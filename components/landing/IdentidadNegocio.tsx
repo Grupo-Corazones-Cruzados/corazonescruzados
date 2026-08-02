@@ -24,7 +24,7 @@
  * Debe verse **sin JavaScript y sin iniciar sesión**: es contenido estático a propósito.
  */
 
-import { RAZON_SOCIAL, NOMBRE_COMERCIAL, RUC, DIRECCION, CONTACTO } from '@/app/legal/datos';
+import { RAZON_SOCIAL, NOMBRE_COMERCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
 export default function IdentidadNegocio() {
   return (

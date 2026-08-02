@@ -24,8 +24,8 @@ export default function PieSitio() {
           <div className="lg:col-span-2">
             <p className="text-[15px] font-semibold text-white" itemProp="name">{SITIO.nombre}</p>
             <p className="mt-2 text-[13.5px] leading-relaxed text-white/45 max-w-sm">
-              Desarrollo de software, automatización y agentes de atención con inteligencia
-              artificial. {SITIO.ciudad}, {SITIO.pais}.
+              Un proyecto de desarrollo humano. De ahí nacen los sistemas que desarrollamos
+              y operamos para nuestros clientes. {SITIO.ciudad}, {SITIO.pais}.
             </p>
           </div>
 

@@ -1,39 +1,63 @@
 /**
- * RECURSOS — qué ofrece el proyecto a las personas, no a las empresas.
+ * RECURSOS — el proyecto por dentro: por qué existe, cómo se organiza y en qué cree.
  *
- * Es la otra mitad de `/negocio`: allí se habla a empresas que contratan un servicio, aquí
- * a personas que quieren participar, crecer o simplemente entender qué es esto.
+ * ── EL REPARTO CON `/negocio` ──────────────────────────────────────────────────
+ * `/negocio` dice **qué ofrecemos** —a clientes, a miembros y a candidatos—. Esta dice
+ * **qué somos**, que es de donde sale todo lo anterior.
+ *
+ * Corrección de Fernando (2026-08-02): la primera versión del sitio presentaba al GCC como
+ * proveedor de tecnología porque se escribió mirando a un revisor de Meta. Está del revés.
+ * El GCC es **un proyecto de desarrollo humano**, y los servicios a clientes nacen de él.
  *
  * Server Component: en el HTML crudo, como el resto del sitio público.
  */
 
 import type { Metadata } from 'next';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
-import { SITIO, RECURSOS } from '@/lib/sitio/contenido';
+import { ArrowRight } from 'lucide-react';
+import { SITIO } from '@/lib/sitio/contenido';
 import {
-  Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
-  BotonPrimario, BotonSecundario, conNegritas,
+  Contenedor, Seccion, TituloSeccion, Tarjeta, FondoHeroe, BotonPrimario, BotonSecundario,
 } from '@/components/sitio/piezas';
 
 export const metadata: Metadata = {
-  title: 'Recursos — desarrollo humano, proyectos y el videojuego',
+  title: 'El proyecto — desarrollo humano, condiciología y Modelo 4P',
   description:
-    'Grupo Corazones Cruzados ofrece una plataforma de desarrollo humano, participación en proyectos, un marketplace de talento y GCC World, un videojuego 2D donde el proyecto se explica jugando.',
+    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: por qué existe, cómo se organiza con el Modelo 4P, qué es la Condiciología y qué significa el violeta.',
   keywords: [
-    'desarrollo humano Ecuador', 'condiciología', 'proyecto colaborativo Guayaquil',
-    'GCC World videojuego', 'participar en proyectos', 'marketplace de talento',
+    'desarrollo humano Ecuador', 'condiciología', 'Modelo 4P', 'proyecto colaborativo Guayaquil',
+    'GCC World', 'crecimiento personal Guayaquil',
   ],
   alternates: { canonical: '/recursos' },
   openGraph: {
-    title: `Recursos — ${SITIO.nombre}`,
-    description: 'Desarrollo humano, participación en proyectos, marketplace de talento y un videojuego.',
+    title: `El proyecto — ${SITIO.nombre}`,
+    description: 'Por qué existe, cómo se organiza y en qué cree un proyecto de desarrollo humano.',
     url: `${SITIO.url}/recursos`,
     type: 'website',
     locale: 'es_EC',
   },
 };
 
-/** Los cuatro pisos y los cuatro pasos, que es cómo se organiza todo el grupo. */
+const MOTIVOS = [
+  {
+    n: '01',
+    titulo: 'Un corazón puede cruzar el mundo',
+    texto:
+      'Crecemos en entornos diferentes, pero los valores deben ser compartidos. Una organización debe representar la alianza única que existe en la humanidad. Y lo que más necesitamos es una razón para trabajar juntos por un futuro mejor.',
+  },
+  {
+    n: '02',
+    titulo: 'Una realidad imposible, contra una disciplina centralizada',
+    texto:
+      'Los jóvenes heredan las consecuencias de adultos que ignoraron las problemáticas sociales y prefirieron creerlas imposibles antes que intentarlo. La forma de confrontar esa realidad imposible es una disciplina centralizada: un sueño único y compartido, trabajado a diario.',
+  },
+  {
+    n: '03',
+    titulo: 'El poder se construye, no se decide',
+    texto:
+      'Tener acceso a recursos no ganados es poder ilegítimo. El poder se construye y se obtiene cuando la gente reconoce a su líder, no cuando elige entre opciones que no la representan. Quien logra movilizar a las personas es líder nato.',
+  },
+];
+
 const PISOS = [
   ['Global', 'Decide sobre los sistemas fundamentales de un paso.'],
   ['Pilar', 'Crea y gestiona los proyectos aprobados.'],
@@ -47,58 +71,91 @@ const PASOS = [
   ['Gestión', 'Publicación, marketing y monetización.'],
 ];
 
-export default function RecursosPage() {
+const VALORES = [
+  'Determinación', 'Coraje', 'Pureza', 'Fe', 'Paciencia',
+  'Seriedad', 'Espontaneidad', 'Autonomía', 'Empatía',
+];
+
+const CONDICIOLOGIA = [
+  ['Reconocer', 'Identificar las condiciones que intervienen.'],
+  ['Controlar', 'Establecer control sobre ellas.'],
+  ['Predecir', 'Anticipar cómo se comportarán.'],
+  ['Experimentar', 'Probar sobre ellas.'],
+  ['Convertir', 'Transformarlas.'],
+  ['Cambiar', 'Cambiar la condición, y con ella el resultado.'],
+];
+
+export default function ProyectoPage() {
   return (
     <>
       <section className="relative overflow-hidden">
         <FondoHeroe />
         <Contenedor className="relative py-24 sm:py-32 text-center">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#7B5FBF]/30 bg-[#7B5FBF]/10 px-3.5 py-1.5 text-[12.5px] text-[#c4b5fd]">
-            Un proyecto de desarrollo humano
+            El proyecto
           </p>
           <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-white tracking-tight max-w-3xl mx-auto">
-            Lo que ofrecemos a
-            <br className="hidden sm:block" /> las personas
+            Un proyecto de
+            <br className="hidden sm:block" /> desarrollo humano
           </h1>
           <p className="mt-6 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-2xl mx-auto">
-            {SITIO.nombre} no es solo una empresa de software. Es una organización que
-            desarrolla proyectos, personas y sistemas bajo una misma filosofía.
+            {SITIO.nombre} desarrolla proyectos, personas y sistemas bajo una misma
+            filosofía. Todo lo que ofrecemos —también a nuestros clientes— sale de aquí.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <BotonPrimario href="/">Entrar en GCC World</BotonPrimario>
-            <BotonSecundario href="#organizacion">Cómo nos organizamos</BotonSecundario>
+            <BotonSecundario href="/negocio#servicios">Ver todo lo que ofrecemos</BotonSecundario>
           </div>
         </Contenedor>
       </section>
 
-      <Seccion tono="realce">
+      {/* ── POR QUÉ ─────────────────────────────────────────────────────────── */}
+      <Seccion id="motivos" tono="realce">
         <TituloSeccion
-          etiqueta="Recursos"
-          titulo="Cuatro formas de participar"
-          entradilla="Cada una tiene su público. No hay que pasar por todas."
+          etiqueta="Por qué existe"
+          titulo="Tres motivos"
+          entradilla="No son eslóganes: son las razones que dan origen al proyecto y de las que sale todo lo demás."
         />
-        <div className="mt-12 grid gap-5 md:grid-cols-2">
-          {RECURSOS.map((r) => (
-            <Tarjeta key={r.id} id={r.id}>
-              <IconoCuadro nombre={r.icono} />
-              <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#a78bfa]">{r.para}</p>
-              <h3 className="mt-1.5 text-[19px] font-semibold text-white leading-snug">{r.titulo}</h3>
-              <p className="mt-2.5 text-[14.5px] leading-relaxed text-white/55">{r.resumen}</p>
-              <ul className="mt-5 space-y-2.5">
-                {r.detalle.map((d, i) => (
-                  <li key={i} className="flex gap-2.5 text-[14px] leading-relaxed text-white/50">
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-[#7B5FBF]" />
-                    <span>{conNegritas(d)}</span>
-                  </li>
-                ))}
-              </ul>
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          {MOTIVOS.map((m) => (
+            <Tarjeta key={m.n}>
+              <span className="text-[13px] font-semibold tracking-[0.14em] text-[#7B5FBF]">{m.n}</span>
+              <h3 className="mt-3 text-[18px] font-semibold text-white leading-snug">{m.titulo}</h3>
+              <p className="mt-3 text-[14.5px] leading-relaxed text-white/50">{m.texto}</p>
             </Tarjeta>
           ))}
         </div>
       </Seccion>
 
-      {/* ── EL MODELO 4P ────────────────────────────────────────────────────── */}
-      <Seccion id="organizacion">
+      {/* ── CONDICIOLOGÍA ───────────────────────────────────────────────────── */}
+      <Seccion id="condiciologia">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
+          <TituloSeccion
+            etiqueta="El método"
+            titulo="Condiciología"
+            entradilla="Una condición es el conjunto de factores que se manifiestan en una instancia de la realidad. Lo que no se ha estudiado no es una condición: se convierte en una cuando se reconoce por qué ocurrió. Se aplica a personas, a proyectos y a ideas."
+          />
+          <Tarjeta>
+            <p className="text-[15.5px] font-semibold text-white">Los seis pasos</p>
+            <ol className="mt-5 space-y-3.5">
+              {CONDICIOLOGIA.map(([n, d], i) => (
+                <li key={n} className="flex gap-3.5">
+                  <span className="shrink-0 w-6 h-6 rounded-full border border-[#7B5FBF]/40 bg-[#7B5FBF]/10 text-[#c4b5fd] text-[12px] font-semibold inline-flex items-center justify-center">
+                    {i + 1}
+                  </span>
+                  <span>
+                    <span className="block text-[14.5px] font-medium text-white/90">{n}</span>
+                    <span className="block mt-0.5 text-[13.5px] leading-relaxed text-white/45">{d}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </Tarjeta>
+        </div>
+      </Seccion>
+
+      {/* ── MODELO 4P ───────────────────────────────────────────────────────── */}
+      <Seccion id="organizacion" tono="realce">
         <TituloSeccion
           etiqueta="Modelo 4P"
           titulo="Cuatro pisos y cuatro pasos"
@@ -128,8 +185,25 @@ export default function RecursosPage() {
         </div>
       </Seccion>
 
+      {/* ── VALORES ─────────────────────────────────────────────────────────── */}
+      <Seccion id="valores">
+        <TituloSeccion
+          etiqueta="Valores"
+          titulo="Nueve, y no son decorativos"
+          entradilla="Candidatos y miembros representan lo que el grupo es. Por eso los valores no son un cartel en la pared: son el criterio con el que se entra y con el que se sigue."
+        />
+        <div className="mt-10 flex flex-wrap gap-2.5">
+          {VALORES.map((v) => (
+            <span key={v}
+              className="inline-flex items-center rounded-full border border-white/[0.12] bg-white/[0.03] px-4 py-2 text-[14px] text-white/70">
+              {v}
+            </span>
+          ))}
+        </div>
+      </Seccion>
+
       {/* ── VIOLETA ─────────────────────────────────────────────────────────── */}
-      <Seccion tono="realce">
+      <Seccion id="violeta" tono="realce">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <TituloSeccion
             etiqueta="Violeta"
@@ -154,7 +228,7 @@ export default function RecursosPage() {
       <Seccion>
         <div className="max-w-2xl mx-auto text-center">
           <TituloSeccion titulo="¿Quieres formar parte?" centrado
-            entradilla="La postulación se hace desde la portada. Si te eligen, recibes acceso a la plataforma y a las herramientas del grupo." />
+            entradilla="La postulación se hace desde la portada. Si te eligen, recibes acceso a la plataforma, tu pulsera y tu pizarra de visión personal." />
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <BotonPrimario href="/">Postularme <ArrowRight className="w-4 h-4" /></BotonPrimario>
             <BotonSecundario href="/contacto">Hablar con alguien</BotonSecundario>
@@ -167,13 +241,22 @@ export default function RecursosPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type': 'ItemList',
-            name: 'Recursos de Grupo Corazones Cruzados',
-            itemListElement: RECURSOS.map((r, i) => ({
-              '@type': 'ListItem',
-              position: i + 1,
-              item: { '@type': 'Service', name: r.titulo, description: r.resumen, provider: { '@type': 'Organization', name: SITIO.nombre } },
-            })),
+            '@type': 'AboutPage',
+            mainEntity: {
+              '@type': 'Organization',
+              name: SITIO.nombre,
+              legalName: SITIO.razonSocial,
+              taxID: SITIO.ruc,
+              url: SITIO.url,
+              description:
+                'Proyecto de desarrollo humano que desarrolla proyectos, personas y sistemas bajo una misma filosofía.',
+              address: {
+                '@type': 'PostalAddress',
+                streetAddress: SITIO.direccion,
+                addressLocality: SITIO.ciudad,
+                addressCountry: 'EC',
+              },
+            },
           }),
         }}
       />

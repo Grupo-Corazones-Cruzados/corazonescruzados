@@ -5,14 +5,22 @@
  * lo leen de aquí. Así se edita en un sitio, se traduce de una vez si algún día hace falta,
  * y no hay dos versiones del mismo servicio en dos páginas distintas.
  *
- * ── LA REGLA ───────────────────────────────────────────────────────────────────
- * **Nada que no sea verificable.** Cada servicio corresponde a un módulo que existe en la
- * aplicación. Sin cifras de clientes, sin años de experiencia, sin premios: esta es la web
- * que abre un revisor de Meta con el certificado del RUC delante, y un dato que no cuadra
- * hace más daño que un dato que falta.
+ * ── LAS DOS REGLAS ─────────────────────────────────────────────────────────────
+ * 1. **Nada que no sea verificable.** Cada servicio corresponde a un módulo que existe en
+ *    la aplicación. Sin cifras de clientes, sin años de experiencia, sin premios: un dato
+ *    que no cuadra hace más daño que un dato que falta.
+ *
+ * 2. **El GCC es, ante todo, un PROYECTO DE DESARROLLO HUMANO** (corrección de Fernando,
+ *    2026-08-02). La primera versión de este sitio lo presentaba como proveedor de
+ *    tecnología, porque se escribió mirando a un revisor de Meta. Estaba del revés: los
+ *    servicios a clientes **nacen del** proyecto de desarrollo humano, no al contrario, y
+ *    el agente de WhatsApp es **uno** de ellos, no el eje.
+ *
+ *    De ahí que los servicios estén agrupados por **a quién sirven** —clientes, miembros y
+ *    candidatos—, que son los tres públicos del proyecto.
  */
 
-import { NOMBRE_COMERCIAL, RAZON_SOCIAL, RUC, DIRECCION, CONTACTO } from '@/app/legal/datos';
+import { NOMBRE_COMERCIAL, RAZON_SOCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
 export const SITIO = {
   nombre: NOMBRE_COMERCIAL,
@@ -34,41 +42,41 @@ export const SITIO = {
 
 export const NAVEGACION = [
   { href: '/', label: 'Inicio' },
-  { href: '/negocio', label: 'Negocio' },
-  { href: '/recursos', label: 'Recursos' },
+  // La ruta sigue siendo /recursos para no romper enlaces ya publicados; la etiqueta
+  // dice lo que de verdad contiene.
+  { href: '/negocio', label: 'Qué hacemos' },
+  { href: '/recursos', label: 'El proyecto' },
   { href: '/contacto', label: 'Contacto' },
 ] as const;
 
 /* ═══════════════════════ SERVICIOS ═══════════════════════ */
 
+export type Publico = 'clientes' | 'miembros' | 'candidatos';
+
+export const PUBLICOS: { id: Publico; label: string; entradilla: string }[] = [
+  { id: 'clientes', label: 'Para empresas y clientes',
+    entradilla: 'Lo que construimos y operamos para quien nos contrata. Nace de lo que primero desarrollamos para nosotros mismos.' },
+  { id: 'miembros', label: 'Para los miembros',
+    entradilla: 'Las herramientas del proyecto: es aquí donde empieza todo lo demás.' },
+  { id: 'candidatos', label: 'Para quien llega nuevo',
+    entradilla: 'Cómo se entra, qué se recibe y cómo se demuestra la afiliación.' },
+];
+
 export interface Servicio {
   id: string;
   icono: string;
+  publico: Publico;
   titulo: string;
   resumen: string;
   detalle: string[];
 }
 
 export const SERVICIOS: Servicio[] = [
+  /* ── PARA CLIENTES ─────────────────────────────────────────────────────────── */
   {
-    id: 'agente-whatsapp',
-    icono: 'mensaje',
-    titulo: 'Agentes de atención con IA en WhatsApp',
-    resumen:
-      'Tu número de WhatsApp Business atiende solo, con la información de tu negocio, y pasa a una persona cuando hace falta.',
-    detalle: [
-      'Conectas **tu propio número** y lo conservas: tu equipo sigue usando WhatsApp Business en el teléfono y WhatsApp Web como siempre. Es una conexión en coexistencia, no una sustitución.',
-      'El agente se configura con **el conocimiento de tu negocio** —qué ofreces, precios, horarios, políticas— y responde solo con eso. Lo que no sabe, no se lo inventa: lo pasa a una persona.',
-      'Cada conversación queda en **una bandeja** donde tu equipo ve quién contestó qué, y puede tomar el control de un chat en cualquier momento.',
-      'Tú decides cuándo se enciende. **No responde a nadie hasta que lo apruebas.**',
-    ],
-  },
-  {
-    id: 'plataformas',
-    icono: 'capas',
+    id: 'plataformas', icono: 'capas', publico: 'clientes',
     titulo: 'Plataformas de gestión a medida',
-    resumen:
-      'El sistema con el que tu empresa gestiona su trabajo, construido sobre cómo trabajáis de verdad.',
+    resumen: 'El sistema con el que tu empresa gestiona su trabajo, construido sobre cómo trabajáis de verdad.',
     detalle: [
       'Proyectos y tareas, tickets de soporte, clientes, cotizaciones, suscripciones y facturación, en un solo sitio.',
       'Cada implantación se ajusta a **tu operación real** en lugar de obligarte a adaptarte a un producto cerrado.',
@@ -76,90 +84,122 @@ export const SERVICIOS: Servicio[] = [
     ],
   },
   {
-    id: 'automatizacion',
-    icono: 'rayo',
+    id: 'agente-whatsapp', icono: 'mensaje', publico: 'clientes',
+    titulo: 'Agentes de atención con IA en WhatsApp',
+    resumen: 'Tu número de WhatsApp Business atiende solo, con la información de tu negocio, y pasa a una persona cuando hace falta.',
+    detalle: [
+      'Conectas **tu propio número** y lo conservas: tu equipo sigue usando WhatsApp Business en el teléfono y WhatsApp Web como siempre.',
+      'El agente responde solo con **el conocimiento de tu negocio**. Lo que no sabe, no se lo inventa: lo pasa a una persona.',
+      'Cada conversación queda en **una bandeja** donde tu equipo ve quién contestó qué y puede tomar el control.',
+      'Tú decides cuándo se enciende. **No responde a nadie hasta que lo apruebas.**',
+    ],
+  },
+  {
+    id: 'automatizacion', icono: 'rayo', publico: 'clientes',
     titulo: 'Automatización de la comunicación',
-    resumen:
-      'Campañas, recordatorios y avisos que salen solos desde lo que ya ocurre en tu operación.',
+    resumen: 'Campañas, recordatorios y avisos que salen solos desde lo que ya ocurre en tu operación.',
     detalle: [
       'Campañas de **correo electrónico y de WhatsApp** con plantillas, programación por lotes y seguimiento de entrega.',
       'Recordatorios automáticos generados desde tu propia operación: un vencimiento, una reunión, una factura.',
     ],
   },
   {
-    id: 'facturacion',
-    icono: 'documento',
+    id: 'facturacion', icono: 'documento', publico: 'clientes',
     titulo: 'Facturación electrónica con el SRI',
-    resumen:
-      'Emisión, firma y autorización de comprobantes ante el SRI, dentro del mismo sistema.',
+    resumen: 'Emisión, firma y autorización de comprobantes ante el SRI, dentro del mismo sistema.',
     detalle: [
-      'Comprobantes electrónicos firmados y autorizados por el **Servicio de Rentas Internas del Ecuador**.',
-      'Integrada en el mismo sistema de gestión: se factura desde donde ya está el proyecto o la suscripción, sin volver a teclear nada.',
-    ],
-  },
-];
-
-/* ═══════════════════════ RECURSOS ═══════════════════════ */
-
-export interface Recurso {
-  id: string;
-  icono: string;
-  titulo: string;
-  resumen: string;
-  detalle: string[];
-  /** A quién le sirve. Encabeza la tarjeta. */
-  para: string;
-}
-
-export const RECURSOS: Recurso[] = [
-  {
-    id: 'desarrollo-humano',
-    icono: 'personas',
-    para: 'Para quien quiere crecer',
-    titulo: 'Plataforma de desarrollo humano',
-    resumen:
-      'Herramientas para trabajar sobre tus condiciones: reconocerlas, medirlas y cambiarlas.',
-    detalle: [
-      'El crecimiento se analiza con cuatro aspectos, en orden de importancia: **talento, valores, dimensiones de desarrollo humano** —laboral, corporal, social y mental— **y red de apoyo**.',
-      'La metodología condiciológica da el método: Reconocer, Controlar, Predecir, Experimentar, Convertir y Cambiar.',
-      'Los miembros usan una aplicación que evalúa sus condiciones del día a día, con horario de vida, tareas y seguimiento.',
+      'Comprobantes firmados y autorizados por el **Servicio de Rentas Internas del Ecuador**.',
+      'Se factura desde donde ya está el proyecto o la suscripción, sin volver a teclear nada.',
     ],
   },
   {
-    id: 'proyectos',
-    icono: 'capas',
-    para: 'Para quien quiere participar',
-    titulo: 'Participación en proyectos',
-    resumen:
-      'Todos los proyectos del grupo son recursos compartidos. El talento se reutiliza entre ellos.',
+    id: 'cotizaciones', icono: 'documento', publico: 'clientes',
+    titulo: 'Cotizaciones y seguimiento',
+    resumen: 'Pides lo que necesitas, recibes la propuesta con su alcance y su precio, y queda registrada.',
     detalle: [
-      'El grupo se organiza con el **Modelo 4P**: cuatro pisos —Global, Pilar, Controlador y Colaborador— y cuatro pasos —Fundamentación, Creación, Implementación y Gestión—.',
-      'Si un proyecto cae, **el talento se reutiliza** en otro con mejores resultados. El conocimiento se comparte entre generaciones y entre proyectos.',
-      'El crecimiento se adapta a la necesidad de cada persona, valorando su talento y dándole los recursos que requiere.',
+      'Todo ocurre **dentro de la plataforma**, en tu espacio de cliente: nada se pierde en un hilo de correos.',
+      'Cada versión de la cotización se conserva, así que se puede volver atrás y comparar.',
+    ],
+  },
+
+  /* ── PARA MIEMBROS ─────────────────────────────────────────────────────────── */
+  {
+    id: 'condiciologia', icono: 'brujula', publico: 'miembros',
+    titulo: 'Metodología condiciológica',
+    resumen: 'El método del proyecto: reconocer las condiciones que intervienen en algo, y cambiarlas.',
+    detalle: [
+      'Seis pasos: **Reconocer, Controlar, Predecir, Experimentar, Convertir y Cambiar.**',
+      'Una condición es el conjunto de factores que se manifiestan en una instancia de la realidad. Lo que **no se ha estudiado no es una condición**: se convierte en una cuando se reconoce por qué ocurrió.',
+      'Se aplica a personas, a proyectos y a ideas, y de ahí salen las decisiones estratégicas del grupo.',
     ],
   },
   {
-    id: 'videojuego',
-    icono: 'juego',
-    para: 'Para quien llega nuevo',
+    id: 'crecimiento', icono: 'personas', publico: 'miembros',
+    titulo: 'Método de crecimiento personal',
+    resumen: 'Cuatro aspectos, en orden de importancia, para analizar dónde está cada persona y qué necesita.',
+    detalle: [
+      '**Talento** primero, porque es el origen del potencial. Después **valores**, que fortalecen a la persona frente al mundo.',
+      'Luego las **cuatro dimensiones de desarrollo humano**: laboral, corporal, social y mental.',
+      'Y la **red de apoyo** al final: es un complemento, no el origen. Nadie la necesita para tener éxito.',
+    ],
+  },
+  {
+    id: 'herramientas-diarias', icono: 'rayo', publico: 'miembros',
+    titulo: 'Herramientas del día a día',
+    resumen: 'La aplicación con la que un miembro trabaja sus condiciones cada día.',
+    detalle: [
+      'Horario de vida, tareas, recordatorios y seguimiento de lo que se propone.',
+      'Registro de pensamientos y de percepción, para tener con qué medir en lugar de opinar de memoria.',
+      'Su espacio de proyectos y experiencias dentro del grupo.',
+    ],
+  },
+  {
+    id: 'proyectos-compartidos', icono: 'capas', publico: 'miembros',
+    titulo: 'Proyectos compartidos',
+    resumen: 'Todos los proyectos que surgen son recursos del grupo, y el talento se reutiliza entre ellos.',
+    detalle: [
+      'Organizados con el **Modelo 4P**: cuatro pisos —Global, Pilar, Controlador y Colaborador— y cuatro pasos —Fundamentación, Creación, Implementación y Gestión—.',
+      'Si un proyecto cae, **el talento se reutiliza** en otro. El conocimiento se comparte entre generaciones y entre proyectos, con competencia sana.',
+    ],
+  },
+  {
+    id: 'marketplace', icono: 'tienda', publico: 'miembros',
+    titulo: 'Marketplace y talento',
+    resumen: 'Perfiles con CV y portafolio, para que el talento del grupo sea visible y reutilizable.',
+    detalle: [
+      'Publicación de servicios y necesidades entre los proyectos del grupo.',
+      'Un CV y un portafolio que se mantienen solos desde lo que ya se hace dentro.',
+    ],
+  },
+
+  /* ── PARA CANDIDATOS ───────────────────────────────────────────────────────── */
+  {
+    id: 'videojuego', icono: 'juego', publico: 'candidatos',
     titulo: 'GCC World — el videojuego',
-    resumen:
-      'Un mundo 2D donde el proyecto se explica jugando, no leyendo un folleto.',
+    resumen: 'Un mundo 2D donde el proyecto se explica jugando, no leyendo un folleto.',
     detalle: [
       'Juego de **pixel art en 2D** desarrollado en Godot, jugable desde el navegador.',
-      'Tu personaje se crea al entrar y te acompaña dentro de la plataforma: es la misma identidad, no dos cosas separadas.',
+      'Tu personaje se crea al entrar y **te acompaña dentro de la plataforma**: es la misma identidad, no dos cosas separadas.',
     ],
   },
   {
-    id: 'marketplace',
-    icono: 'tienda',
-    para: 'Para quien busca o ofrece',
-    titulo: 'Marketplace y talento',
-    resumen:
-      'Un espacio donde los proyectos del grupo publican lo que ofrecen y buscan.',
+    id: 'afiliacion', icono: 'brujula', publico: 'candidatos',
+    titulo: 'El camino de candidato a miembro',
+    resumen: 'Qué se recibe al entrar y cómo se demuestra la afiliación.',
     detalle: [
-      'Perfiles con CV y portafolio, para que el talento del grupo sea visible y reutilizable.',
-      'Publicación de servicios y necesidades entre los proyectos del grupo.',
+      'Se postula desde el formulario del sitio. Quien es elegido recibe acceso como **usuario candidato** y su **pulsera gris**.',
+      'Y una **pizarra de visión personal**, que se lleva a las reuniones semanales presenciales con los controladores.',
+      'La afiliación **no se mide en puntos**: es una cualificación basada en los logros y resultados de las acciones que se ejecutan.',
+    ],
+  },
+  {
+    id: 'beneficios', icono: 'personas', publico: 'candidatos',
+    titulo: 'Qué se recibe desde el primer día',
+    resumen: 'Beneficios para el desarrollo humano en todas sus dimensiones.',
+    detalle: [
+      '**No es un empleo y no hay trabajos no remunerados**: toda acción tiene un propósito y un beneficio para quien la hace.',
+      'El crecimiento se adapta a la necesidad de cada uno, valorando su talento y dándole los recursos que requiere.',
+      'Acceso a las herramientas del grupo desde el momento de la afiliación.',
     ],
   },
 ];

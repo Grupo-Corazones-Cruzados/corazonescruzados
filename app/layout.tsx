@@ -14,11 +14,11 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(SITIO.url),
   title: {
-    default: `${SITIO.nombre} — Software, automatización y agentes de IA en Ecuador`,
+    default: `${SITIO.nombre} — Proyecto de desarrollo humano y servicios de tecnología`,
     template: `%s · ${SITIO.nombre}`,
   },
   description:
-    'Agentes de atención con inteligencia artificial en WhatsApp, plataformas de gestión a medida y facturación electrónica ante el SRI. Guayaquil, Ecuador.',
+    'Proyecto de desarrollo humano de Guayaquil, Ecuador. De ahí nacen los servicios que ofrecemos: plataformas de gestión a medida, agentes de atención con IA en WhatsApp, automatización y facturación electrónica ante el SRI.',
   icons: { icon: '/icon.png' },
   openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
   robots: { index: true, follow: true },

@@ -20,162 +20,191 @@
  * especial las secciones de datos sensibles / geolocalización.
  */
 
-import { h1, h2, ul, b, link, pagina, articulo, recuadro, sutil } from './estilos';
-import { RESPONSABLE, RUC, DIRECCION, CONTACTO } from './datos';
+import type { Metadata } from 'next';
+import DocumentoLegal, { Titulo, h2, ul, b, link, p as pp, recuadro } from '@/components/sitio/documento';
+import { RESPONSABLE, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
-export const metadata = {
-  title: 'Términos y Condiciones y Política de Privacidad — Grupo Corazones Cruzados',
+export const metadata: Metadata = {
+  title: 'Términos y condiciones y política de privacidad',
+  description:
+    'Política de privacidad y tratamiento de datos personales de Grupo Corazones Cruzados conforme a la LOPDP del Ecuador, y términos de uso del sitio.',
+  alternates: { canonical: '/legal' },
 };
+
+/** El índice lateral. Se pasa a mano porque la página es de servidor a propósito. */
+const INDICE = [
+  { id: 's1', label: '1. Antecedentes y objeto' },
+  { id: 's2', label: '2. Responsable y contacto' },
+  { id: 's3', label: '3. Definiciones' },
+  { id: 's4', label: '4. Principios' },
+  { id: 's5', label: '5. Datos que tratamos' },
+  { id: 's6', label: '6. Momento de la recolección' },
+  { id: 's7', label: '7. Finalidades' },
+  { id: 's8', label: '8. Base de licitud' },
+  { id: 's9', label: '9. Control Psicosocial' },
+  { id: 's10', label: '10. Cookies' },
+  { id: 's11', label: '11. Decisiones automatizadas' },
+  { id: 's12', label: '12. Encargados y transferencias' },
+  { id: 's13', label: '13. Conservación' },
+  { id: 's14', label: '14. Derechos del Titular' },
+  { id: 's15', label: '15. Seguridad' },
+  { id: 's16', label: '16. Vulneraciones' },
+  { id: 's17', label: '17. Permisos y desafiliación' },
+  { id: 's18', label: '18. Menores de edad' },
+  { id: 's19', label: '19. Términos de uso' },
+  { id: 's20', label: '20. Modificaciones' },
+  { id: 'eliminar-datos', label: '21. Cómo eliminar tus datos' },
+  { id: 's22', label: '22. Contacto y autoridad' },
+];
 
 const ULTIMA_ACTUALIZACION = '1 de agosto de 2026';
 
 export default function LegalPage() {
   return (
-    <main style={pagina}>
-      <article style={articulo}>
-        <h1 style={h1}>Términos y Condiciones y Política de Privacidad</h1>
-        <p style={{ ...sutil, marginTop: 4 }}>
-          Grupo Corazones Cruzados — Última actualización: {ULTIMA_ACTUALIZACION}
-        </p>
-
-        <div style={recuadro('nota')}>
-          <p style={{ margin: 0 }}>
-            <strong style={b}>¿Buscas el servicio de WhatsApp?</strong> Si escribiste por
+    <DocumentoLegal
+      titulo="Términos y condiciones y política de privacidad"
+      subtitulo="Cómo tratamos los datos de las personas candidatas y miembros del proyecto, y las condiciones de uso de este sitio."
+      actualizado={ULTIMA_ACTUALIZACION}
+      indice={INDICE}
+      aviso={
+        <>
+            <strong className={b}>¿Buscas el servicio de WhatsApp?</strong> Si escribiste por
             WhatsApp a una empresa atendida por nuestro agente de IA, o si eres una empresa
             que usa ese servicio, el documento que te aplica es{' '}
-            <a href="/legal/whatsapp" style={link}>
+            <a href="/legal/whatsapp" className={link}>
               Agente IA en WhatsApp — privacidad y condiciones
             </a>
-            . Allí Grupo Corazones Cruzados actúa como <strong style={b}>encargado</strong>{' '}
-            del tratamiento por cuenta de esa empresa, no como responsable.
-          </p>
-        </div>
+          . Allí Grupo Corazones Cruzados actúa como <strong className={b}>encargado</strong>{' '}
+          del tratamiento por cuenta de esa empresa, no como responsable.
+        </>
+      }
+    >
 
-        <h2 style={h2}>1. Antecedentes y objeto</h2>
-        <p>
+        <Titulo id="s1">1. Antecedentes y objeto</Titulo>
+        <p className={pp}>
           El presente documento (en adelante, la “Política”) regula el uso de este sitio web y el{' '}
-          <strong style={b}>tratamiento de datos personales</strong> de las personas usuarias y
+          <strong className={b}>tratamiento de datos personales</strong> de las personas usuarias y
           candidatas (en adelante, “el Usuario” o “el Titular”), de conformidad con la{' '}
-          <strong style={b}>Constitución de la República del Ecuador</strong> (artículo 66, numeral
-          19), la <strong style={b}>Ley Orgánica de Protección de Datos Personales (LOPDP)</strong>,
-          su <strong style={b}>Reglamento General</strong> y demás normativa aplicable. Al aceptar la
+          <strong className={b}>Constitución de la República del Ecuador</strong> (artículo 66, numeral
+          19), la <strong className={b}>Ley Orgánica de Protección de Datos Personales (LOPDP)</strong>,
+          su <strong className={b}>Reglamento General</strong> y demás normativa aplicable. Al aceptar la
           Política, el Titular declara haberla leído y comprendido, y otorga su consentimiento{' '}
-          <strong style={b}>libre, específico, informado e inequívoco</strong> para el tratamiento de
+          <strong className={b}>libre, específico, informado e inequívoco</strong> para el tratamiento de
           sus datos en los términos aquí descritos. El responsable podrá actualizar esta Política;
           la versión vigente se publicará siempre en esta página.
         </p>
 
-        <h2 style={h2}>2. Responsable del tratamiento y contacto de protección de datos</h2>
-        <p>
-          <strong style={b}>Alcance de esta Política:</strong> regula el sitio web y los datos
+        <Titulo id="s2">2. Responsable del tratamiento y contacto de protección de datos</Titulo>
+        <p className={pp}>
+          <strong className={b}>Alcance de esta Política:</strong> regula el sitio web y los datos
           de las personas candidatas y miembros del proyecto, respecto de los cuales Grupo
-          Corazones Cruzados es <strong style={b}>responsable</strong>. No cubre las
-          conversaciones de WhatsApp que atendemos <strong style={b}>por cuenta de empresas
-          clientes</strong>: en ese servicio somos <strong style={b}>encargados</strong> y la
+          Corazones Cruzados es <strong className={b}>responsable</strong>. No cubre las
+          conversaciones de WhatsApp que atendemos <strong className={b}>por cuenta de empresas
+          clientes</strong>: en ese servicio somos <strong className={b}>encargados</strong> y la
           responsable es la empresa, con su propio documento en{' '}
-          <a href="/legal/whatsapp" style={link}>
+          <a href="/legal/whatsapp" className={link}>
             /legal/whatsapp
           </a>
           .
         </p>
-        <p>
-          <strong style={b}>Responsable del tratamiento:</strong> {RESPONSABLE}, en representación
-          del proyecto <strong style={b}>Grupo Corazones Cruzados</strong>.
+        <p className={pp}>
+          <strong className={b}>Responsable del tratamiento:</strong> {RESPONSABLE}, en representación
+          del proyecto <strong className={b}>Grupo Corazones Cruzados</strong>.
           <br />
-          <strong style={b}>RUC:</strong> {RUC}.
+          <strong className={b}>RUC:</strong> {RUC}.
           <br />
-          <strong style={b}>Dirección:</strong> {DIRECCION}.
+          <strong className={b}>Dirección:</strong> {DIRECCION}.
           <br />
-          <strong style={b}>Correo de contacto y de protección de datos:</strong>{' '}
-          <a href={`mailto:${CONTACTO}`} style={link}>
+          <strong className={b}>Correo de contacto y de protección de datos:</strong>{' '}
+          <a href={`mailto:${CONTACTO}`} className={link}>
             {CONTACTO}
           </a>
           .
         </p>
-        <p>
+        <p className={pp}>
           El Titular puede dirigir a ese correo cualquier consulta, el ejercicio de sus derechos o
           el retiro de su consentimiento.
         </p>
 
-        <h2 style={h2}>3. Definiciones</h2>
-        <ul style={ul}>
+        <Titulo id="s3">3. Definiciones</Titulo>
+        <ul className={ul}>
           <li>
-            <strong style={b}>Dato personal:</strong> cualquier información sobre una persona natural
+            <strong className={b}>Dato personal:</strong> cualquier información sobre una persona natural
             identificada o identificable.
           </li>
           <li>
-            <strong style={b}>Dato sensible:</strong> aquel que, de tratarse indebidamente, pueda
+            <strong className={b}>Dato sensible:</strong> aquel que, de tratarse indebidamente, pueda
             afectar derechos fundamentales (p. ej. salud, datos biométricos o que revelen origen,
             creencias o conducta).
           </li>
           <li>
-            <strong style={b}>Titular:</strong> la persona natural a quien corresponden los datos.
+            <strong className={b}>Titular:</strong> la persona natural a quien corresponden los datos.
           </li>
           <li>
-            <strong style={b}>Responsable:</strong> quien decide sobre la finalidad y el tratamiento
+            <strong className={b}>Responsable:</strong> quien decide sobre la finalidad y el tratamiento
             de los datos (en este caso, el indicado en la sección 2).
           </li>
           <li>
-            <strong style={b}>Encargado:</strong> quien trata datos por cuenta del responsable.
+            <strong className={b}>Encargado:</strong> quien trata datos por cuenta del responsable.
           </li>
           <li>
-            <strong style={b}>Tratamiento:</strong> cualquier operación sobre datos personales
+            <strong className={b}>Tratamiento:</strong> cualquier operación sobre datos personales
             (recolección, registro, uso, conservación, supresión, etc.).
           </li>
           <li>
-            <strong style={b}>Consentimiento:</strong> manifestación de voluntad libre, específica,
+            <strong className={b}>Consentimiento:</strong> manifestación de voluntad libre, específica,
             informada e inequívoca del Titular para el tratamiento.
           </li>
         </ul>
 
-        <h2 style={h2}>4. Principios que aplicamos</h2>
-        <p>
+        <Titulo id="s4">4. Principios que aplicamos</Titulo>
+        <p className={pp}>
           Tratamos los datos conforme a los principios de la LOPDP:{' '}
-          <strong style={b}>juridicidad, lealtad, transparencia, finalidad, pertinencia y
+          <strong className={b}>juridicidad, lealtad, transparencia, finalidad, pertinencia y
           minimización, proporcionalidad, confidencialidad, calidad y exactitud, conservación,
           seguridad, y responsabilidad proactiva y demostrada</strong>, aplicando siempre la
           interpretación más favorable al Titular.
         </p>
 
-        <h2 style={h2}>5. Datos que tratamos</h2>
-        <p>
-          Aplicamos el principio de <strong style={b}>minimización</strong>: solo tratamos los datos
+        <Titulo id="s5">5. Datos que tratamos</Titulo>
+        <p className={pp}>
+          Aplicamos el principio de <strong className={b}>minimización</strong>: solo tratamos los datos
           necesarios para las finalidades indicadas. Las categorías de datos que podemos recabar son:
         </p>
-        <ul style={ul}>
+        <ul className={ul}>
           <li>
-            <strong style={b}>Datos de postulación:</strong> nombre completo, correo electrónico,
+            <strong className={b}>Datos de postulación:</strong> nombre completo, correo electrónico,
             país, dirección y contacto telefónico, la motivación que el Titular redacta (texto libre)
             y el registro de las aceptaciones que otorga (qué aceptó y cuándo). Estos datos se
             solicitan únicamente en el formulario de postulación.
           </li>
           <li>
-            <strong style={b}>Datos de cuenta y perfil:</strong> alias o nombre de usuario,
+            <strong className={b}>Datos de cuenta y perfil:</strong> alias o nombre de usuario,
             configuración de su personaje/avatar y contraseña (almacenada de forma cifrada) para el
             acceso y la recuperación de la cuenta.
           </li>
           <li>
-            <strong style={b}>Datos técnicos y de conexión:</strong> identificadores de dispositivo,
-            cookies o tokens de sesión y <strong style={b}>dirección IP</strong>, utilizados para
+            <strong className={b}>Datos técnicos y de conexión:</strong> identificadores de dispositivo,
+            cookies o tokens de sesión y <strong className={b}>dirección IP</strong>, utilizados para
             reconocer si el Titular es nuevo o recurrente y para la seguridad del servicio.
           </li>
           <li>
-            <strong style={b}>Datos de comunicación:</strong> los que el Titular nos proporcione al
+            <strong className={b}>Datos de comunicación:</strong> los que el Titular nos proporcione al
             contactarnos o participar en reuniones del proyecto.
           </li>
         </ul>
 
-        <h2 style={h2}>6. Momento de la recolección (minimización y responsabilidad)</h2>
-        <p>
-          Como medida de responsabilidad proactiva, <strong style={b}>los datos de postulación se
+        <Titulo id="s6">6. Momento de la recolección (minimización y responsabilidad)</Titulo>
+        <p className={pp}>
+          Como medida de responsabilidad proactiva, <strong className={b}>los datos de postulación se
           recolectan y conservan únicamente cuando el Titular completa y envía el formulario de
           postulación</strong> y otorga su aceptación final. Antes de ese momento, la información
           introducida permanece de forma temporal en el dispositivo del Titular y no es transmitida
           ni almacenada por el responsable con fines de tratamiento.
         </p>
 
-        <h2 style={h2}>7. Finalidades del tratamiento</h2>
-        <ul style={ul}>
+        <Titulo id="s7">7. Finalidades del tratamiento</Titulo>
+        <ul className={ul}>
           <li>Gestionar la postulación y, en su caso, la afiliación del Titular al proyecto.</li>
           <li>Crear y administrar su cuenta y permitir el acceso al sitio y a sus herramientas.</li>
           <li>Comunicarnos con el Titular respecto de su candidatura y del proyecto.</li>
@@ -183,28 +212,28 @@ export default function LegalPage() {
           <li>Cumplir obligaciones legales aplicables.</li>
         </ul>
 
-        <h2 style={h2}>8. Base de licitud</h2>
-        <p>
-          El tratamiento se sustenta principalmente en el <strong style={b}>consentimiento</strong>{' '}
+        <Titulo id="s8">8. Base de licitud</Titulo>
+        <p className={pp}>
+          El tratamiento se sustenta principalmente en el <strong className={b}>consentimiento</strong>{' '}
           del Titular, otorgado al aceptar esta Política, así como, cuando corresponda, en la
           ejecución de medidas precontractuales a petición del Titular, en el interés legítimo del
           responsable o en el cumplimiento de obligaciones legales. El Titular puede{' '}
-          <strong style={b}>retirar su consentimiento</strong> en cualquier momento, sin que ello
+          <strong className={b}>retirar su consentimiento</strong> en cualquier momento, sin que ello
           afecte la licitud del tratamiento realizado con anterioridad (ver sección 14).
         </p>
 
-        <h2 style={h2}>9. Sistema de Control Psicosocial y geolocalización</h2>
-        <p>
+        <Titulo id="s9">9. Sistema de Control Psicosocial y geolocalización</Titulo>
+        <p className={pp}>
           El proyecto contempla un <em>Sistema de Control Psicosocial</em> compuesto por distintas
-          herramientas. <strong style={b}>Cada herramienta de este sistema solicitará su propio
+          herramientas. <strong className={b}>Cada herramienta de este sistema solicitará su propio
           consentimiento</strong>, de forma explícita, separada, específica e informada, antes de
           tratar cualquier dato.
         </p>
-        <p>
+        <p className={pp}>
           El consentimiento específico a cada dato se otorga{' '}
-          <strong style={b}>antes de acceder a la herramienta correspondiente</strong>, no de forma
+          <strong className={b}>antes de acceder a la herramienta correspondiente</strong>, no de forma
           anticipada. En su estado actual,{' '}
-          <strong style={b}>este sistema no recopila datos del Titular a través del sitio</strong>.
+          <strong className={b}>este sistema no recopila datos del Titular a través del sitio</strong>.
           Si en el futuro se habilitan herramientas que requieran datos —incluida geolocalización u
           otros datos sensibles— se solicitará el consentimiento explícito y separado
           correspondiente y se adoptarán las garantías y, cuando proceda, la evaluación de impacto
@@ -212,16 +241,16 @@ export default function LegalPage() {
           usar las funciones que no dependan de esos datos.
         </p>
 
-        <h2 style={h2}>10. Cookies y tecnologías similares</h2>
-        <p>
+        <Titulo id="s10">10. Cookies y tecnologías similares</Titulo>
+        <p className={pp}>
           Utilizamos cookies o tokens de sesión estrictamente necesarios para el funcionamiento y la
           seguridad del sitio (por ejemplo, para mantener la sesión y distinguir entre usuarios
           nuevos y recurrentes). El Titular puede gestionar las cookies desde la configuración de su
           navegador; deshabilitarlas puede afectar el funcionamiento de algunas funciones.
         </p>
 
-        <h2 style={h2}>11. Decisiones automatizadas y elaboración de perfiles</h2>
-        <p>
+        <Titulo id="s11">11. Decisiones automatizadas y elaboración de perfiles</Titulo>
+        <p className={pp}>
           El Titular tiene derecho a no ser objeto de decisiones basadas únicamente en tratamientos
           automatizados que produzcan efectos jurídicos o le afecten significativamente. Si en algún
           momento se realizaran tratamientos de este tipo, se informará al Titular y se garantizará
@@ -229,45 +258,45 @@ export default function LegalPage() {
           decisión.
         </p>
 
-        <h2 style={h2}>12. Encargados del tratamiento y transferencias internacionales</h2>
-        <p>
+        <Titulo id="s12">12. Encargados del tratamiento y transferencias internacionales</Titulo>
+        <p className={pp}>
           Para prestar el servicio utilizamos proveedores tecnológicos que actúan como encargados del
           tratamiento, algunos ubicados fuera del Ecuador, entre ellos: servicios de{' '}
-          <strong style={b}>alojamiento e infraestructura</strong>, de{' '}
-          <strong style={b}>envío de correo electrónico</strong> y de{' '}
-          <strong style={b}>inteligencia artificial</strong> para funciones del sitio. Estos
+          <strong className={b}>alojamiento e infraestructura</strong>, de{' '}
+          <strong className={b}>envío de correo electrónico</strong> y de{' '}
+          <strong className={b}>inteligencia artificial</strong> para funciones del sitio. Estos
           encargados tratan los datos siguiendo nuestras instrucciones y con obligaciones de
           confidencialidad y seguridad. En las transferencias internacionales adoptamos las garantías
           adecuadas previstas en la LOPDP (cláusulas contractuales u otros mecanismos válidos).
         </p>
 
-        <h2 style={h2}>13. Conservación</h2>
-        <p>
+        <Titulo id="s13">13. Conservación</Titulo>
+        <p className={pp}>
           Conservamos los datos durante el tiempo necesario para las finalidades descritas y mientras
           exista una relación con el Titular, y luego durante los plazos legales aplicables. Cumplidos
-          dichos plazos, los datos se <strong style={b}>eliminan o anonimizan</strong> de forma
+          dichos plazos, los datos se <strong className={b}>eliminan o anonimizan</strong> de forma
           segura.
         </p>
 
-        <h2 style={h2}>14. Derechos del Titular</h2>
-        <p>
+        <Titulo id="s14">14. Derechos del Titular</Titulo>
+        <p className={pp}>
           El Titular puede ejercer, de forma gratuita, sus derechos de{' '}
-          <strong style={b}>acceso, rectificación y actualización, eliminación (supresión),
+          <strong className={b}>acceso, rectificación y actualización, eliminación (supresión),
           oposición, anulación, portabilidad, suspensión del tratamiento, limitación</strong> y a{' '}
-          <strong style={b}>no ser objeto de decisiones automatizadas</strong>, así como{' '}
-          <strong style={b}>retirar su consentimiento</strong>, escribiendo a{' '}
-          <a href={`mailto:${CONTACTO}`} style={link}>
+          <strong className={b}>no ser objeto de decisiones automatizadas</strong>, así como{' '}
+          <strong className={b}>retirar su consentimiento</strong>, escribiendo a{' '}
+          <a href={`mailto:${CONTACTO}`} className={link}>
             {CONTACTO}
           </a>
           . Atenderemos la solicitud en los plazos previstos por la ley (por regla general,{' '}
-          <strong style={b}>dentro de quince (15) días</strong> en el caso del derecho de acceso).
+          <strong className={b}>dentro de quince (15) días</strong> en el caso del derecho de acceso).
           Para verificar su identidad podremos solicitar información adicional. Si el Titular
           considera vulnerados sus derechos, puede presentar un reclamo ante la{' '}
-          <strong style={b}>Superintendencia de Protección de Datos Personales del Ecuador (SPDP)</strong>.
+          <strong className={b}>Superintendencia de Protección de Datos Personales del Ecuador (SPDP)</strong>.
         </p>
 
-        <h2 style={h2}>15. Seguridad de la información</h2>
-        <p>
+        <Titulo id="s15">15. Seguridad de la información</Titulo>
+        <p className={pp}>
           Aplicamos medidas técnicas y organizativas razonables para proteger los datos frente a
           accesos no autorizados, pérdida, alteración o divulgación (entre otras, cifrado de
           contraseñas, control de acceso y conexiones seguras). Ningún sistema es completamente
@@ -275,36 +304,36 @@ export default function LegalPage() {
           credenciales.
         </p>
 
-        <h2 style={h2}>16. Vulneraciones de seguridad</h2>
-        <p>
+        <Titulo id="s16">16. Vulneraciones de seguridad</Titulo>
+        <p className={pp}>
           Ante una vulneración de la seguridad de los datos personales que entrañe un riesgo para los
-          derechos del Titular, notificaremos a la <strong style={b}>SPDP</strong> y, cuando
+          derechos del Titular, notificaremos a la <strong className={b}>SPDP</strong> y, cuando
           corresponda, a los Titulares afectados, en el plazo previsto por la normativa{' '}
-          (<strong style={b}>dentro de los cinco (5) días</strong> siguientes a su conocimiento),
+          (<strong className={b}>dentro de los cinco (5) días</strong> siguientes a su conocimiento),
           describiendo la naturaleza del incidente y las medidas adoptadas.
         </p>
 
-        <h2 style={h2}>17. Permisos otorgados y desafiliación</h2>
-        <p>
+        <Titulo id="s17">17. Permisos otorgados y desafiliación</Titulo>
+        <p className={pp}>
           La aceptación de esta Política implica la concesión de los permisos necesarios para las
           finalidades descritas. Sin perjuicio de los derechos del Titular reconocidos por la ley
           (sección 14), tales permisos se mantienen vigentes mientras el Titular forme parte del
-          proyecto y <strong style={b}>se retiran cuando: (i) el Titular solicita voluntariamente su
+          proyecto y <strong className={b}>se retiran cuando: (i) el Titular solicita voluntariamente su
           desafiliación, o (ii) se produce su desafiliación por incumplimiento de las reglas</strong>.
           En ambos casos cesa el tratamiento basado en dichos permisos y se procede conforme a la
           sección 13.
         </p>
 
-        <h2 style={h2}>18. Personas menores de edad</h2>
-        <p>
+        <Titulo id="s18">18. Personas menores de edad</Titulo>
+        <p className={pp}>
           El sitio está dirigido a personas mayores de edad. El tratamiento de datos de niñas, niños
           y adolescentes, de ser el caso, se realizará únicamente con el consentimiento de su
           representante legal y con las garantías reforzadas que exige la LOPDP, atendiendo a su
           interés superior.
         </p>
 
-        <h2 style={h2}>19. Términos de uso del sitio</h2>
-        <p>
+        <Titulo id="s19">19. Términos de uso del sitio</Titulo>
+        <p className={pp}>
           El Titular se compromete a usar el sitio de forma lícita y de buena fe, a proporcionar
           información veraz y a no realizar actividades que afecten la seguridad o el funcionamiento
           del servicio. El responsable podrá suspender o cancelar el acceso ante usos indebidos. Los
@@ -312,64 +341,56 @@ export default function LegalPage() {
           utilizarse sin autorización.
         </p>
 
-        <h2 style={h2}>20. Modificaciones</h2>
-        <p>
+        <Titulo id="s20">20. Modificaciones</Titulo>
+        <p className={pp}>
           Podemos actualizar esta Política para reflejar cambios legales o del servicio. Publicaremos
           la versión vigente en esta página, indicando la fecha de última actualización. El uso
           continuado del sitio tras una actualización implica la aceptación de la versión vigente.
         </p>
 
-        <h2 style={h2} id="eliminar-datos">
-          21. Cómo eliminar tus datos
-        </h2>
-        <p>
-          El Titular puede solicitar la <strong style={b}>eliminación de sus datos personales</strong>{' '}
+        <Titulo id="eliminar-datos">21. Cómo eliminar tus datos</Titulo>
+        <p className={pp}>
+          El Titular puede solicitar la <strong className={b}>eliminación de sus datos personales</strong>{' '}
           en cualquier momento y de forma gratuita, siguiendo estos pasos:
         </p>
-        <ol style={ul}>
+        <ol className={ul}>
           <li>
             Escribir a{' '}
-            <a href={`mailto:${CONTACTO}`} style={link}>
+            <a href={`mailto:${CONTACTO}`} className={link}>
               {CONTACTO}
             </a>{' '}
             desde el correo asociado a su cuenta, con el asunto{' '}
-            <strong style={b}>«Eliminación de datos»</strong>.
+            <strong className={b}>«Eliminación de datos»</strong>.
           </li>
           <li>
             Indicar el nombre completo y, si aplica, el alias de usuario, para poder localizar la
             cuenta. Podremos solicitar información adicional únicamente para{' '}
-            <strong style={b}>verificar la identidad</strong> del solicitante.
+            <strong className={b}>verificar la identidad</strong> del solicitante.
           </li>
           <li>
             Recibirá confirmación y respuesta dentro de los plazos legales (por regla general,{' '}
-            <strong style={b}>quince (15) días</strong>).
+            <strong className={b}>quince (15) días</strong>).
           </li>
         </ol>
-        <p>
-          Una vez atendida la solicitud, los datos se <strong style={b}>eliminan o anonimizan</strong>{' '}
+        <p className={pp}>
+          Una vez atendida la solicitud, los datos se <strong className={b}>eliminan o anonimizan</strong>{' '}
           de forma segura, salvo aquellos que debamos conservar por obligación legal durante los
           plazos aplicables (ver sección 13). La eliminación de los datos implica la{' '}
-          <strong style={b}>cancelación de la cuenta</strong> y el cese del tratamiento descrito en
+          <strong className={b}>cancelación de la cuenta</strong> y el cese del tratamiento descrito en
           esta Política.
         </p>
 
-        <h2 style={h2}>22. Contacto y autoridad de control</h2>
-        <p>
+        <Titulo id="s22">22. Contacto y autoridad de control</Titulo>
+        <p className={pp}>
           Para cualquier consulta sobre esta Política o sobre el tratamiento de tus datos, escríbenos
           a{' '}
-          <a href={`mailto:${CONTACTO}`} style={link}>
+          <a href={`mailto:${CONTACTO}`} className={link}>
             {CONTACTO}
           </a>
           . La autoridad de control en materia de protección de datos en el Ecuador es la{' '}
-          <strong style={b}>Superintendencia de Protección de Datos Personales (SPDP)</strong>.
+          <strong className={b}>Superintendencia de Protección de Datos Personales (SPDP)</strong>.
         </p>
 
-        <p style={{ marginTop: 40 }}>
-          <a href="/" style={link}>
-            ← Volver al inicio
-          </a>
-        </p>
-      </article>
-    </main>
+    </DocumentoLegal>
   );
 }

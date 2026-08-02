@@ -17,7 +17,7 @@
 
 import type { Metadata } from 'next';
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { SITIO, SERVICIOS, CLIENTES } from '@/lib/sitio/contenido';
+import { SITIO, SERVICIOS, CLIENTES, PUBLICOS } from '@/lib/sitio/contenido';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
   BotonPrimario, BotonSecundario, conNegritas,
@@ -25,9 +25,9 @@ import {
 import AltaCliente from './AltaCliente';
 
 export const metadata: Metadata = {
-  title: 'Servicios para empresas — agentes de IA en WhatsApp y plataformas a medida',
+  title: 'Qué hacemos — un proyecto de desarrollo humano y sus servicios',
   description:
-    'Grupo Corazones Cruzados conecta tu número de WhatsApp Business a un agente de atención con IA, desarrolla plataformas de gestión a medida, automatiza tu comunicación y emite facturación electrónica ante el SRI. Guayaquil, Ecuador.',
+    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador. De ahí nacen sus servicios: plataformas de gestión a medida, agentes de atención con IA en WhatsApp, automatización de la comunicación y facturación electrónica ante el SRI.',
   keywords: [
     'agente de IA WhatsApp Ecuador', 'WhatsApp Business API Ecuador', 'chatbot WhatsApp Guayaquil',
     'desarrollo de software Guayaquil', 'facturación electrónica SRI', 'automatización WhatsApp',
@@ -53,15 +53,16 @@ export default function NegocioPage() {
         <Contenedor className="relative py-24 sm:py-32 text-center">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#7B5FBF]/30 bg-[#7B5FBF]/10 px-3.5 py-1.5 text-[12.5px] text-[#c4b5fd]">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Proveedor de tecnología de WhatsApp Business
+            Un proyecto de desarrollo humano · Guayaquil, Ecuador
           </p>
           <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-white tracking-tight max-w-3xl mx-auto">
-            Que tu negocio atienda
-            <br className="hidden sm:block" /> aunque tú no estés
+            Primero las personas.
+            <br className="hidden sm:block" /> Lo demás sale de ahí.
           </h1>
           <p className="mt-6 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-2xl mx-auto">
-            Conectamos tu número de WhatsApp a un agente que responde con la información de
-            tu negocio, y construimos el sistema con el que gestionas todo lo demás.
+            {SITIO.nombre} es un proyecto de desarrollo humano. Los sistemas que hoy
+            ofrecemos a empresas nacieron primero como herramientas para nuestra propia
+            gente — y por eso están hechos para usarse, no para venderse.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <BotonPrimario href="#crear-cuenta">
@@ -78,27 +79,38 @@ export default function NegocioPage() {
       {/* ── SERVICIOS ───────────────────────────────────────────────────────── */}
       <Seccion id="servicios" tono="realce">
         <TituloSeccion
-          etiqueta="Servicios"
-          titulo="Cuatro cosas, y las cuatro las operamos nosotros"
-          entradilla="No entregamos un producto y desaparecemos: implantamos, configuramos con tu información y seguimos operando el servicio."
+          etiqueta="Todo lo que ofrecemos"
+          titulo="Tres públicos, no uno"
+          entradilla="Un cliente que contrata, un miembro que crece y alguien que acaba de llegar necesitan cosas distintas. Estas son todas."
         />
-        <div className="mt-12 grid gap-5 md:grid-cols-2">
-          {SERVICIOS.map((s) => (
-            <Tarjeta key={s.id} id={s.id}>
-              <IconoCuadro nombre={s.icono} />
-              <h3 className="mt-5 text-[19px] font-semibold text-white leading-snug">{s.titulo}</h3>
-              <p className="mt-2.5 text-[14.5px] leading-relaxed text-white/55">{s.resumen}</p>
-              <ul className="mt-5 space-y-2.5">
-                {s.detalle.map((d, i) => (
-                  <li key={i} className="flex gap-2.5 text-[14px] leading-relaxed text-white/50">
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-[#7B5FBF]" />
-                    <span>{conNegritas(d)}</span>
-                  </li>
+
+        {PUBLICOS.map((pub) => {
+          const suyos = SERVICIOS.filter((s) => s.publico === pub.id);
+          if (!suyos.length) return null;
+          return (
+            <div key={pub.id} id={pub.id} className="mt-16 first:mt-12 scroll-mt-24">
+              <h3 className="text-[22px] font-semibold text-white tracking-tight">{pub.label}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-white/45 max-w-2xl">{pub.entradilla}</p>
+              <div className="mt-7 grid gap-5 md:grid-cols-2">
+                {suyos.map((s) => (
+                  <Tarjeta key={s.id} id={s.id}>
+                    <IconoCuadro nombre={s.icono} />
+                    <h4 className="mt-5 text-[18px] font-semibold text-white leading-snug">{s.titulo}</h4>
+                    <p className="mt-2.5 text-[14.5px] leading-relaxed text-white/55">{s.resumen}</p>
+                    <ul className="mt-5 space-y-2.5">
+                      {s.detalle.map((d, i) => (
+                        <li key={i} className="flex gap-2.5 text-[14px] leading-relaxed text-white/50">
+                          <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-[#7B5FBF]" />
+                          <span>{conNegritas(d)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Tarjeta>
                 ))}
-              </ul>
-            </Tarjeta>
-          ))}
-        </div>
+              </div>
+            </div>
+          );
+        })}
       </Seccion>
 
       {/* ── CLIENTES ────────────────────────────────────────────────────────── */}
@@ -164,7 +176,8 @@ export default function NegocioPage() {
       <Seccion>
         <TituloSeccion
           etiqueta="Tratamiento de datos"
-          titulo="Tu número y tus conversaciones siguen siendo tuyos"
+          titulo="Si contratas el agente de WhatsApp, tu número y tus conversaciones siguen siendo tuyos"
+          entradilla="Es uno de los servicios, y el que más dudas genera. Así queda claro."
         />
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           <Tarjeta>

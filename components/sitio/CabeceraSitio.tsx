@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
@@ -46,13 +47,18 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group" onClick={() => setAbierto(false)}>
-          {/* Los tres corazones cruzados de la marca, en trazo. Un SVG de 24px pesa nada y
-              no depende de que cargue una imagen. */}
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden className="shrink-0">
-            <circle cx="8" cy="12" r="5.2" stroke="#8267d4" strokeWidth="1.6" />
-            <circle cx="12" cy="12" r="5.2" stroke="#a78bfa" strokeWidth="1.6" />
-            <circle cx="16" cy="12" r="5.2" stroke="#8267d4" strokeWidth="1.6" />
-          </svg>
+          {/* El logo REAL de la organización: los corazones cruzados.
+              `public/logo-gcc.png` sale de `LogoApp.png` recortado al círculo —así se va la
+              marca de agua de la herramienta con la que se dibujó— y reducido a 256 px:
+              de 567 kB a 71 kB, que es lo que puede permitirse una cabecera. */}
+          <Image
+            src="/logo-gcc.png"
+            alt=""
+            width={30}
+            height={30}
+            priority
+            className="shrink-0 rounded-full"
+          />
           <span className="text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors">
             Grupo Corazones Cruzados
           </span>

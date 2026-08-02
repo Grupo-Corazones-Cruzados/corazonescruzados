@@ -23,12 +23,12 @@
 
 import type { ReactNode } from 'react';
 import {
-  MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, type LucideIcon,
+  MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass, type LucideIcon,
 } from 'lucide-react';
 
 export const ICONOS: Record<string, LucideIcon> = {
   mensaje: MessageSquare, capas: Layers, rayo: Zap, documento: FileText,
-  personas: Users, juego: Gamepad2, tienda: Store,
+  personas: Users, juego: Gamepad2, tienda: Store, brujula: Compass,
 };
 
 /** Convierte los `**dobles asteriscos**` del contenido en negrita. */
