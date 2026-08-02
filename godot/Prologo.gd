@@ -404,9 +404,10 @@ const TRAMOS := [
 		84, 65, 94, 95, 96, 97
 	] },
 
-	# Verso 13 · siguen los otros cuatro fotogramas, al mismo ritmo de 1 s.
+	# Verso 13 · la 115 (las siluetas deshechas, solo aguantan las manos) abre el
+	# verso, justo antes de las cuatro de las auras. Mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
-		111, 112, 113, 114
+		115, 111, 112, 113, 114
 	], "seg": 1  },
 ]
 
