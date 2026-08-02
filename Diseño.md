@@ -1281,6 +1281,38 @@ cada línea se parte tres veces y no se puede leer lo que se escribe. Usa `max-w
 Los prompts del agente se editan así desde el Estudio. El conocimiento, que sí es un formulario con
 lista, sigue yendo al panel lateral.
 
+### Diálogos de acceso y alta — `AuthSurface` (2026-08-02)
+
+**`components/landing/AuthSurface.tsx`** es la definición única del armazón y los campos de los
+cinco diálogos de la portada: alta de cliente, acceso de cliente, acceso de miembro, recuperación de
+cuenta y cuenta de candidato.
+
+**Qué había antes:** cinco formularios escritos cada uno con su propio pixel art —`Silkscreen` en las
+etiquetas, bordes de 2 px, botones en mayúsculas—. Parecidos pero no iguales, y **ninguno se parecía
+al panel al que llevan**.
+
+**Cómo se resolvió:** con el patrón que el proyecto ya tenía —**isla `.corp dark`** sobre la
+portada—. `corp-overlay` hereda tokens y tipografía del panel sin imponer el fondo de página ni el
+`min-height:100vh` de `.corp`; el velo lo pone el propio overlay.
+
+> **Descubrimiento útil:** dentro de la isla, `.corp` **ya reescribe `pixel-btn` a Fluent**
+> (`globals.css`). Los tres diálogos de acceso conservan sus clases de botón y se ven correctos sin
+> tocarlas — bastó con retematizar sus constantes de estilo en línea para que leyeran
+> `var(--color-digi-*)` y meter el velo en la isla. No hizo falta reescribir su JSX ni su lógica de
+> pasos.
+
+**Piezas:** `AuthDialog` (velo, tarjeta, cabecera con chip de icono, cuerpo `bg-digi-darker`, pie) ·
+`Campo` · `Casilla` (se tiñe `bg-accent-light` al marcar) · `ErrorAuth` · `BotonAuth` (con `Loader2`,
+nunca un spinner pixel) · `EnlaceAuth` · `INPUT`.
+
+**Detalles de comportamiento que se ganaron de paso:**
+- Cierra con **Escape** y con clic en el velo, como el resto de diálogos.
+- **Bloquea el desplazamiento del fondo**: sin eso la portada se movía detrás al usar la rueda.
+- El aviso de «las contraseñas no coinciden» aparece **mientras se escribe**, no al enviar:
+  descubrirlo después de pulsar el botón obliga a volver a los dos campos.
+- Los `autoComplete` correctos (`name`, `email`, `tel`, `street-address`, `new-password`), que el
+  pixel art no tenía y hacen que el gestor de contraseñas funcione.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un

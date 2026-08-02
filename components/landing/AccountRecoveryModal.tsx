@@ -182,7 +182,7 @@ export default function AccountRecoveryModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true" style={overlay}>
+    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay}>
       <div
         style={{
           width: '100%',
@@ -196,7 +196,7 @@ export default function AccountRecoveryModal({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <BrandLoader size="md" />
           <span
-            style={{ fontFamily: PIXEL, fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
+            style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >
             GCC WORLD
           </span>
@@ -399,27 +399,21 @@ function ErrorMsg({ children }: { children: React.ReactNode }) {
 }
 
 const overlay: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 300,
-  background: 'rgba(6,7,12,0.82)',
-  backdropFilter: 'blur(4px)',
-  WebkitBackdropFilter: 'blur(4px)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 20,
-  animation: 'pixelFadeIn 0.45s ease-out',
+  position: 'fixed', inset: 0, zIndex: 230,
+  background: 'rgba(6,7,12,0.72)',
+  backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: 16, overflowY: 'auto',
 };
 
 const panel: React.CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  background: '#121722',
-  border: '1px solid rgba(255,255,255,0.10)',
-  borderRadius: 12,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-  padding: '26px 24px',
+  position: 'relative', width: '100%',
+  background: 'var(--color-digi-card)',
+  border: '1px solid var(--color-digi-border)',
+  borderRadius: 8,
+  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+  padding: '22px 20px',
+  fontFamily: 'var(--font-body)',
 };
 
 const closeBtn: React.CSSProperties = {
@@ -429,28 +423,25 @@ const closeBtn: React.CSSProperties = {
   background: 'transparent',
   border: 0,
   color: 'rgba(225,215,255,0.6)',
-  fontFamily: PIXEL,
+  fontFamily: 'var(--font-body)',
   fontSize: '0.85rem',
   cursor: 'pointer',
   padding: 6,
 };
 
 const title: React.CSSProperties = {
-  fontFamily: PIXEL,
-  fontSize: '1rem',
-  color: '#f1eefb',
-  margin: '0 0 6px',
-  textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
+  fontFamily: 'var(--font-body)',
+  fontSize: '1.06rem', fontWeight: 600,
+  color: 'var(--color-digi-text)',
+  margin: '0 0 6px', letterSpacing: '-0.01em',
 };
 
 const input: React.CSSProperties = {
-  width: '100%',
-  padding: '11px 13px',
-  background: '#0d1119',
-  color: '#e9e6f5',
-  border: '1px solid rgba(255,255,255,0.14)',
-  borderRadius: 6,
-  fontFamily: BODY,
-  fontSize: '0.9rem',
+  width: '100%', padding: '9px 12px',
+  background: 'var(--color-digi-darker)',
+  color: 'var(--color-digi-text)',
+  border: '1px solid var(--color-digi-border)',
+  borderRadius: 4,
+  fontFamily: 'var(--font-body)', fontSize: '0.85rem',
   outline: 'none',
 };

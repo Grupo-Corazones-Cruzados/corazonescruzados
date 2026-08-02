@@ -1,19 +1,26 @@
 'use client';
 
 /**
- * ClientSignupModal
- * -----------------
- * Creación de cuenta de CLIENTE directamente desde la landing (sin pasar por el
- * juego). Recoge los datos de cuenta + contraseña y los envía a
- * POST /api/client/signup; luego pide verificar el correo. Su inicio (tras
- * verificar) será el marketplace (pendiente de backend).
+ * ALTA DE CUENTA DE CLIENTE.
+ *
+ * Es **el mismo diálogo** desde la portada y desde `/negocio`: una sola definición, para
+ * que no haya dos altas que piden cosas distintas.
+ *
+ * Estilo: el del panel, en su variante oscura, sobre una **isla `.corp dark`**. Antes era
+ * pixel art —`Silkscreen` en las etiquetas, bordes de 2 px, botones en mayúsculas— y no se
+ * parecía en nada al panel al que lleva. El armazón y los campos vienen de `AuthSurface`,
+ * compartidos con los demás diálogos de acceso.
+ *
+ * Crea un usuario con rol `client` y **exige verificar el correo** antes de poder entrar.
  */
 
 import { useState } from 'react';
-import BrandLoader from '@/components/ui/BrandLoader';
+import { UserPlus, MailCheck } from 'lucide-react';
+import {
+  AuthDialog, Campo, Casilla, ErrorAuth, BotonAuth, EnlaceAuth, INPUT,
+} from './AuthSurface';
 
-const PIXEL = "'Silkscreen', cursive";
-const BODY = "'Inter', system-ui, -apple-system, sans-serif";
+const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function ClientSignupModal({
   onClose,
@@ -81,306 +88,99 @@ export default function ClientSignupModal({
     }
   };
 
-  return (
-    <div role="dialog" aria-modal="true" style={overlay}>
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 560,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 18,
-        }}
+  /* ── Confirmación ─────────────────────────────────────────────────────────── */
+  if (sent) {
+    return (
+      <AuthDialog
+        Icon={MailCheck}
+        titulo="Confirma tu correo"
+        subtitulo="Falta un paso para activar la cuenta."
+        onClose={onClose}
+        ancho="sm"
+        pie={<BotonAuth onClick={onClose}>Entendido</BotonAuth>}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <BrandLoader size="md" />
-          <span
-            style={{
-              fontFamily: PIXEL,
-              fontSize: '0.72rem',
-              letterSpacing: '0.2em',
-              color: '#fff',
-            }}
-          >
-            GCC WORLD
-          </span>
-        </div>
+        <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
+          Te enviamos un enlace a <strong className="text-digi-text font-semibold">{email}</strong>.
+          Ábrelo para activar tu cuenta y entrar a tu espacio de cliente.
+        </p>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-digi-muted" style={mf}>
+          Si no lo ves en unos minutos, revisa la carpeta de correo no deseado.
+        </p>
+      </AuthDialog>
+    );
+  }
 
-        <div style={panel}>
-          <button type="button" aria-label="Cerrar" onClick={onClose} style={closeBtn}>
-            ✕
-          </button>
-
-          {sent ? (
-          <div style={{ textAlign: 'center', padding: '6px 0' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 8 }}>📬</div>
-            <h2 style={title}>Confirma tu correo</h2>
-            <p style={{ fontFamily: BODY, fontSize: '0.9rem', lineHeight: 1.6, color: '#cfc9e2' }}>
-              Te enviamos un enlace a <strong style={{ color: '#fff' }}>{email}</strong>. Ábrelo
-              para activar tu cuenta de cliente y poder adquirir nuestros productos y servicios.
-            </p>
-            <button
-              type="button"
-              className="pixel-btn pixel-btn-primary"
-              style={{ width: '100%', marginTop: 18 }}
-              onClick={onClose}
-            >
-              Entendido
-            </button>
-          </div>
-        ) : (
-          <>
-            <h2 style={title}>Crea tu cuenta de cliente</h2>
-            <p
-              style={{
-                fontFamily: BODY,
-                fontSize: '0.84rem',
-                color: '#b9b2cf',
-                margin: '0 0 16px',
-              }}
-            >
-              Para adquirir los productos, servicios y proyectos del grupo.
-            </p>
-
-            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={grid}>
-                <Field label="Nombre completo" value={fullName} onChange={setFullName} autoFocus />
-                <Field
-                  label="Correo electrónico"
-                  type="email"
-                  value={email}
-                  onChange={setEmail}
-                  invalid={email.length > 0 && !emailOk}
-                />
-                <Field label="País" value={country} onChange={setCountry} />
-                <Field label="Contacto telefónico" type="tel" value={phone} onChange={setPhone} />
-              </div>
-              <Field label="Dirección" value={address} onChange={setAddress} />
-              <div style={grid}>
-                <Field
-                  label="Contraseña (mín. 8)"
-                  type="password"
-                  value={pwd}
-                  onChange={setPwd}
-                />
-                <Field
-                  label="Confirma la contraseña"
-                  type="password"
-                  value={pwd2}
-                  onChange={setPwd2}
-                  invalid={pwd2.length > 0 && pwd !== pwd2}
-                />
-              </div>
-
-              <Check checked={terms} onToggle={() => setTerms((v) => !v)}>
-                Acepto los{' '}
-                <a
-                  href="/legal"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  style={{ color: '#c9b6ff', textDecoration: 'underline' }}
-                >
-                  términos y condiciones y la política de privacidad
-                </a>
-                , y autorizo el tratamiento de mis datos conforme a ella.
-              </Check>
-              <Check checked={marketing} onToggle={() => setMarketing((v) => !v)}>
-                Quiero recibir información sobre publicidad, productos y novedades del proyecto
-                (opcional).
-              </Check>
-
-              {error && (
-                <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: '#ff8f8f' }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={!ok || busy}
-                className="pixel-btn pixel-btn-primary"
-                style={{ marginTop: 4, opacity: !ok || busy ? 0.5 : 1, cursor: ok && !busy ? 'pointer' : 'default' }}
-              >
-                {busy ? 'Creando cuenta...' : 'Crear cuenta'}
-              </button>
-
-              <button
-                type="button"
-                onClick={onLogin}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  cursor: 'pointer',
-                  fontFamily: BODY,
-                  fontSize: '0.78rem',
-                  color: '#c9b6ff',
-                  textDecoration: 'underline',
-                  marginTop: 2,
-                }}
-              >
-                ¿Ya tienes cuenta? Inicia sesión
-              </button>
-            </form>
-          </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  autoFocus = false,
-  invalid = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  autoFocus?: boolean;
-  invalid?: boolean;
-}) {
+  /* ── Formulario ───────────────────────────────────────────────────────────── */
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={labelStyle}>{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoFocus={autoFocus}
-        autoComplete={
-          type === 'password' ? 'new-password' : type === 'email' ? 'email' : undefined
-        }
-        style={{
-          width: '100%',
-          padding: '10px 12px',
-          background: '#0d1119',
-          color: '#e9e6f5',
-          border: `1px solid ${invalid ? '#c8455c' : 'rgba(255,255,255,0.14)'}`,
-          borderRadius: 6,
-          fontFamily: BODY,
-          fontSize: '0.88rem',
-          outline: 'none',
-        }}
-      />
-    </div>
-  );
-}
-
-function Check({
-  checked,
-  onToggle,
-  children,
-}: {
-  checked: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      onClick={onToggle}
-      role="checkbox"
-      aria-checked={checked}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
-      style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '2px 0' }}
+    <AuthDialog
+      Icon={UserPlus}
+      titulo="Crea tu cuenta de cliente"
+      subtitulo="Para pedir una cotización y seguir tus proyectos, tickets y facturas."
+      onClose={onClose}
+      ancho="lg"
+      pie={<EnlaceAuth onClick={onLogin}>¿Ya tienes cuenta? Inicia sesión</EnlaceAuth>}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          flexShrink: 0,
-          marginTop: 1,
-          width: 19,
-          height: 19,
-          borderRadius: 4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.75rem',
-          color: '#fff',
-          background: checked ? 'var(--color-accent, #4B2D8E)' : 'transparent',
-          border: checked
-            ? '2px solid var(--color-accent-glow, #7B5FBF)'
-            : '2px solid rgba(123,95,191,0.6)',
-        }}
-      >
-        {checked ? '✓' : ''}
-      </span>
-      <span style={{ fontFamily: BODY, fontSize: '0.76rem', lineHeight: 1.45, color: 'rgba(225,215,255,0.82)' }}>
-        {children}
-      </span>
-    </div>
+      <form onSubmit={submit} className="space-y-4">
+        {error && <ErrorAuth>{error}</ErrorAuth>}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Campo label="Nombre completo" requerido>
+            <input className={INPUT} value={fullName} onChange={(e) => setFullName(e.target.value)}
+              autoComplete="name" placeholder="Tu nombre y apellidos" />
+          </Campo>
+          <Campo label="Correo electrónico" requerido>
+            <input className={INPUT} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email" placeholder="nombre@empresa.com" />
+          </Campo>
+          <Campo label="País" requerido>
+            <input className={INPUT} value={country} onChange={(e) => setCountry(e.target.value)}
+              autoComplete="country-name" placeholder="Ecuador" />
+          </Campo>
+          <Campo label="Teléfono" requerido>
+            <input className={INPUT} value={phone} onChange={(e) => setPhone(e.target.value)}
+              autoComplete="tel" placeholder="+593 99 000 0000" />
+          </Campo>
+        </div>
+
+        <Campo label="Dirección" requerido>
+          <input className={INPUT} value={address} onChange={(e) => setAddress(e.target.value)}
+            autoComplete="street-address" placeholder="Calle, número, ciudad" />
+        </Campo>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Campo label="Contraseña" hint="Mínimo 8 caracteres." requerido>
+            <input className={INPUT} type="password" value={pwd} onChange={(e) => setPwd(e.target.value)}
+              autoComplete="new-password" />
+          </Campo>
+          <Campo
+            label="Repite la contraseña"
+            requerido
+            // El aviso aparece MIENTRAS se escribe, no al enviar: descubrir que no coinciden
+            // después de pulsar el botón obliga a volver a los dos campos.
+            hint={pwd2.length > 0 && pwd !== pwd2 ? 'No coinciden.' : undefined}
+          >
+            <input className={INPUT} type="password" value={pwd2} onChange={(e) => setPwd2(e.target.value)}
+              autoComplete="new-password" />
+          </Campo>
+        </div>
+
+        <div className="space-y-2.5">
+          <Casilla checked={terms} onChange={setTerms}>
+            Acepto los{' '}
+            <a href="/legal" target="_blank" rel="noopener noreferrer"
+              className="text-accent hover:underline">términos y condiciones y la política de privacidad</a>
+            , y autorizo el tratamiento de mis datos conforme a ella.
+          </Casilla>
+          <Casilla checked={marketing} onChange={setMarketing}>
+            Quiero recibir información sobre productos y novedades del proyecto.{' '}
+            <span className="text-digi-muted">(opcional)</span>
+          </Casilla>
+        </div>
+
+        <BotonAuth tipo="submit" cargando={busy} deshabilitado={!ok}>
+          {busy ? 'Creando la cuenta…' : 'Crear cuenta'}
+        </BotonAuth>
+      </form>
+    </AuthDialog>
   );
 }
-
-const overlay: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 230,
-  background: 'rgba(6,7,12,0.82)',
-  backdropFilter: 'blur(4px)',
-  WebkitBackdropFilter: 'blur(4px)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 20,
-  animation: 'pixelFadeIn 0.45s ease-out',
-};
-
-const panel: React.CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  maxHeight: '78vh',
-  overflowY: 'auto',
-  background: '#121722',
-  border: '1px solid rgba(255,255,255,0.10)',
-  borderRadius: 12,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-  padding: '26px 24px',
-};
-
-const closeBtn: React.CSSProperties = {
-  position: 'absolute',
-  top: 10,
-  right: 12,
-  background: 'transparent',
-  border: 0,
-  color: 'rgba(225,215,255,0.6)',
-  fontFamily: PIXEL,
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-  padding: 6,
-};
-
-const title: React.CSSProperties = {
-  fontFamily: PIXEL,
-  fontSize: '1rem',
-  color: '#f1eefb',
-  margin: '0 0 6px',
-  textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
-};
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: PIXEL,
-  fontSize: '0.6rem',
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--color-accent-glow, #7B5FBF)',
-};
-
-const grid: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 10,
-};
