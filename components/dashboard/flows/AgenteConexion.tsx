@@ -44,6 +44,8 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
   const [confirmar, setConfirmar] = useState(false);
   const [estadoMeta, setEstadoMeta] = useState<any>(null);
   const datosDelAlta = useRef<{ waba_id?: string; phone_number_id?: string }>({});
+  /** ¿La ventana de Meta llegó a dar señales de vida? Lo marca su `postMessage`. */
+  const abierto = useRef(false);
 
   /* ── SDK de Meta ─────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
       try {
         const d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
         if (d?.type !== 'WA_EMBEDDED_SIGNUP') return;
+        abierto.current = true;   // la ventana existe y habla: no está bloqueada
         if (d.event === 'FINISH' || d.event === 'FINISH_ONLY_WABA') {
           datosDelAlta.current = { waba_id: d.data?.waba_id, phone_number_id: d.data?.phone_number_id };
         }
@@ -97,17 +100,16 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
     setConfirmar(false);
     datosDelAlta.current = {};
 
-    // La ventana de Meta es un POPUP. Si el navegador lo bloquea, `FB.login` no avisa: su
-    // callback simplemente no se llama nunca. Se abre uno propio primero para detectarlo,
-    // y se cierra en el acto — así el bloqueo se ve como un mensaje y no como un botón muerto.
-    const sonda = window.open('', '_blank', 'width=1,height=1');
-    if (!sonda || sonda.closed) {
-      toast.error('El navegador está bloqueando las ventanas emergentes. Permítelas para este sitio y vuelve a intentarlo: el alta de Meta se abre en una.');
-      return;
-    }
-    sonda.close();
-
+    // ⚠️ AQUÍ HUBO UNA SONDA Y HACÍA MÁS DAÑO QUE BIEN. Para detectar el bloqueo de
+    // emergentes se abría una ventana propia de 1×1 y se cerraba en el acto. Dos problemas,
+    // los dos reales y vistos por Fernando:
+    //   1. Se VE. El navegador impone un tamaño mínimo, así que aparecía una ventanita que
+    //      se cerraba sola — justo el síntoma que se intentaba diagnosticar.
+    //   2. La mayoría de navegadores permiten UNA sola emergente por gesto del usuario. La
+    //      sonda se gastaba esa única, así que la de Meta quedaba bloqueada POR NOSOTROS.
+    // La detección va después, sin consumir el permiso.
     console.info('[agente] Abriendo el alta de Meta', { configId, appId });
+    abierto.current = false;
 
     window.FB.login(
       async (respuesta: any) => {
@@ -141,6 +143,22 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
         extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
       },
     );
+
+    // Detección SIN consumir el permiso de emergentes: si a los 3 segundos la ventana no
+    // ha hablado y esta página nunca perdió el foco, es que no llegó a abrirse. No se
+    // puede afirmar la causa —bloqueador, dominio del SDK sin autorizar, app no publicada—
+    // así que se dice qué mirar, en orden, en vez de adivinar.
+    window.setTimeout(() => {
+      if (abierto.current || !document.hasFocus()) return;
+      toast.error(
+        'La ventana de Meta no llegó a abrirse. Revisa, por este orden: ventanas emergentes ' +
+        'permitidas para este sitio · app.grupocc.org en «Dominios permitidos para el SDK de ' +
+        'JavaScript» · la app de Meta publicada. La consola tiene el detalle.',
+        { duration: 15000 },
+      );
+      console.warn('[agente] La ventana del alta no dio señales en 3 s. Comprueba en el panel de Meta: ' +
+        'Inicio de sesión con Facebook → Configuración → Dominios permitidos para el SDK de JavaScript.');
+    }, 3000);
   }, [configId, appId, flowId, recargar]);
 
   const consultarMeta = async () => {
