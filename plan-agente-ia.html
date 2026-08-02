@@ -106,7 +106,7 @@
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
     <p class="paso">C9 · El alta con el primer cliente</p>
-    <p class="quien"><strong>El sistema está vivo.</strong> Worker desplegado y cadena comprobada de punta a punta en producción: cola → worker → runner → decisión → constancia en el panel, en 5 segundos. Lo que queda es conectar un número real.</p>
+    <p class="quien"><strong>Peters Tours ya tiene su conocimiento cargado</strong> — 14 bloques, 28.782 caracteres, y el prefijo <strong>sí cachea</strong>. Faltan su clave de IA y el alta del número. Detalle en <a href="#c9" style="color:var(--morado)">§9</a>.</p>
     <div class="barra"><span style="width:82%"></span></div>
     <div class="barra-pie"><span>18 de 22 pasos terminados</span><span>82%</span></div>
   </div>
@@ -800,6 +800,42 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     más importante de todo el proyecto.</p>
   </div>
 
+  <h3 id="c9">5.7 · El alta de Peters Tours (C9)</h3>
+  <div class="bien">
+    <p><span class="et">Ya hecho el 2026-08-01:</span> el canal del flujo <strong>«Diego Castillo»</strong>
+    (id 10) está sembrado con el conocimiento y los prompts reales, extraídos del HTML de la guía
+    —sin transcribir nada a mano—: <strong>14 bloques, 28.782 caracteres</strong>. El prefijo son
+    ~8.690 tokens, por encima del mínimo de Haiku (4.096): <strong>sí cachea</strong>.</p>
+    <p><strong>Y con el fallo de la guía ya corregido:</strong> su <code>reglas_negocio</code> lleva
+    escrita a mano la lista de bloques pendientes —«pagos, cambios y reclamos, y horario»— y ya está
+    desfasada, porque el cliente rellenó pagos y horario. Se quitó esa lista al sembrar. Nuestro
+    cálculo dice hoy <strong>solo «cambios y reclamos»</strong>, que es lo cierto.</p>
+  </div>
+  <table class="datos">
+    <tr><th>Falta</th><th>De quién</th><th>Nota</th></tr>
+    <tr><td><strong>Clave de IA de Peters Tours</strong></td><td>Fernando ← Diego</td>
+        <td>Decisión cerrada: cada cliente pone la suya. Se pega en el Estudio → Parámetros; se guarda cifrada y no se puede volver a leer.</td></tr>
+    <tr><td><strong>El alta del número</strong></td><td>Fernando</td>
+        <td>Estudio → Conexión. Inicia sesión con la cuenta que administra los <strong>dos</strong> portafolios, y elige el de <strong>Peter's tour</strong> — no el de GCC, que es el dueño de la app.</td></tr>
+    <tr><td><strong>Comprobar WhatsApp Web</strong></td><td>Diego</td>
+        <td>La única prueba de que la coexistencia quedó bien. <code>CLOUD_API</code> no lo demuestra.</td></tr>
+    <tr><td><strong>Encender el agente</strong></td><td>Fernando</td>
+        <td>No se enciende solo, a propósito. Estudio → Parámetros, después de probar con un mensaje.</td></tr>
+  </table>
+  <div class="ojo">
+    <p><span class="et">Por qué el alta debe funcionar aunque falte el App Review:</span> con acceso
+    estándar, el Embedded Signup solo atiende a usuarios que <strong>tienen un rol en la app</strong>.
+    Fernando creó la app de GCC, así que lo tiene. Cuando el alta la haga <em>un cliente por su
+    cuenta</em>, hará falta acceso avanzado — y por eso F12 sigue en el plan.</p>
+  </div>
+  <div class="peligro">
+    <p><span class="et">La WABA de Peters Tours es de tipo SMB.</span> Admite <strong>cero socios</strong>
+    y no permite registrar el número por API: el Embedded Signup desde la app de <em>otro</em>
+    portafolio es el único camino que queda. Es justo el montaje que tenemos, así que debería
+    funcionar — pero si aparece un error raro, lo primero a mirar es el tipo de cuenta, no la
+    configuración.</p>
+  </div>
+
   <h3 id="identidad">5.4 · Identidad legal del proveedor</h3>
   <p>Fuente de verdad: <code>documentos-negocio/DATOS-NEGOCIO.md</code>, extraído del certificado de
   RUC del SRI emitido el <strong>1 de agosto de 2026</strong>.</p>
@@ -1042,6 +1078,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Comprobado en la Consulta de RUC:</strong> el establecimiento 001 está ABIERTO pero <strong>sin nombre comercial registrado</strong>. Se recomienda registrar «GRUPO CORAZONES CRUZADOS» actualizando ese establecimiento — no bloquea nada.</td></tr>
     <tr><td>2026-08-01</td><td>Corregida la dirección de <code>app/legal/page.tsx</code>: decía «Tabacundo, código postal 090102» confundiendo la calle con la ciudad. Ahora es la certificada, en Guayaquil.</td></tr>
     <tr><td>2026-08-01</td><td>Enviada al SRI la actualización del establecimiento 001 con el nombre comercial <code>GRUPO CORAZONES CRUZADOS</code>. El SRI avisa de <strong>~2 horas de procesamiento</strong>. Queda comprobar en la Consulta de RUC que ya aparece.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Arranca C9 con Peters Tours.</strong> Sembrado el canal del flujo «Diego Castillo» con los 14 bloques y los tres prompts reales, extraídos del HTML de la guía. El prefijo cachea (~8.690 tokens vs 4.096). <strong>Corregido al sembrar</strong> el fallo vivo de la guía: la lista de pendientes escrita a mano decía «pagos, cambios y reclamos, y horario»; el cálculo real dice solo «cambios y reclamos».</td></tr>
     <tr><td>2026-08-01</td><td><strong>F13 hecho: el worker desplegado y la cadena comprobada.</strong> El servicio se creó y configuró entero por CLI + API, sin tocar el panel: <code>serviceInstanceUpdate</code> de la API pública sí expone <code>startCommand</code>, aunque la CLI no. <strong>Se corrigió el comentario de <code>frequent-cron.mjs</code></strong>, que daba por imposible hacerlo sin el panel. Prueba de punta a punta contra producción: trabajo encolado → recogido en 5 s → runner → escalado correcto por falta de clave de IA → fallo visible en el panel.</td></tr>
     <tr><td>2026-08-01</td><td><strong>C8 hecho: el worker.</strong> Servicio de larga vida con bucle de 5 s, no un cron: quien escribe por WhatsApp espera segundos. Reutiliza <code>CRON_TOKEN</code> — un secreto menos que rotar. Verificado contra producción: 401 sin token, y con el real un pase real en 82 ms. <strong>Con esto el código está completo</strong>; falta crear el servicio en Railway (F13).</td></tr>
     <tr><td>2026-08-01</td><td><strong>C7 hecho: la pantalla de alta.</strong> Embedded Signup con el aviso del paso irreversible repetido tres veces y casilla obligatoria. El alta suscribe la cuenta del cliente a nuestra app <strong>y lo verifica</strong>: es la versión por cliente del despiste de <code>messages</code>, y por eso se automatiza en vez de dejarlo a mano. Se avisa de que <code>CLOUD_API</code> no demuestra la coexistencia: eso lo comprueba una persona abriendo WhatsApp Web. Un número no puede estar en dos agentes, y desconectar no borra el conocimiento. 14 pruebas, 0 fallos.</td></tr>
