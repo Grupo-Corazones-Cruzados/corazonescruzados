@@ -137,6 +137,7 @@ INSERTADAS = {
     119: 66,  # como la 118 pero el brazo derecho PINTADO de rojo, no con aura
     120: 66,  # todo lo que quedaba de los tres se pinta de VIOLETA
     121: 66,  # corrige la 120: los DOS brazos violeta y el polvo en violeta claro
+    122: 66,  # como la 119 pero SIN tocar el brillo de la zona
 }
 
 
@@ -3659,6 +3660,79 @@ ESCENAS = [
         "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
         "gris, blanco, negro y los tres violetas indicados. PROHIBIDO cualquier texto, letra, "
         "número o marca de agua."),
+
+    # ── 122 · COMO LA 119 PERO SIN TOCAR EL BRILLO DE LA ZONA ──────────────────
+    # Encadena la 117 otra vez. Mismo encargo que la 119 (movimiento + brazo
+    # derecho rojo), con UNA exigencia nueva: la ILUMINACIÓN no puede cambiar.
+    # El brazo derecho va PINTADO, no con aura: confirmado por Fernando.
+    (122, ["assets/Prologo/escenas/escena_117.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia un instante DESPUÉS. Es LA MISMA "
+        "ESCENA, EL MISMO SITIO y EL MISMO DIBUJO: solo cambian las cosas que se dicen abajo. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE de la imagen de referencia: el estilo PIXEL ART 2D de 16 bits "
+        "dibujado a mano, con sombreado plano, contornos definidos, píxeles visibles y dithering "
+        "sutil. El encuadre horizontal 16:9, la MISMA POSICIÓN DE CÁMARA y el MISMO PLANO "
+        "GENERAL Y LEJANO. El interior del Hoyo con la pared de roca cuarteada oscura y la "
+        "penumbra de las esquinas. No hay suelo. "
+        "SIGUE SIN HABER CUERPOS: ni torsos, ni cabezas, ni siluetas de persona. Solo el polvo, "
+        "los trozos sueltos y los dos agarres de manos. PROHIBIDO ABSOLUTAMENTE volver a dibujar "
+        "figuras humanas. PROHIBIDO cambiar la vista, el ángulo, el encuadre o el estilo, o "
+        "acercar la cámara. "
+
+        "══ BLOQUE 2 · ⚠ LA LUZ NO SE TOCA — ESTO ES IMPORTANTE ══ "
+        "La ILUMINACIÓN de la escena tiene que quedar EXACTAMENTE IGUAL que en la imagen de "
+        "referencia. El halo de luz redondo del centro conserva el MISMO tamaño, la MISMA forma, "
+        "la MISMA posición y sobre todo el MISMO BRILLO e intensidad; la penumbra de las "
+        "esquinas cierra igual y el contraste general entre el centro y los bordes es idéntico. "
+        "PROHIBIDO ABSOLUTAMENTE aclarar la zona central, oscurecerla, agrandar o encoger el "
+        "halo, subir el contraste, añadir un resplandor nuevo o cambiar de sitio la fuente de "
+        "luz. Si al comparar las dos imágenes la zona se ve más luminosa o más apagada, está "
+        "MAL. La luz es la de la referencia, tal cual. "
+
+        "══ BLOQUE 3 · PRIMER CAMBIO: EL POLVO Y LOS TROZOS SE ABREN UN POCO MÁS ══ "
+        "Todo lo que flota se ha separado un poco más, como si siguiera abriéndose despacio en "
+        "el aire. Las manchas de polvo están algo MÁS EXTENDIDAS y MÁS RALAS que en la "
+        "referencia: ocupan un poco más de sitio, sus puntitos están más separados entre sí y "
+        "los bordes se deshilachan más lejos. Los trozos sueltos se han alejado un poco unos de "
+        "otros y del centro, y cada uno ha girado un poco. "
+        "⚠ ES UN CAMBIO SUAVE, NO UNA ESCENA NUEVA: se tiene que reconocer que es el mismo "
+        "momento un poco después. PROHIBIDO dispersarlo todo hasta vaciar el cuadro, PROHIBIDO "
+        "cambiar el número de trozos y PROHIBIDO moverlos a sitios completamente distintos. "
+        "Sigue habiendo más polvo que trozos, y el polvo sigue QUIETO y asentado: nada de "
+        "estelas de movimiento ni de partículas saliendo disparadas. "
+
+        "══ BLOQUE 4 · SEGUNDO CAMBIO: LAS MANOS SIGUEN AGARRADAS ══ "
+        "Los DOS agarres de manos siguen exactamente donde estaban y SIGUEN UNIDOS: brazo, mano "
+        "agarrando otra mano, y el otro brazo. Contorno limpio y cerrado, sin boquetes y sin "
+        "motas sueltas, y sin cuerpo detrás. Solo se han MOVIDO UN POQUITO, como en el "
+        "fotograma siguiente de una animación: el conjunto se inclina un pelín y los brazos se "
+        "reacomodan apenas. PROHIBIDO ABSOLUTAMENTE que se suelten, se separen o se rompan. "
+        "PROHIBIDO dibujar una barra, un palo o una franja recta en su lugar. "
+
+        "══ BLOQUE 5 · TERCER CAMBIO: EL BRAZO DERECHO SE PINTA DE ROJO ══ "
+        "⚠ ESTO NO ES UN AURA NI UN HALO: es el COLOR DEL PROPIO BRAZO, RELLENO por dentro. "
+        "· EL BRAZO IZQUIERDO (el agarre del lado IZQUIERDO DEL CUADRO, con su mano): se queda "
+        "EXACTAMENTE COMO ESTÁ EN LA REFERENCIA, con toda su silueta RELLENA DE AZUL, el mismo "
+        "tono y la misma intensidad. No lo cambies, no lo apagues, no lo aclares. "
+        "· EL BRAZO DERECHO (el agarre del lado DERECHO DEL CUADRO, con su mano): en la "
+        "referencia es NEGRO. Aquí pasa a estar PINTADO ENTERO de ROJO CARMESÍ, exactamente el "
+        "hexadecimal #c62f30. Relleno SÓLIDO Y PLANO que ocupa TODA la silueta del brazo y de la "
+        "mano, de punta a punta, igual que el azul llena todo el brazo izquierdo. Los dos brazos "
+        "se tienen que leer igual, cada uno de su color. "
+        "⚠ PROHIBIDO ABSOLUTAMENTE dibujar un aura, un halo, un resplandor, un contorno de luz, "
+        "lenguas de llama o chispas alrededor de los brazos. Nada de un brazo negro rodeado de "
+        "rojo: el brazo ES rojo por dentro. Y ojo: ese rojo NO ilumina la escena, no proyecta "
+        "luz ni tiñe lo que tiene alrededor. "
+        "⚠ EL AZUL Y EL ROJO SON LOS ÚNICOS COLORES DE TODA LA IMAGEN, cada uno en SU brazo. "
+        "PROHIBIDO teñir de azul o de rojo el polvo, los trozos sueltos, la roca o el halo: todo "
+        "lo demás sigue siendo MONOCROMO en grises, blancos y negros. "
+
+        "══ BLOQUE 6 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
+        "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
+        "gris, blanco, negro, el azul del brazo izquierdo y el rojo #c62f30 del derecho. "
+        "PROHIBIDO cualquier texto, letra, número o marca de agua."),
 ]
 
 
