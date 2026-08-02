@@ -15,6 +15,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { TONO } from '@/components/ui/tonos';
 import { SectionBar, PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/FlowPanelUI';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles,
@@ -186,7 +187,7 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
           </div>
           <p className="text-[11.5px] text-digi-muted mt-0.5" style={mf}>{c.wa_id}</p>
           {c.motivo_escalado && (
-            <p className="text-[12px] text-amber-800 mt-1" style={mf}>Motivo del escalado: {c.motivo_escalado}</p>
+            <p className={`text-[12px] ${TONO.aviso.texto} mt-1`} style={mf}>Motivo del escalado: {c.motivo_escalado}</p>
           )}
         </div>
         {c.bot_activo ? (
@@ -266,7 +267,7 @@ function Burbuja({ m }: { m: Mensaje }) {
   if (!m.texto && m.herramienta === 'escalar_a_humano') {
     return (
       <div className="flex justify-center">
-        <span className="text-[11px] text-amber-800 italic px-2 py-1" style={mf}>
+        <span className={`text-[11px] ${TONO.aviso.texto} italic px-2 py-1`} style={mf}>
           Pasó a una persona — {m.motivo}
         </span>
       </div>

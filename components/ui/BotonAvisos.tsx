@@ -22,6 +22,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
+import { TONO } from './tonos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -31,11 +32,6 @@ export interface Aviso {
   tono: TonoAviso;
   texto: string;
 }
-
-const ESTILO: Record<TonoAviso, { punto: string; texto: string }> = {
-  error: { punto: 'bg-red-500', texto: 'text-red-800' },
-  aviso: { punto: 'bg-amber-500', texto: 'text-amber-900' },
-};
 
 export default function BotonAvisos({
   avisos,
@@ -51,6 +47,8 @@ export default function BotonAvisos({
   const burbujaRef = useRef<HTMLDivElement | null>(null);
 
   const hayError = avisos.some((a) => a.tono === 'error');
+  /** El botón toma el tono del aviso MÁS GRAVE: si hay un error, manda el error. */
+  const tono = TONO[hayError ? 'error' : 'aviso'];
 
   /**
    * Posición, en dos pasadas y antes de pintar.
@@ -118,16 +116,17 @@ export default function BotonAvisos({
         aria-label={`${avisos.length} ${avisos.length === 1 ? 'advertencia' : 'advertencias'}`}
         aria-expanded={abierto}
         title={`${avisos.length} ${avisos.length === 1 ? 'advertencia' : 'advertencias'}`}
-        className={`relative inline-flex items-center justify-center w-9 h-9 rounded border transition-colors ${
-          hayError
-            ? 'border-red-300 bg-red-50 text-red-600 hover:bg-red-100'
-            : 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-        } ${abierto ? 'ring-2 ring-offset-1 ' + (hayError ? 'ring-red-300' : 'ring-amber-300') : ''}`}
+        className={`relative inline-flex items-center justify-center w-9 h-9 rounded border transition-colors
+          ${tono.control} ${abierto ? `ring-2 ring-offset-1 ${tono.anillo}` : ''}`}
       >
         <AlertTriangle className="w-4 h-4" />
+        {/* El contador NO va relleno de color: un relleno sólido obliga a texto blanco, y
+            el ámbar del tema es oscuro en claro pero dorado claro en oscuro — el blanco
+            deja de leerse. Con el tono sobre la superficie de la tarjeta funciona en los
+            dos temas sin excepciones. */}
         <span
           className={`absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full text-[10px] font-bold
-            text-white flex items-center justify-center ${hayError ? 'bg-red-600' : 'bg-amber-600'}`}
+            flex items-center justify-center border bg-digi-card ${tono.texto} ${tono.caja.split(' ')[0]}`}
           style={mf}
         >
           {avisos.length}
@@ -161,8 +160,8 @@ export default function BotonAvisos({
           <ul className="py-1 max-h-[60vh] overflow-y-auto">
             {avisos.map((a, i) => (
               <li key={i} className="flex gap-2 px-3 py-2 border-b border-digi-border last:border-b-0">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${ESTILO[a.tono].punto}`} />
-                <span className={`text-[12.5px] leading-relaxed ${ESTILO[a.tono].texto}`} style={mf}>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${TONO[a.tono].punto}`} />
+                <span className={`text-[12.5px] leading-relaxed ${TONO[a.tono].texto}`} style={mf}>
                   {a.texto}
                 </span>
               </li>

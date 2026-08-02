@@ -1014,6 +1014,47 @@ Piezas del catálogo que nacen aquí y son reusables en cualquier página legal 
 - **`tabla`/`th`/`td`** — inventarios (qué datos se tratan, qué subencargados). Una tabla dice en
   cuatro filas lo que en prosa legal se vuelve ilegible.
 
+### Tonos semánticos (`components/ui/tonos.ts`) — definición ÚNICA de error/aviso/éxito (2026-08-01)
+
+**El tema `.corp` NO remapea toda la paleta de Tailwind.** Solo un conjunto concreto de tonos tiene
+override en claro y en oscuro (`app/globals.css`). Escribir `text-red-800` o `text-amber-900`
+compila y se ve "más o menos rojo" en claro, pero **queda fuera de la paleta**: en oscuro acaba casi
+negro sobre fondo oscuro, y no es ninguno de nuestros colores. Pasó con los avisos del detalle de
+flujo, y lo detectó el usuario.
+
+**Los únicos tonos semánticos que el tema redefine en AMBOS temas:**
+
+| | claro (`.corp`) | oscuro (`.corp.dark`) |
+|---|---|---|
+| `red-400` / `red-300` | `#b3261e` | `#f1707b` |
+| `amber-400` / `amber-300` | `#8a6116` | `#e0b34d` |
+| `green-400` | `#0e700e` | `#6bb700` |
+| `blue-400` | `#0f6cbd` | `#4aa3f0` |
+
+Más overrides explícitos de `bg-*-50`, `border-*-300` y `text-*-600/700`.
+
+**Regla:** el color de un aviso **sale de `TONO`**, nunca escrito a mano en el componente.
+
+```tsx
+import { TONO, type Tono } from '@/components/ui/tonos';
+<div className={`rounded-lg border ${TONO.aviso.caja} p-4`}>
+  <AlertTriangle className={`w-5 h-5 ${TONO.aviso.icono}`} />
+  <p className={TONO.aviso.texto}>…</p>
+</div>
+```
+
+Campos: `texto` · `icono` · `punto` (viñeta) · `caja` (borde + superficie) · `control` (botón) ·
+`anillo` (foco). Tonos: `error` · `aviso` · `exito` · **`info` = el morado de marca**, no azul — un
+azul suelto sería otro color fuera de la identidad.
+
+**Prohibido:** `-800`, `-900`, `-500`, `emerald-*`, `gray-*` para semántica. No tienen override.
+Para neutros, los tokens `digi-*`.
+
+**Detalle de contraste que obligó a un cambio de diseño:** el contador del `BotonAvisos` iba relleno
+de color con texto blanco. No funciona: el ámbar del tema es **oscuro en claro** pero **dorado claro
+en oscuro**, así que el blanco deja de leerse en uno de los dos. Ahora el contador va sobre
+`bg-digi-card` con el tono en el texto y el borde — legible en ambos sin excepciones.
+
 ## Desviaciones detectadas y resolución
 - **2026-07-31 — Detalle de proyecto: SEIS ediciones inline ("por encima") → CORREGIDAS.**
   `projects/[id]` editaba el **requerimiento** sustituyendo la fila por tres inputs (captura del

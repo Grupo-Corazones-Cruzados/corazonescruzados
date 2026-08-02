@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { TONO } from '@/components/ui/tonos';
 import { SectionBar, PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import { Plug, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, Smartphone } from 'lucide-react';
 
@@ -177,18 +178,18 @@ function SinConectar({ sdkListo, entendido, setEntendido, ocupado, alConectar, c
         <strong> coexistencia</strong>.
       </p>
 
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+      <div className={`rounded-lg border ${TONO.error.caja} p-4`}>
         <div className="flex gap-2 items-start">
-          <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <ShieldAlert className={`w-5 h-5 ${TONO.error.icono} shrink-0 mt-0.5`} />
           <div>
-            <p className="text-[13px] font-semibold text-red-800" style={mf}>
+            <p className={`text-[13px] font-semibold ${TONO.error.texto}`} style={mf}>
               Hay un paso sin vuelta atrás, y está dentro de la ventana de Meta
             </p>
-            <p className="text-[12.5px] text-red-800 mt-1 leading-relaxed" style={mf}>
+            <p className={`text-[12.5px] ${TONO.error.texto} mt-1 leading-relaxed`} style={mf}>
               Meta preguntará si quieres <strong>conectar una cuenta existente</strong> o
               <strong> dar de alta un número nuevo</strong>. Hay que elegir la primera.
             </p>
-            <p className="text-[12.5px] text-red-800 mt-2 leading-relaxed" style={mf}>
+            <p className={`text-[12.5px] ${TONO.error.texto} mt-2 leading-relaxed`} style={mf}>
               Si se elige la segunda, <strong>el número sale del teléfono</strong> y el equipo del
               cliente <strong>pierde WhatsApp Web en el acto</strong>. No hay forma de deshacerlo
               desde aquí ni desde el panel de Meta.
@@ -238,28 +239,28 @@ function Conectado({ canal, estadoMeta }: { canal: any; estadoMeta: any }) {
   const n = estadoMeta?.numero;
   return (
     <div className="max-w-3xl space-y-4">
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex gap-2 items-start">
-        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+      <div className={`rounded-lg border ${TONO.exito.caja} p-4 flex gap-2 items-start`}>
+        <CheckCircle2 className={`w-5 h-5 ${TONO.exito.icono} shrink-0 mt-0.5`} />
         <div>
-          <p className="text-[13px] font-semibold text-emerald-900" style={mf}>El número está conectado</p>
-          <p className="text-[12.5px] text-emerald-900 mt-1" style={mf}>
+          <p className={`text-[13px] font-semibold ${TONO.exito.texto}`} style={mf}>El número está conectado</p>
+          <p className={`text-[12.5px] ${TONO.exito.texto} mt-1`} style={mf}>
             {canal.numero_visible ?? 'Número sin nombre'} · {canal.nombre_verificado ?? 'sin nombre verificado'}
           </p>
         </div>
       </div>
 
       {!canal.coexistencia_verificada && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex gap-2 items-start">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className={`rounded-lg border ${TONO.aviso.caja} p-4 flex gap-2 items-start`}>
+          <AlertTriangle className={`w-5 h-5 ${TONO.aviso.icono} shrink-0 mt-0.5`} />
           <div>
-            <p className="text-[13px] font-semibold text-amber-900" style={mf}>
+            <p className={`text-[13px] font-semibold ${TONO.aviso.texto}`} style={mf}>
               Falta la comprobación que de verdad importa
             </p>
-            <p className="text-[12.5px] text-amber-900 mt-1 leading-relaxed" style={mf}>
+            <p className={`text-[12.5px] ${TONO.aviso.texto} mt-1 leading-relaxed`} style={mf}>
               Pídele al cliente que abra <strong>WhatsApp Web</strong> con ese número. Si entra, la
               coexistencia quedó bien y su equipo no ha perdido nada.
             </p>
-            <p className="text-[12px] text-amber-900 mt-2 leading-relaxed" style={mf}>
+            <p className={`text-[12px] ${TONO.aviso.texto} mt-2 leading-relaxed`} style={mf}>
               Que Meta diga <code>CLOUD_API</code> <strong>no</strong> lo demuestra: ese campo
               describe el lado de la API, no si el número sigue en el teléfono.
             </p>
