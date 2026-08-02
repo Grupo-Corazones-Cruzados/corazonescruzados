@@ -64,12 +64,36 @@ export function armarPeticion(p: PeticionAgente): Record<string, any> {
     tool_choice: { type: 'any' },
   };
 
-  // Razonamiento: cada familia lo pide de una forma, y la que no toca da 400.
+  // ── Razonamiento ────────────────────────────────────────────────────────────
+  // ⚠️ AQUÍ HAY UNA INCOMPATIBILIDAD QUE DEJA AL AGENTE MUDO AL 100 %, y no es teórica:
+  // salió en el ensayo en seco del 2026-08-01, con TODAS las preguntas devolviendo 400.
+  //
+  // Medido contra la API (no razonado), con `tool_choice: { type: 'any' }`:
+  //
+  //   claude-haiku-4-5 · sin razonamiento        ✅ devuelve tool_use
+  //   claude-haiku-4-5 · budget_tokens           ❌ 400 «Thinking may not be enabled
+  //                                                  when tool_choice forces tool use»
+  //   claude-haiku-4-5 · adaptive                ❌ 400 «adaptive thinking is not
+  //                                                  supported on this model»
+  //   claude-sonnet-5  · adaptive                ✅   ·  claude-sonnet-5 · sin razon. ✅
+  //   claude-opus-5    · adaptive                ✅
+  //
+  // O sea: **el razonamiento de estilo antiguo (`budget_tokens`) es incompatible con
+  // forzar el uso de herramienta; el `adaptive` no lo es.** Y como aquí la herramienta
+  // ES la decisión, forzarla no es negociable — lo que se cae es el razonamiento.
+  //
+  // Por eso `budget_tokens` NO se manda nunca mientras `tool_choice` fuerce. La sonda
+  // confirma además que Haiku sin razonamiento devuelve el `tool_use` limpio, sin
+  // escribir la llamada como texto visible, que era el riesgo que motivó encenderlo.
+  const fuerzaHerramienta =
+    peticion.tool_choice?.type === 'any' || peticion.tool_choice?.type === 'tool';
+
   if (cap.thinking === 'adaptive') {
     // Se deja encendido a propósito: apagado, la familia Claude 5 puede escribir la
     // llamada a la herramienta como texto visible, que nunca se ejecuta. Fallo silencioso.
+    // Convive sin problema con el forzado — comprobado arriba.
     peticion.thinking = { type: 'adaptive' };
-  } else if (cap.thinking === 'budget_tokens') {
+  } else if (cap.thinking === 'budget_tokens' && !fuerzaHerramienta) {
     // Estilo antiguo. El presupuesto debe ser MENOR que max_tokens, mínimo 1024.
     const presupuesto = Math.max(1024, Math.floor(peticion.max_tokens / 2));
     if (presupuesto < peticion.max_tokens) {

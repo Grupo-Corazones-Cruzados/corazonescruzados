@@ -57,7 +57,11 @@ export const CAPACIDADES: Record<string, Capacidades> = {
   // El de por defecto (decisión del cliente por costo). Ojo: es el que MÁS exige al
   // caché — 4.096 tokens — y el único que NO acepta `effort`.
   'claude-haiku-4-5': {
-    thinking: 'budget_tokens', // el estilo antiguo; `adaptive` no existe aquí
+    // El estilo antiguo; `adaptive` da 400 aquí («not supported on this model»).
+    // ⚠️ Y `budget_tokens` es INCOMPATIBLE con forzar herramienta, que es lo que hace el
+    // agente siempre — así que en la práctica este modelo corre SIN razonamiento. Lo
+    // resuelve `armarPeticion()`, donde está medida la matriz entera.
+    thinking: 'budget_tokens',
     effort: false,             // ⚠️ mandarlo = 400
     muestreo: true,
     minimoCache: 4096,
