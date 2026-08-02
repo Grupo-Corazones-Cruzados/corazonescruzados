@@ -1136,6 +1136,60 @@ y **el campo no se mueve**, que es lo que no puede pasar en una rejilla de dos c
 > clase que "no hace nada", lo primero es comprobar que existe en el CSS compilado
 > (`grep '\.min-h-6{' .next/static/css/*.css`), no revisar el JSX.
 
+### Estudio del agente — lienzo de pipeline (React Flow + ELK, 2026-08-02)
+
+**Qué es:** un **visor del pipeline real** del agente, no un editor de flujos. Cada tarjeta es un
+paso que el código ejecuta de verdad y lleva anotado su archivo. Sustituye a las pestañas
+«Parámetros» y «Conexión», que pasan a ser **fuentes del propio grafo**.
+
+**La regla que lo gobierna:** *nada se dibuja si no está en el código*, y el contenido de las
+fuentes lo sirven **las mismas funciones que usa el runner**. Si la pantalla y el modelo vieran
+cosas distintas, el diagrama mentiría — y se usa para decidir.
+
+De ahí la regla visual: **el dato manda sobre la explicación**. En las tarjetas no hay prosa; hay
+esquemas reales de entrada/salida y **chips navegables**: dentro de un esquema, cualquier cadena
+`"@fuenteId"` se pinta como chip que abre ese recurso. Así se nombra el recurso *dentro del campo
+donde interviene*.
+
+**Interacción, y por qué:**
+| Decisión | Motivo |
+|---|---|
+| Los nodos **no se arrastran** | Mover una tarjeta daría a entender que se cambia el flujo |
+| Los nodos **no se conectan** | No es un constructor |
+| La rueda hace **pan, no zoom** | El diagrama es largo; el zoom vive en los botones |
+| Al pulsar un nodo, **la vista viaja hasta él** (`setCenter`, 520 ms) | Recorrer un diagrama largo se siente continuo en vez de a saltos |
+| Editar abre el **panel lateral con overlay** | Es la superficie de edición estándar del proyecto; el panel derecho muestra, no pide datos |
+
+**Paleta:** solo tokens de `.corp`. `accent` para la marca y para los pasos con **IA** —que llevan
+distintivo propio porque cuestan dinero, tardan y pueden variar entre corridas—, `blue-400` para la
+ingesta, `green-400` para el cierre. Nada de hexes propios.
+
+**Archivos:** `lib/agente/estudio/{tipos,pipeline}.ts` (contrato y pipeline declarativo, en el
+servidor) · `components/dashboard/flows/estudio/{pipeline-layout,satelites-layout}.ts` (ELK) ·
+`PipelineFlow.tsx` (lienzo) · `AgenteEstudio.tsx` (los tres paneles).
+
+**Los cinco gotchas, todos comentados en su sitio:**
+1. **`elementsSelectable` TIENE que estar activo.** React Flow pone `pointer-events: none` a un nodo
+   que no es seleccionable ni arrastrable ni conectable, y los botones de dentro nunca reciben el
+   clic. Cuesta descubrirlo porque el nodo se ve perfectamente.
+2. **En los contenedores de ELK, solo espaciados — nunca opciones de algoritmo.** Los espaciados hay
+   que repetirlos (no se heredan); repetir `considerModelOrder`/`edgeRouting` hace **reventar** a ELK
+   con aristas que cruzan contenedores.
+3. **Puertos `FIXED_POS` al centro de la TARJETA, sin `elk.port.side`.** Con abanico, el centro de la
+   caja cae en medio del abanico; y declarar el lado hace que ELK ignore la `y` dada.
+4. **Las coordenadas de una arista son relativas al ANCESTRO COMÚN de sus extremos**, no al nodo
+   donde ELK la guarda. Sumar lo otro deja las aristas internas corridas justo lo que mide su grupo.
+   Además hay que concatenar **todas** las secciones y descartar los puntos duplicados: dos idénticos
+   meten un `NaN` en el `path` y el navegador descarta la línea entera.
+5. **Carga con `dynamic(..., { ssr: false })`.** ELK pesa 1,4 MB. Comprobado que queda en su propio
+   trozo: solo se descarga al abrir el Estudio.
+
+**Cómo se comprueba:** `node --import ./scripts/registrar-ts.mjs scripts/probar-estudio-layout.mjs`
+— ejecuta **el mismo archivo de colocación que usa la app** y verifica que cada arista nace en el
+borde inferior de su origen y muere en el superior de su destino (es la que caza el fallo del
+ancestro común), que ningún nodo pisa a otro contando abanicos, y que el hueco declarado a ELK
+coincide con lo dibujado.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un

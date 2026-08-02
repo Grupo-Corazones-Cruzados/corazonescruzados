@@ -27,14 +27,15 @@ import AgenteBandeja from '@/components/dashboard/flows/AgenteBandeja';
 import AgenteConexion from '@/components/dashboard/flows/AgenteConexion';
 import type { Aviso } from '@/components/ui/BotonAvisos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
+import AgenteEstudio from '@/components/dashboard/flows/estudio/AgenteEstudio';
 import {
   BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
-  AlertTriangle,
+  AlertTriangle, Workflow,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type Seccion = 'bandeja' | 'conocimiento' | 'prompts' | 'parametros' | 'conexion';
+type Seccion = 'bandeja' | 'conocimiento' | 'prompts' | 'estudio';
 
 interface Bloque {
   id: number; clave: string; titulo: string; contenido: string;
@@ -100,8 +101,9 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
     { value: 'conocimiento' as const, label: 'Conocimiento', Icon: BookText, count: bloques.length,
       hint: estudio.pendientes.length ? `${estudio.pendientes.length} sin rellenar` : undefined },
     { value: 'prompts' as const, label: 'Prompts', Icon: ScrollText, count: prompts.filter((p) => p.caracteres > 0).length },
-    { value: 'parametros' as const, label: 'Parámetros', Icon: SlidersHorizontal },
-    { value: 'conexion' as const, label: 'Conexión y estado', Icon: Plug },
+    // Parámetros y Conexión YA NO son secciones: viven dentro del Estudio como fuentes
+    // del propio grafo, en el paso donde intervienen. Ver AgenteEstudio.
+    { value: 'estudio' as const, label: 'Estudio del agente', Icon: Workflow },
   ];
 
   return (
@@ -113,10 +115,19 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
         {seccion === 'bandeja' && <AgenteBandeja flowId={flow.id} />}
         {seccion === 'conocimiento' && <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />}
         {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} recargar={cargar} />}
-        {seccion === 'parametros' && <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />}
-        {seccion === 'conexion' && (
-          <AgenteConexion flowId={flow.id} canal={estudio.canal}
-            appId={estudio.appId} configId={estudio.configId} recargar={cargar} />
+        {seccion === 'estudio' && (
+          <AgenteEstudio
+            flowId={flow.id}
+            recargar={cargar}
+            editores={{
+              parametros: () => <Parametros flowId={flow.id} estudio={estudio} recargar={cargar} />,
+              conexion: () => (
+                <AgenteConexion flowId={flow.id} canal={estudio.canal}
+                  appId={estudio.appId} configId={estudio.configId} recargar={cargar} />
+              ),
+              conocimiento: () => <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />,
+            }}
+          />
         )}
       </div>
     </div>
