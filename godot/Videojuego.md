@@ -661,6 +661,20 @@ definir; 150+ competitivo.
     en `TRAMOS` donde toca y que el reparto de tiempos cuadra.
   - **Se incumplió el 2026-08-02** con la escena 115: cinco tiradas seguidas juzgando yo cada
     resultado, sin enseñarle ninguna. La norma ya estaba escrita justo debajo.
+- ## ⛔ REGLA Nº 2 DEL ARTE — CADA INTENTO VA A UNA ESCENA NUEVA, NO SE SOBRESCRIBE
+  **Nunca se regenera encima de una estampa existente.** Cada nuevo intento del mismo momento
+  se guarda con el **número siguiente libre** (115 → 116 → 117…), y el anterior se queda tal
+  cual. Dicho por Fernando el 2026-08-02: *"ya no iremos reemplazando lo ya creado, sino que
+  iremos grabando lo nuevo en nuevas escenas, no importa que se generen cientas… para que no se
+  me pierda lo ya generado"*.
+  - **Por qué:** regenerando encima se perdía trabajo bueno. Antes se paliaba copiando a mano
+    la versión previa (regla §4.25) y aun así se perdían variantes. Con una escena por intento,
+    **nada se pierde y él compara**.
+  - **Numerar es barato, perder una versión no.** No importa acumular cientos de archivos.
+  - Consecuencias prácticas: `INSERTADAS` necesita su entrada para heredar el tono; el
+    `.png.import` nace SIN comprimir y hay que ponerle `mode=1` + `lossy_quality=0.85` antes de
+    publicar (§4-bis); y **el prólogo solo muestra la que Fernando elija** — las demás se quedan
+    en disco sin entrar en `TRAMOS`.
 - **Arte del prólogo: una escena por vez.** Genera → revisa → corrige con detalle →
   aprueba explícitamente → siguiente. No avanzar sin su "ok".
 - Le importa **muchísimo**: (a) la **consistencia del estilo de dibujo** de personajes y

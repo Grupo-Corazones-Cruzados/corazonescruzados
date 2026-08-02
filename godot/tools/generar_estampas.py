@@ -131,6 +131,7 @@ INSERTADAS = {
     113: 66,  # como la 105 + aura violeta de corazones cruzados
     114: 66,  # picado desde arriba: caen dejando estela violeta
     115: 66,  # las siluetas se deshacen en polvo; solo aguantan las manos unidas
+    116: 66,  # segundo intento: los cuerpos YA SON polvo + partes sueltas
 }
 
 
@@ -3237,6 +3238,86 @@ ESCENAS = [
         "PROHIBIDO añadir figuras o elementos nuevos. PROHIBIDO cualquier líquido, mancha o "
         "salpicadura. PROHIBIDO cualquier color que no sea gris, blanco o negro. PROHIBIDO "
         "cualquier texto, letra, número o marca de agua."),
+
+    # ── 116 · SEGUNDO INTENTO DE LA 115 · YA NO HAY CUERPOS, SOLO POLVO ────────
+    # ⚠ MÉTODO (2026-08-02): cada intento va a un número NUEVO y NO se sobrescribe
+    # el anterior. La 115 se conserva tal cual; esta es otra propuesta del mismo
+    # momento. Fernando elige después cuál va al prólogo.
+    #
+    # La diferencia con la 115: allí los cuerpos se estaban DESINTEGRANDO (proceso,
+    # con estelas y bordes desprendiéndose). Aquí el proceso YA TERMINÓ: no hay
+    # cuerpo ninguno, solo polvo asentado y algunos trozos sueltos desperdigados.
+    (116, ["assets/Prologo/escenas/escena_97.png"],
+        "Esta es LA MISMA ESCENA de la imagen de referencia, EL MISMO SITIO y EL MISMO DIBUJO, "
+        "un rato después. Lo único que cambia es que las tres figuras YA NO EXISTEN como "
+        "cuerpos. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA DE LA REFERENCIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE, tal cual está en la imagen de referencia: el estilo PIXEL ART 2D de "
+        "16 bits dibujado a mano, con sombreado plano por zonas, contornos definidos, píxeles "
+        "visibles y dithering sutil. El encuadre horizontal 16:9. La MISMA POSICIÓN DE CÁMARA y "
+        "el MISMO PLANO GENERAL Y LEJANO. El interior del Hoyo con la pared de ROCA CUARTEADA "
+        "OSCURA cubriendo todo el cuadro. El halo de luz redondo y grisáceo del centro. La "
+        "penumbra que oscurece hacia las cuatro esquinas. La paleta MONOCROMA de grises fríos, "
+        "blancos y negros, con la misma iluminación gris apagada. No hay suelo. "
+        "PROHIBIDO ABSOLUTAMENTE cambiar el tipo de vista, el ángulo de cámara, el encuadre o el "
+        "estilo de dibujo. PROHIBIDO aclarar el fondo, poner un fondo liso o un halo blanco "
+        "grande. PROHIBIDO acercar la cámara o hacer un primer plano. "
+
+        "══ BLOQUE 2 · YA NO HAY CUERPOS: SON POLVO, Y ESTO ES LO PRINCIPAL ══ "
+        "En la referencia hay tres figuras. AQUÍ NO HAY NINGUNA. PROHIBIDO ABSOLUTAMENTE dibujar "
+        "un cuerpo, un torso, una silueta de persona, una cabeza o una figura reconocible, ni "
+        "entera ni a medias ni rota. Si al terminar se distingue aunque sea una sola figura "
+        "humana, está MAL. "
+        "En su lugar, en el centro del halo y ocupando más o menos el mismo sitio y el mismo "
+        "tamaño que ocupaba el grupo (apenas una QUINTA PARTE del alto del cuadro), hay TRES "
+        "MANCHAS DE POLVO NEGRO: nubes de puntitos y cuadraditos negros de unos pocos píxeles, "
+        "densas en el medio y deshilachadas por fuera, con el borde irregular y sin ningún "
+        "contorno definido. Son manchas informes, como ceniza esparcida. Se puede intuir "
+        "vagamente que hubo algo ahí —una más grande en el centro y dos más pequeñas a los "
+        "lados— pero NO se distingue ninguna forma de persona. "
+        "⚠ ESTO YA HA PASADO, NO ESTÁ PASANDO: el polvo está QUIETO y ASENTADO, flotando sin "
+        "más. PROHIBIDO ABSOLUTAMENTE dibujar el efecto de algo desintegrándose o pulverizándose "
+        "en este instante: nada de estelas de movimiento, nada de partículas saliendo disparadas "
+        "de un cuerpo, nada de bordes desprendiéndose, nada de una figura a medio deshacer. El "
+        "trabajo ya está hecho: solo queda el polvo. "
+
+        "══ BLOQUE 3 · LOS TROZOS SUELTOS, DESPERDIGADOS ══ "
+        "Repartidos por el halo, entre las manchas de polvo y alrededor de ellas, hay unos "
+        "POCOS TROZOS SUELTOS de silueta NEGRA MACIZA, y son lo único con forma reconocible "
+        "aparte de las manos. Cada trozo es pequeño, del tamaño de un dedo o dos en la escala de "
+        "la imagen, de contorno limpio y cerrado, negro plano y sin detalle interior: la forma "
+        "alargada de un antebrazo, la de una pierna con su zapato al extremo, la de un piececito "
+        "pequeño, la de un trozo de tela acampanada de la falda. "
+        "Están DESPERDIGADOS: separados unos de otros, a distintas alturas del cuadro, cada uno "
+        "girado en un ángulo distinto, algunos casi tocando el borde del halo y otros cerca del "
+        "polvo. Ninguno está pegado a otro ni forma un montón. Que se lean como piezas sueltas "
+        "esparcidas por el aire, no como un cuerpo despiezado colocado en orden. "
+        "Pon unos pocos, bien separados y con mucho hueco entre ellos: la escena tiene que verse "
+        "VACÍA, con más polvo que trozos. PROHIBIDO llenarla de fragmentos. "
+
+        "══ BLOQUE 4 · LO ÚNICO ENTERO: LAS MANOS SIGUEN AGARRADAS ══ "
+        "Es la parte más importante de la imagen y la única nítida de todo el cuadro. En el "
+        "centro, a la altura en que estaban los brazos en la referencia, siguen flotando LOS DOS "
+        "AGARRES: un brazo que termina en una mano agarrando otra mano que continúa en otro "
+        "brazo, y lo mismo al otro lado. Son NEGRO MACIZO, de CONTORNO LIMPIO Y CERRADO, unidos "
+        "sin cortarse, sin un solo boquete y sin una sola mota suelta, con la MISMA POSTURA que "
+        "tienen en la imagen de referencia. "
+        "Ya NO hay cuerpos a los que estén pegados: los brazos se acaban en el aire por el lado "
+        "del hombro, y de ahí para dentro solo hay polvo. Pero las manos siguen agarradas. "
+        "PROHIBIDO ABSOLUTAMENTE que esos agarres se rompan, se separen o se desgranen. "
+        "PROHIBIDO dibujar en su lugar una BARRA, un PALO, una franja recta o una línea "
+        "horizontal rígida que cruce el cuadro: son brazos y manos, y se tienen que leer como "
+        "tales. "
+        "La lectura de la imagen debe ser: aquí ya no queda nadie, solo polvo y unos pocos "
+        "restos, y en medio dos manos que siguen agarradas. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar figuras humanas, caras, ojos o cualquier detalle interior. PROHIBIDO "
+        "añadir elementos nuevos. PROHIBIDO cualquier líquido, mancha roja o salpicadura. "
+        "PROHIBIDO cualquier color que no sea gris, blanco o negro. PROHIBIDO cualquier texto, "
+        "letra, número o marca de agua. Dibuja un patrón de grietas de la roca COMPLETAMENTE "
+        "DISTINTO y ALEATORIO, sin copiar el trazado de la referencia."),
 ]
 
 
