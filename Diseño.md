@@ -1184,6 +1184,22 @@ servidor) · `components/dashboard/flows/estudio/{pipeline-layout,satelites-layo
 5. **Carga con `dynamic(..., { ssr: false })`.** ELK pesa 1,4 MB. Comprobado que queda en su propio
    trozo: solo se descarga al abrir el Estudio.
 
+**Correcciones tras verlo funcionando (2026-08-02, Fernando):**
+- **Los controles de zoom en modo oscuro salían BLANCOS.** React Flow trae su propia hoja con
+  blancos fijos, y quedaba un bloque luminoso en mitad del diagrama. Reescritos con los tokens en
+  `globals.css` (`.corp .react-flow__controls*`), así que se adaptan solos. Ganan por especificidad
+  aunque su hoja cargue después, porque van prefijados con `.corp`.
+- **`elk.spacing.edgeNode` de 28 → 44.** Con 28 las líneas pasaban ROZANDO la tarjeta y parecían
+  salir de su borde en vez de esquivarla. También subieron `nodeNodeBetweenLayers` (56→76) y
+  `nodeNode` (44→64): un diagrama de 18 pasos necesita aire para leerse.
+- **Alto: `max(560px, calc(100vh - 250px))`** en vez de un `min(72vh, 780px)` a ojo, que dejaba una
+  franja muerta abajo. El mínimo evita que en pantallas cortas quede una rendija.
+- **Parámetros y Conexión se editan EN el panel derecho**, sin overlay y sin botón «Editar». Para
+  esos dos, ver el JSON y tener que abrir un panel encima es un paso de más: lo que se quiere es
+  cambiar el modelo o conectar el número. El panel se ensancha a 460 px y los formularios se fuerzan
+  a una columna con `.estudio-en-sitio` — vienen de pestañas a ancho completo. El overlay se reserva
+  para lo que necesita sitio de verdad: prompts largos y conocimiento.
+
 **Cómo se comprueba:** `node --import ./scripts/registrar-ts.mjs scripts/probar-estudio-layout.mjs`
 — ejecuta **el mismo archivo de colocación que usa la app** y verifica que cada arista nace en el
 borde inferior de su origen y muere en el superior de su destino (es la que caza el fallo del

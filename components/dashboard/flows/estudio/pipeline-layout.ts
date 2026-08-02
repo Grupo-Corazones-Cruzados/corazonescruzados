@@ -38,11 +38,14 @@ const OPCIONES_RAIZ = {
   // y el pipeline deja de leerse como un relato.
   'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
   'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
-  'elk.layered.spacing.nodeNodeBetweenLayers': '56',
-  'elk.spacing.nodeNode': '44',
-  'elk.spacing.edgeNode': '28',
-  'elk.spacing.edgeEdge': '20',
-  'elk.padding': '[top=24,left=24,bottom=24,right=24]',
+  'elk.layered.spacing.nodeNodeBetweenLayers': '76',
+  'elk.spacing.nodeNode': '64',
+  // ⚠️ `edgeNode` es la distancia entre una arista y una tarjeta. Con 28 las líneas pasaban
+  // ROZANDO el nodo y parecían salir de su borde. 44 les da aire suficiente para leerse
+  // como líneas que lo esquivan, que es lo que hacen.
+  'elk.spacing.edgeNode': '44',
+  'elk.spacing.edgeEdge': '26',
+  'elk.padding': '[top=28,left=28,bottom=28,right=28]',
 };
 
 /**
@@ -55,11 +58,11 @@ const OPCIONES_RAIZ = {
  */
 const OPCIONES_GRUPO = {
   // 76 px arriba: el hueco para el título del contenedor.
-  'elk.padding': '[top=76,left=32,bottom=32,right=32]',
-  'elk.layered.spacing.nodeNodeBetweenLayers': '52',
-  'elk.spacing.nodeNode': '40',
-  'elk.spacing.edgeNode': '24',
-  'elk.spacing.edgeEdge': '20',
+  'elk.padding': '[top=76,left=36,bottom=36,right=36]',
+  'elk.layered.spacing.nodeNodeBetweenLayers': '68',
+  'elk.spacing.nodeNode': '58',
+  'elk.spacing.edgeNode': '40',
+  'elk.spacing.edgeEdge': '24',
 };
 
 export const GRUPOS: { id: string; label: string }[] = [

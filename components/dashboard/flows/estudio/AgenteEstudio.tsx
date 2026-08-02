@@ -105,7 +105,10 @@ export default function AgenteEstudio({ flowId, recargar, editores }: Props) {
       <BarraDeControl estado={pipeline.estado} />
 
       {/* Tres columnas. El lienzo manda: los paneles no crecen. */}
-      <div className="flex gap-3 items-stretch" style={{ height: 'min(72vh, 780px)' }}>
+      {/* Alto: lo que queda de ventana bajo la cabecera del detalle y la barra de control.
+          Antes era un `min(72vh, …)` a ojo y dejaba una franja muerta abajo. El mínimo
+          evita que en pantallas cortas el diagrama quede en una rendija. */}
+      <div className="flex gap-3 items-stretch" style={{ height: 'max(560px, calc(100vh - 250px))' }}>
         <PanelNodo nodo={nodo} fuentes={pipeline.fuentes} alAbrirFuente={abrirFuente} />
 
         <div className="flex-1 min-w-0 rounded-lg border border-digi-border bg-digi-darker/40 overflow-hidden">
@@ -123,6 +126,8 @@ export default function AgenteEstudio({ flowId, recargar, editores }: Props) {
           cargando={!!fuenteSel && !contenido}
           alCerrar={() => { setFuenteSel(null); setContenido(null); }}
           alEditar={() => setEditando(contenido?.editable ?? null)}
+          editores={editores}
+          alGuardar={() => { cargar(); recargar(); if (fuenteSel) abrirFuente(fuenteSel); }}
         />
       </div>
 
@@ -134,8 +139,8 @@ export default function AgenteEstudio({ flowId, recargar, editores }: Props) {
           onClose={cerrarEditor}
         >
           <div className="p-6">
-            {editando.tipo === 'parametros' && editores.parametros(cerrarEditor)}
-            {editando.tipo === 'conexion' && editores.conexion(cerrarEditor)}
+            {/* Parámetros y Conexión NO llegan aquí: se editan en el propio panel derecho.
+                Solo pasan por el overlay los que necesitan sitio de verdad. */}
             {editando.tipo === 'conocimiento' && editores.conocimiento(cerrarEditor)}
             {editando.tipo === 'prompt' && (
               <EditorPrompt flowId={flowId} clave={editando.clave} inicial={contenido?.texto ?? ''} alGuardar={cerrarEditor} />
@@ -279,12 +284,26 @@ function Esquema({ valor, fuentes, alAbrirFuente, nivel = 0 }: {
 
 /* ═══════════════════════ PANEL DERECHO: LA FUENTE ═══════════════════════ */
 
-function PanelFuente({ contenido, cargando, alCerrar, alEditar }: {
+function PanelFuente({ contenido, cargando, alCerrar, alEditar, editores, alGuardar }: {
   contenido: ContenidoFuente | null;
   cargando: boolean;
   alCerrar: () => void;
   alEditar: () => void;
+  editores: Props['editores'];
+  alGuardar: () => void;
 }) {
+  /**
+   * Parámetros y Conexión se editan AQUÍ MISMO, no en un overlay.
+   *
+   * Decisión de Fernando (2026-08-02): para esos dos, ver el JSON y tener que pulsar
+   * «Editar» para que se abra un panel encima es un paso de más — lo que se quiere es
+   * cambiar el modelo o conectar el número, y punto. El overlay se reserva para lo que
+   * necesita sitio de verdad: los prompts largos y el conocimiento.
+   */
+  const enSitio = contenido?.editable?.tipo === 'parametros' || contenido?.editable?.tipo === 'conexion';
+  // El formulario necesita más ancho que un visor de JSON.
+  const ancho = enSitio ? 'w-[460px]' : 'w-[320px]';
+
   if (!contenido && !cargando) {
     return (
       <div className="w-[320px] shrink-0 h-full flex items-center justify-center rounded-lg border border-dashed border-digi-border px-4 text-center">
@@ -298,7 +317,7 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar }: {
   const Icono = contenido ? ICONO_ORIGEN[contenido.meta.origen] : FileText;
 
   return (
-    <div className="w-[320px] shrink-0 h-full flex flex-col rounded-lg border border-digi-border bg-digi-card overflow-hidden">
+    <div className={`${ancho} shrink-0 h-full flex flex-col rounded-lg border border-digi-border bg-digi-card overflow-hidden transition-[width] duration-200`}>
       <div className="px-3 py-2 border-b border-digi-border flex items-start gap-2 shrink-0">
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
@@ -323,25 +342,37 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar }: {
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 [&>*]:shrink-0">
         {cargando && <p className="text-[12px] text-digi-muted" style={mf}>Cargando…</p>}
 
+        {/* El formulario de verdad, montado aquí dentro. Los mismos componentes que había
+            en las pestañas de antes — no una copia.
+            La clase `estudio-en-sitio` los adapta a una columna: vienen de una pestaña a
+            ancho completo, con rejilla de dos columnas y `max-w-3xl`, y aquí tienen 460 px.
+            Ver la regla en globals.css. */}
+        {enSitio && (
+          <div className="estudio-en-sitio">
+            {contenido?.editable?.tipo === 'parametros' && editores.parametros(alGuardar)}
+            {contenido?.editable?.tipo === 'conexion' && editores.conexion(alGuardar)}
+          </div>
+        )}
+
         {contenido?.aviso && (
           <div className={`rounded-md border p-2.5 ${TONO.aviso.caja}`}>
             <p className={`text-[11.5px] leading-relaxed ${TONO.aviso.texto}`} style={mf}>{contenido.aviso}</p>
           </div>
         )}
 
-        {contenido?.texto !== undefined && (
+        {!enSitio && contenido?.texto !== undefined && (
           <pre className="text-[11px] leading-relaxed text-digi-text whitespace-pre-wrap break-words font-mono bg-digi-darker/40 border border-digi-border rounded-md p-2.5">
             {contenido.texto || '(sin escribir)'}
           </pre>
         )}
 
-        {contenido?.json !== undefined && (
+        {!enSitio && contenido?.json !== undefined && (
           <pre className="text-[11px] leading-relaxed text-digi-text whitespace-pre-wrap break-words font-mono bg-digi-darker/40 border border-digi-border rounded-md p-2.5">
             {JSON.stringify(contenido.json, null, 2)}
           </pre>
         )}
 
-        {contenido?.lista && (
+        {!enSitio && contenido?.lista && (
           <ul className="space-y-1">
             {contenido.lista.map((i) => (
               <li key={i.id} className="rounded-md border border-digi-border bg-digi-darker/40 px-2.5 py-1.5">
@@ -355,7 +386,7 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar }: {
         )}
       </div>
 
-      {contenido?.editable && (
+      {contenido?.editable && !enSitio && (
         <div className="px-3 py-2 border-t border-digi-border shrink-0">
           <button className={`${BTN_SECONDARY} w-full justify-center`} onClick={alEditar}>
             <Pencil className="w-3.5 h-3.5" /> Editar

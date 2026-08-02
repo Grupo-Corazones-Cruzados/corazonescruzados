@@ -1246,3 +1246,41 @@ html {
   0%, 100% { opacity: 0.25; transform: translateY(0); }
   50%      { opacity: 1;    transform: translateY(-3px); }
 }
+
+/* =====================================================
+   LIENZO DEL ESTUDIO DEL AGENTE (React Flow)
+   React Flow trae su propia hoja con blancos y grises fijos. Sus controles de zoom
+   quedaban en BLANCO sobre el fondo oscuro — un bloque luminoso en mitad del diagrama.
+   Aquí se reescriben con los tokens del tema, así que se adaptan solos a claro y oscuro
+   igual que el resto del panel. Ver Diseño.md → «Estudio del agente».
+   ===================================================== */
+.corp .react-flow__controls {
+  box-shadow: 0 1.6px 3.6px rgba(0,0,0,.16), 0 .3px .9px rgba(0,0,0,.1);
+  border: 1px solid var(--color-digi-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.corp .react-flow__controls-button {
+  background: var(--color-digi-card);
+  border-bottom: 1px solid var(--color-digi-border);
+  color: var(--color-digi-text);
+  width: 26px;
+  height: 26px;
+}
+.corp .react-flow__controls-button:last-child { border-bottom: none; }
+.corp .react-flow__controls-button:hover { background: var(--color-accent-light); }
+.corp .react-flow__controls-button svg { fill: currentColor; }
+
+/* El panel de atajos y los controles no deben tapar el diagrama más de lo necesario. */
+.corp .react-flow__panel { margin: 10px; }
+
+/* El nodo contenedor no debe capturar el clic: si lo hace, pulsar el fondo de un grupo
+   se traga el clic que iba a la tarjeta de dentro. */
+.corp .react-flow__node-grupo { pointer-events: none; }
+
+/* Formularios montados DENTRO del panel derecho del Estudio.
+   Vienen de pestañas a ancho completo —rejilla de dos columnas y `max-w-3xl`— y aquí
+   disponen de 460 px. Se les quita el ancho máximo y se fuerzan a una sola columna, en vez
+   de duplicar los componentes solo para cambiarles la rejilla. */
+.corp .estudio-en-sitio .grid { grid-template-columns: 1fr !important; }
+.corp .estudio-en-sitio [class*="max-w-"] { max-width: 100% !important; }
