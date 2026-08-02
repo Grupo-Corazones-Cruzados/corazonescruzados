@@ -136,6 +136,7 @@ INSERTADAS = {
     118: 66,  # sigue a la 117: se enciende tambien la otra mano, en rojo
     119: 66,  # como la 118 pero el brazo derecho PINTADO de rojo, no con aura
     120: 66,  # todo lo que quedaba de los tres se pinta de VIOLETA
+    121: 66,  # corrige la 120: los DOS brazos violeta y el polvo en violeta claro
 }
 
 
@@ -3596,6 +3597,68 @@ ESCENAS = [
         "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
         "gris, blanco, negro y el violeta #6216a1. PROHIBIDO cualquier texto, letra, número o "
         "marca de agua."),
+
+    # ── 121 · CORRIGE LA 120 · LOS DOS BRAZOS Y EL POLVO EN VIOLETA ────────────
+    # La 120 gustó pero le faltaban dos cosas: el brazo DERECHO se quedó sin
+    # pintar y las manchas de polvo siguieron oscuras. Aquí SOLO se corrige el
+    # color: la escena no se mueve nada (no se pide dispersión ni cambio de pose,
+    # a diferencia de la 117-120).
+    # Los violetas claros del polvo salen de la paleta que pasó Fernando:
+    # #AD81D7 (violeta claro) y #D9B2FA (el más claro, para los puntos brillantes).
+    (121, ["assets/Prologo/escenas/escena_120.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia EXACTAMENTE IGUAL, cambiando "
+        "SOLO EL COLOR de las dos cosas que se dicen abajo. "
+
+        "══ BLOQUE 1 · NO SE MUEVE NADA ══ "
+        "Esta NO es la escena un instante después: es la MISMA imagen, con los mismos elementos "
+        "en el MISMO SITIO. Copia EXACTAMENTE de la referencia el estilo PIXEL ART 2D de 16 bits "
+        "con sombreado plano y dithering, el encuadre 16:9, la posición de cámara, el plano "
+        "general y lejano, la pared de roca cuarteada, el halo de luz del centro y la penumbra "
+        "de las esquinas. "
+        "Y sobre todo: NO cambies la COMPOSICIÓN. Las manchas de polvo tienen la MISMA forma, el "
+        "MISMO tamaño y la MISMA posición; los trozos sueltos son los MISMOS, en el MISMO sitio "
+        "y con el MISMO giro; los dos agarres de manos están en la MISMA postura. PROHIBIDO "
+        "ABSOLUTAMENTE dispersar más el polvo, mover los trozos, cambiar las poses, añadir o "
+        "quitar elementos. Lo ÚNICO que cambia es el color. "
+        "SIGUE SIN HABER CUERPOS: ni torsos, ni cabezas, ni siluetas de persona. PROHIBIDO "
+        "volver a dibujar figuras humanas. "
+
+        "══ BLOQUE 2 · PRIMER CAMBIO: LOS **DOS** BRAZOS EN VIOLETA ══ "
+        "En la referencia solo uno de los dos brazos quedó pintado de violeta y el otro no. "
+        "AQUÍ LOS DOS BRAZOS SON VIOLETAS, iguales entre sí. "
+        "Cada brazo, con su mano, está PINTADO ENTERO del mismo violeta que ya tiene el brazo "
+        "que sí quedó violeta en la referencia: el hexadecimal #6216a1 (morado profundo y "
+        "saturado). Relleno SÓLIDO Y PLANO que ocupa TODA la silueta del brazo y de la mano, de "
+        "punta a punta. Los dos tienen que quedar del MISMO color y la MISMA intensidad: si uno "
+        "se ve violeta y el otro negro, oscuro o de otro tono, está MAL. "
+        "⚠ NO ES UN AURA NI UN HALO: es el color del propio brazo, por dentro. PROHIBIDO "
+        "ABSOLUTAMENTE dibujar resplandores, contornos de luz, lenguas de llama o chispas "
+        "alrededor de los brazos. PROHIBIDO dejar restos de azul, de rojo o de negro en ellos. "
+
+        "══ BLOQUE 3 · SEGUNDO CAMBIO: EL POLVO, EN VIOLETA CLARO ══ "
+        "En la referencia, las manchas redondeadas de las que sale el polvo siguen siendo "
+        "OSCURAS, casi negras. AQUÍ NO: esas manchas y todo su polvo pasan a ser VIOLETA CLARO. "
+        "· El cuerpo de cada mancha y sus puntitos y cuadraditos: violeta claro, el hexadecimal "
+        "#AD81D7 (un violeta suave, bastante más claro que el de los brazos). "
+        "· Los puntos más brillantes, salpicados entre los demás: un violeta aún más claro, el "
+        "hexadecimal #D9B2FA (casi lila pálido). "
+        "Que las manchas se lean CLARAS sobre el fondo gris oscuro, no oscuras. PROHIBIDO "
+        "ABSOLUTAMENTE dejar negras, grises o casi negras las manchas de polvo o sus partículas: "
+        "si alguna zona de polvo sigue viéndose negra, está MAL. "
+        "· Los TROZOS SUELTOS desperdigados conservan el violeta que ya tienen en la referencia. "
+
+        "══ BLOQUE 4 · LO QUE NO SE TIÑE ══ "
+        "⚠ EL ESCENARIO NO CAMBIA: la pared de roca cuarteada, el halo de luz del centro y la "
+        "penumbra de las esquinas siguen siendo GRISES, blancos y negros exactamente como en la "
+        "referencia. PROHIBIDO pintar de violeta la roca, el halo o el fondo. Los únicos colores "
+        "de la imagen son los violetas #6216a1, #AD81D7 y #D9B2FA, y solo en los brazos, los "
+        "trozos y el polvo. "
+
+        "══ BLOQUE 5 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar figuras humanas, caras u ojos. PROHIBIDO añadir elementos nuevos. "
+        "PROHIBIDO cualquier líquido, mancha o salpicadura. PROHIBIDO cualquier color que no sea "
+        "gris, blanco, negro y los tres violetas indicados. PROHIBIDO cualquier texto, letra, "
+        "número o marca de agua."),
 ]
 
 
