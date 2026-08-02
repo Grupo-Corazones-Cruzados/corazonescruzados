@@ -900,6 +900,28 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     número es el que está dentro. Si solo está en el WhatsApp normal, hay dos salidas: migrar la
     cuenta a WhatsApp Business (la propia app lo ofrece y conserva los chats), o ensayar con otro
     número que no haga falta a diario.</p>
+    <p><strong>✅ Confirmado por Fernando el 2026-08-01: el número sí está en WhatsApp Business.</strong>
+    La coexistencia es posible y el ensayo puede seguir adelante.</p>
+  </div>
+
+  <h3 id="seco">5.6 ter · El ensayo EN SECO — la cuarta verificación</h3>
+  <div class="peligro">
+    <p><span class="et">La primera vez que se corrió, el agente estaba mudo al 100 %.</span> Las seis
+    preguntas contra el canal real de Peters Tours devolvieron <strong>400</strong>: el razonamiento
+    de estilo antiguo es incompatible con forzar el uso de herramienta. Con un cliente escribiendo
+    <strong>no habría salido ni una respuesta</strong>, y ese fallo no lo caza <code>tsc</code>, ni
+    <code>next build</code>, ni una prueba contra la base — solo llamar de verdad a la API.</p>
+  </div>
+  <div class="bien">
+    <p><span class="et">Repetido tras el arreglo: 6 de 6 correctas.</span> Lo más valioso es la
+    segunda: preguntado por un <strong>«tour a Galápagos»</strong>, que Peters Tours no ofrece,
+    <strong>dijo que no lo ofrecen y reorientó a sus rutas reales</strong> — no se inventó nada. El
+    reclamo y el «quiero hablar con una persona» escalaron con el motivo bien redactado.</p>
+    <p><strong>Y el caché confirmado en números:</strong> la primera llamada escribió 10.401 tokens de
+    caché y las cinco siguientes los leyeron. Es la comprobación que la guía dice que nadie hace.</p>
+    <p><code>node scripts/agente-ensayo.mjs &lt;canal&gt; ["pregunta"…]</code> —
+    <strong>ningún número se conecta sin pasarlo</strong>. Aborta si el canal ya tiene número o
+    token, porque ahí mandaría mensajes de verdad.</p>
   </div>
 
   <h3 id="identidad">5.4 · Identidad legal del proveedor</h3>
@@ -1171,6 +1193,10 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>C10, salido de F10: la retención.</strong> Al redactar la política se vio que <code>agente_eventos_webhook</code> guardaba <strong>sin plazo</strong> una copia cruda del contenido de los mensajes. Como prometer un plazo sin borrarlo sería publicar algo falso, primero se escribió el borrado: traza a 30 días, cola cerrada a 14, enganchado al cron nocturno. Comprobado contra la base real con ROLLBACK — sembradas filas de 31 y 29 días, murió solo la de 31. <strong>Las conversaciones no se purgan por tiempo a propósito</strong>: el plazo lo decide la empresa responsable.</td></tr>
     <tr><td>2026-08-01</td><td>Extraídos <code>app/legal/estilos.ts</code> y <code>app/legal/datos.ts</code>: con dos páginas legales, una dirección corregida en una y no en la otra sería una <strong>contradicción publicada</strong>, y esto lo lee un revisor de Meta. Una definición, dos páginas.</td></tr>
     <tr><td>2026-08-01</td><td><strong>Creado el flujo de ensayo <code>lfgonzalezm0</code></strong> (id 23, canal 33) para hacer el alta con el número de GCC antes que con el de un cliente. <strong>Aviso levantado:</strong> hay que confirmar que ese número está en <em>WhatsApp Business</em>; si está en el WhatsApp normal no habrá coexistencia y el único camino se lleva el número del teléfono. Ver §5.6 bis.</td></tr>
+    <tr><td>2026-08-01</td><td>Confirmado por Fernando: <strong>el número +593 99 270 6933 sí está en WhatsApp Business</strong>. La coexistencia es posible y el ensayo puede seguir adelante.</td></tr>
+    <tr><td>2026-08-01</td><td>🚨 <strong>EL ENSAYO EN SECO ENCONTRÓ AL AGENTE MUDO AL 100 %.</strong> Las seis preguntas contra el canal real de Peters Tours devolvieron <strong>400 — «Thinking may not be enabled when tool_choice forces tool use»</strong>. Ni una respuesta habría salido con un cliente escribiendo. <strong>Matriz medida contra la API, no deducida:</strong> con herramienta forzada, <code>budget_tokens</code> da 400 y <code>adaptive</code> no; en Haiku <code>adaptive</code> tampoco existe, así que Haiku corre sin razonamiento — y devuelve el <code>tool_use</code> limpio, que era justo el riesgo por el que se encendió. Arreglado en <code>armarPeticion()</code>.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Repetido el ensayo tras el arreglo: 6 de 6 correctas.</strong> Saludo → responde · «tour a Galápagos» → <strong>dice que no lo ofrecen y reorienta, sin inventarse nada</strong> · pagos y horario → datos exactos del conocimiento · reclamo → <code>escalar_a_humano</code> con el motivo bien redactado · «hablar con una persona» → escala. <strong>Y el caché confirmado en números:</strong> la primera llamada escribió 10.401 tokens y las cinco siguientes los leyeron.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>El ensayo en seco pasa a ser la CUARTA verificación del repo</strong> (<code>scripts/agente-ensayo.mjs</code>), junto a <code>tsc</code>, <code>next build</code> y la base real. <strong>Ningún número se conecta sin pasarlo.</strong> Aborta solo si el canal ya tiene número o token, porque ahí mandaría mensajes de verdad.</td></tr>
   </table>
 </div>
 

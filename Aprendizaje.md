@@ -109,6 +109,42 @@ El tablero vivo es **`plan-agente-ia.html`**; aquí solo el resumen y lo que sig
 | **F11** | Fernando | Verificar el negocio del portafolio de GCC (nombre legal `GONZALEZ MUYULEMA LUIS FERNANDO`, ver `documentos-negocio/DATOS-NEGOCIO.md`). |
 | **F12** | Fernando | App Review + verificación de proveedor de tecnología, para que un cliente pueda darse de alta **por su cuenta**. |
 
+### EL ENSAYO EN SECO ENCONTRÓ AL AGENTE MUDO (2026-08-01) — lo más importante de la sesión
+
+Antes de conectar ningún número se probó el agente **en seco**: preguntas reales por el camino de
+verdad (cola → worker desplegado → runner), leyendo lo que habría contestado sin WhatsApp de por
+medio. Las **seis preguntas devolvieron 400**:
+
+> `Thinking may not be enabled when tool_choice forces tool use`
+
+**El agente habría estado mudo al 100 %** con un cliente real escribiendo. No una respuesta pobre:
+ninguna respuesta. Y no lo caza `tsc`, ni `next build`, ni una prueba contra la base — solo llamar
+de verdad a la API.
+
+**La matriz se midió, no se dedujo** (sonda directa contra la API):
+
+| modelo | razonamiento | `tool_choice: any` |
+|---|---|---|
+| `claude-haiku-4-5` | ninguno | ✅ |
+| `claude-haiku-4-5` | `budget_tokens` | ❌ 400 |
+| `claude-haiku-4-5` | `adaptive` | ❌ 400 «not supported on this model» |
+| `claude-sonnet-5` | `adaptive` | ✅ |
+| `claude-opus-5` | `adaptive` | ✅ |
+
+`adaptive` sí convive con forzar herramienta; `budget_tokens` no. Como la herramienta **es** la
+decisión, forzarla no es negociable: lo que se cae es el razonamiento, y solo en esa rama.
+
+**Repetido tras el arreglo, 6 de 6 correctas:** saludo → responde; pregunta por un servicio que no
+existe («tour a Galápagos») → **dice que no lo ofrecen y reorienta, sin inventarse nada**; pagos y
+horario → datos exactos del conocimiento; reclamo → `escalar_a_humano` con el motivo bien redactado;
+«necesito hablar con una persona» → escala. Y el caché confirmado: la primera llamada escribió
+10.401 tokens y las cinco siguientes los leyeron.
+
+> **Lo que queda como regla:** el ensayo en seco (`scripts/agente-ensayo.mjs`) es la **cuarta
+> verificación** del repo, junto a `tsc`, `next build` y la base real. **Ningún número se conecta
+> sin pasarlo.** Y ante cualquier duda sobre el contrato de la API, se escribe una sonda que pruebe
+> la matriz: deducirlo ha fallado tres veces de tres (mínimos de caché, `effort`, y esto).
+
 ### EL ROL LEGAL ES EL REVÉS DEL DE SIEMPRE (F10, 2026-08-01)
 
 Lo que hacía obligatorio F10 no era publicar más texto: era que **el rol estaba invertido**.

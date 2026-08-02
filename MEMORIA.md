@@ -394,6 +394,18 @@ Stack estándar de la casa, con particularidades de este repo:
     avance) y un **registro de los datos que va pidiendo Meta**. Regla: cuando un formulario de Meta
     pida algo no previsto, **se añade la fila en el momento** en su §5. Ningún valor secreto se
     escribe ahí — solo que existe, dónde vive y desde cuándo.
+  - **🧪 EL ENSAYO EN SECO (`scripts/agente-ensayo.mjs`) — la CUARTA verificación del repo.**
+    `node scripts/agente-ensayo.mjs <canal> ["pregunta"…]`. Encola preguntas reales por el
+    camino de verdad (cola → worker desplegado → runner) y **lee lo que el agente habría
+    contestado**, aprovechando que `mandar()` registra el saliente con su texto aunque el envío
+    falle por no haber token. **Aborta si el canal ya tiene número o token** — ahí mandaría
+    mensajes de verdad. Enciende el agente el tiempo del ensayo, lo restaura, borra lo que crea
+    y compara el inventario antes/después.
+    - **La primera vez que se corrió encontró que el agente estaba MUDO al 100 %** (ver lección
+      13). Ese fallo no lo caza `tsc`, ni `next build`, ni la base de datos: solo llamar de
+      verdad a la API. **Ningún número se conecta sin pasar por aquí.**
+    - Confirmado de paso que **el prefijo cachea**: primera llamada escribe 10.401 tokens de
+      caché, las cinco siguientes los leen.
   - **🧠 LECCIONES TÉCNICAS de esta construcción (no volver a tropezar):**
     1. **`ON CONFLICT` sobre un índice único PARCIAL exige repetir su condición.**
        `wa_message_id` tiene índice `WHERE wa_message_id IS NOT NULL`; sin ese `WHERE` en el
@@ -433,6 +445,25 @@ Stack estándar de la casa, con particularidades de este repo:
     12. **Medir, no razonar, en la interfaz.** La burbuja de avisos se salía por arriba de la
         pantalla (`top: -41`) y solo se vio midiendo con puppeteer + Chrome del sistema
         (`executablePath` al Chrome de `/Applications`: puppeteer no trae el suyo descargado).
+    13. **⚠️ EL RAZONAMIENTO DE ESTILO ANTIGUO NO CONVIVE CON FORZAR HERRAMIENTA.** Con
+        `tool_choice: {type:'any'}`, `thinking: {type:'enabled', budget_tokens}` devuelve
+        **400 «Thinking may not be enabled when tool_choice forces tool use»**. Como el agente
+        fuerza herramienta SIEMPRE —la herramienta *es* la decisión—, esto lo dejaba **mudo al
+        100 %**. Matriz medida contra la API, no deducida:
+        | modelo | razonamiento | `tool_choice: any` |
+        |---|---|---|
+        | `claude-haiku-4-5` | ninguno | ✅ |
+        | `claude-haiku-4-5` | `budget_tokens` | ❌ 400 |
+        | `claude-haiku-4-5` | `adaptive` | ❌ 400 «not supported on this model» |
+        | `claude-sonnet-5` | `adaptive` | ✅ |
+        | `claude-opus-5` | `adaptive` | ✅ |
+        **`adaptive` sí convive; `budget_tokens` no.** Resuelto en `armarPeticion()`. Y el
+        motivo original de encender el razonamiento —que Claude 5 escribiera la llamada como
+        texto visible— lo cubre el propio forzado: la sonda muestra `tool_use` limpio.
+    14. **Medir, no razonar, TAMBIÉN en la API.** Las lecciones 5, 6 y 13 salieron todas de
+        llamar de verdad. Ante una duda de contrato de la API, se escribe una sonda de 30
+        líneas que prueba la matriz y se lee el resultado. Deducirlo del cambio de versión o
+        de la documentación general ha fallado tres veces de tres.
   - **Contexto completo y errores a no repetir:** `guia-coexistencia-proveedor.html` (raíz) —
     incluye la sección «El agente por dentro» con los prompts y el conocimiento reales.
     Preguntas abiertas y plan: `Aprendizaje.md` → objetivo del 2026-08-01.
