@@ -91,9 +91,14 @@ const DURACIONES := {
 	76: 2,
 	77: 2.5,
 	63: 2.5,
-	65: 2,
+	# El verso 12 sin montaje: la 84 y la 65 abren con 3 s cada una y los cuatro
+	# fotogramas de la caída van a 1 s. 3 + 3 + 4 = los 10 s del verso.
+	65: 3,
 	84: 3,
-	95: 0.5,
+	94: 1,
+	95: 1,
+	96: 1,
+	97: 1,
 	105:0.2,
 	106: 0.2,
 	98: 0.2,
@@ -286,26 +291,15 @@ const CAIDA := {
 	"desde_verso": 12,         # "al fondo del mundo, a la noche bajaron."
 	# Estampas de la primera mitad del verso, a pantalla completa y en este orden.
 	# "seg" es lo que dura cada una; la ÚLTIMA se queda hasta que entra el montaje.
-	# ⚠ Todas menos la ÚLTIMA necesitan su "seg": la que no lo lleva se estira
-	#   hasta que entra el montaje, y si no es la última, las de detrás nunca
-	#   llegan a verse. Por eso la 65 pasó a llevarlo cuando se sumaron las
-	#   cuatro de la caída.
-	"portadas": [
-		{ "escena": 84, "seg": 2.0 },
-		{ "escena": 65, "seg": 2.0 },
-		# Los cuatro fotogramas de la caída, a un segundo cada uno, justo antes
-		# del montaje.
-		{ "escena": 94, "seg": 1.0 },
-		{ "escena": 95, "seg": 1.0 },
-		{ "escena": 96, "seg": 1.0 },
-		{ "escena": 97 },          # se queda hasta que entra el montaje
-	],
-	# Retrasado de 92,6 a 96,6 para hacer sitio a los cuatro fotogramas de arriba
-	# (decisión de Fernando). ⚠ El montaje ya NO entra con "a la noche bajaron", y
-	# le quedan 1,9 s hasta el verso 13 en vez de 5,9.
+	"portadas": [],
 	"t_montaje": 96.6,
-	# El orden es el orden en que se van colocando. La ÚLTIMA es la del centro.
-	"escenas": [95, 105, 106, 101, 102, 98, 107, 96, 97, 93],
+	# ⛔ MONTAJE RETIRADO (decisión de Fernando). Con la lista vacía, `_caida_n`
+	# queda en 0 y `_procesar_caida` no pinta nada: el verso 12 lo llevan las
+	# estampas normales de TRAMOS, una detrás de otra a pantalla completa.
+	# El mosaico anterior era: [95, 105, 106, 101, 102, 98, 107, 96, 97, 93].
+	# Para recuperarlo basta con devolver esa lista aquí (y quitar del tramo del
+	# verso 12 las estampas que ahora hacen su papel).
+	"escenas": [],
 
 	# CÓMO SE REPARTEN:
 	#   Todas se van colocando ALREDEDOR del centro, girando en el sentido del reloj
@@ -401,11 +395,19 @@ const TRAMOS := [
 	# Verso 12 ("a la noche bajaron") · manda la CAÍDA (la cinta vertical continua).
 	# Este tramo existe solo para MARCAR el corte con el verso anterior; su estampa
 	# queda debajo de la cinta, que la tapa mientras dura el descenso.
-	{ "desde_verso": 12, "escenas": [94] },
+	# Verso 12 ("a la noche bajaron") · sin montaje: la caída se cuenta con
+	# estampas seguidas a pantalla completa. La 84 y la 65 abren (3 s cada una,
+	# fijadas en DURACIONES) y detrás entran los cuatro fotogramas de la caída a
+	# UN SEGUNDO clavado. 3 + 3 + 4 = 10 s = el hueco exacto del verso, así que la
+	# 97 remata justo cuando entra el verso 13 y la cadencia no se rompe.
+	{ "desde_verso": 12, "escenas": [
+		84, 65, 94, 95, 96, 97
+	] },
 
+	# Verso 13 · siguen los otros cuatro fotogramas, al mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
 		111, 112, 113, 114
-	], "seg": 2  },
+	], "seg": 1  },
 ]
 
 
