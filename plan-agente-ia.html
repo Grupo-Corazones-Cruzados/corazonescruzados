@@ -105,8 +105,8 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C9 · El primer alta — y ahora se ensaya con el número de GCC</p>
-    <p class="quien"><strong>La clave de IA de Peters Tours ya está guardada</strong> (2026-08-01), así que solo le falta el alta del número. Y antes de tocarlo se ensaya con un canal propio: <strong>flujo «lfgonzalezm0»</strong>, número de GCC. Detalle en <a href="#c9" style="color:var(--morado)">§9</a>.</p>
+    <p class="paso">F11 · Verificar el negocio — es lo único que falta para el alta</p>
+    <p class="quien">El código está entero y probado: el agente decide bien en seco (9 de 9 y 5 de 5), la ventana de Meta abre y el <code>config_id</code> es válido. <strong>Lo único que falta es que el portafolio de GCC esté verificado</strong> — sin eso Meta no deja registrar ningún número, ni siquiera el propio. Ver <a href="#c9" style="color:var(--morado)">§5.7</a>.</p>
     <div class="barra"><span style="width:87%"></span></div>
     <div class="barra-pie"><span>20 de 23 pasos terminados</span><span>87%</span></div>
   </div>
@@ -333,9 +333,12 @@
     </tr>
 
     <tr>
-      <td>F11</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>F11</td><td><span class="est e-curso">En curso</span></td>
       <td>
-        <span class="t">Verificar el negocio del portafolio de GCC</span>
+        <span class="t">Verificar el negocio del portafolio de GCC ← BLOQUEA EL ALTA</span>
+        <span class="d" style="color:var(--rojo)"><strong>Comprobado el 2026-08-02: sin esto no se
+        puede dar de alta ningún número, ni siquiera el propio.</strong> La ventana de Meta responde
+        «no puede registrar clientes en este momento».</span>
         <span class="d">Portafolio <code>1000698870638078</code> → Centro de seguridad → Verificación
         del negocio. Es <strong>requisito previo</strong> de la verificación de proveedor de
         tecnología, y faltaba en este plan: en la guía constan verificados los portafolios de
@@ -520,7 +523,7 @@
         <code>lfgonzalezm0</code> (id 23, canal 33), creado el 2026-08-01. Si el alta sale mal, el
         que se queda sin WhatsApp Web es GCC, no Peters Tours.</span>
       </td>
-      <td>C7, C8, F8, F9, F13</td>
+      <td>C7, C8, F8, F9, F13, <strong>F11</strong></td>
     </tr>
 
     <tr>
@@ -863,11 +866,20 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><td><strong>Encender el agente</strong></td><td>Fernando</td>
         <td>No se enciende solo, a propósito. Estudio → Parámetros, después de probar con un mensaje.</td></tr>
   </table>
-  <div class="ojo">
-    <p><span class="et">Por qué el alta debe funcionar aunque falte el App Review:</span> con acceso
-    estándar, el Embedded Signup solo atiende a usuarios que <strong>tienen un rol en la app</strong>.
-    Fernando creó la app de GCC, así que lo tiene. Cuando el alta la haga <em>un cliente por su
-    cuenta</em>, hará falta acceso avanzado — y por eso F12 sigue en el plan.</p>
+  <div class="peligro">
+    <p><span class="et">❌ ESTA SUPOSICIÓN ERA FALSA, y lo demostró el primer intento real
+    (2026-08-02).</span> Aquí decía que el alta debía funcionar aun sin App Review, porque con
+    acceso estándar el Embedded Signup atiende a quien <strong>tiene un rol en la app</strong>, y
+    Fernando la creó. <strong>No es así.</strong> La ventana de Meta abre y responde:</p>
+    <p style="text-align:center;margin:14px 0"><strong>«Grupo Corazones Cruzados no puede registrar
+    clientes en este momento»</strong></p>
+    <p>Tener un rol en la app da acceso al <em>diálogo</em>, no al <em>alta</em>. Para dar de alta
+    cualquier número —incluso uno propio— la app tiene que pertenecer a un <strong>negocio
+    verificado</strong>. Es decir: <strong>F11 no es un paso «para después», es el que
+    desbloquea C9</strong>, y con él F12.</p>
+    <p><span class="et">Lo que sí se ganó del intento:</span> la ventana ABRE, el
+    <code>config_id</code> es válido, los dominios están bien y la app está publicada. Lo único que
+    falta es la verificación. El camino técnico está entero.</p>
   </div>
   <div class="peligro">
     <p><span class="et">La WABA de Peters Tours es de tipo SMB.</span> Admite <strong>cero socios</strong>
@@ -1198,6 +1210,7 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>Repetido el ensayo tras el arreglo: 6 de 6 correctas.</strong> Saludo → responde · «tour a Galápagos» → <strong>dice que no lo ofrecen y reorienta, sin inventarse nada</strong> · pagos y horario → datos exactos del conocimiento · reclamo → <code>escalar_a_humano</code> con el motivo bien redactado · «hablar con una persona» → escala. <strong>Y el caché confirmado en números:</strong> la primera llamada escribió 10.401 tokens y las cinco siguientes los leyeron.</td></tr>
     <tr><td>2026-08-01</td><td><strong>El ensayo en seco pasa a ser la CUARTA verificación del repo</strong> (<code>scripts/agente-ensayo.mjs</code>), junto a <code>tsc</code>, <code>next build</code> y la base real. <strong>Ningún número se conecta sin pasarlo.</strong> Aborta solo si el canal ya tiene número o token, porque ahí mandaría mensajes de verdad.</td></tr>
     <tr><td>2026-08-02</td><td>🐛 <strong>El botón del alta no abría nada, y la causa era un callback <code>async</code>.</strong> <code>FB.login</code> valida el tipo del argumento y lanza <em>«Expression is of type asyncfunction, not function»</em> ANTES de abrir la ventana — excepción del propio SDK, invisible salvo en consola. Corregido pasando una función normal que dispara aparte el trabajo asíncrono. De camino se arreglaron dos <code>return</code> mudos y se retiró una sonda de emergentes que <strong>causaba</strong> el bloqueo que pretendía detectar: los navegadores permiten una sola emergente por gesto y la sonda se la gastaba. También quedó publicada la app de Meta, que estaba en modo desarrollo.</td></tr>
+    <tr><td>2026-08-02</td><td>🚧 <strong>La ventana del alta ABRE, y Meta la corta: «Grupo Corazones Cruzados no puede registrar clientes en este momento».</strong> <strong>Cae una suposición del plan:</strong> se daba por hecho que con acceso estándar bastaba tener un rol en la app. No basta — el rol da acceso al diálogo, no al alta. Para registrar cualquier número la app debe pertenecer a un <strong>negocio verificado</strong>. <strong>F11 deja de ser «para después» y pasa a ser el bloqueante de C9.</strong> Lo bueno: el camino técnico quedó entero y comprobado —ventana, <code>config_id</code>, dominios y app publicada—; solo falta el trámite.</td></tr>
   </table>
 </div>
 

@@ -104,7 +104,8 @@ El tablero vivo es **`plan-agente-ia.html`**; aquí solo el resumen y lo que sig
 **Lo que falta:**
 | | Quién | Qué |
 |---|---|---|
-| **C9** | los dos | El alta del número. **Primero de ensayo con el número de GCC** (flujo `lfgonzalezm0`, id 23) y después el de Peters Tours (flujo 10, ya sembrado con sus 14 bloques y 3 prompts). ⚠️ Antes hay que confirmar que el número de ensayo está en **WhatsApp Business**, no en el WhatsApp normal: sin eso no hay coexistencia y el único camino se lleva el número del teléfono. |
+| **F11** | Fernando | ⛔ **BLOQUEA C9.** Verificar el negocio del portafolio de GCC. Comprobado el 2026-08-02: sin la verificación, Meta no permite dar de alta **ningún** número, ni el propio — la ventana abre y responde «no puede registrar clientes en este momento». La suposición de que bastaba tener un rol en la app **era falsa**. |
+| **C9** | los dos | El alta del número, en cuanto F11 esté. **Primero de ensayo con el número de GCC** (flujo `lfgonzalezm0`, id 23) y después el de Peters Tours (flujo 10, ya sembrado con sus 14 bloques y 3 prompts). ⚠️ Antes hay que confirmar que el número de ensayo está en **WhatsApp Business**, no en el WhatsApp normal: sin eso no hay coexistencia y el único camino se lleva el número del teléfono. |
 | **F10** | Fernando | Solo queda **cambiar las tres URLs** en la configuración básica de la app de Meta, que siguen apuntando a `/legal`. Las páginas ya están publicadas. |
 | **F11** | Fernando | Verificar el negocio del portafolio de GCC (nombre legal `GONZALEZ MUYULEMA LUIS FERNANDO`, ver `documentos-negocio/DATOS-NEGOCIO.md`). |
 | **F12** | Fernando | App Review + verificación de proveedor de tecnología, para que un cliente pueda darse de alta **por su cuenta**. |
