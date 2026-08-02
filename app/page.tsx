@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
 import CabeceraSitio from '@/components/sitio/CabeceraSitio';
-import IdentidadNegocio from '@/components/landing/IdentidadNegocio';
+import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
@@ -4176,12 +4176,14 @@ export default function LandingPage() {
           </p>
         )}
 
-        {/* Quién está detrás de esto: nombre legal, RUC, dirección y contacto, visibles
-            sin iniciar sesión. Lo pidió indirectamente Meta al rechazar la verificación
-            del negocio porque «no puede determinar que pertenezca a un negocio real».
-            Ver `components/landing/IdentidadNegocio.tsx`. */}
-        <IdentidadNegocio />
       </footer>
+
+      {/* El MISMO pie que el resto del sitio (decisión de Fernando, 2026-08-02). Va DESPUÉS
+          del pie pixel, no dentro: `PieSitio` pinta su propio `<footer>` y anidar dos es
+          marcado inválido.
+          El pixel se queda porque lleva el altavoz del chat del mundo y el copyright que se
+          va con el viento — son parte de la escena, no del pie corporativo. */}
+      <PieSitio />
 
       {/* ====== MODAL DE ENTRADA ====== */}
       {showEntryModal && (

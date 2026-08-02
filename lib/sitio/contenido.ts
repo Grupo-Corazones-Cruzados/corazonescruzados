@@ -44,8 +44,8 @@ export const NAVEGACION = [
   { href: '/', label: 'Inicio' },
   // La ruta sigue siendo /recursos para no romper enlaces ya publicados; la etiqueta
   // dice lo que de verdad contiene.
-  { href: '/negocio', label: 'Qué hacemos' },
-  { href: '/recursos', label: 'El proyecto' },
+  { href: '/negocio', label: 'Negocios' },
+  { href: '/recursos', label: 'Desarrollo Humano' },
   { href: '/contacto', label: 'Contacto' },
 ] as const;
 

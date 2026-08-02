@@ -53,7 +53,7 @@ export default function NegocioPage() {
         <Contenedor className="relative py-24 sm:py-32 text-center">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#7B5FBF]/30 bg-[#7B5FBF]/10 px-3.5 py-1.5 text-[12.5px] text-[#c4b5fd]">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Un proyecto de desarrollo humano · Guayaquil, Ecuador
+            Un proyecto de desarrollo humano
           </p>
           <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-white tracking-tight max-w-3xl mx-auto">
             Primero las personas.
