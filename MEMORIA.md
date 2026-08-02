@@ -335,12 +335,81 @@ Stack estándar de la casa, con particularidades de este repo:
       código postal que no consta en ningún documento— y se corrigió el 2026-08-01.
     - Los **PDF de `documentos-negocio/` están en `.gitignore`** (datos personales, historial de git
       permanente); solo se versiona el `DATOS-NEGOCIO.md`.
+  - **🧱 QUÉ SE CONSTRUYÓ (2026-08-01) — el agente está COMPLETO en código y desplegado.**
+    Todo vive en `lib/agente/`, `app/api/agente/`, `app/api/admin/flows/[id]/agente/` y
+    `components/dashboard/flows/Agente*.tsx`. **Migración `sql/migrations/027_agente_ia.sql`**
+    (9 tablas `agente_*`), aplicada en producción.
+    - **EL TENANT ES EL FLUJO.** Un flujo de tipo `ai_agent` = un canal = un número = una empresa
+      cliente. El aislamiento sale del modelo de datos, no de acordarse de filtrar.
+      `agente_canales.phone_number_id` es **único** ⇒ el webhook resuelve el cliente con lo que
+      manda Meta en `metadata`.
+    - **Módulos:** `cifrado.ts` (AES-256-GCM, cada secreto **atado a su canal y campo** por AAD —
+      un token movido de una fila a otra NO descifra) · `firma.ts` (HMAC del webhook) ·
+      `entrante.ts` (lectura de la carga de Meta, **puro**) · `ingesta.ts` · `cola.ts` ·
+      `canales.ts` · `modelos.ts` (tabla de capacidades) · `conocimiento.ts` (**puro**) ·
+      `herramientas.ts` (**puro**) · `anthropic.ts` · `whatsapp.ts` · `runner.ts` · `meta.ts` ·
+      `bandeja.ts`.
+    - **Pantallas:** `AgenteFlowWorkspace` (rail de 5 secciones) + `AgenteBandeja` +
+      `AgenteConexion`. Montadas desde `FlowDetail` para `type === 'ai_agent'`.
+    - **Worker:** `/api/agente/procesar` + `scripts/agente-worker.mjs`. Servicio
+      **`agente-worker`** en Railway (`Servidor-GCC`), ya creado y corriendo.
+    - **Eliminado el tipo de flujo `chatbot`** (iba por YCloud). Sus tablas no existían.
+  - **⚙️ PARÁMETROS ESTÁNDAR de todo agente nuevo** (los de la guía, medidos en producción):
+    modelo `claude-haiku-4-5`, `max_tokens` 4096, **debounce 8 s**, **ventana 40 mensajes**,
+    tres herramientas con `tool_choice: "any"`, y el prompt ensamblado como
+    `[perfil (caché) · conocimiento (caché) · reglas]`. **El orden importa**: lo estable primero.
+  - **🔑 SECRETOS Y VARIABLES (Railway, servicio `corazonescruzados`):** `WHATSAPP_APP_ID`
+    `1426486649348985` · `WHATSAPP_ES_CONFIG_ID` `1070995845869940` · `WHATSAPP_APP_SECRET` ·
+    `WHATSAPP_TOKEN` (del usuario del sistema de GCC — **no** es el que envía los mensajes de los
+    clientes) · `WHATSAPP_VERIFY_TOKEN` · **`AGENTE_CLAVE_MAESTRA`** (⚠️ si se pierde, los
+    secretos cifrados de los clientes **no se recuperan** y hay que rehacer cada alta).
+    El worker usa `CRON_TOKEN` + `APP_URL` + `AGENTE_INTERVALO_MS`.
+    - Webhook dado de alta y **suscrito a `messages`** — verificado contra la Graph API.
   - **📋 TABLERO DEL PROYECTO: `plan-agente-ia.html`** (raíz, creado 2026-08-01). Documento **vivo**
     con los dos carriles de trabajo —**F1–F11** los pasos de Fernando en Meta, **C1–C9** los de
     desarrollo—, sus dependencias, **en qué paso vamos** (banner arriba, hay que actualizarlo en cada
     avance) y un **registro de los datos que va pidiendo Meta**. Regla: cuando un formulario de Meta
     pida algo no previsto, **se añade la fila en el momento** en su §5. Ningún valor secreto se
     escribe ahí — solo que existe, dónde vive y desde cuándo.
+  - **🧠 LECCIONES TÉCNICAS de esta construcción (no volver a tropezar):**
+    1. **`ON CONFLICT` sobre un índice único PARCIAL exige repetir su condición.**
+       `wa_message_id` tiene índice `WHERE wa_message_id IS NOT NULL`; sin ese `WHERE` en el
+       `ON CONFLICT`, Postgres falla con *«no unique or exclusion constraint matching»* y la
+       ingesta entera se cae. Lo mismo aplica a la cola.
+    2. **`tsc` limpio NO basta en este repo.** `TokenPayload extends JWTPayload`, que lleva
+       **índice abierto**, así que `user.id` (inventado; es `user.userId`) typechequea como
+       `unknown` y pasa. Y `gcc_world.users` **no tiene columna `name`** — son `first_name` y
+       `last_name`. Los dos fallos solo salen **ejecutando**.
+    3. **Un `route.ts` de Next SOLO puede exportar manejadores.** Exportar un ayudante compila
+       con `tsc` y **rompe el `next build`** con un error de tipos opaco. Los ayudantes van a
+       `lib/` (por eso existe `lib/agente/bandeja.ts`).
+    4. **Firmas de los componentes del repo:** la columna de `PixelDataTable` se llama
+       **`header`**, no `label`; `PixelSelect` recibe **`options`** como prop, no `<option>`
+       como hijos.
+    5. **El mínimo de caché de prompt NO crece con la generación:** 4.096 en Haiku 4.5, 1.024 en
+       Sonnet 5, **512 en Opus 5**. Por debajo **no cachea y la API no avisa**: se paga el prompt
+       entero en cada mensaje. Se comprueba mirando `tokens_cache_lectura`.
+    6. **Parámetros por modelo:** `output_config.effort` **da 400 en Haiku 4.5**;
+       `temperature`/`top_p`/`top_k` los **rechaza toda la familia Claude 5**. Por eso la
+       petición se arma desde `modelos.ts` y un modelo desconocido cae a un perfil conservador.
+    7. **Comprobar `stop_reason === 'refusal'` ANTES de leer `content`**, y ramificar por
+       `stop_reason`, **nunca** por `stop_details`, que puede ser `null` incluso en un rechazo.
+    8. **Con el razonamiento apagado, la familia Claude 5 puede escribir la llamada a la
+       herramienta como TEXTO VISIBLE.** Nunca se ejecuta y no hay error: fallo silencioso. Se
+       detecta (no hay bloque `tool_use`) y se trata como fallo explícito.
+    9. **`strict: true` va en la DEFINICIÓN de la herramienta**, no en `tool_choice`, y exige
+       `additionalProperties: false` + `required`.
+    10. **La API pública de Railway SÍ expone lo que la CLI no.** `serviceInstanceUpdate` acepta
+        `startCommand` y `cronSchedule`, y se autentica con el token que la CLI ya guarda en
+        `~/.railway/config.json`. Así se creó entero el servicio `agente-worker` sin tocar el
+        panel. **Se corrigió el comentario de `scripts/frequent-cron.mjs`**, que lo daba por
+        imposible. Lo que sigue siendo cierto es que **no** se puede por `railway.json`: afectaría
+        también al servicio web y lo convertiría en cron.
+    11. **`railway variables --set-from-stdin`** crea un secreto sin que su valor pase por la
+        terminal, el historial de shell ni la conversación. Es la forma correcta.
+    12. **Medir, no razonar, en la interfaz.** La burbuja de avisos se salía por arriba de la
+        pantalla (`top: -41`) y solo se vio midiendo con puppeteer + Chrome del sistema
+        (`executablePath` al Chrome de `/Applications`: puppeteer no trae el suyo descargado).
   - **Contexto completo y errores a no repetir:** `guia-coexistencia-proveedor.html` (raíz) —
     incluye la sección «El agente por dentro» con los prompts y el conocimiento reales.
     Preguntas abiertas y plan: `Aprendizaje.md` → objetivo del 2026-08-01.

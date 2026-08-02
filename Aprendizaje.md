@@ -7,7 +7,7 @@
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · 🔎 EN APRENDIZAJE
+## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · ✅ 98% — CÓDIGO COMPLETO Y DESPLEGADO, falta conectar el primer número
 
 **Rol asumido:** *arquitecto de integraciones + backend multi-tenant* — el problema no es "hacer un
 bot", es montar la **infraestructura de proveedor ante Meta** y el aislamiento por cliente. La parte
@@ -82,6 +82,56 @@ sistema probado, y el hallazgo del documento aplica igual aquí: *"un canal = un
 un canal es exactamente un tenant"*. Así el aislamiento por cliente sale del modelo de datos, no de
 un filtro en cada consulta.
 
+### DÓNDE QUEDÓ AL CERRAR EL 2026-08-01 (18 de 22 pasos)
+
+El tablero vivo es **`plan-agente-ia.html`**; aquí solo el resumen y lo que sigue abierto.
+
+**Hecho y verificado en producción:**
+- **Meta (F1–F9):** app `1426486649348985` en el portafolio de GCC, producto WhatsApp,
+  configuración básica, Embedded Signup `1070995845869940` con plantilla de 60 días, JSSDK
+  habilitado, usuario del sistema con token permanente, **webhook dado de alta y suscrito a
+  `messages`** (comprobado contra la Graph API, no de palabra), y las seis variables en Railway.
+- **Código (C1–C8):** esquema, cifrado, webhook + cola, runner, Estudio, bandeja, pantalla de
+  alta y worker. **Cadena comprobada de punta a punta contra producción:** trabajo encolado →
+  recogido por el worker desplegado **en 5 segundos** → runner → escalado correcto → constancia
+  en el panel.
+- **F13:** servicio `agente-worker` creado y corriendo en Railway, **sin tocar el panel**.
+
+**Lo que falta:**
+| | Quién | Qué |
+|---|---|---|
+| **C9** | los dos | El alta del número de Peters Tours (flujo 10, «Diego Castillo»). Su canal **ya está sembrado** con los 14 bloques y los 3 prompts reales, extraídos del HTML de la guía. |
+| **F10** | Fernando | Políticas legales en el dominio de GCC, describiéndolo como **encargado del tratamiento** y al cliente como responsable. Hoy `/legal` lo dice al revés. Es el cambio conceptual más importante y es **obligatorio antes del App Review**. |
+| **F11** | Fernando | Verificar el negocio del portafolio de GCC (nombre legal `GONZALEZ MUYULEMA LUIS FERNANDO`, ver `documentos-negocio/DATOS-NEGOCIO.md`). |
+| **F12** | Fernando | App Review + verificación de proveedor de tecnología, para que un cliente pueda darse de alta **por su cuenta**. |
+| — | Fernando | Comprobar en el SRI que el nombre comercial ya quedó registrado en el establecimiento 001. |
+
+### EL FALLO DE LA GUÍA, RESUELTO POR DISEÑO (lo más valioso de la sesión)
+
+En Peters Tours, `reglas_negocio` lleva **escrita a mano** la lista de bloques `[PENDIENTE]`:
+«pagos, cambios y reclamos, y horario de atención». El cliente ya rellenó pagos y horario, así
+que **el agente escala a una persona preguntas que sabe contestar**, y nadie se entera.
+
+Aquí esa lista **se calcula** del conocimiento (`avisoDePendientes()` en `conocimiento.ts`) y se
+inyecta en las reglas al ensamblar el prompt. Si el cliente rellena un bloque, la instrucción de
+escalar desaparece sola. Al sembrar Peters Tours se quitó la lista a mano; el cálculo real dice
+hoy **solo «cambios y reclamos»**.
+
+Regla general que deja: **un dato derivable no se guarda ni se escribe a mano** — el estado
+«sin rellenar» de un bloque, los pendientes del prompt y los avisos del Estudio se calculan
+todos, por el mismo motivo.
+
+### CÓMO SE PROBÓ (nada se dio por bueno sin ejecutar)
+
+~150 comprobaciones en total, todas contra la base **real** en transacción con `ROLLBACK`,
+verificando el inventario antes y después. Lo que cazaron y no habría cazado ninguna revisión
+a ojo: el `ON CONFLICT` sobre índice parcial, `users.name` inexistente, `user.id` en vez de
+`userId`, el ayudante exportado desde un `route.ts`, y la burbuja saliéndose de la pantalla.
+
+**Tres herramientas distintas cazan fallos distintos:** `tsc` (tipos), `next build`
+(restricciones de Next), y **ejecutar contra la base** (todo lo demás). Ninguna sustituye a las
+otras.
+
 ### Preguntas y respuestas
 
 #### P1 — ¿Se reescribe el agente desde cero o se porta el de Peters Tours? · ✅ Resuelta — SE PORTA LA ARQUITECTURA
@@ -131,13 +181,16 @@ un filtro en cada consulta.
 - ⚠️ **Comprobar que la app quedó en el portafolio de GCC** (`1000698870638078`): se elige al crear
   y **no se cambia después**. Si quedó en otro, hay que rehacerla ahora, no más tarde.
 
-#### P6 — ¿Cómo corre el worker en este repo? · 🔎 Investigando (propuesta lista)
+#### P6 — ¿Cómo corre el worker en este repo? · ✅ Resuelta — servicio aparte, ya desplegado
 - **Por qué importa:** el chat necesita responder en 2–3 s. El cron actual pasa **cada ~10 minutos**:
   serviría para campañas, **no para conversar**.
 - **Opciones:** (a) servicio worker aparte en Railway con bucle de 5 s, como en Peters Tours;
   (b) `scripts/frequent-cron.mjs` con un pase corto adicional; (c) procesar en el propio webhook tras
   responder 200 (**descartado**: en serverless el proceso puede morir al devolver la respuesta).
-- **Respuesta:** _(pendiente de confirmar (a))_
+- **Respuesta (2026-08-01): (a), y ya está funcionando.** Servicio `agente-worker` en Railway con
+  bucle de 5 s. Reutiliza `CRON_TOKEN` en vez de un secreto propio. Los trabajos se procesan **en
+  serie**: cada corrida es una llamada al modelo con la clave del cliente, y varias a la vez se
+  comen su límite de uso de golpe.
 
 ### La ARQUITECTURA ESTÁNDAR del agente (documento actualizado 2026-08-01, sección 6)
 El usuario amplió `guia-coexistencia-proveedor.html` con «El agente por dentro»: es **la norma que
