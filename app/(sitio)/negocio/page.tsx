@@ -18,6 +18,7 @@
 import type { Metadata } from 'next';
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { SITIO, SERVICIOS, CLIENTES, PUBLICOS } from '@/lib/sitio/contenido';
+import { RAZON_SOCIAL } from '@/lib/negocio/datos';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
   BotonPrimario, BotonSecundario, conNegritas,
@@ -200,6 +201,50 @@ export default function NegocioPage() {
               className="mt-4 inline-flex items-center gap-1.5 text-[13.5px] text-[#a78bfa] hover:text-white transition-colors">
               Leer la política del servicio <ArrowRight className="w-3.5 h-3.5" />
             </a>
+          </Tarjeta>
+        </div>
+      </Seccion>
+
+      {/* ── IDENTIDAD ───────────────────────────────────────────────────────── */}
+      {/* ⚠️ ESTA SECCIÓN NO PUEDE FALTAR DE ESTA PÁGINA. `/negocio` es la URL declarada a
+          Meta como sitio del negocio, y su verificación se rechazó una vez con «no puede
+          determinar que pertenezca a un negocio real». Un revisor que abre esto tiene que
+          poder ver quién está detrás **y comprobarlo por su cuenta**.
+          Se perdió sin querer al reorganizar la página por públicos, y se detectó al
+          comprobar el HTML compilado antes de publicar. El RUC seguía en los datos
+          estructurados, que un revisor humano no lee. */}
+      <Seccion id="identidad">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
+          <TituloSeccion
+            etiqueta="Identidad legal"
+            titulo="Quién está detrás de esto"
+            entradilla="Somos un negocio registrado en Ecuador, y puedes comprobarlo tú mismo sin fiarte de esta página."
+          />
+          <Tarjeta>
+            <dl className="space-y-3.5">
+              {[
+                ['Razón social', RAZON_SOCIAL],
+                ['Nombre comercial', SITIO.nombre],
+                ['RUC', SITIO.ruc],
+                ['Domicilio', SITIO.direccion],
+                ['Correo', SITIO.correo],
+              ].map(([k, v]) => (
+                <div key={k} className="grid sm:grid-cols-[130px_1fr] gap-1 sm:gap-3">
+                  <dt className="text-[13px] text-white/35">{k}</dt>
+                  <dd className="text-[13.5px] text-white/75 leading-relaxed break-words">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-6 pt-5 border-t border-white/[0.07] text-[13px] leading-relaxed text-white/45">
+              El registro es <strong className="text-white/70 font-semibold">público y sin clave</strong>: en la{' '}
+              <a href="https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc"
+                target="_blank" rel="noopener noreferrer"
+                className="text-[#a78bfa] hover:text-white underline transition-colors">
+                Consulta de RUC del SRI
+              </a>{' '}
+              introduces <strong className="text-white/70 font-semibold">{SITIO.ruc}</strong> y aparecen la razón
+              social, el estado del contribuyente y el establecimiento con su nombre comercial.
+            </p>
           </Tarjeta>
         </div>
       </Seccion>
