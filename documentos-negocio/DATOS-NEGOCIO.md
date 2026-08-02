@@ -115,6 +115,29 @@ Esto cierra las dos cosas que quedaban abiertas:
 - [ ] Guardar en esta carpeta el PDF de la Consulta de RUC como prueba archivada. *(Opcional: la
       consulta es pública y se puede repetir en cualquier momento.)*
 
+## Cómo se clasifica el negocio en formularios extranjeros
+
+Los formularios de plataformas de EE. UU. (Meta, pasarelas de pago, proveedores cloud) no tienen la
+categoría ecuatoriana «persona natural con RUC». La equivalencia correcta es:
+
+| Su categoría | Traducción de Meta | ¿La nuestra? |
+|---|---|---|
+| **Sole proprietorship / DBA** | **«Sociedad unipersonal»** | ✅ **SÍ — esta es** |
+| Privately held company (LLC) | «Empresa privada» | ❌ implica persona jurídica; no existe |
+| Publicly traded / Partnership | «Sociedad» (las dos) | ❌ |
+| Government / non-profit | «Institución» | ❌ |
+
+**Por qué «sole proprietorship»:** un solo propietario (RUC = `PERSONA NATURAL`, RIMPE, sin socios)
+que **opera bajo un nombre comercial distinto del legal** — `GRUPO CORAZONES CRUZADOS` frente a
+`GONZALEZ MUYULEMA LUIS FERNANDO`. Eso es literalmente un *DBA* («doing business as»).
+
+⚠️ **La trampa:** «Empresa privada (LLC)» suena a «mi empresa es privada», pero significa una
+**persona jurídica separada de la persona**. No existe ninguna. Declararla contradiría el RUC que la
+plataforma consulta, y **las contradicciones son lo que hace que rechacen una verificación**.
+
+> Registrado el 2026-08-02, durante la verificación del negocio ante Meta (paso F11 de
+> `plan-agente-ia.html`). Se repite en el App Review y en cualquier alta futura.
+
 ## Dónde se usan estos datos en el código
 
 | Sitio | Qué toma |
