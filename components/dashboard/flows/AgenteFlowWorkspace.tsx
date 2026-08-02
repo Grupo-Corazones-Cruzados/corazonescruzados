@@ -11,7 +11,7 @@
  * (panel lateral derecho); lo de uno o dos campos, en `QuickEditDialog`.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -25,6 +25,7 @@ import { BTN_PRIMARY } from '@/components/ui/Button';
 import { SectionBar, PanelEmpty, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import AgenteBandeja from '@/components/dashboard/flows/AgenteBandeja';
 import AgenteConexion from '@/components/dashboard/flows/AgenteConexion';
+import type { Aviso } from '@/components/ui/BotonAvisos';
 import {
   BookText, ScrollText, SlidersHorizontal, Plug, Inbox, Pencil, Trash2, Plus,
   AlertTriangle, KeyRound,
@@ -58,7 +59,11 @@ const NOMBRE_PROMPT: Record<string, { titulo: string; para: string }> = {
   resumen_conversacion: { titulo: 'Resumen de conversación', para: 'Cómo comprime la conversación en la memoria larga.' },
 };
 
-export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name: string } }) {
+export default function AgenteFlowWorkspace({ flow, onAvisos }: {
+  flow: { id: number; name: string };
+  /** Los avisos suben a la cabecera de la página: allí viven junto a «Activar». */
+  onAvisos?: (avisos: Aviso[]) => void;
+}) {
   const [seccion, setSeccion] = useState<Seccion>('bandeja');
   const [estudio, setEstudio] = useState<Estudio | null>(null);
   const [bloques, setBloques] = useState<Bloque[]>([]);
@@ -81,6 +86,11 @@ export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const avisos = useMemo(() => calcularAvisos(estudio), [estudio]);
+  // Se reportan a la página, que los pinta junto a «Activar». Depende de `avisos`, que
+  // es memoizado, así que esto no entra en bucle.
+  useEffect(() => { onAvisos?.(avisos); }, [avisos, onAvisos]);
+
   if (cargando) return <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando el estudio…" /></div>;
   if (!estudio) return <PanelEmpty Icon={AlertTriangle} title="No se pudo cargar el estudio" desc="Vuelve a intentarlo en un momento." />;
 
@@ -99,7 +109,6 @@ export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name
         <FilterRail title="Estudio" items={rail} value={seccion} onChange={(v) => setSeccion(v as Seccion)} wrapLabels />
       </div>
       <div className="flex-1 min-w-0 space-y-4">
-        <Avisos estudio={estudio} />
         {seccion === 'bandeja' && <AgenteBandeja flowId={flow.id} />}
         {seccion === 'conocimiento' && <Conocimiento flowId={flow.id} bloques={bloques} recargar={cargar} />}
         {seccion === 'prompts' && <Prompts flowId={flow.id} prompts={prompts} pendientes={estudio.pendientes} recargar={cargar} />}
@@ -113,11 +122,16 @@ export default function AgenteFlowWorkspace({ flow }: { flow: { id: number; name
   );
 }
 
-/* ── Avisos que valen dinero o silencio ─────────────────────────────────────── */
+/* ── Los avisos: lo que cuesta dinero o silencio ────────────────────────────── */
 
-function Avisos({ estudio }: { estudio: Estudio }) {
+/**
+ * Se calculan de los datos, no se guardan. Suben a la cabecera y se ven al pulsar el
+ * icono de advertencia, en vez de ocupar la pantalla mientras se trabaja.
+ */
+function calcularAvisos(estudio: Estudio | null): Aviso[] {
+  if (!estudio) return [];
   const { canal, cache, cifradoListo } = estudio;
-  const avisos: { tono: 'error' | 'aviso'; texto: string }[] = [];
+  const avisos: Aviso[] = [];
 
   if (!cifradoListo) {
     avisos.push({ tono: 'error', texto: 'Falta AGENTE_CLAVE_MAESTRA en el servidor: sin ella no se puede guardar ningún secreto.' });
@@ -129,7 +143,7 @@ function Avisos({ estudio }: { estudio: Estudio }) {
     avisos.push({ tono: 'error', texto: `Último fallo del canal: ${canal.ultimo_error}` });
   }
   if (!cache.cachea) {
-    // Este es el aviso que evita pagar de más sin enterarse.
+    // Este es el que evita pagar de más sin enterarse.
     avisos.push({
       tono: 'aviso',
       texto: `El prompt no llega al mínimo de caché de este modelo (~${cache.tokensEstimados} de ${cache.minimo} tokens), así que se paga entero en cada mensaje. Faltan unos ${cache.faltanCaracteres.toLocaleString('es-ES')} caracteres de conocimiento — o usa un modelo con mínimo más bajo.`,
@@ -138,19 +152,7 @@ function Avisos({ estudio }: { estudio: Estudio }) {
   if (!canal.bot_activo) {
     avisos.push({ tono: 'aviso', texto: 'El agente está apagado: recibe y guarda los mensajes, pero no responde. Se enciende en Parámetros.' });
   }
-
-  if (!avisos.length) return null;
-  return (
-    <div className="space-y-2">
-      {avisos.map((a, i) => (
-        <div key={i} className={`flex gap-2 items-start rounded-md border px-3 py-2 text-[12.5px] ${
-          a.tono === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-900'}`} style={mf}>
-          <AlertTriangle className="w-4 h-4 shrink-0 mt-[1px]" />
-          <span>{a.texto}</span>
-        </div>
-      ))}
-    </div>
-  );
+  return avisos;
 }
 
 /* ── Conocimiento ───────────────────────────────────────────────────────────── */

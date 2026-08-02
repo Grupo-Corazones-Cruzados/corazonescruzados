@@ -452,6 +452,40 @@ Horario de Vida; la burbuja usa `z-[80]` para quedar sobre el `FloatingWindow` `
 tarjeta es **clicable para editar** la tarea en el formulario (resalta con `ring-accent`; el botón pasa de
 "Agregar tarea" a "Guardar cambios" y aparece "Cancelar edición"; el ⋯ eliminar hace `stopPropagation`).
 
+### Botón de advertencias con burbuja flotante (`BotonAvisos`) — definición ÚNICA (2026-08-01)
+`components/ui/BotonAvisos.tsx`. Para avisos que hay que **poder consultar** pero que no deben
+ocupar la pantalla mientras se trabaja. Decisión del usuario: los banners apilados sobre el
+contenido empujaban lo importante hacia abajo y, en cuanto eran más de uno, se dejaban de leer.
+- **El botón** va en la barra de comandos del `DetailHeader`, **a la izquierda de la acción que
+  la mayoría de avisos condiciona** (en el agente IA, «Activar»). Cuadrado de **36×36**
+  (`w-9 h-9`) para igualar la altura de `BTN_SECONDARY` (`px-3 py-2`), y **`rounded`** (4 px)
+  como sus vecinos — no `rounded-md`. Lleva el **conteo en burbuja** arriba a la derecha.
+- **El color lo fija el aviso más grave:** rojo si hay alguno de tono `error`, ámbar si solo hay
+  `aviso`. Con cero avisos **el botón no se pinta**: un icono permanente en gris se vuelve
+  invisible y deja de avisar.
+- **La burbuja sale a la IZQUIERDA del botón**, en `createPortal` sobre `document.body`, `fixed`
+  y posicionada con `getBoundingClientRect` (`right: innerWidth - r.left + 8`). **`z-[80]`** para
+  quedar sobre el banner de Comandos Violeta (`z-[60]`) y los paneles deslizantes (`z-[70]`).
+- ⚠️ **Centrarla en el botón con `-translate-y-1/2` NO vale, y se descubrió MIDIENDO** en Chrome
+  headless, no a ojo: el botón vive en la cabecera, cerca del borde superior, y con cuatro o
+  cinco avisos la burbuja es más alta que el hueco que queda encima — se salía por arriba
+  (`top: -41`) y los primeros avisos quedaban fuera de la pantalla. Se **acota al viewport**
+  (`max(8, min(centro - alto/2, innerHeight - alto - 8))`) y **la punta se mueve dentro de la
+  burbuja** para seguir señalando al botón. Posicionado en **dos pasadas**: la primera renderiza
+  con `visibility: hidden` para poder medir el alto real, la segunda coloca; así no hay salto.
+  Comprobado con puppeteer a 400 px y 900 px de alto: 14 medidas, 0 fallos.
+- **Se cierra** al pulsar fuera, con `Escape`, y **al desplazar o redimensionar**: perseguir el
+  botón mientras la página se mueve se ve peor que cerrar.
+- Se posiciona en `useLayoutEffect`, antes de pintar, para que no dé un salto visible.
+- **Quién calcula los avisos:** el espacio de trabajo, que es quien tiene los datos, y los sube a
+  la página con una prop `onAvisos`. Es el complemento del `controlRef` del correo: allí la
+  página dispara una acción del contenido; aquí el contenido alimenta la cabecera.
+- **No es una superficie de edición**, así que no le aplica la regla del panel lateral: solo
+  muestra, no pide datos.
+- ⚠️ **Sustituye al patrón copiado inline** en el Horario de Vida y en `GenerateTasksModal`
+  (chip + burbuja al hover, posicionada a mano). Aquello estaba duplicado y se veía distinto en
+  cada sitio. **Una burbuja nueva se hace con este componente, no copiando el marcado.**
+
 ### Entradas de tarea FIJAS en el Horario/Mi día (auto de ticket/proyecto · generada por política)
 Patrón para tareas que el usuario **no puede quitar** (fijadas por lógica externa); solo cambia estado (y, si aplica,
 etiquetas). Tarjeta con **borde `border-dashed`** y color por **fuente**, que vira a verde/rojo según estado

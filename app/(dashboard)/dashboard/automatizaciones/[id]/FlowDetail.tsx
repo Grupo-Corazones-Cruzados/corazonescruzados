@@ -21,6 +21,7 @@ import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dashboard/flows/EmailFlowWorkspace';
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
 import AgenteFlowWorkspace from '@/components/dashboard/flows/AgenteFlowWorkspace';
+import BotonAvisos, { type Aviso } from '@/components/ui/BotonAvisos';
 import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -51,6 +52,11 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   /** Acciones del espacio de trabajo que se disparan desde la cabecera de la página. */
   const emailRef = useRef<EmailWorkspaceHandle | null>(null);
+  /**
+   * Advertencias del agente. El dato lo tiene el espacio de trabajo, pero se ven mejor
+   * aquí: junto a «Activar», que es la acción que la mayoría condiciona.
+   */
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -116,6 +122,7 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         }
         actions={
           <>
+            <BotonAvisos avisos={avisos} />
             <button onClick={toggleStatus} className={BTN_SECONDARY}>
               {flow.status === 'active' ? <><Pause className="w-4 h-4" /> Pausar</> : <><Play className="w-4 h-4" /> Activar</>}
             </button>
@@ -138,7 +145,7 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
       {flow.type === 'whatsapp' ? (
         <WhatsAppFlowPanel flow={flow} variant="page" onClose={() => router.push('/dashboard/automatizaciones')} />
       ) : flow.type === 'ai_agent' ? (
-        <AgenteFlowWorkspace flow={flow} />
+        <AgenteFlowWorkspace flow={flow} onAvisos={setAvisos} />
       ) : (
         // email · custom → campañas de correo (igual que antes del rediseño).
         <EmailFlowWorkspace flow={flow} controlRef={emailRef} />
