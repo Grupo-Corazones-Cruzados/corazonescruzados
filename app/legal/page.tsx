@@ -9,42 +9,47 @@
  * base de licitud, derechos del titular (respuesta en 15 días), vulneraciones de
  * seguridad (notificación en 5 días), cookies y decisiones automatizadas.
  *
+ * ⚠️ ALCANCE: esta página cubre a GCC como **RESPONSABLE** del tratamiento —los datos
+ * de candidatos y miembros del propio proyecto—. El servicio de Agente IA en WhatsApp
+ * es el caso CONTRARIO: ahí GCC es **encargado** por cuenta de la empresa cliente, y
+ * vive en `/legal/whatsapp`. No mezclar: meter los dos roles en un documento haría
+ * falso uno de los dos.
+ *
  * AVISO: Es una plantilla orientada al cumplimiento; NO sustituye asesoría legal.
  * Debe ser revisada por un abogado ecuatoriano antes de su uso definitivo, en
  * especial las secciones de datos sensibles / geolocalización.
  */
 
+import { h1, h2, ul, b, link, pagina, articulo, recuadro, sutil } from './estilos';
+import { RESPONSABLE, RUC, DIRECCION, CONTACTO } from './datos';
+
 export const metadata = {
   title: 'Términos y Condiciones y Política de Privacidad — Grupo Corazones Cruzados',
 };
 
-const ULTIMA_ACTUALIZACION = '23 de junio de 2026';
-const RESPONSABLE = 'Luis Fernando González Muyulema';
-const RUC = '0930095922001';
-// Dirección del domicilio tributario, tal como consta en el certificado de RUC del SRI
-// (ver documentos-negocio/DATOS-NEGOCIO.md). Ojo: «Tabacundo» es la CALLE, no la ciudad —
-// antes decía «Tabacundo, código postal 090102», que confundía la calle con un cantón de
-// Pichincha e inventaba un código postal que no consta en ningún documento.
-const DIRECCION =
-  'Barrio 7 Lagos, calle Tabacundo #12 e intersección Guasmo Central, parroquia Ximena, Guayaquil, Ecuador';
-const CONTACTO = 'lfgonzalezm0@grupocc.org';
+const ULTIMA_ACTUALIZACION = '1 de agosto de 2026';
 
 export default function LegalPage() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: '#0e1118',
-        color: '#d9d4ea',
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-        padding: '48px 20px 80px',
-      }}
-    >
-      <article style={{ maxWidth: 820, margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}>
+    <main style={pagina}>
+      <article style={articulo}>
         <h1 style={h1}>Términos y Condiciones y Política de Privacidad</h1>
-        <p style={{ color: '#9b95b3', marginTop: 4 }}>
+        <p style={{ ...sutil, marginTop: 4 }}>
           Grupo Corazones Cruzados — Última actualización: {ULTIMA_ACTUALIZACION}
         </p>
+
+        <div style={recuadro('nota')}>
+          <p style={{ margin: 0 }}>
+            <strong style={b}>¿Buscas el servicio de WhatsApp?</strong> Si escribiste por
+            WhatsApp a una empresa atendida por nuestro agente de IA, o si eres una empresa
+            que usa ese servicio, el documento que te aplica es{' '}
+            <a href="/legal/whatsapp" style={link}>
+              Agente IA en WhatsApp — privacidad y condiciones
+            </a>
+            . Allí Grupo Corazones Cruzados actúa como <strong style={b}>encargado</strong>{' '}
+            del tratamiento por cuenta de esa empresa, no como responsable.
+          </p>
+        </div>
 
         <h2 style={h2}>1. Antecedentes y objeto</h2>
         <p>
@@ -61,6 +66,18 @@ export default function LegalPage() {
         </p>
 
         <h2 style={h2}>2. Responsable del tratamiento y contacto de protección de datos</h2>
+        <p>
+          <strong style={b}>Alcance de esta Política:</strong> regula el sitio web y los datos
+          de las personas candidatas y miembros del proyecto, respecto de los cuales Grupo
+          Corazones Cruzados es <strong style={b}>responsable</strong>. No cubre las
+          conversaciones de WhatsApp que atendemos <strong style={b}>por cuenta de empresas
+          clientes</strong>: en ese servicio somos <strong style={b}>encargados</strong> y la
+          responsable es la empresa, con su propio documento en{' '}
+          <a href="/legal/whatsapp" style={link}>
+            /legal/whatsapp
+          </a>
+          .
+        </p>
         <p>
           <strong style={b}>Responsable del tratamiento:</strong> {RESPONSABLE}, en representación
           del proyecto <strong style={b}>Grupo Corazones Cruzados</strong>.
@@ -356,14 +373,3 @@ export default function LegalPage() {
     </main>
   );
 }
-
-const h1: React.CSSProperties = { fontSize: '1.6rem', color: '#f1eefb', margin: 0 };
-const h2: React.CSSProperties = {
-  fontSize: '1.12rem',
-  color: '#f1eefb',
-  marginTop: 34,
-  marginBottom: 8,
-};
-const ul: React.CSSProperties = { paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 };
-const b: React.CSSProperties = { color: '#fff', fontWeight: 700 };
-const link: React.CSSProperties = { color: '#7B5FBF', textDecoration: 'underline' };

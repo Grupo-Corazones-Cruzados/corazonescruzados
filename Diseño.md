@@ -983,6 +983,37 @@ Detalles aprendidos al aplicarla:
 - **Formularios largos**: dentro del panel no hacen falta límites de ancho (`max-w-sm`) heredados de
   cuando el editor vivía en una tarjeta estrecha — el panel ya acota a 644 px.
 
+### Páginas legales públicas — fuera del tema `.corp`, con definición única (2026-08-01)
+
+`/legal` y `/legal/whatsapp` **no usan el tema `.corp` ni los componentes del panel**, y es
+deliberado: las abre gente que no ha entrado nunca a la app —candidatos, empresas clientes y los
+revisores de Meta— y deben verse igual pase lo que pase con el tema del dashboard. Por eso llevan
+colores literales, no tokens.
+
+Pero "estilo propio" no significa "estilo suelto". Al aparecer la segunda página, lo que estaba
+inline en la primera se extrajo:
+
+| Archivo | Qué centraliza |
+|---|---|
+| `app/legal/estilos.ts` | `pagina`, `articulo`, `h1`, `h2`, `h2Parte`, `ul`, `b`, `link`, `sutil`, `recuadro(tono)`, `tabla`/`th`/`td` |
+| `app/legal/datos.ts` | Identidad legal: razón social, nombre comercial, RUC, dirección, contacto |
+
+**Por qué `datos.ts` importa tanto como los estilos:** la dirección de estas páginas ya se había
+corregido una vez (decía «Tabacundo, código postal 090102», confundiendo la calle con la ciudad).
+Con dos páginas legales y las constantes duplicadas, la siguiente corrección se aplicaría en una y
+no en la otra — y eso es una **contradicción publicada** en un documento que lee un revisor de Meta.
+Los valores salen de `documentos-negocio/DATOS-NEGOCIO.md`, que a su vez sale del certificado del SRI.
+
+Piezas del catálogo que nacen aquí y son reusables en cualquier página legal futura:
+- **`h2Parte`** — encabezado de PARTE, con línea superior. Separa bloques dirigidos a **públicos
+  distintos** dentro de un mismo documento (la persona que escribe por WhatsApp / la empresa
+  cliente), que es más fuerte que un simple salto de sección.
+- **`recuadro('aviso' | 'nota')`** — destacado de una sola definición, en vez de un `div` con
+  estilos a ojo cada vez. `aviso` (ámbar) para lo que puede salir mal —el paso irreversible del
+  alta—; `nota` (morado) para orientar.
+- **`tabla`/`th`/`td`** — inventarios (qué datos se tratan, qué subencargados). Una tabla dice en
+  cuatro filas lo que en prosa legal se vuelve ilegible.
+
 ## Desviaciones detectadas y resolución
 - **2026-07-31 — Detalle de proyecto: SEIS ediciones inline ("por encima") → CORREGIDAS.**
   `projects/[id]` editaba el **requerimiento** sustituyendo la fila por tres inputs (captura del

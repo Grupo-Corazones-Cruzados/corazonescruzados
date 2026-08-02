@@ -12,7 +12,7 @@
 | Dato | Valor |
 |---|---|
 | **Razón social / nombre legal** | `GONZALEZ MUYULEMA LUIS FERNANDO` |
-| **Nombre comercial** | `GRUPO CORAZONES CRUZADOS` — ⚠️ **de uso propio, NO registrado en el SRI** (comprobado 2026-08-01). Ver abajo. |
+| **Nombre comercial** | `GRUPO CORAZONES CRUZADOS` — ✅ **registrado en el SRI** en el establecimiento `001` el **2026-08-01**. Ver abajo. |
 | **RUC** | `0930095922001` |
 | **Tipo de contribuyente** | PERSONAS NATURALES |
 | **Régimen** | RIMPE — NEGOCIO POPULAR |
@@ -61,17 +61,17 @@ Nota: el correo corporativo del proyecto es `lfgonzalezm0@grupocc.org` (Google W
 `grupocc.org`). Son dos cosas distintas y **ninguna sustituye a la otra**: en trámites que cotejan
 contra el RUC se usa el registrado en el SRI.
 
-## ⚠️ El nombre comercial NO consta en este certificado
+## ⚠️ El nombre comercial NO consta en este certificado (pero sí en la Consulta de RUC)
 
 `lib/integrations/sri/config.ts` declara `nombreComercial: 'GRUPO CORAZONES CRUZADOS'` y así sale en
-las facturas electrónicas. **Pero este certificado de RUC no lo muestra**: solo trae «Apellidos y
+las facturas electrónicas. **Este certificado de RUC no lo muestra**: solo trae «Apellidos y
 nombres». En Ecuador el nombre comercial se registra **por establecimiento**, y el detalle de los
 establecimientos no aparece en este documento de 2 páginas — solo su conteo.
 
-**Consecuencia práctica:** si un tercero (Meta, un banco, un cliente) pide una prueba oficial de que
-«Grupo Corazones Cruzados» es el nombre comercial de este RUC, **este PDF no sirve**. Hay que
-descargar del SRI en línea el reporte de **«Establecimientos registrados»**, que sí lista cada
-establecimiento con su nombre comercial.
+**Consecuencia práctica:** si un tercero (Meta, un banco, un cliente) pide una prueba oficial del
+nombre comercial, **este PDF no sirve**; sirve la **Consulta de RUC** pública o el reporte de
+«Establecimientos registrados», que sí listan cada establecimiento con su nombre comercial. Desde el
+2026-08-01 ambos lo muestran (ver más abajo).
 
 ### El establecimiento YA existe — no hay que crear ninguno
 
@@ -88,42 +88,39 @@ El establecimiento **001 (matriz)** se crea solo al inscribir el RUC. Coincide c
 > numeración de las facturas se rompería y habría que reconfigurar la facturación electrónica que
 > hoy funciona. No hay ningún motivo para hacerlo.
 
-### ⚠️ El nombre comercial NO está registrado en el SRI (comprobado 2026-08-01)
+### ✅ El nombre comercial YA está registrado en el SRI (2026-08-01)
 
-Consultado en *sri.gob.ec → Consultas → Consulta de RUC*, el establecimiento sale así:
+Se actualizó el establecimiento **001** —el que ya existía, sin crear ninguno nuevo— y la Consulta
+de RUC pública ya lo muestra:
 
 | No. establecimiento | Nombre comercial | Ubicación | Estado |
 |---|---|---|---|
-| `001` | *(vacío)* | GUAYAS / GUAYAQUIL / XIMENA / TABACUNDO 12 Y GUASMO CENTRAL | ABIERTO |
+| `001` | `GRUPO CORAZONES CRUZADOS` | GUAYAS / GUAYAQUIL / XIMENA / TABACUNDO 12 Y GUASMO CENTRAL | ABIERTO |
 
-**La columna «Nombre comercial» está vacía.** El nombre comercial es un dato **opcional** del
-establecimiento, y este nunca se llenó.
+*(Fecha de actualización del RUC: 2026-08-01. Comprobado en sri.gob.ec → Consultas → Consulta de
+RUC, que es pública: cualquiera puede verificarlo con el RUC, sin clave.)*
 
-Esto tiene dos consecuencias, y la segunda importa más que la primera:
+Esto cierra las dos cosas que quedaban abiertas:
 
-1. **No existe ningún documento oficial que ligue «GRUPO CORAZONES CRUZADOS» a este RUC.** Ante Meta
-   no es bloqueante —lo que se verifica es el nombre legal—, pero si alguna vez piden probar el
-   nombre comercial, hoy no hay con qué.
-2. **Las facturas electrónicas declaran un nombre comercial que no está registrado.**
+1. **Ya existe prueba oficial** de que «GRUPO CORAZONES CRUZADOS» es el nombre comercial de este
+   RUC. Ante Meta nunca fue bloqueante —lo que se verifica es el nombre legal—, pero si algún día
+   lo piden, la Consulta de RUC lo acredita.
+2. **Las facturas electrónicas ya declaran un nombre comercial registrado.**
    `lib/integrations/sri/config.ts` pone `nombreComercial: 'GRUPO CORAZONES CRUZADOS'` en el XML de
-   cada comprobante. No ha causado rechazos —las 30 autorizadas lo demuestran, porque en el esquema
-   del SRI ese campo es informativo— pero es un dato inexacto en un documento fiscal.
+   cada comprobante; antes era un dato exacto de hecho pero no de derecho, y ahora coincide con el
+   registro.
 
-**Recomendado: registrar el nombre comercial en el establecimiento 001.** No es obligatorio y no
-bloquea nada, pero resuelve las dos cosas de una vez y es gratis.
-
-- [ ] **Actualizar el establecimiento 001** en *SRI en línea → RUC → actualización de datos /
-      establecimientos*, poniendo `GRUPO CORAZONES CRUZADOS` como nombre comercial.
-      **Es una actualización del establecimiento que ya existe, NO uno nuevo.**
-- [ ] Después, volver a la Consulta de RUC, comprobar que la columna ya lo muestra y **guardar ese
-      documento en esta carpeta** como prueba del nombre comercial.
+- [x] **Actualizado el establecimiento 001** en *SRI en línea → RUC → establecimientos*
+      (2026-08-01). Fue una actualización del que ya existía, **no uno nuevo**.
+- [ ] Guardar en esta carpeta el PDF de la Consulta de RUC como prueba archivada. *(Opcional: la
+      consulta es pública y se puede repetir en cualquier momento.)*
 
 ## Dónde se usan estos datos en el código
 
 | Sitio | Qué toma |
 |---|---|
 | `lib/integrations/sri/config.ts` | RUC, razón social, nombre comercial, dirección de matriz y establecimiento, régimen |
-| `app/legal/page.tsx` | Responsable del tratamiento, RUC, dirección y contacto |
+| `app/legal/datos.ts` | Definición ÚNICA de identidad legal que consumen `/legal` y `/legal/whatsapp`: razón social, nombre comercial, RUC, dirección y contacto. **Si cambia un dato de aquí, se cambia ahí.** |
 | Portafolio comercial de Meta | Nombre legal, dirección y teléfono para la verificación del negocio |
 
 ## Los archivos de esta carpeta no van al repositorio

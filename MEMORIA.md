@@ -354,6 +354,29 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Worker:** `/api/agente/procesar` + `scripts/agente-worker.mjs`. Servicio
       **`agente-worker`** en Railway (`Servidor-GCC`), ya creado y corriendo.
     - **Eliminado el tipo de flujo `chatbot`** (iba por YCloud). Sus tablas no existían.
+    - **Retención (`lib/agente/retencion.ts` + `/api/agente/cron/purgar`, en el cron nocturno):**
+      la traza cruda de webhooks se borra a los **30 días** y los trabajos de cola cerrados a los
+      14. **Las conversaciones NO se purgan por tiempo, a propósito**: son el historial de atención
+      de la empresa, que es la responsable y a quien le toca decidir el plazo. Se borran cuando lo
+      pide y **en cascada al desconectar el canal**.
+  - **⚖️ EL ROL LEGAL ES EL REVÉS DEL DE SIEMPRE — y de ahí salen dos páginas, no una (2026-08-01).**
+    En `/legal` **GCC es responsable** del tratamiento (candidatos y miembros): decide las
+    finalidades. En el servicio de WhatsApp **GCC es ENCARGADO** y la **empresa cliente es la
+    responsable**: nosotros no decidimos nada, ejecutamos instrucciones suyas. Por eso el servicio
+    tiene página propia, **`/legal/whatsapp`** — tres partes: **A** privacidad, **B** condiciones
+    del servicio, **C** anexo de encargo (el contrato que exige la LOPDP). Cada página **declara su
+    alcance y enlaza a la otra**.
+    - **El rol no es un matiz de redacción, es quién decide.** Un solo documento que dijera las dos
+      cosas sería falso en una de ellas — y esto lo lee un revisor de Meta.
+    - **URLs a declarar en Meta** (Fernando aún debe cambiarlas en el formulario): privacidad
+      `…/legal/whatsapp` · condiciones `…#condiciones` · eliminación `…#eliminar-datos` ·
+      solicitudes de autoridades `…#autoridades`.
+    - **Identidad legal y estilos compartidos:** `app/legal/datos.ts` y `app/legal/estilos.ts`. Con
+      dos páginas legales, un dato corregido en una y no en la otra es una **contradicción
+      publicada**. Los datos salen de `documentos-negocio/DATOS-NEGOCIO.md`.
+    - **REGLA: primero el código, después la promesa.** La política promete borrar la traza a los
+      30 días, así que el borrado se escribió y se comprobó **antes** de publicar la frase. Escribir
+      un plazo que nadie cumple es publicar algo falso.
   - **⚙️ PARÁMETROS ESTÁNDAR de todo agente nuevo** (los de la guía, medidos en producción):
     modelo `claude-haiku-4-5`, `max_tokens` 4096, **debounce 8 s**, **ventana 40 mensajes**,
     tres herramientas con `tool_choice: "any"`, y el prompt ensamblado como

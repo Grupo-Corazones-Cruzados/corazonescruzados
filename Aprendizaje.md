@@ -82,7 +82,7 @@ sistema probado, y el hallazgo del documento aplica igual aquí: *"un canal = un
 un canal es exactamente un tenant"*. Así el aislamiento por cliente sale del modelo de datos, no de
 un filtro en cada consulta.
 
-### DÓNDE QUEDÓ AL CERRAR EL 2026-08-01 (18 de 22 pasos)
+### DÓNDE QUEDÓ AL CERRAR EL 2026-08-01 (20 de 23 pasos)
 
 El tablero vivo es **`plan-agente-ia.html`**; aquí solo el resumen y lo que sigue abierto.
 
@@ -96,15 +96,45 @@ El tablero vivo es **`plan-agente-ia.html`**; aquí solo el resumen y lo que sig
   recogido por el worker desplegado **en 5 segundos** → runner → escalado correcto → constancia
   en el panel.
 - **F13:** servicio `agente-worker` creado y corriendo en Railway, **sin tocar el panel**.
+- **F10 + C10:** páginas legales con el rol al derecho (`/legal/whatsapp`) y la retención que hace
+  cierto el plazo que prometen. Detalle abajo.
+- **SRI:** el nombre comercial `GRUPO CORAZONES CRUZADOS` **ya consta** en el establecimiento 001.
+- **Clave de IA de Peters Tours:** guardada y cifrada en su canal.
 
 **Lo que falta:**
 | | Quién | Qué |
 |---|---|---|
-| **C9** | los dos | El alta del número de Peters Tours (flujo 10, «Diego Castillo»). Su canal **ya está sembrado** con los 14 bloques y los 3 prompts reales, extraídos del HTML de la guía. |
-| **F10** | Fernando | Políticas legales en el dominio de GCC, describiéndolo como **encargado del tratamiento** y al cliente como responsable. Hoy `/legal` lo dice al revés. Es el cambio conceptual más importante y es **obligatorio antes del App Review**. |
+| **C9** | los dos | El alta del número. **Primero de ensayo con el número de GCC** (flujo `lfgonzalezm0`, id 23) y después el de Peters Tours (flujo 10, ya sembrado con sus 14 bloques y 3 prompts). ⚠️ Antes hay que confirmar que el número de ensayo está en **WhatsApp Business**, no en el WhatsApp normal: sin eso no hay coexistencia y el único camino se lleva el número del teléfono. |
+| **F10** | Fernando | Solo queda **cambiar las tres URLs** en la configuración básica de la app de Meta, que siguen apuntando a `/legal`. Las páginas ya están publicadas. |
 | **F11** | Fernando | Verificar el negocio del portafolio de GCC (nombre legal `GONZALEZ MUYULEMA LUIS FERNANDO`, ver `documentos-negocio/DATOS-NEGOCIO.md`). |
 | **F12** | Fernando | App Review + verificación de proveedor de tecnología, para que un cliente pueda darse de alta **por su cuenta**. |
-| — | Fernando | Comprobar en el SRI que el nombre comercial ya quedó registrado en el establecimiento 001. |
+
+### EL ROL LEGAL ES EL REVÉS DEL DE SIEMPRE (F10, 2026-08-01)
+
+Lo que hacía obligatorio F10 no era publicar más texto: era que **el rol estaba invertido**.
+
+- En `/legal`, **GCC es responsable**: decide para qué se tratan los datos de candidatos y miembros.
+- En el servicio de WhatsApp, **GCC es encargado** y la **empresa cliente es la responsable**.
+  Nosotros no decidimos nada — ejecutamos instrucciones suyas sobre datos de *sus* clientes.
+
+**Por qué dos páginas y no una sección más.** El rol no es un matiz de redacción, es *quién decide*.
+Un documento que dijera las dos cosas sería falso en una de ellas, y esto lo lee un revisor de Meta.
+Así que `/legal` conserva su rol y ahora **declara su alcance y enlaza** a `/legal/whatsapp`, que
+tiene tres partes: **A** privacidad (qué datos, para qué, con quién, cuánto), **B** condiciones del
+servicio, **C** anexo de encargo — el contrato que la LOPDP exige entre responsable y encargado.
+
+**Y de redactarla salió un fallo real.** `agente_eventos_webhook` guardaba **sin plazo** una copia
+cruda del contenido de los mensajes: un duplicado de `agente_mensajes` que solo sirve para
+diagnosticar. Nadie lo había notado porque nada lo miraba.
+
+> **Regla que queda:** primero el código, después la promesa. Escribir «se borra a los 30 días» sin
+> un borrado que lo cumpla es publicar algo falso. Se escribió `lib/agente/retencion.ts`, se
+> comprobó contra la base real (sembradas filas de 31 y 29 días, murió solo la de 31) y **entonces**
+> se publicó la frase.
+
+Las conversaciones, en cambio, **no se purgan por tiempo a propósito**: son el historial de atención
+de la empresa, que es la responsable y a quien le corresponde fijar el plazo. Se borran cuando lo
+pide y en cascada al desconectar el canal.
 
 ### EL FALLO DE LA GUÍA, RESUELTO POR DISEÑO (lo más valioso de la sesión)
 

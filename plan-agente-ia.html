@@ -105,10 +105,10 @@
   <!-- ══ ACTUALIZAR ESTE BLOQUE EN CADA AVANCE ══ -->
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
-    <p class="paso">C9 · El alta con el primer cliente</p>
-    <p class="quien"><strong>Peters Tours ya tiene su conocimiento cargado</strong> — 14 bloques, 28.782 caracteres, y el prefijo <strong>sí cachea</strong>. Faltan su clave de IA y el alta del número. Detalle en <a href="#c9" style="color:var(--morado)">§9</a>.</p>
-    <div class="barra"><span style="width:82%"></span></div>
-    <div class="barra-pie"><span>18 de 22 pasos terminados</span><span>82%</span></div>
+    <p class="paso">C9 · El primer alta — y ahora se ensaya con el número de GCC</p>
+    <p class="quien"><strong>La clave de IA de Peters Tours ya está guardada</strong> (2026-08-01), así que solo le falta el alta del número. Y antes de tocarlo se ensaya con un canal propio: <strong>flujo «lfgonzalezm0»</strong>, número de GCC. Detalle en <a href="#c9" style="color:var(--morado)">§9</a>.</p>
+    <div class="barra"><span style="width:87%"></span></div>
+    <div class="barra-pie"><span>20 de 23 pasos terminados</span><span>87%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
     Última actualización: <strong>1 de agosto de 2026</strong> ·
@@ -290,15 +290,23 @@
     </tr>
 
     <tr>
-      <td>F10</td><td><span class="est e-pend">Pendiente</span></td>
+      <td>F10</td><td><span class="est e-hecho">Hecho</span></td>
       <td>
         <span class="t">Publicar las páginas legales en el dominio de GCC</span>
-        <span class="d">Privacidad, términos y eliminación de datos, describiendo a <strong>GCC como
-        encargado del tratamiento</strong> y al cliente como <strong>responsable</strong>. Hoy el repo lo
-        tiene al revés y ese es el cambio conceptual más importante del proyecto.<br>
-        <strong>Regla aprendida:</strong> primero se asume el compromiso en la política <em>publicada</em>,
-        y solo entonces se marcan las casillas del formulario. Al revés sería declarar políticas
-        inexistentes.</span>
+        <span class="d"><strong>Hecho el 2026-08-01.</strong> Nueva página
+        <code>/legal/whatsapp</code>, con GCC como <strong>encargado del tratamiento</strong> y la
+        empresa cliente como <strong>responsable</strong> — el giro conceptual que faltaba. Tres
+        partes: <em>A</em> privacidad, <em>B</em> condiciones del servicio, <em>C</em> anexo de
+        encargo. Anclas para Meta: <code>#eliminar-datos</code>, <code>#autoridades</code>,
+        <code>#condiciones</code>.<br>
+        <code>/legal</code> <strong>no se toca en su rol</strong>: sigue siendo la de GCC como
+        responsable de sus miembros, y ahora declara su alcance y enlaza a la otra. Un solo
+        documento con los dos roles haría falso uno de los dos.<br>
+        <strong>Regla aplicada al pie de la letra:</strong> primero el código, después la promesa.
+        La política promete borrar la traza de webhooks a los 30 días, así que se escribió el
+        borrado y se comprobó contra la base antes de publicar la frase — ver <strong>C10</strong>.
+        <br><strong>Falta que Fernando cambie las tres URLs</strong> en la configuración básica de
+        la app (§5.1): apuntan a <code>/legal</code> y deben apuntar a <code>/legal/whatsapp</code>.</span>
       </td>
       <td>F4</td>
     </tr>
@@ -507,9 +515,32 @@
         · el número queda en <code>CLOUD_API</code> + <code>CONNECTED</code>;<br>
         · <strong>WhatsApp Web sigue funcionando para el equipo del cliente</strong> ← esta es la que vale;<br>
         · un mensaje de prueba entra en la bandeja;<br>
-        · el agente se enciende a mano desde el Estudio (no se enciende solo, a propósito).</span>
+        · el agente se enciende a mano desde el Estudio (no se enciende solo, a propósito).<br>
+        <strong>Se ensaya primero con el número de GCC</strong>, no con el del cliente: flujo
+        <code>lfgonzalezm0</code> (id 23, canal 33), creado el 2026-08-01. Si el alta sale mal, el
+        que se queda sin WhatsApp Web es GCC, no Peters Tours.</span>
       </td>
       <td>C7, C8, F8, F9, F13</td>
+    </tr>
+
+    <tr>
+      <td>C10</td><td><span class="est e-hecho">Hecho</span></td>
+      <td>
+        <span class="t">Retención: borrar lo que la política dice que se borra</span>
+        <span class="d">Nació de F10. Al redactar la política salió que <code>agente_eventos_webhook</code>
+        guardaba <strong>sin plazo</strong> una copia cruda del contenido de los mensajes — un
+        duplicado de <code>agente_mensajes</code> que solo sirve para diagnosticar. Prometer un plazo
+        sin un borrado que lo cumpla es publicar algo falso.<br>
+        <strong>Hecho el 2026-08-01.</strong> <code>lib/agente/retencion.ts</code> +
+        <code>/api/agente/cron/purgar</code>, enganchado a los trabajos nocturnos de
+        <code>frequent-cron.mjs</code>. Traza de webhooks a los <strong>30 días</strong>; trabajos de
+        cola ya cerrados a los 14.<br>
+        <strong>Las conversaciones NO se purgan por tiempo</strong>, a propósito: son el historial de
+        atención de la empresa, que es la responsable y a quien le toca decidir su plazo.<br>
+        Comprobado contra la base real en transacción con <code>ROLLBACK</code>: sembradas una fila de
+        31 días y otra de 29, se borró <strong>solo la de 31</strong> y producción quedó intacta.</span>
+      </td>
+      <td>C1</td>
     </tr>
   </table>
 
@@ -526,25 +557,28 @@
   <h2 id="orden">4 · El orden, de un vistazo</h2>
   <pre><code>TÚ (Meta)                          YO (código)
 ─────────────────────────          ─────────────────────────
-F1  crear la app          ✅
-F2  verificar portafolio  ◀ AQUÍ   C1  esquema + limpieza   ◀ AQUÍ
-F3  producto WhatsApp              C2  cifrado
-F4  configuración básica           C3  webhook + cola
-F5  config Embedded Signup         C4  runner (3 herramientas)
-F6  habilitar el JSSDK             C5  Estudio del agente
-F7  usuario del sistema            C6  bandeja + toma humana
+F1  crear la app          ✅   C1  esquema + limpieza   ✅
+F2  verificar portafolio  ✅   C2  cifrado              ✅
+F3  producto WhatsApp     ✅   C3  webhook + cola       ✅
+F4  configuración básica  ✅   C4  runner (3 herram.)   ✅
+F5  config Embedded Signup ✅  C5  Estudio del agente   ✅
+F6  habilitar el JSSDK    ✅   C6  bandeja + toma humana ✅
+F7  usuario del sistema   ✅   C10 retención            ✅
                     └──────┬──────────┘
                            ▼
-                    C7  pantalla de conexión
-                    C8  worker en Railway
-F8  webhook + messages     │
-F9  variables en Railway   │
+                    C7  pantalla de conexión ✅
+                    C8  worker (código)      ✅
+F8  webhook + messages ✅  │   F13 worker en Railway    ✅
+F9  variables en Railway ✅│
+F10 páginas legales      ✅│
                            ▼
-                    C9  alta del número real  ← WhatsApp Web sigue vivo
-                           │
-F10 páginas legales        │
-F11 verificar el negocio  │
-F12 App Review + proveedor ┘
+                    C9  alta del número   ◀ AQUÍ
+                        1º ensayo con el número de GCC
+                        2º Peters Tours
+                           │   ← WhatsApp Web sigue vivo
+                           ▼
+F11 verificar el negocio   ⏳
+F12 App Review + proveedor ⏳
                            ▼
                     Cliente nuevo = una pantalla</code></pre>
   <p>Los dos carriles solo se tocan en tres sitios: <strong>F5/F6 → C7</strong> (sin la configuración de
@@ -666,20 +700,20 @@ F12 App Review + proveedor ┘
       <td>Es por donde Meta avisa de restricciones y revisiones. Conviene que sea del <strong>mismo dominio que la app</strong>: un proveedor de tecnología con correo de otro dominio da mala señal en la verificación.</td>
     </tr>
     <tr>
-      <td><strong>URL de la política de privacidad</strong></td>
-      <td><span class="val">https://app.grupocc.org/legal</span></td>
-      <td>✅ Comprobado el 2026-08-01: responde, es pública y no pide iniciar sesión.</td>
+      <td><strong>URL de la política de privacidad</strong> ⚠️ <em>cambiar</em></td>
+      <td><span class="val">https://app.grupocc.org/legal/whatsapp</span></td>
+      <td><strong>Ya no es <code>/legal</code>.</strong> Desde F10 existe la página del servicio, que es la que describe el tratamiento que el revisor va a mirar: qué datos de WhatsApp se tratan, para qué, con quién se comparten y cuánto duran. <code>/legal</code> habla de los miembros del proyecto y no menciona WhatsApp.</td>
     </tr>
     <tr>
-      <td><strong>URL de Condiciones del servicio</strong> ⚠️</td>
-      <td><span class="val">https://app.grupocc.org/legal</span></td>
-      <td><strong>Hoy tiene <code>https://www.facebook.com/</code></strong>. La misma página sirve: su título es «Términos y Condiciones <em>y</em> Política de Privacidad» y la sección 19 son los términos de uso.</td>
+      <td><strong>URL de Condiciones del servicio</strong> ⚠️ <em>cambiar</em></td>
+      <td><span class="val">https://app.grupocc.org/legal/whatsapp#condiciones</span></td>
+      <td><strong>Hoy tiene <code>https://www.facebook.com/</code></strong>. La Parte B de esa página son las condiciones del servicio para la empresa cliente: qué pone cada parte, coexistencia, uso aceptable y límites.</td>
     </tr>
     <tr>
-      <td><strong>Eliminación de datos de usuario</strong> ⚠️</td>
-      <td>Desplegable: <strong>URL de instrucciones</strong> (ya está)<br>
-          URL: <span class="val">https://app.grupocc.org/legal#eliminar-datos</span></td>
-      <td><strong>Hoy tiene <code>https://www.facebook.com/</code></strong>. Meta no quiere una política genérica: quiere <strong>instrucciones</strong>. Se añadió la sección 21 «Cómo eliminar tus datos» con los pasos concretos.</td>
+      <td><strong>Eliminación de datos de usuario</strong> ⚠️ <em>cambiar</em></td>
+      <td>Desplegable: <strong>URL de instrucciones</strong><br>
+          URL: <span class="val">https://app.grupocc.org/legal/whatsapp#eliminar-datos</span></td>
+      <td><strong>Hoy tiene <code>https://www.facebook.com/</code></strong>. Meta no quiere una política genérica: quiere <strong>instrucciones</strong>. La sección A.12 las da <em>para la persona que escribió por WhatsApp</em>, que es de quien pregunta Meta — la sección 21 de <code>/legal</code> se las daba a un miembro del proyecto, que no es el mismo público.</td>
     </tr>
     <tr>
       <td><strong>Ícono de la app</strong></td>
@@ -788,16 +822,23 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     <tr><th>Dato</th><th>Dónde lo pide</th><th>Valor / estado</th><th>Fecha</th></tr>
     <tr><td>Usuario de prueba para el revisor</td><td>App Review</td><td class="vacio">por crear (F12) — debe seguir activo un año</td><td>—</td></tr>
     <tr><td>Video de demostración</td><td>App Review</td><td class="vacio">por grabar (F12)</td><td>—</td></tr>
-    <tr><td>Compromisos ante solicitudes de autoridades</td><td>App Review</td><td class="vacio">por añadir a la política <strong>antes</strong> de marcar las casillas (F10)</td><td>—</td></tr>
+    <tr><td>Compromisos ante solicitudes de autoridades</td><td>App Review</td><td><span class="val">https://app.grupocc.org/legal/whatsapp#autoridades</span> — publicado en F10 (sección A.11): requerimiento válido, aviso previo al responsable salvo prohibición legal, impugnación de lo desproporcionado, entrega mínima y registro de cada solicitud.</td><td>2026-08-01</td></tr>
   </table>
 
-  <div class="nota">
-    <p><span class="et">La política legal sirve para arrancar, pero no para la revisión final.</span>
-    <code>/legal</code> describe hoy a GCC como <strong>responsable</strong> del tratamiento de datos
-    de candidatos y miembros del proyecto. No menciona WhatsApp, ni el papel de <strong>encargado del
-    tratamiento por cuenta de empresas clientes</strong>. Con esos textos F4 se completa sin problema,
-    pero <strong>F10 sigue siendo obligatorio antes del App Review</strong>: es el cambio conceptual
-    más importante de todo el proyecto.</p>
+  <div class="bien">
+    <p><span class="et">Resuelto el 2026-08-01 (F10).</span> <code>/legal</code> describe a GCC como
+    <strong>responsable</strong> del tratamiento de datos de candidatos y miembros del proyecto, y así
+    se queda: para ese tratamiento es cierto. Lo que faltaba era el papel contrario, y ahora vive en
+    <code>/legal/whatsapp</code>: GCC como <strong>encargado</strong> por cuenta de la empresa cliente,
+    que es la <strong>responsable</strong>.</p>
+    <p><span class="et">Por qué dos páginas y no una:</span> el rol no es un matiz de redacción, es
+    quién decide. En <code>/legal</code> GCC decide las finalidades; en el servicio de WhatsApp no
+    decide nada — ejecuta instrucciones de otro. Un solo documento que dijera las dos cosas sería
+    falso en una de ellas, y esto lo lee un revisor de Meta. Cada página declara su alcance y enlaza a
+    la otra, para que nadie acabe leyendo la equivocada.</p>
+    <p><span class="et">Lo único que falta de F10:</span> Fernando tiene que cambiar las
+    <strong>tres URLs</strong> de la tabla de arriba en la configuración básica de la app. La página
+    ya está publicada; el formulario todavía apunta a la anterior.</p>
   </div>
 
   <h3 id="c9">5.7 · El alta de Peters Tours (C9)</h3>
@@ -813,10 +854,10 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
   </div>
   <table class="datos">
     <tr><th>Falta</th><th>De quién</th><th>Nota</th></tr>
-    <tr><td><strong>Clave de IA de Peters Tours</strong></td><td>Fernando ← Diego</td>
-        <td>Decisión cerrada: cada cliente pone la suya. Se pega en el Estudio → Parámetros; se guarda cifrada y no se puede volver a leer.</td></tr>
+    <tr><td><s>Clave de IA de Peters Tours</s> ✅</td><td>Fernando ← Diego</td>
+        <td><strong>Guardada el 2026-08-01.</strong> Cifrada en el canal 11 y no se puede volver a leer — solo se muestran los últimos caracteres. Decisión cerrada: cada cliente pone la suya.</td></tr>
     <tr><td><strong>El alta del número</strong></td><td>Fernando</td>
-        <td>Estudio → Conexión. Inicia sesión con la cuenta que administra los <strong>dos</strong> portafolios, y elige el de <strong>Peter's tour</strong> — no el de GCC, que es el dueño de la app.</td></tr>
+        <td>Estudio → Conexión. Inicia sesión con la cuenta que administra los <strong>dos</strong> portafolios, y elige el de <strong>Peter's tour</strong> — no el de GCC, que es el dueño de la app. <strong>Antes, el ensayo con el número de GCC</strong> (abajo).</td></tr>
     <tr><td><strong>Comprobar WhatsApp Web</strong></td><td>Diego</td>
         <td>La única prueba de que la coexistencia quedó bien. <code>CLOUD_API</code> no lo demuestra.</td></tr>
     <tr><td><strong>Encender el agente</strong></td><td>Fernando</td>
@@ -834,6 +875,31 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
     portafolio es el único camino que queda. Es justo el montaje que tenemos, así que debería
     funcionar — pero si aparece un error raro, lo primero a mirar es el tipo de cuenta, no la
     configuración.</p>
+  </div>
+
+  <h3 id="ensayo">5.6 bis · El ensayo con el número de GCC</h3>
+  <div class="bien">
+    <p><span class="et">Antes de tocar el número de un cliente, se ensaya con el propio.</span> Creado
+    el 2026-08-01 el flujo <code>lfgonzalezm0</code> de tipo <code>ai_agent</code>
+    (<strong>id 23</strong>, canal <strong>33</strong>), con los parámetros por defecto y el agente
+    apagado. El número es el de GCC, <strong>+593 99 270 6933</strong> — el mismo que consta en el SRI.</p>
+    <p><strong>Por qué merece la pena:</strong> el alta tiene un paso que no se puede deshacer. Si sale
+    mal, el que se queda sin WhatsApp Web es GCC, que puede permitírselo, y no el equipo de Peters
+    Tours atendiendo clientes.</p>
+  </div>
+  <div class="peligro">
+    <p><span class="et">Hay que confirmar una cosa ANTES de empezar el alta:</span> que ese número
+    esté en la aplicación <strong>WhatsApp Business</strong>, no en el WhatsApp normal. La
+    coexistencia solo existe para WhatsApp Business — es lo que permite conservar el número en el
+    teléfono.</p>
+    <p>Si el número está en el WhatsApp personal, el asistente de Meta <strong>no ofrecerá conectar
+    la cuenta existente</strong>, y el único camino que quedará es el de dar de alta un número nuevo,
+    que <strong>se lleva el número del teléfono y es irreversible</strong>. Si es el número personal
+    de Fernando, eso significa perder WhatsApp en el móvil.</p>
+    <p><strong>Cómo se comprueba:</strong> abrir la app WhatsApp Business en el teléfono y ver que ese
+    número es el que está dentro. Si solo está en el WhatsApp normal, hay dos salidas: migrar la
+    cuenta a WhatsApp Business (la propia app lo ofrece y conserva los chats), o ensayar con otro
+    número que no haga falta a diario.</p>
   </div>
 
   <h3 id="identidad">5.4 · Identidad legal del proveedor</h3>
@@ -866,32 +932,37 @@ usuario, contrasena y la ruta exacta hasta el boton de conectar].</code></pre>
         <td>El certificado de RUC del SRI. Código de verificación <span class="val">RCR1785623856514981</span>, comprobable en SRI en línea.</td></tr>
   </table>
 
-  <div class="peligro">
-    <p><span class="et">Cuidado con el nombre comercial: el certificado de RUC NO lo muestra.</span>
-    Solo trae «Apellidos y nombres». En Ecuador el nombre comercial se registra <strong>por
-    establecimiento</strong>, y el detalle de establecimientos no sale en ese documento de dos
-    páginas — solo su conteo.</p>
-    <p><strong>Y comprobado el 2026-08-01: tampoco está registrado en el SRI.</strong> En la Consulta
-    de RUC, el establecimiento <code>001</code> aparece ABIERTO pero con la columna
-    <strong>«Nombre comercial» vacía</strong>. Es un dato opcional que nunca se llenó.</p>
-    <p><strong>Qué significa:</strong> para la verificación del negocio (F11) da igual — ahí se
-    verifica el <em>nombre legal</em>, que sí está certificado. Pero hoy <strong>no existe ningún
-    documento oficial que ligue «Grupo Corazones Cruzados» a este RUC</strong>, y las facturas
-    electrónicas declaran ese nombre comercial en el XML sin que conste registrado.
-    <strong>Recomendado registrarlo</strong> actualizando el establecimiento 001: no es obligatorio,
-    no bloquea nada y arregla las dos cosas a la vez.</p>
+  <div class="bien">
+    <p><span class="et">✅ Cerrado el 2026-08-01: el nombre comercial ya está registrado.</span> La
+    Consulta de RUC —que es <strong>pública</strong>, cualquiera la hace con el RUC y sin clave— ya
+    muestra el establecimiento así:</p>
+    <table class="datos">
+      <tr><th>No.</th><th>Nombre comercial</th><th>Ubicación</th><th>Estado</th></tr>
+      <tr><td><code>001</code></td><td><span class="val">GRUPO CORAZONES CRUZADOS</span></td>
+          <td>GUAYAS / GUAYAQUIL / XIMENA / TABACUNDO 12 Y GUASMO CENTRAL</td><td>ABIERTO</td></tr>
+    </table>
+    <p>Se hizo <strong>actualizando el establecimiento 001</strong> que ya existía, no creando uno
+    nuevo. Con eso quedan resueltas las dos cosas que colgaban: ya <strong>existe prueba oficial</strong>
+    de que «Grupo Corazones Cruzados» es el nombre comercial de este RUC, y las facturas electrónicas
+    —que lo declaran en el XML— pasan a decir algo que consta registrado.</p>
+  </div>
+
+  <div class="nota">
+    <p><span class="et">Lo que sigue siendo cierto:</span> el <strong>certificado de RUC en PDF no
+    muestra el nombre comercial</strong>. Solo trae «Apellidos y nombres», porque en Ecuador el
+    nombre comercial va <strong>por establecimiento</strong> y ese documento de dos páginas solo
+    cuenta los establecimientos. Si alguien lo pide, lo que sirve es la <strong>Consulta de RUC</strong>
+    o el reporte de «Establecimientos registrados», no el certificado.</p>
+    <p>Para la verificación del negocio (F11) esto nunca fue bloqueante: ahí se verifica el
+    <strong>nombre legal</strong>, «GONZALEZ MUYULEMA LUIS FERNANDO», que siempre estuvo certificado.</p>
   </div>
 
   <div class="bien">
-    <p><span class="et">El establecimiento ya existe: no hay que crear ninguno.</span> El certificado
+    <p><span class="et">El establecimiento ya existía: no había que crear ninguno.</span> El certificado
     dice «Establecimientos: Abiertos 1», y está comprobado en producción — hay <strong>30 facturas
     autorizadas por el SRI</strong> numeradas <code>001-001-000000024</code> a
     <code>001-001-000000073</code>. Ese primer <code>001</code> <strong>es el establecimiento</strong>
     (el segundo es el punto de emisión). Sin un establecimiento abierto no se emite ni una factura.</p>
-    <p><strong>Lo único por confirmar</strong> es si ese establecimiento tiene asignado el
-    <em>nombre comercial</em>, que es un dato opcional: se mira en <em>SRI en línea → RUC →
-    Establecimientos</em>. Si no lo tiene, es una <strong>actualización del establecimiento que ya
-    existe</strong>.</p>
   </div>
 
   <div class="peligro">
@@ -1094,6 +1165,12 @@ Campos suscritos  : messages   ✅</code></pre>
     <tr><td>2026-08-01</td><td><strong>F5 y F6 hechos.</strong> Configuración de Embedded Signup creada con la plantilla de 60 días — identificador <code>1070995845869940</code> — y SDK de JavaScript habilitado. <strong>C7 deja de estar bloqueado.</strong></td></tr>
     <tr><td>2026-08-01</td><td><strong>C1 hecho y aplicado en producción.</strong> Migración <code>027_agente_ia.sql</code>: 9 tablas del agente, con el tenant siendo el flujo. Validada antes con ROLLBACK — 19 comprobaciones, 0 fallos, inventario idéntico. Eliminado el chatbot de YCloud (código y rutas); sus tablas no existían. <code>tsc</code> y <code>next build</code> OK.</td></tr>
     <tr><td>2026-08-01</td><td><strong>F4 hecho.</strong> Configuración básica completa. Las <strong>instrucciones de prueba se dejan vacías a propósito</strong> —decisión del usuario— hasta F12: hoy describirían una pantalla que no existe. Arrancan F5 y F6.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Clave de IA de Peters Tours guardada.</strong> Cifrada en el canal 11; no se puede volver a leer. Con eso C9 solo espera al alta del número.</td></tr>
+    <tr><td>2026-08-01</td><td>✅ <strong>El SRI ya muestra el nombre comercial.</strong> La Consulta de RUC lista el establecimiento <code>001</code> como <code>GRUPO CORAZONES CRUZADOS</code>. Cierra lo que quedaba de §5.4: ya hay prueba oficial, y las facturas electrónicas declaran un nombre que consta registrado. <strong>El certificado en PDF sigue sin mostrarlo</strong> — eso no cambia, va por establecimiento.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>F10 hecho: las páginas legales, con el rol al derecho.</strong> Nueva <code>/legal/whatsapp</code> — privacidad (A), condiciones del servicio (B) y anexo de encargo (C) — con GCC como <strong>encargado</strong> y la empresa cliente como <strong>responsable</strong>. <code>/legal</code> conserva su rol de responsable y ahora declara su alcance y enlaza a la otra: <strong>dos páginas y no una, porque el rol es quién decide, no un matiz de redacción</strong>. Anclas <code>#eliminar-datos</code>, <code>#autoridades</code> y <code>#condiciones</code> para las tres URLs de Meta, <strong>que Fernando aún debe cambiar</strong> en el formulario.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>C10, salido de F10: la retención.</strong> Al redactar la política se vio que <code>agente_eventos_webhook</code> guardaba <strong>sin plazo</strong> una copia cruda del contenido de los mensajes. Como prometer un plazo sin borrarlo sería publicar algo falso, primero se escribió el borrado: traza a 30 días, cola cerrada a 14, enganchado al cron nocturno. Comprobado contra la base real con ROLLBACK — sembradas filas de 31 y 29 días, murió solo la de 31. <strong>Las conversaciones no se purgan por tiempo a propósito</strong>: el plazo lo decide la empresa responsable.</td></tr>
+    <tr><td>2026-08-01</td><td>Extraídos <code>app/legal/estilos.ts</code> y <code>app/legal/datos.ts</code>: con dos páginas legales, una dirección corregida en una y no en la otra sería una <strong>contradicción publicada</strong>, y esto lo lee un revisor de Meta. Una definición, dos páginas.</td></tr>
+    <tr><td>2026-08-01</td><td><strong>Creado el flujo de ensayo <code>lfgonzalezm0</code></strong> (id 23, canal 33) para hacer el alta con el número de GCC antes que con el de un cliente. <strong>Aviso levantado:</strong> hay que confirmar que ese número está en <em>WhatsApp Business</em>; si está en el WhatsApp normal no habrá coexistencia y el único camino se lleva el número del teléfono. Ver §5.6 bis.</td></tr>
   </table>
 </div>
 
