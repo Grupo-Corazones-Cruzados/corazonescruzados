@@ -149,6 +149,7 @@ INSERTADAS = {
     132: 66,  # el mismo encargo, con un prompt corto y directo
     133: 66,  # tres maniquies de madera desmontados (no son personas)
     134: 66,  # el maniqui, pieza a pieza: el torso son DOS bloques separados
+    135: 66,  # la 134 + las piezas destruidas y polvificandose
 }
 
 
@@ -4538,6 +4539,58 @@ ESCENAS = [
         "es más ancho. Las manos están cerradas una sobre otra, unidas, sin separación. Se "
         "cortan en seco por el hombro, sin pecho ni hombro detrás, y no tocan ninguna otra "
         "pieza. Son lo más nítido de la imagen. "
+
+        "Sin sangre, sin color y sin texto."),
+
+    # ── 135 · LA 134, CON LAS PIEZAS DESTRUIDAS Y HACIÉNDOSE POLVO ────────────
+    # La 134 va bien: las piezas ya salen sueltas y el tronco partido. Fernando
+    # pide AÑADIR encima el efecto de destrucción/pulverización.
+    # Se encadena la 134 y se pide SOLO el añadido, sin tocar la composición:
+    # editar para AÑADIR sobre la propia imagen es lo que mejor funciona (§4.5) y
+    # no reposiciona lo que ya hay (§4.12).
+    # ⚠ Los cuatro brazos se quedan LIMPIOS: son lo único entero de la escena.
+    (135, ["assets/Prologo/escenas/escena_134.png"],
+        "Toma la imagen de referencia y consérvala, añadiéndole el efecto que se describe abajo. "
+
+        "══ LO QUE NO SE TOCA ══ "
+        "Copia la imagen de referencia tal cual: el estilo PIXEL ART 2D de 16 bits con sombreado "
+        "plano y dithering, el encuadre 16:9, la cámara, la perspectiva, la roca cuarteada del "
+        "fondo, el halo de luz del centro, la penumbra de las esquinas y la paleta de grises, "
+        "blancos y negros. "
+        "Y sobre todo: cada PIEZA NEGRA suelta se queda DONDE ESTÁ, con su MISMO tamaño y su "
+        "MISMO giro. PROHIBIDO moverlas, recolocarlas, quitarlas, añadir piezas nuevas o "
+        "montarlas entre sí formando una figura. Siguen sueltas y desordenadas igual que en la "
+        "referencia. "
+
+        "══ LO QUE SE AÑADE: LAS PIEZAS ESTÁN DESTROZADAS Y SE HACEN POLVO ══ "
+        "Cada una de esas piezas, además de estar suelta, se está DESHACIENDO. Aplica esto a "
+        "todas ellas: "
+        "· SUS BORDES DEJAN DE SER LIMPIOS: el contorno de cada pieza pasa a estar MORDIDO y "
+        "ROTO, con muescas, dientes y esquinas arrancadas, como piedra que se descascarilla. "
+        "Nada de siluetas de canto liso. "
+        "· SE LES ABREN AGUJEROS POR DENTRO: en medio de cada pieza aparecen BOQUETES "
+        "irregulares por los que SE VE EL FONDO de roca al otro lado, y grietas que la parten. "
+        "Las piezas grandes son las que más agujereadas están: de algunas queda poco más que un "
+        "armazón. "
+        "· SE DESGRANAN EN POLVO: de todo el borde de cada pieza se van desprendiendo MOTAS y "
+        "CUADRADITOS NEGROS de unos pocos píxeles, que forman una NUBE GRANULADA alrededor de "
+        "ella, más densa pegada a la pieza y más rala según se aleja, con algún hilo de puntos "
+        "escapándose. Cada pieza tiene su propia nubecita: el polvo sale de ellas y no de un "
+        "punto central. "
+        "· ENTRE MEDIAS, más polvo suelto flotando por todo el halo, repartido de forma "
+        "irregular, más denso en unos sitios y más ralo en otros. "
+        "⚠ NADA DE UNA BOLA O UN FOCO que suelte partículas: el polvo sale del BORDE DE CADA "
+        "PIEZA, repartido por toda la escena. "
+        "El conjunto tiene que leerse como: esto no solo está desmontado, está DESTRUIDO y "
+        "convirtiéndose en polvo. "
+
+        "══ LA EXCEPCIÓN: LOS CUATRO BRAZOS SIGUEN LIMPIOS ══ "
+        "Los CUATRO BRAZOS con sus manos, agarrados de dos en dos, son la ÚNICA excepción y no "
+        "se tocan: siguen ENTEROS y NÍTIDOS, negro macizo, con el contorno LIMPIO y CERRADO, sin "
+        "muescas, sin agujeros, sin desgranarse y sin nube de polvo alrededor. Las manos siguen "
+        "agarradas, sin separarse. "
+        "Ese contraste es la idea de la imagen: todo lo demás se deshace, y lo único que aguanta "
+        "entero son las manos cogidas. "
 
         "Sin sangre, sin color y sin texto."),
 ]
