@@ -146,6 +146,7 @@ INSERTADAS = {
     128: 66,  # las piezas descritas como FORMAS sueltas, no como partes del cuerpo
     130: 66,  # la 129 + los cuatro brazos agarrados (solo anadir)
     131: 66,  # desde la 94: los tres desmontados como marionetas de papel
+    132: 66,  # el mismo encargo, con un prompt corto y directo
 }
 
 
@@ -4398,6 +4399,33 @@ ESCENAS = [
         "PROHIBIDO añadir elementos que no sean esos recortes y el polvo. PROHIBIDO cualquier "
         "líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no sea gris, blanco o "
         "negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
+
+    # ── 132 · EL MISMO ENCARGO, CON UN PROMPT CORTO ───────────────────────────
+    # ⚠ QUINTO INTENTO. Los prompts han ido creciendo hasta seis bloques y ~6.500
+    # caracteres, y el resultado no mejora: puede que lo importante se diluya
+    # entre tanta prohibición. Aquí se prueba lo contrario — un prompt BREVE, con
+    # una sola idea por frase y solo lo esencial: piezas grandes y separadas, y
+    # los cuatro brazos. Sin polvo, sin listas largas, sin repetir prohibiciones.
+    (132, ["assets/Prologo/escenas/escena_94.png"],
+        "Misma escena que la imagen de referencia: mismo pixel art 2D de 16 bits, mismo "
+        "encuadre 16:9, misma cámara, mismo plano lejano, misma roca cuarteada, mismo halo de "
+        "luz en el centro y misma penumbra en las esquinas. Todo en grises, blancos y negros. "
+        "EL CAMBIO: las tres figuras han estallado en pedazos. En su lugar, flotando en el "
+        "halo, hay unas VEINTE PIEZAS NEGRAS SUELTAS, bien grandes y bien separadas unas de "
+        "otras, cada una girada de una manera distinta. Se ve el fondo entre ellas. "
+        "Las piezas son: cuatro o cinco óvalos del tamaño de una cabeza, tres bultos anchos "
+        "como un torso (uno acampanado abajo, como una falda), unas cuantas barras alargadas "
+        "como piernas y brazos partidos, y varias cuñas pequeñas como zapatos. Las de la figura "
+        "del centro son el doble de grandes que las de los lados. "
+        "NINGUNA PIEZA TOCA A OTRA. Ninguna está encima de otra. Ninguna está en el sitio que le "
+        "tocaría en un cuerpo. No se puede reconocer ninguna persona: si se ve un cuerpo, está "
+        "mal. "
+        "LO ÚNICO ENTERO: cuatro brazos con sus manos, cogidos de dos en dos. A la izquierda, un "
+        "brazo largo y grueso cuya mano agarra la mano de un brazo corto y fino. A la derecha, "
+        "lo mismo. Cuatro brazos, cuatro manos, dos agarres. El brazo largo mide el doble que el "
+        "corto. Están sueltos en el aire y se cortan en seco por el hombro, sin cuerpo detrás. "
+        "Son lo más nítido de la imagen. "
+        "Siluetas negras planas, sin caras ni detalles. Sin sangre. Sin texto."),
 ]
 
 
