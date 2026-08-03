@@ -502,6 +502,15 @@ Stack estándar de la casa, con particularidades de este repo:
         una función normal que dispare aparte el trabajo asíncrono
         (`(r) => { void cerrarAlta(r); }`), y envolver la llamada en `try/catch` para que la
         próxima excepción del SDK llegue a la pantalla y no solo a la consola.
+    16. **⚠️ LA COEXISTENCIA SE PIDE CON `extras.featureType`, Y ESTUVO VACÍO.** El Embedded
+        Signup se lanza con `featureType: 'whatsapp_business_app_onboarding'`. Con el campo
+        en `''` Meta abre el flujo **estándar**, que solo ofrece dar de alta un número nuevo
+        o migrar uno existente — o sea, **el único camino que ofrece es el irreversible**,
+        el que le quita el WhatsApp al cliente. Síntoma: el desplegable no lista el número
+        existente y Meta responde «este número ya está registrado con una cuenta de
+        WhatsApp; migra o desconéctalo». Parece un problema de permisos o de portafolio y no
+        lo es. ⚠️ **`coexistence` YA NO es un valor válido**: hay que usar
+        `whatsapp_business_app_onboarding`.
     14. **Medir, no razonar, TAMBIÉN en la API.** Las lecciones 5, 6 y 13 salieron todas de
         llamar de verdad. Ante una duda de contrato de la API, se escribe una sonda de 30
         líneas que prueba la matriz y se lee el resultado. Deducirlo del cambio de versión o

@@ -150,7 +150,28 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
           config_id: configId,
           response_type: 'code',
           override_default_response_type: true,
-          extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
+          extras: {
+            setup: {},
+            /**
+             * ⚠️ ESTE CAMPO ES LO QUE PIDE LA COEXISTENCIA, Y ESTUVO VACÍO.
+             *
+             * Con `featureType: ''` Meta abre el flujo ESTÁNDAR, que solo sabe dar de alta
+             * números nuevos o migrar uno existente. Le pasó a Peters Tours el 2026-08-03:
+             * el desplegable solo ofrecía «Agregar un nuevo número de WhatsApp» y Meta
+             * respondía «este número ya está registrado con una cuenta de WhatsApp; para
+             * continuar, migra o desconéctalo». Es decir: el único camino que ofrecía era
+             * el irreversible, el que le quita el WhatsApp al cliente.
+             *
+             * No era un fallo de Meta ni de la configuración del portafolio: **nunca le
+             * habíamos pedido el flujo de coexistencia**.
+             *
+             * Documentación de Meta: «Add a featureType property set to
+             * whatsapp_business_app_onboarding to the extras object in the launch method».
+             * Y avisa de que **`coexistence` ya NO es un valor válido** — hay que usar este.
+             */
+            featureType: 'whatsapp_business_app_onboarding',
+            sessionInfoVersion: '3',
+          },
         },
       );
     } catch (err: any) {
