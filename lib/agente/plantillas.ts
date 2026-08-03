@@ -194,10 +194,20 @@ export async function enviarAListado(
 
     // El mensaje se guarda SIEMPRE, salga o no. Un envío fallido que no deja rastro es un
     // cliente preguntando «¿le llegó?» sin nadie que pueda responder.
-    await registrarSaliente(canal.id, para, c.name, {
-      texto: rellenar(plantilla.cuerpo, valores),
-      waMessageId: waId, envioId: envio.id, error,
-    });
+    //
+    // ⚠️ Y SI EL GUARDADO FALLA, NO SE TUMBA EL ENVÍO. El orden es: primero se manda a
+    // WhatsApp, después se guarda. Cuando el guardado reventaba —pasó con la restricción
+    // que no conocía `'plantilla'`, 2026-08-03— el envío terminaba en error habiendo
+    // funcionado: los mensajes LLEGABAN y la pantalla decía que no. Peor aún, abortaba el
+    // resto de la tanda. Que no se pueda anotar algo nunca puede impedir hacer lo demás.
+    try {
+      await registrarSaliente(canal.id, para, c.name, {
+        texto: rellenar(plantilla.cuerpo, valores),
+        waMessageId: waId, envioId: envio.id, error,
+      });
+    } catch (e: any) {
+      console.error('[agente] no se pudo registrar el saliente de plantilla:', e?.message, { para, envio: envio.id });
+    }
 
     await pool.query(
       `UPDATE gcc_world.agente_envios SET enviados = $2, fallidos = $3 WHERE id = $1`,
