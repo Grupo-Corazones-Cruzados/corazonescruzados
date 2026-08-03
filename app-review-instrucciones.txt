@@ -42,27 +42,31 @@ CAMPO 3 — Instrucciones de acceso y prueba  (CAMPO OBLIGATORIO)
 >>>
 ACCESS
 Platform URL: https://app.grupocc.org
-Sign in at:   https://app.grupocc.org/auth
 Email:    revisor.meta@grupocc.org
 Password: g6kA-NKAt7gC
 
+HOW TO SIGN IN
+1. Open https://app.grupocc.org
+2. Click the "Plataforma" button in the top-right of the home page.
+3. Choose "Ingresar como cliente" (Sign in as a client).
+4. Enter the email and password above and press "Continuar".
+
 Email and password are all that is required — this account is exempt from the
-email verification code that our platform normally sends, so there is no second
-step and no inbox access is needed. The account is client-type and will remain
-active for at least one year from the date of this submission.
+email verification code our platform normally sends, so there is no second step
+and no inbox access is needed. The account is client-type and will remain active
+for at least one year from the date of this submission.
 
 WHAT THIS APP DOES
-Grupo Corazones Cruzados is a human development project in Ecuador. Alongside
-our work with people, we build technology for the organizations that work with
-us — this app is that part. Business customers connect
-their own WhatsApp Business number through our platform, and an AI agent answers
-their incoming WhatsApp messages on their behalf, while their staff keep using
-WhatsApp on their phone (coexistence). Each customer is a separate tenant:
-one flow = one channel = one phone number = one business.
+Grupo Corazones Cruzados is a human development project in Ecuador. Alongside our
+work with people, we build technology for the organizations that work with us —
+this app is that part. Business customers connect their own WhatsApp Business
+number through our platform, and an AI agent answers their incoming WhatsApp
+messages on their behalf, while their staff keep using WhatsApp on their phones
+(coexistence). Each customer is a separate tenant: one flow = one channel = one
+phone number = one business.
 
 STEP-BY-STEP TEST
-1. Sign in at https://app.grupocc.org/auth with the credentials above. You will
-   land directly on the dashboard.
+1. Sign in following the steps above. You will land on the dashboard.
 2. In the left sidebar, open "Automatizaciones" (Automations).
 3. Open the flow named "lfgonzalezm0". This review account is scoped to that
    single flow by design; other customers' flows are not visible to it, and are
@@ -72,11 +76,11 @@ STEP-BY-STEP TEST
    the contact, and the outbound replies our AI agent generated and sent back
    through the Cloud API. The footer shows model usage for that conversation.
 5. "Plantillas" (Templates) tab — the message templates registered on the
-   connected WhatsApp Business Account, with their Meta review status. From here
-   a template can be created (it is submitted to Meta for approval), edited, and
-   — once approved — sent to a list of the business's own contacts, with each
-   template variable filled from that contact's data. Sent messages appear in the
-   inbox labelled as template sends.
+   connected WhatsApp Business Account, each with its real Meta review status.
+   From here a template can be created (it is submitted to Meta for approval),
+   edited, and — once approved — sent to a list of the business's own contacts,
+   with each template variable filled from that contact's data. Template sends
+   appear in the inbox labelled as such.
 6. "Estudio del agente" (Agent Studio) tab — a read-only diagram of the actual
    processing pipeline: webhook -> signature check -> queue -> worker -> model
    -> reply sent via WhatsApp Cloud API. Click any step to see what it receives
@@ -89,8 +93,8 @@ exactly what this submission requests. Until it is granted we cannot onboard a
 real customer number, so we connected the Meta test number that ships with our
 app (+1 555 666 6709) in order to exercise the full chain end to end. Both
 permissions have already been used successfully with it: subscribing our app to
-the WABA (whatsapp_business_management), and registering the number and sending
-messages (whatsapp_business_messaging). The attached video demonstrates a send.
+the WABA and managing message templates (whatsapp_business_management), and
+registering the number and sending messages (whatsapp_business_messaging).
 
 META APIS AND FACEBOOK LOGIN
 We use Facebook Login for Business solely as part of the WhatsApp Embedded
@@ -101,16 +105,15 @@ app.grupocc.org uses our own email + password system — the credentials above.
 
 The `public_profile` permission is included by default with Facebook Login for
 Business and appears in our use case for that reason. We do not read, store or
-otherwise use any profile data from it, which is why it shows no test API calls.
-We request no other user-data permissions — no email, no user_friends, no
-user_birthday. The only data we take from the Embedded Signup flow is the
-WhatsApp Business Account ID and the phone number ID of the business being
-onboarded.
+otherwise use any profile data from it. We request no other user-data
+permissions — no email, no user_friends, no user_birthday. The only data we take
+from the Embedded Signup flow is the WhatsApp Business Account ID and the phone
+number ID of the business being onboarded.
 
 The Meta APIs we call are the WhatsApp Cloud API and the WhatsApp Business
 Management API: exchanging the Embedded Signup code, subscribing our app to the
-customer's WABA, reading phone number status, registering a phone number, and
-sending and receiving messages.
+customer's WABA, reading phone number status, registering a phone number,
+listing/creating/editing message templates, and sending and receiving messages.
 
 Terms and privacy policy for this service, where we act as data processor on
 behalf of the business customer:
@@ -126,7 +129,8 @@ CAMPO 4 — Credenciales de prueba (suscripciones / compras / funciones)
 No payment, subscription or membership is required to access any of the features
 under review. The test credentials for the full platform are:
 
-  URL:      https://app.grupocc.org/auth
+  URL:      https://app.grupocc.org
+            (click "Plataforma" -> "Ingresar como cliente")
   Email:    revisor.meta@grupocc.org
   Password: g6kA-NKAt7gC
 
@@ -331,6 +335,87 @@ own account.
 
 
 --------------------------------------------------------------------------------
+whatsapp_business_management — DESCRIPCIÓN DETALLADA
+(el campo largo: cómo se usa · qué valor aporta · por qué es imprescindible)
+--------------------------------------------------------------------------------
+
+    Mismo orden que el de messaging: los tres bloques que Meta evalúa por separado.
+    Este permiso cubre DOS cosas en nuestra app —conectar la cuenta y gestionar
+    las plantillas—, y conviene que se vean como dos, porque la segunda es la que
+    el revisor va a ver funcionando en la pantalla y en el video.
+
+>>>
+WHO USES THIS APP
+Our business customers: small and medium organizations in Ecuador — a tour operator, a
+clinic, a store — who already run their customer service over WhatsApp and want an AI
+assistant to answer for them, without losing WhatsApp on their own phones.
+
+HOW THE APP USES whatsapp_business_management
+Two distinct jobs, both visible in the product.
+
+1. CONNECTING AND MAINTAINING THE CUSTOMER'S ACCOUNT.
+   · We exchange the Embedded Signup authorization code for that customer's access token.
+   · We subscribe our app to their WhatsApp Business Account
+     (POST /{waba-id}/subscribed_apps) and then VERIFY the subscription actually took
+     effect. Without this step not a single message is delivered to us, and the setup
+     would look successful while silently failing.
+   · We read the state of their phone number (GET /{waba-id}/phone_numbers): display
+     number, verified name, status and quality rating. This is what we show the business
+     on its own connection screen, and what tells us whether onboarding still needs work
+     on their side.
+   · We register the number with the Cloud API when required
+     (POST /{phone-number-id}/register), so it can send and receive.
+
+2. MANAGING THEIR MESSAGE TEMPLATES — the "Plantillas" tab of each agent.
+   · We list the templates of their WhatsApp Business Account
+     (GET /{waba-id}/message_templates) and show each one with its real Meta review
+     status — approved, in review, rejected with its reason, or paused for quality —
+     refreshed on demand.
+   · The business creates a template from our interface
+     (POST /{waba-id}/message_templates); it is submitted to Meta and stays unusable
+     until Meta approves it.
+   · It can edit one (POST /{template-id}), which sends it back to review, or delete it
+     (DELETE /{waba-id}/message_templates).
+   Templates can carry variables, and our interface maps each variable to a column of the
+   business's own contact list, previewing the filled-in message before anything is sent.
+
+WHAT VALUE THIS BRINGS
+For the business, the value is not having to leave our platform — or learn Meta's — to run
+its own WhatsApp. Without this permission, connecting a number would mean walking a
+non-technical owner through Meta's Business Manager, and every template would mean going
+back there, writing it in Meta's editor, and returning to us to use it. That round trip is
+where small businesses give up. Here they see their templates, their status and the reason
+for a rejection in the same screen where they will use them, in Spanish, and they can fix
+and resubmit without leaving.
+
+Reading the connection state matters just as much, and for a less obvious reason: when
+something is wrong — the app was never subscribed, the number was never registered, quality
+dropped — everything otherwise LOOKS fine and the business just never receives messages.
+Surfacing that state is what turns a silent failure into something they can act on.
+
+For their end customers, the value is indirect but real: a template is the only way a
+business can start a conversation outside the 24-hour service window, so it is what makes
+an appointment reminder or a service notice possible at all.
+
+WHY IT IS NECESSARY FOR THE APP TO WORK
+Without whatsapp_business_management our app cannot be connected to any customer at all:
+the code cannot be exchanged, our app cannot be subscribed to their account, and therefore
+no message ever reaches us. Everything else in the product depends on that one step. And
+without it there is no way to read or create templates on the customer's behalf, which
+means the business would have to do it in Meta's own tools — the exact work our customers
+come to us to avoid.
+
+HOW WE STAY WITHIN THE POLICY
+We use this permission only on WhatsApp Business Accounts whose owner explicitly connected
+them to us through Embedded Signup. We do not create, modify or delete any other asset in a
+customer's portfolio, we do not manage their users or roles, and we do not read or touch
+any account beyond the one they connected. Each customer's access token is stored
+encrypted, bound to that channel, and used only for that customer's own account. Templates
+are always created inside the customer's own WhatsApp Business Account and remain theirs.
+<<<
+
+
+--------------------------------------------------------------------------------
 public_profile — «Describe cómo tu app usa este permiso»
 --------------------------------------------------------------------------------
 
@@ -364,6 +449,83 @@ VIDEOS Y CASILLAS
   «Confirma que cumplirás con el uso permitido»: marcar la casilla en los tres.
   Los textos de arriba están escritos para ser coherentes con esa confirmación —
   no prometen nada que la app no haga.
+
+
+================================================================================
+TRATAMIENTO DE DATOS  (sección «Data Handling» del formulario)
+================================================================================
+
+    Todo lo de aquí está respaldado por lo que ya está publicado en
+    https://app.grupocc.org/legal/whatsapp — no se promete nada nuevo.
+    Secciones A.6 (subencargados) y A.11 (solicitudes de autoridades).
+
+
+processor-0 — ¿Tienes encargados del tratamiento o proveedores de servicios?
+--------------------------------------------------------------------------------
+    Respuesta:  SÍ
+    (Responder «No» sería falso y contradiría la propia política publicada.)
+
+>>>
+Anthropic, PBC — AI model provider. Receives the recent conversation text and the
+business's knowledge base in order to compose the reply.
+
+Railway Corp. — Hosting and infrastructure. Runs the application and hosts the
+database where the service's data is stored.
+<<<
+
+
+responsible-1 — ¿Quién es el responsable de los Datos de la plataforma?
+--------------------------------------------------------------------------------
+    ⚠️ EXACTAMENTE la misma cadena que figura como nombre legal en el portafolio
+    verificado. Es el campo que rechazaron dos veces al principio por no coincidir
+    con el registro; poner «Grupo Corazones Cruzados» aquí repite ese error.
+
+>>>
+GONZALEZ MUYULEMA LUIS FERNANDO — RUC 0930095922001
+(commercial name: Grupo Corazones Cruzados)
+<<<
+
+
+responsible-2 — País
+--------------------------------------------------------------------------------
+    Ecuador
+
+
+requests-3 — ¿Datos entregados por seguridad nacional en los últimos 12 meses?
+--------------------------------------------------------------------------------
+    No.
+
+
+requests-4 — Procesos ante solicitudes de autoridades
+--------------------------------------------------------------------------------
+    Marcar las CUATRO primeras. Las cuatro están escritas en la sección A.11 de
+    la política publicada:
+
+    [x] Revisión obligatoria de la legalidad
+        → «Exigimos un requerimiento válido»: autoridad competente, por escrito y
+          con fundamento legal. No se entregan datos por una petición informal.
+    [x] Disposiciones para recusar solicitudes ilícitas
+        → «Impugnamos lo desproporcionado»: excesivo, genérico o sin base legal.
+    [x] Política de minimización de datos
+        → «Entregamos el mínimo»: solo lo comprendido en el requerimiento, nunca
+          acceso general ni volcados completos.
+    [x] Documentación de las solicitudes
+        → «Dejamos constancia de cada solicitud recibida y de la respuesta dada».
+
+    NO marcar «Ninguna de las anteriores»: hay política publicada, y marcarlo
+    dejaría la solicitud peor de lo que está.
+
+
+⚠️ LOS DOS «RESPONSABLES», QUE SE CONFUNDEN
+--------------------------------------------------------------------------------
+    · Los datos que META comparte con NOSOTROS —tokens, identificadores de cuenta,
+      el secreto de la app—: el responsable es GCC. **Es lo que pregunta este
+      formulario.**
+    · Las conversaciones de los clientes finales: la responsable es la EMPRESA
+      CLIENTE, y GCC es su encargado. Es lo que dice la política.
+
+    No es una contradicción, son dos capas. Si alguna vez preguntan por qué en un
+    sitio dice «responsable» y en otro «encargado», la respuesta es esa.
 
 
 ================================================================================

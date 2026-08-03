@@ -3,6 +3,7 @@ import { pool } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
 import { createToken, setAuthCookie } from '@/lib/auth/jwt';
+import { PERFILES, cuentaEncaja, esTipoValido } from '@/lib/auth/tipos';
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
@@ -45,12 +46,30 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
-    // El login de cliente (expect='client') solo acepta cuentas de cliente.
-    if (expect === 'client' && user.role !== 'client') {
-      return NextResponse.json(
-        { error: 'Esta cuenta no es de cliente. Usa "Ingresar como miembro" o "Soy candidato".' },
-        { status: 403 },
+    /**
+     * ── CADA PUERTA ACEPTA SU TIPO ────────────────────────────────────────────
+     * `expect` dice por qué pantalla se está entrando: `cliente`, `miembro` o `candidato`.
+     *
+     * ⚠️ NO BASTA CON EL ROL. Cliente y candidato comparten `role = 'client'`; lo que los
+     * separa es `clients.account_type`. La comprobación anterior solo miraba el rol, así
+     * que un candidato entraba por la puerta de clientes sin que nada se quejara.
+     *
+     * `expect: 'client'` se sigue aceptando como sinónimo de `cliente`: lo usa el modal de
+     * la portada, que es anterior a esto.
+     */
+    const tipoEsperado = expect === 'client' ? 'cliente' : expect;
+    if (esTipoValido(tipoEsperado)) {
+      const { rows: [ficha] } = await pool.query(
+        `SELECT account_type FROM gcc_world.clients WHERE LOWER(email) = $1
+          ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+        [cleanEmail],
       );
+      if (!cuentaEncaja(tipoEsperado, { role: user.role, accountType: ficha?.account_type })) {
+        return NextResponse.json(
+          { error: PERFILES[tipoEsperado].mensajeTipoIncorrecto },
+          { status: 403 },
+        );
+      }
     }
 
     /**

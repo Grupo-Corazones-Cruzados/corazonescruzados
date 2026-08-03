@@ -1,348 +1,63 @@
-"use client";
+/**
+ * /auth — el selector: ¿quién eres?
+ *
+ * Dejó de ser un formulario. Era una puerta única para clientes, miembros y candidatos, y
+ * no distinguía nada: quien se equivocaba de cuenta se enteraba tarde y sin explicación.
+ * Ahora reparte hacia la puerta que corresponde, y cada una comprueba en el servidor que
+ * la cuenta encaje.
+ *
+ * ⚠️ La URL `/auth` NO se retira: está enlazada desde correos, guardada en marcadores y
+ * declarada en sitios que no controlamos. Se convierte en la antesala, no desaparece.
+ */
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/components/providers/AuthProvider";
-import { startAuthentication } from "@simplewebauthn/browser";
-import { toast } from "sonner";
-import Link from "next/link";
-import BrandLoader from "@/components/ui/BrandLoader";
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import { PERFILES, type TipoCuenta } from '@/lib/auth/tipos';
 
-function AuthForm() {
-  const params = useSearchParams();
-  const redirect = params.get("redirect") || "/dashboard";
+export const metadata: Metadata = { title: 'Acceso · GCC World', robots: { index: false } };
 
-  const [tab, setTab] = useState<"login" | "reset">("login");
-  const [loading, setLoading] = useState(false);
-  const [passkeyBusy, setPasskeyBusy] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  // 2FA por código
-  const [codeStep, setCodeStep] = useState(false);
-  const [code, setCode] = useState("");
-  const [masked, setMasked] = useState<string | null>(null);
+const ORDEN: TipoCuenta[] = ['cliente', 'miembro', 'candidato'];
 
-  const { resetPassword, refreshUser } = useAuth();
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (tab === "reset") {
-        await resetPassword(email);
-        toast.info(
-          "Si el correo existe, recibirás un enlace para restablecer tu contraseña."
-        );
-        return;
-      }
-
-      // Login con 2FA: paso 1 (credenciales → código), paso 2 (código → entra).
-      if (!codeStep) {
-        const r = await fetch("/api/auth/login/begin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        const j = await r.json();
-        if (!r.ok) {
-          toast.error(j?.error ?? "No se pudo iniciar sesión");
-          return;
-        }
-        // Cuenta exenta del segundo factor: el servidor ya dejó la sesión abierta, así
-        // que no hay código que pedir. Ver la migración 029 y `login/begin`.
-        if (j?.sinCodigo) {
-          await refreshUser();
-          router.push(redirect);
-          return;
-        }
-        setMasked(j?.masked ?? null);
-        setCodeStep(true);
-      } else {
-        const r = await fetch("/api/auth/login/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code }),
-        });
-        const j = await r.json();
-        if (!r.ok) {
-          toast.error(j?.error ?? "Código incorrecto");
-          return;
-        }
-        await refreshUser();
-        router.push(redirect);
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Ocurrió un error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasskey = async () => {
-    // El correo es opcional: si está vacío el servidor resuelve por
-    // cookie/IP (igual que el passkey del juego).
-    setPasskeyBusy(true);
-    try {
-      const begin = await fetch("/api/auth/passkey/begin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const opts = await begin.json();
-      if (!begin.ok) {
-        toast.error(opts?.error ?? "No se pudo iniciar passkey");
-        return;
-      }
-
-      const credential = await startAuthentication({ optionsJSON: opts });
-
-      const finish = await fetch("/api/auth/passkey/finish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, credential }),
-      });
-      const fJson = await finish.json();
-      if (!finish.ok) {
-        toast.error(fJson?.error ?? "Passkey rechazada");
-        return;
-      }
-
-      await refreshUser();
-      router.push(redirect);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Error de passkey";
-      // El usuario canceló el prompt → ignorar en silencio.
-      if (!/cancel|abort|timeout|allowed/i.test(msg)) {
-        toast.error(msg);
-      }
-    } finally {
-      setPasskeyBusy(false);
-    }
-  };
-
-  const pixelFont = { fontFamily: "'Silkscreen', cursive" } as const;
-  const busy = loading || passkeyBusy;
-
+export default function SelectorDeAcceso() {
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Logo / Brand */}
-      <Link href="/" className="group">
-        <BrandLoader size="md" label="GCC WORLD" />
-      </Link>
+    <div className="corp dark w-full max-w-[440px]">
+      <div className="bg-digi-card border border-digi-border rounded-lg shadow-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-digi-border">
+          <h1 className="text-[17px] font-semibold text-digi-text leading-tight"
+              style={{ fontFamily: 'var(--font-body)' }}>
+            Entrar a GCC World
+          </h1>
+          <p className="mt-0.5 text-[12.5px] text-digi-muted leading-relaxed"
+             style={{ fontFamily: 'var(--font-body)' }}>
+            Elige el tipo de cuenta con el que vas a entrar.
+          </p>
+        </div>
 
-      {/* Auth Card */}
-      <div className="pixel-card w-full">
-        <h1 className="pixel-heading text-lg text-white text-center mb-1">
-          {tab === "login" ? "Iniciar Sesion" : "Restablecer"}
-        </h1>
-        <p
-          className="text-center text-xs mb-6 opacity-50"
-          style={{ ...pixelFont, color: "#94A3B8" }}
-        >
-          {tab === "login"
-            ? "Ingresa a tu cuenta"
-            : "Te enviaremos un enlace por correo"}
-        </p>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {tab === "login" && codeStep ? (
-            <>
-              <p
-                className="text-xs text-center opacity-70"
-                style={{ ...pixelFont, color: "#CBD5E1" }}
+        <div className="bg-digi-darker p-3 space-y-2">
+          {ORDEN.map((tipo) => {
+            const p = PERFILES[tipo];
+            return (
+              <Link
+                key={tipo} href={`/auth/${tipo}`}
+                className="block rounded-md border border-digi-border bg-digi-card px-4 py-3
+                           hover:border-accent hover:bg-accent-light transition-colors"
+                style={{ fontFamily: 'var(--font-body)' }}
               >
-                Te enviamos un código a {masked ?? "tu correo"}.
-              </p>
-              <PixelInput
-                label="Código de 6 dígitos"
-                name="code"
-                type="text"
-                required
-                value={code}
-                onChange={(v) => setCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-                placeholder="000000"
-              />
-            </>
-          ) : (
-            <>
-              <PixelInput
-                label="Correo electronico"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={setEmail}
-                placeholder="tu@correo.com"
-              />
-              {tab === "login" && (
-                <PixelInput
-                  label="Contrasena"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={setPassword}
-                  placeholder="Minimo 8 caracteres"
-                  minLength={8}
-                />
-              )}
-            </>
-          )}
+                <span className="block text-[13.5px] font-semibold text-digi-text">{p.titulo}</span>
+                <span className="block text-[12px] text-digi-muted mt-0.5 leading-relaxed">{p.subtitulo}</span>
+              </Link>
+            );
+          })}
+        </div>
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="pixel-btn pixel-btn-primary w-full mt-2 disabled:opacity-50"
-          >
-            {loading
-              ? "Cargando..."
-              : tab === "reset"
-                ? "Enviar Enlace"
-                : codeStep
-                  ? "Confirmar y entrar"
-                  : "Enviar código"}
-          </button>
-
-          {tab === "login" && codeStep && (
-            <button
-              type="button"
-              onClick={() => {
-                setCodeStep(false);
-                setCode("");
-              }}
-              className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
-              style={pixelFont}
-            >
-              ← Volver
-            </button>
-          )}
-        </form>
-
-        {tab === "login" && !codeStep && (
-          <>
-            <div className="flex items-center gap-3 my-4">
-              <span className="flex-1 h-px bg-digi-border" />
-              <span
-                className="text-[9px] opacity-40"
-                style={{ ...pixelFont, color: "#94A3B8" }}
-              >
-                o
-              </span>
-              <span className="flex-1 h-px bg-digi-border" />
-            </div>
-            <button
-              type="button"
-              onClick={handlePasskey}
-              disabled={busy}
-              className="pixel-btn pixel-btn-primary w-full"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                opacity: busy ? 0.6 : 1,
-              }}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="square"
-                aria-hidden="true"
-              >
-                <path d="M12 2a5 5 0 0 1 5 5v3" />
-                <path d="M12 2a5 5 0 0 0-5 5v3" />
-                <rect x="5" y="10" width="14" height="11" rx="1" />
-                <path d="M12 14v4" />
-              </svg>
-              {passkeyBusy ? "Autenticando..." : "Usar passkey"}
-            </button>
-          </>
-        )}
-
-        <div className="mt-5 text-center space-y-2">
-          {tab === "login" ? (
-            <button
-              className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
-              style={pixelFont}
-              onClick={() => setTab("reset")}
-            >
-              Olvidaste tu contrasena?
-            </button>
-          ) : (
-            <button
-              className="text-[10px] text-accent-glow opacity-60 hover:opacity-100 transition-opacity"
-              style={pixelFont}
-              onClick={() => setTab("login")}
-            >
-              Volver a iniciar sesion
-            </button>
-          )}
+        <div className="px-5 py-3.5 border-t border-digi-border">
+          <Link href="/"
+            className="block text-center text-[12.5px] text-digi-muted hover:text-accent transition-colors"
+            style={{ fontFamily: 'var(--font-body)' }}>
+            Volver al inicio
+          </Link>
         </div>
       </div>
     </div>
-  );
-}
-
-function PixelInput({
-  label,
-  name,
-  type = "text",
-  required,
-  value,
-  onChange,
-  placeholder,
-  minLength,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  minLength?: number;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label
-        htmlFor={name}
-        className="text-[10px] text-accent-glow opacity-70"
-        style={{ fontFamily: "'Silkscreen', cursive" }}
-      >
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        minLength={minLength}
-        className="w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none transition-colors"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
-      />
-    </div>
-  );
-}
-
-export default function AuthPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-20">
-          <BrandLoader size="lg" />
-        </div>
-      }
-    >
-      <AuthForm />
-    </Suspense>
   );
 }

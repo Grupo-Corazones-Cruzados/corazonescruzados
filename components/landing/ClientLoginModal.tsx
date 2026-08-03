@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import BrandLoader from '@/components/ui/BrandLoader';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
+import { PANEL_AUTH, TITULO_AUTH, CAMPO_AUTH } from './authEstilos';
 
 const PIXEL = "'Silkscreen', cursive";
 const BODY = "'Inter', system-ui, -apple-system, sans-serif";
@@ -425,15 +426,7 @@ const overlay: React.CSSProperties = {
   padding: 16, overflowY: 'auto',
 };
 
-const panel: React.CSSProperties = {
-  position: 'relative', width: '100%',
-  background: 'var(--color-digi-card)',
-  border: '1px solid var(--color-digi-border)',
-  borderRadius: 8,
-  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-  padding: '22px 20px',
-  fontFamily: 'var(--font-body)',
-};
+const panel = PANEL_AUTH;
 
 const closeBtn: React.CSSProperties = {
   position: 'absolute',
@@ -448,19 +441,6 @@ const closeBtn: React.CSSProperties = {
   padding: 6,
 };
 
-const title: React.CSSProperties = {
-  fontFamily: 'var(--font-body)',
-  fontSize: '1.06rem', fontWeight: 600,
-  color: 'var(--color-digi-text)',
-  margin: '0 0 6px', letterSpacing: '-0.01em',
-};
+const title = TITULO_AUTH;
 
-const input: React.CSSProperties = {
-  width: '100%', padding: '9px 12px',
-  background: 'var(--color-digi-darker)',
-  color: 'var(--color-digi-text)',
-  border: '1px solid var(--color-digi-border)',
-  borderRadius: 4,
-  fontFamily: 'var(--font-body)', fontSize: '0.85rem',
-  outline: 'none',
-};
+const input = CAMPO_AUTH;
