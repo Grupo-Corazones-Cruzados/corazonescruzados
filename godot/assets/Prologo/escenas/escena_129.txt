@@ -1,0 +1,15 @@
+ESCENA 129 — GENERADA FUERA DEL PIPELINE
+
+⚠ Esta estampa NO la hizo `tools/generar_estampas.py`. La generó Fernando manualmente en
+otra herramienta el 2026-08-02, después de que Gemini esquivara este contenido una y otra
+vez (ver Videojuego.md §4.41 y assets/Prologo/PROMPT-despiece.md).
+
+Por eso NO tiene entrada en la lista ESCENAS del generador: si la tuviera, un
+`python tools/generar_estampas.py 129` la sobrescribiría y se perdería el original.
+
+Qué muestra: el interior del Hoyo, con los restos de los tres hermanos ya despiezados
+flotando en el halo de luz — piezas sueltas, separadas y giradas, con polvo entre ellas.
+
+El archivo original, tal cual salió de la herramienta (2000×1143, RGBA), está guardado sin
+tocar en `assets/Prologo/referencias/129_original_2000x1143.png`. La estampa se reescaló a
+1344×768 RGB para que encaje con el resto del prólogo.

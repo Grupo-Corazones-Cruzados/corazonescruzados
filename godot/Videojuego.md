@@ -651,6 +651,17 @@ portada → "Entrar" → login; escribir la URL a pelo devuelve a la portada.
     Corolario: si algo tiene que verse ROTO, no basta con prohibir que esté entero; hay que
     dejar de nombrarlo por su nombre.
 
+42. **ESTAMPAS GENERADAS FUERA DEL PIPELINE: no darlas de alta en `ESCENAS`.** Cuando una
+    estampa la genera Fernando a mano en otra herramienta (pasó con la **129** el
+    2026-08-02, tras la regla §4.41), se copia a `assets/Prologo/escenas/escena_NN.png` como
+    cualquier otra —mismo tamaño 1344×768 RGB, `.import` con `mode=1` + `lossy_quality=0.85`,
+    su sitio en `TRAMOS`— pero **NO se le añade entrada en la lista `ESCENAS`** del generador.
+    Si la tuviera, un `python tools/generar_estampas.py NN` la **sobrescribiría** y se perdería
+    el original, que no se puede reproducir.
+    En su lugar: (a) su `.txt` explica de dónde salió y por qué no está en el generador, y
+    (b) el archivo **original sin tocar** (con su tamaño y su modo de color de origen) se
+    guarda en `assets/Prologo/referencias/`, que además está excluida del export.
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**
