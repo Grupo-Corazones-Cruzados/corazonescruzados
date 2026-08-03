@@ -662,6 +662,25 @@ portada → "Entrar" → login; escribir la URL a pelo devuelve a la portada.
     (b) el archivo **original sin tocar** (con su tamaño y su modo de color de origen) se
     guarda en `assets/Prologo/referencias/`, que además está excluida del export.
 
+43. **⛔ EL DESPIECE DE LOS TRES HERMANOS: el modelo OSCILA entre dos extremos y nunca da el
+    punto medio.** Encargo: los tres despiezados, con las partes sueltas (pies, piernas,
+    torsos) y solo cuatro brazos agarrados. Seis intentos (126, 127, 128, 131, 132, 133) y el
+    resultado siempre cae en uno de los dos lados:
+      · si se nombran las partes → devuelve **los cuerpos enteros** (126, 127, 131, 132);
+      · si se describen como formas para esquivarlo → devuelve **bolitas informes**, sin pies
+        ni piernas reconocibles (128).
+    Nunca lo intermedio. No es que no entienda el encargo: **evita dibujar partes de cuerpo
+    separadas de menores**, igual que bloqueó la 58 y la 28 (§4.20, §4.36). Da igual el largo
+    del prompt: se probó con 6.239 caracteres y con 1.690, y con encuadres de marioneta de
+    papel y de maniquí de madera.
+    **Salidas conocidas, por orden:** (a) **componer por código** las dos mitades ya buenas —es
+    lo que resolvió la 82 (§4.36-ter)—; (b) **partir la escena en dos** estampas, una con las
+    piezas y otra con los brazos (§4.36); (c) generar la imagen **fuera**, como hizo Fernando
+    con la 129 (§4.42).
+    ⚠ Y lo más importante: **no encadenar tiradas juzgando yo el resultado** (§6, regla nº 1).
+    Aquí se pidió una a una, pero conviene reconocer antes el patrón y proponer las salidas en
+    vez de seguir probando prompts.
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**

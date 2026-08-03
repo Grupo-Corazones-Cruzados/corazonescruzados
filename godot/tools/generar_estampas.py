@@ -147,6 +147,7 @@ INSERTADAS = {
     130: 66,  # la 129 + los cuatro brazos agarrados (solo anadir)
     131: 66,  # desde la 94: los tres desmontados como marionetas de papel
     132: 66,  # el mismo encargo, con un prompt corto y directo
+    133: 66,  # tres maniquies de madera desmontados (no son personas)
 }
 
 
@@ -4426,6 +4427,48 @@ ESCENAS = [
         "corto. Están sueltos en el aire y se cortan en seco por el hombro, sin cuerpo detrás. "
         "Son lo más nítido de la imagen. "
         "Siluetas negras planas, sin caras ni detalles. Sin sangre. Sin texto."),
+
+    # ── 133 · TRES MANIQUÍES DE MADERA DESMONTADOS ────────────────────────────
+    # ⚠ SEXTO INTENTO. Diagnóstico de Fernando tras la 132: el modelo OSCILA entre
+    # dos extremos —cuerpos enteros o bolitas informes— y nunca da el punto medio
+    # (piezas reconocibles como pies y piernas, sueltas). Eso no es que no entienda
+    # el encargo: es que evita dibujar partes de cuerpo de menores separadas.
+    # Último recurso por generación: quitar del prompt TODA mención a personas,
+    # niños o cuerpos. Aquí no hay tres hermanos: hay tres MANIQUÍES DE MADERA de
+    # los que usan los dibujantes, que son OBJETOS. Un maniquí se desmonta sin
+    # problema, y sus piezas SÍ son un pie, una pierna, un torso.
+    (133, ["assets/Prologo/escenas/escena_94.png"],
+        "Misma escena que la imagen de referencia: mismo pixel art 2D de 16 bits, mismo encuadre "
+        "16:9, misma cámara, mismo plano lejano, misma roca cuarteada, mismo halo de luz en el "
+        "centro y misma penumbra en las esquinas. Todo en grises, blancos y negros. "
+
+        "LO QUE HAY QUE DIBUJAR: en el halo de luz flotan las piezas de TRES MANIQUÍES DE MADERA "
+        "ARTICULADOS —esos muñecos de madera que usan los dibujantes para estudiar posturas—, "
+        "que están DESMONTADOS. No son personas: son muñecos de madera, objetos. Uno era grande "
+        "y los otros dos pequeños. "
+
+        "LAS PIEZAS: cada maniquí se ha separado en sus piezas y todas flotan sueltas. De cada "
+        "uno hay: la pieza de la CABEZA (un óvalo liso), la pieza del TORSO, las dos piezas de "
+        "los MUSLOS, las dos de las PANTORRILLAS, los dos PIES, y alguna pieza de articulación "
+        "pequeña. Son piezas de muñeco, se reconoce lo que es cada una por su forma: se tiene "
+        "que ver claramente que eso es un PIE, eso una PIERNA, eso un TORSO. Las piezas del "
+        "maniquí grande son el doble de grandes que las de los dos pequeños. "
+
+        "CÓMO ESTÁN: desparramadas por el halo, cada pieza girada en un ángulo distinto —muchas "
+        "de lado, otras boca abajo—, todas separadas entre sí, sin tocarse y sin encajar unas "
+        "con otras. Se ve el fondo de roca entre ellas. Ninguna pieza está en el sitio que le "
+        "tocaría en el muñeco montado: ninguna cabeza sobre un torso, ningún pie bajo una "
+        "pierna. Ningún maniquí está montado ni se reconoce entero. "
+
+        "LO ÚNICO QUE SIGUE UNIDO: los BRAZOS. Hay cuatro piezas de brazo terminadas en mano, "
+        "agarradas de dos en dos. A la izquierda, un brazo largo y grueso (del maniquí grande) "
+        "cuya mano agarra la mano de un brazo corto y fino (de uno pequeño). A la derecha, lo "
+        "mismo con el otro pequeño. Cuatro brazos, cuatro manos, dos agarres. El brazo largo "
+        "mide el doble que el corto. Se cortan en seco por el hombro, sin torso detrás. Son lo "
+        "más nítido de la imagen. "
+
+        "Todo son siluetas negras planas, sin caras ni detalles interiores. Sin sangre, sin "
+        "color y sin texto."),
 ]
 
 
