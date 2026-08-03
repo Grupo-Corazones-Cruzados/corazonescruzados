@@ -53,11 +53,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
-    if (validateOnly) {
-      return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
-    }
-
     /**
      * ── CUENTAS EXENTAS DEL CÓDIGO ───────────────────────────────────────────
      * El código va al correo de la cuenta, lo que deja fuera a quien no controla ese
@@ -67,6 +62,13 @@ export async function POST(req: NextRequest) {
      * La exención se marca **por cuenta y solo en la base** (`sin_doble_factor`); no hay
      * forma de encenderla desde la app, que sería el primer sitio al que iría quien
      * entrara con una sesión robada. Ver la migración 029.
+     *
+     * ⚠️ EL ORDEN IMPORTA, Y ESTUVO MAL. Esto vivía DEBAJO del `validateOnly`, y los
+     * modales de la portada preguntan primero con `validateOnly: true` para saber si las
+     * credenciales valen antes de ofrecer «código o passkey». Con la exención debajo, la
+     * respuesta salía antes de llegar a ella y la pantalla seguía pidiendo el segundo
+     * paso. Va delante: si la cuenta está exenta, no hay nada que validar aparte — ya
+     * hay sesión.
      *
      * ⚠️ La contraseña ya se comprobó arriba: lo que se salta es el segundo factor, no
      * el acceso. Y se deja constancia en el registro, para que una exención activa nunca
@@ -79,6 +81,12 @@ export async function POST(req: NextRequest) {
       // `sinCodigo` le dice a la pantalla que no pinte el paso del código: ya hay sesión.
       return NextResponse.json({ ok: true, sinCodigo: true, masked: maskEmail(cleanEmail) });
     }
+
+    // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
+    if (validateOnly) {
+      return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
+    }
+
 
     await pool.query(
       `ALTER TABLE gcc_world.users

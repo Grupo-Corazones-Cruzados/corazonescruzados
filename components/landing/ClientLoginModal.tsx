@@ -53,6 +53,9 @@ export default function ClientLoginModal({
         setError(j?.error ?? 'Credenciales incorrectas');
         return;
       }
+      // Cuenta exenta del segundo factor (ver la migración 029): el servidor ya dejó la
+      // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
+      if (j?.sinCodigo) { onLoggedIn(); return; }
       setMasked(j?.masked ?? null);
       setStep('factor');
     } catch {
