@@ -148,6 +148,7 @@ INSERTADAS = {
     131: 66,  # desde la 94: los tres desmontados como marionetas de papel
     132: 66,  # el mismo encargo, con un prompt corto y directo
     133: 66,  # tres maniquies de madera desmontados (no son personas)
+    134: 66,  # el maniqui, pieza a pieza: el torso son DOS bloques separados
 }
 
 
@@ -4469,6 +4470,76 @@ ESCENAS = [
 
         "Todo son siluetas negras planas, sin caras ni detalles interiores. Sin sangre, sin "
         "color y sin texto."),
+
+    # ── 134 · EL MANIQUÍ, PIEZA A PIEZA ───────────────────────────────────────
+    # La 133 (maniquíes de madera) fue el primer avance real: los PIES salieron
+    # desmembrados. Lo que seguía entero era el TORSO — y era culpa del prompt:
+    # se pidió "la pieza del TORSO", en singular, así que el modelo dibujó un
+    # bloque central macizo con la cabeza encima, y eso se lee como un cuerpo.
+    # Un maniquí de dibujante REAL tiene el tronco en DOS piezas (pecho y cadera)
+    # unidas por una bola. Aquí se enumera el muñeco pieza a pieza, con su nombre
+    # de pieza, y se exige que pecho y cadera vayan SEPARADOS.
+    (134, ["assets/Prologo/escenas/escena_94.png"],
+        "Misma escena que la imagen de referencia: mismo pixel art 2D de 16 bits, mismo encuadre "
+        "16:9, misma cámara, mismo plano lejano, misma roca cuarteada, mismo halo de luz en el "
+        "centro y misma penumbra en las esquinas. Todo en grises, blancos y negros. Todo son "
+        "siluetas negras planas, sin caras ni detalles interiores. "
+
+        "QUÉ SE DIBUJA: en el halo de luz flotan, sueltas, las PIEZAS de TRES MANIQUÍES DE "
+        "MADERA ARTICULADOS —esos muñecos de madera de dibujante— que están DESMONTADOS. No son "
+        "personas: son muñecos de madera, objetos hechos de piezas. Uno era grande y los otros "
+        "dos, pequeños. "
+
+        "══ LAS PIEZAS DE CADA MANIQUÍ, UNA A UNA ══ "
+        "Un maniquí de estos NO es una figura de una pieza: es un montón de piezas de madera "
+        "ensartadas. Desmontado, cada uno da estas ONCE piezas, y todas tienen que aparecer "
+        "sueltas: "
+        "  1. LA CABEZA — un óvalo liso, sin cara. "
+        "  2. EL PECHO — el bloque de arriba del tronco, con forma de trapecio ancho de hombros "
+        "     y estrecho abajo. "
+        "  3. LA CADERA — el bloque de abajo del tronco, MUCHO MÁS PEQUEÑO que el pecho, con "
+        "     forma de cuña corta. "
+        "  4 y 5. LOS DOS MUSLOS — barras gruesas y cortas. "
+        "  6 y 7. LAS DOS PANTORRILLAS — barras algo más finas. "
+        "  8 y 9. LOS DOS PIES — cuñas pequeñas y achatadas. "
+        "  10 y 11. Dos bolitas de articulación sueltas. "
+        "⚠ FÍJATE EN QUE EL TRONCO SON DOS PIEZAS, NO UNA: el PECHO y la CADERA son piezas "
+        "distintas y en esta imagen están SEPARADAS una de otra, cada una por su lado, con "
+        "hueco entre ellas. PROHIBIDO ABSOLUTAMENTE dibujar el tronco como un solo bloque "
+        "entero, y PROHIBIDO dejar el pecho y la cadera pegados o alineados. "
+        "Las piezas del maniquí GRANDE son el doble de grandes que las de los dos pequeños. "
+
+        "══ CÓMO ESTÁN COLOCADAS ══ "
+        "Las tres docenas de piezas están DESPARRAMADAS por el halo, cada una girada en un "
+        "ángulo distinto —muchas de lado, otras boca abajo, otras en diagonal—, todas separadas "
+        "entre sí, sin tocarse y sin encajar unas con otras. Entre unas y otras se ve el fondo "
+        "de roca: hay más hueco vacío que pieza. "
+        "Ninguna pieza está en el sitio que le tocaría en el muñeco montado: ninguna CABEZA "
+        "encima de un PECHO, ninguna CADERA debajo de un PECHO, ningún MUSLO enganchado a una "
+        "CADERA, ninguna PANTORRILLA bajo un MUSLO, ningún PIE bajo una PANTORRILLA. "
+
+        "══ ⚠ LA COMPROBACIÓN, Y ES LO QUE MÁS IMPORTA ══ "
+        "En NINGÚN punto de la imagen puede haber un bloque grande con un óvalo encima y dos "
+        "barras debajo: eso se lee como un cuerpo y es exactamente lo que NO se quiere. Repasa "
+        "la imagen antes de darla por buena y comprueba tres cosas: "
+        "  (a) que no se distingue ningún maniquí montado ni reconocible como figura; "
+        "  (b) que el PECHO y la CADERA de cada maniquí están separados, en sitios distintos; "
+        "  (c) que los PIES y las PANTORRILLAS se ven sueltos y lejos de todo lo demás. "
+        "Si alguna falla, rehaz la imagen. La lectura correcta es: aquí había tres muñecos y "
+        "ahora solo hay piezas de madera desparramadas. "
+
+        "══ LO ÚNICO QUE SIGUE UNIDO: LOS BRAZOS ══ "
+        "Aparte de esas once piezas por maniquí, están los BRAZOS, y son lo único que no se ha "
+        "soltado. Hay CUATRO piezas de brazo terminadas en mano, agarradas de dos en dos: "
+        "· A la IZQUIERDA: un brazo LARGO Y GRUESO (del maniquí grande) cuya mano agarra la mano "
+        "de un brazo CORTO Y FINO (de uno pequeño). "
+        "· A la DERECHA: lo mismo con el otro maniquí pequeño. "
+        "Cuatro brazos, cuatro manos, dos agarres. El brazo largo mide el DOBLE que el corto y "
+        "es más ancho. Las manos están cerradas una sobre otra, unidas, sin separación. Se "
+        "cortan en seco por el hombro, sin pecho ni hombro detrás, y no tocan ninguna otra "
+        "pieza. Son lo más nítido de la imagen. "
+
+        "Sin sangre, sin color y sin texto."),
 ]
 
 
