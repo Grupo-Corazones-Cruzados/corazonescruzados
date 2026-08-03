@@ -22,6 +22,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
+import BotonAyuda from '@/components/ui/BotonAyuda';
 import { SectionBar, PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import { Plug, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, Smartphone, FlaskConical } from 'lucide-react';
 
@@ -450,32 +451,27 @@ function Conectado({ canal, estadoMeta }: { canal: any; estadoMeta: any }) {
         </div>
       </div>
 
-      {!canal.coexistencia_verificada && (
-        <div className={`rounded-lg border ${TONO.aviso.caja} p-4 flex gap-2 items-start`}>
-          <AlertTriangle className={`w-5 h-5 ${TONO.aviso.icono} shrink-0 mt-0.5`} />
-          <div>
-            <p className={`text-[13px] font-semibold ${TONO.aviso.texto}`} style={mf}>
-              Falta la comprobación que de verdad importa
-            </p>
-            <p className={`text-[12.5px] ${TONO.aviso.texto} mt-1 leading-relaxed`} style={mf}>
-              Pídele al cliente que abra <strong>WhatsApp Web</strong> con ese número. Si entra, la
-              coexistencia quedó bien y su equipo no ha perdido nada.
-            </p>
-            <p className={`text-[12px] ${TONO.aviso.texto} mt-2 leading-relaxed`} style={mf}>
-              Que Meta diga <code>CLOUD_API</code> <strong>no</strong> lo demuestra: ese campo
-              describe el lado de la API, no si el número sigue en el teléfono.
-            </p>
-          </div>
-        </div>
-      )}
-
       <dl className="grid sm:grid-cols-2 gap-3">
         <Dato titulo="Cuenta de WhatsApp (WABA)"><code className="text-[12px]">{canal.waba_id ?? '—'}</code></Dato>
         <Dato titulo="Identificador del número"><code className="text-[12px]">{canal.phone_number_id ?? '—'}</code></Dato>
         <Dato titulo="Token del cliente">
           {canal.tiene_wa_token ? <PixelBadge variant="success">Guardado y cifrado</PixelBadge> : <PixelBadge variant="error">Falta</PixelBadge>}
         </Dato>
-        <Dato titulo="Coexistencia">
+        {/* La advertencia de la coexistencia vivía aquí arriba en una caja ámbar del
+            tamaño de media pantalla, y la quitó Fernando (2026-08-03): es una instrucción
+            para el día del alta, no algo que haya que releer cada vez que se abre la
+            pantalla. Su contenido no se pierde — pasa detrás del botón de ayuda, que es
+            la regla del proyecto para los avisos, y cuelga del dato al que se refiere.
+            El estado sigue a la vista en la insignia. */}
+        <Dato
+          titulo="Coexistencia"
+          ayuda={
+            <>
+              <p className="mb-2">Pídele al cliente que abra <strong>WhatsApp Web</strong> con ese número. Si entra, la coexistencia quedó bien y su equipo no ha perdido nada.</p>
+              <p>Que Meta diga <code>CLOUD_API</code> <strong>no</strong> lo demuestra: ese campo describe el lado de la API, no si el número sigue en el teléfono.</p>
+            </>
+          }
+        >
           {canal.coexistencia_verificada
             ? <PixelBadge variant="success">Comprobada con el cliente</PixelBadge>
             : <PixelBadge variant="warning">Sin comprobar</PixelBadge>}
@@ -504,10 +500,18 @@ function Conectado({ canal, estadoMeta }: { canal: any; estadoMeta: any }) {
   );
 }
 
-function Dato({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Dato({ titulo, ayuda, children }: {
+  titulo: string;
+  /** Lo que hay que saber sobre este dato, detrás del botón de ayuda. Opcional. */
+  ayuda?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-md border border-digi-border bg-digi-card px-3 py-2">
-      <dt className="text-[11px] uppercase tracking-wide text-digi-muted mb-1" style={mf}>{titulo}</dt>
+      <dt className="text-[11px] uppercase tracking-wide text-digi-muted mb-1 flex items-center gap-1" style={mf}>
+        {titulo}
+        {ayuda && <BotonAyuda titulo={titulo} lado="derecha">{ayuda}</BotonAyuda>}
+      </dt>
       <dd className="text-[13px] text-digi-text" style={mf}>{children}</dd>
     </div>
   );

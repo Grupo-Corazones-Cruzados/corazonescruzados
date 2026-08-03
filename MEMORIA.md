@@ -450,6 +450,27 @@ Stack estándar de la casa, con particularidades de este repo:
     proyecto decide qué parámetros admite cada modelo. La autodesactivación queda de red de
     seguridad, pero **por modelo** (`Set<string>`) y no como una bandera global del proceso: la
     de antes apagaba el respaldo para TODOS los clientes al primer 400 de cualquiera.
+  - **📏 EL PIE FIJO DE LA APP SE COME LO QUE SE ESTIRE A `100vh` — y ya mordió dos veces.**
+    `DashboardBreadcrumb` es `fixed bottom-0`: flota por encima del contenido, no reserva su
+    sitio. Un bloque estirado a la ventana **termina por debajo** y su última franja queda
+    tapada. Pasó con las tablas (2026-08-01) y volvió a pasar con los paneles del Estudio
+    del agente (2026-08-03, lo vio Fernando). El remedio ya existía dentro de
+    `PixelDataTable` y no estaba compartido; ahora es **`useAltoHastaElPie()`**
+    (`lib/hooks`), que **mide** el hueco —descontando el pie por `[data-app-footer]`, no por
+    sus 36 px— y se recalcula si cambia lo que hay encima.
+    - **Y `max-h-[70vh]` NO es «llena la pantalla»**: es un techo. La Bandeja lo usaba y con
+      una sola conversación medía lo que su contenido, dejando media pantalla vacía.
+      Llenar = alto medido + `flex-1 min-h-0` en la zona que se desplaza y `shrink-0` en el resto.
+  - **🔄 LO QUE LLEGA SOLO HAY QUE PEDIRLO SOLO (2026-08-03).** La bandeja del agente no se
+    actualizaba: los mensajes llegan por WhatsApp y el agente contesta segundos después, sin
+    que en la pantalla pase nada, así que había que recargar la página. Sondeo cada 6 s (el
+    debounce del agente es de 8) con **`useSondeo()`** (`lib/hooks`), que generaliza el
+    patrón que estaba copiado a mano en `ChatDock`, `PersonalPanel` y `GroupPanel`.
+    - **Dos trampas del sondeo, resueltas dentro del hook:** solapar vueltas cuando una tarda
+      más que el intervalo (pinta datos viejos encima de los nuevos) y avisar de cada fallo
+      (un túnel se convierte en una lluvia de mensajes rojos).
+    - **Y una tercera, en el hilo:** bajar del todo en cada vuelta le roba la vista cada seis
+      segundos a quien esté leyendo lo de arriba. Solo baja si ya estaba abajo.
   - **🎨 EL TEMA NO REMAPEA TODA LA PALETA DE TAILWIND** (2026-08-01, lo vio Fernando).
     `.corp` solo redefine un conjunto concreto de tonos. `text-red-800` o `text-amber-900`
     compilan y en claro parecen rojo y ámbar, pero **están fuera de la paleta** y en oscuro

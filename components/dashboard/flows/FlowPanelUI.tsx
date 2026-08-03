@@ -28,20 +28,16 @@ export const FIELD_SM =
 export const LABEL = 'field-label block text-[12px] font-semibold text-digi-text mb-1';
 
 /**
- * ALTO DEL ESPACIO DE TRABAJO DEL AGENTE — la Bandeja y el Estudio miden lo mismo.
+ * ⚠️ El alto del espacio de trabajo del agente **ya no es una constante**.
  *
- * Las dos vistas cuelgan de la misma cabecera de detalle y llevan encima una barra de la
- * misma altura —los filtros en la Bandeja, la barra de control en el Estudio, ~36 px las
- * dos—, así que el hueco que les queda de ventana es el mismo. Al estar aquí, ajustarlo
- * una vez las mueve a las dos; cuando cada una llevaba su número, se separaban.
+ * Fue `max(560px, calc(100vh - 250px))`, y ese 250 era un número a ojo que no sabía nada
+ * del pie fijo de la app: los paneles del Estudio terminaban POR DEBAJO de la barra de la
+ * ruta y su última franja quedaba tapada (lo vio Fernando el 2026-08-03).
  *
- * `max(560px, …)` para que en una pantalla corta no quede una rendija.
- *
- * ⚠️ Va en `style`, no en una clase: Tailwind no genera utilidades para un `calc()`
- * arbitrario, y un `h-[calc(100vh-250px)]` que no existe **no falla**, simplemente no
- * aplica y el panel vuelve a medir por su contenido.
+ * Ahora se **mide** el hueco real con `useAltoHastaElPie()` (`lib/hooks`), que descuenta el
+ * pie buscándolo en el DOM y se recalcula cuando cambia lo que hay encima. Es el mismo
+ * remedio que ya se le había puesto a las tablas, ahora compartido.
  */
-export const ALTO_ESPACIO_AGENTE = { height: 'max(560px, calc(100vh - 250px))' } as const;
 
 /** Botón pequeño de fila/tabla (neutro). Para acciones dentro de un `PixelDataTable`. */
 export const BTN_ROW =

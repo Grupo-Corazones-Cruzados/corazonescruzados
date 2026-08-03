@@ -17,7 +17,8 @@ import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { SectionBar, PanelEmpty, BTN_ROW, ALTO_ESPACIO_AGENTE } from '@/components/dashboard/flows/FlowPanelUI';
+import { SectionBar, PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/FlowPanelUI';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles,
 } from 'lucide-react';
@@ -49,6 +50,8 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
   const [busca, setBusca] = useState('');
   const [sel, setSel] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
+  /** Las dos columnas llegan hasta el pie de la app, sin meterse debajo. */
+  const altoBandeja = useAltoHastaElPie({ minimo: 420 });
 
   /**
    * `silencioso` distingue las dos formas de cargar. La primera vez —y al cambiar de
@@ -113,7 +116,7 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
            que es un TECHO, no un relleno. Con pocas conversaciones las dos columnas medían
            lo que su contenido y dejaban media pantalla muerta debajo — se veía con una sola
            conversación de cuatro mensajes. */
-        <div className="flex gap-4 items-stretch" style={ALTO_ESPACIO_AGENTE}>
+        <div ref={altoBandeja.ref} className="flex gap-4 items-stretch" style={altoBandeja.style}>
           {/* La lista: cabecera fija ninguna, así que el desplazamiento es de todo el bloque. */}
           <div className="w-[320px] shrink-0 h-full overflow-y-auto rounded-lg border border-digi-border bg-digi-card">
             {filas.map((f) => (

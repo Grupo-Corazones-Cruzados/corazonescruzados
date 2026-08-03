@@ -128,6 +128,20 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
   recordatorios y clientes: **todas cierran 16 px por encima del pie** (el `BOTTOM_GAP` de aire).
 
 ## Reglas clave (do / don't)
+- **NO** estirar un bloque a `100vh` ni a un `calc(100vh - N)` a ojo dentro del panel: el pie
+  de la app (`DashboardBreadcrumb`) es `fixed bottom-0` y **flota por encima**, así que el
+  bloque termina por debajo y su última franja queda tapada. → usar
+  **`useAltoHastaElPie()`** (`lib/hooks`), que mide el hueco real y descuenta el pie
+  buscándolo por `[data-app-footer]`. Ha mordido dos veces: en las tablas (2026-08-01) y en
+  los paneles del Estudio del agente (2026-08-03).
+- **NO** `max-h-[Nvh]` cuando lo que se quiere es *llenar*: un `max-h` es un TECHO, no un
+  relleno — con poco contenido el bloque mide lo que su contenido y deja media pantalla
+  muerta. → alto medido + `flex-1 min-h-0` en la zona que se desplaza, y `shrink-0` en el
+  resto (cabecera, pie del panel).
+- **NO** un `setInterval` a mano para refrescar datos → usar **`useSondeo()`** (`lib/hooks`):
+  para con la pestaña oculta, no solapa vueltas y calla los fallos.
+- **NO** cajas de advertencia permanentes ocupando media pantalla para algo que se lee una
+  vez → detrás de **`BotonAyuda`**, colgando del dato al que se refieren.
 - **NO** emojis como íconos → usar `EditorIcons` (SVG).
 - **NO** hex crudos en componentes del editor → usar tokens `E.*`.
 - **NO** recomponer botones/headers ad-hoc → usar `editorUi`.
