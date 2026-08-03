@@ -151,6 +151,7 @@ INSERTADAS = {
     134: 66,  # el maniqui, pieza a pieza: el torso son DOS bloques separados
     135: 66,  # la 134 + las piezas destruidas y polvificandose
     136: 66,  # el despiece partiendo de la 66, donde ya van cogidos de la mano
+    137: 66,  # la 136 con el del centro tambien despiezado, salvo sus dos brazos
 }
 
 
@@ -4657,6 +4658,74 @@ ESCENAS = [
         "bola, esfera o foco central que suelte partículas. "
         "La lectura de la imagen debe ser: los tres se han destrozado y se están haciendo polvo, "
         "y lo único que queda entero son sus manos, todavía cogidas. "
+
+        "Sin sangre, sin color y sin texto."),
+
+    # ── 137 · LA 136, DESPIEZANDO TAMBIÉN AL DEL CENTRO ──────────────────────
+    # La 136 gustó, pero la figura del CENTRO se quedó entera mientras las dos de
+    # los lados sí se despiezaron.
+    # Baza nueva y muy fuerte: la referencia YA CONTIENE EL EJEMPLO de cómo tiene
+    # que quedar (las dos figuras pequeñas ya están despiezadas dentro de esa
+    # misma imagen), así que en vez de describir el despiece desde cero se le pide
+    # "haz con la del centro exactamente lo mismo que ya está hecho con las de los
+    # lados". Es lo más parecido a una referencia visual del propio efecto (§4.31).
+    # Se conservan sus DOS brazos, cada uno cogido de una manita.
+    (137, ["assets/Prologo/escenas/escena_136.png"],
+        "Toma la imagen de referencia y consérvala, cambiando SOLO la figura del centro. "
+
+        "══ LO QUE NO SE TOCA ══ "
+        "Copia la imagen de referencia tal cual: el estilo PIXEL ART 2D de 16 bits con sombreado "
+        "plano y dithering, el encuadre 16:9, la cámara, la perspectiva, el interior del Hoyo "
+        "con sus paredes, la luz y la paleta de grises fríos, blancos y negros. "
+        "Y sobre todo: TODAS LAS PIEZAS SUELTAS que ya hay flotando —las de las dos figuras "
+        "pequeñas de los lados, ya despiezadas— se quedan EXACTAMENTE donde están, con su mismo "
+        "tamaño, su mismo giro, sus bordes rotos y sus nubecitas de polvo. PROHIBIDO moverlas, "
+        "recolocarlas, quitarlas o volver a montarlas. "
+
+        "══ EL ÚNICO CAMBIO: LA FIGURA DEL CENTRO SE DESPIEZA IGUAL QUE LAS OTRAS ══ "
+        "En la imagen de referencia, la figura del CENTRO —la más alta— todavía se ve entera, "
+        "mientras que las dos pequeñas de los lados ya están hechas pedazos. "
+        "HAZ CON LA DEL CENTRO EXACTAMENTE LO MISMO QUE YA ESTÁ HECHO CON LAS DE LOS LADOS EN "
+        "ESA MISMA IMAGEN: mírala, fíjate en cómo están las piezas de las pequeñas —sueltas, "
+        "giradas, separadas, con los bordes mordidos y su polvo alrededor— y deja la del centro "
+        "igual, solo que con las piezas más grandes, porque era la figura más grande. "
+        "Su cuerpo se separa en estas piezas, todas sueltas: la CABEZA (un óvalo liso), el PECHO "
+        "(bloque de arriba del tronco, trapecio ancho de hombros), la CADERA (bloque de abajo, "
+        "mucho más pequeño, en cuña), los dos MUSLOS (barras gruesas), las dos PANTORRILLAS "
+        "(barras más finas) y los dos PIES (cuñas achatadas). "
+        "⚠ SU TRONCO SON DOS PIEZAS, NO UNA: el PECHO y la CADERA quedan SEPARADOS, cada uno por "
+        "su lado y con hueco entre ellos. PROHIBIDO dejar el tronco como un bloque entero. "
+        "⚠ NINGUNA de esas piezas queda en el sitio que le tocaría: la cabeza NO encima del "
+        "pecho, la cadera NO bajo el pecho, los pies NO bajo las pantorrillas. Cada una girada "
+        "en un ángulo distinto, esparcidas por la zona donde estaba esa figura, separadas entre "
+        "sí y sin tocarse. "
+        "Y como las demás, están DESTRUIDAS: contorno mordido y roto, boquetes por los que se ve "
+        "el fondo, y motas negras desprendiéndose de su borde formando una nubecita granulada "
+        "alrededor de cada pieza. "
+        "⚠ COMPROBACIÓN: en el centro de la imagen ya NO puede quedar ninguna figura alta "
+        "reconocible, ni entera ni a medias. Si todavía se distingue un cuerpo en medio, está "
+        "MAL. Al terminar, las tres figuras tienen que estar igual de deshechas. "
+
+        "══ LO ÚNICO QUE SE SALVA: LOS DOS BRAZOS DEL CENTRO, COGIDOS DE LA MANO ══ "
+        "De esa figura del centro se conservan ENTEROS sus DOS BRAZOS con sus manos, y nada más. "
+        "· SU BRAZO DERECHO, que en la referencia ya está cogido de la mano con el bracito "
+        "pequeño de un lado: se queda EXACTAMENTE IGUAL, en la misma postura, con las manos "
+        "igual de agarradas. "
+        "· SU BRAZO IZQUIERDO tiene que quedar IGUAL QUE EL DERECHO: entero y con su mano cogida "
+        "a la mano del bracito pequeño del otro lado, en una postura equivalente y simétrica a "
+        "la del otro agarre. "
+        "En total, CUATRO brazos y CUATRO manos formando DOS agarres: a cada lado, un brazo "
+        "LARGO Y GRUESO (el del centro) cogido de la mano de un brazo CORTO Y FINO (el de una "
+        "figura pequeña). El largo mide el DOBLE que el corto y es más ancho. "
+        "Los cuatro están ENTEROS y NÍTIDOS: negro macizo, contorno LIMPIO y CERRADO, sin "
+        "muescas, sin boquetes, sin desgranarse y sin polvo alrededor. Son lo único limpio de "
+        "toda la imagen. "
+        "⚠ Los brazos NO tienen cuerpo detrás: se cortan EN SECO por el extremo del hombro. "
+        "PROHIBIDO que de ahí salga un hombro, un cuello, una cabeza o un torso. PROHIBIDO que "
+        "las manos se suelten o queden a medio agarrar. "
+
+        "La lectura de la imagen debe ser: los tres están hechos pedazos, y lo único que sigue "
+        "entero son los dos brazos del de en medio, cada uno cogido de una manita. "
 
         "Sin sangre, sin color y sin texto."),
 ]
