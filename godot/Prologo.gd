@@ -126,6 +126,21 @@ const IMPACTOS := {
 }
 
 
+## --- ⬇ ESTAMPAS QUE ENTRAN DESLIZÁNDOSE HACIA ABAJO ---------------------------
+## La estampa nueva no se funde encima de la anterior: las dos se DESPLAZAN a la
+## vez, la vieja saliendo por abajo y la nueva entrando desde arriba. Así el
+## cambio se lee como que lo que flota SIGUE CAYENDO, en vez de como un cambio de
+## dibujo.
+## Se usa entre la 138 y la 139, que son la misma escena con los restos más
+## abajo: encadenadas con este deslizamiento, el ojo las une en un solo
+## movimiento continuo.
+##   "px"  → cuántos píxeles del lienzo recorre el desplazamiento.
+##   "dur" → lo que dura. Si es más largo que la estampa, se recorta solo.
+const DESLIZAN := {
+	139: { "px": 34.0, "dur": 0.9 },
+}
+
+
 ## --- NOMBRE DE CADA ESTAMPA (para saber qué es cada número al ordenarlas) -----
 ## Solo sirve para leer y reordenar cómodo; no afecta a la reproducción. Se
 ## imprime junto al reparto cuando `mostrar_reparto` está activado.
@@ -419,13 +434,13 @@ const TRAMOS := [
 	# UN SEGUNDO clavado. 3 + 3 + 4 = 10 s = el hueco exacto del verso, así que la
 	# 97 remata justo cuando entra el verso 13 y la cadencia no se rompe.
 	{ "desde_verso": 12, "escenas": [
-		84, 65, 94, 95, 96, 97, 138
+		84, 65, 94, 95, 96, 97
 	] },
 
 	# Verso 13 · la 115 (las siluetas deshechas, solo aguantan las manos) abre el
 	# verso, justo antes de las cuatro de las auras. Mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
-	   138, 117, 123, 119, 111, 112, 113, 114
+	   138, 139, 117, 123, 119, 111, 112, 113, 114
 	], "seg": 1  },
 ]
 
@@ -485,6 +500,31 @@ enum Aparicion { BARRIDO, TECLEO }
 ## el verso siguiente sea largo (por un instrumental), el tecleo nunca dura más
 ## que esto.
 @export var tecleo_max: float = 1.6
+
+@export_group("Los tres espíritus")
+## A partir de que se vea ESTA estampa aparecen los tres óvalos, flotando en el
+## centro. 0 = no aparecen nunca.
+@export var espiritus_desde_escena: int = 138
+## Segundos que tardan en aparecer (entran suave, no de golpe).
+@export var espiritus_entrada: float = 1.6
+## Radio del óvalo pequeño, en píxeles del lienzo de 960×540.
+@export_range(6.0, 80.0, 1.0) var espiritus_radio: float = 24.0
+## Cuánto MÁS grande es el del centro (1.2 = un 20 % mayor).
+@export_range(1.0, 2.0, 0.02) var espiritus_grande: float = 1.22
+## Separación entre uno y otro.
+@export_range(20.0, 240.0, 2.0) var espiritus_separacion: float = 88.0
+## Cuánto tiemblan, en píxeles.
+@export_range(0.0, 8.0, 0.1) var espiritus_temblor: float = 1.6
+## Achatado del óvalo (1 = círculo perfecto; más bajo = más ovalado).
+@export_range(0.5, 1.0, 0.02) var espiritus_achatado: float = 0.86
+
+@export_subgroup("Auras de color")
+## A partir de ESTA estampa se enciende el aura del espíritu de la IZQUIERDA.
+@export var aura_izq_desde_escena: int = 139
+## Color de esa aura.
+@export var aura_izq_color: Color = Color("#7BA1EF")
+## Segundos que tarda en encenderse (aparece poco a poco, no de golpe).
+@export var aura_entrada: float = 3.0
 
 @export_group("Temblor de la caída")
 ## A partir de que se vea ESTA estampa, las imágenes tiemblan un poco, para que
@@ -577,7 +617,10 @@ var _escena_en_pantalla := -1   # para no repetir el cambio (ni el golpe) si es 
 ## Si cada efecto moviera la capa por su cuenta, el último en escribir borraría
 ## al otro y la caja acabaría descuadrada.
 var _base_capa := Vector2.ZERO   # posición de reposo (la caja fija)
-var _off_golpe := Vector2.ZERO   # desplazamiento del golpe
+var _off_golpe := Vector2.ZERO   # desplazamiento del golpe (afecta a las dos capas)
+var _off_a := Vector2.ZERO       # desplazamiento propio de la capa A (deslizamiento)
+var _off_b := Vector2.ZERO       # desplazamiento propio de la capa B
+var _espiritus: Espiritus = null
 var _temblando := false
 var _t_temblor := 0.0
 
@@ -687,6 +730,18 @@ func _construir_ui() -> void:
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_flash.modulate.a = 0.0
 	add_child(_flash)
+
+	# Los tres espíritus, sobre la imagen: se dibujan por código para poder
+	# temblar y encenderse. Empiezan invisibles y aparecen cuando toca.
+	_espiritus = Espiritus.new()
+	_espiritus.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_espiritus.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_espiritus.radio = espiritus_radio
+	_espiritus.separacion = espiritus_separacion
+	_espiritus.grande = espiritus_grande
+	_espiritus.temblor = espiritus_temblor
+	_espiritus.achatado = espiritus_achatado
+	add_child(_espiritus)
 
 	# La letra: DEBAJO de la imagen, centrada, tamaño de letra FIJO.
 	_texto = Label.new()
@@ -1941,6 +1996,26 @@ func _cambiar_imagen(n: int) -> void:
 	# A partir de esta estampa, las imágenes tiemblan: están cayendo.
 	if temblor_desde_escena > 0 and n == temblor_desde_escena:
 		_temblando = true
+	# Los tres espíritus aparecen aquí, suave.
+	if espiritus_desde_escena > 0 and n == espiritus_desde_escena and _espiritus != null \
+			and _espiritus.visible_centro <= 0.0:
+		var te := create_tween()
+		te.set_parallel(true)
+		# Entran escalonados, del centro hacia fuera: se siente más vivo que si
+		# aparecieran los tres a la vez.
+		te.tween_property(_espiritus, "visible_centro", 1.0, espiritus_entrada)
+		te.tween_property(_espiritus, "visible_izq", 1.0, espiritus_entrada) \
+			.set_delay(espiritus_entrada * 0.25)
+		te.tween_property(_espiritus, "visible_der", 1.0, espiritus_entrada) \
+			.set_delay(espiritus_entrada * 0.45)
+	# El aura del de la izquierda se enciende poco a poco a partir de su estampa.
+	if aura_izq_desde_escena > 0 and n == aura_izq_desde_escena and _espiritus != null \
+			and _espiritus.aura[0] == null:
+		var au := { "color": aura_izq_color, "fuerza": 0.0 }
+		_espiritus.aura[0] = au
+		var ta := create_tween()
+		ta.tween_method(func (v: float) -> void: au["fuerza"] = v, 0.0, 1.0, aura_entrada) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	# Primera imagen del prólogo: entra sin cruce.
 	if _capa_a.texture == null:
 		_capa_a.texture = tex
@@ -1963,9 +2038,31 @@ func _cambiar_imagen(n: int) -> void:
 	_cruzando = true
 	_capa_b.texture = tex
 	_capa_b.modulate.a = 0.0
+
+	# ⬇ ¿Esta estampa entra deslizándose? Entonces, además del fundido, las dos
+	# capas viajan hacia abajo: la vieja se va por el borde inferior y la nueva
+	# llega desde arriba hasta su sitio.
+	var desliza: bool = DESLIZAN.has(n)
+	var dur_cruce := _dur_cruce()
+	if desliza:
+		var cfg: Dictionary = DESLIZAN[n]
+		var px := float(cfg.get("px", 30.0))
+		dur_cruce = minf(float(cfg.get("dur", 0.9)), dur_cruce)
+		_off_a = Vector2.ZERO
+		_off_b = Vector2(0.0, -px)          # la nueva empieza más arriba
+		var td := create_tween()
+		td.set_parallel(true)
+		td.tween_property(self, "_off_a", Vector2(0.0, px), dur_cruce) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		td.tween_property(self, "_off_b", Vector2.ZERO, dur_cruce) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
 	var t := create_tween()
-	t.tween_property(_capa_b, "modulate:a", 1.0, _dur_cruce())
+	t.tween_property(_capa_b, "modulate:a", 1.0, dur_cruce)
 	await t.finished
+	if desliza:
+		_off_a = Vector2.ZERO
+		_off_b = Vector2.ZERO
 	_capa_a.texture = tex
 	_capa_a.modulate.a = 1.0
 	_capa_b.modulate.a = 0.0
@@ -1988,9 +2085,11 @@ func _mover_capas(delta: float) -> void:
 			sin(_t_temblor * 11.3) * a + sin(_t_temblor * 27.1) * a * 0.35,
 			cos(_t_temblor *  9.7) * a + sin(_t_temblor * 23.3) * a * 0.45)
 	if _capa_a != null:
-		_capa_a.position = _base_capa + off
+		_capa_a.position = _base_capa + off + _off_a
 	if _capa_b != null:
-		_capa_b.position = _base_capa + off
+		_capa_b.position = _base_capa + off + _off_b
+	if _espiritus != null:
+		_espiritus.avanzar(delta)
 
 
 ## 💥 El golpe con que entra una estampa de IMPACTOS: fogonazo, sacudida y zoom.
@@ -2149,3 +2248,82 @@ func _volcar_calibracion() -> void:
 		f.close()
 		print("También guardado en: ", ProjectSettings.globalize_path(ruta))
 	print("-----------------------------------------------------------------\n")
+
+
+## ============================================================================
+##  🫧 LOS TRES ESPÍRITUS — los óvalos que quedan de los niños
+## ============================================================================
+## Tres siluetas ovaladas e irregulares que flotan en el centro, temblando. No
+## son círculos perfectos: llevan bollos, como la silueta de la Tierra, que
+## tampoco es redonda del todo. La del centro es un poco más grande.
+##
+## Se dibujan por CÓDIGO y no como estampa porque tienen que temblar, aparecer
+## poco a poco y encenderse de color por separado, y eso una imagen fija no lo da.
+class Espiritus extends Control:
+	var color_cuerpo := Color(0.05, 0.05, 0.08)
+	var radio := 26.0
+	var separacion := 92.0
+	var grande := 1.22          # cuánto mayor es el del centro
+	var temblor := 1.6
+	var achatado := 0.86        # 1 = círculo; <1 = ovalado
+	## Cuánto se ve cada uno (0 = nada, 1 = del todo). Se animan con tween.
+	var visible_izq := 0.0
+	var visible_centro := 0.0
+	var visible_der := 0.0
+	## Aura de color por espíritu: {"color": Color, "fuerza": 0..1}
+	var aura := [null, null, null]
+	var _t := 0.0
+
+	func avanzar(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	## Un óvalo con bollos: el radio cambia con el ángulo, así no sale un círculo
+	## perfecto. Dos ondas de frecuencias distintas dan una silueta orgánica sin
+	## que se le vea el patrón.
+	func _contorno(centro: Vector2, r: float, semilla: float) -> PackedVector2Array:
+		var pts := PackedVector2Array()
+		var lados := 26
+		for i in lados:
+			var a := TAU * float(i) / float(lados)
+			var rr: float = r * (1.0
+				+ 0.085 * sin(a * 3.0 + semilla)
+				+ 0.05 * sin(a * 5.0 + semilla * 1.7)
+				+ 0.03 * sin(a * 8.0 + semilla * 0.6))
+			pts.append(centro + Vector2(cos(a) * rr, sin(a) * rr * achatado))
+		return pts
+
+	func _draw() -> void:
+		var c := size / 2.0
+		var datos := [
+			{ "x": -separacion, "r": radio,          "v": visible_izq,    "s": 0.0, "i": 0 },
+			{ "x": 0.0,         "r": radio * grande, "v": visible_centro, "s": 2.1, "i": 1 },
+			{ "x":  separacion, "r": radio,          "v": visible_der,    "s": 4.3, "i": 2 },
+		]
+		for d in datos:
+			var v := float(d["v"])
+			if v <= 0.001:
+				continue
+			var s := float(d["s"])
+			# Cada uno tiembla a su aire, con su fase: si fueran a la vez
+			# parecerían una sola pieza moviéndose.
+			var tmb := Vector2(
+				sin(_t * 2.7 + s) * temblor + sin(_t * 6.1 + s) * temblor * 0.35,
+				cos(_t * 2.2 + s) * temblor + sin(_t * 5.3 + s) * temblor * 0.4)
+			var pos: Vector2 = c + Vector2(float(d["x"]), 0.0) + tmb
+			var r := float(d["r"])
+			# El aura, si la tiene: anillos hacia fuera que se van apagando.
+			var au = aura[int(d["i"])]
+			if au != null and float(au["fuerza"]) > 0.001:
+				var f := float(au["fuerza"])
+				var col: Color = au["color"]
+				for k in range(6, 0, -1):
+					var ext := r * (1.0 + 0.10 * float(k))
+					var a2 := col
+					a2.a = f * v * 0.16 * (1.0 - float(k) / 7.0)
+					draw_colored_polygon(_contorno(pos, ext, s), a2)
+			# El cuerpo del espíritu.
+			var cc := color_cuerpo
+			cc.a = v
+			draw_colored_polygon(_contorno(pos, r, s), cc)
+
