@@ -154,6 +154,7 @@ INSERTADAS = {
     137: 66,  # la 136 con el del centro tambien despiezado, salvo sus dos brazos
     139: 66,  # la 138 con todas las piezas mas abajo (fotograma de caida)
     140: 66,  # la 139 con todo un poco mas abajo: sigue la caida
+    141: 66,  # rehace la 140 sin las siluetas inventadas, desde la 139
 }
 
 
@@ -4837,6 +4838,78 @@ ESCENAS = [
         "conservando exactamente la misma postura, el mismo tamaño y el mismo agarre que en la "
         "referencia. Siguen siendo lo más nítido de la imagen: negro macizo y contorno limpio. "
         "PROHIBIDO que se separen, se rompan o cambien de forma. "
+
+        "Sin sangre, sin color y sin texto."),
+
+    # ── 141 · REHACE LA 140, SIN LAS SILUETAS INVENTADAS ─────────────────────
+    # En la 140 el modelo se inventó DOS siluetas con brazos y manos, mucho más
+    # grandes que el resto. Por eso esta NO parte de la 140 (arrastraría el
+    # error) sino de la 139, la última buena, bajando el DOBLE de distancia para
+    # ocupar el sitio que le tocaba a la 140.
+    # Se reusa el prompt de la 139 y se le añade un bloque contra ese fallo
+    # concreto: ni una silueta nueva, ni una sola pieza más grande.
+    (141, ["assets/Prologo/escenas/escena_139.png"],
+        "Vuelve a dibujar la imagen de referencia EXACTAMENTE IGUAL, con UN SOLO CAMBIO: todo lo "
+        "que flota está MÁS ABAJO. Es el fotograma siguiente de la misma escena, un instante "
+        "después, mientras los restos siguen cayendo. "
+
+        "══ BLOQUE 1 · LO QUE NO CAMBIA ══ "
+        "Copia de la referencia, sin tocar nada: el estilo PIXEL ART 2D de 16 bits con sombreado "
+        "plano y dithering, el encuadre horizontal 16:9, la posición de cámara, la perspectiva, "
+        "la pared de roca cuarteada del fondo con sus grietas, el halo de luz del centro, la "
+        "penumbra de las esquinas y la paleta monocroma de grises, blancos y negros. "
+        "El FONDO NO SE MUEVE: la roca y el halo se quedan donde están. Lo único que baja son "
+        "las siluetas negras que flotan delante. "
+
+        "══ BLOQUE 2 · ⚠ EL INVENTARIO: NO PUEDE FALTAR NI UNA PIEZA ══ "
+        "Esto es lo más importante del encargo. En la imagen de referencia hay un número "
+        "concreto de siluetas negras flotando: piezas grandes y pequeñas, alargadas y "
+        "redondeadas, más el polvo y los puntitos sueltos. "
+        "TIENEN QUE ESTAR TODAS, SIN EXCEPCIÓN. Antes de dibujar, recórrelas una por una en la "
+        "referencia y llévalas todas a la imagen nueva: "
+        "· el MISMO NÚMERO de piezas, ni una más ni una menos; "
+        "· cada una con su MISMA FORMA y su MISMO CONTORNO, exactamente el mismo dibujo; "
+        "· cada una con su MISMO TAMAÑO; "
+        "· cada una con su MISMO GIRO e inclinación; "
+        "· y con la MISMA POSICIÓN HORIZONTAL: la que está a la izquierda sigue a la izquierda, "
+        "la del centro sigue en el centro, la de la derecha sigue a la derecha. "
+        "PROHIBIDO ABSOLUTAMENTE quitar piezas, fusionar dos en una, partir una en dos, cambiar "
+        "su forma, girarlas de otra manera, moverlas de lado o inventarse piezas nuevas. "
+        "También bajan el POLVO y los PUNTITOS sueltos, todos, igual que las piezas. "
+
+        "══ BLOQUE 3 · EL ÚNICO CAMBIO: TODO BAJA ══ "
+        "Todas las siluetas se han desplazado HACIA ABAJO, y solo hacia abajo. Bajan TODAS LA "
+        "MISMA DISTANCIA, en bloque, como si la imagen de delante se hubiera deslizado en "
+        "vertical: aproximadamente DOS QUINTOS de la altura del cuadro. "
+        "Nada se mueve en horizontal. Nada se acerca ni se aleja. Ninguna adelanta a otra: las "
+        "distancias entre unas y otras se mantienen igual que en la referencia. "
+        "Las que en la referencia estaban más abajo llegan ahora al borde inferior y lo cruzan: "
+        "se dibujan CORTADAS por ese borde, viéndose solo la parte que queda dentro. NO las "
+        "borres: se ve el trozo que aún cabe. "
+        "Arriba, por donde antes había piezas, ahora queda el halo despejado. "
+
+        "══ BLOQUE 4 · LOS BRAZOS ══ "
+        "Los brazos con sus manos agarradas bajan igual que todo lo demás, sin soltarse, "
+        "conservando exactamente la misma postura, el mismo tamaño y el mismo agarre que en la "
+        "referencia. Siguen siendo lo más nítido de la imagen: negro macizo y contorno limpio. "
+        "PROHIBIDO que se separen, se rompan o cambien de forma. "
+
+        "══ BLOQUE 5 · ⚠ NI UNA SILUETA NUEVA, NI UNA MÁS GRANDE ══ "
+        "Esto falló en la tirada anterior y es lo que hay que evitar. En esa tirada aparecieron "
+        "DOS SILUETAS NUEVAS con brazos y manos, que no estaban en la referencia, y además "
+        "mucho más grandes que el resto. Aquí NO puede pasar: "
+        "· PROHIBIDO ABSOLUTAMENTE inventar siluetas que no estén en la imagen de referencia, y "
+        "muy en especial figuras con forma de brazo, de mano, de persona o de cuerpo. Si una "
+        "silueta no está en la referencia, NO se dibuja. "
+        "· PROHIBIDO ABSOLUTAMENTE agrandar nada. Ninguna pieza crece, ni un poco: cada una "
+        "mide EXACTAMENTE lo mismo que en la referencia, ocupando los mismos píxeles de ancho y "
+        "de alto. Nada se acerca a la cámara ni gana protagonismo. "
+        "· Las siluetas que ya están en la referencia son las únicas que pueden aparecer, y "
+        "TODAS ellas tienen que aparecer. "
+        "COMPROBACIÓN antes de terminar: pon la imagen nueva al lado de la referencia y "
+        "compáralas. Debe haber el MISMO número de siluetas, con el MISMO tamaño y la MISMA "
+        "forma; lo único distinto es que están más abajo. Si ves alguna silueta que no estaba, "
+        "o alguna que ha crecido, está MAL y hay que rehacerlo. "
 
         "Sin sangre, sin color y sin texto."),
 ]
