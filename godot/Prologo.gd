@@ -505,8 +505,12 @@ enum Aparicion { BARRIDO, TECLEO }
 ## A partir de que se vea ESTA estampa aparecen los tres óvalos, flotando en el
 ## centro. 0 = no aparecen nunca.
 @export var espiritus_desde_escena: int = 138
-## Segundos que tardan en aparecer (entran suave, no de golpe).
-@export var espiritus_entrada: float = 1.6
+## Cómo aparecen los tres, en segundos:
+##   · 0     → DE GOLPE, sin desvanecimiento: están y ya.
+##   · > 0   → van apareciendo poco a poco durante ese tiempo, y además entran
+##             escalonados (primero el del centro y luego los de los lados).
+## Ejemplos: 0 = seco · 0.4 = un parpadeo · 1.6 = una aparición lenta.
+@export_range(0.0, 6.0, 0.1) var espiritus_entrada: float = 0.0
 ## Radio del óvalo pequeño, en píxeles del lienzo de 960×540.
 @export_range(4.0, 80.0, 0.5) var espiritus_radio: float = 14.0
 ## Cuánto MÁS grande es el del centro (1.2 = un 20 % mayor).
@@ -2012,15 +2016,23 @@ func _cambiar_imagen(n: int) -> void:
 	# Los tres espíritus aparecen aquí, suave.
 	if espiritus_desde_escena > 0 and n == espiritus_desde_escena and _espiritus != null \
 			and _espiritus.visible_centro <= 0.0:
-		var te := create_tween()
-		te.set_parallel(true)
-		# Entran escalonados, del centro hacia fuera: se siente más vivo que si
-		# aparecieran los tres a la vez.
-		te.tween_property(_espiritus, "visible_centro", 1.0, espiritus_entrada)
-		te.tween_property(_espiritus, "visible_izq", 1.0, espiritus_entrada) \
-			.set_delay(espiritus_entrada * 0.25)
-		te.tween_property(_espiritus, "visible_der", 1.0, espiritus_entrada) \
-			.set_delay(espiritus_entrada * 0.45)
+		if espiritus_entrada <= 0.0:
+			# De golpe: aparecen los tres en el mismo fotograma, sin fundido. Va
+			# bien justo aquí, porque la 138 entra con el impacto y los espíritus
+			# salen con el mismo golpe.
+			_espiritus.visible_izq = 1.0
+			_espiritus.visible_centro = 1.0
+			_espiritus.visible_der = 1.0
+		else:
+			var te := create_tween()
+			te.set_parallel(true)
+			# Poco a poco y escalonados, del centro hacia fuera: se siente más vivo
+			# que si aparecieran los tres a la vez.
+			te.tween_property(_espiritus, "visible_centro", 1.0, espiritus_entrada)
+			te.tween_property(_espiritus, "visible_izq", 1.0, espiritus_entrada) \
+				.set_delay(espiritus_entrada * 0.25)
+			te.tween_property(_espiritus, "visible_der", 1.0, espiritus_entrada) \
+				.set_delay(espiritus_entrada * 0.45)
 	# El aura del de la izquierda se enciende poco a poco a partir de su estampa.
 	if aura_izq_desde_escena > 0 and n == aura_izq_desde_escena and _espiritus != null \
 			and _espiritus.aura[0] == null:
