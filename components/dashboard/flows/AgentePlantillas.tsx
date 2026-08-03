@@ -27,10 +27,11 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { SectionBar, LABEL } from '@/components/dashboard/flows/FlowPanelUI';
+import { SectionBar, LABEL, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import {
-  ColumnaListas, TablaContactos, DialogoNuevaLista, type Lista,
+  ColumnaListas, TablaContactos, DialogoNuevaLista, DialogoRenombrarLista,
+  DialogoCompartirLista, type Lista,
 } from '@/components/dashboard/flows/PanelListasContactos';
 import {
   RefreshCw, Plus, Send, Pencil, Trash2, AlertTriangle, Eye,
@@ -43,6 +44,8 @@ interface Plantilla {
   id: number; meta_id: string | null; nombre: string; idioma: string; categoria: string;
   estado: string; motivo_rechazo: string | null; cuerpo: string; pie: string | null;
   variables: string[]; envios: number; sincronizado_en: string | null;
+  /** Las listas marcadas para esta plantilla, y a cuánta gente con teléfono llegan. */
+  listas: number[]; destinatarios: number;
 }
 
 /**
@@ -79,6 +82,8 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
   const [listas, setListas] = useState<Lista[]>([]);
   const [listaId, setListaId] = useState<number | null>(null);
   const [nuevaLista, setNuevaLista] = useState(false);
+  const [renombrando, setRenombrando] = useState<Lista | null>(null);
+  const [compartiendo, setCompartiendo] = useState<Lista | null>(null);
   const [borrandoLista, setBorrandoLista] = useState<Lista | null>(null);
 
   const plantilla = plantillas.find((p) => p.id === sel) ?? null;
@@ -91,6 +96,17 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
   }, [flowId]);
 
   useEffect(() => { cargarListas(); }, [cargarListas]);
+
+  /** La casilla de una lista: la asocia o la desasocia de la plantilla seleccionada. */
+  const marcarLista = async (l: Lista, marcar: boolean) => {
+    if (!plantilla) return;
+    const r = await fetch(`/api/admin/flows/${flowId}/agente/plantillas/${plantilla.id}/listas`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lista_id: l.id, asociar: marcar }),
+    });
+    if (!r.ok) { toast.error('No se pudo cambiar'); return; }
+    cargar();
+  };
 
   const borrarLista = async () => {
     if (!borrandoLista) return;
@@ -145,9 +161,26 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         <button className={BTN_SECONDARY} onClick={sincronizar} disabled={ocupado || !conectado}>
           <RefreshCw className={`w-4 h-4 ${ocupado ? 'animate-spin' : ''}`} /> Actualizar
         </button>
-        <button className={BTN_PRIMARY} onClick={() => setEditando('nueva')} disabled={!conectado}>
+        <button className={BTN_SECONDARY} onClick={() => setEditando('nueva')} disabled={!conectado}>
           <Plus className="w-4 h-4" /> Nueva plantilla
         </button>
+        {/* El envío va aquí arriba y no junto a la lista: es la acción principal de la
+            pantalla y depende de la plantilla seleccionada, no de la lista abierta. El
+            propio botón dice a cuánta gente va, que es el dato que hace dudar o seguir. */}
+        {plantilla && (
+          <button
+            className={BTN_PRIMARY} onClick={() => setEnviando(plantilla)}
+            disabled={plantilla.estado !== 'APPROVED' || !plantilla.destinatarios}
+            title={
+              plantilla.estado !== 'APPROVED' ? 'Solo se puede enviar una plantilla aprobada por Meta'
+              : !plantilla.destinatarios ? 'Marca con la casilla al menos una lista con contactos que tengan teléfono'
+              : `Enviar «${plantilla.nombre}»`
+            }
+          >
+            <Send className="w-4 h-4" />
+            Enviar{plantilla.destinatarios ? ` a ${plantilla.destinatarios}` : ''}
+          </button>
+        )}
         <BotonAyuda titulo="Para qué sirven las plantillas" lado="derecha">
           <p className="mb-2">Fuera de las <strong>24 horas</strong> siguientes al último mensaje de una persona, WhatsApp no deja escribirle libremente. Solo pasa una plantilla <strong>aprobada por Meta</strong>.</p>
           <p className="mb-2">Por eso son la única forma de <strong>iniciar</strong> una conversación: un aviso, un recordatorio, una confirmación.</p>
@@ -183,39 +216,59 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
           ) : plantillas.map((p) => {
             const est = pinta(p.estado);
             return (
-              <button
-                key={p.id} onClick={() => setSel(p.id)}
-                className={`w-full text-left px-3 py-2.5 border-b border-digi-border last:border-b-0 transition-colors ${
+              <div
+                key={p.id}
+                className={`group border-b border-digi-border last:border-b-0 transition-colors ${
                   sel === p.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}
               >
-                <span className={`block text-[13px] font-medium truncate ${
-                  sel === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.nombre}</span>
-                <span className="flex items-center gap-1.5 mt-1">
-                  <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
-                  <span className="text-[11px] text-digi-muted" style={mf}>{p.idioma}</span>
-                </span>
-              </button>
+                <button onClick={() => setSel(p.id)} className="w-full text-left px-3 py-2.5">
+                  <span className={`block text-[13px] font-medium truncate ${
+                    sel === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.nombre}</span>
+                  <span className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
+                    <span className="text-[11px] text-digi-muted" style={mf}>
+                      {p.idioma}
+                      {p.listas?.length ? ` · ${p.listas.length} lista(s)` : ''}
+                      {p.envios > 0 ? ` · ${p.envios} envío(s)` : ''}
+                    </span>
+                  </span>
+                  {/* El motivo del rechazo es lo único que dice qué corregir. Sin él,
+                      «Rechazada» es un callejón sin salida. */}
+                  {p.motivo_rechazo && (
+                    <span className={`block text-[11px] ${TONO.error.texto} mt-1`} style={mf}>
+                      {p.motivo_rechazo}
+                    </span>
+                  )}
+                </button>
+
+                {/* Editar y borrar, dentro de la tarjeta y fuera del botón de selección
+                    para que no se traguen el clic. Al editar se ve el contenido. */}
+                <div className={`flex items-center gap-1 px-3 pb-2 ${
+                  sel === p.id ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                  <button onClick={() => setEditando(p)} className={BTN_ROW} title="Editar la plantilla">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setBorrando(p)} className={BTN_ROW_DANGER} title="Borrar la plantilla">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             );
           })}
         </div>
 
         {/* 2. Las listas de contactos */}
         <ColumnaListas
-          listas={listas} seleccionada={listaId} alSeleccionar={setListaId}
-          alCrear={() => setNuevaLista(true)} alBorrar={setBorrandoLista}
+          listas={listas} seleccionada={listaId} marcadas={plantilla ? plantilla.listas : null}
+          alSeleccionar={setListaId} alMarcar={marcarLista}
+          alCrear={() => setNuevaLista(true)} alRenombrar={setRenombrando}
+          alCompartir={setCompartiendo} alBorrar={setBorrandoLista}
         />
 
-        {/* 3. La plantilla elegida, y los contactos de la lista elegida */}
-        <div className="flex-1 min-w-0 w-full space-y-3">
-          {plantilla && (
-            <DetallePlantilla
-              p={plantilla} columnas={columnas} lista={lista}
-              alEditar={() => setEditando(plantilla)}
-              alBorrar={() => setBorrando(plantilla)}
-              alEnviar={() => setEnviando(plantilla)}
-            />
-          )}
-          <TablaContactos flowId={flowId} lista={lista} alCambiar={cargarListas} />
+        {/* 3. Solo los contactos de la lista abierta. El contenido de la plantilla se ve
+               al editarla, como la campaña en el correo masivo — no ocupando esta zona. */}
+        <div className="flex-1 min-w-0 w-full">
+          <TablaContactos flowId={flowId} lista={lista} alCambiar={() => { cargarListas(); cargar(); }} />
         </div>
       </div>
 
@@ -230,7 +283,7 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
 
       {enviando && (
         <PanelEnvio
-          flowId={flowId} plantilla={enviando} lista={lista}
+          flowId={flowId} plantilla={enviando} listas={listas}
           alCerrar={() => setEnviando(null)}
           alEnviado={() => { setEnviando(null); cargar(); }}
         />
@@ -240,6 +293,18 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         flowId={flowId} abierto={nuevaLista}
         alCerrar={() => setNuevaLista(false)}
         alCreada={() => { setNuevaLista(false); cargarListas(); }}
+      />
+
+      <DialogoRenombrarLista
+        flowId={flowId} lista={renombrando}
+        alCerrar={() => setRenombrando(null)}
+        alGuardado={() => { setRenombrando(null); cargarListas(); }}
+      />
+
+      <DialogoCompartirLista
+        flowId={flowId} lista={compartiendo}
+        alCerrar={() => setCompartiendo(null)}
+        alCambiado={cargarListas}
       />
 
       <PixelConfirm
@@ -259,76 +324,6 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         onConfirm={borrarLista}
         onCancel={() => setBorrandoLista(null)}
       />
-    </div>
-  );
-}
-
-/* ── La plantilla elegida ───────────────────────────────────────────────────── */
-
-/**
- * La barra de arriba a la derecha: qué se va a mandar, en qué estado está y qué se puede
- * hacer con ella. Es el equivalente de la barra de la campaña en el correo masivo.
- */
-function DetallePlantilla({ p, columnas, lista, alEditar, alBorrar, alEnviar }: {
-  p: Plantilla; columnas: Columna[]; lista: Lista | null;
-  alEditar: () => void; alBorrar: () => void; alEnviar: () => void;
-}) {
-  const est = pinta(p.estado);
-  const aprobada = p.estado === 'APPROVED';
-
-  return (
-    <div className="bg-digi-card border border-digi-border rounded-lg p-3 space-y-2.5">
-      <div className="flex flex-wrap items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold text-digi-text truncate" style={mf}>{p.nombre}</p>
-          <p className="text-[11.5px] text-digi-muted" style={mf}>
-            {p.idioma} · {p.categoria === 'UTILITY' ? 'Utilidad' : 'Marketing'}
-            {p.envios > 0 && ` · ${p.envios} envío(s)`}
-          </p>
-        </div>
-        <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
-        <div className="flex items-center gap-1.5">
-          <button
-            className={BTN_PRIMARY} onClick={alEnviar} disabled={!aprobada || !lista}
-            title={
-              !aprobada ? 'Solo se puede enviar una plantilla aprobada por Meta'
-              : !lista ? 'Elige primero una lista de contactos'
-              : `Enviar a «${lista.name}»`
-            }
-          >
-            <Send className="w-4 h-4" /> Enviar{lista ? ` a ${lista.name}` : ''}
-          </button>
-          <button className={BTN_SECONDARY} onClick={alEditar} title="Editar"><Pencil className="w-4 h-4" /></button>
-          <button
-            onClick={alBorrar} title="Borrar"
-            className="inline-flex items-center justify-center px-2.5 py-2 rounded border border-digi-border
-                       text-digi-muted hover:text-red-400 hover:border-red-400 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-md bg-digi-darker border border-digi-border px-3 py-2.5">
-        <p className="text-[12.5px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>{p.cuerpo}</p>
-        {p.pie && <p className="text-[11px] text-digi-muted mt-1.5" style={mf}>{p.pie}</p>}
-      </div>
-
-      {p.variables?.length > 0 && (
-        <p className="text-[11.5px] text-digi-muted" style={mf}>
-          {p.variables.map((v, i) => (
-            <span key={i} className="mr-3">
-              <code className="text-accent">{`{{${i + 1}}}`}</code> → {columnas.find((c) => c.clave === v)?.etiqueta ?? v}
-            </span>
-          ))}
-        </p>
-      )}
-
-      {/* El motivo del rechazo es lo único que dice qué corregir. Sin él, «Rechazada» es un
-          callejón sin salida. */}
-      {p.motivo_rechazo && (
-        <p className={`text-[12px] ${TONO.error.texto}`} style={mf}>Meta la rechazó: {p.motivo_rechazo}</p>
-      )}
     </div>
   );
 }
@@ -523,35 +518,50 @@ function PanelPlantilla({ flowId, plantilla, columnas, alCerrar, alGuardar }: {
 
 /* ── Enviar a una lista ─────────────────────────────────────────────────────── */
 
-function PanelEnvio({ flowId, plantilla, lista, alCerrar, alEnviado }: {
-  flowId: number; plantilla: Plantilla; lista: Lista | null;
+function PanelEnvio({ flowId, plantilla, listas, alCerrar, alEnviado }: {
+  flowId: number; plantilla: Plantilla; listas: Lista[];
   alCerrar: () => void; alEnviado: () => void;
 }) {
   const [contactos, setContactos] = useState<any[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [confirmar, setConfirmar] = useState(false);
-  const listaId = lista?.id ?? null;
 
-  // Los contactos de la lista elegida, para poder enseñar a cuántos se va a escribir y con
-  // qué datos. Un envío masivo a ciegas es la clase de acción que nadie debería confirmar.
+  const marcadas = listas.filter((l) => plantilla.listas?.includes(l.id));
+
+  /**
+   * Los contactos de TODAS las listas marcadas, para poder enseñar a cuántos se va a
+   * escribir y con qué datos. Un envío masivo a ciegas es la clase de acción que nadie
+   * debería confirmar.
+   *
+   * Se quitan los repetidos por teléfono: una persona que esté en dos listas marcadas
+   * recibiría el mismo mensaje dos veces, y eso al otro lado se lee como spam.
+   */
   useEffect(() => {
-    if (!listaId) { setContactos([]); return; }
-    fetch(`/api/admin/flows/${flowId}/contact-lists/${listaId}/contacts`)
-      .then((r) => r.json())
-      .then((d) => setContactos(d.data ?? []))
-      .catch(() => setContactos([]));
-  }, [flowId, listaId]);
-
-  const conTelefono = contactos.filter((c) => c.phone?.trim());
-  const sinTelefono = contactos.length - conTelefono.length;
+    let vivo = true;
+    Promise.all(marcadas.map((l) =>
+      fetch(`/api/admin/flows/${flowId}/contact-lists/${l.id}/contacts`)
+        .then((r) => r.json()).then((d) => d.data ?? []).catch(() => []),
+    )).then((todas) => {
+      if (!vivo) return;
+      const vistos = new Set<string>();
+      const unicos: any[] = [];
+      for (const c of todas.flat()) {
+        const tel = String(c.phone ?? '').replace(/[^\d]/g, '');
+        if (!tel || vistos.has(tel)) continue;
+        vistos.add(tel); unicos.push(c);
+      }
+      setContactos(unicos);
+    });
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowId, plantilla.id]);
 
   const enviar = async () => {
     setConfirmar(false);
     setEnviando(true);
     try {
       const r = await fetch(`/api/admin/flows/${flowId}/agente/plantillas/${plantilla.id}/enviar`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lista_id: listaId }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
       });
       const d = await r.json();
       if (!r.ok) { toast.error(d.error ?? 'No se pudo enviar'); return; }
@@ -569,54 +579,56 @@ function PanelEnvio({ flowId, plantilla, lista, alCerrar, alEnviado }: {
   return (
     <>
       <EditPanel
-        open title={`Enviar «${plantilla.nombre}» a «${lista?.name ?? ''}»`}
+        open title={`Enviar «${plantilla.nombre}»`}
         onClose={alCerrar} onSave={() => setConfirmar(true)}
-        saving={enviando} canSave={!!listaId && conTelefono.length > 0}
-        saveLabel={conTelefono.length ? `Enviar a ${conTelefono.length} contacto(s)` : 'Enviar'}
+        saving={enviando} canSave={contactos.length > 0}
+        saveLabel={contactos.length ? `Enviar a ${contactos.length} contacto(s)` : 'Enviar'}
       >
         <div className="space-y-4">
-          {lista && (
-            <>
-              {sinTelefono > 0 && (
-                <div className={`rounded-md border ${TONO.aviso.caja} px-3 py-2.5`}>
-                  <p className={`text-[12px] ${TONO.aviso.texto} leading-relaxed`} style={mf}>
-                    {sinTelefono} contacto(s) de esta lista <strong>no tienen teléfono</strong> y se van a
-                    saltar. WhatsApp necesita el número; el correo no sirve aquí.
-                  </p>
-                </div>
-              )}
+          <div>
+            <label className={LABEL}>Listas marcadas</label>
+            {marcadas.length === 0 ? (
+              <p className="text-[12.5px] text-digi-muted leading-relaxed" style={mf}>
+                Esta plantilla no tiene ninguna lista marcada. Marca al menos una con su casilla, en
+                la columna de listas de contactos.
+              </p>
+            ) : (
+              <ul className="text-[12.5px] text-digi-text space-y-0.5" style={mf}>
+                {marcadas.map((l) => (
+                  <li key={l.id}>· {l.name} <span className="text-digi-muted">({l.contact_count ?? 0} contacto(s))</span></li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-              {/* Los tres primeros, ya rellenos. Es la última oportunidad de ver un «Hola —»
-                  antes de que salga a cien personas. */}
-              {conTelefono.length > 0 && (
-                <div>
-                  <label className={LABEL}>Así lo va a recibir cada uno</label>
-                  <div className="space-y-2">
-                    {conTelefono.slice(0, 3).map((c) => (
-                      <div key={c.id} className="rounded-lg bg-digi-darker border border-digi-border p-2.5">
-                        <p className="text-[11px] text-digi-muted mb-1" style={mf}>
-                          {c.name || 'Sin nombre'} · {c.phone}
-                        </p>
-                        <p className="text-[12.5px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>
-                          {rellena(c)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  {conTelefono.length > 3 && (
-                    <p className="mt-1.5 text-[11.5px] text-digi-muted" style={mf}>
-                      …y {conTelefono.length - 3} más.
+          {contactos.length > 0 && (
+            <div>
+              <label className={LABEL}>Así lo va a recibir cada uno</label>
+              <div className="space-y-2">
+                {contactos.slice(0, 3).map((c) => (
+                  <div key={c.id} className="rounded-lg bg-digi-darker border border-digi-border p-2.5">
+                    <p className="text-[11px] text-digi-muted mb-1" style={mf}>
+                      {c.name || 'Sin nombre'} · {c.phone}
                     </p>
-                  )}
-                </div>
+                    <p className="text-[12.5px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>
+                      {rellena(c)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {contactos.length > 3 && (
+                <p className="mt-1.5 text-[11.5px] text-digi-muted" style={mf}>
+                  …y {contactos.length - 3} más.
+                </p>
               )}
-            </>
+            </div>
           )}
 
           <p className="text-[11.5px] text-digi-muted leading-relaxed flex items-start gap-1.5" style={mf}>
             <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
-            Los mensajes salen de uno en uno para no agotar el límite del número. Cuando termine, los
-            verás en la bandeja etiquetados como «plantilla», cada uno en su conversación.
+            Se saltan los contactos sin teléfono y los repetidos entre listas. Los mensajes salen de
+            uno en uno para no agotar el límite del número; al terminar los verás en la bandeja
+            etiquetados «plantilla», cada uno en su conversación.
           </p>
         </div>
       </EditPanel>
@@ -624,7 +636,7 @@ function PanelEnvio({ flowId, plantilla, lista, alCerrar, alEnviado }: {
       <PixelConfirm
         open={confirmar}
         title="Confirmar el envío"
-        message={`Se van a enviar ${conTelefono.length} mensajes de WhatsApp reales, ahora mismo. No se pueden retirar una vez enviados. ¿Continuamos?`}
+        message={`Se van a enviar ${contactos.length} mensajes de WhatsApp reales, ahora mismo. No se pueden retirar una vez enviados. ¿Continuamos?`}
         confirmLabel="Sí, enviar"
         onConfirm={enviar}
         onCancel={() => setConfirmar(false)}

@@ -32,23 +32,43 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { SectionBar, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import {
-  Users, Plus, Pencil, Trash2, Upload, Download, FileSpreadsheet, User,
+  Users, Plus, Pencil, Trash2, Upload, Download, FileSpreadsheet, User, Share2,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-export interface Lista { id: number; name: string; contact_count?: number }
+export interface Lista { id: number; name: string; contact_count?: number; share_token?: string | null }
 export interface Contacto {
   id: number; name: string; email: string | null; phone: string | null; position: string | null;
 }
 
 /* ═══════════════════════ LA COLUMNA DE LISTAS ═══════════════════════ */
 
-export function ColumnaListas({ listas, seleccionada, alSeleccionar, alCrear, alBorrar }: {
+/**
+ * La columna de listas.
+ *
+ * ── LA CASILLA Y EL CLIC SON DOS COSAS DISTINTAS ──────────────────────────────
+ * Es el patrón que ya tiene el correo masivo, y no es un capricho:
+ *   · la **casilla** asocia o desasocia la lista con lo que está seleccionado —una campaña
+ *     allí, una plantilla aquí—. Una lista sirve para varias plantillas.
+ *   · el **clic en el nombre** solo la abre para ver y editar sus contactos.
+ * Mezclarlos obligaría a asociar una lista para poder mirarla.
+ *
+ * Las acciones —renombrar, compartir, borrar— van DENTRO de la tarjeta, fuera del botón de
+ * selección para que no se traguen el clic.
+ */
+export function ColumnaListas({
+  listas, seleccionada, marcadas, alSeleccionar, alMarcar, alCrear, alRenombrar, alCompartir, alBorrar,
+}: {
   listas: Lista[];
   seleccionada: number | null;
+  /** Las asociadas a lo que esté seleccionado. `null` = no hay nada que asociar todavía. */
+  marcadas: number[] | null;
   alSeleccionar: (id: number) => void;
+  alMarcar: (l: Lista, marcar: boolean) => void;
   alCrear: () => void;
+  alRenombrar: (l: Lista) => void;
+  alCompartir: (l: Lista) => void;
   alBorrar: (l: Lista) => void;
 }) {
   return (
@@ -70,28 +90,50 @@ export function ColumnaListas({ listas, seleccionada, alSeleccionar, alCrear, al
           Todavía no hay listas. Crea una con el <strong>+</strong> y añade los contactos a los que
           quieras escribir.
         </p>
-      ) : listas.map((l) => (
-        <div
-          key={l.id}
-          className={`group flex items-center gap-1 border-b border-digi-border last:border-b-0 transition-colors ${
-            seleccionada === l.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}
-        >
-          <button onClick={() => alSeleccionar(l.id)} className="min-w-0 flex-1 text-left px-3 py-2.5">
-            <span className={`block text-[13px] font-medium truncate ${
-              seleccionada === l.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{l.name}</span>
-            <span className="block text-[11.5px] text-digi-muted" style={mf}>
-              {l.contact_count ?? 0} contacto(s)
-            </span>
-          </button>
-          <button
-            onClick={() => alBorrar(l)} title="Borrar lista" aria-label="Borrar lista"
-            className="shrink-0 mr-2 w-6 h-6 rounded flex items-center justify-center text-digi-muted
-                       hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+      ) : listas.map((l) => {
+        const marcada = marcadas?.includes(l.id) ?? false;
+        return (
+          <div
+            key={l.id}
+            className={`group border-b border-digi-border last:border-b-0 transition-colors ${
+              seleccionada === l.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ))}
+            <div className="flex items-start gap-2 px-3 py-2.5">
+              {marcadas !== null && (
+                <input
+                  type="checkbox" checked={marcada}
+                  onChange={(e) => alMarcar(l, e.target.checked)}
+                  title={marcada ? 'Quitar esta lista de la plantilla' : 'Usar esta lista en la plantilla'}
+                  className="mt-0.5 w-[15px] h-[15px] shrink-0 accent-[var(--color-accent)] cursor-pointer"
+                />
+              )}
+              <button onClick={() => alSeleccionar(l.id)} className="min-w-0 flex-1 text-left">
+                <span className={`block text-[13px] font-medium truncate ${
+                  seleccionada === l.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{l.name}</span>
+                <span className="block text-[11.5px] text-digi-muted" style={mf}>
+                  {l.contact_count ?? 0} contacto(s)
+                  {l.share_token ? ' · enlace activo' : ''}
+                </span>
+              </button>
+            </div>
+
+            {/* Las acciones, dentro de la tarjeta y fuera del botón de selección. Aparecen
+                al pasar el puntero o cuando la lista está abierta. */}
+            <div className={`flex items-center gap-1 px-3 pb-2 ${
+              seleccionada === l.id ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+              <button onClick={() => alRenombrar(l)} className={BTN_ROW} title="Renombrar">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => alCompartir(l)} className={BTN_ROW} title="Compartir por enlace">
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => alBorrar(l)} className={BTN_ROW_DANGER} title="Borrar lista">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -361,6 +403,110 @@ export function DialogoNuevaLista({ flowId, abierto, alCerrar, alCreada }: {
       <EditField label="Nombre de la lista" hint="Por ejemplo: Clientes de agosto, o Postulantes.">
         <PixelInput value={nombre} onChange={(e: any) => setNombre(e.target.value)} autoFocus />
       </EditField>
+    </EditPanel>
+  );
+}
+
+/* ── Renombrar una lista ────────────────────────────────────────────────────── */
+
+export function DialogoRenombrarLista({ flowId, lista, alCerrar, alGuardado }: {
+  flowId: number; lista: Lista | null; alCerrar: () => void; alGuardado: () => void;
+}) {
+  const [nombre, setNombre] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  useEffect(() => { if (lista) setNombre(lista.name); }, [lista]);
+  if (!lista) return null;
+
+  const guardar = async () => {
+    setGuardando(true);
+    try {
+      const r = await fetch(`/api/admin/flows/${flowId}/contact-lists/${lista.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nombre.trim() }),
+      });
+      if (!r.ok) { toast.error('No se pudo renombrar'); return; }
+      alGuardado();
+    } finally { setGuardando(false); }
+  };
+
+  return (
+    <EditPanel open title="Renombrar lista" onClose={alCerrar} onSave={guardar}
+      saving={guardando} canSave={!!nombre.trim()}>
+      <EditField label="Nombre de la lista">
+        <PixelInput value={nombre} onChange={(e: any) => setNombre(e.target.value)} autoFocus />
+      </EditField>
+    </EditPanel>
+  );
+}
+
+/* ── Compartir una lista por enlace ─────────────────────────────────────────── */
+
+/**
+ * El enlace deja que alguien de fuera **añada contactos** a la lista sin tener cuenta.
+ * Es lo que ya hace el correo masivo, y sirve igual aquí: el cliente pasa el enlace a su
+ * equipo y los contactos entran solos.
+ *
+ * ⚠️ Quien tenga el enlace puede escribir en la lista. Se desactiva con el mismo botón.
+ */
+export function DialogoCompartirLista({ flowId, lista, alCerrar, alCambiado }: {
+  flowId: number; lista: Lista | null; alCerrar: () => void; alCambiado: () => void;
+}) {
+  const [token, setToken] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  useEffect(() => { setToken(lista?.share_token ?? null); }, [lista]);
+  if (!lista) return null;
+
+  const enlace = token ? `${window.location.origin}/listas/${token}` : null;
+
+  const activar = async () => {
+    setOcupado(true);
+    try {
+      const r = await fetch(`/api/admin/flows/${flowId}/contact-lists/${lista.id}/share`, { method: 'POST' });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { toast.error(d.error ?? 'No se pudo generar el enlace'); return; }
+      setToken(d.share_token ?? d.token ?? null);
+      alCambiado();
+    } finally { setOcupado(false); }
+  };
+
+  const desactivar = async () => {
+    setOcupado(true);
+    try {
+      const r = await fetch(`/api/admin/flows/${flowId}/contact-lists/${lista.id}/share`, { method: 'DELETE' });
+      if (!r.ok) { toast.error('No se pudo desactivar'); return; }
+      setToken(null); alCambiado();
+    } finally { setOcupado(false); }
+  };
+
+  return (
+    <EditPanel open title={`Compartir «${lista.name}»`} onClose={alCerrar}
+      onSave={alCerrar} saving={ocupado} saveLabel="Cerrar">
+      <div className="space-y-3">
+        <p className="text-[12.5px] text-digi-muted leading-relaxed" style={mf}>
+          Con este enlace, cualquiera puede <strong>añadir contactos</strong> a la lista sin tener
+          cuenta en la plataforma. No podrá ver ni borrar los que ya están.
+        </p>
+        {enlace ? (
+          <>
+            <EditField label="Enlace activo">
+              <input className={EDIT_INPUT} value={enlace} readOnly onFocus={(e) => e.currentTarget.select()} />
+            </EditField>
+            <div className="flex gap-2">
+              <button className={BTN_ROW} onClick={() => { navigator.clipboard.writeText(enlace); toast.success('Enlace copiado'); }}>
+                Copiar enlace
+              </button>
+              <button className={BTN_ROW_DANGER} onClick={desactivar} disabled={ocupado}>
+                Desactivar el enlace
+              </button>
+            </div>
+          </>
+        ) : (
+          <button className={BTN_PRIMARY} onClick={activar} disabled={ocupado}>
+            <Share2 className="w-4 h-4" /> Generar enlace
+          </button>
+        )}
+      </div>
     </EditPanel>
   );
 }

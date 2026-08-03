@@ -28,6 +28,20 @@ export function sePuedeEnviar(estado: string): boolean {
   return estado === 'APPROVED';
 }
 
+/**
+ * El motivo del rechazo, si de verdad hay uno.
+ *
+ * ⚠️ Meta devuelve `rejected_reason: "NONE"` en las plantillas **aprobadas**: no es un
+ * motivo, es su forma de decir «ninguno». Guardarlo tal cual hacía que una plantilla
+ * aprobada mostrara «Meta la rechazó: NONE», que es exactamente lo contrario de la verdad.
+ * Lo vio Fernando el 2026-08-03, y encima justo después de un envío que sí funcionó.
+ */
+function motivoReal(motivo: string | undefined | null): string | null {
+  if (!motivo) return null;
+  const m = String(motivo).trim();
+  return m && m.toUpperCase() !== 'NONE' ? m : null;
+}
+
 /** El cuerpo de una plantilla, sacado de los componentes que devuelve Meta. */
 function cuerpoDe(componentes: any[] | undefined): { encabezado: string | null; cuerpo: string; pie: string | null } {
   const busca = (tipo: string) => componentes?.find((c) => String(c?.type).toUpperCase() === tipo);
@@ -76,7 +90,7 @@ export async function sincronizarPlantillas(canal: any): Promise<{ total: number
            OR gcc_world.agente_plantillas.estado  IS DISTINCT FROM EXCLUDED.estado
            OR gcc_world.agente_plantillas.cuerpo  IS DISTINCT FROM EXCLUDED.cuerpo`,
       [canal.id, p.id, p.name, p.language, p.category, p.status,
-       p.rejected_reason ?? null, encabezado, cuerpo, pie],
+       motivoReal(p.rejected_reason), encabezado, cuerpo, pie],
     );
     if (rowCount) nuevas++;
   }

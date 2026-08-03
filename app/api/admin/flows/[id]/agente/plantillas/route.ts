@@ -39,8 +39,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
   }
 
+  // Cada plantilla viene con las listas que usa y a cuánta gente CON TELÉFONO llega. El
+  // recuento se calcula aquí y no en la pantalla: contar contactos en el navegador
+  // obligaría a traerse todos los contactos de todas las listas para pintar un número.
   const { rows } = await pool.query(
-    `SELECT p.*, (SELECT COUNT(*)::int FROM gcc_world.agente_envios e WHERE e.plantilla_id = p.id) AS envios
+    `SELECT p.*,
+            (SELECT COUNT(*)::int FROM gcc_world.agente_envios e WHERE e.plantilla_id = p.id) AS envios,
+            COALESCE((SELECT json_agg(pl.lista_id) FROM gcc_world.agente_plantilla_listas pl
+                       WHERE pl.plantilla_id = p.id), '[]') AS listas,
+            (SELECT COUNT(DISTINCT c.id)::int
+               FROM gcc_world.agente_plantilla_listas pl
+               JOIN gcc_world.flow_contacts c ON c.list_id = pl.lista_id
+              WHERE pl.plantilla_id = p.id AND c.phone IS NOT NULL AND TRIM(c.phone) <> '') AS destinatarios
        FROM gcc_world.agente_plantillas p
       WHERE p.canal_id = $1 ORDER BY p.updated_at DESC`,
     [canal.id],

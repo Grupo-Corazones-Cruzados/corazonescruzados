@@ -33,9 +33,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  const { lista_id } = await req.json();
-  if (!lista_id) return NextResponse.json({ error: 'Elige una lista de contactos.' }, { status: 400 });
-
   const canal = await asegurarCanal(flujo.id);
   const { rows: [plantilla] } = await pool.query(
     `SELECT * FROM gcc_world.agente_plantillas WHERE id = $1 AND canal_id = $2`,
@@ -43,21 +40,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   );
   if (!plantilla) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
 
-  // La lista tiene que ser de ESTE flujo. Sin esta comprobación, un identificador escrito
-  // a mano mandaría la plantilla de un cliente a los contactos de otro.
-  const { rows: [lista] } = await pool.query(
-    `SELECT id, name FROM gcc_world.flow_contact_lists WHERE id = $1 AND flow_id = $2`,
-    [lista_id, flujo.id],
+  // Las listas MARCADAS para esta plantilla. Se vuelven a filtrar por flujo aunque la
+  // asociación ya lo comprobó: si algún día se asocian por otro camino, esta consulta
+  // sigue impidiendo mandar la plantilla de un cliente a los contactos de otro.
+  const { rows: listas } = await pool.query(
+    `SELECT l.id, l.name
+       FROM gcc_world.agente_plantilla_listas pl
+       JOIN gcc_world.flow_contact_lists l ON l.id = pl.lista_id
+      WHERE pl.plantilla_id = $1 AND l.flow_id = $2
+      ORDER BY l.name`,
+    [plantilla.id, flujo.id],
   );
-  if (!lista) return NextResponse.json({ error: 'Esa lista no es de este flujo.' }, { status: 404 });
+  if (!listas.length) {
+    return NextResponse.json(
+      { error: 'Esta plantilla no tiene ninguna lista marcada. Marca al menos una con su casilla.' },
+      { status: 400 },
+    );
+  }
 
   try {
-    const r = await enviarAListado(canal, plantilla, Number(lista_id), user.userId);
+    let enviados = 0, fallidos = 0;
+    for (const lista of listas) {
+      const r = await enviarAListado(canal, plantilla, lista.id, user.userId);
+      enviados += r.enviados; fallidos += r.fallidos;
+    }
     return NextResponse.json({
-      ...r,
-      mensaje: r.fallidos
-        ? `Enviados ${r.enviados}, fallaron ${r.fallidos}. Los fallidos quedan en la bandeja con su error.`
-        : `Enviados ${r.enviados} mensajes. Ya están en la bandeja.`,
+      enviados, fallidos, listas: listas.length,
+      mensaje: fallidos
+        ? `Enviados ${enviados}, fallaron ${fallidos}. Los fallidos quedan en la bandeja con su error.`
+        : `Enviados ${enviados} mensajes. Ya están en la bandeja.`,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? 'No se pudo enviar' }, { status: 400 });

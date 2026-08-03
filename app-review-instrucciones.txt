@@ -1,0 +1,460 @@
+================================================================================
+GCC WORLD — APP REVIEW DE META
+Respuestas para el formulario «Instrucciones de prueba para la web»
+Preparado el 3 de agosto de 2026
+================================================================================
+
+Cada bloque marcado con >>> se copia TAL CUAL en su campo del formulario.
+El texto va en inglés a propósito: los revisores de Meta son internacionales y
+una respuesta en español suele acabar en una petición de aclaración.
+
+Permisos solicitados:
+  · whatsapp_business_management
+  · whatsapp_business_messaging
+
+
+================================================================================
+CAMPO 1 — «¿Dónde podemos encontrar la app?»
+================================================================================
+
+>>>
+https://app.grupocc.org
+<<<
+
+
+================================================================================
+CAMPO 2 — «¿El inicio de sesión con Facebook está integrado en esta plataforma?»
+================================================================================
+
+    Respuesta:  SÍ
+
+    Por qué SÍ y no NO, aunque no lo usemos para autenticar usuarios:
+    la app carga el SDK de Facebook y llama a FB.login (Facebook Login for
+    Business) dentro del Embedded Signup de WhatsApp. Si se responde «No» y el
+    revisor lo encuentra en el código, es una contradicción que cuesta un
+    rechazo. Se responde «Sí» y se aclara el alcance en el campo 3.
+
+
+================================================================================
+CAMPO 3 — Instrucciones de acceso y prueba  (CAMPO OBLIGATORIO)
+================================================================================
+
+>>>
+ACCESS
+Platform URL: https://app.grupocc.org
+Sign in at:   https://app.grupocc.org/auth
+Email:    revisor.meta@grupocc.org
+Password: g6kA-NKAt7gC
+
+Email and password are all that is required — this account is exempt from the
+email verification code that our platform normally sends, so there is no second
+step and no inbox access is needed. The account is client-type and will remain
+active for at least one year from the date of this submission.
+
+WHAT THIS APP DOES
+Grupo Corazones Cruzados is a human development project in Ecuador. Alongside
+our work with people, we build technology for the organizations that work with
+us — this app is that part. Business customers connect
+their own WhatsApp Business number through our platform, and an AI agent answers
+their incoming WhatsApp messages on their behalf, while their staff keep using
+WhatsApp on their phone (coexistence). Each customer is a separate tenant:
+one flow = one channel = one phone number = one business.
+
+STEP-BY-STEP TEST
+1. Sign in at https://app.grupocc.org/auth with the credentials above. You will
+   land directly on the dashboard.
+2. In the left sidebar, open "Automatizaciones" (Automations).
+3. Open the flow named "lfgonzalezm0". This review account is scoped to that
+   single flow by design; other customers' flows are not visible to it, and are
+   rejected server-side even if their URL is entered directly.
+4. "Bandeja" (Inbox) tab — the WhatsApp conversation view. It shows a real
+   conversation received through the WhatsApp Cloud API: inbound messages from
+   the contact, and the outbound replies our AI agent generated and sent back
+   through the Cloud API. The footer shows model usage for that conversation.
+5. "Plantillas" (Templates) tab — the message templates registered on the
+   connected WhatsApp Business Account, with their Meta review status. From here
+   a template can be created (it is submitted to Meta for approval), edited, and
+   — once approved — sent to a list of the business's own contacts, with each
+   template variable filled from that contact's data. Sent messages appear in the
+   inbox labelled as template sends.
+6. "Estudio del agente" (Agent Studio) tab — a read-only diagram of the actual
+   processing pipeline: webhook -> signature check -> queue -> worker -> model
+   -> reply sent via WhatsApp Cloud API. Click any step to see what it receives
+   and what it produces, and which source file implements it.
+
+WHY THE CONNECTED NUMBER IS A META TEST NUMBER
+Onboarding a customer's own number through Embedded Signup requires Advanced
+Access to whatsapp_business_management and whatsapp_business_messaging, which is
+exactly what this submission requests. Until it is granted we cannot onboard a
+real customer number, so we connected the Meta test number that ships with our
+app (+1 555 666 6709) in order to exercise the full chain end to end. Both
+permissions have already been used successfully with it: subscribing our app to
+the WABA (whatsapp_business_management), and registering the number and sending
+messages (whatsapp_business_messaging). The attached video demonstrates a send.
+
+META APIS AND FACEBOOK LOGIN
+We use Facebook Login for Business solely as part of the WhatsApp Embedded
+Signup flow (FB.login with a config_id and response_type "code"), to obtain the
+onboarding authorization code for a customer's WhatsApp Business Account. We do
+NOT use Facebook Login to authenticate users into our platform: sign-in to
+app.grupocc.org uses our own email + password system — the credentials above.
+
+The `public_profile` permission is included by default with Facebook Login for
+Business and appears in our use case for that reason. We do not read, store or
+otherwise use any profile data from it, which is why it shows no test API calls.
+We request no other user-data permissions — no email, no user_friends, no
+user_birthday. The only data we take from the Embedded Signup flow is the
+WhatsApp Business Account ID and the phone number ID of the business being
+onboarded.
+
+The Meta APIs we call are the WhatsApp Cloud API and the WhatsApp Business
+Management API: exchanging the Embedded Signup code, subscribing our app to the
+customer's WABA, reading phone number status, registering a phone number, and
+sending and receiving messages.
+
+Terms and privacy policy for this service, where we act as data processor on
+behalf of the business customer:
+https://app.grupocc.org/legal/whatsapp
+<<<
+
+
+================================================================================
+CAMPO 4 — Credenciales de prueba (suscripciones / compras / funciones)
+================================================================================
+
+>>>
+No payment, subscription or membership is required to access any of the features
+under review. The test credentials for the full platform are:
+
+  URL:      https://app.grupocc.org/auth
+  Email:    revisor.meta@grupocc.org
+  Password: g6kA-NKAt7gC
+
+No verification code or second factor is required for this account. It will
+remain active for at least one year from the date of this submission.
+<<<
+
+
+================================================================================
+CAMPO 5 — Códigos de regalo de tienda de apps
+================================================================================
+
+>>>
+Not applicable. This is a web application, not distributed through any app store.
+No payment is required to access it.
+<<<
+
+
+================================================================================
+CAMPO 6 — Restricciones geográficas
+================================================================================
+
+>>>
+None. The platform is accessible worldwide, with no geo-blocking or geo-fencing.
+<<<
+
+
+================================================================================
+JUSTIFICACIÓN DE CADA PERMISO  (formulario de revisión, un bloque por permiso)
+================================================================================
+
+--------------------------------------------------------------------------------
+DESCRIPCIÓN DEL NEGOCIO  (se pide en messaging y en management: la misma en ambos)
+--------------------------------------------------------------------------------
+
+    Abre con lo que somos —un proyecto de desarrollo humano— y cierra explicando
+    por qué existe la app. Las dos partes hacen falta: sin la primera la
+    descripción es falsa; sin la segunda, el revisor no entiende qué pinta esta
+    app mandando mensajes de WhatsApp, y eso genera preguntas.
+
+>>>
+Grupo Corazones Cruzados is a human development project in Ecuador: we help
+people grow, and we help the organizations around them work better — including
+connecting their own WhatsApp Business numbers to an AI assistant so their
+customers are answered within seconds.
+<<<
+
+
+--------------------------------------------------------------------------------
+whatsapp_business_messaging — «Describe cómo tu app usa este permiso»
+--------------------------------------------------------------------------------
+
+>>>
+Our platform hosts an AI assistant that answers WhatsApp messages on behalf of
+our business customers. Each customer connects their own WhatsApp Business
+number through Embedded Signup and remains the owner of that number and of the
+conversations; we act strictly as their data processor.
+
+We use whatsapp_business_messaging for exactly two things:
+
+1. RECEIVING. We subscribe to the `messages` webhook field for the customer's
+   WhatsApp Business Account so that inbound messages from their end customers
+   reach our platform. Each message is stored against that customer's channel
+   only, and is shown in their inbox.
+
+2. REPLYING. Our assistant composes an answer using the knowledge base that the
+   business itself configured, and we send it back to the same end customer
+   through the Cloud API (POST /{phone-number-id}/messages), using the access
+   token issued for that specific customer. A human operator on the business
+   side can take over a conversation at any time and reply manually from the
+   same inbox; while a conversation is taken over, the assistant stays silent so
+   the end customer never receives two answers.
+
+Free-form replies go only to people who messaged the business first, inside the
+customer service window. Outside it we send only Meta-approved message templates,
+from the business's own number, to contacts the business already holds and from
+whom it has obtained consent. We never message people on behalf of a business
+that has not connected its own number through Embedded Signup and granted us
+access, and we do not sell or share contact lists.
+<<<
+
+
+--------------------------------------------------------------------------------
+whatsapp_business_messaging — DESCRIPCIÓN DETALLADA
+(el campo largo: cómo se usa · qué valor aporta · por qué es imprescindible)
+--------------------------------------------------------------------------------
+
+    Meta pide tres cosas en este campo y las evalúa por separado. El texto está
+    ordenado en esos tres bloques a propósito, para que el revisor encuentre
+    cada respuesta donde la busca.
+
+>>>
+WHO USES THIS APP
+There are two kinds of people involved. First, our business customers: small and
+medium organizations in Ecuador — a tour operator, a clinic, a store — who
+already run their day-to-day customer service over WhatsApp. Second, their end
+customers: the people who write to that business asking about prices, schedules,
+availability or how to get started.
+
+HOW THE APP USES whatsapp_business_messaging
+The business connects its own WhatsApp Business number through Embedded Signup.
+It remains the owner of the number and of every conversation; we act strictly as
+its data processor. From that point the permission is used for exactly two
+operations:
+
+1. RECEIVING. We subscribe to the `messages` webhook field for that customer's
+   WhatsApp Business Account. When one of their end customers writes, the message
+   arrives at our webhook, we verify the payload signature, and we store it
+   against that customer's channel only. It then appears in that business's
+   inbox inside our platform.
+
+2. REPLYING. An AI assistant composes an answer using only the knowledge base
+   that the business itself wrote and configured — its services, its schedule,
+   its policies. We send that answer back to the same end customer through the
+   Cloud API (POST /{phone-number-id}/messages), using the access token issued
+   for that specific business. At any moment a human on the business side can
+   press "take over the conversation": the assistant then goes silent for that
+   thread and the person replies manually from the same inbox, so the end
+   customer never receives two answers to one question.
+
+WHAT VALUE THIS BRINGS
+For the end customer, the value is being answered. A small business in Ecuador
+cannot staff WhatsApp at 9 p.m. or on a Sunday, and the ordinary outcome of
+writing to one is waiting until the next working day — or being forgotten. With
+this permission the answer arrives in seconds, at any hour, in Spanish, with the
+business's real information rather than a generic auto-reply. And when the
+question needs a person, the handover is immediate and happens in the same
+conversation: the end customer never has to repeat themselves or move to another
+channel.
+
+For the business, the value is keeping the channel their customers already use.
+Because the number is connected with coexistence, their team keeps WhatsApp on
+their phones and WhatsApp Web exactly as before — nothing is taken away from
+them. They gain an assistant that covers the hours they cannot, a shared inbox
+where the whole team sees the same history, and the ability to step in whenever
+they want.
+
+WHY IT IS NECESSARY FOR THE APP TO WORK
+This app is a WhatsApp inbox with an assistant attached; without
+whatsapp_business_messaging there is no app. The permission is what allows
+messages to reach us at all — without the `messages` webhook subscription, not a
+single message is delivered — and what allows any answer to be sent back. There
+is no alternative path: the WhatsApp Cloud API is the only supported way to send
+and receive on a business's own WhatsApp Business number, and a business cannot
+delegate its customer service to software without it.
+
+HOW WE STAY WITHIN THE POLICY
+Free-form replies are only ever sent to people who messaged the business first,
+and only inside the 24-hour customer service window — this is the assistant's
+normal mode of operation.
+
+Outside that window we send only APPROVED MESSAGE TEMPLATES, which is what
+templates exist for. A business can select one of its own Meta-approved templates
+and send it to a list of its own contacts — for example a confirmation, an
+appointment reminder or a service notice. Those templates are reviewed and
+approved by Meta before they can be used at all, they are always sent from the
+business's own number, and the recipients are contacts that the business already
+holds and from whom it has obtained consent. Each message is recorded in the same
+inbox, labelled as a template send, so the business has a full record of what was
+sent and to whom.
+
+We do not sell or share contact lists, we do not send on behalf of third parties,
+and we never message anyone on behalf of a business that has not connected its own
+number through Embedded Signup and explicitly granted us access. Each business's
+access token is stored encrypted, bound to that channel, and used only for that
+business's own number. End customers can ask for their data to be deleted through
+the process published at
+https://app.grupocc.org/legal/whatsapp#eliminar-datos
+<<<
+
+
+--------------------------------------------------------------------------------
+whatsapp_business_management — «Describe cómo tu app usa este permiso»
+--------------------------------------------------------------------------------
+
+>>>
+We use whatsapp_business_management only to set up and maintain the connection
+between a business customer's WhatsApp Business Account (WABA) and our platform,
+never to read or manage anything beyond what that setup requires:
+
+1. ONBOARDING. When a business connects through Embedded Signup, we exchange the
+   returned authorization code for that customer's access token.
+
+2. SUBSCRIBING OUR APP TO THEIR WABA (POST /{waba-id}/subscribed_apps) and then
+   verifying the subscription actually took effect. Without this step no message
+   ever reaches us, and the setup would look successful while silently failing.
+
+3. READING THE STATE OF THEIR NUMBER (GET /{waba-id}/phone_numbers): display
+   number, verified name, status and quality rating. This is what we show the
+   business on its own connection screen, and what tells us whether the
+   onboarding still needs work on their side.
+
+4. REGISTERING A PHONE NUMBER with the Cloud API when required
+   (POST /{phone-number-id}/register), so the number can send and receive.
+
+We do not use this permission to create, modify or delete assets in a customer's
+portfolio, to manage users or roles, or to access any WhatsApp Business Account
+other than one whose owner explicitly connected it to us through Embedded Signup.
+Each customer's token is stored encrypted and is used only for that customer's
+own account.
+<<<
+
+
+--------------------------------------------------------------------------------
+public_profile — «Describe cómo tu app usa este permiso»
+--------------------------------------------------------------------------------
+
+>>>
+We do not use profile data for any product feature.
+
+public_profile is included by default with Facebook Login for Business, which we
+use solely to run the WhatsApp Embedded Signup flow: a business owner signs in
+with their own Facebook account so that Meta can show them their portfolios and
+WhatsApp Business Accounts and let them authorize the connection. The only value
+we take out of that flow is the authorization code, which we exchange for the
+customer's WhatsApp access token.
+
+We do not read, store, display or share any profile field (name, ID, picture),
+we do not use it to create or identify accounts in our platform — sign-in to our
+platform is our own email and password system — and we do not share it with any
+third party. This is why this permission shows no test API calls beyond the
+single verification call.
+<<<
+
+
+--------------------------------------------------------------------------------
+VIDEOS Y CASILLAS
+--------------------------------------------------------------------------------
+
+  whatsapp_business_messaging  → video del ENVÍO por la Cloud API (ya grabado).
+  whatsapp_business_management → video creando y guardando una PLANTILLA en
+                                 WhatsApp Manager (pendiente).
+  public_profile               → no pide video. Solo la casilla de conformidad.
+
+  «Confirma que cumplirás con el uso permitido»: marcar la casilla en los tres.
+  Los textos de arriba están escritos para ser coherentes con esa confirmación —
+  no prometen nada que la app no haga.
+
+
+================================================================================
+ESTADO DE LAS PRUEBAS DE LA API  (verificado el 3 de agosto de 2026)
+================================================================================
+
+  whatsapp_business_messaging    ● Completado
+  whatsapp_business_management   ● Completado
+  public_profile                 ● llamada hecha el 3-ago-2026 (GET /me?fields=id,name)
+
+  Los dos permisos solicitados quedaron en verde con las llamadas reales que se
+  hicieron sobre el número de prueba: suscribir la app a la WABA, registrar el
+  número y enviar un mensaje. El caso de uso marca «Prueba completada».
+
+  `public_profile` no requería prueba —es acceso estándar y viene incluido por
+  defecto con Facebook Login—, pero se hizo igualmente un `GET /me?fields=id,name`
+  para que no quede el contador en cero. Devolvió id y nombre correctamente.
+  Puede tardar hasta 24 horas en reflejarse en el formulario.
+
+  ⚠️ CADA PRUEBA SOLO VALE 30 DÍAS, y contando desde el 3 de agosto de 2026.
+  Si la solicitud se envía después del 2 de septiembre de 2026 hay que repetir
+  las llamadas.
+
+
+================================================================================
+LOS DOS VIDEOS QUE PIDE META
+================================================================================
+
+Ninguno de los dos necesita mostrar el alta de un cliente. Ese error de «la app
+de socio no tiene los permisos avanzados» es lo que esta solicitud viene a
+resolver, no un requisito previo.
+
+  whatsapp_business_management
+      Video creando y guardando una PLANTILLA DE MENSAJE en WhatsApp Manager.
+      Además hay que hacer las llamadas de prueba de la colección de Postman
+      publicada por Meta — tardan hasta 24 horas en aparecer en el formulario,
+      así que conviene lanzarlas cuanto antes.
+
+  whatsapp_business_messaging
+      Video enviando un mensaje por la Cloud API y mostrando cómo llega a
+      WhatsApp (web o móvil). Se puede usar la API Setup tool: completar los
+      pasos 1 y 2 y grabar el envío con el comando cURL del paso 2.
+
+  Recomendaciones para ambos:
+      · Sin cortes en el tramo que demuestra el permiso: un salto de edición se
+        lee como que se ocultó un paso.
+      · En inglés, o con subtítulos, o narrado despacio.
+      · Datos a mano: número de prueba +1 555 666 6709 · destinatario verificado
+        +593 99 270 6933.
+
+
+================================================================================
+NOTAS INTERNAS — NO SE ENVÍAN A META
+================================================================================
+
+LA CUENTA DEL REVISOR
+  Es una cuenta de tipo cliente con los accesos normales de cualquier cliente,
+  y en Automatizaciones ve ÚNICAMENTE el flujo «lfgonzalezm0».
+  Comprobado contra producción con una sesión real:
+      · la lista le devuelve solo el flujo 23;
+      · los flujos 1 y 10 le responden 404, también entrando por URL directa;
+      · la bandeja del flujo 23 responde 200; la del 10, 404.
+
+LA EXENCIÓN DEL CÓDIGO POR CORREO
+  El acceso al panel manda normalmente un código de seis dígitos al correo de la
+  cuenta. Esta cuenta vive en nuestro dominio, así que el código llegaría a un
+  buzón de GCC y no del revisor.
+  Los límites de la exención:
+      · Es POR CUENTA, no por rol. Hoy es la única marcada de seis.
+      · No se puede activar desde la app: solo con un UPDATE en la base. Si se
+        pudiera encender desde dentro, sería el primer sitio al que iría quien
+        entrara con una sesión robada.
+      · Lleva escrito el motivo y cuándo revisarla.
+  La contraseña sigue siendo obligatoria: lo que se salta es el segundo factor,
+  no el acceso.
+
+QUÉ HACER CUANDO META APRUEBE
+  1. Apagar la exención:
+       UPDATE gcc_world.users SET sin_doble_factor = false
+        WHERE email = 'revisor.meta@grupocc.org';
+     (Ojo: el formulario pide que las credenciales sigan activas un año. La
+     cuenta se mantiene; lo que se puede apagar es la exención, avisando antes
+     a Meta si aún la necesitaran.)
+  2. Dar de alta el número real de Peters Tours por Embedded Signup.
+  3. Comprobar CON EL CLIENTE que su equipo sigue entrando a WhatsApp Web. Es la
+     única prueba válida de que la coexistencia quedó bien: que Meta diga
+     CLOUD_API no lo demuestra.
+
+SI EL REVISOR INTENTA RESPONDER DESDE LA BANDEJA
+  El envío libre solo funciona mientras siga abierta la ventana de 24 horas que
+  abre cada mensaje entrante. Si se quiere que esa parte le funcione en vivo,
+  conviene escribirle al número de prueba el mismo día del envío de la
+  solicitud. Si no, no pasa nada: el video es la evidencia que Meta pide para el
+  envío, y la bandeja igualmente muestra la conversación real.
