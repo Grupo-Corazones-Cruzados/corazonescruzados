@@ -458,6 +458,22 @@ Stack estándar de la casa, con particularidades de este repo:
     `PixelDataTable` y no estaba compartido; ahora es **`useAltoHastaElPie()`**
     (`lib/hooks`), que **mide** el hueco —descontando el pie por `[data-app-footer]`, no por
     sus 36 px— y se recalcula si cambia lo que hay encima.
+    - **⚠️ LO QUE COSTÓ DOS INTENTOS NO FUE EL CÁLCULO, FUE *CUÁNDO* MEDIR.** Con un
+      `useEffect` + `ResizeObserver` sobre `document.body` **no funciona**, por dos motivos
+      que se tapan entre sí: (1) el efecto corre al montar, cuando la pantalla aún enseña el
+      cargador y el bloque **no existe** —`ref.current` es `null`, no mide, y no vuelve a
+      intentarlo—; y (2) `<main>` es `overflow-auto min-h-screen`, así que **el `body` nunca
+      cambia de tamaño** —el contenido crece dentro de `main`, que se desplaza por dentro— y
+      el observador no se dispara jamás. Solución: **referencia como FUNCIÓN** (React la
+      llama en cuanto el nodo entra en el documento) y observar **el padre**, no el `body`.
+      `PixelDataTable` se salvaba de casualidad: remide con `[data.length]`.
+    - **Segundo tope: el relleno del contenedor.** Llegar hasta el pie no basta si el
+      ancestro con desplazamiento añade su `padding-bottom` por debajo: sale una barra de
+      desplazamiento con espacio muerto. El hook se para en el menor de los dos topes.
+    - **`main` llevaba `pb-28` (112 px) de herencia**, de cuando los botones de chat y avisos
+      flotaban sobre el contenido. Desde que viven **dentro del pie** sobran: pasa a `pb-14`.
+    - Medido en Chrome real a 1440×900, 1920×1080 y 1280×700: llena, termina 20 px por encima
+      del pie y sin desplazamiento en las tres.
     - **Y `max-h-[70vh]` NO es «llena la pantalla»**: es un techo. La Bandeja lo usaba y con
       una sola conversación medía lo que su contenido, dejando media pantalla vacía.
       Llenar = alto medido + `flex-1 min-h-0` en la zona que se desplaza y `shrink-0` en el resto.
