@@ -152,6 +152,7 @@ INSERTADAS = {
     135: 66,  # la 134 + las piezas destruidas y polvificandose
     136: 66,  # el despiece partiendo de la 66, donde ya van cogidos de la mano
     137: 66,  # la 136 con el del centro tambien despiezado, salvo sus dos brazos
+    139: 66,  # la 138 con todas las piezas mas abajo (fotograma de caida)
 }
 
 
@@ -4726,6 +4727,60 @@ ESCENAS = [
 
         "La lectura de la imagen debe ser: los tres están hechos pedazos, y lo único que sigue "
         "entero son los dos brazos del de en medio, cada uno cogido de una manita. "
+
+        "Sin sangre, sin color y sin texto."),
+
+    # ── 139 · LA 138, TODO MÁS ABAJO ─────────────────────────────────────────
+    # Fotograma siguiente de la 138 (la buena, que trajo Fernando). Encadenadas en
+    # el prólogo, 138 → 139 se leen como que los restos siguen cayendo.
+    # ⚠ Aquí lo difícil NO es el dibujo, es que NO SE PIERDA NADA: el modelo tiende
+    # a "reinterpretar" y omitir piezas. Por eso el prompt insiste en el inventario
+    # (mismo número, misma forma, mismo giro) y solo deja cambiar la altura.
+    (139, ["assets/Prologo/escenas/escena_138.png"],
+        "Vuelve a dibujar la imagen de referencia EXACTAMENTE IGUAL, con UN SOLO CAMBIO: todo lo "
+        "que flota está MÁS ABAJO. Es el fotograma siguiente de la misma escena, un instante "
+        "después, mientras los restos siguen cayendo. "
+
+        "══ BLOQUE 1 · LO QUE NO CAMBIA ══ "
+        "Copia de la referencia, sin tocar nada: el estilo PIXEL ART 2D de 16 bits con sombreado "
+        "plano y dithering, el encuadre horizontal 16:9, la posición de cámara, la perspectiva, "
+        "la pared de roca cuarteada del fondo con sus grietas, el halo de luz del centro, la "
+        "penumbra de las esquinas y la paleta monocroma de grises, blancos y negros. "
+        "El FONDO NO SE MUEVE: la roca y el halo se quedan donde están. Lo único que baja son "
+        "las siluetas negras que flotan delante. "
+
+        "══ BLOQUE 2 · ⚠ EL INVENTARIO: NO PUEDE FALTAR NI UNA PIEZA ══ "
+        "Esto es lo más importante del encargo. En la imagen de referencia hay un número "
+        "concreto de siluetas negras flotando: piezas grandes y pequeñas, alargadas y "
+        "redondeadas, más el polvo y los puntitos sueltos. "
+        "TIENEN QUE ESTAR TODAS, SIN EXCEPCIÓN. Antes de dibujar, recórrelas una por una en la "
+        "referencia y llévalas todas a la imagen nueva: "
+        "· el MISMO NÚMERO de piezas, ni una más ni una menos; "
+        "· cada una con su MISMA FORMA y su MISMO CONTORNO, exactamente el mismo dibujo; "
+        "· cada una con su MISMO TAMAÑO; "
+        "· cada una con su MISMO GIRO e inclinación; "
+        "· y con la MISMA POSICIÓN HORIZONTAL: la que está a la izquierda sigue a la izquierda, "
+        "la del centro sigue en el centro, la de la derecha sigue a la derecha. "
+        "PROHIBIDO ABSOLUTAMENTE quitar piezas, fusionar dos en una, partir una en dos, cambiar "
+        "su forma, girarlas de otra manera, moverlas de lado o inventarse piezas nuevas. "
+        "También bajan el POLVO y los PUNTITOS sueltos, todos, igual que las piezas. "
+
+        "══ BLOQUE 3 · EL ÚNICO CAMBIO: TODO BAJA ══ "
+        "Todas las siluetas se han desplazado HACIA ABAJO, y solo hacia abajo. Bajan TODAS LA "
+        "MISMA DISTANCIA, en bloque, como si la imagen de delante se hubiera deslizado en "
+        "vertical: aproximadamente UN QUINTO de la altura del cuadro. "
+        "Nada se mueve en horizontal. Nada se acerca ni se aleja. Ninguna adelanta a otra: las "
+        "distancias entre unas y otras se mantienen igual que en la referencia. "
+        "Las que en la referencia estaban más abajo quedan ahora muy cerca del borde inferior, y "
+        "si alguna llega a salirse, se dibuja CORTADA por el borde —se ve la parte que queda "
+        "dentro—, pero NO desaparece. "
+        "Arriba, por donde antes había piezas, ahora queda el halo despejado. "
+
+        "══ BLOQUE 4 · LOS BRAZOS ══ "
+        "Los brazos con sus manos agarradas bajan igual que todo lo demás, sin soltarse, "
+        "conservando exactamente la misma postura, el mismo tamaño y el mismo agarre que en la "
+        "referencia. Siguen siendo lo más nítido de la imagen: negro macizo y contorno limpio. "
+        "PROHIBIDO que se separen, se rompan o cambien de forma. "
 
         "Sin sangre, sin color y sin texto."),
 ]
