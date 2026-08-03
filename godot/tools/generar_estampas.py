@@ -145,6 +145,7 @@ INSERTADAS = {
     127: 66,  # como la 126 pero desde la 94 y sin que se reconstruyan los cuerpos
     128: 66,  # las piezas descritas como FORMAS sueltas, no como partes del cuerpo
     130: 66,  # la 129 + los cuatro brazos agarrados (solo anadir)
+    131: 66,  # desde la 94: los tres desmontados como marionetas de papel
 }
 
 
@@ -4304,6 +4305,97 @@ ESCENAS = [
 
         "══ BLOQUE 4 · PROHIBICIONES ══ "
         "PROHIBIDO dibujar caras, ojos, bocas o detalle interior en nada. PROHIBIDO cualquier "
+        "líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no sea gris, blanco o "
+        "negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
+
+    # ── 131 · DESDE LA 94 · LOS TRES DESMONTADOS COMO MARIONETAS ──────────────
+    # ⚠ CUARTO INTENTO. Fallaron: 126 y 127 (devolvió los cuerpos enteros), 128
+    # (formas abstractas que no parecían partes) y 130 (partió de la 129, que no
+    # era lo pedido).
+    # Lo nuevo aquí: el encuadre de MARIONETA DE PAPEL RECORTADO. Es el mismo
+    # truco que desbloqueó el despiece del personaje jugable para animarlo
+    # (`scripts/despiezar.mjs`): pedir un muñeco DESMONTADO en piezas, no un
+    # cuerpo roto. El modelo acepta desmontar un recortable y en cambio esquiva
+    # romper a una persona (§4.41), y además así las piezas SÍ se leen como
+    # cabeza, torso, pierna o pie, que es lo que faltaba en la 128.
+    (131, ["assets/Prologo/escenas/escena_94.png"],
+        "Vuelve a dibujar la escena de la imagen de referencia, con UN SOLO CAMBIO: las tres "
+        "figuras ya no están montadas, están DESMONTADAS EN PIEZAS. "
+
+        "══ BLOQUE 1 · LO QUE SE COPIA SIN CAMBIAR NADA ══ "
+        "Copia EXACTAMENTE de la referencia: el estilo PIXEL ART 2D de 16 bits dibujado a mano, "
+        "con sombreado plano por zonas, contornos definidos, píxeles visibles y dithering sutil. "
+        "El encuadre horizontal 16:9. La MISMA POSICIÓN DE CÁMARA, el MISMO PLANO GENERAL Y "
+        "LEJANO y la MISMA PERSPECTIVA. El interior del Hoyo con la roca cuarteada, el halo de "
+        "luz del centro y la penumbra de las esquinas. La paleta MONOCROMA de grises fríos, "
+        "blancos y negros. No hay suelo. Las piezas conservan la ESCALA de la referencia: el "
+        "conjunto sigue ocupando el mismo sitio y el mismo tamaño en el cuadro. "
+        "⚠ PROHIBIDO cambiar el estilo de dibujo, la perspectiva, la vista, el ángulo o el "
+        "encuadre. No es un diseño nuevo: es el mismo sitio. Todo son SILUETAS NEGRAS MACIZAS Y "
+        "PLANAS, sin caras, sin ojos, sin pliegues y sin sombreado. "
+
+        "══ BLOQUE 2 · LA IDEA: TRES RECORTABLES DESMONTADOS ══ "
+        "Imagina que las tres figuras de la referencia no eran personas sino tres MARIONETAS DE "
+        "PAPEL RECORTADO, de esas articuladas por remaches, y que alguien las ha DESMONTADO y ha "
+        "soltado las piezas en el aire. Eso es lo que hay que dibujar: los RECORTES SUELTOS de "
+        "las tres marionetas, flotando separados. "
+        "Cada recorte es una silueta negra plana, de contorno limpio y cerrado, y se reconoce "
+        "por su forma: el recorte de la CABEZA (un óvalo liso; el de la marioneta pequeña de la "
+        "izquierda lleva dos coletas), el recorte del TORSO (uno con la camiseta recta, otro con "
+        "la falda acampanada), los recortes de las PIERNAS (barritas alargadas), los de los PIES "
+        "con su ZAPATO (cuñas pequeñas), y alguna pieza pequeña partida. "
+        "Los recortes de la marioneta GRANDE (la del centro) son claramente MÁS GRANDES que los "
+        "de las dos pequeñas de los lados. "
+
+        "══ BLOQUE 3 · CÓMO ESTÁN COLOCADAS LAS PIEZAS — LO MÁS IMPORTANTE ══ "
+        "Las piezas están SUELTAS Y DESORDENADAS, no montadas. Cada una está GIRADA en un ángulo "
+        "cualquiera —muchas de lado, otras boca abajo, otras en diagonal— y DESPLAZADA lejos del "
+        "sitio que ocuparía en la marioneta montada: la cabeza NO está encima del torso, el "
+        "torso NO está encima de las piernas, los pies NO están debajo. "
+        "Todas SEPARADAS entre sí, sin tocarse y sin encajar unas con otras, con el fondo de "
+        "roca y el halo visibles entre ellas: hay MÁS HUECO VACÍO QUE PIEZA. "
+        "⚠ PROHIBIDO ABSOLUTAMENTE que ninguna de las tres marionetas quede montada o "
+        "reconocible como una persona, ni entera ni a medias. PROHIBIDO apilar las piezas en "
+        "vertical o alinearlas de forma que juntas dibujen una silueta humana. PRUEBA PARA "
+        "COMPROBARLO: si al mirar el resultado se puede seguir con la vista el cuerpo de "
+        "alguien uniendo las piezas, está MAL y hay que rehacerlo. "
+        "Las piezas de cada marioneta se quedan más o menos por la zona donde estaba esa "
+        "marioneta —las grandes en el centro, las pequeñas a los lados—, pero desperdigadas por "
+        "toda esa zona, a distintas alturas, algunas ya alejándose hacia el borde del halo. "
+        "Entre ellas hay POLVO: puntitos y cuadraditos negros sueltos de unos pocos píxeles, "
+        "repartidos de forma irregular, sin ningún centro y sin ninguna bola que los suelte. El "
+        "polvo está QUIETO: nada de estelas ni de partículas disparadas. "
+
+        "══ BLOQUE 4 · LO ÚNICO QUE SIGUE UNIDO: CUATRO BRAZOS COGIDOS ══ "
+        "De todas las piezas, las de los BRAZOS son las únicas que NO se han soltado: siguen "
+        "agarradas de dos en dos por las manos, formando DOS PAREJAS. "
+        "· PAREJA DE LA IZQUIERDA: el recorte de un brazo LARGO Y GRUESO (el de la marioneta "
+        "grande), que termina en una mano, y esa mano agarra la mano de un brazo CORTO Y "
+        "DELGADO (el de la marioneta pequeña de la izquierda). Las dos manos, cerradas una sobre "
+        "otra, unidas, tocándose, sin separación. "
+        "· PAREJA DE LA DERECHA: otro brazo LARGO Y GRUESO de la marioneta grande agarrando con "
+        "su mano la mano de otro brazo CORTO Y DELGADO, el de la marioneta pequeña de la "
+        "derecha. "
+        "⚠ LA DIFERENCIA DE TAMAÑO TIENE QUE SALTAR A LA VISTA: el brazo largo mide "
+        "aproximadamente EL DOBLE que el corto y es claramente MÁS ANCHO. A simple vista se debe "
+        "ver cuál es el de la marioneta grande y cuál el de la pequeña. "
+        "⚠ CUENTA ANTES DE TERMINAR: dos parejas × dos brazos = CUATRO brazos y CUATRO manos, y "
+        "DOS puntos de agarre. Ni uno más ni uno menos. "
+        "Estos cuatro recortes son los más NÍTIDOS de la imagen: enteros, negro macizo, contorno "
+        "limpio, sin roturas ni motas. Flotan sueltos en el aire y se CORTAN EN SECO por el "
+        "extremo del hombro, con un corte limpio. PROHIBIDO ABSOLUTAMENTE que de ese extremo "
+        "salga un hombro, un cuello, una cabeza o un torso, y PROHIBIDO que estén pegados a "
+        "cualquier otra pieza. "
+        "PROHIBIDO que las manos se suelten o queden a medio agarrar. PROHIBIDO dibujar una "
+        "barra, un palo o una franja recta: son brazos con manos. "
+
+        "══ BLOQUE 5 · LA LECTURA ══ "
+        "El resultado debe leerse así: las tres marionetas se han desmontado y sus recortes "
+        "flotan sueltos por todas partes, pero los brazos siguen cogidos de la mano. "
+
+        "══ BLOQUE 6 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar caras, ojos, bocas, remaches o detalle interior en las piezas. "
+        "PROHIBIDO añadir elementos que no sean esos recortes y el polvo. PROHIBIDO cualquier "
         "líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no sea gris, blanco o "
         "negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
 ]
