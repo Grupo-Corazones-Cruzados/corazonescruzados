@@ -1,0 +1,18 @@
+ESCENA 138 — GENERADA FUERA DEL PIPELINE ✅ LA BUENA
+
+⚠ Esta estampa NO la hizo `tools/generar_estampas.py`. La generó Fernando manualmente en
+otra herramienta el 2026-08-02, y es la que dio por buena tras una larga tanda de intentos
+(126, 127, 128, 130, 131, 132, 133, 134, 135, 136, 137).
+
+Por eso NO tiene entrada en la lista ESCENAS del generador: si la tuviera, un
+`python tools/generar_estampas.py 138` la sobrescribiría y se perdería. Ver Videojuego.md §4.42.
+
+Qué muestra: el interior del Hoyo, con los restos de los tres hermanos ya despiezados y
+destruidos flotando en el halo de luz — piezas sueltas, separadas y giradas, con polvo
+desprendiéndose de sus bordes.
+
+Por qué costó tanto: el modelo de Gemini oscilaba entre devolver los cuerpos enteros o
+manchas informes sin partes reconocibles, y nunca daba el punto medio (Videojuego.md §4.43).
+
+El archivo llegó ya a 1344×768 RGB, el tamaño estándar del prólogo, así que se copió TAL
+CUAL, sin reescalar ni convertir: el .png de la escena ES el original de Fernando.
