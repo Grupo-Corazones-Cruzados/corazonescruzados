@@ -50,6 +50,13 @@ function AuthForm() {
           toast.error(j?.error ?? "No se pudo iniciar sesión");
           return;
         }
+        // Cuenta exenta del segundo factor: el servidor ya dejó la sesión abierta, así
+        // que no hay código que pedir. Ver la migración 029 y `login/begin`.
+        if (j?.sinCodigo) {
+          await refreshUser();
+          router.push(redirect);
+          return;
+        }
         setMasked(j?.masked ?? null);
         setCodeStep(true);
       } else {

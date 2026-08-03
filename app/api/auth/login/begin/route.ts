@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
+import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
@@ -26,8 +27,8 @@ export async function POST(req: NextRequest) {
     const cleanEmail = String(email).trim().toLowerCase();
 
     const r = await pool.query(
-      `SELECT id, password_hash, is_verified, first_name, role FROM gcc_world.users
-        WHERE LOWER(email) = $1 LIMIT 1`,
+      `SELECT id, email, password_hash, is_verified, first_name, role, sin_doble_factor
+         FROM gcc_world.users WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail],
     );
     const user = r.rows[0];
@@ -55,6 +56,28 @@ export async function POST(req: NextRequest) {
     // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
     if (validateOnly) {
       return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
+    }
+
+    /**
+     * ── CUENTAS EXENTAS DEL CÓDIGO ───────────────────────────────────────────
+     * El código va al correo de la cuenta, lo que deja fuera a quien no controla ese
+     * buzón. El caso real: el revisor de Meta, cuya cuenta vive en NUESTRO dominio — el
+     * código llegaría a un buzón nuestro, no suyo.
+     *
+     * La exención se marca **por cuenta y solo en la base** (`sin_doble_factor`); no hay
+     * forma de encenderla desde la app, que sería el primer sitio al que iría quien
+     * entrara con una sesión robada. Ver la migración 029.
+     *
+     * ⚠️ La contraseña ya se comprobó arriba: lo que se salta es el segundo factor, no
+     * el acceso. Y se deja constancia en el registro, para que una exención activa nunca
+     * sea silenciosa.
+     */
+    if (user.sin_doble_factor) {
+      console.info(`[auth] acceso sin segundo factor (cuenta exenta): ${cleanEmail}`);
+      const token = await createToken({ userId: user.id, email: user.email, role: user.role });
+      await setAuthCookie(token);
+      // `sinCodigo` le dice a la pantalla que no pinte el paso del código: ya hay sesión.
+      return NextResponse.json({ ok: true, sinCodigo: true, masked: maskEmail(cleanEmail) });
     }
 
     await pool.query(
