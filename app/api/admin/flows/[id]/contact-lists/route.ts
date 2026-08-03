@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { puedeVerFlujo } from '@/lib/flows/acceso';
 
 async function ensureTables() {
   await pool.query(`
@@ -26,10 +27,10 @@ async function ensureTables() {
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ data: [] }, { status: 403 });
-
     await ensureTables();
     const { id } = await params;
+    // Acceso al flujo = acceso a sus listas. Ver `puedeVerFlujo`.
+    if (!await puedeVerFlujo(user, id)) return NextResponse.json({ data: [] }, { status: 403 });
 
     const { rows } = await pool.query(
       `SELECT cl.*, (SELECT COUNT(*)::int FROM gcc_world.flow_contacts WHERE list_id = cl.id) as contact_count
@@ -49,10 +50,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
     await ensureTables();
     const { id } = await params;
+    if (!await puedeVerFlujo(user, id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { name } = await req.json();
 
     if (!name?.trim()) return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });

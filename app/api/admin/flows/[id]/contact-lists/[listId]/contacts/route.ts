@@ -1,13 +1,13 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { puedeVerFlujo } from '@/lib/flows/acceso';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string; listId: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ data: [] }, { status: 403 });
-
-    const { listId } = await params;
+    const { id, listId } = await params;
+    if (!await puedeVerFlujo(user, id)) return NextResponse.json({ data: [] }, { status: 403 });
     const { rows } = await pool.query(
       `SELECT id, list_id, name, email, phone, position, added_via_share, created_at
          FROM gcc_world.flow_contacts WHERE list_id = $1 ORDER BY created_at DESC, id DESC`,
@@ -24,9 +24,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; listId: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-    const { listId } = await params;
+    const { id, listId } = await params;
+    if (!await puedeVerFlujo(user, id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json();
 
     // Support both single contact and batch
@@ -66,7 +65,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string; listId: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const { id } = await params;
+    if (!await puedeVerFlujo(user, id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const contactId = searchParams.get('contactId');

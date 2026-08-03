@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { puedeVerFlujo } from '@/lib/flows/acceso';
 
 /**
  * Un contacto de una lista. Los cuatro campos editables (nombre, correo, teléfono, puesto)
@@ -13,9 +14,13 @@ import { NextResponse } from 'next/server';
  * escribe fuera del flujo en el que se está trabajando.
  */
 
-async function requireAdmin() {
-  const user = await getCurrentUser();
-  return user && user.role === 'admin' ? user : null;
+/**
+ * ⚠️ Antes esto exigía rol de administrador y por eso un cliente con acceso al flujo no
+ * podía ver sus listas de contactos. La regla correcta es la del flujo — ver
+ * `puedeVerFlujo` en `lib/flows/acceso.ts`.
+ */
+async function puedeEntrar(flowId: string) {
+  return puedeVerFlujo(await getCurrentUser(), flowId);
 }
 
 /** La lista pertenece al flujo. */
@@ -28,8 +33,8 @@ async function listInFlow(flowId: string, listId: string): Promise<boolean> {
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; listId: string; contactId: string }> }) {
   try {
-    if (!await requireAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id, listId, contactId } = await params;
+    if (!await puedeEntrar(id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!await listInFlow(id, listId)) return NextResponse.json({ error: 'La lista no existe' }, { status: 404 });
 
     const body = await req.json().catch(() => ({}));
@@ -64,8 +69,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string; listId: string; contactId: string }> }) {
   try {
-    if (!await requireAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id, listId, contactId } = await params;
+    if (!await puedeEntrar(id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!await listInFlow(id, listId)) return NextResponse.json({ error: 'La lista no existe' }, { status: 404 });
 
     const { rowCount } = await pool.query(

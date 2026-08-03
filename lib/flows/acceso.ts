@@ -86,3 +86,24 @@ export async function flujoPermitido(
   );
   return ficha ? flujo : null;
 }
+
+/**
+ * Atajo para las rutas que cuelgan de un flujo y no necesitan el flujo en sí: listas de
+ * contactos, sus contactos, su enlace de compartir.
+ *
+ * ── POR QUÉ NO SON «SOLO DE ADMINISTRADOR» ────────────────────────────────────
+ * Lo eran, y era incoherente: el cliente veía sus plantillas pero no las listas de
+ * contactos del MISMO flujo, que es justo a quién se las va a mandar. Lo vio Fernando
+ * probando con la cuenta del revisor (2026-08-03).
+ *
+ * La regla del proyecto es una: **acceso al flujo = acceso a lo que cuelga del flujo**.
+ * Las listas pertenecen al flujo (`flow_contact_lists.flow_id`), así que quien puede ver
+ * el flujo puede ver y gestionar sus listas.
+ *
+ * ⚠️ Lo que NO se abre por esto: **lanzar un envío**. Eso manda WhatsApp de verdad a gente
+ * de verdad y no se puede deshacer, así que sigue siendo del responsable y los
+ * administradores. Editar una lista se corrige; un envío no.
+ */
+export async function puedeVerFlujo(user: TokenPayload | null, flowId: string | number) {
+  return (await flujoPermitido(user, flowId)) !== null;
+}

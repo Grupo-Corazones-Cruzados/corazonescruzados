@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { createShareToken, revokeShareToken, shareUrl, ShareError } from '@/lib/flows/contact-share';
+import { puedeVerFlujo } from '@/lib/flows/acceso';
 
 /**
  * Enlace público de una lista de contactos (Automatizaciones → Email masivo).
@@ -11,16 +12,19 @@ import { createShareToken, revokeShareToken, shareUrl, ShareError } from '@/lib/
  * DELETE → revoca el enlace (la lista y sus contactos no se tocan)
  */
 
-async function requireAdmin() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== 'admin') return null;
-  return user;
+/**
+ * ⚠️ Antes esto exigía rol de administrador y por eso un cliente con acceso al flujo no
+ * podía ver sus listas de contactos. La regla correcta es la del flujo — ver
+ * `puedeVerFlujo` en `lib/flows/acceso.ts`.
+ */
+async function puedeEntrar(flowId: string) {
+  return puedeVerFlujo(await getCurrentUser(), flowId);
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string; listId: string }> }) {
   try {
-    if (!await requireAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id, listId } = await params;
+    if (!await puedeEntrar(id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { rows: [row] } = await pool.query(
       `SELECT share_token, share_created_at FROM gcc_world.flow_contact_lists WHERE id = $1 AND flow_id = $2`,
@@ -41,8 +45,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; listId: string }> }) {
   try {
-    if (!await requireAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id, listId } = await params;
+    if (!await puedeEntrar(id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const token = await createShareToken(id, listId);
     // Se devuelve también el token: el panel arma la URL con el origen del navegador, que es
@@ -57,8 +61,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string; listId: string }> }) {
   try {
-    if (!await requireAdmin()) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id, listId } = await params;
+    if (!await puedeEntrar(id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     await revokeShareToken(id, listId);
     return NextResponse.json({ ok: true });
