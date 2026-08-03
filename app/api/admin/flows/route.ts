@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { filtroDeFlujos } from '@/lib/flows/acceso';
 import { NextResponse } from 'next/server';
 
 // Ensure table exists
@@ -21,15 +22,22 @@ async function ensureTable() {
 export async function GET() {
   try {
     const user = await getCurrentUser();
-    // Accesible para cualquier usuario autenticado (no solo admin).
     if (!user) return NextResponse.json({ data: [] }, { status: 401 });
 
     await ensureTable();
 
+    // ⚠️ ANTES ESTO DEVOLVÍA TODOS LOS FLUJOS A CUALQUIERA CON SESIÓN. Con un solo cliente
+    // no se notaba; con dos, el cliente A veía el flujo del cliente B —y desde ahí su
+    // bandeja de WhatsApp—. Quién ve qué lo decide `lib/flows/acceso.ts`, en un solo sitio.
+    const { sql: filtro, params } = await filtroDeFlujos(user);
+
     const { rows } = await pool.query(
-      `SELECT id, name, type, description, status, config, created_at, updated_at
-       FROM gcc_world.flows
-       ORDER BY created_at DESC`
+      `SELECT f.id, f.name, f.type, f.description, f.status, f.config,
+              f.responsable_user_id, f.created_at, f.updated_at
+       FROM gcc_world.flows f
+       WHERE ${filtro}
+       ORDER BY f.created_at DESC`,
+      params,
     );
 
     return NextResponse.json({ data: rows });

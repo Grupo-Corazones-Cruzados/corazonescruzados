@@ -22,7 +22,8 @@ import type { User } from '@/lib/types';
  *  Soporte         → todos
  *  Suscripciones   → client, member, admin
  *  Centralizado    → member, admin
- *  Automatizaciones→ member, admin
+ *  Automatizaciones→ client, member, admin  (el cliente ve SOLO los flujos a los que se
+ *                    le dio acceso; el filtro está en `lib/flows/acceso.ts`, no aquí)
  *  Herramientas    → member, admin
  *  Admin           → admin
  */
@@ -50,7 +51,11 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   { path: '/dashboard/support', roles: ALL },
   { path: '/dashboard/subscriptions', roles: ['client', 'member', 'admin'] },
   { path: '/dashboard/centralized', roles: ['member', 'admin'] },
-  { path: '/dashboard/automatizaciones', roles: ['member', 'admin'] },
+  // El CLIENTE entra, pero no ve lo mismo: la lista sale filtrada por `lib/flows/acceso.ts`
+  // y solo aparecen los flujos a los que se le dio acceso desde «Accesos». Un cliente sin
+  // ninguno ve el módulo vacío. Esta tabla decide a qué RUTA se puede navegar; qué FILAS
+  // devuelve cada ruta es otra pregunta, y se responde en el servidor, por petición.
+  { path: '/dashboard/automatizaciones', roles: ['client', 'member', 'admin'] },
   { path: '/dashboard/tools', roles: ['member', 'admin'] },
   { path: '/dashboard/admin', roles: ['admin'] },
 ];

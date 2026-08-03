@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { getCurrentUser, type TokenPayload } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal } from '@/lib/agente/canales';
 
@@ -8,10 +9,13 @@ import { asegurarCanal } from '@/lib/agente/canales';
  * se responde 404 en vez de escribir donde no toca. Es el mismo scoping que se aplicó a
  * las campañas de correo tras encontrar el agujero allí.
  */
-async function bloqueDelFlujo(flowId: string, bloqueId: string) {
-  const { rows: [flujo] } = await pool.query(
-    `SELECT id, type FROM gcc_world.flows WHERE id = $1`, [flowId],
-  );
+/**
+ * ⚠️ El flujo se busca por `flujoPermitido()`, no con un `SELECT` directo: además de
+ * traerlo, comprueba que ESTE usuario pueda verlo. Antes bastaba con tener sesión, y eso
+ * dejaba a un cliente entrar al agente de otro escribiendo su identificador en la URL.
+ */
+async function bloqueDelFlujo(user: TokenPayload | null, flowId: string, bloqueId: string) {
+  const flujo = await flujoPermitido(user, flowId);
   if (flujo?.type !== 'ai_agent') return null;
   const canal = await asegurarCanal(flujo.id);
   const { rows: [bloque] } = await pool.query(
@@ -25,7 +29,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const { id, bloqueId } = await params;
-  const bloque = await bloqueDelFlujo(id, bloqueId);
+  const bloque = await bloqueDelFlujo(user, id, bloqueId);
   if (!bloque) return NextResponse.json({ error: 'Bloque no encontrado' }, { status: 404 });
 
   const body = await req.json();
@@ -49,7 +53,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const { id, bloqueId } = await params;
-  const bloque = await bloqueDelFlujo(id, bloqueId);
+  const bloque = await bloqueDelFlujo(user, id, bloqueId);
   if (!bloque) return NextResponse.json({ error: 'Bloque no encontrado' }, { status: 404 });
 
   await pool.query(`DELETE FROM gcc_world.agente_conocimiento WHERE id = $1`, [bloqueId]);

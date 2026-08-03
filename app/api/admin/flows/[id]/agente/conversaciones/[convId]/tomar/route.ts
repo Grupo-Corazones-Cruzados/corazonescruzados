@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const { id, convId } = await params;
-  const encontrada = await conversacionDelFlujo(id, convId);
+  const encontrada = await conversacionDelFlujo(user, id, convId);
   if (!encontrada) return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 });
 
   const { tomar, motivo } = await req.json().catch(() => ({ tomar: true, motivo: null }));

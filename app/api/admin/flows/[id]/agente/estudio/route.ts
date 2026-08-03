@@ -11,7 +11,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { getCurrentUser, type TokenPayload } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal, canalPublico } from '@/lib/agente/canales';
 import { capacidadesDe, cacheaElPrefijo, MODELOS_OFRECIDOS } from '@/lib/agente/modelos';
@@ -20,10 +21,13 @@ import { HERRAMIENTAS } from '@/lib/agente/herramientas';
 import { construirPipeline, FUENTES } from '@/lib/agente/estudio/pipeline';
 import { recortar, type ContenidoFuente } from '@/lib/agente/estudio/tipos';
 
-async function flujoDeAgente(id: string) {
-  const { rows: [flujo] } = await pool.query(
-    `SELECT id, name, type FROM gcc_world.flows WHERE id = $1`, [id],
-  );
+/**
+ * ⚠️ El flujo se busca por `flujoPermitido()`, no con un `SELECT` directo: además de
+ * traerlo, comprueba que ESTE usuario pueda verlo. Antes bastaba con tener sesión, y eso
+ * dejaba a un cliente entrar al agente de otro escribiendo su identificador en la URL.
+ */
+async function flujoDeAgente(user: TokenPayload | null, id: string) {
+  const flujo = await flujoPermitido(user, id);
   return flujo?.type === 'ai_agent' ? flujo : null;
 }
 
@@ -32,7 +36,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const flujo = await flujoDeAgente(id);
+  const flujo = await flujoDeAgente(user, id);
   if (!flujo) return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
 
   const canal = await asegurarCanal(flujo.id);

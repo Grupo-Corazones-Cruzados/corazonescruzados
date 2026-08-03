@@ -17,19 +17,23 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import PanelAccesos from '@/components/dashboard/flows/PanelAccesos';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dashboard/flows/EmailFlowWorkspace';
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
 import AgenteFlowWorkspace from '@/components/dashboard/flows/AgenteFlowWorkspace';
 import BotonAvisos, { type Aviso } from '@/components/ui/BotonAvisos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
-import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus } from 'lucide-react';
+import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus , Users} from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 interface Flow {
   id: number; name: string; type: string; description: string; status: string;
   config: Record<string, any>; created_at: string; updated_at: string;
+  /** Quién lleva el flujo dentro de GCC. Decide si se ofrece el botón de accesos. */
+  responsable_user_id: string | null;
 }
 
 const FLOW_TYPES: Record<string, { label: string; Icon: any }> = {
@@ -51,6 +55,8 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [accesos, setAccesos] = useState(false);
+  const { user } = useAuth();
   /** Acciones del espacio de trabajo que se disparan desde la cabecera de la página. */
   const emailRef = useRef<EmailWorkspaceHandle | null>(null);
   /**
@@ -108,6 +114,12 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   }
 
   const type = FLOW_TYPES[flow.type] || FLOW_TYPES.custom;
+
+  // Solo el responsable del flujo y los administradores reparten accesos: un cliente con
+  // acceso no puede dárselo a otro. El servidor lo vuelve a comprobar — esconder el botón
+  // no es seguridad, es no ofrecer lo que no se puede hacer.
+  const puedeRepartirAccesos =
+    user?.role === 'admin' || (!!flow.responsable_user_id && flow.responsable_user_id === user?.id);
   const isEmailWorkspace = flow.type !== 'whatsapp' && flow.type !== 'ai_agent';
 
   return (
@@ -129,6 +141,11 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         actions={
           <>
             <BotonAvisos avisos={avisos} />
+            {puedeRepartirAccesos && (
+              <button onClick={() => setAccesos(true)} className={BTN_SECONDARY}>
+                <Users className="w-4 h-4" /> Accesos
+              </button>
+            )}
             <button onClick={toggleStatus} className={BTN_SECONDARY}>
               {flow.status === 'active' ? <><Pause className="w-4 h-4" /> Pausar</> : <><Play className="w-4 h-4" /> Activar</>}
             </button>
@@ -152,6 +169,8 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
         // email · custom → campañas de correo (igual que antes del rediseño).
         <EmailFlowWorkspace flow={flow} controlRef={emailRef} />
       )}
+
+      <PanelAccesos flowId={flow.id} abierto={accesos} alCerrar={() => setAccesos(false)} />
 
       <PixelConfirm
         open={confirmDelete}

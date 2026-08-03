@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { NextResponse } from 'next/server';
 
 /**
@@ -9,13 +10,16 @@ import { NextResponse } from 'next/server';
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+    // LEER el flujo ya no es solo de administradores: un cliente con acceso tiene que poder
+    // abrir su propio flujo. Quién puede lo decide `flujoPermitido()`. Modificarlo y
+    // borrarlo siguen siendo de administrador (ver PUT y DELETE más abajo).
     const { id } = await params;
-    const { rows } = await pool.query(`SELECT * FROM gcc_world.flows WHERE id = $1`, [id]);
-    if (rows.length === 0) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+    const flujo = await flujoPermitido(user, id);
+    if (!flujo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
-    return NextResponse.json({ data: rows[0] });
+    return NextResponse.json({ data: flujo });
   } catch (err: any) {
     console.error('Flow GET error:', err.message);
     return NextResponse.json({ error: 'Error al cargar el flujo' }, { status: 500 });

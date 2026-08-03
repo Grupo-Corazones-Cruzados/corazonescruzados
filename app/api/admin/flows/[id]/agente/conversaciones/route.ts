@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal } from '@/lib/agente/canales';
 
@@ -17,8 +18,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const { rows: [flujo] } = await pool.query(`SELECT id, type FROM gcc_world.flows WHERE id = $1`, [id]);
-  if (flujo?.type !== 'ai_agent') return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
+  const flujo = await flujoPermitido(user, id);
+  if (!flujo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+  if (flujo.type !== 'ai_agent') return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
   const canal = await asegurarCanal(flujo.id);
 
   const url = new URL(req.url);

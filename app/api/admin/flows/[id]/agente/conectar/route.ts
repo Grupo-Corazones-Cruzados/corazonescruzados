@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal, canalPublico, guardarSecreto, anotarError, limpiarError } from '@/lib/agente/canales';
 import { claveMaestraConfigurada } from '@/lib/agente/cifrado';
@@ -17,8 +18,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { id } = await params;
-  const { rows: [flujo] } = await pool.query(`SELECT id, type FROM gcc_world.flows WHERE id = $1`, [id]);
-  if (flujo?.type !== 'ai_agent') return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
+  const flujo = await flujoPermitido(user, id);
+  if (!flujo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+  if (flujo.type !== 'ai_agent') return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
 
   if (!claveMaestraConfigurada()) {
     return NextResponse.json(
@@ -190,8 +192,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const { id } = await params;
-  const { rows: [flujo] } = await pool.query(`SELECT id, type FROM gcc_world.flows WHERE id = $1`, [id]);
-  if (flujo?.type !== 'ai_agent') return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
+  const flujo = await flujoPermitido(user, id);
+  if (!flujo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+  if (flujo.type !== 'ai_agent') return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
 
   const canal = await asegurarCanal(flujo.id);
   if (!canal.waba_id) return NextResponse.json({ error: 'Este agente todavía no tiene número conectado' }, { status: 409 });

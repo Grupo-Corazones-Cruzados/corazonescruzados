@@ -7,17 +7,21 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { getCurrentUser, type TokenPayload } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal } from '@/lib/agente/canales';
 
 const TIPOS = ['perfil_agente', 'reglas_negocio', 'resumen_conversacion'] as const;
 type Tipo = (typeof TIPOS)[number];
 
-async function canalDelFlujo(id: string) {
-  const { rows: [flujo] } = await pool.query(
-    `SELECT id, type FROM gcc_world.flows WHERE id = $1`, [id],
-  );
+/**
+ * ⚠️ El flujo se busca por `flujoPermitido()`, no con un `SELECT` directo: además de
+ * traerlo, comprueba que ESTE usuario pueda verlo. Antes bastaba con tener sesión, y eso
+ * dejaba a un cliente entrar al agente de otro escribiendo su identificador en la URL.
+ */
+async function canalDelFlujo(user: TokenPayload | null, id: string) {
+  const flujo = await flujoPermitido(user, id);
   if (flujo?.type !== 'ai_agent') return null;
   return asegurarCanal(flujo.id);
 }
@@ -26,7 +30,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const { id } = await params;
-  const canal = await canalDelFlujo(id);
+  const canal = await canalDelFlujo(user, id);
   if (!canal) return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
 
   const { rows } = await pool.query(
@@ -57,7 +61,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const { id } = await params;
-  const canal = await canalDelFlujo(id);
+  const canal = await canalDelFlujo(user, id);
   if (!canal) return NextResponse.json({ error: 'Este flujo no es un agente IA' }, { status: 404 });
 
   const { tipo, contenido } = await req.json();
