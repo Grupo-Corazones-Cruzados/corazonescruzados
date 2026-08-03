@@ -30,7 +30,7 @@ import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FlowPanelShell, PanelEmpty, SectionBar } from '@/components/dashboard/flows/FlowPanelUI';
+import { FlowPanelShell, PanelEmpty, SectionBar, ALTO_ESPACIO_AGENTE } from '@/components/dashboard/flows/FlowPanelUI';
 import { LongTextDialog } from '@/components/ui/EditDialog';
 import { TONO } from '@/components/ui/tonos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
@@ -114,11 +114,9 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
 
       <BarraDeControl estado={pipeline.estado} />
 
-      {/* Tres columnas. El lienzo manda: los paneles no crecen. */}
-      {/* Alto: lo que queda de ventana bajo la cabecera del detalle y la barra de control.
-          Antes era un `min(72vh, …)` a ojo y dejaba una franja muerta abajo. El mínimo
-          evita que en pantallas cortas el diagrama quede en una rendija. */}
-      <div className="flex gap-3 items-stretch" style={{ height: 'max(560px, calc(100vh - 250px))' }}>
+      {/* Tres columnas. El lienzo manda: los paneles no crecen.
+          El alto sale de `ALTO_ESPACIO_AGENTE`, compartido con la Bandeja. */}
+      <div className="flex gap-3 items-stretch" style={ALTO_ESPACIO_AGENTE}>
         <PanelNodo nodo={nodo} fuentes={pipeline.fuentes} alAbrirFuente={abrirFuente} />
 
         <div className="flex-1 min-w-0 rounded-lg border border-digi-border bg-digi-darker/40 overflow-hidden">

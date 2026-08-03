@@ -11,12 +11,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useSondeo } from '@/lib/hooks/useSondeo';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { SectionBar, PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/FlowPanelUI';
+import { SectionBar, PanelEmpty, BTN_ROW, ALTO_ESPACIO_AGENTE } from '@/components/dashboard/flows/FlowPanelUI';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles,
 } from 'lucide-react';
@@ -49,17 +50,35 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
   const [sel, setSel] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  const cargarLista = useCallback(async () => {
+  /**
+   * `silencioso` distingue las dos formas de cargar. La primera vez —y al cambiar de
+   * filtro— un fallo es información y se avisa. En el sondeo no: se reintenta a los pocos
+   * segundos, y un aviso por cada corte de red sería una lluvia de mensajes rojos.
+   */
+  const cargarLista = useCallback(async (silencioso = false) => {
     try {
       const q = new URLSearchParams({ filtro, q: busca });
       const d = await fetch(`/api/admin/flows/${flowId}/agente/conversaciones?${q}`).then((r) => r.json());
       setFilas(d.data ?? []);
       if (d.conteo) setConteo(d.conteo);
-    } catch { toast.error('No se pudo cargar la bandeja'); }
+    } catch { if (!silencioso) toast.error('No se pudo cargar la bandeja'); }
     finally { setCargando(false); }
   }, [flowId, filtro, busca]);
 
   useEffect(() => { cargarLista(); }, [cargarLista]);
+
+  /**
+   * La bandeja se refresca sola.
+   *
+   * Los mensajes no los provoca quien mira la pantalla: llegan por WhatsApp y el agente
+   * contesta segundos después, sin que aquí pase nada. Sin esto había que recargar la
+   * página para ver una conversación en marcha — lo vio Fernando el 2026-08-03 durante el
+   * ensayo del número de prueba.
+   *
+   * Seis segundos: el debounce del agente es de ocho, así que una respuesta suya aparece
+   * a la vuelta siguiente de haberse enviado. Más rápido no adelantaría nada.
+   */
+  useSondeo(() => cargarLista(true), 6000);
 
   if (cargando) return <div className="flex justify-center py-20"><BrandLoader label="Cargando la bandeja…" /></div>;
 
@@ -90,8 +109,13 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
         <PanelEmpty Icon={Inbox} title="Todavía no hay conversaciones"
           desc="Aparecerán aquí en cuanto alguien escriba al número conectado." />
       ) : (
-        <div className="flex gap-4 items-start">
-          <div className="w-[320px] shrink-0 rounded-lg border border-digi-border bg-digi-card overflow-hidden max-h-[70vh] overflow-y-auto">
+        /* `items-stretch` + alto compartido: antes era `items-start` con `max-h-[70vh]`,
+           que es un TECHO, no un relleno. Con pocas conversaciones las dos columnas medían
+           lo que su contenido y dejaban media pantalla muerta debajo — se veía con una sola
+           conversación de cuatro mensajes. */
+        <div className="flex gap-4 items-stretch" style={ALTO_ESPACIO_AGENTE}>
+          {/* La lista: cabecera fija ninguna, así que el desplazamiento es de todo el bloque. */}
+          <div className="w-[320px] shrink-0 h-full overflow-y-auto rounded-lg border border-digi-border bg-digi-card">
             {filas.map((f) => (
               <button key={f.id} onClick={() => setSel(f.id)}
                 className={`w-full text-left px-3 py-2.5 border-b border-digi-border last:border-b-0 transition-colors ${
@@ -117,9 +141,13 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
             ))}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 h-full">
             {sel ? <Hilo flowId={flowId} convId={sel} alCambiar={cargarLista} />
-                 : <PanelEmpty Icon={Inbox} title="Elige una conversación" desc="Aquí se ve el hilo completo y se puede tomar el chat." />}
+                 : (
+                   <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-digi-border">
+                     <PanelEmpty Icon={Inbox} title="Elige una conversación" desc="Aquí se ve el hilo completo y se puede tomar el chat." />
+                   </div>
+                 )}
           </div>
         </div>
       )}
@@ -134,6 +162,9 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
   const [texto, setTexto] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const finRef = useRef<HTMLDivElement | null>(null);
+  const cuerpoRef = useRef<HTMLDivElement | null>(null);
+  /** ¿La vista está al final del hilo? Decide si el sondeo puede bajar solo. */
+  const pegadoAbajo = useRef(true);
 
   const cargar = useCallback(async () => {
     const d = await fetch(`/api/admin/flows/${flowId}/agente/conversaciones/${convId}`).then((r) => r.json());
@@ -141,7 +172,25 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
   }, [flowId, convId]);
 
   useEffect(() => { cargar(); }, [cargar]);
-  useEffect(() => { finRef.current?.scrollIntoView({ block: 'end' }); }, [datos]);
+
+  // El hilo abierto también se refresca solo; si no, la lista mostraría un mensaje nuevo
+  // que al abrir el chat no está. Se pausa mientras se envía o se toma la conversación:
+  // esas acciones ya recargan al terminar, y una vuelta a medias pintaría el estado viejo.
+  useSondeo(cargar, 6000, !ocupado);
+
+  /**
+   * Bajar del todo SOLO si ya se estaba abajo.
+   *
+   * Antes bajaba en cada `datos`, y eso con el sondeo significa que a quien esté leyendo
+   * lo de arriba se le va la vista al final cada seis segundos. El margen de 60 px es
+   * para que «casi abajo» cuente como abajo.
+   */
+  useEffect(() => {
+    if (pegadoAbajo.current) finRef.current?.scrollIntoView({ block: 'end' });
+  }, [datos]);
+
+  // Al cambiar de conversación se empieza abajo, que es donde está lo último.
+  useEffect(() => { pegadoAbajo.current = true; }, [convId]);
 
   if (!datos) return <div className="flex justify-center py-16"><BrandLoader label="Cargando el hilo…" /></div>;
 
@@ -176,8 +225,10 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
   };
 
   return (
-    <div className="rounded-lg border border-digi-border bg-digi-card flex flex-col max-h-[70vh]">
-      <div className="px-4 py-3 border-b border-digi-border flex items-start justify-between gap-3">
+    // `h-full` en vez de `max-h-[70vh]`: llena la columna. Cabecera, resumen, redacción y
+    // pie son `shrink-0`; los mensajes son lo único que crece y se desplaza.
+    <div className="h-full rounded-lg border border-digi-border bg-digi-card flex flex-col overflow-hidden">
+      <div className="shrink-0 px-4 py-3 border-b border-digi-border flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[14px] font-semibold text-digi-text truncate" style={mf}>
@@ -204,18 +255,27 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
       </div>
 
       {c.resumen && (
-        <div className="px-4 py-2 border-b border-digi-border bg-digi-bg">
+        <div className="shrink-0 px-4 py-2 border-b border-digi-border bg-digi-bg">
           <p className="text-[11px] uppercase tracking-wide text-digi-muted mb-1" style={mf}>Memoria de lo hablado antes</p>
           <p className="text-[12.5px] text-digi-text whitespace-pre-wrap" style={mf}>{c.resumen}</p>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+      {/* ⚠️ `min-h-0` NO es opcional: por defecto vale `auto` = «no me encojas por debajo de
+          mi contenido», así que la zona crecería y el desplazamiento no aparecería nunca. */}
+      <div
+        ref={cuerpoRef}
+        onScroll={() => {
+          const el = cuerpoRef.current;
+          if (el) pegadoAbajo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+        }}
+        className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-2 [&>*]:shrink-0"
+      >
         {mensajes.map((m) => <Burbuja key={m.id} m={m} />)}
         <div ref={finRef} />
       </div>
 
-      <div className="px-4 py-3 border-t border-digi-border">
+      <div className="shrink-0 px-4 py-3 border-t border-digi-border">
         {c.bot_activo ? (
           <p className="text-[12.5px] text-digi-muted flex items-center gap-1.5" style={mf}>
             <Bot className="w-3.5 h-3.5" />
@@ -237,7 +297,7 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
         )}
       </div>
 
-      <div className="px-4 py-2 border-t border-digi-border text-[11px] text-digi-muted flex flex-wrap gap-x-4" style={mf}>
+      <div className="shrink-0 px-4 py-2 border-t border-digi-border text-[11px] text-digi-muted flex flex-wrap gap-x-4" style={mf}>
         <span>{gasto.corridas} corrida(s) del modelo</span>
         <span>{gasto.entrada.toLocaleString('es-ES')} tokens de entrada</span>
         <span>{gasto.salida.toLocaleString('es-ES')} de salida</span>
