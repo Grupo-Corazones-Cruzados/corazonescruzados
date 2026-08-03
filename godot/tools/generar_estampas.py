@@ -144,6 +144,7 @@ INSERTADAS = {
     126: 66,  # muchas partes desprendidas y 4 brazos cogidos de dos en dos
     127: 66,  # como la 126 pero desde la 94 y sin que se reconstruyan los cuerpos
     128: 66,  # las piezas descritas como FORMAS sueltas, no como partes del cuerpo
+    130: 66,  # la 129 + los cuatro brazos agarrados (solo anadir)
 }
 
 
@@ -4244,6 +4245,67 @@ ESCENAS = [
         "añadir elementos que no sean esas formas negras, los cuatro brazos y el polvo. "
         "PROHIBIDO cualquier líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no "
         "sea gris, blanco o negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
+
+    # ── 130 · LA 129 CON LOS CUATRO BRAZOS AÑADIDOS ───────────────────────────
+    # ⚠ CAMBIO DE ESTRATEGIA. Los intentos 126-128 fallaban porque pedían DOS
+    # cosas a la vez: romper los cuerpos Y poner los brazos agarrados. Lo primero
+    # es justo lo que el modelo esquiva (§4.41).
+    # La 129 —hecha fuera por Fernando— YA TIENE las piezas sueltas resueltas. Así
+    # que aquí no se pide romper nada: se ENCADENA la 129 y se AÑADE únicamente lo
+    # que le falta. Editar para AÑADIR sobre la propia imagen es lo que mejor
+    # funciona de todo el pipeline (§4.5), y no reposiciona lo que ya hay (§4.12).
+    (130, ["assets/Prologo/escenas/escena_129.png"],
+        "Toma la imagen de referencia y CONSÉRVALA TAL CUAL, añadiéndole UNA SOLA COSA. "
+
+        "══ BLOQUE 1 · LO QUE NO SE TOCA: TODO LO DEMÁS ══ "
+        "Copia la imagen de referencia EXACTAMENTE como está, sin cambiar absolutamente nada: "
+        "el estilo PIXEL ART 2D de 16 bits con sombreado plano y dithering, el encuadre "
+        "horizontal 16:9, la posición de cámara, la perspectiva, la pared de roca cuarteada, el "
+        "gran halo de luz blanco del centro, la penumbra de las esquinas, las rayas finas de "
+        "arrastre y la paleta monocroma de grises, blancos y negros. "
+        "Y sobre todo: CONSERVA TODAS LAS PIEZAS NEGRAS SUELTAS que ya hay flotando en el halo, "
+        "cada una con su MISMA forma, su MISMO tamaño, su MISMO giro y en su MISMA posición, "
+        "junto con el polvo y los puntitos que hay entre ellas. "
+        "PROHIBIDO ABSOLUTAMENTE mover, girar, agrandar, encoger, quitar o redibujar ninguna de "
+        "esas piezas. PROHIBIDO añadir piezas nuevas aparte de lo que se pide abajo. PROHIBIDO "
+        "cambiar el fondo, la luz o el encuadre. PROHIBIDO montar con esas piezas una persona: "
+        "siguen sueltas y desordenadas exactamente como están. "
+
+        "══ BLOQUE 2 · LO ÚNICO QUE SE AÑADE: CUATRO BRAZOS COGIDOS DE DOS EN DOS ══ "
+        "Añade sobre esa misma escena, flotando entre las piezas que ya hay, EXACTAMENTE CUATRO "
+        "BRAZOS con sus CUATRO MANOS, agarrados de dos en dos, formando DOS PAREJAS. Son "
+        "siluetas NEGRAS MACIZAS Y PLANAS, del mismo negro y el mismo estilo que las piezas que "
+        "ya están en la imagen, con el contorno limpio y cerrado. "
+        "· PAREJA DE LA IZQUIERDA, en la mitad izquierda del halo: un brazo LARGO Y GRUESO que "
+        "baja y termina en una mano; esa mano agarra la mano de un brazo CORTO Y DELGADO. Las "
+        "dos manos están cerradas una sobre otra, unidas, tocándose, sin ninguna separación "
+        "entre ellas. "
+        "· PAREJA DE LA DERECHA, en la mitad derecha del halo: otro brazo LARGO Y GRUESO cuya "
+        "mano agarra la mano de otro brazo CORTO Y DELGADO, igual que la anterior. "
+        "⚠ LA DIFERENCIA DE TAMAÑO TIENE QUE SALTAR A LA VISTA: el brazo largo mide "
+        "aproximadamente EL DOBLE que el corto y es claramente MÁS ANCHO. Puestos uno junto al "
+        "otro se debe ver al instante cuál es el grande y cuál el pequeño. "
+        "⚠ CUENTA ANTES DE TERMINAR: dos parejas × dos brazos = CUATRO brazos y CUATRO manos en "
+        "total, y DOS puntos donde las manos se agarran. Ni uno más ni uno menos. "
+        "Los cuatro brazos son lo más NÍTIDO de la imagen: enteros, sin boquetes, sin "
+        "desgranarse y sin motas sueltas, claramente reconocibles como brazos con manos. Que se "
+        "vean bien y destaquen sobre el fondo claro del halo. "
+        "Están SUELTOS EN EL AIRE: cada brazo SE CORTA EN SECO por el extremo del hombro, con un "
+        "corte limpio. PROHIBIDO ABSOLUTAMENTE que de ese extremo salga un hombro, un cuello, "
+        "una cabeza o un torso. PROHIBIDO que un brazo esté pegado a alguna de las piezas que ya "
+        "había. PROHIBIDO dibujar una persona, un cuerpo o una figura humana. "
+        "PROHIBIDO que las manos se suelten, se separen o queden a medio agarrar: están cogidas. "
+        "PROHIBIDO dibujar una barra, un palo o una franja recta: son brazos con manos y se "
+        "leen como tales. "
+
+        "══ BLOQUE 3 · LA LECTURA ══ "
+        "El resultado debe leerse así: todo se ha hecho pedazos y los pedazos flotan sueltos, "
+        "pero en medio quedan dos manos grandes agarradas cada una a una manita pequeña. "
+
+        "══ BLOQUE 4 · PROHIBICIONES ══ "
+        "PROHIBIDO dibujar caras, ojos, bocas o detalle interior en nada. PROHIBIDO cualquier "
+        "líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no sea gris, blanco o "
+        "negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
 ]
 
 
