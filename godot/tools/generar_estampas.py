@@ -155,6 +155,7 @@ INSERTADAS = {
     139: 66,  # la 138 con todas las piezas mas abajo (fotograma de caida)
     140: 66,  # la 139 con todo un poco mas abajo: sigue la caida
     141: 66,  # rehace la 140 sin las siluetas inventadas, desde la 139
+    142: 66,  # plano cercano de las dos manos agarradas, sin cuerpos
 }
 
 
@@ -4912,6 +4913,52 @@ ESCENAS = [
         "o alguna que ha crecido, está MAL y hay que rehacerlo. "
 
         "Sin sangre, sin color y sin texto."),
+
+    # ── 142 · PLANO CERCANO: LAS DOS MANOS AGARRADAS ─────────────────────────
+    # Es el plano al que se llega tras el ZOOM sobre la 139 (ver ZOOMS en
+    # Prologo.gd): la cámara entra en el centro de la escena y corta aquí.
+    # Se genera SIN referencia encadenada, como pidió Fernando, así que el estilo
+    # va descrito entero en el prompt.
+    (142, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits "
+        "(referencias: Undertale, Sea of Stars, Hyper Light Drifter): SOMBREADO PLANO por "
+        "zonas, contornos definidos, píxeles grandes y visibles, dithering sutil, paleta "
+        "limitada y sombría. NADA de render 3D, nada de aspecto fotorrealista, nada de voxels "
+        "ni cubos. Debe verse como un DIBUJO 2D. Encuadre horizontal 16:9. "
+
+        "══ EL LUGAR ══ "
+        "El interior de un pozo de roca —el fondo del Hoyo—, en PLANO CERCANO: pared de roca "
+        "cuarteada con sus grietas ocupando todo el fondo, un halo de luz grisáceo difuso hacia "
+        "el centro y la penumbra cerrando las cuatro esquinas. Alguna mota de polvo suelta "
+        "flotando. Paleta MONOCROMA de grises fríos, blancos y negros: ningún otro color. "
+
+        "══ LO QUE SE VE, Y ES TODO LO QUE HAY ══ "
+        "Dos brazos que se dan la mano, flotando en el aire, SIN CUERPO NINGUNO. "
+        "· UN BRAZO GRANDE, entrando en el cuadro, que baja y termina en una MANO. Es el brazo "
+        "de alguien mayor: largo y de trazo grueso. "
+        "· UNA MANO MÁS PEQUEÑA agarrada a la suya, que continúa en un BRAZO MÁS CORTO Y MÁS "
+        "DELGADO, el de alguien pequeño. "
+        "Las dos manos están cerradas una sobre otra, los dedos agarrados, unidas y sin "
+        "separación entre ellas. Ese agarre es el CENTRO de la imagen y lo que primero se mira. "
+        "⚠ NINGUNO DE LOS DOS BRAZOS TIENE CUERPO: los dos se CORTAN EN SECO por el extremo del "
+        "hombro, con un corte limpio y recto, y ahí se acaban. Del corte no sale nada. "
+        "PROHIBIDO ABSOLUTAMENTE dibujar un hombro, un cuello, una cabeza, un torso, una "
+        "persona o cualquier figura humana completa. PROHIBIDO que los brazos salgan del borde "
+        "del cuadro como si el cuerpo estuviera fuera: se ven los dos extremos cortados, dentro "
+        "de la imagen, flotando. "
+        "Los brazos son SILUETAS NEGRAS MACIZAS Y PLANAS, sin ningún detalle interior: sin "
+        "pliegues, sin sombreado, sin ropa dibujada, sin uñas ni líneas de dedos por dentro. "
+        "Solo su contorno, limpio y cerrado, y en ese contorno sí se distinguen los DEDOS del "
+        "agarre, porque es lo que hay que entender de la imagen. "
+
+        "══ EL ENCUADRE ══ "
+        "Es un PLANO CERCANO: los dos brazos con sus manos ocupan buena parte del cuadro, más o "
+        "menos la mitad del ancho, centrados. Se ve bien el agarre. Pero NO es un primerísimo "
+        "plano: alrededor queda aire suficiente para que se lea el fondo de roca y la penumbra. "
+
+        "PROHIBIDO añadir cualquier otro elemento: ni más brazos, ni objetos, ni criaturas. "
+        "PROHIBIDO cualquier líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que "
+        "no sea gris, blanco o negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
 ]
 
 

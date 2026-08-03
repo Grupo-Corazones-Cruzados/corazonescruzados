@@ -141,6 +141,19 @@ const DESLIZAN := {
 }
 
 
+## --- 🔍 ESTAMPAS SOBRE LAS QUE SE HACE ZOOM ----------------------------------
+## Mientras se ve esta estampa, la imagen se va ACERCANDO hacia su centro, como
+## si la cámara entrara en ella. Al cambiar a la estampa siguiente el zoom se
+## suelta de golpe: ese corte es el que deja paso al plano cercano.
+##   "hasta" → cuánto se acerca (1.0 = nada; 1.6 = un 60 % más grande).
+##   "dur"   → segundos que tarda en llegar ahí.
+## Ojo: al acercarse, los bordes de la estampa se salen de la caja. Es lo
+## normal en un zoom, pero si te pasas de "hasta" se pierde media imagen.
+const ZOOMS := {
+	139: { "hasta": 1.55, "dur": 2.2 },
+}
+
+
 ## --- NOMBRE DE CADA ESTAMPA (para saber qué es cada número al ordenarlas) -----
 ## Solo sirve para leer y reordenar cómodo; no afecta a la reproducción. Se
 ## imprime junto al reparto cuando `mostrar_reparto` está activado.
@@ -440,7 +453,7 @@ const TRAMOS := [
 	# Verso 13 · la 115 (las siluetas deshechas, solo aguantan las manos) abre el
 	# verso, justo antes de las cuatro de las auras. Mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
-	   138, 139, 114
+	   138, 139
 	], "seg": 1  },
 ]
 
@@ -635,6 +648,7 @@ var _escena_en_pantalla := -1   # para no repetir el cambio (ni el golpe) si es 
 ## al otro y la caja acabaría descuadrada.
 var _base_capa := Vector2.ZERO   # posición de reposo (la caja fija)
 var _off_golpe := Vector2.ZERO   # desplazamiento del golpe (afecta a las dos capas)
+var _zoom := 1.0                 # escala de las capas (zoom y golpe pasan por aquí)
 var _off_a := Vector2.ZERO       # desplazamiento propio de la capa A (deslizamiento)
 var _off_b := Vector2.ZERO       # desplazamiento propio de la capa B
 var _espiritus: Espiritus = null
@@ -2012,6 +2026,15 @@ func _cambiar_imagen(n: int) -> void:
 	if n == _escena_en_pantalla:
 		return
 	_escena_en_pantalla = n
+	# 🔍 El zoom se suelta al cambiar de estampa (ese corte es el que da paso al
+	# plano siguiente) y vuelve a arrancar si la nueva estampa lo pide.
+	_zoom = 1.0
+	if ZOOMS.has(n):
+		var z: Dictionary = ZOOMS[n]
+		var tzz := create_tween()
+		tzz.tween_property(self, "_zoom", float(z.get("hasta", 1.5)),
+			float(z.get("dur", 2.0))).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
 	# A partir de esta estampa, las imágenes tiemblan: están cayendo.
 	if temblor_desde_escena > 0 and n == temblor_desde_escena:
 		_temblando = true
@@ -2111,6 +2134,12 @@ func _mover_capas(delta: float) -> void:
 		off += Vector2(
 			sin(_t_temblor * 11.3) * a + sin(_t_temblor * 27.1) * a * 0.35,
 			cos(_t_temblor *  9.7) * a + sin(_t_temblor * 23.3) * a * 0.45)
+	# El zoom y el golpe escriben los dos en `_zoom`, y se aplica aquí: si cada
+	# uno animara `scale` por su cuenta, el último en tocarlo borraría al otro.
+	for capa in [_capa_a, _capa_b]:
+		if capa != null:
+			capa.pivot_offset = capa.size / 2.0
+			capa.scale = Vector2(_zoom, _zoom)
 	if _capa_a != null:
 		_capa_a.position = _base_capa + off + _off_a
 	if _capa_b != null:
@@ -2137,14 +2166,10 @@ func _golpe(cfg: Dictionary) -> void:
 
 	# Zoom de golpe: entra un poco más grande y se asienta.
 	if punch > 1.0:
-		for capa in [_capa_a, _capa_b]:
-			capa.pivot_offset = capa.size / 2.0
-			capa.scale = Vector2(punch, punch)
+		_zoom = punch
 		var tz := create_tween()
-		tz.set_parallel(true)
-		for capa in [_capa_a, _capa_b]:
-			tz.tween_property(capa, "scale", Vector2.ONE, dur) \
-				.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+		tz.tween_property(self, "_zoom", 1.0, dur) \
+			.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 	# Sacudida: tirones cada vez más pequeños, y vuelta a la posición exacta.
 	if fuerza <= 0.0:
