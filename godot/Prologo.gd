@@ -508,11 +508,22 @@ enum Aparicion { BARRIDO, TECLEO }
 ## Segundos que tardan en aparecer (entran suave, no de golpe).
 @export var espiritus_entrada: float = 1.6
 ## Radio del óvalo pequeño, en píxeles del lienzo de 960×540.
-@export_range(6.0, 80.0, 1.0) var espiritus_radio: float = 24.0
+@export_range(4.0, 80.0, 0.5) var espiritus_radio: float = 14.0
 ## Cuánto MÁS grande es el del centro (1.2 = un 20 % mayor).
 @export_range(1.0, 2.0, 0.02) var espiritus_grande: float = 1.22
-## Separación entre uno y otro.
-@export_range(20.0, 240.0, 2.0) var espiritus_separacion: float = 88.0
+## ⬅➡ DÓNDE VAN, en coordenadas del lienzo de 960×540. Este punto es el CENTRO
+## del grupo, o sea donde se coloca el espíritu de en medio.
+##   · x = 0 es el borde izquierdo, 480 el centro, 960 el derecho.
+##   · y = 0 es arriba del todo, 270 el centro, 540 abajo.
+## Ojo: la estampa NO ocupa toda la pantalla, va en una caja de 672×384 centrada
+## (ver `caja_imagen`), así que si quieres que caigan DENTRO de la imagen, mantén
+## la x entre 144 y 816 y la y entre 11 y 395.
+@export var espiritus_centro := Vector2(480.0, 270.0)
+## Separación horizontal entre uno y otro.
+@export_range(10.0, 240.0, 1.0) var espiritus_separacion: float = 52.0
+## Cuánto se levantan (negativo) o se hunden (positivo) los DOS de los lados
+## respecto al del centro. 0 = los tres en línea recta.
+@export_range(-80.0, 80.0, 1.0) var espiritus_desnivel: float = 0.0
 ## Cuánto tiemblan, en píxeles.
 @export_range(0.0, 8.0, 0.1) var espiritus_temblor: float = 1.6
 ## Achatado del óvalo (1 = círculo perfecto; más bajo = más ovalado).
@@ -737,6 +748,8 @@ func _construir_ui() -> void:
 	_espiritus.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_espiritus.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_espiritus.radio = espiritus_radio
+	_espiritus.centro = espiritus_centro
+	_espiritus.desnivel = espiritus_desnivel
 	_espiritus.separacion = espiritus_separacion
 	_espiritus.grande = espiritus_grande
 	_espiritus.temblor = espiritus_temblor
@@ -2262,6 +2275,8 @@ func _volcar_calibracion() -> void:
 class Espiritus extends Control:
 	var color_cuerpo := Color(0.05, 0.05, 0.08)
 	var radio := 26.0
+	var centro := Vector2(480.0, 270.0)   # dónde va el del medio, en el lienzo
+	var desnivel := 0.0                   # cuánto suben/bajan los de los lados
 	var separacion := 92.0
 	var grande := 1.22          # cuánto mayor es el del centro
 	var temblor := 1.6
@@ -2294,11 +2309,11 @@ class Espiritus extends Control:
 		return pts
 
 	func _draw() -> void:
-		var c := size / 2.0
+		var c := centro
 		var datos := [
-			{ "x": -separacion, "r": radio,          "v": visible_izq,    "s": 0.0, "i": 0 },
-			{ "x": 0.0,         "r": radio * grande, "v": visible_centro, "s": 2.1, "i": 1 },
-			{ "x":  separacion, "r": radio,          "v": visible_der,    "s": 4.3, "i": 2 },
+			{ "x": -separacion, "y": desnivel, "r": radio,          "v": visible_izq,    "s": 0.0, "i": 0 },
+			{ "x": 0.0,         "y": 0.0,      "r": radio * grande, "v": visible_centro, "s": 2.1, "i": 1 },
+			{ "x":  separacion, "y": desnivel, "r": radio,          "v": visible_der,    "s": 4.3, "i": 2 },
 		]
 		for d in datos:
 			var v := float(d["v"])
@@ -2310,7 +2325,7 @@ class Espiritus extends Control:
 			var tmb := Vector2(
 				sin(_t * 2.7 + s) * temblor + sin(_t * 6.1 + s) * temblor * 0.35,
 				cos(_t * 2.2 + s) * temblor + sin(_t * 5.3 + s) * temblor * 0.4)
-			var pos: Vector2 = c + Vector2(float(d["x"]), 0.0) + tmb
+			var pos: Vector2 = c + Vector2(float(d["x"]), float(d["y"])) + tmb
 			var r := float(d["r"])
 			# El aura, si la tiene: anillos hacia fuera que se van apagando.
 			var au = aura[int(d["i"])]
@@ -2326,4 +2341,3 @@ class Espiritus extends Control:
 			var cc := color_cuerpo
 			cc.a = v
 			draw_colored_polygon(_contorno(pos, r, s), cc)
-
