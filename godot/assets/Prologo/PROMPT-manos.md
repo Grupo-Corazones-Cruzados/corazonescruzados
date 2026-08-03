@@ -1,0 +1,101 @@
+# Prompt de las manos agarradas (escenas 142/143) — para otra herramienta
+
+> Es el prompt EXACTO que se envió para la escena 143 (el de la 142 es igual salvo la
+> descripción de los brazos). Se genera SIN imagen de referencia: el estilo va descrito
+> dentro, así que se puede pegar tal cual en cualquier herramienta.
+>
+> Sale también en `assets/Prologo/escenas/escena_143.txt`, que el generador escribe con el
+> prompt real de cada tirada.
+
+## Notas antes de pegarlo
+
+- Los dos últimos párrafos (**"Casi monocromo gris…"** y **"|| ESTILO OBLIGATORIO: …"**) los
+  añade automáticamente `tools/generar_estampas.py` a TODAS las estampas: el primero es el
+  tono del Acto 4 y el segundo, el estilo del prólogo. Si tu herramienta acorta prompts,
+  esos dos son los primeros que puedes recortar.
+- La última frase (*"Respeta EXACTAMENTE el mismo estilo… de las imágenes de referencia"*)
+  solo tiene sentido si adjuntas una referencia. **Sin imagen adjunta, bórrala.**
+- Pide relación **16:9**. Si la herramienta no la respeta, exígela aparte en sus ajustes.
+
+---
+
+## El prompt
+
+```
+ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits (referencias:
+Undertale, Sea of Stars, Hyper Light Drifter): SOMBREADO PLANO por zonas, contornos
+definidos, píxeles grandes y visibles, dithering sutil, paleta limitada y sombría. NADA de
+render 3D, nada de aspecto fotorrealista, nada de voxels ni cubos. Debe verse como un
+DIBUJO 2D. Encuadre horizontal 16:9.
+
+EL LUGAR: el interior de un pozo de roca —el fondo del Hoyo—, en PLANO CERCANO: pared de
+roca cuarteada con sus grietas ocupando todo el fondo, un halo de luz grisáceo difuso hacia
+el centro y la penumbra cerrando las cuatro esquinas. Alguna mota de polvo suelta flotando.
+Paleta MONOCROMA de grises fríos, blancos y negros: ningún otro color.
+
+LO QUE SE VE, Y ES TODO LO QUE HAY: dos brazos que se dan la mano, flotando en el aire, SIN
+CUERPO NINGUNO.
+
+· EL BRAZO MAYOR, entrando en el cuadro, que baja y termina en una MANO. Es un brazo
+DELGADO Y ESTILIZADO, de trazo fino: su contorno va casi recto del hombro a la muñeca,
+estrechándose un poco, SIN bulto de bíceps, SIN antebrazo ancho y SIN músculo marcado. Su
+grosor es más o menos una OCTAVA parte de su largo: un brazo fino y alargado. NO es el brazo
+de un adulto corpulento: nada de brazo robusto, ancho, musculoso o pesado. Es el brazo de
+alguien todavía en crecimiento, más largo que fuerte.
+
+· EL BRAZO MENOR, agarrado al anterior por la mano. Mide unos DOS TERCIOS del mayor y es
+algo más fino, pero está dibujado con el MISMO trazo estilizado. NO es un brazo de bebé:
+PROHIBIDO que salga rechoncho, con pliegues en la muñeca o el codo, redondeado o con la
+manita desproporcionadamente grande respecto al brazo. Es un brazo pequeño pero
+PROPORCIONADO: fino, con su codo y su muñeca en su sitio, como el de alguien pequeño que ya
+camina y corre.
+
+La diferencia entre los dos se nota sobre todo en el LARGO y en el TAMAÑO DE LA MANO, no en
+el grosor: los dos son delgados.
+
+Las dos manos están cerradas una sobre otra, los dedos agarrados, unidas y sin separación
+entre ellas. Ese agarre es el CENTRO de la imagen y lo que primero se mira.
+
+NINGUNO DE LOS DOS BRAZOS TIENE CUERPO: los dos se CORTAN EN SECO por el extremo del hombro,
+con un corte limpio y recto, y ahí se acaban. Del corte no sale nada. PROHIBIDO ABSOLUTAMENTE
+dibujar un hombro, un cuello, una cabeza, un torso, una persona o cualquier figura humana
+completa. PROHIBIDO que los brazos salgan del borde del cuadro como si el cuerpo estuviera
+fuera: se ven los dos extremos cortados, dentro de la imagen, flotando.
+
+Los brazos son SILUETAS NEGRAS MACIZAS Y PLANAS, sin ningún detalle interior: sin pliegues,
+sin sombreado, sin ropa dibujada, sin uñas ni líneas de dedos por dentro. Solo su contorno,
+limpio y cerrado, y en ese contorno sí se distinguen los DEDOS del agarre, porque es lo que
+hay que entender de la imagen.
+
+EL ENCUADRE: es un PLANO CERCANO: los dos brazos con sus manos ocupan buena parte del cuadro,
+más o menos la mitad del ancho, centrados. Se ve bien el agarre. Pero NO es un primerísimo
+plano: alrededor queda aire suficiente para que se lea el fondo de roca y la penumbra.
+
+PROHIBIDO añadir cualquier otro elemento: ni más brazos, ni objetos, ni criaturas. PROHIBIDO
+cualquier líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que no sea gris,
+blanco o negro. PROHIBIDO cualquier texto, letra, número o marca de agua.
+
+Casi monocromo gris, frío, solo detalles con tinte.
+
+ESTILO OBLIGATORIO: ilustración 2D en PIXEL ART dibujada a mano, estilo de videojuego 2D de
+16 bits (referencias: Undertale, Sea of Stars, Hyper Light Drifter, Owlboy): sombreado plano
+por zonas, contornos definidos, paleta limitada y sombría, dithering sutil, atmósfera de
+fábula oscura y melancólica. Vista 2D plana. PROHIBIDO ABSOLUTAMENTE: estilo Minecraft,
+voxels, cubos, bloques 3D, render 3D, isométrico con cubos o cualquier cosa que parezca
+tridimensional. Debe verse como un DIBUJO 2D, no como un mundo 3D. Relación de aspecto 16:9
+horizontal. PROHIBIDO cualquier texto, palabra, letra, número, título, subtítulo, cartel,
+firma o marca de agua: la imagen NO debe contener NINGÚN texto.
+```
+
+---
+
+## Si el resultado no cuadra
+
+- **Brazos demasiado gruesos** → sube la comparación: *"el grosor es una DÉCIMA parte del largo"*.
+- **El pequeño parece un bebé** → insiste en el codo y la muñeca marcados, y baja la mano.
+- **Sale un cuerpo o un hombro** → repite lo del corte en seco y añade *"los dos extremos del
+  hombro están DENTRO del cuadro, no tocan el borde"*.
+- **No es pixel art** → sube al principio el bloque de ESTILO OBLIGATORIO.
+
+Cuando tengas la buena, pásamela y la integro: la numero, la dejo a 1344×768, la comprimo
+para el export y la coloco en `TRAMOS`.
