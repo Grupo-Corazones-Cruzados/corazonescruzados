@@ -1,11 +1,16 @@
 /**
- * Envía una plantilla a todos los contactos de una lista.
+ * Envía una plantilla a los contactos de las listas marcadas.
  *
- * ── POR QUÉ SOLO EL RESPONSABLE Y LOS ADMINISTRADORES ─────────────────────────
- * Esto manda WhatsApp de verdad a gente de verdad, y no se puede deshacer. Un cliente con
- * acceso al flujo puede leer su bandeja y contestar a quien le escribió; lanzar un envío
- * masivo en nombre del negocio es otra cosa, y de momento la decide GCC. Si más adelante
- * el cliente debe poder hacerlo, se cambia aquí y en un solo sitio.
+ * ── QUIÉN PUEDE: CUALQUIERA CON ACCESO AL FLUJO ───────────────────────────────
+ * Estuvo limitado al responsable y a los administradores, con el razonamiento de que un
+ * envío no se puede retirar. Fernando lo cambió (2026-08-03): **el acceso al flujo da
+ * todas las funciones del flujo, incluido enviar**. Tiene sentido — el número es del
+ * cliente, los contactos son suyos y la plantilla la aprobó Meta para su cuenta; que
+ * necesite pedirle a GCC que pulse un botón convierte el producto en un servicio.
+ *
+ * Lo que protege al envío no es esconder el botón, sino que **la plantilla tenga que estar
+ * aprobada**, que solo salga a listas del propio flujo y que la pantalla enseñe los tres
+ * primeros mensajes rellenos y pida confirmación antes.
  *
  * ⚠️ NO se responde hasta que termina. Un envío a cien contactos tarda; se hace en serie
  * a propósito (ver `enviarAListado`) para no comerse el límite del número del cliente.
@@ -13,6 +18,7 @@
 
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal } from '@/lib/agente/canales';
 import { enviarAListado } from '@/lib/agente/plantillas';
@@ -22,16 +28,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { id, plantillaId } = await params;
-  const { rows: [flujo] } = await pool.query(
-    `SELECT id, type, responsable_user_id FROM gcc_world.flows WHERE id = $1`, [id],
-  );
+  const flujo = await flujoPermitido(user, id);
   if (flujo?.type !== 'ai_agent') return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
-
-  if (user.role !== 'admin' && flujo.responsable_user_id !== user.userId) {
-    return NextResponse.json(
-      { error: 'Solo el responsable del flujo puede lanzar un envío de plantilla.' }, { status: 403 },
-    );
-  }
 
   const canal = await asegurarCanal(flujo.id);
   const { rows: [plantilla] } = await pool.query(

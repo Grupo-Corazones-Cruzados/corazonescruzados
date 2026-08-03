@@ -100,9 +100,10 @@ export async function flujoPermitido(
  * Las listas pertenecen al flujo (`flow_contact_lists.flow_id`), así que quien puede ver
  * el flujo puede ver y gestionar sus listas.
  *
- * ⚠️ Lo que NO se abre por esto: **lanzar un envío**. Eso manda WhatsApp de verdad a gente
- * de verdad y no se puede deshacer, así que sigue siendo del responsable y los
- * administradores. Editar una lista se corrige; un envío no.
+ * Enviar una plantilla también entra: decisión de Fernando (2026-08-03), y es coherente —
+ * el número es del cliente y los contactos son suyos. Lo único que sigue reservado al
+ * responsable es **repartir accesos** (`/accesos`): dar entrada a otro no es usar el
+ * flujo, es administrarlo.
  */
 export async function puedeVerFlujo(user: TokenPayload | null, flowId: string | number) {
   return (await flujoPermitido(user, flowId)) !== null;
