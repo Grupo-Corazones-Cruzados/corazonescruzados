@@ -156,6 +156,7 @@ INSERTADAS = {
     140: 66,  # la 139 con todo un poco mas abajo: sigue la caida
     141: 66,  # rehace la 140 sin las siluetas inventadas, desde la 139
     142: 66,  # plano cercano de las dos manos agarradas, sin cuerpos
+    143: 66,  # como la 142 pero brazos de adolescente y de nino, no de adulto
 }
 
 
@@ -4938,6 +4939,63 @@ ESCENAS = [
         "de alguien mayor: largo y de trazo grueso. "
         "· UNA MANO MÁS PEQUEÑA agarrada a la suya, que continúa en un BRAZO MÁS CORTO Y MÁS "
         "DELGADO, el de alguien pequeño. "
+        "Las dos manos están cerradas una sobre otra, los dedos agarrados, unidas y sin "
+        "separación entre ellas. Ese agarre es el CENTRO de la imagen y lo que primero se mira. "
+        "⚠ NINGUNO DE LOS DOS BRAZOS TIENE CUERPO: los dos se CORTAN EN SECO por el extremo del "
+        "hombro, con un corte limpio y recto, y ahí se acaban. Del corte no sale nada. "
+        "PROHIBIDO ABSOLUTAMENTE dibujar un hombro, un cuello, una cabeza, un torso, una "
+        "persona o cualquier figura humana completa. PROHIBIDO que los brazos salgan del borde "
+        "del cuadro como si el cuerpo estuviera fuera: se ven los dos extremos cortados, dentro "
+        "de la imagen, flotando. "
+        "Los brazos son SILUETAS NEGRAS MACIZAS Y PLANAS, sin ningún detalle interior: sin "
+        "pliegues, sin sombreado, sin ropa dibujada, sin uñas ni líneas de dedos por dentro. "
+        "Solo su contorno, limpio y cerrado, y en ese contorno sí se distinguen los DEDOS del "
+        "agarre, porque es lo que hay que entender de la imagen. "
+
+        "══ EL ENCUADRE ══ "
+        "Es un PLANO CERCANO: los dos brazos con sus manos ocupan buena parte del cuadro, más o "
+        "menos la mitad del ancho, centrados. Se ve bien el agarre. Pero NO es un primerísimo "
+        "plano: alrededor queda aire suficiente para que se lea el fondo de roca y la penumbra. "
+
+        "PROHIBIDO añadir cualquier otro elemento: ni más brazos, ni objetos, ni criaturas. "
+        "PROHIBIDO cualquier líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que "
+        "no sea gris, blanco o negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
+
+    # ── 143 · COMO LA 142, PERO BRAZOS DELGADOS ──────────────────────────────
+    # La 142 gustó, salvo por los brazos: el mayor salió de adulto corpulento y
+    # el menor tirando a bebé. Se reusa el prompt entero y solo se reescribe la
+    # descripción de los dos brazos.
+    # Pedido COMPARANDO y por su forma, no por la edad (§4.33): grosor respecto
+    # al largo, uno respecto al otro, y qué NO debe parecer.
+    (143, [],
+        "ILUSTRACIÓN EN PIXEL ART 2D dibujada a mano, estilo de videojuego de 16 bits "
+        "(referencias: Undertale, Sea of Stars, Hyper Light Drifter): SOMBREADO PLANO por "
+        "zonas, contornos definidos, píxeles grandes y visibles, dithering sutil, paleta "
+        "limitada y sombría. NADA de render 3D, nada de aspecto fotorrealista, nada de voxels "
+        "ni cubos. Debe verse como un DIBUJO 2D. Encuadre horizontal 16:9. "
+
+        "══ EL LUGAR ══ "
+        "El interior de un pozo de roca —el fondo del Hoyo—, en PLANO CERCANO: pared de roca "
+        "cuarteada con sus grietas ocupando todo el fondo, un halo de luz grisáceo difuso hacia "
+        "el centro y la penumbra cerrando las cuatro esquinas. Alguna mota de polvo suelta "
+        "flotando. Paleta MONOCROMA de grises fríos, blancos y negros: ningún otro color. "
+
+        "══ LO QUE SE VE, Y ES TODO LO QUE HAY ══ "
+        "Dos brazos que se dan la mano, flotando en el aire, SIN CUERPO NINGUNO. "
+        "· EL BRAZO MAYOR, entrando en el cuadro, que baja y termina en una MANO. Es un brazo "
+        "DELGADO Y ESTILIZADO, de trazo fino: su contorno va casi recto del hombro a la muñeca, "
+        "estrechándose un poco, SIN bulto de bíceps, SIN antebrazo ancho y SIN músculo marcado. "
+        "Su grosor es más o menos una OCTAVA parte de su largo: un brazo fino y alargado. "
+        "⚠ NO es el brazo de un adulto corpulento: nada de brazo robusto, ancho, musculoso o "
+        "pesado. Es el brazo de alguien todavía en crecimiento, más largo que fuerte. "
+        "· EL BRAZO MENOR, agarrado al anterior por la mano. Mide unos DOS TERCIOS del mayor y "
+        "es algo más fino, pero está dibujado con el MISMO trazo estilizado. "
+        "⚠ NO es un brazo de bebé: PROHIBIDO que salga rechoncho, con pliegues en la muñeca o "
+        "el codo, redondeado o con la manita desproporcionadamente grande respecto al brazo. Es "
+        "un brazo pequeño pero PROPORCIONADO: fino, con su codo y su muñeca en su sitio, como "
+        "el de alguien pequeño que ya camina y corre. "
+        "La diferencia entre los dos se nota sobre todo en el LARGO y en el TAMAÑO DE LA MANO, "
+        "no en el grosor: los dos son delgados. "
         "Las dos manos están cerradas una sobre otra, los dedos agarrados, unidas y sin "
         "separación entre ellas. Ese agarre es el CENTRO de la imagen y lo que primero se mira. "
         "⚠ NINGUNO DE LOS DOS BRAZOS TIENE CUERPO: los dos se CORTAN EN SECO por el extremo del "
