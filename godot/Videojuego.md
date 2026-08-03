@@ -636,6 +636,21 @@ portada → "Entrar" → login; escribir la URL a pelo devuelve a la portada.
     la 119 pidiéndolo como relleno. **Antes de pedir un color, mirar cómo está el que ya está
     aprobado y copiar esa forma de decirlo.**
 
+41. **⭐ NOMBRAR PARTES DEL CUERPO HACE QUE EL MODELO RECONSTRUYA LA FIGURA.** Al pedir una
+    escena de cuerpos despiezados enumerando *"cabezas, torsos, piernas, pies, zapatos"*, el
+    modelo reconoce las partes anatómicas y **las recoloca en su sitio**, devolviendo las
+    figuras enteras. Pasó **tres veces seguidas** (escenas 126, 127 y el encargo original de la
+    115) por mucho que se prohibiera "dibujar personas completas": la prohibición no gana al
+    sesgo de montar un cuerpo con las piezas que se le nombran.
+    **Lo que hay que hacer** (aplicación de §4.36-bis): describir las piezas por su **GEOMETRÍA**
+    y no por lo que son — *"óvalos lisos, rectángulos redondeados uno con la base en campana,
+    barritas alargadas con un codo, cuñas achatadas, esquirlas angulosas"*—, decir que **las
+    figuras de la referencia NO se dibujan**, y prohibir explícitamente **apilarlas, alinearlas
+    o colocarlas de forma que juntas dibujen una silueta**. La imagen que ayuda: *"como las
+    fichas de un juego tiradas al vuelo"*, no un muñeco montado.
+    Corolario: si algo tiene que verse ROTO, no basta con prohibir que esté entero; hay que
+    dejar de nombrarlo por su nombre.
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**
