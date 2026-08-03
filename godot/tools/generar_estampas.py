@@ -157,6 +157,7 @@ INSERTADAS = {
     141: 66,  # rehace la 140 sin las siluetas inventadas, desde la 139
     142: 66,  # plano cercano de las dos manos agarradas, sin cuerpos
     143: 66,  # como la 142 pero brazos de adolescente y de nino, no de adulto
+    144: 66,  # tercer intento de las manos: brazos delgados, con prueba medible
 }
 
 
@@ -5013,6 +5014,70 @@ ESCENAS = [
         "Es un PLANO CERCANO: los dos brazos con sus manos ocupan buena parte del cuadro, más o "
         "menos la mitad del ancho, centrados. Se ve bien el agarre. Pero NO es un primerísimo "
         "plano: alrededor queda aire suficiente para que se lea el fondo de roca y la penumbra. "
+
+        "PROHIBIDO añadir cualquier otro elemento: ni más brazos, ni objetos, ni criaturas. "
+        "PROHIBIDO cualquier líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que "
+        "no sea gris, blanco o negro. PROHIBIDO cualquier texto, letra, número o marca de agua."),
+
+    # ── 144 · LAS MANOS, TERCER INTENTO ──────────────────────────────────────
+    # La 142 gustó como imagen pero con los brazos demasiado adultos; la 143 se
+    # generó otra vez desde 0 y tampoco.
+    # Cambio de enfoque: en vez de partir de cero por tercera vez, se ENCADENA la
+    # 142 para heredar lugar, estilo, paleta y encuadre —lo que ya estaba bien— y
+    # se dice EXPLÍCITAMENTE que los brazos se REDIBUJAN desde cero.
+    # ⚠ Es importante NO decir "conserva los brazos": encadenar con un "consérvalo
+    # todo" bloquea los cambios de anatomía (§4.33-ter). Aquí se separa: el sitio
+    # se copia, los brazos se rehacen.
+    # Y las proporciones van con PRUEBA VERIFICABLE (§4.33-bis): algo que el
+    # modelo pueda comprobar en su propio dibujo, no un adjetivo.
+    (144, ["assets/Prologo/escenas/escena_142.png"],
+        "De la imagen de referencia se copia EL SITIO Y EL DIBUJO, pero LOS DOS BRAZOS SE "
+        "REDIBUJAN DE CERO, más delgados. "
+
+        "══ LO QUE SE COPIA TAL CUAL ══ "
+        "El estilo PIXEL ART 2D de 16 bits dibujado a mano, con sombreado plano por zonas, "
+        "contornos definidos, píxeles grandes y visibles y dithering sutil. El encuadre "
+        "horizontal 16:9 y el mismo PLANO CERCANO. El interior del pozo de roca: pared "
+        "cuarteada con sus grietas al fondo, el halo de luz grisáceo difuso hacia el centro, la "
+        "penumbra cerrando las cuatro esquinas y alguna mota de polvo flotando. La paleta "
+        "MONOCROMA de grises fríos, blancos y negros. "
+
+        "══ LO QUE SE REHACE: LOS DOS BRAZOS ══ "
+        "En la referencia hay dos brazos que se dan la mano. La composición es la misma —dos "
+        "brazos agarrados de la mano, flotando, sin cuerpo— pero los brazos se DIBUJAN DE "
+        "NUEVO, con otras proporciones. No los copies: rehazlos. "
+        "⚠ SON MUCHO MÁS DELGADOS QUE EN LA REFERENCIA. En la referencia son brazos gruesos, de "
+        "adulto corpulento. Aquí no. "
+
+        "══ ⚠ LA PRUEBA DEL GROSOR — COMPRUÉBALA EN TU PROPIO DIBUJO ══ "
+        "Antes de dar la imagen por buena, mide lo que has dibujado: "
+        "  (a) EL BRAZO MAYOR: coge su ANCHO en la parte más gruesa y compáralo con su LARGO, "
+        "del hombro a la muñeca. El largo tiene que ser al menos OCHO VECES el ancho. Si el "
+        "brazo es tan ancho que solo cabe cuatro o cinco veces, está DEMASIADO GRUESO y hay que "
+        "afinarlo. "
+        "  (b) Su contorno va CASI RECTO del hombro a la muñeca, estrechándose poco a poco. Si "
+        "se le ve un bulto a media altura, eso es un bíceps y NO puede estar. Nada de "
+        "antebrazo ancho, nada de músculo marcado, nada de brazo pesado. "
+        "  (c) EL BRAZO MENOR: mide unos DOS TERCIOS del largo del mayor, y es un poco más fino, "
+        "pero con el MISMO trazo estilizado. Si lo pones al lado del mayor, los dos se ven "
+        "delgados; lo que cambia es que uno es más corto. "
+        "  (d) EL BRAZO MENOR NO ES DE BEBÉ: tiene su codo y su muñeca marcados, y el contorno "
+        "es recto, no redondeado. PROHIBIDO que salga rechoncho, con pliegues en muñeca o codo, "
+        "o con la manita desproporcionadamente grande respecto al brazo. "
+        "La diferencia entre los dos se nota en el LARGO y en el TAMAÑO DE LA MANO, no en el "
+        "grosor: los dos son finos. "
+
+        "══ EL AGARRE ══ "
+        "Las dos manos están cerradas una sobre otra, los dedos agarrados, unidas y sin "
+        "separación. Ese agarre es el CENTRO de la imagen y lo primero que se mira. "
+        "⚠ NINGUNO DE LOS DOS BRAZOS TIENE CUERPO: los dos se CORTAN EN SECO por el extremo del "
+        "hombro, con un corte limpio y recto, y ahí se acaban. Del corte no sale nada. "
+        "PROHIBIDO dibujar un hombro, un cuello, una cabeza, un torso o cualquier figura "
+        "humana. PROHIBIDO que los brazos se vayan por el borde del cuadro como si el cuerpo "
+        "estuviera fuera: los dos extremos cortados se ven DENTRO de la imagen, flotando. "
+        "Los brazos son SILUETAS NEGRAS MACIZAS Y PLANAS, sin detalle interior: sin pliegues, "
+        "sin sombreado, sin ropa, sin uñas ni líneas por dentro. Solo su contorno, limpio y "
+        "cerrado, y en él sí se distinguen los DEDOS del agarre. "
 
         "PROHIBIDO añadir cualquier otro elemento: ni más brazos, ni objetos, ni criaturas. "
         "PROHIBIDO cualquier líquido, mancha roja o salpicadura. PROHIBIDO cualquier color que "
