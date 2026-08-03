@@ -486,6 +486,17 @@ enum Aparicion { BARRIDO, TECLEO }
 ## que esto.
 @export var tecleo_max: float = 1.6
 
+@export_group("Temblor de la caída")
+## A partir de que se vea ESTA estampa, las imágenes tiemblan un poco, para que
+## se sienta que los personajes van cayendo. Se enciende sola cuando entra y ya
+## no se apaga. Poner 0 para no usarlo nunca.
+@export var temblor_desde_escena: int = 94
+## Cuánto se mueve la imagen, en píxeles del lienzo de 960×540. Muy poco a
+## propósito: 1-2 px se sienten, 5 ya marea.
+@export_range(0.0, 6.0, 0.1) var temblor_amplitud: float = 1.4
+## Lo rápido que vibra. Alto = nervioso, bajo = un balanceo.
+@export_range(0.1, 4.0, 0.1) var temblor_velocidad: float = 1.0
+
 @export_group("Presentación (el cartel del principio)")
 ## Rótulo pequeño de arriba. Vacío = no se muestra.
 @export var presentacion_texto: String = "Presentado por:"
@@ -559,6 +570,16 @@ var _idx_verso := -1
 var _tween_texto: Tween = null
 var _cruzando := false
 var _escena_en_pantalla := -1   # para no repetir el cambio (ni el golpe) si es la misma
+## --- Movimiento de las capas de imagen ---------------------------------------
+## Las capas se mueven por DOS motivos a la vez (el golpe de una estampa y el
+## temblor de la caída), así que ninguno toca `position` directamente: cada uno
+## escribe su propio desplazamiento y `_process` los suma sobre la posición base.
+## Si cada efecto moviera la capa por su cuenta, el último en escribir borraría
+## al otro y la caja acabaría descuadrada.
+var _base_capa := Vector2.ZERO   # posición de reposo (la caja fija)
+var _off_golpe := Vector2.ZERO   # desplazamiento del golpe
+var _temblando := false
+var _t_temblor := 0.0
 
 # --- Estado de la RÁFAGA (el mosaico) ---------------------------------------
 var _caja: Rect2                  # la caja de imagen, en coordenadas del lienzo
@@ -631,6 +652,7 @@ func _construir_ui() -> void:
 	_capa_b = _nueva_capa_imagen(img_x, img_y, ancho_img, alto_img)
 	_capa_b.modulate.a = 0.0
 	add_child(_capa_b)
+	_base_capa = _capa_a.position
 
 	# La caja de imagen, guardada para el mosaico de la ráfaga.
 	_caja = Rect2(img_x, img_y, ancho_img, alto_img)
@@ -1800,6 +1822,7 @@ func _calcular_plan_imagenes() -> Array:
 func _process(_delta: float) -> void:
 	if _terminado or calibrar_letras:
 		return
+	_mover_capas(_delta)
 	var pos := _pos_musica()
 
 	# 0) El cartel de presentación se retira ANTES del primer verso, de modo que
@@ -1915,6 +1938,9 @@ func _cambiar_imagen(n: int) -> void:
 	if n == _escena_en_pantalla:
 		return
 	_escena_en_pantalla = n
+	# A partir de esta estampa, las imágenes tiemblan: están cayendo.
+	if temblor_desde_escena > 0 and n == temblor_desde_escena:
+		_temblando = true
 	# Primera imagen del prólogo: entra sin cruce.
 	if _capa_a.texture == null:
 		_capa_a.texture = tex
@@ -1944,6 +1970,27 @@ func _cambiar_imagen(n: int) -> void:
 	_capa_a.modulate.a = 1.0
 	_capa_b.modulate.a = 0.0
 	_cruzando = false
+
+
+## Coloca las capas de imagen sumando los dos desplazamientos: el del GOLPE y el
+## del TEMBLOR de la caída.
+##
+## El temblor no es aleatorio: son cuatro senos de frecuencias que no encajan
+## entre sí, así que el vaivén nunca se repite igual y no se le ve el patrón.
+## Con ruido puro daría saltos secos; así queda un balanceo continuo, que es lo
+## que se siente al caer.
+func _mover_capas(delta: float) -> void:
+	var off := _off_golpe
+	if _temblando and temblor_amplitud > 0.0:
+		_t_temblor += delta * temblor_velocidad
+		var a := temblor_amplitud
+		off += Vector2(
+			sin(_t_temblor * 11.3) * a + sin(_t_temblor * 27.1) * a * 0.35,
+			cos(_t_temblor *  9.7) * a + sin(_t_temblor * 23.3) * a * 0.45)
+	if _capa_a != null:
+		_capa_a.position = _base_capa + off
+	if _capa_b != null:
+		_capa_b.position = _base_capa + off
 
 
 ## 💥 El golpe con que entra una estampa de IMPACTOS: fogonazo, sacudida y zoom.
@@ -1976,8 +2023,6 @@ func _golpe(cfg: Dictionary) -> void:
 	# Sacudida: tirones cada vez más pequeños, y vuelta a la posición exacta.
 	if fuerza <= 0.0:
 		return
-	var base_a := _capa_a.position
-	var base_b := _capa_b.position
 	var pasos := 9
 	var t := create_tween()
 	for i in pasos:
@@ -1985,13 +2030,9 @@ func _golpe(cfg: Dictionary) -> void:
 		var d := Vector2(
 			randf_range(-fuerza, fuerza) * resto,
 			randf_range(-fuerza, fuerza) * resto)
-		t.tween_callback(func () -> void:
-			_capa_a.position = base_a + d
-			_capa_b.position = base_b + d)
+		t.tween_callback(func () -> void: _off_golpe = d)
 		t.tween_interval(dur / float(pasos))
-	t.tween_callback(func () -> void:
-		_capa_a.position = base_a
-		_capa_b.position = base_b)
+	t.tween_callback(func () -> void: _off_golpe = Vector2.ZERO)
 
 
 ## El cruce nunca puede durar más de la mitad de lo que dura la estampa.
