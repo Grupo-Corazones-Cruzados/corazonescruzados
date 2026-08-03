@@ -150,6 +150,7 @@ INSERTADAS = {
     133: 66,  # tres maniquies de madera desmontados (no son personas)
     134: 66,  # el maniqui, pieza a pieza: el torso son DOS bloques separados
     135: 66,  # la 134 + las piezas destruidas y polvificandose
+    136: 66,  # el despiece partiendo de la 66, donde ya van cogidos de la mano
 }
 
 
@@ -4591,6 +4592,71 @@ ESCENAS = [
         "agarradas, sin separarse. "
         "Ese contraste es la idea de la imagen: todo lo demás se deshace, y lo único que aguanta "
         "entero son las manos cogidas. "
+
+        "Sin sangre, sin color y sin texto."),
+
+    # ── 136 · EL DESPIECE, PARTIENDO DE LA 66 ────────────────────────────────
+    # La 66 es la mejor base posible para este encargo: los tres YA VAN COGIDOS
+    # DE LA MANO (en la 97 iban abrazados en un bulto). Así los cuatro brazos
+    # agarrados no hay que inventarlos, solo CONSERVARLOS, que es mucho más fácil
+    # que crearlos — y es donde fallaban los intentos anteriores.
+    # Se aplica todo lo aprendido: maniquí desmontado pieza a pieza (§4.43, lo
+    # único que desmembró de verdad), tronco en DOS piezas, y el efecto de
+    # destrucción y polvo que pidió Fernando en la 135.
+    (136, ["assets/Prologo/escenas/escena_66.png"],
+        "Misma escena que la imagen de referencia: mismo pixel art 2D de 16 bits con sombreado "
+        "plano y dithering, mismo encuadre 16:9, misma cámara, mismo plano, mismo interior "
+        "oscuro del Hoyo con sus paredes de tierra árida y su luz. Todo en grises fríos, blancos "
+        "y negros, y todo son siluetas negras planas, sin caras ni detalles interiores. "
+
+        "══ LO QUE SE CONSERVA DE LA REFERENCIA: LAS MANOS COGIDAS ══ "
+        "En la imagen de referencia hay tres figuras cayendo COGIDAS DE LA MANO: la del centro "
+        "es más alta y las de los lados más pequeñas. "
+        "De todo eso se conserva UNA SOLA COSA, y es lo más importante de la imagen: LOS CUATRO "
+        "BRAZOS CON SUS MANOS, agarrados de dos en dos, tal y como están en la referencia — el "
+        "brazo LARGO Y GRUESO de la figura del centro dando la mano al brazo CORTO Y FINO de la "
+        "pequeña de la izquierda, y lo mismo al otro lado con la pequeña de la derecha. "
+        "Esos cuatro brazos se quedan EXACTAMENTE donde están, con la misma postura, el mismo "
+        "tamaño y las manos igual de agarradas. Están ENTEROS y NÍTIDOS: negro macizo, contorno "
+        "LIMPIO y CERRADO, sin muescas, sin agujeros, sin desgranarse y sin polvo alrededor. "
+        "Cuatro brazos, cuatro manos, dos agarres. Ni uno más ni uno menos. "
+        "⚠ Ahora esos brazos NO tienen cuerpo detrás: se CORTAN EN SECO por el extremo del "
+        "hombro, con un corte limpio, y ahí se acaban. PROHIBIDO que de ese extremo salga un "
+        "hombro, un cuello, una cabeza o un torso. "
+
+        "══ LO QUE CAMBIA: LOS TRES CUERPOS YA NO ESTÁN ══ "
+        "Todo lo demás de esas tres figuras ha desaparecido como cuerpo. Imagina que no eran "
+        "personas sino tres MANIQUÍES DE MADERA ARTICULADOS —muñecos de dibujante, objetos— y "
+        "que se han DESMONTADO y DESTROZADO en el aire. "
+        "De cada uno quedan sus piezas sueltas, y hay que dibujarlas una a una: la CABEZA (un "
+        "óvalo liso), el PECHO (bloque de arriba del tronco, trapecio ancho de hombros), la "
+        "CADERA (bloque de abajo, mucho más pequeño, en cuña), los dos MUSLOS (barras gruesas y "
+        "cortas), las dos PANTORRILLAS (barras más finas), los dos PIES (cuñas achatadas) y "
+        "alguna bolita de articulación. "
+        "⚠ EL TRONCO SON DOS PIEZAS, NO UNA: el PECHO y la CADERA van SEPARADOS, cada uno por su "
+        "lado y con hueco entre ellos. PROHIBIDO dibujar el tronco como un bloque entero. "
+        "Las piezas de la figura GRANDE son el doble de grandes que las de las dos pequeñas. "
+
+        "══ CÓMO ESTÁN COLOCADAS ══ "
+        "Todas esas piezas están DESPARRAMADAS por la zona donde caían los tres, cada una girada "
+        "en un ángulo distinto —muchas de lado, otras boca abajo—, todas SEPARADAS entre sí, sin "
+        "tocarse y sin encajar unas con otras. Entre ellas se ve el fondo: hay más hueco vacío "
+        "que pieza. "
+        "Ninguna pieza está en el sitio que le tocaría en el muñeco montado: ninguna CABEZA "
+        "encima de un PECHO, ninguna CADERA bajo un PECHO, ningún PIE bajo una PANTORRILLA. "
+        "⚠ COMPROBACIÓN: en NINGÚN punto de la imagen puede haber un bloque grande con un óvalo "
+        "encima y dos barras debajo — eso se lee como un cuerpo y es lo que NO se quiere. Si al "
+        "terminar se distingue alguna de las tres figuras montada o reconocible, está MAL. "
+
+        "══ EL EFECTO: ADEMÁS DE SUELTAS, ESTÁN DESTRUIDAS ══ "
+        "Cada pieza se está deshaciendo: su contorno está MORDIDO Y ROTO, con muescas y esquinas "
+        "arrancadas, y tiene BOQUETES por dentro por los que se ve el fondo. De su borde se van "
+        "desprendiendo MOTAS y CUADRADITOS NEGROS de unos pocos píxeles, que forman una nubecita "
+        "granulada alrededor de esa pieza, más densa pegada a ella y más rala al alejarse. "
+        "El polvo sale del BORDE DE CADA PIEZA, repartido por toda la escena: PROHIBIDA cualquier "
+        "bola, esfera o foco central que suelte partículas. "
+        "La lectura de la imagen debe ser: los tres se han destrozado y se están haciendo polvo, "
+        "y lo único que queda entero son sus manos, todavía cogidas. "
 
         "Sin sangre, sin color y sin texto."),
 ]
