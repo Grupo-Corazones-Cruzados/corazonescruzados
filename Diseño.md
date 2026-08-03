@@ -128,6 +128,13 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
   recordatorios y clientes: **todas cierran 16 px por encima del pie** (el `BOTTOM_GAP` de aire).
 
 ## Reglas clave (do / don't)
+- **NO** escribir un control «parecido» al que ya existe en otra pantalla → **usar el
+  componente**. Un rail se hace con `FilterRail`, no copiando su marcado; las listas de
+  contactos con `PanelListasContactos`. Pasó el 2026-08-03 con la pantalla de plantillas:
+  se escribió una columna equivalente —casilla nativa en vez de botón con `Check`, acciones
+  con borde y siempre visibles en vez de iconos al borde derecho que aparecen al pasar el
+  puntero— y hacía lo mismo pero se veía distinta. Se notó al poner las dos pantallas
+  juntas. **Equivalente no es igual.**
 - **NO** estirar un bloque a `100vh` ni a un `calc(100vh - N)` a ojo dentro del panel: el pie
   de la app (`DashboardBreadcrumb`) es `fixed bottom-0` y **flota por encima**, así que el
   bloque termina por debajo y su última franja queda tapada. → usar

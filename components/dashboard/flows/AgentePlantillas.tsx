@@ -21,7 +21,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
@@ -29,12 +28,13 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import { SectionBar, LABEL, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import BotonAyuda from '@/components/ui/BotonAyuda';
+import FilterRail from '@/components/ui/FilterRail';
 import {
   ColumnaListas, TablaContactos, DialogoNuevaLista, DialogoRenombrarLista,
   DialogoCompartirLista, type Lista,
 } from '@/components/dashboard/flows/PanelListasContactos';
 import {
-  RefreshCw, Plus, Send, Pencil, Trash2, AlertTriangle, Eye,
+  RefreshCw, Plus, Send, Pencil, Trash2, AlertTriangle, Eye, FileText, CheckCircle2,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -201,61 +201,40 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
       {/* ── Tres columnas, como en el correo masivo: qué se manda · a quién · el detalle ── */}
       <div className="flex flex-col lg:flex-row gap-3 items-start">
 
-        {/* 1. Las plantillas */}
-        <div className="w-full lg:w-[280px] shrink-0 rounded-lg border border-digi-border bg-digi-card overflow-hidden">
-          <div className="px-3 py-2 border-b border-digi-border">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted" style={mf}>
-              Plantillas ({plantillas.length})
-            </span>
-          </div>
-          {plantillas.length === 0 ? (
-            <p className="px-3 py-4 text-[12px] text-digi-muted leading-relaxed" style={mf}>
-              Todavía no hay ninguna. Crea una, o pulsa «Actualizar» si ya existen en la cuenta de
-              WhatsApp del cliente.
-            </p>
-          ) : plantillas.map((p) => {
-            const est = pinta(p.estado);
-            return (
-              <div
-                key={p.id}
-                className={`group border-b border-digi-border last:border-b-0 transition-colors ${
-                  sel === p.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}
-              >
-                <button onClick={() => setSel(p.id)} className="w-full text-left px-3 py-2.5">
-                  <span className={`block text-[13px] font-medium truncate ${
-                    sel === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.nombre}</span>
-                  <span className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
-                    <span className="text-[11px] text-digi-muted" style={mf}>
-                      {p.idioma}
-                      {p.listas?.length ? ` · ${p.listas.length} lista(s)` : ''}
-                      {p.envios > 0 ? ` · ${p.envios} envío(s)` : ''}
-                    </span>
-                  </span>
-                  {/* El motivo del rechazo es lo único que dice qué corregir. Sin él,
-                      «Rechazada» es un callejón sin salida. */}
-                  {p.motivo_rechazo && (
-                    <span className={`block text-[11px] ${TONO.error.texto} mt-1`} style={mf}>
-                      {p.motivo_rechazo}
-                    </span>
-                  )}
+        {/* 1. Las plantillas.
+             ⚠️ Va con `FilterRail`, el MISMO control que el rail de campañas del correo
+             masivo, y no con un marcado propio. El primer intento se escribió a mano y
+             quedó parecido pero distinto —los botones siempre visibles, con borde, en otro
+             color— y se notó en cuanto Fernando puso las dos pantallas juntas. Un rail
+             nuevo se hace con este componente, no copiando su aspecto. */}
+        <FilterRail
+          className="lg:w-[240px]"
+          title={`Plantillas (${plantillas.length})`}
+          value={String(sel ?? '')}
+          onChange={(v) => setSel(Number(v) || null)}
+          items={plantillas.map((p) => ({
+            value: String(p.id),
+            label: p.nombre,
+            Icon: ESTADOS[p.estado]?.variante === 'success' ? CheckCircle2 : FileText,
+            hint: [
+              pinta(p.estado).texto,
+              p.listas?.length ? `${p.listas.length} lista(s)` : null,
+            ].filter(Boolean).join(' · '),
+            actions: (
+              <>
+                <button onClick={() => setEditando(p)} title="Editar la plantilla"
+                  className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                  <Pencil className="w-3.5 h-3.5" />
                 </button>
-
-                {/* Editar y borrar, dentro de la tarjeta y fuera del botón de selección
-                    para que no se traguen el clic. Al editar se ve el contenido. */}
-                <div className={`flex items-center gap-1 px-3 pb-2 ${
-                  sel === p.id ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                  <button onClick={() => setEditando(p)} className={BTN_ROW} title="Editar la plantilla">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => setBorrando(p)} className={BTN_ROW_DANGER} title="Borrar la plantilla">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                <button onClick={() => setBorrando(p)} title="Eliminar la plantilla"
+                  className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ),
+          }))}
+          wrapLabels
+        />
 
         {/* 2. Las listas de contactos */}
         <ColumnaListas

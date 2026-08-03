@@ -32,7 +32,7 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { SectionBar, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import {
-  Users, Plus, Pencil, Trash2, Upload, Download, FileSpreadsheet, User, Share2,
+  Users, Plus, Pencil, Trash2, Upload, Download, FileSpreadsheet, User, Share2, Check,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -47,15 +47,22 @@ export interface Contacto {
 /**
  * La columna de listas.
  *
+ * ⚠️ EL MARCADO ES EL MISMO QUE EL DE `ListGroup` EN `EmailFlowWorkspace`, A PROPÓSITO.
+ * En un primer intento se escribió «parecido» —casilla nativa, botones con borde, siempre
+ * visibles— y quedó una columna que hacía lo mismo pero se veía distinta. Lo vio Fernando
+ * en el acto (2026-08-03). Cuando dos pantallas hacen lo mismo, no se escribe algo
+ * equivalente: se copia el control, o mejor, se comparte.
+ *
+ * Las tres cosas que lo definen y que se habían perdido:
+ *   · la casilla es un BOTÓN con `Check` dentro, no un `<input type=checkbox>`;
+ *   · las acciones van pegadas al BORDE DERECHO, como iconos sin borde;
+ *   · y solo aparecen al pasar el puntero, o si la lista está abierta.
+ *
  * ── LA CASILLA Y EL CLIC SON DOS COSAS DISTINTAS ──────────────────────────────
- * Es el patrón que ya tiene el correo masivo, y no es un capricho:
- *   · la **casilla** asocia o desasocia la lista con lo que está seleccionado —una campaña
- *     allí, una plantilla aquí—. Una lista sirve para varias plantillas.
+ *   · la **casilla** asocia o desasocia la lista con lo que esté seleccionado —una campaña
+ *     allí, una plantilla aquí—. Una lista sirve para varias.
  *   · el **clic en el nombre** solo la abre para ver y editar sus contactos.
  * Mezclarlos obligaría a asociar una lista para poder mirarla.
- *
- * Las acciones —renombrar, compartir, borrar— van DENTRO de la tarjeta, fuera del botón de
- * selección para que no se traguen el clic.
  */
 export function ColumnaListas({
   listas, seleccionada, marcadas, alSeleccionar, alMarcar, alCrear, alRenombrar, alCompartir, alBorrar,
@@ -72,68 +79,81 @@ export function ColumnaListas({
   alBorrar: (l: Lista) => void;
 }) {
   return (
-    <div className="w-full lg:w-[260px] shrink-0 rounded-lg border border-digi-border bg-digi-card overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-digi-border">
-        <span className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted" style={mf}>
+    <div className="w-full lg:w-[240px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-3">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={mf}>
           Listas de contactos
-        </span>
+        </p>
         <button
-          onClick={alCrear} title="Nueva lista" aria-label="Nueva lista"
-          className="w-6 h-6 rounded flex items-center justify-center text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
+          onClick={alCrear} title="Nueva lista"
+          className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
       {listas.length === 0 ? (
-        <p className="px-3 py-4 text-[12px] text-digi-muted leading-relaxed" style={mf}>
-          Todavía no hay listas. Crea una con el <strong>+</strong> y añade los contactos a los que
-          quieras escribir.
+        <p className="text-[11.5px] text-digi-muted/80 px-1 pb-1.5 leading-relaxed" style={mf}>
+          Sin listas. Crea una con el + y añade los contactos a los que quieras escribir.
         </p>
-      ) : listas.map((l) => {
-        const marcada = marcadas?.includes(l.id) ?? false;
-        return (
-          <div
-            key={l.id}
-            className={`group border-b border-digi-border last:border-b-0 transition-colors ${
-              seleccionada === l.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}
-          >
-            <div className="flex items-start gap-2 px-3 py-2.5">
-              {marcadas !== null && (
-                <input
-                  type="checkbox" checked={marcada}
-                  onChange={(e) => alMarcar(l, e.target.checked)}
-                  title={marcada ? 'Quitar esta lista de la plantilla' : 'Usar esta lista en la plantilla'}
-                  className="mt-0.5 w-[15px] h-[15px] shrink-0 accent-[var(--color-accent)] cursor-pointer"
-                />
-              )}
-              <button onClick={() => alSeleccionar(l.id)} className="min-w-0 flex-1 text-left">
-                <span className={`block text-[13px] font-medium truncate ${
-                  seleccionada === l.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{l.name}</span>
-                <span className="block text-[11.5px] text-digi-muted" style={mf}>
-                  {l.contact_count ?? 0} contacto(s)
-                  {l.share_token ? ' · enlace activo' : ''}
-                </span>
-              </button>
-            </div>
+      ) : (
+        <div className="space-y-0.5">
+          {listas.map((l) => {
+            const abierta = seleccionada === l.id;
+            const marcada = marcadas?.includes(l.id) ?? false;
+            return (
+              <div
+                key={l.id}
+                className={`group/list flex items-center gap-1.5 rounded-md border-l-2 transition-colors ${
+                  abierta ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.03]'
+                }`}
+              >
+                {marcadas !== null && (
+                  <button
+                    type="button"
+                    onClick={() => alMarcar(l, !marcada)}
+                    title={marcada ? 'Quitar de la plantilla' : 'Agregar a la plantilla'}
+                    className={`ml-2 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${
+                      marcada ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker hover:border-accent'
+                    }`}
+                  >
+                    {marcada && <Check className="w-3 h-3" strokeWidth={3} />}
+                  </button>
+                )}
 
-            {/* Las acciones, dentro de la tarjeta y fuera del botón de selección. Aparecen
-                al pasar el puntero o cuando la lista está abierta. */}
-            <div className={`flex items-center gap-1 px-3 pb-2 ${
-              seleccionada === l.id ? '' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-              <button onClick={() => alRenombrar(l)} className={BTN_ROW} title="Renombrar">
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => alCompartir(l)} className={BTN_ROW} title="Compartir por enlace">
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => alBorrar(l)} className={BTN_ROW_DANGER} title="Borrar lista">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        );
-      })}
+                <button
+                  type="button"
+                  onClick={() => alSeleccionar(l.id)}
+                  className={`flex-1 min-w-0 text-left py-2 ${marcadas !== null ? 'pl-1' : 'pl-3'} pr-1`}
+                >
+                  <span className={`block text-[12.5px] font-medium truncate ${abierta ? 'text-accent' : 'text-digi-text'}`} style={mf}>
+                    {l.name}
+                  </span>
+                  <span className="block text-[10.5px] text-digi-muted" style={mf}>
+                    {l.contact_count ?? 0} contacto(s){l.share_token ? ' · enlace activo' : ''}
+                  </span>
+                </button>
+
+                <span className={`flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${
+                  abierta ? 'opacity-100' : 'opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
+                  <button onClick={() => alRenombrar(l)} title="Renombrar la lista"
+                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => alCompartir(l)} title="Compartir enlace"
+                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => alBorrar(l)} title="Eliminar la lista"
+                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
