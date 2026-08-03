@@ -91,20 +91,38 @@ const DURACIONES := {
 	76: 2,
 	77: 2.5,
 	63: 2.5,
-	# El verso 12 sin montaje: la 84 y la 65 abren con 3 s cada una y los cuatro
-	# fotogramas de la caída van a 1 s. 3 + 3 + 4 = los 10 s del verso.
-	65: 3,
-	84: 3,
+	# El verso 12 sin montaje: la 84 y la 65 abren con 2,5 s cada una, los cuatro
+	# fotogramas de la caída van a 1 s y la 138 (el despiece) cierra con 1 s.
+	# 2,5 + 2,5 + 4 + 1 = los 10 s exactos del verso, sin pasarse ni sobrar.
+	65: 2.5,
+	84: 2.5,
 	94: 1,
 	95: 1,
 	96: 1,
 	97: 1,
+	138: 1,
 	105:0.2,
 	106: 0.2,
 	98: 0.2,
 	107: 0.2,
 	99: 0.2
 	
+}
+
+
+## --- 💥 ESTAMPAS QUE ENTRAN DE GOLPE ------------------------------------------
+## Estampas que NO entran con el cruce suave de siempre, sino con un IMPACTO: la
+## imagen anterior se corta en seco y la nueva llega con un golpe.
+##
+## Nació para el paso de la 97 (los tres cayendo, todavía enteros) a la 138 (sus
+## cuerpos ya despiezados): entre las dos no pasa el tiempo, pasa un GOLPE, y con
+## un fundido de 0,6 s eso no se leía. Cuatro cosas a la vez, todas breves:
+##   "flash"    → fogonazo blanco (0 = ninguno).
+##   "sacudida" → cuánto tiembla la imagen, en píxeles del lienzo.
+##   "punch"    → cuánto se agranda de golpe antes de asentarse (1.0 = nada).
+##   "dur"      → lo que tardan en calmarse la sacudida y el zoom.
+const IMPACTOS := {
+	138: { "flash": 0.85, "sacudida": 9.0, "punch": 1.05, "dur": 0.55 },
 }
 
 
@@ -401,13 +419,13 @@ const TRAMOS := [
 	# UN SEGUNDO clavado. 3 + 3 + 4 = 10 s = el hueco exacto del verso, así que la
 	# 97 remata justo cuando entra el verso 13 y la cadencia no se rompe.
 	{ "desde_verso": 12, "escenas": [
-		84, 65, 94, 95, 96, 97
+		84, 65, 94, 95, 96, 97, 138
 	] },
 
 	# Verso 13 · la 115 (las siluetas deshechas, solo aguantan las manos) abre el
 	# verso, justo antes de las cuatro de las auras. Mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
-		116, 111, 112, 113, 114
+	   138, 117, 123, 119, 111, 112, 113, 114
 	], "seg": 1  },
 ]
 
@@ -540,6 +558,7 @@ var _idx_imagen := 0
 var _idx_verso := -1
 var _tween_texto: Tween = null
 var _cruzando := false
+var _escena_en_pantalla := -1   # para no repetir el cambio (ni el golpe) si es la misma
 
 # --- Estado de la RÁFAGA (el mosaico) ---------------------------------------
 var _caja: Rect2                  # la caja de imagen, en coordenadas del lienzo
@@ -1889,6 +1908,13 @@ func _cambiar_imagen(n: int) -> void:
 	var tex := _cargar(n)
 	if tex == null:
 		return
+	# Si ya está en pantalla, no se hace nada. Pasa cuando una estampa se repite a
+	# caballo de dos tramos (p. ej. la 138, que cierra el verso 12 y abre el 13
+	# para que se quede 2 s): sin esto se relanzaría el cruce y, peor, el GOLPE
+	# sonaría dos veces seguidas.
+	if n == _escena_en_pantalla:
+		return
+	_escena_en_pantalla = n
 	# Primera imagen del prólogo: entra sin cruce.
 	if _capa_a.texture == null:
 		_capa_a.texture = tex
@@ -1898,6 +1924,16 @@ func _cambiar_imagen(n: int) -> void:
 	if _cruzando:
 		_capa_a.texture = _capa_b.texture
 		_capa_a.modulate.a = 1.0
+
+	# 💥 ¿Esta estampa entra de golpe? Entonces nada de cruce: corte seco y golpe.
+	if IMPACTOS.has(n):
+		_cruzando = false
+		_capa_a.texture = tex
+		_capa_a.modulate.a = 1.0
+		_capa_b.modulate.a = 0.0
+		_golpe(IMPACTOS[n])
+		return
+
 	_cruzando = true
 	_capa_b.texture = tex
 	_capa_b.modulate.a = 0.0
@@ -1908,6 +1944,54 @@ func _cambiar_imagen(n: int) -> void:
 	_capa_a.modulate.a = 1.0
 	_capa_b.modulate.a = 0.0
 	_cruzando = false
+
+
+## 💥 El golpe con que entra una estampa de IMPACTOS: fogonazo, sacudida y zoom.
+##
+## La sacudida mueve las DOS capas de imagen a la vez (si no, se vería la de
+## debajo asomando por el borde) y se apaga sola: cada tirón es más pequeño que
+## el anterior, como un rebote que se va calmando. Al acabar se restaura la
+## posición exacta de partida, no una aproximada, para que la caja fija no quede
+## descuadrada ni un píxel.
+func _golpe(cfg: Dictionary) -> void:
+	var dur := float(cfg.get("dur", 0.5))
+	var fuerza := float(cfg.get("sacudida", 8.0))
+	var punch := float(cfg.get("punch", 1.05))
+	var flash := float(cfg.get("flash", 0.8))
+
+	if flash > 0.0:
+		_fogonazo(flash, dur * 0.55)
+
+	# Zoom de golpe: entra un poco más grande y se asienta.
+	if punch > 1.0:
+		for capa in [_capa_a, _capa_b]:
+			capa.pivot_offset = capa.size / 2.0
+			capa.scale = Vector2(punch, punch)
+		var tz := create_tween()
+		tz.set_parallel(true)
+		for capa in [_capa_a, _capa_b]:
+			tz.tween_property(capa, "scale", Vector2.ONE, dur) \
+				.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
+	# Sacudida: tirones cada vez más pequeños, y vuelta a la posición exacta.
+	if fuerza <= 0.0:
+		return
+	var base_a := _capa_a.position
+	var base_b := _capa_b.position
+	var pasos := 9
+	var t := create_tween()
+	for i in pasos:
+		var resto := 1.0 - float(i) / float(pasos)   # se va apagando
+		var d := Vector2(
+			randf_range(-fuerza, fuerza) * resto,
+			randf_range(-fuerza, fuerza) * resto)
+		t.tween_callback(func () -> void:
+			_capa_a.position = base_a + d
+			_capa_b.position = base_b + d)
+		t.tween_interval(dur / float(pasos))
+	t.tween_callback(func () -> void:
+		_capa_a.position = base_a
+		_capa_b.position = base_b)
 
 
 ## El cruce nunca puede durar más de la mitad de lo que dura la estampa.
