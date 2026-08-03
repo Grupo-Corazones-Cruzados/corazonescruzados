@@ -502,9 +502,11 @@ enum Aparicion { BARRIDO, TECLEO }
 @export var tecleo_max: float = 1.6
 
 @export_group("Los tres espíritus")
-## A partir de que se vea ESTA estampa aparecen los tres óvalos, flotando en el
-## centro. 0 = no aparecen nunca.
-@export var espiritus_desde_escena: int = 138
+## 👉 A PARTIR DE QUÉ ESTAMPA APARECEN los tres óvalos. Se enciende justo cuando
+## esa estampa entra en pantalla, y ya no se apagan. 0 = no aparecen nunca.
+## Es el NÚMERO de la estampa (el del archivo `escena_NN.png`), no su posición en
+## la secuencia: cámbialo aquí y aparecen en otro momento, sin tocar nada más.
+@export var espiritus_desde_escena: int = 117
 ## Cómo aparecen los tres, en segundos:
 ##   · 0     → DE GOLPE, sin desvanecimiento: están y ya.
 ##   · > 0   → van apareciendo poco a poco durante ese tiempo, y además entran
@@ -522,7 +524,7 @@ enum Aparicion { BARRIDO, TECLEO }
 ## Ojo: la estampa NO ocupa toda la pantalla, va en una caja de 672×384 centrada
 ## (ver `caja_imagen`), así que si quieres que caigan DENTRO de la imagen, mantén
 ## la x entre 144 y 816 y la y entre 11 y 395.
-@export var espiritus_centro := Vector2(480.0, 270.0)
+@export var espiritus_centro := Vector2(480.0, 170.0)
 ## Separación horizontal entre uno y otro.
 @export_range(10.0, 240.0, 1.0) var espiritus_separacion: float = 52.0
 ## Cuánto se levantan (negativo) o se hunden (positivo) los DOS de los lados
