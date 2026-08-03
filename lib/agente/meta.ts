@@ -78,6 +78,25 @@ export async function numerosDeWaba(wabaId: string, token: string) {
   }>;
 }
 
+/**
+ * Registra un número en la Cloud API. **Sin esto no se puede enviar nada**: la API
+ * responde `(#133010) Account not registered` aunque el número exista, esté en la cuenta
+ * y la app esté suscrita.
+ *
+ * En el alta de un cliente **no hace falta**: el Embedded Signup lo registra por su
+ * cuenta. Hace falta para el **número de prueba de Meta**, que nadie ha registrado nunca.
+ *
+ * El `pin` es la verificación en dos pasos del número. Se manda uno fijo para el número
+ * de prueba —no protege nada, es de la app y caduca a los 90 días—; el de un cliente sí
+ * es suyo y va cifrado en `pin_cifrado`.
+ */
+export async function registrarNumero(phoneNumberId: string, token: string, pin: string) {
+  return graph(`/${phoneNumberId}/register`, {
+    method: 'POST', token,
+    body: JSON.stringify({ messaging_product: 'whatsapp', pin }),
+  });
+}
+
 /** Datos de la cuenta del cliente. */
 export async function datosWaba(wabaId: string, token: string) {
   return graph(`/${wabaId}?fields=id,name,currency,timezone_id,account_review_status`, { method: 'GET', token });

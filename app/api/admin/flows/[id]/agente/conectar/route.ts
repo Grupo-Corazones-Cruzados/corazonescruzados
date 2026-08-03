@@ -10,7 +10,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { pool } from '@/lib/db';
 import { asegurarCanal, canalPublico, guardarSecreto, anotarError, limpiarError } from '@/lib/agente/canales';
 import { claveMaestraConfigurada } from '@/lib/agente/cifrado';
-import { canjearCodigo, suscribirWaba, appsSuscritas, numerosDeWaba } from '@/lib/agente/meta';
+import { canjearCodigo, suscribirWaba, appsSuscritas, numerosDeWaba, registrarNumero } from '@/lib/agente/meta';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -28,7 +28,87 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const canal = await asegurarCanal(flujo.id);
-  const { codigo, waba_id, phone_number_id } = await req.json();
+  const { codigo, waba_id, phone_number_id, modo } = await req.json();
+
+  /**
+   * ── ALTA DEL NÚMERO DE PRUEBA DE META (`modo: 'prueba'`) ──────────────────────
+   *
+   * Toda app con el producto WhatsApp trae un número de prueba gratuito, propiedad de la
+   * propia app. No pasa por el Embedded Signup —no hay cliente que comparta nada, ni
+   * código que canjear— así que se conecta a mano con sus dos identificadores.
+   *
+   * Por qué existe este camino:
+   *  · **Es la única forma de probar la cadena entera sin tocar el número de un cliente.**
+   *    El portafolio dueño de la app NO puede darse de alta a sí mismo por Embedded
+   *    Signup: sale en gris con «es propiedad de este portafolio».
+   *  · El **App Review** exige que la app haya usado con éxito cada permiso que pide. Un
+   *    alta real con este número los ejercita los dos.
+   *
+   * ⚠️ El token NO viaja desde el navegador: se toma el del usuario del sistema que ya
+   * está en el entorno del servidor. Es el mismo secreto, y así no pasa por el chat, ni
+   * por la red, ni por el historial de nadie.
+   */
+  if (modo === 'prueba') {
+    if (!phone_number_id || !waba_id) {
+      return NextResponse.json(
+        { error: 'Para el número de prueba hacen falta su identificador de número y el de la cuenta de WhatsApp.' },
+        { status: 400 },
+      );
+    }
+    const token = process.env.WHATSAPP_TOKEN;
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Falta WHATSAPP_TOKEN en el servidor: es el token del usuario del sistema de GCC.' },
+        { status: 500 },
+      );
+    }
+    try {
+      await guardarSecreto(canal.id, 'wa_token', token);
+
+      // ⚠️ EL PASO QUE NO ESTÁ EN EL ALTA NORMAL Y SIN EL CUAL NO SALE NI UN MENSAJE.
+      // El Embedded Signup registra el número del cliente por su cuenta; al de prueba no
+      // lo registra nadie. Sin esto, todo lo demás sale bien —la app se suscribe, el canal
+      // queda conectado, Meta devuelve el número— y al enviar contesta
+      // `(#133010) Account not registered`. Comprobado contra la API real, 2026-08-03.
+      // Si ya estaba registrado, Meta responde con error y no pasa nada: se sigue.
+      const pin = '142536';
+      try {
+        await registrarNumero(String(phone_number_id), token, pin);
+        await guardarSecreto(canal.id, 'pin', pin);
+      } catch { /* ya registrado, o el número no admite registro: no bloquea el alta */ }
+
+      await suscribirWaba(String(waba_id), token);
+      const suscritas = await appsSuscritas(String(waba_id), token);
+      const suscrita = suscritas.length > 0;
+
+      let numero: any = null;
+      try {
+        const numeros = await numerosDeWaba(String(waba_id), token);
+        numero = numeros.find((n) => n.id === String(phone_number_id)) ?? numeros[0] ?? null;
+      } catch { /* el alta vale igual: los identificadores los dio Meta en su panel */ }
+
+      await pool.query(
+        `UPDATE gcc_world.agente_canales
+            SET waba_id = $2, phone_number_id = $3, numero_visible = $4, nombre_verificado = $5,
+                estado = $6, coexistencia_verificada = false, updated_at = NOW()
+          WHERE id = $1`,
+        [canal.id, String(waba_id), String(phone_number_id),
+         numero?.display_phone_number ?? null, numero?.verified_name ?? 'Número de prueba de Meta',
+         suscrita ? 'conectado' : 'error'],
+      );
+      if (!suscrita) await anotarError(canal.id, 'El número de prueba quedó guardado pero la app no se suscribió a su cuenta: no llegará ningún mensaje.');
+      else await limpiarError(canal.id);
+
+      const { rows: [fresco] } = await pool.query(`SELECT * FROM gcc_world.agente_canales WHERE id = $1`, [canal.id]);
+      return NextResponse.json({
+        data: canalPublico(fresco), suscrita, numero, prueba: true,
+        aviso: 'Número de PRUEBA de Meta: solo habla con los destinatarios verificados en el panel, y caduca a los 90 días. No sirve para atender clientes.',
+      });
+    } catch (e: any) {
+      await anotarError(canal.id, e?.message ?? 'Fallo al conectar el número de prueba');
+      return NextResponse.json({ error: e?.message ?? 'Fallo al conectar el número de prueba' }, { status: 500 });
+    }
+  }
 
   if (!codigo) return NextResponse.json({ error: 'Falta el código del alta' }, { status: 400 });
   if (!waba_id) return NextResponse.json({ error: 'Meta no devolvió la cuenta de WhatsApp' }, { status: 400 });

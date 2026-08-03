@@ -40,8 +40,26 @@ export interface ResultadoAgente {
   };
 }
 
-/** ¿Se apagó el respaldo a mano, o se autodesactivó tras un rechazo de la API? */
-let respaldoDesactivado = process.env.AGENTE_SIN_RESPALDO === '1';
+/**
+ * Modelos a los que se les dejó de mandar el respaldo porque la API lo rechazó.
+ *
+ * ── POR QUÉ ES UN CONJUNTO POR MODELO Y NO UNA BANDERA ─────────────────────────
+ * Antes era una sola bandera del proceso: el primer 400 de CUALQUIER cliente apagaba el
+ * respaldo para TODOS, incluidos los que corren en un modelo que sí lo admite. Y como
+ * vive en memoria, cada reinicio del contenedor volvía a quemar una llamada fallida
+ * antes de aprenderlo otra vez. Se vio en el log del ensayo del 2026-08-03.
+ *
+ * Ahora lo normal lo decide la tabla de `modelos.ts` —medida contra la API— y esto queda
+ * solo de red de seguridad para cuando Anthropic cambie el contrato sin avisar.
+ */
+const respaldoDesactivado = new Set<string>();
+const SIN_RESPALDO_GLOBAL = process.env.AGENTE_SIN_RESPALDO === '1';
+
+/** ¿Se le manda el respaldo a este modelo? */
+function usaRespaldo(modelo: string): boolean {
+  if (SIN_RESPALDO_GLOBAL || respaldoDesactivado.has(modelo)) return false;
+  return capacidadesDe(modelo).respaldo;
+}
 
 export function armarPeticion(p: PeticionAgente): Record<string, any> {
   const cap = capacidadesDe(p.modelo);
@@ -126,18 +144,19 @@ export async function decidir(p: PeticionAgente): Promise<ResultadoAgente> {
   };
 
   let respuesta: any;
+  const conRespaldo = usaRespaldo(p.modelo);
   try {
-    respuesta = await llamar(!respaldoDesactivado);
+    respuesta = await llamar(conRespaldo);
   } catch (err: any) {
-    // Si la API rechaza la bandera beta, se autodesactiva y se reintenta sin ella: un
-    // cambio de contrato no puede dejar al agente mudo.
+    // Si la API rechaza la bandera beta, se desactiva PARA ESE MODELO y se reintenta sin
+    // ella: un cambio de contrato no puede dejar al agente mudo.
     const mensaje = String(err?.message ?? '');
-    const esBandera = !respaldoDesactivado && /beta|fallback|unsupported|unknown/i.test(mensaje);
+    const esBandera = conRespaldo && /beta|fallback|unsupported|unknown/i.test(mensaje);
     if (!esBandera) {
       return { ok: false, motivo: mensajeDeError(err), uso: { ...vacio, duracionMs: Date.now() - arranque } };
     }
-    respaldoDesactivado = true;
-    console.warn('[agente] respaldo del servidor desactivado:', mensaje);
+    respaldoDesactivado.add(p.modelo);
+    console.warn(`[agente] respaldo del servidor desactivado para ${p.modelo}:`, mensaje);
     try {
       respuesta = await llamar(false);
     } catch (err2: any) {

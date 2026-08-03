@@ -26,6 +26,14 @@ export interface Capacidades {
   thinking: FormaThinking;
   /** ¿Acepta `output_config.effort`? En Haiku 4.5 da 400. */
   effort: boolean;
+  /**
+   * ¿Acepta `fallbacks: 'default'` (respaldo del lado del servidor)?
+   *
+   * ⚠️ Casi ningún modelo lo acepta, y el que no lo hace responde **400**. Medido contra
+   * la API real el 2026-08-03: solo `claude-opus-5`. Haiku 4.5, Sonnet 5 y Opus 4.8 lo
+   * rechazan con «does not support the `fallbacks` parameter».
+   */
+  respaldo: boolean;
   /** ¿Acepta temperature/top_p/top_k? La familia Claude 5 los rechaza. */
   muestreo: boolean;
   /** Mínimo de tokens del prefijo para que el caché entre. Por debajo NO cachea y no avisa. */
@@ -47,6 +55,7 @@ export interface Capacidades {
 export const PERFIL_DESCONOCIDO: Capacidades = {
   thinking: 'ninguno',
   effort: false,
+  respaldo: false,
   muestreo: false,
   minimoCache: 4096,
   maxSalida: 8192,
@@ -63,6 +72,7 @@ export const CAPACIDADES: Record<string, Capacidades> = {
     // resuelve `armarPeticion()`, donde está medida la matriz entera.
     thinking: 'budget_tokens',
     effort: false,             // ⚠️ mandarlo = 400
+    respaldo: false,           // ⚠️ mandarlo = 400
     muestreo: true,
     minimoCache: 4096,
     maxSalida: 64_000,
@@ -71,6 +81,7 @@ export const CAPACIDADES: Record<string, Capacidades> = {
   'claude-sonnet-5': {
     thinking: 'adaptive',
     effort: true,
+    respaldo: false,           // ⚠️ mandarlo = 400
     muestreo: false,           // ⚠️ mandarlo = 400
     minimoCache: 1024,
     maxSalida: 128_000,
@@ -79,6 +90,7 @@ export const CAPACIDADES: Record<string, Capacidades> = {
   'claude-opus-5': {
     thinking: 'adaptive',      // va encendido por defecto en este modelo
     effort: true,
+    respaldo: true,            // el ÚNICO que lo acepta
     muestreo: false,
     minimoCache: 512,          // el más bajo: cachea prompts que en Haiku no cachearían
     maxSalida: 128_000,
@@ -87,6 +99,7 @@ export const CAPACIDADES: Record<string, Capacidades> = {
   'claude-opus-4-8': {
     thinking: 'adaptive',      // aquí hay que pedirlo explícitamente
     effort: true,
+    respaldo: false,           // ⚠️ mandarlo = 400
     muestreo: false,
     minimoCache: 1024,
     maxSalida: 128_000,

@@ -420,6 +420,36 @@ Stack estándar de la casa, con particularidades de este repo:
       verdad a la API. **Ningún número se conecta sin pasar por aquí.**
     - Confirmado de paso que **el prefijo cachea**: primera llamada escribe 10.401 tokens de
       caché, las cinco siguientes los leen.
+  - **✅ CADENA COMPLETA PROBADA DE PUNTA A PUNTA CON EL NÚMERO DE PRUEBA DE META (2026-08-03).**
+    Canal 33 `lfgonzalezm0` · número `+1 555-666-6709` · `phone_number_id 1300197646501797` ·
+    WABA `1226288837237571`. Fernando escribió desde su móvil y el agente contestó dos veces,
+    en *usted* y con el conocimiento del GCC. Recorrido verificado en la base:
+    webhook (firma válida → canal 33) → conversación → cola con debounce de 8 s → worker →
+    modelo → saliente. Los dos trabajos en `hecho`, sin errores.
+    - **POR QUÉ IMPORTA MÁS ALLÁ DE LA PRUEBA:** el App Review exige que la app **haya usado con
+      éxito** cada permiso que pide. Con esto quedan ejercitados los dos:
+      `whatsapp_business_management` (suscribir la app a la WABA) y `whatsapp_business_messaging`
+      (envío de plantilla `hello_world`). Es la evidencia de F12.
+    - **Y es el único ensayo posible sin cliente:** el portafolio dueño de la app **no puede
+      darse de alta a sí mismo** por Embedded Signup — sale en gris. El número de prueba es de
+      la app, así que no pasa por ese flujo.
+  - **⚠️ AL NÚMERO DE PRUEBA HAY QUE REGISTRARLO A MANO, Y NADIE LO DICE (2026-08-03).**
+    Todo puede salir bien —el número existe, está en la WABA, la app suscrita, el canal
+    `conectado`— y al enviar responde **`(#133010) Account not registered`**. Falta
+    `POST /{phone_number_id}/register` con `{messaging_product, pin}`.
+    **En el alta de un cliente no hace falta**: el Embedded Signup lo registra por su cuenta. Por
+    eso el repo no lo tenía. Vive en `registrarNumero()` de `lib/agente/meta.ts` y lo llama la
+    rama `modo: 'prueba'` de `.../agente/conectar/route.ts`, que además **toma el token del
+    servidor** (`WHATSAPP_TOKEN`) en vez de canjear un código: así ningún token pasa por el
+    navegador. En la interfaz es un panel plegado en la pantalla de Conexión.
+  - **⚠️ `fallbacks: 'default'` SOLO LO ACEPTA OPUS 5 — medido contra la API el 2026-08-03.**
+    Haiku 4.5, Sonnet 5 y Opus 4.8 devuelven **400** «does not support the `fallbacks`
+    parameter». Como el modelo por defecto es Haiku, **cada reinicio del contenedor quemaba una
+    llamada fallida** antes de autodesactivarlo — se vio en el log del ensayo.
+    Ahora es un campo más de la tabla de `modelos.ts` (`respaldo: boolean`), que es donde este
+    proyecto decide qué parámetros admite cada modelo. La autodesactivación queda de red de
+    seguridad, pero **por modelo** (`Set<string>`) y no como una bandera global del proceso: la
+    de antes apagaba el respaldo para TODOS los clientes al primer 400 de cualquiera.
   - **🎨 EL TEMA NO REMAPEA TODA LA PALETA DE TAILWIND** (2026-08-01, lo vio Fernando).
     `.corp` solo redefine un conjunto concreto de tonos. `text-red-800` o `text-amber-900`
     compilan y en claro parecen rojo y ámbar, pero **están fuera de la paleta** y en oscuro

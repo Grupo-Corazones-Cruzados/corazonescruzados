@@ -106,12 +106,14 @@
   <div class="tablero">
     <div class="et">En qué paso vamos</div>
     <p class="paso">F12 · App Review — acceso avanzado</p>
-    <p class="quien"><strong>El alta de un CLIENTE exige acceso avanzado</strong>, confirmado el 2026-08-03 con el número de Peters Tours: «la app de socio no tiene los permisos avanzados». Nuestro token ya tiene los dos permisos, pero en acceso estándar. <strong>Antes del App Review conviene dar de alta el número propio</strong> (flujo <code>lfgonzalezm0</code>): prueba la cadena entera y genera las llamadas reales que Meta exige como evidencia.</p>
+    <p class="quien"><strong>El alta de un CLIENTE exige acceso avanzado</strong>, confirmado el 2026-08-03 con el número de Peters Tours: «la app de socio no tiene los permisos avanzados». Nuestro token tiene los dos permisos, pero en acceso estándar.<br>
+    ✅ <strong>La evidencia ya está generada</strong> (2026-08-03): el <strong>número de prueba de Meta</strong> quedó conectado al flujo <code>lfgonzalezm0</code> y Fernando conversó con el agente por WhatsApp. Con eso quedan ejercitados con éxito <code>whatsapp_business_management</code> (suscribir la app a la WABA) y <code>whatsapp_business_messaging</code> (envío de plantilla). <em>No se pudo usar el número propio de GCC: el portafolio dueño de la app no puede darse de alta a sí mismo.</em><br>
+    <strong>Queda:</strong> rellenar el App Review —usuario de prueba, video de demostración y los textos de uso de datos— y enviarlo.</p>
     <div class="barra"><span style="width:87%"></span></div>
     <div class="barra-pie"><span>20 de 23 pasos terminados</span><span>87%</span></div>
   </div>
   <p style="font-size:13px;color:var(--texto-suave);margin:14px 0 0">
-    Última actualización: <strong>1 de agosto de 2026</strong> ·
+    Última actualización: <strong>3 de agosto de 2026</strong> ·
     Contexto y arquitectura: <code>guia-coexistencia-proveedor.html</code> ·
     Decisiones: <code>MEMORIA.md</code> · Preguntas abiertas: <code>Aprendizaje.md</code>
   </p>
@@ -514,7 +516,16 @@
       <td>C9</td><td><span class="est e-pend">Pendiente</span></td>
       <td>
         <span class="t">Alta del primer número real y verificación de punta a punta</span>
-        <span class="d">Con el primer cliente. Las comprobaciones que de verdad importan:<br>
+        <span class="d">✅ <strong>La cadena ya se probó entera con WhatsApp de verdad el 2026-08-03</strong>,
+        con el número de prueba de Meta (<code>+1 555-666-6709</code>) en el canal 33 <code>lfgonzalezm0</code>:
+        webhook con firma válida → conversación → cola con debounce → worker → modelo → respuesta enviada.
+        Dos preguntas, dos respuestas correctas, en <em>usted</em> y con el conocimiento del GCC.
+        Lo que queda de C9 es lo que <strong>solo se puede comprobar con un cliente delante</strong>.<br>
+        ⚠️ Al número de prueba hubo que <strong>registrarlo a mano</strong>
+        (<code>POST /{phone_number_id}/register</code>); sin eso el envío responde
+        <code>(#133010) Account not registered</code>. En el alta de un cliente lo hace el
+        Embedded Signup por su cuenta.<br>
+        Con el primer cliente, las comprobaciones que de verdad importan:<br>
         · el número queda en <code>CLOUD_API</code> + <code>CONNECTED</code>;<br>
         · <strong>WhatsApp Web sigue funcionando para el equipo del cliente</strong> ← esta es la que vale;<br>
         · un mensaje de prueba entra en la bandeja;<br>

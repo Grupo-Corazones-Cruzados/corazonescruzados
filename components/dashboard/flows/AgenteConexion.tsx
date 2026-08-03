@@ -23,7 +23,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import { SectionBar, PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
-import { Plug, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, Smartphone } from 'lucide-react';
+import { Plug, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, Smartphone, FlaskConical } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -208,6 +208,26 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
     } finally { setOcupado(false); }
   };
 
+  /**
+   * Alta del número de PRUEBA de Meta. No abre ninguna ventana: manda los dos
+   * identificadores que Meta enseña en su panel y el servidor pone el token del usuario
+   * del sistema. Ver el bloque `modo === 'prueba'` de la ruta `conectar`.
+   */
+  const conectarPrueba = useCallback(async (phone_number_id: string, waba_id: string) => {
+    setOcupado(true);
+    try {
+      const res = await fetch(`/api/admin/flows/${flowId}/agente/conectar`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modo: 'prueba', phone_number_id, waba_id }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error ?? 'No se pudo conectar el número de prueba'); return; }
+      if (!d.suscrita) toast.error('Quedó guardado pero la cuenta no se suscribió: no llegarán mensajes.');
+      else toast.success('Número de prueba conectado. Escríbele desde un destinatario verificado.');
+      recargar();
+    } finally { setOcupado(false); }
+  }, [flowId, recargar]);
+
   const conectado = canal.estado === 'conectado';
   const faltaConfig = !appId || !configId;
 
@@ -230,6 +250,7 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
         <SinConectar
           sdkListo={sdkListo} entendido={entendido} setEntendido={setEntendido}
           ocupado={ocupado} alConectar={() => setConfirmar(true)} canal={canal}
+          alConectarPrueba={conectarPrueba}
         />
       )}
 
@@ -251,9 +272,10 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
 
 /* ── Antes de conectar ──────────────────────────────────────────────────────── */
 
-function SinConectar({ sdkListo, entendido, setEntendido, ocupado, alConectar, canal }: {
+function SinConectar({ sdkListo, entendido, setEntendido, ocupado, alConectar, canal, alConectarPrueba }: {
   sdkListo: boolean; entendido: boolean; setEntendido: (v: boolean) => void;
   ocupado: boolean; alConectar: () => void; canal: any;
+  alConectarPrueba: (phoneNumberId: string, wabaId: string) => void;
 }) {
   return (
     <div className="max-w-3xl space-y-4">
@@ -305,9 +327,109 @@ function SinConectar({ sdkListo, entendido, setEntendido, ocupado, alConectar, c
         </button>
         {!sdkListo && <span className="text-[12px] text-digi-muted" style={mf}>Cargando el conector de Meta…</span>}
         {canal.estado === 'error' && canal.ultimo_error && (
-          <span className="text-[12px] text-red-600" style={mf}>Último intento: {canal.ultimo_error}</span>
+          <span className={`text-[12px] ${TONO.error.icono}`} style={mf}>Último intento: {canal.ultimo_error}</span>
         )}
       </div>
+
+      <NumeroDePrueba ocupado={ocupado} alConectar={alConectarPrueba} />
+    </div>
+  );
+}
+
+/* ── El número de prueba de Meta ────────────────────────────────────────────── */
+
+/**
+ * El camino de al lado, para ensayar sin tocar a nadie.
+ *
+ * El alta de arriba necesita un cliente delante: su portafolio, su teléfono a mano y una
+ * decisión irreversible dentro de la ventana de Meta. Eso no se puede ensayar. **Y el
+ * portafolio dueño de la app no puede darse de alta a sí mismo**: sale en gris.
+ *
+ * El número de prueba sí: es de la app, ya existe, y solo hace falta copiar sus dos
+ * identificadores de «WhatsApp → Configuración de la API». Con él se recorre la cadena
+ * entera —webhook, cola, trabajador, agente, respuesta— antes de que exista un cliente.
+ *
+ * Va plegado a propósito: no es el camino normal, es la excepción.
+ */
+function NumeroDePrueba({ ocupado, alConectar }: {
+  ocupado: boolean; alConectar: (phoneNumberId: string, wabaId: string) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [phoneNumberId, setPhoneNumberId] = useState('');
+  const [wabaId, setWabaId] = useState('');
+  const listo = /^\d{6,}$/.test(phoneNumberId.trim()) && /^\d{6,}$/.test(wabaId.trim());
+
+  if (!abierto) {
+    return (
+      <button
+        type="button" onClick={() => setAbierto(true)}
+        className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted hover:text-accent transition-colors"
+        style={mf}
+      >
+        <FlaskConical className="w-3.5 h-3.5" /> Conectar el número de prueba de Meta
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-digi-border bg-digi-card p-4 space-y-3">
+      <div className="flex gap-2 items-start">
+        <FlaskConical className="w-4 h-4 shrink-0 text-digi-muted mt-0.5" />
+        <div>
+          <p className="text-[12.5px] font-semibold text-digi-text" style={mf}>Número de prueba de Meta</p>
+          <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>
+            Sirve para ensayar el agente de punta a punta. Solo habla con los destinatarios
+            que estén verificados en el panel de Meta y caduca a los 90 días:
+            <strong> no sirve para atender clientes</strong>. Los dos identificadores están en
+            la app de Meta, en <em>WhatsApp → Configuración de la API</em>.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <CampoId
+          label="Identificador del número" valor={phoneNumberId} alCambiar={setPhoneNumberId}
+          ejemplo="1300197646501797"
+        />
+        <CampoId
+          label="Identificador de la cuenta de WhatsApp" valor={wabaId} alCambiar={setWabaId}
+          ejemplo="1226288837237571"
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          className={BTN_SECONDARY} disabled={!listo || ocupado}
+          onClick={() => alConectar(phoneNumberId.trim(), wabaId.trim())}
+        >
+          <Plug className="w-4 h-4" /> {ocupado ? 'Conectando…' : 'Conectar el número de prueba'}
+        </button>
+        <button
+          type="button" onClick={() => setAbierto(false)}
+          className="text-[12px] text-digi-muted hover:text-digi-text transition-colors" style={mf}
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CampoId({ label, valor, alCambiar, ejemplo }: {
+  label: string; valor: string; alCambiar: (v: string) => void; ejemplo: string;
+}) {
+  return (
+    <div>
+      <label className="block text-[12px] font-semibold text-digi-text mb-1" style={mf}>{label}</label>
+      <input
+        value={valor}
+        // Meta los enseña con espacios al copiar; se limpia aquí y no en la validación.
+        onChange={(e) => alCambiar(e.target.value.replace(/\s/g, ''))}
+        placeholder={ejemplo} inputMode="numeric"
+        className="field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-[13px]
+                   text-digi-text placeholder:text-digi-muted/45 focus:border-accent focus:outline-none transition-colors"
+        style={mf}
+      />
     </div>
   );
 }
