@@ -97,6 +97,81 @@ export async function registrarNumero(phoneNumberId: string, token: string, pin:
   });
 }
 
+/* ═══════════════════════ PLANTILLAS DE MENSAJE ═══════════════════════ */
+
+/**
+ * Las plantillas de una cuenta, tal como las ve Meta.
+ *
+ * ⚠️ Meta es la FUENTE DE VERDAD del estado, y cambia solo: una plantilla aprobada puede
+ * caerse a `PAUSED` por baja calidad sin que nadie toque nada. Por eso la lista se pide
+ * cada vez que se sincroniza y no se confía en lo guardado para decidir si se puede enviar.
+ */
+export async function plantillasDeWaba(wabaId: string, token: string) {
+  const r = await graph(
+    `/${wabaId}/message_templates?fields=id,name,language,category,status,rejected_reason,components&limit=200`,
+    { method: 'GET', token },
+  );
+  return (r?.data ?? []) as Array<{
+    id: string; name: string; language: string; category: string;
+    status: string; rejected_reason?: string; components?: any[];
+  }>;
+}
+
+/**
+ * Crea una plantilla en la cuenta del cliente. Nace en `PENDING`: la aprueba Meta, no
+ * nosotros, y puede tardar de minutos a un día.
+ *
+ * ⚠️ El `example` de cada variable NO es decorativo: sin él Meta rechaza el alta. Es lo
+ * que el revisor humano ve para juzgar si el uso es legítimo, así que se manda un valor
+ * verosímil y no un «texto».
+ */
+export async function crearPlantilla(wabaId: string, token: string, cuerpo: Record<string, any>) {
+  return graph(`/${wabaId}/message_templates`, {
+    method: 'POST', token, body: JSON.stringify(cuerpo),
+  });
+}
+
+/**
+ * Edita una plantilla ya existente. Se dirige al identificador de la PLANTILLA, no al de
+ * la cuenta, y vuelve a dejarla en revisión.
+ *
+ * Meta no deja cambiar el nombre ni el idioma: eso sería otra plantilla. Solo el contenido.
+ */
+export async function editarPlantilla(metaId: string, token: string, cuerpo: Record<string, any>) {
+  return graph(`/${metaId}`, { method: 'POST', token, body: JSON.stringify(cuerpo) });
+}
+
+/** Borra una plantilla de la cuenta del cliente, por nombre (así lo pide Meta). */
+export async function borrarPlantilla(wabaId: string, token: string, nombre: string) {
+  return graph(`/${wabaId}/message_templates?name=${encodeURIComponent(nombre)}`, {
+    method: 'DELETE', token,
+  });
+}
+
+/**
+ * Envía un mensaje de plantilla a un número.
+ *
+ * Es el ÚNICO envío que puede iniciar una conversación: fuera de la ventana de atención
+ * de 24 horas, un mensaje libre se rechaza y solo pasa una plantilla aprobada.
+ */
+export async function enviarPlantilla(
+  phoneNumberId: string, token: string,
+  { para, nombre, idioma, valores }: { para: string; nombre: string; idioma: string; valores: string[] },
+) {
+  const componentes = valores.length
+    ? [{ type: 'body', parameters: valores.map((v) => ({ type: 'text', text: v })) }]
+    : [];
+  return graph(`/${phoneNumberId}/messages`, {
+    method: 'POST', token,
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: para,
+      type: 'template',
+      template: { name: nombre, language: { code: idioma }, ...(componentes.length ? { components: componentes } : {}) },
+    }),
+  });
+}
+
 /** Datos de la cuenta del cliente. */
 export async function datosWaba(wabaId: string, token: string) {
   return graph(`/${wabaId}?fields=id,name,currency,timezone_id,account_review_status`, { method: 'GET', token });

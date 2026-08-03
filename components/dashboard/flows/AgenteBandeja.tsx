@@ -20,7 +20,7 @@ import { TONO } from '@/components/ui/tonos';
 import { SectionBar, PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/FlowPanelUI';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import {
-  Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles,
+  Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles, FileText,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -346,10 +346,16 @@ function Burbuja({ m }: { m: Mensaje }) {
         <p className="text-[13px] text-digi-text whitespace-pre-wrap break-words" style={mf}>{m.texto}</p>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="text-[10.5px] text-digi-muted" style={mf}>{hora}</span>
+          {/* Quién escribió esto. Son tres orígenes distintos y conviene distinguirlos:
+              «a mano» lo tecleó una persona, «agente» lo compuso el modelo, y «plantilla»
+              salió de un envío masivo — que no es una respuesta a nadie, sino un mensaje
+              que iniciamos nosotros. Al leer un hilo, esa diferencia lo explica todo. */}
           {!entrante && (
-            m.herramienta === null
-              ? <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><User className="w-2.5 h-2.5" /> a mano</span>
-              : <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><Sparkles className="w-2.5 h-2.5" /> agente</span>
+            m.herramienta === 'plantilla'
+              ? <span className="text-[10.5px] text-accent flex items-center gap-0.5" style={mf}><FileText className="w-2.5 h-2.5" /> plantilla</span>
+              : m.herramienta === null
+                ? <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><User className="w-2.5 h-2.5" /> a mano</span>
+                : <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><Sparkles className="w-2.5 h-2.5" /> agente</span>
           )}
           {m.enviado_ok === false && (
             <span className="text-[10.5px] text-red-600 flex items-center gap-0.5" style={mf}>

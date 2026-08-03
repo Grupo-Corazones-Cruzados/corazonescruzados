@@ -27,8 +27,9 @@ import AgenteConexion from '@/components/dashboard/flows/AgenteConexion';
 import type { Aviso } from '@/components/ui/BotonAvisos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import AgenteEstudio from '@/components/dashboard/flows/estudio/AgenteEstudio';
+import AgentePlantillas from '@/components/dashboard/flows/AgentePlantillas';
 import {
-  BookText, Inbox, Pencil, Trash2, Plus, AlertTriangle, Workflow,
+  BookText, Inbox, Pencil, Trash2, Plus, AlertTriangle, Workflow, FileText,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -39,7 +40,7 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
  * Estudio —conocimiento, prompts, parámetros y conexión son recursos del propio grafo— y
  * el rail se había convertido en un índice de cosas que ya estaban dentro.
  */
-type Vista = 'bandeja' | 'estudio';
+type Vista = 'bandeja' | 'plantillas' | 'estudio';
 
 interface Estudio {
   canal: any;
@@ -96,6 +97,10 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
     <div className="inline-flex items-center rounded-md border border-digi-border overflow-hidden shrink-0">
       {([
         { v: 'bandeja' as const, label: 'Bandeja', Icon: Inbox },
+        // Las plantillas van EN MEDIO a propósito: es lo que se usa para empezar una
+        // conversación, y queda entre lo que pasa a diario (la bandeja) y cómo está
+        // montado el agente (el estudio), que se toca mucho menos.
+        { v: 'plantillas' as const, label: 'Plantillas', Icon: FileText },
         { v: 'estudio' as const, label: 'Estudio del agente', Icon: Workflow },
       ]).map(({ v, label, Icon }) => (
         <button
@@ -116,6 +121,7 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
   return (
     <div>
       {vista === 'bandeja' && <AgenteBandeja flowId={flow.id} acciones={conmutador} />}
+      {vista === 'plantillas' && <AgentePlantillas flowId={flow.id} acciones={conmutador} />}
       {vista === 'estudio' && (
         <AgenteEstudio
           flowId={flow.id}
