@@ -22,16 +22,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
-import PixelInput from '@/components/ui/PixelInput';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { SectionBar, PanelEmpty, LABEL } from '@/components/dashboard/flows/FlowPanelUI';
+import { SectionBar, LABEL } from '@/components/dashboard/flows/FlowPanelUI';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import {
-  FileText, RefreshCw, Plus, Send, Pencil, Trash2, AlertTriangle, Eye,
+  ColumnaListas, TablaContactos, DialogoNuevaLista, type Lista,
+} from '@/components/dashboard/flows/PanelListasContactos';
+import {
+  RefreshCw, Plus, Send, Pencil, Trash2, AlertTriangle, Eye,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -42,7 +44,6 @@ interface Plantilla {
   estado: string; motivo_rechazo: string | null; cuerpo: string; pie: string | null;
   variables: string[]; envios: number; sincronizado_en: string | null;
 }
-interface Lista { id: number; name: string; contact_count?: number }
 
 /**
  * Cómo se pinta cada estado de Meta.
@@ -72,6 +73,32 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
   const [editando, setEditando] = useState<Plantilla | 'nueva' | null>(null);
   const [enviando, setEnviando] = useState<Plantilla | null>(null);
   const [borrando, setBorrando] = useState<Plantilla | null>(null);
+
+  /** La plantilla elegida en la columna izquierda, y la lista elegida en la de al lado. */
+  const [sel, setSel] = useState<number | null>(null);
+  const [listas, setListas] = useState<Lista[]>([]);
+  const [listaId, setListaId] = useState<number | null>(null);
+  const [nuevaLista, setNuevaLista] = useState(false);
+  const [borrandoLista, setBorrandoLista] = useState<Lista | null>(null);
+
+  const plantilla = plantillas.find((p) => p.id === sel) ?? null;
+
+  const cargarListas = useCallback(async () => {
+    try {
+      const d = await fetch(`/api/admin/flows/${flowId}/contact-lists`).then((r) => r.json());
+      setListas(d.data ?? []);
+    } catch { /* sin listas se puede seguir viendo y creando plantillas */ }
+  }, [flowId]);
+
+  useEffect(() => { cargarListas(); }, [cargarListas]);
+
+  const borrarLista = async () => {
+    if (!borrandoLista) return;
+    const r = await fetch(`/api/admin/flows/${flowId}/contact-lists/${borrandoLista.id}`, { method: 'DELETE' });
+    if (!r.ok) { toast.error('No se pudo borrar la lista'); return; }
+    if (listaId === borrandoLista.id) setListaId(null);
+    setBorrandoLista(null); cargarListas();
+  };
 
   const cargar = useCallback(async (sincronizar = false) => {
     try {
@@ -106,6 +133,8 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
 
   if (cargando) return <div className="flex justify-center py-20"><BrandLoader label="Cargando las plantillas…" /></div>;
 
+  const lista = listas.find((l) => l.id === listaId) ?? null;
+
   return (
     <div>
       <SectionBar
@@ -113,11 +142,8 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         hint={`${plantillas.length} plantilla(s) · ${plantillas.filter((p) => p.estado === 'APPROVED').length} aprobada(s)`}
       >
         {acciones}
-      </SectionBar>
-
-      <div className="flex flex-wrap gap-2 items-center mb-3">
         <button className={BTN_SECONDARY} onClick={sincronizar} disabled={ocupado || !conectado}>
-          <RefreshCw className={`w-4 h-4 ${ocupado ? 'animate-spin' : ''}`} /> Actualizar desde Meta
+          <RefreshCw className={`w-4 h-4 ${ocupado ? 'animate-spin' : ''}`} /> Actualizar
         </button>
         <button className={BTN_PRIMARY} onClick={() => setEditando('nueva')} disabled={!conectado}>
           <Plus className="w-4 h-4" /> Nueva plantilla
@@ -125,9 +151,9 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         <BotonAyuda titulo="Para qué sirven las plantillas" lado="derecha">
           <p className="mb-2">Fuera de las <strong>24 horas</strong> siguientes al último mensaje de una persona, WhatsApp no deja escribirle libremente. Solo pasa una plantilla <strong>aprobada por Meta</strong>.</p>
           <p className="mb-2">Por eso son la única forma de <strong>iniciar</strong> una conversación: un aviso, un recordatorio, una confirmación.</p>
-          <p>El estado lo decide Meta y puede cambiar solo. Pulsa «Actualizar desde Meta» antes de un envío importante.</p>
+          <p>El estado lo decide Meta y puede cambiar solo. Pulsa «Actualizar» antes de un envío importante.</p>
         </BotonAyuda>
-      </div>
+      </SectionBar>
 
       {!conectado && (
         <div className={`rounded-lg border ${TONO.aviso.caja} p-4 mb-3 flex gap-2 items-start`}>
@@ -139,24 +165,59 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         </div>
       )}
 
-      {plantillas.length === 0 ? (
-        <PanelEmpty
-          Icon={FileText}
-          title="Todavía no hay plantillas"
-          desc="Crea una, o pulsa «Actualizar desde Meta» si ya existen en la cuenta de WhatsApp del cliente."
-        />
-      ) : (
-        <div className="rounded-lg border border-digi-border bg-digi-card overflow-hidden">
-          {plantillas.map((p) => (
-            <Fila
-              key={p.id} p={p} columnas={columnas}
-              alEditar={() => setEditando(p)}
-              alEnviar={() => setEnviando(p)}
-              alBorrar={() => setBorrando(p)}
-            />
-          ))}
+      {/* ── Tres columnas, como en el correo masivo: qué se manda · a quién · el detalle ── */}
+      <div className="flex flex-col lg:flex-row gap-3 items-start">
+
+        {/* 1. Las plantillas */}
+        <div className="w-full lg:w-[280px] shrink-0 rounded-lg border border-digi-border bg-digi-card overflow-hidden">
+          <div className="px-3 py-2 border-b border-digi-border">
+            <span className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted" style={mf}>
+              Plantillas ({plantillas.length})
+            </span>
+          </div>
+          {plantillas.length === 0 ? (
+            <p className="px-3 py-4 text-[12px] text-digi-muted leading-relaxed" style={mf}>
+              Todavía no hay ninguna. Crea una, o pulsa «Actualizar» si ya existen en la cuenta de
+              WhatsApp del cliente.
+            </p>
+          ) : plantillas.map((p) => {
+            const est = pinta(p.estado);
+            return (
+              <button
+                key={p.id} onClick={() => setSel(p.id)}
+                className={`w-full text-left px-3 py-2.5 border-b border-digi-border last:border-b-0 transition-colors ${
+                  sel === p.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}
+              >
+                <span className={`block text-[13px] font-medium truncate ${
+                  sel === p.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.nombre}</span>
+                <span className="flex items-center gap-1.5 mt-1">
+                  <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
+                  <span className="text-[11px] text-digi-muted" style={mf}>{p.idioma}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
-      )}
+
+        {/* 2. Las listas de contactos */}
+        <ColumnaListas
+          listas={listas} seleccionada={listaId} alSeleccionar={setListaId}
+          alCrear={() => setNuevaLista(true)} alBorrar={setBorrandoLista}
+        />
+
+        {/* 3. La plantilla elegida, y los contactos de la lista elegida */}
+        <div className="flex-1 min-w-0 w-full space-y-3">
+          {plantilla && (
+            <DetallePlantilla
+              p={plantilla} columnas={columnas} lista={lista}
+              alEditar={() => setEditando(plantilla)}
+              alBorrar={() => setBorrando(plantilla)}
+              alEnviar={() => setEnviando(plantilla)}
+            />
+          )}
+          <TablaContactos flowId={flowId} lista={lista} alCambiar={cargarListas} />
+        </div>
+      </div>
 
       {editando && (
         <PanelPlantilla
@@ -169,11 +230,17 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
 
       {enviando && (
         <PanelEnvio
-          flowId={flowId} plantilla={enviando} columnas={columnas}
+          flowId={flowId} plantilla={enviando} lista={lista}
           alCerrar={() => setEnviando(null)}
           alEnviado={() => { setEnviando(null); cargar(); }}
         />
       )}
+
+      <DialogoNuevaLista
+        flowId={flowId} abierto={nuevaLista}
+        alCerrar={() => setNuevaLista(false)}
+        alCreada={() => { setNuevaLista(false); cargarListas(); }}
+      />
 
       <PixelConfirm
         open={!!borrando}
@@ -183,63 +250,55 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
         onConfirm={borrar}
         onCancel={() => setBorrando(null)}
       />
+
+      <PixelConfirm
+        open={!!borrandoLista}
+        title="Borrar lista"
+        message={`¿Borrar la lista «${borrandoLista?.name}» y todos sus contactos? No se puede deshacer.`}
+        confirmLabel="Sí, borrar"
+        onConfirm={borrarLista}
+        onCancel={() => setBorrandoLista(null)}
+      />
     </div>
   );
 }
 
-/* ── Una fila de la tabla ───────────────────────────────────────────────────── */
+/* ── La plantilla elegida ───────────────────────────────────────────────────── */
 
-function Fila({ p, columnas, alEditar, alEnviar, alBorrar }: {
-  p: Plantilla; columnas: Columna[];
-  alEditar: () => void; alEnviar: () => void; alBorrar: () => void;
+/**
+ * La barra de arriba a la derecha: qué se va a mandar, en qué estado está y qué se puede
+ * hacer con ella. Es el equivalente de la barra de la campaña en el correo masivo.
+ */
+function DetallePlantilla({ p, columnas, lista, alEditar, alBorrar, alEnviar }: {
+  p: Plantilla; columnas: Columna[]; lista: Lista | null;
+  alEditar: () => void; alBorrar: () => void; alEnviar: () => void;
 }) {
   const est = pinta(p.estado);
   const aprobada = p.estado === 'APPROVED';
 
   return (
-    <div className="px-4 py-3 border-b border-digi-border last:border-b-0">
-      <div className="flex items-start gap-3">
+    <div className="bg-digi-card border border-digi-border rounded-lg p-3 space-y-2.5">
+      <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13.5px] font-semibold text-digi-text" style={mf}>{p.nombre}</span>
-            <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
-            <span className="text-[11.5px] text-digi-muted" style={mf}>
-              {p.idioma} · {p.categoria}
-              {p.envios > 0 && ` · ${p.envios} envío(s)`}
-            </span>
-          </div>
-
-          <p className="text-[12.5px] text-digi-text mt-1 leading-relaxed whitespace-pre-wrap" style={mf}>
-            {p.cuerpo}
+          <p className="text-[14px] font-semibold text-digi-text truncate" style={mf}>{p.nombre}</p>
+          <p className="text-[11.5px] text-digi-muted" style={mf}>
+            {p.idioma} · {p.categoria === 'UTILITY' ? 'Utilidad' : 'Marketing'}
+            {p.envios > 0 && ` · ${p.envios} envío(s)`}
           </p>
-
-          {p.variables?.length > 0 && (
-            <p className="text-[11.5px] text-digi-muted mt-1" style={mf}>
-              {p.variables.map((v, i) => (
-                <span key={i} className="mr-2">
-                  {`{{${i + 1}}}`} → {columnas.find((c) => c.clave === v)?.etiqueta ?? v}
-                </span>
-              ))}
-            </p>
-          )}
-
-          {/* El motivo del rechazo es lo único que dice qué corregir. Sin él, «Rechazada»
-              es un callejón sin salida. */}
-          {p.motivo_rechazo && (
-            <p className={`text-[12px] ${TONO.error.texto} mt-1.5`} style={mf}>
-              Meta la rechazó: {p.motivo_rechazo}
-            </p>
-          )}
         </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
+        <PixelBadge variant={est.variante}>{est.texto}</PixelBadge>
+        <div className="flex items-center gap-1.5">
           <button
-            className={BTN_PRIMARY} onClick={alEnviar} disabled={!aprobada}
-            title={aprobada ? 'Enviar a una lista de contactos' : 'Solo se puede enviar una plantilla aprobada por Meta'}
+            className={BTN_PRIMARY} onClick={alEnviar} disabled={!aprobada || !lista}
+            title={
+              !aprobada ? 'Solo se puede enviar una plantilla aprobada por Meta'
+              : !lista ? 'Elige primero una lista de contactos'
+              : `Enviar a «${lista.name}»`
+            }
           >
-            <Send className="w-4 h-4" /> Enviar
+            <Send className="w-4 h-4" /> Enviar{lista ? ` a ${lista.name}` : ''}
           </button>
-          <button className={BTN_SECONDARY} onClick={alEditar}><Pencil className="w-4 h-4" /></button>
+          <button className={BTN_SECONDARY} onClick={alEditar} title="Editar"><Pencil className="w-4 h-4" /></button>
           <button
             onClick={alBorrar} title="Borrar"
             className="inline-flex items-center justify-center px-2.5 py-2 rounded border border-digi-border
@@ -249,6 +308,27 @@ function Fila({ p, columnas, alEditar, alEnviar, alBorrar }: {
           </button>
         </div>
       </div>
+
+      <div className="rounded-md bg-digi-darker border border-digi-border px-3 py-2.5">
+        <p className="text-[12.5px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>{p.cuerpo}</p>
+        {p.pie && <p className="text-[11px] text-digi-muted mt-1.5" style={mf}>{p.pie}</p>}
+      </div>
+
+      {p.variables?.length > 0 && (
+        <p className="text-[11.5px] text-digi-muted" style={mf}>
+          {p.variables.map((v, i) => (
+            <span key={i} className="mr-3">
+              <code className="text-accent">{`{{${i + 1}}}`}</code> → {columnas.find((c) => c.clave === v)?.etiqueta ?? v}
+            </span>
+          ))}
+        </p>
+      )}
+
+      {/* El motivo del rechazo es lo único que dice qué corregir. Sin él, «Rechazada» es un
+          callejón sin salida. */}
+      {p.motivo_rechazo && (
+        <p className={`text-[12px] ${TONO.error.texto}`} style={mf}>Meta la rechazó: {p.motivo_rechazo}</p>
+      )}
     </div>
   );
 }
@@ -443,22 +523,14 @@ function PanelPlantilla({ flowId, plantilla, columnas, alCerrar, alGuardar }: {
 
 /* ── Enviar a una lista ─────────────────────────────────────────────────────── */
 
-function PanelEnvio({ flowId, plantilla, columnas, alCerrar, alEnviado }: {
-  flowId: number; plantilla: Plantilla; columnas: Columna[];
+function PanelEnvio({ flowId, plantilla, lista, alCerrar, alEnviado }: {
+  flowId: number; plantilla: Plantilla; lista: Lista | null;
   alCerrar: () => void; alEnviado: () => void;
 }) {
-  const [listas, setListas] = useState<Lista[]>([]);
-  const [listaId, setListaId] = useState<number | null>(null);
   const [contactos, setContactos] = useState<any[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [confirmar, setConfirmar] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/admin/flows/${flowId}/contact-lists`)
-      .then((r) => r.json())
-      .then((d) => setListas(d.data ?? []))
-      .catch(() => toast.error('No se pudieron cargar las listas de contactos'));
-  }, [flowId]);
+  const listaId = lista?.id ?? null;
 
   // Los contactos de la lista elegida, para poder enseñar a cuántos se va a escribir y con
   // qué datos. Un envío masivo a ciegas es la clase de acción que nadie debería confirmar.
@@ -497,27 +569,13 @@ function PanelEnvio({ flowId, plantilla, columnas, alCerrar, alEnviado }: {
   return (
     <>
       <EditPanel
-        open title={`Enviar «${plantilla.nombre}»`}
+        open title={`Enviar «${plantilla.nombre}» a «${lista?.name ?? ''}»`}
         onClose={alCerrar} onSave={() => setConfirmar(true)}
         saving={enviando} canSave={!!listaId && conTelefono.length > 0}
         saveLabel={conTelefono.length ? `Enviar a ${conTelefono.length} contacto(s)` : 'Enviar'}
       >
         <div className="space-y-4">
-          <EditField label="Lista de contactos" hint="Las listas de este flujo. Se crean y se editan igual que en el correo masivo.">
-            <select className={EDIT_INPUT} value={listaId ?? ''} onChange={(e) => setListaId(Number(e.target.value) || null)}>
-              <option value="">Elige una lista…</option>
-              {listas.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-            </select>
-          </EditField>
-
-          {listas.length === 0 && (
-            <p className="text-[12.5px] text-digi-muted leading-relaxed" style={mf}>
-              Este flujo todavía no tiene listas de contactos. Se crean en la pestaña de listas del
-              flujo, igual que las del correo masivo.
-            </p>
-          )}
-
-          {listaId && (
+          {lista && (
             <>
               {sinTelefono > 0 && (
                 <div className={`rounded-md border ${TONO.aviso.caja} px-3 py-2.5`}>
