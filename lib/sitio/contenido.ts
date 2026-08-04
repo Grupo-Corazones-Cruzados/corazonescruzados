@@ -33,7 +33,28 @@ export const SITIO = {
   telefonoPlano: '+593992706933',
   /** Nacional, como lo escribiría alguien en Guayaquil. */
   telefonoLocal: '0992706933',
-  url: 'https://app.grupocc.org',
+  /**
+   * EL DOMINIO CANÓNICO DEL SITIO PÚBLICO — el que se le declara a Google.
+   *
+   * Solo lo usan piezas de SEO: `metadataBase`, los `canonical`, el `openGraph.url`, el
+   * mapa del sitio, `robots.ts` y los JSON-LD. **No** los enlaces de los correos ni de la
+   * aplicación, que van por `NEXT_PUBLIC_APP_URL`.
+   *
+   * ── POR QUÉ `www` Y NO `grupocc.org` A SECAS (2026-08-03) ──────────────────────
+   * No es una preferencia: el dominio se compró **dentro de Microsoft 365**, y eso congela
+   * los nameservers. Sin poder moverlos a un DNS con aplanado de CNAME, el apex **no puede
+   * apuntar a Railway** (Railway no publica IP fija, así que no admite registros A). `www`
+   * sí, con un CNAME normal.
+   *
+   * Para Google `www` y el apex valen exactamente igual. Lo que sí cuesta posicionamiento
+   * es **cambiar el canónico a mitad de camino**, así que se elige una vez y se elige este.
+   * Si algún día se transfiere el dominio fuera de Microsoft, el apex redirigirá aquí —
+   * esta constante no se toca.
+   *
+   * ⚠️ `app.grupocc.org` NO desaparece: sigue sirviendo la plataforma, el juego y también
+   * `/negocio`, que es la URL declarada a Meta en las verificaciones.
+   */
+  url: 'https://www.grupocc.org',
   ciudad: 'Guayaquil',
   pais: 'Ecuador',
 } as const;

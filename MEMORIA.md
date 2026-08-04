@@ -275,6 +275,23 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔎 LA WEB PÚBLICA TIENE QUE ENCONTRARSE EN GOOGLE — objetivo abierto el 2026-08-03.**
+  Fernando: diseño y contenido específicos para `/negocio`, `/recursos` y `/contacto`,
+  «considerando el SEO de la empresa para que sea encontrable en las búsquedas en la web».
+  **Se empieza por `/negocio`.**
+  - **Punto de partida:** la base técnica de SEO ya existe desde el 2026-08-02 (`metadataBase`,
+    `title`/`description`/`canonical`/`openGraph` por página, `app/sitemap.ts`, `app/robots.ts`,
+    JSON-LD por página, microdato `Organization` en el pie, todo Server Component).
+  - **El fallo grave detectado:** `app/page.tsx` es `'use client'`, así que **la portada — la URL
+    que acumula toda la autoridad — está vacía para un buscador**. Todo el SEO cuelga hoy de
+    `/negocio`, que es una página interior.
+  - Otros siete fallos técnicos y las seis preguntas de negocio (dominio, palabras clave,
+    territorio, Search Console, clientes/vídeos autorizados, diseño) en `Aprendizaje.md` →
+    objetivo del 2026-08-03.
+  - **⚠️ El SEO se mete DENTRO de lo que Fernando quiere decir, no encima.** El sitio ya se
+    escribió una vez mirando a un revisor de Meta y presentaba al GCC como proveedor de
+    tecnología; su corrección del 2026-08-02 fue que **es un proyecto de desarrollo humano** y
+    los servicios nacen de ahí. Escribir para Google no puede volver a darle la vuelta.
 - **⛔ MÉTODO — SOLO FERNANDO EVALÚA LAS IMÁGENES GENERADAS (2026-08-02).** Regla de trabajo, no
   de código, y manda sobre cualquier otra del pipeline de arte. Textual: *"deja para siempre de
   estar calificando las imágenes, tú tienes mala capacidad para distinguir detalles muy

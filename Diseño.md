@@ -11,12 +11,15 @@
 > (`app/globals.css`, `editorUi.tsx`, `lib/integrations/email.ts`): si cambia un token,
 > actualizar también ese archivo.
 
-La app tiene **tres lenguajes visuales** distintos (intencional):
+La app tiene **cuatro lenguajes visuales** distintos (intencional):
 1. **Landing / juego (pixelart oscuro):** fuente `Silkscreen`/`JetBrains Mono`, `var(--color-accent)`,
    clases `pixel-btn`, sombras duras. En `app/page.tsx`, `components/landing/*`, `app/globals.css`.
-2. **Dashboard:** Next.js + Tailwind, **Microsoft Fluent claro** scoped en **`.corp`** (montado en
+2. **Sitio público (oscuro sobrio + violeta):** `#0b0d14`, **Inter**, tarjetas de borde tenue.
+   `/negocio`, `/recursos`, `/contacto` y las páginas legales. Fuente única:
+   `components/sitio/piezas.tsx`. Ver sección "Sitio público".
+3. **Dashboard:** Next.js + Tailwind, **Microsoft Fluent claro** scoped en **`.corp`** (montado en
    `app/(dashboard)/layout.tsx`). Ver sección "Dashboard — Fluent (`.corp`)".
-3. **Editor del mundo (Microsoft Fluent):** claro, `system-ui/Segoe UI`, azul `#0078d4`. **Este doc se
+4. **Editor del mundo (Microsoft Fluent):** claro, `system-ui/Segoe UI`, azul `#0078d4`. **Este doc se
    centra aquí** (es lo estandarizado en 2026-06-28).
 
 ---
@@ -64,6 +67,73 @@ que avance "de píxel en píxel". Modificador `.pixel-progress-fill--idle` = ind
 `environment/defaults/default_clear_color` de `godot/project.godot`**: la pantalla de carga, el
 contenedor del canvas y el motor lo comparten, así al arrancar Godot no se ve un salto de color.
 Antes estaba escrito a mano tres veces en `GodotGame.tsx` (desviación corregida): ahora es token.
+
+---
+
+## Sitio público — oscuro sobrio + violeta (`/negocio`, `/recursos`, `/contacto`)
+
+> Documentado el 2026-08-03 al abrir el objetivo de SEO. **Existía desde el 2026-08-02
+> (`bb9f7f0`) y no estaba en este documento**: era el cuarto lenguaje visual sin registrar.
+> Ver "Desviaciones detectadas y resolución".
+
+Es la web que ve **quien todavía no ha entrado**: una empresa que quiere contratar, un
+buscador, un revisor de Meta. No es el pixel art de la portada ni el Fluent claro del panel.
+
+### Por qué es un lenguaje aparte y no reusa nada del panel
+- El panel (`.corp`) es **claro** y vive tras una sesión. Estas páginas se sirven a terceros
+  y **deben verse igual pase lo que pase con el tema del dashboard** → colores **literales**,
+  no tokens (misma razón que las páginas legales).
+- La portada es una experiencia a pantalla completa con pixel art. Estas son páginas de
+  lectura, con ritmo de web corporativa.
+
+### Fuente única — `components/sitio/piezas.tsx`
+**Ninguna página del sitio compone clases a mano.** Todo sale de aquí:
+
+| Pieza | Qué es |
+|---|---|
+| `Contenedor` | Ancho de lectura: `mx-auto max-w-6xl px-5 sm:px-6`. Lo usan TODAS las secciones |
+| `Seccion` | Bloque con su aire: `py-20 sm:py-28`; `tono="realce"` añade `bg-white/[0.02]` para separar dos secciones seguidas **sin dibujar una línea** |
+| `TituloSeccion` | Etiqueta violeta en versalitas + `h2` de 30/38 px + entradilla. `centrado` opcional |
+| `Tarjeta` | `rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7`, realce al hover **de borde**, nunca de sombra |
+| `IconoCuadro` | Icono lucide de 20 px en cuadro de 44 px con borde y fondo violeta |
+| `FondoHeroe` | Resplandor radial violeta + rejilla de 64 px con máscara de desvanecido. **Cero peticiones de red**: son dos degradados CSS |
+| `BotonPrimario` / `BotonSecundario` | `h-11 px-6 rounded-lg`; primario `bg-[#7B5FBF]`, secundario borde `white/15` |
+| `conNegritas` | Convierte los `**dobles asteriscos**` del contenido en `<strong>` |
+| `ICONOS` | Mapa nombre→icono lucide, para que el contenido nombre iconos sin importarlos |
+
+Marco compartido: `app/(sitio)/layout.tsx` → `CabeceraSitio` + `main pt-16` + `PieSitio`.
+
+### Los valores (literales, a propósito)
+| Uso | Valor |
+|---|---|
+| Fondo de página | `#0b0d14` |
+| Fondo del pie | `#080a10` |
+| Violeta de marca | `#7B5FBF` (fondos, bordes al 30 %) |
+| Violeta de texto | `#a78bfa` (enlaces, etiquetas de sección) · `#c4b5fd` (píldoras, hover) |
+| Texto | `white` titulares · `white/55` cuerpo · `white/45`–`white/35` secundario |
+| Bordes | `white/[0.08]` en reposo · `white/[0.16]` al hover |
+| Tipografía | **Inter**, fijada en el `style` del layout, no heredada del tema |
+
+Escala tipográfica: `h1` 38/56 px · `h2` 30/38 px · `h3` 22 px · `h4` 18 px · cuerpo
+14,5–18,5 px. **El contraste de tamaño es lo que hace que la página respire**; no hay
+librería de UI detrás.
+
+### Reglas del sitio público
+- **Server Components, sin `use client`.** El contenido tiene que estar en el HTML crudo:
+  un buscador y un revisor pueden no ejecutar JavaScript. Lo que necesita estado se saca a
+  una **isla** (`app/(sitio)/negocio/AltaCliente.tsx` es la única que hay).
+- **El texto no vive en la página**, vive en `lib/sitio/contenido.ts`. Un servicio se edita
+  en un sitio y cambia en todos.
+- **Nada que no sea verificable.** Sin cifras de clientes, sin años de experiencia, sin
+  premios. Una lista vacía (`CLIENTES`, `VIDEOS`) hace que **la sección entera no se pinte**:
+  no queda un hueco ni un «próximamente».
+- **La cabecera no lleva «Crear cuenta»** (Fernando, 2026-08-02): empujaba a registrarse
+  antes de haber contado nada. El alta está al final de `/negocio`.
+- **El pie es una sola línea** —copyright + `/legal`—: no repite la navegación ni el logo,
+  que ya presiden la cabecera fija, y **no lleva la dirección**, que es el domicilio
+  particular de Fernando.
+- **La identidad legal NO puede faltar de `/negocio`** — es la URL declarada a Meta. Se
+  perdió una vez al reorganizar la página y se detectó revisando el HTML compilado.
 
 ---
 
@@ -1369,6 +1439,15 @@ función y no de la memoria de quien escribe.
 > mueve habitaciones**.
 
 ## Desviaciones detectadas y resolución
+
+### 2026-08-03 · El sitio público era un lenguaje visual sin documentar · **ADOPTADO como estándar**
+`components/sitio/piezas.tsx` nació el 2026-08-02 con el sitio público y montó un lenguaje
+visual completo —fondo `#0b0d14`, Inter, tarjetas de borde tenue, héroe con resplandor
+radial— que **no estaba en este documento**, que seguía diciendo que la app tenía tres.
+No es una desviación accidental: es un lenguaje **necesario y bien construido** (una sola
+fuente de piezas, sin librería de UI, Server Components). Resuelto **adoptándolo**: sección
+"Sitio público" nueva y el índice de arriba pasa a cuatro lenguajes. Detectado al abrir el
+objetivo de SEO de `/negocio`.
 
 ### 2026-08-03 · La pantalla de Plantillas se escribió «parecida» y no igual · **CORREGIDO**
 La columna de plantillas y la de listas hacían lo mismo que las del correo masivo pero se

@@ -33,7 +33,481 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · ✅ 99% — TODO PROBADO CON WHATSAPP REAL; solo falta que Meta apruebe el App Review
+## Objetivo ACTUAL (declarado 2026-08-03) — LA WEB PÚBLICA QUE SE ENCUENTRA EN GOOGLE: diseño y contenido de `/negocio`, `/recursos` y `/contacto` · 🔎 60%
+
+**Rol asumido:** *ingeniero de SEO técnico + estratega de contenido para una web corporativa
+en Next.js App Router*. El trabajo tiene dos mitades que no se pueden separar —lo que la
+página **dice** (contenido y palabras por las que quiere aparecer) y cómo el buscador lo
+**lee** (HTML servido, datos estructurados, rendimiento, indexación)—, y una tercera que
+manda sobre las dos: **lo que Fernando quiere presentar**.
+
+**Orden acordado:** primero **`/negocio`**, después `/recursos` y `/contacto`.
+
+### El punto de partida — lo que YA existe (auditado el 2026-08-03, contra el código)
+
+No se parte de cero. La web pública se construyó el 2026-08-02 (`bb9f7f0`) para el rechazo
+de verificación de Meta, y trae más SEO del que suele traer una web recién hecha:
+
+| Pieza | Dónde | Estado |
+|---|---|---|
+| `metadataBase` + plantilla de título | `app/layout.tsx` | ✅ |
+| `title`, `description`, `canonical`, `openGraph` por página | las tres `page.tsx` | ✅ |
+| Mapa del sitio | `app/sitemap.ts` — portada, las tres páginas y los legales | ✅ |
+| `robots.txt` | `app/robots.ts` — bloquea panel, API, sesión y portales | ✅ |
+| Datos estructurados JSON-LD | `ProfessionalService` en `/negocio`, `AboutPage` en `/recursos`, `ContactPage` en `/contacto` | ✅ |
+| Microdato `Organization` | `components/sitio/PieSitio.tsx` | ✅ |
+| Render en HTML crudo | las tres son **Server Components**; solo `AltaCliente` es isla | ✅ |
+| Contenido en fuente única | `lib/sitio/contenido.ts` (`SERVICIOS`, `PUBLICOS`, `CLIENTES`, `VIDEOS`) | ✅ |
+| Identidad legal verificable | `lib/negocio/datos.ts` → RUC contrastable en el SRI | ✅ |
+
+### Los ocho fallos que ya se ven sin preguntar nada
+
+Encontrados leyendo el código; **ninguno depende de una respuesta de Fernando** para
+afirmarse, aunque sí para decidir cómo se arreglan.
+
+1. ~~**EL FALLO GRAVE — la portada no existe para un buscador.**~~ **❌ ESTO ERA FALSO, y lo
+   comprobé el 2026-08-03 midiendo el HTML servido.** Escribí que `app/page.tsx`, por ser
+   `'use client'`, servía un HTML vacío. **No es así:** `'use client'` no desactiva el
+   render en servidor, solo añade hidratación. `curl https://www.grupocc.org/` devuelve
+   **21.567 bytes** con su `<title>` correcto y un `<h1>` real. La portada **sí es
+   indexable**.
+   - **Lo que sí queda en pie, mucho más pequeño:** el `<h1>` de la portada es *«Un Corazón
+     puede cruzar el mundo»* — no contiene «Grupo Corazones Cruzados» ni ninguna palabra por
+     la que alguien busque, y el resto de la portada es la experiencia del juego, con poco
+     texto de negocio. Es un problema de **qué dice**, no de si se puede leer.
+   - **Lección:** no dar por hecho el comportamiento de un framework a partir de una
+     directiva del código. Se mide.
+2. **El dominio es `app.grupocc.org`.** Un subdominio llamado `app` se lee como "la
+   aplicación", no como el sitio de la empresa; y el SEO de un subdominio **no suma** al del
+   dominio raíz, se acumula aparte. Es la decisión más determinante de todas y es de negocio
+   → P1.
+3. **Ningún H1 contiene una palabra por la que alguien busque.** «Primero las personas. Lo
+   demás sale de ahí.» es buena marca y cero búsqueda. Nadie teclea eso en Google. El H1 es
+   la señal más fuerte de una página sobre de qué trata.
+4. **No hay imagen de Open Graph.** `openGraph` no lleva `images`, así que al pegar el
+   enlace en WhatsApp, LinkedIn o X sale una tarjeta gris sin imagen. No es ranking, pero sí
+   es cuántos clics recibe un enlace compartido.
+5. **`user-scalable=no, maximum-scale=1`** en el `<meta viewport>` de `app/layout.tsx`.
+   Impide ampliar con los dedos: fallo de accesibilidad que Lighthouse marca y que pesa en
+   la evaluación móvil, que es la que Google usa (mobile-first).
+6. **`lastModified: new Date()`** en el mapa del sitio: cada rastreo dice que **todas** las
+   páginas cambiaron hoy. Una fecha que siempre miente deja de ser una señal.
+7. **`keywords` en el `metadata`.** Google las ignora desde 2009. No hacen daño; tampoco
+   nada. Lo que sí funciona es que esas palabras estén **en el texto visible**.
+8. **No hay verificación de Search Console ni analítica.** Sin Search Console se trabaja a
+   ciegas: no se sabe por qué consultas aparece, ni si Google llegó a indexar las páginas.
+
+### Y lo que falta de contenido, que es lo que de verdad posiciona
+
+- **Poco texto y muy troceado.** Las páginas son tarjetas con viñetas de una línea. Para una
+  consulta competida ("chatbot whatsapp ecuador") Google prefiere páginas que **desarrollan**
+  el tema. Hoy no hay ni un párrafo largo en toda la web.
+- **Sin página por servicio.** Los cinco servicios de cliente viven como tarjetas dentro de
+  `/negocio`. Una URL por servicio —`/negocio/agente-whatsapp`, `/negocio/facturacion-sri`…—
+  es lo que permite competir por cada búsqueda por separado en vez de con una sola página
+  para todo.
+- **Sin preguntas frecuentes** → sin `FAQPage`, que es lo que gana los recuadros de
+  respuesta en los resultados.
+- **Sin nada que atraiga a quien todavía no busca comprar.** No hay artículos ni guías.
+- **La sección de clientes está vacía** (`CLIENTES: []`, a propósito, esperando su permiso) y
+  la de vídeos también (`VIDEOS: []`, faltan las URLs).
+
+### Preguntas · lo que NO se puede deducir del repo
+
+#### PS1 — ¿Se queda la web en `app.grupocc.org` o hay dominio propio? · ✅ Resuelta (Fernando, 2026-08-03) + 🔎 investigado contra el DNS real
+- **Por qué importa:** es la decisión de mayor impacto de todo el objetivo. Un subdominio
+  `app.` acumula autoridad aparte del dominio raíz y se lee como "la aplicación", no como la
+  web de la empresa.
+- **Respuesta de Fernando:** quiere **`grupocc.org` para el sitio web** (negocio, contacto,
+  recursos) y **`app.grupocc.org` para la plataforma y el videojuego**. Dos frenos que él
+  mismo señala: (1) **ya hay solicitudes de verificación en Meta apuntando al subdominio**,
+  y (2) el servicio de **Railway apunta hoy al subdominio** — no usó el dominio principal
+  desde el principio porque «creo que no se podía o no supe hacerlo bien». Proveedor del
+  dominio: **Microsoft / GoDaddy**.
+
+- **🔎 LO QUE DICE EL DNS REAL (medido el 2026-08-03 con `dig` y `curl`, no de memoria):**
+
+  | Consulta | Resultado |
+  |---|---|
+  | `grupocc.org` A | `216.198.79.1` → **Vercel**. `https://grupocc.org` responde **404 `DEPLOYMENT_NOT_FOUND`** |
+  | `www.grupocc.org` | **no resuelve** — no existe el registro |
+  | `app.grupocc.org` | CNAME → `cndr3q54.up.railway.app` → Railway ✅ |
+  | Nameservers | `ns1..4.bdm.microsoftonline.com` → **el DNS lo gestiona Microsoft 365**, no GoDaddy |
+  | MX | `smtp.google.com` → el **correo entra por Google Workspace** |
+  | TXT | SPF `include:spf.protection.outlook.com include:amazonses.com` + `mscid=…` de Microsoft |
+
+- **🚨 HALLAZGO GRAVE, y no lo sabíamos:** **ya existió un sitio en `grupocc.org` y sigue
+  indexado.** Buscando `condiciología`, el **primer resultado es `https://www.grupocc.org/`**
+  con contenido real («la condiciología se usa como base para estructurar, diseñar y
+  gestionar acciones»). Pero ese sitio **hoy está caído**: `www` no resuelve y el apex
+  devuelve el 404 de Vercel. O sea: **la marca ya tiene presencia en el índice de Google,
+  en un dominio que ahora mismo está roto para cualquiera que lo abra.** Hay también una
+  **página de empresa en LinkedIn** (`ec.linkedin.com/company/grupo-corazones-cruzados`,
+  fundada en 2011), que es una señal externa que ya está trabajando a favor.
+
+- **⚠️ EL OBSTÁCULO TÉCNICO REAL — y no es el que él pensaba:** no es que «no se pueda»,
+  es una combinación concreta de dos limitaciones:
+  1. **Railway no publica IP estática**, así que **no admite registros A**. Solo CNAME.
+     Para un dominio raíz hace falta que el DNS soporte *CNAME flattening* / `ALIAS` /
+     `ANAME`, porque el estándar de DNS no permite un CNAME en el apex.
+  2. **El DNS de Microsoft 365 (`bdm.microsoftonline.com`) no ofrece ese aplanado.** Por eso
+     el apex está hoy en Vercel: Vercel **sí** da una IP fija y con un registro A basta.
+  → **Conclusión:** para poner `grupocc.org` en Railway hay que **mover los nameservers a
+  Cloudflare** (gratis, el registrador sigue siendo el mismo; solo cambian los NS), que sí
+  aplana el CNAME en el apex. La alternativa sin tocar NS es servir el sitio en
+  **`www.grupocc.org`** (CNAME, eso sí se puede en el DNS de Microsoft) y dejar el apex
+  redirigiendo — pero el apex necesita un redirector y ahí volvemos a depender de Vercel o
+  de Cloudflare.
+
+- **⚠️ Y AL MOVER EL DNS NO SE PUEDE ROMPER EL CORREO.** `lfgonzalezm0@grupocc.org` entra por
+  **Google Workspace** (MX `smtp.google.com`). Migrar a Cloudflare obliga a **copiar todos
+  los registros** —MX, SPF, el `mscid` de Microsoft, DKIM si lo hay, y el CNAME de `app`—
+  antes de cambiar los NS. Un registro que se olvide es correo perdido.
+
+- **✅ Y LO DE META NO ES UN PROBLEMA, es un orden.** `app.grupocc.org` **no se toca ni se
+  apaga**: en Railway se **añade** `grupocc.org` al mismo servicio, así que las URLs
+  declaradas a Meta siguen respondiendo exactamente igual. Lo que cambia es qué se sirve en
+  cada dominio (enrutado por *hostname*) y a dónde apunta el `canonical` —a `grupocc.org`—
+  para que Google no vea dos copias del mismo contenido. **La redirección permanente del
+  subdominio al dominio, si se hace, se deja para DESPUÉS de que Meta apruebe.**
+
+- **✅ RECOMENDACIÓN, tras preguntar Fernando si Railway es viable o conviene otro (2026-08-03):
+  SE QUEDA EN RAILWAY. Lo que se cambia es el DNS, no el hosting.**
+  - **Por qué Railway y no Vercel, para ESTA app:** no es preferencia, es que la app **no
+    entra** en un hosting serverless. `next.config.ts` ya declara
+    `serverExternalPackages: ['@ffmpeg-installer/ffmpeg', 'puppeteer']`; además hay firma SRI
+    con el `.p12` de `data/`, PDFs, los archivos del juego de Godot con su cabecera de caché
+    propia, y una Postgres con conexión persistente vía `pg`. En Vercel eso es pelear con
+    límites de tiempo de ejecución y sin sistema de archivos persistente. **Railway es la
+    elección correcta y no se toca.**
+  - **Por qué tampoco conviene partirlo** (sitio público en un sitio, app en otro): el
+    contenido vive en el mismo repo (`lib/sitio/contenido.ts`), la cabecera y el pie son
+    compartidos, y `/negocio` tiene que seguir respondiendo en `app.grupocc.org` para Meta.
+    Partirlo son dos despliegues y dos sitios donde se rompe lo mismo.
+  - **El arreglo real: mover los nameservers a Cloudflare** (gratis; el registrador sigue
+    siendo el mismo). Verificado el 2026-08-03: **Microsoft 365 no ofrece ALIAS/ANAME** —solo
+    A, CNAME, TXT, MX, SRV— y **Cloudflare aplana el CNAME en el apex automáticamente en el
+    plan Free**, sin interruptor que buscar y conviviendo con los MX.
+  - **Beneficio extra que aquí no es adorno:** con Cloudflare delante, la web pública se
+    sirve desde caché en toda Latinoamérica. Como el territorio elegido es **LatAm entera**
+    (PS3) y Railway sirve desde **una sola región**, esto se nota en la velocidad de carga,
+    que sí es un factor de posicionamiento.
+  - **Canónico elegido: `grupocc.org` a secas** (con `www` redirigiendo). Se decide **una
+    vez**: cambiar el canónico más tarde cuesta posicionamiento.
+  - **Camino alternativo si NO quiere tocar nameservers:** servir el sitio en
+    **`www.grupocc.org`** con un CNAME a Railway —eso sí se puede hoy en el DNS de
+    Microsoft— y dejar el apex para después. Funciona, pero el apex seguiría roto y el
+    canónico quedaría en `www`.
+
+- **🔁 CORRECCIÓN IMPORTANTE (2026-08-03, al preguntar Fernando si yo podía hacer los
+  cambios): CLOUDFLARE NO SE PUEDE HOY. El alternativo pasa a ser el plan principal.**
+  - **El dato que lo cambia todo:** los nameservers son `ns1..4.bdm.microsoftonline.com`, y
+    `bdm` = *Buy Domain Microsoft*. Es decir, **el dominio se compró a través de Microsoft
+    365**. Y según la documentación de Microsoft, **los dominios comprados en Microsoft 365
+    no admiten cambio de nameservers**. Sin cambio de NS **no hay Cloudflare**, y sin
+    Cloudflare **no hay aplanado de CNAME**, así que **el apex `grupocc.org` no puede
+    apuntar a Railway**. ⚠️ *Pendiente de que Fernando lo confirme en su panel: no tengo
+    acceso a su tenant y esto lo sé por la documentación, no por haberlo visto.*
+  - **Salir de ahí exige transferir el dominio a otro registrador** (código de autorización,
+    no antes de 60 días desde la compra, ~5-7 días de trámite). Es una operación aparte y
+    **no debe bloquear la web**.
+  - **➡️ DECISIÓN: el canónico pasa a ser `https://www.grupocc.org`.** No es un apaño: para
+    Google `www` y el apex valen **exactamente igual**, y así se evita el peor escenario —
+    lanzar en `www`, transferir el dominio meses después y **cambiar el canónico**, que sí
+    cuesta posicionamiento. Se elige una vez, y se elige `www`.
+  - **Lo que queda para después, sin prisa:** que `grupocc.org` a secas redirija a `www`
+    (necesita transferencia + Cloudflare, o algo con IP fija delante) y la caché de
+    Cloudflare para LatAm. **Ninguna de las dos bloquea nada.**
+  - **Lo que hay que hacer, y en este orden:**
+    1. **Railway** — añadir `www.grupocc.org` al servicio que ya existe. Railway devuelve el
+       **destino CNAME exacto**, que es el dato que hace falta para el paso 2.
+    2. **Microsoft 365 → Dominios → `grupocc.org` → Registros DNS → Agregar:** un **CNAME**,
+       host `www`, con el destino del paso 1. **Nada más se toca**: ni MX, ni SPF, ni el
+       `mscid` — tocarlos es tumbar el correo de Google Workspace.
+    3. El registro **A del apex que apunta a Vercel** se deja de momento. Quitarlo no
+       arregla nada (pasa de dar 404 a no resolver) y se decide junto con la transferencia.
+    4. **En código (esto sí es mío):** enrutado por *hostname*, `metadataBase` y `canonical`
+       a `https://www.grupocc.org`, mapa del sitio y `robots` al día, y que
+       `app.grupocc.org` siga sirviendo `/negocio` para Meta.
+  - **¿Puedo hacerlo yo?** **No los pasos 1-3, y conviene saber por qué:**
+    - **Microsoft:** su API (Graph) expone los registros DNS de un dominio de M365 **solo de
+      lectura**; no hay forma de crear un CNAME personalizado por API. Es el centro de
+      administración a mano, y son dos minutos.
+    - **Railway:** sí tiene API, pero **no hay `RAILWAY_TOKEN` en el `.env` de este repo**
+      (comprobado). Con un token suyo podría; sin él, es el panel.
+    - **Regla que no se rompe:** una credencial que me pase se usa **desde el entorno**, no
+      se escribe nunca en el repo ni en estos documentos.
+  - **⚠️ Cautelas de la migración de DNS, por orden:** (1) copiar **todos** los registros
+    actuales a Cloudflare **antes** de cambiar los NS —MX de Google Workspace, SPF, el
+    `mscid` de Microsoft, DKIM si lo hay, y el CNAME de `app`—; (2) los registros de correo
+    **nunca proxeados**; (3) **quitar el registro A que hoy apunta a Vercel**; (4) **no
+    apagar `app.grupocc.org`** hasta que Meta apruebe.
+
+- **✅ `www.grupocc.org` YA ESTÁ EN MARCHA (medido el 2026-08-03).** Fernando añadió los dos
+  registros que pidió Railway y funcionan:
+
+  | Registro | Valor | Estado |
+  |---|---|---|
+  | CNAME `www` | `o8b57xou.up.railway.app` → `69.46.46.79` | ✅ resuelve |
+  | TXT `_railway-verify.www` | `railway-verify=35af23b1…` | ✅ presente |
+  | `https://www.grupocc.org/negocio` | **200**, certificado válido, sirve el `<title>` correcto | ✅ |
+
+- **⛔⛔ NO PULSAR «CORREGIR REGISTROS AUTOMÁTICAMENTE» DE MICROSOFT 365 (2026-08-03).**
+  Fernando enseñó el diálogo. **Ese botón le deja sin correo.** Lo que hace:
+  - **Quita el `MX @ → 1 SMTP.GOOGLE.COM`** y lo sustituye por
+    `0 grupocc-org.mail.protection.outlook.com`. Es decir, **desvía TODO el correo entrante
+    de `@grupocc.org` de Google Workspace a Exchange Online.** Sin buzones creados ahí, el
+    correo se pierde o rebota.
+  - **Quita el SPF que incluye `amazonses.com`** y lo deja en `v=spf1
+    include:spf.protection.outlook.com -all`. Amazon SES es **por donde envía Resend**, que
+    es el correo saliente de la aplicación (`RESEND_API_KEY`, `lib/integrations/email.ts`).
+    Con `-all` y sin ese `include`, **los correos de la app fallarían la autenticación**.
+  - Añade `autodiscover` y `enterpriseenrollment` (Outlook e Intune): inofensivos, pero no
+    hacen falta.
+  - **El aviso de «registros en mal estado» es cosmético**: Microsoft marca como enfermo
+    cualquier dominio suyo que no tenga el correo apuntando a Microsoft. Como el correo es de
+    Google **a propósito**, ese aviso **no se va a ir nunca** y **no pasa nada**.
+
+- **🔎 PERO HAY UN FALLO REAL EN EL SPF, y es anterior a todo esto (medido con `dig`):**
+  ```
+  v=spf1 include:spf.protection.outlook.com include:amazonses.com -all
+  ```
+  **No incluye a Google**, y el correo lo recibe *y lo envía* Google Workspace (el MX es
+  `smtp.google.com` y existe `google._domainkey.grupocc.org`). O sea: **lo que Fernando
+  escribe desde Gmail con su dirección `@grupocc.org` falla SPF**, y con `-all` es fallo
+  duro. Hoy no se nota porque **la firma DKIM de Google sí valida** y el DMARC está en
+  `p=none` (`_dmarc` → `v=DMARC1; p=none; rua=mailto:postmaster@grupocc.org`), así que el
+  mensaje pasa por DKIM. Es frágil: cualquier receptor que mire SPF de forma estricta lo
+  marca.
+  - **✅ VALOR FINAL DEL SPF (2026-08-03), después de dos correcciones sobre la marcha:**
+    ```
+    v=spf1 include:spf.protection.outlook.com include:_spf.google.com -all
+    ```
+    - **`spf.protection.outlook.com` se queda porque Microsoft NO deja quitarlo.** Fernando
+      lo intentó y el panel respondió: *«No se puede editar ni quitar el registro SPF
+      Microsoft 365: spf.protection.outlook.com»*. Es una condición del dominio comprado en
+      M365, la misma familia de restricciones que impide cambiar los nameservers. **No
+      importa**: solo autoriza a unos servidores que no se usan, y el recuento de consultas
+      DNS del SPF sigue muy por debajo del límite de 10.
+    - **`_spf.google.com` entra** — es lo que de verdad envía y lo que arregla el fallo.
+    - **`amazonses.com` sale.** Fernando: *«ya no me interesa enviar con resend»*.
+  - **🔎 Y RESEND YA ESTABA FUERA DEL CÓDIGO — comprobado, no supuesto (2026-08-03).**
+    `lib/integrations/email.ts` lo dice en su cabecera: *«Envío de correo unificado por la
+    **Gmail API** (cuenta corporativa grupocc.org)… Resend se eliminó por completo»*, y
+    `deliver()` llama a `sendViaGmail` de `lib/integrations/google-workspace.ts`
+    (`gmail.users.messages.send`, scope `gmail.send`). Las únicas menciones que quedan son
+    **inofensivas**: dos comentarios que documentan el reemplazo, la columna
+    `flow_campaign_sends.resend_id` —un nombre heredado— y decenas de `resend`/`Reenviar`
+    de la interfaz, que son el verbo español, no el proveedor.
+    → **Quitar `amazonses.com` del SPF no rompe absolutamente nada.** Opcionales y sin
+    prisa: borrar el TXT `resend._domainkey` y la variable `RESEND_API_KEY` del `.env`.
+  - **Lo que NO se toca:** el `MX` de Google, el `mscid` de Microsoft, el DKIM de Google
+    (`google._domainkey`) y el `_dmarc`.
+  - **Siguiente paso del correo, cuando esto lleve unas semanas estable:** el DMARC está en
+    `p=none`. Con el SPF ya correcto y el DKIM de Google firmando, se puede subir a
+    `p=quarantine`. No ahora.
+
+- **🧹 LIMPIEZA COMPLETA DE LA ZONA DNS (2026-08-03).** Fernando pasó la lista entera de
+  registros. Clasificación, con el porqué de cada uno:
+
+  | Registro | Qué es de verdad | Acción |
+  |---|---|---|
+  | `MX send → feedback-smtp.sa-east-1.amazonses.com` | Rebotes de Amazon SES = **Resend**. Muerto | 🗑️ **Borrar** |
+  | `TXT resend._domainkey` | Firma DKIM de Resend. Muerta | 🗑️ **Borrar** |
+  | `CNAME lyncdiscover → webdir.online.lync.com` | **Skype for Business Online**, servicio retirado por Microsoft | 🗑️ **Borrar** |
+  | `CNAME sip → sipdir.online.lync.com` | Ídem | 🗑️ **Borrar** |
+  | `SRV _sip._tls` y `SRV _sipfederationtls._tcp` | Ídem — federación de Lync | 🗑️ **Borrar** |
+  | `A @ → 216.198.79.1` | **Vercel**, con el despliegue borrado: sirve un 404 | 🗑️ **Borrar** (ver nota) |
+  | `MX @ → 1 smtp.google.com` | **El correo entrante.** Google Workspace | 🔒 **Intocable** |
+  | `TXT google._domainkey` | **DKIM de Google.** Hoy es lo único que hace pasar el DMARC | 🔒 **Intocable** |
+  | `TXT _dmarc` | La política DMARC | 🔒 Conservar |
+  | `TXT @` SPF | Ya corregido | 🔒 Conservar |
+  | `TXT gmail-conection → google-site-verification=…` | **Verificación de propiedad ante Google.** Borrarla puede desverificar el dominio | 🔒 Conservar |
+  | `CNAME xpsfz52om5hi → gv-….dv.googlehosted.com` | Otra verificación de Google (prefijo `gv-`) | 🔒 Conservar |
+  | `CNAME app → cndr3q54.up.railway.app` | La plataforma **y lo que Meta tiene declarado** | 🔒 Intocable |
+  | `CNAME www → o8b57xou.up.railway.app` | El sitio público | 🔒 Intocable |
+  | `TXT _railway-verify.www` | Verificación de Railway | 🔒 Conservar |
+  | `CNAME enterpriseregistration`, `selector1/2._domainkey` | Azure AD y DKIM de Microsoft. Inertes (no se envía por Microsoft) | ⬜ Da igual; dejarlos |
+  | Sección **Microsoft Exchange** en «Error»: `MX @ → outlook`, `CNAME autodiscover`, `CNAME enterpriseenrollment` | Son lo que el «arreglo automático» quiere meter | ⛔ **Dejar en Error para siempre** |
+  | `NS @ → ns1..4.bdm.microsoftonline.com` | Los nameservers. No se pueden cambiar | 🔒 No tocar |
+
+  - **Nota sobre el `A` del apex:** borrarlo deja `grupocc.org` **sin resolver**; dejarlo, lo
+    deja sirviendo un **404 de Vercel**. Ninguna de las dos es buena, y **no hay tercera
+    opción desde aquí**: el DNS de Microsoft no hace redirecciones HTTP, y apuntar el apex a
+    la IP de Railway **sería un error** —Railway no garantiza esa IP y el certificado no
+    cubriría ese nombre—. Se borra porque al menos **elimina la dependencia de una cuenta de
+    Vercel que no controlamos**. El arreglo de verdad —que `grupocc.org` redirija a `www`—
+    **necesita transferir el dominio** fuera de Microsoft.
+  - **🔎 PISTA PARA PS4 (Search Console):** existe un `google-site-verification` en la zona.
+    Puede ser de Google Workspace **o de Search Console**. Hay que mirar si ya hay propiedad
+    creada antes de crear otra.
+  - **Propagación:** al comprobar con `dig` justo después, el SPF viejo seguía en caché (TTL
+    de 1 hora). El panel ya lo daba por aplicado. Normal; se vuelve a medir más tarde.
+
+#### PS2 — ¿Por qué búsquedas quiere aparecer, y para vender qué? · ✅ Resuelta (Fernando, 2026-08-03)
+- **Respuesta:** **el proyecto de desarrollo humano.** No el agente de WhatsApp, ni el
+  software a medida, ni la facturación. Lo que quiere que se encuentre es **el GCC en sí**.
+- **Lo que eso significa, y es una estrategia distinta de la que yo tenía en la cabeza:**
+  - **«Condiciología» es un término que inventó Fernando.** Nadie más compite por él: el
+    resultado nº 1 hoy ya es suyo (el sitio viejo). Posicionar nº 1 ahí no es difícil, es
+    **cuestión de que la página exista y funcione**. Lo que no tiene es volumen: nadie busca
+    una palabra que no conoce. Sirve para **retener** a quien ya oyó el término, no para
+    traer gente nueva.
+  - **«Desarrollo humano» sí tiene volumen y es amplísimo** — compiten universidades, la
+    ONU y el PNUD (el Índice de Desarrollo Humano se come el término). Competir por la
+    palabra sola es perder. Se gana por **la cola larga**: las preguntas concretas que hace
+    quien busca crecer, no la etiqueta.
+  - **⚠️ Consecuencia sobre el orden de trabajo:** la página del proyecto de desarrollo
+    humano es **`/recursos`**, no `/negocio`. `/negocio` es la comercial. → pregunta PS8.
+- **Consecuencia sobre el resto:** el agente de WhatsApp y los demás servicios **no
+  desaparecen** del SEO; pasan a segundo plano y se posicionan desde `/negocio`.
+
+#### PS3 — ¿Hasta dónde llega el territorio: Guayaquil, Ecuador o fuera? · ✅ Resuelta (Fernando, 2026-08-03)
+- **Respuesta:** **Latinoamérica / cualquier país hispanohablante.** Sin anclaje geográfico.
+- **Qué cambia:** encaja con PS2 —un proyecto de desarrollo humano no se busca por ciudad—,
+  pero es el escenario **más difícil**: se compite contra todo el continente y **no aplica**
+  el atajo del SEO local (Perfil de Empresa de Google, ciudad en los titulares).
+- **⚠️ Y choca con una cosa que sí es local:** los **servicios** sí son ecuatorianos —la
+  facturación con el SRI no se le vende a un mexicano—. Se resuelve por página: `/recursos`
+  sin territorio, `/negocio` con Ecuador donde toca. El `areaServed: 'EC'` del JSON-LD de
+  `/negocio` se queda; el de `/recursos` se abre.
+
+#### PS10 — «Busco Grupo Corazones Cruzados y no sale mi web» · 🔎 Abierta — mi medición NO era válida
+- **⛔ CORRECCIÓN (2026-08-03): NO PUEDO MEDIR POSICIONES EN GOOGLE, y afirmé que sí.**
+  Dije que `www.grupocc.org` salía **cuarto** al buscar el nombre. **Ese dato no vale.** Mi
+  herramienta de búsqueda **no es Google**: es otro índice, y además con sesgo de Estados
+  Unidos. Fernando, buscando desde Ecuador, **no encuentra el sitio** — solo ve
+  `corazonescruzados.org`, que es otro negocio. **Su observación manda sobre la mía.**
+  - Por el mismo motivo, el resultado nº 1 en «condiciología» que reporté antes tampoco
+    prueba nada sobre Google: puede ser un rastreo antiguo de ese otro índice.
+  - **Hipótesis de trabajo a partir de ahora: el sitio NO está indexado en Google.** Es la
+    suposición prudente y la que lleva a hacer lo correcto.
+  - **Cómo se sabe de verdad, y son las únicas dos formas:**
+    1. Buscar en Google `site:grupocc.org`. Si no sale nada, no está indexado. Es la prueba
+       rápida y la puede hacer Fernando en diez segundos.
+    2. **Google Search Console** — la fuente oficial: qué URLs conoce, cuáles rechazó y por
+       qué. Sin esto se trabaja a ciegas, y es lo que hay que montar ya.
+  - **Lección de método:** una herramienta de búsqueda genérica sirve para **descubrir
+    hechos** (que existe `corazonescruzados.org`, que hay una ficha de LinkedIn), **no para
+    medir posiciones**. Para posiciones, Search Console o nada.
+- **✅ RESPUESTA DEFINITIVA (2026-08-03), y es la peor y la más limpia a la vez:**
+  `site:grupocc.org` → **«No se han encontrado resultados»**.
+  `site:app.grupocc.org` → **«No se han encontrado resultados»**.
+  **Google no tiene una sola página de ninguno de los dos dominios.** No es que estemos
+  mal posicionados: **no existimos para Google.** Se parte de cero absoluto.
+- **🔎 Y NO ES QUE ALGO LO BLOQUEE — comprobado uno por uno contra el sitio en vivo:**
+
+  | Comprobación | Resultado |
+  |---|---|
+  | `<meta name="robots">` | `index, follow` ✅ |
+  | Cabecera `X-Robots-Tag` | no existe ✅ |
+  | `robots.txt` | `Allow: /`, solo bloquea panel/API/sesión ✅ |
+  | HTML servido | completo, con título y encabezados ✅ |
+
+  → **La puerta está abierta. Google simplemente nunca ha venido.**
+- **La causa es el DESCUBRIMIENTO, no la técnica.** Google rastrea lo que encuentra
+  enlazado o lo que se le envía. `app.grupocc.org` lleva **meses** en pie y tiene **cero**
+  páginas indexadas: nadie lo enlaza desde fuera y nunca se dio de alta en Search Console.
+  Un dominio que nadie enlaza y nadie envía es un dominio invisible, por bueno que sea.
+- **La única lectura buena de esto:** partir de cero significa que **no hay nada que
+  deshacer** — ni penalizaciones, ni contenido viejo compitiendo, ni redirecciones sucias.
+- **➡️ ORDEN DE ACCIONES (importa, no es una lista suelta):**
+  1. **Desplegar el cambio de dominio canónico.** Hasta que no se suba, el `sitemap.xml` y
+     el `robots.txt` en producción siguen declarando `app.grupocc.org` — comprobado en vivo:
+     `Sitemap: https://app.grupocc.org/sitemap.xml`. **Enviar el mapa antes de desplegar
+     sería pedirle a Google que indexe el dominio equivocado.**
+  2. **Search Console, propiedad de tipo «Dominio»** (no «prefijo de URL»): cubre
+     `grupocc.org` y **todos** sus subdominios de una vez, y se verifica **con un registro
+     TXT**, que es justo lo que Fernando puede añadir en Microsoft 365.
+  3. **Enviar el mapa del sitio** `https://www.grupocc.org/sitemap.xml`.
+  4. **Solicitar indexación** de `/`, `/negocio`, `/recursos` y `/contacto` una por una
+     (Inspección de URLs → Solicitar indexación).
+  5. **El enlace desde LinkedIn**, que es la vía por la que Google descubre dominios nuevos
+     sin esperar.
+- **Lo que sí sigue siendo cierto y él mismo confirma:** el nombre **no es exclusivo** —
+  `corazonescruzados.org` es otra organización real y hoy es la que se ve.
+- ~~Causas probables de que no esté indexado:~~ (resueltas arriba, se conservan por histórico)
+  1. **El sitio nuevo lleva horas vivo.** Google no lo ha vuelto a rastrear. No hay nada roto.
+  2. **Nadie le ha dicho a Google que existe.** Sin Search Console, sin mapa del sitio
+     enviado y **sin enlaces externos** apuntando al dominio, el rastreo tarda semanas.
+  3. **El nombre no es exclusivo.** Compiten `corazonescruzados.org` (una asociación civil
+     real, apoyo a niños con cáncer), Instagram, Vimeo y hasta **un libro en Amazon**
+     titulado *Corazones Cruzados*. Aparecer nº 1 por ese nombre **hay que ganarlo**.
+- **Lo más rentable que se puede hacer hoy, y no es código:** la ficha de **LinkedIn ya sale
+  nº 1 y nº 3 por el nombre**. Poner ahí el enlace a `www.grupocc.org` hace que Google
+  descubra el sitio por una página que ya rastrea a menudo, y le pasa autoridad. Vale más
+  que cualquier ajuste técnico de esta semana.
+- **En código:** añadir `sameAs` al JSON-LD de `Organization` con LinkedIn, Vimeo e
+  Instagram, para decirle a Google que **todos son la misma entidad**.
+
+#### PS8 — ¿Empezamos por `/negocio` o por `/recursos`? · ⏸ Bloqueada (2026-08-03)
+- **Por qué importa:** él pidió empezar por `/negocio`, pero al elegir «el proyecto de
+  desarrollo humano» como lo que quiere posicionar, la página que lleva ese contenido es
+  **`/recursos`**. Son dos trabajos distintos y el orden cambia qué se escribe primero.
+- **Respuesta:**
+
+#### PS9 — ¿De quién es el despliegue de Vercel que tiene hoy `grupocc.org`? · ⏸ Bloqueada (2026-08-03)
+- **Por qué importa:** el apex apunta a una cuenta de Vercel con un despliegue borrado. Para
+  llevar el dominio a Railway hay que **quitar ese registro A**, y para eso hace falta saber
+  si esa cuenta es suya y si hay algo ahí que conservar (el contenido del sitio viejo que
+  Google todavía indexa vale oro: son los textos que ya posicionan).
+- **Respuesta:**
+
+#### PS4 — ¿Existe Google Search Console / Analytics para el dominio? · ⏸ Bloqueada
+- **Por qué importa:** sin Search Console no hay forma de saber si Google indexó nada ni por
+  qué consultas aparece; y la verificación se hace con una etiqueta en el `metadata`, que es
+  código de este repo.
+- **Respuesta:**
+
+#### PS5 — Los dos huecos a propósito: ¿qué clientes autorizan aparecer y cuáles son los vídeos? · ⏸ Bloqueada
+- **Por qué importa:** `CLIENTES` y `VIDEOS` están vacíos y sus secciones **no se pintan**.
+  Un cliente real con nombre es la prueba de credibilidad más fuerte que puede tener la
+  página, y para Meta también.
+- **Respuesta:**
+
+#### PS6 — El diseño actual, ¿se conserva o se rehace? · ✅ Resuelta (Fernando, 2026-08-03)
+- **Respuesta:** **se conserva y se amplía.** Se trabaja dentro del lenguaje visual que ya
+  existe (`components/sitio/piezas.tsx`) y **las piezas nuevas se añaden ahí**, no sueltas
+  dentro de una página. Documentado como estándar en `Diseño.md` → sección "Sitio público".
+
+#### PS7 — ¿Se puede mover el candado del `/negocio` que revisa Meta? · 🔎 Investigando
+- **Por qué importa:** `/negocio` está declarada a Meta como la web del negocio y su sección
+  de identidad legal **no puede faltar** (ya se perdió una vez, `b8a70fd`). Cualquier
+  rediseño de esa página tiene que conservarla, y si además se cambia de dominio (PS1) hay
+  que actualizar la URL declarada en Meta antes de que caduque la revisión.
+- **Respuesta parcial (del propio repo):** la restricción es real y está documentada en el
+  comentario de `app/(sitio)/negocio/page.tsx` (líneas 209-215). Se respeta pase lo que pase.
+
+### Plan de solución (borrador — se concreta al cerrar PS1, PS2 y PS6)
+
+1. **Cimientos técnicos** (no dependen de las respuestas, se pueden hacer ya): imagen de
+   Open Graph, quitar `user-scalable=no`, `lastModified` con fechas reales, hueco para la
+   verificación de Search Console.
+2. **`/negocio`**: reescribir jerarquía de encabezados con las palabras de PS2, desarrollar
+   el texto de cada servicio, añadir preguntas frecuentes con `FAQPage`, migas de pan con
+   `BreadcrumbList`.
+3. **Una URL por servicio** bajo `/negocio/<servicio>`, generadas desde `SERVICIOS` para que
+   siga habiendo una sola fuente de contenido.
+4. **La portada**: que el HTML servido diga quién es la empresa aunque la experiencia siga
+   siendo el pixel art. Es el fallo nº 1 y probablemente merezca objetivo propio.
+5. `/recursos` y `/contacto` después, con el mismo método.
+
+### Riesgos
+
+- **Romper la verificación de Meta** al tocar `/negocio` o al cambiar de dominio → la
+  sección de identidad legal se conserva siempre y el cambio de dominio se coordina con la
+  revisión.
+- **Escribir para el buscador y perder la voz.** La corrección de Fernando del 2026-08-02
+  ya fue exactamente esto al revés: el sitio se había escrito mirando a un revisor de Meta y
+  presentaba al GCC como proveedor de tecnología en vez de como proyecto de desarrollo
+  humano. **El SEO se mete dentro de lo que Fernando quiere decir, no encima.**
+- **Prometer lo que no se puede medir.** Aparecer primero en Google no depende solo del
+  código; se puede dejar la web impecable y tardar meses en posicionar. Lo que sí se
+  garantiza es que nada del lado técnico lo impida.
+
+---
+
+## Objetivo ANTERIOR (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · ✅ 99% — TODO PROBADO CON WHATSAPP REAL; solo falta que Meta apruebe el App Review
 
 ### ⏱️ Estado al 2026-08-03 (fin de la jornada)
 
