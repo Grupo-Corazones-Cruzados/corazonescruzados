@@ -1284,3 +1284,27 @@ html {
    de duplicar los componentes solo para cambiarles la rejilla. */
 .corp .estudio-en-sitio .grid { grid-template-columns: 1fr !important; }
 .corp .estudio-en-sitio [class*="max-w-"] { max-width: 100% !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SITIO PÚBLICO — la transición al abrir una puerta de /negocio (2026-08-04)
+
+   Al pulsar una tarjeta se cambia de ruta y el detalle de debajo se sustituye. Sin nada, el
+   cambio es un corte seco y no se ve que haya pasado algo. Esto lo hace aparecer subiendo.
+
+   Va aquí y NO dentro de `.corp`: el sitio público está fuera del tema del panel.
+   El bloque se remonta en cada navegación gracias al `key` del componente; sin ese `key`,
+   React reaprovecharía el nodo y la animación solo se vería la primera vez.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@keyframes aparecer-detalle {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.aparece-detalle {
+  animation: aparecer-detalle 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Quien pide en su sistema que no le muevan las cosas —mareos, vértigo, migrañas— no debe
+   recibir la animación. El contenido aparece igual, sin desplazamiento. */
+@media (prefers-reduced-motion: reduce) {
+  .aparece-detalle { animation: none; }
+}

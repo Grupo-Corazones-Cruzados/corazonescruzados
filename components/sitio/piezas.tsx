@@ -22,6 +22,7 @@
  */
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import {
   MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
   Ticket, Vote, ArrowRight, type LucideIcon,
@@ -171,35 +172,50 @@ export function FondoHeroe() {
  *   petición expresa. Añadir otro es poner `enlace` en `contenido.ts`, no tocar esto.
  */
 export function RejillaAccesos({
-  accesos, etiqueta,
+  accesos, etiqueta, activa,
 }: {
-  accesos: { id: string; icono: string; texto: string; enlace?: { href: string; etiqueta: string } }[];
+  accesos: { id: string; icono: string; texto: string }[];
   etiqueta: string;
+  /** `id` de la puerta abierta. Marca su tarjeta y le pone `aria-current`. */
+  activa?: string;
 }) {
   return (
     <ul aria-label={etiqueta} className="flex flex-wrap items-stretch justify-center gap-4 text-left">
       {accesos.map((a) => {
         const Icono = ICONOS[a.icono] ?? Layers;
+        const abierta = a.id === activa;
         return (
-          <li
-            key={a.id}
-            className="w-full sm:w-[280px] flex flex-col rounded-xl border border-white/[0.08]
-                       bg-white/[0.02] p-5 transition-colors hover:border-white/[0.16]"
-          >
-            <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0
-                             border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
-              <Icono className="w-[18px] h-[18px] text-[#a78bfa]" />
-            </span>
-            <p className="mt-3.5 text-[14px] leading-relaxed text-white/60">{a.texto}</p>
-            {a.enlace && (
-              <a
-                href={a.enlace.href}
-                className="mt-auto pt-4 inline-flex items-center gap-1.5 text-[13.5px] font-medium
-                           text-[#a78bfa] hover:text-white transition-colors"
+          <li key={a.id} className="w-full sm:w-[280px] flex">
+            {/* `#detalle` es lo que hace que al pulsar desde /negocio la página baje sola
+                hasta el detalle. Sin JavaScript: lo resuelve el navegador, y el
+                `scroll-smooth` del documento hace que se deslice en vez de saltar. */}
+            <Link
+              href={`/negocio/${a.id}#detalle`}
+              aria-current={abierta ? 'page' : undefined}
+              className={`group w-full flex flex-col rounded-xl border p-5 transition-colors
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B5FBF]/60
+                ${abierta
+                  ? 'border-[#7B5FBF]/55 bg-[#7B5FBF]/[0.09]'
+                  : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.18] hover:bg-white/[0.04]'}`}
+            >
+              <span
+                className={`inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border transition-colors
+                  ${abierta ? 'border-[#7B5FBF]/60 bg-[#7B5FBF]/25' : 'border-[#7B5FBF]/30 bg-[#7B5FBF]/10'}`}
               >
-                {a.enlace.etiqueta} <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-            )}
+                <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[#c4b5fd]' : 'text-[#a78bfa]'}`} />
+              </span>
+              <p className={`mt-3.5 text-[14px] leading-relaxed transition-colors
+                             ${abierta ? 'text-white/85' : 'text-white/60 group-hover:text-white/75'}`}>
+                {a.texto}
+              </p>
+              {/* `mt-auto` empuja esta línea al fondo: con textos de distinto largo, si no,
+                  cada flecha queda a una altura y la fila se ve descuadrada. */}
+              <span className={`mt-auto pt-4 inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors
+                                ${abierta ? 'text-[#c4b5fd]' : 'text-white/35 group-hover:text-[#a78bfa]'}`}>
+                {abierta ? 'Estás aquí' : 'Ver más'}
+                {!abierta && <ArrowRight className="w-3.5 h-3.5" />}
+              </span>
+            </Link>
           </li>
         );
       })}

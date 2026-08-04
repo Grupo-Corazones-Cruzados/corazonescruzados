@@ -1,44 +1,46 @@
 /**
- * NEGOCIO — la página comercial. Qué hacemos y para quién.
+ * NEGOCIO — la portada de la sección comercial.
  *
- * ── POR QUÉ EXISTE ─────────────────────────────────────────────────────────────
- * Meta rechazó la verificación (2026-08-02) con «no puede determinar que pertenezca a un
- * negocio real». El certificado de RUC era correcto; lo que fallaba era que un revisor
- * abría `app.grupocc.org` y encontraba la portada de captación de candidatos —pixel art,
- * creador de personaje—, que no se lee como una empresa que presta servicios.
+ * ── QUÉ ES AHORA ───────────────────────────────────────────────────────────────
+ * El titular, el subtítulo y **cinco puertas**. Nada más. Cada tarjeta lleva a su propia
+ * página (`/negocio/<id>`), donde el detalle aparece **debajo de las mismas tarjetas**, con
+ * la suya marcada.
  *
- * ── LAS REGLAS ─────────────────────────────────────────────────────────────────
+ * ── QUÉ SE QUITÓ EL 2026-08-04, Y QUE CONSTE ───────────────────────────────────
+ * Fernando pidió vaciar todo lo que había debajo de las tarjetas: servicios por públicos,
+ * precios, el apartado de WhatsApp, el alta de cliente y **la identidad legal**.
+ *
+ * ⚠️ **La identidad legal se quitó sabiendo lo que era.** Esta es la URL declarada a Meta,
+ * su verificación se rechazó una vez con «no puede determinar que pertenezca a un negocio
+ * real», y este archivo llevaba un aviso escrito de que esa sección no podía faltar. Se le
+ * advirtió y decidió quitarla: sigue estando en `/contacto` y en `/legal`, y avisó de que
+ * también la quitará de `/contacto`. **Si Meta vuelve a rechazar la verificación, esto es
+ * lo primero que hay que mirar.**
+ *
+ * El texto de los servicios NO se ha borrado: sigue en `SERVICIOS`
+ * (`lib/sitio/contenido.ts`), listo para repartirse entre las cinco páginas cuando Fernando
+ * dicte qué va en cada una.
+ *
+ * ── LAS REGLAS QUE SIGUEN EN PIE ───────────────────────────────────────────────
  * 1. **Server Component, sin `use client`.** Tiene que estar en el HTML crudo: un buscador
- *    y un revisor pueden no ejecutar JavaScript. Solo el alta de cliente es una isla.
- * 2. **Nada que no sea verificable.** Sin cifras de clientes ni años de experiencia. Un
- *    dato que no cuadra hace más daño que un dato que falta.
+ *    y un revisor pueden no ejecutar JavaScript.
+ * 2. **Nada que no sea verificable.** Sin cifras de clientes ni años de experiencia.
  * 3. **El texto vive en `lib/sitio/contenido.ts`**, no aquí.
  */
 
 import type { Metadata } from 'next';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
-import { SITIO, SERVICIOS, CLIENTES, PUBLICOS, REDES, OG_IMAGEN, ACCESOS } from '@/lib/sitio/contenido';
-import { RAZON_SOCIAL } from '@/lib/negocio/datos';
-import {
-  Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
-  RejillaAccesos, conNegritas,
-} from '@/components/sitio/piezas';
-import AltaCliente from './AltaCliente';
+import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
+import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
 
 export const metadata: Metadata = {
   title: 'Qué hacemos — un proyecto de desarrollo humano y sus servicios',
   description:
-    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador. De ahí nacen sus servicios: plataformas de gestión a medida, agentes de atención con IA en WhatsApp, automatización de la comunicación y facturación electrónica ante el SRI.',
-  keywords: [
-    'agente de IA WhatsApp Ecuador', 'WhatsApp Business API Ecuador', 'chatbot WhatsApp Guayaquil',
-    'desarrollo de software Guayaquil', 'facturación electrónica SRI', 'automatización WhatsApp',
-    'proveedor de tecnología WhatsApp',
-  ],
+    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
   alternates: { canonical: '/negocio' },
   openGraph: {
-    title: `${SITIO.nombre} — Servicios para empresas`,
+    title: `${SITIO.nombre} — Qué puedes hacer aquí`,
     description:
-      'Agentes de atención con IA en WhatsApp, plataformas de gestión a medida y facturación electrónica ante el SRI.',
+      'Tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
     url: `${SITIO.url}/negocio`,
     type: 'website',
     locale: 'es_EC',
@@ -49,216 +51,11 @@ export const metadata: Metadata = {
 export default function NegocioPage() {
   return (
     <>
-      {/* ── HÉROE ───────────────────────────────────────────────────────────── */}
-      {/* Rehecho el 2026-08-04 con Fernando. Antes había un titular de marca —«Primero las
-          personas. Lo demás sale de ahí.»— y dos botones. Se leía bonito y no contestaba a
-          la única pregunta de quien acaba de llegar: **qué puedo hacer yo aquí**.
-          Ahora eso lo contestan cinco puertas, en cinco tarjetas que se reparten solas (`RejillaAccesos`).
-          El titular y el subtítulo son suyos, palabra por palabra. */}
-      <section className="relative overflow-hidden">
-        <FondoHeroe />
-        <Contenedor className="relative pt-20 pb-14 sm:pt-24 sm:pb-16">
-          <div className="text-center">
-            <h1 className="text-[38px] sm:text-[54px] leading-[1.08] font-semibold text-white tracking-tight">
-              {SITIO.nombre}
-            </h1>
-            <p className="mt-5 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-3xl mx-auto">
-              Proyecto de desarrollo humano que ofrece soluciones para las necesidades
-              individuales o grupales de los sujetos, en función de resolver determinadas
-              problemáticas sociales.
-            </p>
-          </div>
-          <div className="mt-10 sm:mt-12">
-            <RejillaAccesos accesos={ACCESOS} etiqueta="Lo que puedes hacer en GCC World" />
-          </div>
-        </Contenedor>
-      </section>
+      <CabeceraNegocio />
 
-      {/* ── SERVICIOS ───────────────────────────────────────────────────────── */}
-      <Seccion id="servicios" tono="realce">
-        <TituloSeccion
-          etiqueta="Todo lo que ofrecemos"
-          titulo="Tres públicos, no uno"
-          entradilla="Un cliente que contrata, un miembro que crece y alguien que acaba de llegar necesitan cosas distintas. Estas son todas."
-        />
-
-        {PUBLICOS.map((pub) => {
-          const suyos = SERVICIOS.filter((s) => s.publico === pub.id);
-          if (!suyos.length) return null;
-          return (
-            <div key={pub.id} id={pub.id} className="mt-16 first:mt-12 scroll-mt-24">
-              <h3 className="text-[22px] font-semibold text-white tracking-tight">{pub.label}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-white/45 max-w-2xl">{pub.entradilla}</p>
-              <div className="mt-7 grid gap-5 md:grid-cols-2">
-                {suyos.map((s) => (
-                  <Tarjeta key={s.id} id={s.id}>
-                    <IconoCuadro nombre={s.icono} />
-                    <h4 className="mt-5 text-[18px] font-semibold text-white leading-snug">{s.titulo}</h4>
-                    <p className="mt-2.5 text-[14.5px] leading-relaxed text-white/55">{s.resumen}</p>
-                    <ul className="mt-5 space-y-2.5">
-                      {s.detalle.map((d, i) => (
-                        <li key={i} className="flex gap-2.5 text-[14px] leading-relaxed text-white/50">
-                          <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-[#7B5FBF]" />
-                          <span>{conNegritas(d)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Tarjeta>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </Seccion>
-
-      {/* ── CLIENTES ────────────────────────────────────────────────────────── */}
-      {/* Si la lista está vacía la sección NO se pinta: no queda un hueco ni un
-          «próximamente». Ver la nota en `lib/sitio/contenido.ts`. */}
-      {CLIENTES.length > 0 && (
-        <Seccion id="clientes">
-          <TituloSeccion
-            etiqueta="Clientes"
-            titulo="Empresas que trabajan con nosotros"
-            centrado
-          />
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {CLIENTES.map((c) => (
-              <Tarjeta key={c.nombre}>
-                <p className="text-[17px] font-semibold text-white">{c.nombre}</p>
-                <p className="mt-1 text-[13px] text-[#a78bfa]">{c.sector}</p>
-                <p className="mt-3 text-[14px] leading-relaxed text-white/50">{c.que}</p>
-                {c.url && (
-                  <a href={c.url} target="_blank" rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-1.5 text-[13.5px] text-white/60 hover:text-white transition-colors">
-                    Visitar <ArrowRight className="w-3.5 h-3.5" />
-                  </a>
-                )}
-              </Tarjeta>
-            ))}
-          </div>
-        </Seccion>
-      )}
-
-      {/* ── PRECIOS ─────────────────────────────────────────────────────────── */}
-      <Seccion id="precios" tono="realce">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-          <TituloSeccion
-            etiqueta="Precios"
-            titulo="No publicamos tarifas, y hay un motivo"
-            entradilla="No cuesta lo mismo conectar un número de WhatsApp con su conocimiento cargado que desarrollar un sistema de gestión a medida. Una tarifa fija para las dos cosas sería falsa en alguna de ellas."
-          />
-          <Tarjeta>
-            <p className="text-[15.5px] font-semibold text-white">Cómo funciona</p>
-            <ol className="mt-4 space-y-4">
-              {[
-                ['Creas tu cuenta', 'Gratis, y no te compromete a nada.'],
-                ['Describes lo que necesitas', 'Desde tu espacio de cliente, dentro de la plataforma.'],
-                ['Recibes la propuesta', 'Con su alcance y su precio, y queda registrada ahí para consultarla o revisarla.'],
-              ].map(([t, d], i) => (
-                <li key={t} className="flex gap-3.5">
-                  <span className="shrink-0 w-6 h-6 rounded-full border border-[#7B5FBF]/40 bg-[#7B5FBF]/10 text-[#c4b5fd] text-[12px] font-semibold inline-flex items-center justify-center">
-                    {i + 1}
-                  </span>
-                  <span>
-                    <span className="block text-[14.5px] font-medium text-white/90">{t}</span>
-                    <span className="block mt-0.5 text-[13.5px] leading-relaxed text-white/45">{d}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </Tarjeta>
-        </div>
-      </Seccion>
-
-      {/* ── PAPEL ANTE WHATSAPP ─────────────────────────────────────────────── */}
-      <Seccion>
-        <TituloSeccion
-          etiqueta="Tratamiento de datos"
-          titulo="Si contratas el agente de WhatsApp, tu número y tus conversaciones siguen siendo tuyos"
-          entradilla="Es uno de los servicios, y el que más dudas genera. Así queda claro."
-        />
-        <div className="mt-10 grid gap-5 md:grid-cols-2">
-          <Tarjeta>
-            <p className="text-[15.5px] font-semibold text-white">Conservas tu cuenta</p>
-            <p className="mt-2.5 text-[14.5px] leading-relaxed text-white/55">
-              Conectas <strong className="text-white font-semibold">tu propio número</strong> de
-              WhatsApp Business y mantienes su titularidad. Tu equipo sigue usando la aplicación
-              en el teléfono y WhatsApp Web como siempre.
-            </p>
-          </Tarjeta>
-          <Tarjeta>
-            <p className="text-[15.5px] font-semibold text-white">Tú decides, nosotros ejecutamos</p>
-            <p className="mt-2.5 text-[14.5px] leading-relaxed text-white/55">
-              Sobre los datos de esas conversaciones tú eres el{' '}
-              <strong className="text-white font-semibold">responsable</strong> y {SITIO.nombre} es{' '}
-              <strong className="text-white font-semibold">encargado del tratamiento</strong>: los
-              tratamos solo por cuenta tuya y siguiendo tus instrucciones.
-            </p>
-            <a href="/legal/whatsapp"
-              className="mt-4 inline-flex items-center gap-1.5 text-[13.5px] text-[#a78bfa] hover:text-white transition-colors">
-              Leer la política del servicio <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-          </Tarjeta>
-        </div>
-      </Seccion>
-
-      {/* ── IDENTIDAD ───────────────────────────────────────────────────────── */}
-      {/* ⚠️ ESTA SECCIÓN NO PUEDE FALTAR DE ESTA PÁGINA. `/negocio` es la URL declarada a
-          Meta como sitio del negocio, y su verificación se rechazó una vez con «no puede
-          determinar que pertenezca a un negocio real». Un revisor que abre esto tiene que
-          poder ver quién está detrás **y comprobarlo por su cuenta**.
-          Se perdió sin querer al reorganizar la página por públicos, y se detectó al
-          comprobar el HTML compilado antes de publicar. El RUC seguía en los datos
-          estructurados, que un revisor humano no lee. */}
-      <Seccion id="identidad">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
-          <TituloSeccion
-            etiqueta="Identidad legal"
-            titulo="Quién está detrás de esto"
-            entradilla="Somos un negocio registrado en Ecuador, y puedes comprobarlo tú mismo sin fiarte de esta página."
-          />
-          <Tarjeta>
-            <dl className="space-y-3.5">
-              {[
-                ['Razón social', RAZON_SOCIAL],
-                ['Nombre comercial', SITIO.nombre],
-                ['RUC', SITIO.ruc],
-                ['Domicilio', SITIO.direccion],
-                ['Correo', SITIO.correo],
-              ].map(([k, v]) => (
-                <div key={k} className="grid sm:grid-cols-[130px_1fr] gap-1 sm:gap-3">
-                  <dt className="text-[13px] text-white/35">{k}</dt>
-                  <dd className="text-[13.5px] text-white/75 leading-relaxed break-words">{v}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-6 pt-5 border-t border-white/[0.07] text-[13px] leading-relaxed text-white/45">
-              El registro es <strong className="text-white/70 font-semibold">público y sin clave</strong>: en la{' '}
-              <a href="https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc"
-                target="_blank" rel="noopener noreferrer"
-                className="text-[#a78bfa] hover:text-white underline transition-colors">
-                Consulta de RUC del SRI
-              </a>{' '}
-              introduces <strong className="text-white/70 font-semibold">{SITIO.ruc}</strong> y aparecen la razón
-              social, el estado del contribuyente y el establecimiento con su nombre comercial.
-            </p>
-          </Tarjeta>
-        </div>
-      </Seccion>
-
-      {/* ── ALTA ────────────────────────────────────────────────────────────── */}
-      <Seccion id="crear-cuenta" tono="realce">
-        <div className="max-w-2xl mx-auto text-center">
-          <TituloSeccion titulo="Empieza por abrir tu cuenta" centrado
-            entradilla="Tendrás tu espacio para pedir una cotización y ver su alcance y su precio, el estado de tus proyectos, tus tickets de soporte y tus facturas." />
-          <div className="mt-9 flex justify-center">
-            <AltaCliente />
-          </div>
-        </div>
-      </Seccion>
-
-      {/* Datos estructurados: le dan al buscador —y a quien revise— la lectura de que esto
-          es una organización real con dirección, teléfono e identificador fiscal. */}
+      {/* Datos estructurados: le dan al buscador la lectura de que esto es una organización
+          real con dirección, teléfono e identificador fiscal, y le enumeran las cinco
+          páginas de dentro para que las descubra sin depender del mapa del sitio. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -269,8 +66,6 @@ export default function NegocioPage() {
             legalName: SITIO.razonSocial,
             taxID: SITIO.ruc,
             url: `${SITIO.url}/negocio`,
-            // «Esta web, ese LinkedIn y ese Instagram son la misma organización.» Con un
-            // nombre tan repetido como el nuestro, esa aclaración vale más que un adjetivo.
             sameAs: [...REDES],
             email: SITIO.correo,
             telephone: SITIO.telefonoPlano,
@@ -282,13 +77,14 @@ export default function NegocioPage() {
             },
             areaServed: 'EC',
             description:
-              'Agentes de atención con inteligencia artificial en WhatsApp, plataformas de gestión a medida, automatización de la comunicación y facturación electrónica ante el SRI.',
+              'Proyecto de desarrollo humano que ofrece soluciones para las necesidades individuales y grupales de sus colaboradores, en función de resolver determinadas problemáticas sociales, teniendo como meta final la unión del mundo.',
             hasOfferCatalog: {
               '@type': 'OfferCatalog',
-              name: 'Servicios',
-              itemListElement: SERVICIOS.map((s) => ({
+              name: 'Lo que ofrecemos',
+              itemListElement: ACCESOS.map((a) => ({
                 '@type': 'Offer',
-                itemOffered: { '@type': 'Service', name: s.titulo, description: s.resumen },
+                url: `${SITIO.url}/negocio/${a.id}`,
+                itemOffered: { '@type': 'Service', name: a.titulo, description: a.texto },
               })),
             },
           }),

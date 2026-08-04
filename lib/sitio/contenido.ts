@@ -108,18 +108,31 @@ export const NAVEGACION = [
   { href: '/contacto', label: 'Contacto' },
 ] as const;
 
-/* ═══════════════════════ ACCESOS (la tira de /negocio) ═══════════════════════ */
+/* ═══════════════════════ ACCESOS — las cinco puertas de /negocio ═══════════════════════ */
 
 /**
- * LAS CINCO TARJETAS DE LA CABECERA DE `/negocio` — dictadas por Fernando (2026-08-04).
+ * LAS CINCO PUERTAS DE `/negocio` — dictadas por Fernando (2026-08-04).
  *
- * Sustituyen al bloque que había («Primero las personas. Lo demás sale de ahí.») porque no
- * decía **qué puede hacer aquí** quien llega. Estas cinco sí: cada una es una puerta.
+ * Sustituyeron al bloque que había («Primero las personas. Lo demás sale de ahí.») porque
+ * no decía **qué puede hacer aquí** quien llega. Y desde el mismo día son además **cinco
+ * páginas**: `/negocio/<id>`.
  *
- * ── CÓMO ESTÁN ESCRITAS ────────────────────────────────────────────────────────
+ * ── ⚠️ EL `id` ES LA URL. NO SE CAMBIA A LA LIGERA ─────────────────────────────
+ * De aquí salen a la vez la tarjeta, la ruta, el mapa del sitio y el `canonical`. Cambiar
+ * un `id` **rompe cualquier enlace ya publicado y tira el posicionamiento** que esa URL
+ * hubiera ganado. Si algún día hay que renombrar uno, se hace con una **redirección
+ * permanente** del viejo al nuevo, nunca a secas.
+ *
+ * Fernando eligió nombres y no números (`/negocio/requerimientos` en vez de
+ * `/negocio/necesidad1`): la URL dice de qué va, y eso cuenta tanto para el buscador como
+ * para quien recibe el enlace por WhatsApp.
+ *
+ * ── CÓMO ESTÁN ESCRITAS LAS TARJETAS ───────────────────────────────────────────
  * **Una frase, sin título.** Fernando dio una frase por tarjeta y pidió que no fueran
- * altas; meterles además un titular las alarga y obliga a inventar palabras que él no dijo.
- * El icono hace de rótulo.
+ * altas; el icono hace de rótulo. El `titulo` es el de su **página**, no el de la tarjeta.
+ *
+ * ⚠️ Los títulos son **provisionales a propósito**: «ponle un título básico a cada página,
+ * y luego te digo qué iría en cada página» (Fernando, 2026-08-04).
  *
  * ⚠️ **La quinta habla de algo que TODAVÍA NO EXISTE.** Buscado en el código: lo único que
  * hay es que los **miembros** voten la **cancelación de un proyecto**
@@ -129,36 +142,54 @@ export const NAVEGACION = [
  * viene». Queda escrito aquí para que la decisión tenga dueño y fecha.
  */
 export interface Acceso {
+  /** El último tramo de la URL: `/negocio/<id>`. Ver el aviso de arriba. */
   id: string;
   icono: string;
+  /** Título de SU PÁGINA. Provisional hasta que Fernando dicte el contenido. */
+  titulo: string;
+  /** La frase de la tarjeta. */
   texto: string;
-  /** Solo la del marketplace lo lleva, por petición expresa. */
-  enlace?: { href: string; etiqueta: string };
+  /**
+   * Enlace a otra parte del sitio, si lo tiene. Se pinta **en la página de detalle**, no en
+   * la tarjeta: la tarjeta entera ya es un enlace, y un `<a>` dentro de otro `<a>` es
+   * marcado inválido — el navegador lo desarma y uno de los dos deja de funcionar.
+   */
+  enlaceExterno?: { href: string; etiqueta: string };
 }
 
 export const ACCESOS: Acceso[] = [
   {
     id: 'requerimientos', icono: 'ticket',
-    texto: 'Gestiona tus requerimientos publicando tickets, o los proyectos que ya necesitas en tu organización.',
+    titulo: 'Tickets y proyectos',
+    texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
   },
   {
     id: 'automatizacion', icono: 'rayo',
+    titulo: 'Automatización',
     texto: 'Adquiere soluciones de automatización para tu negocio: aplicaciones, agentes de IA y robots.',
   },
   {
-    id: 'juego', icono: 'juego',
+    id: 'videojuego', icono: 'juego',
+    titulo: 'GCC World, el videojuego',
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
   },
   {
     id: 'marketplace', icono: 'tienda',
+    titulo: 'Marketplace',
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
-    enlace: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' },
+    enlaceExterno: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' },
   },
   {
     id: 'votacion', icono: 'voto',
-    texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar en la organización.',
+    titulo: 'Votación de mejoras',
+    texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar dentro de la organización.',
   },
 ];
+
+/** Búsqueda por URL. `undefined` si el tramo no es ninguna puerta → la ruta responde 404. */
+export function accesoPorId(id: string): Acceso | undefined {
+  return ACCESOS.find((a) => a.id === id);
+}
 
 /* ═══════════════════════ SERVICIOS ═══════════════════════ */
 
