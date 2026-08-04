@@ -23,6 +23,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
   Ticket, Vote, ArrowRight, CalendarClock, type LucideIcon,
@@ -262,7 +263,12 @@ export function BloqueTema({
   etiqueta: string;
   pregunta: string;
   texto: string;
-  pasos?: { titulo: string; texto: string; icono?: string }[];
+  pasos?: {
+    titulo: string;
+    texto: string;
+    icono?: string;
+    imagen?: { src: string; ancho: number; alto: number };
+  }[];
 }) {
   return (
     <section
@@ -331,7 +337,23 @@ export function BloqueTema({
                     {p.titulo}
                   </p>
                   <p className="mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
-                  {Icono && (
+                  {/* La ilustración manda sobre el icono. Es una ESCENA, no un pictograma:
+                      ocupa el ancho de su columna, no un recuadro de 44 px, o su línea de
+                      tiempo y sus tarjetas no se leerían.
+                      `aria-hidden` y `alt=""`: no aporta nada que no diga ya el texto del
+                      paso, así que a un lector de pantalla solo le estorbaría. */}
+                  {p.imagen ? (
+                    <div className="mt-auto pt-8">
+                      <Image
+                        src={p.imagen.src}
+                        alt=""
+                        aria-hidden
+                        width={p.imagen.ancho}
+                        height={p.imagen.alto}
+                        className="w-full max-w-[240px] h-auto"
+                      />
+                    </div>
+                  ) : Icono ? (
                     // El hueco va en un envoltorio, no en el recuadro: con `pt-6` sobre el
                     // propio recuadro, el relleno quedaría DENTRO del borde y saldría una
                     // caja alta con el icono descentrado.
@@ -341,7 +363,7 @@ export function BloqueTema({
                         <Icono className="w-[22px] h-[22px] text-[#a78bfa]" />
                       </span>
                     </div>
-                  )}
+                  ) : null}
                 </li>
               );
             })}
