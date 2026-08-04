@@ -255,16 +255,22 @@ export function RejillaAccesos({
  * Sin sombras, sin degradados de moda y sin animación de entrada: el sitio se ve serio
  * porque usa aire y tipografía, no efectos. Server Component.
  */
-export function BloqueDestacado({
-  etiqueta, pregunta, texto, pasos,
+export function BloqueTema({
+  id, etiqueta, pregunta, texto, pasos,
 }: {
+  id: string;
   etiqueta: string;
   pregunta: string;
   texto: string;
   pasos?: { titulo: string; texto: string }[];
 }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-[#7B5FBF]/25 bg-white/[0.02]">
+    <section
+      id={id}
+      // `scroll-mt-24`: al abrir un enlace con ancla, deja aire por arriba para que la
+      // cabecera fija no tape el título del tema.
+      className="group/tema relative overflow-hidden rounded-2xl border border-[#7B5FBF]/25 bg-white/[0.02] scroll-mt-24"
+    >
       {/* El resplandor. Es un degradado CSS: ni una petición de red, ni una imagen que
           cargar, y se ve igual en cualquier pantalla. */}
       <div
@@ -281,8 +287,26 @@ export function BloqueDestacado({
           {etiqueta}
         </p>
 
-        <h2 className="mt-4 text-[30px] sm:text-[44px] leading-[1.1] font-semibold text-white tracking-tight max-w-3xl">
-          {pregunta}
+        {/* El título es su propio enlace: pulsarlo deja el ancla en la barra del navegador,
+            listo para copiar y mandar por WhatsApp. La almohadilla solo asoma al acercar el
+            puntero —a quien está leyendo no le estorba— pero el enlace existe siempre, y por
+            eso funciona igual con el teclado. */}
+        <h2 className="mt-4 max-w-3xl">
+          <a
+            href={`#${id}`}
+            className="group/ancla inline text-[30px] sm:text-[44px] leading-[1.1] font-semibold
+                       text-white tracking-tight focus:outline-none focus-visible:underline
+                       focus-visible:decoration-[#7B5FBF] decoration-2 underline-offset-4"
+          >
+            {pregunta}
+            <span
+              aria-hidden
+              className="ml-3 align-middle text-[0.5em] text-[#7B5FBF]/0 transition-colors
+                         group-hover/tema:text-[#7B5FBF]/70 group-focus-within/tema:text-[#7B5FBF]/70"
+            >
+              #
+            </span>
+          </a>
         </h2>
 
         <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-white/60 max-w-2xl">

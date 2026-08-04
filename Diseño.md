@@ -161,6 +161,26 @@ en dos, y **solo la primera mitad se hace sin preguntar**:
 Las piezas de `piezas.tsx` y las reglas de abajo siguen siendo el estándar **cuando ya hay
 un diseño acordado** — dicen *cómo* se construye, no *qué* se construye.
 
+### Temas de `/negocio/<id>` — `BloqueTema` (2026-08-04)
+
+Cada página de puerta lleva N **temas** cortos entre el vídeo y las preguntas: rótulo,
+pregunta grande, respuesta en una o dos frases y unos pasos numerados. Salen del campo
+`temas` de cada puerta en `contenido.ts`; sin temas, no se pinta nada.
+
+- **Cada tema tiene su ancla** — `/negocio/<puerta>#<id>` — y **su título es un enlace a sí
+  mismo**: al pulsarlo, el ancla queda en la barra del navegador lista para copiar. La
+  almohadilla solo asoma al acercar el puntero, pero el enlace existe siempre (funciona con
+  teclado).
+- **Anclas y no páginas propias** (decisión de Fernando): los temas son cortos, y una página
+  corta en un dominio nuevo acaba en «rastreada, sin indexar». Acumulándolos, la página de
+  la puerta **se hace densa**, que es lo que Google pide como «calidad suficiente».
+- **⚠️ El `id` es media URL.** Cambiarlo rompe los enlaces que ya circulen.
+- **Qué le da el golpe de vista**, y ninguna es un efecto: pregunta a 30/44 px contra
+  cuerpo de 14-17 · la pregunta habla del problema de quien lee, no de nosotros · resplandor
+  violeta propio, más marcado que el de la página · pasos con número grande y tenue, que
+  convierten una promesa en un mecanismo.
+- `scroll-mt-24` para que la cabecera fija no tape el título al abrir un enlace con ancla.
+
 ### Preguntas frecuentes de `/negocio/<id>` (2026-08-04)
 
 **En la web** (`components/sitio/FaqsNegocio.tsx`): buscador arriba; debajo, dos columnas —

@@ -34,7 +34,7 @@ import { faqsDeAcceso } from '@/lib/faqs';
 import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
 import VideoYouTube from '@/components/sitio/VideoYouTube';
 import FaqsNegocio from '@/components/sitio/FaqsNegocio';
-import { Contenedor, BloqueDestacado } from '@/components/sitio/piezas';
+import { Contenedor, BloqueTema } from '@/components/sitio/piezas';
 
 type Props = { params: Promise<{ necesidad: string }> };
 
@@ -122,14 +122,16 @@ export default async function DetalleNecesidadPage({ params }: Props) {
             </div>
           )}
 
-          {/* El bloque que le habla al cliente. Va DESPUÉS del vídeo y ANTES de las
-              preguntas, como pidió Fernando: primero se ve, luego se entiende, y al final
-              se resuelven las dudas. Sin `destacado`, no se pinta nada. */}
-          {acceso.destacado && (
-            <div className="mt-14">
-              <BloqueDestacado {...acceso.destacado} />
+          {/* Los temas. Van DESPUÉS del vídeo y ANTES de las preguntas, como pidió
+              Fernando: primero se ve, luego se entiende, y al final se resuelven las dudas.
+              Cada uno tiene su ancla —`#<id>`— y su título es un enlace a sí mismo, para
+              poder mandar a alguien directo al tema que responde su duda.
+              Sin temas, no se pinta nada. */}
+          {acceso.temas?.map((t) => (
+            <div key={t.id} className="mt-14">
+              <BloqueTema {...t} />
             </div>
-          )}
+          ))}
 
           {/* Preguntas frecuentes. Igual: si no hay ninguna, la sección entera desaparece. */}
           {faqs.length > 0 && (

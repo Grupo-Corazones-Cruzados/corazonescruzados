@@ -174,24 +174,42 @@ export interface Acceso {
    */
   video?: string;
   /**
-   * EL BLOQUE DESTACADO de su página — entre el vídeo y las preguntas frecuentes.
+   * LOS TEMAS de su página — entre el vídeo y las preguntas frecuentes.
    *
-   * Es donde se le habla al cliente de verdad: una pregunta grande que le suena a su
-   * problema, la respuesta en una frase, y los pasos concretos para que no quede en promesa.
-   * Fernando lo dictó para «Progreso» el 2026-08-04; las otras cuatro llegarán igual.
+   * Cada uno le habla al cliente de una cosa: una pregunta grande que le suena a su
+   * problema, la respuesta en una o dos frases, y unos pasos para que no quede en promesa.
+   * Aquí caben los flujos de trabajo que resuelven dudas frecuentes.
    *
-   * Si una puerta no lo trae, **no se pinta nada**: ni recuadro vacío ni relleno.
+   * Si una puerta no trae ninguno, **no se pinta nada**: ni recuadro vacío ni relleno.
    */
-  destacado?: {
-    /** Rótulo pequeño en versalitas, sobre la pregunta. */
-    etiqueta: string;
-    /** La pregunta grande. Es el gancho: tiene que sonar al problema de quien lee. */
-    pregunta: string;
-    /** La respuesta, en una o dos frases. */
-    texto: string;
-    /** Los pasos, para que la promesa se vea concreta. Opcional. */
-    pasos?: { titulo: string; texto: string }[];
-  };
+  temas?: Tema[];
+}
+
+/**
+ * UN TEMA — con su propio enlace.
+ *
+ * ── POR QUÉ ANCLA Y NO PÁGINA PROPIA (decisión de Fernando, 2026-08-04) ────────
+ * Se enlazan como `/negocio/<puerta>#<id>`, no como `/negocio/<puerta>/<id>`. Los temas son
+ * **cortos** —párrafo y unos pasos—, y una página corta en un dominio recién estrenado
+ * acaba en «rastreada, actualmente sin indexar». Acumulándolos en la página de su puerta
+ * pasa lo contrario: **la página se hace densa**, que es justo lo que Google pide cuando
+ * habla de «calidad suficiente». Y el enlace directo funciona igual de bien.
+ *
+ * ⚠️ **El `id` es la mitad de una URL**: `#como-funciona` se comparte por WhatsApp y se
+ * queda en el navegador de la gente. Cambiarlo rompe los enlaces que ya circulen. Se usan
+ * palabras, sin tildes ni mayúsculas, separadas por guiones.
+ */
+export interface Tema {
+  /** El ancla: `/negocio/<puerta>#<id>`. No se cambia a la ligera. */
+  id: string;
+  /** Rótulo pequeño en versalitas, sobre la pregunta. */
+  etiqueta: string;
+  /** La pregunta grande. Es el gancho: tiene que sonar al problema de quien lee. */
+  pregunta: string;
+  /** La respuesta, en una o dos frases. */
+  texto: string;
+  /** Los pasos, para que la promesa se vea concreta. Opcional. */
+  pasos?: { titulo: string; texto: string }[];
 }
 
 export const ACCESOS: Acceso[] = [
@@ -218,7 +236,8 @@ export const ACCESOS: Acceso[] = [
      *    —tickets, el círculo del talento y el portal del cliente—, según la regla de la
      *    página: nada que no sea verificable.
      */
-    destacado: {
+    temas: [{
+      id: 'como-funciona',
       etiqueta: 'Cómo funciona',
       pregunta: '¿Tienes un requerimiento que nadie termina de resolver?',
       texto:
@@ -237,7 +256,7 @@ export const ACCESOS: Acceso[] = [
           texto: 'El estado está siempre a la vista, y lo que se resuelve queda registrado con su historia.',
         },
       ],
-    },
+    }],
   },
   {
     id: 'automatizacion', icono: 'rayo',
