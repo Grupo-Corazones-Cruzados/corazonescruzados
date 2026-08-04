@@ -28,14 +28,36 @@ export const SRI_MAX = {
   campoAdicionalValor: 300,
 } as const;
 
-/** Escapa los cinco caracteres que XML reserva. */
-export function escapeXml(str: string): string {
+/**
+ * Escapa TEXTO DE UN NODO (character data).
+ *
+ * ⚠ Solo `&`, `<` y `>`. **NUNCA `'` ni `"`**, aunque XML los admita escapados: en texto de
+ * nodo no hacen ninguna falta (solo importan dentro de un valor de atributo) y el
+ * canonicalizador de `ec-sri-invoice-signer` los **re-escapa**, convirtiendo `&apos;` en
+ * `&amp;apos;`. Entonces la librería calcula el digest sobre `y &amp;apos;Empacar…` mientras
+ * el SRI lo calcula sobre `y 'Empacar…` → los hashes no cuadran y el SRI responde
+ * **FIRMA INVALIDA (firma y/o certificados alterados)**.
+ *
+ * Pasó en producción el 2026-08-04 con la primera descripción que llevó un apóstrofo
+ * («barrido final y 'Empacar y Facturar'»). Comprobado ejecutando la c14n de la librería
+ * contra la canonicalización correcta: con `&apos;` no cuadran; con el apóstrofo literal, sí.
+ */
+export function escapeXmlText(str: string): string {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Escapa un VALOR DE ATRIBUTO. Los atributos se emiten entre comillas dobles, así que se
+ * escapa `"` pero no `'`. (`&quot;` en atributo sí lo canonicaliza bien la librería.)
+ */
+export function escapeXmlAttr(str: string): string {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
@@ -47,11 +69,19 @@ export function escapeXml(str: string): string {
  * de escapar contaría de más y, peor, podría partir una entidad por la mitad.
  */
 export function sriText(value: string | null | undefined, max: number): string {
+  return escapeXmlText(truncar(value, max));
+}
+
+/** Igual que `sriText` pero para un valor de atributo. */
+export function sriAttr(value: string | null | undefined, max: number): string {
+  return escapeXmlAttr(truncar(value, max));
+}
+
+function truncar(value: string | null | undefined, max: number): string {
   const s = String(value ?? '').replace(/\s+/g, ' ').trim();
-  if (s.length <= max) return escapeXml(s);
+  if (s.length <= max) return s;
   // Corta y remata con «…» (1 carácter) sin dejar puntuación colgando.
-  const cut = s.slice(0, max - 1).replace(/[\s,;:.·\-–—]+$/, '');
-  return escapeXml(cut + '…');
+  return s.slice(0, max - 1).replace(/[\s,;:.·\-–—]+$/, '') + '…';
 }
 
 /** ¿Este texto se va a truncar? Para avisar en la UI antes de emitir. */

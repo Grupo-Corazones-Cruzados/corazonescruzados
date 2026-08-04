@@ -1,6 +1,6 @@
 import { SRI_CONFIG, getTipoIdentificacion } from './config';
 import { generateAccessKey, formatInvoiceNumber, ecuadorDateParts } from './access-key';
-import { sriText, SRI_MAX } from './text';
+import { sriText, sriAttr, SRI_MAX } from './text';
 
 export interface InvoiceItem {
   codigoPrincipal?: string;
@@ -138,7 +138,7 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   const infoAdicionalXml = additionalFields.length > 0
     ? `
   <infoAdicional>${additionalFields.map(f => `
-    <campoAdicional nombre="${sriText(f.name, SRI_MAX.campoAdicionalNombre)}">${sriText(f.value, SRI_MAX.campoAdicionalValor)}</campoAdicional>`).join('')}
+    <campoAdicional nombre="${sriAttr(f.name, SRI_MAX.campoAdicionalNombre)}">${sriText(f.value, SRI_MAX.campoAdicionalValor)}</campoAdicional>`).join('')}
   </infoAdicional>`
     : '';
 
