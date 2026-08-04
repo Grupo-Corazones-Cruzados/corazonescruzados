@@ -17,7 +17,7 @@
 
 import type { Metadata } from 'next';
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { SITIO, SERVICIOS, CLIENTES, PUBLICOS, REDES } from '@/lib/sitio/contenido';
+import { SITIO, SERVICIOS, CLIENTES, PUBLICOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { RAZON_SOCIAL } from '@/lib/negocio/datos';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
@@ -42,6 +42,7 @@ export const metadata: Metadata = {
     url: `${SITIO.url}/negocio`,
     type: 'website',
     locale: 'es_EC',
+    images: [OG_IMAGEN],
   },
 };
 

@@ -14,7 +14,7 @@
 
 import type { Metadata } from 'next';
 import { ArrowRight } from 'lucide-react';
-import { SITIO, REDES } from '@/lib/sitio/contenido';
+import { SITIO, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, FondoHeroe, BotonPrimario, BotonSecundario,
 } from '@/components/sitio/piezas';
@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     url: `${SITIO.url}/recursos`,
     type: 'website',
     locale: 'es_EC',
+    images: [OG_IMAGEN],
   },
 };
 

@@ -25,9 +25,22 @@ import PieSitio from '@/components/sitio/PieSitio';
  * Sobrescribe el `viewport` de `app/layout.tsx` solo para `/negocio`, `/recursos`,
  * `/contacto` y los legales.
  */
+/**
+ * ⚠️ HAY QUE ANULAR **CAMPO POR CAMPO**, y esto costó un despliegue.
+ *
+ * La primera versión solo ponía `width` e `initialScale`, dando por hecho que lo que no se
+ * declara aquí «no se hereda». Es al revés: Next **fusiona** el viewport con el de la raíz,
+ * así que `maximumScale: 1` y `userScalable: false` seguían llegando y el zoom seguía
+ * bloqueado. Se vio midiendo el `<meta>` en producción, no en el código.
+ *
+ * Por eso los dos campos están escritos **explícitamente**: es la única forma de deshacer
+ * lo que pone la raíz.
+ */
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function SitioLayout({ children }: { children: ReactNode }) {

@@ -8,7 +8,7 @@
 
 import type { Metadata } from 'next';
 import { Mail, Phone, MapPin, Youtube, ArrowRight } from 'lucide-react';
-import { SITIO, VIDEOS, CANAL_YOUTUBE, REDES } from '@/lib/sitio/contenido';
+import { SITIO, VIDEOS, CANAL_YOUTUBE, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, FondoHeroe, BotonPrimario,
 } from '@/components/sitio/piezas';
@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     url: `${SITIO.url}/contacto`,
     type: 'website',
     locale: 'es_EC',
+    images: [OG_IMAGEN],
   },
 };
 

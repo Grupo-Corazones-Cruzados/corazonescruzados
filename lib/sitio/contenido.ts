@@ -59,6 +59,20 @@ export const SITIO = {
   pais: 'Ecuador',
 } as const;
 
+/**
+ * LA IMAGEN QUE SALE AL COMPARTIR — hay que nombrarla en cada página, y no es obvio.
+ *
+ * `app/opengraph-image.tsx` se aplica sola a la portada y a cualquier ruta que **no**
+ * declare su propio `openGraph`. Pero `/negocio`, `/recursos` y `/contacto` sí lo declaran
+ * —cada una con su título y su descripción—, y Next **sustituye** el bloque `openGraph`
+ * entero en vez de completarlo: al no llevar `images`, se quedaban sin imagen.
+ *
+ * Comprobado en producción el 2026-08-04: la portada traía `og:image` y las otras tres no.
+ * Por eso las tres la nombran con esta constante — una sola definición, no tres rutas
+ * escritas a mano.
+ */
+export const OG_IMAGEN = '/opengraph-image';
+
 /* ═══════════════════════ PERFILES OFICIALES ═══════════════════════ */
 
 /**
