@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
+import { ensureRequirementColumns, normalizeTalents, talentsAggSql } from '@/lib/projects/requirements';
 
 export async function GET(req: NextRequest) {
   try {
@@ -69,8 +69,7 @@ export async function GET(req: NextRequest) {
               ) as team,
               (SELECT COUNT(*) FROM gcc_world.project_requirements r WHERE r.project_id = p.id) as requirements_count,
               COALESCE((SELECT SUM(r.slots)::int FROM gcc_world.project_requirements r WHERE r.project_id = p.id), 0) as slots_total,
-              COALESCE((SELECT ARRAY(SELECT DISTINCT UNNEST(ARRAY_AGG(r.talents)) ORDER BY 1)
-                          FROM gcc_world.project_requirements r WHERE r.project_id = p.id), '{}') as talents
+              ${talentsAggSql('p')} as talents
        FROM gcc_world.projects p
        ${where}
        ORDER BY p.marketplace_published_at DESC`,

@@ -196,6 +196,8 @@ export default function ProjectsPage() {
     try {
       const res = await fetch(`/api/projects?${params}`);
       const data = await res.json();
+      // Un fallo del servidor NO debe verse como "no hay proyectos": se avisa.
+      if (!res.ok || data.error) toast.error(data.error || 'No se pudo cargar la lista de proyectos');
       setProjects(data.data || []);
       setTotal(data.total || 0);
       setCounts(data.counts || {});

@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requirements';
+import { ensureRequirementColumns, normalizeTalents, talentsAggSql } from '@/lib/projects/requirements';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
@@ -143,8 +143,7 @@ export async function GET(req: NextRequest) {
               inv_info.invoice_id,
               inv_info.invoice_sri_status,
               COALESCE((SELECT SUM(r.slots)::int FROM gcc_world.project_requirements r WHERE r.project_id = p.id), 0) as slots_total,
-              COALESCE((SELECT ARRAY(SELECT DISTINCT UNNEST(ARRAY_AGG(r.talents)) ORDER BY 1)
-                          FROM gcc_world.project_requirements r WHERE r.project_id = p.id), '{}') as talents
+              ${talentsAggSql('p')} as talents
        FROM gcc_world.projects p
        LEFT JOIN gcc_world.clients c ON c.id = p.client_id
        LEFT JOIN LATERAL (
@@ -169,8 +168,14 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts, talentOptions: talentOpt.map((r: any) => r.talent) });
   } catch (err: any) {
+    // Antes se devolvía `{data: []}` con HTTP 200: cualquier fallo se veía como "no hay
+    // proyectos" en vez de como un error, y la lista parecía haberse borrado sola
+    // (incidente del 2026-08-04). Ahora el fallo se declara para que la UI lo muestre.
     console.error('Projects error:', err.message);
-    return NextResponse.json({ data: [], total: 0, counts: {} });
+    return NextResponse.json(
+      { error: err.message || 'No se pudo cargar la lista de proyectos', data: [], total: 0, counts: {} },
+      { status: 500 },
+    );
   }
 }
 

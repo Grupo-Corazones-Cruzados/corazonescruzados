@@ -85,3 +85,23 @@ export function talentFilterSql(alias: string, paramIndex: number): string {
      WHERE pr.project_id = ${alias}.id AND pr.talents && $${paramIndex}::text[]
   )`;
 }
+
+/**
+ * Fragmento SQL con los talentos de un proyecto (unión de los de sus requerimientos),
+ * como `text[]` ordenado y sin repetidos. `alias` es el alias de `projects` en la consulta.
+ *
+ * ⚠ Se DESANIDA antes de agregar. `ARRAY_AGG(r.talents)` sobre un `text[]` construye una
+ * matriz 2-D y Postgres exige que todas las filas tengan la MISMA longitud: en cuanto un
+ * proyecto tiene un requerimiento con 2 talentos y otro con 3, la consulta entera muere con
+ * «cannot accumulate arrays of different dimensionality». Pasó en producción el 2026-08-04.
+ */
+export function talentsAggSql(alias: string): string {
+  return `COALESCE((
+    SELECT ARRAY(
+      SELECT DISTINCT t
+        FROM gcc_world.project_requirements r, UNNEST(r.talents) AS t
+       WHERE r.project_id = ${alias}.id
+       ORDER BY 1
+    )
+  ), '{}')`;
+}
