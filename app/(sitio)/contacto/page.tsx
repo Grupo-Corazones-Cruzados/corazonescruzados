@@ -8,7 +8,7 @@
 
 import type { Metadata } from 'next';
 import { Mail, Phone, MapPin, Youtube, ArrowRight } from 'lucide-react';
-import { SITIO, VIDEOS, CANAL_YOUTUBE } from '@/lib/sitio/contenido';
+import { SITIO, VIDEOS, CANAL_YOUTUBE, REDES } from '@/lib/sitio/contenido';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, FondoHeroe, BotonPrimario,
 } from '@/components/sitio/piezas';
@@ -171,6 +171,7 @@ export default function ContactoPage() {
               legalName: SITIO.razonSocial,
               taxID: SITIO.ruc,
               url: SITIO.url,
+              sameAs: [...REDES],
               email: SITIO.correo,
               telephone: SITIO.telefonoPlano,
               address: {

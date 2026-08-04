@@ -11,8 +11,24 @@
  */
 
 import type { ReactNode } from 'react';
+import type { Viewport } from 'next';
 import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
+
+/**
+ * AQUÍ SÍ SE PUEDE AMPLIAR CON LOS DEDOS.
+ *
+ * La raíz bloquea el zoom porque el juego lo necesita. Estas son páginas de LEER, y
+ * bloquear el pellizco en una página de leer deja fuera a quien necesita agrandar el texto.
+ * Es un fallo de accesibilidad que además pesa: Google evalúa el sitio por su versión móvil.
+ *
+ * Sobrescribe el `viewport` de `app/layout.tsx` solo para `/negocio`, `/recursos`,
+ * `/contacto` y los legales.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export default function SitioLayout({ children }: { children: ReactNode }) {
   return (

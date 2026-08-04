@@ -14,7 +14,7 @@
 
 import type { Metadata } from 'next';
 import { ArrowRight } from 'lucide-react';
-import { SITIO } from '@/lib/sitio/contenido';
+import { SITIO, REDES } from '@/lib/sitio/contenido';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, FondoHeroe, BotonPrimario, BotonSecundario,
 } from '@/components/sitio/piezas';
@@ -248,6 +248,7 @@ export default function ProyectoPage() {
               legalName: SITIO.razonSocial,
               taxID: SITIO.ruc,
               url: SITIO.url,
+              sameAs: [...REDES],
               description:
                 'Proyecto de desarrollo humano que desarrolla proyectos, personas y sistemas bajo una misma filosofía.',
               address: {

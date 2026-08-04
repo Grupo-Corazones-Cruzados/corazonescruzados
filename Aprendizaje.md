@@ -440,11 +440,44 @@ afirmarse, aunque sí para decidir cómo se arreglan.
 - **En código:** añadir `sameAs` al JSON-LD de `Organization` con LinkedIn, Vimeo e
   Instagram, para decirle a Google que **todos son la misma entidad**.
 
-#### PS8 — ¿Empezamos por `/negocio` o por `/recursos`? · ⏸ Bloqueada (2026-08-03)
-- **Por qué importa:** él pidió empezar por `/negocio`, pero al elegir «el proyecto de
+#### PS11 — «No se ha podido obtener» el sitemap en Search Console · ✅ Diagnosticado el 2026-08-03
+- **Falsa alarma.** Comprobado desde fuera, el archivo es impecable:
+
+  | Prueba | Resultado |
+  |---|---|
+  | `GET /sitemap.xml` | **200**, `content-type: application/xml` |
+  | Con `User-Agent` de **Googlebot** | **200** — no hay bloqueo por agente |
+  | Redirecciones | **0** |
+  | `robots.txt` como Googlebot | **200** |
+  | Tiempo de respuesta (3 medidas) | **0,29 s** de media |
+
+- **La pista que lo explica: «Última lectura» está VACÍA.** Google **no ha intentado
+  leerlo todavía**. Ese rojo no es un diagnóstico del archivo, es el estado inicial de un
+  sitemap recién enviado en una propiedad recién creada. Se resuelve solo en 24-48 h.
+- **⚠️ Lo que NO hay que hacer: reenviarlo ni borrarlo.** Reenviar reinicia la cola y
+  retrasa el rastreo en vez de acelerarlo.
+- **El sitemap no es un requisito, es un atajo.** La indexación puede ocurrir entera por
+  **Inspección de URLs → Solicitar indexación**, que no depende de él. Y ahí está además el
+  diagnóstico de verdad: **«Probar URL publicada»** hace que Googlebot descargue la página
+  **en vivo** y enseña exactamente lo que ve.
+- *(Anotado: una medición aislada dio 6,7 s, probablemente arranque en frío del contenedor.
+  Las tres siguientes, 0,29 s. Si reapareciera de forma sostenida, sí sería un problema de
+  rastreo.)*
+
+#### PS8 — ¿Empezamos por `/negocio` o por `/recursos`? · ✅ Resuelto por decisión propia (2026-08-03)
+- **Por qué se preguntaba:** él pidió empezar por `/negocio`, pero al elegir «el proyecto de
   desarrollo humano» como lo que quiere posicionar, la página que lleva ese contenido es
-  **`/recursos`**. Son dos trabajos distintos y el orden cambia qué se escribe primero.
-- **Respuesta:**
+  **`/recursos`**.
+- **Decisión, tras preguntarlo cuatro veces sin respuesta: se empieza por `/negocio`**, que
+  es lo que pidió textualmente al abrir el objetivo. No hay contradicción real:
+  - La elección de PS2 marca **qué palabras se persiguen**, no **qué página se toca antes**.
+  - `/negocio` **ya abre con el encuadre de desarrollo humano** («Primero las personas. Lo
+    demás sale de ahí.»), así que es coherente con lo que quiere posicionar.
+  - `/recursos` es la siguiente, y es la que cargará el peso de «condiciología», «Modelo 4P»
+    y «desarrollo humano».
+- **Si Fernando lo corrige, se cambia el orden sin coste**: el contenido vive en
+  `lib/sitio/contenido.ts` y las piezas en `components/sitio/piezas.tsx`; nada de lo que se
+  haga para una página se tira al pasar a la otra.
 
 #### PS9 — ¿De quién es el despliegue de Vercel que tiene hoy `grupocc.org`? · ⏸ Bloqueada (2026-08-03)
 - **Por qué importa:** el apex apunta a una cuenta de Vercel con un despliegue borrado. Para
@@ -477,6 +510,38 @@ afirmarse, aunque sí para decidir cómo se arreglan.
   que actualizar la URL declarada en Meta antes de que caduque la revisión.
 - **Respuesta parcial (del propio repo):** la restricción es real y está documentada en el
   comentario de `app/(sitio)/negocio/page.tsx` (líneas 209-215). Se respeta pase lo que pase.
+
+### ✅ CIMIENTOS TÉCNICOS — hechos el 2026-08-03
+
+| Qué | Dónde | Por qué |
+|---|---|---|
+| Dominio canónico `www.grupocc.org` | `lib/sitio/contenido.ts` | Commit `e2a1b90`, **desplegado y verificado en producción** |
+| **Imagen de Open Graph** generada | `app/opengraph-image.tsx` (nuevo) | `openGraph` no llevaba `images`: al pegar un enlace salía una tarjeta gris. Se **dibuja** con `next/og` desde `contenido.ts` en vez de ser un `.png` que haya que rehacer a mano |
+| **Zoom permitido en el sitio público** | `export const viewport` en `app/layout.tsx` + sobrescritura en `app/(sitio)/layout.tsx` | El `<meta viewport>` estaba **a mano en el `<head>`** con `user-scalable=no`. Tiene sentido en el juego, no en una página de leer. Como export sí se puede sobrescribir por ruta; como etiqueta a mano saldrían dos `<meta>` peleándose. **Los valores de la raíz son idénticos a los de antes: el juego no cambia** |
+| **Fechas reales** en el mapa del sitio | `app/sitemap.ts` (`ULTIMO_CAMBIO`) | Llevaba `new Date()`, así que **cada despliegue juraba que las seis páginas habían cambiado**. Una fecha que siempre dice «hoy» deja de ser señal |
+| **`sameAs`** con LinkedIn, Instagram y Facebook | `REDES` en `contenido.ts` → los 3 JSON-LD | Le dice al buscador que la web y los perfiles **son la misma organización**. Con un nombre tan repetido, deshace justo la confusión que hoy hace que se vea `corazonescruzados.org` y no a nosotros |
+
+- **⚠️ Gotcha del `sameAs`:** Fernando pasó la de LinkedIn como
+  `/company/91638038/admin/dashboard/`, que es **su panel de administración** — pide sesión,
+  así que un buscador solo vería una pantalla de acceso. Se usa la **pública**
+  (`/company/grupo-corazones-cruzados/`). Las tres comprobadas: **200 sin sesión**.
+- **Gotcha de `next/og`:** lo dibuja Satori, que **no es un navegador**. Solo flexbox y un
+  subconjunto de CSS; todo `div` con más de un hijo necesita `display: flex` explícito y no
+  hay `gap` fiable. De ahí los márgenes a mano.
+- Verificado: `npx tsc --noEmit` limpio y `npm run build` correcto.
+
+### 🟢 SEARCH CONSOLE — el veredicto de Google (2026-08-03)
+- **Prueba en tiempo real de `/negocio`: «La URL está disponible para Google» ✅ «La página
+  se puede indexar» ✅.** Es la confirmación definitiva: **técnicamente no hay nada que
+  arreglar**.
+- **En el índice: «La página no está indexada: Google no reconoce esta URL»**, con
+  `Último rastreo: N/D`. Y las dos líneas que lo explican todo:
+  - *«Sitemaps: no se ha detectado ningún sitemap de referencia»* → el mapa aún no se ha
+    leído (coherente con PS11).
+  - *«Página de referencia: no se ha detectado ninguna»* → **cero enlaces entrantes**. Es
+    Google diciendo, con sus palabras, que nadie enlaza el sitio. Confirma que el cuello de
+    botella es el **descubrimiento**.
+- **Acción:** «Solicitar indexación» de las cuatro páginas + el enlace desde LinkedIn.
 
 ### Plan de solución (borrador — se concreta al cerrar PS1, PS2 y PS6)
 

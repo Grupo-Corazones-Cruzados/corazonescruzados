@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { SITIO } from '@/lib/sitio/contenido';
@@ -24,6 +24,28 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/**
+ * EL VIEWPORT, AHORA COMO EXPORT Y NO COMO `<meta>` A MANO.
+ *
+ * Estaba escrito directamente en el `<head>` de abajo con `maximum-scale=1,
+ * user-scalable=no`, que **bloquea el pellizco para ampliar**. Eso tiene sentido en el
+ * juego —un pellizco a media partida descoloca la escena— pero en una página de lectura es
+ * un fallo de accesibilidad: quien necesita ampliar para leer, no puede. Y Google evalúa el
+ * sitio por su versión móvil.
+ *
+ * Escrito como `export const viewport`, Next lo emite igual **y además** deja que una ruta
+ * lo sobrescriba. El sitio público lo hace en `app/(sitio)/layout.tsx` para permitir el
+ * zoom. Con la etiqueta a mano no se podía: saldrían dos `<meta viewport>` peleándose.
+ *
+ * ⚠️ Los valores de aquí son EXACTAMENTE los de antes, para no cambiar el juego.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // `scroll-smooth`: al pulsar un tema del índice de un documento legal, la página se
   // desliza hasta él en vez de saltar de golpe. Con veintidós secciones, el salto seco
@@ -31,7 +53,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className="dark scroll-smooth">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        {/* El viewport ya no se escribe aquí: vive en `export const viewport`, arriba, para
+            que el sitio público pueda permitir el zoom sin pelearse con esta etiqueta. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

@@ -59,6 +59,28 @@ export const SITIO = {
   pais: 'Ecuador',
 } as const;
 
+/* ═══════════════════════ PERFILES OFICIALES ═══════════════════════ */
+
+/**
+ * LOS PERFILES DE LA ORGANIZACIÓN EN OTRAS PLATAFORMAS.
+ *
+ * Van al `sameAs` de los datos estructurados de las tres páginas. `sameAs` es la forma de
+ * decirle a un buscador **«esta web, esa página de LinkedIn y ese Instagram son la misma
+ * organización»**. Sin él, para Google son tres cosas sueltas que casualmente se llaman
+ * parecido — y con un nombre tan repetido como «Corazones Cruzados», donde hay otra
+ * organización real y hasta un libro, esa confusión es justo lo que hay que deshacer.
+ *
+ * ⚠️ **URLs PÚBLICAS, no de administración.** Fernando pasó la de LinkedIn en su forma
+ * `/company/91638038/admin/dashboard/`, que es su panel: exige sesión y permisos, así que
+ * un buscador solo vería una pantalla de acceso. La que vale es la dirección pública.
+ * Comprobadas las tres el 2026-08-03: responden 200 sin sesión.
+ */
+export const REDES = [
+  'https://www.linkedin.com/company/grupo-corazones-cruzados/',
+  'https://www.instagram.com/grupocorazonescruzados/',
+  'https://www.facebook.com/GrupoCorazonesCruzados',
+] as const;
+
 /* ═══════════════════════ NAVEGACIÓN ═══════════════════════ */
 
 export const NAVEGACION = [

@@ -17,7 +17,7 @@
 
 import type { Metadata } from 'next';
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { SITIO, SERVICIOS, CLIENTES, PUBLICOS } from '@/lib/sitio/contenido';
+import { SITIO, SERVICIOS, CLIENTES, PUBLICOS, REDES } from '@/lib/sitio/contenido';
 import { RAZON_SOCIAL } from '@/lib/negocio/datos';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
@@ -272,6 +272,9 @@ export default function NegocioPage() {
             legalName: SITIO.razonSocial,
             taxID: SITIO.ruc,
             url: `${SITIO.url}/negocio`,
+            // «Esta web, ese LinkedIn y ese Instagram son la misma organización.» Con un
+            // nombre tan repetido como el nuestro, esa aclaración vale más que un adjetivo.
+            sameAs: [...REDES],
             email: SITIO.correo,
             telephone: SITIO.telefonoPlano,
             address: {
