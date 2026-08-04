@@ -456,33 +456,64 @@ afirmarse, aunque sí para decidir cómo se arreglan.
   sitemap recién enviado en una propiedad recién creada. Se resuelve solo en 24-48 h.
 - **⚠️ Lo que NO hay que hacer: reenviarlo ni borrarlo.** Reenviar reinicia la cola y
   retrasa el rastreo en vez de acelerarlo.
+- **Segunda batería de pruebas (2026-08-04), porque Fernando volvió a preguntar.** Descartadas
+  todas las causas clásicas de «no se ha podido leer el sitemap»:
+
+  | Sospecha | Resultado |
+  |---|---|
+  | **BOM** o basura antes de `<?xml` | Los primeros bytes son `3c3f 786d 6c` = `<?xml` **limpio** ✅ |
+  | XML mal formado | `xmllint --noout` **válido**, 968 bytes, 6 `<loc>` ✅ |
+  | Codificación | ASCII / UTF-8 ✅ |
+  | Solo habla HTTP/2 | `--http1.1` → **200** ✅ |
+  | Falla comprimido | `Accept-Encoding: gzip` → **200** ✅ |
+  | No responde a `HEAD` | **200** ✅ |
+
+  **El archivo no tiene ni un fallo.** Queda confirmado que es el estado pendiente de Search
+  Console.
+- **Y el argumento que zanja la preocupación, del propio documento de Google que trajo
+  Fernando:** *«enviar un sitemap es tan solo una recomendación: no garantiza que Google lo
+  descargue ni que lo utilice para rastrear URLs del sitio»*. Además hay **dos canales más**
+  ya abiertos que no dependen de él: la línea `Sitemap:` del `robots.txt` y la solicitud de
+  indexación por Inspección de URLs.
+- **Detalle menor detectado y NO corregido a propósito:** el `<loc>` de la portada va sin
+  barra final (`https://www.grupocc.org`). Google lo normaliza y la propia página no declara
+  `canonical`, así que no hay contradicción. Tocarlo tendría más riesgo que beneficio.
 - **El sitemap no es un requisito, es un atajo.** La indexación puede ocurrir entera por
   **Inspección de URLs → Solicitar indexación**, que no depende de él. Y ahí está además el
   diagnóstico de verdad: **«Probar URL publicada»** hace que Googlebot descargue la página
   **en vivo** y enseña exactamente lo que ve.
-- **🚨 CAUSA PROBABLE ENCONTRADA (2026-08-04): EL CONTENEDOR SE DUERME.** Aquello de los
-  6,7 s que anoté como medición aislada **no lo era**. Medido a propósito, tres tandas con
-  90 s de pausa entre ellas:
+- **❌ FALSA ALARMA MÍA — «EL CONTENEDOR SE DUERME». ERA MI PROPIO ORDENADOR (2026-08-04).**
+  Vi que la primera petición tras un rato de silencio tardaba 6-9 s, lo diagnostiqué como
+  arranque en frío de Railway y **mandé a Fernando a desactivar el App Sleeping**. No era
+  eso. Al desglosar el tiempo con `curl`, todo estaba en el primer tramo:
 
-  | Tanda | 1ª petición | 2ª petición |
-  |---|---|---|
-  | 1 (en caliente) | 0,28 s | 0,32 s |
-  | 2 (tras 90 s parado) | **6,68 s** | 0,35 s |
-  | 3 (tras 90 s parado) | **8,85 s** | 0,28 s |
+  ```
+  1ª tras 100 s:  dns=6,39s  conexión=6,45s  tls=6,52s  PRIMER_BYTE=6,66s
+  2ª inmediata:   dns=0,004s conexión=0,15s  tls=0,22s  PRIMER_BYTE=0,37s
+  ```
 
-  El patrón es inequívoco: **tras un rato sin tráfico, la primera petición tarda entre 7 y 9
-  segundos**; la siguiente, tres décimas. Es un **arranque en frío** del contenedor de
-  Railway.
-  - **Por qué importa, y son tres cosas a la vez:**
-    1. **Googlebot siempre llega en frío** — nadie visita el sitio, así que su petición es
-       *siempre* la primera. Es una explicación muy plausible del «No se ha podido obtener».
-    2. **Cada visitante nuevo espera 7-9 segundos** para ver la primera pantalla.
-    3. Es exactamente lo que miden las **Core Web Vitals**, que sí cuentan para posicionar.
-  - **Qué mirar:** en Railway, el ajuste de **App Sleeping / serverless** del servicio. Si
-    está activo, duerme el contenedor al quedarse sin tráfico. Desactivarlo cuesta más
-    —el contenedor queda encendido— pero un sitio público que tarda 9 segundos en despertar
-    no sirve.
-  - ⚠️ **Es de Fernando**: no hay `RAILWAY_TOKEN` en este repo y el ajuste está en su panel.
+  **Los 6,4 segundos eran la resolución DNS**; la conexión se abría 0,06 s después y el
+  servidor contestaba en 0,14 s más. Un archivo estático de `_next` tardó lo mismo, con el
+  mismo reparto: el servidor nunca estuvo en la ecuación.
+
+  Y midiendo **quién** tarda en resolver:
+
+  | Resolutor | Tiempo |
+  |---|---|
+  | **8.8.8.8 — el de Google** | **0,12 s** |
+  | 9.9.9.9 · 1.1.1.1 | 0,14 s · 0,34 s |
+  | Los nameservers de Microsoft, directos | 0,10 – 0,21 s |
+  | **El resolutor de mi máquina** | **2,15 s** (y 6,4 s desde `curl`) |
+
+  → **El sitio está sano**: resuelve en 120 ms para Google y responde en 0,3 s.
+  - **Consecuencia práctica:** el App Sleeping se desactivó sin motivo. Puede volver a
+    activarse si le sube la factura — no hay evidencia de que hiciera daño.
+  - **⛔ LECCIÓN, y es la que vale:** `time_starttransfer` **no es «lo que tarda el
+    servidor»**: incluye DNS, conexión y TLS. Medí el total y acusé al último eslabón sin
+    desglosarlo, cuando el culpable era el primero y estaba en mi mesa. **Antes de culpar a
+    una infraestructura ajena, desglosar el tiempo y contrastar el resolutor propio contra
+    `@8.8.8.8`.** Dos segundos de `dig` habrían evitado un cambio de configuración inútil en
+    producción.
 
 #### ⛔ REGLA DE MÉTODO PARA ESTE OBJETIVO — EL DISEÑO SE VE CON FERNANDO ANTES (2026-08-03)
 
