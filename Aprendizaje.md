@@ -464,7 +464,32 @@ afirmarse, aunque sí para decidir cómo se arreglan.
   Las tres siguientes, 0,29 s. Si reapareciera de forma sostenida, sí sería un problema de
   rastreo.)*
 
-#### PS8 — ¿Empezamos por `/negocio` o por `/recursos`? · ✅ Resuelto por decisión propia (2026-08-03)
+#### ⛔ REGLA DE MÉTODO PARA ESTE OBJETIVO — EL DISEÑO SE VE CON FERNANDO ANTES (2026-08-03)
+
+Textual: *«no hagas nada en la página de negocio, no quiero que hagas el diseño por tu
+cuenta porque tengo que ver contigo el diseño específico de esa página y todas otras»*.
+
+**Manda sobre PS8 y sobre cualquier plan de contenido de este documento.** El trabajo del
+sitio público se parte en dos, y solo una mitad es mía por iniciativa propia:
+
+| | Qué incluye | Quién decide |
+|---|---|---|
+| **Fontanería** | Metadatos, `canonical`, mapa del sitio, `robots`, JSON-LD, dominio, rendimiento, accesibilidad, imagen al compartir | Propongo, hago y aviso |
+| **Diseño y contenido visible** | Encabezados, secciones nuevas, textos, maquetación, qué se cuenta y en qué orden | **Fernando, conmigo, antes de escribir una línea** |
+
+**Y no vale «te dejo una propuesta ya montada en el código».** Quiere verlo **antes de que
+exista**. Todo lo de «reescribir la jerarquía de encabezados», «desarrollar el texto de cada
+servicio», «añadir preguntas frecuentes» y «una URL por servicio» del plan de abajo **queda
+en suspenso** hasta que lo acordemos.
+
+**Es el mismo patrón que la regla del arte** (§ arriba, las imágenes las evalúa solo él):
+cuando el criterio de aceptación es **lo que él quiere presentar**, el juez es él.
+
+#### PS8 — ¿Empezamos por `/negocio` o por `/recursos`? · ⏸ ANULADA por la regla de arriba (2026-08-03)
+*(Se conserva por histórico. Ya no la decido yo: el orden y el enfoque salen de la revisión
+de diseño con Fernando.)*
+
+#### PS8 (histórico) — ¿Empezamos por `/negocio` o por `/recursos`? · ~~Resuelto por decisión propia~~
 - **Por qué se preguntaba:** él pidió empezar por `/negocio`, pero al elegir «el proyecto de
   desarrollo humano» como lo que quiere posicionar, la página que lleva ese contenido es
   **`/recursos`**.

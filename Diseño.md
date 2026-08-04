@@ -118,6 +118,23 @@ Escala tipográfica: `h1` 38/56 px · `h2` 30/38 px · `h3` 22 px · `h4` 18 px 
 14,5–18,5 px. **El contraste de tamaño es lo que hace que la página respire**; no hay
 librería de UI detrás.
 
+### ⛔ El diseño de estas páginas lo decide Fernando, conmigo, ANTES (2026-08-03)
+
+Textual: *«no hagas nada en la página de negocio, no quiero que hagas el diseño por tu
+cuenta porque tengo que ver contigo el diseño específico de esa página y todas otras»*.
+
+Aplica a `/negocio`, `/recursos`, `/contacto` y cualquier página pública que venga. Se parte
+en dos, y **solo la primera mitad se hace sin preguntar**:
+
+- **Fontanería** —metadatos, `canonical`, mapa del sitio, `robots`, JSON-LD, rendimiento,
+  accesibilidad, imagen al compartir—: se propone, se hace y se avisa.
+- **Diseño y contenido visible** —encabezados, secciones nuevas, textos, maquetación, qué se
+  cuenta y en qué orden—: **se acuerda con él antes de escribir una línea.** Y no vale
+  dejarle «una propuesta ya montada» para que la mire: quiere verlo **antes de que exista**.
+
+Las piezas de `piezas.tsx` y las reglas de abajo siguen siendo el estándar **cuando ya hay
+un diseño acordado** — dicen *cómo* se construye, no *qué* se construye.
+
 ### Reglas del sitio público
 - **Server Components, sin `use client`.** El contenido tiene que estar en el HTML crudo:
   un buscador y un revisor pueden no ejecutar JavaScript. Lo que necesita estado se saca a
