@@ -25,13 +25,13 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
-  Ticket, Vote, ArrowRight, type LucideIcon,
+  Ticket, Vote, ArrowRight, CalendarClock, type LucideIcon,
 } from 'lucide-react';
 
 export const ICONOS: Record<string, LucideIcon> = {
   mensaje: MessageSquare, capas: Layers, rayo: Zap, documento: FileText,
   personas: Users, juego: Gamepad2, tienda: Store, brujula: Compass,
-  ticket: Ticket, voto: Vote,
+  ticket: Ticket, voto: Vote, calendario: CalendarClock,
 };
 
 /** Convierte los `**dobles asteriscos**` del contenido en negrita. */
@@ -262,7 +262,7 @@ export function BloqueTema({
   etiqueta: string;
   pregunta: string;
   texto: string;
-  pasos?: { titulo: string; texto: string }[];
+  pasos?: { titulo: string; texto: string; icono?: string }[];
 }) {
   return (
     <section
@@ -315,19 +315,36 @@ export function BloqueTema({
 
         {pasos && pasos.length > 0 && (
           <ol className="mt-12 grid gap-8 sm:gap-6 sm:grid-cols-3">
-            {pasos.map((p, i) => (
-              // La línea superior separa los pasos entre sí sin dibujar cajas: tres
-              // recuadros dentro de otro recuadro sería una caja de más.
-              <li key={p.titulo} className="border-t border-white/[0.12] pt-5">
-                <span className="block text-[34px] leading-none font-semibold text-[#7B5FBF]/55 tabular-nums">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <p className="mt-4 text-[15.5px] font-semibold text-white leading-snug">
-                  {p.titulo}
-                </p>
-                <p className="mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
-              </li>
-            ))}
+            {pasos.map((p, i) => {
+              const Icono = p.icono ? ICONOS[p.icono] : null;
+              return (
+                // La línea superior separa los pasos entre sí sin dibujar cajas: tres
+                // recuadros dentro de otro recuadro sería una caja de más.
+                // `flex flex-col` + `mt-auto` en el icono: los textos miden distinto y, sin
+                // esto, cada icono quedaría a una altura y las tres columnas se verían
+                // descuadradas. Así se alinean todos abajo.
+                <li key={p.titulo} className="flex flex-col border-t border-white/[0.12] pt-5">
+                  <span className="block text-[34px] leading-none font-semibold text-[#7B5FBF]/55 tabular-nums">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <p className="mt-4 text-[15.5px] font-semibold text-white leading-snug">
+                    {p.titulo}
+                  </p>
+                  <p className="mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
+                  {Icono && (
+                    // El hueco va en un envoltorio, no en el recuadro: con `pt-6` sobre el
+                    // propio recuadro, el relleno quedaría DENTRO del borde y saldría una
+                    // caja alta con el icono descentrado.
+                    <div aria-hidden className="mt-auto pt-6">
+                      <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg
+                                       border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
+                        <Icono className="w-[22px] h-[22px] text-[#a78bfa]" />
+                      </span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>

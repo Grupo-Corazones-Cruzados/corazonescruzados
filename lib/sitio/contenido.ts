@@ -208,8 +208,13 @@ export interface Tema {
   pregunta: string;
   /** La respuesta, en una o dos frases. */
   texto: string;
-  /** Los pasos, para que la promesa se vea concreta. Opcional. */
-  pasos?: { titulo: string; texto: string }[];
+  /**
+   * Los pasos, para que la promesa se vea concreta. Opcional.
+   * `icono` es una clave de `ICONOS` (`components/sitio/piezas.tsx`) y se pinta **debajo**
+   * del paso: da un ancla visual al final de cada columna y evita que las tres se lean como
+   * tres párrafos sueltos.
+   */
+  pasos?: { titulo: string; texto: string; icono?: string }[];
 }
 
 export const ACCESOS: Acceso[] = [
@@ -239,21 +244,24 @@ export const ACCESOS: Acceso[] = [
     temas: [{
       id: 'como-funciona',
       etiqueta: 'Cómo funciona',
-      pregunta: '¿Tienes un requerimiento que nadie termina de resolver?',
+      pregunta: '¿Necesitas ayuda para completar una tarea difícil?',
       texto:
-        'Publícalo como ticket. No se queda esperando a que alguien tenga hueco: lo toma el miembro cuyo talento encaja con lo que pides, y empieza a moverse desde ese momento.',
+        'Publícalo como ticket, y descubre nuevos talentos capaces de resolver tus problemas, y de sorprenderte con el aporte que pueden ofrecer a tu organización.',
       pasos: [
         {
           titulo: 'Lo publicas',
-          texto: 'Un ticket con lo que necesitas, desde tu espacio de cliente. Sin reuniones previas para poder empezar.',
+          texto: 'Un ticket con lo que necesitas desde tu perspectiva como cliente, tu presupuesto, la fecha límite de entrega, y configuras el talento que necesitas.',
+          icono: 'ticket',
         },
         {
           titulo: 'Lo toma quien sabe hacerlo',
-          texto: 'Nuestros miembros ven los requerimientos abiertos y lo toma quien tiene el talento que ese pide.',
+          texto: 'Un perfil con el talento requerido revisa el ticket abierto, analiza su disponibilidad según la fecha límite de entrega, y define el costo final en base a tu presupuesto.',
+          icono: 'personas',
         },
         {
-          titulo: 'Lo sigues sin preguntar',
-          texto: 'El estado está siempre a la vista, y lo que se resuelve queda registrado con su historia.',
+          titulo: 'Lo sigues sin arrear',
+          texto: 'El talento se hace responsable de establecer los días y horas de trabajo previo a la fecha límite de entrega, coordina reuniones, y tomará contacto hasta completar la tarea.',
+          icono: 'calendario',
         },
       ],
     }],
