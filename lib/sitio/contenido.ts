@@ -79,6 +79,8 @@ export const REDES = [
   'https://www.linkedin.com/company/grupo-corazones-cruzados/',
   'https://www.instagram.com/grupocorazonescruzados/',
   'https://www.facebook.com/GrupoCorazonesCruzados',
+  'https://www.tiktok.com/@grupocc.org',
+  'https://www.youtube.com/@grupocc-org',
 ] as const;
 
 /* ═══════════════════════ NAVEGACIÓN ═══════════════════════ */
@@ -285,11 +287,13 @@ export interface Video {
 }
 
 /**
- * ⚠️ TAMBIÉN VACÍO, y por otra razón: **no tengo los enlaces**.
+ * ⚠️ `VIDEOS` SIGUE VACÍO A PROPÓSITO: Fernando dio el **canal** (2026-08-03), no vídeos
+ * concretos. Destacar uno es una decisión suya —cuál representa al proyecto—, y no se
+ * inventan enlaces que puedan no existir: uno roto en la web que revisa Meta es peor que no
+ * tener sección. Cuando diga cuáles, entran aquí y la rejilla aparece sola.
  *
- * Fernando: pásame la URL del canal y de los vídeos que quieras destacar, y los pongo. No
- * se inventan enlaces que puedan no existir — un enlace roto en la web que revisa Meta es
- * peor que no tener sección.
+ * `CANAL_YOUTUBE` sí está: con él, la sección «En vídeo» de `/contacto` **ya se pinta**, con
+ * su botón al canal. Comprobado el 2026-08-03: responde 200.
  */
 export const VIDEOS: Video[] = [];
-export const CANAL_YOUTUBE: string | null = null;
+export const CANAL_YOUTUBE: string | null = 'https://www.youtube.com/@grupocc-org';
