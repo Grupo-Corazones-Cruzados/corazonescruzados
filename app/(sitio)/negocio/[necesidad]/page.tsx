@@ -30,7 +30,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId } from '@/lib/sitio/contenido';
+import { faqsDeAcceso } from '@/lib/faqs';
 import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
+import VideoYouTube from '@/components/sitio/VideoYouTube';
+import FaqsNegocio from '@/components/sitio/FaqsNegocio';
 import { Contenedor } from '@/components/sitio/piezas';
 
 type Props = { params: Promise<{ necesidad: string }> };
@@ -41,6 +44,19 @@ export function generateStaticParams() {
 
 /** Un tramo inventado no debe existir: nada fuera de `ACCESOS` se renderiza. */
 export const dynamicParams = false;
+
+/**
+ * ⏱️ SE REGENERA CADA 5 MINUTOS, Y ES IMPRESCINDIBLE.
+ *
+ * La página se sirve como HTML ya hecho —rápido y perfectamente indexable—, pero **las
+ * preguntas frecuentes salen de la base de datos**. Sin esto, una pregunta creada desde
+ * Admin → FAQs **no aparecería en la web hasta el siguiente despliegue**, y nadie
+ * entendería por qué: la habría guardado bien y no estaría.
+ *
+ * Cinco minutos es el punto medio razonable: no obliga a montar nada extra y quien escribe
+ * ve su cambio publicado dentro del mismo rato en que sigue trabajando.
+ */
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { necesidad } = await params;
@@ -66,6 +82,11 @@ export default async function DetalleNecesidadPage({ params }: Props) {
   const { necesidad } = await params;
   const acceso = accesoPorId(necesidad);
   if (!acceso) notFound();
+
+  // Se leen en el servidor, al generar la página: las preguntas y sus respuestas viajan ya
+  // escritas dentro del HTML. Si se pidieran por red desde el navegador, el buscador —que es
+  // para quien más valen— no las vería.
+  const faqs = await faqsDeAcceso(acceso.id);
 
   return (
     <>
@@ -93,6 +114,25 @@ export default async function DetalleNecesidadPage({ params }: Props) {
               {acceso.enlaceExterno.etiqueta} <ArrowRight className="w-4 h-4" />
             </a>
           )}
+
+          {/* Vídeo. Mientras no haya enlace no se pinta nada: ni hueco ni «próximamente». */}
+          {acceso.video && (
+            <div className="mt-12 max-w-3xl">
+              <VideoYouTube url={acceso.video} titulo={`${acceso.titulo} — ${SITIO.nombre}`} />
+            </div>
+          )}
+
+          {/* Preguntas frecuentes. Igual: si no hay ninguna, la sección entera desaparece. */}
+          {faqs.length > 0 && (
+            <div className="mt-16">
+              <h2 className="text-[24px] sm:text-[30px] font-semibold text-white tracking-tight">
+                Preguntas frecuentes
+              </h2>
+              <div className="mt-8">
+                <FaqsNegocio faqs={faqs} />
+              </div>
+            </div>
+          )}
         </Contenedor>
       </section>
 
@@ -116,6 +156,28 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           }),
         }}
       />
+
+      {/* ⭐ `FAQPage` — de todo lo que se ha hecho por el posicionamiento, esto es lo que más
+          puede rendir. Es el formato que Google convierte en **respuestas desplegables dentro
+          de sus propios resultados**: ocupa más sitio en la página, se lee sin entrar y
+          responde justo lo que alguien tecleó.
+          Solo se declara si hay preguntas de verdad: un `FAQPage` vacío es un dato falso. */}
+      {faqs.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: faqs.map((f) => ({
+                '@type': 'Question',
+                name: f.pregunta,
+                acceptedAnswer: { '@type': 'Answer', text: f.respuesta },
+              })),
+            }),
+          }}
+        />
+      )}
     </>
   );
 }

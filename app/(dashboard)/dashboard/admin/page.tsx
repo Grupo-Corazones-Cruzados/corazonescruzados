@@ -7,7 +7,8 @@ import RazonesPanel from '@/components/razones/RazonesPanel';
 import FuentesPanel from '@/components/admin/FuentesPanel';
 import TutorialesPanel from '@/components/admin/TutorialesPanel';
 import ListasPanel from '@/components/admin/ListasPanel';
-import { Flame, ShieldAlert, Database, Video, ListChecks } from 'lucide-react';
+import FaqsPanel from '@/components/admin/FaqsPanel';
+import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -21,6 +22,10 @@ const TABS = [
   { value: 'fuentes', label: 'Fuentes', Icon: Database },
   { value: 'tutoriales', label: 'Tutoriales', Icon: Video },
   { value: 'listas', label: 'Listas', Icon: ListChecks },
+  // Las preguntas frecuentes que se PUBLICAN en /negocio/<seccion>. Es la única pestaña
+  // del admin cuyo contenido sale de cara al mundo, y de la que salen los datos
+  // estructurados `FAQPage` que Google convierte en respuestas dentro de sus resultados.
+  { value: 'faqs', label: 'FAQs', Icon: HelpCircle },
 ];
 
 
@@ -64,6 +69,7 @@ export default function AdminPage() {
         {tab === 'fuentes' && <FuentesPanel />}
         {tab === 'tutoriales' && <TutorialesPanel />}
         {tab === 'listas' && <ListasPanel />}
+        {tab === 'faqs' && <FaqsPanel />}
       </div>
     </div>
   );

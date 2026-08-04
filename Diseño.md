@@ -161,6 +161,32 @@ en dos, y **solo la primera mitad se hace sin preguntar**:
 Las piezas de `piezas.tsx` y las reglas de abajo siguen siendo el estándar **cuando ya hay
 un diseño acordado** — dicen *cómo* se construye, no *qué* se construye.
 
+### Preguntas frecuentes de `/negocio/<id>` (2026-08-04)
+
+**En la web** (`components/sitio/FaqsNegocio.tsx`): buscador arriba; debajo, dos columnas —
+lista de preguntas a la izquierda, respuesta completa a la derecha (`lg:sticky lg:top-24`).
+**Debajo de `lg` no hay dos columnas**: la respuesta se despliega bajo su propia pregunta,
+que es el gesto que se espera en un teléfono.
+
+- Es la **única isla de cliente** de la sección; el buscador y la selección necesitan estado.
+- ⚠️ **Las respuestas van TODAS en el HTML**, también las no seleccionadas, en un bloque
+  `hidden`. Es lo que hace que un buscador las lea sin pulsar nada. Si algún día se cambia a
+  pedirlas por red, se pierde el contenido con más valor de la web.
+- El buscador filtra **también por el texto de la respuesta**: quien escribe «factura»
+  quiere encontrar la pregunta que la menciona dentro.
+
+**En el Admin** (`components/admin/FaqsPanel.tsx`, pestaña «FAQs»): es el patrón
+**«Explorador Azure»** de siempre, con `FilterRail` + `PixelDataTable` + panel de detalle —
+`grid lg:grid-cols-[220px_minmax(0,1fr)_340px]`. **No se escribió un rail nuevo.**
+- La tabla **no enseña la respuesta**: una respuesta ocupa párrafos y haría filas de cinco
+  líneas. La tabla es para **encontrar**; el panel derecho, para **leer**.
+- Orden manual con flechas; se manda la lista completa reordenada, no «sube uno».
+- La edición va en `EditPanel` (panel lateral con overlay), que es lo que manda el sistema
+  para un formulario con un campo largo.
+
+**El vídeo** (`components/sitio/VideoYouTube.tsx`): acepta la URL tal cual se copia del
+navegador, carga diferida y `youtube-nocookie`. **Si no hay enlace, no se pinta nada.**
+
 ### Reglas del sitio público
 - **Server Components, sin `use client`.** El contenido tiene que estar en el HTML crudo:
   un buscador y un revisor pueden no ejecutar JavaScript. Lo que necesita estado se saca a

@@ -155,6 +155,19 @@ export interface Acceso {
    * marcado inválido — el navegador lo desarma y uno de los dos deja de funcionar.
    */
   enlaceExterno?: { href: string; etiqueta: string };
+  /**
+   * ⏳ PENDIENTE — el vídeo de YouTube de esta página.
+   *
+   * Fernando (2026-08-04): *«no tengo los enlaces de youtube porque no he creado los vídeos
+   * todavía; en el futuro te los pasaré»*. Mientras esté vacío, **la sección de vídeo no se
+   * pinta**: ni hueco, ni recuadro gris, ni «próximamente». Es la misma regla que ya siguen
+   * `CLIENTES` y `VIDEOS`.
+   *
+   * Cuando lleguen, basta con pegar aquí la dirección normal del vídeo —la de la barra del
+   * navegador, `https://www.youtube.com/watch?v=…` o `https://youtu.be/…`—. De extraer el
+   * identificador y montar el reproductor se encarga `idDeYouTube` en `VideoYouTube`.
+   */
+  video?: string;
 }
 
 export const ACCESOS: Acceso[] = [
