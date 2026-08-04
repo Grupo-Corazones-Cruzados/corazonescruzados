@@ -9,6 +9,19 @@
  * apunta el guardián del panel cuando alguien intenta entrar sin sesión.
  */
 
+
+/**
+ * ⚠️ DINÁMICA A LA FUERZA, Y NO ES UN DETALLE.
+ *
+ * En una versión anterior esta ruta era una página con `generateStaticParams`, así que Next
+ * la prerenderizó y la sirvió con `s-maxage` de un año. Al convertirla en redirección, el
+ * despliegue nuevo salió bien pero la URL seguía devolviendo **el HTML viejo cacheado**
+ * (`x-nextjs-cache: HIT`): el arreglo estaba publicado y era invisible.
+ *
+ * Una ruta cuyo trabajo es redirigir no puede tener respuesta guardada.
+ */
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 
 export default async function AccesoGenerico({
