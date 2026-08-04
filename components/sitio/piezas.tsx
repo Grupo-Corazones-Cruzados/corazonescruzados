@@ -235,6 +235,82 @@ export function RejillaAccesos({
   );
 }
 
+/* ── Bloque destacado ────────────────────────────────────────────────────────── */
+
+/**
+ * EL BLOQUE QUE LE HABLA AL CLIENTE — entre el vídeo y las preguntas frecuentes.
+ *
+ * Fernando pidió «un diseño muy impactante a primera vista y atractivo para clientes».
+ * Lo que da ese golpe de vista aquí son cuatro cosas, y ninguna es un efecto:
+ *
+ * 1. **Una pregunta enorme.** 30/44 px frente a los 14-17 del resto de la página. El
+ *    contraste de tamaño es lo que hace que la vista caiga ahí y no en otro sitio.
+ * 2. **La pregunta habla de SU problema, no de nosotros.** Es lo que hace que alguien siga
+ *    leyendo: se ha reconocido en la primera línea.
+ * 3. **Un resplandor violeta propio**, más marcado que el del resto de la página, que separa
+ *    este bloque del fondo sin necesidad de una caja de color plano.
+ * 4. **Los pasos numerados en números grandes y tenues.** Convierten una promesa en un
+ *    mecanismo; el número grande da ritmo visual y ordena la lectura de un vistazo.
+ *
+ * Sin sombras, sin degradados de moda y sin animación de entrada: el sitio se ve serio
+ * porque usa aire y tipografía, no efectos. Server Component.
+ */
+export function BloqueDestacado({
+  etiqueta, pregunta, texto, pasos,
+}: {
+  etiqueta: string;
+  pregunta: string;
+  texto: string;
+  pasos?: { titulo: string; texto: string }[];
+}) {
+  return (
+    <section className="relative overflow-hidden rounded-2xl border border-[#7B5FBF]/25 bg-white/[0.02]">
+      {/* El resplandor. Es un degradado CSS: ni una petición de red, ni una imagen que
+          cargar, y se ve igual en cualquier pantalla. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(75% 120% at 12% 0%, rgba(123,95,191,0.30) 0%, rgba(123,95,191,0.10) 42%, transparent 72%)',
+        }}
+      />
+
+      <div className="relative px-6 py-10 sm:px-12 sm:py-14">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#a78bfa]">
+          {etiqueta}
+        </p>
+
+        <h2 className="mt-4 text-[30px] sm:text-[44px] leading-[1.1] font-semibold text-white tracking-tight max-w-3xl">
+          {pregunta}
+        </h2>
+
+        <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-white/60 max-w-2xl">
+          {texto}
+        </p>
+
+        {pasos && pasos.length > 0 && (
+          <ol className="mt-12 grid gap-8 sm:gap-6 sm:grid-cols-3">
+            {pasos.map((p, i) => (
+              // La línea superior separa los pasos entre sí sin dibujar cajas: tres
+              // recuadros dentro de otro recuadro sería una caja de más.
+              <li key={p.titulo} className="border-t border-white/[0.12] pt-5">
+                <span className="block text-[34px] leading-none font-semibold text-[#7B5FBF]/55 tabular-nums">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <p className="mt-4 text-[15.5px] font-semibold text-white leading-snug">
+                  {p.titulo}
+                </p>
+                <p className="mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /* ── Botones ─────────────────────────────────────────────────────────────────── */
 
 export function BotonPrimario({ href, children }: { href: string; children: ReactNode }) {

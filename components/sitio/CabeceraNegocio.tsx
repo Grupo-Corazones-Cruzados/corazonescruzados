@@ -35,6 +35,16 @@ export default function CabeceraNegocio({ activa }: { activa?: string }) {
           {activa
             ? <p className={CLASES_TITULAR}>{SITIO.nombre}</p>
             : <h1 className={CLASES_TITULAR}>{SITIO.nombre}</h1>}
+
+          {/* «Clientes» — a quién habla esta sección (Fernando, 2026-08-04).
+              Va como `<p>` y no como `<h2>` por la misma razón que el nombre de las
+              tarjetas: en las cinco páginas de detalle el `<h1>` está MÁS ABAJO —es el
+              título de la puerta—, así que un `<h2>` aquí quedaría por encima de él y
+              dejaría la jerarquía del revés para quien lee el documento. El peso visual es
+              el que pidió; la señal para el buscador se mantiene limpia. */}
+          <p className="mt-3 text-[20px] sm:text-[24px] font-semibold tracking-tight text-[#a78bfa]">
+            Clientes
+          </p>
           {/* Texto de Fernando, palabra por palabra (2026-08-04). Solo se corrigió la tilde
               de «unión», que venía como «únion». */}
           <p className="mt-5 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-3xl mx-auto">

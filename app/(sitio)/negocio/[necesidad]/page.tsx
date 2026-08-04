@@ -34,7 +34,7 @@ import { faqsDeAcceso } from '@/lib/faqs';
 import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
 import VideoYouTube from '@/components/sitio/VideoYouTube';
 import FaqsNegocio from '@/components/sitio/FaqsNegocio';
-import { Contenedor } from '@/components/sitio/piezas';
+import { Contenedor, BloqueDestacado } from '@/components/sitio/piezas';
 
 type Props = { params: Promise<{ necesidad: string }> };
 
@@ -119,6 +119,15 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           {acceso.video && (
             <div className="mt-12 max-w-3xl">
               <VideoYouTube url={acceso.video} titulo={`${acceso.titulo} — ${SITIO.nombre}`} />
+            </div>
+          )}
+
+          {/* El bloque que le habla al cliente. Va DESPUÉS del vídeo y ANTES de las
+              preguntas, como pidió Fernando: primero se ve, luego se entiende, y al final
+              se resuelven las dudas. Sin `destacado`, no se pinta nada. */}
+          {acceso.destacado && (
+            <div className="mt-14">
+              <BloqueDestacado {...acceso.destacado} />
             </div>
           )}
 

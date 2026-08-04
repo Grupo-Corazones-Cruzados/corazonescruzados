@@ -173,6 +173,25 @@ export interface Acceso {
    * identificador y montar el reproductor se encarga `idDeYouTube` en `VideoYouTube`.
    */
   video?: string;
+  /**
+   * EL BLOQUE DESTACADO de su página — entre el vídeo y las preguntas frecuentes.
+   *
+   * Es donde se le habla al cliente de verdad: una pregunta grande que le suena a su
+   * problema, la respuesta en una frase, y los pasos concretos para que no quede en promesa.
+   * Fernando lo dictó para «Progreso» el 2026-08-04; las otras cuatro llegarán igual.
+   *
+   * Si una puerta no lo trae, **no se pinta nada**: ni recuadro vacío ni relleno.
+   */
+  destacado?: {
+    /** Rótulo pequeño en versalitas, sobre la pregunta. */
+    etiqueta: string;
+    /** La pregunta grande. Es el gancho: tiene que sonar al problema de quien lee. */
+    pregunta: string;
+    /** La respuesta, en una o dos frases. */
+    texto: string;
+    /** Los pasos, para que la promesa se vea concreta. Opcional. */
+    pasos?: { titulo: string; texto: string }[];
+  };
 }
 
 export const ACCESOS: Acceso[] = [
@@ -180,6 +199,45 @@ export const ACCESOS: Acceso[] = [
     id: 'requerimientos', icono: 'ticket',
     titulo: 'Progreso',
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
+    /**
+     * Dictado por Fernando el 2026-08-04, con permiso para retocarlo. Su texto era:
+     *
+     *   «¿Tienes requerimientos específicos en tus proyectos o en tus procesos para tu
+     *   organización? Solicita un ticket al cual nuestros miembros a través de su talento
+     *   podrán tomarlo y resolverlo aprovechando la disponibilidad y el acceso rápido a
+     *   nuestros recursos humanos.»
+     *
+     * Qué se cambió y por qué:
+     *  · La pregunta se acortó. Un titular grande se lee de un vistazo o no se lee; «para tu
+     *    organización» ya se entiende por el contexto y solo alargaba la línea.
+     *  · «Aprovechando la disponibilidad y el acceso rápido a nuestros recursos humanos» se
+     *    convirtió en **lo que significa**: que lo toma quien tiene el talento, y que empieza
+     *    ya. Dicho así es una ventaja; dicho en el original, es una frase de folleto.
+     *  · Se añadieron los tres pasos. La promesa «lo resolvemos» la hace cualquiera; lo que
+     *    convence es enseñar el mecanismo. Los tres corresponden a módulos que EXISTEN
+     *    —tickets, el círculo del talento y el portal del cliente—, según la regla de la
+     *    página: nada que no sea verificable.
+     */
+    destacado: {
+      etiqueta: 'Cómo funciona',
+      pregunta: '¿Tienes un requerimiento que nadie termina de resolver?',
+      texto:
+        'Publícalo como ticket. No se queda esperando a que alguien tenga hueco: lo toma el miembro cuyo talento encaja con lo que pides, y empieza a moverse desde ese momento.',
+      pasos: [
+        {
+          titulo: 'Lo publicas',
+          texto: 'Un ticket con lo que necesitas, desde tu espacio de cliente. Sin reuniones previas para poder empezar.',
+        },
+        {
+          titulo: 'Lo toma quien sabe hacerlo',
+          texto: 'Nuestros miembros ven los requerimientos abiertos y lo toma quien tiene el talento que ese pide.',
+        },
+        {
+          titulo: 'Lo sigues sin preguntar',
+          texto: 'El estado está siempre a la vista, y lo que se resuelve queda registrado con su historia.',
+        },
+      ],
+    },
   },
   {
     id: 'automatizacion', icono: 'rayo',
