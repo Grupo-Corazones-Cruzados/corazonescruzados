@@ -1,5 +1,6 @@
 import { SRI_CONFIG, getTipoIdentificacion } from './config';
 import { generateAccessKey, formatInvoiceNumber } from './access-key';
+import { sriText, SRI_MAX } from './text';
 
 interface CreditNoteItem {
   description: string;
@@ -24,10 +25,6 @@ interface CreditNoteData {
   // Motivo
   motivo: string;
   items: CreditNoteItem[];
-}
-
-function escapeXml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
 /**
@@ -78,7 +75,7 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
     return `
       <detalle>
         <codigoInterno>SRV${String(idx + 1).padStart(3, '0')}</codigoInterno>
-        <descripcion>${escapeXml(item.description)}</descripcion>
+        <descripcion>${sriText(item.description, SRI_MAX.descripcion)}</descripcion>
         <cantidad>${item.quantity.toFixed(2)}</cantidad>
         <precioUnitario>${item.unitPrice.toFixed(2)}</precioUnitario>
         <descuento>${discount.toFixed(2)}</descuento>
@@ -113,21 +110,21 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
   <infoTributaria>
     <ambiente>${SRI_CONFIG.ambiente}</ambiente>
     <tipoEmision>${SRI_CONFIG.tipoEmision}</tipoEmision>
-    <razonSocial>${escapeXml(SRI_CONFIG.razonSocial)}</razonSocial>
-    <nombreComercial>${escapeXml(SRI_CONFIG.nombreComercial)}</nombreComercial>
+    <razonSocial>${sriText(SRI_CONFIG.razonSocial, SRI_MAX.razonSocial)}</razonSocial>
+    <nombreComercial>${sriText(SRI_CONFIG.nombreComercial, SRI_MAX.nombreComercial)}</nombreComercial>
     <ruc>${SRI_CONFIG.ruc}</ruc>
     <claveAcceso>${claveAcceso}</claveAcceso>
     <codDoc>04</codDoc>
     <estab>${SRI_CONFIG.establecimiento}</estab>
     <ptoEmi>${SRI_CONFIG.puntoEmision}</ptoEmi>
     <secuencial>${String(data.secuencial).padStart(9, '0')}</secuencial>
-    <dirMatriz>${escapeXml(SRI_CONFIG.dirMatriz)}</dirMatriz>
+    <dirMatriz>${sriText(SRI_CONFIG.dirMatriz, SRI_MAX.dirMatriz)}</dirMatriz>
   </infoTributaria>
   <infoNotaCredito>
     <fechaEmision>${fechaEmision}</fechaEmision>
-    <dirEstablecimiento>${escapeXml(SRI_CONFIG.dirEstablecimiento)}</dirEstablecimiento>
+    <dirEstablecimiento>${sriText(SRI_CONFIG.dirEstablecimiento, SRI_MAX.dirEstablecimiento)}</dirEstablecimiento>
     <tipoIdentificacionComprador>${tipoIdComprador}</tipoIdentificacionComprador>
-    <razonSocialComprador>${escapeXml(data.clienteNombre)}</razonSocialComprador>
+    <razonSocialComprador>${sriText(data.clienteNombre, SRI_MAX.razonSocialComprador)}</razonSocialComprador>
     <identificacionComprador>${idCompradorSri}</identificacionComprador>
     <obligadoContabilidad>${SRI_CONFIG.obligadoContabilidad}</obligadoContabilidad>
     <codDocModificado>${codDocModificado}</codDocModificado>
@@ -138,13 +135,13 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
     <moneda>${SRI_CONFIG.moneda}</moneda>
     <totalConImpuestos>${totalConImpuestosXml}
     </totalConImpuestos>
-    <motivo>${escapeXml(data.motivo)}</motivo>
+    <motivo>${sriText(data.motivo, SRI_MAX.motivo)}</motivo>
   </infoNotaCredito>
   <detalles>${detallesXml}
   </detalles>
   <infoAdicional>
-    <campoAdicional nombre="email">${escapeXml(data.clienteEmail || '')}</campoAdicional>${realIdExterior ? `
-    <campoAdicional nombre="identificacionExterior">${escapeXml(realIdExterior)}</campoAdicional>` : ''}
+    <campoAdicional nombre="email">${sriText(data.clienteEmail || '', SRI_MAX.campoAdicionalValor)}</campoAdicional>${realIdExterior ? `
+    <campoAdicional nombre="identificacionExterior">${sriText(realIdExterior, SRI_MAX.campoAdicionalValor)}</campoAdicional>` : ''}
   </infoAdicional>
 </notaCredito>`;
 

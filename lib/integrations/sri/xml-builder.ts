@@ -1,5 +1,6 @@
 import { SRI_CONFIG, getTipoIdentificacion } from './config';
 import { generateAccessKey, formatInvoiceNumber, ecuadorDateParts } from './access-key';
+import { sriText, SRI_MAX } from './text';
 
 export interface InvoiceItem {
   codigoPrincipal?: string;
@@ -34,15 +35,6 @@ export interface InvoiceData {
   items: InvoiceItem[];
   payments?: PaymentMethod[];
   additionalFields?: AdditionalField[];
-}
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 /**
@@ -86,8 +78,8 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
 
     return `
       <detalle>
-        <codigoPrincipal>${escapeXml(codigo)}</codigoPrincipal>
-        <descripcion>${escapeXml(item.description)}</descripcion>
+        <codigoPrincipal>${sriText(codigo, SRI_MAX.codigoPrincipal)}</codigoPrincipal>
+        <descripcion>${sriText(item.description, SRI_MAX.descripcion)}</descripcion>
         <cantidad>${item.quantity.toFixed(2)}</cantidad>
         <precioUnitario>${item.unitPrice.toFixed(2)}</precioUnitario>
         <descuento>${discount.toFixed(2)}</descuento>
@@ -146,7 +138,7 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   const infoAdicionalXml = additionalFields.length > 0
     ? `
   <infoAdicional>${additionalFields.map(f => `
-    <campoAdicional nombre="${escapeXml(f.name)}">${escapeXml(f.value)}</campoAdicional>`).join('')}
+    <campoAdicional nombre="${sriText(f.name, SRI_MAX.campoAdicionalNombre)}">${sriText(f.value, SRI_MAX.campoAdicionalValor)}</campoAdicional>`).join('')}
   </infoAdicional>`
     : '';
 
@@ -155,25 +147,25 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   <infoTributaria>
     <ambiente>${SRI_CONFIG.ambiente}</ambiente>
     <tipoEmision>${SRI_CONFIG.tipoEmision}</tipoEmision>
-    <razonSocial>${escapeXml(SRI_CONFIG.razonSocial)}</razonSocial>
-    <nombreComercial>${escapeXml(SRI_CONFIG.nombreComercial)}</nombreComercial>
+    <razonSocial>${sriText(SRI_CONFIG.razonSocial, SRI_MAX.razonSocial)}</razonSocial>
+    <nombreComercial>${sriText(SRI_CONFIG.nombreComercial, SRI_MAX.nombreComercial)}</nombreComercial>
     <ruc>${SRI_CONFIG.ruc}</ruc>
     <claveAcceso>${claveAcceso}</claveAcceso>
     <codDoc>${SRI_CONFIG.tipoComprobante}</codDoc>
     <estab>${SRI_CONFIG.establecimiento}</estab>
     <ptoEmi>${SRI_CONFIG.puntoEmision}</ptoEmi>
     <secuencial>${String(data.secuencial).padStart(9, '0')}</secuencial>
-    <dirMatriz>${escapeXml(SRI_CONFIG.dirMatriz)}</dirMatriz>
-${SRI_CONFIG.regimenMicroempresas ? `    <regimenMicroempresas>${escapeXml(SRI_CONFIG.regimenMicroempresas)}</regimenMicroempresas>\n` : ''}${SRI_CONFIG.agenteRetencion ? `    <agenteRetencion>${SRI_CONFIG.agenteRetencion}</agenteRetencion>` : ''}
+    <dirMatriz>${sriText(SRI_CONFIG.dirMatriz, SRI_MAX.dirMatriz)}</dirMatriz>
+${SRI_CONFIG.regimenMicroempresas ? `    <regimenMicroempresas>${sriText(SRI_CONFIG.regimenMicroempresas, 300)}</regimenMicroempresas>\n` : ''}${SRI_CONFIG.agenteRetencion ? `    <agenteRetencion>${SRI_CONFIG.agenteRetencion}</agenteRetencion>` : ''}
   </infoTributaria>
   <infoFactura>
     <fechaEmision>${fechaEmision}</fechaEmision>
-    <dirEstablecimiento>${escapeXml(SRI_CONFIG.dirEstablecimiento)}</dirEstablecimiento>
+    <dirEstablecimiento>${sriText(SRI_CONFIG.dirEstablecimiento, SRI_MAX.dirEstablecimiento)}</dirEstablecimiento>
     <obligadoContabilidad>${SRI_CONFIG.obligadoContabilidad}</obligadoContabilidad>
     <tipoIdentificacionComprador>${tipoIdComprador}</tipoIdentificacionComprador>
-    <razonSocialComprador>${escapeXml(data.clienteNombre)}</razonSocialComprador>
+    <razonSocialComprador>${sriText(data.clienteNombre, SRI_MAX.razonSocialComprador)}</razonSocialComprador>
     <identificacionComprador>${idCompradorSri}</identificacionComprador>
-    <direccionComprador>${escapeXml(data.clienteDireccion || 'N/A')}</direccionComprador>
+    <direccionComprador>${sriText(data.clienteDireccion || 'N/A', SRI_MAX.direccionComprador)}</direccionComprador>
     <totalSinImpuestos>${totalSinImpuestos.toFixed(2)}</totalSinImpuestos>
     <totalDescuento>${totalDescuento.toFixed(2)}</totalDescuento>
     <totalConImpuestos>${totalConImpuestosXml}

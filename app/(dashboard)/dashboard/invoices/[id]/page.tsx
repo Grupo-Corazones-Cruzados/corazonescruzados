@@ -11,6 +11,7 @@ import DetailHeader from '@/components/ui/DetailHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
+import { SRI_MAX } from '@/lib/integrations/sri/text';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -488,11 +489,21 @@ export default function InvoiceDetailPage() {
             <div className="space-y-2">
               {editForm.items.map((it, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-1 items-start">
-                  <input value={it.description} onChange={e => {
-                    const items = [...editForm.items]; items[idx] = { ...it, description: e.target.value };
-                    setEditForm({ ...editForm, items });
-                  }} placeholder="Descripción"
-                    className="col-span-5 px-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  <div className="col-span-5">
+                    <input value={it.description} onChange={e => {
+                      const items = [...editForm.items]; items[idx] = { ...it, description: e.target.value };
+                      setEditForm({ ...editForm, items });
+                    }} placeholder="Descripción"
+                      className={`w-full px-2 py-1.5 bg-digi-darker border-2 text-[12px] text-digi-text focus:border-accent focus:outline-none ${
+                        it.description.length > SRI_MAX.descripcion ? 'border-red-500' : 'border-digi-border'}`} style={mf} />
+                    {/* El XSD del SRI limita la descripción a 300; pasarse hace que DEVUELVA
+                        la factura con "ARCHIVO NO CUMPLE ESTRUCTURA XML". */}
+                    {it.description.length > SRI_MAX.descripcion && (
+                      <p className="mt-0.5 text-[10px] text-red-400" style={mf}>
+                        {it.description.length}/{SRI_MAX.descripcion} — el SRI no acepta más de {SRI_MAX.descripcion}; se enviará recortada
+                      </p>
+                    )}
+                  </div>
                   <input type="number" step="0.01" value={it.quantity} onChange={e => {
                     const items = [...editForm.items]; items[idx] = { ...it, quantity: Number(e.target.value) };
                     setEditForm({ ...editForm, items });
