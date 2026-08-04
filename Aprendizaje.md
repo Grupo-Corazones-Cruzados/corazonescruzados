@@ -555,6 +555,23 @@ de diseño con Fernando.)*
   hay `gap` fiable. De ahí los márgenes a mano.
 - Verificado: `npx tsc --noEmit` limpio y `npm run build` correcto.
 
+- **⚠️ LECCIÓN — DOS DE LOS CUATRO CAMBIOS NO SURTIERON EFECTO, Y SOLO SE VIO MIDIENDO
+  PRODUCCIÓN (2026-08-04).** `tsc` limpio, `build` correcto, desplegado… y al comprobar el
+  HTML servido, el zoom seguía bloqueado y tres páginas seguían sin imagen. **Next hereda de
+  dos maneras opuestas y yo di por hecho una sola:**
+
+  | | Cómo hereda | Qué falló |
+  |---|---|---|
+  | `viewport` | **Se fusiona campo por campo** | El sitio público solo declaraba `width` e `initialScale`, así que `maximumScale: 1` y `userScalable: false` **seguían bajando de la raíz**. Hay que anular cada campo **explícitamente** |
+  | `openGraph` | **Se sustituye entero** | Las tres páginas declaran el suyo con su título; al no llevar `images`, **perdían** la imagen de `app/opengraph-image.tsx` que sí tenía la portada. Hay que **nombrarla** en cada una |
+
+  - Corregido en `0d5b87d` y **verificado contra producción**: `/negocio` sirve
+    `maximum-scale=5, user-scalable=yes`, la portada sigue en `maximum-scale=1,
+    user-scalable=no` (el juego intacto), y las tres páginas ya traen `og:image`.
+  - **Generalización, que es lo que vale:** *compila* y *funciona* son cosas distintas, y
+    con los metadatos de un framework la única prueba es **`curl` al HTML servido**. Es la
+    misma familia de la regla de `gcc-tsc-no-basta`, aplicada al `<head>`.
+
 ### 🟢 SEARCH CONSOLE — el veredicto de Google (2026-08-03)
 - **Prueba en tiempo real de `/negocio`: «La URL está disponible para Google» ✅ «La página
   se puede indexar» ✅.** Es la confirmación definitiva: **técnicamente no hay nada que
@@ -567,6 +584,19 @@ de diseño con Fernando.)*
     Google diciendo, con sus palabras, que nadie enlaza el sitio. Confirma que el cuello de
     botella es el **descubrimiento**.
 - **Acción:** «Solicitar indexación» de las cuatro páginas + el enlace desde LinkedIn.
+- **Las tres condiciones que Google dice que la prueba NO comprueba**, contrastadas contra
+  nuestro caso (2026-08-03):
+
+  | Condición | Nuestra situación |
+  |---|---|
+  | Sin acciones manuales ni problemas de seguridad | Dominio recién estrenado, sin historial. **Se confirma en un clic**: Search Console → «Seguridad y Acciones manuales» |
+  | No ser duplicado de otra página indexada | **Ya resuelto**: la misma aplicación se sirve en `www` **y** en `app.grupocc.org`, así que las dos servían `/negocio`. El `canonical` desplegado en `e2a1b90` apunta desde ambas a `www`, que es exactamente lo que Google pide |
+  | **«Calidad suficiente»** | La única que no se arregla con fontanería. Es criterio de Google sobre el contenido, y hoy las páginas son tarjetas con viñetas de una línea. **Es justo lo que resolvería el trabajo de diseño y contenido — que ahora depende de Fernando** |
+
+- **Dato útil del propio documento de Google:** *«la mejor opción para indexar muchas páginas
+  es enviar un sitemap con las páginas marcadas con `<lastmod>`»*. Es literalmente lo que se
+  hizo en `5defe52` al cambiar `new Date()` por fechas reales — **pero ese commit está sin
+  publicar**, así que el `<lastmod>` que Google ve sigue siendo el falso.
 
 ### Plan de solución (borrador — se concreta al cerrar PS1, PS2 y PS6)
 
