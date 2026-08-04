@@ -3957,6 +3957,30 @@ Módulos principales:
   lista de proyectos del mismo día: **lo que el agente genera hay que validarlo antes de que
   llegue a un sistema con esquema estricto** (XSD del SRI, `ARRAY_AGG` de Postgres).
 
+- **«FIRMA INVALIDA» = escapar `'` o `"` en el TEXTO del XML (2026-08-04):** el SRI devolvió
+  `FIRMA INVALIDA [firma y/o certificados alterados]`. **No era el certificado** (vigente hasta
+  2028-02-03, comprobado con `node-forge`) ni los datos del cliente. `escapeXml` convertía `'` en
+  `&apos;` y `"` en `&quot;` **también dentro del texto de los nodos**, donde XML no lo exige
+  (solo importa dentro de un valor de atributo), y el canonicalizador de `ec-sri-invoice-signer`
+  los **re-escapa**: `&apos;` → `&amp;apos;`.
+  - `la librería firma sobre` → `y &amp;apos;Empacar y Facturar&amp;apos;.`
+  - `el SRI verifica sobre`  → `y 'Empacar y Facturar'.`
+  - Hashes distintos ⇒ firma inválida. **Funcionó durante meses porque ninguna descripción había
+    llevado nunca un apóstrofo.**
+  - **Regla:** en texto de nodo se escapan **solo `&`, `<`, `>`** (`escapeXmlText`); en valor de
+    atributo, `&`, `<`, `"` y nunca `'` (`escapeXmlAttr`). Ambas en
+    `lib/integrations/sri/text.ts`.
+  - **Cómo comprobarlo sin enviar nada al SRI:** `require('ec-sri-invoice-signer/dist/src/canonicalization/c14n.js')`
+    y comparar `c14nCanonicalize(xml)` contra la canonicalización correcta (reescapar solo `&<>`
+    sobre el texto real). Si no coinciden, el digest no va a cuadrar. Se verificaron así los 12
+    nodos de texto de la factura antes de publicar.
+  - **Los caracteres «…» y «→» canonicalizan bien** y no tenían nada que ver — se descartaron con
+    el mismo método en vez de por intuición.
+- **Los dos rechazos del SRI del 2026-08-04 estaban encadenados:** mientras la factura fallaba la
+  validación de ESTRUCTURA (descripción > 300), nunca llegaba a la validación de FIRMA. Al
+  arreglar lo primero salió lo segundo. **Un rechazo del SRI puede estar tapando otro**: tras
+  corregir uno, no dar por hecho que ya pasa.
+
 ## Pendientes / preguntas abiertas
 - **Confirmación visual del usuario:** sigue siendo suya la última palabra, pero desde el 2026-07-30
   la verificación visual **ya no depende de él**: ver la lección "Verificar la UI de verdad".
