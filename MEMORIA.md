@@ -487,6 +487,82 @@ Stack estándar de la casa, con particularidades de este repo:
       (un túnel se convierte en una lluvia de mensajes rojos).
     - **Y una tercera, en el hilo:** bajar del todo en cada vuelta le roba la vista cada seis
       segundos a quien esté leyendo lo de arriba. Solo baja si ya estaba abajo.
+  - **🔐 DE QUIÉN ES CADA FLUJO — y el agujero que tapó (2026-08-03).**
+    Al preparar la cuenta del revisor de Meta salió que `GET /api/admin/flows` devolvía
+    **TODOS** los flujos a cualquiera con sesión, y que las 27 rutas de detalle solo
+    comprobaban que hubiera sesión: ninguna miraba de quién era el flujo. Con un cliente no
+    se notaba; con dos, el cliente A abre la bandeja del cliente B.
+    - **El modelo son DOS cosas distintas, no una** (decisión de Fernando):
+      **`flows.responsable_user_id`** = quién LLEVA el flujo dentro de GCC, es uno; y
+      **`flow_clients`** = a quién PERTENECE lo gestionado, pueden ser varios — por eso es
+      tabla y no columna. Un flujo sin clientes es interno de GCC. Migración 028.
+    - **La regla vive en `lib/flows/acceso.ts` y en ningún otro sitio.** Son 27 rutas: una
+      regla copiada 27 veces es una regla que en la número 19 está mal y nadie lo nota. Las
+      tres rutas de una conversación pasan todas por `conversacionDelFlujo()`, así que
+      comprobar ahí las cubre a las tres.
+    - **ACCESO AL FLUJO = ACCESO A TODO LO DEL FLUJO** (Fernando corrigió dos veces mi
+      criterio, 2026-08-03): las listas de contactos y **lanzar un envío de plantilla**
+      también entran. Lo único reservado al responsable es **repartir accesos**: dar
+      entrada a otro no es usar el flujo, es administrarlo.
+    - Botón **«Accesos»** en la cabecera del detalle → panel lateral (`PanelAccesos.tsx`).
+  - **🔓 EXENCIÓN DEL SEGUNDO FACTOR, ACOTADA (`users.sin_doble_factor`, migración 029).**
+    El acceso manda un código al correo de la cuenta, lo que deja fuera a quien no controla
+    ese buzón — el caso real es el **revisor de Meta**, cuya cuenta vive en NUESTRO dominio.
+    Los límites son la mitad del diseño: es **por cuenta y no por rol**, **no se puede
+    encender desde la app** (solo un UPDATE en la base; si se pudiera desde dentro sería el
+    primer sitio al que iría quien entrara con una sesión robada), y lleva `motivo` escrito
+    con cuándo revisarla. La contraseña sigue siendo obligatoria.
+    - ⚠️ **EL ORDEN IMPORTÓ Y LO PUSE MAL LA PRIMERA VEZ.** La comprobación iba DEBAJO del
+      `validateOnly`, y los modales de la portada preguntan primero con `validateOnly: true`
+      antes de ofrecer «código o passkey»: la respuesta salía antes de llegar a la exención.
+      Funcionaba por `/auth` y no desde la portada.
+  - **📨 PLANTILLAS DE WHATSAPP — pestaña propia del agente (2026-08-03).**
+    Fuera de la ventana de 24 h que abre cada mensaje entrante, WhatsApp **no deja escribir
+    libremente**: solo pasa una plantilla aprobada por Meta. Es la única forma de INICIAR
+    una conversación. Migraciones 030 (`agente_plantillas`, `agente_envios`), 031
+    (`agente_plantilla_listas`) y 032.
+    - **META MANDA, y eso da forma a todo.** El estado lo decide Meta y cambia solo —una
+      aprobada se cae a `PAUSED` por calidad—, así que la tabla es un **espejo** y no la
+      fuente de verdad. La sincronización **no borra** las que no vuelven: una ausencia
+      puede ser un borrado, una respuesta cortada o un token sin permiso, y borrar por
+      ausencia perdería el mapeo de variables, que es lo único que no se recupera de Meta.
+    - **Las variables se guardan como LISTA, no como objeto**: el orden ES el significado.
+      `["name","position"]` dice que `{{1}}` es el nombre y `{{2}}` el puesto. Salen de las
+      cuatro columnas que `flow_contacts` ya tiene; **`position` («Puesto») es la cuarta**,
+      decisión de Fernando para no tocar la tabla que comparte con el correo masivo.
+    - **El envío va EN SERIE.** En paralelo se come el límite del número del cliente de
+      golpe, y lo que Meta devuelve entonces no es «espera» sino errores que cuentan contra
+      la calidad del número. Un envío lento es un incordio; un número degradado es un
+      cliente sin servicio. Se quitan los repetidos por teléfono entre listas: recibir dos
+      veces lo mismo se lee como spam.
+    - **DOS FALLOS QUE SOLO APARECEN ENVIANDO DE VERDAD:**
+      1. **`rejected_reason: "NONE"`** — Meta lo devuelve en las plantillas **aprobadas**:
+         no es un motivo, es «ninguno». Guardarlo tal cual hacía que una aprobada dijera
+         «Meta la rechazó: NONE», lo contrario de la verdad.
+      2. **`agente_mensajes_herramienta_chk`** no conocía `'plantilla'` — escrita cuando lo
+         único que producía un saliente era el agente. Y el orden lo explica todo: **primero
+         se manda a WhatsApp, después se guarda**, así que el mensaje LLEGABA y el guardado
+         reventaba: el envío terminaba en error habiendo funcionado, y no aparecía en la
+         bandeja. Arreglado con la migración 032 **y** metiendo el guardado en su propio
+         `try`: que no se pueda ANOTAR algo nunca puede impedir HACER lo demás — antes un
+         fallo al escribir una fila abortaba el resto de la tanda.
+    - En la bandeja los salientes se etiquetan `plantilla`, junto a `agente` y `a mano`.
+  - **🚪 UNA PUERTA DE ACCESO POR TIPO DE CUENTA (2026-08-03).**
+    `/auth/cliente`, `/auth/miembro`, `/auth/candidato`. **No son páginas: son
+    redirecciones** a `/?acceso={tipo}`, y la portada abre el diálogo que YA existe. Lo
+    hice primero como páginas con un formulario propio que imitaba al de la portada y
+    Fernando lo vio en el acto; el problema de fondo no era el parecido, eran **dos
+    formularios de acceso que mantener**.
+    - ⚠️ **CLIENTE Y CANDIDATO COMPARTEN `role = 'client'`.** Lo que los separa es
+      `clients.account_type`. La comprobación anterior solo miraba el rol, así que un
+      candidato pasaba por la puerta de clientes. Se comprueba en el SERVIDOR
+      (`login/begin` → `cuentaEncaja`): la ruta es el rótulo de la puerta, no la cerradura.
+      Los administradores entran por cualquiera, a propósito.
+    - ⚠️ **UNA RUTA QUE REDIRIGE NO PUEDE SER ESTÁTICA.** El despliegue salió bien y la URL
+      seguía devolviendo **el HTML viejo cacheado** (`x-nextjs-cache: HIT`, `s-maxage` de un
+      año) porque una versión anterior tenía `generateStaticParams`. El arreglo estaba
+      publicado y era invisible. Se caza mirando las CABECERAS, no el `200`. Solución:
+      `export const dynamic = 'force-dynamic'`.
   - **🎨 EL TEMA NO REMAPEA TODA LA PALETA DE TAILWIND** (2026-08-01, lo vio Fernando).
     `.corp` solo redefine un conjunto concreto de tonos. `text-red-800` o `text-amber-900`
     compilan y en claro parecen rojo y ámbar, pero **están fuera de la paleta** y en oscuro

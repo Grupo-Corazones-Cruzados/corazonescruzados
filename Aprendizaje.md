@@ -33,7 +33,61 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · ✅ 98% — CÓDIGO COMPLETO Y DESPLEGADO, falta conectar el primer número
+## Objetivo ACTUAL (declarado 2026-08-01) — FLUJO "AGENTE IA": GCC como PROVEEDOR DE TECNOLOGÍA de WhatsApp (coexistencia, multi-tenant) · ✅ 99% — TODO PROBADO CON WHATSAPP REAL; solo falta que Meta apruebe el App Review
+
+### ⏱️ Estado al 2026-08-03 (fin de la jornada)
+
+**Lo que se cerró hoy, y todo comprobado contra la API/base reales:**
+
+| Pieza | Estado |
+|---|---|
+| Negocio verificado en Meta | ✅ aprobado tras tres intentos |
+| Cadena completa con WhatsApp real | ✅ número de prueba `+1 555-666-6709` en el canal 33 |
+| `whatsapp_business_management` | ✅ llamadas de prueba **Completado** |
+| `whatsapp_business_messaging` | ✅ llamadas de prueba **Completado** |
+| `public_profile` | ✅ `GET /me?fields=id,name` hecho (no requería) |
+| Video del envío | ✅ grabado por Fernando |
+| Video de la plantilla | ⏳ pendiente de grabar |
+| Cuenta del revisor | ✅ `revisor.meta@grupocc.org`, ve **solo** el flujo 23 |
+| Instrucciones del formulario | ✅ `app-review-instrucciones.txt`, campo por campo |
+
+⚠️ **Cada prueba de la API solo vale 30 días.** Las de hoy caducan el **2 de septiembre de
+2026**; si la solicitud se envía después, hay que repetirlas.
+
+**Lo que se construyó hoy, más allá del alta:**
+1. **Modelo de accesos por flujo** — responsable + clientes (`lib/flows/acceso.ts`). Tapó
+   un agujero real: cualquiera con sesión veía todos los flujos.
+2. **Pestaña de Plantillas** — crear, sincronizar con Meta, y enviar a listas de contactos
+   reutilizando las del correo masivo. Es además la mejor evidencia del permiso de
+   *management* para el revisor.
+3. **Una puerta de acceso por tipo de cuenta** (`/auth/{cliente,miembro,candidato}`).
+
+**Lo que queda, en orden:**
+1. Grabar el video de la plantilla (`whatsapp_business_management`).
+2. Enviar el App Review con los textos de `app-review-instrucciones.txt`.
+3. Cuando aprueben: apagar `sin_doble_factor` del revisor, dar de alta el número de Peters
+   Tours por Embedded Signup, y **comprobar con el cliente que su equipo sigue entrando a
+   WhatsApp Web** — la única prueba válida de que la coexistencia quedó bien.
+4. Migrar `EmailFlowWorkspace` a `PanelListasContactos` (hoy tiene su propia copia).
+5. Rellenar los tres bloques de conocimiento vacíos del agente de GCC: `horario_atencion`,
+   `servicios_empresas`, `cambios_reclamos`.
+
+### 🧠 Las cinco lecciones de método de esta jornada
+
+1. **`tsc` + `build` limpios no significan nada sobre el comportamiento.** Los tres fallos
+   más caros del día —`fallbacks` no soportado, la restricción que no conocía `'plantilla'`,
+   y el `NONE`— solo aparecen **llamando de verdad** a la API o a la base.
+2. **Comprobar las CABECERAS, no el código de estado.** Un `200` puede ser HTML cacheado de
+   hace dos despliegues (`x-nextjs-cache: HIT`). El arreglo estaba publicado y era
+   invisible.
+3. **Equivalente no es igual.** Escribir un control «parecido» al que ya existe se nota en
+   cuanto alguien pone las dos pantallas juntas — pasó dos veces hoy (plantillas y acceso).
+   Se usa el componente, o se extrae y se comparte.
+4. **El orden de las comprobaciones es parte del diseño.** La exención del segundo factor
+   puesta debajo del `validateOnly` no se ejecutaba nunca por el camino que importaba.
+5. **Diagnosticar de más es tan malo como de menos.** Di el `NONE` por explicación del
+   «error raro al enviar» y me quedé corto: eran dos fallos distintos, y el real —el que
+   dejaba los mensajes fuera de la bandeja— seguía ahí.
 
 **Rol asumido:** *arquitecto de integraciones + backend multi-tenant* — el problema no es "hacer un
 bot", es montar la **infraestructura de proveedor ante Meta** y el aislamiento por cliente. La parte

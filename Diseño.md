@@ -181,6 +181,10 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
 | Modal / Panel | `components/ui/PixelModal` | md/lg se vuelven **panel lateral derecho** (Fluent) |
 | Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px |
 | Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
+| Listas de contactos + su tabla | `components/dashboard/flows/PanelListasContactos` | La columna de listas (con casilla de asociación, y renombrar/compartir/borrar al borde derecho) y la tabla de contactos con importar/exportar Excel. Extraído del correo masivo el 2026-08-03 al pedir Fernando la misma disposición para las plantillas de WhatsApp. ⚠️ **PENDIENTE:** `EmailFlowWorkspace` todavía tiene su propia copia dentro de sus 1.500 líneas; migrarlo es el siguiente paso |
+| Estilos de las superficies de acceso | `components/landing/authEstilos` | `PANEL_AUTH`, `TITULO_AUTH`, `SUBTITULO_AUTH`, `CAMPO_AUTH`, `ENLACE_AUTH`. Los del diálogo de acceso de la portada, que es el aspecto canónico: campos **sin etiqueta** (el marcador de posición hace de rótulo) y primario a ancho completo. Los importa `ClientLoginModal`, para que no haya dos |
+| Alto hasta el pie | `lib/hooks/useAltoHastaElPie` | Mide el hueco real hasta el pie fijo (`[data-app-footer]`) y el fondo del contenedor con desplazamiento. **Referencia como FUNCIÓN** y observador sobre el PADRE: con `useEffect` + `ResizeObserver` sobre `document.body` no funciona (ver la regla de abajo) |
+| Sondeo periódico | `lib/hooks/useSondeo` | Para con la pestaña oculta, refresca al volver, no solapa vueltas y calla los fallos |
 | Rail de filtro | `components/ui/FilterRail` | **único** rail de filtro: icono + label + conteo, activo con barra izq. accent. Admite `hint` (2ª línea) y `sections` (grupos con encabezado y separador). Ancho 220px. **Un rail nuevo se hace con este componente, nunca copiando el marcado** — estaba duplicado en 12 pantallas y por eso unas y otras se veían distintas (migradas todas el 2026-07-26) |
 | Header de detalle | `components/ui/DetailHeader` | breadcrumb + título + command bar + overflow ⋯ |
 | Confirmar | `components/ui/PixelConfirm` | NO usar `confirm()` del navegador (excepción puntual) |
@@ -1365,6 +1369,31 @@ función y no de la memoria de quien escribe.
 > mueve habitaciones**.
 
 ## Desviaciones detectadas y resolución
+
+### 2026-08-03 · La pantalla de Plantillas se escribió «parecida» y no igual · **CORREGIDO**
+La columna de plantillas y la de listas hacían lo mismo que las del correo masivo pero se
+veían distintas: botones siempre visibles, con borde y en otro color, en vez de iconos
+pegados al borde derecho que aparecen al pasar el puntero; y `<input type=checkbox>` nativo
+en vez del botón con `Check` dentro. **La causa no fue el detalle sino el método**: se
+escribió un marcado equivalente en lugar de usar el control. Lo vio Fernando al poner las
+dos pantallas juntas. Resuelto usando `FilterRail` de verdad y replicando el marcado de
+`ListGroup`, con nota en el código de que se copió a propósito. → regla nueva en «do/don't».
+
+### 2026-08-03 · Páginas de acceso con formulario propio · **CORREGIDO, y eliminado**
+`/auth/{tipo}` se hizo como páginas con un formulario escrito aparte que imitaba al diálogo
+de la portada. Se parecía, no era. El problema de fondo eran **dos formularios de acceso
+que mantener**. Resuelto convirtiendo las rutas en **redirecciones** a `/?acceso={tipo}`:
+la portada abre el diálogo que ya existe. Cero duplicación.
+
+### 2026-08-03 · `max-h-[Nvh]` usado para «llenar» · **CORREGIDO**
+La Bandeja del agente y los paneles del Estudio usaban un techo donde querían un relleno.
+Con poco contenido medían lo que su contenido y dejaban media pantalla muerta. → alto
+medido con `useAltoHastaElPie` + `flex-1 min-h-0` en la zona que se desplaza.
+
+### 2026-08-03 · Caja de aviso permanente en la pantalla de Conexión · **MOVIDA**
+La advertencia sobre comprobar la coexistencia ocupaba media pantalla y repetía en cada
+visita algo que se lee una vez, el día del alta. Pasó detrás de `BotonAyuda`, colgando del
+dato «Coexistencia»; el estado sigue a la vista en su insignia.
 - **2026-08-01 — AUDITORÍA DE COLOR del ámbito `.corp`: 117 usos fuera de paleta en 26 archivos.**
   La disparó Fernando al ver los avisos del detalle de flujo. El barrido completo se hizo con un
   script que compara cada clase contra los tonos que `globals.css` remapea en claro **y** en oscuro.
