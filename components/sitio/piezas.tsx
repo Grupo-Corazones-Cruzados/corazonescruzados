@@ -198,20 +198,25 @@ export function RejillaAccesos({
                   ? 'border-[#7B5FBF]/55 bg-[#7B5FBF]/[0.09]'
                   : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.18] hover:bg-white/[0.04]'}`}
             >
-              <span
-                className={`inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border transition-colors
-                  ${abierta ? 'border-[#7B5FBF]/60 bg-[#7B5FBF]/25' : 'border-[#7B5FBF]/30 bg-[#7B5FBF]/10'}`}
-              >
-                <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[#c4b5fd]' : 'text-[#a78bfa]'}`} />
-              </span>
-              {/* El nombre de la puerta. Es un `<p>` y no un encabezado a propósito: estas
-                  tarjetas se repiten en las seis páginas de la sección, y una ristra de
-                  `<h3>` repetidos en todas confundiría la jerarquía que lee un buscador. */}
-              <p className={`mt-3.5 text-[15.5px] font-semibold leading-snug transition-colors
-                             ${abierta ? 'text-white' : 'text-white/90 group-hover:text-white'}`}>
-                {a.titulo}
-              </p>
-              <p className={`mt-1.5 text-[14px] leading-relaxed transition-colors
+              {/* Icono y nombre en la misma línea (Fernando, 2026-08-04). Antes iban uno
+                  debajo del otro y la tarjeta gastaba dos alturas en su rótulo; así el
+                  encabezado ocupa una sola y queda más sitio para la frase. */}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border transition-colors
+                    ${abierta ? 'border-[#7B5FBF]/60 bg-[#7B5FBF]/25' : 'border-[#7B5FBF]/30 bg-[#7B5FBF]/10'}`}
+                >
+                  <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[#c4b5fd]' : 'text-[#a78bfa]'}`} />
+                </span>
+                {/* El nombre de la puerta. Es un `<p>` y no un encabezado a propósito: estas
+                    tarjetas se repiten en las seis páginas de la sección, y una ristra de
+                    `<h3>` repetidos en todas confundiría la jerarquía que lee un buscador. */}
+                <p className={`text-[15.5px] font-semibold leading-snug transition-colors
+                               ${abierta ? 'text-white' : 'text-white/90 group-hover:text-white'}`}>
+                  {a.titulo}
+                </p>
+              </div>
+              <p className={`mt-3.5 text-[14px] leading-relaxed transition-colors
                              ${abierta ? 'text-white/75' : 'text-white/55 group-hover:text-white/70'}`}>
                 {a.texto}
               </p>
