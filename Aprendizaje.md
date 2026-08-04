@@ -460,9 +460,29 @@ afirmarse, aunque sí para decidir cómo se arreglan.
   **Inspección de URLs → Solicitar indexación**, que no depende de él. Y ahí está además el
   diagnóstico de verdad: **«Probar URL publicada»** hace que Googlebot descargue la página
   **en vivo** y enseña exactamente lo que ve.
-- *(Anotado: una medición aislada dio 6,7 s, probablemente arranque en frío del contenedor.
-  Las tres siguientes, 0,29 s. Si reapareciera de forma sostenida, sí sería un problema de
-  rastreo.)*
+- **🚨 CAUSA PROBABLE ENCONTRADA (2026-08-04): EL CONTENEDOR SE DUERME.** Aquello de los
+  6,7 s que anoté como medición aislada **no lo era**. Medido a propósito, tres tandas con
+  90 s de pausa entre ellas:
+
+  | Tanda | 1ª petición | 2ª petición |
+  |---|---|---|
+  | 1 (en caliente) | 0,28 s | 0,32 s |
+  | 2 (tras 90 s parado) | **6,68 s** | 0,35 s |
+  | 3 (tras 90 s parado) | **8,85 s** | 0,28 s |
+
+  El patrón es inequívoco: **tras un rato sin tráfico, la primera petición tarda entre 7 y 9
+  segundos**; la siguiente, tres décimas. Es un **arranque en frío** del contenedor de
+  Railway.
+  - **Por qué importa, y son tres cosas a la vez:**
+    1. **Googlebot siempre llega en frío** — nadie visita el sitio, así que su petición es
+       *siempre* la primera. Es una explicación muy plausible del «No se ha podido obtener».
+    2. **Cada visitante nuevo espera 7-9 segundos** para ver la primera pantalla.
+    3. Es exactamente lo que miden las **Core Web Vitals**, que sí cuentan para posicionar.
+  - **Qué mirar:** en Railway, el ajuste de **App Sleeping / serverless** del servicio. Si
+    está activo, duerme el contenedor al quedarse sin tráfico. Desactivarlo cuesta más
+    —el contenedor queda encendido— pero un sitio público que tarda 9 segundos en despertar
+    no sirve.
+  - ⚠️ **Es de Fernando**: no hay `RAILWAY_TOKEN` en este repo y el ajuste está en su panel.
 
 #### ⛔ REGLA DE MÉTODO PARA ESTE OBJETIVO — EL DISEÑO SE VE CON FERNANDO ANTES (2026-08-03)
 
