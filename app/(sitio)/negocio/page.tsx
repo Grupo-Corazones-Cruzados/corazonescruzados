@@ -16,12 +16,12 @@
  */
 
 import type { Metadata } from 'next';
-import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { SITIO, SERVICIOS, CLIENTES, PUBLICOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { SITIO, SERVICIOS, CLIENTES, PUBLICOS, REDES, OG_IMAGEN, ACCESOS } from '@/lib/sitio/contenido';
 import { RAZON_SOCIAL } from '@/lib/negocio/datos';
 import {
   Contenedor, Seccion, TituloSeccion, Tarjeta, IconoCuadro, FondoHeroe,
-  BotonPrimario, BotonSecundario, conNegritas,
+  RejillaAccesos, conNegritas,
 } from '@/components/sitio/piezas';
 import AltaCliente from './AltaCliente';
 
@@ -50,31 +50,27 @@ export default function NegocioPage() {
   return (
     <>
       {/* ── HÉROE ───────────────────────────────────────────────────────────── */}
+      {/* Rehecho el 2026-08-04 con Fernando. Antes había un titular de marca —«Primero las
+          personas. Lo demás sale de ahí.»— y dos botones. Se leía bonito y no contestaba a
+          la única pregunta de quien acaba de llegar: **qué puedo hacer yo aquí**.
+          Ahora eso lo contestan cinco puertas, en cinco tarjetas que se reparten solas (`RejillaAccesos`).
+          El titular y el subtítulo son suyos, palabra por palabra. */}
       <section className="relative overflow-hidden">
         <FondoHeroe />
-        <Contenedor className="relative py-24 sm:py-32 text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-[#7B5FBF]/30 bg-[#7B5FBF]/10 px-3.5 py-1.5 text-[12.5px] text-[#c4b5fd]">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Un proyecto de desarrollo humano
-          </p>
-          <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-white tracking-tight max-w-3xl mx-auto">
-            Primero las personas.
-            <br className="hidden sm:block" /> Lo demás sale de ahí.
-          </h1>
-          <p className="mt-6 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-2xl mx-auto">
-            {SITIO.nombre} es un proyecto de desarrollo humano. Los sistemas que hoy
-            ofrecemos a empresas nacieron primero como herramientas para nuestra propia
-            gente — y por eso están hechos para usarse, no para venderse.
-          </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <BotonPrimario href="#crear-cuenta">
-              Crear cuenta de cliente <ArrowRight className="w-4 h-4" />
-            </BotonPrimario>
-            <BotonSecundario href="#servicios">Ver los servicios</BotonSecundario>
+        <Contenedor className="relative pt-20 pb-14 sm:pt-24 sm:pb-16">
+          <div className="text-center">
+            <h1 className="text-[38px] sm:text-[54px] leading-[1.08] font-semibold text-white tracking-tight">
+              {SITIO.nombre}
+            </h1>
+            <p className="mt-5 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-3xl mx-auto">
+              Proyecto de desarrollo humano que ofrece soluciones para las necesidades
+              individuales o grupales de los sujetos, en función de resolver determinadas
+              problemáticas sociales.
+            </p>
           </div>
-          <p className="mt-5 text-[13px] text-white/35">
-            Abrir la cuenta no cuesta nada y no compromete a nada.
-          </p>
+          <div className="mt-10 sm:mt-12">
+            <RejillaAccesos accesos={ACCESOS} etiqueta="Lo que puedes hacer en GCC World" />
+          </div>
         </Contenedor>
       </section>
 

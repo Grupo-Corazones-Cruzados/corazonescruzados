@@ -108,6 +108,58 @@ export const NAVEGACION = [
   { href: '/contacto', label: 'Contacto' },
 ] as const;
 
+/* ═══════════════════════ ACCESOS (la tira de /negocio) ═══════════════════════ */
+
+/**
+ * LAS CINCO TARJETAS DE LA CABECERA DE `/negocio` — dictadas por Fernando (2026-08-04).
+ *
+ * Sustituyen al bloque que había («Primero las personas. Lo demás sale de ahí.») porque no
+ * decía **qué puede hacer aquí** quien llega. Estas cinco sí: cada una es una puerta.
+ *
+ * ── CÓMO ESTÁN ESCRITAS ────────────────────────────────────────────────────────
+ * **Una frase, sin título.** Fernando dio una frase por tarjeta y pidió que no fueran
+ * altas; meterles además un titular las alarga y obliga a inventar palabras que él no dijo.
+ * El icono hace de rótulo.
+ *
+ * ⚠️ **La quinta habla de algo que TODAVÍA NO EXISTE.** Buscado en el código: lo único que
+ * hay es que los **miembros** voten la **cancelación de un proyecto**
+ * (`project_cancellation_votes`, y el endpoint rechaza a quien no es miembro). Se avisó del
+ * riesgo —esta es la página que revisa Meta, y anunciar lo que un revisor no encuentra es
+ * justo lo que tumbó la primera verificación— y **Fernando decidió dejarla**: «es lo que
+ * viene». Queda escrito aquí para que la decisión tenga dueño y fecha.
+ */
+export interface Acceso {
+  id: string;
+  icono: string;
+  texto: string;
+  /** Solo la del marketplace lo lleva, por petición expresa. */
+  enlace?: { href: string; etiqueta: string };
+}
+
+export const ACCESOS: Acceso[] = [
+  {
+    id: 'requerimientos', icono: 'ticket',
+    texto: 'Gestiona tus requerimientos publicando tickets, o los proyectos que ya necesitas en tu organización.',
+  },
+  {
+    id: 'automatizacion', icono: 'rayo',
+    texto: 'Adquiere soluciones de automatización para tu negocio: aplicaciones, agentes de IA y robots.',
+  },
+  {
+    id: 'juego', icono: 'juego',
+    texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
+  },
+  {
+    id: 'marketplace', icono: 'tienda',
+    texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
+    enlace: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' },
+  },
+  {
+    id: 'votacion', icono: 'voto',
+    texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar en la organización.',
+  },
+];
+
 /* ═══════════════════════ SERVICIOS ═══════════════════════ */
 
 export type Publico = 'clientes' | 'miembros' | 'candidatos';

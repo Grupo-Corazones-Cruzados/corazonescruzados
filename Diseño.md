@@ -100,6 +100,32 @@ buscador, un revisor de Meta. No es el pixel art de la portada ni el Fluent clar
 | `BotonPrimario` / `BotonSecundario` | `h-11 px-6 rounded-lg`; primario `bg-[#7B5FBF]`, secundario borde `white/15` |
 | `conNegritas` | Convierte los `**dobles asteriscos**` del contenido en `<strong>` |
 | `ICONOS` | Mapa nombre→icono lucide, para que el contenido nombre iconos sin importarlos |
+| `RejillaAccesos` | Tarjetas de acceso que **se reparten solas según el ancho**. Ver abajo |
+
+#### `RejillaAccesos` — tarjetas que se reparten solas (2026-08-04)
+
+La cabecera de `/negocio`. Cinco puertas de entrada al proyecto: tres arriba y dos
+**centradas** debajo en pantalla grande, dos y dos y una en tableta, una por fila en el
+móvil. Los datos salen de `ACCESOS` en `lib/sitio/contenido.ts`.
+
+```tsx
+<RejillaAccesos accesos={ACCESOS} etiqueta="Lo que puedes hacer en GCC World" />
+```
+
+- **`flex flex-wrap justify-center`, NO `grid`.** Con `grid-cols-3` las dos últimas quedan
+  pegadas a la izquierda con un hueco a la derecha. Con `flex-wrap` la última fila **se
+  centra sola**, y el reparto **no depende de que sean cinco**: con seis o con cuatro se
+  recoloca sin tocar el componente.
+- **`w-full sm:w-[280px]`** — ancho fijo para que todas midan igual aunque sus textos no; a
+  ancho completo en el móvil, que es lo natural.
+- **`items-stretch` + `mt-auto` en el enlace.** Sin eso, la única tarjeta con botón deja el
+  enlace a otra altura y la fila se ve descuadrada.
+- **Una frase, sin titular.** El icono hace de rótulo. Meterle título alarga la tarjeta y
+  obliga a inventar palabras que Fernando no dijo.
+- **El botón aparece solo si la tarjeta trae `enlace`** — hoy solo el marketplace. Añadir
+  otro es tocar `contenido.ts`, no el componente.
+- **Sin JavaScript**, Server Component: las frases están en el HTML crudo. Nació como una
+  tira que se arrastraba y Fernando la cambió a esto sobre la marcha.
 
 Marco compartido: `app/(sitio)/layout.tsx` → `CabeceraSitio` + `main pt-16` + `PieSitio`.
 

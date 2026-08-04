@@ -23,12 +23,14 @@
 
 import type { ReactNode } from 'react';
 import {
-  MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass, type LucideIcon,
+  MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
+  Ticket, Vote, ArrowRight, type LucideIcon,
 } from 'lucide-react';
 
 export const ICONOS: Record<string, LucideIcon> = {
   mensaje: MessageSquare, capas: Layers, rayo: Zap, documento: FileText,
   personas: Users, juego: Gamepad2, tienda: Store, brujula: Compass,
+  ticket: Ticket, voto: Vote,
 };
 
 /** Convierte los `**dobles asteriscos**` del contenido en negrita. */
@@ -136,6 +138,72 @@ export function FondoHeroe() {
         }}
       />
     </div>
+  );
+}
+
+/* ── Rejilla de accesos ──────────────────────────────────────────────────────── */
+
+/**
+ * LAS TARJETAS DE ACCESO — cabecera de `/negocio` (2026-08-04).
+ *
+ * Cinco puertas de entrada. **Se reparten solas según el ancho que haya**: tres arriba y
+ * dos centradas debajo en pantalla grande, dos y dos y una en tableta, una por fila en el
+ * móvil.
+ *
+ * ── POR QUÉ `flex-wrap` Y NO UNA REJILLA ───────────────────────────────────────
+ * Nació como una tira que se arrastraba y Fernando la cambió a esto en el momento: *«mejor
+ * muéstralas todas según el espacio disponible»*. Con `grid-cols-3` las dos últimas
+ * quedarían pegadas a la izquierda y con un hueco a la derecha. Con `flex-wrap` +
+ * `justify-center` **la última fila se centra sola**, y —lo que más importa— el reparto
+ * **no depende de que sean cinco**: si mañana hay seis o cuatro, se recolocan sin tocar
+ * este archivo.
+ *
+ * ── EL RESTO DE DECISIONES ─────────────────────────────────────────────────────
+ * · **Sin JavaScript.** Es un Server Component: las cinco frases están en el HTML crudo que
+ *   lee un buscador, no detrás de una hidratación.
+ * · **Ancho fijo de 280 px a partir de `sm`**, y `w-full` en el móvil. Fijo mantiene todas
+ *   las tarjetas iguales aunque sus textos midan distinto; en el móvil, ocupar el ancho
+ *   completo es lo natural.
+ * · **`items-stretch`** para que todas las de una fila midan lo mismo de alto, y `mt-auto`
+ *   en el botón para que quede pegado abajo. Sin eso, la del marketplace —que es la única
+ *   con botón— dejaría el enlace a una altura distinta y la fila se vería descuadrada.
+ * · **El botón solo aparece si la tarjeta trae `enlace`.** Hoy solo el marketplace, por
+ *   petición expresa. Añadir otro es poner `enlace` en `contenido.ts`, no tocar esto.
+ */
+export function RejillaAccesos({
+  accesos, etiqueta,
+}: {
+  accesos: { id: string; icono: string; texto: string; enlace?: { href: string; etiqueta: string } }[];
+  etiqueta: string;
+}) {
+  return (
+    <ul aria-label={etiqueta} className="flex flex-wrap items-stretch justify-center gap-4 text-left">
+      {accesos.map((a) => {
+        const Icono = ICONOS[a.icono] ?? Layers;
+        return (
+          <li
+            key={a.id}
+            className="w-full sm:w-[280px] flex flex-col rounded-xl border border-white/[0.08]
+                       bg-white/[0.02] p-5 transition-colors hover:border-white/[0.16]"
+          >
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0
+                             border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
+              <Icono className="w-[18px] h-[18px] text-[#a78bfa]" />
+            </span>
+            <p className="mt-3.5 text-[14px] leading-relaxed text-white/60">{a.texto}</p>
+            {a.enlace && (
+              <a
+                href={a.enlace.href}
+                className="mt-auto pt-4 inline-flex items-center gap-1.5 text-[13.5px] font-medium
+                           text-[#a78bfa] hover:text-white transition-colors"
+              >
+                {a.enlace.etiqueta} <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
