@@ -649,6 +649,30 @@ de diseño con Fernando.)*
   hizo en `5defe52` al cambiar `new Date()` por fechas reales — **pero ese commit está sin
   publicar**, así que el `<lastmod>` que Google ve sigue siendo el falso.
 
+### ✅ `/negocio`, REHECHA CON FERNANDO (2026-08-04)
+
+Primera página de contenido acordada con él, ya bajo la regla de «el diseño se ve conmigo
+antes». Lo que salió, y lo que enseñó:
+
+| Decisión suya | Lo que aporté |
+|---|---|
+| Quitar el titular de marca y poner cinco tarjetas | Le advertí de que la página se quedaba **sin `<h1>`** y dictó uno |
+| Primero una tira deslizante; luego, «que se repartan según el espacio» | `flex-wrap` centrado, **no `grid`**: la última fila se centra sola y el reparto no depende de que sean cinco |
+| URLs por tarjeta | Le ofrecí **nombres frente a números** y eligió nombres. Es lo correcto: la URL que dice de qué va cuenta en el buscador y al compartir |
+| Vaciar todo lo de debajo, identidad legal incluida | **Le paré antes de tocar**: es la URL declarada a Meta y ya se rechazó una vez. Decidió quitarla y **queda con dueño y fecha** en la cabecera del archivo |
+| FAQs con tres paneles en el admin | Reusé el patrón «Explorador Azure» en vez de escribir otro; y saqué el `FAQPage`, que es lo que de verdad puede rendir en Google |
+
+- **⚠️ LA LECCIÓN TÉCNICA DE LA JORNADA — «no funciona» hay que demostrarlo.** Vi que al
+  pulsar una tarjeta la página se quedaba a 306 px cuando el detalle estaba a 588, lo di por
+  roto y **escribí un componente de cliente para arreglarlo**. Midiendo después:
+  `scrollFinal === scrollMáximoPosible` en las dos ventanas probadas. **306 era el fondo de
+  la página**: el detalle aún no tiene contenido y no había más recorrido. El componente
+  sobraba y se quitó.
+  - Es **el mismo error de método** que el del «contenedor que se duerme», el mismo día: dar
+    por diagnosticado un síntoma sin aislar la causa. Dos veces en una jornada.
+  - **Regla:** antes de añadir código que corrige un comportamiento, **demostrar que el
+    comportamiento es incorrecto** — no que se ve raro.
+
 ### Plan de solución (borrador — se concreta al cerrar PS1, PS2 y PS6)
 
 1. **Cimientos técnicos** (no dependen de las respuestas, se pueden hacer ya): imagen de

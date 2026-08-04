@@ -275,6 +275,45 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🚪 `/negocio` SON SEIS PÁGINAS, NO UNA (2026-08-04).** Fernando rehízo la sección entera.
+  - **La cabecera son cinco puertas.** Fuera el titular de marca («Primero las personas. Lo
+    demás sale de ahí.»), que se leía bien y no contestaba a lo único que pregunta quien
+    llega: *qué puedo hacer yo aquí*. En su lugar, su titular y subtítulo + **cinco
+    tarjetas**: tickets y proyectos, automatización, videojuego, marketplace y votación.
+  - **Cada tarjeta es una URL**: `/negocio/{requerimientos,automatizacion,videojuego,
+    marketplace,votacion}`. Con nombre y no numeradas. **El `id` en `ACCESOS`
+    (`lib/sitio/contenido.ts`) ES la URL**: de ahí salen tarjeta, ruta, mapa del sitio y
+    `canonical`. Cambiar uno rompe enlaces publicados — si hay que renombrar, con
+    redirección permanente.
+  - **En una página de detalle se repiten las cinco tarjetas**, con la suya marcada, y el
+    detalle debajo. El nombre del grupo baja a `<p>` ahí para dejar el `<h1>` al título de
+    la página; con el mismo encabezado, las cinco competirían sin decir de qué van.
+  - **Se vació todo lo que había debajo**: servicios por públicos, precios, apartado de
+    WhatsApp, alta de cliente y **la identidad legal**. El texto de los servicios NO se
+    borró, sigue en `SERVICIOS`.
+  - **⚠️ LA IDENTIDAD LEGAL SE QUITÓ DE `/negocio` SABIENDO EL RIESGO.** Es la URL declarada
+    a Meta y su verificación ya se rechazó una vez con «no puede determinar que pertenezca a
+    un negocio real». Se advirtió; Fernando decidió quitarla porque **ya está en `/legal`**
+    (y avisó de que también la quitará de `/contacto`). **Si Meta vuelve a rechazar, esto es
+    lo primero que hay que mirar.**
+- **❓ PREGUNTAS FRECUENTES POR PÁGINA, REDACTADAS DESDE EL ADMIN (2026-08-04).**
+  - Tabla `gcc_world.faqs` (migración **033**, versionada — no `CREATE TABLE` en el código).
+    Orden **manual** por columna `orden`, a petición suya.
+  - **Admin → pestaña «FAQs»**: tres paneles (secciones · preguntas sin la respuesta ·
+    respuesta completa). Es el patrón **«Explorador Azure»** ya existente: `FilterRail` +
+    `PixelDataTable` + panel. **No se escribió un explorador nuevo.**
+  - **Web**: buscador + lista a la izquierda y respuesta a la derecha; en móvil, la respuesta
+    cae bajo su pregunta.
+  - **⭐ Las respuestas van TODAS en el HTML** (también las no seleccionadas, en un bloque
+    `hidden`). Es lo que permite declarar **`FAQPage`**, el formato que Google convierte en
+    respuestas desplegables dentro de sus resultados. **Es la pieza con más potencial de
+    todo el trabajo de SEO**, y se perdería entera si vivieran solo en un panel de
+    JavaScript.
+  - **`export const revalidate = 300`** en `/negocio/[necesidad]`: la página es HTML ya
+    hecho, pero las preguntas salen de la base. Sin esto, lo que se escribe en el admin **no
+    aparecería hasta el siguiente despliegue**.
+  - **Vídeo por página**: campo `video` en `ACCESOS`, **pendiente** — Fernando aún no los ha
+    grabado. Mientras esté vacío, la sección no se pinta.
 - **🔎 LA WEB PÚBLICA TIENE QUE ENCONTRARSE EN GOOGLE — objetivo abierto el 2026-08-03.**
   Fernando: diseño y contenido específicos para `/negocio`, `/recursos` y `/contacto`,
   «considerando el SEO de la empresa para que sea encontrable en las búsquedas en la web».
