@@ -128,11 +128,10 @@ export const NAVEGACION = [
  * para quien recibe el enlace por WhatsApp.
  *
  * ── CÓMO ESTÁN ESCRITAS LAS TARJETAS ───────────────────────────────────────────
- * **Una frase, sin título.** Fernando dio una frase por tarjeta y pidió que no fueran
- * altas; el icono hace de rótulo. El `titulo` es el de su **página**, no el de la tarjeta.
- *
- * ⚠️ Los títulos son **provisionales a propósito**: «ponle un título básico a cada página,
- * y luego te digo qué iría en cada página» (Fernando, 2026-08-04).
+ * **Nombre + una frase.** Nacieron sin nombre —el icono hacía de rótulo— y Fernando les
+ * puso uno el mismo día: Progreso · Automatización · Videojuego · Marketplace · Democracia.
+ * Ese nombre es **el mismo** en la tarjeta, en el `<h1>` de su página y en el rail del
+ * Admin: un solo `titulo`, para que no se separen con el tiempo.
  *
  * ⚠️ **La quinta habla de algo que TODAVÍA NO EXISTE.** Buscado en el código: lo único que
  * hay es que los **miembros** voten la **cancelación de un proyecto**
@@ -145,7 +144,13 @@ export interface Acceso {
   /** El último tramo de la URL: `/negocio/<id>`. Ver el aviso de arriba. */
   id: string;
   icono: string;
-  /** Título de SU PÁGINA. Provisional hasta que Fernando dicte el contenido. */
+  /**
+   * El nombre de la puerta. Se usa en TRES sitios y por eso es uno solo: el título de la
+   * tarjeta, el `<h1>` de su página y la etiqueta del rail de Admin → FAQs. Dos nombres para
+   * lo mismo se separan con el tiempo.
+   * Dictados por Fernando el 2026-08-04: Progreso · Automatización · Videojuego ·
+   * Marketplace · Democracia.
+   */
   titulo: string;
   /** La frase de la tarjeta. */
   texto: string;
@@ -173,7 +178,7 @@ export interface Acceso {
 export const ACCESOS: Acceso[] = [
   {
     id: 'requerimientos', icono: 'ticket',
-    titulo: 'Tickets y proyectos',
+    titulo: 'Progreso',
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
   },
   {
@@ -183,7 +188,7 @@ export const ACCESOS: Acceso[] = [
   },
   {
     id: 'videojuego', icono: 'juego',
-    titulo: 'GCC World, el videojuego',
+    titulo: 'Videojuego',
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
   },
   {
@@ -194,7 +199,7 @@ export const ACCESOS: Acceso[] = [
   },
   {
     id: 'votacion', icono: 'voto',
-    titulo: 'Votación de mejoras',
+    titulo: 'Democracia',
     texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar dentro de la organización.',
   },
 ];

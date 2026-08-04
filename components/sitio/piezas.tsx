@@ -174,7 +174,7 @@ export function FondoHeroe() {
 export function RejillaAccesos({
   accesos, etiqueta, activa,
 }: {
-  accesos: { id: string; icono: string; texto: string }[];
+  accesos: { id: string; icono: string; titulo: string; texto: string }[];
   etiqueta: string;
   /** `id` de la puerta abierta. Marca su tarjeta y le pone `aria-current`. */
   activa?: string;
@@ -204,8 +204,15 @@ export function RejillaAccesos({
               >
                 <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[#c4b5fd]' : 'text-[#a78bfa]'}`} />
               </span>
-              <p className={`mt-3.5 text-[14px] leading-relaxed transition-colors
-                             ${abierta ? 'text-white/85' : 'text-white/60 group-hover:text-white/75'}`}>
+              {/* El nombre de la puerta. Es un `<p>` y no un encabezado a propósito: estas
+                  tarjetas se repiten en las seis páginas de la sección, y una ristra de
+                  `<h3>` repetidos en todas confundiría la jerarquía que lee un buscador. */}
+              <p className={`mt-3.5 text-[15.5px] font-semibold leading-snug transition-colors
+                             ${abierta ? 'text-white' : 'text-white/90 group-hover:text-white'}`}>
+                {a.titulo}
+              </p>
+              <p className={`mt-1.5 text-[14px] leading-relaxed transition-colors
+                             ${abierta ? 'text-white/75' : 'text-white/55 group-hover:text-white/70'}`}>
                 {a.texto}
               </p>
               {/* `mt-auto` empuja esta línea al fondo: con textos de distinto largo, si no,
