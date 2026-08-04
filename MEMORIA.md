@@ -3933,6 +3933,30 @@ Módulos principales:
   un resultado vacío. Detalle diagnóstico: el rail de conteos seguía mostrando números correctos
   (esas consultas no fallaban) mientras la tabla salía vacía — esa asimetría es la firma del bug.
 
+- **«ARCHIVO NO CUMPLE ESTRUCTURA XML» = un campo de texto se pasa del máximo del XSD
+  (2026-08-04):** la factura `001-001-000000075` fue **DEVUELTA** por el SRI. El mensaje guardado
+  en `invoices.sri_response` traía el diagnóstico exacto:
+  `cvc-maxLength-valid: Value '…' with length = '327' is not facet-valid with respect to maxLength
+  '300' for type 'descripcion'`. Las 6 descripciones venían de una **cotización generada por el
+  agente** y medían 327–416 caracteres. **Ningún campo de texto se estaba acotando.**
+  - **Regla:** todo texto que va al XML pasa por `sriText(valor, SRI_MAX.campo)`
+    (`lib/integrations/sri/text.ts`), que colapsa espacios, **trunca y escapa — en ese orden**,
+    porque el validador del SRI **decodifica las entidades y cuenta caracteres reales**
+    (`&amp;` cuenta 1, no 5); truncar después de escapar contaría de más y podría partir una
+    entidad. Límites: 300 para descripción/razón social/direcciones/motivo/campos adicionales,
+    **25 para los códigos**.
+  - `escapeXml` estaba **duplicado** en `xml-builder.ts` y `credit-note-builder.ts`; los dos
+    tenían el mismo fallo. Ahora es uno solo en `text.ts`.
+  - El panel «Editar y reintentar» avisa en rojo al pasar de 300, para acortar a mano en vez de
+    que el sistema corte a mitad de frase (una factura es un documento que ve el cliente).
+  - **Cómo diagnosticar cualquier rechazo del SRI:** leer `sri_response` de `gcc_world.invoices`;
+    el SRI dice literalmente qué campo y qué regla se violó. No adivinar.
+- **El texto que produce el agente de cotizaciones no está pensado para el SRI (2026-08-04):**
+  genera descripciones largas y con caracteres tipográficos (`→`). Al facturar un proyecto
+  cotizado, esas descripciones entran tal cual en el XML. Es la misma raíz que el incidente de la
+  lista de proyectos del mismo día: **lo que el agente genera hay que validarlo antes de que
+  llegue a un sistema con esquema estricto** (XSD del SRI, `ARRAY_AGG` de Postgres).
+
 ## Pendientes / preguntas abiertas
 - **Confirmación visual del usuario:** sigue siendo suya la última palabra, pero desde el 2026-07-30
   la verificación visual **ya no depende de él**: ver la lección "Verificar la UI de verdad".
