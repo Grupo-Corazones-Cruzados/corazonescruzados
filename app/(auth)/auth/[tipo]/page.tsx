@@ -1,37 +1,30 @@
 /**
- * Una puerta por tipo de cuenta: /auth/cliente · /auth/miembro · /auth/candidato.
+ * `/auth/{tipo}` — no es una página, es una PUERTA CON NOMBRE.
  *
- * Antes había una sola pantalla para todos, y no distinguía nada: un candidato entraba por
- * la misma puerta que un cliente. Ahora cada quien tiene su enlace —que además se puede
- * compartir como «este es el acceso de tus clientes»— y el servidor comprueba que la
- * cuenta encaje con la puerta (`login/begin` → `cuentaEncaja`).
+ * Redirige a la portada pidiéndole que abra el diálogo de acceso que corresponda. El
+ * formulario es el de la portada, el mismo que se abre desde «Plataforma»: uno solo, no
+ * dos que hay que mantener a la par.
  *
- * Una URL inventada no cuela: si el tipo no es de los tres, es 404.
+ * Existe para poder dar un enlace directo —«este es el acceso de tus clientes»— sin
+ * duplicar la pantalla. Un tipo que no sea de los tres es 404.
  */
 
-import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
-import type { Metadata } from 'next';
-import FormularioAcceso from '@/components/auth/FormularioAcceso';
-import { PERFILES, esTipoValido, type TipoCuenta } from '@/lib/auth/tipos';
+import { redirect, notFound } from 'next/navigation';
+import { esTipoValido } from '@/lib/auth/tipos';
 
-export function generateStaticParams() {
-  return (Object.keys(PERFILES) as TipoCuenta[]).map((tipo) => ({ tipo }));
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ tipo: string }> }): Promise<Metadata> {
-  const { tipo } = await params;
-  if (!esTipoValido(tipo)) return { title: 'Acceso' };
-  return { title: `${PERFILES[tipo].titulo} · GCC World`, robots: { index: false } };
-}
-
-export default async function PaginaAcceso({ params }: { params: Promise<{ tipo: string }> }) {
+export default async function PuertaDeAcceso({
+  params, searchParams,
+}: {
+  params: Promise<{ tipo: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { tipo } = await params;
   if (!esTipoValido(tipo)) notFound();
 
-  return (
-    <Suspense>
-      <FormularioAcceso tipo={tipo} />
-    </Suspense>
-  );
+  // `redirect` se conserva: es a dónde iba quien fue enviado aquí por el guardián del panel.
+  const sp = await searchParams;
+  const destino = typeof sp.redirect === 'string' ? sp.redirect : null;
+  const query = new URLSearchParams({ acceso: tipo, ...(destino ? { redirect: destino } : {}) });
+
+  redirect(`/?${query.toString()}`);
 }

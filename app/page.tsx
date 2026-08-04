@@ -402,6 +402,42 @@ export default function LandingPage() {
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const [memberLoginOpen, setMemberLoginOpen] = useState(false);
+
+  /**
+   * ── ENTRAR DIRECTO A UNA PUERTA: `/?acceso=cliente` ─────────────────────────
+   * Es lo que hacen `/auth/cliente`, `/auth/miembro` y `/auth/candidato`, que no son
+   * páginas sino redirecciones hacia aquí.
+   *
+   * ── POR QUÉ NO SON PÁGINAS PROPIAS ─────────────────────────────────────────
+   * Lo fueron durante un rato, con un formulario escrito aparte que imitaba a estos
+   * diálogos. Fernando lo vio en el acto (2026-08-03): se parecía, pero no era. Un enlace
+   * directo tiene que llevar **al mismo diálogo** que se abre desde el botón «Plataforma»,
+   * no a una copia — si no, hay dos formularios de acceso que mantener y uno se queda
+   * atrás. Aquí no se duplica nada: se abre el que ya existe.
+   *
+   * `?redirect=` se conserva para que el guardián del panel pueda mandar aquí a quien
+   * intente entrar sin sesión y devolverlo a donde iba.
+   */
+  const [destinoTrasAcceso, setDestinoTrasAcceso] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const acceso = q.get('acceso');
+    // `?redirect=` se guarda aunque no venga `?acceso=`: el guardián del panel manda aquí
+    // sin elegir puerta, y quien elija una debe acabar donde iba.
+    const destino = q.get('redirect');
+    if (destino?.startsWith('/')) setDestinoTrasAcceso(destino);
+    if (!acceso) return;
+    // ⚠️ Quien llega por un enlace de acceso va al PANEL, no al juego. Es lo que distingue
+    // «entrar a trabajar» de «entrar a jugar», y sin esto un cliente acababa en la aventura.
+    if (acceso === 'cliente') { setEntryDestination('dashboard'); setClientLoginOpen(true); }
+    else if (acceso === 'miembro') { setEntryDestination('dashboard'); setMemberLoginOpen(true); }
+    else if (acceso === 'candidato') setRecoveryOpen(true);
+    // Se limpia la URL: dejar `?acceso=` haría que el diálogo reapareciera al volver atrás.
+    const limpia = new URL(window.location.href);
+    limpia.searchParams.delete('acceso');
+    window.history.replaceState({}, '', limpia.pathname + limpia.search + limpia.hash);
+  }, []);
   // (Eliminados) `enteredAsMember` y `freshAuth`: eran banderas del juego VIEJO
   // embebido (CharacterGameplay) para no repetirle el login ni el formulario de
   // cuenta dentro de la misma carga de página. Ya nadie las leía —el juego vive
@@ -3328,6 +3364,7 @@ export default function LandingPage() {
           }}
           onLoggedIn={async () => {
             setClientLoginOpen(false);
+            if (destinoTrasAcceso) { window.location.href = destinoTrasAcceso; return; }
             if (entryDestination === 'dashboard') {
               // Colaborar: el cliente va al dashboard (marketplace).
               window.location.href = '/dashboard/marketplace';
@@ -3361,6 +3398,7 @@ export default function LandingPage() {
           onClose={() => setMemberLoginOpen(false)}
           onLoggedIn={async (hasCharacter) => {
             setMemberLoginOpen(false);
+            if (destinoTrasAcceso) { window.location.href = destinoTrasAcceso; return; }
             if (entryDestination === 'dashboard') {
               // Colaborar: el miembro/admin va al dashboard.
               window.location.href = '/dashboard';
