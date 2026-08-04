@@ -3916,6 +3916,23 @@ Módulos principales:
   - Para detectar código muerto real: solo es fiable sobre archivos **importados** (components/lib),
     verificando cada candidato a mano. Ver `Estado actual`.
 
+- **La lista de proyectos se vació sola al cotizar (2026-08-04):** `ARRAY_AGG(r.talents)` sobre una
+  columna `text[]` construye una **matriz 2-D**, y Postgres exige que **todas las filas tengan la
+  misma longitud**. Mientras cada requerimiento traía 1 talento (o todos 2) funcionó; en cuanto el
+  agente de cotizaciones generó un proyecto con requerimientos de **2 y de 3** talentos (proyectos
+  28 y 29), la consulta entera murió con *«cannot accumulate arrays of different dimensionality»*.
+  **Regla: desanidar ANTES de agregar** — `FROM project_requirements r, UNNEST(r.talents) AS t` y
+  luego `ARRAY_AGG(t)`. Extraído a `talentsAggSql()` en `lib/projects/requirements.ts`; lo usan la
+  lista y el marketplace, que tenía la misma expresión rota copiada.
+- **Un `catch` que devuelve lista vacía con HTTP 200 convierte cualquier bug en «se borraron los
+  datos» (2026-08-04):** el GET de `/api/projects` hacía
+  `return NextResponse.json({ data: [], total: 0, counts: {} })` en su `catch`. Con la consulta
+  rota, la pantalla mostraba cero proyectos **para todos los usuarios y en todas las pestañas**,
+  sin un solo mensaje de error, y el diagnóstico natural fue «se perdieron los proyectos».
+  **Regla: un fallo del servidor se declara (500 + `error`) y la UI lo muestra.** Nunca se finge
+  un resultado vacío. Detalle diagnóstico: el rail de conteos seguía mostrando números correctos
+  (esas consultas no fallaban) mientras la tabla salía vacía — esa asimetría es la firma del bug.
+
 ## Pendientes / preguntas abiertas
 - **Confirmación visual del usuario:** sigue siendo suya la última palabra, pero desde el 2026-07-30
   la verificación visual **ya no depende de él**: ver la lección "Verificar la UI de verdad".

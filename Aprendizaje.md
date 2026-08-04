@@ -3583,3 +3583,66 @@ lo que se lleva puesto, anclajes para lo que se sujeta.
   prenda da un torso de otro tamaño (una túnica es más ancha que una camisa).
 - **Montado y ejecutado en Godot**: 7 piezas, jerarquía con el torso como raíz (inclinarlo arrastra
   cabeza y brazos), caminata por rotación. **La materia prima ya es la correcta.**
+
+---
+
+## Objetivo PARALELO (declarado 2026-08-04) — ¿SE PUEDEN CONSULTAR LAS FACTURAS DEL SRI Y TRAERLAS A UNA APP? · 🔎 75%
+
+**Rol asumido:** *integrador de sistemas fiscales / ingeniero de conectores contra
+administraciones tributarias*. La pregunta no es de UI ni de negocio: es de qué superficie
+expone realmente el SRI y qué se puede construir encima sin romperse ni exponer al cliente.
+
+**Contexto:** no es para GCC World. Fernando tiene otro proyecto que va a requerir *ingesta* de
+comprobantes (hoy la herramienta solo **emite**), y quiere llegar a la conversación con ese
+cliente sabiendo qué es posible.
+
+📄 **La investigación completa vive en [`SRI-CONSULTA-COMPROBANTES.md`](SRI-CONSULTA-COMPROBANTES.md)**
+(vías reales, autenticación del portal reverseada, arquitectura, riesgo legal, PoC y dudas
+abiertas). Aquí solo queda lo que es **memoria transversal del stack**, porque sirve para
+cualquier proyecto ecuatoriano futuro:
+
+- **No existe API del SRI para "dame las facturas del RUC X".** Existen dos cosas: un **WS SOAP
+  público sin autenticación** que devuelve el **XML completo de UN comprobante dada su clave de
+  acceso** (verificado en vivo el 2026-08-04: responde 200 desde cualquier IP), y el **portal
+  autenticado**, que es la única fuente del *listado*. Todo lo demás son intermediarios.
+- **El login de SRI en Línea es Keycloak/RH-SSO 7.3.8** (`realm=Internet`,
+  `client_id=app-tuportal-internet`, OIDC authorization code) y **no tiene captcha ni OTP**. La
+  clave se envía transformada en cliente como **`md5(clave) ‖ sha512(clave)` en hex**, y el
+  usuario adicional se codifica como `RUC[ad]CEDULA`. ⇒ **se puede automatizar con HTTP puro, sin
+  navegador.**
+- **REST público de catastro** (sin credenciales, requiere User-Agent de navegador):
+  `srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/ConsolidadoContribuyente/obtenerPorNumerosRuc?&ruc=…`
+  → razón social, régimen RIMPE, obligado a contabilidad, agente de retención, representantes.
+  Sirve **ya** para validar RUCs de clientes y proveedores en cualquier app.
+- **Gap encontrado en el módulo de GCC:** `consultarAutorizacion()`
+  (`lib/integrations/sri/soap-client.ts:96-142`) declara `xmlAutorizado?: string` en su tipo pero
+  **nunca lo rellena**. No estorba para emitir (solo interesa el estado), pero para consumir
+  comprobantes ajenos hay que extraer el `<comprobante>` en CDATA de la respuesta.
+- **La clave de acceso es la PK natural de todo comprobante ecuatoriano** (49 dígitos, DV módulo
+  11, ya implementada en `access-key.ts`). Cualquier ingesta debe idempotentizar por ahí.
+
+**Actualización 2026-08-04 — el caso real es OTRO y está acotado (🔎 70%).** No es "traer mis
+compras": el titular es **representante legal de 3 empresas** y quiere que **su cliente entre,
+ponga su RUC y vea las facturas que las 3 le han emitido**. Es **emitidos**, no recibidos.
+Consecuencias, todas en §5.6 de `SRI-CONSULTA-COMPROBANTES.md`:
+
+- **Hay que invertir el diseño: sincronizar de noche, no consultar en vivo.** La pantalla de
+  emitidos se consulta **día a día** y **no muestra al adquirente** — para saber a quién se
+  facturó hay que abrir el XML de cada comprobante. Consultar al SRI dentro del request del
+  usuario es inviable. Se indexa en Postgres por `identificacion_comprador` y la plataforma solo
+  lee de ahí.
+- **Normalizar la identificación a la raíz de 10 dígitos** (a la misma persona se le factura unas
+  veces con cédula y otras con RUC = cédula+`001`) y **excluir `9999999999999`** (consumidor final).
+- **🚨 Riesgo LOPDP que hay que resolver antes de programar:** "pone su RUC y ve sus facturas" sin
+  autenticar deja que cualquiera vea las compras de un tercero. Solución barata: **OTP al correo
+  que ya consta en el XML** de las facturas emitidas a ese RUC.
+- **Pregunta abierta que puede ahorrar medio proyecto:** ¿cómo emiten hoy esas 3 empresas? Si
+  comparten sistema o proveedor, la fuente son sus XMLs y el SRI queda solo como conciliación.
+
+**Especificación técnica escrita (2026-08-04):**
+[`PROYECTO-CONSULTA-FACTURAS-SRI.md`](PROYECTO-CONSULTA-FACTURAS-SRI.md) — implementación completa
+lista para cotizar y construir: DDL, conector Keycloak con código, patrón JSF/PrimeFaces, parser
+de XML por versión de esquema y tipo de documento, orquestación (backfill reanudable · incremental
+· revisión de anulaciones), OTP al correo del XML, API con el guard anti-fuga, seguridad de
+credenciales, fases, riesgos y el **checklist de la sesión de reconocimiento (§14) que bloquea la
+fase 2**.
