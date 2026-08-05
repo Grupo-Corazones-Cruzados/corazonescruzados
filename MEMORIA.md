@@ -3556,6 +3556,27 @@ Módulos principales:
        `revalidate = 300` la regenera con las preguntas de verdad en los cinco minutos siguientes.
        **En ejecución no se traga nada**, que es justo la diferencia con el `catch` de
        `/api/projects` que fingía cero proyectos: aquí el silencio dura un build y queda escrito.
+- **En Railway, TODO lo que va a stderr se pinta como error (2026-08-05).** No hay nivel «warn»:
+  `console.warn` sale igual de rojo que `console.error`. `cotizador-worker` marcaba como error
+  «la sesion ya no existe; se arranca una nueva», que ocurre **después de cada despliegue por
+  diseño**. Un contador de errores que se llena de cosas normales no sirve para nada — y eso es
+  justo lo que hizo que 20 fallos reales de `agente-worker` pasaran meses sin verse. **Lo esperado
+  va por `console.log`; el rojo se reserva para lo que lo es.** (Queda una línea roja que no es
+  nuestra: `npm warn config production`, del propio constructor de Railway.)
+- **Un nombre «pelado» en `allowedTools` deja el `canUseTool` en adorno (2026-08-05).** El SDK de
+  agentes avisaba en cada pase con `CLAUDE_SDK_CAN_USE_TOOL_SHADOWED`: *«Bare allowedTools entries
+  auto-approve the whole tool before the callback is consulted»*. `cotizador-worker` declaraba sus
+  dos herramientas **en los dos sitios**, así que quien aprobaba era `allowedTools` y el callback
+  —cuyo comentario decía ser el que aprueba— no se consultaba nunca para ellas. El comportamiento
+  salía bien **por casualidad** (ambos caminos permitían lo mismo); el peligro era el día que
+  alguien endureciera el callback y no surtiera efecto. **Arreglo:** quitar los nombres de
+  `allowedTools` y dejar el callback como puerta única, que es el remedio que el propio aviso
+  recomienda.
+  - **Verificado con la herramienta de verdad, no solo arrancando:** worker en local
+    (`npm run dev`, que carga `../../.env` y `../../.env.local`) y un `POST /chat` con
+    `x-worker-token` pidiendo explícitamente `buscar_talentos`. Devolvió los 20 nombres reales
+    ordenados por score —o sea, la herramienta se ejecutó y el callback la aprobó— y **cero
+    avisos** en el registro. Un `/health` solo habría probado que el proceso levanta.
 - **`cotizador-worker` es inmune al problema anterior, y conviene saber por qué (revisado
   2026-08-05).** No tiene repo conectado (`source.repo = null`): sube por
   `railway up` desde `services/cotizador-worker/` —un snapshot de 7 kB, solo esa carpeta— y su
