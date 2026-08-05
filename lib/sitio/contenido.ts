@@ -274,6 +274,40 @@ export const ACCESOS: Acceso[] = [
           imagen: { src: '/negocio/paso-3-seguimiento.webp', ancho: 760, alto: 589 },
         },
       ],
+    },
+    /**
+     * Segundo tema de Progreso, dictado por Fernando el 2026-08-04. Su texto va **tal
+     * cual**; los pasos los propuse yo a partir de él, con su permiso: «los pasos agrégalos
+     * tú, luego yo los arreglo según se requiera».
+     *
+     * Cómo salieron los tres: su párrafo describe cuatro momentos —hablar, cotizar,
+     * negociar, ejecutar—, pero cotizar y hablar son el mismo gesto para quien lo vive
+     * (escribes y te contestan con un precio), así que van juntos. Tres pasos, además,
+     * es lo que cabe en la fila sin dejar una columna coja.
+     */
+    {
+      id: 'de-idea-a-proyecto',
+      etiqueta: 'Proyectos',
+      pregunta: '¿Tienes alguna idea de proyecto que quieres hacer real?',
+      texto:
+        'Comunícate con cualquiera de nuestros talentos, recibe una cotización de tu proyecto, y negocia el presupuesto. En caso de aceptarlo el talento responsable tomará el control del proyecto para gestionar el presupuesto, y participantes del proyecto para completar todos sus requerimientos.',
+      pasos: [
+        {
+          titulo: 'Hablas con un talento',
+          texto: 'Eliges con quién y le cuentas la idea. Te devuelve una cotización con su alcance y su precio, para que sepas qué entra y qué no.',
+          icono: 'mensaje',
+        },
+        {
+          titulo: 'Negocias el presupuesto',
+          texto: 'Se ajusta hasta que cuadre para los dos. Nada se pone en marcha sin que tú lo aceptes.',
+          icono: 'acuerdo',
+        },
+        {
+          titulo: 'El responsable toma el control',
+          texto: 'Gestiona el presupuesto y suma a los participantes que hagan falta hasta cubrir todos los requerimientos del proyecto.',
+          icono: 'personas',
+        },
+      ],
     }],
   },
   {

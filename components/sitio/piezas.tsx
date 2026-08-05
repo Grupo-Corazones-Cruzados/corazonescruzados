@@ -26,13 +26,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
-  Ticket, Vote, ArrowRight, CalendarClock, type LucideIcon,
+  Ticket, Vote, ArrowRight, CalendarClock, Handshake, type LucideIcon,
 } from 'lucide-react';
 
 export const ICONOS: Record<string, LucideIcon> = {
   mensaje: MessageSquare, capas: Layers, rayo: Zap, documento: FileText,
   personas: Users, juego: Gamepad2, tienda: Store, brujula: Compass,
-  ticket: Ticket, voto: Vote, calendario: CalendarClock,
+  ticket: Ticket, voto: Vote, calendario: CalendarClock, acuerdo: Handshake,
 };
 
 /** Convierte los `**dobles asteriscos**` del contenido en negrita. */
