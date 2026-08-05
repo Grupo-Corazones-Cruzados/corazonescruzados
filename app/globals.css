@@ -1308,3 +1308,66 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .aparece-detalle { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SITIO PÚBLICO — los temas aparecen al desplazarse  (2026-08-04)
+
+   Animaciones ligadas al scroll con `animation-timeline: view()`, que es CSS nativo:
+   el navegador reproduce la animación según dónde está el elemento respecto a la
+   ventana, sin un solo `IntersectionObserver` ni un `useEffect`.
+
+   ── POR QUÉ SIN JAVASCRIPT, Y NO ES UNA COQUETERÍA ───────────────────────────
+   El contenido de estos bloques —las preguntas, los pasos, los textos— es lo que de
+   verdad puede posicionar la página. La forma habitual de hacer esto («empieza en
+   opacidad 0 y un script lo revela al entrar en pantalla») deja el contenido oculto
+   si el script no llega a ejecutarse: un rastreador que no espera, una red que falla,
+   un error en otra parte de la página. Así no puede pasar.
+
+   ── TODO VA DENTRO DE `@supports` ────────────────────────────────────────────
+   Donde `animation-timeline` no exista —Firefox hoy, navegadores viejos—, **no se
+   aplica nada**: el bloque se ve normal, quieto, completo. El efecto es un extra para
+   quien puede verlo, nunca un requisito para leer.
+
+   ── LA SALIDA ES MUY SUAVE, Y A PROPÓSITO ────────────────────────────────────
+   Un tema mide unos 700 px: mientras se lee, ya está «saliendo» por arriba. Si se
+   desvaneciera durante todo ese recorrido, el texto se apagaría justo mientras alguien
+   lo está leyendo. Por eso la salida solo actúa en el último tramo (`exit 55%`) y no
+   baja de 0,25 de opacidad.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes tema-entra {
+  from { opacity: 0; transform: translateY(48px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tema-sale {
+  from { opacity: 1; }
+  to   { opacity: 0.25; }
+}
+@keyframes paso-entra {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+
+    .tema-anima {
+      animation: tema-entra linear both, tema-sale linear both;
+      animation-timeline: view(), view();
+      /* Entra mientras asoma por abajo; se apaga solo al final del todo. */
+      animation-range: entry 0% entry 90%, exit 55% exit 100%;
+    }
+
+    /* Los pasos entran en cascada: cada uno arranca un poco después que el anterior.
+       No es un retardo por tiempo sino por recorrido — si se para el scroll, se paran
+       ellos, que es lo que hace que el efecto se sienta ligado al gesto y no a un reloj. */
+    .tema-anima ol > li {
+      animation: paso-entra linear both;
+      animation-timeline: view();
+    }
+    .tema-anima ol > li:nth-child(1) { animation-range: entry 15% cover 22%; }
+    .tema-anima ol > li:nth-child(2) { animation-range: entry 22% cover 29%; }
+    .tema-anima ol > li:nth-child(3) { animation-range: entry 29% cover 36%; }
+    .tema-anima ol > li:nth-child(4) { animation-range: entry 36% cover 43%; }
+  }
+}

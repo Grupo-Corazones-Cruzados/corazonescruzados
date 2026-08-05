@@ -275,7 +275,7 @@ export function BloqueTema({
       id={id}
       // `scroll-mt-24`: al abrir un enlace con ancla, deja aire por arriba para que la
       // cabecera fija no tape el título del tema.
-      className="group/tema relative overflow-hidden rounded-2xl border border-[#7B5FBF]/25 bg-white/[0.02] scroll-mt-24"
+      className="tema-anima group/tema relative overflow-hidden rounded-2xl border border-[#7B5FBF]/25 bg-white/[0.02] scroll-mt-24"
     >
       {/* El resplandor. Es un degradado CSS: ni una petición de red, ni una imagen que
           cargar, y se ve igual en cualquier pantalla. */}

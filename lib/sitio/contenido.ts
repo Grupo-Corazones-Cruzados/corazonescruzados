@@ -288,9 +288,9 @@ export const ACCESOS: Acceso[] = [
     {
       id: 'de-idea-a-proyecto',
       etiqueta: 'Proyectos',
-      pregunta: '¿Tienes alguna idea de proyecto que quieres hacer real?',
+      pregunta: '¿Buscas hacer realidad tus ideas de proyectos?',
       texto:
-        'Comunícate con cualquiera de nuestros talentos, recibe una cotización de tu proyecto, y negocia el presupuesto. En caso de aceptar, el miembro responsable tomará el control del proyecto para gestionar el presupuesto, y participantes del proyecto para completar todos sus requerimientos.',
+        'Comunícate con cualquiera de nuestros talentos, recibe una cotización de tu proyecto, y negocia el presupuesto. En caso de aceptar, el miembro responsable tomará el control del proyecto para gestionar el presupuesto, los participantes, y completar todos sus requerimientos.',
       pasos: [
         {
           titulo: 'Hablas con un talento',

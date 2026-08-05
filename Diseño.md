@@ -181,6 +181,30 @@ pregunta grande, respuesta en una o dos frases y unos pasos numerados. Salen del
   convierten una promesa en un mecanismo.
 - `scroll-mt-24` para que la cabecera fija no tape el título al abrir un enlace con ancla.
 
+### Los temas aparecen al desplazarse — `.tema-anima` (2026-08-04)
+
+Animación ligada al scroll con **`animation-timeline: view()`**, CSS nativo. El tema entra
+subiendo y fundiéndose, sus pasos lo siguen en cascada, y solo al final del recorrido de
+salida se atenúa a 0,25.
+
+- **⚠️ SIN JAVASCRIPT, Y ES LO QUE MÁS IMPORTA.** El truco habitual —empezar en opacidad 0 y
+  revelar con un `IntersectionObserver`— **deja el contenido oculto si el script no llega a
+  ejecutarse**. Y el contenido de estos bloques es justo lo que puede posicionar la página.
+- **Todo dentro de `@supports (animation-timeline: view())`.** Donde no exista —Firefox hoy—
+  no se aplica nada y el bloque se ve quieto y entero. El efecto es un extra, nunca un
+  requisito para leer.
+- **`prefers-reduced-motion`**: verificado que no se crea **ninguna** animación.
+- **La salida es muy suave a propósito** (`exit 55%`, mínimo 0,25): un tema mide unos 700 px
+  y ya está «saliendo» mientras se lee. Un fundido en todo el recorrido apagaría el texto
+  justo mientras alguien lo lee.
+- **La cascada de los pasos se hace por recorrido, no por tiempo** (`animation-range`
+  escalonado por `nth-child`): si se para el scroll, se paran ellos. Es lo que hace que se
+  sienta ligado al gesto y no a un reloj.
+- **⚠️ Al verificarlo:** `getComputedStyle().opacity` devuelve **siempre el valor base**,
+  porque estas animaciones corren en el compositor. Para comprobar que funciona hay que
+  mirar `getAnimations()[0].effect.getComputedTiming().progress`, o medir el brillo de una
+  captura.
+
 ### Preguntas frecuentes de `/negocio/<id>` (2026-08-04)
 
 **En la web** (`components/sitio/FaqsNegocio.tsx`): buscador arriba; debajo, dos columnas —
