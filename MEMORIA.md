@@ -3515,6 +3515,37 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Un servicio auxiliar SIN `buildCommand` propio hereda el build de la app entera
+  (2026-08-04).** `agente-worker` acumuló **20 despliegues fallidos seguidos** (desde las 09:11
+  del 4 de agosto) y el motivo no tenía nada que ver con el agente: al no llevar `buildCommand`,
+  Railpack le ejecutaba el `npm run build` del repo (`prisma generate && next build`) y compilaba
+  **la app Next completa**, que ese servicio no usa para nada — su arranque es
+  `node scripts/agente-worker.mjs`, 109 líneas **sin un solo `import`** que solo hace `fetch` a
+  `/api/agente/procesar`.
+  - **El detonante** fue `1321f0c` («preguntas frecuentes, redactadas desde el admin»): metió
+    `faqsDeAcceso()` —un `pool.query` a Postgres— dentro de `app/(sitio)/negocio/[necesidad]/page.tsx`,
+    que es **prerenderizada** (`generateStaticParams` + `dynamicParams = false`). Desde entonces esa
+    página **consulta la base durante el build**. Como `agente-worker` no tiene `DATABASE_URL`
+    (12 variables frente a las 35 del web), `pg` cae al `localhost:5432` por defecto →
+    `ECONNREFUSED` → `Export encountered an error on /(sitio)/negocio/[necesidad]/page`.
+  - **El web sí compilaba** con la misma revisión, porque él sí tiene `DATABASE_URL` (proxy
+    público). Por eso el fallo pasó desapercibido: nada estaba roto a la vista.
+  - **El agente nunca dejó de responder.** Railway mantiene vivo el último deploy bueno, y como
+    toda la lógica vive en `/api/agente/procesar` (que se despliega con el web), el worker seguía
+    contestando WhatsApp con código del 4 de agosto. El riesgo real era el día que hubiera que
+    cambiar `agente-worker.mjs`: no habría subido.
+  - **Arreglo (2026-08-04, aplicado por la API).** El mismo blindaje que ya tenía `nightly-cron`:
+    `serviceInstanceUpdate` con
+    `buildCommand = echo "sin build: este servicio solo ejecuta el worker del agente"`.
+    Deploy `1135a598` en **SUCCESS en 72 s** (antes: ~2 min hasta reventar) y
+    `▶ Worker del agente en marcha` en los logs. **Regla: todo servicio auxiliar del repo nace con
+    su `buildCommand` de no-op**; darle `DATABASE_URL` para que el build pase habría sido el
+    arreglo equivocado (secreto innecesario + compilar Next para nada en cada push).
+  - ⚠️ **Dos deudas que quedan de este hallazgo:** (1) `nightly-cron` vigila
+    `scripts/nightly-cron.mjs` en `watchPatterns` pero arranca `scripts/frequent-cron.mjs` — si se
+    edita el que de verdad corre, **no se redespliega**; (2) el build del **web** depende de que
+    Postgres conteste, porque `/negocio/[necesidad]` consulta las FAQs al prerenderizar: un
+    Postgres caído tumba el despliegue de producción. Conviene que esa consulta tolere el fallo.
 - **Verificar la UI de verdad, no solo que compile (2026-07-30).** Durante meses la memoria decía
   "el dashboard requiere login, así que solo se verifica con `tsc`". **No hace falta**: el proyecto
   ya trae `puppeteer`, y aunque su Chrome no está descargado, sirve el del sistema con
