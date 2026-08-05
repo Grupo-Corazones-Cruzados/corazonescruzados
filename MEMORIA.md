@@ -4564,3 +4564,28 @@ Módulos principales:
   - **Un 429 por saldo cuesta ~4 min, no un error rápido:** Claude Code reintenta solo. El cliente
     web corta a los 280 s, así que aguanta por poco. Si la cuenta de Kimi se queda sin saldo, el
     usuario ve un spinner de 4 minutos antes del error. Vigilar el saldo.
+
+- **Desplegar el cotizador-worker exige `--path-as-root` (2026-08-05) — CORRIGE lo anotado antes:**
+  el comando documentado (`cd services/cotizador-worker && railway up --service cotizador-worker
+  --detach`) **ya no funciona**: devuelve **`413 Payload Too Large`** de Cloudflare.
+  - **Por qué:** la **raíz del repo está enlazada a ese servicio**, y `railway up` arma el archivo
+    desde *el directorio del proyecto* (la raíz), no desde donde lo lanzas → sube la app Next
+    entera. Se confirmó por descarte: apartar `node_modules` dejó la carpeta en **92 KB** y el 413
+    **siguió igual**. El `.railwayignore` tampoco pinta nada por el mismo motivo.
+  - **Comando correcto:**
+    `cd services/cotizador-worker && railway up . --path-as-root --service cotizador-worker --detach`
+  - `--detach` sigue siendo obligatorio (sin él se cuelga en "Uploading…" → `operation timed out`).
+  - **Orden del corte sin ventana rota:** poner las variables con **`--skip-deploys`**
+    (`KIMI_API_KEY`, `COTIZADOR_MODEL`) y **borrar `ANTHROPIC_API_KEY`**, y solo después
+    `railway up`. Si se cambian variables sin `--skip-deploys`, Railway redespliega el código
+    **viejo** con el modelo **nuevo** — o sea, `kimi-k2.6` pidiéndoselo a Anthropic.
+  - La web (`corazonescruzados`) **no tenía** `COTIZADOR_MODEL`: usaba el default del código. Ahora
+    está puesta explícita a `kimi-k2.6`.
+  - **Sigue pendiente de 2026-07-26:** el dominio público accidental
+    `cotizador-worker-production.up.railway.app` **NO se ha borrado** (el CLI no puede; hay que
+    hacerlo desde el panel → servicio → Settings → Networking). Se usó para verificar `/health` y
+    la prueba de humo, así que es cómodo — pero `/health` ahora expone `baseUrl` y si hay clave.
+    Sigue siendo fail-closed (401 sin token) en `/generate` y `/chat`.
+  - **Verificado en producción (2026-08-05):** `/health` → `model: kimi-k2.6`, `apiKey: ok`,
+    `talentSearch: app`; `/generate` real → 4 requerimientos, 95 h, **$1 425 = 95×15**, y los 6
+    talentos existen en `gd_talentos` (entre ellos *Odontología*, que solo sale por embeddings).

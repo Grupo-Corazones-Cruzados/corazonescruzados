@@ -72,11 +72,18 @@ En la app web (`.env.local`): `COTIZADOR_WORKER_URL=http://localhost:4610`, el m
 conectado (verificado con `railway status --json` → `source.repo = null`). Para desplegarlo:
 
 ```bash
-cd services/cotizador-worker && railway up --service cotizador-worker --detach
+cd services/cotizador-worker && railway up . --path-as-root --service cotizador-worker --detach
 ```
 
-El `--detach` es **obligatorio**: sin él, `railway up` se cuelga en "Uploading…" y revienta con
-`operation timed out`.
+Los dos flags son **obligatorios**, cada uno por un fallo distinto ya pagado:
+
+- **`--path-as-root`**: la **raíz del repo está enlazada a este servicio**, así que `railway up`
+  arma el archivo desde el directorio del proyecto (la raíz) aunque lo lances desde aquí — sube
+  la app Next entera y Cloudflare responde **`413 Payload Too Large`**. Con `--path-as-root` el
+  archivo se arma desde `.` (92 KB). Mover `node_modules` no arregla nada: el problema no es
+  esta carpeta, es cuál se archiva. El `.railwayignore` tampoco, por lo mismo.
+- **`--detach`**: sin él, `railway up` se cuelga en "Uploading…" y revienta con
+  `operation timed out`.
 
 Variables en el servicio `cotizador-worker`: `KIMI_API_KEY`, `COTIZADOR_WORKER_TOKEN`,
 `DATABASE_URL`, `APP_URL`, `COTIZADOR_MODEL=kimi-k2.6` — y **quitar `ANTHROPIC_API_KEY`**.
