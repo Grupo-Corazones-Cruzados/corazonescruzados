@@ -261,17 +261,17 @@ export const ACCESOS: Acceso[] = [
         {
           titulo: 'Lo publicas',
           texto: 'Un ticket con lo que necesitas desde tu perspectiva como cliente, tu presupuesto, la fecha límite de entrega, y configuras el talento que necesitas.',
-          imagen: { src: '/negocio/paso-1-publicas.webp', ancho: 760, alto: 589 },
+          imagen: { src: '/negocio/paso-1-publicas.webp', ancho: 760, alto: 677 },
         },
         {
           titulo: 'Lo toma quien sabe hacerlo',
           texto: 'Un perfil con el talento requerido revisa el ticket abierto, analiza su disponibilidad según la fecha límite de entrega, y define el costo final en base a tu presupuesto.',
-          imagen: { src: '/negocio/paso-2-lo-toma.webp', ancho: 760, alto: 639 },
+          imagen: { src: '/negocio/paso-2-lo-toma.webp', ancho: 760, alto: 753 },
         },
         {
           titulo: 'Lo sigues sin arrear',
           texto: 'El talento se hace responsable de establecer los días y horas de trabajo previo a la fecha límite de entrega, coordina reuniones, y tomará contacto hasta completar la tarea.',
-          imagen: { src: '/negocio/paso-3-seguimiento.webp', ancho: 760, alto: 589 },
+          imagen: { src: '/negocio/paso-3-seguimiento.webp', ancho: 760, alto: 182 },
         },
       ],
     },
