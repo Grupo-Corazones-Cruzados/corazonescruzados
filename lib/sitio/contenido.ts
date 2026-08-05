@@ -295,7 +295,7 @@ export const ACCESOS: Acceso[] = [
         {
           titulo: 'Hablas con un talento',
           texto: 'Eliges con quién y le cuentas la idea. Te devuelve una cotización con su alcance y su precio, para que sepas qué entra y qué no.',
-          imagen: { src: '/negocio/proyecto-1-hablas.webp', ancho: 760, alto: 504 },
+          imagen: { src: '/negocio/proyecto-1-hablas.webp', ancho: 760, alto: 525 },
         },
         {
           titulo: 'Negocias el presupuesto',
