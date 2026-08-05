@@ -4589,3 +4589,27 @@ Módulos principales:
   - **Verificado en producción (2026-08-05):** `/health` → `model: kimi-k2.6`, `apiKey: ok`,
     `talentSearch: app`; `/generate` real → 4 requerimientos, 95 h, **$1 425 = 95×15**, y los 6
     talentos existen en `gd_talentos` (entre ellos *Odontología*, que solo sale por embeddings).
+
+- **Borrado el dominio público accidental del cotizador-worker (2026-08-05) — CIERRA el pendiente
+  de 2026-07-26, y desmiente el «hay que hacerlo desde el panel»:** el CLI efectivamente no puede
+  (`railway domain` solo crea), pero **la API sí**:
+  ```
+  mutation($id:String!){ serviceDomainDelete(id:$id) }   # → true
+  ```
+  El `id` sale de `query{ domains(projectId,environmentId,serviceId){ serviceDomains{id domain} } }`,
+  y se autentica con el token que la CLI ya guarda en `~/.railway/config.json` (`user.token`).
+  Es el mismo patrón que ya se usó para `startCommand`: **lo que la CLI no hace, la API sí**.
+  - **Comprobado antes de borrar** (no a ciegas): la web llama al worker por
+    `COTIZADOR_WORKER_URL=http://cotizador-worker.railway.internal:4610` (red privada) y **ninguna
+    referencia al dominio público en el código**. Después: el dominio devuelve **404** y el worker
+    sigue arriba.
+  - **Consecuencia práctica:** ya no se puede comprobar `/health` con un `curl` desde fuera. Para
+    verificar un despliegue del worker: `railway logs --service cotizador-worker` (la línea de
+    arranque dice modelo, base URL y si falta la clave), o crear el dominio un momento con
+    `railway domain` y borrarlo otra vez con la mutación de arriba.
+  - **Aviso visto en los logs (preexistente, no se tocó):** el SDK advierte
+    `CLAUDE_SDK_CAN_USE_TOOL_SHADOWED` — las entradas sueltas en `allowedTools` aprueban la
+    herramienta **antes** de consultar `canUseTool`, así que el callback no se invoca para
+    `list_my_projects` ni `buscar_talentos`. **No es un agujero:** son justo las dos que queremos
+    permitir, y cualquier otra herramienta sí cae en el callback y se deniega. Si algún día se
+    quiere auditar cada llamada, la vía es un hook `PreToolUse`, no el callback.
