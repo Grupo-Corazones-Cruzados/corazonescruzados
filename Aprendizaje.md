@@ -3710,3 +3710,176 @@ Funcionó durante meses porque **ninguna descripción había llevado nunca un ap
    pasar de 300 caracteres. El truncado automático queda como red de seguridad, no como
    comportamiento normal: una factura es un documento que ve el cliente y cortarla a mitad de
    frase es un defecto, aunque el SRI la acepte.
+
+---
+
+# Aprendizaje — Cambiar el modelo del agente de cotizaciones (y GCC Bot) de Anthropic a Kimi K2.6 (2026-08-04)
+
+> Objetivo declarado por el usuario: *"al generar la cotización de un proyecto y al usar GCC Bot,
+> cambiar el modelo de IA de Anthropic por Kimi K2.6, revisando si se puede sin afectar el
+> funcionamiento del agente de cotizaciones"*.
+
+## Rol asumido
+**Integrador de sistemas / ingeniero de plataformas de LLM**: el problema no es de producto sino de
+compatibilidad de contrato de API, variables de entorno, protocolo de tool-use y despliegue.
+
+## Progreso
+- **% de información para el objetivo: 95 %**
+- **Estado:** decisión tomada (**reemplazo total**, Kimi K2.6 pasa a ser el modelo por defecto de
+  los agentes futuros del proyecto — P10 ✅). Ruta A implementada y verificada en estático
+  (`node --check`, `tsc`, `next build`). Falta **solo** la verificación 3 de
+  [[gcc-tsc-no-basta]]: correr contra el endpoint real, que necesita `KIMI_API_KEY` (P11).
+
+## Fuentes consultadas (2026-08-04)
+- Código: `services/cotizador-worker/index.mjs`, `lib/cotizaciones/worker.ts`,
+  `app/api/quotes/generate|[id]/chat|[id]/public/chat/route.ts`, `services/cotizador-worker/README.md`.
+- `MEMORIA.md` §Worker de cotizaciones (líneas ~2150 y ~4381-4430): despliegue por CLI, gotcha de
+  `bypassPermissions`, herramienta `buscar_talentos`, `/health` como sonda de configuración.
+- SDK instalado: `@anthropic-ai/claude-agent-sdk@0.3.217` — `sdk.d.ts` confirma `options.model` y
+  `options.env`; `sdk.mjs`/`bridge.mjs` leen `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`,
+  `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU,FABLE}_MODEL`,
+  `CLAUDE_CODE_SUBAGENT_MODEL`.
+- Docs de Kimi (`platform.kimi.ai/docs/guide/claude-code-kimi` y `/docs/models`), OpenRouter,
+  issue MoonshotAI/Kimi-K2#129.
+
+## Hallazgo central
+El worker **no llama a la API de Anthropic directamente**: usa el **Claude Agent SDK**, que lanza el
+binario de Claude Code. Ese binario habla el protocolo `/v1/messages` y **respeta `ANTHROPIC_BASE_URL`**.
+Moonshot publica un **endpoint compatible con Anthropic** en `https://api.moonshot.ai/anthropic`.
+→ El cambio de modelo es, en el caso feliz, **solo variables de entorno**: no se toca la lógica del
+agente, ni el prompt, ni las herramientas MCP, ni la reanudación por `sessionId`.
+
+## Preguntas y respuestas
+
+### P1 — ¿Dónde vive exactamente el modelo hoy? · ✅ Resuelta
+Dos sitios, ambos con el mismo default y ambos alimentados por `COTIZADOR_MODEL`:
+`lib/cotizaciones/worker.ts:17` (la web lo manda en cada petición **y lo guarda en `quote_sessions`**)
+y `services/cotizador-worker/index.mjs:22` (default del worker). "GCC Bot" es el mismo worker por
+`/chat` reanudando la sesión → **un solo punto de cambio cubre generar + chatear**.
+
+### P2 — ¿El Agent SDK deja apuntar a otro proveedor? · ✅ Resuelta
+Sí. `options.env` existe y **reemplaza por completo** el entorno del subproceso (hay que esparcir
+`process.env`). Más simple: poner las variables en el servicio de Railway y no tocar código.
+
+### P3 — ¿Basta con cambiar el ID de modelo? · ✅ Resuelta — **NO**
+Claude Code hace llamadas de **modelo pequeño** por su cuenta (compactación, títulos, subagentes) con
+IDs de Claude. Contra Moonshot eso da *model not found*. Hay que fijar **todas** las variantes:
+`ANTHROPIC_DEFAULT_OPUS_MODEL`, `..._SONNET_MODEL`, `..._HAIKU_MODEL`, `..._FABLE_MODEL` y
+`CLAUDE_CODE_SUBAGENT_MODEL`. Es el fallo silencioso más probable si se hace a medias.
+
+### P4 — ¿`ANTHROPIC_API_KEY` puede quedarse puesta? · ✅ Resuelta — **NO**
+`ANTHROPIC_API_KEY` **gana** a `ANTHROPIC_AUTH_TOKEN` en el orden de resolución. Si se queda, el
+worker mandaría la clave de Anthropic a Moonshot → 401. **Hay que borrarla** del servicio del worker.
+
+### P5 — ¿Qué se pierde de contexto? · ✅ Resuelta
+Opus 4.8 = 1 M tokens. **Kimi K2.6 = 262 k**. Generar una cotización cabe de sobra; **GCC Bot acumula
+turnos** sobre la misma sesión. Kimi documenta `CLAUDE_CODE_AUTO_COMPACT_WINDOW` justo para esto.
+
+### P6 — ¿Qué NO está garantizado en el endpoint compatible? · ⏸ Bloqueada (hay que medirlo)
+El endpoint acepta `model, messages, system, tools, tool_choice, max_tokens, temperature, stream`.
+**Sin especificación publicada** para: `count_tokens`, `cache_control`/cabeceras beta de caché
+(Moonshot cachea solo, sin breakpoints) y `anthropic-version`. `WebFetch` está documentado como no
+soportado — **no nos afecta**: `allowedTools` solo deja `list_my_projects` y `buscar_talentos`.
+Impacto esperado: coste/latencia, no corrección. **Pendiente de prueba real.**
+
+### P7 — ¿Cuál es el riesgo funcional de verdad? · ✅ Identificado
+No es la conexión: es la **fidelidad del tool-use y del formato**. El agente tiene tres obligaciones
+frágiles: (a) llamar `buscar_talentos` **por cada requerimiento**, (b) **copiar el nombre exacto**
+devuelto (si lo inventa, la materialización queda coja) y (c) devolver **solo JSON** como mensaje
+final. `parseJson()` ya es tolerante (extrae el primer `{…}`), pero (a) y (b) hay que verificarlos
+sobre cotizaciones reales. `maxTurns: 14` puede quedarse corto con otro modelo.
+
+### P8 — ¿Coste? · ✅ Resuelta
+Opus 4.8: **$5 / $25** por millón (entrada/salida). Kimi K2.6: **$0,58 / $3,40**.
+→ ~8,6× más barato en entrada y ~7,4× en salida.
+
+### P9 — ¿Cómo se despliega el cambio? · ✅ Resuelta
+El worker **no se despliega con push**: está subido por CLI. Si el cambio es **solo variables**, basta
+con ponerlas en Railway (redespliega solo). Si se toca `index.mjs`:
+`cd services/cotizador-worker && railway up --service cotizador-worker --detach` (el `--detach` es
+obligatorio). `COTIZADOR_MODEL` hay que cambiarlo **también en el servicio web** (`corazonescruzados`),
+porque la web manda el modelo en cada petición y lo persiste.
+
+### P10 — ¿Reemplazo total o convivencia? · ❓ Abierta (decisión de negocio)
+La UI ya tiene un **"selector de agente"** en el panel de nueva cotización (hoy con una sola opción).
+Es el sitio natural si se quiere elegir modelo por cotización en vez de cambiarlo global.
+
+### P11 — ¿Hay clave de Moonshot/Kimi en el proyecto? · ⏸ Bloqueada — hace falta que la dé Fernando
+
+## Decisiones de diseño (propuestas, a confirmar)
+- **Ruta A — proxy Anthropic-compatible (recomendada).** Solo variables de entorno. Cero código,
+  conserva sesión/reanudación, herramientas MCP, prompt y `canUseTool`. **Reversible en un minuto.**
+- **Ruta B — reescribir el worker sobre el SDK de OpenAI** contra `https://api.moonshot.ai/v1`.
+  Quita la dependencia del binario de Claude Code, pero obliga a **reimplementar el bucle de tool-use
+  y la persistencia de sesión** que hoy regala el SDK (`sessionId` es lo que sostiene GCC Bot).
+  Mucho más trabajo y más superficie de fallo. Solo si la Ruta A falla en la prueba.
+
+## Riesgos y mitigación
+| Riesgo | Mitigación |
+|---|---|
+| Llamadas internas de modelo pequeño con ID de Claude | Fijar las 4 `ANTHROPIC_DEFAULT_*_MODEL` + `CLAUDE_CODE_SUBAGENT_MODEL` |
+| `ANTHROPIC_API_KEY` residual gana al token de Kimi | Borrarla del servicio del worker |
+| Contexto 262 k en sesiones largas de GCC Bot | `CLAUDE_CODE_AUTO_COMPACT_WINDOW` |
+| Talentos inventados / no llama a la herramienta | Probar con cotizaciones reales antes de producción |
+| Cotizaciones ya existentes con sesión de Opus | Las sesiones viejas no se pueden reanudar contra otro proveedor: probar qué hace `/chat` con una cotización antigua |
+| Despliegue silencioso (worker no sale de `main`) | Comprobar `/health` → devuelve `model` |
+
+## Plan de prueba (antes de tocar producción)
+1. Local: levantar el worker con las variables apuntando a Moonshot y `COTIZADOR_MODEL=kimi-k2.6`.
+2. `GET /health` → debe reportar `model: 'kimi-k2.6'`.
+3. `POST /generate` con un detalle real → revisar que hay `requirements`, `talents` con nombres que
+   existan de verdad en `gd_talentos`, `additional_costs` y `deadline`.
+4. `POST /chat` con el `sessionId` devuelto → pedir un cambio y comprobar que devuelve la cotización
+   completa y que se versiona.
+5. Solo entonces mover las variables en Railway (web + worker).
+
+## Primera prueba contra el endpoint real (2026-08-05)
+
+**El cableado funciona; el bloqueo es de saldo, no técnico.**
+
+`GET /health` → `{ model: "kimi-k2.6", baseUrl: "https://api.moonshot.ai/anthropic",
+apiKey: "ok", talentSearch: "app" }`.
+
+`POST /generate` → **HTTP 500** con el mensaje que devuelve Moonshot:
+*"Request rejected (429) · Your account … is suspended due to insufficient balance, please
+recharge your account"*.
+
+**Qué prueba esto (y no es poco):** la clave se aceptó, el modelo `kimi-k2.6` se reconoció y la
+petición llegó a Moonshot. El fallo es de **facturación de la cuenta**, no del contrato de API,
+ni del ID de modelo, ni de la autenticación. Queda pendiente lo único que no se puede deducir:
+la **fidelidad del tool-use** (P7).
+
+### Hallazgo operativo — un 429 de saldo cuesta ~4 minutos, no un error rápido · ⚠️
+La llamada tardó **3 min 38 s** antes de fallar: Claude Code **reintenta** el 429 por su cuenta.
+El cliente de la web (`lib/cotizaciones/worker.ts`) tiene `TIMEOUT_MS = 280_000` (4 min 40 s), o
+sea que sobrevive por poco. **Consecuencia en producción:** si la cuenta de Kimi se queda sin
+saldo, el usuario ve un spinner ~4 minutos antes de enterarse. Con Anthropic no pasaba porque la
+clave era de prepago de una cuenta con saldo.
+→ **Pendiente de decidir:** si vale la pena cortar antes ante un 429 de saldo, o basta con
+vigilar el saldo. No se toca todavía: primero hay que ver el comportamiento normal con saldo.
+
+## Verificación end-to-end con saldo (2026-08-05) — ✅ FUNCIONA
+
+Repetida la misma llamada tras recargar la cuenta de Moonshot:
+
+- **`POST /generate` → HTTP 200 en 1 min 13 s.** 6 requerimientos, 160 h, **$2 400**, que es
+  exactamente `160 × $15` (respetó la tarifa/hora). `deadline` coherente, 4 costos adicionales
+  sensatos (hosting, dominio, **certificado de firma electrónica**, correo transaccional).
+- **Los talentos son REALES: 13 de 13 verificados contra `gd_talentos`, ninguno inventado.**
+  Era el riesgo grande (P7) y lo pasa: llamó a `buscar_talentos` por requerimiento y copió los
+  nombres exactos. Comprobado con `SELECT nombre FROM gd_talentos WHERE nombre = ANY($1)`.
+- **`POST /chat` → HTTP 200 en 52 s, reanudando el MISMO `sessionId`.** Se le pidió cuadrar a
+  $1 800: devolvió 120 h / **$1 800** exactos (otra vez `120 × $15`), conservó los talentos
+  reales y explicó qué recortó. **La reanudación de sesión sobrevive al cambio de proveedor**,
+  que era la otra incógnita.
+- El mensaje final fue **JSON limpio** en los dos casos.
+
+### Única desviación observada (cosmética) · ❓ Abierta
+El prompt pide **2-6 subtareas** por requerimiento. En `/generate`, dos de los seis salieron con
+**1 subtarea** (en `/chat` todos quedaron dentro del rango). No rompe nada —`requirement_items`
+admite las que haya— pero si se quiere apretar, es un ajuste de prompt, no de la migración.
+**No se toca sin que Fernando lo pida.**
+
+### Conclusión
+La ruta A (endpoint compatible + entorno armado en el worker) queda **validada en local**.
+Lo que faltaba medir ya está medido; el resto es despliegue.

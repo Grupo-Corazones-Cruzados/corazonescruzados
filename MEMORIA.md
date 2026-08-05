@@ -4550,3 +4550,17 @@ Módulos principales:
   - **Fuera de alcance (no se tocó):** el **agente de WhatsApp** (`lib/agente/`) sigue en Claude —
     ahí la clave la pone **cada cliente** por canal (`ia_api_key` cifrada) y el modelo se elige
     desde el Estudio; es otra arquitectura, no una variable de entorno.
+
+- **Kimi K2.6 verificado end-to-end en el agente de cotizaciones (2026-08-05):** tras recargar la
+  cuenta de Moonshot, `/generate` devolvió 200 en 1:13 (6 requerimientos, 160 h, **$2 400 = 160×15**,
+  4 costos adicionales) y `/chat` reanudó **el mismo `sessionId`** y cuadró a **$1 800 = 120×15**.
+  - **Los talentos salen reales: 13/13 existen en `gd_talentos`.** Era el riesgo grande del cambio
+    de modelo (que inventara nombres y los requerimientos nacieran sin talento) y no se materializó:
+    llama a `buscar_talentos` por requerimiento y copia el nombre exacto.
+  - **La reanudación por `sessionId` sobrevive al cambio de proveedor** — es del binario de Claude
+    Code, no de Anthropic. GCC Bot no necesitó nada.
+  - **Desviación cosmética:** el prompt pide 2-6 subtareas y en `/generate` dos requerimientos
+    salieron con 1. No rompe la materialización. **Sin tocar** hasta que Fernando lo pida.
+  - **Un 429 por saldo cuesta ~4 min, no un error rápido:** Claude Code reintenta solo. El cliente
+    web corta a los 280 s, así que aguanta por poco. Si la cuenta de Kimi se queda sin saldo, el
+    usuario ve un spinner de 4 minutos antes del error. Vigilar el saldo.

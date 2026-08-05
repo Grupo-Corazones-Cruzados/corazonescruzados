@@ -1,5 +1,5 @@
 // Worker dedicado del Agente de Cotizaciones Software.
-// Ejecuta el Claude Agent SDK (Opus 4.8), mantiene la sesion viva y la reanuda por sessionId.
+// Ejecuta el Claude Agent SDK contra KIMI K2.6, mantiene la sesion viva y la reanuda por sessionId.
 // La app web le habla por HTTP + token compartido (x-worker-token), fail-closed.
 //
 // Endpoints:
@@ -7,10 +7,11 @@
 //   POST /generate  { model, context }                 -> { sessionId, payload }
 //   POST /chat      { sessionId, model, message, context } -> { sessionId, reply, payload? }
 //
-// Env: PORT (4610), COTIZADOR_WORKER_TOKEN, ANTHROPIC_API_KEY, DATABASE_URL, COTIZADOR_MODEL.
+// Env: PORT (4610), COTIZADOR_WORKER_TOKEN, KIMI_API_KEY, DATABASE_URL, COTIZADOR_MODEL, APP_URL.
 //
 // NOTA (pedido del usuario): el thinking extendido queda DESACTIVADO — no se configura
 // ninguna opcion de thinking/interleaved-thinking; el SDK no lo activa por defecto.
+// (Por eso el modelo es k2.6 y no k2.7-code: ese ultimo EXIGE thinking y devuelve 400 sin el.)
 
 import http from 'node:http';
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
@@ -19,7 +20,51 @@ import pg from 'pg';
 
 const PORT = Number(process.env.PORT || 4610);
 const TOKEN = process.env.COTIZADOR_WORKER_TOKEN || '';
-const DEFAULT_MODEL = process.env.COTIZADOR_MODEL || 'claude-opus-4-8';
+const DEFAULT_MODEL = process.env.COTIZADOR_MODEL || 'kimi-k2.6';
+
+// ── El proveedor del modelo ───────────────────────────────────────────────────
+// El Agent SDK no habla con Anthropic directamente: lanza el binario de Claude Code, que
+// respeta ANTHROPIC_BASE_URL. Moonshot expone un endpoint COMPATIBLE con /v1/messages, asi
+// que el cambio de proveedor es de entorno, no de logica: el prompt, las herramientas MCP y
+// la reanudacion por sessionId siguen igual.
+const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.ai/anthropic';
+const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || '';
+// Ventana de auto-compactacion. Kimi K2.6 son 262k de contexto, no el millon de Opus: generar
+// una cotizacion cabe de sobra, pero GCC Bot ACUMULA turnos sobre la misma sesion.
+const COMPACT_WINDOW = process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW || '200000';
+
+/**
+ * El entorno del subproceso del SDK.
+ *
+ * ── POR QUE SE ARMA AQUI Y NO SE DEJA EN VARIABLES DE RAILWAY ──────────────────
+ * Claude Code hace llamadas de MODELO PEQUEÑO por su cuenta (compactacion, titulos,
+ * subagentes) con IDs de Claude. Contra Moonshot eso devuelve *model not found* y el agente
+ * se cae a mitad de una cotizacion — un fallo que no aparece en la primera prueba, solo
+ * cuando la sesion crece. Fijar aqui las cuatro variantes evita que dependa de que alguien
+ * recuerde ponerlas al crear un servicio nuevo.
+ *
+ * Y se BORRA ANTHROPIC_API_KEY: gana a ANTHROPIC_AUTH_TOKEN en el orden de resolucion, asi
+ * que una clave de Anthropic olvidada en el entorno se mandaria a Moonshot -> 401.
+ *
+ * ⚠️ `options.env` REEMPLAZA el entorno del subproceso, no lo mezcla: hay que esparcir
+ * process.env o el worker pierde PATH, DATABASE_URL y todo lo demas.
+ */
+function entornoDelAgente(modelo) {
+  const env = {
+    ...process.env,
+    ANTHROPIC_BASE_URL: KIMI_BASE_URL,
+    ANTHROPIC_AUTH_TOKEN: KIMI_API_KEY,
+    ANTHROPIC_MODEL: modelo,
+    ANTHROPIC_DEFAULT_OPUS_MODEL: modelo,
+    ANTHROPIC_DEFAULT_SONNET_MODEL: modelo,
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: modelo,
+    ANTHROPIC_DEFAULT_FABLE_MODEL: modelo,
+    CLAUDE_CODE_SUBAGENT_MODEL: modelo,
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: COMPACT_WINDOW,
+  };
+  delete env.ANTHROPIC_API_KEY;
+  return env;
+}
 // URL de la app web: la usa la herramienta de talentos (la búsqueda semántica vive allí,
 // para que las claves de IA no tengan que estar también en el worker).
 const APP_URL = (process.env.APP_URL || '').replace(/\/+$/, '');
@@ -172,13 +217,18 @@ function buildMcp(memberId) {
 }
 
 async function runAgent({ prompt, model, resume, memberId }) {
+  // Fail-closed: sin clave el SDK intentaria autenticarse por su cuenta y el fallo saldria
+  // como un error opaco del subproceso a mitad de la generacion.
+  if (!KIMI_API_KEY) throw new Error('Falta KIMI_API_KEY en el worker: no hay con que autenticarse contra Kimi.');
   const mcp = buildMcp(memberId);
+  const modelo = model || DEFAULT_MODEL;
   let sessionId = resume || null;
   let finalText = '';
   const q = query({
     prompt,
     options: {
-      model: model || DEFAULT_MODEL,
+      model: modelo,
+      env: entornoDelAgente(modelo),
       systemPrompt: SYSTEM_PROMPT,
       mcpServers: { gcc: mcp },
       allowedTools: ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'],
@@ -239,6 +289,10 @@ const server = http.createServer(async (req, res) => {
         tools: ['list_my_projects', 'buscar_talentos'],
         talentSearch: APP_URL ? 'app' : 'respaldo-texto',
         model: DEFAULT_MODEL,
+        // La sonda tambien dice CONTRA QUIEN corre y si hay clave: comprobar el cambio de
+        // proveedor sin gastar una cotizacion es el punto de todo esto.
+        baseUrl: KIMI_BASE_URL,
+        apiKey: KIMI_API_KEY ? 'ok' : 'FALTA',
       });
     }
 
@@ -271,4 +325,6 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`[cotizador-worker] escuchando en :${PORT} (modelo ${DEFAULT_MODEL})`));
+server.listen(PORT, () => console.log(
+  `[cotizador-worker] escuchando en :${PORT} (modelo ${DEFAULT_MODEL} en ${KIMI_BASE_URL}${KIMI_API_KEY ? '' : ' — ⚠️ SIN KIMI_API_KEY'})`,
+));

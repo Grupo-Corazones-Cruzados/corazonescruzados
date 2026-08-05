@@ -1,20 +1,24 @@
 import { normalizeQuotePayload, type QuotePayload } from '@/lib/cotizaciones/schema';
 
 /**
- * Cliente HTTP del WORKER DEDICADO de cotizaciones (Agent SDK de Claude, Opus 4.8).
+ * Cliente HTTP del WORKER DEDICADO de cotizaciones (Agent SDK corriendo sobre Kimi K2.6).
  *
  * La app web NO ejecuta el agente: habla con un servicio worker long-running (patrón del
  * worker de Percepción) que mantiene la sesión viva del Agent SDK y la reanuda por
  * `sessionId`. Autenticación por token compartido (`x-worker-token`), fail-closed.
  *
+ * ⚠️ El modelo que se manda aquí se GUARDA en `quote_sessions`, así que este default y el del
+ * worker tienen que decir lo mismo o el historial miente sobre con qué se generó cada
+ * cotización. La clave del proveedor vive SOLO en el worker (`KIMI_API_KEY`), no aquí.
+ *
  * Config (env, en la app y en el worker):
  *   COTIZADOR_WORKER_URL    — base URL del worker (p. ej. https://cotizador.up.railway.app)
  *   COTIZADOR_WORKER_TOKEN  — secreto compartido
- *   COTIZADOR_MODEL         — opcional, default 'claude-opus-4-8'
+ *   COTIZADOR_MODEL         — opcional, default 'kimi-k2.6'
  */
 const WORKER_URL = process.env.COTIZADOR_WORKER_URL || '';
 const WORKER_TOKEN = process.env.COTIZADOR_WORKER_TOKEN || '';
-export const COTIZADOR_MODEL = process.env.COTIZADOR_MODEL || 'claude-opus-4-8';
+export const COTIZADOR_MODEL = process.env.COTIZADOR_MODEL || 'kimi-k2.6';
 const TIMEOUT_MS = 280_000; // el agente puede tardar; el worker responde cuando termina
 
 export function cotizadorConfigured(): boolean {
