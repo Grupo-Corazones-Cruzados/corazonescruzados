@@ -2147,7 +2147,7 @@ Stack estándar de la casa, con particularidades de este repo:
     `cotizacion` se ocultan Imágenes y la pestaña DigiMundo. Costo = horas × tarifa/hora (salvo precio fijado en
     instrucciones). Tablas nuevas (`lib/cotizaciones/schema.ts` `ensureQuoteTables`): `quote_sessions`
     (`worker_session_id`, servicio, detalle, instrucciones), `quote_versions`, `project_observations`.
-  - **Worker de cotizaciones (Agent SDK, Opus 4.8) — infra.** Servicio **aislado** `services/cotizador-worker/`
+  - **Worker de cotizaciones (Agent SDK; desde 2026-08-04 sobre **Kimi K2.6**, antes Opus 4.8) — infra.** Servicio **aislado** `services/cotizador-worker/`
     (package.json propio: `@anthropic-ai/claude-agent-sdk` + `zod@4` — la web usa zod3, por eso se separa). HTTP
     (`/generate`, `/chat`, `/health`) con auth por token compartido `x-worker-token` (fail-closed). Mantiene la
     **sesión viva** del SDK y la reanuda por `sessionId`. Herramienta `list_my_projects` (solo lectura, Postgres)
@@ -3541,11 +3541,40 @@ Módulos principales:
     `▶ Worker del agente en marcha` en los logs. **Regla: todo servicio auxiliar del repo nace con
     su `buildCommand` de no-op**; darle `DATABASE_URL` para que el build pase habría sido el
     arreglo equivocado (secreto innecesario + compilar Next para nada en cada push).
-  - ⚠️ **Dos deudas que quedan de este hallazgo:** (1) `nightly-cron` vigila
-    `scripts/nightly-cron.mjs` en `watchPatterns` pero arranca `scripts/frequent-cron.mjs` — si se
-    edita el que de verdad corre, **no se redespliega**; (2) el build del **web** depende de que
-    Postgres conteste, porque `/negocio/[necesidad]` consulta las FAQs al prerenderizar: un
-    Postgres caído tumba el despliegue de producción. Conviene que esa consulta tolere el fallo.
+  - **Las dos deudas que dejó el hallazgo, ya saldadas el 2026-08-04:**
+    1. **`nightly-cron` vigilaba el archivo equivocado.** `watchPatterns` apuntaba a
+       `scripts/nightly-cron.mjs` mientras el `startCommand` es `node scripts/frequent-cron.mjs`:
+       editar el que de verdad corre **no lo redesplegaba**. Corregido a
+       `watchPatterns: ["scripts/frequent-cron.mjs"]`. Es el mismo despiste de julio con el
+       comando de arranque, ahora en el otro campo: cuando un servicio se **repurposa**, hay que
+       revisar `startCommand` **y** `watchPatterns` a la vez, porque son dos sitios distintos que
+       nombran el mismo script.
+    2. **El build del web dependía de que Postgres contestara.** Resuelto con
+       `faqsTolerantesAlBuild()` en `app/(sitio)/negocio/[necesidad]/page.tsx`: **solo** cuando
+       `process.env.NEXT_PHASE === 'phase-production-build'`, un fallo de la base deja la página
+       sin preguntas —con aviso en el registro del build— en vez de abortar el despliegue; el
+       `revalidate = 300` la regenera con las preguntas de verdad en los cinco minutos siguientes.
+       **En ejecución no se traga nada**, que es justo la diferencia con el `catch` de
+       `/api/projects` que fingía cero proyectos: aquí el silencio dura un build y queda escrito.
+- **Un despliegue no debería depender de que la base esté en pie (2026-08-04).** Prerenderizar una
+  página que consulta Postgres convierte la base en **requisito de compilación**. Si hace falta que
+  el HTML lleve los datos dentro (SEO), el patrón es: leer en el servidor + `revalidate`, y **envolver
+  la lectura para que solo el build tolere el fallo**. Verificado construyendo con
+  `DATABASE_URL` apuntando a un puerto muerto: **exit 0** y cinco avisos, uno por página; y con la
+  base real, **exit 0** y ningún aviso.
+- **`next dev` y `next build` se pisan: comparten `.next` (2026-08-04).** Con un `next dev` de otra
+  sesión corriendo en el mismo directorio, dos builds seguidos dieron errores **falsos y distintos**
+  —`TypeError: Cannot read properties of undefined (reading 'call')` en `webpack-runtime.js` y
+  `Could not find a production build in the '.next' directory`—, ninguno relacionado con el código.
+  El baseline **sin** el cambio fallaba igual, que es lo que delató el ruido.
+  - **Cómo verificar sin pisar a nadie:** `git worktree add` en un directorio aparte, **symlink** a
+    `node_modules`, copiar `.env`/`.env.local` y construir ahí. El resultado es limpio y el repo del
+    otro no se toca. Antes de dar por buena una compilación rara, `ps aux | grep next` y
+    `git status` — si aparecen ficheros que uno no tocó, hay compañía.
+  - ⚠️ **Y con compañía, `git add -A` ajeno se lleva lo que tengas sin commitear.** El cambio de
+    `page.tsx` de esta sesión acabó publicado dentro de `34cd7f4`, un commit de la otra sobre otro
+    tema. No se perdió nada, pero el mensaje del commit miente sobre lo que contiene: **commitea
+    pronto y en pequeño** cuando el repo está compartido.
 - **Verificar la UI de verdad, no solo que compile (2026-07-30).** Durante meses la memoria decía
   "el dashboard requiere login, así que solo se verifica con `tsc`". **No hace falta**: el proyecto
   ya trae `puppeteer`, y aunque su Chrome no está descargado, sirve el del sistema con
@@ -4472,3 +4501,41 @@ Módulos principales:
     fuese de 42 días. Ahora `daily` y `weekly` **saltan directo al inicio del rango** (respetando la fase del
     intervalo) y el contador solo cuenta instancias emitidas; el límite vuelve a ser lo que decía ser: una red
     de seguridad. Verificado contra la BD real: *Descanso* mantiene 85/mes en 2027, 2028 y 2030.
+
+- **El agente de cotizaciones y GCC Bot pasan a KIMI K2.6 (2026-08-04):** decisión de Fernando —
+  **reemplazo total**, y *"todos los agentes que se crearán a futuro serán usando este modelo"*.
+  Kimi K2.6 es, a partir de aquí, **el modelo por defecto del proyecto para agentes nuevos**.
+  - **Por qué se pudo sin reescribir el agente:** el worker no llama a Anthropic directamente —
+    usa el **Claude Agent SDK**, que lanza el binario de Claude Code, y ese binario respeta
+    `ANTHROPIC_BASE_URL`. Moonshot expone un endpoint **compatible con `/v1/messages`**
+    (`https://api.moonshot.ai/anthropic`). Sobreviven intactos el system prompt, las dos
+    herramientas MCP (`list_my_projects`, `buscar_talentos`), `canUseTool` y —lo que sostiene
+    GCC Bot— la **reanudación por `sessionId`**.
+  - **Dos trampas que NO se ven en la primera prueba** (por eso el entorno se arma en código,
+    `entornoDelAgente()` en `index.mjs`, y no en variables sueltas de Railway):
+    1. **Claude Code hace llamadas de modelo pequeño por su cuenta** (compactación, títulos,
+       subagentes) con IDs de Claude → contra Moonshot es *model not found*. Salta cuando la
+       sesión de GCC Bot **crece**, no al generar la primera cotización. Se fijan las cuatro
+       `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU,FABLE}_MODEL` + `CLAUDE_CODE_SUBAGENT_MODEL`.
+    2. **`ANTHROPIC_API_KEY` gana a `ANTHROPIC_AUTH_TOKEN`** en el orden de resolución: una clave
+       de Anthropic olvidada se mandaría a Moonshot → 401. El worker la **borra** del entorno del
+       subproceso. En Railway hay que **quitarla** del servicio.
+  - **`kimi-k2.6`, no `kimi-k2.7-code`:** ese último **exige thinking activado** (`400 invalid
+    thinking: only type=enabled is allowed`) y aquí el thinking va **desactivado** por decisión
+    previa del usuario. La decisión vieja restringe la elección de modelo nuevo.
+  - **Contexto 262 k, no 1 M.** Generar una cotización cabe de sobra; **GCC Bot acumula turnos**
+    sobre la misma sesión → `CLAUDE_CODE_AUTO_COMPACT_WINDOW` (200 k por defecto).
+  - **Coste:** Opus 4.8 $5/$25 por millón → Kimi K2.6 **$0,58/$3,40** (~8× menos en entrada).
+  - **Config nueva:** `KIMI_API_KEY` en el worker (obligatoria, fail-closed) y
+    `COTIZADOR_MODEL=kimi-k2.6` en **worker y web** (la web lo manda en cada petición y lo
+    **persiste en `quote_sessions`**, así que si los dos defaults no coinciden el historial miente).
+    `npm run dev` en el worker lee `../../.env` y `../../.env.local` (Node `--env-file`).
+  - **`/health` ahora dice contra quién corre:** añade `baseUrl` y `apiKey: 'ok'|'FALTA'`. Es la
+    forma de comprobar el cambio de proveedor **sin gastar una cotización**.
+  - **Riesgo real pendiente de medir:** no es la conexión, es la **fidelidad del tool-use** —
+    que llame `buscar_talentos` por CADA requerimiento, que **copie el nombre exacto** devuelto
+    (si lo inventa, el requerimiento nace sin talento) y que el mensaje final sea **solo JSON**.
+    También: qué hace `/chat` con una cotización antigua cuyo `sessionId` nació contra Opus.
+  - **Fuera de alcance (no se tocó):** el **agente de WhatsApp** (`lib/agente/`) sigue en Claude —
+    ahí la clave la pone **cada cliente** por canal (`ia_api_key` cifrada) y el modelo se elige
+    desde el Estudio; es otra arquitectura, no una variable de entorno.
