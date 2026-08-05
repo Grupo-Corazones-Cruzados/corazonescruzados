@@ -22,12 +22,17 @@
 
 1. **Pídelas una a una y en la MISMA conversación.** En conversaciones distintas salen tres
    estilos distintos. Es el mismo problema de consistencia que el prólogo del videojuego.
-2. **Deja aire abajo.** Gemini estampa su estrella en la esquina inferior derecha y hay que
-   recortarla. Si el dibujo llega hasta abajo, el recorte se lo come.
-   → `node scripts/recortar-marca.mjs public/negocio/*.png --franja=0.12`
+2. ~~Deja aire abajo por la marca de Gemini.~~ **YA NO HACE FALTA RECORTAR** (Fernando,
+   2026-08-04): las imágenes vienen sin la estrella. Y aunque venga —pasó con una de la
+   última tanda, en gris tenue—, **la limpieza se la lleva sola**: al dejar invisible todo
+   lo que no es violeta, una marca neutra desaparece con el fondo.
+   `scripts/recortar-marca.mjs` se conserva por si vuelve a aparecer sobre el dibujo, donde
+   la limpieza no podría distinguirla.
 3. **Nómbralas bien al guardarlas.** En la primera tanda, la 1 y la 3 se guardaron
    intercambiadas y solo se vio al componerlas en orden para revisarlas.
-4. **El «fondo transparente» viene con un damero incrustado** — píxeles semitransparentes de
+4. **⚠️ NO las mandes por el chat: déjalas en `public/negocio/`.** Unas veces llegan y
+   otras no, y cuando llegan pueden convertirse a JPEG y perder la transparencia.
+5. **El fondo puede venir con un damero incrustado** — píxeles semitransparentes de
    verdad, que sobre el fondo del sitio se notan. Se limpia al pasarlas a WebP dejando
    invisible todo lo que no es violeta. Eso además las baja de ~2,5 MB a ~15 kB, que es lo
    que permite publicarlas sin cargarse la velocidad de la página.
