@@ -3,6 +3,7 @@ import { ensureRequirementColumns, normalizeTalents } from '@/lib/projects/requi
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureQuoteTables, type QuotePayload } from '@/lib/cotizaciones/schema';
+import { loadQuote } from '@/lib/cotizaciones/data';
 import { chatQuote, cotizadorConfigured, COTIZADOR_MODEL } from '@/lib/cotizaciones/worker';
 
 /** Rehace los requerimientos + subtareas del proyecto a partir de un payload nuevo. */
@@ -66,13 +67,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       memberId, userId: user.userId,
       service: { id: proj.service_id ? Number(proj.service_id) : null, name: proj.service_name || '', rate: proj.service_rate != null ? Number(proj.service_rate) : null },
       detail: proj.detail || '', instructions: (proj.instructions || '') + budgetNote,
+      // La cotización guardada viaja en cada turno: la sesión del agente puede no existir
+      // (contenedor nuevo) o estar desfasada respecto a una edición hecha fuera del chat.
+      currentQuote: await loadQuote(id),
     };
 
     const out = await chatQuote({ sessionId: proj.worker_session_id || '', message, model: COTIZADOR_MODEL, context });
 
-    // Guarda la sesión (por si el worker devolvió una distinta).
+    // Guarda la sesión (por si el worker devolvió una distinta) y la reabre: tras una decisión
+    // se cierra, y volver a escribir arranca una conversación nueva sobre la misma cotización.
     if (out.sessionId && out.sessionId !== proj.worker_session_id) {
-      await pool.query(`UPDATE gcc_world.quote_sessions SET worker_session_id = $1, updated_at = NOW() WHERE project_id = $2`, [out.sessionId, id]);
+      await pool.query(
+        `UPDATE gcc_world.quote_sessions SET worker_session_id = $1, status = 'active', updated_at = NOW() WHERE project_id = $2`,
+        [out.sessionId, id]);
     }
 
     let changed = false;
@@ -92,7 +99,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    return NextResponse.json({ data: { reply: out.reply, changed, version } });
+    return NextResponse.json({ data: { reply: out.reply, changed, version, sesionNueva: out.sesionNueva } });
   } catch (err: any) {
     console.error('Quote chat error:', err.message);
     return NextResponse.json({ error: err.message || 'Error en el chat de la cotización' }, { status: 500 });

@@ -4613,3 +4613,38 @@ Módulos principales:
     `list_my_projects` ni `buscar_talentos`. **No es un agujero:** son justo las dos que queremos
     permitir, y cualquier otra herramienta sí cae en el callback y se deniega. Si algún día se
     quiere auditar cada llamada, la vía es un hook `PreToolUse`, no el callback.
+
+- **GCC Bot deja de depender de un archivo en disco (2026-08-05):** una cotización quedaba muerta
+  para siempre tras un despliegue del worker — `No conversation found with session ID`. Las
+  sesiones del Agent SDK viven en el **disco del contenedor** y Railway levanta uno nuevo en cada
+  deploy; la cotización, en cambio, vive en Postgres. **Esa asimetría era el bug.**
+  - **El atajo obvio era peor:** borrar el `worker_session_id` para forzar sesión nueva habría
+    hecho que el agente **se inventara** la cotización — el prompt de `/chat` decía *"sobre la
+    cotización actual"* pero **nunca le mandaba la cotización**; se apoyaba solo en la memoria
+    de la sesión.
+  - **Arreglo:** `/chat` manda **siempre** la cotización guardada (`loadQuote`) en
+    `context.currentQuote`, aunque se reanude la sesión, y el worker, si el `resume` falla,
+    arranca una sesión nueva sembrada con ella. La base es la fuente de verdad; la sesión solo
+    aporta el hilo de la charla.
+  - **Beneficio no buscado:** también arregla el desfase cuando la cotización se edita **fuera**
+    del chat (edición manual, panel, otra sesión). Antes el agente devolvía la versión que
+    recordaba y pisaba el cambio.
+  - **Dos errores distintos se tratan igual** (`esSesionPerdida`): *No conversation found* y
+    *--resume requires a valid session ID … is not a UUID* (id corrupto en la base). Se listan
+    explícitamente en vez de tragarse cualquier error: un fallo de red o de saldo **no** debe
+    disfrazarse de sesión perdida y gastar una segunda llamada.
+  - La respuesta lleva `sesionNueva: true` y el chat lo dice: *"Empecé una conversación nueva: no
+    conservo lo que hablamos antes, pero sí tengo la cotización tal como está guardada"*.
+  - **Verificado en local** con la sesión muerta real (`baa4bf00…`) y con un id corrupto: los dos
+    devuelven 200, `sesionNueva: true`, y reformulan sobre **$270 / 8 requerimientos** (el estado
+    real), no sobre los $1 875 originales.
+
+- **La decisión del cliente CIERRA la sesión del agente (2026-08-05, pedido de Fernando):** al
+  aceptar o rechazar, `public/decision` pone `worker_session_id = NULL` y `status = 'closed'` en
+  `quote_sessions`.
+  - **A propósito NO se bloquea el chat en las rechazadas:** rechazar existe justamente para que
+    el responsable ajuste y vuelva a compartir. Lo que termina es el **hilo**, no la posibilidad
+    de trabajar: si vuelve a escribir, arranca una conversación nueva sembrada con la cotización
+    guardada, sin arrastrar el regateo anterior, y la sesión vuelve a `active`.
+  - En las **aceptadas** el chat ya estaba cerrado por otra vía (el proyecto pasa a `draft` y la
+    ruta interna exige `status = 'cotizacion'`).

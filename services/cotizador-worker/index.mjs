@@ -122,8 +122,30 @@ Responde SOLO con este JSON (sin nada mas):
 }`;
 }
 
-function chatPrompt(message) {
-  return `El usuario pide lo siguiente sobre la cotizacion actual:
+/**
+ * El prompt del chat lleva SIEMPRE la cotizacion tal como esta guardada, aunque se este
+ * reanudando la sesion.
+ *
+ * ── POR QUE ─────────────────────────────────────────────────────────────────────
+ * Antes el agente se apoyaba solo en su memoria de la sesion, y eso falla de dos formas:
+ *   1. Si la sesion no existe (contenedor nuevo tras un despliegue), no hay memoria y el
+ *      agente se INVENTARIA la cotizacion en vez de editar la real.
+ *   2. Aunque exista, la cotizacion pudo cambiar FUERA de la conversacion (una edicion
+ *      manual, otra sesion, el panel). La memoria del modelo queda desfasada y devuelve
+ *      una cotizacion vieja como si fuera la buena.
+ * La base de datos es la fuente de verdad; la sesion solo aporta el hilo de la charla.
+ */
+function chatPrompt(message, ctx) {
+  const actual = ctx?.currentQuote
+    ? `ESTADO ACTUAL DE LA COTIZACION (fuente de verdad — puede haber cambiado fuera de esta
+conversacion; parte SIEMPRE de aqui, no de lo que recuerdes):
+"""
+${JSON.stringify(ctx.currentQuote, null, 1)}
+"""
+
+`
+    : '';
+  return `${actual}El usuario pide lo siguiente sobre la cotizacion actual:
 """
 ${message}
 """
@@ -216,42 +238,76 @@ function buildMcp(memberId) {
   });
 }
 
+/**
+ * ¿El error viene de que la sesion que queriamos reanudar no sirve?
+ *
+ * Dos casos, los dos reales y los dos con el mismo remedio — empezar de cero:
+ *   1. **No existe.** Pasa en CADA despliegue: las sesiones del SDK viven en el DISCO del
+ *      contenedor y Railway levanta uno nuevo. La cotizacion, en cambio, vive en Postgres.
+ *      Esa asimetria dejaba a GCC Bot inservible para siempre en toda cotizacion anterior
+ *      al despliegue.
+ *   2. **No es un UUID valido.** Un `worker_session_id` corrupto o truncado en la base
+ *      hace que el CLI rechace el `--resume` antes de arrancar.
+ *
+ * Se listan los dos mensajes a proposito en vez de tragarse cualquier error: un fallo de red
+ * o de saldo NO debe disfrazarse de sesion perdida y gastar una segunda llamada.
+ */
+function esSesionPerdida(err) {
+  const m = String(err?.message ?? '');
+  return /no conversation found|session .{0,20}not found/i.test(m)
+    || /--resume requires a valid session id|is not a UUID/i.test(m);
+}
+
 async function runAgent({ prompt, model, resume, memberId }) {
   // Fail-closed: sin clave el SDK intentaria autenticarse por su cuenta y el fallo saldria
   // como un error opaco del subproceso a mitad de la generacion.
   if (!KIMI_API_KEY) throw new Error('Falta KIMI_API_KEY en el worker: no hay con que autenticarse contra Kimi.');
   const mcp = buildMcp(memberId);
   const modelo = model || DEFAULT_MODEL;
-  let sessionId = resume || null;
-  let finalText = '';
-  const q = query({
-    prompt,
-    options: {
-      model: modelo,
-      env: entornoDelAgente(modelo),
-      systemPrompt: SYSTEM_PROMPT,
-      mcpServers: { gcc: mcp },
-      allowedTools: ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'],
-      // NO usamos 'bypassPermissions' (pasa --dangerously-skip-permissions, que falla como
-      // root en Railway). En su lugar, un callback aprueba SOLO nuestra herramienta (read-only)
-      // y niega cualquier otra — sin prompts (headless).
-      canUseTool: async (toolName, input) =>
-        ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'].includes(toolName)
-          ? { behavior: 'allow', updatedInput: input }
-          : { behavior: 'deny', message: 'Herramienta no permitida en este agente' },
-      settingSources: [],      // no cargar settings del filesystem
-      maxTurns: 14,
-      ...(resume ? { resume } : {}),
-    },
-  });
-  for await (const msg of q) {
-    if (msg.type === 'system' && msg.subtype === 'init') sessionId = msg.session_id;
-    else if (msg.type === 'result') {
-      if (typeof msg.result === 'string') finalText = msg.result;
-      if (msg.session_id) sessionId = msg.session_id;
+
+  const ejecutar = async (reanudar) => {
+    let sessionId = reanudar || null;
+    let finalText = '';
+    const q = query({
+      prompt,
+      options: {
+        model: modelo,
+        env: entornoDelAgente(modelo),
+        systemPrompt: SYSTEM_PROMPT,
+        mcpServers: { gcc: mcp },
+        allowedTools: ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'],
+        // NO usamos 'bypassPermissions' (pasa --dangerously-skip-permissions, que falla como
+        // root en Railway). En su lugar, un callback aprueba SOLO nuestra herramienta (read-only)
+        // y niega cualquier otra — sin prompts (headless).
+        canUseTool: async (toolName, input) =>
+          ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'].includes(toolName)
+            ? { behavior: 'allow', updatedInput: input }
+            : { behavior: 'deny', message: 'Herramienta no permitida en este agente' },
+        settingSources: [],      // no cargar settings del filesystem
+        maxTurns: 14,
+        ...(reanudar ? { resume: reanudar } : {}),
+      },
+    });
+    for await (const msg of q) {
+      if (msg.type === 'system' && msg.subtype === 'init') sessionId = msg.session_id;
+      else if (msg.type === 'result') {
+        if (typeof msg.result === 'string') finalText = msg.result;
+        if (msg.session_id) sessionId = msg.session_id;
+      }
     }
+    return { sessionId, finalText, reanudada: Boolean(reanudar) };
+  };
+
+  try {
+    return await ejecutar(resume || null);
+  } catch (err) {
+    if (!resume || !esSesionPerdida(err)) throw err;
+    // Que la sesion se haya perdido NO es motivo para dejar tirado al usuario: el prompt del
+    // chat ya lleva la cotizacion entera, asi que una sesion nueva puede seguir trabajando.
+    // Lo que se pierde es el hilo de la charla, no el trabajo.
+    console.warn(`[cotizador-worker] la sesion ${resume} ya no existe; se arranca una nueva desde la cotizacion guardada`);
+    return await ejecutar(null);
   }
-  return { sessionId, finalText };
 }
 
 // Extrae el primer objeto JSON del texto (por si el modelo agrega algo alrededor).
@@ -313,9 +369,11 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const ctx = body.context || {};
       if (!body.message) return send(res, 400, { error: 'message requerido' });
-      const { sessionId, finalText } = await runAgent({ prompt: chatPrompt(body.message), model: body.model, resume: body.sessionId, memberId: ctx.memberId });
+      const { sessionId, finalText, reanudada } = await runAgent({ prompt: chatPrompt(body.message, ctx), model: body.model, resume: body.sessionId, memberId: ctx.memberId });
       const parsed = parseJson(finalText);
-      return send(res, 200, { sessionId, reply: parsed.reply || '', payload: parsed.quote || null });
+      // `reanudada: false` con un sessionId pedido significa que la sesión vieja se perdió y
+      // esta es nueva. La app lo persiste; se dice para que se pueda avisar en el chat.
+      return send(res, 200, { sessionId, reply: parsed.reply || '', payload: parsed.quote || null, sesionNueva: Boolean(body.sessionId) && !reanudada });
     }
 
     return send(res, 404, { error: 'Not found' });

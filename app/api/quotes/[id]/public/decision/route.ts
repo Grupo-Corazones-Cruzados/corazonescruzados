@@ -38,6 +38,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         `UPDATE gcc_world.projects SET quote_status = 'rejected', quote_decided_at = NOW(), updated_at = NOW() WHERE id = $1`, [id]);
     }
 
+    // ── La decisión CIERRA la sesión del agente ─────────────────────────────────
+    // Aceptada o rechazada, la conversación que produjo esta cotización termina aquí: se
+    // suelta el `worker_session_id` y la sesión queda 'closed'. No se bloquea el chat en las
+    // rechazadas a propósito — rechazar existe justamente para que el responsable ajuste y
+    // vuelva a compartir; lo que se corta es el HILO viejo. Si vuelve a escribir, arranca una
+    // conversación nueva sembrada con la cotización guardada, sin arrastrar el regateo previo.
+    await pool.query(
+      `UPDATE gcc_world.quote_sessions SET worker_session_id = NULL, status = 'closed', updated_at = NOW()
+        WHERE project_id = $1`, [id]);
+
     // Notifica al responsable (miembro) del proyecto.
     try {
       const q = await loadQuote(id);

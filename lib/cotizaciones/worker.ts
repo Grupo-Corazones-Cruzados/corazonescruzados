@@ -32,6 +32,15 @@ export type QuoteAgentContext = {
   service: { id: number | null; name: string; rate: number | null };
   detail: string;
   instructions: string;
+  /**
+   * La cotización tal como está GUARDADA, para el chat.
+   *
+   * Va en cada turno a propósito, aunque se reanude la sesión: la base es la fuente de verdad
+   * y la memoria del modelo no. Sin esto, una sesión perdida (contenedor nuevo) hacía que el
+   * agente se inventara la cotización, y una edición hecha fuera del chat lo dejaba trabajando
+   * sobre una versión vieja.
+   */
+  currentQuote?: unknown;
 };
 
 async function callWorker(path: string, body: any): Promise<any> {
@@ -79,7 +88,7 @@ export async function generateQuote(ctx: QuoteAgentContext & { model?: string })
  */
 export async function chatQuote(opts: {
   sessionId: string; message: string; model?: string; context: QuoteAgentContext;
-}): Promise<{ sessionId: string; reply: string; payload: QuotePayload | null }> {
+}): Promise<{ sessionId: string; reply: string; payload: QuotePayload | null; sesionNueva: boolean }> {
   const data = await callWorker('/chat', {
     sessionId: opts.sessionId,
     model: opts.model || COTIZADOR_MODEL,
@@ -87,11 +96,15 @@ export async function chatQuote(opts: {
     context: {
       memberId: opts.context.memberId, userId: opts.context.userId,
       service: opts.context.service, detail: opts.context.detail, instructions: opts.context.instructions,
+      currentQuote: opts.context.currentQuote ?? null,
     },
   });
   return {
     sessionId: String(data.sessionId || opts.sessionId),
     reply: String(data.reply || ''),
     payload: data.payload ? normalizeQuotePayload(data.payload) : null,
+    // El worker no pudo reanudar y empezó de cero: el trabajo se conserva (venía en el
+    // contexto), pero el hilo de la conversación anterior se perdió.
+    sesionNueva: Boolean(data.sesionNueva),
   };
 }

@@ -48,6 +48,12 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Error');
+      // La conversación anterior se perdió (despliegue del worker, o la cotización se decidió y
+      // se cerró la sesión). El trabajo NO se pierde: la cotización guardada va en cada turno.
+      // Se avisa porque el bot ya no recuerda lo hablado antes, y eso el usuario tiene que saberlo.
+      if (d.data.sesionNueva) {
+        setMsgs((m) => [...m, { role: 'bot', text: 'Empecé una conversación nueva: no conservo lo que hablamos antes, pero sí tengo la cotización tal como está guardada.' }]);
+      }
       setMsgs((m) => [...m, { role: 'bot', text: d.data.reply || (d.data.changed ? 'Listo, actualicé la cotización.' : 'Ok.') }]);
       if (d.data.changed) { toast.success(`Cotización actualizada${d.data.version ? ` (v${d.data.version})` : ''}`); onChanged?.(); }
     } catch (e: any) {

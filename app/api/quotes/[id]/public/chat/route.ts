@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateQuoteToken } from '@/lib/cotizaciones/schema';
-import { applyQuoteChange } from '@/lib/cotizaciones/data';
+import { applyQuoteChange, loadQuote } from '@/lib/cotizaciones/data';
 import { chatQuote, cotizadorConfigured, COTIZADOR_MODEL } from '@/lib/cotizaciones/worker';
 
 /**
@@ -28,11 +28,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       memberId: p.assigned_member_id ? Number(p.assigned_member_id) : null, userId: 'external',
       service: { id: s?.service_id ? Number(s.service_id) : null, name: s?.service_name || '', rate: s?.service_rate != null ? Number(s.service_rate) : null },
       detail: s?.detail || '', instructions: (s?.instructions || '') + budgetNote,
+      // Igual que en el chat interno: la cotización guardada manda sobre la memoria de la sesión.
+      currentQuote: await loadQuote(id),
     };
     const out = await chatQuote({ sessionId: s?.worker_session_id || '', message, model: COTIZADOR_MODEL, context });
 
     if (out.sessionId && out.sessionId !== s?.worker_session_id) {
-      await pool.query(`UPDATE gcc_world.quote_sessions SET worker_session_id = $1, updated_at = NOW() WHERE project_id = $2`, [out.sessionId, id]);
+      await pool.query(
+        `UPDATE gcc_world.quote_sessions SET worker_session_id = $1, status = 'active', updated_at = NOW() WHERE project_id = $2`,
+        [out.sessionId, id]);
     }
 
     let changed = false;

@@ -338,7 +338,7 @@ export const ACCESOS: Acceso[] = [
   {
     id: 'automatizacion', icono: 'rayo',
     titulo: 'Automatización',
-    texto: 'Adquiere soluciones de automatización para tu negocio: aplicaciones, agentes de IA y robots.',
+    texto: 'Adquiere soluciones personalizadas de automatización de procesos y digitalización de tu negocio.',
     galeria: {
       items: [
         { icono: 'aplicacion', titulo: 'Aplicaciones Empresariales',
