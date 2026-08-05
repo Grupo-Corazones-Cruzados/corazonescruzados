@@ -199,8 +199,13 @@ export interface Acceso {
  * dar cifras: la regla de la página sigue siendo que nada sea incomprobable.
  */
 export interface Galeria {
-  etiqueta: string;
-  titulo: string;
+  /**
+   * Encabezado, **opcional**. Fernando lo quitó de Automatización el 2026-08-05: las once
+   * tarjetas se explican solas y el titular solo repetía con más palabras lo que ya dice el
+   * nombre de la puerta. Sin `titulo`, la galería se pinta a secas.
+   */
+  etiqueta?: string;
+  titulo?: string;
   entradilla?: string;
   items: { icono: string; titulo: string; texto: string }[];
 }
@@ -335,9 +340,6 @@ export const ACCESOS: Acceso[] = [
     titulo: 'Automatización',
     texto: 'Adquiere soluciones de automatización para tu negocio: aplicaciones, agentes de IA y robots.',
     galeria: {
-      etiqueta: 'Lo que construimos',
-      titulo: 'Once formas de quitarle trabajo repetido a tu equipo',
-      entradilla: 'Cada una resuelve un tipo de problema distinto. Rara vez hace falta una sola: lo normal es que dos o tres encajen entre sí.',
       items: [
         { icono: 'aplicacion', titulo: 'Aplicaciones Empresariales',
           texto: 'El sistema con el que tu empresa trabaja de verdad, construido sobre vuestra operación y no sobre un producto cerrado.' },

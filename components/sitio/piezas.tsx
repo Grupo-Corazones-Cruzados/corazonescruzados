@@ -416,16 +416,18 @@ export function BloqueTema({
 export function GaleriaTarjetas({
   etiqueta, titulo, entradilla, items,
 }: {
-  etiqueta: string;
-  titulo: string;
+  etiqueta?: string;
+  titulo?: string;
   entradilla?: string;
   items: { icono: string; titulo: string; texto: string }[];
 }) {
   return (
     <section>
-      <TituloSeccion etiqueta={etiqueta} titulo={titulo} entradilla={entradilla} />
+      {/* El encabezado es opcional: en Automatización se quitó porque las once tarjetas se
+          explican solas. Sin `titulo`, van las tarjetas y ya. */}
+      {titulo && <TituloSeccion etiqueta={etiqueta} titulo={titulo} entradilla={entradilla} />}
 
-      <ul className="galeria-anima mt-12 flex flex-wrap justify-center gap-4">
+      <ul className={`galeria-anima flex flex-wrap justify-center gap-4 ${titulo ? 'mt-12' : ''}`}>
         {items.map((it) => {
           const Icono = ICONOS[it.icono] ?? Layers;
           return (

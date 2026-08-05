@@ -171,6 +171,9 @@ puerta.
   última fila deja dos pegadas a la izquierda. Envolviendo y centrando **se centra sola**, y
   aguanta si mañana son nueve o catorce.
 - **Ancho fijo de 300 px**; a ancho completo en el móvil.
+- **El encabezado (`etiqueta` · `titulo` · `entradilla`) es OPCIONAL.** Fernando lo quitó de
+  Automatización el 2026-08-05: las once tarjetas se explican solas y el titular repetía con
+  más palabras lo que ya dice el nombre de la puerta. Sin `titulo`, van las tarjetas y ya.
 - **Al pasar el puntero:** la tarjeta sube 2 px, el borde se tiñe de violeta y el cuadro del
   icono se enciende. **Nada de sombras** — el realce de este sitio es de borde. `focus-within`
   hace lo mismo con el teclado.
