@@ -253,7 +253,7 @@ export const ACCESOS: Acceso[] = [
      */
     temas: [{
       id: 'como-funciona',
-      etiqueta: 'Cómo funciona',
+      etiqueta: 'Tickets',
       pregunta: '¿Necesitas ayuda para completar una tarea difícil?',
       texto:
         'Publícalo como ticket, y descubre nuevos talentos capaces de resolver tus problemas, y de sorprenderte con el aporte que pueden ofrecer a tu organización.',
@@ -290,22 +290,22 @@ export const ACCESOS: Acceso[] = [
       etiqueta: 'Proyectos',
       pregunta: '¿Tienes alguna idea de proyecto que quieres hacer real?',
       texto:
-        'Comunícate con cualquiera de nuestros talentos, recibe una cotización de tu proyecto, y negocia el presupuesto. En caso de aceptarlo el talento responsable tomará el control del proyecto para gestionar el presupuesto, y participantes del proyecto para completar todos sus requerimientos.',
+        'Comunícate con cualquiera de nuestros talentos, recibe una cotización de tu proyecto, y negocia el presupuesto. En caso de aceptar, el miembro responsable tomará el control del proyecto para gestionar el presupuesto, y participantes del proyecto para completar todos sus requerimientos.',
       pasos: [
         {
           titulo: 'Hablas con un talento',
           texto: 'Eliges con quién y le cuentas la idea. Te devuelve una cotización con su alcance y su precio, para que sepas qué entra y qué no.',
-          icono: 'mensaje',
+          imagen: { src: '/negocio/proyecto-1-hablas.webp', ancho: 760, alto: 504 },
         },
         {
           titulo: 'Negocias el presupuesto',
           texto: 'Se ajusta hasta que cuadre para los dos. Nada se pone en marcha sin que tú lo aceptes.',
-          icono: 'acuerdo',
+          imagen: { src: '/negocio/proyecto-2-negocias.webp', ancho: 760, alto: 601 },
         },
         {
           titulo: 'El responsable toma el control',
           texto: 'Gestiona el presupuesto y suma a los participantes que hagan falta hasta cubrir todos los requerimientos del proyecto.',
-          icono: 'personas',
+          imagen: { src: '/negocio/proyecto-3-responsable.webp', ancho: 760, alto: 763 },
         },
       ],
     }],
