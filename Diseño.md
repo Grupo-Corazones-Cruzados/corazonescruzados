@@ -161,6 +161,23 @@ en dos, y **solo la primera mitad se hace sin preguntar**:
 Las piezas de `piezas.tsx` y las reglas de abajo siguen siendo el estándar **cuando ya hay
 un diseño acordado** — dicen *cómo* se construye, no *qué* se construye.
 
+### Galería de tarjetas — `GaleriaTarjetas` (2026-08-04)
+
+Para **enumerar** muchas cosas, frente a los temas, que **explican un flujo**. Estrenada en
+Automatización con once tarjetas: icono, título y una línea. Sale del campo `galeria` de la
+puerta.
+
+- **`flex-wrap` centrado, no rejilla.** Once no es múltiplo de tres: con `grid-cols-3` la
+  última fila deja dos pegadas a la izquierda. Envolviendo y centrando **se centra sola**, y
+  aguanta si mañana son nueve o catorce.
+- **Ancho fijo de 300 px**; a ancho completo en el móvil.
+- **Al pasar el puntero:** la tarjeta sube 2 px, el borde se tiñe de violeta y el cuadro del
+  icono se enciende. **Nada de sombras** — el realce de este sitio es de borde. `focus-within`
+  hace lo mismo con el teclado.
+- **Entrada escalonada al desplazarse** (`.galeria-anima`), con el mismo motor que los temas.
+  El escalón va **por columna** (`nth-child(3n+1/2/3)`) y no por tarjeta: con once, un retardo
+  por posición dejaría la última entrando mucho después y se sentiría lento.
+
 ### Temas de `/negocio/<id>` — `BloqueTema` (2026-08-04)
 
 Cada página de puerta lleva N **temas** cortos entre el vídeo y las preguntas: rótulo,

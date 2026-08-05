@@ -26,13 +26,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
-  Ticket, Vote, ArrowRight, CalendarClock, Handshake, type LucideIcon,
+  Ticket, Vote, ArrowRight, CalendarClock, Handshake,
+  AppWindow, Bot, Network, Database, MonitorSmartphone, BotMessageSquare, Globe, Blocks,
+  Building2, Cloud, Puzzle, type LucideIcon,
 } from 'lucide-react';
 
 export const ICONOS: Record<string, LucideIcon> = {
   mensaje: MessageSquare, capas: Layers, rayo: Zap, documento: FileText,
   personas: Users, juego: Gamepad2, tienda: Store, brujula: Compass,
   ticket: Ticket, voto: Vote, calendario: CalendarClock, acuerdo: Handshake,
+  // Galería de Automatización
+  aplicacion: AppWindow, robot: Bot, red: Network, 'base-datos': Database,
+  pantallas: MonitorSmartphone, agente: BotMessageSquare, web: Globe, modulos: Blocks,
+  integracion: Puzzle, inquilinos: Building2, nube: Cloud,
 };
 
 /** Convierte los `**dobles asteriscos**` del contenido en negrita. */
@@ -378,6 +384,71 @@ export function BloqueTema({
           </ol>
         )}
       </div>
+    </section>
+  );
+}
+
+/* ── Galería de tarjetas ─────────────────────────────────────────────────────── */
+
+/**
+ * GALERÍA DE TARJETAS PEQUEÑAS — icono, título y una línea.
+ *
+ * Para cuando hay que **enumerar** muchas cosas (once en Automatización) en vez de explicar
+ * un flujo. Un bloque grande por cada una haría una página infinita; una lista con viñetas
+ * no se lee.
+ *
+ * ── LAS DECISIONES DE COLOCACIÓN ───────────────────────────────────────────────
+ * · **`flex-wrap` centrado, no rejilla.** Once no es múltiplo de tres: con `grid-cols-3` la
+ *   última fila deja dos tarjetas pegadas a la izquierda y un hueco. Envolviendo y centrando,
+ *   la última fila se centra sola — y sigue funcionando si mañana son nueve o catorce.
+ * · **Ancho fijo de 300 px.** Todas iguales aunque sus textos midan distinto.
+ * · **El icono, arriba y a la izquierda**, del mismo tamaño que en las tarjetas de la
+ *   cabecera: es el mismo lenguaje, solo que aquí hay muchas más.
+ *
+ * ── LOS EFECTOS ────────────────────────────────────────────────────────────────
+ * · **Entrada escalonada al desplazarse** (`.galeria-anima`, en `globals.css`): las tarjetas
+ *   no aparecen de golpe, van llegando. Como el resto del sitio, es CSS ligado al scroll —
+ *   sin JavaScript, y el contenido está en el HTML desde el primer momento.
+ * · **Al pasar el puntero**: la tarjeta **sube 2 px**, el borde se tiñe de violeta y el
+ *   cuadro del icono se enciende. Nada de sombras — el realce de este sitio es de borde.
+ * · **`focus-within`** hace lo mismo al recorrerla con el teclado.
+ */
+export function GaleriaTarjetas({
+  etiqueta, titulo, entradilla, items,
+}: {
+  etiqueta: string;
+  titulo: string;
+  entradilla?: string;
+  items: { icono: string; titulo: string; texto: string }[];
+}) {
+  return (
+    <section>
+      <TituloSeccion etiqueta={etiqueta} titulo={titulo} entradilla={entradilla} />
+
+      <ul className="galeria-anima mt-12 flex flex-wrap justify-center gap-4">
+        {items.map((it) => {
+          const Icono = ICONOS[it.icono] ?? Layers;
+          return (
+            <li
+              key={it.titulo}
+              className="group w-full sm:w-[300px] rounded-xl border border-white/[0.08] bg-white/[0.02] p-5
+                         transition-[transform,border-color,background-color] duration-200
+                         hover:-translate-y-0.5 hover:border-[#7B5FBF]/45 hover:bg-white/[0.04]
+                         focus-within:-translate-y-0.5 focus-within:border-[#7B5FBF]/45"
+            >
+              <span
+                className="inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors
+                           border-[#7B5FBF]/30 bg-[#7B5FBF]/10
+                           group-hover:border-[#7B5FBF]/60 group-hover:bg-[#7B5FBF]/25"
+              >
+                <Icono className="w-5 h-5 text-[#a78bfa] transition-colors group-hover:text-[#c4b5fd]" />
+              </span>
+              <p className="mt-4 text-[15px] font-semibold text-white leading-snug">{it.titulo}</p>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">{it.texto}</p>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

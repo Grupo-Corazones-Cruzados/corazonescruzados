@@ -1371,3 +1371,21 @@ html {
     .tema-anima ol > li:nth-child(4) { animation-range: entry 36% cover 43%; }
   }
 }
+
+/* Galería de tarjetas: entran escalonadas al desplazarse. Mismo motor que los temas
+   —`animation-timeline: view()`—, así que también es CSS puro y también queda desactivado
+   donde no exista o donde se pida no mover las cosas.
+   El escalón se aplica por COLUMNA (uno de cada tres) y no por tarjeta: con once tarjetas,
+   un retardo por posición dejaría la última entrando mucho después que la primera y se
+   sentiría lento. Así cada fila entra en tres tiempos y el conjunto avanza rápido. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .galeria-anima > li {
+      animation: paso-entra linear both;
+      animation-timeline: view();
+    }
+    .galeria-anima > li:nth-child(3n + 1) { animation-range: entry 5% cover 12%; }
+    .galeria-anima > li:nth-child(3n + 2) { animation-range: entry 9% cover 16%; }
+    .galeria-anima > li:nth-child(3n + 3) { animation-range: entry 13% cover 20%; }
+  }
+}

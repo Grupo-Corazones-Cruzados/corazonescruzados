@@ -183,6 +183,26 @@ export interface Acceso {
    * Si una puerta no trae ninguno, **no se pinta nada**: ni recuadro vacío ni relleno.
    */
   temas?: Tema[];
+  /** Galería de tarjetas pequeñas. Ver `Galeria`. */
+  galeria?: Galeria;
+}
+
+/**
+ * UNA GALERÍA DE TARJETAS PEQUEÑAS — icono, título y una línea.
+ *
+ * Distinta de los `temas`: un tema **explica un flujo** con sus pasos; una galería
+ * **enumera** lo que se ofrece. Cuando la lista es larga —once cosas en Automatización— un
+ * bloque grande por cada una sería una página infinita, y una lista con viñetas no se lee.
+ *
+ * ⚠️ Los títulos los dictó Fernando (2026-08-04); **los textos los escribí yo** y están para
+ * que los corrija. Cada uno dice qué es la cosa y para qué sirve, sin prometer resultados ni
+ * dar cifras: la regla de la página sigue siendo que nada sea incomprobable.
+ */
+export interface Galeria {
+  etiqueta: string;
+  titulo: string;
+  entradilla?: string;
+  items: { icono: string; titulo: string; texto: string }[];
 }
 
 /**
@@ -314,6 +334,35 @@ export const ACCESOS: Acceso[] = [
     id: 'automatizacion', icono: 'rayo',
     titulo: 'Automatización',
     texto: 'Adquiere soluciones de automatización para tu negocio: aplicaciones, agentes de IA y robots.',
+    galeria: {
+      etiqueta: 'Lo que construimos',
+      titulo: 'Once formas de quitarle trabajo repetido a tu equipo',
+      entradilla: 'Cada una resuelve un tipo de problema distinto. Rara vez hace falta una sola: lo normal es que dos o tres encajen entre sí.',
+      items: [
+        { icono: 'aplicacion', titulo: 'Aplicaciones Empresariales',
+          texto: 'El sistema con el que tu empresa trabaja de verdad, construido sobre vuestra operación y no sobre un producto cerrado.' },
+        { icono: 'robot', titulo: 'Robots Automatizados',
+          texto: 'Tareas repetitivas que se ejecutan solas: capturan, comparan, registran y avisan sin que nadie esté delante.' },
+        { icono: 'red', titulo: 'Intranets',
+          texto: 'El sitio interno donde tu equipo encuentra lo que necesita, con permisos por área y por persona.' },
+        { icono: 'base-datos', titulo: 'Bases de Datos',
+          texto: 'Diseño, migración y puesta a punto del sitio donde vive tu información, para que responda rápido y no se corrompa.' },
+        { icono: 'pantallas', titulo: 'Máquinas Virtuales para Desktop y Móvil',
+          texto: 'Entornos aislados que se levantan cuando hacen falta: para probar, para dar soporte o para separar lo que no puede caerse.' },
+        { icono: 'agente', titulo: 'Agentes de IA o Conversacionales',
+          texto: 'Atención que responde con el conocimiento de tu negocio y pasa a una persona en cuanto hace falta.' },
+        { icono: 'web', titulo: 'Sitios Webs',
+          texto: 'La cara pública de tu negocio, hecha para que se encuentre en las búsquedas y para que cargue rápido.' },
+        { icono: 'modulos', titulo: 'ERP Modular',
+          texto: 'Compras, inventario, facturación o nómina: se enciende lo que necesitas hoy y se añade lo demás cuando toque.' },
+        { icono: 'integracion', titulo: 'Integraciones Tecnológicas',
+          texto: 'Que tus sistemas se hablen entre ellos, para dejar de teclear lo mismo en dos sitios.' },
+        { icono: 'inquilinos', titulo: 'Administración de Inquilinos',
+          texto: 'Varias empresas o sedes sobre un mismo sistema, cada una con sus datos, sus accesos y su configuración.' },
+        { icono: 'nube', titulo: 'Administración de Recursos de Azure o multi-nube',
+          texto: 'Servidores, respaldos y costos bajo control, en Azure o repartidos entre varias nubes.' },
+      ],
+    },
   },
   {
     id: 'videojuego', icono: 'juego',

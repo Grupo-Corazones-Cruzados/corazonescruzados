@@ -30,11 +30,11 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId } from '@/lib/sitio/contenido';
-import { faqsDeAcceso } from '@/lib/faqs';
+import { faqsDeAcceso, type Faq } from '@/lib/faqs';
 import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
 import VideoYouTube from '@/components/sitio/VideoYouTube';
 import FaqsNegocio from '@/components/sitio/FaqsNegocio';
-import { Contenedor, BloqueTema } from '@/components/sitio/piezas';
+import { Contenedor, BloqueTema, GaleriaTarjetas } from '@/components/sitio/piezas';
 
 type Props = { params: Promise<{ necesidad: string }> };
 
@@ -57,6 +57,40 @@ export const dynamicParams = false;
  * ve su cambio publicado dentro del mismo rato en que sigue trabajando.
  */
 export const revalidate = 300;
+
+/**
+ * LAS PREGUNTAS, TOLERANDO QUE LA BASE NO CONTESTE **DURANTE EL BUILD**.
+ *
+ * Al prerenderizarse, esta página convierte una consulta a Postgres en **requisito de
+ * compilación**: si la base no responde mientras corre `next build`, no se cae la página —
+ * se cae el despliegue entero. Ya pasó el 2026-08-04, y de la forma más confusa posible:
+ * el servicio `agente-worker`, que comparte repo con la app, heredaba su build y acumuló
+ * **20 despliegues fallidos** por no tener `DATABASE_URL` (ver MEMORIA.md → Lecciones).
+ *
+ * Un despliegue no debería depender de que la base esté en pie. Así que **solo en el
+ * build**, un fallo deja la página sin preguntas en vez de abortar: el `revalidate` de
+ * arriba la regenera con las preguntas de verdad dentro de los cinco minutos siguientes,
+ * de modo que el hueco se cierra solo y sin intervención.
+ *
+ * ⚠️ **En ejecución no se traga nada.** El error sube, Next sigue sirviendo la última
+ * versión buena y reintenta en la siguiente revalidación. Devolver «no hay preguntas»
+ * cuando lo que hay es una base caída es exactamente el fallo que ya costó una
+ * investigación entera —el `catch` de `/api/projects` que fingía cero proyectos—, y aquí no
+ * se repite: el silencio dura lo que dura un build y queda escrito en su registro.
+ */
+async function faqsTolerantesAlBuild(accesoId: string): Promise<Faq[]> {
+  if (process.env.NEXT_PHASE !== 'phase-production-build') return faqsDeAcceso(accesoId);
+
+  try {
+    return await faqsDeAcceso(accesoId);
+  } catch (e) {
+    console.warn(
+      `⚠ Las FAQs de «${accesoId}» no se pudieron leer durante el build: ${(e as Error).message}\n` +
+        '  La página se prerenderiza sin ellas; la primera revalidación (5 min) las traerá.',
+    );
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { necesidad } = await params;
@@ -86,7 +120,7 @@ export default async function DetalleNecesidadPage({ params }: Props) {
   // Se leen en el servidor, al generar la página: las preguntas y sus respuestas viajan ya
   // escritas dentro del HTML. Si se pidieran por red desde el navegador, el buscador —que es
   // para quien más valen— no las vería.
-  const faqs = await faqsDeAcceso(acceso.id);
+  const faqs = await faqsTolerantesAlBuild(acceso.id);
 
   return (
     <>
@@ -132,6 +166,13 @@ export default async function DetalleNecesidadPage({ params }: Props) {
               <BloqueTema {...t} />
             </div>
           ))}
+
+          {/* La galería, para las puertas que enumeran en vez de explicar un flujo. */}
+          {acceso.galeria && (
+            <div className="mt-14">
+              <GaleriaTarjetas {...acceso.galeria} />
+            </div>
+          )}
 
           {/* Preguntas frecuentes. Igual: si no hay ninguna, la sección entera desaparece. */}
           {faqs.length > 0 && (
