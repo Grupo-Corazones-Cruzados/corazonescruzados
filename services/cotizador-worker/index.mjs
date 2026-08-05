@@ -275,10 +275,17 @@ async function runAgent({ prompt, model, resume, memberId }) {
         env: entornoDelAgente(modelo),
         systemPrompt: SYSTEM_PROMPT,
         mcpServers: { gcc: mcp },
-        allowedTools: ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'],
         // NO usamos 'bypassPermissions' (pasa --dangerously-skip-permissions, que falla como
-        // root en Railway). En su lugar, un callback aprueba SOLO nuestra herramienta (read-only)
-        // y niega cualquier otra — sin prompts (headless).
+        // root en Railway). En su lugar, un callback aprueba SOLO nuestras herramientas
+        // (read-only) y niega cualquier otra — sin prompts (headless).
+        //
+        // ⚠️ Y NO se declaran en `allowedTools`, aunque parezca lo natural: un nombre "pelado"
+        // ahi **auto-aprueba la herramienta ANTES de consultar al callback**, que es justo lo
+        // que este avisaba en cada pase —`CLAUDE_SDK_CAN_USE_TOOL_SHADOWED`— y el remedio que
+        // el propio SDK recomienda. Mientras estuvieron las dos listas, el comentario de arriba
+        // era mentira: quien aprobaba era `allowedTools`, no el callback, asi que endurecer el
+        // callback no habria tenido ningun efecto. Con una sola puerta, lo que dice el codigo
+        // es lo que pasa.
         canUseTool: async (toolName, input) =>
           ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'].includes(toolName)
             ? { behavior: 'allow', updatedInput: input }
@@ -305,7 +312,11 @@ async function runAgent({ prompt, model, resume, memberId }) {
     // Que la sesion se haya perdido NO es motivo para dejar tirado al usuario: el prompt del
     // chat ya lleva la cotizacion entera, asi que una sesion nueva puede seguir trabajando.
     // Lo que se pierde es el hilo de la charla, no el trabajo.
-    console.warn(`[cotizador-worker] la sesion ${resume} ya no existe; se arranca una nueva desde la cotizacion guardada`);
+    // `console.log`, no `console.warn`: en Railway **todo lo que va a stderr se pinta como
+    // error**, y esto pasa despues de cada despliegue por diseno. Manchar de rojo el panel con
+    // lo que es normal deja el contador de errores sin valor — que es exactamente lo que costo
+    // no ver los 20 fallos de `agente-worker`. Los rojos se reservan para lo que si lo es.
+    console.log(`[cotizador-worker] la sesion ${resume} ya no existe; se arranca una nueva desde la cotizacion guardada`);
     return await ejecutar(null);
   }
 }
