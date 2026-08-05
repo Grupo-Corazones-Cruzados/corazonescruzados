@@ -329,59 +329,49 @@ export function BloqueTema({
                 // `flex flex-col` + `mt-auto` en el icono: los textos miden distinto y, sin
                 // esto, cada icono quedaría a una altura y las tres columnas se verían
                 // descuadradas. Así se alinean todos abajo.
-                <li key={p.titulo} className="flex flex-col border-t border-white/[0.12] pt-5">
-                  <span className="block text-[34px] leading-none font-semibold text-[#7B5FBF]/55 tabular-nums">
+                <li
+                  key={p.titulo}
+                  className="relative overflow-hidden border-t border-white/[0.12] pt-5 pb-24"
+                >
+                  {/* ── LA ILUSTRACIÓN, COMO MARCA DE AGUA ────────────────────────────
+                      Pasó por tres sitios antes de acabar aquí (Fernando, 2026-08-04):
+                      debajo del texto a ancho completo, luego encajada en una caja, luego
+                      arriba junto al número. Ninguna funcionaba, y el motivo es el mismo en
+                      las tres: como ELEMENTO, tres dibujos de proporciones muy distintas
+                      —uno de 4:1 junto a dos casi cuadrados— nunca se ven del mismo tamaño.
+                      Como FONDO deja de importar: al 16 % de opacidad y al pie del paso, lo
+                      que se percibe es una textura, no una figura que compita con la de al
+                      lado.
+                      `aria-hidden` y `pointer-events-none`: es decoración pura; ni se lee ni
+                      se puede pulsar. El `pb-24` de arriba es su banda — sin él, el texto
+                      del paso se le sentaría encima. */}
+                  {p.imagen && (
+                    <Image
+                      src={p.imagen.src}
+                      alt=""
+                      aria-hidden
+                      width={p.imagen.ancho}
+                      height={p.imagen.alto}
+                      className="pointer-events-none select-none absolute bottom-0 right-0
+                                 w-[200px] h-[92px] object-contain object-right-bottom opacity-[0.16]"
+                    />
+                  )}
+
+                  <span className="relative block text-[34px] leading-none font-semibold text-[#7B5FBF]/55 tabular-nums">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <p className="mt-4 text-[15.5px] font-semibold text-white leading-snug">
+                  <p className="relative mt-4 text-[15.5px] font-semibold text-white leading-snug">
                     {p.titulo}
                   </p>
-                  <p className="mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
-                  {/* La ilustración manda sobre el icono. Es una ESCENA, no un pictograma:
-                      ocupa el ancho de su columna, no un recuadro de 44 px, o su línea de
-                      tiempo y sus tarjetas no se leerían.
-                      `aria-hidden` y `alt=""`: no aporta nada que no diga ya el texto del
-                      paso, así que a un lector de pantalla solo le estorbaría. */}
-                  {p.imagen ? (
-                    // ── TODAS EN UNA CAJA DEL MISMO ALTO ──────────────────────────────
-                    // Antes se igualaban por ANCHO y el resultado era un desastre: la línea
-                    // de tiempo del tercer paso es apaisada por naturaleza (4,18:1) y quedaba
-                    // en 57 px de alto contra los 214 y 238 de sus compañeras. Fernando
-                    // regeneró esa imagen dos veces y salió idéntica de proporción — porque
-                    // el problema nunca estuvo en el dibujo, sino en cómo se colocaba.
-                    //
-                    // Ahora las tres comparten una caja de **200 x 128 px** y `object-contain`
-                    // encaja cada una dentro sin deformarla.
-                    //
-                    // El ancho máximo importa tanto como el alto: con la caja abierta a lo
-                    // ancho de la columna, la línea de tiempo se estiraba a 320 px y se veía
-                    // enorme al lado de las otras. Acotando las dos medidas, las tres ocupan
-                    // un espacio parecido.
-                    //
-                    // ⚠️ Con un dibujo de 4:1 no hay maquetación que lo iguale del todo a uno
-                    // cuadrado: o es ancho, o es pequeño. Esto es el punto medio; la solución
-                    // completa sería rehacer esa ilustración más compacta.
-                    <div className="mt-auto pt-8">
-                      <Image
-                        src={p.imagen.src}
-                        alt=""
-                        aria-hidden
-                        width={p.imagen.ancho}
-                        height={p.imagen.alto}
-                        className="w-full max-w-[200px] h-[128px] object-contain object-left"
-                      />
-                    </div>
-                  ) : Icono ? (
-                    // El hueco va en un envoltorio, no en el recuadro: con `pt-6` sobre el
-                    // propio recuadro, el relleno quedaría DENTRO del borde y saldría una
-                    // caja alta con el icono descentrado.
-                    <div aria-hidden className="mt-auto pt-6">
-                      <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg
-                                       border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
-                        <Icono className="w-[22px] h-[22px] text-[#a78bfa]" />
-                      </span>
-                    </div>
-                  ) : null}
+                  <p className="relative mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
+
+                  {/* Si el paso no trae ilustración, el icono sigue haciendo de rótulo. */}
+                  {!p.imagen && Icono && (
+                    <span aria-hidden className="relative mt-5 inline-flex items-center justify-center w-11 h-11
+                                                 rounded-lg border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
+                      <Icono className="w-[22px] h-[22px] text-[#a78bfa]" />
+                    </span>
+                  )}
                 </li>
               );
             })}

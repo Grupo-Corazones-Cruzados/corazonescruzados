@@ -200,6 +200,13 @@ salida se atenúa a 0,25.
 - **La cascada de los pasos se hace por recorrido, no por tiempo** (`animation-range`
   escalonado por `nth-child`): si se para el scroll, se paran ellos. Es lo que hace que se
   sienta ligado al gesto y no a un reloj.
+- **Las ilustraciones de los pasos van de MARCA DE AGUA**, no como elemento: al pie de cada
+  paso, en una caja de 200x92 al 16 % de opacidad, con `aria-hidden` y `pointer-events-none`.
+  Llegaron ahí tras cuatro intentos —debajo del texto a ancho completo, encajadas en una
+  caja, arriba junto al número— y el motivo del fracaso fue siempre el mismo: **como figura,
+  tres dibujos de proporciones muy distintas (uno de 4:1 junto a dos casi cuadrados) nunca se
+  ven del mismo tamaño**. Como fondo deja de importar: lo que se percibe es textura. El
+  `pb-24` del paso es su banda; sin él, el texto se le sienta encima.
 - **⚠️ Al verificarlo:** `getComputedStyle().opacity` devuelve **siempre el valor base**,
   porque estas animaciones corren en el compositor. Para comprobar que funciona hay que
   mirar `getAnimations()[0].effect.getComputedTiming().progress`, o medir el brillo de una
