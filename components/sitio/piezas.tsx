@@ -343,6 +343,24 @@ export function BloqueTema({
                       `aria-hidden` y `alt=""`: no aporta nada que no diga ya el texto del
                       paso, así que a un lector de pantalla solo le estorbaría. */}
                   {p.imagen ? (
+                    // ── TODAS EN UNA CAJA DEL MISMO ALTO ──────────────────────────────
+                    // Antes se igualaban por ANCHO y el resultado era un desastre: la línea
+                    // de tiempo del tercer paso es apaisada por naturaleza (4,18:1) y quedaba
+                    // en 57 px de alto contra los 214 y 238 de sus compañeras. Fernando
+                    // regeneró esa imagen dos veces y salió idéntica de proporción — porque
+                    // el problema nunca estuvo en el dibujo, sino en cómo se colocaba.
+                    //
+                    // Ahora las tres comparten una caja de **200 x 128 px** y `object-contain`
+                    // encaja cada una dentro sin deformarla.
+                    //
+                    // El ancho máximo importa tanto como el alto: con la caja abierta a lo
+                    // ancho de la columna, la línea de tiempo se estiraba a 320 px y se veía
+                    // enorme al lado de las otras. Acotando las dos medidas, las tres ocupan
+                    // un espacio parecido.
+                    //
+                    // ⚠️ Con un dibujo de 4:1 no hay maquetación que lo iguale del todo a uno
+                    // cuadrado: o es ancho, o es pequeño. Esto es el punto medio; la solución
+                    // completa sería rehacer esa ilustración más compacta.
                     <div className="mt-auto pt-8">
                       <Image
                         src={p.imagen.src}
@@ -350,7 +368,7 @@ export function BloqueTema({
                         aria-hidden
                         width={p.imagen.ancho}
                         height={p.imagen.alto}
-                        className="w-full max-w-[240px] h-auto"
+                        className="w-full max-w-[200px] h-[128px] object-contain object-left"
                       />
                     </div>
                   ) : Icono ? (
