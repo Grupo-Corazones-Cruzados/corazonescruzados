@@ -3646,3 +3646,67 @@ de XML por versión de esquema y tipo de documento, orquestación (backfill rean
 · revisión de anulaciones), OTP al correo del XML, API con el guard anti-fuga, seguridad de
 credenciales, fases, riesgos y el **checklist de la sesión de reconocimiento (§14) que bloquea la
 fase 2**.
+
+---
+
+## Jornada 2026-08-04 — tres incidentes de producción, y lo que enseñan para el proyecto del SRI
+
+Los tres salieron el mismo día, uno detrás de otro, y **los tres tienen la misma raíz**: texto
+generado por un agente entrando sin validar en un sistema de esquema estricto. Eso convierte lo
+aprendido aquí en material de diseño para el objetivo del SRI, no en anécdota.
+
+### 1 · La lista de proyectos se vació sola · ✅ Resuelto
+`ARRAY_AGG(r.talents)` sobre una columna `text[]` construye una matriz 2-D y **Postgres exige que
+todas las filas midan lo mismo**. El agente de cotizaciones generó requerimientos con 2 y con 3
+talentos → la consulta entera murió. Regla: **desanidar antes de agregar**.
+
+**Lo agravante, y lo que de verdad importa:** el `catch` del endpoint devolvía `{data: []}` con
+**HTTP 200**, así que el fallo se veía como «no hay proyectos». Diagnóstico natural: «se borraron
+los datos». Firma del bug: **el rail de conteos seguía bien mientras la tabla salía vacía** — esa
+asimetría delata que la consulta gorda es la que revienta.
+→ **Regla para cualquier proyecto: un fallo del servidor se declara (500 + `error`) y la UI lo
+muestra. Nunca se finge un resultado vacío.**
+
+### 2 · El SRI devolvió la factura: «ARCHIVO NO CUMPLE ESTRUCTURA XML» · ✅ Resuelto
+Las 6 descripciones venían de una cotización del agente y medían 327–416 caracteres, contra el
+**máximo de 300 del XSD**. Ningún campo de texto se estaba acotando.
+→ Nuevo `lib/integrations/sri/text.ts`: `SRI_MAX` + `sriText()`, que **trunca y luego escapa** —
+en ese orden, porque el validador del SRI **decodifica las entidades y cuenta caracteres reales**
+(`&amp;` cuenta 1, no 5).
+
+### 3 · El SRI devolvió la factura: «FIRMA INVALIDA» · ✅ Resuelto
+**No era el certificado** (vigente hasta 2028-02-03) ni los datos del cliente. `escapeXml`
+convertía `'` en `&apos;` dentro del **texto de los nodos**, donde XML no lo exige, y el
+canonicalizador de `ec-sri-invoice-signer` lo **re-escapa** a `&amp;apos;`:
+
+```
+la librería firma sobre : y &amp;apos;Empacar y Facturar&amp;apos;.
+el SRI verifica sobre   : y 'Empacar y Facturar'.
+```
+
+Funcionó durante meses porque **ninguna descripción había llevado nunca un apóstrofo**.
+→ En texto de nodo: solo `&`, `<`, `>`. En atributo: `&`, `<`, `"` y nunca `'`.
+
+### Lo que estos tres incidentes cambian en el plan del proyecto del SRI
+
+1. **Un rechazo del SRI puede estar tapando otro.** El de estructura escondía el de firma: hasta
+   que la estructura no pasó, la firma ni se llegaba a validar. **Tras corregir un rechazo, no dar
+   por hecho que ya pasa.**
+2. **El SRI dice literalmente qué falla; no hay que adivinar.** `sri_response` guardó
+   `cvc-maxLength-valid: … length = '327' … maxLength '300' for type 'descripcion'`. Y para
+   cualquier clave, `consultarAutorizacion()` devuelve el motivo exacto **sin credenciales**. En
+   el proyecto nuevo, **guardar siempre la respuesta cruda del SRI** es tan importante como
+   guardar el XML.
+3. **La firma se puede verificar en local, sin enviar nada.** `c14nCanonicalize()` de la librería
+   contra la canonicalización correcta (reescapar solo `&<>` sobre el texto real): si no
+   coinciden, el digest no va a cuadrar. Así se descartó que «…» y «→» fueran culpables — por
+   medición, no por intuición. **Esto debe ser un test del proyecto nuevo, no un script de
+   emergencia.**
+4. **Lo que genera un LLM hay que validarlo antes de que toque un esquema estricto.** Es la raíz
+   común de los tres. En el proyecto del SRI aplica igual: descripciones, razones sociales y
+   direcciones que vengan de fuera deben pasar por `sriText()`/longitudes **antes** de construir
+   nada, y avisar en la UI en vez de recortar a escondidas.
+5. **Avisar antes, no cortar después.** El panel «Editar y reintentar» ahora marca en rojo al
+   pasar de 300 caracteres. El truncado automático queda como red de seguridad, no como
+   comportamiento normal: una factura es un documento que ve el cliente y cortarla a mitad de
+   frase es un defecto, aunque el SRI la acepte.
