@@ -3556,6 +3556,17 @@ Módulos principales:
        `revalidate = 300` la regenera con las preguntas de verdad en los cinco minutos siguientes.
        **En ejecución no se traga nada**, que es justo la diferencia con el `catch` de
        `/api/projects` que fingía cero proyectos: aquí el silencio dura un build y queda escrito.
+- **`cotizador-worker` es inmune al problema anterior, y conviene saber por qué (revisado
+  2026-08-05).** No tiene repo conectado (`source.repo = null`): sube por
+  `railway up` desde `services/cotizador-worker/` —un snapshot de 7 kB, solo esa carpeta— y su
+  `package.json` propio no tiene script `build`. Un push a `main` ni lo roza, y Railpack no tiene
+  nada que compilar. **Los otros dos servicios auxiliares son los que comparten repo con la app**,
+  y son los que necesitan el `buildCommand` de no-op.
+  - ⚠️ **Trampa:** la raíz del repo está enlazada en la CLI **a `cotizador-worker`**
+    (`railway status` desde la raíz responde eso). Un `railway up` lanzado desde la raíz en vez de
+    desde `services/cotizador-worker/` **subiría la app Next entera encima del worker** e intentaría
+    compilarla. Al no estar protegido por un repo conectado, ahí sí se sustituye el servicio.
+    Antes de un `railway up`, comprobar en qué directorio se está.
 - **Un despliegue no debería depender de que la base esté en pie (2026-08-04).** Prerenderizar una
   página que consulta Postgres convierte la base en **requisito de compilación**. Si hace falta que
   el HTML lleve los datos dentro (SEO), el patrón es: leer en el servidor + `revalidate`, y **envolver
