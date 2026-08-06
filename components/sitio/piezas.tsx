@@ -414,42 +414,81 @@ export function BloqueTema({
  * · **`focus-within`** hace lo mismo al recorrerla con el teclado.
  */
 export function GaleriaTarjetas({
-  etiqueta, titulo, entradilla, items,
+  etiqueta, titulo, entradilla, items, desliza,
 }: {
   etiqueta?: string;
   titulo?: string;
   entradilla?: string;
+  desliza?: boolean;
   items: { icono: string; titulo: string; texto: string }[];
 }) {
+  /** La tarjeta, igual en los dos modos. */
+  const tarjeta = (it: { icono: string; titulo: string; texto: string }, oculta = false) => {
+    const Icono = ICONOS[it.icono] ?? Layers;
+    return (
+      <li
+        key={it.titulo + (oculta ? '-copia' : '')}
+        aria-hidden={oculta || undefined}
+        className={`group rounded-xl border border-white/[0.08] bg-white/[0.02] p-5
+                    transition-[transform,border-color,background-color] duration-200
+                    hover:-translate-y-0.5 hover:border-[#7B5FBF]/45 hover:bg-white/[0.04]
+                    focus-within:-translate-y-0.5 focus-within:border-[#7B5FBF]/45
+                    ${desliza ? 'w-[300px] shrink-0' : 'w-full sm:w-[300px]'}`}
+      >
+        <span
+          className="inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors
+                     border-[#7B5FBF]/30 bg-[#7B5FBF]/10
+                     group-hover:border-[#7B5FBF]/60 group-hover:bg-[#7B5FBF]/25"
+        >
+          <Icono className="w-5 h-5 text-[#a78bfa] transition-colors group-hover:text-[#c4b5fd]" />
+        </span>
+        <p className="mt-4 text-[15px] font-semibold text-white leading-snug">{it.titulo}</p>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">{it.texto}</p>
+      </li>
+    );
+  };
+
+  if (desliza) {
+    return (
+      <section>
+        {titulo && <TituloSeccion etiqueta={etiqueta} titulo={titulo} entradilla={entradilla} />}
+
+        {/* ── DE BORDE A BORDE DE LA PANTALLA ──────────────────────────────────────
+            La tira vive dentro del ancho de lectura (`max-w-6xl`) y tiene que salirse
+            de él. `left-1/2` la lleva al centro de la página y `-translate-x-1/2` la
+            devuelve media pantalla a la izquierda: el resultado es exactamente el ancho
+            de la ventana, venga de donde venga su contenedor.
+            ⚠️ `100vw` incluye la barra de desplazamiento, así que sin el `overflow-x-clip`
+            del `<section id="detalle">` esto añadiría barra horizontal a toda la página.
+            Se usa `clip` y no `hidden` porque `hidden` crearía un contenedor de scroll y
+            rompería el salto a las anclas de los temas. */}
+        <div
+          className={`tira-desliza-marco relative left-1/2 -translate-x-1/2 w-screen overflow-hidden py-2
+                      ${titulo ? 'mt-12' : ''}`}
+          style={{
+            // Las tarjetas se desvanecen al entrar y al salir en vez de aparecer
+            // cortadas por un borde recto. Es lo que hace que «vayan apareciendo».
+            maskImage: 'linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%)',
+          }}
+        >
+          {/* La lista va DUPLICADA y la animación recorre justo la mitad: al terminar, la
+              copia está donde estaba el original y el bucle no da tirón. La segunda pasada
+              lleva `aria-hidden` para que un lector de pantalla no lea las once dos veces. */}
+          <ul className="tira-desliza flex w-max gap-4 px-2">
+            {items.map((it) => tarjeta(it))}
+            {items.map((it) => tarjeta(it, true))}
+          </ul>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
-      {/* El encabezado es opcional: en Automatización se quitó porque las once tarjetas se
-          explican solas. Sin `titulo`, van las tarjetas y ya. */}
       {titulo && <TituloSeccion etiqueta={etiqueta} titulo={titulo} entradilla={entradilla} />}
-
       <ul className={`galeria-anima flex flex-wrap justify-center gap-4 ${titulo ? 'mt-12' : ''}`}>
-        {items.map((it) => {
-          const Icono = ICONOS[it.icono] ?? Layers;
-          return (
-            <li
-              key={it.titulo}
-              className="group w-full sm:w-[300px] rounded-xl border border-white/[0.08] bg-white/[0.02] p-5
-                         transition-[transform,border-color,background-color] duration-200
-                         hover:-translate-y-0.5 hover:border-[#7B5FBF]/45 hover:bg-white/[0.04]
-                         focus-within:-translate-y-0.5 focus-within:border-[#7B5FBF]/45"
-            >
-              <span
-                className="inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors
-                           border-[#7B5FBF]/30 bg-[#7B5FBF]/10
-                           group-hover:border-[#7B5FBF]/60 group-hover:bg-[#7B5FBF]/25"
-              >
-                <Icono className="w-5 h-5 text-[#a78bfa] transition-colors group-hover:text-[#c4b5fd]" />
-              </span>
-              <p className="mt-4 text-[15px] font-semibold text-white leading-snug">{it.titulo}</p>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">{it.texto}</p>
-            </li>
-          );
-        })}
+        {items.map((it) => tarjeta(it))}
       </ul>
     </section>
   );

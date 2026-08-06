@@ -1389,3 +1389,39 @@ html {
     .galeria-anima > li:nth-child(3n + 3) { animation-range: entry 13% cover 20%; }
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SITIO PÚBLICO — la tira de tarjetas que se desliza sola  (2026-08-06)
+
+   Las once tarjetas de Automatización cruzan la pantalla de derecha a izquierda, en
+   bucle. La lista va DUPLICADA en el marcado y la animación recorre exactamente la
+   mitad (-50 %): al terminar, la segunda copia está justo donde estaba la primera, y
+   el salto de vuelta al inicio no se ve. Es la única forma de que un bucle infinito
+   no dé un tirón cada vuelta.
+
+   Va a la velocidad que va —55 s la vuelta completa— a propósito: esto no es un
+   carrusel para leer al vuelo, es un fondo vivo. Si corriera, marearía.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@keyframes tira-desliza {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.tira-desliza {
+  animation: tira-desliza 55s linear infinite;
+  /* `will-change` mueve la tira al compositor: sin él, animar 6.900 px de tarjetas
+     obliga al navegador a repintar en cada cuadro y se nota en portátiles modestos. */
+  will-change: transform;
+}
+
+/* Se para al acercar el puntero, y también al llegar con el teclado: si alguien quiere
+   leer una tarjeta, lo peor que puede hacer la página es escapársele. */
+.tira-desliza-marco:hover .tira-desliza,
+.tira-desliza-marco:focus-within .tira-desliza { animation-play-state: paused; }
+
+/* Quien pide que no le muevan las cosas no ve ningún movimiento — y entonces la tira
+   se puede recorrer a mano, porque si no las últimas tarjetas serían inalcanzables. */
+@media (prefers-reduced-motion: reduce) {
+  .tira-desliza { animation: none; }
+  .tira-desliza-marco { overflow-x: auto; }
+}

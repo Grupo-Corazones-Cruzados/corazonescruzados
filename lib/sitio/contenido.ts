@@ -207,6 +207,12 @@ export interface Galeria {
   etiqueta?: string;
   titulo?: string;
   entradilla?: string;
+  /**
+   * `true` = las tarjetas cruzan la pantalla solas, de derecha a izquierda y en bucle
+   * (Fernando, 2026-08-06). Se sale del ancho de lectura y ocupa el ancho completo.
+   * Sin esto, se pintan quietas y envueltas en filas.
+   */
+  desliza?: boolean;
   items: { icono: string; titulo: string; texto: string }[];
 }
 
@@ -340,6 +346,7 @@ export const ACCESOS: Acceso[] = [
     titulo: 'Automatización',
     texto: 'Adquiere soluciones personalizadas de automatización de procesos y digitalización de tu negocio.',
     galeria: {
+      desliza: true,
       items: [
         { icono: 'aplicacion', titulo: 'Aplicaciones Empresariales',
           texto: 'El sistema con el que tu empresa trabaja de verdad, construido sobre vuestra operación y no sobre un producto cerrado.' },
@@ -353,7 +360,7 @@ export const ACCESOS: Acceso[] = [
           texto: 'Entornos aislados que se levantan cuando hacen falta: para probar, para dar soporte o para separar lo que no puede caerse.' },
         { icono: 'agente', titulo: 'Agentes de IA o Conversacionales',
           texto: 'Atención que responde con el conocimiento de tu negocio y pasa a una persona en cuanto hace falta.' },
-        { icono: 'web', titulo: 'Sitios Webs',
+        { icono: 'web', titulo: 'Sitios Web',
           texto: 'La cara pública de tu negocio, hecha para que se encuentre en las búsquedas y para que cargue rápido.' },
         { icono: 'modulos', titulo: 'ERP Modular',
           texto: 'Compras, inventario, facturación o nómina: se enciende lo que necesitas hoy y se añade lo demás cuando toque.' },

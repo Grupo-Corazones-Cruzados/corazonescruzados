@@ -177,6 +177,20 @@ puerta.
 - **Al pasar el puntero:** la tarjeta sube 2 px, el borde se tiñe de violeta y el cuadro del
   icono se enciende. **Nada de sombras** — el realce de este sitio es de borde. `focus-within`
   hace lo mismo con el teclado.
+- **Modo `desliza`** (Automatización, 2026-08-06): las tarjetas cruzan la pantalla **de
+  derecha a izquierda en bucle**, de borde a borde de la ventana.
+  - **La lista va DUPLICADA** y la animación recorre exactamente `-50 %`: al terminar, la
+    copia está donde estaba el original y el bucle no da tirón. La segunda pasada lleva
+    `aria-hidden` para que un lector de pantalla no lea las once dos veces.
+  - **De borde a borde:** `left-1/2 -translate-x-1/2 w-screen`. ⚠️ `100vw` incluye la barra
+    de desplazamiento, así que el `<section id="detalle">` necesita **`overflow-x-clip`** o
+    la página entera gana barra horizontal. `clip` y **no** `hidden`: `hidden` crearía un
+    contenedor de scroll y rompería el salto a las anclas de los temas.
+  - **Máscara de degradado** en los bordes para que las tarjetas se desvanezcan al entrar y
+    salir en vez de aparecer cortadas.
+  - **Se para** al acercar el puntero y al llegar con el teclado. Con `prefers-reduced-motion`
+    no se mueve y el marco pasa a `overflow-x: auto`, o las últimas serían inalcanzables.
+  - 55 s la vuelta: es un fondo vivo, no un carrusel para leer al vuelo.
 - **Entrada escalonada al desplazarse** (`.galeria-anima`), con el mismo motor que los temas.
   El escalón va **por columna** (`nth-child(3n+1/2/3)`) y no por tarjeta: con once, un retardo
   por posición dejaría la última entrando mucho después y se sentiría lento.

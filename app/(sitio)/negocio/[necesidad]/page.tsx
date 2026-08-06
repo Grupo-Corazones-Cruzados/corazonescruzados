@@ -129,7 +129,11 @@ export default async function DetalleNecesidadPage({ params }: Props) {
       <section
         id="detalle"
         key={acceso.id}
-        className="aparece-detalle scroll-mt-24 border-t border-white/[0.07] bg-white/[0.02] py-16 sm:py-20"
+        // `overflow-x-clip`: la tira de tarjetas de Automatización se sale a lo ancho de la
+        // ventana, y `100vw` incluye la barra de desplazamiento. Sin esto, la página entera
+        // ganaría una barra horizontal. Se usa `clip` y NO `hidden` porque `hidden` crearía
+        // un contenedor de scroll y rompería el salto a las anclas de los temas.
+        className="aparece-detalle scroll-mt-24 overflow-x-clip border-t border-white/[0.07] bg-white/[0.02] py-16 sm:py-20"
       >
         <Contenedor>
           <h1 className="text-[30px] sm:text-[40px] leading-[1.12] font-semibold text-white tracking-tight">
