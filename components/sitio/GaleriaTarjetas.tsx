@@ -4,9 +4,16 @@
  * LA GALERÍA DE TARJETAS. Vive aparte de `piezas.tsx` porque necesita estado —cuál está
  * abierta— y eso obliga a que sea un componente de cliente.
  *
- * ⚠️ Que sea de cliente **no** esconde nada de un buscador: Next lo renderiza igualmente en
- * el servidor, así que los once títulos, sus líneas y las descripciones completas de la
- * ventana están en el HTML aunque nadie pulse nada.
+ * ── ⚠️ LO QUE CREÍ Y ERA FALSO (corregido el 2026-08-06) ─────────────────────
+ * Di por hecho que, al renderizar Next el componente en el servidor, las descripciones
+ * largas quedaban en el HTML. **No.** Solo viajan como PROPS del componente de cliente, y
+ * eso acaba dentro de un `<script>` con los datos de hidratación — que un buscador **no**
+ * lee como contenido de la página. Medido: la frase larga aparecía 1 vez en el HTML y las 1
+ * dentro de `<script>`; en el marcado visible, 0.
+ *
+ * Por eso al final va un bloque `hidden` con las once descripciones y sus beneficios: ahí sí
+ * son nodos del documento. Es el mismo remedio que ya se usó con las respuestas de las
+ * preguntas frecuentes.
  */
 
 import { useState } from 'react';
@@ -125,6 +132,21 @@ export default function GaleriaTarjetas({
         </div>
 
         <VentanaTarjeta item={abierta} onCerrar={() => setAbierta(null)} />
+
+      {/* Las descripciones completas, en el documento y fuera de la vista.
+          Sin esto solo existirían dentro del `<script>` de hidratación, que no cuenta como
+          contenido. `hidden` es `display:none`, que los buscadores sí leen. */}
+      <div hidden aria-hidden="true">
+        {items.map((it) => (
+          <div key={it.titulo}>
+            <h3>{it.titulo}</h3>
+            <p>{it.descripcion ?? it.texto}</p>
+            {it.beneficios && (
+              <ul>{it.beneficios.map((x) => <li key={x}>{x}</li>)}</ul>
+            )}
+          </div>
+        ))}
+      </div>
       </section>
     );
   }
@@ -137,6 +159,21 @@ export default function GaleriaTarjetas({
       </ul>
 
       <VentanaTarjeta item={abierta} onCerrar={() => setAbierta(null)} />
+
+      {/* Las descripciones completas, en el documento y fuera de la vista.
+          Sin esto solo existirían dentro del `<script>` de hidratación, que no cuenta como
+          contenido. `hidden` es `display:none`, que los buscadores sí leen. */}
+      <div hidden aria-hidden="true">
+        {items.map((it) => (
+          <div key={it.titulo}>
+            <h3>{it.titulo}</h3>
+            <p>{it.descripcion ?? it.texto}</p>
+            {it.beneficios && (
+              <ul>{it.beneficios.map((x) => <li key={x}>{x}</li>)}</ul>
+            )}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

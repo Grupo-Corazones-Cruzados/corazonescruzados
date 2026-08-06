@@ -175,9 +175,14 @@ empresa» en tres puntos y —cuando la haya— una ilustración a la derecha.
 - **⚠️ `m-auto` para centrarla.** El `<dialog>` se centra solo, pero el reajuste de Tailwind
   le pone `margin: 0` y la deja pegada arriba a la izquierda.
 - **Dos columnas solo si hay imagen**; sin ella queda a una y no se pinta un recuadro vacío.
-- **La galería vive en `components/sitio/GaleriaTarjetas.tsx`** con `'use client'`, porque
-  necesita estado. Eso **no** esconde nada de un buscador: Next la renderiza en el servidor y
-  las once descripciones están en el HTML aunque nadie pulse.
+- **⚠️ QUE NEXT RENDERICE EN EL SERVIDOR NO BASTA — y es una trampa fácil.** La galería es
+  `'use client'` y di por hecho que sus descripciones quedaban en el HTML. **No:** solo
+  viajan como **props**, y eso acaba dentro del `<script>` de hidratación, que un buscador no
+  lee como contenido. Medido: la frase larga aparecía 1 vez en el HTML, la 1 dentro de
+  `<script>`, y **0 en el marcado visible**.
+  Se arregla con un bloque `hidden` que las pinta como nodos de verdad — el mismo remedio de
+  las respuestas de las preguntas frecuentes. **Regla: lo que solo se pasa como prop a un
+  componente de cliente no existe para el buscador.**
 - **Las tarjetas son `<button>`**, no `div` con `onClick`: se alcanzan con el tabulador y se
   activan con Intro. La copia de la tira deslizante lleva `tabIndex={-1}` además de
   `aria-hidden`, o el tabulador pararía en once botones invisibles.
