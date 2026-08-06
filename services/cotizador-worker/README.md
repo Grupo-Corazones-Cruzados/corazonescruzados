@@ -72,18 +72,36 @@ En la app web (`.env.local`): `COTIZADOR_WORKER_URL=http://localhost:4610`, el m
 conectado (verificado con `railway status --json` → `source.repo = null`). Para desplegarlo:
 
 ```bash
-cd services/cotizador-worker && railway up . --path-as-root --service cotizador-worker --detach
+cd services/cotizador-worker && railway up --detach
 ```
 
-Los dos flags son **obligatorios**, cada uno por un fallo distinto ya pagado:
+**`--detach` es obligatorio**: sin él, `railway up` se cuelga en "Uploading…" y revienta con
+`operation timed out`.
 
-- **`--path-as-root`**: la **raíz del repo está enlazada a este servicio**, así que `railway up`
-  arma el archivo desde el directorio del proyecto (la raíz) aunque lo lances desde aquí — sube
-  la app Next entera y Cloudflare responde **`413 Payload Too Large`**. Con `--path-as-root` el
-  archivo se arma desde `.` (92 KB). Mover `node_modules` no arregla nada: el problema no es
-  esta carpeta, es cuál se archiva. El `.railwayignore` tampoco, por lo mismo.
-- **`--detach`**: sin él, `railway up` se cuelga en "Uploading…" y revienta con
-  `operation timed out`.
+### Por qué ya no hace falta `--path-as-root` (2026-08-06)
+
+Hacía falta porque **esta carpeta no estaba enlazada**: la CLI armaba el archivo desde el
+*directorio del proyecto* —la raíz del repo— aunque el comando se lanzara desde aquí. Eso subía
+la app Next entera (**1.896 ficheros, 426 MB**) y Cloudflare respondía **`413 Payload Too Large`**.
+Peor: la raíz estaba enlazada **a este mismo servicio**, así que un `railway up` tecleado desde la
+raíz habría plantado la app web encima del worker. Ni mover `node_modules` ni el `.railwayignore`
+arreglaban nada: el problema no era qué carpeta se ignora, sino **cuál se archiva**.
+
+Se arregló enlazando cada directorio a lo suyo:
+
+```bash
+cd services/cotizador-worker && railway link -p 9879300f-745e-4929-b9cb-3d6a03ce0117 -e production -s cotizador-worker
+cd ../..                     && railway link -p 9879300f-745e-4929-b9cb-3d6a03ce0117 -e production -s corazonescruzados
+```
+
+Ahora esta carpeta es su propio directorio de proyecto: el archivo sale a **5 ficheros / 96 KB** y
+la subida tarda **1,6 s**. Y la raíz apunta al servicio web, que es lo que de verdad hay ahí.
+
+⚠️ **El enlace vive en `~/.railway/config.json`, que es local a cada máquina.** En un portátil
+nuevo o un clon recién hecho no existe, y el `railway up` volvería a archivar la raíz. Si
+`railway status` desde esta carpeta no responde `Service: cotizador-worker`, vuelve a lanzar el
+`railway link` de arriba **antes** de desplegar (o usa `railway up . --path-as-root --service
+cotizador-worker --detach`, que sigue funcionando como salida de emergencia).
 
 Variables en el servicio `cotizador-worker`: `KIMI_API_KEY`, `COTIZADOR_WORKER_TOKEN`,
 `DATABASE_URL`, `APP_URL`, `COTIZADOR_MODEL=kimi-k2.6` — y **quitar `ANTHROPIC_API_KEY`**.

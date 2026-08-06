@@ -3583,11 +3583,20 @@ Módulos principales:
   `package.json` propio no tiene script `build`. Un push a `main` ni lo roza, y Railpack no tiene
   nada que compilar. **Los otros dos servicios auxiliares son los que comparten repo con la app**,
   y son los que necesitan el `buildCommand` de no-op.
-  - ⚠️ **Trampa:** la raíz del repo está enlazada en la CLI **a `cotizador-worker`**
-    (`railway status` desde la raíz responde eso). Un `railway up` lanzado desde la raíz en vez de
-    desde `services/cotizador-worker/` **subiría la app Next entera encima del worker** e intentaría
-    compilarla. Al no estar protegido por un repo conectado, ahí sí se sustituye el servicio.
-    Antes de un `railway up`, comprobar en qué directorio se está.
+  - ⚠️ **La trampa que tenía, ya cerrada (2026-08-06).** La raíz del repo estaba enlazada en la CLI
+    **a `cotizador-worker`**, y `railway up` arma el archivo desde el *directorio del proyecto* —la
+    raíz— **aunque se lance desde la subcarpeta**. Medido: **1.896 ficheros / 426 MB** desde la raíz
+    frente a **5 ficheros / 96 KB** desde la carpeta del worker. De ahí el `413 Payload Too Large`
+    que costó el parche `--path-as-root`; y un `railway up` tecleado desde la raíz habría plantado
+    la app web encima del worker, porque al no tener repo conectado ahí sí se sustituye el servicio.
+    - **Arreglo: enlazar cada directorio a lo suyo** con `railway link -p … -e production -s …` —
+      la subcarpeta a `cotizador-worker` (pasa a ser su propio directorio de proyecto) y la raíz a
+      `corazonescruzados`. Verificado: `railway up --detach` **sin** `--path-as-root` sube en
+      **1,6 s** y despliega en **13 s**. `--path-as-root` deja de ser necesario; `--detach` sigue
+      siéndolo.
+    - ⚠️ **El enlace vive en `~/.railway/config.json`, local a cada máquina**: en un clon nuevo no
+      existe y la trampa vuelve. Por eso el README del worker manda comprobar `railway status`
+      antes de desplegar. **Un enlace de CLI no es una garantía del repo.**
 - **Un despliegue no debería depender de que la base esté en pie (2026-08-04).** Prerenderizar una
   página que consulta Postgres convierte la base en **requisito de compilación**. Si hace falta que
   el HTML lleve los datos dentro (SEO), el patrón es: leer en el servidor + `revalidate`, y **envolver
