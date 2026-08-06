@@ -34,7 +34,8 @@ import { faqsDeAcceso, type Faq } from '@/lib/faqs';
 import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
 import VideoYouTube from '@/components/sitio/VideoYouTube';
 import FaqsNegocio from '@/components/sitio/FaqsNegocio';
-import { Contenedor, BloqueTema, GaleriaTarjetas } from '@/components/sitio/piezas';
+import { Contenedor, BloqueTema } from '@/components/sitio/piezas';
+import GaleriaTarjetas from '@/components/sitio/GaleriaTarjetas';
 
 type Props = { params: Promise<{ necesidad: string }> };
 
@@ -136,12 +137,20 @@ export default async function DetalleNecesidadPage({ params }: Props) {
         className="aparece-detalle scroll-mt-24 overflow-x-clip border-t border-white/[0.07] bg-white/[0.02] py-16 sm:py-20"
       >
         <Contenedor>
-          <h1 className="text-[30px] sm:text-[40px] leading-[1.12] font-semibold text-white tracking-tight">
-            {acceso.titulo}
-          </h1>
-          <p className="mt-5 text-[17px] leading-relaxed text-white/60 max-w-3xl">
-            {acceso.texto}
-          </p>
+          {/* ── EL TITULAR DE LA PUERTA, SOLO SI HACE FALTA ─────────────────────────
+              Repetía lo que ya dicen la tarjeta abierta de arriba —que ahora lleva el `<h1>`
+              de la página— y su propia frase. Fernando lo quitó de Automatización el
+              2026-08-06; la bandera deja hacer lo mismo en las demás cuando toque. */}
+          {!acceso.sinTitular && (
+            <>
+              <p className="text-[30px] sm:text-[40px] leading-[1.12] font-semibold text-white tracking-tight">
+                {acceso.titulo}
+              </p>
+              <p className="mt-5 text-[17px] leading-relaxed text-white/60 max-w-3xl">
+                {acceso.texto}
+              </p>
+            </>
+          )}
 
           {acceso.enlaceExterno && (
             <a

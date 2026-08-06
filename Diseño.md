@@ -161,6 +161,27 @@ en dos, y **solo la primera mitad se hace sin preguntar**:
 Las piezas de `piezas.tsx` y las reglas de abajo siguen siendo el estándar **cuando ya hay
 un diseño acordado** — dicen *cómo* se construye, no *qué* se construye.
 
+### Ventana de detalle de una tarjeta — `VentanaTarjeta` (2026-08-06)
+
+Al pulsar una tarjeta de la galería se abre con su título, de qué se trata, «Qué gana tu
+empresa» en tres puntos y —cuando la haya— una ilustración a la derecha.
+
+- **`<dialog>` NATIVO, no un `div` con `position: fixed`.** Trae hecho lo que un diálogo
+  casero olvida: atrapa el foco dentro, cierra con Escape, vive en la capa superior del
+  navegador —ningún `z-index` puede taparlo— y deja el resto de la página inerte.
+- **Lo que sí hubo que añadir:** cerrar al pulsar fuera —comparando el clic con el
+  **rectángulo** del panel, porque `e.target === dialog` falla cuando el diálogo tiene
+  relleno— y bloquear el desplazamiento del fondo.
+- **⚠️ `m-auto` para centrarla.** El `<dialog>` se centra solo, pero el reajuste de Tailwind
+  le pone `margin: 0` y la deja pegada arriba a la izquierda.
+- **Dos columnas solo si hay imagen**; sin ella queda a una y no se pinta un recuadro vacío.
+- **La galería vive en `components/sitio/GaleriaTarjetas.tsx`** con `'use client'`, porque
+  necesita estado. Eso **no** esconde nada de un buscador: Next la renderiza en el servidor y
+  las once descripciones están en el HTML aunque nadie pulse.
+- **Las tarjetas son `<button>`**, no `div` con `onClick`: se alcanzan con el tabulador y se
+  activan con Intro. La copia de la tira deslizante lleva `tabIndex={-1}` además de
+  `aria-hidden`, o el tabulador pararía en once botones invisibles.
+
 ### Galería de tarjetas — `GaleriaTarjetas` (2026-08-04)
 
 Para **enumerar** muchas cosas, frente a los temas, que **explican un flujo**. Estrenada en
