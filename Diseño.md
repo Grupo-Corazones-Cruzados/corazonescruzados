@@ -258,6 +258,21 @@ que es el gesto que se espera en un teléfono.
 **El vídeo** (`components/sitio/VideoYouTube.tsx`): acepta la URL tal cual se copia del
 navegador, carga diferida y `youtube-nocookie`. **Si no hay enlace, no se pinta nada.**
 
+### El pie, siempre al fondo (2026-08-06)
+
+`app/(sitio)/layout.tsx` es `min-h-screen **flex flex-col**` y el `<main>` lleva `flex-1`.
+
+⚠️ **`min-h-screen` por sí solo NO basta**, y es un malentendido habitual: estira el
+envoltorio a la altura de la pantalla, pero sus hijos siguen apilándose uno tras otro, así
+que en una página corta el pie quedaba pegado al final del contenido con un vacío debajo. Lo
+vio Fernando en `/negocio` sin ninguna puerta abierta.
+
+Con `flex-1` el cuerpo se queda todo el espacio que sobre y empuja el pie al fondo. En una
+página larga no cambia nada, porque no sobra espacio que repartir. La cabecera es `fixed`, no
+entra en el reparto, y el `pt-16` del `<main>` compensa su alto.
+
+Comprobado a 1200 y 1600 px de alto en las seis páginas de la sección y en los legales.
+
 ### Reglas del sitio público
 - **Server Components, sin `use client`.** El contenido tiene que estar en el HTML crudo:
   un buscador y un revisor pueden no ejecutar JavaScript. Lo que necesita estado se saca a

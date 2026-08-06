@@ -45,10 +45,24 @@ export const viewport: Viewport = {
 
 export default function SitioLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0b0d14] text-white/75 antialiased" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+    // ── EL PIE, SIEMPRE ABAJO ────────────────────────────────────────────────────
+    // `min-h-screen` por sí solo NO basta, y es un malentendido habitual: estira el
+    // envoltorio a la altura de la pantalla, pero sus hijos siguen apilándose uno tras otro,
+    // así que en una página corta —`/negocio`, sin ninguna puerta abierta— el pie quedaba
+    // pegado al final del contenido y debajo sobraba un vacío. Lo vio Fernando.
+    //
+    // Se arregla con `flex flex-col` aquí y `flex-1` en el `<main>`: el cuerpo se queda con
+    // todo el espacio que sobre y empuja el pie al fondo. En una página larga no cambia
+    // nada, porque entonces no sobra espacio que repartir.
+    //
+    // La cabecera es `position: fixed`, así que no entra en el reparto; el `pt-16` del
+    // `<main>` es lo que compensa su alto.
+    <div
+      className="min-h-screen flex flex-col bg-[#0b0d14] text-white/75 antialiased"
+      style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
+    >
       <CabeceraSitio />
-      {/* pt-16 = el alto de la cabecera fija. */}
-      <main className="pt-16">{children}</main>
+      <main className="flex-1 pt-16">{children}</main>
       <PieSitio />
     </div>
   );
