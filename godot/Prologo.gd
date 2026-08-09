@@ -149,9 +149,10 @@ const DESLIZAN := {
 ##   "dur"   → segundos que tarda en llegar ahí.
 ## Ojo: al acercarse, los bordes de la estampa se salen de la caja. Es lo
 ## normal en un zoom, pero si te pasas de "hasta" se pierde media imagen.
-const ZOOMS := {
-	139: { "hasta": 1.55, "dur": 2.2 },
-}
+## (Vacía ahora mismo: el zoom sobre la 139 se quitó el 2026-08-09 porque Fernando
+## cambió de idea. El mecanismo se queda montado — añadir una línea aquí vuelve a
+## activarlo en cualquier estampa, sin tocar nada más.)
+const ZOOMS := {}
 
 
 ## --- NOMBRE DE CADA ESTAMPA (para saber qué es cada número al ordenarlas) -----
@@ -453,8 +454,8 @@ const TRAMOS := [
 	# Verso 13 · la 115 (las siluetas deshechas, solo aguantan las manos) abre el
 	# verso, justo antes de las cuatro de las auras. Mismo ritmo de 1 s.
 	{"desde_verso": 13, "escenas": [
-	   138, 139
-	], "seg": 1  },
+	   138, 139, 143
+	], "seg": 1.5  },
 ]
 
 
