@@ -136,9 +136,11 @@ const IMPACTOS := {
 ## movimiento continuo.
 ##   "px"  → cuántos píxeles del lienzo recorre el desplazamiento.
 ##   "dur" → lo que dura. Si es más largo que la estampa, se recorta solo.
-const DESLIZAN := {
-	139: { "px": 34.0, "dur": 0.9 },
-}
+## (Vacía ahora mismo: el deslizamiento de la 139 se quitó el 2026-08-09 — el
+## salto vertical no se leía como una transición, se notaba como un tirón. La 139
+## entra ya con el fundido normal. El mecanismo se queda montado: añadir una
+## línea aquí vuelve a activarlo en cualquier estampa.)
+const DESLIZAN := {}
 
 
 ## --- 🔍 ESTAMPAS SOBRE LAS QUE SE HACE ZOOM ----------------------------------
