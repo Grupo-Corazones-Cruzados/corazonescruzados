@@ -128,7 +128,16 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   }).join('');
 
   // Build infoAdicional
+  // La leyenda RIMPE va en infoAdicional y no en la etiqueta <contribuyenteRimpe>:
+  // el XSD publicado (factura_V1.1.0) restringe esa etiqueta con
+  // pattern="CONTRIBUYENTE RÉGIMEN RIMPE", así que el texto de NEGOCIO POPULAR haría
+  // que el SRI devuelva el comprobante por "ARCHIVO NO CUMPLE ESTRUCTURA XML".
+  // Información adicional es la ubicación que el propio SRI indica para los negocios
+  // populares. Si algún día el SRI amplía el pattern, se mueve a <contribuyenteRimpe>
+  // (entre <dirMatriz>/<agenteRetencion> y </infoTributaria>, y subiendo esta factura
+  // a version="1.1.0", porque en 1.0.0 la etiqueta no existe).
   const additionalFields = [
+    ...(SRI_CONFIG.contribuyenteRimpe ? [{ name: 'regimen', value: SRI_CONFIG.contribuyenteRimpe }] : []),
     ...(data.clienteEmail ? [{ name: 'email', value: data.clienteEmail }] : []),
     ...(data.clienteTelefono ? [{ name: 'telefono', value: data.clienteTelefono }] : []),
     ...(data.clienteDireccion ? [{ name: 'direccion', value: data.clienteDireccion }] : []),

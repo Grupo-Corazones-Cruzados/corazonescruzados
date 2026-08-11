@@ -3447,6 +3447,23 @@ Módulos principales:
 - **BD multi-schema**: toda query (Prisma o `pg` cruda) opera sobre el schema `gcc_world`.
   Al crear tablas nuevas, hacerlo como migración SQL en `sql/migrations/` con numeración correlativa.
 - **Facturación = Ecuador / SRI**: firma electrónica con `.p12`; respetar formato XML SRI.
+- **El régimen del emisor es RIMPE NEGOCIO POPULAR, no Régimen General (2026-08-11).** El RIDE
+  llevaba **hardcodeada** la leyenda `Contribuyente Regimen General` (`lib/integrations/sri/ride-pdf.ts`),
+  que es de otro régimen: GCC (`GONZALEZ MUYULEMA LUIS FERNANDO`) está catalogado como **RIMPE
+  Negocio Popular**. Ahora la leyenda vive en `SRI_CONFIG.contribuyenteRimpe` (`config.ts`) y de ahí
+  la toman el RIDE y los XML, para que exista **una sola fuente** del texto.
+  - **Texto literal de la Ficha Técnica del SRI (ANEXO 22):** `CONTRIBUYENTE NEGOCIO POPULAR -
+    RÉGIMEN RIMPE` (45 caracteres con espacios y **con tilde**). El del RIMPE Emprendedor es
+    `CONTRIBUYENTE RÉGIMEN RIMPE` (27). No son intercambiables.
+  - **Los comprobantes ya autorizados NO se pueden corregir**: el XML está firmado y autorizado, y
+    la clave de acceso lo sella. Lo único rectificable es el **RIDE**, que es representación
+    impresa y se re-renderiza desde la BD. Las 41 facturas autorizadas se regeneraron el
+    2026-08-11 (ver Lecciones técnicas).
+- **⚠️ Pendiente de confirmar con el contador (2026-08-11):** el sistema emite **facturas con IVA 15%
+  desglosado**, y el RIMPE Negocio Popular normalmente emite **notas de venta sin desglose de IVA**
+  (la nota de venta de negocio popular no da crédito tributario al comprador). No se ha tocado nada
+  de esto — solo la leyenda. Si el contador confirma que corresponden notas de venta, es un cambio
+  de fondo del módulo (otro `codDoc`, otro esquema XSD, otro RIDE), no un retoque.
 - **Rebuild v2 descartado** (2026-06-07): el usuario confirmó que `main` de este repo es la
   versión correcta y en uso. Se eliminó la rama `origin/rebuild/v2`. El trabajo continúa aquí.
 - **Suscripciones — alta vinculada a cliente registrado (2026-06-15):** al **crear** una suscripción
@@ -3515,6 +3532,36 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **La leyenda RIMPE va en `infoAdicional`, NO en `<contribuyenteRimpe>` (2026-08-11).** La Ficha
+  Técnica del SRI (ANEXO 22) manda poner la leyenda en la etiqueta `<contribuyenteRimpe>`, dentro de
+  `<infoTributaria>` y entre `<agenteRetencion>` y `</infoTributaria>`. **Pero el XSD publicado
+  contradice a la ficha:** `factura_V1.1.0.xsd` define esa etiqueta con
+  `<xsd:pattern value="CONTRIBUYENTE RÉGIMEN RIMPE"/>`, un patrón que **solo admite el texto del
+  RIMPE Emprendedor**. Verificado con `xmllint` contra tres copias independientes del XSD oficial: el
+  texto de negocio popular **no valida** ⇒ el SRI devolvería el comprobante con *ARCHIVO NO CUMPLE
+  ESTRUCTURA XML*. Y en `factura_V1.0.0.xsd` (la versión que emite este repo) la etiqueta **ni
+  siquiera existe**.
+  - **Por eso la leyenda va como `<campoAdicional nombre="regimen">`**, que es además la ubicación
+    que el propio SRI indica a los negocios populares en sus preguntas frecuentes. Validado con
+    `xmllint` sobre el XML **que produce el builder real** (factura contra `factura_V1.0.0.xsd`,
+    nota de crédito contra `NotaCredito_V1.1.0.xsd`): ambos `validates`.
+  - **Si algún día el SRI amplía el patrón**, mover el texto a `<contribuyenteRimpe>` exige además
+    subir la factura a `version="1.1.0"` (la estructura actual ya valida contra ese esquema; se
+    comprobó).
+  - **El ambiente de pruebas del SRI (celcer) no sirvió para decidirlo:** devuelve todo con
+    *"No existe un contribuyente registrado con el RUC 0930095922001"* — el RUC **no está habilitado
+    en pruebas**. Para poder probar contra el SRI antes de tocar producción, hay que habilitarlo en
+    SRI en línea → Facturación electrónica → ambiente de pruebas.
+- **El RIDE guardado (`pdf_data`) no se actualiza solo (2026-08-11).** `GET /api/invoices/[id]/pdf`
+  re-renderiza al vuelo, así que **la descarga** siempre usa la plantilla actual; pero el PDF que
+  viaja **por correo** (envío inicial y reenvío) sale de la columna `pdf_data`, que quedó congelada
+  con la plantilla del día en que se emitió. Un arreglo de plantilla se ve en la web y **no** en los
+  correos hasta re-persistirlo. Para eso está `POST /api/invoices/regenerate-rides` (admin,
+  `{dryRun:true}` para contar antes): recorre las facturas autorizadas y reescribe `pdf_data`. Solo
+  toca la representación derivada; el XML firmado y la autorización son inmutables.
+  - Ejecutado el 2026-08-11 con la leyenda RIMPE: **41/41 actualizadas, 0 fallidas** (y una factura
+    que estaba sin `pdf_data` quedó con el suyo). Verificado extrayendo el `pdf_data` de la BD y
+    pasándolo por `pdftotext`.
 - **Un servicio auxiliar SIN `buildCommand` propio hereda el build de la app entera
   (2026-08-04).** `agente-worker` acumuló **20 despliegues fallidos seguidos** (desde las 09:11
   del 4 de agosto) y el motivo no tenía nada que ver con el agente: al no llevar `buildCommand`,

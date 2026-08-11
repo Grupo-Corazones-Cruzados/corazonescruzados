@@ -10,7 +10,13 @@ export const SRI_CONFIG = {
   obligadoContabilidad: 'NO',
   contribuyenteEspecial: '',
   agenteRetencion: '',
-  regimenMicroempresas: '', // RIMPE Negocio Popular no usa este campo
+  regimenMicroempresas: '', // Régimen de microempresas (derogado por el RIMPE): no aplica
+
+  // Leyenda RIMPE obligatoria — Ficha Técnica del SRI, ANEXO 22.
+  // GCC (GONZALEZ MUYULEMA LUIS FERNANDO) está catalogado como RIMPE NEGOCIO POPULAR,
+  // por lo que el texto literal de la ficha es el de 45 caracteres. El otro valor válido
+  // es 'CONTRIBUYENTE RÉGIMEN RIMPE' (27), para el RIMPE Emprendedor.
+  contribuyenteRimpe: 'CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE',
 
   // Punto de emisión
   establecimiento: '001',

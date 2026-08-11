@@ -64,7 +64,7 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     y = doc.y + 3;
     doc.font('Helvetica-Bold').text(`Obligado A Llevar Contabilidad: `, L, y, { continued: true }).font('Helvetica').text(SRI_CONFIG.obligadoContabilidad);
     y = doc.y + 3;
-    doc.font('Helvetica').text('Contribuyente Regimen General', L, y);
+    doc.font('Helvetica').text(SRI_CONFIG.contribuyenteRimpe, L, y, { width: PW * 0.46 });
     const leftBottomY = doc.y + 4;
 
     // ─── RIGHT: Fiscal box ───

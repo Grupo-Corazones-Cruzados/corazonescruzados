@@ -3883,3 +3883,86 @@ admite las que haya— pero si se quiere apretar, es un ajuste de prompt, no de 
 ### Conclusión
 La ruta A (endpoint compatible + entorno armado en el worker) queda **validada en local**.
 Lo que faltaba medir ya está medido; el resto es despliegue.
+
+---
+
+# Objetivo (2026-08-11) — Que las facturas digan el régimen tributario REAL: RIMPE Negocio Popular
+
+> Fernando: *"al generar facturas sale como si yo fuera «Contribuyente Regimen General», pero yo
+> realmente soy «negocio popular» en el SRI"*. Objetivo: corregir el texto y arreglar **todos los
+> documentos ya generados**.
+
+## Rol asumido
+Integrador de facturación electrónica del SRI (Ecuador): la corrección es de forma tributaria y
+toca XML firmado, esquemas XSD y RIDE, así que manda lo que valida el SRI, no lo que se ve bonito.
+
+## Progreso
+- **% de información para el objetivo: 100 %** en lo que se implementó. Queda **una duda de
+  negocio abierta** (P5), que es del contador y no del código.
+- **Estado:** implementado y verificado (tsc + `next build` + XSD con `xmllint` + 41/41 RIDE
+  regenerados en la BD real).
+
+## Fuentes consultadas
+- **Ficha Técnica de Comprobantes Electrónicos del SRI, ANEXO 22** (esquema offline, v2.22) —
+  da el nombre de etiqueta, la ubicación y el texto literal de cada leyenda RIMPE. (2026-08-11)
+- **XSD oficiales** `factura_V1.0.0.xsd`, `factura_V1.1.0.xsd`, `NotaCredito_V1.1.0.xsd`
+  (tres copias independientes, coincidentes) — validación real con `xmllint`. (2026-08-11)
+- **SRI, "RIMPE – Preguntas frecuentes"** — dice que en comprobantes electrónicos la leyenda del
+  negocio popular va en *información adicional*. (2026-08-11)
+- Código del repo: `lib/integrations/sri/*`, `app/api/invoices/*`; BD de producción (41 facturas
+  autorizadas).
+
+## Preguntas y respuestas
+
+### P1 — ¿De dónde sale el texto «Contribuyente Regimen General»? · ✅ Resuelta
+- **Por qué importa:** sin ubicar la fuente no se sabe si el error es de datos o de plantilla.
+- **Respuesta:** estaba **hardcodeado** en `lib/integrations/sri/ride-pdf.ts:67`. No venía de la
+  BD ni de la configuración: era una constante escrita en la plantilla del RIDE. Se movió a
+  `SRI_CONFIG.contribuyenteRimpe` para que haya una sola fuente del texto. (fuente: código)
+
+### P2 — ¿El XML enviado al SRI decía «negocio popular», como suponía Fernando? · ✅ Resuelta
+- **Por qué importa:** determina si lo ya emitido está bien de fondo o solo mal impreso.
+- **Respuesta:** **no.** El XML **no llevaba ninguna leyenda de régimen**: `regimenMicroempresas`
+  estaba vacío y `<contribuyenteRimpe>` no se emitía. Es decir, el régimen no viajaba ni bien ni
+  mal — sencillamente no constaba. (fuente: `xml-builder.ts` + XML almacenados)
+
+### P3 — ¿Cuál es el texto exacto y dónde va en el XML? · ✅ Resuelta
+- **Por qué importa:** un texto aproximado no cumple, y un campo mal puesto hace que el SRI
+  devuelva el comprobante.
+- **Respuesta:** `CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE` (45 caracteres, con tilde). La
+  ficha lo pide en `<contribuyenteRimpe>`… **pero el XSD publicado restringe esa etiqueta a
+  `CONTRIBUYENTE RÉGIMEN RIMPE`** (el del Emprendedor) y en factura 1.0.0 la etiqueta no existe.
+  Se comprobó con `xmllint`: el texto de negocio popular **no valida**. Por eso la leyenda va como
+  `<campoAdicional nombre="regimen">`, que es lo que el propio SRI indica para negocios populares
+  y **sí valida**. (fuente: ficha técnica + XSD + preguntas frecuentes del SRI)
+
+### P4 — ¿Se pueden corregir los comprobantes ya autorizados? · ✅ Resuelta
+- **Por qué importa:** es literalmente lo que pidió Fernando.
+- **Respuesta:** el **XML** ya autorizado, **no**: está firmado y sellado por la autorización del
+  SRI; alterarlo rompe la firma. El **RIDE sí**, porque es representación impresa y se re-renderiza
+  desde la BD. Se regeneraron **41/41**. Lo no rectificable es que en esos XML la leyenda nunca
+  constó; corregirlo de verdad exigiría anular y refacturar, que es decisión de Fernando y su
+  contador, no algo que hacer por iniciativa propia. (fuente: normativa SRI + código)
+
+### P5 — ¿Un RIMPE Negocio Popular debe emitir facturas con IVA? · ⏸ Bloqueada (es del contador)
+- **Por qué importa:** si la respuesta es "no", el problema de fondo es mayor que una leyenda.
+- **Estado:** el sistema emite **facturas con IVA 15 % desglosado**; la doctrina general es que el
+  negocio popular emite **notas de venta sin desglose de IVA**. **No se tocó nada** — está fuera de
+  lo pedido y es una decisión tributaria. Debe confirmarlo el contador de Fernando.
+
+## Decisiones de diseño
+1. **Una sola fuente del texto** (`SRI_CONFIG.contribuyenteRimpe`): RIDE y XML lo leen de ahí. Si
+   mañana Fernando cambia de categoría RIMPE, se toca **una línea**.
+2. **Ganar la validación por encima de la literalidad de la ficha**: entre cumplir el ANEXO 22 al
+   pie de la letra y que el SRI **acepte** el comprobante, manda lo segundo. Documentado en el
+   código el porqué y cómo migrar si el SRI corrige el XSD.
+3. **El backfill como endpoint reutilizable**, no como script de un solo uso: cada vez que cambie
+   la plantilla del RIDE habrá que re-persistir los PDFs de los correos.
+
+## Riesgos y cómo se mitigaron
+- **Rechazo del SRI en producción** → validación con `xmllint` contra los XSD oficiales sobre el
+  XML **que produce el builder real**, no sobre una réplica escrita a mano.
+- **Estropear comprobantes autorizados** → el backfill escribe **solo** `pdf_data`; no toca
+  `xml_signed`, `access_key` ni `authorization_number`.
+- **Que el arreglo se vea en la web pero no en los correos** → por eso el backfill, y no solo el
+  cambio de plantilla.

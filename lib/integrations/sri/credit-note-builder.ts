@@ -139,7 +139,8 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
   </infoNotaCredito>
   <detalles>${detallesXml}
   </detalles>
-  <infoAdicional>
+  <infoAdicional>${SRI_CONFIG.contribuyenteRimpe ? `
+    <campoAdicional nombre="regimen">${sriText(SRI_CONFIG.contribuyenteRimpe, SRI_MAX.campoAdicionalValor)}</campoAdicional>` : ''}
     <campoAdicional nombre="email">${sriText(data.clienteEmail || '', SRI_MAX.campoAdicionalValor)}</campoAdicional>${realIdExterior ? `
     <campoAdicional nombre="identificacionExterior">${sriText(realIdExterior, SRI_MAX.campoAdicionalValor)}</campoAdicional>` : ''}
   </infoAdicional>
