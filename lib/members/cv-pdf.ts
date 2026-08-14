@@ -27,7 +27,7 @@ import {
   ETIQUETA_MODALIDAD,
   textoSalario,
   type CvPublico,
-} from '@/lib/members/cv-share';
+} from '@/lib/members/cv-tipos';
 
 /* ── Paleta (literal, como todo lo que se sirve a terceros) ─────────────────── */
 const C = {
@@ -122,16 +122,20 @@ function frasesDisponibilidad(d: CvPublico['disponibilidad']): string[] {
 
 /* ── El documento ───────────────────────────────────────────────────────────── */
 
-export interface PortadaPortafolio { id: number; imagen: string | null }
+export interface PortadaPortafolio { id: number; fuente: 'propio' | 'proyecto'; imagen: string | null }
+
+/** Clave de la miniatura. ⚠️ Lleva la FUENTE: un proyecto de la app y un ítem
+ *  añadido a mano pueden tener el mismo id, y sin ella uno pisaría al otro. */
+const claveImagen = (fuente: string, id: number) => `${fuente}-${id}`;
 
 export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] = []): Promise<Buffer> {
   // Las imágenes se resuelven ANTES de empezar a dibujar: PDFKit escribe de forma
   // síncrona y no se le puede pedir que espere a una descarga a mitad de una página.
   const foto = await aJpeg(cv.foto, 240);
-  const miniaturas = new Map<number, string>();
+  const miniaturas = new Map<string, string>();
   for (const p of portadas) {
     const img = await aJpeg(p.imagen, 320);
-    if (img) miniaturas.set(p.id, img);
+    if (img) miniaturas.set(claveImagen(p.fuente, p.id), img);
   }
 
   return new Promise<Buffer>((resolve, reject) => {
@@ -375,7 +379,7 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
     if (cv.portafolio.length) {
       seccion('Portafolio');
       for (const item of cv.portafolio) {
-        const mini = miniaturas.get(item.id);
+        const mini = miniaturas.get(claveImagen(item.fuente, item.id));
         const anchoTexto = ancho - (mini ? 86 : 0);
         const hDesc = item.descripcion ? alto(item.descripcion, 9, anchoTexto) : 0;
         const altoFila = Math.max(mini ? 58 : 0, 22 + hDesc + (item.etiquetas.length ? 13 : 0));

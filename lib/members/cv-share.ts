@@ -21,57 +21,13 @@
  */
 import crypto from 'crypto';
 import { pool } from '@/lib/db';
-import { fmtInt } from '@/lib/format';
+import type {
+  CvPublico, Educacion, EstadoLaboral, Experiencia, ItemPortafolio, Jornada, Modalidad, TalentoPublico,
+} from '@/lib/members/cv-tipos';
 
-/* ── Tipos de lo que se publica ─────────────────────────────────────────────── */
-
-export type EstadoLaboral = 'immediate' | 'from_date' | 'not_available';
-export type Jornada = 'full' | 'part' | 'both';
-export type Modalidad = 'remote' | 'hybrid' | 'onsite' | 'any';
-
-export interface Educacion { institucion: string; titulo: string; campo: string; desde: string; hasta: string }
-export interface Experiencia { empresa: string; cargo: string; descripcion: string; desde: string; hasta: string }
-export interface TalentoPublico { nombre: string; educacion: Educacion[]; experiencia: Experiencia[]; servicios: string[] }
-export interface ItemPortafolio {
-  id: number;
-  tipo: 'project' | 'product' | 'automation';
-  titulo: string;
-  descripcion: string | null;
-  enlace: string | null;
-  etiquetas: string[];
-  imagenes: number;
-}
-export interface FranjaHoraria { dia: number; inicio: string; fin: string }
-
-export interface CvPublico {
-  /** Nombre completo tal cual se muestra. */
-  nombre: string;
-  titular: string | null;
-  cargo: string | null;
-  ubicacion: string | null;
-  foto: string | null;
-  bio: string | null;
-  /** Solo si el miembro los encendió. Ausentes, no vacíos, cuando están apagados. */
-  correo?: string;
-  telefono?: string;
-  linkedin: string | null;
-  web: string | null;
-  skills: string[];
-  idiomas: string[];
-  talentos: TalentoPublico[];
-  portafolio: ItemPortafolio[];
-  disponibilidad: {
-    estado: EstadoLaboral;
-    desde: string | null;
-    jornada: Jornada;
-    modalidad: Modalidad;
-    nota: string | null;
-    horario: FranjaHoraria[];
-  };
-  /** Ausente si no la declaró o la tiene oculta. */
-  salario?: { min: number | null; max: number | null };
-  actualizado: string | null;
-}
+/* ── Tipos y etiquetas: en `cv-tipos.ts`, que es puro y lo comparte el navegador.
+ * Se re-exportan para que quien ya importaba de aquí no tenga que cambiar. ─────── */
+export * from '@/lib/members/cv-tipos';
 
 /* ── Token: generar · consultar · resolver · revocar ────────────────────────── */
 
@@ -204,6 +160,37 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
     [memberId],
   );
 
+  /* ── Proyectos de la app en los que el miembro TRABAJÓ ──────────────────────
+   * Decisión de Fernando (2026-08-14): **solo los COMPLETADOS**. Los borradores y
+   * las cotizaciones quedan fuera: no son trabajo hecho, son propuestas, y
+   * publicarlas enseñaría la cartera comercial a un tercero. Los que están en curso
+   * tampoco — lo que se ve en el CV, se entregó.
+   *
+   * «Trabajó en» son DOS cosas y hacen falta las dos: la **puja aceptada** dice que
+   * entró al proyecto, y la **asignación de requerimientos** que hizo tareas dentro.
+   * Con solo una de las dos se caen proyectos reales.
+   *
+   * Los talentos de los requerimientos hacen de etiquetas: describen el proyecto con
+   * el mismo vocabulario que el resto del CV, sin escribir nada a mano.            */
+  const { rows: prRows } = await pool.query(
+    `SELECT p.id, p.title, p.description,
+            COALESCE(array_length(p.images, 1), 0)::int AS n_imagenes,
+            COALESCE((SELECT array_agg(DISTINCT t)
+                        FROM gcc_world.project_requirements pr, UNNEST(pr.talents) AS t
+                       WHERE pr.project_id = p.id), '{}') AS etiquetas
+       FROM gcc_world.projects p
+      WHERE p.status = 'completed'
+        AND (
+          EXISTS (SELECT 1 FROM gcc_world.project_bids b
+                   WHERE b.project_id = p.id AND b.member_id = $1 AND b.status = 'accepted')
+          OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra
+                       JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
+                      WHERE pr.project_id = p.id AND ra.member_id = $1 AND ra.status = 'accepted')
+        )
+      ORDER BY p.marketplace_published_at DESC NULLS LAST, p.id DESC`,
+    [memberId],
+  );
+
   const { rows: hRows } = await pool.query(
     `SELECT day_of_week, start_time, end_time
        FROM gcc_world.member_schedules
@@ -255,16 +242,31 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
     skills: lista(cv.skills),
     idiomas: lista(cv.languages),
     talentos,
-    portafolio: pfRows.map((r: any) => ({
-      id: Number(r.id),
-      tipo: (r.item_type || 'project') as ItemPortafolio['tipo'],
-      titulo: String(r.title ?? ''),
-      descripcion: texto(r.description),
-      enlace: texto(r.project_url),
-      etiquetas: lista(r.tags),
-      imagenes: Number(r.n_imagenes) || 0,
-      // Nótese: NO va el precio. Es un CV, no una tienda.
-    })),
+    // Primero los proyectos de la app —son el trabajo real y con cliente detrás— y
+    // detrás lo que la persona añadió a mano.
+    portafolio: [
+      ...prRows.map((r: any) => ({
+        id: Number(r.id),
+        fuente: 'proyecto' as const,
+        tipo: 'project' as const,
+        titulo: String(r.title ?? ''),
+        descripcion: texto(r.description),
+        enlace: null,
+        etiquetas: lista(r.etiquetas),
+        imagenes: Number(r.n_imagenes) || 0,
+      })),
+      ...pfRows.map((r: any) => ({
+        id: Number(r.id),
+        fuente: 'propio' as const,
+        tipo: (r.item_type || 'project') as ItemPortafolio['tipo'],
+        titulo: String(r.title ?? ''),
+        descripcion: texto(r.description),
+        enlace: texto(r.project_url),
+        etiquetas: lista(r.tags),
+        imagenes: Number(r.n_imagenes) || 0,
+        // Nótese: NO va el precio. Es un CV, no una tienda.
+      })),
+    ],
     disponibilidad: {
       estado: (cv.job_status || 'immediate') as EstadoLaboral,
       desde: cv.job_available_from ? new Date(cv.job_available_from).toISOString().slice(0, 10) : null,
@@ -301,15 +303,61 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
  * PDF sí las necesita en bruto porque se incrusta el binario en el documento, y por
  * eso esta función vive aquí, en la misma puerta, y filtra por `member_id`.
  */
-export async function portadasDePortafolio(memberId: string): Promise<{ id: number; imagen: string | null }[]> {
-  const { rows } = await pool.query(
-    `SELECT id, COALESCE(images[1], image_url) AS imagen
-       FROM gcc_world.member_portfolio_items
-      WHERE member_id = $1
-      ORDER BY item_type, sort_order, id`,
-    [memberId],
+export async function portadasDePortafolio(
+  memberId: string,
+): Promise<{ id: number; fuente: 'propio' | 'proyecto'; imagen: string | null }[]> {
+  const cv = await armarCvPublico(memberId);
+  if (!cv) return [];
+  // Se recorre lo que YA se decidió publicar, en vez de repetir aquí las consultas.
+  // Si mañana cambia el criterio de qué proyectos salen, el PDF lo sigue solo.
+  const salida: { id: number; fuente: 'propio' | 'proyecto'; imagen: string | null }[] = [];
+  for (const item of cv.portafolio) {
+    if (!item.imagenes) { salida.push({ id: item.id, fuente: item.fuente, imagen: null }); continue; }
+    salida.push({ id: item.id, fuente: item.fuente, imagen: await imagenDePortafolio(memberId, item.fuente, item.id, 0) });
+  }
+  return salida;
+}
+
+/**
+ * Una imagen concreta del portafolio, EN CRUDO, comprobando que pertenece al miembro.
+ *
+ * ⚠️ **El `AND member_id` / la comprobación de participación son el candado.** Si la
+ * imagen se sirviera solo por su id, revocar el enlace dejaría las fotos accesibles y
+ * con el token de una persona se sacarían las de otra probando números.
+ */
+export async function imagenDePortafolio(
+  memberId: string,
+  fuente: 'propio' | 'proyecto',
+  id: number,
+  i: number,
+): Promise<string | null> {
+  if (fuente === 'propio') {
+    const { rows: [r] } = await pool.query(
+      `SELECT COALESCE(images[$3], CASE WHEN $3 = 1 THEN image_url END) AS img
+         FROM gcc_world.member_portfolio_items
+        WHERE id = $1 AND member_id = $2`,
+      [id, memberId, i + 1],
+    );
+    return r?.img ? String(r.img) : null;
+  }
+  // De un proyecto: se repite la MISMA condición de publicación que arriba
+  // (completado + participación), o el token daría acceso a las imágenes de un
+  // proyecto que la página no enseña.
+  const { rows: [r] } = await pool.query(
+    `SELECT p.images[$3] AS img
+       FROM gcc_world.projects p
+      WHERE p.id = $1
+        AND p.status = 'completed'
+        AND (
+          EXISTS (SELECT 1 FROM gcc_world.project_bids b
+                   WHERE b.project_id = p.id AND b.member_id = $2 AND b.status = 'accepted')
+          OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra
+                       JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
+                      WHERE pr.project_id = p.id AND ra.member_id = $2 AND ra.status = 'accepted')
+        )`,
+    [id, memberId, i + 1],
   );
-  return rows.map((r: any) => ({ id: Number(r.id), imagen: r.imagen ? String(r.imagen) : null }));
+  return r?.img ? String(r.img) : null;
 }
 
 /** Atajo para los cuatro consumidores: token → CV publicable (o `null`). */
@@ -317,39 +365,4 @@ export async function cvPublicoDeToken(token: string): Promise<CvPublico | null>
   const memberId = await miembroDeToken(token);
   if (!memberId) return null;
   return armarCvPublico(memberId);
-}
-
-/* ── Etiquetas en español (fuente única: las usan la página y el PDF) ───────── */
-
-export const ETIQUETA_ESTADO: Record<EstadoLaboral, string> = {
-  immediate: 'Disponible de inmediato',
-  from_date: 'Disponible a partir de',
-  not_available: 'No disponible por ahora',
-};
-export const ETIQUETA_JORNADA: Record<Jornada, string> = {
-  full: 'Jornada completa',
-  part: 'Media jornada',
-  both: 'Jornada completa o parcial',
-};
-export const ETIQUETA_MODALIDAD: Record<Modalidad, string> = {
-  remote: 'Remoto',
-  hybrid: 'Híbrido',
-  onsite: 'Presencial',
-  any: 'Remoto, híbrido o presencial',
-};
-export const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-/**
- * Rango salarial mensual en USD, ya redactado. Fuente única para la página y el PDF:
- * el mismo número no puede escribirse de dos formas según dónde se lea.
- *
- * El formateo sale de `lib/format` (`fmtInt`, locale es-ES), que es la fuente única
- * de presentación numérica del proyecto. Sin decimales a propósito: es una
- * aspiración aproximada, y «$1.200,00» finge una precisión que nadie tiene.
- */
-export function textoSalario(s: { min: number | null; max: number | null }): string {
-  if (s.min != null && s.max != null) return `$${fmtInt(s.min)} – $${fmtInt(s.max)}`;
-  if (s.min != null) return `Desde $${fmtInt(s.min)}`;
-  if (s.max != null) return `Hasta $${fmtInt(s.max)}`;
-  return '';
 }

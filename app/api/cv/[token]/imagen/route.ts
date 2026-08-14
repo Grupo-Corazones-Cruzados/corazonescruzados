@@ -12,9 +12,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { pool } from '@/lib/db';
 import { isCloudinaryUrl, cloudinaryResized } from '@/lib/cloudinary';
-import { miembroDeToken } from '@/lib/members/cv-share';
+import { imagenDePortafolio, miembroDeToken } from '@/lib/members/cv-share';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,11 +31,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
     const itemId = parseInt(req.nextUrl.searchParams.get('item') || '', 10);
     if (!Number.isFinite(itemId)) return new NextResponse(null, { status: 400 });
+    // `fuente` distingue un ítem añadido a mano de un proyecto de la app. Cualquier
+    // valor que no sea `proyecto` cae a `propio`: no se confía en el parámetro.
+    const fuente = req.nextUrl.searchParams.get('fuente') === 'proyecto' ? 'proyecto' : 'propio';
     const i = Math.max(0, parseInt(req.nextUrl.searchParams.get('i') || '0', 10) || 0);
     let w = parseInt(req.nextUrl.searchParams.get('w') || '480', 10) || 480;
     if (!ANCHOS.has(w)) w = 480;
 
-    const key = `${memberId}:${itemId}:${i}:${w}`;
+    const key = `${memberId}:${fuente}:${itemId}:${i}:${w}`;
     const hit = cache.get(key);
     if (hit) {
       return new NextResponse(new Uint8Array(hit), {
@@ -48,17 +50,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       });
     }
 
-    // El `AND member_id` es lo que ata la imagen al token: con el token de una persona
-    // no se saca la foto del portafolio de otra aunque se adivine el id del ítem.
-    const { rows: [row] } = await pool.query(
-      `SELECT COALESCE(images[$3], CASE WHEN $3 = 1 THEN image_url END) AS img
-         FROM gcc_world.member_portfolio_items
-        WHERE id = $1 AND member_id = $2`,
-      [itemId, memberId, i + 1],
-    );
-    if (!row?.img) return new NextResponse(null, { status: 404 });
-
-    const raw = String(row.img);
+    // La comprobación de pertenencia vive en `cv-share.ts`, con el resto de la puerta:
+    // así la condición de qué se publica está escrita UNA vez y la imagen no puede
+    // enseñar un proyecto que la página no lista.
+    const raw = await imagenDePortafolio(memberId, fuente, itemId, i);
+    if (!raw) return new NextResponse(null, { status: 404 });
     if (isCloudinaryUrl(raw)) return NextResponse.redirect(cloudinaryResized(raw, w));
     if (/^https?:\/\//i.test(raw)) return NextResponse.redirect(raw);
 

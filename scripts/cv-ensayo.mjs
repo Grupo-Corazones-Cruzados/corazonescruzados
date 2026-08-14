@@ -158,6 +158,55 @@ async function main() {
     writeFileSync('/tmp/cv-ensayo.pdf', pdf);
     console.log('   → guardado en /tmp/cv-ensayo.pdf');
 
+    // ── 4b. Los PROYECTOS de la app (solo lectura, contra una cuenta real) ───
+    // El miembro de prueba no participa en ningún proyecto, así que este camino se
+    // comprueba contra una cuenta que sí — sin escribir nada. Si no tiene enlace
+    // generado, se salta y se dice: **un ensayo que se salta algo lo anuncia**.
+    const { rows: [real] } = await pool.query(
+      `SELECT id, cv_public_token FROM gcc_world.members
+        WHERE cv_public_token IS NOT NULL AND is_active = true
+        ORDER BY id LIMIT 1`);
+    if (!real) {
+      console.log('◻ SALTADO: ningún miembro tiene enlace generado, no se comprueba el camino de los proyectos');
+    } else {
+      const rr = await fetch(`${BASE}/api/cv/${real.cv_public_token}`);
+      const cvr = await rr.json();
+      const proyectos = (cvr.portafolio || []).filter((x) => x.fuente === 'proyecto');
+      const { rows: [esperado] } = await pool.query(
+        `SELECT count(*)::int AS n FROM gcc_world.projects p
+          WHERE p.status = 'completed'
+            AND (EXISTS (SELECT 1 FROM gcc_world.project_bids b
+                          WHERE b.project_id = p.id AND b.member_id = $1 AND b.status = 'accepted')
+              OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra
+                           JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
+                          WHERE pr.project_id = p.id AND ra.member_id = $1 AND ra.status = 'accepted'))`,
+        [real.id]);
+      ok(proyectos.length === esperado.n, `salen los ${esperado.n} proyectos completados en los que participa (${proyectos.length})`);
+
+      // Lo que NO debe salir: nada que no esté completado.
+      const { rows: noCompletados } = await pool.query(
+        `SELECT p.title FROM gcc_world.projects p WHERE p.status <> 'completed'`);
+      const titulos = new Set(proyectos.map((x) => x.titulo));
+      const colados = noCompletados.filter((x) => titulos.has(x.title));
+      ok(colados.length === 0, `ningún borrador ni cotización se cuela (${colados.map((c) => c.title).join(', ') || 'ninguno'})`);
+
+      if (proyectos.length) {
+        const conFoto = proyectos.find((x) => x.imagenes > 0);
+        if (conFoto) {
+          // ⚠️ Aquí NO se exige `image/webp`. Las imágenes ya migradas a Cloudinary
+          // se sirven con una REDIRECCIÓN a su transformación de ancho, y llegan en
+          // el formato que elija Cloudinary; solo las que siguen en base64 pasan por
+          // `sharp`. Exigir webp hacía fallar el camino que MÁS se usa.
+          const ri = await fetch(`${BASE}/api/cv/${real.cv_public_token}/imagen?fuente=proyecto&item=${conFoto.id}&i=0&w=480`);
+          const tipo = ri.headers.get('content-type') || '';
+          ok(ri.status === 200 && tipo.startsWith('image/'), `la imagen de un proyecto se sirve (${ri.status} ${tipo})`);
+        }
+        // El token del miembro de PRUEBA no puede sacar la imagen de un proyecto ajeno.
+        const rx = await fetch(`${BASE}/api/cv/${token}/imagen?fuente=proyecto&item=${proyectos[0].id}&i=0&w=480`);
+        ok(rx.status === 404, `con otro token, la imagen de ese proyecto da 404 (fue ${rx.status})`);
+      }
+    }
+
     // ── 5. Token inválido y revocación ───────────────────────────────────────
     const inventado = 'a'.repeat(64);
     ok((await fetch(`${BASE}/api/cv/${inventado}`)).status === 404, 'un token inventado da 404');

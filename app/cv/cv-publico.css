@@ -1,28 +1,30 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   CV PÚBLICO — animaciones y retículas propias.
+   CV PÚBLICO — tema CLARO, animaciones y retículas propias.
 
-   ── POR QUÉ UNA HOJA APARTE ─────────────────────────────────────────────────
-   Estas animaciones van ligadas al RECORRIDO del scroll (`animation-timeline`),
-   que no es algo que Tailwind exprese. Vive junto a la ruta y no en `globals.css`
-   porque solo la usa esta página: meterla en la hoja global la descargaría también
-   quien entra al panel o al juego.
+   ── POR QUÉ CLARO, SI TODO LO PÚBLICO DEL SITIO ES OSCURO ───────────────────
+   Decisión de Fernando (2026-08-14): **el oscuro es el tema interno de la app**;
+   lo que se comparte por un enlace va en claro. Un currículum se lee, se compara
+   con otros y a veces se imprime; el fondo oscuro lo convierte en una pieza de
+   producto en vez de un documento. Alcance: **solo `/cv` por ahora** — `/negocio`,
+   los legales y el resto de enlaces siguen como están, funcionando.
 
    ── LA REGLA QUE MANDA: NUNCA OCULTAR CONTENIDO ─────────────────────────────
-   El truco habitual —empezar en `opacity: 0` y revelar con un IntersectionObserver—
-   deja la página EN BLANCO si el script no llega a ejecutarse. Aquí todo está
-   dentro de `@supports (animation-timeline: view())`: donde no exista —Firefox
-   hoy— no se aplica nada y el contenido se ve quieto y entero. El efecto es un
-   extra, jamás un requisito para leer.
+   Todo lo animado está dentro de `@supports (animation-timeline: view())`, y
+   **ninguna animación toca la opacidad** (ver el bloque de abajo). Donde no exista
+   —Firefox hoy— no se aplica nada y el contenido se ve quieto y entero.
    ───────────────────────────────────────────────────────────────────────────── */
 
 .cv-publico {
-  --violeta: #7b5fbf;
-  --violeta-txt: #a78bfa;
-  --violeta-claro: #c4b5fd;
-  --fondo: #0b0d14;
-  --linea: rgba(255, 255, 255, 0.08);
-  --linea-fuerte: rgba(255, 255, 255, 0.16);
-  --panel: rgba(255, 255, 255, 0.02);
+  --violeta: #4b2d8e;        /* el morado de marca del panel */
+  --violeta-vivo: #7b5fbf;   /* el de los fondos y bordes */
+  --violeta-txt: #5b3fa8;    /* el de TEXTO: #a78bfa no llega a AA sobre blanco */
+  --papel: #f6f5f9;
+  --tarjeta: #ffffff;
+  --texto: #1c1b22;
+  --suave: #56545f;
+  --tenue: #86838f;
+  --linea: #e6e3ee;
+  --linea-fuerte: #cfc9de;
 }
 
 /* ── Fondo: dos degradados CSS, cero peticiones de red ─────────────────────── */
@@ -32,8 +34,8 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(60rem 40rem at 15% -10%, rgba(123, 95, 191, 0.22), transparent 70%),
-    radial-gradient(45rem 35rem at 100% 0%, rgba(123, 95, 191, 0.1), transparent 65%);
+    radial-gradient(58rem 34rem at 12% -12%, rgba(123, 95, 191, 0.16), transparent 68%),
+    radial-gradient(42rem 30rem at 100% -4%, rgba(123, 95, 191, 0.09), transparent 62%);
 }
 .cv-rejilla {
   position: fixed;
@@ -41,43 +43,47 @@
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, rgba(75, 45, 142, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(75, 45, 142, 0.055) 1px, transparent 1px);
   background-size: 64px 64px;
-  -webkit-mask-image: radial-gradient(70% 55% at 50% 0%, #000 30%, transparent 100%);
-  mask-image: radial-gradient(70% 55% at 50% 0%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(70% 55% at 50% 0%, #000 28%, transparent 100%);
+  mask-image: radial-gradient(70% 55% at 50% 0%, #000 28%, transparent 100%);
 }
 
-/* ── Entrada de la portada: sí es por tiempo, y aquí es correcto ────────────
-   La portada está en pantalla desde el primer fotograma, así que no hay recorrido
-   de scroll al que atarla. Es corta y no vuelve a ocurrir.                    */
+/* ── Entrada de la ficha: por TIEMPO, y aquí es correcto ───────────────────
+   Está en pantalla desde el primer fotograma, así que no hay recorrido de scroll
+   al que atarla. Es corta, siempre termina y no vuelve a ocurrir.              */
 @keyframes cvEntra {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
 }
-.cv-entra {
-  animation: cvEntra 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+.cv-entra { animation: cvEntra 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.cv-entra-1 { animation-delay: 0.04s; }
+.cv-entra-2 { animation-delay: 0.12s; }
+.cv-entra-3 { animation-delay: 0.2s; }
+.cv-entra-4 { animation-delay: 0.28s; }
+
+/* ── Cambio de pestaña: el panel derecho entra al conmutar ─────────────────── */
+@keyframes cvPanel {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
-.cv-entra-1 { animation-delay: 0.05s; }
-.cv-entra-2 { animation-delay: 0.13s; }
-.cv-entra-3 { animation-delay: 0.21s; }
-.cv-entra-4 { animation-delay: 0.29s; }
+.cv-panel { animation: cvPanel 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* ── Secciones que aparecen al desplazarse ───────────────────────────────────
 
    ⚠️ ESTA ANIMACIÓN **NO TOCA LA OPACIDAD**, Y ESE ES EL PUNTO.
 
    La primera versión iba de `opacity: 0` a `1`. Se vio en una captura de página
-   completa a 390 px: **todo lo que hay bajo la portada salía en blanco**. El motivo
-   no es un fallo del navegador — es que un `animation-timeline: view()` cuyo
-   recorrido no avanza se queda en el fotograma inicial, y ese fotograma era
-   «invisible». Pasa siempre que la página **no se desplaza**: una ventana muy alta,
-   un CV corto, o el modo de captura completa de un navegador.
+   completa a 390 px: **todo lo que había bajo la portada salía en blanco**. No es
+   un fallo del navegador: un `animation-timeline: view()` cuyo recorrido no avanza
+   se queda en el fotograma inicial, y ese fotograma era «invisible». Pasa siempre
+   que la página no se desplaza —ventana muy alta, contenido corto, captura
+   completa—.
 
-   No es un detalle estético: un currículum en blanco es un currículum perdido, y
-   quien lo abre es un reclutador que no va a investigar por qué. Animando **solo el
-   desplazamiento**, el peor caso posible es que un bloque quede 18 px más abajo de
-   su sitio — algo que nadie percibe— en vez de desaparecer.                       */
+   Un currículum en blanco es un currículum perdido, y quien lo abre es un
+   reclutador que no va a investigar por qué. Animando **solo el desplazamiento**,
+   el peor caso es un bloque 18 px más abajo de su sitio, que nadie percibe.      */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     @keyframes cvAsoma {
@@ -87,13 +93,10 @@
     .cv-anima {
       animation: cvAsoma linear both;
       animation-timeline: view();
-      /* Entra en los primeros 22 % del recorrido y NO se atenúa al salir: un CV se
-         lee de arriba abajo y apagar un bloque mientras alguien lo repasa es
-         justo lo contrario de lo que se busca. */
       animation-range: entry 2% cover 22%;
     }
-    /* La cascada de las tarjetas se hace por RECORRIDO, no por tiempo: si se para
-       el scroll, se paran ellas. Es lo que hace que se sienta ligado al gesto. */
+    /* La cascada de las tarjetas va por RECORRIDO, no por tiempo: si se para el
+       scroll, se paran ellas. Es lo que la hace sentir ligada al gesto. */
     .cv-cascada > * {
       animation: cvAsoma linear both;
       animation-timeline: view();
@@ -104,50 +107,51 @@
   }
 }
 
-/* ── Con movimiento reducido no se crea NINGUNA animación ──────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .cv-entra { animation: none; }
+  .cv-entra, .cv-panel { animation: none; }
 }
 
-/* ── Realce de tarjeta: de BORDE, nunca de sombra (es el idioma de lo público) ─ */
+/* ── Tarjeta: realce de BORDE y una sombra mínima (en claro, sin sombra flota) ─ */
 .cv-tarjeta {
   border: 1px solid var(--linea);
-  background: var(--panel);
+  background: var(--tarjeta);
   border-radius: 0.75rem;
-  transition: border-color 0.25s ease, transform 0.25s ease;
+  box-shadow: 0 1px 2px rgba(28, 27, 34, 0.04);
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 .cv-tarjeta:hover,
 .cv-tarjeta:focus-within {
   border-color: rgba(123, 95, 191, 0.55);
+  box-shadow: 0 6px 18px rgba(75, 45, 142, 0.1);
   transform: translateY(-2px);
 }
 @media (prefers-reduced-motion: reduce) {
   .cv-tarjeta:hover, .cv-tarjeta:focus-within { transform: none; }
 }
 
-/* ── Índice de secciones: la sección en pantalla se marca sola ─────────────── */
-.cv-indice a {
+/* ── Pestañas de la ficha: la activa se marca con filete y fondo ───────────── */
+.cv-pestanas button {
   transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
-.cv-indice a[data-activo='si'] {
-  color: var(--violeta-claro);
+.cv-pestanas-v button {
+  border-left: 2px solid transparent;
 }
-/* En vertical la marca es un filete a la izquierda; en horizontal son píldoras y
-   un filete lateral quedaría fuera de sitio, así que se tiñe el borde entero. */
-.cv-indice-v a { border-left: 2px solid transparent; }
-.cv-indice-v a[data-activo='si'] { border-left-color: var(--violeta); }
-.cv-indice-h a[data-activo='si'] {
-  border-color: rgba(123, 95, 191, 0.6);
-  background: rgba(123, 95, 191, 0.14);
+.cv-pestanas-v button[aria-selected='true'] {
+  border-left-color: var(--violeta-vivo);
+  color: var(--violeta-txt);
+  background: rgba(123, 95, 191, 0.08);
+}
+.cv-pestanas-h button[aria-selected='true'] {
+  border-color: rgba(123, 95, 191, 0.55);
+  background: rgba(123, 95, 191, 0.1);
+  color: var(--violeta-txt);
 }
 
-/* ── Que el ancla no quede tapada por la barra pegajosa del móvil ──────────── */
-.cv-seccion { scroll-margin-top: 5.5rem; }
-
-/* ── Impresión: si alguien pulsa Ctrl+P, que salga algo legible ─────────────
-   El documento bueno es el PDF del botón; esto es solo una red de seguridad
-   para que la versión impresa no salga en negro y con la barra encima.       */
+/* ── Impresión: red de seguridad para quien pulse Ctrl+P ───────────────────
+   El documento bueno es el PDF del botón; esto solo evita que la versión
+   impresa salga con la barra pegajosa encima.                                 */
 @media print {
   .cv-fondo, .cv-rejilla, .cv-no-imprimir { display: none !important; }
-  .cv-publico { background: #fff !important; color: #111 !important; }
+  .cv-publico { background: #fff !important; }
+  .cv-tarjeta { box-shadow: none !important; }
 }

@@ -1633,29 +1633,69 @@ función y no de la memoria de quien escribe.
 > en la app de Meta y enlazadas desde formularios. Reorganizar la navegación **añade puertas, no
 > mueve habitaciones**.
 
-## CV público — `/cv/<token>` (2026-08-14)
+## CV público — `/cv/<token>` (2026-08-14) · **TEMA CLARO**
 
-Cuarto lenguaje… no: **es el del sitio público**, reusado. Mismos valores literales
-(`#0b0d14`, violeta `#7B5FBF`/`#a78bfa`/`#c4b5fd`, **Inter**, realce de **borde** y nunca de
-sombra), por el mismo motivo: la ve un tercero y no puede depender del tema del panel.
-Lo que cambia es la **maqueta**, no la paleta.
+⚠️ **Es el ÚNICO sitio público en claro, y es a propósito.** Decisión de Fernando
+(2026-08-14): *«el tema oscuro es propio interno de la app»*, así que **lo que se comparte
+por un enlace va en claro**. Un currículum se lee, se compara con otros y a veces se
+imprime; en negro deja de parecer un documento.
+
+**Alcance: solo `/cv`.** `/negocio`, los legales, el calendario público y las listas de
+contactos **siguen como están** — «ya funcionan bien con esa normalidad». No se generalice
+esta paleta sin preguntarle.
+
+### La paleta (literal, como todo lo que se sirve a terceros)
+| Uso | Valor |
+|---|---|
+| Papel | `#f6f5f9` · tarjetas `#ffffff` · huecos de imagen `#f2f0f7` |
+| Violeta de marca | `#4b2d8e` (botones, cifras) · `#7b5fbf` (iconos, bordes, fondos al 7-10 %) |
+| **Violeta de TEXTO** | **`#5b3fa8`** |
+| Texto | `#1c1b22` titulares · `#56545f` cuerpo · `#86838f` secundario · `#a3a0ac` tenue |
+| Líneas | `#e6e3ee` · `#cfc9de` la fuerte |
+| Tipografía | **Inter**, fijada en el `style` del layout |
+
+⚠️ **Dos trampas al pasar de oscuro a claro, y las dos se ven en cuanto lo miras:**
+- **El violeta de texto tiene que ser OTRO.** El `#a78bfa` que funciona sobre `#0b0d14` no
+  llega a AA sobre blanco. Sobre papel se usa `#5b3fa8`.
+- **En claro hace falta sombra.** El realce del sitio oscuro es solo de borde; sobre blanco,
+  una tarjeta con borde y sin sombra **no se despega del fondo**. `.cv-tarjeta` lleva
+  `0 1px 2px` en reposo y `0 6px 18px` violeta al hover, además del borde.
 
 ### ⛔ EXCEPCIÓN PUNTUAL a la regla «el diseño de lo público se acuerda antes»
 Fernando la levantó **para esta página y solo para esta** el 2026-08-14: *«esta vez propón tú
 el diseño»*. Para `/negocio`, `/recursos`, `/contacto` y cualquier página pública futura,
 **la regla de §«El diseño de estas páginas lo decide Fernando, conmigo, ANTES» sigue vigente**.
 
-### Vistas especializadas — la maqueta cambia, no se estrecha
-Es lo que Fernando distinguía de «responsivo». Tres maquetas distintas:
+### Ficha a la izquierda + UNA pestaña a la derecha (2026-08-14, 2ª pasada)
+Fernando lo reorganizó al verlo funcionando. **La ficha concentra lo que se consulta** y el
+panel **enseña solo la pestaña activa**, no todo seguido.
+
+| Zona | Qué lleva |
+|---|---|
+| **Ficha** (izquierda, `sticky top-0 h-screen overflow-y-auto`) | Foto · nombre · titular · ubicación · **aspiración salarial** · **Disponibilidad** (estado, jornada, modalidad, nota y el horario de atención como detalle) · **Aptitudes** (skills e idiomas) · contacto · botón de PDF · pestañas |
+| **Panel** (derecha) | Franja de cifras (siempre) + **una** de: Perfil · Trayectoria · Portafolio |
+
+**Por qué disponibilidad y aptitudes bajaron a la ficha:** son bloques cortos que en el panel
+grande dejaban medio ancho vacío, y son justo lo que alguien vuelve a mirar. **Por qué la
+ficha es fija:** quien lee un CV vuelve todo el rato a «quién es y cuánto pide»; si eso se va
+con el scroll, hay que subir para comprobarlo.
 
 | Ancho | Maqueta |
 |---|---|
-| `lg+` | `grid [340px_1fr]` (`xl`: 380). Izquierda **fija** (`sticky top-0 h-screen overflow-y-auto`): foto, nombre, titular, ubicación, píldora de disponibilidad, sueldo, contacto, botón de PDF e índice. Derecha: franja de cifras + secciones |
-| `md` | Una columna. La ficha se convierte en **portada centrada**; el índice baja a una **barra pegajosa** de píldoras (`sticky top-0` + `backdrop-blur`); las secciones internas van a dos columnas |
-| `< md` | Una columna. Índice deslizable en horizontal y **barra inferior fija** con «Descargar en PDF» + correo + teléfono. El contenedor lleva `pb-28` para que la barra no tape el pie |
+| `lg+` | `grid [360px_1fr]` (`xl`: 400). Ficha fija a la izquierda; pestañas **verticales** con filete violeta bajo el botón de PDF |
+| `md` | Una columna. La ficha se apila arriba; las pestañas pasan a **píldoras en una barra pegajosa** (`sticky top-0` + `backdrop-blur`) |
+| `< md` | Una columna, pestañas deslizables y **barra inferior fija** con «Descargar en PDF» + correo + teléfono. El contenedor lleva `pb-28` para que la barra no tape el pie |
 
-**Por qué la ficha es fija en escritorio:** quien lee un CV vuelve todo el rato a «quién es y
-cuánto pide». Si eso se va con el scroll, hay que subir para comprobarlo.
+⚠️ **Los tres paneles siguen en el DOM, ocultos con `hidden`.** Desmontarlos dejaría un CV de
+una sola sección para quien no ejecute JavaScript o recorra el documento con un lector.
+
+⚠️ **`mt-auto` en el pie del panel.** En «Perfil» —tres líneas de biografía— quedaba colgado a
+media pantalla con un vacío enorme debajo. El `<main>` es `flex flex-col lg:min-h-screen`.
+
+### Una tarjeta sin imagen NO pinta un recuadro gris
+Con cuatro de once proyectos sin foto, esos marcos vacíos ocupaban media rejilla y el
+portafolio parecía roto. Misma regla que el sitio público: **una lista vacía no deja hueco ni
+«próximamente»**.
 
 ### La franja de cifras — el «de un vistazo»
 Cuatro recuadros bajo la portada: **Disponibilidad · Trayectoria · Talentos · Portafolio**. Un
@@ -1688,7 +1728,8 @@ tiempo**, que siempre termina, y el elemento está en pantalla desde el primer f
 | `Hito` | Entrada de trayectoria: filete a la izquierda que se tiñe al hover, título 16 px, empresa en violeta, fecha a la derecha en `tabular-nums`. **Filete y no caja**: a diez entradas, diez recuadros cansan |
 | `Chips` | Skills (violeta, destacado) e idiomas (neutro) |
 | `PildoraDisponibilidad` | Punto + texto; verde si está libre, gris si no |
-| `IndiceSecciones` | `components/cv/IndiceSecciones.tsx`. Anclas **de verdad** renderizadas en el servidor; el script solo añade la marca de en cuál estás. Sin JavaScript navega igual. Variantes `cv-indice-v` (filete) y `cv-indice-h` (píldoras) |
+| Pestañas | `.cv-pestanas` + `-v` (filete a la izquierda) / `-h` (píldoras). Son `<button role="tab">` con `aria-selected` y `aria-controls`, no `div` con `onClick` |
+| `FichaBloque` | Tarjeta de la ficha: rótulo en versalitas violeta sobre fondo blanco |
 | `PortafolioPublico` | Rejilla + visor. `<dialog>` **nativo** (foco atrapado, Escape, capa superior) con `m-auto` — el reajuste de Tailwind le pone `margin: 0` y lo deja arriba a la izquierda |
 
 ### El PDF es OTRO diseño, no esta página impresa

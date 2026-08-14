@@ -6,6 +6,11 @@
  * grupo. Una cabecera con «Negocio · Recursos · Contacto» encima de un currículum
  * compite con lo único que hay que mirar.
  *
+ * ── TEMA CLARO, Y NO ES UN DESPISTE ───────────────────────────────────────────
+ * Decisión de Fernando (2026-08-14): **el oscuro es el tema interno de la app**; lo
+ * que se comparte por enlace va en claro. Por eso este `<div>` fuerza el fondo claro
+ * aunque el `<html>` de la raíz lleve la clase `dark` para todo lo demás.
+ *
  * Fondo y tipografía LITERALES, como en todo lo que se sirve a terceros: la página
  * tiene que verse igual pase lo que pase con el tema del panel.
  */
@@ -45,7 +50,7 @@ export const metadata: Metadata = {
 export default function CvLayout({ children }: { children: ReactNode }) {
   return (
     <div
-      className="cv-publico relative min-h-screen bg-[#0b0d14] text-white/70 antialiased"
+      className="cv-publico relative min-h-screen bg-[#f6f5f9] text-[#56545f] antialiased"
       style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
     >
       <div className="cv-fondo" aria-hidden />

@@ -341,6 +341,40 @@ Stack estándar de la casa, con particularidades de este repo:
     el pulgar. **Fernando levantó para esta página su regla de acordar el diseño antes**
     («esta vez propón tú el diseño»); la regla general de [[gcc-diseno-sitio-con-fernando]]
     **sigue vigente para el resto**.
+  - **🔁 SEGUNDA PASADA, con Fernando delante (2026-08-14).** Cuatro correcciones suyas:
+    1. **TEMA CLARO.** *«El oscuro es propio interno de la app»*: lo que se comparte por un
+       enlace va en claro. **Alcance: SOLO `/cv` por ahora** — dijo que el resto (`/negocio`,
+       legales, calendario, listas) «ya funciona bien con esa normalidad» y no se toca.
+       Paleta: papel `#f6f5f9`, tarjeta blanca, línea `#e6e3ee`, texto `#1c1b22`. ⚠️ **El
+       violeta de TEXTO baja a `#5b3fa8`**: el `#a78bfa` del tema oscuro no llega a AA sobre
+       blanco. En claro además hace falta una **sombra mínima** en las tarjetas — sin ella no
+       se despegan del fondo, al revés que en oscuro.
+    2. **EL PANEL DERECHO ENSEÑA SOLO LA PESTAÑA ACTIVA** (Perfil · Trayectoria · Portafolio),
+       no todo seguido. El índice de anclas deja de existir; `IndiceSecciones.tsx` se borró.
+    3. **DISPONIBILIDAD Y APTITUDES SE MUDAN A LA FICHA IZQUIERDA**, con los datos personales:
+       son bloques cortos que en el panel grande dejaban medio ancho vacío, y son justo lo que
+       alguien vuelve a mirar.
+    4. **EL PORTAFOLIO INCLUYE LOS PROYECTOS DE LA APP**, no solo los ítems añadidos a mano.
+       Criterio de Fernando: **solo los COMPLETADOS en los que participó** —puja aceptada o
+       requerimientos asignados—; borradores y cotizaciones fuera, que no son trabajo hecho
+       sino cartera comercial. **Con el nombre del cliente tal cual**, que es lo que le da
+       credibilidad. En su cuenta: 10 proyectos + 1 ítem propio. Las etiquetas salen de los
+       **talentos de los requerimientos**, sin escribir nada a mano.
+  - **🐛 UN COMPONENTE DE CLIENTE QUE IMPORTA UNA CONSTANTE SE LLEVA EL MÓDULO ENTERO.**
+    `CvCuerpo` importó `DIAS_SEMANA`/`textoSalario` de `cv-share.ts` y el build murió con
+    *«Can't resolve 'fs' / 'dns' / 'net'»*: arrastraba **`pg` al navegador**. Un `import type`
+    se borra al compilar; una constante o una función **no**. Se partió en
+    **`lib/members/cv-tipos.ts`** (puro: tipos, etiquetas, `textoSalario`) y `cv-share.ts`
+    (base de datos), que lo re-exporta. Mismo patrón que los módulos puros del agente.
+  - **Detalles que solo se vieron mirando la página real:** una tarjeta de proyecto **sin
+    imagen ya no pinta un recuadro gris** —con cuatro de once sin foto, la rejilla parecía
+    rota—, y el pie del panel baja al fondo con `mt-auto`, porque en «Perfil» (tres líneas de
+    biografía) quedaba colgado a media pantalla.
+  - **Las imágenes de proyecto ya migradas a Cloudinary se sirven por REDIRECCIÓN** a su
+    transformación de ancho; solo las que siguen en base64 pasan por `sharp`. El ensayo exigía
+    `image/webp` y hacía fallar justo el camino más usado.
+  - ⓘ **El 401 de `/api/auth/me` en las páginas públicas es preexistente y general**: el
+    `AuthProvider` del layout raíz pregunta por la sesión en toda la app. No se tocó.
   - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
     CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
     las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.

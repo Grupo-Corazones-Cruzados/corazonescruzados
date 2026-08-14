@@ -4195,3 +4195,49 @@ Ninguno de los tres lo ve el typecheck ni el build. Confirmado otra vez: **medir
 - **Las imágenes del portafolio siguen en base64 dentro de la fila.** La página pública ya no las
   manda (contador + endpoint con `sharp`), pero el problema de fondo sigue ahí para quien las lea
   en crudo.
+
+## Segunda pasada — correcciones de Fernando sobre lo construido (2026-08-14)
+
+Vio la página funcionando con sus datos y pidió cuatro cambios. Los cuatro están aplicados y
+verificados.
+
+1. **Tema CLARO.** *«El tema oscuro es propio interno de la app»*: lo que se comparte por un
+   enlace va en claro. **Alcance acotado por él: solo `/cv`** — el resto «ya funciona bien con
+   esa normalidad».
+2. **El panel derecho enseña SOLO la pestaña activa** (Perfil · Trayectoria · Portafolio). El
+   índice de anclas desaparece; `IndiceSecciones.tsx` se borró.
+3. **Disponibilidad y Aptitudes bajan a la ficha izquierda**, con los datos personales.
+4. **El portafolio incluye los proyectos de la app.** Decisión suya: **solo los COMPLETADOS en
+   los que participó**, con **el nombre del cliente tal cual**. Borradores y cotizaciones
+   fuera — no son trabajo hecho, son cartera comercial.
+
+### P10 — ¿Qué es «trabajó en un proyecto»? · ✅ Resuelta (medido contra la base)
+- **Por qué importa:** con un solo criterio se caen proyectos reales.
+- **Respuesta:** son **dos** y hacen falta las dos: **puja aceptada** (`project_bids`, entró al
+  proyecto) **o asignación de requerimientos aceptada** (`requirement_assignments`, hizo tareas
+  dentro). En la cuenta de Fernando: 24 proyectos en la app · 14 con participación · **10
+  completados**, que son los que salen. El endpoint del marketplace no servía: exige además
+  `is_marketplace_published`, que es un criterio de escaparate, no de currículum.
+
+### P11 — ¿Por qué reventó el build al mover la maqueta a un componente de cliente? · ✅ Resuelta
+- **Respuesta:** `CvCuerpo` importaba `DIAS_SEMANA` y `textoSalario` de `cv-share.ts`, que
+  importa `pg`. **Un `import type` se borra al compilar; una constante o una función no**: se
+  lleva el módulo detrás, y `pg` en el navegador da *«Can't resolve 'fs' / 'dns' / 'net'»*.
+  Solución: **`lib/members/cv-tipos.ts`**, módulo puro con tipos, etiquetas y `textoSalario`;
+  `cv-share.ts` lo re-exporta para el servidor. Es el patrón que el repo ya usaba con los
+  módulos puros del agente.
+
+### Lo que volvió a encontrarse solo MIRÁNDOLO
+- **Tarjetas sin imagen con un recuadro gris**: cuatro de once proyectos sin foto y la rejilla
+  parecía rota. Ahora, sin imagen no se pinta nada.
+- **El pie del panel colgado** a media pantalla en la pestaña «Perfil». `mt-auto`.
+- **El ensayo exigía `image/webp` a las imágenes de proyecto**, pero las ya migradas a
+  Cloudinary se sirven por **redirección** a su transformación de ancho: solo las que siguen
+  en base64 pasan por `sharp`. La comprobación hacía fallar el camino más usado.
+- **Dos trampas del paso oscuro → claro:** el violeta de texto tiene que cambiar (`#a78bfa` no
+  llega a AA sobre blanco → `#5b3fa8`) y **hace falta sombra**, porque una tarjeta con solo
+  borde no se despega del papel.
+
+### Anotado, no tocado
+- **El 401 de `/api/auth/me` en cualquier página pública** es del `AuthProvider` del layout
+  raíz, preexistente y común a todo el sitio. Fernando dijo que el resto funciona bien.
