@@ -7,7 +7,9 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
 import CompartirCv, { AJUSTES_VACIOS, type AjustesCvPublico } from '@/components/settings/CompartirCv';
-import { User, Camera, RefreshCw } from 'lucide-react';
+import BotonAyuda from '@/components/ui/BotonAyuda';
+import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
+import { User, Camera, RefreshCw, ExternalLink } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -100,6 +102,13 @@ export default function ProfilePanel() {
     e.preventDefault();
     setSaving(true);
     try {
+      // Se comprueba ANTES de la petición: así el aviso señala el campo concreto en
+      // vez de devolver un 400 genérico con el resto del formulario ya enviado.
+      for (const [red, valor] of [['youtube', youtube], ['tiktok', tiktok], ['instagram', instagram], ['facebook', facebook]] as [Red, string][]) {
+        const { error } = normalizarRed(red, valor);
+        if (error) throw new Error(`${REDES[red].etiqueta}: ${error}`);
+      }
+
       const res = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -125,6 +134,13 @@ export default function ProfilePanel() {
           throw new Error(d.error || 'Error al guardar el CV público');
         }
       }
+
+      // Refleja la URL ya compuesta: quien escribió «@fulano» ve en el acto el
+      // enlace completo que se ha guardado, sin tener que recargar para creérselo.
+      setYoutube(normalizarRed('youtube', youtube).url || '');
+      setTiktok(normalizarRed('tiktok', tiktok).url || '');
+      setInstagram(normalizarRed('instagram', instagram).url || '');
+      setFacebook(normalizarRed('facebook', facebook).url || '');
 
       await refreshUser();
       toast.success('Perfil actualizado');
@@ -179,17 +195,31 @@ export default function ProfilePanel() {
         <PixelInput label="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+593999999999" />
 
         <div className="pt-3 border-t border-digi-border space-y-3">
-          <div>
-            <h4 className="text-[13px] font-semibold text-digi-text mb-0.5" style={mf}>Redes sociales</h4>
-            <p className="text-[11px] text-digi-muted" style={mf}>
-              Se usarán al generar copy para promocionar tus proyectos. Formato @usuario o nombre de página.
-            </p>
+          {/* Regla de formularios: solo el título del campo y el campo. La
+              explicación va dentro del botón de ayuda, no como párrafo fijo. */}
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Redes sociales</h4>
+            <BotonAyuda titulo="Redes sociales">
+              <p>
+                Pega el <strong>enlace a tu perfil</strong>, el que sale en la barra del
+                navegador cuando lo abres. Aparecerán como botones en tu CV público.
+              </p>
+              <p className="mt-2">
+                También vale escribir solo tu usuario (<code>@tuusuario</code>): se completa
+                con la dirección de esa red.
+              </p>
+              <p className="mt-2">
+                Se comprueba que el enlace sea <strong>de esa red</strong>. Un botón de
+                Instagram que lleva a otro sitio, delante de quien está mirando tu perfil, es
+                peor que no tener botón.
+              </p>
+            </BotonAyuda>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <PixelInput label="YouTube" value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="@canal" />
-            <PixelInput label="TikTok" value={tiktok} onChange={(e) => setTiktok(e.target.value)} placeholder="@usuario" />
-            <PixelInput label="Instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@usuario" />
-            <PixelInput label="Facebook" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="Nombre de página" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CampoRed red="youtube" valor={youtube} onChange={setYoutube} />
+            <CampoRed red="tiktok" valor={tiktok} onChange={setTiktok} />
+            <CampoRed red="instagram" valor={instagram} onChange={setInstagram} />
+            <CampoRed red="facebook" valor={facebook} onChange={setFacebook} />
           </div>
         </div>
 
@@ -225,5 +255,43 @@ export default function ProfilePanel() {
         </button>
       </form>
     </SettingsPanel>
+  );
+}
+
+/* ── Campo de una red social: enlace + aviso en vivo + atajo para abrirlo ─────
+ * El aviso aparece mientras se escribe, no al guardar: descubrir en el botón
+ * «Guardar» que un campo de arriba está mal obliga a volver a buscarlo.        */
+function CampoRed({ red, valor, onChange }: { red: Red; valor: string; onChange: (v: string) => void }) {
+  const def = REDES[red];
+  const { url, error, aviso } = normalizarRed(red, valor);
+  // Nada de gritar sobre un campo que aún se está escribiendo: solo se avisa
+  // cuando ya parece una dirección terminada.
+  const avisar = !!error && valor.trim().length > 3;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-[12px] font-medium text-digi-text" style={mf}>{def.etiqueta}</label>
+        {url && (
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] text-digi-muted hover:text-accent transition-colors" style={mf}
+            title="Abrir el enlace para comprobar que lleva a tu perfil">
+            <ExternalLink className="w-3 h-3" /> Probar
+          </a>
+        )}
+      </div>
+      <input
+        type="url" inputMode="url" value={valor} onChange={(e) => onChange(e.target.value)}
+        placeholder={def.ejemplo}
+        aria-invalid={avisar || undefined}
+        className={`field-control w-full px-3 py-2 bg-digi-darker border-2 rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none transition-colors
+          ${avisar ? 'border-red-400 focus:border-red-500' : 'border-digi-border focus:border-accent'}`}
+        style={mf}
+      />
+      {avisar && <p className="text-[11px] text-red-600" style={mf}>{error}</p>}
+      {/* El aviso NO impide guardar: el enlace es válido, solo puede que no sea el
+          que se quería. Va en ámbar para que no se confunda con un error. */}
+      {!avisar && aviso && <p className="text-[11px] text-amber-600" style={mf}>{aviso}</p>}
+    </div>
   );
 }

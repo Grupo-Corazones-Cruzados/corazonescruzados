@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizarRed } from '@/lib/members/redes';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,6 +30,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await req.json();
 
+    // LinkedIn y la web se guardan como URL ABSOLUTA, por la misma puerta que las
+    // demás redes. Sin `https://`, un `href` se lee como ruta relativa y el botón
+    // del CV público no lleva a ninguna parte — que es justo el fallo que se vio.
+    const enlaceLinkedin = normalizarRed('linkedin', body.linkedin_url);
+    const enlaceWeb = normalizarRed('web', body.website_url);
+    const malo = enlaceLinkedin.error || enlaceWeb.error;
+    if (malo) return NextResponse.json({ error: malo }, { status: 400 });
+
     // `talents`: [{ key, education[], experience[] }] — talentos del usuario con su
     // educación/experiencia propias (los servicios de cada talento son filas en `services`).
     await pool.query(`ALTER TABLE gcc_world.member_cv_profiles ADD COLUMN IF NOT EXISTS talents JSONB DEFAULT '[]'::jsonb`);
@@ -48,7 +57,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
          talents = EXCLUDED.talents,
          updated_at = NOW()
        RETURNING *`,
-      [id, body.bio || null, body.skills || [], body.languages || [], body.linkedin_url || null, body.website_url || null, JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
+      [id, body.bio || null, body.skills || [], body.languages || [], enlaceLinkedin.url, enlaceWeb.url, JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
     );
 
     return NextResponse.json({ cv: rows[0] });

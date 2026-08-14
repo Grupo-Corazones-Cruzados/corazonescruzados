@@ -375,6 +375,35 @@ Stack estándar de la casa, con particularidades de este repo:
     `image/webp` y hacía fallar justo el camino más usado.
   - ⓘ **El 401 de `/api/auth/me` en las páginas públicas es preexistente y general**: el
     `AuthProvider` del layout raíz pregunta por la sesión en toda la app. No se tocó.
+  - **🔗 LAS REDES SOCIALES PASAN DE «@usuario» A ENLACE (2026-08-14, 3ª pasada).** Fernando:
+    *«el botón de LinkedIn no me lleva a mi perfil»*. Dos cosas distintas detrás:
+    - **La causa real no era el código:** el enlace guardado era
+      `https://www.linkedin.com/feed/` — la dirección que sale al ABRIR LinkedIn, no la del
+      perfil. El botón funcionaba y no llevaba a ninguna parte útil. Ahora el formulario lo
+      **avisa en ámbar** (`avisoDeCamino()`): «ese enlace abre LinkedIn, no tu perfil».
+      **Avisa, no bloquea** — puede haber casos legítimos.
+    - **Los cuatro campos `users.*_handle` se reusan como URL**, que es lo que pidió. Antes
+      guardaban texto libre para redactar copys; **nadie más los consumía** (verificado), así
+      que reusarlos no rompió nada. Migración **035**, conservadora: solo convierte lo que
+      claramente es un usuario (sin `/` ni `.`). Las columnas **no se renombran** a propósito:
+      el nombre no era el problema, y renombrarlas obliga a tocar la API, el tipo `User` y
+      `/api/auth/me` a la vez.
+    - **`lib/members/redes.ts` es la única puerta**, y es un módulo **puro** con 21 pruebas
+      (`npm run redes:prueba`). Acepta las **tres** formas en que alguien escribe su red —URL
+      entera · sin protocolo · `@usuario`— y guarda **siempre** una URL absoluta.
+    - ⚠️ **SIN `https://` UN ENLACE NO FUNCIONA.** `<a href="www.linkedin.com/in/x">` el
+      navegador lo lee como **ruta relativa** y acaba en `…/cv/<token>/www.linkedin…` → 404.
+      Es un fallo que solo se ve **pulsando**, no leyendo el código. El ensayo lo comprueba:
+      «ningún href se queda sin protocolo».
+    - ⚠️ **Se comprueba el DOMINIO de cada red.** Si en «Instagram» cabe cualquier URL, el
+      botón de Instagram puede llevar a cualquier sitio delante de un reclutador. Se aceptan
+      los alias reales (`youtu.be`, `fb.com`) y los subdominios (`ec.linkedin.com`), y se
+      rechaza `javascript:`. Lo que no encaja **no se publica**, ni siquiera si ya estaba en
+      la base.
+    - **En la página son botones con icono** en la ficha izquierda; en el PDF, el nombre de la
+      red y la dirección legible (en papel no se pulsa). ⚠️ **TikTok no existe en lucide**:
+      va como SVG propio. `Linkedin`, `Youtube`, `Instagram` y `Facebook` sí están en la 0.468.
+    - `linkedin_url` y `website_url` del CV pasan por la misma puerta al guardarse.
   - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
     CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
     las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.

@@ -10,6 +10,7 @@ import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { money } from '@/lib/format';
 import { TALENTOS } from '@/lib/centralized/talentos';
+import { normalizarRed } from '@/lib/members/redes';
 import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -95,9 +96,16 @@ export default function CvPanel() {
           linkedin_url: linkedin, website_url: website, education, experience, talents,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Error al guardar');
+      }
+      const d = await res.json();
+      // El servidor devuelve el enlace ya compuesto: quien escribió «linkedin.com/in/x»
+      // ve en el acto el `https://` que se guardó.
+      if (d?.cv) { setLinkedin(d.cv.linkedin_url || ''); setWebsite(d.cv.website_url || ''); }
       toast.success('CV actualizado');
-    } catch { toast.error('Error al guardar'); }
+    } catch (e: any) { toast.error(e?.message || 'Error al guardar'); }
     finally { setSaving(false); }
   };
 
@@ -220,8 +228,18 @@ export default function CvPanel() {
           <label className="text-[12px] font-medium text-digi-text mb-1 block" style={mf}>Idiomas</label>
           <MultiSelectSearch options={LANG_OPTIONS} selected={languages} onChange={setLanguages} placeholder="Elegir idiomas…" />
         </div>
-        <PixelInput label="LinkedIn" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/…" />
-        <PixelInput label="Website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" />
+        {/* Enlaces, no textos: son botones en el CV público. El servidor los
+            normaliza y rechaza lo que no sea de esa red. */}
+        <div className="flex flex-col gap-1">
+          <PixelInput label="LinkedIn" type="url" inputMode="url" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://www.linkedin.com/in/tu-perfil" />
+          {(() => {
+            const r = normalizarRed('linkedin', linkedin);
+            if (r.error && linkedin.trim().length > 3) return <p className="text-[11px] text-red-600" style={mf}>{r.error}</p>;
+            if (r.aviso) return <p className="text-[11px] text-amber-600" style={mf}>{r.aviso}</p>;
+            return null;
+          })()}
+        </div>
+        <PixelInput label="Sitio web" type="url" inputMode="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://tusitio.com" />
       </div>
 
       {/* Talentos */}

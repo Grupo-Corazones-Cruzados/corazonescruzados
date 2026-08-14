@@ -12,7 +12,8 @@
     "juego:publicar": "bash scripts/publicar-juego.sh",
     "postinstall": "prisma generate",
     "agente:worker": "node scripts/agente-worker.mjs",
-    "cv:ensayo": "node scripts/cv-ensayo.mjs"
+    "cv:ensayo": "node scripts/cv-ensayo.mjs",
+    "redes:prueba": "node --experimental-strip-types scripts/prueba-redes.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

@@ -28,6 +28,7 @@ import {
   textoSalario,
   type CvPublico,
 } from '@/lib/members/cv-tipos';
+import { textoCorto } from '@/lib/members/redes';
 
 /* ── Paleta (literal, como todo lo que se sirve a terceros) ─────────────────── */
 const C = {
@@ -231,12 +232,23 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
     };
 
     // Contacto (solo lo que el miembro encendió)
-    if (cv.correo || cv.telefono || cv.linkedin || cv.web) {
+    if (cv.correo || cv.telefono) {
       rotuloRail('Contacto');
       if (cv.correo) lineaRail(cv.correo);
       if (cv.telefono) lineaRail(cv.telefono);
-      if (cv.linkedin) lineaRail(cv.linkedin.replace(/^https?:\/\//, ''), 7.5);
-      if (cv.web) lineaRail(cv.web.replace(/^https?:\/\//, ''), 7.5);
+    }
+
+    // En papel un enlace no se pulsa, así que se escribe la dirección legible —sin
+    // `https://` ni `www.`— precedida del nombre de la red, que es lo que permite
+    // teclearla. `textoCorto` es el mismo recorte que usa la página.
+    if (cv.redes.length) {
+      rotuloRail('Redes');
+      for (const r of cv.redes) {
+        doc.fillColor(C.violetaClaro).font('Helvetica-Bold').fontSize(7.5)
+          .text(r.etiqueta, rx, ry, { width: rw });
+        ry = doc.y;
+        lineaRail(textoCorto(r.url), 7.5, '#FFFFFF', 0.62);
+      }
     }
 
     // Disponibilidad

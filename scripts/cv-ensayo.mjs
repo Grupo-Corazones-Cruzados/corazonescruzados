@@ -36,6 +36,9 @@ async function inventario() {
     horario: await q(`SELECT count(*)::int n FROM gcc_world.member_schedules WHERE member_id = ${MIEMBRO}`),
     servicios: await q(`SELECT count(*)::int n FROM gcc_world.services WHERE member_id = ${MIEMBRO}`),
     token: await q(`SELECT count(*)::int n FROM gcc_world.members WHERE id = ${MIEMBRO} AND cv_public_token IS NOT NULL`),
+    redes: await q(`SELECT count(*)::int n FROM gcc_world.users
+                     WHERE member_id = ${MIEMBRO}
+                       AND COALESCE(youtube_handle, tiktok_handle, instagram_handle, facebook_handle) IS NOT NULL`),
   };
 }
 
@@ -75,6 +78,16 @@ async function sembrar() {
     `INSERT INTO gcc_world.services (member_id, name, description, base_price, is_active, talent)
      VALUES ($1, 'Servicio de ensayo', null, 0, true, 'Desarrollo de software')`, [MIEMBRO]);
 
+  // Redes: se siembran EN CRUDO (un @usuario y una URL sin protocolo) para que el
+  // ensayo compruebe que la normalización ocurre al LEER, no solo al guardar desde
+  // el formulario. Hay filas anteriores a la migración 035 justo así.
+  await pool.query(
+    `UPDATE gcc_world.users SET youtube_handle = $2, tiktok_handle = $3,
+            instagram_handle = $4, facebook_handle = $5
+      WHERE member_id = $1`,
+    [MIEMBRO, 'https://www.youtube.com/@ensayo', '@ensayo',
+     'www.instagram.com/ensayo', 'https://evil.example.com/no']);
+
   const token = (await pool.query(
     `UPDATE gcc_world.members SET cv_public_token = encode(gen_random_bytes(32),'hex'), cv_public_token_created_at = NOW()
       WHERE id = $1 RETURNING cv_public_token`, [MIEMBRO])).rows[0].cv_public_token;
@@ -87,6 +100,8 @@ async function limpiar() {
   await pool.query(`DELETE FROM gcc_world.member_schedules WHERE member_id = ${MIEMBRO}`);
   await pool.query(`DELETE FROM gcc_world.services WHERE member_id = ${MIEMBRO}`);
   await pool.query(`UPDATE gcc_world.members SET cv_public_token = NULL, cv_public_token_created_at = NULL WHERE id = ${MIEMBRO}`);
+  await pool.query(`UPDATE gcc_world.users SET youtube_handle = NULL, tiktok_handle = NULL,
+                           instagram_handle = NULL, facebook_handle = NULL WHERE member_id = ${MIEMBRO}`);
 }
 
 async function main() {
@@ -117,6 +132,15 @@ async function main() {
     ok(cv.disponibilidad?.horario?.length === 2, `horario: ${cv.disponibilidad?.horario?.length} franjas`);
     ok(rJson.headers.get('x-robots-tag')?.includes('noindex'), 'el JSON manda X-Robots-Tag noindex');
 
+    // ── 1a bis. REDES: enlaces absolutos, de su red, y los malos no salen ────
+    const redes = Object.fromEntries((cv.redes || []).map((r) => [r.red, r.url]));
+    ok((cv.redes || []).every((r) => /^https:\/\//.test(r.url)),
+       `todas las redes son URL absolutas https (${(cv.redes || []).length})`);
+    ok(redes.tiktok === 'https://www.tiktok.com/@ensayo', `un @usuario se compone: ${redes.tiktok}`);
+    ok(redes.instagram === 'https://www.instagram.com/ensayo', `sin protocolo se completa: ${redes.instagram}`);
+    ok(!('facebook' in redes), 'una URL de otro dominio NO se publica como Facebook');
+    ok(!('linkedin' in cv), 'ya no hay campos sueltos `linkedin`/`web`; todo va en `redes`');
+
     // ── 1b. Contacto apagado ⇒ NO sale del servidor ──────────────────────────
     await pool.query(`UPDATE gcc_world.member_cv_profiles SET share_phone = false, share_email = false WHERE member_id = ${MIEMBRO}`);
     const cv2 = await (await fetch(`${BASE}/api/cv/${token}`)).json();
@@ -139,6 +163,8 @@ async function main() {
     ok(/1\.200|1200/.test(html) && /1\.800|1800/.test(html), 'el rango salarial está en el HTML');
     ok(/<meta name="robots"[^>]*noindex/i.test(html), 'la página declara noindex');
     ok(html.includes('maximum-scale=5') || html.includes('user-scalable=yes'), 'el viewport permite ampliar (zoom desbloqueado)');
+    ok(html.includes('href="https://www.tiktok.com/@ensayo"'), 'el botón de la red lleva una URL absoluta en el HTML');
+    ok(!/href="www\./.test(html), 'ningún href se queda sin protocolo (sería una ruta relativa)');
 
     // ── 3. Imagen ────────────────────────────────────────────────────────────
     const itemId = cv.portafolio[0].id;

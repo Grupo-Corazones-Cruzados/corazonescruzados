@@ -3,12 +3,23 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceEmail } from '@/lib/workspace/account';
 import { isGoogleWorkspaceConfigured, updateGoogleProfile } from '@/lib/integrations/google-workspace';
+import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
 
-function normalizeHandle(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  return trimmed;
+/**
+ * Los cuatro campos de redes guardan una **URL de perfil**, no un `@usuario`.
+ * La conversión y la comprobación viven en `lib/members/redes.ts`, que es la única
+ * puerta: el formulario avisa mientras se escribe y aquí se corta lo que llegue por
+ * otro camino. Un enlace mal formado en el CV público es un botón que no lleva a
+ * ninguna parte delante de un reclutador.
+ */
+function redesDelCuerpo(body: any): { valores: Record<Red, string | null>; error: string | null } {
+  const valores = {} as Record<Red, string | null>;
+  for (const red of ['youtube', 'tiktok', 'instagram', 'facebook'] as Red[]) {
+    const { url, error } = normalizarRed(red, body[`${red}_handle`]);
+    if (error) return { valores, error: `${REDES[red].etiqueta}: ${error}` };
+    valores[red] = url;
+  }
+  return { valores, error: null };
 }
 
 export async function PUT(req: NextRequest) {
@@ -25,10 +36,8 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     const { first_name, last_name, phone, avatar_url } = body;
-    const youtube = normalizeHandle(body.youtube_handle);
-    const tiktok = normalizeHandle(body.tiktok_handle);
-    const instagram = normalizeHandle(body.instagram_handle);
-    const facebook = normalizeHandle(body.facebook_handle);
+    const { valores: redes, error: errorRedes } = redesDelCuerpo(body);
+    if (errorRedes) return NextResponse.json({ error: errorRedes }, { status: 400 });
 
     await pool.query(
       `UPDATE gcc_world.users
@@ -37,7 +46,7 @@ export async function PUT(req: NextRequest) {
            updated_at = NOW()
        WHERE id = $9`,
       [first_name || null, last_name || null, phone || null, avatar_url || null,
-       youtube, tiktok, instagram, facebook, user.userId]
+       redes.youtube, redes.tiktok, redes.instagram, redes.facebook, user.userId]
     );
 
     // Refleja nombre/teléfono en el perfil de Google (si tiene cuenta corporativa).

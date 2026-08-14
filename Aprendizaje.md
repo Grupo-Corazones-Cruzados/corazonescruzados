@@ -4241,3 +4241,35 @@ verificados.
 ### Anotado, no tocado
 - **El 401 de `/api/auth/me` en cualquier página pública** es del `AuthProvider` del layout
   raíz, preexistente y común a todo el sitio. Fernando dijo que el resto funciona bien.
+
+## Tercera pasada — las redes sociales como enlaces (2026-08-14)
+
+Fernando: *«hay un botón que dice LinkedIn que realmente no ayuda porque hacerle clic no me
+lleva a mi perfil»*, y pidió reusar los campos de redes del perfil para que guarden **enlaces**
+y salgan como botones en la página pública.
+
+### P12 — ¿Por qué el botón de LinkedIn no llevaba al perfil? · ✅ Resuelta (y NO era el código)
+- **Respuesta:** el valor guardado era `https://www.linkedin.com/feed/` — la dirección que sale
+  al **abrir** LinkedIn, no la del perfil. El `href` era correcto y el enlace respondía 200; lo
+  que estaba mal era el dato. Desde fuera se ve idéntico a un fallo de programación.
+- **Lo que se hizo con eso:** un **aviso en ámbar** (`avisoDeCamino()`) cuando el enlace apunta
+  a la portada o al muro de la red. **Avisa, no bloquea**: puede haber casos legítimos, y un
+  formulario que impide guardar algo válido es peor que uno que avisa.
+
+### P13 — ¿Se pueden reusar los campos `*_handle`? · ✅ Resuelta (verificado, no supuesto)
+- **Por qué importa:** decían «se usarán al generar copy para promocionar tus proyectos». Si
+  algún módulo los leía, cambiarlos de `@usuario` a URL rompería ese texto.
+- **Respuesta:** **nadie los consume.** Los únicos usos son el `ALTER TABLE` que los crea,
+  `/api/auth/me`, el tipo `User` y el propio panel. El generador de copy social de proyectos
+  (`/api/projects/[id]/social`) **no los toca**. Reusarlos es seguro. Migración 035.
+
+### Lo aprendido, transferible a cualquier campo de enlace
+1. **Sin `https://` un `href` es una RUTA RELATIVA.** `www.x.com/y` acaba en
+   `…/cv/<token>/www.x.com/y` → 404. No lo ve el typecheck ni el build: solo pulsando. El
+   ensayo lo comprueba ahora con `!/href="www\\./`.
+2. **Un campo de enlace sin comprobación de dominio es un agujero de presentación:** el botón
+   de «Instagram» puede llevar a cualquier sitio delante de un tercero.
+3. **Aceptar las tres formas en que la gente escribe** (URL entera, sin protocolo, `@usuario`)
+   y guardar siempre una URL absoluta. Nadie copia la dirección completa.
+4. **Devolver lo normalizado a la pantalla tras guardar**: quien escribió `@fulano` ve el
+   enlace completo sin recargar, y entiende qué guardó el sistema.

@@ -1692,6 +1692,26 @@ una sola sección para quien no ejecute JavaScript o recorra el documento con un
 ⚠️ **`mt-auto` en el pie del panel.** En «Perfil» —tres líneas de biografía— quedaba colgado a
 media pantalla con un vacío enorme debajo. El `<main>` es `flex flex-col lg:min-h-screen`.
 
+### Redes sociales — botones que llevan al perfil (2026-08-14)
+En la ficha, debajo del contacto: una fila de botones envolvente, uno por red, con su icono
+y su nombre. `border-[#e6e3ee] bg-white`, borde violeta al hover, `target="_blank"` +
+`rel="noopener noreferrer nofollow"`. La dirección va en el `title`, para verla antes de
+pulsar.
+
+- **Solo se pintan las que están rellenas.** Un botón vacío o roto no ocupa sitio.
+- **El orden lo fija `ORDEN_REDES`** (`lib/members/redes.ts`): LinkedIn primero, que es la que
+  mira un reclutador; después el sitio web y luego las demás.
+- ⚠️ **TikTok NO existe en lucide** — va como SVG propio dentro de `IconoRed`. `Linkedin`,
+  `Youtube`, `Instagram`, `Facebook` y `Globe` sí están en la versión del repo (0.468).
+- **En el PDF no son botones**: en papel no se pulsa, así que se escribe el nombre de la red
+  en violeta y debajo la dirección legible (`textoCorto`, sin `https://` ni `www.`).
+
+#### El formulario: enlace, aviso en vivo y «Probar»
+`CampoRed` en `ProfilePanel`. `type="url"`, marco rojo + mensaje si la dirección no es de esa
+red, **ámbar** si es válida pero apunta a la portada en vez de a un perfil, y un enlace
+**«Probar»** que lo abre — la única forma de comprobar de verdad que lleva donde se cree.
+La explicación va en el botón de ayuda (?), no como párrafo fijo: es la regla de formularios.
+
 ### Una tarjeta sin imagen NO pinta un recuadro gris
 Con cuatro de once proyectos sin foto, esos marcos vacíos ocupaban media rejilla y el
 portafolio parecía roto. Misma regla que el sitio público: **una lista vacía no deja hueco ni

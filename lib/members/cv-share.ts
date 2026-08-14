@@ -24,6 +24,7 @@ import { pool } from '@/lib/db';
 import type {
   CvPublico, Educacion, EstadoLaboral, Experiencia, ItemPortafolio, Jornada, Modalidad, TalentoPublico,
 } from '@/lib/members/cv-tipos';
+import { normalizarRed, ORDEN_REDES, REDES, type Red } from '@/lib/members/redes';
 
 /* ── Tipos y etiquetas: en `cv-tipos.ts`, que es puro y lo comparte el navegador.
  * Se re-exportan para que quien ya importaba de aquí no tenga que cambiar. ─────── */
@@ -123,6 +124,30 @@ function aExperiencia(e: any): Experiencia {
     hasta: String(e?.end_year ?? '').trim(),
   };
 }
+/**
+ * Los enlaces de perfil, ya normalizados y en orden. Vuelve a pasar por
+ * `normalizarRed()` **aunque en la base ya deberían estar bien**: hay filas
+ * anteriores a la migración 035 y un enlace sin `https://` en un `href` es una ruta
+ * relativa — un botón que no lleva a ninguna parte delante de un reclutador.
+ * Lo que no se pueda arreglar, no se publica.
+ */
+function armarRedes(m: any, cv: any): { red: Red; etiqueta: string; url: string }[] {
+  const bruto: Record<Red, unknown> = {
+    linkedin: cv.linkedin_url,
+    web: cv.website_url,
+    youtube: m.youtube_handle,
+    instagram: m.instagram_handle,
+    tiktok: m.tiktok_handle,
+    facebook: m.facebook_handle,
+  };
+  const salida: { red: Red; etiqueta: string; url: string }[] = [];
+  for (const red of ORDEN_REDES) {
+    const { url } = normalizarRed(red, bruto[red]);
+    if (url) salida.push({ red, etiqueta: REDES[red].etiqueta, url });
+  }
+  return salida;
+}
+
 /** Una entrada vacía del editor (se agregó y no se rellenó) no se publica. */
 const tieneAlgo = (o: Record<string, string>) => Object.values(o).some((v) => v !== '');
 
@@ -130,7 +155,8 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
   const { rows: mRows } = await pool.query(
     `SELECT m.id, m.name, m.email, m.phone, m.photo_url,
             p.name AS position,
-            u.avatar_url, u.first_name, u.last_name
+            u.avatar_url, u.first_name, u.last_name,
+            u.youtube_handle, u.tiktok_handle, u.instagram_handle, u.facebook_handle
        FROM gcc_world.members m
        LEFT JOIN gcc_world.positions p ON p.id = m.position_id
        LEFT JOIN gcc_world.users u     ON u.member_id = m.id
@@ -237,8 +263,7 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
     // registro de miembro es la de respaldo.
     foto: texto(m.avatar_url) || texto(m.photo_url),
     bio: texto(cv.bio),
-    linkedin: texto(cv.linkedin_url),
-    web: texto(cv.website_url),
+    redes: armarRedes(m, cv),
     skills: lista(cv.skills),
     idiomas: lista(cv.languages),
     talentos,

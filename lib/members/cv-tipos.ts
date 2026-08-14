@@ -12,6 +12,7 @@
  * (`entrante.ts`, `conocimiento.ts`, `herramientas.ts`).
  */
 import { fmtInt } from '@/lib/format';
+import type { Red } from '@/lib/members/redes';
 
 /* ── Tipos de lo que se publica ─────────────────────────────────────────────── */
 
@@ -46,8 +47,11 @@ export interface CvPublico {
   /** Solo si el miembro los encendió. Ausentes, no vacíos, cuando están apagados. */
   correo?: string;
   telefono?: string;
-  linkedin: string | null;
-  web: string | null;
+  /**
+   * Enlaces a perfiles, ya normalizados a URL absoluta y en el orden en que se
+   * pintan. Solo trae las que la persona rellenó: una red vacía no ocupa sitio.
+   */
+  redes: { red: Red; etiqueta: string; url: string }[];
   skills: string[];
   idiomas: string[];
   talentos: TalentoPublico[];
