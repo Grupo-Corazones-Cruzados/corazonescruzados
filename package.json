@@ -11,7 +11,8 @@
     "migrate:status": "node scripts/migrate.mjs --status",
     "juego:publicar": "bash scripts/publicar-juego.sh",
     "postinstall": "prisma generate",
-    "agente:worker": "node scripts/agente-worker.mjs"
+    "agente:worker": "node scripts/agente-worker.mjs",
+    "cv:ensayo": "node scripts/cv-ensayo.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

@@ -275,6 +275,75 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📄 CV PÚBLICO COMPARTIBLE POR TOKEN, para reclutadores (2026-08-14).** Un miembro genera
+  un enlace desde **Configuración → Perfil** y se lo pasa a alguien **sin cuenta**: una empresa
+  de selección. La página enseña foto, datos, talentos con su experiencia y formación,
+  portafolio, disponibilidad laboral y aspiración salarial, y se descarga en PDF.
+  - **🚨 SE RETIRÓ `/members/[id]`, QUE ERA PÚBLICA Y SIN TOKEN** (decisión de Fernando). Enseñaba
+    nombre, foto, **teléfono**, correo, CV y portafolio a cualquiera que escribiera un número del
+    1 al 10, y **nada del sitio enlazaba a ella**: era una exposición huérfana. Con esa URL viva,
+    el token no protegía nada — había otra puerta abierta al lado. Se borró también su endpoint
+    `/api/members/[id]/public`.
+  - **El token se calca del calendario público** (`members.calendar_public_token`), que es el
+    mecanismo ya probado: `cv_public_token` + `_created_at` en `members`, 32 bytes hex, índice
+    único **parcial**, y GET/POST(regenerar)/DELETE(revocar). **Regenerar mata el anterior.**
+  - **UNA SOLA PUERTA token → miembro: `lib/members/cv-share.ts`.** La usan las cuatro salidas
+    (página, JSON, imagen y PDF). Es la lección de `lib/flows/acceso.ts`: una regla copiada en
+    cuatro sitios es una regla que en alguno está mal.
+  - **LO QUE NO DEBE VERSE NO SALE DEL SERVIDOR.** `armarCvPublico()` devuelve solo lo publicable;
+    si el teléfono está apagado, la clave **no existe** en el JSON. Nada de filtrar en el cliente:
+    un JSON público se lee igual de fácil que la página. Probado apagando los interruptores.
+  - **Campos nuevos en `member_cv_profiles`** (migración **034**, versionada): `headline`,
+    `location`, `salary_min`/`salary_max`/`salary_visible`, los `job_*` de disponibilidad laboral,
+    y `share_email`/`share_phone` — **los dos nacen APAGADOS**: un enlace se reenvía y un teléfono
+    publicado no se despublica.
+  - **Aspiración salarial = rango MENSUAL en USD** (decisión de Fernando). Sin columna de periodo
+    a propósito: «1.200 – 1.800» sin unidad es ambiguo. El formulario está en el panel de Perfil
+    porque él lo pidió ahí, pero **el dato vive en el CV**: si el bloque se muda de panel, el dato
+    no se muda. Se guarda con el botón «Guardar cambios» del propio Perfil (dos botones en una
+    columna de 400 px es una trampa para dejarse la mitad sin guardar).
+  - **⚠️ «DISPONIBILIDAD» ERA TRES COSAS DISTINTAS Y AHORA SON TRES CAMPOS DISTINTOS.**
+    `member_schedules` = horario de atención (Lun-Vie 09:00-17:00) · `members.availability_status`
+    = conectado / fuera de casa · **`member_cv_profiles.job_*` = disponibilidad LABORAL** (cuándo
+    puedes empezar, jornada, remoto/híbrido/presencial), que es lo único que pregunta un
+    reclutador. Se edita en la pestaña **Disponibilidad**; el horario baja a dato secundario.
+  - **El PDF se dibuja con PDFKit, no con puppeteer.** PDFKit es el motor **probado en producción**
+    (los RIDE de las facturas), mientras que **el navegador de puppeteer no está descargado** en el
+    entorno, así que la ruta de la proforma que lo usa no está demostrada. Y PDFKit es literalmente
+    lo pedido: una maqueta de A4 —columna lateral de color a sangre, pie propio, saltos de página
+    cuidados—, no una captura de la pantalla. Página 1 con columna lateral; de la 2 en adelante, a
+    ancho completo.
+  - **🐛 `pdfkit.standalone` EMPAQUETADO NO RECONOCE UN `Buffer` DE NODE.** Al pasarle una imagen
+    como `Buffer`, `PDFImage.open` hace `Buffer.isBuffer()` con el **`Buffer` del navegador** que
+    webpack le inyecta, da **false**, cree que le han dado una ruta y llama a `fs.readFileSync` —
+    que en el paquete es un módulo vacío: **500 con «p.readFileSync is not a function»**.
+    **Solución: pasar la imagen como `data:` URL**, que toma la rama del base64. Esto **no le
+    pasaba a los PDF de facturas porque son solo texto**. Aislado con una sonda de seis casos
+    contra el servidor compilado; los casos sin imagen pasaban todos.
+  - **🐛 UNA ANIMACIÓN LIGADA AL SCROLL QUE PARTE DE `opacity: 0` DEJA LA PÁGINA EN BLANCO.** Con
+    `animation-timeline: view()`, si el recorrido **no avanza** —ventana muy alta, CV corto,
+    captura de página completa— el bloque se queda en el primer fotograma, que era invisible. Se
+    vio en una captura a 390 px: todo lo que había bajo la portada salía vacío. **Ahora la
+    animación solo mueve (`translateY`), nunca la opacidad**: el peor caso es un bloque 18 px más
+    abajo, no un currículum en blanco. Es la misma regla que ya estaba escrita para `/negocio` —
+    *nunca ocultar contenido tras un efecto*—, incumplida por la vía de las animaciones nativas.
+  - **`noindex` en toda la rama `/cv`** (en el layout, para que ninguna página pueda olvidarlo) y
+    **`X-Robots-Tag`** en el JSON, la imagen y el PDF, que no tienen `<head>`. Un token indexado
+    deja de ser un token.
+  - **Las imágenes del portafolio NUNCA salen en base64**: el JSON manda el **contador** y los
+    píxeles se piden a `/api/cv/<token>/imagen`, reescalados con `sharp` a WebP. Y **el token manda
+    también ahí** (`AND member_id`): sin eso, revocar el enlace dejaría las fotos accesibles.
+  - **⭐ VISTAS ESPECIALIZADAS, NO UNA COLUMNA QUE SE ESTRECHA** — es lo que Fernando distinguía de
+    «responsivo». Escritorio: **ficha fija** a la izquierda (foto, disponibilidad, sueldo, contacto,
+    índice) que no se mueve mientras el contenido pasa al lado. Tableta: esa ficha se vuelve
+    portada horizontal y el índice baja a una barra pegajosa de píldoras. Teléfono: portada
+    centrada, índice deslizable y **barra inferior fija** con el PDF y el contacto, donde alcanza
+    el pulgar. **Fernando levantó para esta página su regla de acordar el diseño antes**
+    («esta vez propón tú el diseño»); la regla general de [[gcc-diseno-sitio-con-fernando]]
+    **sigue vigente para el resto**.
+  - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
+    CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
+    las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.
 - **🚪 `/negocio` SON SEIS PÁGINAS, NO UNA (2026-08-04).** Fernando rehízo la sección entera.
   - **La cabecera son cinco puertas.** Fuera el titular de marca («Primero las personas. Lo
     demás sale de ahí.»), que se leía bien y no contestaba a lo único que pregunta quien

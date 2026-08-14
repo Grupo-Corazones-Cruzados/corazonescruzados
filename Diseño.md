@@ -1633,6 +1633,73 @@ función y no de la memoria de quien escribe.
 > en la app de Meta y enlazadas desde formularios. Reorganizar la navegación **añade puertas, no
 > mueve habitaciones**.
 
+## CV público — `/cv/<token>` (2026-08-14)
+
+Cuarto lenguaje… no: **es el del sitio público**, reusado. Mismos valores literales
+(`#0b0d14`, violeta `#7B5FBF`/`#a78bfa`/`#c4b5fd`, **Inter**, realce de **borde** y nunca de
+sombra), por el mismo motivo: la ve un tercero y no puede depender del tema del panel.
+Lo que cambia es la **maqueta**, no la paleta.
+
+### ⛔ EXCEPCIÓN PUNTUAL a la regla «el diseño de lo público se acuerda antes»
+Fernando la levantó **para esta página y solo para esta** el 2026-08-14: *«esta vez propón tú
+el diseño»*. Para `/negocio`, `/recursos`, `/contacto` y cualquier página pública futura,
+**la regla de §«El diseño de estas páginas lo decide Fernando, conmigo, ANTES» sigue vigente**.
+
+### Vistas especializadas — la maqueta cambia, no se estrecha
+Es lo que Fernando distinguía de «responsivo». Tres maquetas distintas:
+
+| Ancho | Maqueta |
+|---|---|
+| `lg+` | `grid [340px_1fr]` (`xl`: 380). Izquierda **fija** (`sticky top-0 h-screen overflow-y-auto`): foto, nombre, titular, ubicación, píldora de disponibilidad, sueldo, contacto, botón de PDF e índice. Derecha: franja de cifras + secciones |
+| `md` | Una columna. La ficha se convierte en **portada centrada**; el índice baja a una **barra pegajosa** de píldoras (`sticky top-0` + `backdrop-blur`); las secciones internas van a dos columnas |
+| `< md` | Una columna. Índice deslizable en horizontal y **barra inferior fija** con «Descargar en PDF» + correo + teléfono. El contenedor lleva `pb-28` para que la barra no tape el pie |
+
+**Por qué la ficha es fija en escritorio:** quien lee un CV vuelve todo el rato a «quién es y
+cuánto pide». Si eso se va con el scroll, hay que subir para comprobarlo.
+
+### La franja de cifras — el «de un vistazo»
+Cuatro recuadros bajo la portada: **Disponibilidad · Trayectoria · Talentos · Portafolio**. Un
+recuadro **no se pinta si su cifra es 0** (misma regla que el sitio: una lista vacía no deja
+hueco ni «próximamente»). Los años salen del primer año declarado en cualquier experiencia.
+
+### ⚠️ ANIMACIÓN LIGADA AL SCROLL: **NUNCA** TOCAR LA OPACIDAD
+`.cv-anima` y `.cv-cascada` usan `animation-timeline: view()` dentro de
+`@supports` + `prefers-reduced-motion: no-preference`, como `.tema-anima`. **Pero animan solo
+`translateY`, no `opacity`, y esa diferencia no es de gusto.**
+
+Un `animation-timeline: view()` cuyo recorrido **no avanza** se queda en el primer fotograma.
+Pasa siempre que la página no se desplaza: ventana muy alta, contenido corto, o el modo de
+captura de página completa de un navegador. Con `opacity: 0` de partida, eso es **la página en
+blanco**. Medido: captura a 390 px con todo lo que había bajo la portada vacío.
+
+La regla de `/negocio` («el truco de opacidad 0 + IntersectionObserver deja el contenido
+oculto si el script no llega») **se aplica igual a las animaciones nativas**: no es el
+JavaScript lo que falla, es empezar en invisible. **El peor caso admisible es un bloque 18 px
+descolocado.**
+
+`.cv-entra` (la portada) sí va de `opacity: 0` a `1`, y ahí es correcto: es una animación **por
+tiempo**, que siempre termina, y el elemento está en pantalla desde el primer fotograma.
+
+### Catálogo propio de la página
+| Pieza | Qué es |
+|---|---|
+| `.cv-tarjeta` | `border white/[0.08]` + `bg white/[0.02]`, realce de **borde violeta** y `-2px` al hover / `focus-within` |
+| `Cifra` | Recuadro de la franja: rótulo en versalitas + icono violeta + valor de 17 px |
+| `Hito` | Entrada de trayectoria: filete a la izquierda que se tiñe al hover, título 16 px, empresa en violeta, fecha a la derecha en `tabular-nums`. **Filete y no caja**: a diez entradas, diez recuadros cansan |
+| `Chips` | Skills (violeta, destacado) e idiomas (neutro) |
+| `PildoraDisponibilidad` | Punto + texto; verde si está libre, gris si no |
+| `IndiceSecciones` | `components/cv/IndiceSecciones.tsx`. Anclas **de verdad** renderizadas en el servidor; el script solo añade la marca de en cuál estás. Sin JavaScript navega igual. Variantes `cv-indice-v` (filete) y `cv-indice-h` (píldoras) |
+| `PortafolioPublico` | Rejilla + visor. `<dialog>` **nativo** (foco atrapado, Escape, capa superior) con `m-auto` — el reajuste de Tailwind le pone `margin: 0` y lo deja arriba a la izquierda |
+
+### El PDF es OTRO diseño, no esta página impresa
+`lib/members/cv-pdf.ts`, PDFKit. Columna lateral **a sangre** de 196 pt en `#181231` con la foto
+y los datos de decisión; contenido en blanco a la derecha. De la página 2 en adelante **no se
+arrastra la columna** —sería un tercio del papel en blanco—: un filete violeta arriba cose las
+páginas y el contenido va a ancho completo. Pie con nombre + fecha + `n / total`, **medido y
+recortado a mano** con `widthOfString` (`lineBreak: false` y `ellipsis` no bastaron).
+Hay un `@media print` en la hoja de la página, pero solo como red de seguridad para quien pulse
+Ctrl+P: **el documento bueno es el del botón.**
+
 ## Desviaciones detectadas y resolución
 
 ### 2026-08-03 · El sitio público era un lenguaje visual sin documentar · **ADOPTADO como estándar**

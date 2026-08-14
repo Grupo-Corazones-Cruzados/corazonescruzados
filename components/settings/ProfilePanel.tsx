@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
+import CompartirCv, { AJUSTES_VACIOS, type AjustesCvPublico } from '@/components/settings/CompartirCv';
 import { User, Camera, RefreshCw } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -25,6 +26,29 @@ export default function ProfilePanel() {
   const [uploading, setUploading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Ajustes del CV público. Solo se cargan/guardan si el usuario es miembro: quien no
+  // lo es no tiene fila en `member_cv_profiles` y el endpoint le responde 403.
+  const esMiembro = !!user?.member_id;
+  const [cvPublico, setCvPublico] = useState<AjustesCvPublico>(AJUSTES_VACIOS);
+
+  useEffect(() => {
+    if (!esMiembro) return;
+    fetch('/api/members/cv/publico')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setCvPublico({
+          headline: d.headline || '',
+          location: d.location || '',
+          salary_min: d.salary_min ?? null,
+          salary_max: d.salary_max ?? null,
+          salary_visible: d.salary_visible ?? true,
+          share_email: d.share_email ?? false,
+          share_phone: d.share_phone ?? false,
+        });
+      })
+      .catch(() => {});
+  }, [esMiembro]);
 
   // Trae nombre/teléfono/foto desde el perfil de Google del usuario.
   const handleGoogleSync = async () => {
@@ -86,6 +110,22 @@ export default function ProfilePanel() {
         }),
       });
       if (!res.ok) throw new Error('Error al actualizar');
+
+      // Los datos del CV público viven en otra tabla y tienen su propia puerta
+      // (`/api/members/cv/publico`), pero el botón es UNO: dos «Guardar» en un panel
+      // de 400 px es una trampa para dejarse la mitad sin guardar.
+      if (esMiembro) {
+        const resCv = await fetch('/api/members/cv/publico', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cvPublico),
+        });
+        if (!resCv.ok) {
+          const d = await resCv.json().catch(() => ({}));
+          throw new Error(d.error || 'Error al guardar el CV público');
+        }
+      }
+
       await refreshUser();
       toast.success('Perfil actualizado');
     } catch (err) {
@@ -152,6 +192,15 @@ export default function ProfilePanel() {
             <PixelInput label="Facebook" value={facebook} onChange={(e) => setFacebook(e.target.value)} placeholder="Nombre de página" />
           </div>
         </div>
+
+        {/* CV público: enlace con token + aspiración salarial + qué se publica.
+            Solo para miembros — es su CV lo que se comparte. */}
+        {esMiembro && (
+          <CompartirCv
+            ajustes={cvPublico}
+            onChange={(patch) => setCvPublico((p) => ({ ...p, ...patch }))}
+          />
+        )}
 
         {/* Cuenta */}
         <div className="pt-3 border-t border-digi-border space-y-3">

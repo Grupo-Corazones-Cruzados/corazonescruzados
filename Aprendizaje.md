@@ -3966,3 +3966,232 @@ toca XML firmado, esquemas XSD y RIDE, así que manda lo que valida el SRI, no l
   `xml_signed`, `access_key` ni `authorization_number`.
 - **Que el arreglo se vea en la web pero no en los correos** → por eso el backfill, y no solo el
   cambio de plantilla.
+
+---
+
+# Objetivo (2026-08-14) — CV PÚBLICO COMPARTIBLE POR TOKEN, para reclutadores · 🔎 55%
+
+**Rol asumido:** *ingeniero de producto full-stack con foco en exposición pública segura de
+datos personales* — la mitad del trabajo es Next.js/Postgres (token, campos, PDF) y la otra
+mitad es **decidir qué de una persona sale a internet y con qué control**. Quien abre ese
+enlace no es un usuario del sistema: es un reclutador externo, sin sesión, que puede reenviar
+la URL a quien quiera.
+
+## Objetivo / necesidad (verbatim resumido, 2026-08-14)
+En **Configuración**, en el **panel de Perfil** (columna izquierda), un **botón que genera un
+token de acceso público** para compartir el CV del usuario. La página pública debe mostrar:
+**foto · información del CV · datos personales · proyectos del portafolio · disponibilidad ·
+aspiración salarial**. Además:
+- **Campo nuevo «Aspiración salarial»** en el panel de Perfil, con un **rango aproximado**, que
+  también se ve en la página pública.
+- **Descarga en PDF** de todo el contenido — **NO impresión de la página**: un **diseño
+  específico para PDF**.
+- Presentación **muy moderna**, con **transiciones y animaciones**, pero **todo el contenido
+  accesible de un vistazo**.
+- **Vistas especializadas** para computadora / teléfono / distintos tamaños de pantalla — en
+  este caso en particular; hoy la app es **solo responsiva** y a futuro pedirá vistas
+  personalizadas para el resto.
+
+## ⛔ REGLA QUE MANDA SOBRE ESTE OBJETIVO (ya establecida, `Diseño.md` §«Sitio público»)
+**El diseño y el contenido visible de cualquier página pública los decide Fernando, conmigo,
+ANTES de escribir una línea** (2026-08-03, verbatim: *«no quiero que hagas el diseño por tu
+cuenta porque tengo que ver contigo el diseño específico de esa página y todas otras»*), y
+**no vale dejarle una propuesta ya montada**. Se parte en dos:
+- **Fontanería** (token, modelo de datos, endpoints, PDF, metadatos, `noindex`): se propone,
+  se hace y se avisa.
+- **Diseño y contenido visible** (secciones, orden, qué se cuenta, maquetación, animaciones):
+  **se acuerda antes**.
+⇒ Este objetivo **no puede completarse sin una sesión de diseño con él**. La parte de
+fontanería sí puede avanzar en paralelo. [[gcc-diseno-sitio-con-fernando]]
+
+## Fuentes consultadas (2026-08-14, todo verificado contra el código actual)
+| Fuente | Qué aportó |
+|---|---|
+| `app/(dashboard)/dashboard/settings/page.tsx` | Perfil fijo 400 px + pestañas CV·Disponibilidad·Portafolio; las pestañas solo si `user.member_id` |
+| `components/settings/ProfilePanel.tsx` | Escribe en **`users`** vía `PUT /api/users/profile` (nombre, apellido, teléfono, redes) + avatar + sync Google. **Aquí va el botón y el campo nuevos** |
+| `components/settings/CvPanel.tsx` | CV en `member_cv_profiles`: bio, skills, languages, linkedin_url, website_url, education/experience (legado global) y **`talents` JSONB** = `[{key, education[], experience[]}]`. Servicios = filas de `services` por talento |
+| `components/settings/PortfolioPanel.tsx` | `member_portfolio_items` (project/product/automation) + proyectos del **equipo** del marketplace. Imágenes en **base64** en la fila |
+| `components/settings/AvailabilityPanel.tsx` + `/api/users/availability` | Disponibilidad = **`member_schedules`** (día 1-7, `is_active`, `start_time`, `end_time`). Es un **horario semanal de atención**, no una «disponibilidad laboral» |
+| `app/api/members/calendar/public-link/route.ts` | **PRECEDENTE EXACTO del token**: `members.calendar_public_token` + `_created_at`, `crypto.randomBytes(32).toString('hex')`, GET/POST(regenerar)/DELETE(revocar) |
+| `lib/flows/contact-share.ts` + `app/lista-contactos/[token]` | Segundo precedente de enlace público con token (base64url, una sola puerta token→recurso) |
+| `app/members/[id]/page.tsx` + `/api/members/[id]/public` | ⚠️ **YA EXISTE una página pública del miembro SIN token**, en pixel art, que expone nombre, foto, **teléfono**, correo, CV y portafolio a cualquiera que ponga el id |
+| `lib/cotizaciones/pdf.ts` + `app/api/projects/[id]/proforma` | **Precedente del PDF con diseño propio**: se construye un HTML A4 dedicado y se convierte con **puppeteer** (`import` dinámico, `--no-sandbox`) |
+| `lib/finance-pdf.ts`, `lib/integrations/sri/ride-pdf.ts` | Camino alternativo de PDF: **PDFKit** — el que sí está probado en producción (los RIDE de las facturas) |
+| `Diseño.md` §«Sitio público» | Lenguaje visual de lo público: fondo `#0b0d14`, violeta `#7B5FBF`/`#a78bfa`, **Inter**, colores **literales** (no tokens), piezas en `components/sitio/piezas.tsx`, Server Components, animación por `animation-timeline: view()` **sin JavaScript** |
+| `package.json` | `framer-motion` 11.15, `puppeteer` 24.40, `pdfkit` 0.18, `sharp` 0.34 disponibles |
+| `sql/migrations/` | Última migración **033**. La nueva sería **034** (y va versionada, no `CREATE TABLE` en el código) |
+
+## Preguntas y respuestas
+
+### P1 — ¿Dónde vive el token y con qué forma? · ✅ Resuelta (por precedente)
+- **Por qué importa:** inventar un mecanismo nuevo cuando ya hay uno probado rompe la regla
+  «equivalente no es igual».
+- **Respuesta:** se calca `calendar_public_token`: columnas **`cv_public_token`** +
+  **`cv_public_token_created_at`** en `gcc_world.members`, índice único parcial, 32 bytes hex,
+  y un endpoint con **GET (consultar) · POST (generar/regenerar) · DELETE (revocar)**. La
+  resolución token→miembro vive en **un solo archivo** (`lib/members/cv-share.ts`), como
+  `lib/flows/contact-share.ts`. (fuente: `app/api/members/calendar/public-link/route.ts`)
+
+### P2 — ¿Qué pasa con `/members/[id]`, que YA es pública y sin token? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** es **el punto crítico de todo el objetivo**. Pedir un token para
+  proteger el CV mientras existe otra URL que enseña lo mismo —incluido el **teléfono**— con
+  solo poner un número, deja la puerta de atrás abierta. Cualquier decisión de privacidad que
+  tomemos en la página nueva es papel mojado si esa sigue viva.
+- **Opciones:** (a) la nueva la sustituye y `/members/[id]` se retira o redirige; (b) conviven
+  y se recorta lo que enseña la vieja; (c) se deja tal cual.
+- **Respuesta:** —
+
+### P3 — ¿Qué significa «disponibilidad» para un reclutador? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** lo que hoy guarda la app (`member_schedules`) es un **horario semanal de
+  atención** (Lun-Vie 09:00-17:00). Un reclutador no lee eso como disponibilidad: espera
+  «inmediata / 15 días / a partir de tal fecha», «jornada completa o parcial», «remoto,
+  híbrido o presencial». Si es lo segundo, hacen falta **campos nuevos**, no solo pintar el
+  horario que ya existe.
+- **Respuesta:** —
+
+### P4 — Aspiración salarial: ¿en qué unidad y con qué forma? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** determina el modelo de datos y cómo se lee. Un rango sin periodo
+  («1.200 – 1.800») es ambiguo: no se sabe si es al mes, por hora o por proyecto.
+- **A decidir:** periodo (mes / hora / proyecto / anual), moneda (¿siempre USD, como el resto
+  de la app?), y si es **rango libre** (mín–máx) o **tramos** predefinidos.
+- **Nota técnica:** el panel de Perfil escribe hoy en `users` y el CV vive en
+  `member_cv_profiles`. La aspiración es dato de CV, así que **el campo se guarda en
+  `member_cv_profiles`** aunque el formulario esté en Perfil, como pidió Fernando.
+- **Respuesta:** —
+
+### P5 — ¿Qué datos personales salen a la página pública? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** el enlace se reenvía. Lo que se publica una vez, se publica para
+  siempre. Correo y **teléfono** son los dos sensibles.
+- **Propuesta a validar:** foto, nombre, cargo, ciudad/país, bio, talentos, skills, idiomas,
+  LinkedIn/web **siempre**; correo y teléfono con **interruptor** en el panel de Perfil.
+- **Respuesta:** —
+
+### P6 — Del portafolio, ¿sale todo y con precios? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** el portafolio guarda **precios** (`cost`) y servicios con tarifa. En una
+  página dirigida a reclutadores, un precio junto a cada proyecto cambia el mensaje: pasa de
+  «esto sé hacer» a «esto cobro». Y están los proyectos **del equipo** (marketplace), que no
+  son suyos en exclusiva.
+- **Respuesta:** —
+
+### P7 — ¿El PDF se genera con puppeteer (HTML propio) o con PDFKit? · 🔎 Investigando
+- **Por qué importa:** Fernando pidió explícitamente **un diseño hecho para PDF, no una
+  impresión de la página**. Con HTML dedicado + puppeteer se consigue en una tarde; con PDFKit
+  hay que dibujar a mano cada caja.
+- **Lo que ya sé:** el repo tiene los dos caminos. `lib/cotizaciones/pdf.ts` construye un HTML
+  A4 propio y `app/api/projects/[id]/proforma/route.ts` lo pasa por puppeteer
+  (`import` dinámico, `--no-sandbox`). **PDFKit sí está probado en producción** (los RIDE de
+  las facturas salen por ahí todos los días).
+- ⚠️ **Riesgo a verificar antes de comprometerse:** en la Mac **el Chrome de puppeteer no está
+  descargado** (quedó anotado en MEMORIA: se usa el Chrome del sistema con `executablePath`).
+  Falta comprobar que en **Railway** el navegador existe y que la ruta de la proforma **funciona
+  de verdad en producción** — que el código exista no prueba que se ejecute. Si no funciona,
+  las salidas son: instalar el navegador en el build, `@sparticuz/chromium`, o dibujar el PDF
+  con PDFKit.
+- **Respuesta:** —
+
+### P8 — ¿La página debe salir en Google? · ❓ Abierta (recomendación clara)
+- **Por qué importa:** es un CV con datos personales detrás de un token. **Debe llevar
+  `robots: noindex, nofollow` y quedar fuera de `app/sitemap.ts`.** Un token indexado deja de
+  ser un token. Lo doy por hecho salvo que Fernando diga lo contrario.
+
+### P9 — «Vistas especializadas» por tipo de pantalla: ¿qué las diferencia? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** Fernando distingue esto de «responsivo», que es lo que la app ya hace.
+  Una vista especializada de verdad significa **maquetación distinta**, no la misma columna
+  estrechada: p. ej. en escritorio dos columnas con la foto fija a la izquierda y el contenido
+  desplazándose; en teléfono, tarjetas apiladas con navegación por secciones. Sin saber qué
+  espera ver, cualquier cosa que haga es adivinar — y esto entra de lleno en la regla de que el
+  diseño se acuerda antes.
+- **Respuesta:** —
+
+## Decisiones de diseño ya firmes (fontanería, no necesitan acuerdo previo)
+1. **Migración `034_cv_publico.sql`, versionada** — nada de `ALTER TABLE` escondido en un
+   endpoint. Añade `cv_public_token`, `cv_public_token_created_at` a `members` y los campos de
+   aspiración salarial a `member_cv_profiles`.
+2. **Una sola puerta token→miembro**, en `lib/members/cv-share.ts`. La lección de
+   `lib/flows/acceso.ts` es literal: una regla copiada en varias rutas es una regla que en
+   alguna está mal y nadie lo nota.
+3. **El endpoint público devuelve SOLO lo que se publica.** No se reusa
+   `/api/members/[id]/public` ni se filtra en el cliente: lo que no debe verse **no sale del
+   servidor**, porque el JSON de la respuesta se lee igual que la página.
+4. **El PDF se arma en el SERVIDOR desde los datos**, no desde el DOM de la página. Es la única
+   forma de que sea «un diseño para PDF» y no una captura, y de que el enlace del token
+   devuelva el mismo documento siempre.
+5. **`noindex` + fuera del sitemap.**
+6. **Colores literales, no tokens `.corp`** — como el resto de lo público y las páginas
+   legales: esta página la ve un tercero y no puede depender del tema del panel.
+
+## Riesgos identificados
+- **La puerta de atrás de `/members/[id]`** (P2) — el riesgo mayor, y es de privacidad, no técnico.
+- **Puppeteer sin navegador en Railway** (P7) — se verifica antes de prometer el botón de PDF.
+- **Imágenes del portafolio en base64 dentro de la fila.** Ya mordió dos veces en el marketplace
+  (listas de 4,8 MB). La página pública **no puede** mandar base64: hay que servir miniaturas por
+  endpoint con `sharp`, como hace `/api/marketplace/projects/[id]/image?w=`.
+- **Animaciones que esconden el contenido.** Fernando pidió a la vez «muy moderna con
+  animaciones» y «todo accesible de un vistazo». La regla del sitio público ya resuelve la
+  tensión: animación **CSS ligada al scroll**, nunca opacidad 0 revelada por JavaScript.
+- **Revocar tiene que revocar de verdad**: token borrado ⇒ 404 en la página **y** en el PDF.
+
+## Respuestas de Fernando (2026-08-14) — decisiones cerradas
+- **P2 · `/members/[id]` SE RETIRA.** La página pública sin token desaparece; la nueva, con token,
+  la sustituye. Es lo que hace que el token signifique algo.
+- **P3 · Disponibilidad = DISPONIBILIDAD LABORAL, con campos nuevos.** Inmediata / a partir de una
+  fecha / no disponible · jornada completa o parcial · remoto, híbrido o presencial. El horario
+  semanal de `member_schedules` es otra cosa y se muestra, si acaso, como detalle secundario.
+- **P4 · Aspiración salarial = RANGO MENSUAL EN USD.** Mínimo–máximo al mes. Sin selector de
+  periodo: una sola unidad, sin ambigüedad.
+- **P-diseño · Fernando LEVANTA la regla para ESTA página** (2026-08-14): *«esta vez propón tú el
+  diseño»*. ⚠️ Es una excepción **puntual y para esta página**; la regla general de
+  `Diseño.md` (el diseño de lo público se acuerda antes) sigue vigente para todo lo demás.
+
+### P7 — Motor del PDF · ✅ Resuelta: **PDFKit**, no puppeteer
+- **Por qué importa:** el botón de descarga tiene que funcionar en producción el primer día.
+- **Respuesta:** se usa **PDFKit**, que es el motor **probado en producción** (los RIDE de las
+  facturas salen por ahí a diario). Se descarta **puppeteer** porque su navegador **no está
+  descargado** (verificado: no hay `~/.cache/puppeteer` ni `.local-chromium`, y no hay ninguna
+  variable `PUPPETEER_*`), así que la ruta de la proforma que lo usa **no está demostrada en
+  Railway** — que el código exista no prueba que se ejecute. Además PDFKit **es** literalmente
+  lo que pidió Fernando: un documento dibujado para PDF, no una captura de la página.
+
+### P5 — Datos personales publicados · ✅ Resuelta (supuesto declarado)
+- **Siempre:** foto, nombre, titular, ubicación, bio, talentos con su educación y experiencia,
+  skills, idiomas, LinkedIn y web.
+- **Con interruptor, apagados por omisión:** correo y teléfono. Un enlace se reenvía; publicar
+  un teléfono no se deshace. El interruptor vive en el panel de Perfil, junto al botón.
+
+### P6 — Portafolio en la página pública · ✅ Resuelta (supuesto declarado)
+- Se publican los ítems del portafolio **sin precio**: es un CV, no una tienda, y un precio al
+  lado de cada proyecto cambia el mensaje que lee un reclutador.
+- **Las imágenes NUNCA salen en base64** (están así en la fila). Se sirven redimensionadas con
+  `sharp` por un endpoint del token, como ya hace el marketplace.
+
+## Progreso — ✅ 100 %, CONSTRUIDO Y VERIFICADO (2026-08-14)
+
+Todas las preguntas críticas están resueltas y la solución está en pie. Lo entregado:
+- Migración **034** (aplicada) · `lib/members/cv-share.ts` (puerta única) · `lib/members/cv-pdf.ts`
+- `GET|POST|DELETE /api/members/cv/public-link` · `GET|PATCH /api/members/cv/publico`
+- `GET /api/cv/[token]` · `/imagen` · `/pdf` · página `/cv/[token]` + su hoja de estilo
+- `components/settings/CompartirCv.tsx` (bloque del panel de Perfil) · `components/ui/Interruptor.tsx`
+  (extraído, ya no hay dos definiciones del switch) · disponibilidad laboral en `AvailabilityPanel`
+- **Retirados** `app/members/[id]` y `app/api/members/[id]/public`
+- `scripts/cv-ensayo.mjs` + `npm run cv:ensayo`
+
+## Lo que encontró el ensayo y no habrían encontrado `tsc` ni `next build`
+1. **El PDF daba 500 al incrustar cualquier imagen.** `pdfkit.standalone`, al empaquetarse, usa el
+   `Buffer` del navegador; `Buffer.isBuffer(bufferDeNode)` da **false**, PDFImage cree que recibe
+   una ruta y llama a `fs.readFileSync`, que es un módulo vacío. Se aisló con una sonda de seis
+   casos contra el servidor compilado: todos los casos **sin imagen** pasaban. Solución: pasar la
+   imagen como **`data:` URL**. Los PDF de facturas nunca lo sufrieron porque son solo texto.
+2. **La página salía en blanco en móvil.** La animación ligada al scroll partía de `opacity: 0` y,
+   cuando el recorrido no avanza, se queda ahí. Solución: animar **solo `translateY`**.
+3. **El pie del PDF se partía en dos líneas** y la segunda se metía debajo del «1 / 1».
+   `lineBreak: false` + `ellipsis` no lo impidieron; se mide con `widthOfString` y se recorta.
+
+Ninguno de los tres lo ve el typecheck ni el build. Confirmado otra vez: **medir, no razonar.**
+
+## Riesgos que quedan abiertos
+- **`lib/cotizaciones/pdf.ts` + puppeteer no está demostrado en producción.** Su navegador no está
+  descargado en el entorno; si la proforma en PDF alguna vez falla, es por aquí. **No se tocó** —
+  está fuera de lo pedido—, pero queda anotado.
+- **Las imágenes del portafolio siguen en base64 dentro de la fila.** La página pública ya no las
+  manda (contador + endpoint con `sharp`), pero el problema de fondo sigue ahí para quien las lea
+  en crudo.
