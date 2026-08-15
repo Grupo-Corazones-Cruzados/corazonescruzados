@@ -4339,3 +4339,27 @@ la maqueta la tiene que mirar Fernando.
 - **Y la barra hay que vestirla.** Volver a meter scroll interno reintroduce la «raya negra»
   si se deja la del navegador: `.cv-scroll` la deja fina y violeta. Se estiliza, **no se
   oculta** — una barra invisible esconde que hay más contenido.
+
+## Sexta pasada — el alto lo pone el pie (2026-08-15)
+
+Los dos paneles de Configuración miden **hasta el pie de la app**, no según sus campos, y los
+botones de guardar quedan **fijos al fondo**, fuera del área que se desplaza.
+
+### P18 — ¿Cómo se ata un botón fijo a un formulario que está encima? · ✅ Resuelta
+- **Respuesta:** el atributo HTML **`form="<id>"`**. Un `<button type="submit" form="x">` envía
+  el formulario `x` aunque esté fuera de él. Sin eso habría que renunciar al `<form>` —y con él
+  al envío con Intro— o meter el botón dentro del área que rueda, que es lo que se quería
+  evitar.
+
+### ⭐ P19 — El problema real: llevo dos entregas «a ciegas» del panel · ✅ Resuelta
+- **El patrón:** las pantallas de `/dashboard` piden contraseña **y código al correo**, así que
+  las entregaba verificadas solo con `tsc` + build. Resultado: una barra de pestañas
+  desbordada y un botón fuera de sitio, encontrados por Fernando en una captura.
+- **La solución no era mirar más el código, era poder ABRIR la pantalla.**
+  `scripts/mirar-panel.mjs` firma un JWT con el secreto del propio entorno y saca captura +
+  **medidas objetivas** (si la página se desplaza, contenedores con scroll, posición de cada
+  botón). Con eso, esta vez comprobé antes de entregar que los dos botones miden 36 px y
+  acaban a la misma altura.
+- **La lección general:** cuando algo «no se puede verificar», casi siempre lo que falta es una
+  herramienta de veinte líneas, no una excusa. El repo ya lo había aprendido con
+  `agente-ensayo.mjs`; esto es lo mismo para la interfaz con sesión.

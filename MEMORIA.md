@@ -466,6 +466,26 @@ Stack estándar de la casa, con particularidades de este repo:
       Configuración lo llevaba «por si algún día no caben»; con tres y sitio de sobra, el
       navegador dibujaba su barra horizontal, se comía alto y asomaba un cuadrito. **No se
       ponen contenedores de scroll preventivos**: si hicieran falta más pestañas, `flex-wrap`.
+  - **📐 SEXTA PASADA — el alto de Configuración lo pone el pie (2026-08-15).**
+    - Los dos paneles **miden lo que queda hasta el pie de la app**, no lo que ocupan sus
+      campos, y cada uno se desplaza por dentro. Reusa **`useAltoHastaElPie()`**, el hook que
+      ya resolvía esto en las tablas y en el Estudio del agente.
+    - **Los «Guardar» quedan fijos al fondo**, fuera del área que rueda: `SettingsPanel` gana
+      la ranura **`pie`** y `CvPanel` se parte en contenido + pie. ⚠️ El botón del pie está
+      FUERA del `<form>`, así que se ata con **`form="perfil-form"`** (atributo HTML estándar):
+      acción fija sin perder el envío con Intro.
+    - ⚠️ **El hueco de la pestaña activa no lleva `overflow`**: **cada panel decide** qué parte
+      suya rueda. Con el scroll en el contenedor, «Guardar CV» se iría con el contenido.
+    - **Todos los botones de guardar comparten estilo** (`BTN_PRIMARY` + icono `Save`). Medido
+      en el navegador: 36 px de alto los dos, y acaban a la misma altura.
+  - **🔭 `npm run mirar:panel` (`scripts/mirar-panel.mjs`) — VER una pantalla del panel.**
+    Las pantallas de `/dashboard` piden contraseña **y un código al correo**, así que no se
+    podían abrir desde aquí: la consecuencia fue **entregar dos cambios de maqueta sin haberlos
+    visto**, y los defectos los encontró Fernando. La herramienta firma un JWT con el secreto
+    del propio `.env` —el mismo que usa la app—, lo pone como cookie y saca captura **y
+    medidas**: si la página se desplaza, cuántos contenedores tienen scroll propio y dónde
+    acaba cada botón. Es **local**: no despliega, no escribe en la base y no sirve sin el
+    `.env`, que ya da acceso a todo.
   - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
     CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
     las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.

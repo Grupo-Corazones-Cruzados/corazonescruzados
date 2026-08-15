@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
-import { User, Camera, RefreshCw, ExternalLink } from 'lucide-react';
+import { User, Camera, RefreshCw, ExternalLink, Save } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -150,8 +151,19 @@ export default function ProfilePanel() {
   };
 
   return (
-    <SettingsPanel Icon={User} title="Perfil" subtitle="Tus datos personales y redes" bodyClassName="p-0" className="w-full xl:w-[400px] shrink-0">
-      <form onSubmit={handleSave} className="p-4 space-y-4">
+    <SettingsPanel
+      Icon={User} title="Perfil" subtitle="Tus datos personales y redes"
+      bodyClassName="p-0" className="w-full xl:w-[400px] shrink-0 h-full"
+      /* ⚠️ El botón vive en el PIE, fuera del `<form>`, así que se ata a él con
+         `form="perfil-form"` — atributo HTML estándar. Es lo que permite tener la
+         acción fija al fondo sin renunciar a enviar con Intro desde un campo. */
+      pie={(
+        <button type="submit" form="perfil-form" disabled={saving} className={`${BTN_PRIMARY} w-full sm:w-auto`}>
+          <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar cambios'}
+        </button>
+      )}
+    >
+      <form id="perfil-form" onSubmit={handleSave} className="p-4 space-y-4">
         {/* Avatar */}
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
@@ -229,9 +241,6 @@ export default function ProfilePanel() {
           </dl>
         </div>
 
-        <button type="submit" disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-          {saving ? 'Guardando...' : 'Guardar cambios'}
-        </button>
       </form>
     </SettingsPanel>
   );

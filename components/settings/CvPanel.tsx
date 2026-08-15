@@ -216,7 +216,11 @@ export default function CvPanel() {
   const activeIdx = talents.length ? Math.min(activeTalent, talents.length - 1) : 0;
 
   return (
-    <div className="space-y-5">
+    /* Contenido que se desplaza + pie fijo: el botón «Guardar CV» no se va con el
+       scroll por muchos talentos que haya. `min-h-0` es lo que permite encoger el
+       área de arriba; sin él, el pie se saldría de la tarjeta. */
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
       {/* Datos base */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-1.5">
@@ -336,7 +340,9 @@ export default function CvPanel() {
         })()}
       </div>
 
-      <div className="flex justify-end">
+      </div>
+
+      <div className="shrink-0 border-t border-digi-border px-4 py-3 flex justify-end">
         <button onClick={save} disabled={saving} className={`${BTN_PRIMARY} w-full sm:w-auto`}>
           <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar CV'}
         </button>

@@ -156,7 +156,8 @@ export default function AvailabilityPanel() {
     }`;
 
   return (
-    <div className="space-y-4">
+    /* El contenido rueda por dentro: el alto lo pone el panel, no los campos. */
+    <div className="h-full min-h-0 overflow-y-auto p-4 space-y-4">
       {/* ── Disponibilidad LABORAL (lo que ve un reclutador en el CV público) ── */}
       <div className="rounded-xl border border-digi-border overflow-hidden">
         <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">

@@ -13,7 +13,8 @@
     "postinstall": "prisma generate",
     "agente:worker": "node scripts/agente-worker.mjs",
     "cv:ensayo": "node scripts/cv-ensayo.mjs",
-    "redes:prueba": "node --experimental-strip-types scripts/prueba-redes.mts"
+    "redes:prueba": "node --experimental-strip-types scripts/prueba-redes.mts",
+    "mirar:panel": "node scripts/mirar-panel.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

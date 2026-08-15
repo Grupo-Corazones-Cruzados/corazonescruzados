@@ -1748,6 +1748,35 @@ se comía alto y asomaba un cuadrito en la esquina. Lo vio Fernando.
 **No se pone un contenedor de scroll preventivo.** Si algún día hicieran falta más pestañas,
 `flex-wrap` en una barra ancha es mejor gesto que arrastrar de lado.
 
+### Configuración: el alto lo pone EL PIE, y los «Guardar» van fijos abajo (2026-08-15)
+Petición de Fernando: *«que la altura máxima de los dos paneles dependa de la posición del pie
+de página, no de los campos que contengan»* y *«los botones de guardado fijos abajo; si hay
+desbordamiento interno, el deslizamiento no debe afectarlos»*.
+
+```
+<div ref={alto.ref} style={alto.style}      ← useAltoHastaElPie({ minimo: 480 })
+     className="flex xl:flex-row items-stretch max-xl:!h-auto xl:min-h-0">
+  <SettingsPanel …>                          ← cabecera · cuerpo que rueda · PIE fijo
+  <div class="h-full min-h-0 flex flex-col"> ← pestañas (shrink-0) + hueco para el panel
+```
+
+- **`useAltoHastaElPie`** (`lib/hooks`) es el hook que ya resolvía esto en las tablas y en el
+  Estudio del agente: mide descontando el pie por `[data-app-footer]` —no por unos píxeles a
+  ojo—, usa **referencia como función** (el bloque puede no existir al montar) y observa **al
+  padre**, porque dentro de un contenedor con desplazamiento propio el `body` no cambia nunca.
+- **`SettingsPanel` gana la ranura `pie`**: se pinta FUERA del área que se desplaza
+  (`shrink-0`), así que el botón está siempre visible. El cuerpo pasa a
+  `flex-1 min-h-0 overflow-y-auto`.
+- ⚠️ **El hueco de la pestaña activa NO lleva `overflow` ni relleno.** **Cada panel decide** qué
+  parte suya rueda y qué queda fija: si el scroll estuviera en el contenedor, «Guardar CV» se
+  iría con el contenido.
+- ⚠️ **El botón del pie está FUERA del `<form>`**, así que se ata con `form="perfil-form"`
+  —atributo HTML estándar—. Es lo que permite la acción fija sin renunciar a enviar con Intro.
+- **El alto solo se impone en `xl`** (`max-xl:!h-auto`): apiladas en vertical, dos columnas
+  recortadas a media pantalla no se leerían. El `!important` de Tailwind gana al `style` inline.
+- **Todos los «Guardar» comparten estilo:** `BTN_PRIMARY` + icono `Save` + `w-full sm:w-auto`,
+  alineados a la derecha. Medido: los dos miden 36 px de alto y acaban a la misma altura.
+
 ### Compartir el CV — botón en la barra de pestañas + panel lateral (2026-08-14)
 `settings/page.tsx`: la barra de pestañas lleva el botón **«Compartir CV»** pegado a la
 derecha, con el borde de acento — es el mismo patrón que «Compartir acceso» en el encabezado
