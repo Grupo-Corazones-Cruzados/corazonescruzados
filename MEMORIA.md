@@ -275,6 +275,29 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧾 CONTENIDO DEL CV DE FERNANDO, PUESTO AL DÍA (2026-08-15).** No es código, es su
+  currículum — pero las decisiones de fondo sí son reglas.
+  - **⭐ TOPE DE 10 SKILLS, Y GENERALES** (`MAX_SKILLS` en `lib/members/cv-tipos.ts`, aplicado
+    en el formulario y en el endpoint). Se le propusieron 21 sacadas de sus 55 requerimientos,
+    14 proyectos y sus tickets, y él las recortó: *«que haya un máximo de 10 y que sean las más
+    generales que abarquen todo»*. Tiene razón por dos motivos: **una lista de veintiuna no se
+    lee, se hojea** —quien recibe un CV no distingue «Power Apps» de «Power Automate» de
+    «SharePoint», distingue «Power Platform»—, y además la ficha del CV público pasaba a pedir
+    1122 px de alto, con lo que la vista de dos columnas dejaba de activarse en cualquier
+    pantalla. Las diez: Automatización de procesos · Power Platform · Desarrollo web full-stack
+    · TypeScript · Python · Bases de datos SQL · Integración de APIs · Agentes de IA ·
+    Microsoft Azure · Facturación electrónica SRI.
+  - ⚠️ **CADA VEZ QUE CAMBIA EL CONTENIDO DE LA FICHA HAY QUE VOLVER A MEDIR EL UMBRAL** de la
+    vista de dos columnas. Subir las skills de 4 a 21 rompió la maqueta **sin que nada avisara**:
+    ni `tsc`, ni el build, ni la base. Solo se ve abriendo la página y comparando el `bottom`
+    del último hijo de `.cv-ficha` con `window.innerHeight`.
+  - **Las píldoras de aptitudes se quedan, y con el coste contado.** En texto corrido la ficha
+    bajaba de 1052 a 880 px —dos columnas en bastantes portátiles más— pero **Fernando prefirió
+    las píldoras** viendo el resultado. Umbral final: **1000 px**.
+  - **Descripciones de los 11 proyectos reescritas desde la NECESIDAD de cada uno**, a partir de
+    sus requerimientos reales y en su estilo (frases llanas, sin marketing, centradas en qué
+    resolvía el cliente). Dos que estaban vacías —Envío Masivo de Correo y Sistema Contable— y
+    una tercera, ATER Genera, ahora la tienen. Copia del texto anterior antes de escribir.
 - **📧 EL CORREO DE LA CUENTA DE FERNANDO VUELVE A `@grupocc.org` (2026-08-15).**
   `lfgonzalezm0@outlook.com` → **`lfgonzalezm0@grupocc.org`**. Es el camino de vuelta de la
   fusión del 2026-07-06, que había dejado la cuenta en outlook.

@@ -157,11 +157,19 @@
    daría un salto. Una consulta de medios **decide antes de pintar, no oscila y no
    necesita JavaScript**.
 
-   El umbral (**900 px** de alto) NO está puesto a ojo: se midió la ficha real en su
-   columna de 400 px. Necesita **866 px** en modo compacto (y 948 sin él, que solo
-   se da por encima de 1000 px de ventana, donde sobra sitio). 900 deja el margen
-   justo para que nunca se corte. Si algún día la ficha engorda, se vuelve a medir
-   con `scripts/mirar-panel.mjs` y se sube este número.
+   El umbral (**1000 px** de alto) NO está puesto a ojo: se midió la ficha real en su
+   columna de 400 px, con las diez skills en píldoras —la forma que eligió Fernando—.
+   Necesita **970 px** compacta, así que 1000 deja el margen justo.
+
+   ⓘ En texto corrido bajaba a 880 y el umbral podía ser 920, es decir, dos columnas
+   en bastantes portátiles más. Se probó y **Fernando prefirió las píldoras**: es su
+   decisión, tomada sobre el resultado, y el coste queda escrito aquí.
+
+   ⚠️ **Cada vez que la ficha cambie de contenido hay que VOLVER A MEDIRLO.** Pasó al
+   subir las skills de 4 a 21: la ficha saltó a 1122 px y la vista de dos columnas
+   dejó de activarse en cualquier pantalla, sin que nada avisara. Se mide abriendo
+   la página y comparando el `bottom` del último hijo de `.cv-ficha` con
+   `window.innerHeight`.
 
    ⚠️ La consulta se repite en cada bloque porque el CSS plano no deja nombrarla.
    **Si se cambia el umbral, hay que cambiarlo en las cuatro.**
@@ -182,7 +190,7 @@
 .cv-cols { display: block; }
 .cv-solo-dos { display: none; }
 
-@media (min-width: 1024px) and (min-height: 900px) {
+@media (min-width: 1024px) and (min-height: 1000px) {
   /* El marco es una columna: las dos columnas arriba y la barra de contacto
      abajo, **a lo ancho de la página entera**. */
   .cv-marco {
@@ -217,7 +225,7 @@
   .cv-solo-apilado { display: none; }
 }
 
-@media (min-width: 1280px) and (min-height: 900px) {
+@media (min-width: 1280px) and (min-height: 1000px) {
   .cv-cols { grid-template-columns: 400px minmax(0, 1fr); gap: 3.5rem; }
 }
 
@@ -235,7 +243,7 @@
   backdrop-filter: blur(10px);
   padding: 0.6rem 1rem;
 }
-@media (min-width: 1024px) and (min-height: 900px) {
+@media (min-width: 1024px) and (min-height: 1000px) {
   .cv-barra {
     position: static;
     flex-shrink: 0;

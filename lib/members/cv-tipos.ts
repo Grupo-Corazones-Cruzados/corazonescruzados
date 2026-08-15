@@ -14,6 +14,21 @@
 import { fmtInt } from '@/lib/format';
 import type { Red } from '@/lib/members/redes';
 
+/**
+ * Tope de skills del CV (Fernando, 2026-08-15): **diez, y generales**.
+ *
+ * No es un capricho de maqueta aunque salga de una: con veintiuna, la ficha del CV
+ * público necesitaba 1122 px de alto y la vista de dos columnas dejaba de activarse
+ * en casi cualquier pantalla. Pero el motivo de fondo es mejor que el técnico —
+ * **una lista de veintiuna skills no se lee, se hojea**: quien recibe un CV no
+ * distingue «Power Apps» de «Power Automate» de «SharePoint», distingue «Power
+ * Platform». Diez etiquetas generales dicen más que veinte específicas.
+ *
+ * Vive aquí, en el módulo puro, para que el formulario y el endpoint usen el MISMO
+ * número: si estuviera escrito dos veces, un día no coincidirían.
+ */
+export const MAX_SKILLS = 10;
+
 /* ── Tipos de lo que se publica ─────────────────────────────────────────────── */
 
 export type EstadoLaboral = 'immediate' | 'from_date' | 'not_available';

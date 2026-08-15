@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { MAX_SKILLS } from '@/lib/members/cv-tipos';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +29,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
     const body = await req.json();
+
+    // El formulario ya lo impide; esto corta lo que llegue por otro camino. Se
+    // responde 400 en vez de recortar en silencio: perder skills sin avisar es peor
+    // que un error que se lee.
+    if (Array.isArray(body.skills) && body.skills.length > MAX_SKILLS) {
+      return NextResponse.json(
+        { error: `Máximo ${MAX_SKILLS} skills. Deja las más generales, que abarcan a las demás.` },
+        { status: 400 },
+      );
+    }
 
     // ⚠️ `linkedin_url` y `website_url` NO se tocan aquí. Desde 2026-08-14 se editan
     // en «Redes sociales» del panel de Perfil, con el resto de enlaces; este upsert

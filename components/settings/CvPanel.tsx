@@ -9,6 +9,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { money } from '@/lib/format';
 import { TALENTOS } from '@/lib/centralized/talentos';
+import { MAX_SKILLS } from '@/lib/members/cv-tipos';
 import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check, Languages } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -124,6 +125,10 @@ export default function CvPanel() {
   const addSkill = () => {
     const s = newSkill.trim();
     if (!s || skills.includes(s)) { setNewSkill(''); return; }
+    if (skills.length >= MAX_SKILLS) {
+      toast.error(`Máximo ${MAX_SKILLS} skills. Quita una o deja las más generales.`);
+      return;
+    }
     setSkills([...skills, s]);
     setNewSkill('');
   };
@@ -253,11 +258,13 @@ export default function CvPanel() {
         {/* Skills e Idiomas comparten EL MISMO control: un botón con los chips
             dentro que abre su modal. Antes Idiomas era un desplegable de búsqueda y
             los dos campos, uno al lado del otro, no se parecían en nada. */}
-        <div>
+        {/* Mitad y mitad: con diez skills, un cuarto de ancho las apilaba en seis
+            filas y dejaba el resto de la fila vacío (Fernando, 2026-08-15). */}
+        <div className="md:col-span-1 xl:col-span-2">
           <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Tag className="w-3.5 h-3.5 text-accent" /> Skills</label>
           <BotonChips valores={skills} vacio="Agregar skills…" onClick={() => setSkillsModal(true)} />
         </div>
-        <div>
+        <div className="md:col-span-1 xl:col-span-2">
           <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Languages className="w-3.5 h-3.5 text-accent" /> Idiomas</label>
           <BotonChips valores={languages} vacio="Agregar idiomas…" onClick={() => setLangModal(true)} />
         </div>
@@ -362,13 +369,22 @@ export default function CvPanel() {
       {/* Modal de skills: se agregan una por una (Enter o botón), como chips. */}
       <PixelModal open={skillsModal} onClose={() => setSkillsModal(false)} title="Skills">
         <div className="space-y-3">
-          <p className="text-[12px] text-digi-muted" style={mf}>Agrega tus skills una por una. Pulsa Enter o “Agregar”.</p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[12px] text-digi-muted" style={mf}>
+              Hasta <strong>{MAX_SKILLS}</strong>, y cuanto más <strong>generales</strong>, mejor:
+              «Power Platform» dice más que «Power Apps», «Power Automate» y «SharePoint» por separado.
+            </p>
+            <span className={`shrink-0 text-[12px] tabular-nums ${skills.length >= MAX_SKILLS ? 'text-amber-600' : 'text-digi-muted'}`} style={mf}>
+              {skills.length}/{MAX_SKILLS}
+            </span>
+          </div>
           <div className="flex gap-2">
             <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
-              placeholder="Ej. React" autoFocus
-              className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-            <button type="button" onClick={addSkill} disabled={!newSkill.trim()} className={`${BTN_PRIMARY} disabled:opacity-50`}><Plus className="w-4 h-4" /> Agregar</button>
+              placeholder={skills.length >= MAX_SKILLS ? 'Quita una para añadir otra' : 'Ej. Automatización de procesos'}
+              disabled={skills.length >= MAX_SKILLS} autoFocus
+              className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+            <button type="button" onClick={addSkill} disabled={!newSkill.trim() || skills.length >= MAX_SKILLS} className={`${BTN_PRIMARY} disabled:opacity-50`}><Plus className="w-4 h-4" /> Agregar</button>
           </div>
           {skills.length === 0 ? (
             <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas skills.</p>

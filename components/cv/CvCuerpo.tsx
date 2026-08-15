@@ -425,6 +425,16 @@ function Hito({ titulo, sub, texto, fecha }: { titulo: string; sub: string; text
   );
 }
 
+/**
+ * Aptitudes en la ficha: **píldoras**.
+ *
+ * ⚠️ Se probaron en texto corrido para ahorrar alto —diez skills con nombres
+ * generales apenas caben dos por fila en una columna de 400 px— y **Fernando
+ * prefirió las píldoras** (2026-08-15), que es lo que estaba viendo cuando dijo que
+ * se veía bien. El coste está contabilizado: la ficha pide 1052 px en vez de 880, y
+ * por eso el umbral de la vista de dos columnas subió a 1000. Es una decisión suya,
+ * tomada sobre el resultado.
+ */
 function Chips({ titulo, icono, valores, destacado = false }: { titulo: string; icono: React.ReactNode; valores: string[]; destacado?: boolean }) {
   return (
     <div>
