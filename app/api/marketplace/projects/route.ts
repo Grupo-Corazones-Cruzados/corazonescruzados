@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `SELECT p.id, p.title, p.description, p.final_cost,
+      `SELECT p.id, p.title, p.description, p.final_cost, COALESCE(p.tags, '{}') AS tags,
               p.marketplace_published_at, p.created_at,
               p.public_docs_token,
               COALESCE(array_length(p.images, 1), 0)::int as image_count,

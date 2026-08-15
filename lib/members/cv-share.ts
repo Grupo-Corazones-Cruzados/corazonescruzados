@@ -215,7 +215,11 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
   const { rows: prRows } = await pool.query(
     `SELECT p.id, p.title, p.description,
             COALESCE(array_length(p.images, 1), 0)::int AS n_imagenes,
-            COALESCE((SELECT array_agg(DISTINCT t)
+            -- Las etiquetas que se enseñan son los TAGS del proyecto —con qué se
+            -- hizo—, no sus talentos: los talentos son todos el mismo dentro de un
+            -- CV y repetirlos en cada tarjeta no distingue nada.
+            COALESCE(NULLIF(p.tags, '{}'),
+                     (SELECT array_agg(DISTINCT t)
                         FROM gcc_world.project_requirements pr, UNNEST(pr.talents) AS t
                        WHERE pr.project_id = p.id), '{}') AS etiquetas,
             -- Los talentos que pide el proyecto SON su clasificación: no hace falta

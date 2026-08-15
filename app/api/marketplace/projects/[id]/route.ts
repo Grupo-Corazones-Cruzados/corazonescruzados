@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (!isMember) return NextResponse.json({ error: 'Solo miembros del equipo pueden editar' }, { status: 403 });
     }
 
-    const { title, final_cost, images } = await req.json();
+    const { title, final_cost, images, tags } = await req.json();
 
     const fields: string[] = [];
     const values: any[] = [];
@@ -72,6 +72,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (title !== undefined) { fields.push(`title = $${idx++}`); values.push(title); }
     if (final_cost !== undefined) { fields.push(`final_cost = $${idx++}`); values.push(final_cost); }
+    // Tags: con qué se hizo el proyecto. Distinto de los talentos de sus
+    // requerimientos, que dicen quién puede hacerlo.
+    if (tags !== undefined) {
+      fields.push(`tags = $${idx++}`);
+      values.push(Array.isArray(tags) ? tags.map((t: any) => String(t ?? '').trim()).filter(Boolean).slice(0, 12) : []);
+    }
     if (images !== undefined) {
       const cleanImages = await uploadImages((images as string[]).filter(u => u && u.trim()), `corazones-cruzados/projects/${id}`);
       fields.push(`images = $${idx++}`);

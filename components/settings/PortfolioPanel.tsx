@@ -134,7 +134,7 @@ export default function PortfolioPanel() {
   const [teamProjects, setTeamProjects] = useState<any[]>([]);
   const [teamEditModal, setTeamEditModal] = useState(false);
   const [teamEditItem, setTeamEditItem] = useState<any>(null);
-  const [teamForm, setTeamForm] = useState({ title: '', price: '', images: [''] as string[] });
+  const [teamForm, setTeamForm] = useState({ title: '', price: '', images: [''] as string[], tags: '' });
   const [teamSaving, setTeamSaving] = useState(false);
 
   const fetchTeamProjects = useCallback(async () => {
@@ -145,7 +145,10 @@ export default function PortfolioPanel() {
 
   const openTeamEdit = (p: any) => {
     setTeamEditItem(p);
-    setTeamForm({ title: p.title || '', price: p.final_cost != null ? String(p.final_cost) : '', images: p.images?.length > 0 ? [...p.images] : [''] });
+    setTeamForm({
+      title: p.title || '', price: p.final_cost != null ? String(p.final_cost) : '',
+      images: p.images?.length > 0 ? [...p.images] : [''], tags: (p.tags || []).join(', '),
+    });
     setTeamEditModal(true);
   };
   const handleTeamSave = async () => {
@@ -155,7 +158,10 @@ export default function PortfolioPanel() {
       const cleanImages = teamForm.images.filter((u) => u.trim());
       const res = await fetch(`/api/marketplace/projects/${teamEditItem.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: teamForm.title, final_cost: Number(teamForm.price) || 0, images: cleanImages }),
+        body: JSON.stringify({
+          title: teamForm.title, final_cost: Number(teamForm.price) || 0, images: cleanImages,
+          tags: teamForm.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
       toast.success('Proyecto actualizado'); setTeamEditModal(false); fetchTeamProjects();
@@ -167,9 +173,17 @@ export default function PortfolioPanel() {
   const tabLabel = tabMeta.label.replace(/s$/, '');
   const q = search.toLowerCase();
   const ownFiltered = items.filter((i: any) => !search || i.title?.toLowerCase().includes(q));
+  /* El talento de un proyecto del equipo **se calcula**: son los talentos que piden
+     sus requerimientos cruzados con los del miembro. No hay que declararlo a mano —
+     ya se declaró al crear los requerimientos, que es lo que decide quién puede
+     tomarlos. Si ninguno coincide, se enseñan los que pide el proyecto. */
   const teamRows = (tab === 'project' ? teamProjects : [])
     .filter((p: any) => !search || p.title?.toLowerCase().includes(q))
-    .map((p: any) => ({ ...p, __team: true, price: p.final_cost }));
+    .map((p: any) => {
+      const pide: string[] = Array.isArray(p.talents) ? p.talents : [];
+      const mios = pide.filter((t) => talentos.includes(t));
+      return { ...p, __team: true, price: p.final_cost, __talentos: mios.length ? mios : pide };
+    });
   const rows = [...ownFiltered, ...teamRows];
 
   const dropzone = (images: string[], setImages: (imgs: string[]) => void) => (
@@ -251,19 +265,26 @@ export default function PortfolioPanel() {
                       ) : <span className="text-digi-muted/50 text-[12px]">—</span>}
                     </td>
                     <td className="px-3 py-2.5 align-middle">
-                      <span className="inline-flex items-center gap-2 min-w-0">
-                        <span className="text-[13px] font-medium text-digi-text">{item.title}</span>
-                        {item.__team && <PixelBadge variant="info">Equipo</PixelBadge>}
-                      </span>
+                      {/* Sin la etiqueta «Equipo»: la columna Talento ya dice de qué
+                          va cada fila, y el rótulo repetido en doce filas era ruido. */}
+                      <span className="text-[13px] font-medium text-digi-text">{item.title}</span>
                     </td>
-                    {/* El talento del ítem. Los proyectos del EQUIPO no lo declaran:
-                        el suyo sale de los talentos de sus requerimientos. */}
+                    {/* El talento de la fila. En un proyecto del equipo sale de sus
+                        requerimientos; en un ítem propio, de su campo. */}
                     <td className="px-3 py-2.5 align-middle">
-                      {item.__team
-                        ? <span className="text-[11.5px] text-digi-muted/60">según requerimientos</span>
-                        : item.talent
-                          ? <PixelBadge variant="info">{item.talent}</PixelBadge>
-                          : <span className="text-[11.5px] text-amber-600">sin talento</span>}
+                      {(() => {
+                        const lista: string[] = item.__team
+                          ? (item.__talentos || [])
+                          : item.talent ? [item.talent] : [];
+                        if (!lista.length) {
+                          return <span className="text-[11.5px] text-amber-600">sin talento</span>;
+                        }
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {lista.map((t: string) => <ChipTalento key={t}>{t}</ChipTalento>)}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-2.5 align-middle">
                       <div className="flex flex-wrap gap-1">{(item.tags || []).slice(0, 3).map((t: string) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>
@@ -318,6 +339,7 @@ export default function PortfolioPanel() {
           <div className="space-y-3">
             <PixelInput label="Título" value={teamForm.title} onChange={(e) => setTeamForm({ ...teamForm, title: e.target.value })} />
             <PixelInput label="Precio (USD)" type="number" value={teamForm.price} onChange={(e) => setTeamForm({ ...teamForm, price: e.target.value })} placeholder="0.00" />
+            <PixelInput label="Tags (separados por coma)" value={teamForm.tags} onChange={(e) => setTeamForm({ ...teamForm, tags: e.target.value })} placeholder="RPA, Oracle, Integración de APIs" />
             {dropzone(teamForm.images, (imgs) => setTeamForm({ ...teamForm, images: imgs }))}
             <button onClick={handleTeamSave} disabled={teamSaving || !teamForm.title.trim()} className={`${BTN_PRIMARY} w-full`}>{teamSaving ? 'Guardando…' : 'Guardar cambios'}</button>
           </div>
@@ -329,5 +351,15 @@ export default function PortfolioPanel() {
         <ImageGallery images={galleryImages} alt={galleryTitle} />
       </PixelModal>
     </div>
+  );
+}
+
+/** Chip de talento: como los tags pero en el acento, y **sin el punto** de
+ *  `PixelBadge` — aquí no marca un estado, solo nombra una categoría. */
+function ChipTalento({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium border border-accent/40 bg-accent-light text-accent" style={mf}>
+      {children}
+    </span>
   );
 }

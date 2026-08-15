@@ -260,23 +260,9 @@ export default function ProfilePanel() {
           </div>
         </div>
 
-        {/* Cuenta */}
-        <div className="pt-3 border-t border-digi-border space-y-3">
-          <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Cuenta</h4>
-          <dl className="space-y-2.5">
-            {[
-              ['Correo', <span key="e" className="text-digi-text" style={mf}>{user?.email}</span>],
-              ['ID', <span key="i" className="text-digi-muted tabular-nums" style={mf}>{user?.id?.slice(0, 8)}…</span>],
-              ['Rol', <PixelBadge key="r" variant="info">{user?.role}</PixelBadge>],
-              ['Verificado', <PixelBadge key="v" variant={user?.is_verified ? 'success' : 'warning'}>{user?.is_verified ? 'Sí' : 'No'}</PixelBadge>],
-            ].map(([k, v]) => (
-              <div key={k as string} className="flex items-center justify-between gap-3 text-[12.5px]">
-                <dt className="text-digi-muted" style={mf}>{k}</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        {/* Sin la sección «Cuenta»: correo, ID, rol y verificado son datos del
+            sistema, no del perfil que se edita. Quien entra ya sabe con qué cuenta
+            está, y el correo está arriba junto a la foto. Lo quitó Fernando. */}
 
       </form>
     </SettingsPanel>

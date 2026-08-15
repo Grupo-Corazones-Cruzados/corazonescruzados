@@ -275,6 +275,23 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏷️ LOS PROYECTOS TIENEN TAGS PROPIOS (2026-08-15, migración 038).** No son lo mismo que
+  los talentos y hacían falta las dos cosas: el **talento** dice *quién* puede hacerlo —y en
+  qué CV aparece—; los **tags** dicen *con qué se hizo* («RPA», «Oracle Database», «WhatsApp
+  Business API»). Usar el talento como etiqueta dejaba los diez proyectos con la misma palabra
+  repetida, que no distingue nada.
+  - Etiquetados **los 24, en cualquier estado**: un borrador o una cotización también se
+    consultan. Los valores salen de la descripción y de los títulos de sus requerimientos.
+  - Editables desde **Portafolio → Editar proyecto del equipo**; el CV público los usa como
+    etiquetas de cada tarjeta, con los talentos de respaldo si un proyecto no tuviera.
+- **🧹 Limpieza del panel de Configuración (2026-08-15).** Fuera la etiqueta «Equipo» de la
+  columna Título —la columna Talento ya dice de qué va la fila y el rótulo repetido en doce
+  filas era ruido—, fuera el punto del chip de talento —no marca un estado, solo nombra una
+  categoría— y fuera la sección **«Cuenta»** del panel de Perfil: correo, ID, rol y verificado
+  son datos del sistema, no del perfil que se edita.
+  - **⭐ Y el talento de un proyecto del equipo YA NO DICE «según requerimientos»: se calcula.**
+    Son los talentos que piden sus requerimientos cruzados con los del miembro. Fernando lo
+    señaló: si el dato existe, no hay por qué escribir una excusa en su lugar.
 - **⭐ EL CV PÚBLICO PASA A ORGANIZARSE POR TALENTO (2026-08-15).** Cambio de modelo, no de
   maqueta. Hasta aquí el CV era uno solo con los talentos dentro; ahora **el talento es el
   eje**: quien abre el enlace ve el CV de UN talento y puede cambiar al otro. Es lo que permite
