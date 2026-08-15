@@ -244,13 +244,8 @@ export default function CvCuerpo({
             </Panel>
           </div>
 
-          <footer className="shrink-0 mt-6 pt-4 border-t border-[#e6e3ee] text-[12px] text-[#a3a0ac]">
-            <p>
-              Currículum compartido por {cv.nombre} desde GCC World.
-              {cv.actualizado && <> Actualizado el {new Date(cv.actualizado).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}.</>}
-            </p>
-          </footer>
-
+          {/* Sin pie de texto: repetía el nombre —que ya preside la ficha— y la
+              fecha de actualización, que sigue estando bajo la ficha. */}
         </main>
       </div>
 
