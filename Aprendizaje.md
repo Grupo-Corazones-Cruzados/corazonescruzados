@@ -4315,3 +4315,27 @@ solo aparece ejecutando.
 El **panel de Configuración (dashboard) no lo he podido ver en el navegador**: exige sesión con
 contraseña y código al correo. Está verificado con typecheck, build y revisión del código, pero
 la maqueta la tiene que mirar Fernando.
+
+## Quinta pasada — desplazamiento y pestañas (2026-08-15)
+
+| Pedido | Resuelto |
+|---|---|
+| Quitar el aviso de LinkedIn | Fuera la función, el campo `aviso` y sus pruebas |
+| Las pestañas de Configuración se desbordan | Era un `overflow-x-auto` innecesario |
+| Pestañas del CV público a la derecha, bajo las cifras, horizontales | Hecho, e iguales en todos los tamaños |
+| Que la página pública no se desplace; que ruede el panel por dentro | Hecho **solo en escritorio** |
+
+### P16 — ¿Por qué se desbordaba una barra con tres pestañas y sitio de sobra? · ✅ Resuelta
+- **Respuesta:** un `overflow-x-auto` puesto de forma preventiva. El navegador reserva y pinta
+  la barra horizontal **aunque no haya nada que desplazar**, y eso come alto y asoma en la
+  esquina. **Regla: no se ponen contenedores de scroll «por si acaso».**
+
+### P17 — ¿Cómo se hace que una columna ruede y la página no? · ✅ Resuelta (medido)
+- `lg:h-screen lg:overflow-hidden` en la raíz, y **`h-full` + `min-h-0` en cada nivel** hasta
+  el contenedor que rueda. Sin `min-h-0` el hijo flex no se encoge por debajo de su contenido
+  y el scroll interno **no aparece nunca**.
+- ⚠️ **Solo en escritorio.** Bloquear el scroll de la página en un teléfono la rompe. Se midió
+  con el navegador en los dos tamaños en vez de darlo por bueno.
+- **Y la barra hay que vestirla.** Volver a meter scroll interno reintroduce la «raya negra»
+  si se deja la del navegador: `.cv-scroll` la deja fina y violeta. Se estiliza, **no se
+  oculta** — una barra invisible esconde que hay más contenido.

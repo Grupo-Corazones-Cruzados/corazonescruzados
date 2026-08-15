@@ -24,12 +24,5 @@ p('la web propia acepta cualquier host', u('web', 'tusitio.com'), 'https://tusit
 p('la web NO compone un usuario suelto', e('web', 'fulano'), true);
 p('usuario con caracteres raros se rechaza', e('instagram', '@fu lano!'), true);
 p('texto corto sin www ni barra final', textoCorto('https://www.linkedin.com/in/fulano/'), 'linkedin.com/in/fulano');
-// ── Avisos: el enlace vale, pero no es un perfil ───────────────────────────────
-const av = (r: any, v: string) => normalizarRed(r, v).aviso !== null && normalizarRed(r, v).aviso !== undefined;
-p('el feed de LinkedIn avisa', av('linkedin', 'https://www.linkedin.com/feed/'), true);
-p('un perfil de LinkedIn no avisa', av('linkedin', 'https://www.linkedin.com/in/fulano'), false);
-p('la portada de Instagram avisa', av('instagram', 'https://instagram.com/'), true);
-p('la empresa en LinkedIn no avisa', av('linkedin', 'https://www.linkedin.com/company/gcc'), false);
-p('el aviso NO bloquea: hay url', normalizarRed('linkedin', 'https://www.linkedin.com/feed/').url, 'https://www.linkedin.com/feed/');
 console.log(fallos ? `\n❌ ${fallos} fallos` : '\n✅ todas pasan');
 process.exit(fallos ? 1 : 0);

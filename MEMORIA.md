@@ -445,6 +445,27 @@ Stack estándar de la casa, con particularidades de este repo:
       quitaron de la lógica **pero no del `SELECT`**, así que la página entera daba 500
       («column salary_visible does not exist»). `tsc` y el build pasaron limpios; lo cazó el
       ensayo.
+  - **🖥️ QUINTA PASADA — el desplazamiento y las pestañas (2026-08-15).**
+    - **Fuera el aviso de LinkedIn** («ese enlace abre LinkedIn, no tu perfil»). Lo pidió
+      quitar; se elimina la función, el campo `aviso` y sus pruebas.
+    - **En escritorio la PÁGINA no se desplaza:** el alto lo pone la ventana y ruedan **la
+      ficha y el panel por dentro**. Antes, mirar el portafolio movía la página entera y la
+      ficha se perdía por arriba. ⚠️ **Solo en `lg`** — en un teléfono una página que no se
+      desplaza es una página rota. Medido: a 1600 px la página no rueda y hay dos contenedores
+      internos; a 390 px, al revés.
+    - ⚠️ **`h-full` + `min-h-0` en TODOS los niveles**, o el scroll interno no aparece: un hijo
+      flex sin `min-h-0` no se deja encoger por debajo de su contenido. Misma lección que
+      `useAltoHastaElPie()`.
+    - **Las barras internas se ESTILIZAN, no se ocultan** (`.cv-scroll`): violeta al 35 % y
+      8 px. Sin eso vuelve la «raya negra», que era justo la barra del navegador con el tema
+      oscuro del sistema.
+    - **Las pestañas se mudan al panel**, bajo la franja de cifras, horizontales y **iguales en
+      todos los tamaños**. Y **el panel deja de repetir su rótulo**: la pestaña ya dice
+      «Portafolio» y debajo ponía «PORTAFOLIO».
+    - **🐛 UN `overflow-x-auto` QUE NUNCA DESPLAZA NADA SOLO ESTORBA.** La barra de pestañas de
+      Configuración lo llevaba «por si algún día no caben»; con tres y sitio de sobra, el
+      navegador dibujaba su barra horizontal, se comía alto y asomaba un cuadrito. **No se
+      ponen contenedores de scroll preventivos**: si hicieran falta más pestañas, `flex-wrap`.
   - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
     CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
     las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.

@@ -40,12 +40,21 @@ export default function SettingsPage() {
 
         {isMember && (
           <div className="flex-1 min-w-0 w-full flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
-            {/* Barra de pestañas + acción a la DERECHA, como el «Compartir acceso» de
-                un proyecto (Fernando, 2026-08-14). El `flex-1` del hueco central es
-                lo que empuja el botón al extremo sin recurrir a `justify-between`,
-                que descuadraría las pestañas si algún día son más. */}
-            <div className="flex items-stretch border-b border-digi-border shrink-0">
-              <div className="flex items-stretch overflow-x-auto">
+            {/* Barra de pestañas + «Compartir CV» a la derecha, como el «Compartir
+                acceso» de un proyecto.
+
+                ⚠️ **NADA DE `overflow-x-auto` AQUÍ.** La primera versión lo puso en
+                el grupo de pestañas «por si algún día no caben», y con tres pestañas
+                y sitio de sobra el navegador dibujaba igualmente su barra horizontal:
+                se comía alto y asomaba un cuadrito en la esquina. Lo vio Fernando.
+                Un contenedor de scroll que nunca desplaza nada solo estorba; si algún
+                día hicieran falta más pestañas, se envuelven (`flex-wrap`), que en
+                una barra ancha es mejor gesto que arrastrar de lado.
+
+                `justify-between` en vez del hueco `flex-1`: es la misma colocación con
+                un elemento menos. */}
+            <div className="flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
+              <div className="flex items-stretch flex-wrap">
                 {TABS.map((t) => {
                   const active = tab === t.key;
                   return (
@@ -56,10 +65,9 @@ export default function SettingsPage() {
                   );
                 })}
               </div>
-              <div className="flex-1" />
-              <div className="flex items-center pr-2 pl-2">
+              <div className="flex items-center shrink-0 px-2">
                 <button onClick={() => setCompartir(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-[13px] font-medium rounded hover:bg-accent-light transition-colors whitespace-nowrap" style={mf}>
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-accent text-accent text-[13px] font-medium rounded hover:bg-accent-light transition-colors whitespace-nowrap" style={mf}>
                   <Share2 className="w-4 h-4" /> Compartir CV
                 </button>
               </div>

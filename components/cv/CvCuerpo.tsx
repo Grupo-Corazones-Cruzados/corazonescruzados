@@ -59,16 +59,28 @@ export default function CvCuerpo({
   const [activa, setActiva] = useState<Pestana>(pestanas[0]?.id ?? 'perfil');
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-28 lg:pb-16">
-      <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] lg:gap-10 xl:gap-14 lg:items-start">
+    /* ── EN ESCRITORIO LA PÁGINA NO SE DESPLAZA (Fernando, 2026-08-14) ────────
+     * El alto lo pone la ventana (`lg:h-screen` + `overflow-hidden`) y lo que se
+     * desplaza es **cada columna por dentro**: la ficha por un lado y el panel por
+     * otro. Antes, mirar el portafolio movía la página entera y la ficha se perdía
+     * por arriba.
+     *
+     * ⚠️ **Solo en `lg`.** En un teléfono, una página que no se desplaza es una
+     * página rota: ahí manda el scroll normal del documento y el `pb-28` que deja
+     * sitio a la barra inferior.
+     *
+     * La cadena `h-full` + `min-h-0` es obligatoria en TODOS los niveles: sin
+     * `min-h-0` un hijo flex no se deja encoger por debajo de su contenido y el
+     * scroll interno nunca aparece — se desborda y ya está. */
+    <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-28 lg:pb-0 lg:h-screen lg:overflow-hidden">
+      <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] lg:gap-10 xl:gap-14 lg:h-full lg:min-h-0">
 
         {/* ══ FICHA ══════════════════════════════════════════════════════════ */}
-        {/* ⚠️ SIN `h-screen` NI `overflow-y-auto`.
-            La ficha tenía scroll propio y el navegador le dibujaba su barra: era la
-            «raya negra» que se veía partiendo la página en dos. Con `sticky top-0` +
-            `self-start` la ficha se pega arriba y, si es más alta que la ventana,
-            sube con la página — que es el gesto natural y no pinta ninguna barra. */}
-        <aside className="lg:sticky lg:top-0 lg:self-start lg:py-10 pt-8 lg:pt-10 space-y-6">
+        {/* La ficha se desplaza por dentro, con la barra fina de `.cv-scroll` —la
+            de antes era la del navegador y se veía como una raya negra partiendo la
+            página—. `overscroll-contain` evita que al llegar al final el gesto
+            arrastre lo de al lado. */}
+        <aside className="cv-scroll lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:py-10 pt-8 lg:pt-10 space-y-6 lg:pr-2">
           <div className="cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
             <Foto cv={cv} />
             <h1 className="mt-5 text-[26px] sm:text-[30px] font-semibold leading-tight text-[#1c1b22]">{cv.nombre}</h1>
@@ -170,19 +182,9 @@ export default function CvCuerpo({
             <Download className="w-4 h-4" aria-hidden /> Descargar en PDF
           </a>
 
-          {/* Pestañas: en escritorio viven en la ficha, bajo el botón. */}
-          {pestanas.length > 1 && (
-            <nav aria-label="Secciones del currículum"
-              className="cv-pestanas cv-pestanas-v cv-no-imprimir hidden lg:flex flex-col gap-1">
-              {pestanas.map((p) => (
-                <button key={p.id} type="button" role="tab" aria-selected={activa === p.id}
-                  aria-controls={`panel-${p.id}`} onClick={() => setActiva(p.id)}
-                  className="inline-flex items-center gap-2.5 rounded-r-md px-3 py-2 text-left text-[13.5px] text-[#56545f] hover:text-[#4b2d8e]">
-                  <span aria-hidden>{p.icono}</span> {p.label}
-                </button>
-              ))}
-            </nav>
-          )}
+          {/* Las pestañas ya NO viven aquí: se mudaron al panel derecho, pegadas al
+              contenido que gobiernan. Tenerlas en la ficha las separaba de lo que
+              cambian, y la ficha es identidad, no navegación. */}
 
           {cv.actualizado && (
             <p className="hidden lg:block text-[11.5px] text-[#a3a0ac]">
@@ -192,10 +194,10 @@ export default function CvCuerpo({
         </aside>
 
         {/* ══ PANEL ══════════════════════════════════════════════════════════ */}
-        <main className="lg:py-10 flex flex-col lg:min-h-screen">
+        <main className="lg:h-full lg:min-h-0 flex flex-col lg:py-10">
           {/* Franja de cifras: sigue arriba y siempre visible — es el «de un
               vistazo», y perderlo al cambiar de pestaña sería un paso atrás. */}
-          <div className="cv-entra cv-entra-3 mt-8 lg:mt-2 grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <div className="cv-entra cv-entra-3 shrink-0 mt-8 lg:mt-0 grid grid-cols-2 xl:grid-cols-4 gap-3">
             <Cifra icono={<CalendarClock className="w-4 h-4" />} rotulo="Disponibilidad"
               valor={cv.disponibilidad.estado === 'not_available' ? 'No disponible'
                 : cv.disponibilidad.estado === 'from_date' && cv.disponibilidad.desde
@@ -206,32 +208,35 @@ export default function CvCuerpo({
             {nProyectos > 0 && <Cifra icono={<Briefcase className="w-4 h-4" />} rotulo="Portafolio" valor={String(nProyectos)} />}
           </div>
 
-          {/* Pestañas para tableta y móvil: pegajosas arriba. */}
+          {/* ── PESTAÑAS: en el panel derecho, JUSTO DEBAJO de las cifras ──────
+              Lo pidió Fernando ahí (2026-08-14): son la navegación del contenido que
+              tienen debajo, así que van pegadas a él y no en la ficha de identidad,
+              que es otra cosa. Horizontales, una al lado de otra, en todos los
+              tamaños — ya no hay una versión para móvil y otra para escritorio. */}
           {pestanas.length > 1 && (
-            <div className="cv-no-imprimir lg:hidden sticky top-0 z-20 -mx-4 sm:-mx-6 mt-6 border-y border-[#e6e3ee] bg-[#f6f5f9]/90 px-4 sm:px-6 py-2.5 backdrop-blur-md">
-              <nav aria-label="Secciones del currículum" className="cv-pestanas cv-pestanas-h flex gap-1.5 overflow-x-auto">
-                {pestanas.map((p) => (
-                  <button key={p.id} type="button" role="tab" aria-selected={activa === p.id}
-                    aria-controls={`panel-${p.id}`} onClick={() => setActiva(p.id)}
-                    className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#e6e3ee] bg-white px-3.5 py-1.5 text-[13px] text-[#56545f]">
-                    <span aria-hidden>{p.icono}</span> {p.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
+            <nav aria-label="Secciones del currículum"
+              className="cv-pestanas cv-pestanas-h cv-no-imprimir shrink-0 mt-7 flex gap-1.5 overflow-x-auto">
+              {pestanas.map((p) => (
+                <button key={p.id} type="button" role="tab" aria-selected={activa === p.id}
+                  aria-controls={`panel-${p.id}`} onClick={() => setActiva(p.id)}
+                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#e6e3ee] bg-white px-4 py-2 text-[13.5px] text-[#56545f]">
+                  <span aria-hidden>{p.icono}</span> {p.label}
+                </button>
+              ))}
+            </nav>
           )}
 
           {/* ⚠️ Los tres paneles SIEMPRE están en el DOM; solo se oculta el que no
               toca. `key={activa}` en el envoltorio hace que la animación de entrada
               se vuelva a disparar en cada cambio. */}
-          <div key={activa} className="cv-panel mt-10 sm:mt-12">
-            <Panel id="perfil" activa={activa} titulo="Perfil">
+          <div key={activa} className="cv-panel cv-scroll mt-8 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
+            <Panel id="perfil" activa={activa} titulo="Perfil" conRotulo={pestanas.length < 2}>
               {cv.bio && (
                 <p className="max-w-[68ch] text-[15.5px] sm:text-[16.5px] leading-relaxed text-[#56545f]">{cv.bio}</p>
               )}
 
               {hayTrayectoria && (
-                <div className={cv.bio ? 'mt-12' : ''}>
+                <div className={cv.bio ? 'mt-11' : ''}>
                   <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Trayectoria por talento</h3>
                   <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
                   <div className="space-y-10">
@@ -265,15 +270,14 @@ export default function CvCuerpo({
               )}
             </Panel>
 
-            <Panel id="portafolio" activa={activa} titulo="Portafolio">
+            <Panel id="portafolio" activa={activa} titulo="Portafolio" conRotulo={pestanas.length < 2}>
               <PortafolioPublico token={token} items={cv.portafolio} />
             </Panel>
           </div>
 
-          {/* `mt-auto`: el pie baja al fondo del panel. Sin esto, en la pestaña
-              «Perfil» —tres líneas de biografía— quedaba colgado a media pantalla
-              con un vacío enorme debajo. */}
-          <footer className="mt-auto pt-10 border-t border-[#e6e3ee] text-[12px] text-[#a3a0ac]">
+          {/* El pie es una línea y se queda FIJO al fondo del panel (`shrink-0`):
+              dentro del área que se desplaza obligaría a bajar del todo para verlo. */}
+          <footer className="shrink-0 mt-6 pt-4 border-t border-[#e6e3ee] text-[12px] text-[#a3a0ac]">
             <p>
               Currículum compartido por {cv.nombre} desde GCC World.
               {cv.actualizado && <> Actualizado el {new Date(cv.actualizado).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}.</>}
@@ -361,12 +365,25 @@ function Cifra({ icono, rotulo, valor }: { icono: React.ReactNode; rotulo: strin
   );
 }
 
-/** Panel de una pestaña. Presente siempre en el DOM; `hidden` si no es la activa. */
-function Panel({ id, activa, titulo, children }: { id: Pestana; activa: Pestana; titulo: string; children: React.ReactNode }) {
+/**
+ * Panel de una pestaña. Presente siempre en el DOM; `hidden` si no es la activa.
+ *
+ * ⚠️ **Con pestañas a la vista, el rótulo NO se pinta.** La pestaña activa dice
+ * «Portafolio» y el panel repetía «PORTAFOLIO» justo debajo: el mismo nombre dos
+ * veces en dos centímetros. El `aria-label` se queda, que es lo que necesita un
+ * lector de pantalla para saber dónde está.
+ */
+function Panel({ id, activa, titulo, conRotulo = true, children }: {
+  id: Pestana; activa: Pestana; titulo: string; conRotulo?: boolean; children: React.ReactNode;
+}) {
   return (
     <section id={`panel-${id}`} role="tabpanel" hidden={activa !== id} aria-label={titulo}>
-      <h2 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">{titulo}</h2>
-      <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
+      {conRotulo && (
+        <>
+          <h2 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">{titulo}</h2>
+          <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
+        </>
+      )}
       {children}
     </section>
   );

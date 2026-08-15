@@ -242,7 +242,7 @@ export default function ProfilePanel() {
  * «Guardar» que un campo de arriba está mal obliga a volver a buscarlo.        */
 function CampoRed({ red, valor, onChange }: { red: Red; valor: string; onChange: (v: string) => void }) {
   const def = REDES[red];
-  const { url, error, aviso } = normalizarRed(red, valor);
+  const { url, error } = normalizarRed(red, valor);
   // Nada de gritar sobre un campo que aún se está escribiendo: solo se avisa
   // cuando ya parece una dirección terminada.
   const avisar = !!error && valor.trim().length > 3;
@@ -268,9 +268,6 @@ function CampoRed({ red, valor, onChange }: { red: Red; valor: string; onChange:
         style={mf}
       />
       {avisar && <p className="text-[11px] text-red-600" style={mf}>{error}</p>}
-      {/* El aviso NO impide guardar: el enlace es válido, solo puede que no sea el
-          que se quería. Va en ámbar para que no se confunda con un error. */}
-      {!avisar && aviso && <p className="text-[11px] text-amber-600" style={mf}>{aviso}</p>}
     </div>
   );
 }

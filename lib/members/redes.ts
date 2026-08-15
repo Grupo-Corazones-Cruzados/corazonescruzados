@@ -90,33 +90,6 @@ export interface ResultadoRed {
   url: string | null;
   /** Mensaje para la persona si lo escrito no sirve. `null` = todo bien. */
   error: string | null;
-  /**
-   * El enlace es válido pero **probablemente no es lo que quería**: apunta a la
-   * portada de la red o a su propio muro, no a un perfil. NO bloquea el guardado —
-   * puede haber casos legítimos—, solo avisa.
-   *
-   * Existe por un caso real: el enlace de LinkedIn guardado era
-   * `https://www.linkedin.com/feed/`, que es la dirección que sale al abrir
-   * LinkedIn, no la del perfil. El botón funcionaba y llevaba a ninguna parte útil,
-   * y desde fuera parecía un fallo del código.
-   */
-  aviso?: string | null;
-}
-
-/** Rutas que delatan que se copió la dirección equivocada. */
-const CAMINOS_SOSPECHOSOS: Partial<Record<Red, RegExp>> = {
-  linkedin: /^\/(feed|mynetwork|jobs|messaging|notifications)?\/?$/i,
-  facebook: /^\/?$/,
-  instagram: /^\/?$/,
-  youtube: /^\/(feed\/.*)?\/?$/i,
-  tiktok: /^\/(foryou)?\/?$/i,
-};
-
-function avisoDeCamino(red: Red, u: URL): string | null {
-  const re = CAMINOS_SOSPECHOSOS[red];
-  if (!re || !re.test(u.pathname)) return null;
-  const def = REDES[red];
-  return `Ese enlace abre ${def.etiqueta}, no tu perfil. Entra en tu perfil y copia la dirección de la barra del navegador (algo como ${def.ejemplo}).`;
 }
 
 /**
@@ -165,7 +138,7 @@ export function normalizarRed(red: Red, bruto: unknown): ResultadoRed {
   // navegador no avisa de sitio no seguro dentro de un currículum.
   if (u.protocol === 'http:') u.protocol = 'https:';
 
-  return { url: u.toString(), error: null, aviso: avisoDeCamino(red, u) };
+  return { url: u.toString(), error: null };
 }
 
 /** Cómo se enseña una URL cuando el botón ya dice de qué red es: sin ruido. */

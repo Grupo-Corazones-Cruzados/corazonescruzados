@@ -1666,16 +1666,40 @@ Fernando la levantó **para esta página y solo para esta** el 2026-08-14: *«es
 el diseño»*. Para `/negocio`, `/recursos`, `/contacto` y cualquier página pública futura,
 **la regla de §«El diseño de estas páginas lo decide Fernando, conmigo, ANTES» sigue vigente**.
 
-### ⚠️ La ficha NO lleva scroll propio — la «raya negra»
-Llevaba `lg:h-screen lg:overflow-y-auto`, así que el navegador le dibujaba su barra de
-desplazamiento y, con el tema oscuro del sistema, se veía como **una línea negra partiendo la
-página en dos**. Lo vio Fernando en una captura.
+### En escritorio la PÁGINA no se desplaza; cada columna sí (2026-08-15)
+Petición de Fernando: mirar el portafolio movía la página entera y la ficha se perdía por
+arriba. Ahora el alto lo pone la ventana y lo que se desplaza es **cada columna por dentro**.
 
-Ahora es `lg:sticky lg:top-0 lg:self-start` (con `lg:items-start` en la rejilla): la ficha se
-pega arriba y, si es más alta que la ventana, sube con la página — que es el gesto natural.
-**Regla: en una página de lectura, un solo contenedor con scroll, el de la página.** Se
-comprueba midiendo en el navegador que ningún elemento tiene `scrollHeight > clientHeight`
-con `overflow-y: auto`.
+```
+<div ... lg:h-screen lg:overflow-hidden>       ← la página no se mueve
+  <div ... lg:grid lg:h-full lg:min-h-0>
+    <aside class="cv-scroll lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
+    <main  class="lg:h-full lg:min-h-0 flex flex-col">
+      <div class="shrink-0">  cifras   </div>
+      <nav class="shrink-0">  pestañas </nav>
+      <div class="cv-scroll lg:flex-1 lg:min-h-0 lg:overflow-y-auto"> ← lo único que rueda
+      <footer class="shrink-0">
+```
+
+- ⚠️ **`h-full` + `min-h-0` en TODOS los niveles.** Sin `min-h-0`, un hijo flex no se deja
+  encoger por debajo de su contenido: el scroll interno no aparece nunca y el bloque se
+  desborda. Es la misma lección de `useAltoHastaElPie()`.
+- ⚠️ **Solo en `lg`.** En un teléfono, una página que no se desplaza es una página rota: ahí
+  manda el scroll del documento. Comprobado midiendo: a 1600 px la página **no** se desplaza y
+  hay dos contenedores internos; a 390 px es al revés.
+- **`overscroll-contain`** para que al llegar al final de una columna el gesto no arrastre lo
+  de al lado.
+
+### ⚠️ Las barras internas se ESTILIZAN, no se ocultan — la «raya negra»
+La ficha ya tuvo scroll propio antes y el navegador le dibujaba su barra: con el tema oscuro
+del sistema se veía como **una línea negra partiendo la página en dos**. Lo vio Fernando.
+
+Al volver a poner scroll interno (arriba), la barra se estiliza con **`.cv-scroll`**:
+`scrollbar-width: thin` + `scrollbar-color` violeta al 35 %, y `::-webkit-scrollbar` de 8 px
+con el pulgar redondeado. **No se oculta**: una barra invisible deja sin pista de que hay más
+contenido, y con ratón es peor que con gesto táctil.
+
+**Regla: cualquier contenedor con `overflow-y: auto` en esta página lleva `.cv-scroll`.**
 
 ### Ficha a la izquierda + UNA pestaña a la derecha (2026-08-14, 2ª pasada)
 Fernando lo reorganizó al verlo funcionando. **La ficha concentra lo que se consulta** y el
@@ -1697,6 +1721,15 @@ con el scroll, hay que subir para comprobarlo.
 | `md` | Una columna. La ficha se apila arriba; las pestañas pasan a **píldoras en una barra pegajosa** (`sticky top-0` + `backdrop-blur`) |
 | `< md` | Una columna, pestañas deslizables y **barra inferior fija** con «Descargar en PDF» + correo + teléfono. El contenedor lleva `pb-28` para que la barra no tape el pie |
 
+**Las pestañas viven en el PANEL, justo debajo de la franja de cifras** (2026-08-15) —no en la
+ficha—: son la navegación del contenido que tienen debajo, y la ficha es identidad. Píldoras
+horizontales, una al lado de otra, **iguales en todos los tamaños**; ya no hay una versión de
+escritorio y otra de móvil.
+
+⚠️ **Con las pestañas a la vista, el panel NO repite su rótulo.** La pestaña activa dice
+«Portafolio» y el panel escribía «PORTAFOLIO» dos centímetros más abajo. El `aria-label` se
+queda, que es lo que necesita un lector de pantalla.
+
 **Son DOS pestañas, no tres** (2026-08-14): «Perfil» se quedaba casi vacío con tres líneas de
 biografía en un panel enorme. Biografía y trayectoria van juntas, que es como se lee un
 currículum; el portafolio sí tiene entidad propia.
@@ -1706,6 +1739,14 @@ una sola sección para quien no ejecute JavaScript o recorra el documento con un
 
 ⚠️ **`mt-auto` en el pie del panel.** En «Perfil» —tres líneas de biografía— quedaba colgado a
 media pantalla con un vacío enorme debajo. El `<main>` es `flex flex-col lg:min-h-screen`.
+
+### ⚠️ Un `overflow-x-auto` que nunca desplaza nada solo estorba (2026-08-15)
+La barra de pestañas de Configuración llevaba `overflow-x-auto` «por si algún día no caben».
+Con tres pestañas y sitio de sobra, el navegador **dibujaba igualmente su barra horizontal**:
+se comía alto y asomaba un cuadrito en la esquina. Lo vio Fernando.
+
+**No se pone un contenedor de scroll preventivo.** Si algún día hicieran falta más pestañas,
+`flex-wrap` en una barra ancha es mejor gesto que arrastrar de lado.
 
 ### Compartir el CV — botón en la barra de pestañas + panel lateral (2026-08-14)
 `settings/page.tsx`: la barra de pestañas lleva el botón **«Compartir CV»** pegado a la

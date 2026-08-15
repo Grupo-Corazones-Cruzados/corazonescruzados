@@ -129,23 +129,37 @@
   .cv-tarjeta:hover, .cv-tarjeta:focus-within { transform: none; }
 }
 
-/* ── Pestañas de la ficha: la activa se marca con filete y fondo ───────────── */
+/* ── Pestañas: píldoras horizontales, la activa teñida ─────────────────────── */
 .cv-pestanas button {
   transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
-.cv-pestanas-v button {
-  border-left: 2px solid transparent;
-}
-.cv-pestanas-v button[aria-selected='true'] {
-  border-left-color: var(--violeta-vivo);
-  color: var(--violeta-txt);
-  background: rgba(123, 95, 191, 0.08);
-}
+.cv-pestanas-h button:hover { border-color: var(--linea-fuerte); }
 .cv-pestanas-h button[aria-selected='true'] {
   border-color: rgba(123, 95, 191, 0.55);
   background: rgba(123, 95, 191, 0.1);
   color: var(--violeta-txt);
+  font-weight: 500;
 }
+
+/* ── Barras de desplazamiento internas, finas y violetas ───────────────────
+   En escritorio la página no se desplaza: lo hacen la ficha y el panel por
+   dentro. Sin esto, el navegador dibuja SU barra —oscura con el tema oscuro del
+   sistema— y vuelve a verse como una raya negra partiendo la página, que es
+   exactamente el defecto que se acababa de quitar.
+
+   Se estiliza, **no se oculta**: una barra invisible deja sin pista de que hay
+   más contenido debajo, y con el ratón (sin gesto táctil) es peor todavía.     */
+.cv-scroll {
+  scrollbar-width: thin;                                   /* Firefox */
+  scrollbar-color: rgba(123, 95, 191, 0.35) transparent;
+}
+.cv-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.cv-scroll::-webkit-scrollbar-track { background: transparent; }
+.cv-scroll::-webkit-scrollbar-thumb {
+  background: rgba(123, 95, 191, 0.3);
+  border-radius: 999px;
+}
+.cv-scroll::-webkit-scrollbar-thumb:hover { background: rgba(123, 95, 191, 0.5); }
 
 /* ── Impresión: red de seguridad para quien pulse Ctrl+P ───────────────────
    El documento bueno es el PDF del botón; esto solo evita que la versión
