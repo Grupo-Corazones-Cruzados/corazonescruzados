@@ -280,7 +280,7 @@ export default function PortfolioPanel() {
                           return <span className="text-[11.5px] text-amber-600">sin talento</span>;
                         }
                         return (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-x-2 gap-y-0.5">
                             {lista.map((t: string) => <ChipTalento key={t}>{t}</ChipTalento>)}
                           </div>
                         );
@@ -294,10 +294,20 @@ export default function PortfolioPanel() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button onClick={() => (item.__team ? openTeamEdit(item) : openEdit(item))}
                           className="inline-flex items-center gap-1 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /> Editar</button>
-                        {!item.__team && (
-                          <button onClick={() => handleDelete(item.id)} title="Eliminar"
-                            className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-digi-muted hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                        )}
+                        {/* Siempre a la vista, deshabilitado cuando no procede: un botón
+                            que aparece y desaparece según la fila descoloca la columna y
+                            deja al usuario adivinando por qué unas filas sí y otras no.
+                            Deshabilitado, el `title` lo explica. */}
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={item.__team}
+                          title={item.__team
+                            ? 'Un proyecto del equipo no se elimina desde el portafolio: se gestiona en el módulo de Proyectos'
+                            : 'Eliminar'}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-digi-muted transition-colors enabled:hover:text-red-600 enabled:hover:border-red-300 enabled:hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -354,11 +364,11 @@ export default function PortfolioPanel() {
   );
 }
 
-/** Chip de talento: como los tags pero en el acento, y **sin el punto** de
- *  `PixelBadge` — aquí no marca un estado, solo nombra una categoría. */
+/** Chip de talento: **sin relleno ni punto**. No marca un estado ni compite con los
+ *  tags de al lado; solo nombra una categoría, y el color del texto ya basta. */
 function ChipTalento({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium border border-accent/40 bg-accent-light text-accent" style={mf}>
+    <span className="inline-flex items-center text-[12px] font-medium text-accent" style={mf}>
       {children}
     </span>
   );

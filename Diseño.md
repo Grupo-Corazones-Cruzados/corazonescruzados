@@ -1744,6 +1744,21 @@ contenido, y con ratón es peor que con gesto táctil.
 
 **Regla: cualquier contenedor con `overflow-y: auto` en esta página lleva `.cv-scroll`.**
 
+### ⭐ Una acción que no procede se DESHABILITA, no desaparece (2026-08-15)
+El tacho de la tabla del portafolio solo se pintaba en las filas borrables. Fernando:
+*«haz que sea siempre visible, solo que esté deshabilitado cuando no se pueda eliminar»*.
+
+**Un botón que aparece y desaparece según la fila descoloca la columna** —cada fila tiene un
+ancho de acciones distinto— y **deja a quien mira adivinando por qué unas filas sí y otras
+no**. Deshabilitado, el `title` lo explica: «un proyecto del equipo no se elimina desde el
+portafolio». Regla para cualquier tabla con acciones por fila.
+
+### Chips: el relleno se reserva para lo que marca un ESTADO
+El chip de talento nació con borde y fondo de acento y competía con los tags de al lado, que
+son los que de verdad distinguen una fila de otra. Ahora es **solo texto en acento**: nombra
+una categoría, no marca un estado. El relleno —y el punto de `PixelBadge`— se guardan para
+estados.
+
 ### ⭐ El CV es POR TALENTO, y el selector es el titular (2026-08-15)
 Quien abre el enlace ve el CV de **un** talento. El nombre del talento hace de titular bajo la
 foto **y es el conmutador**: se pulsa y se despliega la lista.
