@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { memberIdDeUsuario } from '@/lib/members/cv-share';
+import { normalizarRed } from '@/lib/members/redes';
 
 const ESTADOS = ['immediate', 'from_date', 'not_available'];
 const JORNADAS = ['full', 'part', 'both'];
@@ -28,14 +29,15 @@ const CAMPOS: Record<string, (v: any) => any> = {
   location: (v) => (String(v ?? '').trim() || null),
   salary_min: (v) => numeroONulo(v),
   salary_max: (v) => numeroONulo(v),
-  salary_visible: (v) => !!v,
   job_status: (v) => (ESTADOS.includes(v) ? v : 'immediate'),
   job_available_from: (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v ?? '')) ? v : null),
   job_workday: (v) => (JORNADAS.includes(v) ? v : 'full'),
   job_mode: (v) => (MODALIDADES.includes(v) ? v : 'any'),
   job_note: (v) => (String(v ?? '').trim().slice(0, 400) || null),
-  share_email: (v) => !!v,
-  share_phone: (v) => !!v,
+  // LinkedIn y el sitio web se editan desde «Redes sociales» del panel de Perfil
+  // (Fernando, 2026-08-14). Pasan por la misma puerta que las demás redes.
+  linkedin_url: (v) => normalizarRed('linkedin', v).url,
+  website_url: (v) => normalizarRed('web', v).url,
 };
 
 function numeroONulo(v: any): number | null {
@@ -59,9 +61,9 @@ export async function GET() {
     const { error, memberId } = await miMemberId();
     if (error) return error;
     const { rows } = await pool.query(
-      `SELECT headline, location, salary_min, salary_max, salary_visible,
+      `SELECT headline, location, salary_min, salary_max,
               job_status, job_available_from, job_workday, job_mode, job_note,
-              share_email, share_phone
+              linkedin_url, website_url
          FROM gcc_world.member_cv_profiles WHERE member_id = $1`,
       [memberId],
     );
@@ -71,7 +73,6 @@ export async function GET() {
       location: r.location ?? '',
       salary_min: r.salary_min != null ? Number(r.salary_min) : null,
       salary_max: r.salary_max != null ? Number(r.salary_max) : null,
-      salary_visible: r.salary_visible ?? true,
       job_status: r.job_status ?? 'immediate',
       job_available_from: r.job_available_from
         ? new Date(r.job_available_from).toISOString().slice(0, 10)
@@ -79,8 +80,8 @@ export async function GET() {
       job_workday: r.job_workday ?? 'full',
       job_mode: r.job_mode ?? 'any',
       job_note: r.job_note ?? '',
-      share_email: r.share_email ?? false,
-      share_phone: r.share_phone ?? false,
+      linkedin_url: r.linkedin_url ?? '',
+      website_url: r.website_url ?? '',
     });
   } catch (err: any) {
     console.error('CV público GET ajustes error:', err.message);

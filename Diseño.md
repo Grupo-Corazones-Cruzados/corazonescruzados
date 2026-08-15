@@ -1666,6 +1666,17 @@ Fernando la levantó **para esta página y solo para esta** el 2026-08-14: *«es
 el diseño»*. Para `/negocio`, `/recursos`, `/contacto` y cualquier página pública futura,
 **la regla de §«El diseño de estas páginas lo decide Fernando, conmigo, ANTES» sigue vigente**.
 
+### ⚠️ La ficha NO lleva scroll propio — la «raya negra»
+Llevaba `lg:h-screen lg:overflow-y-auto`, así que el navegador le dibujaba su barra de
+desplazamiento y, con el tema oscuro del sistema, se veía como **una línea negra partiendo la
+página en dos**. Lo vio Fernando en una captura.
+
+Ahora es `lg:sticky lg:top-0 lg:self-start` (con `lg:items-start` en la rejilla): la ficha se
+pega arriba y, si es más alta que la ventana, sube con la página — que es el gesto natural.
+**Regla: en una página de lectura, un solo contenedor con scroll, el de la página.** Se
+comprueba midiendo en el navegador que ningún elemento tiene `scrollHeight > clientHeight`
+con `overflow-y: auto`.
+
 ### Ficha a la izquierda + UNA pestaña a la derecha (2026-08-14, 2ª pasada)
 Fernando lo reorganizó al verlo funcionando. **La ficha concentra lo que se consulta** y el
 panel **enseña solo la pestaña activa**, no todo seguido.
@@ -1673,7 +1684,7 @@ panel **enseña solo la pestaña activa**, no todo seguido.
 | Zona | Qué lleva |
 |---|---|
 | **Ficha** (izquierda, `sticky top-0 h-screen overflow-y-auto`) | Foto · nombre · titular · ubicación · **aspiración salarial** · **Disponibilidad** (estado, jornada, modalidad, nota y el horario de atención como detalle) · **Aptitudes** (skills e idiomas) · contacto · botón de PDF · pestañas |
-| **Panel** (derecha) | Franja de cifras (siempre) + **una** de: Perfil · Trayectoria · Portafolio |
+| **Panel** (derecha) | Franja de cifras (siempre) + **una** de: **Perfil** (biografía **y** trayectoria juntas) · **Portafolio** |
 
 **Por qué disponibilidad y aptitudes bajaron a la ficha:** son bloques cortos que en el panel
 grande dejaban medio ancho vacío, y son justo lo que alguien vuelve a mirar. **Por qué la
@@ -1686,11 +1697,50 @@ con el scroll, hay que subir para comprobarlo.
 | `md` | Una columna. La ficha se apila arriba; las pestañas pasan a **píldoras en una barra pegajosa** (`sticky top-0` + `backdrop-blur`) |
 | `< md` | Una columna, pestañas deslizables y **barra inferior fija** con «Descargar en PDF» + correo + teléfono. El contenedor lleva `pb-28` para que la barra no tape el pie |
 
-⚠️ **Los tres paneles siguen en el DOM, ocultos con `hidden`.** Desmontarlos dejaría un CV de
+**Son DOS pestañas, no tres** (2026-08-14): «Perfil» se quedaba casi vacío con tres líneas de
+biografía en un panel enorme. Biografía y trayectoria van juntas, que es como se lee un
+currículum; el portafolio sí tiene entidad propia.
+
+⚠️ **Los paneles siguen en el DOM, ocultos con `hidden`.** Desmontarlos dejaría un CV de
 una sola sección para quien no ejecute JavaScript o recorra el documento con un lector.
 
 ⚠️ **`mt-auto` en el pie del panel.** En «Perfil» —tres líneas de biografía— quedaba colgado a
 media pantalla con un vacío enorme debajo. El `<main>` es `flex flex-col lg:min-h-screen`.
+
+### Compartir el CV — botón en la barra de pestañas + panel lateral (2026-08-14)
+`settings/page.tsx`: la barra de pestañas lleva el botón **«Compartir CV»** pegado a la
+derecha, con el borde de acento — es el mismo patrón que «Compartir acceso» en el encabezado
+del detalle de un proyecto. Un `<div className="flex-1" />` entre las pestañas y el botón es
+lo que lo empuja al extremo; `justify-between` descuadraría las pestañas si algún día son más.
+
+Abre `PanelCompartirCv` (`PixelModal` = panel lateral derecho con overlay), calcado de
+`components/cotizaciones/QuoteShareButton.tsx`: **vigencia** arriba, la acción debajo y el
+enlace generado al pie con copiar/abrir. **No se copió el envío por correo**: una cotización
+tiene el correo del cliente guardado, un CV no tiene destinatario.
+
+### ⭐ EL CAMPO VACÍO ES EL INTERRUPTOR (regla, 2026-08-14)
+Fernando, sobre la aspiración salarial y el contacto: *«si el usuario no ingresa esos valores
+es porque no quiere mostrar ese campo»* · *«eso va porque va»*.
+
+**No se añade una casilla de visibilidad al lado de un campo que ya puede quedarse vacío.**
+Son dos formas de decir lo mismo, y la segunda hay que descubrirla: alguien rellena el sueldo,
+no ve el interruptor y no entiende por qué no sale. Aplica a cualquier dato opcional que se
+publique. Se eliminaron `salary_visible`, `share_email` y `share_phone`.
+
+### Dónde se edita cada campo del CV (2026-08-14)
+| Panel | Campos |
+|---|---|
+| **Perfil** | Foto · nombre · apellido · teléfono · **ubicación** · **las seis redes juntas** (LinkedIn, sitio web, YouTube, TikTok, Instagram, Facebook) |
+| **Mi CV** | Biografía · **titular profesional** · **aspiración salarial** · skills · idiomas · talentos con su educación, experiencia y servicios |
+| **Disponibilidad** | Disponibilidad laboral (`job_*`) + horario semanal |
+
+**Skills e Idiomas usan EL MISMO control** (`BotonChips` + modal). Estaban uno al lado del
+otro con formas distintas —botón con chips vs. desplegable de búsqueda— y la diferencia
+saltaba a la vista. Regla general: **dos campos vecinos del mismo tipo se ven igual.**
+
+⚠️ **`PUT /api/members/[id]/cv` no escribe `linkedin_url` ni `website_url`.** Es un upsert
+completo; al mudarse esos campos a Perfil, seguir mandándolos desde «Mi CV» los borraría cada
+vez que alguien guardara el CV.
 
 ### Redes sociales — botones que llevan al perfil (2026-08-14)
 En la ficha, debajo del contacto: una fila de botones envolvente, uno por red, con su icono

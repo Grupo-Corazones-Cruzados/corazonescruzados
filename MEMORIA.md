@@ -404,6 +404,47 @@ Stack estándar de la casa, con particularidades de este repo:
       red y la dirección legible (en papel no se pulsa). ⚠️ **TikTok no existe en lucide**:
       va como SVG propio. `Linkedin`, `Youtube`, `Instagram` y `Facebook` sí están en la 0.468.
     - `linkedin_url` y `website_url` del CV pasan por la misma puerta al guardarse.
+  - **🧭 CUARTA PASADA — dónde se edita cada cosa, y el enlace pasa a ser temporal (2026-08-14).**
+    Fernando reorganizó el panel entero mirando la pantalla:
+    - **«Compartir CV» sale del panel de Perfil** y pasa a ser un **botón a la derecha de la
+      barra de pestañas** (Mi CV · Disponibilidad · Portafolio), igual que «Compartir acceso»
+      en el detalle de un proyecto. Abre un **panel lateral con overlay**
+      (`PanelCompartirCv.tsx`) calcado de `QuoteShareButton`: **vigencia** arriba, generar,
+      el enlace copiable y revocar.
+    - **EL ENLACE CADUCA** (migración 036, `cv_public_token_expires_at`). Mismas opciones que
+      una cotización —1 día · 1 semana · 1 mes · 3 meses— más «sin caducidad», que es una
+      elección explícita del desplegable. **La caducidad se comprueba en `miembroDeToken()`**,
+      la puerta única: ponerla en la página y olvidarla en el PDF dejaría el documento vivo.
+    - **⭐ EL CAMPO VACÍO ES EL INTERRUPTOR.** Se eliminan `salary_visible`, `share_email` y
+      `share_phone`. Textual: *«si el usuario no ingresa esos valores es porque no quiere
+      mostrar ese campo»* y *«quita el alternar de publicar mi correo y teléfono, eso va
+      porque va»*. Es una regla de diseño general: **un dato que se rellena y luego se oculta
+      con una casilla aparte son dos formas de decir lo mismo, y la segunda hay que
+      descubrirla.** Consecuencia asumida: correo y teléfono se publican siempre; lo que
+      compensa es que ahora el enlace caduca solo.
+    - **Fuera los tres botones de ayuda (?)** de aspiración salarial, CV público y redes.
+    - **Dónde vive cada campo, ya ordenado:** *Perfil* = nombre, teléfono, **ubicación** y
+      **las seis redes juntas** (LinkedIn y sitio web se mudan aquí desde «Mi CV»: son
+      enlaces y estaban separados de los otros cuatro sin motivo). *Mi CV* = biografía,
+      **titular profesional**, **aspiración salarial**, skills, idiomas y talentos.
+    - ⚠️ **`PUT /api/members/[id]/cv` ya NO escribe `linkedin_url` ni `website_url`.** Es un
+      upsert completo: si los siguiera mandando, guardar el CV los borraría cada vez, porque
+      el panel que los edita es otro.
+    - **Skills e Idiomas comparten control** (`BotonChips` + su modal). Estaban uno al lado
+      del otro con formas distintas —un botón con chips y un desplegable de búsqueda— y la
+      diferencia se veía a la primera.
+    - **En la página pública: DOS pestañas, no tres.** «Perfil» se quedaba casi vacío con tres
+      líneas de biografía, así que **Perfil y Trayectoria van juntos** —que es como se lee un
+      currículum, seguido— y la otra es Portafolio.
+    - **🐛 LA «RAYA NEGRA» ERA UNA BARRA DE DESPLAZAMIENTO.** La ficha izquierda era
+      `h-screen overflow-y-auto`, así que el navegador le dibujaba su propia barra y, con el
+      tema oscuro del sistema, se veía como una línea negra partiendo la página. Se quita el
+      scroll interno: `sticky top-0` + `self-start` y la ficha sube con la página. Comprobado
+      midiendo en el navegador que **no queda ningún elemento con scroll propio**.
+    - **🐛 Y un fallo de los que solo salen ejecutando:** al borrar las tres columnas se
+      quitaron de la lógica **pero no del `SELECT`**, así que la página entera daba 500
+      («column salary_visible does not exist»). `tsc` y el build pasaron limpios; lo cazó el
+      ensayo.
   - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
     CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
     las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.

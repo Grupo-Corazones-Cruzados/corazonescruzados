@@ -6,18 +6,15 @@ import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
-import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { money } from '@/lib/format';
 import { TALENTOS } from '@/lib/centralized/talentos';
-import { normalizarRed } from '@/lib/members/redes';
-import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check } from 'lucide-react';
+import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check, Languages } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 // Idiomas para el multiselector (evita escribirlos a mano).
 const LANGUAGES = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 'Alemán', 'Chino (Mandarín)', 'Japonés', 'Coreano', 'Ruso', 'Árabe', 'Kichwa', 'Catalán', 'Neerlandés', 'Hindi'];
-const LANG_OPTIONS = LANGUAGES.map((l) => ({ value: l, label: l }));
 
 interface EduEntry { institution: string; degree: string; field: string; start_year: string; end_year: string; }
 interface ExpEntry { company: string; position: string; description: string; start_year: string; end_year: string; }
@@ -45,8 +42,6 @@ export default function CvPanel() {
   const [bio, setBio] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
-  const [linkedin, setLinkedin] = useState('');
-  const [website, setWebsite] = useState('');
   // Educación/experiencia GLOBALES ya no se editan (cada talento tiene la suya); se
   // conservan en estado para no perder datos previos al guardar.
   const [education, setEducation] = useState<EduEntry[]>([]);
@@ -58,6 +53,12 @@ export default function CvPanel() {
   // Modal para gestionar skills una por una (sin comas).
   const [skillsModal, setSkillsModal] = useState(false);
   const [newSkill, setNewSkill] = useState('');
+  const [langModal, setLangModal] = useState(false);
+  // Campos que viven en `member_cv_profiles` pero se editan aquí. Van por
+  // `/api/members/cv/publico` (PATCH parcial), no por el upsert del CV.
+  const [titular, setTitular] = useState('');
+  const [salarioMin, setSalarioMin] = useState('');
+  const [salarioMax, setSalarioMax] = useState('');
   const [confirmDelTalent, setConfirmDelTalent] = useState<number | null>(null);
   // Formularios en modal (educación/experiencia del talento activo + servicios).
   const [eduForm, setEduForm] = useState<{ idx: number | null; draft: EduEntry } | null>(null);
@@ -73,14 +74,18 @@ export default function CvPanel() {
       setBio(data.cv.bio || '');
       setSkills(Array.isArray(data.cv.skills) ? data.cv.skills : []);
       setLanguages(Array.isArray(data.cv.languages) ? data.cv.languages : []);
-      setLinkedin(data.cv.linkedin_url || '');
-      setWebsite(data.cv.website_url || '');
       setEducation(data.cv.education || []);
       setExperience(data.cv.experience || []);
       setTalents(Array.isArray(data.cv.talents) ? data.cv.talents : []);
     }).catch(() => {});
     fetch(`/api/members/${memberId}/services`).then((r) => r.json())
       .then((d) => setServices(d.data || [])).catch(() => {});
+    fetch('/api/members/cv/publico').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!d) return;
+      setTitular(d.headline || '');
+      setSalarioMin(d.salary_min != null ? String(d.salary_min) : '');
+      setSalarioMax(d.salary_max != null ? String(d.salary_max) : '');
+    }).catch(() => {});
   }, [memberId]);
 
   const save = async () => {
@@ -93,17 +98,23 @@ export default function CvPanel() {
           bio,
           skills,
           languages,
-          linkedin_url: linkedin, website_url: website, education, experience, talents,
+          education, experience, talents,
         }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || 'Error al guardar');
       }
-      const d = await res.json();
-      // El servidor devuelve el enlace ya compuesto: quien escribió «linkedin.com/in/x»
-      // ve en el acto el `https://` que se guardó.
-      if (d?.cv) { setLinkedin(d.cv.linkedin_url || ''); setWebsite(d.cv.website_url || ''); }
+      // Titular y salario viven en la misma tabla pero tienen su propia puerta: el
+      // upsert de arriba no los conoce y los pisaría.
+      const res2 = await fetch('/api/members/cv/publico', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ headline: titular, salary_min: salarioMin, salary_max: salarioMax }),
+      });
+      if (!res2.ok) {
+        const d = await res2.json().catch(() => ({}));
+        throw new Error(d.error || 'Error al guardar');
+      }
       toast.success('CV actualizado');
     } catch (e: any) { toast.error(e?.message || 'Error al guardar'); }
     finally { setSaving(false); }
@@ -213,33 +224,39 @@ export default function CvPanel() {
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Describe tu experiencia…"
             className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
         </div>
-        {/* Skills — chips gestionados en un modal (una por una, sin comas) */}
+
+        {/* Titular profesional: vive aquí, no en Perfil. Es contenido del CV — la
+            frase con la que alguien se presenta—, no un dato de la cuenta. */}
+        <div className="md:col-span-2 xl:col-span-2">
+          <PixelInput label="Titular profesional" value={titular} onChange={(e) => setTitular(e.target.value)} placeholder="Desarrollador full-stack" />
+        </div>
+
+        {/* Aspiración salarial: rango mensual en USD. **Sin interruptor de
+            visibilidad** — si se rellena se enseña, y si no, no existe (Fernando,
+            2026-08-14): el campo vacío YA es el interruptor. */}
+        <div className="md:col-span-2 xl:col-span-2">
+          <label className="text-[12px] font-medium text-digi-text mb-1 block" style={mf}>Aspiración salarial (USD/mes)</label>
+          <div className="grid grid-cols-2 gap-2">
+            <input type="number" min={0} step={50} inputMode="numeric" value={salarioMin}
+              onChange={(e) => setSalarioMin(e.target.value)} placeholder="Desde"
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+            <input type="number" min={0} step={50} inputMode="numeric" value={salarioMax}
+              onChange={(e) => setSalarioMax(e.target.value)} placeholder="Hasta"
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+          </div>
+        </div>
+
+        {/* Skills e Idiomas comparten EL MISMO control: un botón con los chips
+            dentro que abre su modal. Antes Idiomas era un desplegable de búsqueda y
+            los dos campos, uno al lado del otro, no se parecían en nada. */}
         <div>
           <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Tag className="w-3.5 h-3.5 text-accent" /> Skills</label>
-          <button type="button" onClick={() => setSkillsModal(true)}
-            className="field-control w-full min-h-[42px] px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-left flex flex-wrap gap-1.5 items-center hover:border-accent transition-colors" style={mf}>
-            {skills.length === 0
-              ? <span className="text-[13px] text-digi-muted/50">Agregar skills…</span>
-              : skills.map((s) => <span key={s} className="text-[11px] px-1.5 py-0.5 rounded bg-accent-light text-accent">{s}</span>)}
-          </button>
+          <BotonChips valores={skills} vacio="Agregar skills…" onClick={() => setSkillsModal(true)} />
         </div>
-        {/* Idiomas — multiselección */}
         <div>
-          <label className="text-[12px] font-medium text-digi-text mb-1 block" style={mf}>Idiomas</label>
-          <MultiSelectSearch options={LANG_OPTIONS} selected={languages} onChange={setLanguages} placeholder="Elegir idiomas…" />
+          <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Languages className="w-3.5 h-3.5 text-accent" /> Idiomas</label>
+          <BotonChips valores={languages} vacio="Agregar idiomas…" onClick={() => setLangModal(true)} />
         </div>
-        {/* Enlaces, no textos: son botones en el CV público. El servidor los
-            normaliza y rechaza lo que no sea de esa red. */}
-        <div className="flex flex-col gap-1">
-          <PixelInput label="LinkedIn" type="url" inputMode="url" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://www.linkedin.com/in/tu-perfil" />
-          {(() => {
-            const r = normalizarRed('linkedin', linkedin);
-            if (r.error && linkedin.trim().length > 3) return <p className="text-[11px] text-red-600" style={mf}>{r.error}</p>;
-            if (r.aviso) return <p className="text-[11px] text-amber-600" style={mf}>{r.aviso}</p>;
-            return null;
-          })()}
-        </div>
-        <PixelInput label="Sitio web" type="url" inputMode="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://tusitio.com" />
       </div>
 
       {/* Talentos */}
@@ -359,6 +376,28 @@ export default function CvPanel() {
               ))}
             </div>
           )}
+        </div>
+      </PixelModal>
+
+      {/* Modal de idiomas: MISMA forma que el de skills, pero eligiendo de la lista
+          en vez de escribiendo libre. */}
+      <PixelModal open={langModal} onClose={() => setLangModal(false)} title="Idiomas">
+        <div className="space-y-3">
+          <p className="text-[12px] text-digi-muted" style={mf}>Marca los idiomas que hablas.</p>
+          <div className="flex flex-wrap gap-1.5">
+            {LANGUAGES.map((l) => {
+              const puesto = languages.includes(l);
+              return (
+                <button key={l} type="button"
+                  onClick={() => setLanguages(puesto ? languages.filter((x) => x !== l) : [...languages, l])}
+                  className={`inline-flex items-center gap-1 text-[12px] px-2.5 py-1 rounded-full border transition-colors ${
+                    puesto ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text'}`}
+                  style={mf}>
+                  {puesto && <Check className="w-3 h-3" />} {l}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </PixelModal>
 
@@ -543,5 +582,20 @@ function TalentPicker({ options, onPick }: { options: string[]; onPick: (t: stri
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Botón con los valores dentro, que abre su modal ──────────────────────────
+ * Definición única del control de Skills y de Idiomas: los dos campos van uno al
+ * lado del otro y tienen que verse iguales. Antes Idiomas era un desplegable de
+ * búsqueda y Skills este botón, y la diferencia se notaba a la primera. */
+function BotonChips({ valores, vacio, onClick }: { valores: string[]; vacio: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className="field-control w-full min-h-[42px] px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-left flex flex-wrap gap-1.5 items-center hover:border-accent transition-colors" style={mf}>
+      {valores.length === 0
+        ? <span className="text-[13px] text-digi-muted/50">{vacio}</span>
+        : valores.map((v) => <span key={v} className="text-[11px] px-1.5 py-0.5 rounded bg-accent-light text-accent">{v}</span>)}
+    </button>
   );
 }

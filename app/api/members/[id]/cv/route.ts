@@ -1,7 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { normalizarRed } from '@/lib/members/redes';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,13 +29,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await req.json();
 
-    // LinkedIn y la web se guardan como URL ABSOLUTA, por la misma puerta que las
-    // demás redes. Sin `https://`, un `href` se lee como ruta relativa y el botón
-    // del CV público no lleva a ninguna parte — que es justo el fallo que se vio.
-    const enlaceLinkedin = normalizarRed('linkedin', body.linkedin_url);
-    const enlaceWeb = normalizarRed('web', body.website_url);
-    const malo = enlaceLinkedin.error || enlaceWeb.error;
-    if (malo) return NextResponse.json({ error: malo }, { status: 400 });
+    // ⚠️ `linkedin_url` y `website_url` NO se tocan aquí. Desde 2026-08-14 se editan
+    // en «Redes sociales» del panel de Perfil, con el resto de enlaces; este upsert
+    // los pisaría a NULL cada vez que alguien guardara el CV.
 
     // `talents`: [{ key, education[], experience[] }] — talentos del usuario con su
     // educación/experiencia propias (los servicios de cada talento son filas en `services`).
@@ -44,20 +39,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Upsert
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, linkedin_url, website_url, education, experience, talents)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, education, experience, talents)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (member_id) DO UPDATE SET
          bio = EXCLUDED.bio,
          skills = EXCLUDED.skills,
          languages = EXCLUDED.languages,
-         linkedin_url = EXCLUDED.linkedin_url,
-         website_url = EXCLUDED.website_url,
          education = EXCLUDED.education,
          experience = EXCLUDED.experience,
          talents = EXCLUDED.talents,
          updated_at = NOW()
        RETURNING *`,
-      [id, body.bio || null, body.skills || [], body.languages || [], enlaceLinkedin.url, enlaceWeb.url, JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
+      [id, body.bio || null, body.skills || [], body.languages || [], JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
     );
 
     return NextResponse.json({ cv: rows[0] });

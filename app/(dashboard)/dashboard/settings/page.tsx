@@ -6,7 +6,8 @@ import ProfilePanel from '@/components/settings/ProfilePanel';
 import CvPanel from '@/components/settings/CvPanel';
 import AvailabilityPanel from '@/components/settings/AvailabilityPanel';
 import PortfolioPanel from '@/components/settings/PortfolioPanel';
-import { FileText, CalendarClock, Briefcase, type LucideIcon } from 'lucide-react';
+import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
+import { FileText, CalendarClock, Briefcase, Share2, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const isMember = !!user?.member_id;
   const [tab, setTab] = useState<TabKey>('cv');
+  const [compartir, setCompartir] = useState(false);
 
   return (
     <div>
@@ -38,17 +40,29 @@ export default function SettingsPage() {
 
         {isMember && (
           <div className="flex-1 min-w-0 w-full flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
-            {/* Barra de pestañas horizontal */}
-            <div className="flex items-stretch border-b border-digi-border overflow-x-auto shrink-0">
-              {TABS.map((t) => {
-                const active = tab === t.key;
-                return (
-                  <button key={t.key} onClick={() => setTab(t.key)}
-                    className={`inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
-                    <t.Icon className="w-4 h-4" /> {t.label}
-                  </button>
-                );
-              })}
+            {/* Barra de pestañas + acción a la DERECHA, como el «Compartir acceso» de
+                un proyecto (Fernando, 2026-08-14). El `flex-1` del hueco central es
+                lo que empuja el botón al extremo sin recurrir a `justify-between`,
+                que descuadraría las pestañas si algún día son más. */}
+            <div className="flex items-stretch border-b border-digi-border shrink-0">
+              <div className="flex items-stretch overflow-x-auto">
+                {TABS.map((t) => {
+                  const active = tab === t.key;
+                  return (
+                    <button key={t.key} onClick={() => setTab(t.key)}
+                      className={`inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
+                      <t.Icon className="w-4 h-4" /> {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex-1" />
+              <div className="flex items-center pr-2 pl-2">
+                <button onClick={() => setCompartir(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-[13px] font-medium rounded hover:bg-accent-light transition-colors whitespace-nowrap" style={mf}>
+                  <Share2 className="w-4 h-4" /> Compartir CV
+                </button>
+              </div>
             </div>
 
             {/* Contenido de la pestaña activa: llena el alto del panel (ancho completo, sin scroll interno) */}
@@ -60,6 +74,10 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Panel lateral derecho con overlay: el mismo diseño que «Compartir acceso»
+          de una cotización. */}
+      <PanelCompartirCv open={compartir} onClose={() => setCompartir(false)} />
     </div>
   );
 }

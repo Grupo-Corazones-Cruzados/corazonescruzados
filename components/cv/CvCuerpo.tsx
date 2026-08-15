@@ -33,7 +33,7 @@ import {
 } from '@/lib/members/cv-tipos';
 import PortafolioPublico from '@/components/cv/PortafolioPublico';
 
-type Pestana = 'perfil' | 'trayectoria' | 'portafolio';
+type Pestana = 'perfil' | 'portafolio';
 
 const fechaLarga = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -46,20 +46,29 @@ export default function CvCuerpo({
   const hayTrayectoria = cv.talentos.some((t) => t.experiencia.length || t.educacion.length);
   const nProyectos = cv.portafolio.length;
 
+  /* ── DOS pestañas, no tres (Fernando, 2026-08-14) ──────────────────────────
+   * «Perfil» se quedaba prácticamente vacío: tres líneas de biografía en un panel
+   * enorme. Ahora **Perfil y Trayectoria van juntos** en la misma pestaña —que es
+   * como se lee un currículum, seguido— y la segunda es el Portafolio, que sí
+   * tiene entidad propia. */
   const pestanas: { id: Pestana; label: string; icono: React.ReactNode }[] = [
-    cv.bio ? { id: 'perfil' as const, label: 'Perfil', icono: <FileText className="w-4 h-4" /> } : null,
-    hayTrayectoria ? { id: 'trayectoria' as const, label: 'Trayectoria', icono: <Briefcase className="w-4 h-4" /> } : null,
-    nProyectos ? { id: 'portafolio' as const, label: 'Portafolio', icono: <Sparkles className="w-4 h-4" /> } : null,
+    cv.bio || hayTrayectoria ? { id: 'perfil' as const, label: 'Perfil', icono: <FileText className="w-4 h-4" /> } : null,
+    nProyectos ? { id: 'portafolio' as const, label: 'Portafolio', icono: <Briefcase className="w-4 h-4" /> } : null,
   ].filter(Boolean) as { id: Pestana; label: string; icono: React.ReactNode }[];
 
   const [activa, setActiva] = useState<Pestana>(pestanas[0]?.id ?? 'perfil');
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-28 lg:pb-16">
-      <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] lg:gap-10 xl:gap-14">
+      <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] lg:gap-10 xl:gap-14 lg:items-start">
 
         {/* ══ FICHA ══════════════════════════════════════════════════════════ */}
-        <aside className="lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:py-10 pt-8 lg:pt-10 space-y-6">
+        {/* ⚠️ SIN `h-screen` NI `overflow-y-auto`.
+            La ficha tenía scroll propio y el navegador le dibujaba su barra: era la
+            «raya negra» que se veía partiendo la página en dos. Con `sticky top-0` +
+            `self-start` la ficha se pega arriba y, si es más alta que la ventana,
+            sube con la página — que es el gesto natural y no pinta ninguna barra. */}
+        <aside className="lg:sticky lg:top-0 lg:self-start lg:py-10 pt-8 lg:pt-10 space-y-6">
           <div className="cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
             <Foto cv={cv} />
             <h1 className="mt-5 text-[26px] sm:text-[30px] font-semibold leading-tight text-[#1c1b22]">{cv.nombre}</h1>
@@ -220,36 +229,40 @@ export default function CvCuerpo({
               {cv.bio && (
                 <p className="max-w-[68ch] text-[15.5px] sm:text-[16.5px] leading-relaxed text-[#56545f]">{cv.bio}</p>
               )}
-            </Panel>
 
-            <Panel id="trayectoria" activa={activa} titulo="Trayectoria por talento">
-              <div className="space-y-10">
-                {cv.talentos.filter((t) => t.experiencia.length || t.educacion.length).map((t) => (
-                  <div key={t.nombre}>
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <h3 className="text-[20px] font-semibold text-[#1c1b22]">{t.nombre}</h3>
-                      {t.servicios.length > 0 && <p className="text-[13px] text-[#5b3fa8]">{t.servicios.join(' · ')}</p>}
-                    </div>
-                    {t.experiencia.length > 0 && (
-                      <Bloque titulo="Experiencia" icono={<Briefcase className="w-3.5 h-3.5" />}>
-                        {t.experiencia.map((e, i) => (
-                          <Hito key={i} titulo={e.cargo || e.empresa || 'Experiencia'} sub={e.cargo ? e.empresa : ''}
-                            texto={e.descripcion} fecha={[e.desde, e.hasta].filter(Boolean).join(' – ')} />
-                        ))}
-                      </Bloque>
-                    )}
-                    {t.educacion.length > 0 && (
-                      <Bloque titulo="Formación" icono={<GraduationCap className="w-3.5 h-3.5" />}>
-                        {t.educacion.map((e, i) => (
-                          <Hito key={i} titulo={e.titulo || e.institucion || 'Formación'}
-                            sub={[e.institucion, e.campo].filter(Boolean).join(' · ')} texto=""
-                            fecha={[e.desde, e.hasta].filter(Boolean).join(' – ')} />
-                        ))}
-                      </Bloque>
-                    )}
+              {hayTrayectoria && (
+                <div className={cv.bio ? 'mt-12' : ''}>
+                  <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Trayectoria por talento</h3>
+                  <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
+                  <div className="space-y-10">
+                    {cv.talentos.filter((t) => t.experiencia.length || t.educacion.length).map((t) => (
+                      <div key={t.nombre}>
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <h4 className="text-[20px] font-semibold text-[#1c1b22]">{t.nombre}</h4>
+                          {t.servicios.length > 0 && <p className="text-[13px] text-[#5b3fa8]">{t.servicios.join(' · ')}</p>}
+                        </div>
+                        {t.experiencia.length > 0 && (
+                          <Bloque titulo="Experiencia" icono={<Briefcase className="w-3.5 h-3.5" />}>
+                            {t.experiencia.map((e, i) => (
+                              <Hito key={i} titulo={e.cargo || e.empresa || 'Experiencia'} sub={e.cargo ? e.empresa : ''}
+                                texto={e.descripcion} fecha={[e.desde, e.hasta].filter(Boolean).join(' – ')} />
+                            ))}
+                          </Bloque>
+                        )}
+                        {t.educacion.length > 0 && (
+                          <Bloque titulo="Formación" icono={<GraduationCap className="w-3.5 h-3.5" />}>
+                            {t.educacion.map((e, i) => (
+                              <Hito key={i} titulo={e.titulo || e.institucion || 'Formación'}
+                                sub={[e.institucion, e.campo].filter(Boolean).join(' · ')} texto=""
+                                fecha={[e.desde, e.hasta].filter(Boolean).join(' – ')} />
+                            ))}
+                          </Bloque>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </Panel>
 
             <Panel id="portafolio" activa={activa} titulo="Portafolio">

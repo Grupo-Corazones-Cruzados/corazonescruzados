@@ -48,10 +48,10 @@ const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kA
 async function sembrar() {
   await pool.query(`
     INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, linkedin_url, website_url, talents,
-      headline, location, salary_min, salary_max, salary_visible,
-      job_status, job_available_from, job_workday, job_mode, job_note, share_email, share_phone)
-    VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, 1200, 1800, true,
-            'from_date', '2026-09-01', 'both', 'hybrid', 'Con disponibilidad para viajar', true, true)
+      headline, location, salary_min, salary_max,
+      job_status, job_available_from, job_workday, job_mode, job_note)
+    VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, 1200, 1800,
+            'from_date', '2026-09-01', 'both', 'hybrid', 'Con disponibilidad para viajar')
     ON CONFLICT (member_id) DO UPDATE SET bio = EXCLUDED.bio`,
     [MIEMBRO,
      'Perfil de ensayo con acentos: ñ, á, é, í, ó, ú, ü y «comillas».',
@@ -128,7 +128,7 @@ async function main() {
     ok(cv.talentos?.[1]?.experiencia?.length === 0, 'el talento sin trayectoria no inventa entradas');
     ok(cv.portafolio?.length === 1 && cv.portafolio[0].imagenes === 1, `portafolio: ${cv.portafolio?.length} ítem, ${cv.portafolio?.[0]?.imagenes} imagen`);
     ok(!('price' in (cv.portafolio?.[0] || {})) && !('precio' in (cv.portafolio?.[0] || {})), 'el portafolio NO lleva precio');
-    ok(cv.correo === 'miembro@prueba.com' || typeof cv.correo === 'string', `correo publicado: ${cv.correo}`);
+    ok(typeof cv.correo === 'string' && cv.correo.length > 0, `el correo se publica siempre: ${cv.correo}`);
     ok(cv.disponibilidad?.horario?.length === 2, `horario: ${cv.disponibilidad?.horario?.length} franjas`);
     ok(rJson.headers.get('x-robots-tag')?.includes('noindex'), 'el JSON manda X-Robots-Tag noindex');
 
@@ -141,17 +141,13 @@ async function main() {
     ok(!('facebook' in redes), 'una URL de otro dominio NO se publica como Facebook');
     ok(!('linkedin' in cv), 'ya no hay campos sueltos `linkedin`/`web`; todo va en `redes`');
 
-    // ── 1b. Contacto apagado ⇒ NO sale del servidor ──────────────────────────
-    await pool.query(`UPDATE gcc_world.member_cv_profiles SET share_phone = false, share_email = false WHERE member_id = ${MIEMBRO}`);
-    const cv2 = await (await fetch(`${BASE}/api/cv/${token}`)).json();
-    ok(!('telefono' in cv2) && !('correo' in cv2), 'con los interruptores apagados, correo y teléfono NO están en el JSON');
-    await pool.query(`UPDATE gcc_world.member_cv_profiles SET share_phone = true, share_email = true WHERE member_id = ${MIEMBRO}`);
-
-    // ── 1c. Salario oculto ───────────────────────────────────────────────────
-    await pool.query(`UPDATE gcc_world.member_cv_profiles SET salary_visible = false WHERE member_id = ${MIEMBRO}`);
+    // ── 1b. EL CAMPO VACÍO ES EL INTERRUPTOR ─────────────────────────────────
+    // Ya no hay casillas de «publicar correo/teléfono» ni de «mostrar el rango»
+    // (Fernando, 2026-08-14): si el dato está, se publica; si se borra, desaparece.
+    await pool.query(`UPDATE gcc_world.member_cv_profiles SET salary_min = NULL, salary_max = NULL WHERE member_id = ${MIEMBRO}`);
     const cv3 = await (await fetch(`${BASE}/api/cv/${token}`)).json();
-    ok(!('salario' in cv3), 'con el rango oculto, el salario NO está en el JSON');
-    await pool.query(`UPDATE gcc_world.member_cv_profiles SET salary_visible = true WHERE member_id = ${MIEMBRO}`);
+    ok(!('salario' in cv3), 'sin rango escrito, el salario NO está en el JSON');
+    await pool.query(`UPDATE gcc_world.member_cv_profiles SET salary_min = 1200, salary_max = 1800 WHERE member_id = ${MIEMBRO}`);
 
     // ── 2. Página ────────────────────────────────────────────────────────────
     const rPag = await fetch(`${BASE}/cv/${token}`);
@@ -232,6 +228,19 @@ async function main() {
         ok(rx.status === 404, `con otro token, la imagen de ese proyecto da 404 (fue ${rx.status})`);
       }
     }
+
+    // ── 4c. VIGENCIA: un enlace caducado deja de servir ──────────────────────
+    // Se fuerza la caducidad en la base en vez de esperar: es la misma condición
+    // que comprueba `miembroDeToken()`.
+    await pool.query(`UPDATE gcc_world.members SET cv_public_token_expires_at = NOW() - interval '1 minute' WHERE id = ${MIEMBRO}`);
+    const caducadas = await Promise.all([
+      fetch(`${BASE}/api/cv/${token}`),
+      fetch(`${BASE}/cv/${token}`),
+      fetch(`${BASE}/api/cv/${token}/pdf`),
+    ]);
+    ok(caducadas.every((r) => r.status === 404), `caducado, las tres puertas dan 404 (${caducadas.map((r) => r.status).join(', ')})`);
+    await pool.query(`UPDATE gcc_world.members SET cv_public_token_expires_at = NOW() + interval '1 day' WHERE id = ${MIEMBRO}`);
+    ok((await fetch(`${BASE}/api/cv/${token}`)).status === 200, 'con la caducidad en el futuro, vuelve a abrir');
 
     // ── 5. Token inválido y revocación ───────────────────────────────────────
     const inventado = 'a'.repeat(64);

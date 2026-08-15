@@ -6,8 +6,6 @@ import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
-import CompartirCv, { AJUSTES_VACIOS, type AjustesCvPublico } from '@/components/settings/CompartirCv';
-import BotonAyuda from '@/components/ui/BotonAyuda';
 import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
 import { User, Camera, RefreshCw, ExternalLink } from 'lucide-react';
 
@@ -31,7 +29,11 @@ export default function ProfilePanel() {
   // Ajustes del CV público. Solo se cargan/guardan si el usuario es miembro: quien no
   // lo es no tiene fila en `member_cv_profiles` y el endpoint le responde 403.
   const esMiembro = !!user?.member_id;
-  const [cvPublico, setCvPublico] = useState<AjustesCvPublico>(AJUSTES_VACIOS);
+  // Ubicación se queda en Perfil (el titular se fue a «Mi CV»); LinkedIn y el sitio
+  // web se editan aquí, con el resto de redes, aunque vivan en la tabla del CV.
+  const [ubicacion, setUbicacion] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [web, setWeb] = useState('');
 
   useEffect(() => {
     if (!esMiembro) return;
@@ -39,15 +41,9 @@ export default function ProfilePanel() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!d) return;
-        setCvPublico({
-          headline: d.headline || '',
-          location: d.location || '',
-          salary_min: d.salary_min ?? null,
-          salary_max: d.salary_max ?? null,
-          salary_visible: d.salary_visible ?? true,
-          share_email: d.share_email ?? false,
-          share_phone: d.share_phone ?? false,
-        });
+        setUbicacion(d.location || '');
+        setLinkedin(d.linkedin_url || '');
+        setWeb(d.website_url || '');
       })
       .catch(() => {});
   }, [esMiembro]);
@@ -104,7 +100,7 @@ export default function ProfilePanel() {
     try {
       // Se comprueba ANTES de la petición: así el aviso señala el campo concreto en
       // vez de devolver un 400 genérico con el resto del formulario ya enviado.
-      for (const [red, valor] of [['youtube', youtube], ['tiktok', tiktok], ['instagram', instagram], ['facebook', facebook]] as [Red, string][]) {
+      for (const [red, valor] of [['linkedin', linkedin], ['web', web], ['youtube', youtube], ['tiktok', tiktok], ['instagram', instagram], ['facebook', facebook]] as [Red, string][]) {
         const { error } = normalizarRed(red, valor);
         if (error) throw new Error(`${REDES[red].etiqueta}: ${error}`);
       }
@@ -127,7 +123,7 @@ export default function ProfilePanel() {
         const resCv = await fetch('/api/members/cv/publico', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cvPublico),
+          body: JSON.stringify({ location: ubicacion, linkedin_url: linkedin, website_url: web }),
         });
         if (!resCv.ok) {
           const d = await resCv.json().catch(() => ({}));
@@ -141,6 +137,8 @@ export default function ProfilePanel() {
       setTiktok(normalizarRed('tiktok', tiktok).url || '');
       setInstagram(normalizarRed('instagram', instagram).url || '');
       setFacebook(normalizarRed('facebook', facebook).url || '');
+      setLinkedin(normalizarRed('linkedin', linkedin).url || '');
+      setWeb(normalizarRed('web', web).url || '');
 
       await refreshUser();
       toast.success('Perfil actualizado');
@@ -193,44 +191,25 @@ export default function ProfilePanel() {
           <PixelInput label="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Pérez" />
         </div>
         <PixelInput label="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+593999999999" />
+        {esMiembro && (
+          <PixelInput label="Ubicación" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} placeholder="Guayaquil, Ecuador" />
+        )}
 
         <div className="pt-3 border-t border-digi-border space-y-3">
           {/* Regla de formularios: solo el título del campo y el campo. La
               explicación va dentro del botón de ayuda, no como párrafo fijo. */}
-          <div className="flex items-center justify-between gap-2">
-            <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Redes sociales</h4>
-            <BotonAyuda titulo="Redes sociales">
-              <p>
-                Pega el <strong>enlace a tu perfil</strong>, el que sale en la barra del
-                navegador cuando lo abres. Aparecerán como botones en tu CV público.
-              </p>
-              <p className="mt-2">
-                También vale escribir solo tu usuario (<code>@tuusuario</code>): se completa
-                con la dirección de esa red.
-              </p>
-              <p className="mt-2">
-                Se comprueba que el enlace sea <strong>de esa red</strong>. Un botón de
-                Instagram que lleva a otro sitio, delante de quien está mirando tu perfil, es
-                peor que no tener botón.
-              </p>
-            </BotonAyuda>
-          </div>
+          <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Redes sociales</h4>
+          {/* LinkedIn y el sitio web viven aquí desde 2026-08-14: son enlaces, y
+              tenerlos en «Mi CV» los separaba de los otros cuatro sin motivo. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {esMiembro && <CampoRed red="linkedin" valor={linkedin} onChange={setLinkedin} />}
+            {esMiembro && <CampoRed red="web" valor={web} onChange={setWeb} />}
             <CampoRed red="youtube" valor={youtube} onChange={setYoutube} />
             <CampoRed red="tiktok" valor={tiktok} onChange={setTiktok} />
             <CampoRed red="instagram" valor={instagram} onChange={setInstagram} />
             <CampoRed red="facebook" valor={facebook} onChange={setFacebook} />
           </div>
         </div>
-
-        {/* CV público: enlace con token + aspiración salarial + qué se publica.
-            Solo para miembros — es su CV lo que se comparte. */}
-        {esMiembro && (
-          <CompartirCv
-            ajustes={cvPublico}
-            onChange={(patch) => setCvPublico((p) => ({ ...p, ...patch }))}
-          />
-        )}
 
         {/* Cuenta */}
         <div className="pt-3 border-t border-digi-border space-y-3">

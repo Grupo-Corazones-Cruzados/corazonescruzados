@@ -48,33 +48,43 @@ export async function memberIdDeUsuario(userId: string): Promise<string | null> 
 
 export async function leerEnlace(memberId: string) {
   const { rows } = await pool.query(
-    `SELECT cv_public_token, cv_public_token_created_at
+    `SELECT cv_public_token, cv_public_token_created_at, cv_public_token_expires_at
        FROM gcc_world.members WHERE id = $1`,
     [memberId],
   );
   return {
     token: (rows[0]?.cv_public_token as string) || null,
     creado: rows[0]?.cv_public_token_created_at || null,
+    caduca: rows[0]?.cv_public_token_expires_at || null,
   };
 }
 
-/** Genera o REGENERA. Regenerar invalida el anterior en el acto: es lo que se espera
- *  de un botón «generar de nuevo» cuando el enlace se compartió de más. */
-export async function generarEnlace(memberId: string): Promise<string> {
+/**
+ * Genera o REGENERA, con vigencia. Regenerar invalida el anterior en el acto: es lo
+ * que se espera de un botón «generar de nuevo» cuando el enlace se compartió de más.
+ *
+ * `horas = 0` (o negativo) significa **sin caducidad**, que es una opción explícita
+ * y no un descuido: se elige en el desplegable como cualquier otra.
+ */
+export async function generarEnlace(memberId: string, horas = 0): Promise<{ token: string; caduca: Date | null }> {
   const token = nuevoToken();
-  await pool.query(
+  const { rows } = await pool.query(
     `UPDATE gcc_world.members
-        SET cv_public_token = $1, cv_public_token_created_at = NOW()
-      WHERE id = $2`,
-    [token, memberId],
+        SET cv_public_token = $1,
+            cv_public_token_created_at = NOW(),
+            cv_public_token_expires_at = CASE WHEN $3::int > 0 THEN NOW() + ($3 || ' hours')::interval END
+      WHERE id = $2
+      RETURNING cv_public_token_expires_at`,
+    [token, memberId, Math.max(0, Math.floor(horas))],
   );
-  return token;
+  return { token, caduca: rows[0]?.cv_public_token_expires_at || null };
 }
 
 export async function revocarEnlace(memberId: string): Promise<void> {
   await pool.query(
     `UPDATE gcc_world.members
-        SET cv_public_token = NULL, cv_public_token_created_at = NULL
+        SET cv_public_token = NULL, cv_public_token_created_at = NULL,
+            cv_public_token_expires_at = NULL
       WHERE id = $1`,
     [memberId],
   );
@@ -87,9 +97,13 @@ export async function revocarEnlace(memberId: string): Promise<void> {
 export async function miembroDeToken(token: string): Promise<string | null> {
   // Un token con forma imposible no llega a tocar la base.
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
+  // ⚠️ La caducidad se comprueba AQUÍ, en la única puerta. Ponerla en la página y
+  // olvidarla en el PDF dejaría el documento accesible después de expirar.
   const { rows } = await pool.query(
     `SELECT id FROM gcc_world.members
-      WHERE cv_public_token = $1 AND is_active = true`,
+      WHERE cv_public_token = $1
+        AND is_active = true
+        AND (cv_public_token_expires_at IS NULL OR cv_public_token_expires_at > NOW())`,
     [token],
   );
   return rows[0]?.id ? String(rows[0].id) : null;
@@ -169,9 +183,9 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
 
   const { rows: cvRows } = await pool.query(
     `SELECT bio, skills, languages, linkedin_url, website_url, talents,
-            headline, location, salary_min, salary_max, salary_visible,
+            headline, location, salary_min, salary_max,
             job_status, job_available_from, job_workday, job_mode, job_note,
-            share_email, share_phone, updated_at
+            updated_at
        FROM gcc_world.member_cv_profiles WHERE member_id = $1`,
     [memberId],
   );
@@ -307,16 +321,16 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
     actualizado: cv.updated_at ? new Date(cv.updated_at).toISOString() : null,
   };
 
-  // Contacto: solo si está encendido. Ausente, no vacío.
-  if (cv.share_email && texto(m.email)) cvPublico.correo = texto(m.email)!;
-  if (cv.share_phone && texto(m.phone)) cvPublico.telefono = texto(m.phone)!;
+  // Contacto: va siempre que exista. **El campo vacío ES el interruptor** (Fernando,
+  // 2026-08-14): un dato que se rellena y luego se oculta con una casilla aparte son
+  // dos formas de decir lo mismo, y la segunda hay que descubrirla.
+  if (texto(m.email)) cvPublico.correo = texto(m.email)!;
+  if (texto(m.phone)) cvPublico.telefono = texto(m.phone)!;
 
-  // Salario: solo si hay algún extremo y no está oculto.
+  // Salario: si se escribió, se enseña; si no, no existe. Misma regla.
   const min = cv.salary_min != null ? Number(cv.salary_min) : null;
   const max = cv.salary_max != null ? Number(cv.salary_max) : null;
-  if (cv.salary_visible !== false && (min != null || max != null)) {
-    cvPublico.salario = { min, max };
-  }
+  if (min != null || max != null) cvPublico.salario = { min, max };
 
   return cvPublico;
 }

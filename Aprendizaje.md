@@ -4273,3 +4273,45 @@ y salgan como botones en la página pública.
    y guardar siempre una URL absoluta. Nadie copia la dirección completa.
 4. **Devolver lo normalizado a la pantalla tras guardar**: quien escribió `@fulano` ve el
    enlace completo sin recargar, y entiende qué guardó el sistema.
+
+## Cuarta pasada — dónde se edita cada cosa + enlace temporal (2026-08-14)
+
+Fernando revisó el panel con la pantalla delante y dio indicaciones concretas. Todas aplicadas.
+
+| Pedido | Resuelto |
+|---|---|
+| LinkedIn y sitio web, a «Redes sociales» del Perfil | Las **seis** redes juntas; `PUT .../cv` deja de escribirlas |
+| Idiomas con el mismo control que Skills | `BotonChips` + modal, definición única |
+| «Compartir CV» a la derecha de las pestañas | Botón como el «Compartir acceso» de un proyecto |
+| Panel derecho con overlay y **acceso temporal** | `PanelCompartirCv`, calcado de `QuoteShareButton` · migración 036 |
+| Aspiración salarial a «Mi CV» | Junto a skills e idiomas |
+| Quitar «mostrar el rango» y los interruptores de contacto | Columnas **eliminadas** |
+| Quitar los tres botones de ayuda | Hechos |
+| Titular profesional a «Mi CV»; ubicación en Perfil | Hecho |
+| Quitar la raya negra de la página pública | Era una barra de desplazamiento |
+| Fuera las pestañas; perfil y trayectoria juntos; dos pestañas | Hecho |
+
+### P14 — ¿Qué era la «raya negra»? · ✅ Resuelta
+- **Respuesta:** la **barra de desplazamiento** de la ficha izquierda, que era
+  `h-screen overflow-y-auto`. Con el tema oscuro del sistema se pinta oscura y parecía una
+  línea dibujada a propósito. Se quita el scroll interno (`sticky` + `self-start`).
+- **Regla que queda:** en una página de lectura, **un solo contenedor con scroll: el de la
+  página**. Un panel con scroll propio no solo pinta una barra — también atrapa la rueda del
+  ratón y rompe el gesto de leer de arriba abajo.
+
+### P15 — ¿Interruptor de visibilidad o campo vacío? · ✅ Resuelta (regla de diseño)
+- **Respuesta de Fernando:** el **campo vacío ES el interruptor**. Un dato que se rellena y
+  luego se oculta con una casilla aparte son dos formas de decir lo mismo, y la segunda hay
+  que descubrirla: se escribe el sueldo, no sale, y no se sabe por qué.
+- **Vale para cualquier dato opcional que se publique.** Se borraron tres columnas.
+
+### Lo que volvió a demostrar el ensayo
+Al eliminar `salary_visible`, `share_email` y `share_phone` se quitaron **de la lógica pero no
+del `SELECT`**: la página entera daba **500**. `tsc` limpio, `next build` limpio. Lo cazó
+`npm run cv:ensayo` en el primer intento. **Tercera vez en este objetivo** que el fallo real
+solo aparece ejecutando.
+
+### Pendiente de comprobación visual
+El **panel de Configuración (dashboard) no lo he podido ver en el navegador**: exige sesión con
+contraseña y código al correo. Está verificado con typecheck, build y revisión del código, pero
+la maqueta la tiene que mirar Fernando.
