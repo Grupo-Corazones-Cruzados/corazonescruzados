@@ -1711,12 +1711,19 @@ cambia el umbral, hay que cambiarlo en todas.**
 pequeña. Solo se toca el espacio — **ni un dato se oculta**—, y con eso la vista de dos
 columnas alcanza a muchos más portátiles.
 
-### La barra de contacto — una sola pieza, dos anclajes
+### La barra de contacto — una sola pieza, dos anclajes, SIEMPRE a lo ancho de la página
 Correo, teléfono, redes y la descarga bajaron de la ficha a una barra: son **acciones**, no
 identidad, y sacarlas de ahí es lo que hace que la ficha quepa. `.cv-barra` es **el mismo
 componente** en las dos vistas y solo cambia dónde se ancla: tarjeta al pie del panel con dos
 columnas, `position: fixed` a lo ancho cuando está apilado. Dos barras distintas serían dos
 definiciones del mismo control.
+
+⚠️ **Va al nivel de la PÁGINA, no dentro de una columna** (2026-08-15). Estaba en el panel
+derecho y en pantallas medianas se quedaba estrecha: los iconos de red desbordaban y aparecía
+una barra de desplazamiento horizontal. Lo vio Fernando. Como pie de la página entera
+aprovecha también el ancho de la ficha, que es donde estaba el sitio que faltaba: el marco
+pasa a `flex flex-col`, las columnas a `flex: 1; min-height: 0` y la barra a `flex-shrink: 0`.
+Medido: a 1180 px de ancho caben las seis redes sin desbordar.
 
 **Qué se encoge primero cuando no hay sitio:** el texto del correo y del teléfono
 (`hidden sm:inline`) — el icono ya dice qué son y son enlaces, no lectura. Las redes son solo

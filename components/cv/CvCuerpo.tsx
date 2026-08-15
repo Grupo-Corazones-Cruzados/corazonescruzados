@@ -251,11 +251,15 @@ export default function CvCuerpo({
             </p>
           </footer>
 
-          {/* La barra de contacto: pie del panel cuando hay dos columnas, barra
-              flotante cuando está apilado. Es LA MISMA, solo cambia dónde se ancla. */}
-          <BarraContacto cv={cv} urlPdf={urlPdf} />
         </main>
       </div>
+
+      {/* ⚠️ LA BARRA VA AL NIVEL DE LA PÁGINA, no dentro de una columna.
+          Estaba dentro del panel derecho y en pantallas medianas se quedaba
+          estrecha: los iconos de red desbordaban y aparecía una barra de
+          desplazamiento horizontal. Como pie de la página entera aprovecha también
+          el ancho de la ficha, que es donde estaba el sitio que faltaba. */}
+      <BarraContacto cv={cv} urlPdf={urlPdf} />
     </div>
   );
 }
@@ -309,7 +313,7 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
 
         {/* Redes: solo iconos. El nombre va en el `title` y en la etiqueta accesible. */}
         {cv.redes.length > 0 && (
-          <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
+          <div className="cv-scroll flex min-w-0 items-center gap-1.5 overflow-x-auto py-0.5">
             {cv.redes.map((r) => (
               <a key={r.red} href={r.url} target="_blank" rel="noopener noreferrer nofollow"
                 className="cv-red shrink-0" title={`${r.etiqueta}: ${textoCorto(r.url)}`} aria-label={r.etiqueta}>
