@@ -1690,6 +1690,42 @@ arriba. Ahora el alto lo pone la ventana y lo que se desplaza es **cada columna 
 - **`overscroll-contain`** para que al llegar al final de una columna el gesto no arrastre lo
   de al lado.
 
+### ⭐ Dos columnas SOLO SI CABE — la vista depende del ALTO, no solo del ancho (2026-08-15)
+Fernando: la ficha no puede tener desplazamiento propio —*«una ficha que hay que recorrer deja
+de ser un vistazo»*—; **si no cabe entera, se usa la vista apilada**, la del teléfono.
+
+**Lo decide una consulta de medios de ancho Y ALTO** (`min-width: 1024px and min-height: 900px`
+en `cv-publico.css`), no JavaScript. Medir la ficha en el cliente **entra en bucle**: al apilar
+cambia el ancho, la ficha vuelve a caber, se desapila… y oscila; y en el primer pintado no hay
+medida, así que la página da un salto. El CSS decide **antes de pintar**.
+
+⚠️ **El umbral no se pone a ojo: se mide.** La ficha necesita **866 px** en modo compacto y
+948 sin él (que solo ocurre por encima de 1000 px de ventana, donde sobra sitio). De ahí los
+900. Comprobado a 1400/1000/950/900/899/700 px: **cabe entera en todas**, nunca tiene scroll, y
+el corte a la vista apilada cae exactamente en 899.
+
+⚠️ La consulta se repite en varios bloques porque el CSS plano no deja nombrarla: **si se
+cambia el umbral, hay que cambiarlo en todas.**
+
+**Y la ficha se COMPACTA antes de rendirse** (`max-height: 1000px`): menos aire y foto más
+pequeña. Solo se toca el espacio — **ni un dato se oculta**—, y con eso la vista de dos
+columnas alcanza a muchos más portátiles.
+
+### La barra de contacto — una sola pieza, dos anclajes
+Correo, teléfono, redes y la descarga bajaron de la ficha a una barra: son **acciones**, no
+identidad, y sacarlas de ahí es lo que hace que la ficha quepa. `.cv-barra` es **el mismo
+componente** en las dos vistas y solo cambia dónde se ancla: tarjeta al pie del panel con dos
+columnas, `position: fixed` a lo ancho cuando está apilado. Dos barras distintas serían dos
+definiciones del mismo control.
+
+**Qué se encoge primero cuando no hay sitio:** el texto del correo y del teléfono
+(`hidden sm:inline`) — el icono ya dice qué son y son enlaces, no lectura. Las redes son solo
+iconos desde el principio (`.cv-red`, cuadro de 2,1 rem). **La descarga nunca se encoge**: es
+la acción principal.
+
+**El horario de atención se fue al panel**, al final de «Perfil» y a varias columnas: siete
+filas en la ficha eran justo lo que impedía que cupiera.
+
 ### ⚠️ Las barras internas se ESTILIZAN, no se ocultan — la «raya negra»
 La ficha ya tuvo scroll propio antes y el navegador le dibujaba su barra: con el tema oscuro
 del sistema se veía como **una línea negra partiendo la página en dos**. Lo vio Fernando.

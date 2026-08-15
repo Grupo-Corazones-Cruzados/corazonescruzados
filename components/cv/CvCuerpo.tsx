@@ -59,28 +59,20 @@ export default function CvCuerpo({
   const [activa, setActiva] = useState<Pestana>(pestanas[0]?.id ?? 'perfil');
 
   return (
-    /* ── EN ESCRITORIO LA PÁGINA NO SE DESPLAZA (Fernando, 2026-08-14) ────────
-     * El alto lo pone la ventana (`lg:h-screen` + `overflow-hidden`) y lo que se
-     * desplaza es **cada columna por dentro**: la ficha por un lado y el panel por
-     * otro. Antes, mirar el portafolio movía la página entera y la ficha se perdía
-     * por arriba.
+    /* ── DOS COLUMNAS SOLO SI CABE (Fernando, 2026-08-15) ────────────────────
+     * La ficha **no tiene desplazamiento propio**: una ficha de identidad que hay
+     * que recorrer deja de ser un vistazo. Si no cabe entera en la pantalla, se usa
+     * la vista **apilada** —la del teléfono— y se desplaza la página.
      *
-     * ⚠️ **Solo en `lg`.** En un teléfono, una página que no se desplaza es una
-     * página rota: ahí manda el scroll normal del documento y el `pb-28` que deja
-     * sitio a la barra inferior.
-     *
-     * La cadena `h-full` + `min-h-0` es obligatoria en TODOS los niveles: sin
-     * `min-h-0` un hijo flex no se deja encoger por debajo de su contenido y el
-     * scroll interno nunca aparece — se desborda y ya está. */
-    <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-28 lg:pb-0 lg:h-screen lg:overflow-hidden">
-      <div className="lg:grid lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] lg:gap-10 xl:gap-14 lg:h-full lg:min-h-0">
+     * Quién decide es una consulta de medios de ANCHO **y ALTO** en
+     * `cv-publico.css`; medirlo con JavaScript entraba en bucle (al apilar cambia el
+     * ancho, la ficha vuelve a caber, se desapila…) y daba un salto en el primer
+     * pintado. Aquí solo se ponen los nombres de clase. */
+    <div className="cv-marco mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+      <div className="cv-cols">
 
         {/* ══ FICHA ══════════════════════════════════════════════════════════ */}
-        {/* La ficha se desplaza por dentro, con la barra fina de `.cv-scroll` —la
-            de antes era la del navegador y se veía como una raya negra partiendo la
-            página—. `overscroll-contain` evita que al llegar al final el gesto
-            arrastre lo de al lado. */}
-        <aside className="cv-scroll lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:py-10 pt-8 lg:pt-10 space-y-6 lg:pr-2">
+        <aside className="cv-ficha pt-8">
           <div className="cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
             <Foto cv={cv} />
             <h1 className="mt-5 text-[26px] sm:text-[30px] font-semibold leading-tight text-[#1c1b22]">{cv.nombre}</h1>
@@ -123,20 +115,8 @@ export default function CvCuerpo({
                 {cv.disponibilidad.nota}
               </p>
             )}
-            {/* El horario de atención acompaña; no manda. */}
-            {cv.disponibilidad.horario.length > 0 && (
-              <div className="mt-3 border-t border-[#e6e3ee] pt-2.5">
-                <p className="text-[10.5px] uppercase tracking-[0.13em] text-[#a3a0ac]">Horario de atención</p>
-                <dl className="mt-1.5 space-y-1">
-                  {cv.disponibilidad.horario.map((f) => (
-                    <div key={f.dia} className="flex items-center justify-between gap-4 text-[12.5px]">
-                      <dt className="text-[#56545f]">{DIAS_SEMANA[f.dia - 1]}</dt>
-                      <dd className="tabular-nums text-[#86838f]">{f.inicio} – {f.fin}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )}
+            {/* El horario de atención se fue al panel: acompaña, no manda, y siete
+                filas en la ficha son justo lo que impedía que cupiera entera. */}
           </FichaBloque>
 
           {/* ── Aptitudes, también en la ficha: es poco contenido y en el panel
@@ -154,37 +134,9 @@ export default function CvCuerpo({
             </FichaBloque>
           )}
 
-          {(cv.correo || cv.telefono) && (
-            <div className="cv-entra cv-entra-3 flex flex-col gap-0.5">
-              {cv.correo && <Enlace href={`mailto:${cv.correo}`} icono={<Mail className="w-4 h-4" />} texto={cv.correo} />}
-              {cv.telefono && <Enlace href={`tel:${cv.telefono.replace(/[^\d+]/g, '')}`} icono={<Phone className="w-4 h-4" />} texto={cv.telefono} />}
-            </div>
-          )}
-
-          {/* ── Redes: botones que LLEVAN al perfil ──────────────────────────
-              Antes había una fila «LinkedIn» que no llevaba a ninguna parte. Ahora
-              cada red es un botón con su icono y su enlace comprobado; debajo, la
-              dirección en pequeño, para que se vea a dónde va antes de pulsar. */}
-          {cv.redes.length > 0 && (
-            <div className="cv-entra cv-entra-3 flex flex-wrap gap-2">
-              {cv.redes.map((r) => (
-                <a key={r.red} href={r.url} target="_blank" rel="noopener noreferrer nofollow"
-                  title={`${r.etiqueta}: ${textoCorto(r.url)}`}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#e6e3ee] bg-white px-3 py-2 text-[13px] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
-                  <IconoRed red={r.red} /> {r.etiqueta}
-                </a>
-              ))}
-            </div>
-          )}
-
-          <a href={urlPdf}
-            className="cv-entra cv-entra-4 cv-no-imprimir hidden lg:inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#4b2d8e] px-5 h-11 text-[14px] font-medium text-white transition-colors hover:bg-[#5b3fa8]">
-            <Download className="w-4 h-4" aria-hidden /> Descargar en PDF
-          </a>
-
-          {/* Las pestañas ya NO viven aquí: se mudaron al panel derecho, pegadas al
-              contenido que gobiernan. Tenerlas en la ficha las separaba de lo que
-              cambian, y la ficha es identidad, no navegación. */}
+          {/* Contacto, redes y descarga viven ahora en la barra del pie: son
+              ACCIONES, no identidad, y sacarlas de aquí es lo que hace que la ficha
+              quepa en pantallas más bajas sin necesitar desplazamiento. */}
 
           {cv.actualizado && (
             <p className="hidden lg:block text-[11.5px] text-[#a3a0ac]">
@@ -194,10 +146,10 @@ export default function CvCuerpo({
         </aside>
 
         {/* ══ PANEL ══════════════════════════════════════════════════════════ */}
-        <main className="lg:h-full lg:min-h-0 flex flex-col lg:py-10">
+        <main className="cv-panel-col">
           {/* Franja de cifras: sigue arriba y siempre visible — es el «de un
               vistazo», y perderlo al cambiar de pestaña sería un paso atrás. */}
-          <div className="cv-entra cv-entra-3 shrink-0 mt-8 lg:mt-0 grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <div className="cv-entra cv-entra-3 cv-cifras shrink-0 grid grid-cols-2 xl:grid-cols-4 gap-3">
             <Cifra icono={<CalendarClock className="w-4 h-4" />} rotulo="Disponibilidad"
               valor={cv.disponibilidad.estado === 'not_available' ? 'No disponible'
                 : cv.disponibilidad.estado === 'from_date' && cv.disponibilidad.desde
@@ -229,7 +181,7 @@ export default function CvCuerpo({
           {/* ⚠️ Los tres paneles SIEMPRE están en el DOM; solo se oculta el que no
               toca. `key={activa}` en el envoltorio hace que la animación de entrada
               se vuelva a disparar en cada cambio. */}
-          <div key={activa} className="cv-panel cv-scroll mt-8 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
+          <div key={activa} className="cv-panel cv-scroll cv-rueda mt-8">
             <Panel id="perfil" activa={activa} titulo="Perfil" conRotulo={pestanas.length < 2}>
               {cv.bio && (
                 <p className="max-w-[68ch] text-[15.5px] sm:text-[16.5px] leading-relaxed text-[#56545f]">{cv.bio}</p>
@@ -268,6 +220,23 @@ export default function CvCuerpo({
                   </div>
                 </div>
               )}
+
+              {/* Horario de atención: dato secundario, al final y a varias columnas
+                  —siete días en una lista vertical ocupan una pantalla para nada. */}
+              {cv.disponibilidad.horario.length > 0 && (
+                <div className="mt-11">
+                  <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Horario de atención</h3>
+                  <div className="mt-1.5 mb-5 h-px w-full bg-[#e6e3ee]" aria-hidden />
+                  <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-2">
+                    {cv.disponibilidad.horario.map((f) => (
+                      <div key={f.dia} className="flex items-center justify-between gap-3 border-b border-[#e6e3ee] pb-1.5 text-[13.5px]">
+                        <dt className="text-[#56545f]">{DIAS_SEMANA[f.dia - 1]}</dt>
+                        <dd className="tabular-nums text-[#86838f]">{f.inicio} – {f.fin}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
             </Panel>
 
             <Panel id="portafolio" activa={activa} titulo="Portafolio" conRotulo={pestanas.length < 2}>
@@ -275,36 +244,88 @@ export default function CvCuerpo({
             </Panel>
           </div>
 
-          {/* El pie es una línea y se queda FIJO al fondo del panel (`shrink-0`):
-              dentro del área que se desplaza obligaría a bajar del todo para verlo. */}
           <footer className="shrink-0 mt-6 pt-4 border-t border-[#e6e3ee] text-[12px] text-[#a3a0ac]">
             <p>
               Currículum compartido por {cv.nombre} desde GCC World.
               {cv.actualizado && <> Actualizado el {new Date(cv.actualizado).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}.</>}
             </p>
           </footer>
+
+          {/* La barra de contacto: pie del panel cuando hay dos columnas, barra
+              flotante cuando está apilado. Es LA MISMA, solo cambia dónde se ancla. */}
+          <BarraContacto cv={cv} urlPdf={urlPdf} />
         </main>
       </div>
+    </div>
+  );
+}
 
-      {/* Barra inferior fija: solo en tableta y móvil, donde alcanza el pulgar. */}
-      <div className="cv-no-imprimir lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-[#e6e3ee] bg-white/95 px-4 py-3 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-2.5">
-          <a href={urlPdf} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#4b2d8e] px-5 text-[14px] font-medium text-white transition-colors hover:bg-[#5b3fa8]">
-            <Download className="w-4 h-4" aria-hidden /> Descargar en PDF
+/* ── BARRA DE CONTACTO ────────────────────────────────────────────────────────
+ * Correo, teléfono, redes y la descarga, todo en una tira.
+ *
+ * ── UNA SOLA BARRA PARA LAS DOS VISTAS ───────────────────────────────────────
+ * En dos columnas se ancla al pie del panel como una tarjeta; apilada se vuelve
+ * `position: fixed` a lo ancho de la ventana. **El componente es el mismo** y lo
+ * único que cambia es el CSS de `.cv-barra`: una segunda barra «para móvil» serían
+ * dos definiciones del mismo control y dos sitios que mantener.
+ *
+ * ── POR QUÉ ESTO BAJA AQUÍ ───────────────────────────────────────────────────
+ * Correo, teléfono y redes son **acciones**, no identidad. Sacarlas de la ficha es
+ * lo que hace que quepa entera en pantallas más bajas y, de paso, las pone donde se
+ * usan: al alcance del pulgar en el teléfono y a la vista sin desplazarse en el
+ * escritorio.
+ *
+ * ── LO QUE SE ENCOGE PRIMERO CUANDO NO HAY SITIO ─────────────────────────────
+ * El texto del correo y del teléfono (`hidden sm:inline`): el icono ya dice qué es
+ * y son enlaces, no información que haya que leer. Las redes son solo iconos desde
+ * el principio. La descarga **nunca** se encoge: es la acción principal.
+ */
+function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
+  const hayContacto = !!(cv.correo || cv.telefono);
+  return (
+    <div className="cv-barra cv-no-imprimir">
+      <div className="mx-auto flex max-w-[1400px] items-center gap-2 sm:gap-3">
+        {/* Contacto directo */}
+        {cv.correo && (
+          <a href={`mailto:${cv.correo}`} title={cv.correo}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#e6e3ee] bg-white px-2.5 h-[2.1rem] text-[13px] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
+            <Mail className="w-4 h-4 shrink-0" aria-hidden />
+            <span className="hidden sm:inline max-w-[16ch] truncate">{cv.correo}</span>
+            <span className="sr-only sm:hidden">Escribir un correo</span>
           </a>
-          {cv.correo && (
-            <a href={`mailto:${cv.correo}`} aria-label="Escribir un correo"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#cfc9de] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
-              <Mail className="w-4 h-4" />
-            </a>
-          )}
-          {cv.telefono && (
-            <a href={`tel:${cv.telefono.replace(/[^\d+]/g, '')}`} aria-label="Llamar"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#cfc9de] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
-              <Phone className="w-4 h-4" />
-            </a>
-          )}
-        </div>
+        )}
+        {cv.telefono && (
+          <a href={`tel:${cv.telefono.replace(/[^\d+]/g, '')}`} title={cv.telefono}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#e6e3ee] bg-white px-2.5 h-[2.1rem] text-[13px] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
+            <Phone className="w-4 h-4 shrink-0" aria-hidden />
+            <span className="hidden sm:inline">{cv.telefono}</span>
+            <span className="sr-only sm:hidden">Llamar</span>
+          </a>
+        )}
+
+        {hayContacto && cv.redes.length > 0 && (
+          <span className="hidden sm:block h-5 w-px shrink-0 bg-[#e6e3ee]" aria-hidden />
+        )}
+
+        {/* Redes: solo iconos. El nombre va en el `title` y en la etiqueta accesible. */}
+        {cv.redes.length > 0 && (
+          <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
+            {cv.redes.map((r) => (
+              <a key={r.red} href={r.url} target="_blank" rel="noopener noreferrer nofollow"
+                className="cv-red shrink-0" title={`${r.etiqueta}: ${textoCorto(r.url)}`} aria-label={r.etiqueta}>
+                <IconoRed red={r.red} />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* La acción principal, siempre a la derecha y sin encogerse. */}
+        <a href={urlPdf}
+          className="ml-auto inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#4b2d8e] px-4 h-[2.1rem] text-[13.5px] font-medium text-white transition-colors hover:bg-[#5b3fa8]">
+          <Download className="w-4 h-4" aria-hidden />
+          <span className="hidden sm:inline">Descargar en PDF</span>
+          <span className="sm:hidden">PDF</span>
+        </a>
       </div>
     </div>
   );
@@ -314,7 +335,7 @@ export default function CvCuerpo({
 
 function Foto({ cv }: { cv: CvPublico }) {
   const iniciales = cv.nombre.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-  const clases = 'h-28 w-28 sm:h-32 sm:w-32 rounded-2xl border border-[#7b5fbf]/35 object-cover';
+  const clases = 'cv-foto rounded-2xl border border-[#7b5fbf]/35 object-cover';
   return cv.foto ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={cv.foto} alt={cv.nombre} className={clases} />
@@ -341,16 +362,6 @@ function Dato({ icono, children }: { icono: React.ReactNode; children: React.Rea
       <span className="mt-0.5 shrink-0 text-[#7b5fbf]" aria-hidden>{icono}</span>
       <span>{children}</span>
     </li>
-  );
-}
-
-function Enlace({ href, texto, icono, externo = false }: { href: string; texto: string; icono: React.ReactNode; externo?: boolean }) {
-  return (
-    <a href={href} {...(externo ? { target: '_blank', rel: 'noopener noreferrer nofollow' } : {})}
-      className="inline-flex items-center gap-2.5 rounded-md py-1.5 text-[13.5px] text-[#56545f] transition-colors hover:text-[#4b2d8e]">
-      <span className="text-[#7b5fbf]" aria-hidden>{icono}</span>
-      <span className="truncate">{texto}</span>
-    </a>
   );
 }
 

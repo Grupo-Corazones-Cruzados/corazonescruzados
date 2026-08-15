@@ -486,6 +486,23 @@ Stack estándar de la casa, con particularidades de este repo:
     medidas**: si la página se desplaza, cuántos contenedores tienen scroll propio y dónde
     acaba cada botón. Es **local**: no despliega, no escribe en la base y no sirve sin el
     `.env`, que ya da acceso a todo.
+  - **📏 SÉPTIMA PASADA — la vista depende del ALTO de la pantalla (2026-08-15).**
+    - **La ficha del CV público ya no tiene desplazamiento propio.** Fernando: *«una ficha que
+      hay que recorrer deja de ser un vistazo»*. **Si no cabe entera, se pasa a la vista
+      apilada**, la del teléfono, con las dos columnas una debajo de otra.
+    - **Lo decide una consulta de medios de ancho Y ALTO** (`1024px` × `900px`), no JavaScript:
+      medir en el cliente **entra en bucle** —al apilar cambia el ancho, vuelve a caber, se
+      desapila— y da un salto en el primer pintado.
+    - ⚠️ **El umbral se MIDIÓ, no se puso a ojo:** la ficha necesita 866 px compacta y 948 sin
+      compactar. Comprobado a 1400/1000/950/900/899/700: cabe entera en todas y el corte cae
+      exactamente en 899.
+    - **Correo, teléfono y redes bajan a una BARRA al pie del panel** —son acciones, no
+      identidad— y eso es lo que hace que la ficha quepa. Es **la misma barra** en las dos
+      vistas: tarjeta al pie con dos columnas, `fixed` a lo ancho cuando está apilado.
+    - **La ficha se compacta antes de rendirse** (menos aire, foto menor) para que la vista de
+      dos columnas alcance a más portátiles. **Ni un dato se oculta.**
+    - **El horario de atención se fue al panel**, al final de «Perfil» y a varias columnas:
+      siete filas en la ficha eran justo lo que impedía que cupiera.
   - **`npm run cv:ensayo`** (`scripts/cv-ensayo.mjs`) — hermano de `agente-ensayo.mjs`. Siembra un
     CV completo en el miembro de prueba, recorre las cuatro puertas, comprueba que revocar apaga
     las cuatro y **deja la base como estaba**. Fue quien encontró los dos fallos de arriba.

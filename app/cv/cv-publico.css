@@ -141,6 +141,129 @@
   font-weight: 500;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   LA MAQUETA: DOS COLUMNAS **SOLO SI DE VERDAD CABE**
+
+   ── EL PROBLEMA QUE RESUELVE ────────────────────────────────────────────────
+   La ficha izquierda tenía desplazamiento propio, y Fernando lo vio innecesario:
+   una ficha de identidad que hay que recorrer deja de ser un vistazo. Su regla:
+   **si la ficha no cabe entera en la pantalla, se pasa a la vista apilada** —la del
+   teléfono, con las dos columnas una debajo de otra y la página desplazándose.
+
+   ── POR QUÉ CON `min-height` EN CSS Y NO MIDIENDO CON JAVASCRIPT ────────────
+   Medir la ficha y decidir en el cliente parece más exacto, pero entra en bucle:
+   al apilar cambia el ancho, la ficha mide otra cosa, vuelve a caber, se
+   desapila… y oscila. Y en el primer pintado no hay medida, así que la página
+   daría un salto. Una consulta de medios **decide antes de pintar, no oscila y no
+   necesita JavaScript**.
+
+   El umbral (**900 px** de alto) NO está puesto a ojo: se midió la ficha real en su
+   columna de 400 px. Necesita **866 px** en modo compacto (y 948 sin él, que solo
+   se da por encima de 1000 px de ventana, donde sobra sitio). 900 deja el margen
+   justo para que nunca se corte. Si algún día la ficha engorda, se vuelve a medir
+   con `scripts/mirar-panel.mjs` y se sube este número.
+
+   ⚠️ La consulta se repite en cada bloque porque el CSS plano no deja nombrarla.
+   **Si se cambia el umbral, hay que cambiarlo en las cuatro.**
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── La ficha se COMPACTA según el alto que haya ────────────────────────────
+   No es un interruptor «cabe / no cabe»: entre una pantalla de portátil y un
+   monitor grande hay 300 px de diferencia, y apretar un poco los espacios hace
+   que la vista de dos columnas alcance a muchos más equipos. Solo se toca el
+   AIRE y el tamaño de la foto — ni un dato se oculta.                          */
+.cv-ficha > * + * { margin-top: 1.5rem; }
+.cv-foto { height: 7rem; width: 7rem; }
+@media (min-width: 640px) { .cv-foto { height: 8rem; width: 8rem; } }
+
+/* Vista apilada (por defecto): una columna y la PÁGINA se desplaza. */
+.cv-cifras { margin-top: 2rem; }
+.cv-marco { padding-bottom: 7rem; }              /* sitio para la barra fija */
+.cv-cols { display: block; }
+.cv-solo-dos { display: none; }
+
+@media (min-width: 1024px) and (min-height: 900px) {
+  .cv-marco {
+    height: 100dvh;
+    overflow: hidden;                            /* la página NO se desplaza */
+    padding-bottom: 0;
+  }
+  .cv-cols {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 2.5rem;
+    height: 100%;
+    min-height: 0;
+  }
+  /* La ficha NUNCA tiene desplazamiento propio: si no cabe, no estamos aquí. */
+  .cv-ficha { height: 100%; min-height: 0; overflow: visible; padding-block: 2.5rem; }
+  /* Pantalla justa: se aprieta el aire y la foto, y así entran dos columnas donde
+     antes había que apilar. */
+  @media (max-height: 1000px) {
+    .cv-ficha { padding-block: 1.75rem; }
+    .cv-ficha > * + * { margin-top: 1.1rem; }
+    .cv-foto { height: 6rem; width: 6rem; }
+    .cv-panel-col { padding-block: 1.75rem; }
+  }
+  .cv-panel-col { height: 100%; min-height: 0; display: flex; flex-direction: column; padding-block: 2.5rem; }
+  .cv-cifras { margin-top: 0; }
+  /* Lo ÚNICO que rueda. `min-height: 0` es lo que deja encogerse al hijo flex. */
+  .cv-rueda { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 0.5rem; }
+  .cv-solo-dos { display: block; }
+  .cv-solo-apilado { display: none; }
+}
+
+@media (min-width: 1280px) and (min-height: 900px) {
+  .cv-cols { grid-template-columns: 400px minmax(0, 1fr); gap: 3.5rem; }
+}
+
+/* ── La barra de contacto: pie del panel en dos columnas, flotante apilada ──
+   Es **la misma barra** en los dos casos; lo único que cambia es dónde se ancla.
+   Un segundo componente «para móvil» sería la segunda definición del mismo
+   control, con dos sitios que mantener.                                       */
+.cv-barra {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  border-top: 1px solid var(--linea);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  padding: 0.6rem 1rem;
+}
+@media (min-width: 1024px) and (min-height: 900px) {
+  .cv-barra {
+    position: static;
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+    border: 1px solid var(--linea);
+    border-radius: 0.75rem;
+    background: var(--tarjeta);
+    box-shadow: 0 1px 2px rgba(28, 27, 34, 0.04);
+    padding: 0.6rem 0.75rem;
+  }
+}
+
+/* Los iconos de red: cuadrados discretos que se encienden al pasar. */
+.cv-red {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--linea);
+  background: var(--tarjeta);
+  color: var(--suave);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.cv-red:hover {
+  color: var(--violeta);
+  border-color: rgba(123, 95, 191, 0.55);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) { .cv-red:hover { transform: none; } }
+
 /* ── Barras de desplazamiento internas, finas y violetas ───────────────────
    En escritorio la página no se desplaza: lo hacen la ficha y el panel por
    dentro. Sin esto, el navegador dibuja SU barra —oscura con el tema oscuro del
