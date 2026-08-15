@@ -1759,6 +1759,13 @@ foto **y es el conmutador**: se pulsa y se despliega la lista.
   existir (un talento puede no tener portafolio): si no, el panel se queda vacío sin decir por
   qué.
 - **Fuera la cifra de «Talentos»**: dejaron de ser un número para ser la navegación.
+- ⚠️ **EL BLOQUE DE IDENTIDAD SE ELEVA (`.cv-identidad`, `z-index: 30`).** El desplegable se
+  abría **por debajo** de la tarjeta de aspiración salarial y no se podía elegir. No bastaba
+  subirle el `z-index` al desplegable: cada `.cv-entra` anima un `transform`, y **un elemento
+  con `transform` crea su propio contexto de apilamiento**, así que el desplegable solo mandaba
+  dentro de su bloque y el bloque entero perdía contra el hermano siguiente por orden del DOM.
+  **Regla: cuando algo flotante queda tapado, se eleva el BLOQUE que compite, no el elemento
+  que flota** — y se comprueba con `document.elementFromPoint()`, no mirando la captura.
 
 ### Ficha a la izquierda + UNA pestaña a la derecha (2026-08-14, 2ª pasada)
 Fernando lo reorganizó al verlo funcionando. **La ficha concentra lo que se consulta** y el

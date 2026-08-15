@@ -105,7 +105,13 @@ export default function CvCuerpo({
 
         {/* ══ FICHA ══════════════════════════════════════════════════════════ */}
         <aside className="cv-ficha pt-8">
-          <div className="cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
+          {/* ⚠️ `cv-identidad` lo eleva sobre los bloques de abajo. Sin eso, el
+              desplegable del selector de talento se abría POR DEBAJO de la tarjeta de
+              aspiración salarial: cada `.cv-entra` anima un `transform`, y **un
+              elemento con `transform` crea su propio contexto de apilamiento**, así
+              que el `z-index` del desplegable solo competía dentro de su bloque y
+              perdía contra el hermano siguiente por orden del DOM. */}
+          <div className="cv-identidad cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
             <Foto cv={cv} />
             <h1 className="mt-5 text-[26px] sm:text-[30px] font-semibold leading-tight text-[#1c1b22]">{cv.nombre}</h1>
             {/* ⭐ El nombre del TALENTO hace de titular, y es el conmutador.

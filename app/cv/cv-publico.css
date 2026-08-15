@@ -63,6 +63,20 @@
 .cv-entra-3 { animation-delay: 0.2s; }
 .cv-entra-4 { animation-delay: 0.28s; }
 
+/* ── El bloque de identidad, por encima de lo que viene debajo ──────────────
+   El selector de talento despliega su lista dentro de este bloque, y tiene que
+   pintarse SOBRE la tarjeta de aspiración salarial y las demás.
+
+   ⚠️ No basta con un `z-index` alto en el desplegable: cada `.cv-entra` anima un
+   `transform`, y **un elemento con `transform` crea su propio contexto de
+   apilamiento**. Dentro de ese contexto el desplegable manda, pero el bloque entero
+   sigue compitiendo con sus hermanos por orden del DOM — y el salario viene después.
+   Se eleva el BLOQUE, que es quien compite de verdad.                            */
+.cv-identidad {
+  position: relative;
+  z-index: 30;
+}
+
 /* ── Cambio de pestaña: el panel derecho entra al conmutar ─────────────────── */
 @keyframes cvPanel {
   from { opacity: 0; transform: translateY(10px); }
