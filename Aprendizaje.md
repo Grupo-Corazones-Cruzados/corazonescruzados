@@ -4391,3 +4391,49 @@ cada talento es un CV con su trayectoria, sus skills, sus servicios y su portafo
    años sin una sola experiencia registrada. El cálculo se movió al cliente, por talento.
 
 Ninguno de los dos lo ve `tsc`, ni el build, ni el JSON: hay que **pulsar el conmutador**.
+
+## Novena pasada — tags propios y limpieza de la tabla (2026-08-15)
+
+### ⭐ P22 — ¿Talento y tag son lo mismo? · ✅ Resuelta: NO, y hacían falta los dos
+- **El talento dice QUIÉN puede hacerlo** (y ahora, en qué CV aparece). Es una categoría
+  cerrada del grupo, compartida por toda la app.
+- **El tag dice CON QUÉ se hizo** («RPA», «Oracle Database», «WhatsApp Business API»). Es lo
+  que un cliente o un reclutador reconoce de un vistazo.
+- **Síntoma de haberlos confundido:** el CV público usaba los talentos como etiquetas y los
+  diez proyectos salían con la misma palabra repetida, que no distingue nada. Migración 038:
+  `projects.tags`, con los 24 etiquetados **en cualquier estado** a partir de su descripción
+  y de los títulos de sus requerimientos.
+
+### P23 — «Según requerimientos» era una excusa, no un dato · ✅ Resuelta
+- La columna Talento escribía «según requerimientos» para los proyectos del equipo. Fernando
+  lo señaló: **si el dato existe, no se escribe una excusa en su lugar**. Se calcula —los
+  talentos que piden sus requerimientos cruzados con los del miembro— y ya está.
+- **Generalizable:** cuando la interfaz explica por qué no puede enseñar algo, casi siempre
+  es que el dato sí está y falta derivarlo.
+
+## Décima pasada — dos reglas de tabla (2026-08-15)
+
+1. **Una acción que no procede se DESHABILITA, no desaparece.** El tacho solo se pintaba en
+   las filas borrables: eso descoloca la columna y deja adivinando por qué unas filas sí y
+   otras no. Deshabilitado, el `title` lo explica.
+2. **El relleno de color se reserva para lo que marca un ESTADO.** El chip de talento tenía
+   borde y fondo de acento y competía con los tags de al lado, que son los que de verdad
+   distinguen una fila. Ahora es solo texto en acento.
+
+## Cierre del objetivo (2026-08-15)
+
+**✅ 100 % — construido, verificado y publicado.** 15 commits, cinco migraciones (034–038).
+El objetivo creció mucho respecto al enunciado inicial y quedó cerrado en todas sus partes:
+enlace con token y caducidad, PDF propio por talento, tema claro, redes como enlaces, CV
+organizado por talento, tags de proyecto y la reorganización completa del panel.
+
+**Herramientas que quedan para el futuro** (y que nacieron de fallos reales de esta sesión):
+- `npm run cv:ensayo` — recorre las cuatro puertas del CV y deja la base como estaba.
+- `npm run redes:prueba` — 21 pruebas del módulo puro de enlaces.
+- `npm run mirar:panel` — abre una pantalla del dashboard **con sesión** y devuelve medidas.
+  Nació porque entregué dos veces maqueta sin haberla visto.
+- `scripts/cambiar-correo-cuenta.mjs` — renombrar el correo de una cuenta sin perder nada.
+
+**La lección que más se repitió:** *medir, no razonar*. Tres fallos de esta sesión —el 500 del
+PDF, la página en blanco en móvil y el 500 al borrar tres columnas— pasaron limpios por `tsc`
+y por `next build`. Los tres los cazó ejecutar de verdad.
