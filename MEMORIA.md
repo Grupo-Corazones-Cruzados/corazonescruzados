@@ -275,6 +275,29 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📧 EL CORREO DE LA CUENTA DE FERNANDO VUELVE A `@grupocc.org` (2026-08-15).**
+  `lfgonzalezm0@outlook.com` → **`lfgonzalezm0@grupocc.org`**. Es el camino de vuelta de la
+  fusión del 2026-07-06, que había dejado la cuenta en outlook.
+  - **⭐ LAS RELACIONES NO CUELGAN DEL CORREO, CUELGAN DEL `id`.** Verificado antes de tocar
+    nada: proyectos, tickets, pujas, asignaciones, eventos y notificaciones apuntan al UUID de
+    `users` o al `member_id`. **Cambiar el correo es cambiar una etiqueta, no mover la cuenta.**
+    Comprobado después: mismos 18 proyectos, 19 tickets, 15 pujas, 60 asignaciones, 35 eventos
+    y 25 notificaciones, en la misma fila `3fdb4891-…`.
+  - **`scripts/cambiar-correo-cuenta.mjs`** (ensayo por omisión, `--aplicar` para escribir).
+    Una transacción, aborta si el correo nuevo ya existe —ahí lo que toca es **fusionar**, no
+    renombrar— y comprueba dentro de la propia transacción que la cuenta sigue siendo la misma
+    fila. 14 filas cambiadas.
+  - **Qué se cambió:** `users.email`, `members.email`, `clients.email`,
+    `subscriptions.created_by`, `subscription_payments.paid_by`, `billing_clients.email` y
+    `flow_contacts.email`.
+  - **⛔ QUÉ NO SE TOCA, Y ES LA PARTE IMPORTANTE:** `invoices.client_email_sri` —ese
+    comprobante **ya está autorizado por el SRI** con ese correo dentro del XML firmado;
+    cambiarlo dejaría la base diciendo algo distinto del comprobante real— y
+    `flow_campaign_sends.contact_email`, que es el registro de un envío que ocurrió a una
+    dirección concreta. **Un registro que se reescribe deja de ser un registro.**
+  - ⓘ **El código de acceso va al correo de la cuenta**, así que el cambio solo es seguro
+    porque `workspace_email` ya era `@grupocc.org` — el buzón es suyo. El script lo comprueba y
+    avisa si no coinciden.
 - **📄 CV PÚBLICO COMPARTIBLE POR TOKEN, para reclutadores (2026-08-14).** Un miembro genera
   un enlace desde **Configuración → Perfil** y se lo pasa a alguien **sin cuenta**: una empresa
   de selección. La página enseña foto, datos, talentos con su experiencia y formación,
