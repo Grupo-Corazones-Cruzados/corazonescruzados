@@ -19,7 +19,7 @@ const LANGUAGES = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 
 
 interface EduEntry { institution: string; degree: string; field: string; start_year: string; end_year: string; }
 interface ExpEntry { company: string; position: string; description: string; start_year: string; end_year: string; }
-interface TalentEntry { key: string; education: EduEntry[]; experience: ExpEntry[]; }
+interface TalentEntry { key: string; education: EduEntry[]; experience: ExpEntry[]; skills?: string[]; }
 interface ServiceRow { id: number; name: string; description: string | null; base_price: string | number | null; is_active: boolean; talent: string | null; }
 interface ServiceDraft { name: string; description: string; base_price: string; is_active: boolean; }
 
@@ -41,8 +41,6 @@ export default function CvPanel() {
   const { user } = useAuth();
   const memberId = user?.member_id;
   const [bio, setBio] = useState('');
-  const [skills, setSkills] = useState<string[]>([]);
-  const [languages, setLanguages] = useState<string[]>([]);
   // Educación/experiencia GLOBALES ya no se editan (cada talento tiene la suya); se
   // conservan en estado para no perder datos previos al guardar.
   const [education, setEducation] = useState<EduEntry[]>([]);
@@ -53,13 +51,9 @@ export default function CvPanel() {
   const [saving, setSaving] = useState(false);
   // Modal para gestionar skills una por una (sin comas).
   const [skillsModal, setSkillsModal] = useState(false);
-  const [newSkill, setNewSkill] = useState('');
-  const [langModal, setLangModal] = useState(false);
   // Campos que viven en `member_cv_profiles` pero se editan aquí. Van por
   // `/api/members/cv/publico` (PATCH parcial), no por el upsert del CV.
-  const [titular, setTitular] = useState('');
-  const [salarioMin, setSalarioMin] = useState('');
-  const [salarioMax, setSalarioMax] = useState('');
+
   const [confirmDelTalent, setConfirmDelTalent] = useState<number | null>(null);
   // Formularios en modal (educación/experiencia del talento activo + servicios).
   const [eduForm, setEduForm] = useState<{ idx: number | null; draft: EduEntry } | null>(null);
@@ -73,20 +67,13 @@ export default function CvPanel() {
     fetch(`/api/members/${memberId}/cv`).then((r) => r.json()).then((data) => {
       if (!data.cv) return;
       setBio(data.cv.bio || '');
-      setSkills(Array.isArray(data.cv.skills) ? data.cv.skills : []);
-      setLanguages(Array.isArray(data.cv.languages) ? data.cv.languages : []);
       setEducation(data.cv.education || []);
       setExperience(data.cv.experience || []);
       setTalents(Array.isArray(data.cv.talents) ? data.cv.talents : []);
     }).catch(() => {});
     fetch(`/api/members/${memberId}/services`).then((r) => r.json())
       .then((d) => setServices(d.data || [])).catch(() => {});
-    fetch('/api/members/cv/publico').then((r) => (r.ok ? r.json() : null)).then((d) => {
-      if (!d) return;
-      setTitular(d.headline || '');
-      setSalarioMin(d.salary_min != null ? String(d.salary_min) : '');
-      setSalarioMax(d.salary_max != null ? String(d.salary_max) : '');
-    }).catch(() => {});
+
   }, [memberId]);
 
   const save = async () => {
@@ -97,8 +84,6 @@ export default function CvPanel() {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bio,
-          skills,
-          languages,
           education, experience, talents,
         }),
       });
@@ -106,31 +91,9 @@ export default function CvPanel() {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || 'Error al guardar');
       }
-      // Titular y salario viven en la misma tabla pero tienen su propia puerta: el
-      // upsert de arriba no los conoce y los pisaría.
-      const res2 = await fetch('/api/members/cv/publico', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ headline: titular, salary_min: salarioMin, salary_max: salarioMax }),
-      });
-      if (!res2.ok) {
-        const d = await res2.json().catch(() => ({}));
-        throw new Error(d.error || 'Error al guardar');
-      }
       toast.success('CV actualizado');
     } catch (e: any) { toast.error(e?.message || 'Error al guardar'); }
     finally { setSaving(false); }
-  };
-
-  // ── Skills ────────────────────────────────────────────────────────────────
-  const addSkill = () => {
-    const s = newSkill.trim();
-    if (!s || skills.includes(s)) { setNewSkill(''); return; }
-    if (skills.length >= MAX_SKILLS) {
-      toast.error(`Máximo ${MAX_SKILLS} skills. Quita una o deja las más generales.`);
-      return;
-    }
-    setSkills([...skills, s]);
-    setNewSkill('');
   };
 
   // ── Talentos ──────────────────────────────────────────────────────────────
@@ -226,48 +189,13 @@ export default function CvPanel() {
        área de arriba; sin él, el pie se saldría de la tarjeta. */
     <div className="flex flex-col h-full min-h-0">
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
-      {/* Datos base */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-        <div className="md:col-span-2 xl:col-span-4 flex flex-col gap-1.5">
-          <label className="text-[12px] font-medium text-digi-text" style={mf}>Biografía</label>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Describe tu experiencia…"
-            className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
-        </div>
-
-        {/* Titular profesional: vive aquí, no en Perfil. Es contenido del CV — la
-            frase con la que alguien se presenta—, no un dato de la cuenta. */}
-        <div className="md:col-span-2 xl:col-span-2">
-          <PixelInput label="Titular profesional" value={titular} onChange={(e) => setTitular(e.target.value)} placeholder="Desarrollador full-stack" />
-        </div>
-
-        {/* Aspiración salarial: rango mensual en USD. **Sin interruptor de
-            visibilidad** — si se rellena se enseña, y si no, no existe (Fernando,
-            2026-08-14): el campo vacío YA es el interruptor. */}
-        <div className="md:col-span-2 xl:col-span-2">
-          <label className="text-[12px] font-medium text-digi-text mb-1 block" style={mf}>Aspiración salarial (USD/mes)</label>
-          <div className="grid grid-cols-2 gap-2">
-            <input type="number" min={0} step={50} inputMode="numeric" value={salarioMin}
-              onChange={(e) => setSalarioMin(e.target.value)} placeholder="Desde"
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-            <input type="number" min={0} step={50} inputMode="numeric" value={salarioMax}
-              onChange={(e) => setSalarioMax(e.target.value)} placeholder="Hasta"
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-          </div>
-        </div>
-
-        {/* Skills e Idiomas comparten EL MISMO control: un botón con los chips
-            dentro que abre su modal. Antes Idiomas era un desplegable de búsqueda y
-            los dos campos, uno al lado del otro, no se parecían en nada. */}
-        {/* Mitad y mitad: con diez skills, un cuarto de ancho las apilaba en seis
-            filas y dejaba el resto de la fila vacío (Fernando, 2026-08-15). */}
-        <div className="md:col-span-1 xl:col-span-2">
-          <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Tag className="w-3.5 h-3.5 text-accent" /> Skills</label>
-          <BotonChips valores={skills} vacio="Agregar skills…" onClick={() => setSkillsModal(true)} />
-        </div>
-        <div className="md:col-span-1 xl:col-span-2">
-          <label className="text-[12px] font-medium text-digi-text mb-1 inline-flex items-center gap-1.5" style={mf}><Languages className="w-3.5 h-3.5 text-accent" /> Idiomas</label>
-          <BotonChips valores={languages} vacio="Agregar idiomas…" onClick={() => setLangModal(true)} />
-        </div>
+      {/* Datos base: solo la biografía. El titular profesional se eliminó —lo
+          sustituye el nombre del talento en el CV público— y la aspiración salarial
+          y los idiomas se fueron al panel de Perfil (Fernando, 2026-08-15). */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] font-medium text-digi-text" style={mf}>Biografía</label>
+        <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Describe tu experiencia…"
+          className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
       </div>
 
       {/* Talentos */}
@@ -328,6 +256,11 @@ export default function CvPanel() {
                   ))}
                 </ListSection>
 
+                <SkillsDelTalento
+                  valores={t.skills || []}
+                  onChange={(v) => updateTalent(activeIdx, { skills: v })}
+                />
+
                 <ListSection title="Servicios" icon={<Wrench className="w-3.5 h-3.5 text-accent" />}
                   count={talentServices.length} emptyText="Sin servicios. Agrega los servicios que ofreces con este talento." topBorder
                   onAdd={() => setSvcForm({ id: null, draft: emptySvc() })}>
@@ -365,63 +298,6 @@ export default function CvPanel() {
         onConfirm={() => { if (confirmDelTalent !== null) removeTalent(confirmDelTalent); setConfirmDelTalent(null); }}
         onCancel={() => setConfirmDelTalent(null)}
       />
-
-      {/* Modal de skills: se agregan una por una (Enter o botón), como chips. */}
-      <PixelModal open={skillsModal} onClose={() => setSkillsModal(false)} title="Skills">
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-[12px] text-digi-muted" style={mf}>
-              Hasta <strong>{MAX_SKILLS}</strong>, y cuanto más <strong>generales</strong>, mejor:
-              «Power Platform» dice más que «Power Apps», «Power Automate» y «SharePoint» por separado.
-            </p>
-            <span className={`shrink-0 text-[12px] tabular-nums ${skills.length >= MAX_SKILLS ? 'text-amber-600' : 'text-digi-muted'}`} style={mf}>
-              {skills.length}/{MAX_SKILLS}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
-              placeholder={skills.length >= MAX_SKILLS ? 'Quita una para añadir otra' : 'Ej. Automatización de procesos'}
-              disabled={skills.length >= MAX_SKILLS} autoFocus
-              className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-            <button type="button" onClick={addSkill} disabled={!newSkill.trim() || skills.length >= MAX_SKILLS} className={`${BTN_PRIMARY} disabled:opacity-50`}><Plus className="w-4 h-4" /> Agregar</button>
-          </div>
-          {skills.length === 0 ? (
-            <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas skills.</p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {skills.map((s) => (
-                <span key={s} className="inline-flex items-center gap-1 text-[12px] px-2 py-1 rounded-full bg-accent-light text-accent" style={mf}>
-                  {s}
-                  <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} className="hover:text-accent-hover" aria-label={`Quitar ${s}`}><X className="w-3 h-3" /></button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </PixelModal>
-
-      {/* Modal de idiomas: MISMA forma que el de skills, pero eligiendo de la lista
-          en vez de escribiendo libre. */}
-      <PixelModal open={langModal} onClose={() => setLangModal(false)} title="Idiomas">
-        <div className="space-y-3">
-          <p className="text-[12px] text-digi-muted" style={mf}>Marca los idiomas que hablas.</p>
-          <div className="flex flex-wrap gap-1.5">
-            {LANGUAGES.map((l) => {
-              const puesto = languages.includes(l);
-              return (
-                <button key={l} type="button"
-                  onClick={() => setLanguages(puesto ? languages.filter((x) => x !== l) : [...languages, l])}
-                  className={`inline-flex items-center gap-1 text-[12px] px-2.5 py-1 rounded-full border transition-colors ${
-                    puesto ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text'}`}
-                  style={mf}>
-                  {puesto && <Check className="w-3 h-3" />} {l}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </PixelModal>
 
       {/* Formulario de Educación (panel modal). */}
       <PixelModal open={!!eduForm} onClose={() => setEduForm(null)} busy={modalBusy} title={eduForm?.idx === null ? 'Agregar educación' : 'Editar educación'}>
@@ -619,5 +495,69 @@ function BotonChips({ valores, vacio, onClick }: { valores: string[]; vacio: str
         ? <span className="text-[13px] text-digi-muted/50">{vacio}</span>
         : valores.map((v) => <span key={v} className="text-[11px] px-1.5 py-0.5 rounded bg-accent-light text-accent">{v}</span>)}
     </button>
+  );
+}
+
+/* ── SKILLS DEL TALENTO ───────────────────────────────────────────────────────
+ * Debajo de Servicios, dentro de la pestaña del talento: las skills son
+ * **referencias de lo que se sabe hacer CON ESE TALENTO** (Fernando, 2026-08-15).
+ * Una lista única mezclaba «Power Platform» con lo que se usa en psicología, y en el
+ * CV público el reclutador de un oficio veía las del otro.
+ *
+ * Se editan en el sitio, sin modal: son etiquetas de una palabra y abrir un panel
+ * lateral para escribir «Python» es más gesto que el propio dato.
+ */
+function SkillsDelTalento({ valores, onChange }: { valores: string[]; onChange: (v: string[]) => void }) {
+  const [nueva, setNueva] = useState('');
+  const lleno = valores.length >= MAX_SKILLS;
+
+  const agregar = () => {
+    const v = nueva.trim();
+    if (!v) return;
+    if (valores.includes(v)) { setNueva(''); return; }
+    if (lleno) { toast.error(`Máximo ${MAX_SKILLS} skills por talento.`); return; }
+    onChange([...valores, v]);
+    setNueva('');
+  };
+
+  return (
+    <div className="pt-3 border-t border-digi-border">
+      <div className="flex items-center justify-between mb-2.5">
+        <h5 className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}>
+          <Tag className="w-3.5 h-3.5 text-accent" /> Skills
+        </h5>
+        <span className={`text-[11.5px] tabular-nums ${lleno ? 'text-amber-600' : 'text-digi-muted'}`} style={mf}>
+          {valores.length}/{MAX_SKILLS}
+        </span>
+      </div>
+
+      <div className="flex gap-2">
+        <input value={nueva} onChange={(e) => setNueva(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregar(); } }}
+          disabled={lleno}
+          placeholder={lleno ? 'Quita una para añadir otra' : 'Ej. Power Platform — cuanto más general, mejor'}
+          className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+        <button type="button" onClick={agregar} disabled={!nueva.trim() || lleno} className={`${BTN_PRIMARY} disabled:opacity-50`}>
+          <Plus className="w-4 h-4" /> Agregar
+        </button>
+      </div>
+
+      {valores.length === 0 ? (
+        <p className="mt-2.5 text-[12px] text-digi-muted/60" style={mf}>
+          Sin skills. Agrega las que usas con este talento.
+        </p>
+      ) : (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {valores.map((v) => (
+            <span key={v} className="inline-flex items-center gap-1 text-[12px] px-2 py-1 rounded-full bg-accent-light text-accent" style={mf}>
+              {v}
+              <button type="button" onClick={() => onChange(valores.filter((x) => x !== v))} className="hover:text-accent-hover" aria-label={`Quitar ${v}`}>
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

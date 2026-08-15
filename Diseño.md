@@ -1744,6 +1744,22 @@ contenido, y con ratón es peor que con gesto táctil.
 
 **Regla: cualquier contenedor con `overflow-y: auto` en esta página lleva `.cv-scroll`.**
 
+### ⭐ El CV es POR TALENTO, y el selector es el titular (2026-08-15)
+Quien abre el enlace ve el CV de **un** talento. El nombre del talento hace de titular bajo la
+foto **y es el conmutador**: se pulsa y se despliega la lista.
+
+- **Por qué ahí y no en unas pestañas o un desplegable suelto:** cambiar de talento es cambiar
+  de quién eres en este documento. Eso pertenece a la cabecera, no a una esquina.
+- `<details>`/`<summary>` **nativos**: abren y cierran sin estado propio y se manejan con el
+  teclado. Elegir sí necesita estado; abrir la lista, no.
+- **Con un solo talento es texto plano**, sin nada que pulsar: un conmutador de una opción es
+  una promesa falsa.
+- **Todo se filtra por el talento activo**: trayectoria, skills, portafolio, la cifra de
+  portafolio y el PDF. ⚠️ Y **la pestaña activa se reinicia** si la que estaba abierta deja de
+  existir (un talento puede no tener portafolio): si no, el panel se queda vacío sin decir por
+  qué.
+- **Fuera la cifra de «Talentos»**: dejaron de ser un número para ser la navegación.
+
 ### Ficha a la izquierda + UNA pestaña a la derecha (2026-08-14, 2ª pasada)
 Fernando lo reorganizó al verlo funcionando. **La ficha concentra lo que se consulta** y el
 panel **enseña solo la pestaña activa**, no todo seguido.

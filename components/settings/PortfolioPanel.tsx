@@ -18,7 +18,7 @@ const TABS = [
 ];
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const emptyForm = { title: '', description: '', price: '', tags: '', project_url: '', images: [''] };
+const emptyForm = { title: '', description: '', price: '', tags: '', project_url: '', images: [''], talent: '' };
 
 /** Panel de Portafolio: proyectos/productos/automatizaciones propios + proyectos del equipo.
  *  Adaptado a columna angosta: pestañas en píldoras, lista vertical y detalle/galería en modal. */
@@ -31,6 +31,9 @@ export default function PortfolioPanel() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  // Los talentos del miembro: un ítem del portafolio pertenece a uno de ellos, y eso
+  // decide en qué CV público aparece.
+  const [talentos, setTalentos] = useState<string[]>([]);
 
   // Gallery modal
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -48,6 +51,13 @@ export default function PortfolioPanel() {
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
+  useEffect(() => {
+    if (!user?.member_id) return;
+    fetch(`/api/members/${user.member_id}/cv`).then((r) => r.json())
+      .then((d) => setTalentos((d?.cv?.talents || []).map((t: any) => String(t?.key || '')).filter(Boolean)))
+      .catch(() => {});
+  }, [user?.member_id]);
+
   const imageCount = (item: any) => (item.images?.length > 0 ? item.images.length : item.image_url ? 1 : 0);
   const imagesOf = (item: any): string[] => (item.images?.length ? item.images : item.image_url ? [item.image_url] : []);
 
@@ -59,6 +69,7 @@ export default function PortfolioPanel() {
       title: item.title || '', description: item.description || '',
       price: item.price != null ? String(item.price) : '',
       tags: item.tags?.join(', ') || '', project_url: item.project_url || '', images: imgs,
+      talent: item.talent || '',
     });
     setModal(true);
   };
@@ -98,6 +109,7 @@ export default function PortfolioPanel() {
         title: form.title, description: form.description || null, price: Number(form.price) || 0,
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         project_url: form.project_url || null, image_url: cleanImages[0] || null, images: cleanImages, type: tab,
+        talent: form.talent || null,
       };
       const res = editingItem
         ? await fetch(`/api/members/${user.member_id}/portfolio/${editingItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -220,6 +232,7 @@ export default function PortfolioPanel() {
               <tr className="border-b border-digi-border bg-digi-dark">
                 <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[80px]">Fotos</th>
                 <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Título</th>
+                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Talento</th>
                 <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Tags</th>
                 <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[110px]">Precio</th>
                 <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[150px] text-right">Acciones</th>
@@ -242,6 +255,15 @@ export default function PortfolioPanel() {
                         <span className="text-[13px] font-medium text-digi-text">{item.title}</span>
                         {item.__team && <PixelBadge variant="info">Equipo</PixelBadge>}
                       </span>
+                    </td>
+                    {/* El talento del ítem. Los proyectos del EQUIPO no lo declaran:
+                        el suyo sale de los talentos de sus requerimientos. */}
+                    <td className="px-3 py-2.5 align-middle">
+                      {item.__team
+                        ? <span className="text-[11.5px] text-digi-muted/60">según requerimientos</span>
+                        : item.talent
+                          ? <PixelBadge variant="info">{item.talent}</PixelBadge>
+                          : <span className="text-[11.5px] text-amber-600">sin talento</span>}
                     </td>
                     <td className="px-3 py-2.5 align-middle">
                       <div className="flex flex-wrap gap-1">{(item.tags || []).slice(0, 3).map((t: string) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>
@@ -273,6 +295,14 @@ export default function PortfolioPanel() {
             <label className="text-[12px] font-medium text-digi-text" style={mf}>Descripción</label>
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3}
               className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[12px] font-medium text-digi-text" style={mf}>Talento</label>
+            <select value={form.talent} onChange={(e) => setForm({ ...form, talent: e.target.value })}
+              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
+              <option value="">Sin talento — no aparecerá filtrado en tu CV</option>
+              {talentos.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
           {dropzone(form.images, (imgs) => setForm({ ...form, images: imgs }))}
           {tab === 'project' && <PixelInput label="URL del proyecto" value={form.project_url} onChange={(e) => setForm({ ...form, project_url: e.target.value })} placeholder="https://…" />}

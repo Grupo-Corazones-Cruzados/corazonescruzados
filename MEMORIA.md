@@ -275,6 +275,45 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⭐ EL CV PÚBLICO PASA A ORGANIZARSE POR TALENTO (2026-08-15).** Cambio de modelo, no de
+  maqueta. Hasta aquí el CV era uno solo con los talentos dentro; ahora **el talento es el
+  eje**: quien abre el enlace ve el CV de UN talento y puede cambiar al otro. Es lo que permite
+  que un mismo miembro se presente ante una empresa de tecnología y ante una de salud mental
+  sin mezclar las dos cosas. Migración **037**.
+  - **⭐ DE DÓNDE SALE QUE UN PROYECTO ES DE UN TALENTO: YA ESTABA EN LOS REQUERIMIENTOS.** Al
+    crear un proyecto, cada requerimiento declara los talentos que necesita —y eso es lo que
+    decide qué miembro puede tomarlo—. Así que **un proyecto pertenece a un talento si alguno
+    de sus requerimientos pide ese talento**. No hizo falta ninguna tabla nueva ni clasificar
+    nada a mano: se consulta al vuelo. Lo vio Fernando antes que yo.
+  - **Lo que sí necesitaba columna es el portafolio escrito a mano** (`member_portfolio_items.
+    talent`): un producto o una automatización que alguien añade no pasa por requerimientos.
+    Backfill: todo lo existente a «Automatización de procesos».
+  - **El titular profesional SE ELIMINA** (`headline`, DROP). Lo sustituye **el nombre del
+    talento**, que es más honesto: el titular era una frase suelta que había que mantener a
+    mano y que contradecía al CV en cuanto se miraba el otro talento.
+  - **⭐ EL SELECTOR DE TALENTO ES EL PROPIO TITULAR.** Se pulsa el nombre del talento bajo la
+    foto y se despliega la lista. No hay pestañas nuevas ni un desplegable en una esquina:
+    cambiar de talento es cambiar de quién eres en este documento, y eso pertenece a la
+    cabecera. `<details>`/`<summary>` nativos — abren con teclado y sin estado propio.
+  - **Las SKILLS pasan a ser de cada talento** (dentro de `talents`, columna global eliminada).
+    Son referencias de lo que se sabe hacer *con ese talento*; una lista única mezclaba «Power
+    Platform» con lo que se usa en psicología. Se editan en la propia pestaña del talento,
+    debajo de Servicios. El tope de 10 es **por talento**.
+  - **Todo se filtra por el talento activo**: trayectoria, skills, portafolio, la cifra de
+    portafolio y **el PDF** (`?talento=`), cuyo archivo lleva el nombre del talento — dos
+    talentos son dos CV y con el mismo nombre uno pisaría al otro en la carpeta de quien los
+    descarga.
+  - **Fuera la cifra de «Talentos»**: los talentos dejaron de ser un número para ser la
+    navegación del CV.
+  - **En Configuración:** aspiración salarial e idiomas bajan al panel de **Perfil** (debajo de
+    Ubicación) — son de la persona, no de un talento—, y el **Portafolio gana la columna
+    «Talento»**, con selector al crear o editar un ítem. Los proyectos del equipo muestran
+    «según requerimientos», que es de donde sale el suyo.
+  - **🐛 Dos fallos que solo aparecieron cambiando de talento en el navegador:** la pestaña
+    activa no se reiniciaba —«Psicología» no tiene portafolio, y el panel se quedaba vacío sin
+    decir por qué— y los años de trayectoria seguían calculándose sobre TODOS los talentos, así
+    que Psicología presumía de cuatro años sin una sola experiencia. El cálculo se movió al
+    cliente, por talento.
 - **🧾 CONTENIDO DEL CV DE FERNANDO, PUESTO AL DÍA (2026-08-15).** No es código, es su
   currículum — pero las decisiones de fondo sí son reglas.
   - **⭐ TOPE DE 10 SKILLS, Y GENERALES** (`MAX_SKILLS` en `lib/members/cv-tipos.ts`, aplicado

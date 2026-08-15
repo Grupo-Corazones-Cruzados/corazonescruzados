@@ -4363,3 +4363,31 @@ botones de guardar quedan **fijos al fondo**, fuera del área que se desplaza.
 - **La lección general:** cuando algo «no se puede verificar», casi siempre lo que falta es una
   herramienta de veinte líneas, no una excusa. El repo ya lo había aprendido con
   `agente-ensayo.mjs`; esto es lo mismo para la interfaz con sesión.
+
+## Octava pasada — el CV se organiza POR TALENTO (2026-08-15)
+
+Cambio de modelo. El talento deja de ser una sección dentro del CV y pasa a ser **el eje**:
+cada talento es un CV con su trayectoria, sus skills, sus servicios y su portafolio.
+
+### ⭐ P20 — ¿Cómo se sabe a qué talento pertenece un proyecto? · ✅ Resuelta (y ya estaba hecho)
+- **Lo vio Fernando antes que yo:** al crear un proyecto, **cada requerimiento declara los
+  talentos que necesita**, y eso es lo que decide qué miembro puede tomarlo. Así que un
+  proyecto pertenece a un talento si alguno de sus requerimientos pide ese talento.
+- **No hizo falta ninguna tabla nueva.** La relación ya existía en el modelo; solo había que
+  leerla. La lección: antes de añadir una tabla de clasificación, mirar si el dato ya se está
+  declarando en otro sitio por otro motivo.
+- Lo único que sí necesitaba columna es el portafolio **escrito a mano**, que no pasa por
+  requerimientos.
+
+### P21 — ¿Dónde se cambia de talento? · ✅ Resuelta (era una pregunta de diseño)
+- Fernando lo dejó a mi criterio. La respuesta: **el titular ES el selector**. El nombre del
+  talento ya ocupa el sitio del titular, así que pulsarlo para cambiarlo no añade ningún
+  elemento nuevo a la pantalla. Con un solo talento, es texto plano.
+
+### Lo que solo apareció cambiando de talento en el navegador
+1. **La pestaña activa no se reiniciaba.** «Psicología» no tiene portafolio: al venir de
+   Portafolio, el panel se quedaba vacío sin decir por qué.
+2. **Los años de trayectoria seguían siendo globales**, así que Psicología presumía de cuatro
+   años sin una sola experiencia registrada. El cálculo se movió al cliente, por talento.
+
+Ninguno de los dos lo ve `tsc`, ni el build, ni el JSON: hay que **pulsar el conmutador**.

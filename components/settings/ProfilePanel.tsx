@@ -7,6 +7,11 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
+
+/** Idiomas del selector. Vive aquí porque aquí es donde se eligen. */
+const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 'Alemán', 'Chino (Mandarín)', 'Japonés', 'Coreano', 'Ruso', 'Árabe', 'Kichwa', 'Catalán', 'Neerlandés', 'Hindi']
+  .map((l) => ({ value: l, label: l }));
 import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
 import { User, Camera, RefreshCw, ExternalLink, Save } from 'lucide-react';
 
@@ -33,6 +38,11 @@ export default function ProfilePanel() {
   // Ubicación se queda en Perfil (el titular se fue a «Mi CV»); LinkedIn y el sitio
   // web se editan aquí, con el resto de redes, aunque vivan en la tabla del CV.
   const [ubicacion, setUbicacion] = useState('');
+  // Aspiración salarial e idiomas se mudaron aquí desde «Mi CV» (Fernando,
+  // 2026-08-15): son datos de la persona, no de un talento concreto.
+  const [salarioMin, setSalarioMin] = useState('');
+  const [salarioMax, setSalarioMax] = useState('');
+  const [idiomas, setIdiomas] = useState<string[]>([]);
   const [linkedin, setLinkedin] = useState('');
   const [web, setWeb] = useState('');
 
@@ -43,6 +53,9 @@ export default function ProfilePanel() {
       .then((d) => {
         if (!d) return;
         setUbicacion(d.location || '');
+        setSalarioMin(d.salary_min != null ? String(d.salary_min) : '');
+        setSalarioMax(d.salary_max != null ? String(d.salary_max) : '');
+        setIdiomas(Array.isArray(d.languages) ? d.languages : []);
         setLinkedin(d.linkedin_url || '');
         setWeb(d.website_url || '');
       })
@@ -124,7 +137,10 @@ export default function ProfilePanel() {
         const resCv = await fetch('/api/members/cv/publico', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ location: ubicacion, linkedin_url: linkedin, website_url: web }),
+          body: JSON.stringify({
+            location: ubicacion, linkedin_url: linkedin, website_url: web,
+            salary_min: salarioMin, salary_max: salarioMax, languages: idiomas,
+          }),
         });
         if (!resCv.ok) {
           const d = await resCv.json().catch(() => ({}));
@@ -205,6 +221,27 @@ export default function ProfilePanel() {
         <PixelInput label="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+593999999999" />
         {esMiembro && (
           <PixelInput label="Ubicación" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} placeholder="Guayaquil, Ecuador" />
+        )}
+
+        {esMiembro && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-digi-text" style={mf}>Aspiración salarial (USD/mes)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="number" min={0} step={50} inputMode="numeric" value={salarioMin}
+                onChange={(e) => setSalarioMin(e.target.value)} placeholder="Desde"
+                className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+              <input type="number" min={0} step={50} inputMode="numeric" value={salarioMax}
+                onChange={(e) => setSalarioMax(e.target.value)} placeholder="Hasta"
+                className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+            </div>
+          </div>
+        )}
+
+        {esMiembro && (
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-digi-text" style={mf}>Idiomas</label>
+            <MultiSelectSearch options={IDIOMAS} selected={idiomas} onChange={setIdiomas} placeholder="Elegir idiomas…" />
+          </div>
         )}
 
         <div className="pt-3 border-t border-digi-border space-y-3">

@@ -22,10 +22,10 @@
  * que un navegador sin JavaScript —o un lector de pantalla que recorre el
  * documento— viera un CV con una sola sección.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   BadgeCheck, Briefcase, CalendarClock, Clock3, Download, Facebook, FileText, GraduationCap,
-  Globe, Instagram, Languages, Linkedin, Mail, MapPin, Phone, Sparkles, Wallet, Youtube,
+  ChevronDown, Globe, Instagram, Languages, Linkedin, Mail, MapPin, Phone, Sparkles, Wallet, Youtube,
 } from 'lucide-react';
 import { textoCorto, type Red } from '@/lib/members/redes';
 import {
@@ -38,13 +38,37 @@ type Pestana = 'perfil' | 'portafolio';
 const fechaLarga = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
 
+/** Años de trayectoria **del talento**: del primer año declarado en su experiencia
+ *  a hoy. Se calcula aquí y no en el servidor porque cambia con el talento elegido. */
+function aniosDelTalento(t: { experiencia: { desde: string }[] } | null): number {
+  if (!t) return 0;
+  const ahora = new Date().getFullYear();
+  const anios = t.experiencia.map((e) => parseInt(e.desde, 10)).filter((n) => Number.isFinite(n) && n > 1950 && n <= ahora);
+  return anios.length ? Math.max(0, ahora - Math.min(...anios)) : 0;
+}
+
 export default function CvCuerpo({
-  cv, token, anios, urlPdf,
+  cv, token, urlPdf,
 }: {
-  cv: CvPublico; token: string; anios: number; urlPdf: string;
+  cv: CvPublico; token: string; urlPdf: string;
 }) {
-  const hayTrayectoria = cv.talentos.some((t) => t.experiencia.length || t.educacion.length);
-  const nProyectos = cv.portafolio.length;
+  /* ── EL TALENTO ES EL EJE DEL CV (Fernando, 2026-08-15) ──────────────────
+   * Se abre en el PRIMER talento y todo lo que se ve —el nombre bajo la foto, la
+   * trayectoria, las skills y el portafolio— es el de ese talento. Un mismo miembro
+   * puede presentarse ante una empresa de tecnología y ante una de salud mental sin
+   * mezclar las dos cosas. */
+  const [iTalento, setITalento] = useState(0);
+  const talento = cv.talentos[Math.min(iTalento, Math.max(0, cv.talentos.length - 1))] ?? null;
+
+  /* El portafolio del talento. Un ítem SIN talento se muestra siempre: es un dato
+     que falta, y esconderlo lo haría desaparecer sin que nadie se entere. */
+  const portafolio = talento
+    ? cv.portafolio.filter((x) => !x.talento || x.talento === talento.nombre)
+    : cv.portafolio;
+
+  const hayTrayectoria = !!talento && (talento.experiencia.length > 0 || talento.educacion.length > 0);
+  const nProyectos = portafolio.length;
+  const anios = aniosDelTalento(talento);
 
   /* ── DOS pestañas, no tres (Fernando, 2026-08-14) ──────────────────────────
    * «Perfil» se quedaba prácticamente vacío: tres líneas de biografía en un panel
@@ -56,7 +80,15 @@ export default function CvCuerpo({
     nProyectos ? { id: 'portafolio' as const, label: 'Portafolio', icono: <Briefcase className="w-4 h-4" /> } : null,
   ].filter(Boolean) as { id: Pestana; label: string; icono: React.ReactNode }[];
 
-  const [activa, setActiva] = useState<Pestana>(pestanas[0]?.id ?? 'perfil');
+  const [activa, setActiva] = useState<Pestana>('perfil');
+
+  /* ⚠️ Al cambiar de talento las pestañas cambian: «Psicología» puede no tener
+     portafolio. Si la que estaba abierta ya no existe, el panel se quedaba vacío sin
+     decir por qué; se vuelve a la primera disponible. */
+  const idsPestanas = pestanas.map((p) => p.id).join(',');
+  useEffect(() => {
+    if (pestanas.length && !pestanas.some((p) => p.id === activa)) setActiva(pestanas[0].id);
+  }, [idsPestanas, activa, pestanas]);
 
   return (
     /* ── DOS COLUMNAS SOLO SI CABE (Fernando, 2026-08-15) ────────────────────
@@ -76,9 +108,19 @@ export default function CvCuerpo({
           <div className="cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
             <Foto cv={cv} />
             <h1 className="mt-5 text-[26px] sm:text-[30px] font-semibold leading-tight text-[#1c1b22]">{cv.nombre}</h1>
-            {(cv.titular || cv.cargo) && (
-              <p className="mt-1.5 text-[15px] text-[#5b3fa8]">{cv.titular || cv.cargo}</p>
-            )}
+            {/* ⭐ El nombre del TALENTO hace de titular, y es el conmutador.
+                Con varios talentos se vuelve un botón que despliega la lista: el
+                titular *es* lo que se está mirando, así que cambiarlo es cambiar de
+                CV. Con uno solo es texto, sin nada que pulsar. */}
+            {talento ? (
+              cv.talentos.length > 1 ? (
+                <SelectorTalento talentos={cv.talentos} activo={iTalento} onElegir={setITalento} />
+              ) : (
+                <p className="mt-1.5 text-[15px] text-[#5b3fa8]">{talento.nombre}</p>
+              )
+            ) : cv.cargo ? (
+              <p className="mt-1.5 text-[15px] text-[#5b3fa8]">{cv.cargo}</p>
+            ) : null}
             {cv.ubicacion && (
               <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-[#86838f]">
                 <MapPin className="w-3.5 h-3.5" aria-hidden /> {cv.ubicacion}
@@ -121,13 +163,13 @@ export default function CvCuerpo({
 
           {/* ── Aptitudes, también en la ficha: es poco contenido y en el panel
                  grande dejaba medio ancho vacío ── */}
-          {(cv.skills.length > 0 || cv.idiomas.length > 0) && (
+          {((talento?.skills.length ?? 0) > 0 || cv.idiomas.length > 0) && (
             <FichaBloque titulo="Aptitudes" className="cv-entra cv-entra-3">
-              {cv.skills.length > 0 && (
-                <Chips titulo="Skills" icono={<BadgeCheck className="w-3.5 h-3.5" />} valores={cv.skills} destacado />
+              {(talento?.skills.length ?? 0) > 0 && (
+                <Chips titulo="Skills" icono={<BadgeCheck className="w-3.5 h-3.5" />} valores={talento!.skills} destacado />
               )}
               {cv.idiomas.length > 0 && (
-                <div className={cv.skills.length ? 'mt-3.5' : ''}>
+                <div className={(talento?.skills.length ?? 0) ? 'mt-3.5' : ''}>
                   <Chips titulo="Idiomas" icono={<Languages className="w-3.5 h-3.5" />} valores={cv.idiomas} />
                 </div>
               )}
@@ -156,7 +198,8 @@ export default function CvCuerpo({
                   ? new Date(`${cv.disponibilidad.desde}T12:00:00`).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
                   : 'Inmediata'} />
             {anios > 0 && <Cifra icono={<Clock3 className="w-4 h-4" />} rotulo="Trayectoria" valor={`${anios} ${anios === 1 ? 'año' : 'años'}`} />}
-            {cv.talentos.length > 0 && <Cifra icono={<Sparkles className="w-4 h-4" />} rotulo="Talentos" valor={String(cv.talentos.length)} />}
+            {/* Sin la cifra de «Talentos»: los talentos ya no son un número, son la
+                navegación del CV — y salen en el selector del titular. */}
             {nProyectos > 0 && <Cifra icono={<Briefcase className="w-4 h-4" />} rotulo="Portafolio" valor={String(nProyectos)} />}
           </div>
 
@@ -181,7 +224,7 @@ export default function CvCuerpo({
           {/* ⚠️ Los tres paneles SIEMPRE están en el DOM; solo se oculta el que no
               toca. `key={activa}` en el envoltorio hace que la animación de entrada
               se vuelva a disparar en cada cambio. */}
-          <div key={activa} className="cv-panel cv-scroll cv-rueda mt-8">
+          <div key={`${activa}-${iTalento}`} className="cv-panel cv-scroll cv-rueda mt-8">
             <Panel id="perfil" activa={activa} titulo="Perfil" conRotulo={pestanas.length < 2}>
               {cv.bio && (
                 <p className="max-w-[68ch] text-[15.5px] sm:text-[16.5px] leading-relaxed text-[#56545f]">{cv.bio}</p>
@@ -189,15 +232,14 @@ export default function CvCuerpo({
 
               {hayTrayectoria && (
                 <div className={cv.bio ? 'mt-11' : ''}>
-                  <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Trayectoria por talento</h3>
+                  <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Trayectoria</h3>
                   <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
                   <div className="space-y-10">
-                    {cv.talentos.filter((t) => t.experiencia.length || t.educacion.length).map((t) => (
+                    {(talento ? [talento] : []).filter((t) => t.experiencia.length || t.educacion.length).map((t) => (
                       <div key={t.nombre}>
-                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <h4 className="text-[20px] font-semibold text-[#1c1b22]">{t.nombre}</h4>
-                          {t.servicios.length > 0 && <p className="text-[13px] text-[#5b3fa8]">{t.servicios.join(' · ')}</p>}
-                        </div>
+                        {t.servicios.length > 0 && (
+                          <p className="mb-4 text-[13.5px] text-[#5b3fa8]">{t.servicios.join(' · ')}</p>
+                        )}
                         {t.experiencia.length > 0 && (
                           <Bloque titulo="Experiencia" icono={<Briefcase className="w-3.5 h-3.5" />}>
                             {t.experiencia.map((e, i) => (
@@ -240,7 +282,7 @@ export default function CvCuerpo({
             </Panel>
 
             <Panel id="portafolio" activa={activa} titulo="Portafolio" conRotulo={pestanas.length < 2}>
-              <PortafolioPublico token={token} items={cv.portafolio} />
+              <PortafolioPublico token={token} items={portafolio} />
             </Panel>
           </div>
 
@@ -254,8 +296,43 @@ export default function CvCuerpo({
           estrecha: los iconos de red desbordaban y aparecía una barra de
           desplazamiento horizontal. Como pie de la página entera aprovecha también
           el ancho de la ficha, que es donde estaba el sitio que faltaba. */}
-      <BarraContacto cv={cv} urlPdf={urlPdf} />
+      <BarraContacto cv={cv} urlPdf={talento ? `${urlPdf}?talento=${encodeURIComponent(talento.nombre)}` : urlPdf} />
     </div>
+  );
+}
+
+/* ── SELECTOR DE TALENTO ──────────────────────────────────────────────────────
+ * El titular del CV **es** el nombre del talento, así que el conmutador es el
+ * propio titular: se pulsa y se despliega la lista. No hay pestañas nuevas ni un
+ * desplegable suelto en una esquina — cambiar de talento es cambiar de quién eres
+ * en este documento, y eso pertenece a la cabecera.
+ *
+ * `<details>`/`<summary>` nativos: abren y cierran sin estado propio, se manejan con
+ * el teclado y **funcionan aunque el JavaScript no llegue**. Elegir sí necesita
+ * estado, pero abrir la lista no.
+ */
+function SelectorTalento({ talentos, activo, onElegir }: {
+  talentos: { nombre: string }[]; activo: number; onElegir: (i: number) => void;
+}) {
+  return (
+    <details className="cv-talentos group relative mt-1.5">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1 -mx-2 text-[15px] text-[#5b3fa8] transition-colors hover:bg-[#7b5fbf]/[0.08]">
+        {talentos[activo]?.nombre}
+        <ChevronDown className="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
+        <span className="sr-only">Cambiar de talento</span>
+      </summary>
+      <div className="absolute left-0 z-20 mt-1 min-w-[15rem] overflow-hidden rounded-xl border border-[#e6e3ee] bg-white py-1 shadow-lg">
+        {talentos.map((t, i) => (
+          <button key={t.nombre} type="button"
+            onClick={(e) => { onElegir(i); (e.currentTarget.closest('details') as HTMLDetailsElement).open = false; }}
+            className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[14px] transition-colors hover:bg-[#f2f0f7] ${
+              i === activo ? 'text-[#4b2d8e] font-medium' : 'text-[#56545f]'}`}>
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${i === activo ? 'text-[#7b5fbf]' : 'text-[#cfc9de]'}`} aria-hidden />
+            {t.nombre}
+          </button>
+        ))}
+      </div>
+    </details>
   );
 }
 

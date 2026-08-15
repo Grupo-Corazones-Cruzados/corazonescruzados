@@ -182,8 +182,8 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
   if (!m) return null;
 
   const { rows: cvRows } = await pool.query(
-    `SELECT bio, skills, languages, linkedin_url, website_url, talents,
-            headline, location, salary_min, salary_max,
+    `SELECT bio, languages, linkedin_url, website_url, talents,
+            location, salary_min, salary_max,
             job_status, job_available_from, job_workday, job_mode, job_note,
             updated_at
        FROM gcc_world.member_cv_profiles WHERE member_id = $1`,
@@ -192,7 +192,7 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
   const cv = cvRows[0] || {};
 
   const { rows: pfRows } = await pool.query(
-    `SELECT id, item_type, title, description, project_url, COALESCE(tags, '{}') AS tags,
+    `SELECT id, item_type, title, description, project_url, talent, COALESCE(tags, '{}') AS tags,
             COALESCE(array_length(images, 1), CASE WHEN image_url IS NOT NULL THEN 1 ELSE 0 END) AS n_imagenes
        FROM gcc_world.member_portfolio_items
       WHERE member_id = $1
@@ -217,7 +217,12 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
             COALESCE(array_length(p.images, 1), 0)::int AS n_imagenes,
             COALESCE((SELECT array_agg(DISTINCT t)
                         FROM gcc_world.project_requirements pr, UNNEST(pr.talents) AS t
-                       WHERE pr.project_id = p.id), '{}') AS etiquetas
+                       WHERE pr.project_id = p.id), '{}') AS etiquetas,
+            -- Los talentos que pide el proyecto SON su clasificación: no hace falta
+            -- otra tabla, ya se declararon al crear los requerimientos.
+            COALESCE((SELECT array_agg(DISTINCT t)
+                        FROM gcc_world.project_requirements pr, UNNEST(pr.talents) AS t
+                       WHERE pr.project_id = p.id), '{}') AS talentos_pedidos
        FROM gcc_world.projects p
       WHERE p.status = 'completed'
         AND (
@@ -260,8 +265,11 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
       educacion: (Array.isArray(t?.education) ? t.education : []).map(aEducacion).filter(tieneAlgo as any),
       experiencia: (Array.isArray(t?.experience) ? t.experience : []).map(aExperiencia).filter(tieneAlgo as any),
       servicios: serviciosPorTalento.get(String(t?.key ?? '')) || [],
+      skills: lista(t?.skills),
     }))
     .filter((t) => t.nombre);
+
+  const nombresDeTalento = new Set(talentos.map((t) => t.nombre));
 
   const nombre =
     texto(m.name) ||
@@ -270,7 +278,6 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
 
   const cvPublico: CvPublico = {
     nombre,
-    titular: texto(cv.headline),
     cargo: texto(m.position),
     ubicacion: texto(cv.location),
     // El avatar del panel es el que la persona mantiene al día; la foto del
@@ -278,14 +285,20 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
     foto: texto(m.avatar_url) || texto(m.photo_url),
     bio: texto(cv.bio),
     redes: armarRedes(m, cv),
-    skills: lista(cv.skills),
     idiomas: lista(cv.languages),
     talentos,
     // Primero los proyectos de la app —son el trabajo real y con cliente detrás— y
     // detrás lo que la persona añadió a mano.
     portafolio: [
-      ...prRows.map((r: any) => ({
+      ...prRows.flatMap((r: any) => {
+        // Un proyecto puede pedir varios talentos; se queda con el PRIMERO que sea
+        // del miembro, que es el que lo hace suyo. Si ninguno lo es —no debería
+        // pasar, porque participó— se deja sin clasificar y se muestra siempre.
+        const pedidos = lista(r.talentos_pedidos);
+        const suyo = pedidos.find((x) => nombresDeTalento.has(x)) ?? null;
+        return [{
         id: Number(r.id),
+        talento: suyo,
         fuente: 'proyecto' as const,
         tipo: 'project' as const,
         titulo: String(r.title ?? ''),
@@ -293,9 +306,11 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
         enlace: null,
         etiquetas: lista(r.etiquetas),
         imagenes: Number(r.n_imagenes) || 0,
-      })),
+      }];
+      }),
       ...pfRows.map((r: any) => ({
         id: Number(r.id),
+        talento: texto(r.talent),
         fuente: 'propio' as const,
         tipo: (r.item_type || 'project') as ItemPortafolio['tipo'],
         titulo: String(r.title ?? ''),

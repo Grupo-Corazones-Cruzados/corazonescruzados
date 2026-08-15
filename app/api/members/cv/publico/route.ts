@@ -25,8 +25,9 @@ const MODALIDADES = ['remote', 'hybrid', 'onsite', 'any'];
 
 /** Campo → cómo se limpia lo que llega. Lo que no esté aquí NO se escribe. */
 const CAMPOS: Record<string, (v: any) => any> = {
-  headline: (v) => (String(v ?? '').trim() || null),
   location: (v) => (String(v ?? '').trim() || null),
+  // Los idiomas se editan en Perfil desde 2026-08-15; el upsert del CV ya no los toca.
+  languages: (v) => (Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean).slice(0, 20) : []),
   salary_min: (v) => numeroONulo(v),
   salary_max: (v) => numeroONulo(v),
   job_status: (v) => (ESTADOS.includes(v) ? v : 'immediate'),
@@ -61,7 +62,7 @@ export async function GET() {
     const { error, memberId } = await miMemberId();
     if (error) return error;
     const { rows } = await pool.query(
-      `SELECT headline, location, salary_min, salary_max,
+      `SELECT location, languages, salary_min, salary_max,
               job_status, job_available_from, job_workday, job_mode, job_note,
               linkedin_url, website_url
          FROM gcc_world.member_cv_profiles WHERE member_id = $1`,
@@ -69,8 +70,8 @@ export async function GET() {
     );
     const r = rows[0] || {};
     return NextResponse.json({
-      headline: r.headline ?? '',
       location: r.location ?? '',
+      languages: r.languages ?? [],
       salary_min: r.salary_min != null ? Number(r.salary_min) : null,
       salary_max: r.salary_max != null ? Number(r.salary_max) : null,
       job_status: r.job_status ?? 'immediate',

@@ -15,7 +15,7 @@ import { fmtInt } from '@/lib/format';
 import type { Red } from '@/lib/members/redes';
 
 /**
- * Tope de skills del CV (Fernando, 2026-08-15): **diez, y generales**.
+ * Tope de skills **por talento** (Fernando, 2026-08-15): **diez, y generales**.
  *
  * No es un capricho de maqueta aunque salga de una: con veintiuna, la ficha del CV
  * público necesitaba 1122 px de alto y la vista de dos columnas dejaba de activarse
@@ -37,9 +37,18 @@ export type Modalidad = 'remote' | 'hybrid' | 'onsite' | 'any';
 
 export interface Educacion { institucion: string; titulo: string; campo: string; desde: string; hasta: string }
 export interface Experiencia { empresa: string; cargo: string; descripcion: string; desde: string; hasta: string }
-export interface TalentoPublico { nombre: string; educacion: Educacion[]; experiencia: Experiencia[]; servicios: string[] }
+export interface TalentoPublico {
+  nombre: string;
+  educacion: Educacion[];
+  experiencia: Experiencia[];
+  servicios: string[];
+  /** Skills DE ESE TALENTO. Una lista única mezclaba lo de un oficio con lo del otro. */
+  skills: string[];
+}
 export interface ItemPortafolio {
   id: number;
+  /** Talento al que pertenece. `null` = no clasificado; se muestra en todos. */
+  talento: string | null;
   /** De dónde sale la imagen: `propio` = `member_portfolio_items` · `proyecto` = `projects`. */
   fuente: 'propio' | 'proyecto';
   tipo: 'project' | 'product' | 'automation';
@@ -54,7 +63,6 @@ export interface FranjaHoraria { dia: number; inicio: string; fin: string }
 export interface CvPublico {
   /** Nombre completo tal cual se muestra. */
   nombre: string;
-  titular: string | null;
   cargo: string | null;
   ubicacion: string | null;
   foto: string | null;
@@ -67,7 +75,6 @@ export interface CvPublico {
    * pintan. Solo trae las que la persona rellenó: una red vacía no ocupa sitio.
    */
   redes: { red: Red; etiqueta: string; url: string }[];
-  skills: string[];
   idiomas: string[];
   talentos: TalentoPublico[];
   portafolio: ItemPortafolio[];

@@ -47,28 +47,28 @@ const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kA
 
 async function sembrar() {
   await pool.query(`
-    INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, linkedin_url, website_url, talents,
-      headline, location, salary_min, salary_max,
+    INSERT INTO gcc_world.member_cv_profiles (member_id, bio, languages, linkedin_url, website_url, talents,
+      location, salary_min, salary_max,
       job_status, job_available_from, job_workday, job_mode, job_note)
-    VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, 1200, 1800,
+    VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, 1200, 1800,
             'from_date', '2026-09-01', 'both', 'hybrid', 'Con disponibilidad para viajar')
     ON CONFLICT (member_id) DO UPDATE SET bio = EXCLUDED.bio`,
     [MIEMBRO,
      'Perfil de ensayo con acentos: ñ, á, é, í, ó, ú, ü y «comillas».',
-     ['React', 'PostgreSQL', 'Next.js'],
      ['Español', 'Inglés'],
      'https://linkedin.com/in/ensayo', 'https://ejemplo.test',
      JSON.stringify([{
        key: 'Desarrollo de software',
        education: [{ institution: 'Universidad de Ensayo', degree: 'Ingeniería', field: 'Sistemas', start_year: '2014', end_year: '2019' }],
        experience: [{ company: 'Empresa Ñ', position: 'Desarrollador', description: 'Construcción de la plataforma interna.', start_year: '2019', end_year: 'Actual' }],
-     }, { key: 'Diseño', education: [], experience: [] }]),
-     'Desarrollador full-stack', 'Guayaquil, Ecuador']);
+       skills: ['React', 'PostgreSQL', 'Next.js'],
+     }, { key: 'Diseño', education: [], experience: [], skills: [] }]),
+     'Guayaquil, Ecuador']);
 
   await pool.query(
-    `INSERT INTO gcc_world.member_portfolio_items (member_id, title, description, item_type, tags, images, image_url, project_url, cost, sort_order)
-     VALUES ($1, 'Proyecto de ensayo', 'Descripción del proyecto de ensayo.', 'project', ARRAY['React','API'], ARRAY[$2::text], $2, 'https://ejemplo.test/p', 999, 1)`,
-    [MIEMBRO, PNG]);
+    `INSERT INTO gcc_world.member_portfolio_items (member_id, title, description, item_type, tags, images, image_url, project_url, cost, sort_order, talent)
+     VALUES ($1, 'Proyecto de ensayo', 'Descripción del proyecto de ensayo.', 'project', ARRAY['React','API'], ARRAY[$2::text], $2, 'https://ejemplo.test/p', 999, 1, $3)`,
+    [MIEMBRO, PNG, 'Desarrollo de software']);
 
   await pool.query(
     `INSERT INTO gcc_world.member_schedules (member_id, day_of_week, start_time, end_time, is_active)
@@ -125,6 +125,10 @@ async function main() {
     ok(cv.disponibilidad?.estado === 'from_date' && cv.disponibilidad?.desde === '2026-09-01', `disponibilidad: ${cv.disponibilidad?.estado} ${cv.disponibilidad?.desde}`);
     ok(cv.talentos?.length === 2, `talentos: ${cv.talentos?.length}`);
     ok(cv.talentos?.[0]?.servicios?.[0] === 'Servicio de ensayo', 'el servicio activo cuelga de su talento');
+    ok(cv.talentos?.[0]?.skills?.length === 3, `las skills cuelgan del talento (${cv.talentos?.[0]?.skills?.length})`);
+    ok(cv.talentos?.[1]?.skills?.length === 0, 'el otro talento no hereda las skills del primero');
+    ok(!('skills' in cv) && !('titular' in cv), 'ya no hay skills global ni titular suelto');
+    ok(cv.portafolio?.[0]?.talento === 'Desarrollo de software', `el ítem declara su talento: ${cv.portafolio?.[0]?.talento}`);
     ok(cv.talentos?.[1]?.experiencia?.length === 0, 'el talento sin trayectoria no inventa entradas');
     ok(cv.portafolio?.length === 1 && cv.portafolio[0].imagenes === 1, `portafolio: ${cv.portafolio?.length} ítem, ${cv.portafolio?.[0]?.imagenes} imagen`);
     ok(!('price' in (cv.portafolio?.[0] || {})) && !('precio' in (cv.portafolio?.[0] || {})), 'el portafolio NO lleva precio');

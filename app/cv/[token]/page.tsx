@@ -12,7 +12,7 @@
  */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { cvPublicoDeToken, type CvPublico } from '@/lib/members/cv-share';
+import { cvPublicoDeToken } from '@/lib/members/cv-share';
 import CvCuerpo from '@/components/cv/CvCuerpo';
 
 export const dynamic = 'force-dynamic';
@@ -27,15 +27,6 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   };
 }
 
-/** Años de trayectoria: del primer año declarado a hoy. Devuelve 0 si no hay años. */
-function aniosDeTrayectoria(cv: CvPublico): number {
-  const anios = cv.talentos
-    .flatMap((t) => t.experiencia.map((e) => parseInt(e.desde, 10)))
-    .filter((n) => Number.isFinite(n) && n > 1950 && n <= new Date().getFullYear());
-  if (!anios.length) return 0;
-  return Math.max(0, new Date().getFullYear() - Math.min(...anios));
-}
-
 export default async function CvPublicoPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const cv = await cvPublicoDeToken(token);
@@ -43,5 +34,6 @@ export default async function CvPublicoPage({ params }: { params: Promise<{ toke
   // distingue «no existe» de «ya no vale».
   if (!cv) notFound();
 
-  return <CvCuerpo cv={cv} token={token} anios={aniosDeTrayectoria(cv)} urlPdf={`/api/cv/${token}/pdf`} />;
+  // Los años de trayectoria se calculan en el cuerpo: dependen del talento elegido.
+  return <CvCuerpo cv={cv} token={token} urlPdf={`/api/cv/${token}/pdf`} />;
 }

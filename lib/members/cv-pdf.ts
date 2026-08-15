@@ -129,7 +129,16 @@ export interface PortadaPortafolio { id: number; fuente: 'propio' | 'proyecto'; 
  *  añadido a mano pueden tener el mismo id, y sin ella uno pisaría al otro. */
 const claveImagen = (fuente: string, id: number) => `${fuente}-${id}`;
 
-export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] = []): Promise<Buffer> {
+/**
+ * ⚠️ El PDF es **de un talento**, como la página. `talento` dice cuál; sin él se usa
+ * el primero. Un PDF con los dos oficios mezclados sería justo lo que el CV por
+ * talento vino a evitar.
+ */
+export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] = [], talentoPedido?: string): Promise<Buffer> {
+  const talento = cv.talentos.find((t) => t.nombre === talentoPedido) ?? cv.talentos[0] ?? null;
+  const portafolio = talento
+    ? cv.portafolio.filter((x) => !x.talento || x.talento === talento.nombre)
+    : cv.portafolio;
   // Las imágenes se resuelven ANTES de empezar a dibujar: PDFKit escribe de forma
   // síncrona y no se le puede pedir que espere a una descarga a mitad de una página.
   const foto = await aJpeg(cv.foto, 240);
@@ -201,7 +210,7 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
       .text(cv.nombre, rx, ry, { width: rw, lineGap: 1 });
     ry = doc.y + 4;
 
-    const subtitulo = cv.titular || cv.cargo;
+    const subtitulo = talento?.nombre || cv.cargo;
     if (subtitulo) {
       doc.fillColor(C.violetaClaro).font('Helvetica').fontSize(9)
         .text(subtitulo, rx, ry, { width: rw, lineGap: 1.5 });
@@ -266,9 +275,9 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
     }
 
     // Skills e idiomas
-    if (cv.skills.length) {
+    if (talento?.skills.length) {
       rotuloRail('Skills');
-      lineaRail(cv.skills.join(' · '), 8);
+      lineaRail(talento.skills.join(' · '), 8);
     }
     if (cv.idiomas.length) {
       rotuloRail('Idiomas');
@@ -311,12 +320,10 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
     }
 
     // Talentos: cada uno con su experiencia, formación y servicios.
-    if (cv.talentos.length) {
-      seccion('Talentos y trayectoria');
-      for (const t of cv.talentos) {
+    if (talento) {
+      seccion('Trayectoria');
+      for (const t of [talento]) {
         sitio(40);
-        doc.fillColor(C.texto).font('Helvetica-Bold').fontSize(12).text(t.nombre, x, y, { width: ancho });
-        y = doc.y + 3;
 
         if (t.servicios.length) {
           const txt = t.servicios.join(' · ');
@@ -388,9 +395,9 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
     }
 
     // Portafolio
-    if (cv.portafolio.length) {
+    if (portafolio.length) {
       seccion('Portafolio');
-      for (const item of cv.portafolio) {
+      for (const item of portafolio) {
         const mini = miniaturas.get(claveImagen(item.fuente, item.id));
         const anchoTexto = ancho - (mini ? 86 : 0);
         const hDesc = item.descripcion ? alto(item.descripcion, 9, anchoTexto) : 0;

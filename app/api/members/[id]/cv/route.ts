@@ -30,12 +30,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await req.json();
 
-    // El formulario ya lo impide; esto corta lo que llegue por otro camino. Se
-    // responde 400 en vez de recortar en silencio: perder skills sin avisar es peor
-    // que un error que se lee.
-    if (Array.isArray(body.skills) && body.skills.length > MAX_SKILLS) {
+    // Las skills son de cada talento desde 2026-08-15. El formulario ya lo impide;
+    // esto corta lo que llegue por otro camino. Se responde 400 en vez de recortar en
+    // silencio: perder skills sin avisar es peor que un error que se lee.
+    const conExceso = (Array.isArray(body.talents) ? body.talents : [])
+      .find((t: any) => Array.isArray(t?.skills) && t.skills.length > MAX_SKILLS);
+    if (conExceso) {
       return NextResponse.json(
-        { error: `Máximo ${MAX_SKILLS} skills. Deja las más generales, que abarcan a las demás.` },
+        { error: `Máximo ${MAX_SKILLS} skills por talento («${conExceso.key}»). Deja las más generales.` },
         { status: 400 },
       );
     }
@@ -50,18 +52,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Upsert
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.member_cv_profiles (member_id, bio, skills, languages, education, experience, talents)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO gcc_world.member_cv_profiles (member_id, bio, education, experience, talents)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (member_id) DO UPDATE SET
          bio = EXCLUDED.bio,
-         skills = EXCLUDED.skills,
-         languages = EXCLUDED.languages,
          education = EXCLUDED.education,
          experience = EXCLUDED.experience,
          talents = EXCLUDED.talents,
          updated_at = NOW()
        RETURNING *`,
-      [id, body.bio || null, body.skills || [], body.languages || [], JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
+      [id, body.bio || null, JSON.stringify(body.education || []), JSON.stringify(body.experience || []), JSON.stringify(body.talents || [])]
     );
 
     return NextResponse.json({ cv: rows[0] });

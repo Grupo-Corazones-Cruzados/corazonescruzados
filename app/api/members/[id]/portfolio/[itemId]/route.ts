@@ -51,6 +51,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
       values.push(Number(body.price) || 0);
     }
 
+    // El talento al que pertenece el ítem: decide en qué CV público aparece.
+    if ('talent' in body) {
+      fields.push(`talent = $${idx++}`);
+      values.push(String(body.talent || '').trim() || null);
+    }
+
     // Handle images array (base64 → Cloudinary)
     if ('images' in body) {
       const raw = Array.isArray(body.images) ? body.images.filter(Boolean) : [];

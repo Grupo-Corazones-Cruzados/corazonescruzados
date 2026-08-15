@@ -14,17 +14,22 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /** Nombre de archivo seguro: sin acentos, espacios ni nada que rompa la cabecera. */
-function nombreArchivo(nombre: string): string {
+function nombreArchivo(nombre: string, talento?: string): string {
+  const limpio = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const base = nombre
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'CV';
-  return `CV-${base}.pdf`;
+  // Dos talentos son dos CV distintos: si el archivo se llamara igual, el segundo
+  // pisaría al primero en la carpeta de quien los descarga.
+  return talento ? `CV-${base}-${limpio(talento)}.pdf` : `CV-${base}.pdf`;
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
     const { token } = await params;
+    // El PDF sale del talento que se estaba viendo; sin parámetro, el primero.
+    const talento = req.nextUrl.searchParams.get('talento') || undefined;
     const memberId = await miembroDeToken(token);
     if (!memberId) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
@@ -32,12 +37,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     if (!cv) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
     const portadas = await portadasDePortafolio(memberId);
-    const pdf = await generarCvPdf(cv, portadas);
+    const pdf = await generarCvPdf(cv, portadas, talento);
 
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${nombreArchivo(cv.nombre)}"`,
+        'Content-Disposition': `attachment; filename="${nombreArchivo(cv.nombre, talento)}"`,
         'Cache-Control': 'no-store',
         'X-Robots-Tag': 'noindex, nofollow',
       },
