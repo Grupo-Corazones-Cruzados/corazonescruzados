@@ -21,6 +21,12 @@ interface RideData {
   currency?: string;
   currencySymbol?: string;
   exchangeRate?: number;
+  /**
+   * Los `campoAdicional` tal como viajaron en el XML al SRI (incluidos los que escribió
+   * el usuario). Si viene vacío se cae al comportamiento antiguo: dirección/teléfono/email
+   * del cliente.
+   */
+  additionalFields?: { name: string; value: string }[];
 }
 
 const FORMAS_PAGO_LABEL: Record<string, string> = {
@@ -201,10 +207,27 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     doc.fillColor('black').font('Helvetica-Bold').fontSize(6).text('Informacion Adicional', L + 3, y + 3);
     y += 12;
     doc.font('Helvetica').fontSize(6);
+
+    // El RIDE debe reflejar la información adicional REAL del comprobante: se pintan los
+    // `campoAdicional` que viajaron al SRI —los que escribió el usuario incluidos—, no solo
+    // los datos de contacto del cliente. La leyenda del régimen se omite porque ya sale en
+    // la cabecera del emisor. Sin campos (facturas antiguas sin XML) se usa el contacto.
+    const infoRows: [string, string][] = (data.additionalFields || [])
+      .filter(f => f.name && f.value && f.name.toLowerCase() !== 'regimen')
+      .map(f => [f.name.replace(/([a-záéíóúñ])([A-ZÁÉÍÓÚÑ])/g, '$1 $2').toUpperCase(), f.value]);
+
+    if (infoRows.length === 0) {
+      if (data.clienteDireccion) infoRows.push(['DIRECCION', data.clienteDireccion]);
+      if (data.clienteTelefono) infoRows.push(['TELEFONO', data.clienteTelefono]);
+      if (data.clienteEmail) infoRows.push(['EMAIL', data.clienteEmail]);
+    }
+
     // width acotado al recuadro izquierdo → los valores largos (dirección) hacen wrap y no invaden los totales
-    if (data.clienteDireccion) { doc.font('Helvetica-Bold').text('DIRECCION', L + 3, y + 2, { width: botLeftW - 6, continued: true }).font('Helvetica').text(`     ${data.clienteDireccion}`); y = doc.y + 2; }
-    if (data.clienteTelefono) { doc.font('Helvetica-Bold').text('TELEFONO', L + 3, y + 2, { width: botLeftW - 6, continued: true }).font('Helvetica').text(`     ${data.clienteTelefono}`); y = doc.y + 2; }
-    if (data.clienteEmail) { doc.font('Helvetica-Bold').text('EMAIL', L + 3, y + 2, { width: botLeftW - 6, continued: true }).font('Helvetica').text(`     ${data.clienteEmail}`); y = doc.y + 2; }
+    infoRows.forEach(([label, value]) => {
+      doc.font('Helvetica-Bold').text(label, L + 3, y + 2, { width: botLeftW - 6, continued: true })
+        .font('Helvetica').text(`     ${value}`);
+      y = doc.y + 2;
+    });
     doc.rect(L, botY + 12, botLeftW, y - botY - 12).stroke('#ccc');
 
     // ─── RIGHT: Totals ───

@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { buildFacturaXml, InvoiceData, InvoiceItem } from './xml-builder';
+import { buildFacturaXml, InvoiceData, InvoiceItem, parseAdditionalFieldsFromXml, isAutoAdditionalField } from './xml-builder';
 import { signXml } from './xades-signer';
 import { enviarComprobante, consultarAutorizacion } from './soap-client';
 import { generateRidePdf } from './ride-pdf';
@@ -677,6 +677,8 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
         currency: invoice.currency || 'USD',
         currencySymbol: CURRENCY_SYMBOLS[invoice.currency] || '$',
         exchangeRate: Number(invoice.exchange_rate) || 1,
+        // El RIDE muestra la información adicional que realmente viajó al SRI
+        additionalFields: parseAdditionalFieldsFromXml(xmlSigned),
       });
 
       await pool.query(`UPDATE gcc_world.invoices SET pdf_data = $1, updated_at = NOW() WHERE id = $2`, [pdfBuffer, invoiceId]);
@@ -740,6 +742,8 @@ export async function regenerateRidePdf(invoiceId: number, persist = false): Pro
     currency: invoice.currency || 'USD',
     currencySymbol: CURRENCY_SYMBOLS[invoice.currency] || '$',
     exchangeRate: Number(invoice.exchange_rate) || 1,
+    // El RIDE muestra la información adicional que realmente viajó al SRI
+    additionalFields: parseAdditionalFieldsFromXml(invoice.xml_signed),
   });
 
   if (persist) {
@@ -805,7 +809,11 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
   const currency = invoice.currency || 'USD';
   const exchangeRate = Number(invoice.exchange_rate) || 1;
 
-  const additionalFields: { name: string; value: string }[] = [];
+  // Los campos adicionales que escribió el usuario solo viven en el XML anterior: se
+  // rescatan de ahí para que la re-emisión no los pierda. Los que genera el sistema
+  // (régimen, contacto, moneda) los vuelve a derivar `buildFacturaXml`.
+  const additionalFields: { name: string; value: string }[] = parseAdditionalFieldsFromXml(invoice.xml_signed)
+    .filter(f => !isAutoAdditionalField(f.name));
   if (currency !== 'USD' && exchangeRate > 0) {
     const totalUsd = items.reduce((s, i) => s + i.quantity * i.unitPrice - (i.discount || 0), 0);
     const totalConverted = (totalUsd * exchangeRate).toFixed(2);

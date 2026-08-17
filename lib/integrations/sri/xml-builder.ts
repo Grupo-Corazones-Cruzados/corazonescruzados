@@ -38,6 +38,47 @@ export interface InvoiceData {
 }
 
 /**
+ * Nombres de `campoAdicional` que genera el propio sistema (no los escribe el usuario):
+ * la leyenda del régimen, los datos de contacto del cliente y la referencia de moneda.
+ * `buildFacturaXml` los vuelve a derivar en cada emisión, así que al reconstruir una
+ * factura solo hay que arrastrar los campos que NO están en esta lista.
+ */
+const AUTO_ADDITIONAL_FIELDS = ['regimen', 'email', 'telefono', 'direccion', 'identificacionExterior', 'monedaCliente', 'tasaCambio'];
+
+export function isAutoAdditionalField(name: string): boolean {
+  return AUTO_ADDITIONAL_FIELDS.includes(name) || name.startsWith('equivalente');
+}
+
+function unescapeXml(str: string): string {
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&'); // el último: si no, `&amp;lt;` acabaría siendo `<`
+}
+
+/**
+ * Lee los `<campoAdicional>` de un XML de comprobante ya construido.
+ *
+ * El XML firmado (`invoices.xml_signed`) es lo ÚNICO que guarda los campos adicionales
+ * que escribió el usuario —no hay columna propia—, así que es la fuente de verdad tanto
+ * para pintarlos en el RIDE como para conservarlos al regenerar una factura rechazada.
+ */
+export function parseAdditionalFieldsFromXml(xml: string | null | undefined): AdditionalField[] {
+  if (!xml) return [];
+  const bloque = xml.match(/<infoAdicional>([\s\S]*?)<\/infoAdicional>/);
+  if (!bloque) return [];
+  const campos: AdditionalField[] = [];
+  const re = /<campoAdicional\s+nombre="([^"]*)"\s*>([\s\S]*?)<\/campoAdicional>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(bloque[1])) !== null) {
+    campos.push({ name: unescapeXml(m[1]).trim(), value: unescapeXml(m[2]).trim() });
+  }
+  return campos;
+}
+
+/**
  * Construye el XML de la factura electrónica según esquema del SRI
  */
 export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: string; numeroFactura: string } {
