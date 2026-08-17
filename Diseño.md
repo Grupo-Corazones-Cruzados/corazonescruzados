@@ -219,6 +219,14 @@ videojuego— y decía «¿Cómo quieres ingresar?» en los dos. Ahora:
   tabla. Separarlas obligaría a recordar la concordancia allí donde se pinta.
 - **El `aria-label` del diálogo es el mismo texto**, para que un lector de pantalla diga a
   dónde se entra y no solo «cómo quieres ingresar».
+- **Las descripciones de las opciones hablan igual** (Fernando, 2026-08-17): decían «entrar
+  al panel» y «entra al juego» por su cuenta, así que el titular hablaba de la Plataforma y
+  las opciones de debajo, de otra cosa. Ahora las cuatro frases salen de la misma tabla.
+- ⚠️ **Dos formas, porque el verbo se conjuga distinto:** `dest` («entrar a la Plataforma»,
+  infinitivo, detrás de otro infinitivo) y `aDestino` («a la Plataforma», sin verbo, para
+  las frases en imperativo: «Inicia sesión … y **entra** a la Plataforma»). Usar la primera
+  en una frase imperativa da «y entrar al Videojuego». Se coló, y lo cazó **leer el diálogo
+  renderizado**, no el código.
 
 #### ⛔ EL ACCESO ES UNO SOLO, Y NO SE COPIA
 El botón llama a `abrirPlataforma()` (`lib/sitio/acceso.ts`), que lleva **al diálogo que ya

@@ -284,9 +284,14 @@ Stack estándar de la casa, con particularidades de este repo:
     crudos por su propio docblock. Medido: `rgb(167,139,250)`.
   - La **preposición viaja con la palabra** («a la Plataforma» / «al Videojuego»): separarlas
     obligaría a recordar la concordancia donde se pinta.
-  - ⏳ **Queda una incoherencia menor**, no tocada por no ser lo pedido: dos opciones del
-    diálogo siguen diciendo «iniciar sesión y **entrar al panel**» mientras el titular ya
-    dice «Plataforma». Pendiente de que Fernando decida si se unifican.
+  - **Las descripciones de las opciones se unificaron después**, a petición suya: decían
+    «entrar al panel» y «entra al juego» por su cuenta. Las cuatro frases del diálogo salen
+    ahora de la misma tabla, así que no pueden volver a separarse.
+  - ⚠️ **Hicieron falta DOS formas del destino, por la conjugación**: `dest` («entrar a la
+    Plataforma», infinitivo, detrás de otro infinitivo) y `aDestino` («a la Plataforma», sin
+    verbo, para el imperativo «Inicia sesión … y **entra** a la Plataforma»). Reusar la
+    primera en la frase imperativa producía «y entrar al Videojuego». **Lo cazó leer el
+    diálogo renderizado en el navegador; ni `tsc` ni el build ven una concordancia rota.**
 - **🔑 «PLATAFORMA» SALE DEL HÉROE Y SUBE A LA BARRA (2026-08-17).** Fernando abrió con esto
   el trabajo de diseño y contenido de las páginas principales.
   - **La portada se queda con un botón**: «Aventura» → **«Comenzar Aventura»**. Fuera el de

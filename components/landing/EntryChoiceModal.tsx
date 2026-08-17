@@ -59,18 +59,22 @@ export default function EntryChoiceModal({
   /** Destino tras iniciar sesión: "game" (Entrar) o "dashboard" (Colaborar). */
   destination?: 'game' | 'dashboard';
 }) {
-  const dest = destination === 'dashboard' ? 'entrar al panel' : 'entrar al juego';
-
   /**
-   * EL TITULAR DICE A DÓNDE SE ENTRA (Fernando, 2026-08-17).
+   * CÓMO SE LLAMA EL DESTINO — la fuente única de este diálogo (Fernando, 2026-08-17).
    *
-   * Era «¿Cómo quieres ingresar?» a secas, y el mismo diálogo sirve para dos destinos muy
-   * distintos: la plataforma de trabajo y el videojuego. Quien lo abría desde «Plataforma»
-   * y quien lo abría desde «Comenzar Aventura» veían exactamente lo mismo.
+   * El titular era «¿Cómo quieres ingresar?» a secas, y el mismo diálogo sirve para dos
+   * destinos muy distintos: la plataforma de trabajo y el videojuego. Quien lo abría desde
+   * «Plataforma» y quien lo abría desde «Comenzar Aventura» veían exactamente lo mismo.
    *
    * La preposición cambia con la palabra —«a la Plataforma» pero «al Videojuego»—, así que
-   * van juntas en la misma tabla: separarlas obligaría a recordar la concordancia en el
-   * sitio donde se pinta.
+   * van juntas: separarlas obligaría a recordar la concordancia en cada sitio donde se
+   * pinta.
+   *
+   * ⚠️ **De aquí sale el nombre del destino en TODO el diálogo**: el titular y las tres
+   * descripciones que lo mencionan. Antes las descripciones decían «el panel» y «el juego»
+   * por su cuenta, así que el titular hablaba de «la Plataforma» y las opciones de debajo,
+   * de otra cosa. Fernando pidió unificarlo el 2026-08-17. Escribiéndolo una vez, no puede
+   * volver a separarse.
    */
   const ambito =
     destination === 'dashboard'
@@ -78,6 +82,19 @@ export default function EntryChoiceModal({
       : { preposicion: 'al', palabra: 'Videojuego' };
 
   const titulo = `¿Cómo quieres ingresar ${ambito.preposicion} ${ambito.palabra}?`;
+
+  /** «a la Plataforma» · «al Videojuego». El destino, sin verbo, para poder conjugarlo. */
+  const aDestino = `${ambito.preposicion} ${ambito.palabra}`;
+
+  /**
+   * «entrar a la Plataforma» · «entrar al Videojuego» — en INFINITIVO, porque va detrás de
+   * otro infinitivo: «iniciar sesión y entrar a la Plataforma».
+   *
+   * ⚠️ No vale para las frases en imperativo («Inicia sesión … y **entra**»), que conjugan
+   * el verbo aparte y usan `aDestino`. Se coló al unificar los textos y lo cazó leer el
+   * diálogo renderizado, no el código.
+   */
+  const dest = `entrar ${aDestino}`;
   // ¿Este visitante (por IP) ya tiene una postulación registrada?
   const [proposal, setProposal] = useState<{
     exists: boolean;
@@ -237,8 +254,8 @@ export default function EntryChoiceModal({
               title="Soy cliente"
               desc={
                 destination === 'dashboard'
-                  ? 'Accede al panel para gestionar tus productos, servicios y proyectos del grupo.'
-                  : 'Inicia sesión (o crea tu cuenta) y entra al juego.'
+                  ? `Accede ${aDestino} para gestionar tus productos, servicios y proyectos del grupo.`
+                  : `Inicia sesión (o crea tu cuenta) y entra ${aDestino}.`
               }
               onClick={onClient}
             />
