@@ -200,6 +200,26 @@ Contacto**, y con **forma de botón**. La distinción es la regla:
 - **El héroe de la portada se queda con un botón**, «Comenzar Aventura» —antes «Aventura»—,
   y pierde el `grid` de dos columnas iguales que servía para igualarlos de ancho.
 
+#### El titular del acceso dice A DÓNDE se entra (2026-08-17)
+
+`EntryChoiceModal` sirve para dos destinos muy distintos —la plataforma de trabajo y el
+videojuego— y decía «¿Cómo quieres ingresar?» en los dos. Ahora:
+
+| Se abre desde | Titular |
+|---|---|
+| «Plataforma» (barra) | ¿Cómo quieres ingresar **a la Plataforma**? |
+| «Comenzar Aventura» (héroe) | ¿Cómo quieres ingresar **al Videojuego**? |
+
+- **La palabra del destino va resaltada** con `text-accent-glow`. **No es un hex**: es el
+  token que `.corp.dark` define para esto —«brighter accent text on dark», `#a78bfa`— y que
+  en `.corp` claro vale `#4B2D8E`. Así el resalte sigue leyéndose el día que el diálogo pase
+  a claro, que es tan simple como quitarle la clase `dark` al overlay. Medido en el
+  navegador: `rgb(167,139,250)`.
+- **La preposición viaja con la palabra** (`a la Plataforma` / `al Videojuego`) en la misma
+  tabla. Separarlas obligaría a recordar la concordancia allí donde se pinta.
+- **El `aria-label` del diálogo es el mismo texto**, para que un lector de pantalla diga a
+  dónde se entra y no solo «cómo quieres ingresar».
+
 #### ⛔ EL ACCESO ES UNO SOLO, Y NO SE COPIA
 El botón llama a `abrirPlataforma()` (`lib/sitio/acceso.ts`), que lleva **al diálogo que ya
 existe en la portada**. No hay un segundo formulario.

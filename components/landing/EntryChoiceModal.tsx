@@ -60,6 +60,24 @@ export default function EntryChoiceModal({
   destination?: 'game' | 'dashboard';
 }) {
   const dest = destination === 'dashboard' ? 'entrar al panel' : 'entrar al juego';
+
+  /**
+   * EL TITULAR DICE A DÓNDE SE ENTRA (Fernando, 2026-08-17).
+   *
+   * Era «¿Cómo quieres ingresar?» a secas, y el mismo diálogo sirve para dos destinos muy
+   * distintos: la plataforma de trabajo y el videojuego. Quien lo abría desde «Plataforma»
+   * y quien lo abría desde «Comenzar Aventura» veían exactamente lo mismo.
+   *
+   * La preposición cambia con la palabra —«a la Plataforma» pero «al Videojuego»—, así que
+   * van juntas en la misma tabla: separarlas obligaría a recordar la concordancia en el
+   * sitio donde se pinta.
+   */
+  const ambito =
+    destination === 'dashboard'
+      ? { preposicion: 'a la', palabra: 'Plataforma' }
+      : { preposicion: 'al', palabra: 'Videojuego' };
+
+  const titulo = `¿Cómo quieres ingresar ${ambito.preposicion} ${ambito.palabra}?`;
   // ¿Este visitante (por IP) ya tiene una postulación registrada?
   const [proposal, setProposal] = useState<{
     exists: boolean;
@@ -111,7 +129,9 @@ export default function EntryChoiceModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="¿Cómo quieres ingresar?"
+      // El mismo texto que se ve, para que quien navega con lector de pantalla oiga a dónde
+      // va a entrar y no solo «cómo quieres ingresar».
+      aria-label={titulo}
       className="corp dark corp-overlay fixed inset-0 z-[220] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
       style={{
         background: 'rgba(6,7,12,0.7)',
@@ -135,8 +155,14 @@ export default function EntryChoiceModal({
             <LogIn className="w-[18px] h-[18px]" />
           </span>
           <div className="min-w-0 flex-1">
+            {/* La palabra del destino va resaltada, que es lo que pidió Fernando. El color
+                sale de `accent-glow`, **no de un hex**: es el token que `.corp.dark` define
+                justo para esto —«brighter accent text on dark», `#a78bfa`— y que en claro
+                vale `#4B2D8E`. Así el resalte sigue leyéndose el día que este diálogo pase a
+                tema claro, que es tan fácil como quitarle la clase `dark` al overlay. */}
             <h2 className="text-[17px] font-semibold text-digi-text leading-tight">
-              ¿Cómo quieres ingresar?
+              ¿Cómo quieres ingresar {ambito.preposicion}{' '}
+              <span className="text-accent-glow">{ambito.palabra}</span>?
             </h2>
             <p className="text-[12.5px] text-digi-muted mt-0.5">Elige tu camino para continuar.</p>
           </div>

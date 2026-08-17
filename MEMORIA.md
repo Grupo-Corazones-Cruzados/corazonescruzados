@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏷️ EL DIÁLOGO DE ACCESO DICE A DÓNDE SE ENTRA (2026-08-17).** `EntryChoiceModal` es el
+  mismo para dos destinos y decía «¿Cómo quieres ingresar?» en los dos. Ahora **«¿Cómo
+  quieres ingresar a la Plataforma?»** o **«al Videojuego»**, con la palabra resaltada.
+  - **El resalte usa `text-accent-glow`, no un hex.** Es el token que `.corp.dark` define
+    justo para texto de acento sobre oscuro (`#a78bfa`) y que en claro vale `#4B2D8E`: el
+    resalte sobrevive si el diálogo pasa a claro. Este archivo tiene prohibidos los hex
+    crudos por su propio docblock. Medido: `rgb(167,139,250)`.
+  - La **preposición viaja con la palabra** («a la Plataforma» / «al Videojuego»): separarlas
+    obligaría a recordar la concordancia donde se pinta.
+  - ⏳ **Queda una incoherencia menor**, no tocada por no ser lo pedido: dos opciones del
+    diálogo siguen diciendo «iniciar sesión y **entrar al panel**» mientras el titular ya
+    dice «Plataforma». Pendiente de que Fernando decida si se unifican.
 - **🔑 «PLATAFORMA» SALE DEL HÉROE Y SUBE A LA BARRA (2026-08-17).** Fernando abrió con esto
   el trabajo de diseño y contenido de las páginas principales.
   - **La portada se queda con un botón**: «Aventura» → **«Comenzar Aventura»**. Fuera el de
