@@ -275,6 +275,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎞️ TRANSICIÓN AL CAMBIAR DE PESTAÑA DEL MENÚ (2026-08-17).** Pedida por Fernando: pasar
+  de «Soluciones» a «Desarrollo Humano» era un corte seco. Ahora el cuerpo entra subiendo
+  (`.transicion-seccion`, 10 px, 0,38 s), con el mismo easing que la que ya existía.
+  - **⭐ La clave es el PRIMER TRAMO de la ruta, no la ruta entera.** Es la decisión que
+    importa: con `key={pathname}` la transición saltaría también al cambiar de puerta dentro
+    de Soluciones, donde **ya hay una** (`.aparece-detalle`, del 2026-08-04), y las dos se
+    sumarían. Con la clave en la sección, cada cosa anima lo suyo. **Medido**: al pulsar el
+    menú arranca solo `transicion-seccion`; al cambiar de puerta, solo `aparecer-detalle`.
+  - **Hace falta un componente de cliente** (`components/sitio/TransicionSeccion.tsx`) porque
+    un layout de Next **no se remonta** entre páginas hermanas —ese es su propósito—, así que
+    la animación no volvería a arrancar sin un `key`, y el `key` sale de `usePathname()`.
+    ⚠️ **`children` sigue en el HTML crudo**: llegan ya renderizados del layout, el cliente
+    solo los envuelve. Comprobado quitando los `<script>` del HTML servido y contando ahí.
+  - `prefers-reduced-motion: reduce` la apaga; verificado emulando la preferencia en Chrome.
+  - **🪤 UNA HORA PERDIDA POR UN `.next` VICIADO.** El build falló con
+    `PageNotFoundError: Cannot find module for page` en diez páginas que no se habían tocado,
+    y después el CSS de la transición «no aparecía» en el bundle y las navegaciones se leían
+    como recargas completas. **Nada de eso era real**: `.next` estaba a medias. Se arregló con
+    `rm -rf .next` y un build limpio, encadenando build + arranque + medición en un solo
+    comando para que nada se pisara. **Regla: ante un error que señala archivos que no
+    tocaste, sospecha del directorio de build antes que del código.**
 - **☀️ EL SITIO PÚBLICO PASA A TEMA CLARO, Y `/recursos` SE LLAMA `/desarrollo-humano` (2026-08-17).**
   Segunda tanda del mismo encargo que renombró `/negocio`.
   - **`/recursos` → `/desarrollo-humano`.** El menú ya decía «Desarrollo Humano» mientras la

@@ -25,6 +25,7 @@ import type { ReactNode } from 'react';
 import type { Viewport } from 'next';
 import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
+import TransicionSeccion from '@/components/sitio/TransicionSeccion';
 
 /**
  * AQUÍ SÍ SE PUEDE AMPLIAR CON LOS DEDOS.
@@ -74,9 +75,14 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
     >
       <CabeceraSitio />
       {/* El tema claro empieza aquí y termina aquí: la cabecera de arriba y el pie de abajo
-          se quedan sobre el `#0b0d14` del envoltorio. */}
+          se quedan sobre el `#0b0d14` del envoltorio.
+
+          `TransicionSeccion` va DENTRO del `<main>` y no fuera: el fondo y el color de
+          texto tienen que estar puestos antes de que el contenido entre, o la transición
+          arrancaría sobre un fondo sin pintar. Y el `<main>` no se remonta al navegar —para
+          eso está el `key` de dentro—, así que el papel no parpadea entre página y página. */}
       <main className="claro-publico flex-1 pt-16 bg-[var(--papel)] text-[var(--suave)]">
-        {children}
+        <TransicionSeccion>{children}</TransicionSeccion>
       </main>
       <PieSitio />
     </div>

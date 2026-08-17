@@ -181,6 +181,32 @@ Tipografía: **Inter**, fijada en el `style` del layout, no heredada del tema.
 tema del panel; esto se sirve a terceros y tiene que verse igual pase lo que pase con la
 sesión de quien mire.
 
+### Transiciones — cuál anima qué, y por qué no se pisan (2026-08-17)
+
+El sitio tiene **dos** transiciones de navegación, y la regla que las separa es la clave
+con la que se remonta cada bloque:
+
+| Al cambiar de… | Anima | Clase | Definida en |
+|---|---|---|---|
+| **pestaña del menú** (Soluciones ↔ Desarrollo Humano ↔ Contacto ↔ Legal) | la página entera | `.transicion-seccion` (10 px, 0,38 s) | `components/sitio/TransicionSeccion.tsx` |
+| **puerta** dentro de Soluciones | solo el detalle | `.aparece-detalle` (14 px, 0,40 s) | el `key` de la `<section>` |
+
+⚠️ **`TransicionSeccion` se llavea por el PRIMER TRAMO de la ruta, no por la ruta entera.**
+Con `key={pathname}` las dos animaciones se dispararían a la vez al cambiar de puerta y el
+bloque recorrería 24 px en lugar de 14. Con la clave en la sección, cada cosa anima lo suyo.
+
+- **Menos distancia cuanto más grande es lo que se mueve.** La página entera recorre 10 px y
+  el detalle 14: con los 14 px la página da un salto. Mismo easing en las dos
+  (`cubic-bezier(.22,1,.36,1)`), para que se lean como el mismo sistema.
+- **Por tiempo, no por scroll**, y por eso **puede tocar la opacidad**: es corta, siempre
+  termina y no se repite. Las de scroll (`.tema-anima`) van dentro de `@supports` justo por
+  lo contrario — si su línea de tiempo no avanzara, el contenido quedaría oculto.
+- **`prefers-reduced-motion: reduce` las apaga las dos.** Verificado emulando la preferencia
+  en Chrome: no arranca ninguna animación.
+- **El contenido sigue siendo Server Component.** `TransicionSeccion` es `'use client'` pero
+  **solo envuelve** `children`, que llegan ya renderizados del layout. Es lo contrario del
+  fallo de `GaleriaTarjetas`. Comprobado midiendo el HTML servido con los `<script>` quitados.
+
 ### ⚠️ LAS DOS COSAS QUE DE VERDAD CAMBIAN AL PASAR DE OSCURO A CLARO
 No son el fondo. Las dos se aprendieron primero en el CV y se repitieron aquí:
 

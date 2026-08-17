@@ -1310,6 +1310,35 @@ html {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   SITIO PÚBLICO — la transición al cambiar de PESTAÑA DEL MENÚ (2026-08-17)
+
+   Pedida por Fernando. Ir de «Soluciones» a «Desarrollo Humano» era un corte seco.
+   Ahora el cuerpo de la página entra subiendo.
+
+   La pone `components/sitio/TransicionSeccion.tsx`, dentro del `<main>` de
+   `app/(sitio)/layout.tsx`. Su `key` es **el primer tramo de la ruta**, no la ruta
+   entera: así cambiar de puerta dentro de Soluciones NO dispara esto —ya lo hace
+   `.aparece-detalle`, arriba— y las dos animaciones no se suman.
+
+   Recorre 10 px y no 14 como la de arriba: aquí se mueve la PÁGINA entera, y cuanto
+   más grande es lo que se desplaza, menos distancia necesita para leerse como
+   movimiento. Con los 14 px se nota un salto.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@keyframes transicion-seccion {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.transicion-seccion {
+  animation: transicion-seccion 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Misma cortesía que el resto del sitio: quien pide que no le muevan las cosas ve la
+   página quieta y entera. */
+@media (prefers-reduced-motion: reduce) {
+  .transicion-seccion { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    SITIO PÚBLICO — los temas aparecen al desplazarse  (2026-08-04)
 
    Animaciones ligadas al scroll con `animation-timeline: view()`, que es CSS nativo:

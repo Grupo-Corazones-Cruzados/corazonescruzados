@@ -4595,3 +4595,55 @@ computado: `main: rgb(246,245,249)`, `h1: rgb(28,27,34)` en las cinco.
 - **Tema claro:** ✅ construido y verificado; **pendiente el visto bueno de Fernando**, que es
   quien juzga lo visible. Se le entregaron las cinco capturas.
 - **Sigue abierto:** qué más quiere cambiar del contenido de esas páginas.
+
+## Tercera tanda (2026-08-17) — transición al cambiar de pestaña del menú
+
+**Pedido:** *«puedes agregar un efecto de transicion al cambiar de pestañas porfavor»*.
+Se preguntó a cuáles se refería —el menú, las cinco puertas o las del CV— porque las tres se
+conmutan y dos ya tenían transición. Respuesta: **el menú de arriba**.
+
+### ⭐ P11 — ¿Con qué clave se remonta el bloque? · ✅ Resuelta: con la SECCIÓN, no la ruta
+Es la única decisión de diseño real del encargo. La animación tiene que **volver a arrancar**
+en cada navegación, y para eso el nodo debe remontarse: un layout de Next **no se remonta**
+entre páginas hermanas, así que hace falta un `key`.
+
+Lo evidente sería `key={pathname}` — y estaría **mal**: dispararía también al cambiar de
+puerta dentro de Soluciones, donde ya hay una transición desde el 2026-08-04
+(`.aparece-detalle`). Las dos se suman y el bloque recorre 24 px en vez de 14.
+
+Con la clave en el **primer tramo** (`pathname.split('/')[1]`), cada cosa anima lo suyo. Y es
+además lo que se pidió literalmente: *al cambiar de pestañas*.
+
+**Generalizable:** antes de añadir una animación, buscar si ya hay otra en ese recorrido. Dos
+transiciones correctas que se solapan dan una incorrecta.
+
+### P12 — ¿Un componente de cliente saca el contenido del HTML? · ✅ Resuelta: no, y se midió
+`TransicionSeccion` es `'use client'`, y este proyecto ya se quemó una vez con eso (la
+galería, cuyas descripciones acababan solo dentro del `<script>` de hidratación).
+
+**No es el mismo caso:** aquel pasaba *datos* como props a un cliente que no los pintaba;
+este **envuelve elementos ya renderizados** por el layout. Comprobado quitando los
+`<script>` del HTML servido y contando en lo que queda: `<h1>` y los párrafos siguen ahí en
+las cuatro páginas.
+
+### ⭐ P13 — Un build que acusa a archivos que no tocaste · ✅ Resuelta: era `.next`
+Se perdió un buen rato con tres síntomas que parecían del código y no lo eran:
+1. `next build` fallando con `PageNotFoundError: Cannot find module for page` en **diez**
+   páginas del dashboard, ninguna tocada.
+2. La regla CSS de la transición «no estaba» en el bundle — sí estaba en `globals.css`.
+3. Puppeteer leyendo **recarga completa** en cada clic del menú, cuando Next hace navegación
+   de cliente.
+
+Los tres salían de un `.next` a medio escribir. `rm -rf .next` + build limpio, y los tres
+desaparecieron. Lo que lo cerró fue **encadenar build + arranque + medición en un solo
+comando**, sin dejar hueco a que nada se pisara entre medias.
+
+**Regla:** ante un error que señala archivos que no has tocado, sospecha del directorio de
+build antes que del código. Y no midas contra un servidor arrancado sobre un build que luego
+se ha regenerado.
+
+### Lo medido al final (build limpio)
+- Menú → `["transicion-seccion"]`, navegación de cliente. En las tres pestañas.
+- Puerta dentro de Soluciones → `["aparecer-detalle"]`, **sin** `transicion-seccion`.
+- `prefers-reduced-motion: reduce` → `[]`, ninguna animación.
+- 3 redirecciones 308, 6 páginas 200, contenido en HTML crudo, papel y titular correctos.
