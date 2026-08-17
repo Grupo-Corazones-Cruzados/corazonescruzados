@@ -59,10 +59,10 @@ export default function ContactoPage() {
       <section className="relative overflow-hidden">
         <FondoHeroe />
         <Contenedor className="relative py-24 sm:py-28 text-center">
-          <h1 className="text-[38px] sm:text-[52px] leading-[1.1] font-semibold text-white tracking-tight">
+          <h1 className="text-[38px] sm:text-[52px] leading-[1.1] font-semibold text-[var(--texto)] tracking-tight">
             Hablemos
           </h1>
-          <p className="mt-6 text-[17px] leading-relaxed text-white/55 max-w-xl mx-auto">
+          <p className="mt-6 text-[17px] leading-relaxed text-[var(--suave)] max-w-xl mx-auto">
             Escribe, llama o manda un WhatsApp. Contesta una persona.
           </p>
         </Contenedor>
@@ -72,19 +72,19 @@ export default function ContactoPage() {
         <div className="grid gap-5 md:grid-cols-3">
           {VIAS.map(({ Icono, titulo, valor, href, nota }) => (
             <Tarjeta key={titulo}>
-              <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
-                <Icono className="w-5 h-5 text-[#a78bfa]" />
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]">
+                <Icono className="w-5 h-5 text-[var(--violeta-txt)]" />
               </span>
-              <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-white/35">{titulo}</p>
+              <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--tenue)]">{titulo}</p>
               {href ? (
                 <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer"
-                  className="mt-1.5 block text-[17px] font-medium text-white hover:text-[#c4b5fd] transition-colors break-words">
+                  className="mt-1.5 block text-[17px] font-medium text-[var(--texto)] hover:text-[var(--violeta)] transition-colors break-words">
                   {valor}
                 </a>
               ) : (
-                <p className="mt-1.5 text-[17px] font-medium text-white">{valor}</p>
+                <p className="mt-1.5 text-[17px] font-medium text-[var(--texto)]">{valor}</p>
               )}
-              <p className="mt-2.5 text-[13.5px] leading-relaxed text-white/45">{nota}</p>
+              <p className="mt-2.5 text-[13.5px] leading-relaxed text-[var(--tenue)]">{nota}</p>
             </Tarjeta>
           ))}
         </div>
@@ -103,12 +103,12 @@ export default function ContactoPage() {
             <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {VIDEOS.map((v) => (
                 <a key={v.url} href={v.url} target="_blank" rel="noopener noreferrer"
-                  className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 transition-colors hover:border-white/[0.16] group">
-                  <Youtube className="w-6 h-6 text-[#a78bfa]" />
-                  <p className="mt-4 text-[16px] font-semibold text-white leading-snug group-hover:text-[#c4b5fd] transition-colors">
+                  className="rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] p-6 transition-colors hover:border-[var(--linea-fuerte)] group">
+                  <Youtube className="w-6 h-6 text-[var(--violeta-txt)]" />
+                  <p className="mt-4 text-[16px] font-semibold text-[var(--texto)] leading-snug group-hover:text-[var(--violeta)] transition-colors">
                     {v.titulo}
                   </p>
-                  <p className="mt-2 text-[13.5px] leading-relaxed text-white/45">{v.descripcion}</p>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--tenue)]">{v.descripcion}</p>
                 </a>
               ))}
             </div>
@@ -140,20 +140,20 @@ export default function ContactoPage() {
                 ['Domicilio', SITIO.direccion],
               ].map(([k, v]) => (
                 <div key={k} className="grid sm:grid-cols-[130px_1fr] gap-1 sm:gap-3">
-                  <dt className="text-[13px] text-white/35">{k}</dt>
-                  <dd className="text-[13.5px] text-white/75 leading-relaxed">{v}</dd>
+                  <dt className="text-[13px] text-[var(--tenue)]">{k}</dt>
+                  <dd className="text-[13.5px] text-[var(--suave)] leading-relaxed">{v}</dd>
                 </div>
               ))}
             </dl>
-            <p className="mt-6 pt-5 border-t border-white/[0.07] text-[13px] leading-relaxed text-white/45">
-              El registro es <strong className="text-white/70 font-semibold">público y sin clave</strong>:
+            <p className="mt-6 pt-5 border-t border-[var(--linea)] text-[13px] leading-relaxed text-[var(--tenue)]">
+              El registro es <strong className="text-[var(--suave)] font-semibold">público y sin clave</strong>:
               en la{' '}
               <a href="https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc"
                 target="_blank" rel="noopener noreferrer"
-                className="text-[#a78bfa] hover:text-white underline transition-colors">
+                className="text-[var(--violeta-txt)] hover:text-[var(--violeta)] underline transition-colors">
                 Consulta de RUC del SRI
               </a>{' '}
-              introduces <strong className="text-white/70 font-semibold">{SITIO.ruc}</strong> y aparecen
+              introduces <strong className="text-[var(--suave)] font-semibold">{SITIO.ruc}</strong> y aparecen
               la razón social, el estado del contribuyente y el establecimiento con su nombre comercial.
             </p>
           </Tarjeta>

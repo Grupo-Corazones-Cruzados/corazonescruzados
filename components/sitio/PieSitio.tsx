@@ -5,7 +5,7 @@
  * Los **enlaces legales** y el **copyright**. Nada más.
  *
  * ── QUÉ NO LLEVA, Y POR QUÉ ────────────────────────────────────────────────────
- * · **La navegación.** La versión anterior repetía Inicio · Negocios · Desarrollo Humano ·
+ * · **La navegación.** La versión anterior repetía Inicio · Soluciones · Desarrollo Humano ·
  *   Contacto, que es **exactamente** lo que hay en la cabecera — y la cabecera está fija
  *   arriba, siempre visible. Repetir cuatro enlaces a sesenta píxeles del original no ayuda
  *   a nadie: solo hace el pie más alto. Lo vio Fernando en una captura donde las dos filas
@@ -19,7 +19,7 @@
  *   el pie**, la busca en la página que se le declara.
  *
  * Dónde sí va la identidad, porque hace falta:
- *   · `/negocio` y `/contacto` — las declaradas a Meta y las que abre quien quiere contratar.
+ *   · `/soluciones` y `/contacto` — las declaradas a Meta (la primera, como `/negocio`) y las que abre quien quiere contratar.
  *   · `/legal` y `/legal/whatsapp` — la **LOPDP exige** que el responsable del tratamiento
  *     sea identificable con su dirección. Ahí no es opcional.
  *

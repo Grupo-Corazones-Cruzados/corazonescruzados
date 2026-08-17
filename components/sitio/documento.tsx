@@ -29,32 +29,32 @@ import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
 /* ═══════════════ CLASES DEL DOCUMENTO ═══════════════ */
 
-export const h1 = 'text-[34px] sm:text-[44px] leading-[1.12] font-semibold text-white tracking-tight';
+export const h1 = 'text-[34px] sm:text-[44px] leading-[1.12] font-semibold text-[var(--texto)] tracking-tight';
 
 /** Título de sección. Lleva `scroll-mt-24` para que el ancla no quede bajo la cabecera fija. */
 export const h2 =
-  'group text-[21px] sm:text-[23px] leading-snug font-semibold text-white tracking-tight mt-14 mb-3 scroll-mt-24';
+  'group text-[21px] sm:text-[23px] leading-snug font-semibold text-[var(--texto)] tracking-tight mt-14 mb-3 scroll-mt-24';
 
 /** Título de PARTE: separa bloques dirigidos a públicos distintos dentro del mismo documento. */
 export const h2Parte =
-  'group text-[26px] sm:text-[29px] leading-snug font-semibold text-white tracking-tight mt-20 mb-4 pt-9 border-t border-white/[0.09] scroll-mt-24';
+  'group text-[26px] sm:text-[29px] leading-snug font-semibold text-[var(--texto)] tracking-tight mt-20 mb-4 pt-9 border-t border-[var(--linea-fuerte)] scroll-mt-24';
 
-export const p = 'text-[15.5px] leading-[1.75] text-white/60 mt-4';
-export const ul = 'mt-4 space-y-3 text-[15.5px] leading-[1.75] text-white/60 list-disc pl-5 marker:text-white/25';
-export const b = 'text-white font-semibold';
-export const link = 'text-[#a78bfa] hover:text-white underline underline-offset-2 transition-colors';
-export const sutil = 'text-white/40';
+export const p = 'text-[15.5px] leading-[1.75] text-[var(--suave)] mt-4';
+export const ul = 'mt-4 space-y-3 text-[15.5px] leading-[1.75] text-[var(--suave)] list-disc pl-5 marker:text-[var(--apagado)]';
+export const b = 'text-[var(--texto)] font-semibold';
+export const link = 'text-[var(--violeta-txt)] hover:text-[var(--violeta)] underline underline-offset-2 transition-colors';
+export const sutil = 'text-[var(--tenue)]';
 
 export const tabla = 'w-full border-collapse mt-5 text-[14.5px]';
 export const th =
-  'text-left align-top py-3 px-3.5 border-b border-white/[0.09] text-white font-semibold text-[13.5px]';
-export const td = 'align-top py-3 px-3.5 border-b border-white/[0.05] text-white/60 leading-relaxed';
+  'text-left align-top py-3 px-3.5 border-b border-[var(--linea-fuerte)] text-[var(--texto)] font-semibold text-[13.5px]';
+export const td = 'align-top py-3 px-3.5 border-b border-[var(--linea)] text-[var(--suave)] leading-relaxed';
 
 /** Recuadro destacado. `aviso` para lo que puede salir mal; `nota` para orientar. */
 export function recuadro(tono: 'aviso' | 'nota' = 'nota'): string {
   return tono === 'aviso'
-    ? 'mt-6 rounded-lg border border-amber-400/25 bg-amber-400/[0.07] p-5 text-[15px] leading-relaxed text-white/65'
-    : 'mt-6 rounded-lg border border-[#7B5FBF]/30 bg-[#7B5FBF]/[0.08] p-5 text-[15px] leading-relaxed text-white/65';
+    ? 'mt-6 rounded-lg border border-amber-500/35 bg-amber-400/[0.12] p-5 text-[15px] leading-relaxed text-[var(--suave)]'
+    : 'mt-6 rounded-lg border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.06] p-5 text-[15px] leading-relaxed text-[var(--suave)]';
 }
 
 /* ═══════════════ ESTRUCTURA ═══════════════ */
@@ -120,27 +120,27 @@ export default function DocumentoLegal({
           Con `h-[112px]` la geometría es idéntica en todos: se cambia de documento y los
           paneles no se mueven ni un píxel. El subtítulo se fue al cuerpo, donde puede
           ocupar lo que necesite sin arrastrar a nadie. */}
-      <section className="border-b border-white/[0.07] bg-white/[0.015]">
+      <section className="border-b border-[var(--linea)] bg-[var(--tarjeta)]">
         {/* Título y fecha CENTRADOS, uno sobre otro. El alto sigue siendo fijo —es lo que
             impide que los paneles laterales suban o bajen al cambiar de documento—, solo
             cambia cómo se reparte dentro. */}
         <ContenedorDoc className="h-[112px] flex flex-col items-center justify-center gap-1.5 text-center">
-          <h1 className="text-[23px] sm:text-[27px] font-semibold text-white tracking-tight leading-tight">
+          <h1 className="text-[23px] sm:text-[27px] font-semibold text-[var(--texto)] tracking-tight leading-tight">
             {titulo}
           </h1>
-          <p className="text-[12.5px] text-white/30">
+          <p className="text-[12.5px] text-[var(--apagado)]">
             Actualizado el {actualizado}
           </p>
         </ContenedorDoc>
       </section>
 
       {/* Navegación compacta por debajo de `xl`, donde no caben tres columnas. */}
-      <div className="xl:hidden border-b border-white/[0.07] bg-white/[0.02]">
+      <div className="xl:hidden border-b border-[var(--linea)] bg-[var(--tarjeta)]">
         <ContenedorDoc className="py-3">
           <details className="group">
             <summary className="flex items-center justify-between gap-3 cursor-pointer list-none py-1.5">
-              <span className="text-[13px] font-semibold text-white/80">Documentos y contenido</span>
-              <span aria-hidden className="text-white/35 text-[12px] transition-transform group-open:rotate-180">▾</span>
+              <span className="text-[13px] font-semibold text-[var(--texto)]">Documentos y contenido</span>
+              <span aria-hidden className="text-[var(--tenue)] text-[12px] transition-transform group-open:rotate-180">▾</span>
             </summary>
             <div className="pt-4 pb-2 space-y-6">
               <ListaDocumentos activo={id} />
@@ -162,7 +162,7 @@ export default function DocumentoLegal({
           {/* ── Centro: el documento ── */}
           <article className="max-w-[74ch] mx-auto xl:mx-0">
             {subtitulo && (
-              <p className="text-[16.5px] leading-relaxed text-white/50 pb-7 mb-2 border-b border-white/[0.07]">
+              <p className="text-[16.5px] leading-relaxed text-[var(--tenue)] pb-7 mb-2 border-b border-[var(--linea)]">
                 {subtitulo}
               </p>
             )}
@@ -198,7 +198,7 @@ function ContenedorDoc({ children, className = '' }: { children: ReactNode; clas
 function ListaDocumentos({ activo }: { activo: string }) {
   return (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/30 mb-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-2.5">
         Documentos
       </p>
       <ul className="space-y-1">
@@ -211,12 +211,12 @@ function ListaDocumentos({ activo }: { activo: string }) {
                 aria-current={esActivo ? 'page' : undefined}
                 className={`block rounded-md px-2.5 py-2 text-[12.5px] leading-snug transition-colors border-l-2 ${
                   esActivo
-                    ? 'border-[#7B5FBF] bg-[#7B5FBF]/[0.12] text-white'
-                    : 'border-transparent text-white/45 hover:text-white hover:bg-white/[0.04]'
+                    ? 'border-[#7b5fbf] bg-[#7b5fbf]/[0.08] text-[var(--texto)]'
+                    : 'border-transparent text-[var(--tenue)] hover:text-[var(--texto)] hover:bg-[#7b5fbf]/[0.05]'
                 }`}
               >
                 {d.corto}
-                <span className={`block mt-0.5 text-[10.5px] ${esActivo ? 'text-[#a78bfa]' : 'text-white/25'}`}>
+                <span className={`block mt-0.5 text-[10.5px] ${esActivo ? 'text-[var(--violeta-txt)]' : 'text-[var(--apagado)]'}`}>
                   {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
                 </span>
               </Link>
@@ -240,20 +240,20 @@ function ListaDocumentos({ activo }: { activo: string }) {
 function IndiceSecciones({ grupos }: { grupos: GrupoIndice[] }) {
   return (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-white/30 mb-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-2.5">
         En este documento
       </p>
       <div className="space-y-5">
         {grupos.map((g) => (
           <div key={g.label}>
-            <p className="text-[12px] font-semibold text-white/70 mb-1.5">{g.label}</p>
+            <p className="text-[12px] font-semibold text-[var(--suave)] mb-1.5">{g.label}</p>
             {/* La línea vertical hace de agrupador sin gastar una caja ni un borde. */}
-            <ul className="space-y-0.5 border-l border-white/[0.09] pl-3">
+            <ul className="space-y-0.5 border-l border-[var(--linea-fuerte)] pl-3">
               {g.entradas.map((e) => (
                 <li key={e.id}>
                   <a
                     href={`#${e.id}`}
-                    className="block py-0.5 text-[12.5px] leading-snug text-white/40 hover:text-white transition-colors"
+                    className="block py-0.5 text-[12.5px] leading-snug text-[var(--tenue)] hover:text-[var(--violeta-txt)] transition-colors"
                   >
                     {e.label}
                   </a>
@@ -276,7 +276,7 @@ export function Titulo({
         {children}
         <span
           aria-hidden
-          className="ml-2 text-[#7B5FBF] opacity-0 group-hover:opacity-100 transition-opacity select-none"
+          className="ml-2 text-[#7b5fbf] opacity-0 group-hover:opacity-100 transition-opacity select-none"
         >
           #
         </span>

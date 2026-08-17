@@ -14,18 +14,15 @@
    —Firefox hoy— no se aplica nada y el contenido se ve quieto y entero.
    ───────────────────────────────────────────────────────────────────────────── */
 
-.cv-publico {
-  --violeta: #4b2d8e;        /* el morado de marca del panel */
-  --violeta-vivo: #7b5fbf;   /* el de los fondos y bordes */
-  --violeta-txt: #5b3fa8;    /* el de TEXTO: #a78bfa no llega a AA sobre blanco */
-  --papel: #f6f5f9;
-  --tarjeta: #ffffff;
-  --texto: #1c1b22;
-  --suave: #56545f;
-  --tenue: #86838f;
-  --linea: #e6e3ee;
-  --linea-fuerte: #cfc9de;
-}
+/* ── LA PALETA YA NO ESTÁ AQUÍ ────────────────────────────────────────────────
+   Vivía en este bloque, y el 2026-08-17 se mudó a `.claro-publico`, en
+   `app/globals.css`, cuando el sitio público entero pasó a claro y habría hecho
+   falta escribirla por segunda vez. El `<div>` de `app/cv/layout.tsx` lleva ahora
+   las dos clases: `claro-publico` pone los colores, `cv-publico` lo propio del CV.
+
+   Los valores son EXACTAMENTE los que había. Si hay que retocar un color, se
+   retoca allí y cambia también en las cinco páginas del sitio — que es el motivo
+   de haberla sacado.                                                            */
 
 /* ── Fondo: dos degradados CSS, cero peticiones de red ─────────────────────── */
 .cv-fondo {

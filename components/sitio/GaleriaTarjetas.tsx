@@ -78,21 +78,21 @@ export default function GaleriaTarjetas({
           type="button"
           onClick={() => setAbierta(it)}
           tabIndex={oculta ? -1 : undefined}
-          className="group h-full w-full text-left rounded-xl border border-white/[0.08] bg-white/[0.02] p-5
+          className="claro-tarjeta group h-full w-full text-left rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] p-5
                      transition-[transform,border-color,background-color] duration-200
-                     hover:-translate-y-0.5 hover:border-[#7B5FBF]/45 hover:bg-white/[0.04]
-                     focus:outline-none focus-visible:-translate-y-0.5 focus-visible:border-[#7B5FBF]/45
-                     focus-visible:ring-2 focus-visible:ring-[#7B5FBF]/50"
+                     hover:-translate-y-0.5 hover:border-[#7b5fbf]/45
+                     focus:outline-none focus-visible:-translate-y-0.5 focus-visible:border-[#7b5fbf]/45
+                     focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50"
         >
           <span
             className="inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors
-                       border-[#7B5FBF]/30 bg-[#7B5FBF]/10
-                       group-hover:border-[#7B5FBF]/60 group-hover:bg-[#7B5FBF]/25"
+                       border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]
+                       group-hover:border-[#7b5fbf]/55 group-hover:bg-[#7b5fbf]/20"
           >
-            <Icono className="w-5 h-5 text-[#a78bfa] transition-colors group-hover:text-[#c4b5fd]" />
+            <Icono className="w-5 h-5 text-[var(--violeta-txt)] transition-colors group-hover:text-[var(--violeta)]" />
           </span>
-          <p className="mt-4 text-[15px] font-semibold text-white leading-snug">{it.titulo}</p>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">{it.texto}</p>
+          <p className="mt-4 text-[15px] font-semibold text-[var(--texto)] leading-snug">{it.titulo}</p>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--suave)]">{it.texto}</p>
         </button>
       </li>
     );

@@ -1,7 +1,7 @@
 /**
  * EL CONTENIDO DEL SITIO PÚBLICO — fuente única.
  *
- * Las páginas de `/negocio`, `/recursos` y `/contacto` **no llevan texto escrito dentro**:
+ * Las páginas de `/soluciones`, `/desarrollo-humano` y `/contacto` **no llevan texto escrito dentro**:
  * lo leen de aquí. Así se edita en un sitio, se traduce de una vez si algún día hace falta,
  * y no hay dos versiones del mismo servicio en dos páginas distintas.
  *
@@ -52,7 +52,7 @@ export const SITIO = {
    * esta constante no se toca.
    *
    * ⚠️ `app.grupocc.org` NO desaparece: sigue sirviendo la plataforma, el juego y también
-   * `/negocio`, que es la URL declarada a Meta en las verificaciones.
+   * `/soluciones` (antes `/negocio`, que es la URL declarada a Meta en las verificaciones y que sigue redirigiendo aquí).
    */
   url: 'https://www.grupocc.org',
   ciudad: 'Guayaquil',
@@ -63,7 +63,7 @@ export const SITIO = {
  * LA IMAGEN QUE SALE AL COMPARTIR — hay que nombrarla en cada página, y no es obvio.
  *
  * `app/opengraph-image.tsx` se aplica sola a la portada y a cualquier ruta que **no**
- * declare su propio `openGraph`. Pero `/negocio`, `/recursos` y `/contacto` sí lo declaran
+ * declare su propio `openGraph`. Pero `/soluciones`, `/desarrollo-humano` y `/contacto` sí lo declaran
  * —cada una con su título y su descripción—, y Next **sustituye** el bloque `openGraph`
  * entero en vez de completarlo: al no llevar `images`, se quedaban sin imagen.
  *
@@ -101,31 +101,35 @@ export const REDES = [
 
 export const NAVEGACION = [
   { href: '/', label: 'Inicio' },
-  // La ruta sigue siendo /recursos para no romper enlaces ya publicados; la etiqueta
-  // dice lo que de verdad contiene.
-  { href: '/negocio', label: 'Negocios' },
-  { href: '/recursos', label: 'Desarrollo Humano' },
+  // «Negocios» → «Soluciones» y `/negocio` → `/soluciones` (Fernando, 2026-08-17). La ruta
+  // vieja sigue viva como redirección permanente en `next.config.ts`.
+  { href: '/soluciones', label: 'Soluciones' },
+  // La etiqueta ya decía «Desarrollo Humano» mientras la ruta seguía siendo `/recursos`, que
+  // era el nombre viejo. El 2026-08-17 se igualaron: titular, pestaña, menú y URL dicen lo
+  // mismo. La ruta vieja redirige (308) desde `next.config.ts`.
+  { href: '/desarrollo-humano', label: 'Desarrollo Humano' },
   { href: '/contacto', label: 'Contacto' },
 ] as const;
 
-/* ═══════════════════════ ACCESOS — las cinco puertas de /negocio ═══════════════════════ */
+/* ══════════════════════ ACCESOS — las cinco puertas de /soluciones ══════════════════════ */
 
 /**
- * LAS CINCO PUERTAS DE `/negocio` — dictadas por Fernando (2026-08-04).
+ * LAS CINCO PUERTAS DE `/soluciones` — dictadas por Fernando (2026-08-04).
  *
  * Sustituyeron al bloque que había («Primero las personas. Lo demás sale de ahí.») porque
  * no decía **qué puede hacer aquí** quien llega. Y desde el mismo día son además **cinco
- * páginas**: `/negocio/<id>`.
+ * páginas**: `/soluciones/<id>` (colgaban de `/negocio/<id>` hasta el 2026-08-17).
  *
  * ── ⚠️ EL `id` ES LA URL. NO SE CAMBIA A LA LIGERA ─────────────────────────────
  * De aquí salen a la vez la tarjeta, la ruta, el mapa del sitio y el `canonical`. Cambiar
  * un `id` **rompe cualquier enlace ya publicado y tira el posicionamiento** que esa URL
  * hubiera ganado. Si algún día hay que renombrar uno, se hace con una **redirección
- * permanente** del viejo al nuevo, nunca a secas.
+ * permanente** del viejo al nuevo, nunca a secas — que es exactamente lo que se hizo al
+ * renombrar la sección entera el 2026-08-17.
  *
- * Fernando eligió nombres y no números (`/negocio/requerimientos` en vez de
- * `/negocio/necesidad1`): la URL dice de qué va, y eso cuenta tanto para el buscador como
- * para quien recibe el enlace por WhatsApp.
+ * Fernando eligió nombres y no números (`/soluciones/requerimientos` en vez de
+ * `/soluciones/necesidad1`): la URL dice de qué va, y eso cuenta tanto para el buscador
+ * como para quien recibe el enlace por WhatsApp.
  *
  * ── CÓMO ESTÁN ESCRITAS LAS TARJETAS ───────────────────────────────────────────
  * **Nombre + una frase.** Nacieron sin nombre —el icono hacía de rótulo— y Fernando les
@@ -141,7 +145,7 @@ export const NAVEGACION = [
  * viene». Queda escrito aquí para que la decisión tenga dueño y fecha.
  */
 export interface Acceso {
-  /** El último tramo de la URL: `/negocio/<id>`. Ver el aviso de arriba. */
+  /** El último tramo de la URL: `/soluciones/<id>`. Ver el aviso de arriba. */
   id: string;
   icono: string;
   /**
@@ -250,7 +254,7 @@ export interface ItemGaleria {
  * UN TEMA — con su propio enlace.
  *
  * ── POR QUÉ ANCLA Y NO PÁGINA PROPIA (decisión de Fernando, 2026-08-04) ────────
- * Se enlazan como `/negocio/<puerta>#<id>`, no como `/negocio/<puerta>/<id>`. Los temas son
+ * Se enlazan como `/soluciones/<puerta>#<id>`, no como `/soluciones/<puerta>/<id>`. Los temas son
  * **cortos** —párrafo y unos pasos—, y una página corta en un dominio recién estrenado
  * acaba en «rastreada, actualmente sin indexar». Acumulándolos en la página de su puerta
  * pasa lo contrario: **la página se hace densa**, que es justo lo que Google pide cuando
@@ -261,7 +265,7 @@ export interface ItemGaleria {
  * palabras, sin tildes ni mayúsculas, separadas por guiones.
  */
 export interface Tema {
-  /** El ancla: `/negocio/<puerta>#<id>`. No se cambia a la ligera. */
+  /** El ancla: `/soluciones/<puerta>#<id>`. No se cambia a la ligera. */
   id: string;
   /** Rótulo pequeño en versalitas, sobre la pregunta. */
   etiqueta: string;
@@ -322,17 +326,17 @@ export const ACCESOS: Acceso[] = [
         {
           titulo: 'Lo publicas',
           texto: 'Un ticket con lo que necesitas desde tu perspectiva como cliente, tu presupuesto, la fecha límite de entrega, y configuras el talento que necesitas.',
-          imagen: { src: '/negocio/paso-1-publicas.webp', ancho: 760, alto: 677 },
+          imagen: { src: '/soluciones/paso-1-publicas.webp', ancho: 760, alto: 677 },
         },
         {
           titulo: 'Lo toma quien sabe hacerlo',
           texto: 'Un perfil con el talento requerido revisa el ticket abierto, analiza su disponibilidad según la fecha límite de entrega, y define el costo final en base a tu presupuesto.',
-          imagen: { src: '/negocio/paso-2-lo-toma.webp', ancho: 760, alto: 753 },
+          imagen: { src: '/soluciones/paso-2-lo-toma.webp', ancho: 760, alto: 753 },
         },
         {
           titulo: 'Lo sigues sin arrear',
           texto: 'El talento se hace responsable de establecer los días y horas de trabajo previo a la fecha límite de entrega, coordina reuniones, y tomará contacto hasta completar la tarea.',
-          imagen: { src: '/negocio/paso-3-seguimiento.webp', ancho: 760, alto: 182 },
+          imagen: { src: '/soluciones/paso-3-seguimiento.webp', ancho: 760, alto: 182 },
         },
       ],
     },
@@ -356,17 +360,17 @@ export const ACCESOS: Acceso[] = [
         {
           titulo: 'Hablas con un talento',
           texto: 'Eliges con quién y le cuentas la idea. Te devuelve una cotización con su alcance y su precio, para que sepas qué entra y qué no.',
-          imagen: { src: '/negocio/proyecto-1-hablas.webp', ancho: 760, alto: 525 },
+          imagen: { src: '/soluciones/proyecto-1-hablas.webp', ancho: 760, alto: 525 },
         },
         {
           titulo: 'Negocias el presupuesto',
           texto: 'Se ajusta hasta que cuadre para los dos. Nada se pone en marcha sin que tú lo aceptes.',
-          imagen: { src: '/negocio/proyecto-2-negocias.webp', ancho: 760, alto: 601 },
+          imagen: { src: '/soluciones/proyecto-2-negocias.webp', ancho: 760, alto: 601 },
         },
         {
           titulo: 'El responsable toma el control',
           texto: 'Gestiona el presupuesto y suma a los participantes que hagan falta hasta cubrir todos los requerimientos del proyecto.',
-          imagen: { src: '/negocio/proyecto-3-responsable.webp', ancho: 760, alto: 763 },
+          imagen: { src: '/soluciones/proyecto-3-responsable.webp', ancho: 760, alto: 763 },
         },
       ],
     }],

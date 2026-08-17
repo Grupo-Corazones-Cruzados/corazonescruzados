@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * LAS PREGUNTAS FRECUENTES DE UNA PÁGINA DE `/negocio` — lista con buscador a la izquierda,
+ * LAS PREGUNTAS FRECUENTES DE UNA PÁGINA DE `/soluciones` — lista con buscador a la izquierda,
  * respuesta completa a la derecha.
  *
  * ── POR QUÉ ES UNA ISLA DE CLIENTE, Y QUÉ SE HIZO PARA QUE NO CUESTE SEO ───────
@@ -25,7 +25,7 @@ import { useMemo, useState } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 import type { Faq } from '@/lib/faqs';
 
-export default function FaqsNegocio({ faqs }: { faqs: Faq[] }) {
+export default function FaqsSoluciones({ faqs }: { faqs: Faq[] }) {
   const [busqueda, setBusqueda] = useState('');
   const [elegidaId, setElegidaId] = useState<number | null>(faqs[0]?.id ?? null);
 
@@ -46,27 +46,27 @@ export default function FaqsNegocio({ faqs }: { faqs: Faq[] }) {
   return (
     <div>
       <div className="relative max-w-md">
-        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35 pointer-events-none" />
+        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
         <input
           type="search"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar una pregunta"
           aria-label="Buscar entre las preguntas frecuentes"
-          className="w-full h-11 pl-10 pr-4 rounded-lg bg-white/[0.03] border border-white/[0.1]
-                     text-[14.5px] text-white placeholder:text-white/30
-                     focus:border-[#7B5FBF]/60 focus:outline-none transition-colors"
+          className="w-full h-11 pl-10 pr-4 rounded-lg bg-[var(--tarjeta)] border border-[var(--linea-fuerte)]
+                     text-[14.5px] text-[var(--texto)] placeholder:text-[var(--apagado)]
+                     focus:border-[#7b5fbf]/60 focus:outline-none transition-colors"
         />
       </div>
 
       {visibles.length === 0 ? (
-        <p className="mt-8 text-[14.5px] text-white/45">
+        <p className="mt-8 text-[14.5px] text-[var(--tenue)]">
           Ninguna pregunta coincide con «{busqueda.trim()}».
         </p>
       ) : (
         <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
           {/* ── Las preguntas ─────────────────────────────────────────────── */}
-          <ul className="rounded-xl border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+          <ul className="rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] divide-y divide-[var(--linea)] overflow-hidden">
             {visibles.map((f) => {
               const abierta = f.id === elegidaId;
               return (
@@ -76,21 +76,21 @@ export default function FaqsNegocio({ faqs }: { faqs: Faq[] }) {
                     onClick={() => setElegidaId(abierta ? null : f.id)}
                     aria-expanded={abierta}
                     className={`w-full text-left px-5 py-4 flex items-start gap-3 transition-colors
-                                focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#7B5FBF]/60
-                      ${abierta ? 'bg-[#7B5FBF]/[0.1] text-white' : 'text-white/65 hover:bg-white/[0.03] hover:text-white/85'}`}
+                                focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#7b5fbf]/60
+                      ${abierta ? 'bg-[#7b5fbf]/[0.08] text-[var(--texto)]' : 'text-[var(--suave)] hover:bg-[#7b5fbf]/[0.04] hover:text-[var(--texto)]'}`}
                   >
                     <span className="text-[14.5px] leading-relaxed flex-1">{f.pregunta}</span>
                     {/* La flecha solo tiene sentido en móvil, donde despliega de verdad. */}
                     <ChevronDown
                       className={`w-4 h-4 mt-0.5 shrink-0 lg:hidden transition-transform
-                                  ${abierta ? 'rotate-180 text-[#c4b5fd]' : 'text-white/30'}`}
+                                  ${abierta ? 'rotate-180 text-[var(--violeta)]' : 'text-[var(--apagado)]'}`}
                     />
                   </button>
 
                   {/* Móvil: la respuesta cae bajo su pregunta. */}
                   {abierta && (
                     <div className="lg:hidden px-5 pb-5 -mt-1">
-                      <p className="text-[14px] leading-relaxed text-white/60 whitespace-pre-wrap">
+                      <p className="text-[14px] leading-relaxed text-[var(--suave)] whitespace-pre-wrap">
                         {f.respuesta}
                       </p>
                     </div>
@@ -101,16 +101,16 @@ export default function FaqsNegocio({ faqs }: { faqs: Faq[] }) {
           </ul>
 
           {/* ── La respuesta, en pantalla grande ──────────────────────────── */}
-          <div className="hidden lg:block rounded-xl border border-white/[0.08] bg-white/[0.02] p-7 lg:sticky lg:top-24">
+          <div className="claro-tarjeta hidden lg:block rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] p-7 lg:sticky lg:top-24">
             {elegida ? (
               <>
-                <h3 className="text-[18px] font-semibold text-white leading-snug">{elegida.pregunta}</h3>
-                <p className="mt-4 text-[14.5px] leading-relaxed text-white/60 whitespace-pre-wrap">
+                <h3 className="text-[18px] font-semibold text-[var(--texto)] leading-snug">{elegida.pregunta}</h3>
+                <p className="mt-4 text-[14.5px] leading-relaxed text-[var(--suave)] whitespace-pre-wrap">
                   {elegida.respuesta}
                 </p>
               </>
             ) : (
-              <p className="text-[14.5px] text-white/40">
+              <p className="text-[14.5px] text-[var(--tenue)]">
                 Elige una pregunta de la lista para leer su respuesta.
               </p>
             )}

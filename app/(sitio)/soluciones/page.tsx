@@ -1,10 +1,20 @@
 /**
- * NEGOCIO — la portada de la sección comercial.
+ * SOLUCIONES — la portada de la sección comercial.
  *
  * ── QUÉ ES AHORA ───────────────────────────────────────────────────────────────
  * El titular, el subtítulo y **cinco puertas**. Nada más. Cada tarjeta lleva a su propia
- * página (`/negocio/<id>`), donde el detalle aparece **debajo de las mismas tarjetas**, con
- * la suya marcada.
+ * página (`/soluciones/<id>`), donde el detalle aparece **debajo de las mismas tarjetas**,
+ * con la suya marcada.
+ *
+ * ── SE LLAMABA `/negocio` HASTA EL 2026-08-17 ──────────────────────────────────
+ * Fernando lo reconsideró: la sección se llama **Soluciones** en el titular, en la pestaña,
+ * en el menú y en la URL. Las seis rutas viejas (`/negocio` y sus cinco hijas) siguen vivas
+ * como **redirección permanente 301** en `next.config.ts`, para no romper ningún enlace ya
+ * publicado ni tirar lo que esas URLs hubieran posicionado.
+ *
+ * ⚠️ **`/negocio` es la URL declarada a Meta** para la verificación de proveedor de
+ * tecnología. La redirección evita el 404, pero **hay que actualizarla en el formulario de
+ * Meta** a `/soluciones`.
  *
  * ── QUÉ SE QUITÓ EL 2026-08-04, Y QUE CONSTE ───────────────────────────────────
  * Fernando pidió vaciar todo lo que había debajo de las tarjetas: servicios por públicos,
@@ -30,28 +40,34 @@
 
 import type { Metadata } from 'next';
 import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
-import CabeceraNegocio from '@/components/sitio/CabeceraNegocio';
+import CabeceraSoluciones from '@/components/sitio/CabeceraSoluciones';
 
 export const metadata: Metadata = {
-  title: 'Qué hacemos — un proyecto de desarrollo humano y sus servicios',
+  /**
+   * El nombre de la pestaña, decidido por Fernando el 2026-08-17: **«Soluciones»**.
+   * Aquí va solo esa palabra porque la plantilla de `app/layout.tsx` le añade
+   * « · Grupo Corazones Cruzados» — que es lo que hace que en un resultado de Google se
+   * sepa de quién es la página, y no compita a ciegas con las miles que se llaman igual.
+   */
+  title: 'Soluciones',
   description:
     'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
-  alternates: { canonical: '/negocio' },
+  alternates: { canonical: '/soluciones' },
   openGraph: {
     title: `${SITIO.nombre} — Qué puedes hacer aquí`,
     description:
       'Tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
-    url: `${SITIO.url}/negocio`,
+    url: `${SITIO.url}/soluciones`,
     type: 'website',
     locale: 'es_EC',
     images: [OG_IMAGEN],
   },
 };
 
-export default function NegocioPage() {
+export default function SolucionesPage() {
   return (
     <>
-      <CabeceraNegocio />
+      <CabeceraSoluciones />
 
       {/* Datos estructurados: le dan al buscador la lectura de que esto es una organización
           real con dirección, teléfono e identificador fiscal, y le enumeran las cinco
@@ -65,7 +81,7 @@ export default function NegocioPage() {
             name: SITIO.nombre,
             legalName: SITIO.razonSocial,
             taxID: SITIO.ruc,
-            url: `${SITIO.url}/negocio`,
+            url: `${SITIO.url}/soluciones`,
             sameAs: [...REDES],
             email: SITIO.correo,
             telephone: SITIO.telefonoPlano,
@@ -83,7 +99,7 @@ export default function NegocioPage() {
               name: 'Lo que ofrecemos',
               itemListElement: ACCESOS.map((a) => ({
                 '@type': 'Offer',
-                url: `${SITIO.url}/negocio/${a.id}`,
+                url: `${SITIO.url}/soluciones/${a.id}`,
                 itemOffered: { '@type': 'Service', name: a.titulo, description: a.texto },
               })),
             },

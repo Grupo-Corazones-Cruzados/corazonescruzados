@@ -9,8 +9,8 @@
  *      El contraste de tamaño es lo que hace que una página respire.
  *   2. **Degradados radiales de fondo**, no planos. Un resplandor detrás del titular da
  *      profundidad sin una sola imagen.
- *   3. **Superficies con borde de 1 px muy tenue** (`white/[0.08]`) sobre fondo oscuro, en
- *      vez de sombras. Es lo que separa una tarjeta moderna de una caja de 2010.
+ *   3. **Superficies con borde de 1 px muy tenue** y una sombra mínima. Es lo que separa una
+ *      tarjeta moderna de una caja de 2010.
  *   4. **Aire.** Secciones de 96–128 px de alto. Casi todo lo que parece «barato» en una
  *      web es falta de espacio, no falta de efectos.
  *
@@ -19,6 +19,20 @@
  *
  * Estas piezas son Server Components: no llevan estado y tienen que estar en el HTML crudo
  * para que las lea un buscador —y un revisor de Meta— sin ejecutar JavaScript.
+ *
+ * ── TEMA CLARO DESDE EL 2026-08-17 ─────────────────────────────────────────────
+ * Nacieron en oscuro (`#0b0d14`, texto blanco, realce solo de borde). Fernando pidió que el
+ * cuerpo de las cinco páginas públicas pasara a claro, y **el cambio se hizo aquí**: como
+ * ninguna página compone clases por su cuenta, recolorear estas piezas recolorea el sitio.
+ *
+ * Los colores salen de la clase **`claro-publico`** (`app/globals.css`), que la pone el
+ * `<main>` de `app/(sitio)/layout.tsx` y que comparten con el CV público. Aquí no se escribe
+ * ningún color nuevo a mano: se referencian sus variables.
+ *
+ * ⚠️ **Dos cosas cambian de verdad al pasar a claro, y no son el fondo:**
+ *  · **El violeta de texto es otro.** `#a78bfa` no llega a AA sobre blanco → `--violeta-txt`.
+ *  · **Hace falta sombra.** El realce de borde que bastaba en oscuro no despega una tarjeta
+ *    blanca del papel → la clase `claro-tarjeta`.
  */
 
 import type { ReactNode } from 'react';
@@ -45,7 +59,7 @@ export const ICONOS: Record<string, LucideIcon> = {
 export function conNegritas(texto: string): ReactNode[] {
   return texto.split(/(\*\*[^*]+\*\*)/g).map((trozo, i) =>
     trozo.startsWith('**') && trozo.endsWith('**')
-      ? <strong key={i} className="text-white font-semibold">{trozo.slice(2, -2)}</strong>
+      ? <strong key={i} className="text-[var(--texto)] font-semibold">{trozo.slice(2, -2)}</strong>
       : <span key={i}>{trozo}</span>,
   );
 }
@@ -63,7 +77,7 @@ export function Seccion({
   id, children, tono = 'normal',
 }: { id?: string; children: ReactNode; tono?: 'normal' | 'realce' }) {
   return (
-    <section id={id} className={`py-20 sm:py-28 ${tono === 'realce' ? 'bg-white/[0.02]' : ''}`}>
+    <section id={id} className={`py-20 sm:py-28 ${tono === 'realce' ? 'bg-[var(--tarjeta)]' : ''}`}>
       <Contenedor>{children}</Contenedor>
     </section>
   );
@@ -76,15 +90,15 @@ export function TituloSeccion({
   return (
     <div className={`max-w-2xl ${centrado ? 'mx-auto text-center' : ''}`}>
       {etiqueta && (
-        <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#a78bfa] mb-3">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--violeta-txt)] mb-3">
           {etiqueta}
         </p>
       )}
-      <h2 className="text-[30px] sm:text-[38px] leading-[1.15] font-semibold text-white tracking-tight">
+      <h2 className="text-[30px] sm:text-[38px] leading-[1.15] font-semibold text-[var(--texto)] tracking-tight">
         {titulo}
       </h2>
       {entradilla && (
-        <p className="mt-4 text-[16.5px] leading-relaxed text-white/55">{entradilla}</p>
+        <p className="mt-4 text-[16.5px] leading-relaxed text-[var(--suave)]">{entradilla}</p>
       )}
     </div>
   );
@@ -97,8 +111,8 @@ export function Tarjeta({
   return (
     <div
       id={id}
-      className={`rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7
-                  transition-colors hover:border-white/[0.16] ${className}`}
+      className={`claro-tarjeta rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] p-6 sm:p-7
+                  hover:border-[var(--linea-fuerte)] ${className}`}
     >
       {children}
     </div>
@@ -111,9 +125,9 @@ export function IconoCuadro({ nombre }: { nombre: string }) {
   return (
     <span
       className="inline-flex items-center justify-center w-11 h-11 rounded-lg shrink-0
-                 border border-[#7B5FBF]/30 bg-[#7B5FBF]/10"
+                 border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]"
     >
-      <Icono className="w-5 h-5 text-[#a78bfa]" />
+      <Icono className="w-5 h-5 text-[var(--violeta-txt)]" />
     </span>
   );
 }
@@ -124,6 +138,12 @@ export function IconoCuadro({ nombre }: { nombre: string }) {
  * Es lo que más aporta al «se ve profesional» y no cuesta ni una petición de red: dos
  * degradados CSS y una máscara para que la rejilla se desvanezca hacia abajo en vez de
  * cortarse en seco.
+ *
+ * ⚠️ **Al pasar a claro no basta con bajar la opacidad: la rejilla cambia de color.** Sus
+ * líneas eran blancas —se ven sobre negro y desaparecen sobre papel—, así que ahora son
+ * violeta al 5,5 %, exactamente las mismas del CV público. El resplandor sí solo se
+ * suaviza: sobre blanco, el 28 % de violeta que quedaba bien sobre negro se lee como una
+ * mancha.
  */
 export function FondoHeroe() {
   return (
@@ -132,14 +152,14 @@ export function FondoHeroe() {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(60% 55% at 50% 0%, rgba(123,95,191,0.28) 0%, rgba(123,95,191,0.08) 45%, transparent 75%)',
+            'radial-gradient(60% 55% at 50% 0%, rgba(123,95,191,0.20) 0%, rgba(123,95,191,0.06) 45%, transparent 75%)',
         }}
       />
       <div
-        className="absolute inset-0 opacity-[0.35]"
+        className="absolute inset-0"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)',
+            'linear-gradient(rgba(75,45,142,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(75,45,142,0.055) 1px, transparent 1px)',
           backgroundSize: '64px 64px',
           maskImage: 'linear-gradient(to bottom, black 0%, transparent 70%)',
           WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 70%)',
@@ -152,7 +172,7 @@ export function FondoHeroe() {
 /* ── Rejilla de accesos ──────────────────────────────────────────────────────── */
 
 /**
- * LAS TARJETAS DE ACCESO — cabecera de `/negocio` (2026-08-04).
+ * LAS TARJETAS DE ACCESO — cabecera de `/soluciones` (2026-08-04).
  *
  * Cinco puertas de entrada. **Se reparten solas según el ancho que haya**: tres arriba y
  * dos centradas debajo en pantalla grande, dos y dos y una en tableta, una por fila en el
@@ -193,17 +213,17 @@ export function RejillaAccesos({
         const abierta = a.id === activa;
         return (
           <li key={a.id} className="w-full sm:w-[280px] flex">
-            {/* `#detalle` es lo que hace que al pulsar desde /negocio la página baje sola
-                hasta el detalle. Sin JavaScript: lo resuelve el navegador, y el
+            {/* `#detalle` es lo que hace que al pulsar desde /soluciones la página baje
+                sola hasta el detalle. Sin JavaScript: lo resuelve el navegador, y el
                 `scroll-smooth` del documento hace que se deslice en vez de saltar. */}
             <Link
-              href={`/negocio/${a.id}#detalle`}
+              href={`/soluciones/${a.id}#detalle`}
               aria-current={abierta ? 'page' : undefined}
               className={`group w-full flex flex-col rounded-xl border p-5 transition-colors
-                          focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B5FBF]/60
+                          focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/60
                 ${abierta
-                  ? 'border-[#7B5FBF]/55 bg-[#7B5FBF]/[0.09]'
-                  : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.18] hover:bg-white/[0.04]'}`}
+                  ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.07]'
+                  : 'claro-tarjeta border-[var(--linea)] bg-[var(--tarjeta)] hover:border-[var(--linea-fuerte)]'}`}
             >
               {/* Icono y nombre en la misma línea (Fernando, 2026-08-04). Antes iban uno
                   debajo del otro y la tarjeta gastaba dos alturas en su rótulo; así el
@@ -211,9 +231,9 @@ export function RejillaAccesos({
               <div className="flex items-center gap-3">
                 <span
                   className={`inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border transition-colors
-                    ${abierta ? 'border-[#7B5FBF]/60 bg-[#7B5FBF]/25' : 'border-[#7B5FBF]/30 bg-[#7B5FBF]/10'}`}
+                    ${abierta ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/20' : 'border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]'}`}
                 >
-                  <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[#c4b5fd]' : 'text-[#a78bfa]'}`} />
+                  <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[var(--violeta)]' : 'text-[var(--violeta-txt)]'}`} />
                 </span>
                 {/* El nombre de la puerta.
                     La tarjeta ABIERTA lleva el `<h1>` de la página: es la que dice dónde
@@ -223,21 +243,21 @@ export function RejillaAccesos({
                     encabezados repetidos en las seis páginas confundiría la jerarquía que
                     lee un buscador. */}
                 {abierta ? (
-                  <h1 className="text-[15.5px] font-semibold leading-snug text-white">{a.titulo}</h1>
+                  <h1 className="text-[15.5px] font-semibold leading-snug text-[var(--texto)]">{a.titulo}</h1>
                 ) : (
-                  <p className="text-[15.5px] font-semibold leading-snug text-white/90 transition-colors group-hover:text-white">
+                  <p className="text-[15.5px] font-semibold leading-snug text-[var(--texto)]">
                     {a.titulo}
                   </p>
                 )}
               </div>
               <p className={`mt-3.5 text-[14px] leading-relaxed transition-colors
-                             ${abierta ? 'text-white/75' : 'text-white/55 group-hover:text-white/70'}`}>
+                             ${abierta ? 'text-[var(--suave)]' : 'text-[var(--tenue)] group-hover:text-[var(--suave)]'}`}>
                 {a.texto}
               </p>
               {/* `mt-auto` empuja esta línea al fondo: con textos de distinto largo, si no,
                   cada flecha queda a una altura y la fila se ve descuadrada. */}
               <span className={`mt-auto pt-4 inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors
-                                ${abierta ? 'text-[#c4b5fd]' : 'text-white/35 group-hover:text-[#a78bfa]'}`}>
+                                ${abierta ? 'text-[var(--violeta)]' : 'text-[var(--apagado)] group-hover:text-[var(--violeta-txt)]'}`}>
                 {abierta ? 'Estás aquí' : 'Ver más'}
                 {!abierta && <ArrowRight className="w-3.5 h-3.5" />}
               </span>
@@ -288,7 +308,7 @@ export function BloqueTema({
       id={id}
       // `scroll-mt-24`: al abrir un enlace con ancla, deja aire por arriba para que la
       // cabecera fija no tape el título del tema.
-      className="tema-anima group/tema relative overflow-hidden rounded-2xl border border-[#7B5FBF]/25 bg-white/[0.02] scroll-mt-24"
+      className="tema-anima group/tema relative overflow-hidden rounded-2xl border border-[#7b5fbf]/20 bg-[var(--tarjeta)] scroll-mt-24"
     >
       {/* El resplandor. Es un degradado CSS: ni una petición de red, ni una imagen que
           cargar, y se ve igual en cualquier pantalla. */}
@@ -297,12 +317,12 @@ export function BloqueTema({
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(75% 120% at 12% 0%, rgba(123,95,191,0.30) 0%, rgba(123,95,191,0.10) 42%, transparent 72%)',
+            'radial-gradient(75% 120% at 12% 0%, rgba(123,95,191,0.16) 0%, rgba(123,95,191,0.05) 42%, transparent 72%)',
         }}
       />
 
       <div className="relative px-6 py-10 sm:px-12 sm:py-14">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#a78bfa]">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--violeta-txt)]">
           {etiqueta}
         </p>
 
@@ -314,21 +334,21 @@ export function BloqueTema({
           <a
             href={`#${id}`}
             className="group/ancla inline text-[30px] sm:text-[44px] leading-[1.1] font-semibold
-                       text-white tracking-tight focus:outline-none focus-visible:underline
-                       focus-visible:decoration-[#7B5FBF] decoration-2 underline-offset-4"
+                       text-[var(--texto)] tracking-tight focus:outline-none focus-visible:underline
+                       focus-visible:decoration-[#7b5fbf] decoration-2 underline-offset-4"
           >
             {pregunta}
             <span
               aria-hidden
-              className="ml-3 align-middle text-[0.5em] text-[#7B5FBF]/0 transition-colors
-                         group-hover/tema:text-[#7B5FBF]/70 group-focus-within/tema:text-[#7B5FBF]/70"
+              className="ml-3 align-middle text-[0.5em] text-[#7b5fbf]/0 transition-colors
+                         group-hover/tema:text-[#7b5fbf]/70 group-focus-within/tema:text-[#7b5fbf]/70"
             >
               #
             </span>
           </a>
         </h2>
 
-        <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-white/60 max-w-2xl">
+        <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-[var(--suave)] max-w-2xl">
           {texto}
         </p>
 
@@ -344,7 +364,7 @@ export function BloqueTema({
                 // descuadradas. Así se alinean todos abajo.
                 <li
                   key={p.titulo}
-                  className="relative overflow-hidden border-t border-white/[0.12] pt-5 pb-24"
+                  className="relative overflow-hidden border-t border-[var(--linea-fuerte)] pt-5 pb-24"
                 >
                   {/* ── LA ILUSTRACIÓN, COMO MARCA DE AGUA ────────────────────────────
                       Pasó por tres sitios antes de acabar aquí (Fernando, 2026-08-04):
@@ -366,23 +386,23 @@ export function BloqueTema({
                       width={p.imagen.ancho}
                       height={p.imagen.alto}
                       className="pointer-events-none select-none absolute bottom-0 right-0
-                                 w-[200px] h-[92px] object-contain object-right-bottom opacity-[0.16]"
+                                 w-[200px] h-[92px] object-contain object-right-bottom opacity-[0.22]"
                     />
                   )}
 
-                  <span className="relative block text-[34px] leading-none font-semibold text-[#7B5FBF]/55 tabular-nums">
+                  <span className="relative block text-[34px] leading-none font-semibold text-[#4b2d8e]/30 tabular-nums">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <p className="relative mt-4 text-[15.5px] font-semibold text-white leading-snug">
+                  <p className="relative mt-4 text-[15.5px] font-semibold text-[var(--texto)] leading-snug">
                     {p.titulo}
                   </p>
-                  <p className="relative mt-2 text-[14px] leading-relaxed text-white/55">{p.texto}</p>
+                  <p className="relative mt-2 text-[14px] leading-relaxed text-[var(--tenue)]">{p.texto}</p>
 
                   {/* Si el paso no trae ilustración, el icono sigue haciendo de rótulo. */}
                   {!p.imagen && Icono && (
                     <span aria-hidden className="relative mt-5 inline-flex items-center justify-center w-11 h-11
-                                                 rounded-lg border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
-                      <Icono className="w-[22px] h-[22px] text-[#a78bfa]" />
+                                                 rounded-lg border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]">
+                      <Icono className="w-[22px] h-[22px] text-[var(--violeta-txt)]" />
                     </span>
                   )}
                 </li>
@@ -402,7 +422,7 @@ export function BotonPrimario({ href, children }: { href: string; children: Reac
     <a
       href={href}
       className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-lg
-                 bg-[#7B5FBF] hover:bg-[#6b4faf] text-white text-[15px] font-medium transition-colors"
+                 bg-[var(--violeta)] hover:bg-[#3f2578] text-white text-[15px] font-medium transition-colors"
     >
       {children}
     </a>
@@ -414,8 +434,8 @@ export function BotonSecundario({ href, children }: { href: string; children: Re
     <a
       href={href}
       className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-lg
-                 border border-white/15 hover:border-white/30 hover:bg-white/[0.04]
-                 text-white/85 text-[15px] font-medium transition-colors"
+                 border border-[var(--linea-fuerte)] hover:border-[var(--violeta)] hover:bg-[#7b5fbf]/[0.06]
+                 text-[var(--texto)] text-[15px] font-medium transition-colors"
     >
       {children}
     </a>

@@ -40,7 +40,9 @@ export const PERFILES: Record<TipoCuenta, PerfilAcceso> = {
     subtitulo: 'Entra a tu panel para ver tus automatizaciones, tu bandeja y tus servicios.',
     subtituloAcceso: 'Ya tienes una cuenta de cliente. Ingresa para continuar.',
     altaTexto: '¿Tu empresa aún no tiene cuenta? Solicítala',
-    altaHref: '/negocio#contacto',
+    // `/negocio#contacto` → `/soluciones`: la sección se renombró el 2026-08-17 y el ancla
+    // `#contacto` no existe desde que se vació la página el 2026-08-04.
+    altaHref: '/soluciones',
     mensajeTipoIncorrecto:
       'Esta cuenta no es de cliente. Si eres miembro del proyecto entra por /auth/miembro; si estás postulando, por /auth/candidato.',
   },

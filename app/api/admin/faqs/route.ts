@@ -1,7 +1,7 @@
 /**
  * PREGUNTAS FRECUENTES — listar y crear. Solo administradores.
  *
- * Lo que se escribe aquí sale **publicado en la web**, en `/negocio/<acceso>`. No es una
+ * Lo que se escribe aquí sale **publicado en la web**, en `/soluciones/<acceso>`. No es una
  * tabla interna: es contenido de cara al mundo, y por eso el acceso se comprueba con la
  * misma severidad que en el resto del panel.
  *

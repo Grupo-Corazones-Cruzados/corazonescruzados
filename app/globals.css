@@ -1425,3 +1425,54 @@ html {
   .tira-desliza { animation: none; }
   .tira-desliza-marco { overflow-x: auto; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PALETA CLARA PÚBLICA — FUENTE ÚNICA DEL COLOR DE TODO LO QUE SE COMPARTE
+
+   Nació con el CV público el 2026-08-14 (`app/cv/cv-publico.css`) y el 2026-08-17
+   pasó a gobernar también el sitio público entero —Soluciones, Desarrollo Humano,
+   Contacto y los dos documentos legales—, cuando Fernando pidió que el cuerpo de
+   esas páginas dejara de ser oscuro.
+
+   Estaba escrita dos veces en cuanto la segunda página la necesitó, así que vive
+   aquí y **solo aquí**: cambiar un valor de esta lista recolorea el CV y las cinco
+   páginas del sitio a la vez. Ese es justamente el motivo de sacarla.
+
+   ── POR QUÉ VARIABLES Y NO TOKENS DEL TEMA ──────────────────────────────────
+   El `@theme` de arriba lo mueve el tema del panel. Esto se sirve a terceros
+   —clientes, buscadores, un revisor de Meta— y **tiene que verse igual pase lo que
+   pase con el tema de quien tenga sesión abierta**. Por eso es una clase que se
+   pone a mano en el contenedor, no un token que alguien pueda conmutar.
+
+   ── LA REGLA QUE CUESTA APRENDER AL PASAR DE OSCURO A CLARO ─────────────────
+   **El violeta de texto es OTRO.** El `#a78bfa` que se lee perfectamente sobre
+   `#0b0d14` no llega a AA sobre blanco: sobre papel se usa `--violeta-txt`. Y en
+   claro **hace falta sombra**: una tarjeta blanca con borde y sin sombra no se
+   despega del fondo, mientras que en oscuro bastaba el borde.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.claro-publico {
+  --violeta: #4b2d8e;        /* marca: botones, cifras */
+  --violeta-vivo: #7b5fbf;   /* fondos y bordes tintados */
+  --violeta-txt: #5b3fa8;    /* TEXTO en violeta. Ver el aviso de arriba */
+  --papel: #f6f5f9;
+  --tarjeta: #ffffff;
+  --texto: #1c1b22;          /* titulares */
+  --suave: #56545f;          /* cuerpo */
+  --tenue: #86838f;          /* secundario */
+  --apagado: #a3a0ac;        /* lo más tenue que se puede leer */
+  --linea: #e6e3ee;
+  --linea-fuerte: #cfc9de;
+}
+
+/* ── El realce de una tarjeta en claro ────────────────────────────────────────
+   En el sitio oscuro el realce era SOLO de borde, y funcionaba. Sobre papel no:
+   una tarjeta blanca sobre blanco necesita que la sombra la levante. Es una clase
+   y no un `shadow-[...]` repetido en cada componente para que el día que Fernando
+   quiera más o menos relieve se cambie en un sitio.                            */
+.claro-tarjeta {
+  box-shadow: 0 1px 2px rgba(28, 27, 34, 0.05);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.claro-tarjeta:hover {
+  box-shadow: 0 6px 18px rgba(123, 95, 191, 0.13);
+}

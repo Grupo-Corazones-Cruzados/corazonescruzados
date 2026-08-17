@@ -275,6 +275,73 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **☀️ EL SITIO PÚBLICO PASA A TEMA CLARO, Y `/recursos` SE LLAMA `/desarrollo-humano` (2026-08-17).**
+  Segunda tanda del mismo encargo que renombró `/negocio`.
+  - **`/recursos` → `/desarrollo-humano`.** El menú ya decía «Desarrollo Humano» mientras la
+    ruta decía `/recursos` y el titular «Un proyecto de desarrollo humano»: **tres nombres
+    para una página**. Ahora titular, pestaña, menú y URL dicen lo mismo. Redirección 308.
+    - **Con guion, no `/desarrollohumano`**: es como un buscador separa las palabras, y esta
+      es justo la página con la que se quiere aparecer por «desarrollo humano Ecuador».
+  - **TEMA CLARO en el CUERPO de las CINCO páginas** de `app/(sitio)/`: Soluciones,
+    Desarrollo Humano, Contacto **y los dos documentos legales** (los pidió después, aparte).
+  - **⭐ La cabecera y el pie SIGUEN OSCUROS.** Textual: *«la cabecera y el pie de páginas se
+    quedan igual, solo cambia de tema el contenido de las páginas»*. Y eso es lo que hizo el
+    cambio barato: el tema claro se pone **en el `<main>`**, no en el `<div>` que lo envuelve,
+    así que `CabeceraSitio` y `PieSitio` —que son **los mismos que usa la portada de pixel
+    art**— no se tocan y no hubo que darles una variante.
+  - **⭐ LA PALETA ES AHORA UNA SOLA PARA TODO LO QUE SE COMPARTE: `.claro-publico`**, en
+    `app/globals.css`. Vivía en `.cv-publico` desde el CV del 2026-08-14 y estaba a punto de
+    escribirse por segunda vez. **Cambiar un color ahí recolorea el CV y las cinco páginas.**
+    El `<div>` del CV lleva ahora las dos clases; verificado que su página carga los dos CSS.
+  - **Las dos trampas de pasar de oscuro a claro** (ya aprendidas en el CV, se repitieron):
+    **(1) el violeta de texto es otro** —`#a78bfa` no llega a AA sobre blanco, va `#5b3fa8`—;
+    **(2) hace falta sombra**, porque el realce de solo borde no despega una tarjeta blanca
+    del papel. Y una tercera nueva: **la rejilla del héroe cambia de COLOR, no de opacidad**
+    —sus líneas eran blancas y sobre papel no existen—.
+  - **Encontrado al recolorear:** en `soluciones/[necesidad]/page.tsx` había un `<a>` con las
+    clases de `BotonPrimario` **copiadas a mano**. El botón de verdad cambió de color y la
+    copia se quedó con el viejo. Sustituido por la pieza. Es el caso exacto de «equivalente no
+    es igual»: **una copia no hereda los cambios del original, y solo se nota cuando ya
+    divergió**.
+  - **Verificado midiendo**, no razonando: `tsc` + `next build` + `curl` (las dos
+    redirecciones 308, los cinco 200, títulos, `<h1>`, `canonical`, sitemap) + **Chrome real**
+    con puppeteer, que devolvió `main: rgb(246,245,249)` y `h1: rgb(28,27,34)` en las cinco.
+    Capturas entregadas a Fernando para que las evalúe él.
+- **🪧 `/negocio` SE LLAMA AHORA `/soluciones` (2026-08-17).** Fernando reconsideró la
+  sección: el titular ya no dice «Grupo Corazones Cruzados», dice **«Soluciones»**, y con él
+  cambian la pestaña, la etiqueta del menú (era «Negocios») y **la URL**. Las cinco puertas
+  pasan a `/soluciones/{requerimientos,automatizacion,videojuego,marketplace,votacion}`.
+  - **La regla que queda escrita:** *una sección se llama igual en el titular, en la pestaña,
+    en el menú y en la URL*. Antes no coincidía ninguno de los cuatro.
+  - **La marca no se pierde:** sigue en la barra fija, en el pie y en el sufijo de la pestaña
+    (`%s · Grupo Corazones Cruzados`, plantilla de `app/layout.tsx`). El `<h1>` de una página
+    interior es para decir de qué va **esa** página. La línea morada «Clientes» y el párrafo
+    se quedaron igual.
+  - **⚠️ META: HAY QUE ACTUALIZAR LA URL DECLARADA.** `…/negocio` es la que se le dio a Meta
+    para la verificación de proveedor de tecnología —la que ya rechazaron una vez—. El código
+    deja una **redirección permanente 308** para que no dé 404, pero **el formulario de Meta
+    hay que cambiarlo a `/soluciones`**. Es tarea de Fernando.
+  - **Redirección permanente en `next.config.ts`**, no en middleware: `/negocio` y las cinco
+    hijas. La regla de las hijas **enumera los cinco nombres a propósito** y no usa un
+    comodín, porque **las redirecciones se resuelven ANTES que los archivos de `public/`**:
+    un `/negocio/:x` genérico se habría tragado `/negocio/paso-1-publicas.webp` —las seis
+    ilustraciones de «Progreso»— y las habría dejado rotas. Las imágenes, además, se mudaron
+    a `public/soluciones/`. **Esto no lo ve `tsc` ni el build: se cazó midiendo con `curl`
+    contra el servidor arrancado.**
+  - **Esa lista de cinco es historia congelada**, no un espejo de `ACCESOS`: es el conjunto de
+    URLs que llegaron a publicarse bajo `/negocio`. Una puerta nueva nace ya en `/soluciones`
+    y no necesita redirección de una dirección que nunca existió.
+  - **Del mapa del sitio salen solo las URLs nuevas.** Una URL que redirige no se lista: se le
+    estaría pidiendo a Google que indexe algo que él mismo va a descartar. `lastModified` de
+    la sección se subió a `2026-08-17` — un cambio de URL es justo lo que hay que anunciar.
+  - **Dos anclas muertas encontradas por el camino**, ambas rotas desde que se vació la página
+    el 2026-08-04: `/negocio#servicios` (botón de `/recursos`) y `/negocio#contacto`
+    (`altaHref` del acceso de clientes en `lib/auth/tipos.ts`). Las dos apuntan ya a
+    `/soluciones` a secas. ⏳ **Pendiente de Fernando:** el alta de cliente probablemente
+    debería ir a `/contacto`, no a `/soluciones`, pero eso es decisión suya.
+  - Renombrados también `CabeceraNegocio` → `CabeceraSoluciones` y `FaqsNegocio` →
+    `FaqsSoluciones`. `lib/negocio/{datos,legal}.ts` **NO** se tocan: son la identidad legal
+    del negocio, no la sección web.
 - **🏷️ LOS PROYECTOS TIENEN TAGS PROPIOS (2026-08-15, migración 038).** No son lo mismo que
   los talentos y hacían falta las dos cosas: el **talento** dice *quién* puede hacerlo —y en
   qué CV aparece—; los **tags** dicen *con qué se hizo* («RPA», «Oracle Database», «WhatsApp

@@ -8,6 +8,48 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ['@ffmpeg-installer/ffmpeg', 'puppeteer'],
 
+  /**
+   * `/negocio` → `/soluciones` — RENOMBRADO EL 2026-08-17, CON REDIRECCIÓN PERMANENTE.
+   *
+   * Fernando renombró la sección comercial. Las seis URLs viejas llevan publicadas desde el
+   * 2026-08-04 y **una de ellas es la que se le declaró a Meta** para la verificación de
+   * proveedor de tecnología. Cambiar la ruta a secas las dejaría en 404: enlaces rotos y el
+   * posicionamiento ganado, a la basura.
+   *
+   * `permanent: true` emite un **308** (el 301 de toda la vida, conservando el método):
+   * le dice a Google «esta página se mudó, pasa la autoridad a la nueva y olvida la vieja».
+   * Un 307/302 diría lo contrario —«volveré»— y mantendría las dos URLs compitiendo.
+   *
+   * ⚠️ **La redirección evita el 404, pero no actualiza a Meta.** Hay que cambiar la URL
+   * declarada en su formulario a `/soluciones`.
+   *
+   * ── POR QUÉ LA SEGUNDA REGLA ENUMERA LAS CINCO PUERTAS ─────────────────────────
+   * No es manía: **las redirecciones se resuelven ANTES que los archivos de `public/`**. Un
+   * `/negocio/:necesidad` genérico se tragaría también `/negocio/paso-1-publicas.webp` —las
+   * seis ilustraciones de la puerta «Progreso»— y las mandaría a una ruta que no existe. Con
+   * los cinco nombres escritos, solo se redirige lo que de verdad era una página; cualquier
+   * otra cosa bajo `/negocio/` responde 404, que es lo que ya hacía (`dynamicParams = false`).
+   * Las imágenes, además, se mudaron a `public/soluciones/`.
+   *
+   * Y por eso esta lista **no se sincroniza con `ACCESOS`**, aunque lo parezca: es la lista
+   * cerrada de las URLs que llegaron a publicarse bajo `/negocio`. Una puerta nueva nacerá
+   * ya en `/soluciones` y no necesita redirección de una dirección que nunca existió.
+   */
+  async redirects() {
+    return [
+      { source: '/negocio', destination: '/soluciones', permanent: true },
+      // `/recursos` → `/desarrollo-humano` (Fernando, 2026-08-17). No tiene hijas y no hay
+      // ninguna carpeta `public/recursos`, así que aquí no hace falta acotar nada.
+      { source: '/recursos', destination: '/desarrollo-humano', permanent: true },
+      {
+        source:
+          '/negocio/:necesidad(requerimientos|automatizacion|videojuego|marketplace|votacion)',
+        destination: '/soluciones/:necesidad',
+        permanent: true,
+      },
+    ];
+  },
+
   // Los archivos del juego se revalidan en cada carga: al desplegar un mundo
   // nuevo, el navegador debe descargar la versión nueva y no servir la vieja de
   // caché. El equivalente en producción de lo que hace server.cjs en desarrollo.

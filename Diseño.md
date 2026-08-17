@@ -14,9 +14,11 @@
 La app tiene **cuatro lenguajes visuales** distintos (intencional):
 1. **Landing / juego (pixelart oscuro):** fuente `Silkscreen`/`JetBrains Mono`, `var(--color-accent)`,
    clases `pixel-btn`, sombras duras. En `app/page.tsx`, `components/landing/*`, `app/globals.css`.
-2. **Sitio público (oscuro sobrio + violeta):** `#0b0d14`, **Inter**, tarjetas de borde tenue.
-   `/negocio`, `/recursos`, `/contacto` y las páginas legales. Fuente única:
-   `components/sitio/piezas.tsx`. Ver sección "Sitio público".
+2. **Sitio público (CLARO + violeta, desde el 2026-08-17):** papel `#f6f5f9`, **Inter**, tarjetas
+   blancas con borde y sombra mínima. `/soluciones`, `/desarrollo-humano`, `/contacto` y las
+   páginas legales. **Su cabecera y su pie siguen oscuros** (`#0b0d14`/`#080a10`), porque son los
+   mismos que usa la portada. Colores en `.claro-publico` (`app/globals.css`, compartida con el CV
+   público); piezas en `components/sitio/piezas.tsx`. Ver sección "Sitio público".
 3. **Dashboard:** Next.js + Tailwind, **Microsoft Fluent claro** scoped en **`.corp`** (montado en
    `app/(dashboard)/layout.tsx`). Ver sección "Dashboard — Fluent (`.corp`)".
 4. **Editor del mundo (Microsoft Fluent):** claro, `system-ui/Segoe UI`, azul `#0078d4`. **Este doc se
@@ -70,7 +72,7 @@ Antes estaba escrito a mano tres veces en `GodotGame.tsx` (desviación corregida
 
 ---
 
-## Sitio público — oscuro sobrio + violeta (`/negocio`, `/recursos`, `/contacto`)
+## Sitio público — CLARO desde el 2026-08-17 (`/soluciones`, `/desarrollo-humano`, `/contacto`, `/legal`)
 
 > Documentado el 2026-08-03 al abrir el objetivo de SEO. **Existía desde el 2026-08-02
 > (`bb9f7f0`) y no estaba en este documento**: era el cuarto lenguaje visual sin registrar.
@@ -104,7 +106,7 @@ buscador, un revisor de Meta. No es el pixel art de la portada ni el Fluent clar
 
 #### `RejillaAccesos` — tarjetas que se reparten solas (2026-08-04)
 
-La cabecera de `/negocio`. Cinco puertas de entrada al proyecto: tres arriba y dos
+La cabecera de `/soluciones`. Cinco puertas de entrada al proyecto: tres arriba y dos
 **centradas** debajo en pantalla grande, dos y dos y una en tableta, una por fila en el
 móvil. Los datos salen de `ACCESOS` en `lib/sitio/contenido.ts`.
 
@@ -129,16 +131,69 @@ móvil. Los datos salen de `ACCESOS` en `lib/sitio/contenido.ts`.
 
 Marco compartido: `app/(sitio)/layout.tsx` → `CabeceraSitio` + `main pt-16` + `PieSitio`.
 
-### Los valores (literales, a propósito)
-| Uso | Valor |
-|---|---|
-| Fondo de página | `#0b0d14` |
-| Fondo del pie | `#080a10` |
-| Violeta de marca | `#7B5FBF` (fondos, bordes al 30 %) |
-| Violeta de texto | `#a78bfa` (enlaces, etiquetas de sección) · `#c4b5fd` (píldoras, hover) |
-| Texto | `white` titulares · `white/55` cuerpo · `white/45`–`white/35` secundario |
-| Bordes | `white/[0.08]` en reposo · `white/[0.16]` al hover |
-| Tipografía | **Inter**, fijada en el `style` del layout, no heredada del tema |
+### ⭐ EL CUERPO ES CLARO; LA CABECERA Y EL PIE, OSCUROS (Fernando, 2026-08-17)
+
+Textual: *«la cabecera y el pie de páginas se quedan igual, solo cambia de tema el contenido
+de las páginas»*. Aplica a las **cinco** rutas de `app/(sitio)/`.
+
+**Dónde vive el cambio:** el tema claro se pone en el **`<main>`** de `app/(sitio)/layout.tsx`,
+no en el `<div>` que lo envuelve. Eso es lo que hace que salga gratis: `CabeceraSitio` y
+`PieSitio` son **los mismos componentes que usa la portada**, y darles una variante clara
+habría obligado a tocar el pixel art. Las dos franjas oscuras enmarcan el papel.
+
+```tsx
+<div className="min-h-screen flex flex-col bg-[#0b0d14] antialiased">
+  <CabeceraSitio />                                          {/* oscura */}
+  <main className="claro-publico flex-1 pt-16
+                   bg-[var(--papel)] text-[var(--suave)]">   {/* ← el tema claro */}
+    {children}
+  </main>
+  <PieSitio />                                               {/* oscuro */}
+</div>
+```
+
+### Configuración global de color — `.claro-publico`, en `app/globals.css`
+
+**Fuente ÚNICA del color de todo lo que se comparte.** Nació con el CV público el
+2026-08-14 y el 2026-08-17 pasó a gobernar también las cinco páginas del sitio. Estaba a
+punto de escribirse dos veces, así que se extrajo: **cambiar un valor aquí recolorea el CV y
+el sitio a la vez.**
+
+| Variable | Valor | Para qué |
+|---|---|---|
+| `--papel` | `#f6f5f9` | fondo del `<main>` |
+| `--tarjeta` | `#ffffff` | tarjetas y secciones de realce |
+| `--violeta` | `#4b2d8e` | marca: botones, iconos activos |
+| `--violeta-vivo` | `#7b5fbf` | fondos y bordes tintados |
+| `--violeta-txt` | `#5b3fa8` | **TEXTO** en violeta |
+| `--texto` | `#1c1b22` | titulares |
+| `--suave` | `#56545f` | cuerpo |
+| `--tenue` | `#86838f` | secundario |
+| `--apagado` | `#a3a0ac` | lo más tenue legible |
+| `--linea` | `#e6e3ee` | bordes en reposo |
+| `--linea-fuerte` | `#cfc9de` | bordes al hover, separadores |
+
+Tipografía: **Inter**, fijada en el `style` del layout, no heredada del tema.
+
+**Cabecera y pie conservan sus literales oscuros**: fondo `#0b0d14`/`#080a10`, texto blanco.
+
+⚠️ **Es una CLASE que se pone a mano, no un token del `@theme`.** El `@theme` lo mueve el
+tema del panel; esto se sirve a terceros y tiene que verse igual pase lo que pase con la
+sesión de quien mire.
+
+### ⚠️ LAS DOS COSAS QUE DE VERDAD CAMBIAN AL PASAR DE OSCURO A CLARO
+No son el fondo. Las dos se aprendieron primero en el CV y se repitieron aquí:
+
+1. **El violeta de texto es OTRO.** `#a78bfa` se lee perfectamente sobre `#0b0d14` y **no
+   llega a AA sobre blanco**. Sobre papel, `--violeta-txt` (`#5b3fa8`).
+2. **Hace falta sombra.** En oscuro el realce era **solo de borde** y bastaba. Una tarjeta
+   blanca con borde y sin sombra **no se despega del papel** → clase **`.claro-tarjeta`**
+   (`0 1px 2px` en reposo, `0 6px 18px` violeta al hover). Una clase y no un `shadow-[...]`
+   repetido: el relieve se cambia en un sitio.
+
+Y una tercera que solo se ve al hacerlo: **la rejilla del héroe cambia de color, no de
+opacidad.** Sus líneas eran blancas —invisibles sobre papel—; ahora son violeta al 5,5 %,
+las mismas del CV.
 
 Escala tipográfica: `h1` 38/56 px · `h2` 30/38 px · `h3` 22 px · `h4` 18 px · cuerpo
 14,5–18,5 px. **El contraste de tamaño es lo que hace que la página respire**; no hay
@@ -149,7 +204,7 @@ librería de UI detrás.
 Textual: *«no hagas nada en la página de negocio, no quiero que hagas el diseño por tu
 cuenta porque tengo que ver contigo el diseño específico de esa página y todas otras»*.
 
-Aplica a `/negocio`, `/recursos`, `/contacto` y cualquier página pública que venga. Se parte
+Aplica a `/soluciones`, `/desarrollo-humano`, `/contacto` y cualquier página pública que venga. Se parte
 en dos, y **solo la primera mitad se hace sin preguntar**:
 
 - **Fontanería** —metadatos, `canonical`, mapa del sitio, `robots`, JSON-LD, rendimiento,
@@ -221,13 +276,13 @@ puerta.
   El escalón va **por columna** (`nth-child(3n+1/2/3)`) y no por tarjeta: con once, un retardo
   por posición dejaría la última entrando mucho después y se sentiría lento.
 
-### Temas de `/negocio/<id>` — `BloqueTema` (2026-08-04)
+### Temas de `/soluciones/<id>` — `BloqueTema` (2026-08-04)
 
 Cada página de puerta lleva N **temas** cortos entre el vídeo y las preguntas: rótulo,
 pregunta grande, respuesta en una o dos frases y unos pasos numerados. Salen del campo
 `temas` de cada puerta en `contenido.ts`; sin temas, no se pinta nada.
 
-- **Cada tema tiene su ancla** — `/negocio/<puerta>#<id>` — y **su título es un enlace a sí
+- **Cada tema tiene su ancla** — `/soluciones/<puerta>#<id>` — y **su título es un enlace a sí
   mismo**: al pulsarlo, el ancla queda en la barra del navegador lista para copiar. La
   almohadilla solo asoma al acercar el puntero, pero el enlace existe siempre (funciona con
   teclado).
@@ -272,7 +327,7 @@ salida se atenúa a 0,25.
   mirar `getAnimations()[0].effect.getComputedTiming().progress`, o medir el brillo de una
   captura.
 
-### Preguntas frecuentes de `/negocio/<id>` (2026-08-04)
+### Preguntas frecuentes de `/soluciones/<id>` (2026-08-04)
 
 **En la web** (`components/sitio/FaqsNegocio.tsx`): buscador arriba; debajo, dos columnas —
 lista de preguntas a la izquierda, respuesta completa a la derecha (`lg:sticky lg:top-24`).
@@ -305,7 +360,7 @@ navegador, carga diferida y `youtube-nocookie`. **Si no hay enlace, no se pinta 
 ⚠️ **`min-h-screen` por sí solo NO basta**, y es un malentendido habitual: estira el
 envoltorio a la altura de la pantalla, pero sus hijos siguen apilándose uno tras otro, así
 que en una página corta el pie quedaba pegado al final del contenido con un vacío debajo. Lo
-vio Fernando en `/negocio` sin ninguna puerta abierta.
+vio Fernando en `/soluciones` sin ninguna puerta abierta.
 
 Con `flex-1` el cuerpo se queda todo el espacio que sobre y empuja el pie al fondo. En una
 página larga no cambia nada, porque no sobra espacio que repartir. La cabecera es `fixed`, no
@@ -316,18 +371,18 @@ Comprobado a 1200 y 1600 px de alto en las seis páginas de la sección y en los
 ### Reglas del sitio público
 - **Server Components, sin `use client`.** El contenido tiene que estar en el HTML crudo:
   un buscador y un revisor pueden no ejecutar JavaScript. Lo que necesita estado se saca a
-  una **isla** (`app/(sitio)/negocio/AltaCliente.tsx` es la única que hay).
+  una **isla** (`app/(sitio)/soluciones/AltaCliente.tsx` es la única que hay).
 - **El texto no vive en la página**, vive en `lib/sitio/contenido.ts`. Un servicio se edita
   en un sitio y cambia en todos.
 - **Nada que no sea verificable.** Sin cifras de clientes, sin años de experiencia, sin
   premios. Una lista vacía (`CLIENTES`, `VIDEOS`) hace que **la sección entera no se pinte**:
   no queda un hueco ni un «próximamente».
 - **La cabecera no lleva «Crear cuenta»** (Fernando, 2026-08-02): empujaba a registrarse
-  antes de haber contado nada. El alta está al final de `/negocio`.
+  antes de haber contado nada. El alta está al final de `/soluciones`.
 - **El pie es una sola línea** —copyright + `/legal`—: no repite la navegación ni el logo,
   que ya presiden la cabecera fija, y **no lleva la dirección**, que es el domicilio
   particular de Fernando.
-- **La identidad legal NO puede faltar de `/negocio`** — es la URL declarada a Meta. Se
+- **La identidad legal NO puede faltar de `/soluciones`** — es la URL declarada a Meta. Se
   perdió una vez al reorganizar la página y se detectó revisando el HTML compilado.
 
 ---
@@ -1640,19 +1695,20 @@ función y no de la memoria de quien escribe.
 por un enlace va en claro**. Un currículum se lee, se compara con otros y a veces se
 imprime; en negro deja de parecer un documento.
 
-**Alcance: solo `/cv`.** `/negocio`, los legales, el calendario público y las listas de
-contactos **siguen como están** — «ya funcionan bien con esa normalidad». No se generalice
-esta paleta sin preguntarle.
+**⚠️ ESTO YA NO ES SOLO DE `/cv` (actualizado 2026-08-17).** Cuando se escribió, la regla era
+«alcance: solo `/cv`, no se generalice sin preguntarle». **Fernando lo pidió el 2026-08-17**:
+las cinco páginas del sitio público pasaron a claro con esta misma paleta, que se extrajo a
+`.claro-publico` en `app/globals.css` y ahora las gobierna a todas. Siguen fuera —y siguen
+oscuros— la **portada**, la **cabecera y el pie** del sitio, el calendario público y las
+listas de contactos.
 
-### La paleta (literal, como todo lo que se sirve a terceros)
-| Uso | Valor |
-|---|---|
-| Papel | `#f6f5f9` · tarjetas `#ffffff` · huecos de imagen `#f2f0f7` |
-| Violeta de marca | `#4b2d8e` (botones, cifras) · `#7b5fbf` (iconos, bordes, fondos al 7-10 %) |
-| **Violeta de TEXTO** | **`#5b3fa8`** |
-| Texto | `#1c1b22` titulares · `#56545f` cuerpo · `#86838f` secundario · `#a3a0ac` tenue |
-| Líneas | `#e6e3ee` · `#cfc9de` la fuerte |
-| Tipografía | **Inter**, fijada en el `style` del layout |
+### La paleta — **ya no vive aquí**
+Estaba en `.cv-publico` (`app/cv/cv-publico.css`) y el 2026-08-17 se mudó a **`.claro-publico`**
+en `app/globals.css`, con los MISMOS valores. Ver §«Sitio público» → «Configuración global de
+color». El `<div>` de `app/cv/layout.tsx` lleva las dos clases: `claro-publico` pone los
+colores, `cv-publico` lo propio del CV (fondos fijos, animaciones, retículas).
+
+Lo específico del CV que no se generalizó: huecos de imagen `#f2f0f7`.
 
 ⚠️ **Dos trampas al pasar de oscuro a claro, y las dos se ven en cuanto lo miras:**
 - **El violeta de texto tiene que ser OTRO.** El `#a78bfa` que funciona sobre `#0b0d14` no
@@ -1663,8 +1719,10 @@ esta paleta sin preguntarle.
 
 ### ⛔ EXCEPCIÓN PUNTUAL a la regla «el diseño de lo público se acuerda antes»
 Fernando la levantó **para esta página y solo para esta** el 2026-08-14: *«esta vez propón tú
-el diseño»*. Para `/negocio`, `/recursos`, `/contacto` y cualquier página pública futura,
-**la regla de §«El diseño de estas páginas lo decide Fernando, conmigo, ANTES» sigue vigente**.
+el diseño»*. Para `/soluciones`, `/desarrollo-humano`, `/contacto` y cualquier página pública
+futura, **la regla de §«El diseño de estas páginas lo decide Fernando, conmigo, ANTES» sigue
+vigente** — el paso a claro del 2026-08-17 lo pidió él y las decisiones visibles (paleta,
+titulares, alcance) se acordaron antes de escribir una línea.
 
 ### En escritorio la PÁGINA no se desplaza; cada columna sí (2026-08-15)
 Petición de Fernando: mirar el portafolio movía la página entera y la ficha se perdía por
@@ -1933,7 +1991,7 @@ Pasa siempre que la página no se desplaza: ventana muy alta, contenido corto, o
 captura de página completa de un navegador. Con `opacity: 0` de partida, eso es **la página en
 blanco**. Medido: captura a 390 px con todo lo que había bajo la portada vacío.
 
-La regla de `/negocio` («el truco de opacidad 0 + IntersectionObserver deja el contenido
+La regla de `/soluciones` («el truco de opacidad 0 + IntersectionObserver deja el contenido
 oculto si el script no llega») **se aplica igual a las animaciones nativas**: no es el
 JavaScript lo que falla, es empezar en invisible. **El peor caso admisible es un bloque 18 px
 descolocado.**
@@ -1964,6 +2022,40 @@ Ctrl+P: **el documento bueno es el del botón.**
 
 ## Desviaciones detectadas y resolución
 
+### 2026-08-17 · La paleta clara estaba a punto de escribirse dos veces · **EXTRAÍDA a fuente única**
+Al pasar el sitio público a claro hacían falta los mismos once colores que ya tenía el CV, en
+otro archivo. Copiarlos habría dejado dos listas que se separan a la primera corrección.
+Resuelto extrayéndolas a **`.claro-publico`** (`app/globals.css`) con los valores idénticos;
+`app/cv/cv-publico.css` las perdió y el `<div>` del CV lleva ahora las dos clases. Verificado
+que la página del CV carga los dos CSS (`app-build-manifest` + el HTML servido).
+
+### 2026-08-17 · Un `<a>` con las clases de `BotonPrimario` copiadas a mano · **CORREGIDO**
+En `app/(sitio)/soluciones/[necesidad]/page.tsx`, el enlace externo de una puerta era un
+`<a>` que reproducía `BotonPrimario` clase por clase. **Solo se vio al recolorear**: el botón
+de verdad cambió a violeta oscuro y la copia se quedó con el color viejo. Sustituido por la
+pieza. Es literalmente el caso de la regla «equivalente no es igual»: una copia no hereda los
+cambios de aquello de lo que se copió, y el día que se nota ya llevaba meses divergiendo.
+
+### 2026-08-17 · `/negocio` → `/soluciones`: el titular era la marca, no la sección · **ADOPTADO como estándar**
+Fernando reconsideró la página: el `<h1>` decía «Grupo Corazones Cruzados» y ahora dice
+**«Soluciones»**. El nombre de la sección pasa a decirse igual en los cuatro sitios donde
+aparece —titular, pestaña, etiqueta del menú y URL—, que es la regla que se adopta:
+
+> **Una sección se llama igual en el titular, en la pestaña, en el menú y en la URL.** Si
+> los cuatro no coinciden, quien pulsa duda de si llegó a donde iba.
+
+Antes no coincidía ninguno: el menú decía «Negocios», la URL `/negocio`, el titular la marca
+y la pestaña «Qué hacemos — un proyecto de desarrollo humano y sus servicios».
+
+- **La marca no desaparece de la página**: sigue en la barra fija, en el pie y en el sufijo
+  de la pestaña, que lo pone la plantilla de `app/layout.tsx` (`%s · Grupo Corazones
+  Cruzados`). El titular de una página interior es para decir **de qué va esa página**.
+- **El titular de la sección vive en una sola constante** —`TITULAR`, en
+  `components/sitio/CabeceraSoluciones.tsx`— compartida por las seis rutas, igual que antes.
+  La etiqueta del menú vive en `NAVEGACION` (`lib/sitio/contenido.ts`): son dos sitios porque
+  son dos cosas distintas, pero tienen que decir lo mismo.
+- **La línea morada «Clientes» y el párrafo se quedan** (decisión de Fernando el 2026-08-17).
+
 ### 2026-08-03 · El sitio público era un lenguaje visual sin documentar · **ADOPTADO como estándar**
 `components/sitio/piezas.tsx` nació el 2026-08-02 con el sitio público y montó un lenguaje
 visual completo —fondo `#0b0d14`, Inter, tarjetas de borde tenue, héroe con resplandor
@@ -1971,7 +2063,7 @@ radial— que **no estaba en este documento**, que seguía diciendo que la app t
 No es una desviación accidental: es un lenguaje **necesario y bien construido** (una sola
 fuente de piezas, sin librería de UI, Server Components). Resuelto **adoptándolo**: sección
 "Sitio público" nueva y el índice de arriba pasa a cuatro lenguajes. Detectado al abrir el
-objetivo de SEO de `/negocio`.
+objetivo de SEO de `/soluciones`.
 
 ### 2026-08-03 · La pantalla de Plantillas se escribió «parecida» y no igual · **CORREGIDO**
 La columna de plantillas y la de listas hacían lo mismo que las del correo masivo pero se

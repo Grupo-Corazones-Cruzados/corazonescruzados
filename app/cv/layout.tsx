@@ -1,7 +1,7 @@
 /**
  * MARCO DEL CV PÚBLICO.
  *
- * No usa el marco de `/negocio` (`CabeceraSitio` + `PieSitio`) a propósito: quien
+ * No usa el marco de `/soluciones` (`CabeceraSitio` + `PieSitio`) a propósito: quien
  * abre este enlace viene a leer el CV de una persona, no a navegar por el sitio del
  * grupo. Una cabecera con «Negocio · Recursos · Contacto» encima de un currículum
  * compite con lo único que hay que mirar.
@@ -50,7 +50,9 @@ export const metadata: Metadata = {
 export default function CvLayout({ children }: { children: ReactNode }) {
   return (
     <div
-      className="cv-publico relative min-h-screen bg-[#f6f5f9] text-[#56545f] antialiased"
+      // `claro-publico` trae la paleta (fuente única, en `app/globals.css`, compartida
+      // con las cinco páginas del sitio); `cv-publico` solo lo propio del CV.
+      className="claro-publico cv-publico relative min-h-screen bg-[var(--papel)] text-[var(--suave)] antialiased"
       style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
     >
       <div className="cv-fondo" aria-hidden />

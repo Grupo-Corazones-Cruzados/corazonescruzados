@@ -4437,3 +4437,161 @@ organizado por talento, tags de proyecto y la reorganización completa del panel
 **La lección que más se repitió:** *medir, no razonar*. Tres fallos de esta sesión —el 500 del
 PDF, la página en blanco en móvil y el 500 al borrar tres columnas— pasaron limpios por `tsc`
 y por `next build`. Los tres los cazó ejecutar de verdad.
+
+---
+
+# Objetivo (2026-08-17) — MEJORAS DEL SITIO PÚBLICO: `/negocio` y `/recursos`
+
+> Declarado por Fernando: *«vamos a trabajar en algunas mejoras en nuestro sitio web, para
+> las páginas de /negocio y /recursos. Lo primero… he reconsiderado esta página, quiero que
+> su título no diga Grupo Corazones Cruzados, sino que diga Soluciones. Y el nombre de la
+> pestaña se llame Soluciones, y el nombre de la dirección de la página ahora sea
+> /Soluciones»*.
+
+**Rol asumido:** *ingeniero de SEO técnico + arquitecto de información del sitio público*.
+Un cambio de nombre visible es media hora; un cambio de **URL publicada** es una operación de
+migración, y ahí está todo el riesgo.
+
+**Regla que manda sobre este objetivo:** la de 2026-08-03 —*el diseño y el contenido visible
+del sitio público se acuerdan con Fernando antes de escribir una línea*—. Por eso lo visible
+se preguntó (titular, pestaña, menú, subtítulo) y la fontanería (redirección, mapa del sitio,
+`canonical`, JSON-LD) se hizo y se avisó.
+
+## Progreso
+- **% de información para el objetivo:** **100 %** para la primera mejora (el renombrado).
+  **Abierto** el resto: Fernando aún no ha dicho qué más quiere de `/soluciones` ni de
+  `/recursos`.
+- **Estado:** renombrado construido, verificado contra el HTML servido y listo para publicar.
+
+## Decisiones de Fernando (2026-08-17) — cerradas
+| Pregunta | Respuesta |
+|---|---|
+| ¿El cambio arrastra a las cinco páginas hijas? | **Sí, las seis URLs** |
+| Nombre de la pestaña | **«Soluciones · Grupo Corazones Cruzados»** (la plantilla añade la marca) |
+| Etiqueta del menú | **«Soluciones»** (era «Negocios») |
+| El encabezado bajo el titular | **Se queda igual**: «Clientes» en morado + el párrafo |
+
+## Lo que enseñó este cambio
+
+### ⭐ P1 — ¿Basta con renombrar la carpeta de la ruta? · ✅ Resuelta: NO, y por poco
+**Las redirecciones de Next se resuelven ANTES que los archivos de `public/`.** La regla
+obvia —`/negocio/:necesidad` → `/soluciones/:necesidad`— habría capturado también
+`/negocio/paso-1-publicas.webp`, las seis ilustraciones de la puerta «Progreso», y las habría
+mandado a una ruta inexistente. Imágenes rotas en producción, sin un solo error de
+compilación.
+
+**Cómo se resolvió:** la regla enumera los cinco nombres de puerta en vez de usar un comodín,
+y las imágenes se mudaron a `public/soluciones/`.
+
+**Generalizable:** al renombrar un prefijo de ruta, **mirar siempre si `public/` tiene una
+carpeta con ese mismo nombre**. El orden de resolución de Next es
+`headers → redirects → rewrites(beforeFiles) → filesystem`.
+
+### P2 — ¿Qué código de redirección? · ✅ Resuelta
+`permanent: true` → **308**. Le dice a Google «se mudó, pasa la autoridad y olvida la vieja».
+Un 302/307 diría «volveré» y dejaría las dos URLs compitiendo, que es cómo se pierde el
+posicionamiento en un renombrado.
+
+### P3 — ¿Las URLs viejas van al mapa del sitio? · ✅ Resuelta: no
+Una URL que redirige no se lista en `sitemap.xml`: sería pedirle a Google que indexe algo que
+él mismo va a descartar. Sí se sube el `lastModified` de las nuevas — un cambio de URL es
+exactamente la señal que hace que vuelva a mirar pronto.
+
+### P4 — ¿Qué más apuntaba a `/negocio`? · ✅ Resuelta, y aparecieron dos anclas muertas
+Barrido completo del repo. Además de las rutas, `canonical`, `openGraph`, los dos JSON-LD
+(`ProfessionalService` y `BreadcrumbList`, cuya miga decía «Negocios»), el mapa del sitio, el
+menú, las tarjetas, y los textos del panel de Admin → FAQs.
+
+**Y dos enlaces con ancla que ya estaban rotos desde el 2026-08-04**, cuando Fernando vació
+todo lo que había bajo las tarjetas: `/negocio#servicios` (botón de `/recursos`) y
+`/negocio#contacto` (`altaHref` del acceso de clientes). Ninguna de las dos anclas existe en
+el HTML. Corregidas a `/soluciones`.
+⏳ **Para Fernando:** «¿Tu empresa aún no tiene cuenta? Solicítala» probablemente debería
+llevar a `/contacto`, no a `/soluciones`. Es decisión suya, no se tocó.
+
+### P5 — ¿`tsc` y `next build` bastaban? · ✅ Resuelta: NO (otra vez)
+Los dos pasaron en verde con la trampa de las imágenes dentro. Lo que la cazó fue **arrancar
+el build y medir con `curl`**: los seis 308 con su destino, el 404 de la imagen bajo la ruta
+vieja, el 200 bajo la nueva, el `<title>`, el `<h1>`, el `canonical` y el `sitemap.xml`.
+Es la misma lección de la sesión del CV: **medir, no razonar**.
+
+⚠️ **Detalle que confunde:** tras renombrar la carpeta, `tsc` daba seis errores sobre módulos
+inexistentes en `.next/types/app/(sitio)/negocio/…`. Son **tipos generados obsoletos** de la
+ruta vieja, no un fallo del código. Se van con `rm -rf .next/types` + build.
+
+## ⚠️ Riesgo abierto — META
+`…/negocio` es la URL declarada a Meta para la verificación de proveedor de tecnología, la
+que **ya se rechazó una vez** con «no puede determinar que pertenezca a un negocio real». La
+redirección 308 evita el 404, pero **Fernando tiene que actualizar la URL en el formulario de
+Meta a `/soluciones`**. Y sigue en pie el riesgo anterior: esa página **no lleva la identidad
+legal** desde el 2026-08-04, por decisión suya.
+
+## Pendiente
+Fernando abrió el objetivo hablando de mejoras en `/negocio` **y `/recursos`**. Solo dictó la
+primera. Falta que diga qué más quiere en cada una.
+
+## Segunda tanda (2026-08-17) — `/recursos` → `/desarrollo-humano` y TEMA CLARO en las cinco
+
+**Lo que pidió Fernando**, en dos mensajes: renombrar `/recursos` a «DesarrolloHumano», y que
+`/soluciones`, `/desarrollo-humano` y `/contacto` usen **el tema claro**; después añadió *«los
+legales también cambiale a tema claro porfavor»*.
+
+### Decisiones cerradas
+| Pregunta | Respuesta |
+|---|---|
+| ¿Los legales también en claro? | **Sí** (lo añadió después; al principio eran solo tres) |
+| ¿Cabecera y pie? | **Se quedan oscuros.** *«solo cambia de tema el contenido de las páginas»* |
+| ¿Qué paleta clara? | **La del CV público** |
+| URL de `/recursos` | **`/desarrollo-humano`**, con guion |
+| Titular de esa página | **«Desarrollo Humano»**; píldora y párrafo, igual |
+
+### ⭐ P6 — ¿Había que darles una variante clara a la cabecera y al pie? · ✅ Resuelta: NO
+Era el riesgo grande del encargo: `CabeceraSitio` y `PieSitio` **son los mismos componentes
+que usa la portada**, que es pixel art sobre negro. Recolorearlos la habría despeinado.
+
+La respuesta de Fernando lo deshizo entero: si solo cambia el cuerpo, **el tema claro se pone
+en el `<main>`** y las dos franjas oscuras se quedan como están, enmarcando el papel. Cero
+riesgo para la portada y ni una variante nueva que mantener.
+
+**Generalizable:** antes de dar variantes a un componente compartido, comprobar si el encargo
+se puede resolver **acotando dónde empieza el tema** en vez de parametrizando el componente.
+
+### ⭐ P7 — ¿Se copia la paleta del CV o se extrae? · ✅ Resuelta: se extrae
+Hacían falta los mismos once colores en otro archivo. Copiarlos deja **dos listas que se
+separan a la primera corrección**. Se extrajeron a **`.claro-publico`** en `app/globals.css`,
+con los valores idénticos, y `cv-publico.css` los perdió.
+
+⚠️ **Lo que había que comprobar, y se comprobó:** que la página del CV siga recibiendo esos
+colores ahora que están en otro archivo. `app-build-manifest.json` y el HTML servido confirman
+que `/cv/<token>` carga **los dos** CSS —el global con la paleta y el suyo—.
+
+### P8 — Las dos trampas del claro se repitieron, y apareció una tercera · ✅
+Las dos ya estaban escritas en `Diseño.md` desde el CV, y aun así había que aplicarlas a mano:
+1. **El violeta de texto es otro.** `#a78bfa` no llega a AA sobre blanco → `#5b3fa8`.
+2. **Hace falta sombra.** El realce de solo borde no despega una tarjeta blanca del papel.
+
+La tercera es nueva y solo se ve haciéndolo: **la rejilla del héroe cambia de COLOR, no de
+opacidad.** Sus líneas eran `rgba(255,255,255,.045)` — sobre papel, invisibles a cualquier
+opacidad. Ahora son violeta al 5,5 %, las mismas del CV.
+
+### ⭐ P9 — ¿Qué caza un recoloreado que no caza nada más? · ✅ Resuelta: las COPIAS
+En `soluciones/[necesidad]/page.tsx` había un `<a>` con las clases de `BotonPrimario` escritas
+a mano. Al recolorear, el botón de verdad se puso violeta oscuro y **la copia se quedó con el
+color viejo**: por eso se vio.
+
+**Generalizable:** un cambio transversal —de color, de tipografía, de espaciado— es un
+detector de duplicados. Lo que no cambia con los demás es que no salía de la fuente única.
+
+### P10 — ¿Bastaban `tsc` y el build? · ✅ Resuelta: no, otra vez
+Los dos pasan en verde con una página entera del color equivocado: **un color no es un tipo**.
+Lo que lo cerró fue abrir las cinco en **Chrome de verdad** con puppeteer y leer el color
+computado: `main: rgb(246,245,249)`, `h1: rgb(28,27,34)` en las cinco.
+
+⚠️ **Puppeteer no traía navegador** (`Could not find Chrome`). Se resolvió apuntando
+`executablePath` al Chrome del sistema, sin descargar nada.
+
+## Estado del objetivo del sitio público
+- **Renombrados:** ✅ 100 %. `/negocio` → `/soluciones`, `/recursos` → `/desarrollo-humano`.
+- **Tema claro:** ✅ construido y verificado; **pendiente el visto bueno de Fernando**, que es
+  quien juzga lo visible. Se le entregaron las cinco capturas.
+- **Sigue abierto:** qué más quiere cambiar del contenido de esas páginas.

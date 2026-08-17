@@ -1,8 +1,17 @@
 /**
- * RECURSOS — el proyecto por dentro: por qué existe, cómo se organiza y en qué cree.
+ * DESARROLLO HUMANO — el proyecto por dentro: por qué existe, cómo se organiza y en qué cree.
  *
- * ── EL REPARTO CON `/negocio` ──────────────────────────────────────────────────
- * `/negocio` dice **qué ofrecemos** —a clientes, a miembros y a candidatos—. Esta dice
+ * ── SE LLAMABA `/recursos` HASTA EL 2026-08-17 ─────────────────────────────────
+ * El menú ya decía «Desarrollo Humano» mientras la ruta seguía siendo `/recursos` y el
+ * titular «Un proyecto de desarrollo humano»: tres nombres para una página. Fernando los
+ * igualó. La ruta vieja redirige con **308 permanente** desde `next.config.ts`.
+ *
+ * La URL lleva **guion** —`/desarrollo-humano`, no `/desarrollohumano`— porque es como un
+ * buscador separa las palabras, y esta es justo la página con la que se quiere aparecer por
+ * «desarrollo humano Ecuador».
+ *
+ * ── EL REPARTO CON `/soluciones` ──────────────────────────────────────────────────
+ * `/soluciones` dice **qué ofrecemos** —a clientes, a miembros y a candidatos—. Esta dice
  * **qué somos**, que es de donde sale todo lo anterior.
  *
  * Corrección de Fernando (2026-08-02): la primera versión del sitio presentaba al GCC como
@@ -20,18 +29,22 @@ import {
 } from '@/components/sitio/piezas';
 
 export const metadata: Metadata = {
-  title: 'El proyecto — desarrollo humano, condiciología y Modelo 4P',
+  /**
+   * La pestaña, como en `/soluciones`: solo el nombre de la sección. La plantilla de
+   * `app/layout.tsx` le añade « · Grupo Corazones Cruzados».
+   */
+  title: 'Desarrollo Humano',
   description:
     'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: por qué existe, cómo se organiza con el Modelo 4P, qué es la Condiciología y qué significa el violeta.',
   keywords: [
     'desarrollo humano Ecuador', 'condiciología', 'Modelo 4P', 'proyecto colaborativo Guayaquil',
     'GCC World', 'crecimiento personal Guayaquil',
   ],
-  alternates: { canonical: '/recursos' },
+  alternates: { canonical: '/desarrollo-humano' },
   openGraph: {
-    title: `El proyecto — ${SITIO.nombre}`,
+    title: `Desarrollo Humano — ${SITIO.nombre}`,
     description: 'Por qué existe, cómo se organiza y en qué cree un proyecto de desarrollo humano.',
-    url: `${SITIO.url}/recursos`,
+    url: `${SITIO.url}/desarrollo-humano`,
     type: 'website',
     locale: 'es_EC',
     images: [OG_IMAGEN],
@@ -92,20 +105,25 @@ export default function ProyectoPage() {
       <section className="relative overflow-hidden">
         <FondoHeroe />
         <Contenedor className="relative py-24 sm:py-32 text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-[#7B5FBF]/30 bg-[#7B5FBF]/10 px-3.5 py-1.5 text-[12.5px] text-[#c4b5fd]">
+          <p className="inline-flex items-center gap-2 rounded-full border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08] px-3.5 py-1.5 text-[12.5px] text-[var(--violeta)]">
             El proyecto
           </p>
-          <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-white tracking-tight max-w-3xl mx-auto">
-            Un proyecto de
-            <br className="hidden sm:block" /> desarrollo humano
+          {/* El titular dice el NOMBRE de la sección, igual que en `/soluciones`: coincide
+              con la pestaña, con el menú y con la URL. Antes decía «Un proyecto de
+              desarrollo humano», que era una cuarta forma de nombrar lo mismo. */}
+          <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-[var(--texto)] tracking-tight max-w-3xl mx-auto">
+            Desarrollo Humano
           </h1>
-          <p className="mt-6 text-[17px] sm:text-[18.5px] leading-relaxed text-white/55 max-w-2xl mx-auto">
+          <p className="mt-6 text-[17px] sm:text-[18.5px] leading-relaxed text-[var(--suave)] max-w-2xl mx-auto">
             {SITIO.nombre} desarrolla proyectos, personas y sistemas bajo una misma
             filosofía. Todo lo que ofrecemos —también a nuestros clientes— sale de aquí.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <BotonPrimario href="/">Entrar en GCC World</BotonPrimario>
-            <BotonSecundario href="/negocio#servicios">Ver todo lo que ofrecemos</BotonSecundario>
+            {/* `/negocio#servicios` → `/soluciones`. Dos correcciones en una: la sección se
+                renombró el 2026-08-17, y el ancla `#servicios` **ya no existía** desde que
+                Fernando vació todo lo que había bajo las tarjetas el 2026-08-04. */}
+            <BotonSecundario href="/soluciones">Ver todo lo que ofrecemos</BotonSecundario>
           </div>
         </Contenedor>
       </section>
@@ -120,9 +138,9 @@ export default function ProyectoPage() {
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
           {MOTIVOS.map((m) => (
             <Tarjeta key={m.n}>
-              <span className="text-[13px] font-semibold tracking-[0.14em] text-[#7B5FBF]">{m.n}</span>
-              <h3 className="mt-3 text-[18px] font-semibold text-white leading-snug">{m.titulo}</h3>
-              <p className="mt-3 text-[14.5px] leading-relaxed text-white/50">{m.texto}</p>
+              <span className="text-[13px] font-semibold tracking-[0.14em] text-[var(--violeta-txt)]">{m.n}</span>
+              <h3 className="mt-3 text-[18px] font-semibold text-[var(--texto)] leading-snug">{m.titulo}</h3>
+              <p className="mt-3 text-[14.5px] leading-relaxed text-[var(--tenue)]">{m.texto}</p>
             </Tarjeta>
           ))}
         </div>
@@ -137,16 +155,16 @@ export default function ProyectoPage() {
             entradilla="Una condición es el conjunto de factores que se manifiestan en una instancia de la realidad. Lo que no se ha estudiado no es una condición: se convierte en una cuando se reconoce por qué ocurrió. Se aplica a personas, a proyectos y a ideas."
           />
           <Tarjeta>
-            <p className="text-[15.5px] font-semibold text-white">Los seis pasos</p>
+            <p className="text-[15.5px] font-semibold text-[var(--texto)]">Los seis pasos</p>
             <ol className="mt-5 space-y-3.5">
               {CONDICIOLOGIA.map(([n, d], i) => (
                 <li key={n} className="flex gap-3.5">
-                  <span className="shrink-0 w-6 h-6 rounded-full border border-[#7B5FBF]/40 bg-[#7B5FBF]/10 text-[#c4b5fd] text-[12px] font-semibold inline-flex items-center justify-center">
+                  <span className="shrink-0 w-6 h-6 rounded-full border border-[#7b5fbf]/35 bg-[#7b5fbf]/[0.08] text-[var(--violeta)] text-[12px] font-semibold inline-flex items-center justify-center">
                     {i + 1}
                   </span>
                   <span>
-                    <span className="block text-[14.5px] font-medium text-white/90">{n}</span>
-                    <span className="block mt-0.5 text-[13.5px] leading-relaxed text-white/45">{d}</span>
+                    <span className="block text-[14.5px] font-medium text-[var(--texto)]">{n}</span>
+                    <span className="block mt-0.5 text-[13.5px] leading-relaxed text-[var(--tenue)]">{d}</span>
                   </span>
                 </li>
               ))}
@@ -166,17 +184,17 @@ export default function ProyectoPage() {
           {[['Los 4 pisos', 'Los roles. Siempre expertos en su área.', PISOS],
             ['Los 4 pasos', 'Las etapas, en este orden.', PASOS]].map(([titulo, sub, filas]) => (
             <Tarjeta key={titulo as string}>
-              <p className="text-[15.5px] font-semibold text-white">{titulo as string}</p>
-              <p className="mt-1 text-[13.5px] text-white/45">{sub as string}</p>
+              <p className="text-[15.5px] font-semibold text-[var(--texto)]">{titulo as string}</p>
+              <p className="mt-1 text-[13.5px] text-[var(--tenue)]">{sub as string}</p>
               <ol className="mt-5 space-y-3.5">
                 {(filas as string[][]).map(([n, d], i) => (
                   <li key={n} className="flex gap-3.5">
-                    <span className="shrink-0 w-6 h-6 rounded-full border border-[#7B5FBF]/40 bg-[#7B5FBF]/10 text-[#c4b5fd] text-[12px] font-semibold inline-flex items-center justify-center">
+                    <span className="shrink-0 w-6 h-6 rounded-full border border-[#7b5fbf]/35 bg-[#7b5fbf]/[0.08] text-[var(--violeta)] text-[12px] font-semibold inline-flex items-center justify-center">
                       {i + 1}
                     </span>
                     <span>
-                      <span className="block text-[14.5px] font-medium text-white/90">{n}</span>
-                      <span className="block mt-0.5 text-[13.5px] leading-relaxed text-white/45">{d}</span>
+                      <span className="block text-[14.5px] font-medium text-[var(--texto)]">{n}</span>
+                      <span className="block mt-0.5 text-[13.5px] leading-relaxed text-[var(--tenue)]">{d}</span>
                     </span>
                   </li>
                 ))}
@@ -196,7 +214,7 @@ export default function ProyectoPage() {
         <div className="mt-10 flex flex-wrap gap-2.5">
           {VALORES.map((v) => (
             <span key={v}
-              className="inline-flex items-center rounded-full border border-white/[0.12] bg-white/[0.03] px-4 py-2 text-[14px] text-white/70">
+              className="inline-flex items-center rounded-full border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] px-4 py-2 text-[14px] text-[var(--suave)]">
               {v}
             </span>
           ))}
@@ -218,8 +236,8 @@ export default function ProyectoPage() {
               ['Acción', 'Ayudar y esperar ser ayudado. El apoyo de hoy se devuelve mañana, y el conocimiento se comparte entre proyectos.'],
             ].map(([t, d]) => (
               <Tarjeta key={t} className="!p-5">
-                <p className="text-[14.5px] font-semibold text-white">{t}</p>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-white/50">{d}</p>
+                <p className="text-[14.5px] font-semibold text-[var(--texto)]">{t}</p>
+                <p className="mt-1.5 text-[13.5px] leading-relaxed text-[var(--tenue)]">{d}</p>
               </Tarjeta>
             ))}
           </div>

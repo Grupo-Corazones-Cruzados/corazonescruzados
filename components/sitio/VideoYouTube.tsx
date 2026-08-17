@@ -1,5 +1,5 @@
 /**
- * EL VÍDEO DE UNA PÁGINA DE `/negocio`.
+ * EL VÍDEO DE UNA PÁGINA DE `/soluciones`.
  *
  * ── ACEPTA LA URL TAL CUAL SE COPIA DEL NAVEGADOR ──────────────────────────────
  * `youtube.com/watch?v=…`, `youtu.be/…`, `/embed/…` o `/shorts/…`. Nadie debería tener que
@@ -45,7 +45,7 @@ export default function VideoYouTube({ url, titulo }: { url?: string; titulo: st
   return (
     // `aspect-video` mantiene la proporción 16:9 sin trucos de relleno, y reserva el hueco
     // antes de que cargue nada: así la página no da el salto que Google penaliza.
-    <div className="aspect-video w-full overflow-hidden rounded-xl border border-white/[0.08] bg-black/40">
+    <div className="aspect-video w-full overflow-hidden rounded-xl border border-[var(--linea)] bg-[#1c1b22]">
       <iframe
         src={`https://www.youtube-nocookie.com/embed/${id}`}
         title={titulo}

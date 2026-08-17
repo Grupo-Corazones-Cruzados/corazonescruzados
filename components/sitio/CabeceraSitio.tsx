@@ -16,7 +16,7 @@
  *
  * Y **no lleva botón de «Crear cuenta»** (decisión de Fernando, 2026-08-02). Lo llevó, y
  * empujaba a registrarse desde la primera pantalla, antes de haber contado nada. El alta
- * sigue estando donde tiene sentido: al final de `/negocio`, después de decir qué se hace
+ * sigue estando donde tiene sentido: al final de `/soluciones`, después de decir qué se hace
  * y cómo funciona el precio.
  */
 

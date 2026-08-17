@@ -65,8 +65,8 @@ export default function VentanaTarjeta({
       // `m-auto` centra la ventana: el `<dialog>` lo hace solo, pero el reajuste de estilos
       // de Tailwind le pone `margin: 0` y la deja pegada arriba a la izquierda.
       className="ventana-tarjeta m-auto w-[min(58rem,calc(100vw-2rem))] max-h-[min(44rem,calc(100dvh-2rem))]
-                 overflow-y-auto rounded-2xl border border-[#7B5FBF]/25 bg-[#0f1119] p-0
-                 text-white/75 backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+                 overflow-y-auto rounded-2xl border border-[#7b5fbf]/25 bg-[var(--tarjeta)] p-0
+                 text-[var(--suave)] backdrop:bg-[#1c1b22]/55 backdrop:backdrop-blur-sm"
       style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
       aria-labelledby="ventana-tarjeta-titulo"
     >
@@ -86,9 +86,9 @@ export default function VentanaTarjeta({
         onClick={onCerrar}
         aria-label="Cerrar"
         className="absolute right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-lg
-                   border border-white/[0.12] text-white/55 transition-colors
-                   hover:border-white/30 hover:text-white
-                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B5FBF]/60"
+                   border border-[var(--linea-fuerte)] text-[var(--tenue)] transition-colors
+                   hover:border-[var(--violeta)] hover:text-[var(--texto)]
+                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/60"
       >
         <X className="h-4 w-4" />
       </button>
@@ -102,31 +102,31 @@ export default function VentanaTarjeta({
         <div>
           {Icono && (
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg
-                             border border-[#7B5FBF]/30 bg-[#7B5FBF]/10">
-              <Icono className="h-5 w-5 text-[#a78bfa]" />
+                             border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]">
+              <Icono className="h-5 w-5 text-[var(--violeta-txt)]" />
             </span>
           )}
 
           <h2
             id="ventana-tarjeta-titulo"
-            className="mt-5 text-[24px] sm:text-[30px] font-semibold leading-tight tracking-tight text-white"
+            className="mt-5 text-[24px] sm:text-[30px] font-semibold leading-tight tracking-tight text-[var(--texto)]"
           >
             {item.titulo}
           </h2>
 
-          <p className="mt-5 text-[15px] leading-relaxed text-white/60">
+          <p className="mt-5 text-[15px] leading-relaxed text-[var(--suave)]">
             {item.descripcion ?? item.texto}
           </p>
 
           {item.beneficios && item.beneficios.length > 0 && (
             <>
-              <p className="mt-8 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#a78bfa]">
+              <p className="mt-8 text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
                 Qué gana tu empresa
               </p>
               <ul className="mt-4 space-y-3">
                 {item.beneficios.map((b) => (
-                  <li key={b} className="flex gap-3 text-[14.5px] leading-relaxed text-white/65">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#7B5FBF]" />
+                  <li key={b} className="flex gap-3 text-[14.5px] leading-relaxed text-[var(--suave)]">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--violeta)]" />
                     <span>{b}</span>
                   </li>
                 ))}
@@ -138,7 +138,7 @@ export default function VentanaTarjeta({
         {/* La ilustración, cuando la haya. Sin ella no se pinta ni un recuadro vacío: la
             ventana pasa a una sola columna y ya. Misma regla que el resto del sitio. */}
         {item.imagen && (
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+          <div className="rounded-xl border border-[var(--linea)] bg-[var(--papel)] p-5">
             <Image
               src={item.imagen.src}
               alt=""
