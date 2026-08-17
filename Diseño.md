@@ -181,6 +181,43 @@ Tipografía: **Inter**, fijada en el `style` del layout, no heredada del tema.
 tema del panel; esto se sirve a terceros y tiene que verse igual pase lo que pase con la
 sesión de quien mire.
 
+### La barra: cuatro pestañas de navegación + «Plataforma», que es una acción (2026-08-17)
+
+Fernando movió «Plataforma» del héroe de la portada a la barra, **a la derecha de
+Contacto**, y con **forma de botón**. La distinción es la regla:
+
+| | Qué es | Cómo se ve |
+|---|---|---|
+| Inicio · Soluciones · Desarrollo Humano · Contacto | navegación | enlaces; el activo, con fondo tenue |
+| **Plataforma** | la única **acción** de la barra | botón violeta lleno (`#7B5FBF`) |
+
+- **Un `<button>`, no un `<Link>`.** Estando ya en la portada no navega a ningún sitio: abre
+  el diálogo. Un enlace que a veces no enlaza miente sobre lo que va a pasar.
+- **Una sola definición de estilo** (`CLASES_PLATAFORMA`, en `CabeceraSitio.tsx`) compartida
+  por la barra y el menú desplegable del móvil.
+- **Sigue en violeta oscuro sobre la barra oscura**: la barra NO pasó a claro el 2026-08-17,
+  solo el cuerpo de las páginas.
+- **El héroe de la portada se queda con un botón**, «Comenzar Aventura» —antes «Aventura»—,
+  y pierde el `grid` de dos columnas iguales que servía para igualarlos de ancho.
+
+#### ⛔ EL ACCESO ES UNO SOLO, Y NO SE COPIA
+El botón llama a `abrirPlataforma()` (`lib/sitio/acceso.ts`), que lleva **al diálogo que ya
+existe en la portada**. No hay un segundo formulario.
+
+Es la regla que Fernando fijó el 2026-08-03, cuando `/auth/cliente` y sus hermanas eran
+páginas con un formulario propio que *se parecía* al de la portada: lo vio en el acto. Desde
+entonces esas rutas no son páginas, son **puertas con nombre** que redirigen.
+
+```
+ya en la portada  → evento `gcc:abrir-plataforma` → el diálogo se abre sin recargar
+en otra página    → /auth → /?acceso=plataforma&redirect=<donde estaba> → se abre allí
+```
+
+⚠️ **El acceso se abre EN LA PORTADA, no encima de la página en la que estabas.** Es lo que
+ya hacían `/auth/*` y el guardián del panel. Para que se abriera *en el sitio*, habría que
+**extraer** la orquestación de diálogos de `app/page.tsx` a un componente compartido y
+montarlo también en `app/(sitio)/layout.tsx` — extraer, nunca copiar.
+
 ### Transiciones — cuál anima qué, y por qué no se pisan (2026-08-17)
 
 El sitio tiene **dos** transiciones de navegación, y la regla que las separa es la clave

@@ -18,6 +18,7 @@ import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
+import { ACCESO_PLATAFORMA, EVENTO_ABRIR_PLATAFORMA } from '@/lib/sitio/acceso';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
 import CandidateAccountModal from '@/components/landing/CandidateAccountModal';
 import ClientSignupModal from '@/components/landing/ClientSignupModal';
@@ -433,6 +434,11 @@ export default function LandingPage() {
     if (acceso === 'cliente') { setEntryDestination('dashboard'); setClientLoginOpen(true); }
     else if (acceso === 'miembro') { setEntryDestination('dashboard'); setMemberLoginOpen(true); }
     else if (acceso === 'candidato') setRecoveryOpen(true);
+    // `plataforma` no es una puerta con nombre: es el MENÚ de ingreso, el que se abría con
+    // el botón «Plataforma» del héroe antes de subirlo a la barra de navegación
+    // (2026-08-17). Aquí llega quien lo pulsa desde `/soluciones`, `/legal` o cualquier
+    // otra página, vía `/auth`. El diálogo es el mismo: no hay una segunda copia.
+    else if (acceso === ACCESO_PLATAFORMA) { setEntryDestination('dashboard'); setEntryChoiceOpen(true); }
     // Se limpia la URL: dejar `?acceso=` haría que el diálogo reapareciera al volver atrás.
     const limpia = new URL(window.location.href);
     limpia.searchParams.delete('acceso');
@@ -1217,6 +1223,25 @@ export default function LandingPage() {
       markGameEntry();
       window.location.href = '/juego';
     }, 2200);
+  }, []);
+
+  /**
+   * EL BOTÓN «PLATAFORMA» DE LA BARRA, CUANDO YA ESTAMOS EN LA PORTADA (2026-08-17).
+   *
+   * Desde otra página se llega por `/auth` → `/?acceso=plataforma`, que lo resuelve el
+   * efecto de arriba. Pero si el usuario **ya está aquí**, navegar sería recargar la
+   * portada y volver a lanzarle la intro entera. Así que en ese caso el botón solo avisa
+   * con un evento y el diálogo se abre en el sitio.
+   *
+   * Quien lo emite: `abrirPlataforma()` en `lib/sitio/acceso.ts`.
+   */
+  useEffect(() => {
+    const alPedirPlataforma = () => {
+      setEntryDestination('dashboard');
+      setEntryChoiceOpen(true);
+    };
+    window.addEventListener(EVENTO_ABRIR_PLATAFORMA, alPedirPlataforma);
+    return () => window.removeEventListener(EVENTO_ABRIR_PLATAFORMA, alPedirPlataforma);
   }, []);
 
   // ── On mount: detect returning player by cookie / IP ─────────────
@@ -3073,19 +3098,24 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col items-center gap-3 mt-10">
-            {/* «Aventura» y «Plataforma» con el MISMO ancho, el del texto más largo:
-                en fila son dos columnas `1fr` de un grid ajustado al contenido, así ambas
-                miden lo que la más ancha sin fijar píxeles. Apilados (móvil) el flex-col
-                los estira al mismo ancho por igual.
+            {/* ── UN SOLO BOTÓN DESDE EL 2026-08-17 ──────────────────────────────
+                Eran dos, «Aventura» y «Plataforma», con el mismo ancho. Fernando quitó el
+                segundo del héroe y lo subió a la barra de navegación, donde se ve desde
+                cualquier página (`components/sitio/CabeceraSitio.tsx`). El que queda pasó a
+                llamarse «Comenzar Aventura», que dice lo que hace en vez de nombrar un
+                sitio.
+
+                Con uno solo ya no hace falta el `grid` de dos columnas iguales que los
+                igualaba de ancho: el botón mide lo que su texto.
 
                 ⚠️ `corp dark corp-overlay` convierte esto en una ISLA con el tema del
                 panel. Es el patrón que el proyecto ya usa para los diálogos de la portada
                 (ver `Diseño.md` → «Modales de la landing en tema del dashboard»): dentro de
-                `.corp`, `globals.css` reescribe `pixel-btn` a Fluent, así que estos dos
-                botones se ven como los del panel sin cambiarles una sola clase. Y
-                `corp-overlay` evita que `.corp` imponga su fondo de página y su
-                `min-height`, que aquí destrozarían la escena. */}
-            <div className="corp dark corp-overlay flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
+                `.corp`, `globals.css` reescribe `pixel-btn` a Fluent, así que el botón se ve
+                como los del panel sin cambiarle una sola clase. Y `corp-overlay` evita que
+                `.corp` imponga su fondo de página y su `min-height`, que aquí destrozarían
+                la escena. */}
+            <div className="corp dark corp-overlay flex flex-col items-stretch gap-3 justify-center">
             <button
               onClick={() => {
                 if (landingLocked || windAway) return;
@@ -3120,38 +3150,7 @@ export default function LandingPage() {
                     }),
               }}
             >
-              Aventura
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (landingLocked || windAway) return;
-                // Colaborar: mismo menú de opciones, pero el destino es /dashboard
-                // (candidato/cliente/miembro van al dashboard, no al juego). También
-                // incluye postular y ver el estado de la solicitud.
-                setEntryDestination('dashboard');
-                setEntryChoiceOpen(true);
-              }}
-              disabled={landingLocked || windAway}
-              className="pixel-btn pixel-btn-secondary"
-              style={{
-                ...(landingLocked && !windAway
-                  ? { opacity: 0.45, cursor: 'not-allowed' }
-                  : {}),
-                ...(windAway
-                  ? {
-                      animation:
-                        'windBlowAway 1.15s ease-in 0.4s forwards',
-                      willChange: 'transform, opacity, filter',
-                      cursor: 'default',
-                    }
-                  : {
-                      animation: 'breathe 5s ease-in-out infinite',
-                      willChange: 'transform',
-                    }),
-              }}
-            >
-              Plataforma
+              Comenzar Aventura
             </button>
             </div>
 

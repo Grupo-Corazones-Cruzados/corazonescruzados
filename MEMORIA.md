@@ -275,6 +275,49 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔑 «PLATAFORMA» SALE DEL HÉROE Y SUBE A LA BARRA (2026-08-17).** Fernando abrió con esto
+  el trabajo de diseño y contenido de las páginas principales.
+  - **La portada se queda con un botón**: «Aventura» → **«Comenzar Aventura»**. Fuera el de
+    Plataforma y fuera el `grid` de dos columnas que los igualaba de ancho.
+  - **«Plataforma» va en la barra, a la derecha de Contacto, con forma de botón.** La barra
+    se ve en todas las páginas, así que el acceso ya no depende de estar en la portada.
+    La distinción que queda escrita: las cuatro pestañas son **navegación**; Plataforma es la
+    única **acción**, y por eso es la única con forma de botón.
+  - **⭐ NO SE ESCRIBIÓ UN SEGUNDO LOGIN, y esa es toda la historia.** El proyecto ya tenía
+    resuelto esto: el 2026-08-03 Fernando rechazó que `/auth/cliente` fuera una página con
+    formulario propio *parecido* al de la portada, y desde entonces esas rutas son **puertas
+    con nombre** que redirigen a la portada para que abra el diálogo que ya existe. El botón
+    nuevo hace exactamente lo mismo (`lib/sitio/acceso.ts`):
+    - **ya en la portada** → evento `gcc:abrir-plataforma`, el diálogo se abre sin recargar
+      (recargar relanzaría la intro entera);
+    - **en cualquier otra página** → `/auth` → `/?acceso=plataforma&redirect=<donde estaba>`.
+  - **`/auth` estaba a punto de quedarse huérfano.** Redirigía a `/` a secas contando con que
+    el visitante pulsara el botón «Plataforma» del héroe — el que se acaba de quitar. Ahora
+    manda a `/?acceso=plataforma`. Ahí llegan el guardián del panel, correos y marcadores.
+  - **⚠️ El acceso se abre EN LA PORTADA, no encima de la página en la que estabas.** Es
+    coherente con lo que ya hacía todo lo demás. Para abrirlo en el sitio habría que
+    **extraer** la orquestación de diálogos de `app/page.tsx` (~250 líneas, enredadas con el
+    estado del juego) a un componente compartido. Pendiente de que Fernando lo pida.
+  - **Verificado en navegador**, los cuatro caminos: desde la portada (abre sin navegar),
+    desde `/soluciones` y `/legal` (navega y abre, conservando `?redirect=`), y `/auth`
+    directo. Más build de producción y `tsc`.
+- **🪤 UN `npm run dev` VIVO ROMPE `next build`, Y MIENTE SOBRE LA CAUSA (2026-08-17).**
+  Costó tres diagnósticos falsos en una sola sesión: `PageNotFoundError` en diez páginas sin
+  tocar, `/_document` no encontrado, una regla CSS «ausente» del bundle y navegaciones que se
+  leían como recargas. **Nada era del código**: `next dev` y `next build` comparten `.next` y
+  se pisan.
+  - **Arreglo permanente:** `next.config.ts` ahora lee **`distDir: process.env.NEXT_DIST_DIR
+    || '.next'`**. Para comprobar un build sin parar el `dev` de nadie:
+    **`NEXT_DIST_DIR=.next-build npm run build`**. Por defecto no cambia nada, y Railway no
+    pasa la variable.
+  - **⚠️ Al usar la variable, Next REESCRIBE `next-env.d.ts` y `tsconfig.json`** apuntando al
+    directorio nuevo. **No se commitean así**: dejarían el build de Railway buscando tipos en
+    una carpeta que allí no existe. Tras un build aislado:
+    `git checkout -- next-env.d.ts tsconfig.json`.
+  - Y `tsconfig.tsbuildinfo` **sobrevive a `rm -rf .next`**: si el build se queja de tipos de
+    archivos que ya no existen, hay que borrarlo también.
+  - **Regla: ante un error que señala archivos que no tocaste, mira si hay un `dev` corriendo
+    antes de sospechar del código.**
 - **🎞️ TRANSICIÓN AL CAMBIAR DE PESTAÑA DEL MENÚ (2026-08-17).** Pedida por Fernando: pasar
   de «Soluciones» a «Desarrollo Humano» era un corte seco. Ahora el cuerpo entra subiendo
   (`.transicion-seccion`, 10 px, 0,38 s), con el mismo easing que la que ya existía.

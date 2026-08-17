@@ -4647,3 +4647,76 @@ se ha regenerado.
 - Puerta dentro de Soluciones → `["aparecer-detalle"]`, **sin** `transicion-seccion`.
 - `prefers-reduced-motion: reduce` → `[]`, ninguna animación.
 - 3 redirecciones 308, 6 páginas 200, contenido en HTML crudo, papel y titular correctos.
+
+## Cuarta tanda (2026-08-17) — «Plataforma» sale del héroe y sube a la barra
+
+**Pedido de Fernando**, que además abre el objetivo grande: *«Vamos a ir trabajando en el
+diseño y contenido de todas estas páginas principales… Primero en la página de Inicio,
+necesito que quitemos el botón de plataforma, y dejemos solo el de Aventura pero modifica el
+texto de ese botón por Comenzar Aventura. Y el botón de Plataforma ponlo como pestaña con
+diseño de botón en la lista de pestañas a la derecha de la pestaña de contacto. Ese botón
+debe permitir mostrar el inicio de sesión independientemente de la página donde esté el
+usuario.»*
+
+### ⭐ P14 — ¿Cómo se muestra el login desde cualquier página? · ✅ Resuelta: NO se escribe otro
+Era la pregunta de arquitectura del encargo, y **el proyecto ya la tenía contestada**. Leyendo
+`app/(auth)/auth/page.tsx` apareció escrito:
+
+> *«El formulario es el de la portada, el mismo que se abre desde «Plataforma»: uno solo, no
+> dos que hay que mantener a la par.»*
+
+Viene del 2026-08-03, cuando `/auth/cliente` y sus hermanas eran páginas con un formulario
+propio que *se parecía* al de la portada. Fernando lo vio en el acto. Desde entonces son
+**puertas con nombre** que redirigen a `/?acceso=<tipo>` y la portada abre el diálogo real.
+
+El botón nuevo hace lo mismo, con un valor nuevo —`?acceso=plataforma`, que abre el **menú**
+en vez de una puerta concreta— y un atajo para cuando ya estamos en la portada.
+
+**Lección de método, más que de código:** antes de diseñar el «cómo», buscar si el repo ya
+decidió esto. La respuesta estaba en el docblock del archivo que había que tocar.
+
+### P15 — `/auth` se quedaba huérfano · ✅ Detectado por el camino
+Redirigía a `/` a secas **contando con que el visitante pulsara el botón «Plataforma» del
+héroe** — justo el que se estaba quitando. Nadie lo habría notado hasta que un cliente
+llegara desde un correo y se quedara mirando la portada. Ahora manda a `/?acceso=plataforma`.
+
+**Generalizable:** al quitar un elemento, buscar quién *contaba* con él. El docblock de
+`/auth` lo decía con todas las letras.
+
+### ⭐ P16 — Tres builds rotos que no eran del código · ✅ Resuelta: era `npm run dev`
+`next dev` y `next build` **comparten `.next`**. Con el servidor de desarrollo levantado, el
+build se pisa con él y falla señalando a cualquier sitio menos al culpable:
+- `PageNotFoundError: Cannot find module for page` en diez páginas del dashboard sin tocar
+- `Cannot find module for page: /_document`
+- una regla CSS presente en `globals.css` y «ausente» del bundle
+- navegaciones de cliente leídas como recargas completas
+
+Se perdió un buen rato en dos tandas distintas antes de mirar `ps aux`.
+
+**Arreglado de raíz**, no con disciplina: `next.config.ts` lee ahora
+`distDir: process.env.NEXT_DIST_DIR || '.next'`, así que
+`NEXT_DIST_DIR=.next-build npm run build` compila sin tocar el `dev` de nadie. Con eso, el
+build de producción pasó a la primera.
+
+Y un detalle que confunde aparte: **`tsconfig.tsbuildinfo` sobrevive a `rm -rf .next`**. Si
+el build se queja de tipos de archivos que ya no existen, hay que borrarlo también.
+
+### Lo medido
+| Desde | Diálogo | URL |
+|---|---|---|
+| la portada | **SÍ** | `/` — sin navegar |
+| `/soluciones` | **SÍ** | `/?redirect=%2Fsoluciones` |
+| `/legal` | **SÍ** | `/?redirect=%2Flegal` |
+| `/auth` directo | **SÍ** | `/` |
+
+Más: el héroe con un solo botón («Comenzar Aventura», sin `pixel-btn-secondary`), «Plataforma»
+presente en la barra de las cinco páginas y de la portada, `/auth` conservando `?redirect=`,
+build de producción aislado y `tsc` limpio.
+
+## Estado del objetivo del sitio público
+- **Renombrados y tema claro:** ✅ cerrados y aprobados por Fernando *(«el diseño que hiciste
+  para el tema claro está muy bien»)*.
+- **Transiciones:** hechas; *«casi no las siento pero por ahora queda como está»*. Anotado por
+  si luego quiere subirlas.
+- **Abierto — el objetivo grande:** diseño y contenido de todas las páginas principales.
+  Empezado por Inicio. Falta que dicte el resto.

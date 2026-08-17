@@ -2,7 +2,7 @@
 
 /**
  * CABECERA DEL SITIO PÚBLICO — definición ÚNICA, compartida por la portada y las páginas
- * de negocio, recursos y contacto.
+ * de Soluciones, Desarrollo Humano y Contacto.
  *
  * ── DOS MODOS, Y POR QUÉ ───────────────────────────────────────────────────────
  * · `flotante` — para la PORTADA. Va superpuesta y transparente, y solo se opaca al
@@ -18,6 +18,16 @@
  * empujaba a registrarse desde la primera pantalla, antes de haber contado nada. El alta
  * sigue estando donde tiene sentido: al final de `/soluciones`, después de decir qué se hace
  * y cómo funciona el precio.
+ *
+ * ── SÍ LLEVA «PLATAFORMA», Y ES OTRA COSA (Fernando, 2026-08-17) ───────────────
+ * No es un alta: es la **entrada de quien ya tiene cuenta**. Vivía en el héroe de la
+ * portada, junto a «Aventura», y solo se veía ahí; ahora está en la barra, que se ve en
+ * todas las páginas. Va **a la derecha de «Contacto»** y **con forma de botón**, no de
+ * enlace: es la única acción de la barra, y las cuatro anteriores son navegación.
+ *
+ * ⚠️ **No abre un formulario propio.** Llama a `abrirPlataforma()`
+ * (`lib/sitio/acceso.ts`), que lleva al ÚNICO acceso que existe, el de la portada. Escribir
+ * aquí un segundo login es exactamente lo que Fernando rechazó el 2026-08-03.
  */
 
 import { useEffect, useState } from 'react';
@@ -26,6 +36,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { NAVEGACION } from '@/lib/sitio/contenido';
+import { abrirPlataforma } from '@/lib/sitio/acceso';
+
+/**
+ * El botón «Plataforma». Una sola definición para la barra y para el menú desplegable: si
+ * se retoca el color, se retoca en los dos sitios a la vez.
+ *
+ * Violeta de marca sobre la barra oscura — la barra NO pasó a claro el 2026-08-17, así que
+ * aquí siguen valiendo los literales oscuros del sitio.
+ */
+const CLASES_PLATAFORMA =
+  'inline-flex items-center justify-center rounded-md bg-[#7B5FBF] hover:bg-[#6b4faf] ' +
+  'text-white font-medium transition-colors focus:outline-none ' +
+  'focus-visible:ring-2 focus-visible:ring-[#c4b5fd]/70 focus-visible:ring-offset-2 ' +
+  'focus-visible:ring-offset-[#0b0d14]';
 
 export default function CabeceraSitio({ flotante = false }: { flotante?: boolean }) {
   const pathname = usePathname() || '/';
@@ -85,6 +109,17 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
               </Link>
             );
           })}
+
+          {/* La quinta «pestaña», que no es navegación sino la entrada a la plataforma.
+              Es un `<button>` y no un `<Link>` a propósito: estando ya en la portada no
+              navega a ningún sitio, solo abre el diálogo. */}
+          <button
+            type="button"
+            onClick={() => abrirPlataforma(pathname)}
+            className={`${CLASES_PLATAFORMA} ml-2 px-3.5 py-2 text-[13.5px]`}
+          >
+            Plataforma
+          </button>
         </nav>
 
         <button
@@ -110,6 +145,13 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
               {n.label}
             </Link>
           ))}
+          <button
+            type="button"
+            onClick={() => { setAbierto(false); abrirPlataforma(pathname); }}
+            className={`${CLASES_PLATAFORMA} mt-1.5 px-3 py-2.5 text-[14px]`}
+          >
+            Plataforma
+          </button>
         </nav>
       )}
     </header>

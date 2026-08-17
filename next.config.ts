@@ -1,6 +1,28 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  /**
+   * DÓNDE SE ESCRIBE EL BUILD — configurable, y hace falta (2026-08-17).
+   *
+   * `next dev` y `next build` usan el MISMO `.next` por defecto. Con el servidor de
+   * desarrollo levantado, un `next build` en la misma carpeta se pisa con él y falla de
+   * formas que no señalan al culpable: `PageNotFoundError: Cannot find module for page`
+   * en páginas que nadie ha tocado, reglas CSS que «no aparecen» en el bundle, o un
+   * servidor sirviendo un build que ya se borró debajo.
+   *
+   * Con esto, para comprobar un build sin parar el `npm run dev` de nadie:
+   *
+   *     NEXT_DIST_DIR=.next-build npm run build
+   *
+   * Por defecto no cambia nada, y Railway no pasa la variable: compila en `.next`.
+   *
+   * ⚠️ **Al usarla, Next REESCRIBE `next-env.d.ts` y `tsconfig.json`** apuntando al
+   * directorio nuevo. Esos dos archivos **NO deben commitearse así**: dejarían el build
+   * normal —el de Railway— buscando tipos en una carpeta que allí no existe. Después de un
+   * build aislado: `git checkout -- next-env.d.ts tsconfig.json`.
+   */
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',

@@ -62,3 +62,4 @@ tsconfig.tsbuildinfo
 
 # Copias de seguridad de entornos (nunca al repo)
 .env*.bak*
+.next-build/
