@@ -4008,6 +4008,26 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **El XML firmado es la ÚNICA copia de los campos adicionales de una factura (2026-08-17).**
+  `gcc_world.invoices` no tiene columna para ellos: los que escribe el usuario en el formulario
+  viajan al constructor del XML y quedan solo dentro de `<infoAdicional>` de `xml_signed`. De ahí
+  salieron dos fallos, ambos silenciosos (el SRI autorizaba igual, nadie veía el error hasta mirar
+  el PDF):
+  1. **El RIDE no los imprimía.** El recuadro «Informacion Adicional» del PDF pintaba a mano
+     dirección/teléfono/email del cliente en vez de leer los `campoAdicional` del comprobante.
+     Detectado con la **factura 001-001-000000079** (2026-08-17): el SRI **sí** recibió
+     «Transferencias Internacionales» y «Remesas al Exterior», pero el PDF no los mostraba, así que
+     no hubo que anular nada. Corregido: `ride-pdf.ts` recibe `additionalFields` y
+     `parseAdditionalFieldsFromXml()` (en `xml-builder.ts`) los saca del XML firmado.
+  2. **Regenerar una factura rechazada los perdía.** `regenerateRejectedInvoice` reconstruía la
+     lista desde cero (solo los de moneda) y descartaba los del usuario. Ahora los rescata del XML
+     anterior filtrando los que el sistema re-deriva (`isAutoAdditionalField`).
+  - **El RIDE es derivado y se puede rehacer sin tocar al SRI:** `/api/invoices/[id]/pdf`
+    re-renderiza al vuelo en cada descarga (las facturas viejas heredan los arreglos de plantilla) y
+    `POST /api/invoices/regenerate-rides` reescribe `pdf_data`, que es la copia que viaja por
+    correo. El 2026-08-17 se regeneró la de las 4 facturas con campos propios (23, 24, 61, 79).
+  - **Regla:** cualquier dato que entre por el formulario de facturación y no tenga columna propia
+    hay que leerlo del XML firmado, nunca darlo por perdido ni re-derivarlo.
 - **La leyenda RIMPE va en `infoAdicional`, NO en `<contribuyenteRimpe>` (2026-08-11).** La Ficha
   Técnica del SRI (ANEXO 22) manda poner la leyenda en la etiqueta `<contribuyenteRimpe>`, dentro de
   `<infoTributaria>` y entre `<agenteRetencion>` y `</infoTributaria>`. **Pero el XSD publicado
