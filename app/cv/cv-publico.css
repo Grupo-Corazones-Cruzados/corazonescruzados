@@ -123,22 +123,12 @@
 }
 
 /* ── Tarjeta: realce de BORDE y una sombra mínima (en claro, sin sombra flota) ─ */
-.cv-tarjeta {
-  border: 1px solid var(--linea);
-  background: var(--tarjeta);
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgba(28, 27, 34, 0.04);
-  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-}
-.cv-tarjeta:hover,
-.cv-tarjeta:focus-within {
-  border-color: rgba(123, 95, 191, 0.55);
-  box-shadow: 0 6px 18px rgba(75, 45, 142, 0.1);
-  transform: translateY(-2px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .cv-tarjeta:hover, .cv-tarjeta:focus-within { transform: none; }
-}
+/* ── LA TARJETA YA NO SE DEFINE AQUÍ ──────────────────────────────────────────
+   Se llamaba `.cv-tarjeta` y vivía en este archivo. El 2026-08-18 la página
+   `/ambitos` necesitó exactamente la misma tarjeta —Fernando la pidió «al mismo
+   estilo que el portafolio del CV»—, así que se mudó a `app/globals.css` como
+   **`.tarjeta-portafolio`**, con los mismos valores y un nombre que no miente al
+   usarse fuera del CV.                                                          */
 
 /* ── Pestañas: píldoras horizontales, la activa teñida ─────────────────────── */
 .cv-pestanas button {
@@ -313,5 +303,5 @@
 @media print {
   .cv-fondo, .cv-rejilla, .cv-no-imprimir { display: none !important; }
   .cv-publico { background: #fff !important; }
-  .cv-tarjeta { box-shadow: none !important; }
+  .tarjeta-portafolio { box-shadow: none !important; }
 }

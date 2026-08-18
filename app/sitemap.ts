@@ -29,6 +29,8 @@ const ULTIMO_CAMBIO = {
   soluciones: '2026-08-17',
   /** `/recursos` → `/desarrollo-humano` el 2026-08-17, y de paso pasó a tema claro. */
   desarrolloHumano: '2026-08-17',
+  /** Nació vacía el 2026-08-17 y se llenó el 2026-08-18, cuando ya tenía ámbitos. */
+  ambitos: '2026-08-18',
   contacto: '2026-08-02',
   /** Los documentos legales, que se mueven en bloque. */
   legales: '2026-08-02',
@@ -50,6 +52,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     })),
     { url: `${SITIO.url}/desarrollo-humano`, lastModified: ULTIMO_CAMBIO.desarrolloHumano, changeFrequency: 'monthly', priority: 0.8 },
+    // Entra ahora, no antes: hasta el 2026-08-18 era un titular sin contenido, y
+    // ofrecerle a Google una página vacía resta al dominio entero.
+    { url: `${SITIO.url}/ambitos`, lastModified: ULTIMO_CAMBIO.ambitos, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITIO.url}/contacto`, lastModified: ULTIMO_CAMBIO.contacto, changeFrequency: 'yearly', priority: 0.7 },
     // Los legales salen del registro: uno nuevo entra en el mapa sin tocar este archivo.
     ...DOCUMENTOS_LEGALES.map((d) => ({

@@ -315,6 +315,35 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🗂️ ÁMBITOS — FASE 2: la página pública `/ambitos` (2026-08-18).** Carpetas a la
+  izquierda —ámbito → talentos—, y al elegir un talento, sus proyectos y tickets terminados
+  en tarjetas. Al estilo de `/legal`, como pidió.
+  - **Las tarjetas son LA MISMA que el portafolio del CV.** `.cv-tarjeta` se mudó de
+    `app/cv/cv-publico.css` a `app/globals.css` como **`.tarjeta-portafolio`**, con los
+    mismos valores: copiar sus siete propiedades a otro archivo es como se separan dos cosas
+    que deberían verse igual. Distinta de `.claro-tarjeta` a propósito: esta se levanta al
+    pasar por encima porque es una pieza de galería que invita a pulsarla.
+  - **⚠️ QUIÉN PARTICIPÓ SALE DE TRES TABLAS, NO DE UNA.** Parece que basta
+    `project_members`, y es la trampa: de los **11 proyectos terminados solo 1** tiene fila
+    ahí. Los otros diez registran la participación por **puja aceptada** (`project_bids`) o
+    por **asignación de requerimiento** (`requirement_assignments`). Es la misma condición
+    que ya usa el CV público. Mirando una sola tabla, diez de once tarjetas habrían salido
+    sin un solo círculo.
+  - **La burbuja lleva SOLO contacto**: foto, nombre, correo y teléfono. Fernando lo acotó
+    dos veces. **El talento sobra por deducción**, y su razón quedó escrita en el código: si
+    alguien participó en el proyecto, y el proyecto cuelga de un talento, y el talento del
+    ámbito abierto, ya se sabe que lo tiene — nadie sin él puede participar.
+  - **La burbuja no necesita JavaScript ni ratón**: `group-hover` + `group-focus-within`, y
+    el avatar es un `<button>`. Sale con el puntero, con el tabulador y al tocar en el móvil.
+  - **⭐ El contenido de los talentos NO elegidos también se pinta**, en un bloque `hidden`.
+    Es el remedio que ya se usó en las FAQs y en `VentanaTarjeta`, donde se midió que **lo
+    que solo viaja como prop a un componente de cliente no existe para el buscador**. Sin
+    esto, de 30 trabajos Google vería los del talento abierto y se perdería el resto.
+  - **Las imágenes son URLs de Cloudinary**, públicas: no hizo falta endpoint. Se sirven con
+    `<img>`, como el CV — `next/image` habría exigido configurar `remotePatterns`.
+  - **Sale del `noindex` y entra en el mapa del sitio**, ahora que tiene contenido.
+  - Medido con los datos reales: 1 ámbito, 1 talento, **30 trabajos** (11 proyectos + 19
+    tickets), 30 tarjetas, 30 círculos y la burbuja abriendo con nombre, correo y teléfono.
 - **🗂️ ÁMBITOS — migración 039 + Admin → Ámbitos (2026-08-18). FASE 1 de 2.**
   Un **ámbito** es un tipo de proyecto que el grupo maneja (Tecnología…) y agrupa **talentos**
   del catálogo. Se publicarán en `/ambitos` con panel izquierdo de carpetas, al estilo de

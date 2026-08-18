@@ -4951,3 +4951,54 @@ es su validación sino **dónde vive en la pantalla**. El sitio de un campo decl
 | Backfill | 19/19 tickets con «Automatización de procesos», 0 sin talento |
 
 Los tickets de ensayo se borraron: la base quedó en 19, como estaba.
+
+## Fase 2 (2026-08-18) — la página pública `/ambitos`
+
+### ⭐ P30 — ¿De dónde sale quién participó en un proyecto? · ✅ De TRES tablas
+La respuesta evidente —`project_members`— es la equivocada. Medido: de los **11 proyectos
+terminados, solo 1** tiene fila ahí. Los otros diez registran la participación por **puja
+aceptada** (`project_bids`) o por **asignación de requerimiento**
+(`requirement_assignments`), que son los caminos anteriores a que existiera esa tabla.
+
+Es la misma condición que ya usa el CV público. Mirando una sola tabla, **diez de las once
+tarjetas habrían salido sin un solo círculo** — y el fallo habría parecido de la interfaz.
+
+**Generalizable:** antes de escribir una consulta «de quiénes participaron», mira cómo lo
+resuelve la parte del sistema que ya lo hace bien. Un modelo con historia tiene más de un
+camino para lo mismo.
+
+### P31 — La tarjeta se comparte, no se copia · ✅
+Fernando la pidió «al mismo estilo que el portafolio del CV». La clase `.cv-tarjeta` vivía en
+`app/cv/cv-publico.css`, que **solo carga la rama `/cv`**. Copiar sus siete propiedades a
+otro archivo es exactamente como se separan dos cosas que deberían verse igual, así que se
+mudó a `app/globals.css` como `.tarjeta-portafolio` y el CV se actualizó.
+
+Se dejó **distinta de `.claro-tarjeta`** a propósito: la de portafolio se levanta al pasar
+por encima porque invita a pulsarla; las del resto del sitio no se pulsan.
+
+### P32 — La burbuja, acotada dos veces por Fernando · ✅
+Primero: *«solo te dije que pongas sus datos de contacto y ya, nada más»*. Después, la razón
+de que el talento sobre, que es mejor que «lo pidió» y quedó escrita en el código:
+
+> Si participó en el proyecto, y el proyecto cuelga de un talento, y ese talento del ámbito
+> abierto, **ya se sabe que tiene ese talento**: nadie sin él puede participar.
+
+**Lección:** cuando el usuario corrige el alcance, la corrección se aplica y su razonamiento
+se guarda — vale más que la instrucción, porque explica el criterio para el próximo caso.
+
+### P33 — Que el buscador vea los 30 trabajos y no 1 · ✅
+Solo se muestra el talento elegido. Si se pintara únicamente ese, Google vería un trabajo de
+treinta. Los demás se pintan en un bloque `hidden`, que **no** los saca del HTML — el mismo
+remedio de las FAQs y de `VentanaTarjeta`, donde ya se midió que *lo que solo viaja como prop
+a un componente de cliente no existe para el buscador*.
+
+Verificado quitando los `<script>` del HTML servido y contando ahí.
+
+### Lo medido con los datos reales
+| | |
+|---|---|
+| Ámbitos · talentos | 1 · 1 |
+| Trabajos | **30** (11 proyectos + 19 tickets) |
+| Tarjetas y círculos pintados | 30 y 30 |
+| Burbuja | nombre, correo y teléfono, dentro de la pantalla |
+| Contenido en HTML sin `<script>` | proyectos y tickets presentes ✓ |

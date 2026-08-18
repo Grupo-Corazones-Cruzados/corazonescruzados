@@ -68,7 +68,7 @@ export default function PortafolioPublico({ token, items }: { token: string; ite
     <>
       <div className="cv-cascada grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {items.map((item) => (
-          <article key={`${item.fuente}-${item.id}`} className="cv-tarjeta overflow-hidden flex flex-col">
+          <article key={`${item.fuente}-${item.id}`} className="tarjeta-portafolio overflow-hidden flex flex-col">
             {item.imagenes > 0 ? (
               <button
                 type="button"

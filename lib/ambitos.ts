@@ -217,3 +217,147 @@ export async function coberturaDeTalentos(talentos: string[]): Promise<Cobertura
     tickets: Number(r.tickets ?? 0),
   }));
 }
+
+/* ═══════════════════════ EL TRABAJO HECHO CON UN TALENTO ═══════════════════════ */
+
+/**
+ * Una persona en los círculos de una tarjeta.
+ *
+ * ⚠️ **Solo datos de CONTACTO** (Fernando, 2026-08-18, textual: *«solo te dije que pongas
+ * sus datos de contacto y ya, nada más»*). Ni talento, ni CV, ni enlaces.
+ *
+ * Lo que esté vacío no se pinta, que es la regla que él mismo fijó el 2026-08-14 al quitar
+ * los interruptores `share_email`/`share_phone`: **el campo vacío YA es el interruptor**.
+ */
+export interface Persona {
+  memberId: number;
+  nombre: string;
+  foto: string | null;
+  correo: string | null;
+  telefono: string | null;
+  /** `responsible` marca el círculo; NO se enseña en la burbuja. */
+  rol: 'responsible' | 'participant';
+}
+
+/** Una tarjeta de la columna derecha: un proyecto o un ticket terminado. */
+export interface Trabajo {
+  tipo: 'proyecto' | 'ticket';
+  id: number;
+  titulo: string;
+  descripcion: string | null;
+  etiquetas: string[];
+  /** URLs directas (Cloudinary). Los tickets no tienen. */
+  imagenes: string[];
+  personas: Persona[];
+  /** Para ordenar por «lo más reciente». */
+  fecha: string | null;
+}
+
+/**
+ * ⚠️ QUIÉN PARTICIPÓ EN UN PROYECTO SALE DE **TRES** TABLAS, NO DE UNA.
+ *
+ * Parece que bastaría `project_members`, y es la trampa: medido contra producción, de los
+ * **11 proyectos terminados solo 1** tiene fila ahí. Los otros diez registran la
+ * participación por **puja aceptada** (`project_bids`) o por **asignación de un
+ * requerimiento** (`requirement_assignments`), que son los caminos por los que se trabajaba
+ * antes de que existiera `project_members`.
+ *
+ * Es exactamente la misma condición que ya usa el CV público para decidir qué proyectos
+ * enseña (`lib/members/cv-share.ts`). Si aquí se mirara solo una tabla, diez de las once
+ * tarjetas saldrían **sin un solo círculo** y nadie sabría por qué.
+ */
+const PARTICIPANTES_DE_PROYECTO = `
+  SELECT DISTINCT ON (m.id) m.id AS member_id, m.name, m.photo_url, m.email, m.phone, x.rol
+    FROM (
+      SELECT pm.member_id, pm.role AS rol
+        FROM gcc_world.project_members pm
+       WHERE pm.project_id = $1 AND pm.status = 'active'
+      UNION ALL
+      SELECT b.member_id, 'participant'
+        FROM gcc_world.project_bids b
+       WHERE b.project_id = $1 AND b.status = 'accepted'
+      UNION ALL
+      SELECT ra.member_id, 'participant'
+        FROM gcc_world.requirement_assignments ra
+        JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
+       WHERE pr.project_id = $1
+    ) x
+    JOIN gcc_world.members m ON m.id = x.member_id
+   -- 'responsible' gana a 'participant' cuando la misma persona llega por dos vías.
+   ORDER BY m.id, (x.rol = 'responsible') DESC
+`;
+
+/**
+ * Todo el trabajo TERMINADO hecho con un talento: proyectos y tickets, lo más reciente
+ * primero.
+ *
+ * Se usa desde la página pública `/ambitos`, en el servidor, al generar el HTML.
+ */
+export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
+  const { rows: proyectos } = await pool.query(
+    `SELECT DISTINCT p.id, p.title, p.description, p.tags, p.images, p.updated_at
+       FROM gcc_world.projects p
+       JOIN gcc_world.project_requirements r ON r.project_id = p.id
+      WHERE p.status = $2 AND $1 = ANY(r.talents)
+      ORDER BY p.updated_at DESC NULLS LAST, p.id DESC`,
+    [talento, ESTADO_PUBLICABLE],
+  );
+
+  const conPersonas: Trabajo[] = [];
+  for (const p of proyectos) {
+    const { rows: personas } = await pool.query(PARTICIPANTES_DE_PROYECTO, [p.id]);
+    conPersonas.push({
+      tipo: 'proyecto',
+      id: Number(p.id),
+      titulo: p.title,
+      descripcion: p.description ?? null,
+      etiquetas: p.tags ?? [],
+      imagenes: (p.images ?? []).filter((x: unknown) => typeof x === 'string' && x),
+      personas: personas.map((m: any) => ({
+        memberId: Number(m.member_id),
+        nombre: m.name,
+        foto: m.photo_url ?? null,
+        correo: m.email ?? null,
+        telefono: m.phone ?? null,
+        rol: m.rol === 'responsible' ? 'responsible' : 'participant',
+      })),
+      fecha: p.updated_at ? new Date(p.updated_at).toISOString() : null,
+    });
+  }
+
+  // Los tickets: su participante es el miembro asignado, si lo hubo.
+  const { rows: tickets } = await pool.query(
+    `SELECT t.id, t.title, t.description, t.required_talents, t.updated_at,
+            m.id AS member_id, m.name, m.photo_url, m.email, m.phone
+       FROM gcc_world.tickets t
+       LEFT JOIN gcc_world.members m ON m.id = t.member_id
+      WHERE t.status = $2 AND $1 = ANY(t.required_talents)
+      ORDER BY t.updated_at DESC NULLS LAST, t.id DESC`,
+    [talento, ESTADO_PUBLICABLE],
+  );
+
+  const deTickets: Trabajo[] = tickets.map((t: any) => ({
+    tipo: 'ticket' as const,
+    id: Number(t.id),
+    titulo: t.title,
+    descripcion: t.description ?? null,
+    // El ticket no tiene tags propios: sus talentos hacen de etiqueta.
+    etiquetas: t.required_talents ?? [],
+    imagenes: [],
+    personas: t.member_id
+      ? [{
+          memberId: Number(t.member_id),
+          nombre: t.name,
+          foto: t.photo_url ?? null,
+          correo: t.email ?? null,
+          telefono: t.phone ?? null,
+          rol: 'responsible' as const,
+        }]
+      : [],
+    fecha: t.updated_at ? new Date(t.updated_at).toISOString() : null,
+  }));
+
+  return [...conPersonas, ...deTickets].sort(
+    (a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''),
+  );
+}

@@ -431,7 +431,7 @@ function Foto({ cv }: { cv: CvPublico }) {
 /** Bloque de la ficha: rótulo en versalitas sobre una tarjeta clara. */
 function FichaBloque({ titulo, className = '', children }: { titulo: string; className?: string; children: React.ReactNode }) {
   return (
-    <section className={`cv-tarjeta p-4 ${className}`}>
+    <section className={`tarjeta-portafolio p-4 ${className}`}>
       <h2 className="text-[10.5px] uppercase tracking-[0.15em] text-[#5b3fa8]">{titulo}</h2>
       <div className="mt-3">{children}</div>
     </section>
@@ -449,7 +449,7 @@ function Dato({ icono, children }: { icono: React.ReactNode; children: React.Rea
 
 function Cifra({ icono, rotulo, valor }: { icono: React.ReactNode; rotulo: string; valor: string }) {
   return (
-    <div className="cv-tarjeta px-4 py-3.5">
+    <div className="tarjeta-portafolio px-4 py-3.5">
       <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.13em] text-[#86838f]">
         <span className="text-[#7b5fbf]" aria-hidden>{icono}</span> {rotulo}
       </p>

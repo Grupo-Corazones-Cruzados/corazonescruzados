@@ -1493,6 +1493,36 @@ html {
   --linea-fuerte: #cfc9de;
 }
 
+/* ── LA TARJETA DE PORTAFOLIO — compartida por el CV y por /ambitos ───────────
+   Nació como `.cv-tarjeta` en `app/cv/cv-publico.css`. El 2026-08-18 la página
+   `/ambitos` pidió «el mismo estilo que el portafolio del CV» y, en vez de copiar
+   siete propiedades a otro archivo —que es como se separan dos cosas que deberían
+   verse igual—, se mudó aquí con un nombre que no miente fuera del CV.
+
+   Los valores son EXACTAMENTE los que tenía. Se apoya en las variables de
+   `.claro-publico`, así que solo funciona dentro de esa clase — que es justo donde
+   se usa en los dos sitios.
+
+   ⚠️ Es distinta de `.claro-tarjeta`, la del resto del sitio, y a propósito: esta
+   se LEVANTA al pasar por encima (`translateY(-2px)`) porque es una pieza de
+   galería que invita a pulsarla. Las del sitio no se pulsan.                     */
+.tarjeta-portafolio {
+  border: 1px solid var(--linea);
+  background: var(--tarjeta);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(28, 27, 34, 0.04);
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.tarjeta-portafolio:hover,
+.tarjeta-portafolio:focus-within {
+  border-color: rgba(123, 95, 191, 0.55);
+  box-shadow: 0 6px 18px rgba(75, 45, 142, 0.1);
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-portafolio:hover, .tarjeta-portafolio:focus-within { transform: none; }
+}
+
 /* ── El realce de una tarjeta en claro ────────────────────────────────────────
    En el sitio oscuro el realce era SOLO de borde, y funcionaba. Sobre papel no:
    una tarjeta blanca sobre blanco necesita que la sombra la levante. Es una clase
