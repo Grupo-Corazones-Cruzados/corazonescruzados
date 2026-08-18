@@ -310,8 +310,44 @@ export interface Trabajo {
   /** URLs directas (Cloudinary). Los tickets no tienen. */
   imagenes: string[];
   personas: Persona[];
-  /** Para ordenar por «lo más reciente». */
-  fecha: string | null;
+  /**
+   * ⚠️ **CUÁNDO SE CREÓ, no cuándo se tocó por última vez** (Fernando, 2026-08-18).
+   *
+   * Hasta hoy esto era `updated_at` y solo servía para ordenar. No vale para enseñarlo: el
+   * 2026-08-18 se reescribieron de golpe los títulos y descripciones de los 30 registros para
+   * quitar nombres de clientes, así que **los 30 `updated_at` son del mismo segundo**. Puesta
+   * a la vista, esa fecha diría «todo se hizo ayer», que es falso y además inútil.
+   *
+   * `created_at` está relleno en los 30 (comprobado contra producción), y va de marzo a agosto
+   * de 2026: es la fecha que de verdad sitúa cada trabajo en el tiempo.
+   */
+  creado: string | null;
+  /**
+   * La misma fecha ya escrita («02 ago 2026»), formateada **en el servidor**.
+   *
+   * La tarjeta es un componente de cliente, así que la pinta el servidor y luego la hidrata el
+   * navegador. Formatear allí con `toLocaleDateString` es pedir un desajuste de hidratación: el
+   * servidor y el navegador no tienen por qué traer los mismos datos de idioma ni la misma zona
+   * horaria. Formateado una vez aquí, las dos pasadas escriben exactamente lo mismo.
+   */
+  creadoTexto: string | null;
+}
+
+/**
+ * La fecha como se lee en el sitio: `02 ago 2026`.
+ *
+ * `es-EC` con día de dos cifras y mes abreviado es lo que ya usan `/proyecto/[id]` y
+ * `/cotizacion/[id]`; no se inventa un formato nuevo para esta página.
+ *
+ * `timeZone: 'UTC'` a propósito: la fecha se guarda en UTC y quien mira la página puede estar
+ * en cualquier huso. Sin fijarla, un ticket de las 22:30 UTC saldría con el día anterior en
+ * Ecuador y con el día correcto en Madrid — la misma tarjeta contando dos cosas distintas.
+ */
+function comoFecha(v: unknown): string | null {
+  if (!v) return null;
+  return new Date(v as string).toLocaleDateString('es-EC', {
+    day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC',
+  });
 }
 
 /**
@@ -356,11 +392,11 @@ const PARTICIPANTES_DE_PROYECTO = `
  */
 export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
   const { rows: proyectos } = await pool.query(
-    `SELECT DISTINCT p.id, p.title, p.description, p.tags, p.images, p.updated_at
+    `SELECT DISTINCT p.id, p.title, p.description, p.tags, p.images, p.created_at
        FROM gcc_world.projects p
        JOIN gcc_world.project_requirements r ON r.project_id = p.id
       WHERE p.status = $2 AND $1 = ANY(r.talents)
-      ORDER BY p.updated_at DESC NULLS LAST, p.id DESC`,
+      ORDER BY p.created_at DESC NULLS LAST, p.id DESC`,
     [talento, ESTADO_PUBLICABLE],
   );
 
@@ -382,18 +418,19 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
         telefono: m.phone ?? null,
         rol: m.rol === 'responsible' ? 'responsible' : 'participant',
       })),
-      fecha: p.updated_at ? new Date(p.updated_at).toISOString() : null,
+      creado: p.created_at ? new Date(p.created_at).toISOString() : null,
+      creadoTexto: comoFecha(p.created_at),
     });
   }
 
   // Los tickets: su participante es el miembro asignado, si lo hubo.
   const { rows: tickets } = await pool.query(
-    `SELECT t.id, t.title, t.description, t.required_talents, t.updated_at,
+    `SELECT t.id, t.title, t.description, t.required_talents, t.created_at,
             m.id AS member_id, m.name, m.photo_url, m.email, m.phone
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
       WHERE t.status = $2 AND $1 = ANY(t.required_talents)
-      ORDER BY t.updated_at DESC NULLS LAST, t.id DESC`,
+      ORDER BY t.created_at DESC NULLS LAST, t.id DESC`,
     [talento, ESTADO_PUBLICABLE],
   );
 
@@ -415,11 +452,16 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
           rol: 'responsible' as const,
         }]
       : [],
-    fecha: t.updated_at ? new Date(t.updated_at).toISOString() : null,
+    creado: t.created_at ? new Date(t.created_at).toISOString() : null,
+    creadoTexto: comoFecha(t.created_at),
   }));
 
+  // ⚠️ Se ordena por la MISMA fecha que se enseña. Ordenar por `updated_at` y pintar
+  // `created_at` dejaría las tarjetas con las fechas desordenadas a la vista, que se lee como
+  // un fallo. Y con los 30 `updated_at` puestos en el mismo segundo por la limpieza de
+  // nombres, ese orden ya no significaba nada.
   return [...conPersonas, ...deTickets].sort(
-    (a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''),
+    (a, b) => (b.creado ?? '').localeCompare(a.creado ?? ''),
   );
 }
 

@@ -158,9 +158,27 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
       )}
 
       <div className="p-5 flex flex-col gap-2 flex-1">
-        <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
-          {ETIQUETA[trabajo.tipo]}
-        </span>
+        {/* El tipo a la izquierda y la fecha de creación al otro borde, a la misma altura
+            (Fernando, 2026-08-18). `items-baseline` y no `items-center`: las dos son letra, y
+            alinearlas por su línea base las deja a la misma altura de verdad aunque midan
+            distinto — centrarlas por caja dejaría la fecha un pelo alta.
+
+            La fecha va en `<time>` con la fecha completa en `dateTime`: para quien lee es «02
+            ago 2026», y para un buscador o un lector de pantalla es una fecha que se entiende
+            sin adivinar el formato. */}
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
+            {ETIQUETA[trabajo.tipo]}
+          </span>
+          {trabajo.creadoTexto && (
+            <time
+              dateTime={trabajo.creado ?? undefined}
+              className="shrink-0 text-[11.5px] tabular-nums text-[var(--tenue)]"
+            >
+              {trabajo.creadoTexto}
+            </time>
+          )}
+        </div>
         <h3 className="text-[17px] font-semibold text-[var(--texto)] leading-snug">{trabajo.titulo}</h3>
         {trabajo.descripcion && (
           <p className="text-[13.5px] text-[var(--suave)] leading-relaxed">{trabajo.descripcion}</p>

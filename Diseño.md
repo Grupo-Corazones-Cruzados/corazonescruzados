@@ -350,7 +350,16 @@ y el sitio decide cuál según el ancho:
 | Dónde | Cuándo | Cómo |
 |---|---|---|
 | Tercera columna, a la derecha | `≥ lg` (hay sitio para `lg:grid-cols-[240px_minmax(0,1fr)_280px]`) | Vertical, de arriba abajo, **con** el rótulo «Lo que sabemos hacer», pegajosa (`lg:sticky lg:top-24`) |
-| Bajo la descripción | `< lg` | Horizontal, de izquierda a derecha, **sin** rótulo — ahí va pegada al texto que ya explica de qué va, y un encabezado en medio partiría la lectura |
+| Bajo la descripción | `< lg` | Horizontal, de izquierda a derecha, **sin** rótulo — ahí va pegada al texto que ya explica de qué va, y un encabezado en medio partiría la lectura. **No es pegajosa**: se desplaza con el contenido y desaparece, a petición de Fernando |
+
+**⚠️ `sticky` va en la CELDA de la rejilla y necesita `self-start` (2026-08-18).** Un elemento
+pegajoso se desplaza dentro de su bloque contenedor —la casilla de la tercera columna, tan alta
+como la fila— pero solo si le sobra sitio. Sin `self-start`, la celda se estira hasta llenar la
+fila, no queda holgura y baja con la página como si `sticky` no estuviera. Es justo lo que se
+rompió al envolver la tira para poder ocultarla por ancho: el `sticky` seguía puesto, pero sobre
+el `<aside>` **dentro** del envoltorio, y el envoltorio medía exactamente lo que la tira. Cero
+holgura, cero efecto. **Regla: al envolver un elemento pegajoso, el `sticky` se muda al
+envoltorio** — envolver no es neutro para `position: sticky`.
 
 Las **dos se montan siempre**; el corte lo hacen `hidden lg:block` y `lg:hidden`, exactamente el
 mismo umbral que decide si existe la tercera columna. La que está oculta mide 0 y su propia regla
@@ -385,6 +394,37 @@ necesita `w-max` para medir lo que ocupa de verdad: sin él tomaría el ancho de
 contiene necesita `min-w-0` porque su `min-width` por defecto es `auto` («lo que ocupe mi hijo más
 ancho»): sin él, esa lista de 2.848 px estiraba la columna y **la página entera**, con barra
 horizontal en todo el sitio. Se detectó midiendo `scrollWidth` del documento a 900/560/390 px.
+
+### La tarjeta de trabajo — `components/sitio/TarjetaTrabajo.tsx`
+
+`.tarjeta-portafolio`, **la misma clase que el portafolio del CV público** (vive en
+`app/globals.css`, no en `app/cv/cv-publico.css`, precisamente para que sea una sola
+definición). Estructura de la cabecera, desde el 2026-08-18:
+
+```tsx
+<div className="flex items-baseline justify-between gap-3">
+  <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
+    {ETIQUETA[trabajo.tipo]}
+  </span>
+  {trabajo.creadoTexto && (
+    <time dateTime={trabajo.creado ?? undefined}
+          className="shrink-0 text-[11.5px] tabular-nums text-[var(--tenue)]">
+      {trabajo.creadoTexto}
+    </time>
+  )}
+</div>
+```
+
+- `items-baseline`, no `items-center`: las dos son letra y alinearlas por la línea base las deja
+  a la misma altura de verdad; centrarlas por caja deja la fecha un pelo alta.
+- `<time>` con `dateTime`: a la vista «02 ago 2026», y para un buscador o un lector de pantalla
+  una fecha que se entiende sin adivinar el formato.
+- Formato **`es-EC`, día de dos cifras y mes abreviado**, el mismo de `/proyecto/[id]` y
+  `/cotizacion/[id]`. Se formatea **en el servidor** (`comoFecha` en `lib/soluciones.ts`) con
+  `timeZone: 'UTC'`: la tarjeta es un componente de cliente y formatear en los dos lados invita
+  a un desajuste de hidratación y a que la misma tarjeta cuente días distintos según el huso.
+- ⚠️ **Sin `overflow-hidden` en el `<article>`**: recortaba la burbuja de contacto. El recorte
+  vive en el botón de la imagen, que es el único que lo necesitaba.
 
 ### ⛔ El diseño de estas páginas lo decide Fernando, conmigo, ANTES (2026-08-03)
 

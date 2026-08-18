@@ -5396,3 +5396,70 @@ Y la regla de «solo se mueve si no cabe», en los **cuatro** casos posibles:
 
 Que las tarjetas bajen a 11 y el difuminado desaparezca cuando cabe no es un detalle: confirma
 que sin animación **no se duplica contenido a la vista** ni se esconden bordes que sí se veían.
+
+---
+
+## Undécima pasada (2026-08-18) — la tira se queda quieta y las tarjetas dicen cuándo
+
+Fernando, mirando la página ya ensanchada: *«el carrusel del panel derecho que quede fijo
+flotando en pantalla cuando se puede mostrar desde el panel derecho; en el caso que se ajuste y
+cambie a carrusel horizontal, allí sí que según desliza hacia abajo se pierda esa información»*.
+Y: *«en los tickets y proyectos que se muestran, agregar la fecha de creación, a la altura del
+título que dice Ticket o Proyecto, pero en el borde derecho de la tarjeta»*.
+
+### 🪤 P59 — Envolver un elemento pegajoso lo desactiva, y no avisa
+La tira **ya tenía** `lg:sticky lg:top-24 lg:self-start` desde que se construyó. Dejó de
+funcionar ayer, al envolverla en un `<div hidden lg:block self-start>` para poder ocultarla por
+ancho. Nada falló: `tsc` en verde, build en verde, la tira en su sitio. Simplemente había dejado
+de quedarse quieta.
+
+La razón es que **`position: sticky` se mueve dentro de su bloque contenedor**, y al envolverla
+ese bloque pasó de ser la casilla de la rejilla —tan alta como toda la fila, 2.579 px— a ser el
+envoltorio, que medía exactamente lo que la tira: 721 px. Holgura cero, recorrido cero. Desde
+fuera se lee como «sticky no funciona».
+
+**Regla:** al envolver un elemento pegajoso, el `sticky` se muda al envoltorio. Envolver no es
+neutro para `sticky`, igual que no lo es para `min-width` en una rejilla (P58) — dos trampas del
+mismo día y de la misma familia: **el envoltorio hereda el sitio en el layout, y con él la
+responsabilidad**.
+
+Medido: a `scrollY` 400, 900 y 1500 la tira se queda clavada en `top: 96`. En los últimos 32 px
+de recorrido cede un poco, porque llega al fondo de la rejilla — que es lo correcto: no debe
+invadir el pie.
+
+En horizontal **no** se aplica, y esto lo pidió él explícitamente: allí ocupa un ancho completo
+bajo la descripción y dejarla flotando taparía el listado que se está leyendo.
+
+### ⭐ P60 — ¿Qué fecha se enseña? · ✅ `created_at`, y arrastra el orden
+`Trabajo.fecha` era `updated_at` y solo servía para ordenar. **No sirve para enseñarla**: el
+2026-08-18 se reescribieron de golpe los títulos y descripciones de los 30 registros para quitar
+nombres de clientes, así que los 30 `updated_at` quedaron **en el mismo segundo**. Puesta a la
+vista diría «todo se hizo ayer»; y como criterio de orden ya no significaba nada.
+
+`created_at` está relleno en los 30 (comprobado contra producción) y va de marzo a agosto de 2026.
+
+Y entonces **hay que ordenar por lo que se enseña**. Mostrar `created_at` mientras se ordena por
+`updated_at` dejaría las fechas desordenadas a la vista, que cualquiera lee como un fallo. Es una
+consecuencia de enseñar el dato, no una petición aparte: un dato visible manda sobre el orden.
+
+### 🔎 P61 — Formatear fechas en un componente de cliente
+La tarjeta es `'use client'`, así que la pinta el servidor y la rehidrata el navegador. Un
+`toLocaleDateString` dentro corre **dos veces**, en dos entornos que no tienen por qué traer los
+mismos datos de idioma ni el mismo huso. Se formatea una sola vez en el servidor (`comoFecha`, en
+`lib/soluciones.ts`) y viaja ya escrita, con el ISO al lado para el `dateTime` del `<time>`.
+
+`timeZone: 'UTC'` fijado a mano: sin eso, un ticket creado a las 22:30 UTC saldría con el día
+anterior en Ecuador y con el correcto en Madrid — la misma tarjeta contando dos cosas distintas.
+
+### Lo medido
+| | 1600 px | 900 px | 390 px |
+|---|---|---|---|
+| Tickets con fecha | 19/19 | 19/19 | 19/19 |
+| A la altura de la etiqueta | ✔ | ✔ | ✔ |
+| Distancia al borde derecho | 21 px | 21 px | 21 px |
+| Fecha partida en dos líneas | no | no | no |
+| Orden descendente por la fecha mostrada | ✔ | ✔ | ✔ |
+| Desbordamiento horizontal | no | no | no |
+
+Tira vertical a 1600: `top` 96 clavado entre `scrollY` 400 y 1500. Tira horizontal a 900: de
+`top` 458 a −442 al desplazar 900 px — se va con la página, como se pidió.

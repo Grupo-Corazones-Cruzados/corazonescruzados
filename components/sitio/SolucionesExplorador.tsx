@@ -454,8 +454,20 @@ export default function SolucionesExplorador({
           lista vacía, así que aquí no hace falta condicionar nada más. Su gemela horizontal
           vive arriba, bajo la descripción; el `hidden lg:block` de aquí y el `lg:hidden` de
           allá son el mismo corte que decide si existe la tercera columna, así que nunca se
-          ven las dos ni se queda la pantalla sin ninguna. */}
-      <div className="hidden lg:block self-start min-w-0">
+          ven las dos ni se queda la pantalla sin ninguna.
+
+          ⚠️ **`sticky` va AQUÍ, en la celda de la rejilla, junto con `self-start`.** Un elemento
+          pegajoso se desplaza dentro de su bloque contenedor —aquí, la casilla de la tercera
+          columna, que es tan alta como la fila entera— pero solo si le sobra sitio: sin
+          `self-start` la celda se estira hasta llenar la fila, no queda holgura por la que
+          moverse y la tira baja con la página como si `sticky` no estuviera.
+
+          Y esto es exactamente lo que se rompió al envolverla ayer para poder ocultarla por
+          ancho: el `sticky` seguía puesto, pero sobre el <aside> DENTRO del envoltorio, y el
+          envoltorio medía justo lo que la tira. Cero holgura, cero efecto — y desde fuera parece
+          que «sticky no funciona». Lo vio Fernando (2026-08-18). En horizontal NO se aplica:
+          allí se desplaza con el contenido y desaparece, también a petición suya. */}
+      <div className="hidden lg:block min-w-0 lg:sticky lg:top-24 lg:self-start">
         <TiraConceptos conceptos={conceptosActivos} />
       </div>
     </div>

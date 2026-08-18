@@ -111,10 +111,7 @@ export default function TiraConceptos({
   };
 
   return (
-    <aside
-      aria-label="Lo que sabemos hacer"
-      className={esVertical ? 'lg:sticky lg:top-24 lg:self-start' : ''}
-    >
+    <aside aria-label="Lo que sabemos hacer">
       {/* El rótulo solo en vertical: en horizontal la tira va pegada bajo la descripción y un
           encabezado ahí en medio partiría la lectura. Decisión de Fernando (2026-08-18).
           El `aria-label` del <aside> se queda en las dos: quien navega a ciegas necesita
