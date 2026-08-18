@@ -65,6 +65,22 @@ async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
+/**
+ * ⚠️ SE GENERA EN CADA PETICIÓN, Y NO ES UN CAPRICHO.
+ *
+ * Las páginas de talento salen de la base, y **el build de Railway no llega a la base**: si
+ * el mapa se generara al compilar, saldría siempre sin ellas —comprobado en producción el
+ * 2026-08-18, donde faltaban—.
+ *
+ * Se probó con `revalidate = 3600` y no basta: **la primera versión, la del build, es la
+ * equivocada**, y se serviría durante una hora después de cada despliegue. Justo cuando un
+ * buscador viene a mirar qué cambió.
+ *
+ * El coste es una consulta por petición, y un mapa del sitio lo pide un rastreador muy de
+ * vez en cuando. Barato a cambio de que nunca mienta.
+ */
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: SITIO.url, lastModified: ULTIMO_CAMBIO.portada, changeFrequency: 'monthly', priority: 1 },

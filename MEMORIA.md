@@ -315,6 +315,31 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🐛 EL BUILD DE RAILWAY NO LLEGA A LA BASE, Y ESO TIRÓ TODAS LAS PÁGINAS DE TALENTO
+  (2026-08-18).** Descubierto al contestarle a Fernando si sus páginas saldrían en Google:
+  se miró producción antes de afirmar nada y **`/soluciones/automatizacion-de-procesos` daba
+  404**, `/soluciones` decía «todavía no hay» y el mapa del sitio no las listaba.
+  - **La causa, que es una decisión mía:** puse `dynamicParams = false` para que un tramo
+    inventado diera 404 de verdad. Pero eso **se apoya en que el build conozca la lista**, y
+    el build de Railway **no alcanza la base**: la consulta falla, el `catch` devuelve `[]`, y
+    con `dynamicParams = false` una lista vacía significa *«no existe ninguna»*.
+  - **Ni el `revalidate` lo salvaba**: revalidar refresca páginas que existen, **no añade
+    parámetros nuevos**. Era un 404 permanente hasta el siguiente build con base.
+  - **Arreglo:** `dynamicParams = true`. El 404 real se mantiene porque la página llama a
+    `notFound()` cuando el slug no está en la base — la diferencia es que **ahora lo decide el
+    dato, no una lista que puede venir vacía por un problema de red**.
+  - **El mapa del sitio pasa a `force-dynamic`.** Con `revalidate = 3600` la **primera**
+    versión —la del build, sin talentos— se serviría durante una hora después de cada
+    despliegue, justo cuando un buscador viene a ver qué cambió. Una consulta por petición es
+    barata: un mapa lo pide un rastreador muy de vez en cuando.
+  - **Probado como se debe:** compilando con `DATABASE_URL` apuntando a un puerto muerto —lo
+    mismo que le pasa a Railway— y arrancando después con la base buena. Resultado:
+    `/soluciones` 200 con sus 11 tarjetas, el talento 200, un slug inventado **404**, y el
+    mapa con las 13 URLs.
+  - **⭐ LA LECCIÓN, QUE VALE PARA TODO EL REPO:** *un `catch` que devuelve una lista vacía
+    solo es seguro si algo distingue «vacío» de «no pude leer»*. Aquí no lo había, y el
+    silencio se publicó como un 404. Es primo hermano del fallo del `catch` de
+    `/api/projects` que fingía cero proyectos.
 - **📛 «ÁMBITO» YA NO EXISTE: TODO SE LLAMA «SOLUCIÓN» (2026-08-18, migración 044).**
   Fernando: *«las referencias ahora deben ser siempre soluciones, porque de esa manera no nos
   confundiremos a futuro»*. Y tenía razón: un nombre interno distinto del publicado es una

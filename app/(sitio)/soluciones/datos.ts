@@ -47,7 +47,7 @@ export async function cargarSolucionesConContenido(): Promise<SolucionConConteni
     return await cargar();
   } catch (e) {
     console.warn(
-      `⚠ Los soluciones no se pudieron leer durante el build: ${(e as Error).message}\n` +
+      `⚠ Las soluciones no se pudieron leer durante el build: ${(e as Error).message}\n` +
         '  Las páginas se prerenderizan vacías; la primera revalidación (5 min) las llenará.',
     );
     return [];

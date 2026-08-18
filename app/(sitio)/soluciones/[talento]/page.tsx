@@ -11,14 +11,25 @@
  *    trabajo, en vez de una sola con todo lo demás detrás de un panel. Esto es lo que más
  *    pesa: pasa de una URL con treinta trabajos a una URL por especialidad.
  *
- * ── SE PRERRENDERIZAN TODAS ───────────────────────────────────────────────────
- * `generateStaticParams` las deja como HTML estático. Y `dynamicParams = false`: un tramo
- * inventado responde **404 de verdad**, no una página vacía — la misma regla que
- * `/soluciones/<id>`.
+ * ── SE PRERRENDERIZAN LAS CONOCIDAS, Y LAS DEMÁS SE SIRVEN AL VUELO ───────────
+ * `generateStaticParams` las deja como HTML estático **cuando el build puede leer la base**.
  *
- * ⚠️ **`dynamicParams = false` tiene un precio que hay que saber:** un talento asociado
- * DESPUÉS del último despliegue no tendrá página hasta el siguiente. Es el mismo trato que
- * ya acepta `/soluciones`, y a cambio ningún tramo inventado devuelve una página en blanco.
+ * ⚠️⚠️ **`dynamicParams` ESTUVO EN `false` Y ROMPIÓ LA PÁGINA EN PRODUCCIÓN (2026-08-18).**
+ * La idea era buena —un tramo inventado responde 404 de verdad— pero **se apoyaba en que el
+ * build supiera la lista de talentos**, y en Railway el build **no llega a la base**: la
+ * consulta falla, el `catch` devuelve `[]` y, con `dynamicParams = false`, esa lista vacía
+ * significa *«no existe ninguna»*. Resultado medido en producción: **todas las páginas de
+ * talento daban 404**, y ni el `revalidate` las salvaba — revalidar refresca páginas que
+ * existen, no añade parámetros nuevos.
+ *
+ * Con `true` el comportamiento correcto se mantiene sin depender del build: un slug que no
+ * esté en la base sigue dando **404 de verdad**, porque la página llama a `notFound()` al no
+ * encontrarlo. La diferencia es que ahora el 404 lo decide **el dato**, no una lista que
+ * puede venir vacía por un problema de red.
+ *
+ * 👉 **La lección general: un `catch` que devuelve una lista vacía es seguro solo si algo
+ * distingue “vacío” de “no pude leer”.** Aquí no lo había, y el silencio se publicó como un
+ * 404.
  */
 
 import type { Metadata } from 'next';
@@ -44,7 +55,11 @@ export async function generateStaticParams() {
   }
 }
 
-export const dynamicParams = false;
+/**
+ * `true` a propósito. Ver el aviso de arriba: con `false`, un build que no puede leer la base
+ * deja TODAS las páginas de talento en 404 permanente.
+ */
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { talento: slug } = await params;
