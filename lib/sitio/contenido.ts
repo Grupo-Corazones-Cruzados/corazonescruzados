@@ -115,12 +115,12 @@ export const NAVEGACION = [
    *
    *   | Página                          | 08-17        | 08-18 (hoy)  |
    *   |---------------------------------|--------------|--------------|
-   *   | ámbitos + trabajo terminado     | `/ambitos`   | `/soluciones`|
+   *   | soluciones + trabajo terminado     | `/soluciones`   | `/soluciones`|
    *   | las cinco puertas               | `/soluciones`| `/clientes`  |
    *
    * Fernando: *«esta página en la que hemos estado trabajando realmente tiene el contenido
    * pensado para lo que sería de soluciones»*. El concepto interno de la primera sigue
-   * llamándose **ámbito** —tabla `ambitos`, Admin → Ámbitos—: lo que cambió es su nombre de
+   * llamándose **solución** —tabla `soluciones`, Admin → Soluciones—: lo que cambió es su nombre de
    * cara al público, no el modelo.
    */
   { href: '/soluciones', label: 'Soluciones' },

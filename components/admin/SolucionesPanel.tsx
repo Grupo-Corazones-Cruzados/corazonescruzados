@@ -3,13 +3,13 @@
 /**
  * PESTAÑA «ÁMBITOS» DEL ADMIN — los tipos de proyecto que el grupo maneja.
  *
- * Se publican en `/soluciones`, donde el visitante ve cada ámbito como una carpeta, la
+ * Se publican en `/soluciones`, donde el visitante ve cada solución como una carpeta, la
  * despliega y elige un talento para ver el trabajo hecho con él.
  *
  * ── TRES PANELES ───────────────────────────────────────────────────────────────
  *   ┌────────────┬──────────────────────────┬──────────────────────┐
- *   │ Los        │ Talentos del ámbito, con │ Catálogo de talentos │
- *   │ ámbitos    │ su respaldo real         │ para añadir          │
+ *   │ Los        │ Talentos de la solución, con │ Catálogo de talentos │
+ *   │ soluciones    │ su respaldo real         │ para añadir          │
  *   └────────────┴──────────────────────────┴──────────────────────┘
  *
  * Es el patrón **«Explorador Azure»** ya documentado en `Diseño.md`, el mismo de FAQs,
@@ -18,7 +18,7 @@
  * explícita — un control que ya existe se usa, no se reescribe parecido.
  *
  * ── ⭐ POR QUÉ EL PANEL DEL MEDIO ENSEÑA CUÁNTO RESPALDA A CADA TALENTO ─────────
- * Porque es lo único que evita publicar una carpeta vacía. Un ámbito se monta eligiendo
+ * Porque es lo único que evita publicar una carpeta vacía. Una solución se monta eligiendo
  * talentos del catálogo del grupo —que tiene cientos, incluidos «Jugar fútbol» o
  * «Repostería»—, y nada impide asociar uno con el que jamás se ha hecho un proyecto. En la
  * web eso es un visitante que despliega una carpeta y no encuentra nada.
@@ -27,7 +27,7 @@
  * se publica (decisión de Fernando, 2026-08-18). Un 0 no impide guardar: avisa.
  *
  * ── LO QUE SE ESCRIBE AQUÍ SALE PUBLICADO ──────────────────────────────────────
- * No es una tabla interna. Un error de ortografía en el nombre de un ámbito es un error de
+ * No es una tabla interna. Un error de ortografía en el nombre de una solución es un error de
  * ortografía publicado.
  */
 
@@ -40,7 +40,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, EditField } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TALENTOS_BY_CATEGORY } from '@/lib/centralized/talentos';
-import type { Ambito, CoberturaTalento, TalentoDeAmbito } from '@/lib/ambitos';
+import type { Solucion, CoberturaTalento, TalentoDeSolucion } from '@/lib/soluciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const CAMPO =
@@ -55,23 +55,23 @@ interface FilaTalento {
   tickets: number;
 }
 
-export default function AmbitosPanel() {
-  const [ambitos, setAmbitos] = useState<Ambito[]>([]);
+export default function SolucionesPanel() {
+  const [soluciones, setSoluciones] = useState<Solucion[]>([]);
   const [cobertura, setCobertura] = useState<Record<string, CoberturaTalento>>({});
-  // Talento → nombre del ámbito que ya lo tiene. Un talento pertenece a UNO solo.
+  // Talento → nombre de la solución que ya lo tiene. Un talento pertenece a UNO solo.
   const [ocupados, setOcupados] = useState<Record<string, string>>({});
   const [elegido, setElegido] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
 
-  const [editando, setEditando] = useState<Ambito | 'nuevo' | null>(null);
+  const [editando, setEditando] = useState<Solucion | 'nuevo' | null>(null);
   const [nombre, setNombre] = useState('');
   // El talento que se está asociando (o cuya descripción se edita). La descripción se pide
   // AL ASOCIAR, que es lo que pidió Fernando: no se añade y luego se rellena.
   const [talentoEnEdicion, setTalentoEnEdicion] = useState<{ talento: string; nuevo: boolean } | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [guardando, setGuardando] = useState(false);
-  const [porBorrar, setPorBorrar] = useState<Ambito | null>(null);
+  const [porBorrar, setPorBorrar] = useState<Solucion | null>(null);
 
   // Mide el hueco hasta la barra de ruta fija del pie, igual que las otras pestañas del
   // admin. Sin esto, los tres paneles se salen por debajo y sus últimas filas quedan
@@ -95,14 +95,14 @@ export default function AmbitosPanel() {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const r = await fetch('/api/admin/ambitos?cobertura=1');
+      const r = await fetch('/api/admin/soluciones?cobertura=1');
       const j = await r.json();
-      if (!r.ok) { toast.error(j.error || 'No se pudieron cargar los ámbitos'); return; }
-      const lista: Ambito[] = j.data ?? [];
-      setAmbitos(lista);
+      if (!r.ok) { toast.error(j.error || 'No se pudieron cargar los soluciones'); return; }
+      const lista: Solucion[] = j.data ?? [];
+      setSoluciones(lista);
       setCobertura(Object.fromEntries((j.cobertura ?? []).map((c: CoberturaTalento) => [c.talento, c])));
       setOcupados(j.ocupados ?? {});
-      // Se elige el primero solo si no había nada elegido, para no saltar de ámbito
+      // Se elige el primero solo si no había nada elegido, para no saltar de solución
       // después de guardar.
       setElegido((prev) => (prev && lista.some((a) => a.id === prev) ? prev : lista[0]?.id ?? null));
     } finally {
@@ -112,28 +112,28 @@ export default function AmbitosPanel() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const ambito = ambitos.find((a) => a.id === elegido) ?? null;
+  const solucion = soluciones.find((a) => a.id === elegido) ?? null;
 
   const filas: FilaTalento[] = useMemo(
-    () => (ambito?.talentos ?? []).map((t) => ({
+    () => (solucion?.talentos ?? []).map((t) => ({
       talento: t.talento,
       descripcion: t.descripcion,
       proyectos: cobertura[t.talento]?.proyectos ?? 0,
       tickets: cobertura[t.talento]?.tickets ?? 0,
     })),
-    [ambito, cobertura],
+    [solucion, cobertura],
   );
 
   /* ── Guardar la lista de talentos ───────────────────────────────────────────
      Siempre se manda la lista COMPLETA: la pantalla edita el estado final. */
-  async function guardarTalentos(id: number, talentos: TalentoDeAmbito[]) {
-    const r = await fetch(`/api/admin/ambitos/${id}/talentos`, {
+  async function guardarTalentos(id: number, talentos: TalentoDeSolucion[]) {
+    const r = await fetch(`/api/admin/soluciones/${id}/talentos`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ talentos }),
     });
     if (!r.ok) {
-      // La API explica el choque con «un talento, un ámbito» nombrando al ámbito que lo
+      // La API explica el choque con «un talento, una solución» nombrando a la solución que lo
       // tiene. Tragarse ese texto y poner uno genérico sería desperdiciarlo.
       const j = await r.json().catch(() => ({}));
       toast.error(j.error || 'No se pudieron guardar los talentos');
@@ -147,7 +147,7 @@ export default function AmbitosPanel() {
     setGuardando(true);
     try {
       const esNuevo = editando === 'nuevo';
-      const r = await fetch(esNuevo ? '/api/admin/ambitos' : `/api/admin/ambitos/${(editando as Ambito).id}`, {
+      const r = await fetch(esNuevo ? '/api/admin/soluciones' : `/api/admin/soluciones/${(editando as Solucion).id}`, {
         method: esNuevo ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nombre.trim() }),
@@ -157,44 +157,44 @@ export default function AmbitosPanel() {
       if (esNuevo && j.data?.id) setElegido(j.data.id);
       setEditando(null);
       await cargar();
-      toast.success(esNuevo ? 'Ámbito creado' : 'Ámbito renombrado');
+      toast.success(esNuevo ? 'Solución creada' : 'Solución renombrada');
     } finally {
       setGuardando(false);
     }
   }
 
-  async function borrar(a: Ambito) {
-    const r = await fetch(`/api/admin/ambitos/${a.id}`, { method: 'DELETE' });
+  async function borrar(a: Solucion) {
+    const r = await fetch(`/api/admin/soluciones/${a.id}`, { method: 'DELETE' });
     if (!r.ok) { toast.error('No se pudo eliminar'); return; }
     setPorBorrar(null);
     setElegido(null);
     await cargar();
-    toast.success('Ámbito eliminado');
+    toast.success('Solución eliminada');
   }
 
   async function mover(dir: -1 | 1) {
-    const i = ambitos.findIndex((a) => a.id === elegido);
+    const i = soluciones.findIndex((a) => a.id === elegido);
     const j = i + dir;
-    if (i < 0 || j < 0 || j >= ambitos.length) return;
-    const orden = [...ambitos];
+    if (i < 0 || j < 0 || j >= soluciones.length) return;
+    const orden = [...soluciones];
     [orden[i], orden[j]] = [orden[j], orden[i]];
     // Se pinta ya, sin esperar al servidor: mover algo y que tarde medio segundo en
     // reaccionar hace dudar de si se pulsó bien.
-    setAmbitos(orden);
-    const r = await fetch('/api/admin/ambitos/reordenar', {
+    setSoluciones(orden);
+    const r = await fetch('/api/admin/soluciones/reordenar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids: orden.map((x) => x.id) }),
     });
     if (!r.ok) { toast.error('No se pudo reordenar'); await cargar(); return; }
-    setAmbitos((await r.json()).data ?? orden);
+    setSoluciones((await r.json()).data ?? orden);
   }
 
   /* ── El catálogo del panel derecho, filtrado y sin lo ya asociado ─────────── */
   const catalogo = useMemo(() => {
-    const yaEstan = new Set((ambito?.talentos ?? []).map((t) => t.talento));
+    const yaEstan = new Set((solucion?.talentos ?? []).map((t) => t.talento));
     const q = busqueda.trim().toLowerCase();
-    // ⚠️ Se esconden los que ya tiene OTRO ámbito: un talento pertenece a uno solo
+    // ⚠️ Se esconden los que ya tiene OTRO solución: un talento pertenece a uno solo
     // (migración 042). Ofrecer uno que la base va a rechazar es prometer lo imposible.
     return TALENTOS_BY_CATEGORY
       .map((g) => ({
@@ -204,7 +204,7 @@ export default function AmbitosPanel() {
         ),
       }))
       .filter((g) => g.items.length > 0);
-  }, [ambito, busqueda, ocupados]);
+  }, [solucion, busqueda, ocupados]);
 
   const sinRespaldo = filas.filter((f) => f.proyectos === 0 && f.tickets === 0).length;
 
@@ -216,15 +216,15 @@ export default function AmbitosPanel() {
         <div className="flex flex-col min-h-0 gap-2">
           <button type="button" className={BTN_PRIMARY} style={mf}
             onClick={() => { setEditando('nuevo'); setNombre(''); }}>
-            <Plus className="w-4 h-4" /> Nuevo ámbito
+            <Plus className="w-4 h-4" /> Nueva solución
           </button>
           <div className="flex-1 min-h-0">
             <FilterRail
-              title="Ámbitos"
+              title="Soluciones"
               value={String(elegido ?? '')}
               onChange={(v) => setElegido(Number(v))}
               wrapLabels
-              items={ambitos.map((a) => ({
+              items={soluciones.map((a) => ({
                 value: String(a.id),
                 label: a.nombre,
                 Icon: Layers,
@@ -237,27 +237,27 @@ export default function AmbitosPanel() {
 
         {/* ── 2. LOS TALENTOS DEL ÁMBITO, CON SU RESPALDO ─────────────────────── */}
         <div className="flex flex-col min-h-0">
-          {ambito ? (
+          {solucion ? (
             <>
               <div className="flex items-center gap-2 mb-3">
                 <p className="text-[15px] font-semibold text-digi-text flex-1 truncate" style={mf}>
-                  {ambito.nombre}
+                  {solucion.nombre}
                 </p>
                 <button type="button" className={BTN_SECONDARY} style={mf}
-                  onClick={() => mover(-1)} title="Subir" aria-label="Subir el ámbito">
+                  onClick={() => mover(-1)} title="Subir" aria-label="Subir la solución">
                   <ArrowUp className="w-4 h-4" />
                 </button>
                 <button type="button" className={BTN_SECONDARY} style={mf}
-                  onClick={() => mover(1)} title="Bajar" aria-label="Bajar el ámbito">
+                  onClick={() => mover(1)} title="Bajar" aria-label="Bajar la solución">
                   <ArrowDown className="w-4 h-4" />
                 </button>
                 <button type="button" className={BTN_SECONDARY} style={mf}
-                  onClick={() => { setEditando(ambito); setNombre(ambito.nombre); }}
-                  title="Renombrar" aria-label="Renombrar el ámbito">
+                  onClick={() => { setEditando(solucion); setNombre(solucion.nombre); }}
+                  title="Renombrar" aria-label="Renombrar la solución">
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button type="button" className={BTN_SECONDARY} style={mf}
-                  onClick={() => setPorBorrar(ambito)} title="Eliminar" aria-label="Eliminar el ámbito">
+                  onClick={() => setPorBorrar(solucion)} title="Eliminar" aria-label="Eliminar la solución">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -307,9 +307,9 @@ export default function AmbitosPanel() {
                     <span className={f.tickets ? 'text-digi-text' : 'text-digi-muted'}>{f.tickets}</span>
                   ) },
                   { key: 'quitar', header: '', width: '44px', render: (f: FilaTalento) => (
-                    <button type="button" aria-label={`Quitar ${f.talento}`} title="Quitar del ámbito"
+                    <button type="button" aria-label={`Quitar ${f.talento}`} title="Quitar de la solución"
                       className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
-                      onClick={() => guardarTalentos(ambito.id, ambito.talentos.filter((t) => t.talento !== f.talento))}>
+                      onClick={() => guardarTalentos(solucion.id, solucion.talentos.filter((t) => t.talento !== f.talento))}>
                       <X className="w-4 h-4" />
                     </button>
                   ) },
@@ -319,7 +319,7 @@ export default function AmbitosPanel() {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-[13px] text-digi-muted" style={mf}>
-                {cargando ? 'Cargando…' : 'Crea el primer ámbito para empezar.'}
+                {cargando ? 'Cargando…' : 'Crea el primer solución para empezar.'}
               </p>
             </div>
           )}
@@ -336,15 +336,15 @@ export default function AmbitosPanel() {
               placeholder="Buscar en el catálogo"
               className={`${CAMPO} pl-9`}
               style={mf}
-              disabled={!ambito}
+              disabled={!solucion}
             />
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-            {!ambito ? (
-              <p className="text-[12.5px] text-digi-muted" style={mf}>Elige un ámbito.</p>
+            {!solucion ? (
+              <p className="text-[12.5px] text-digi-muted" style={mf}>Elige una solución.</p>
             ) : catalogo.length === 0 ? (
               <p className="text-[12.5px] text-digi-muted" style={mf}>
-                {busqueda ? 'Sin coincidencias.' : 'Todos los talentos ya están en este ámbito.'}
+                {busqueda ? 'Sin coincidencias.' : 'Todos los talentos ya están en esta solución.'}
               </p>
             ) : (
               catalogo.map((g) => (
@@ -378,7 +378,7 @@ export default function AmbitosPanel() {
       {editando && (
         <EditPanel
           open
-          title={editando === 'nuevo' ? 'Nuevo ámbito' : 'Renombrar ámbito'}
+          title={editando === 'nuevo' ? 'Nueva solución' : 'Renombrar solución'}
           onClose={() => setEditando(null)}
           onSave={guardarNombre}
           saving={guardando}
@@ -396,7 +396,7 @@ export default function AmbitosPanel() {
           </EditField>
           {editando !== 'nuevo' && (
             <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
-              La dirección del ámbito en la web —<code>/soluciones#{editando.slug}</code>— <strong>no
+              La dirección de la solución en la web —<code>/soluciones#{editando.slug}</code>— <strong>no
               cambia</strong> al renombrarlo: es un enlace que puede estar ya compartido.
             </p>
           )}
@@ -405,8 +405,8 @@ export default function AmbitosPanel() {
 
       {/* Asociar un talento (o corregir su descripción). La descripción se pide AQUÍ, al
           asociar, que es lo que pidió Fernando: «uno de los campos a llenar al asociar un
-          talento a un ámbito». Puede quedar vacía — entonces la web no pinta el párrafo. */}
-      {talentoEnEdicion && ambito && (
+          talento a una solución». Puede quedar vacía — entonces la web no pinta el párrafo. */}
+      {talentoEnEdicion && solucion && (
         <EditPanel
           open
           title={talentoEnEdicion.nuevo ? 'Asociar talento' : 'Descripción del talento'}
@@ -416,14 +416,14 @@ export default function AmbitosPanel() {
             setGuardando(true);
             try {
               const texto = descripcion.trim() || null;
-              const yaEsta = ambito.talentos.some((t) => t.talento === talentoEnEdicion.talento);
+              const yaEsta = solucion.talentos.some((t) => t.talento === talentoEnEdicion.talento);
               const lista = yaEsta
-                ? ambito.talentos.map((t) =>
+                ? solucion.talentos.map((t) =>
                     t.talento === talentoEnEdicion.talento ? { ...t, descripcion: texto } : t)
                 // El `slug` lo calcula el servidor al guardar (`fijarTalentos`): es una URL
                 // y no algo que deba inventar la pantalla. Aquí va vacío a propósito.
-                : [...ambito.talentos, { talento: talentoEnEdicion.talento, descripcion: texto, slug: '' }];
-              await guardarTalentos(ambito.id, lista);
+                : [...solucion.talentos, { talento: talentoEnEdicion.talento, descripcion: texto, slug: '' }];
+              await guardarTalentos(solucion.id, lista);
               setTalentoEnEdicion(null);
               toast.success(talentoEnEdicion.nuevo ? 'Talento asociado' : 'Descripción guardada');
             } finally {
@@ -442,7 +442,7 @@ export default function AmbitosPanel() {
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               rows={5}
-              placeholder={`Cómo se ejerce «${talentoEnEdicion.talento}» dentro de ${ambito.nombre}…`}
+              placeholder={`Cómo se ejerce «${talentoEnEdicion.talento}» dentro de ${solucion.nombre}…`}
               className={`${CAMPO} resize-none`}
               style={mf}
             />
@@ -458,7 +458,7 @@ export default function AmbitosPanel() {
         <PixelConfirm
           open
           danger
-          title="Eliminar ámbito"
+          title="Eliminar solución"
           message={`Se eliminará «${porBorrar.nombre}» y sus ${porBorrar.talentos.length} talento(s) asociados. Los proyectos y tickets NO se tocan: la relación se calcula, no se guarda.`}
           confirmLabel="Eliminar"
           onConfirm={() => borrar(porBorrar)}

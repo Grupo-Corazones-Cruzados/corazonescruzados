@@ -168,7 +168,7 @@ export default function TicketsPage() {
       toast.error('Marca la casilla para crear/usar tu cuenta de cliente'); return;
     }
     // El talento es OBLIGATORIO en todo ticket (Fernando, 2026-08-18): es lo que lo
-    // coloca bajo un ámbito en la web pública. Se comprueba aquí para no gastar un viaje
+    // coloca bajo una solución en la web pública. Se comprueba aquí para no gastar un viaje
     // al servidor, pero la API lo valida igual — una pantalla no es una defensa.
     if (form.required_talents.length === 0) {
       toast.error('Elige al menos un talento para el ticket'); return;
@@ -417,7 +417,7 @@ export default function TicketsPage() {
               Medido: los 19 tickets de la base no declaraban ninguno.
 
               Sube aquí, junto al título y la descripción, porque describe AL TICKET: dice
-              de qué va el trabajo, y es lo que lo coloca bajo un ámbito en `/soluciones`. Que
+              de qué va el trabajo, y es lo que lo coloca bajo una solución en `/soluciones`. Que
               además decida quién puede tomarlo es una consecuencia, no su definición. */}
           <div className="flex flex-col gap-1">
             <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Talento *</label>
@@ -427,7 +427,7 @@ export default function TicketsPage() {
             {form.required_talents.length === 0 && (
               <p className="text-[10.5px] text-amber-600" style={mf}>
                 Elige al menos un talento: es lo que clasifica el ticket y lo hace aparecer
-                en la web dentro de su ámbito.
+                en la web dentro de su solución.
               </p>
             )}
           </div>

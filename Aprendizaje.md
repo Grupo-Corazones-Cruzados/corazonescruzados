@@ -5271,3 +5271,49 @@ va si Fernando la quiere con otro texto.
 | `/clientes/paso-1-publicas.webp` | 200 (las imágenes siguen sirviéndose) |
 | Menú | Historia · Soluciones · Clientes · Desarrollo Humano · Contacto |
 | Mapa del sitio | 13 URLs, todas las nuevas |
+
+## Octava pasada (2026-08-18) — «ámbito» desaparece del vocabulario
+
+Fernando: *«podemos actualizar todos esos conceptos internos y demás, las referencias ahora
+deben ser siempre soluciones, porque de esa manera no nos confundiremos a futuro»*.
+
+### P53 — ¿Merece la pena renombrar lo interno? · ✅ Sí, y más aquí
+Un nombre interno distinto del publicado es una trampa para quien lea el código dentro de seis
+meses. En este caso era peor: **«soluciones» había significado otra cosa el día anterior**, así
+que un lector futuro se encontraría `lib/ambitos.ts` sirviendo `/soluciones` mientras el
+historial habla de un `/soluciones` que era otra página.
+
+Renombrado: tablas, columna, **siete índices**, archivo de la librería, endpoints de la API,
+dos componentes, todas las funciones y tipos, y los textos del admin.
+
+### ⚠️ P54 — Renombrar tablas tiene una ventana de rotura · ✅ Asumida a sabiendas
+`ALTER TABLE … RENAME` es instantáneo y conserva datos, claves y permisos, pero **el código
+viejo deja de funcionar hasta que termina el despliegue**.
+
+Se aceptó porque el daño real es pequeño: `/soluciones` es HTML prerenderizado con
+`revalidate`, así que los visitantes siguen viendo la última versión buena; solo el panel de
+administración queda inservible unos minutos. La alternativa —crear vistas con los nombres
+viejos— dejaría **dos nombres vivos para siempre**, que es exactamente lo que se venía a
+quitar.
+
+### 🪤 P55 — El reemplazo por regex se pasó de listo, otra vez
+`\bambito\b` renombró una **variable local de `EntryChoiceModal.tsx`** que se llamaba `ambito`
+y describía el destino de entrada (Plataforma/Videojuego) — nada que ver con esta
+funcionalidad. Quedó como `solucion`, que es peor que el nombre original. Se le puso `destino`.
+
+`tsc` pasó en verde: el código era válido, solo mentía.
+
+**Regla, y es la segunda vez en el día que la aprendo:** tras un renombrado global, revisar la
+**lista de archivos tocados**, no solo que compile. El compilador no sabe que una palabra
+correcta está en el sitio equivocado. Aquí se cazó comparando la lista de 15 archivos
+modificados contra los que debían serlo.
+
+### Lo medido
+| | |
+|---|---|
+| Base | `soluciones`, `solucion_talentos`, `solucion_id`, 7 índices renombrados |
+| Datos | intactos: la solución, su talento, su slug y su descripción |
+| Web | `/soluciones` 200 con h1, descripción y las cuatro pestañas |
+| Rutas viejas | `/ambitos` → `/soluciones`, `/negocio` → `/clientes` (308) |
+| Admin | pestaña «Soluciones», botón «Nueva solución», **cero** apariciones de «ámbito» |
+| Código | ni un identificador con `ambito` fuera de comentarios históricos |

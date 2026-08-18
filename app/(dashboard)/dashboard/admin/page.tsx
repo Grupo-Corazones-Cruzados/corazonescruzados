@@ -8,7 +8,7 @@ import FuentesPanel from '@/components/admin/FuentesPanel';
 import TutorialesPanel from '@/components/admin/TutorialesPanel';
 import ListasPanel from '@/components/admin/ListasPanel';
 import FaqsPanel from '@/components/admin/FaqsPanel';
-import AmbitosPanel from '@/components/admin/AmbitosPanel';
+import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -29,7 +29,7 @@ const TABS = [
   { value: 'faqs', label: 'FAQs', Icon: HelpCircle },
   // Los ÁMBITOS que se publican en /soluciones: los tipos de proyecto que maneja el grupo y
   // los talentos de cada uno. Segunda pestaña cuyo contenido sale de cara al mundo.
-  { value: 'ambitos', label: 'Ámbitos', Icon: Layers },
+  { value: 'soluciones', label: 'Soluciones', Icon: Layers },
 ];
 
 
@@ -74,7 +74,7 @@ export default function AdminPage() {
         {tab === 'tutoriales' && <TutorialesPanel />}
         {tab === 'listas' && <ListasPanel />}
         {tab === 'faqs' && <FaqsPanel />}
-        {tab === 'ambitos' && <AmbitosPanel />}
+        {tab === 'soluciones' && <SolucionesPanel />}
       </div>
     </div>
   );

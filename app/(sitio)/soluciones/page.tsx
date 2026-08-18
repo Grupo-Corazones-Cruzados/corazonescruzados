@@ -1,19 +1,19 @@
 /**
  * SOLUCIONES — los tipos de proyecto que el grupo es capaz de manejar.
  *
- * ⚠️ Vivía en `/ambitos` hasta el 2026-08-18. Fernando le dio el nombre «Soluciones» —que
+ * ⚠️ Vivía en `/soluciones` hasta el 2026-08-18. Fernando le dio el nombre «Soluciones» —que
  * era el que tenía pensado para este contenido— y movió la página anterior a `/clientes`.
- * El concepto interno sigue siendo **ámbito**: la tabla, el admin y este código.
+ * El concepto interno sigue siendo **solución**: la tabla, el admin y este código.
  *
- * Panel izquierdo con las carpetas —un ámbito, y dentro sus talentos— y, al elegir un
+ * Panel izquierdo con las carpetas —una solución, y dentro sus talentos— y, al elegir un
  * talento, a la derecha los proyectos y tickets **terminados** que se hicieron con él.
  * Al estilo de `/legal`, como pidió Fernando.
  *
  * ── DE DÓNDE SALE CADA COSA ────────────────────────────────────────────────────
- * · Los **ámbitos** y sus talentos: `gcc_world.ambitos`, que se editan en Admin → Ámbitos.
+ * · Los **soluciones** y sus talentos: `gcc_world.soluciones`, que se editan en Admin → Soluciones.
  * · El **trabajo** de cada talento: NO está guardado en ninguna parte. Un proyecto es de un
  *   talento si alguno de sus requerimientos lo pide, y un ticket lo declara en
- *   `required_talents`. Se consulta al vuelo (`lib/ambitos.ts`), así que no puede quedar
+ *   `required_talents`. Se consulta al vuelo (`lib/soluciones.ts`), así que no puede quedar
  *   desincronizado con la realidad.
  *
  * ── SOLO LO TERMINADO ──────────────────────────────────────────────────────────
@@ -27,15 +27,15 @@
  * evita que un buscador vea un proyecto de once.
  *
  * ⏱️ `revalidate`: la página es HTML ya hecho, pero su contenido sale de la base y cambia
- * cuando se cierra un proyecto o se toca un ámbito en el admin. Cinco minutos, el mismo
+ * cuando se cierra un proyecto o se toca una solución en el admin. Cinco minutos, el mismo
  * criterio que las preguntas frecuentes de `/soluciones`.
  */
 
 import type { Metadata } from 'next';
 import { Contenedor } from '@/components/sitio/piezas';
-import AmbitosExplorador from '@/components/sitio/AmbitosExplorador';
+import SolucionesExplorador from '@/components/sitio/SolucionesExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { cargarAmbitosConContenido } from './datos';
+import { cargarSolucionesConContenido } from './datos';
 
 export const revalidate = 300;
 
@@ -56,8 +56,8 @@ export const metadata: Metadata = {
 };
 
 export default async function SolucionesPage() {
-  const ambitos = await cargarAmbitosConContenido();
-  const totalTrabajos = ambitos.reduce(
+  const soluciones = await cargarSolucionesConContenido();
+  const totalTrabajos = soluciones.reduce(
     (n, a) => n + Object.values(a.contenido).reduce(
       (m, c) => m + c.proyectos.length + c.tickets.length + c.productos.length, 0), 0,
   );
@@ -65,7 +65,7 @@ export default async function SolucionesPage() {
   return (
     <>
       {/* ── SIN ENCABEZADO, POR PETICIÓN (Fernando, 2026-08-18) ────────────────
-          Había un héroe con «Ámbitos» y una frase debajo. Lo quitó, y la página entra
+          Había un héroe con «Soluciones» y una frase debajo. Lo quitó, y la página entra
           directa al explorador.
 
           ⚠️ Con él se iba el único `<h1>`. No se ha dejado a la página sin encabezado: lo
@@ -78,13 +78,13 @@ export default async function SolucionesPage() {
           Fernando (2026-08-18). Sin `border-b`: no hay nada después de ella. */}
       <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
         <Contenedor>
-          {ambitos.length === 0 ? (
+          {soluciones.length === 0 ? (
             // Ni recuadro gris ni «próximamente»: la misma regla del resto del sitio.
             <p className="text-[15px] text-[var(--tenue)]">
-              Todavía no hay ámbitos publicados.
+              Todavía no hay soluciones publicados.
             </p>
           ) : (
-            <AmbitosExplorador ambitos={ambitos} />
+            <SolucionesExplorador soluciones={soluciones} />
           )}
         </Contenedor>
       </section>
@@ -99,7 +99,7 @@ export default async function SolucionesPage() {
               '@context': 'https://schema.org',
               '@type': 'ItemList',
               name: 'Soluciones de Grupo Corazones Cruzados',
-              itemListElement: ambitos.map((a, i) => ({
+              itemListElement: soluciones.map((a, i) => ({
                 '@type': 'ListItem',
                 position: i + 1,
                 name: a.nombre,

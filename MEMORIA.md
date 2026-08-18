@@ -315,6 +315,28 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **📛 «ÁMBITO» YA NO EXISTE: TODO SE LLAMA «SOLUCIÓN» (2026-08-18, migración 044).**
+  Fernando: *«las referencias ahora deben ser siempre soluciones, porque de esa manera no nos
+  confundiremos a futuro»*. Y tenía razón: un nombre interno distinto del publicado es una
+  trampa, y aquí era peor porque «soluciones» había significado otra cosa **el día anterior**.
+  - **Base:** `ambitos` → `soluciones`, `ambito_talentos` → `solucion_talentos`, la columna
+    `ambito_id` → `solucion_id` y **los siete índices**. `ALTER TABLE … RENAME` conserva
+    datos, claves y permisos: no se copia nada.
+  - **Código:** `lib/ambitos.ts` → `lib/soluciones.ts`, `/api/admin/ambitos` →
+    `/api/admin/soluciones`, `AmbitosPanel` → `SolucionesPanel`, `AmbitosExplorador` →
+    `SolucionesExplorador`, y todas las funciones y tipos. La pestaña del admin y sus textos
+    dicen «Solución».
+  - **⚠️ RENOMBRAR TABLAS ROMPE EL CÓDIGO VIEJO MIENTRAS SE DESPLIEGA EL NUEVO.** Se asumió a
+    sabiendas: `/soluciones` es HTML prerenderizado con `revalidate`, así que los visitantes
+    siguen viendo la última versión buena; solo el panel de administración queda inservible
+    hasta que termina el despliegue. La alternativa —vistas de compatibilidad— dejaría dos
+    nombres vivos para siempre, que es justo lo que se venía a quitar.
+  - **🪤 EL REEMPLAZO POR REGEX SE PASÓ DE LISTO, OTRA VEZ.** `\bambito\b` renombró una
+    **variable local de `EntryChoiceModal`** que se llamaba así y no tenía nada que ver — era
+    el destino de entrada (Plataforma/Videojuego). Se le puso `destino`, que es lo que
+    describe. **Regla: tras un renombrado global, revisar la LISTA DE ARCHIVOS TOCADOS, no
+    solo que compile.** El compilador no sabe que una palabra correcta está en el sitio
+    equivocado.
 - **🔄 LAS DOS PÁGINAS INTERCAMBIAN NOMBRE Y RUTA (2026-08-18). ⚠️ LEER ANTES DE TOCAR EL
   SITIO.** Es el cambio que más despista al leer el historial, porque **una URL cambió de
   significado**:

@@ -15,7 +15,7 @@
  *
  * **El talento sobra por deducción, no por gusto** (Fernando, 2026-08-18): si alguien
  * participó en este proyecto, y el proyecto cuelga de un talento, y ese talento cuelga del
- * ámbito que el visitante tiene abierto, entonces **ya se sabe que tiene ese talento** —
+ * solución que el visitante tiene abierto, entonces **ya se sabe que tiene ese talento** —
  * nadie sin él puede participar. Repetirlo en la burbuja es gastar una línea en decir lo que
  * el sitio donde está la tarjeta ya dijo.
  *
@@ -30,7 +30,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Images, Mail, Phone, X } from 'lucide-react';
-import type { Trabajo, Persona } from '@/lib/ambitos';
+import type { Trabajo, Persona } from '@/lib/soluciones';
 
 const ETIQUETA: Record<Trabajo['tipo'], string> = {
   proyecto: 'Proyecto',

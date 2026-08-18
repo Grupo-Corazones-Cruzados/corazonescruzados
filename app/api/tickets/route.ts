@@ -127,9 +127,9 @@ export async function POST(req: NextRequest) {
      *
      * El campo pasa a tener DOS oficios, y por eso se pide siempre:
      *   · decide **quién puede tomar** el ticket, si está abierto por talento;
-     *   · **clasifica** el ticket, que es lo que lo coloca bajo un ámbito en la web.
+     *   · **clasifica** el ticket, que es lo que lo coloca bajo una solución en la web.
      *
-     * Se filtra contra el catálogo (`TALENTOS_SET`) por el mismo motivo que en los ámbitos:
+     * Se filtra contra el catálogo (`TALENTOS_SET`) por el mismo motivo que en los soluciones:
      * un talento inventado no casaría nunca con nada y dejaría el ticket fuera de toda
      * carpeta, sin que nadie supiera por qué.
      */

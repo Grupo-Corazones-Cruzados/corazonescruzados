@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITIO, ACCESOS } from '@/lib/sitio/contenido';
-import { listarAmbitos } from '@/lib/ambitos';
+import { listarSoluciones } from '@/lib/soluciones';
 import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
 /**
@@ -33,7 +33,7 @@ const ULTIMO_CAMBIO = {
   /** `/recursos` → `/desarrollo-humano` el 2026-08-17, y de paso pasó a tema claro. */
   desarrolloHumano: '2026-08-17',
   /**
-   * La página de los ámbitos. Nació vacía en `/ambitos` el 2026-08-17, se llenó el 08-18 y
+   * La página de los ámbitos. Nació vacía en `/soluciones` el 2026-08-17, se llenó el 08-18 y
    * ese mismo día pasó a llamarse **Soluciones** y a vivir en `/soluciones`.
    */
   soluciones: '2026-08-18',
@@ -51,8 +51,8 @@ const ULTIMO_CAMBIO = {
  */
 async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
   try {
-    const ambitos = await listarAmbitos();
-    return ambitos.flatMap((a) =>
+    const soluciones = await listarSoluciones();
+    return soluciones.flatMap((a) =>
       a.talentos.map((t) => ({
         url: `${SITIO.url}/soluciones/${t.slug}`,
         lastModified: ULTIMO_CAMBIO.soluciones,

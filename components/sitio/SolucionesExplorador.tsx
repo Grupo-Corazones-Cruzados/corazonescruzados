@@ -3,7 +3,7 @@
 /**
  * EL EXPLORADOR DE `/soluciones` — carpetas a la izquierda, contenido a la derecha.
  *
- * Fernando lo pidió «al estilo de legal y privacidad». Cada **ámbito** es una carpeta que se
+ * Fernando lo pidió «al estilo de legal y privacidad». Cada **solución** es una carpeta que se
  * despliega y enseña sus **talentos**; al elegir uno, a la derecha salen su nombre, su
  * descripción, un buscador y **cuatro pestañas fijas**: Talentos · Productos · Tickets ·
  * Proyectos.
@@ -19,7 +19,7 @@
  * de la NAVEGACIÓN. La navegación tiene que ser estable para poder confiar en ella.
  *
  * ── EL TITULAR DEL TALENTO ES EL `<h1>` DE LA PÁGINA ───────────────────────────
- * La página tenía un encabezado propio («Ámbitos») y Fernando lo quitó el 2026-08-18. Sin
+ * La página tenía un encabezado propio («Soluciones») y Fernando lo quitó el 2026-08-18. Sin
  * él la página se quedaría sin `<h1>`, así que lo hereda el nombre del talento abierto, que
  * además es de lo que trata lo que se está mirando.
  *
@@ -33,10 +33,10 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Folder, FolderOpen, Mail, Phone, Search } from 'lucide-react';
-import type { Ambito, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo } from '@/lib/ambitos';
+import type { Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
 
-export interface AmbitoConContenido extends Ambito {
+export interface SolucionConContenido extends Solucion {
   /** El contenido de cada talento, ya consultado en el servidor. */
   contenido: Record<string, ContenidoDeTalento>;
 }
@@ -129,10 +129,10 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
  * otra pestaña, se copia con el botón derecho y el navegador enseña a dónde lleva. Un botón
  * que navega no hace nada de eso.
  */
-export default function AmbitosExplorador({
-  ambitos, slugActivo,
+export default function SolucionesExplorador({
+  soluciones, slugActivo,
 }: {
-  ambitos: AmbitoConContenido[];
+  soluciones: SolucionConContenido[];
   /** El talento de la URL. Sin él —en `/soluciones`— se elige el primero que haya. */
   slugActivo?: string;
 }) {
@@ -143,32 +143,32 @@ export default function AmbitosExplorador({
    * entera antes de saber por dónde empezar; una que arranca con todo cerrado obliga a
    * adivinar que hay que pulsar algo. Abrir solo la primera resuelve las dos cosas.
    *
-   * ⚠️ **Se abre la primera carpeta QUE TENGA TALENTOS, no la primera a secas.** Un ámbito
-   * recién creado y todavía sin talentos dejaría la derecha vacía y —peor— la página sin
+   * ⚠️ **Se abre la primera carpeta QUE TENGA TALENTOS, no la primera a secas.** Una solución
+   * recién creada y todavía sin talentos dejaría la derecha vacía y —peor— la página sin
    * `<h1>`, porque el titular ES el nombre del talento abierto. Saltárselo cuesta una línea
-   * y evita que crear un ámbito en el admin descoloque la web hasta que se le asocie algo.
+   * y evita que crear una solución en el admin descoloque la web hasta que se le asocie algo.
    */
-  const primero = ambitos.find((a) => a.talentos.length > 0) ?? ambitos[0];
+  const primero = soluciones.find((a) => a.talentos.length > 0) ?? soluciones[0];
 
-  /** El ámbito y el talento que pide la URL; si no la hay, el primero con contenido. */
+  /** El solución y el talento que pide la URL; si no la hay, el primero con contenido. */
   const activo = useMemo(() => {
     if (slugActivo) {
-      for (const a of ambitos) {
+      for (const a of soluciones) {
         const t = a.talentos.find((x) => x.slug === slugActivo);
-        if (t) return { ambitoId: a.id, talento: t.talento };
+        if (t) return { solucionId: a.id, talento: t.talento };
       }
     }
     return primero?.talentos[0]
-      ? { ambitoId: primero.id, talento: primero.talentos[0].talento }
+      ? { solucionId: primero.id, talento: primero.talentos[0].talento }
       : null;
-  }, [ambitos, slugActivo, primero]);
+  }, [soluciones, slugActivo, primero]);
 
   const elegido = activo?.talento ?? null;
 
   // La carpeta del talento abierto empieza desplegada; las demás, cerradas. Sigue siendo
   // estado porque desplegar y plegar es del visitante, no de la dirección.
   const [abiertos, setAbiertos] = useState<Set<number>>(
-    new Set(activo ? [activo.ambitoId] : []),
+    new Set(activo ? [activo.solucionId] : []),
   );
   const [pestana, setPestana] = useState<Pestana>('proyectos');
   const [busca, setBusca] = useState('');
@@ -183,20 +183,20 @@ export default function AmbitosExplorador({
   /**
    * La descripción del talento abierto.
    *
-   * Se busca por todos los ámbitos y se coge la primera, y es correcto: **un talento
-   * pertenece a UN solo ámbito** (Fernando, 2026-08-18; índice único en la migración 042),
+   * Se busca por todos los soluciones y se coge la primera, y es correcto: **un talento
+   * pertenece a UN solo solución** (Fernando, 2026-08-18; índice único en la migración 042),
    * así que no hay una segunda que pudiera competir.
    */
   const descripcion = useMemo(() => {
     if (!elegido) return null;
-    for (const a of ambitos) {
+    for (const a of soluciones) {
       const t = a.talentos.find((x) => x.talento === elegido);
       if (t) return t.descripcion;
     }
     return null;
-  }, [ambitos, elegido]);
+  }, [soluciones, elegido]);
 
-  const contenido: ContenidoDeTalento = (elegido && ambitos.find((a) => a.contenido[elegido])?.contenido[elegido]) || VACIO_TOTAL;
+  const contenido: ContenidoDeTalento = (elegido && soluciones.find((a) => a.contenido[elegido])?.contenido[elegido]) || VACIO_TOTAL;
 
   /** El buscador filtra DENTRO de la pestaña abierta, que es lo que se está mirando. */
   const q = busca.trim().toLowerCase();
@@ -219,7 +219,7 @@ export default function AmbitosExplorador({
   const totalDe = (c: ContenidoDeTalento) =>
     c.miembros.length + c.productos.length + c.tickets.length + c.proyectos.length;
 
-  if (ambitos.length === 0) return null;
+  if (soluciones.length === 0) return null;
 
   const vacio = (texto: string) => (
     <p className="text-[14px] text-[var(--tenue)] py-6">{texto}</p>
@@ -228,12 +228,12 @@ export default function AmbitosExplorador({
   return (
     <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
       {/* ── EL PANEL IZQUIERDO ─────────────────────────────────────────────────── */}
-      <nav aria-label="Ámbitos" className="lg:sticky lg:top-24 lg:self-start">
+      <nav aria-label="Soluciones" className="lg:sticky lg:top-24 lg:self-start">
         <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
-          Ámbitos
+          Soluciones
         </p>
         <ul className="space-y-0.5">
-          {ambitos.map((a) => {
+          {soluciones.map((a) => {
             const abierto = abiertos.has(a.id);
             return (
               <li key={a.id} id={a.slug} className="scroll-mt-24">
@@ -386,7 +386,7 @@ export default function AmbitosExplorador({
             Se pinta como nodos de verdad y se oculta con `hidden`, que NO lo saca del HTML.
             Sin esto Google vería una pestaña de un talento, y se perdería el resto. */}
         <div hidden aria-hidden="true">
-          {ambitos.map((a) =>
+          {soluciones.map((a) =>
             a.talentos.map((t) => {
               const c = a.contenido[t.talento] ?? VACIO_TOTAL;
               return (

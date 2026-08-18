@@ -76,15 +76,15 @@ export default function EntryChoiceModal({
    * de otra cosa. Fernando pidió unificarlo el 2026-08-17. Escribiéndolo una vez, no puede
    * volver a separarse.
    */
-  const ambito =
+  const destino =
     destination === 'dashboard'
       ? { preposicion: 'a la', palabra: 'Plataforma' }
       : { preposicion: 'al', palabra: 'Videojuego' };
 
-  const titulo = `¿Cómo quieres ingresar ${ambito.preposicion} ${ambito.palabra}?`;
+  const titulo = `¿Cómo quieres ingresar ${destino.preposicion} ${destino.palabra}?`;
 
   /** «a la Plataforma» · «al Videojuego». El destino, sin verbo, para poder conjugarlo. */
-  const aDestino = `${ambito.preposicion} ${ambito.palabra}`;
+  const aDestino = `${destino.preposicion} ${destino.palabra}`;
 
   /**
    * «entrar a la Plataforma» · «entrar al Videojuego» — en INFINITIVO, porque va detrás de
@@ -178,8 +178,8 @@ export default function EntryChoiceModal({
                 vale `#4B2D8E`. Así el resalte sigue leyéndose el día que este diálogo pase a
                 tema claro, que es tan fácil como quitarle la clase `dark` al overlay. */}
             <h2 className="text-[17px] font-semibold text-digi-text leading-tight">
-              ¿Cómo quieres ingresar {ambito.preposicion}{' '}
-              <span className="text-accent-glow">{ambito.palabra}</span>?
+              ¿Cómo quieres ingresar {destino.preposicion}{' '}
+              <span className="text-accent-glow">{destino.palabra}</span>?
             </h2>
             <p className="text-[12.5px] text-digi-muted mt-0.5">Elige tu camino para continuar.</p>
           </div>

@@ -24,10 +24,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Contenedor } from '@/components/sitio/piezas';
-import AmbitosExplorador from '@/components/sitio/AmbitosExplorador';
+import SolucionesExplorador from '@/components/sitio/SolucionesExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { listarAmbitos, talentoPorSlug } from '@/lib/ambitos';
-import { cargarAmbitosConContenido } from '../datos';
+import { listarSoluciones, talentoPorSlug } from '@/lib/soluciones';
+import { cargarSolucionesConContenido } from '../datos';
 
 export const revalidate = 300;
 
@@ -35,8 +35,8 @@ type Props = { params: Promise<{ talento: string }> };
 
 export async function generateStaticParams() {
   try {
-    const ambitos = await listarAmbitos();
-    return ambitos.flatMap((a) => a.talentos.map((t) => ({ talento: t.slug })));
+    const soluciones = await listarSoluciones();
+    return soluciones.flatMap((a) => a.talentos.map((t) => ({ talento: t.slug })));
   } catch {
     // Durante el build, si la base no contesta no se cae el despliegue: la rama queda sin
     // prerenderizar y la primera revalidación la levanta. Ya costó 20 despliegues fallidos.
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     // Solo el nombre del talento: la plantilla de `app/layout.tsx` añade el del grupo.
     title: t.talento,
-    // La descripción del ámbito, si la hay, es exactamente lo que describe esta página.
+    // La descripción de la solución, si la hay, es exactamente lo que describe esta página.
     description: t.descripcion ?? `Trabajo terminado de ${SITIO.nombre} en ${t.talento}.`,
     alternates: { canonical: `/soluciones/${slug}` },
     openGraph: {
@@ -70,17 +70,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TalentoPage({ params }: Props) {
   const { talento: slug } = await params;
-  const ambitos = await cargarAmbitosConContenido();
+  const soluciones = await cargarSolucionesConContenido();
 
   // Se comprueba contra lo cargado y no con otra consulta: si el talento no está aquí,
   // tampoco habría nada que enseñar.
-  const existe = ambitos.some((a) => a.talentos.some((t) => t.slug === slug));
+  const existe = soluciones.some((a) => a.talentos.some((t) => t.slug === slug));
   if (!existe) notFound();
 
   return (
     <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
       <Contenedor>
-        <AmbitosExplorador ambitos={ambitos} slugActivo={slug} />
+        <SolucionesExplorador soluciones={soluciones} slugActivo={slug} />
       </Contenedor>
     </section>
   );

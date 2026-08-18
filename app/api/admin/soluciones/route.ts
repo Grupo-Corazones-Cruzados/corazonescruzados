@@ -6,12 +6,12 @@
  * severidad que en el resto del panel.
  *
  * La web pública NO pasa por este endpoint: lee la base directamente al generar la página
- * (`lib/ambitos.ts`), igual que las preguntas frecuentes.
+ * (`lib/soluciones.ts`), igual que las preguntas frecuentes.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { listarAmbitos, crearAmbito, coberturaDeTalentos, talentosOcupados } from '@/lib/ambitos';
+import { listarSoluciones, crearSolucion, coberturaDeTalentos, talentosOcupados } from '@/lib/soluciones';
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -19,20 +19,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   }
 
-  const ambitos = await listarAmbitos();
+  const soluciones = await listarSoluciones();
 
   // La cobertura solo se pide si se quiere: es una consulta más y la lista se recarga en
-  // cada guardado. Se calcula para TODOS los talentos de una vez, no uno por ámbito.
+  // cada guardado. Se calcula para TODOS los talentos de una vez, no uno por solución.
   if (req.nextUrl.searchParams.get('cobertura') === '1') {
-    const todos = [...new Set(ambitos.flatMap((a) => a.talentos.map((t) => t.talento)))];
+    const todos = [...new Set(soluciones.flatMap((a) => a.talentos.map((t) => t.talento)))];
     return NextResponse.json({
-      data: ambitos,
+      data: soluciones,
       cobertura: await coberturaDeTalentos(todos),
       // Qué talento está cogido y por quién: el catálogo del panel los esconde.
       ocupados: await talentosOcupados(),
     });
   }
-  return NextResponse.json({ data: ambitos });
+  return NextResponse.json({ data: soluciones });
 }
 
 export async function POST(req: NextRequest) {
@@ -45,5 +45,5 @@ export async function POST(req: NextRequest) {
   if (!nombre?.trim()) {
     return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 });
   }
-  return NextResponse.json({ data: await crearAmbito(nombre.trim()) }, { status: 201 });
+  return NextResponse.json({ data: await crearSolucion(nombre.trim()) }, { status: 201 });
 }

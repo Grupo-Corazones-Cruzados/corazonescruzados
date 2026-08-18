@@ -1,11 +1,11 @@
 /**
  * ÁMBITOS — acceso a datos, definición única.
  *
- * Un **ámbito** es un tipo de proyecto que el grupo sabe manejar (Tecnología, …). Dentro
+ * Un **solución** es un tipo de proyecto que el grupo sabe manejar (Tecnología, …). Dentro
  * lleva **talentos** del catálogo de la organización (`lib/centralized/talentos.ts`), y son
  * esos talentos los que enganchan con el trabajo hecho:
  *
- *     ámbito ──▶ talentos ──▶ proyectos  (por `project_requirements.talents`)
+ *     solución ──▶ talentos ──▶ proyectos  (por `project_requirements.talents`)
  *                        └──▶ tickets    (por `tickets.required_talents`)
  *
  * **Ese enganche no se guarda en ninguna parte: se consulta.** Es la misma regla que fijó
@@ -14,32 +14,32 @@
  * cuadrar.
  *
  * Lo consumen dos sitios, como las FAQs:
- *  · **Admin → Ámbitos**, por la API (`/api/admin/ambitos`).
+ *  · **Admin → Soluciones**, por la API (`/api/admin/soluciones`).
  *  · **La web pública** (`/soluciones`), que leerá esta capa **directamente en el servidor** al
  *    generar la página. Sería absurdo que la aplicación se llamara a sí misma por HTTP para
  *    leer su propia base.
  *
- * Tabla: `gcc_world.ambitos` + `gcc_world.ambito_talentos` (migración 039).
+ * Tabla: `gcc_world.soluciones` + `gcc_world.solucion_talentos` (migración 039).
  */
 
 import { pool } from '@/lib/db';
 import { TALENTOS_SET } from '@/lib/centralized/talentos';
 
 /**
- * Un talento DENTRO de un ámbito.
+ * Un talento DENTRO de una solución.
  *
  * Deja de ser una cadena suelta desde el 2026-08-18: lleva su **descripción**, que cuenta
- * cómo se ejerce ese talento en ESTE ámbito y se publica bajo su título en `/soluciones`.
+ * cómo se ejerce ese talento en ESTA solución y se publica bajo su título en `/soluciones`.
  *
- * ⚠️ **Un talento pertenece a UN SOLO ámbito** (Fernando, 2026-08-18; índice único en la
- * migración 042). El ámbito clasifica, y algo que cae en dos cajones no está clasificado.
+ * ⚠️ **Un talento pertenece a UN SOLO solución** (Fernando, 2026-08-18; índice único en la
+ * migración 042). El solución clasifica, y algo que cae en dos cajones no está clasificado.
  *
  * Que la pareja sea única **no** convierte la descripción en propiedad del talento: sigue
- * describiendo *el talento ejercido dentro de su ámbito*, y el catálogo de talentos vive en
- * el código, no en la base. Lo confirmó él mismo: *«la descripción queda entre ámbito y
+ * describiendo *el talento ejercido dentro de su solución*, y el catálogo de talentos vive en
+ * el código, no en la base. Lo confirmó él mismo: *«la descripción queda entre solución y
  * talento, no es lo mismo que la descripción del talento per se»*.
  */
-export interface TalentoDeAmbito {
+export interface TalentoDeSolucion {
   talento: string;
   descripcion: string | null;
   /**
@@ -50,20 +50,20 @@ export interface TalentoDeAmbito {
   slug: string;
 }
 
-export interface Ambito {
+export interface Solucion {
   id: number;
   nombre: string;
   slug: string;
   orden: number;
   /** Los talentos asociados, en su orden. */
-  talentos: TalentoDeAmbito[];
+  talentos: TalentoDeSolucion[];
 }
 
 /**
  * Cuánto trabajo TERMINADO respalda a un talento.
  *
- * Se enseña en el admin para que, al montar un ámbito, se vea de inmediato si va a salir
- * vacío en la web. Un ámbito con talentos sin nada detrás es una carpeta que el visitante
+ * Se enseña en el admin para que, al montar una solución, se vea de inmediato si va a salir
+ * vacío en la web. Una solución con talentos sin nada detrás es una carpeta que el visitante
  * abre para no encontrar nada.
  */
 export interface CoberturaTalento {
@@ -92,8 +92,8 @@ export function aSlug(texto: string): string {
     .slice(0, 80);
 }
 
-/** Todos los ámbitos con sus talentos, en orden. */
-export async function listarAmbitos(): Promise<Ambito[]> {
+/** Todos los soluciones con sus talentos, en orden. */
+export async function listarSoluciones(): Promise<Solucion[]> {
   const { rows } = await pool.query(
     `SELECT a.id, a.nombre, a.slug, a.orden,
             COALESCE(
@@ -101,11 +101,11 @@ export async function listarAmbitos(): Promise<Ambito[]> {
                                                  'descripcion', t.descripcion,
                                                  'slug', t.slug)
                                ORDER BY t.orden, t.talento)
-                 FROM gcc_world.ambito_talentos t
-                WHERE t.ambito_id = a.id),
+                 FROM gcc_world.solucion_talentos t
+                WHERE t.solucion_id = a.id),
               '[]'::json
             ) AS talentos
-       FROM gcc_world.ambitos a
+       FROM gcc_world.soluciones a
       ORDER BY a.orden, a.id`,
   );
   return rows.map((r: any) => ({
@@ -113,7 +113,7 @@ export async function listarAmbitos(): Promise<Ambito[]> {
     nombre: r.nombre,
     slug: r.slug,
     orden: Number(r.orden),
-    talentos: (r.talentos ?? []) as TalentoDeAmbito[],
+    talentos: (r.talentos ?? []) as TalentoDeSolucion[],
   }));
 }
 
@@ -125,9 +125,9 @@ export async function listarAmbitos(): Promise<Ambito[]> {
  * mala explicación.
  */
 async function slugLibre(nombre: string, excluirId?: number): Promise<string> {
-  const base = aSlug(nombre) || 'ambito';
+  const base = aSlug(nombre) || 'solucion';
   const { rows } = await pool.query(
-    `SELECT slug FROM gcc_world.ambitos WHERE slug LIKE $1 || '%' AND ($2::bigint IS NULL OR id <> $2)`,
+    `SELECT slug FROM gcc_world.soluciones WHERE slug LIKE $1 || '%' AND ($2::bigint IS NULL OR id <> $2)`,
     [base, excluirId ?? null],
   );
   const usados = new Set(rows.map((r: any) => r.slug));
@@ -136,13 +136,13 @@ async function slugLibre(nombre: string, excluirId?: number): Promise<string> {
   return `${base}-${Date.now()}`;
 }
 
-export async function crearAmbito(nombre: string): Promise<Ambito> {
+export async function crearSolucion(nombre: string): Promise<Solucion> {
   const slug = await slugLibre(nombre);
   const { rows: [max] } = await pool.query(
-    `SELECT COALESCE(MAX(orden), -1) + 1 AS siguiente FROM gcc_world.ambitos`,
+    `SELECT COALESCE(MAX(orden), -1) + 1 AS siguiente FROM gcc_world.soluciones`,
   );
   const { rows: [a] } = await pool.query(
-    `INSERT INTO gcc_world.ambitos (nombre, slug, orden) VALUES ($1, $2, $3)
+    `INSERT INTO gcc_world.soluciones (nombre, slug, orden) VALUES ($1, $2, $3)
      RETURNING id, nombre, slug, orden`,
     [nombre, slug, Number(max.siguiente)],
   );
@@ -156,38 +156,38 @@ export async function crearAmbito(nombre: string): Promise<Ambito> {
  * gente. Corregir una tilde del nombre no puede romper enlaces ya repartidos. Si algún día
  * hace falta cambiarlo, será una acción aparte y consciente.
  */
-export async function renombrarAmbito(id: number, nombre: string): Promise<void> {
+export async function renombrarSolucion(id: number, nombre: string): Promise<void> {
   await pool.query(
-    `UPDATE gcc_world.ambitos SET nombre = $2, updated_at = now() WHERE id = $1`,
+    `UPDATE gcc_world.soluciones SET nombre = $2, updated_at = now() WHERE id = $1`,
     [id, nombre],
   );
 }
 
-export async function borrarAmbito(id: number): Promise<void> {
+export async function borrarSolucion(id: number): Promise<void> {
   // `ON DELETE CASCADE` se lleva sus talentos. No toca ningún proyecto ni ticket: la
   // relación con ellos se calcula, no se guarda.
-  await pool.query(`DELETE FROM gcc_world.ambitos WHERE id = $1`, [id]);
+  await pool.query(`DELETE FROM gcc_world.soluciones WHERE id = $1`, [id]);
 }
 
 /**
- * Los talentos que ya están cogidos por OTRO ámbito.
+ * Los talentos que ya están cogidos por OTRO solución.
  *
  * El panel del admin los esconde del catálogo: un talento pertenece a uno solo, y ofrecer
  * uno que va a ser rechazado por la base es prometer algo que no se puede cumplir.
  */
-export async function talentosOcupados(exceptoAmbitoId?: number): Promise<Record<string, string>> {
+export async function talentosOcupados(exceptoSolucionId?: number): Promise<Record<string, string>> {
   const { rows } = await pool.query(
     `SELECT t.talento, a.nombre
-       FROM gcc_world.ambito_talentos t
-       JOIN gcc_world.ambitos a ON a.id = t.ambito_id
-      WHERE $1::bigint IS NULL OR t.ambito_id <> $1`,
-    [exceptoAmbitoId ?? null],
+       FROM gcc_world.solucion_talentos t
+       JOIN gcc_world.soluciones a ON a.id = t.solucion_id
+      WHERE $1::bigint IS NULL OR t.solucion_id <> $1`,
+    [exceptoSolucionId ?? null],
   );
   return Object.fromEntries(rows.map((r: any) => [r.talento, r.nombre]));
 }
 
 /**
- * Fija la lista completa de talentos de un ámbito, en el orden recibido.
+ * Fija la lista completa de talentos de una solución, en el orden recibido.
  *
  * Es un reemplazo y no un «añadir/quitar» suelto porque la pantalla edita la lista entera:
  * mandar el estado final deja imposible que el cliente y el servidor discrepen a medias.
@@ -196,9 +196,9 @@ export async function talentosOcupados(exceptoAmbitoId?: number): Promise<Record
  * jamás casaría con un requerimiento y dejaría una carpeta vacía sin explicación.
  */
 export async function fijarTalentos(
-  ambitoId: number,
-  talentos: TalentoDeAmbito[],
-): Promise<TalentoDeAmbito[]> {
+  solucionId: number,
+  talentos: TalentoDeSolucion[],
+): Promise<TalentoDeSolucion[]> {
   const vistos = new Set<string>();
   const unicos = talentos.filter((t) => {
     if (!TALENTOS_SET.has(t.talento) || vistos.has(t.talento)) return false;
@@ -209,16 +209,16 @@ export async function fijarTalentos(
   const cliente = await pool.connect();
   try {
     await cliente.query('BEGIN');
-    await cliente.query(`DELETE FROM gcc_world.ambito_talentos WHERE ambito_id = $1`, [ambitoId]);
+    await cliente.query(`DELETE FROM gcc_world.solucion_talentos WHERE solucion_id = $1`, [solucionId]);
     if (unicos.length) {
       await cliente.query(
-        `INSERT INTO gcc_world.ambito_talentos (ambito_id, talento, orden, descripcion, slug)
+        `INSERT INTO gcc_world.solucion_talentos (solucion_id, talento, orden, descripcion, slug)
          SELECT $1, t.valor, t.ord - 1, d.valor, s.valor
            FROM UNNEST($2::text[]) WITH ORDINALITY AS t(valor, ord)
            JOIN UNNEST($3::text[]) WITH ORDINALITY AS d(valor, ord) ON d.ord = t.ord
            JOIN UNNEST($4::text[]) WITH ORDINALITY AS s(valor, ord) ON s.ord = t.ord`,
         [
-          ambitoId,
+          solucionId,
           unicos.map((t) => t.talento),
           unicos.map((t) => t.descripcion ?? null),
           // El slug se calcula aquí con la MISMA regla que usó la migración 043. Se
@@ -228,7 +228,7 @@ export async function fijarTalentos(
         ],
       );
     }
-    await cliente.query(`UPDATE gcc_world.ambitos SET updated_at = now() WHERE id = $1`, [ambitoId]);
+    await cliente.query(`UPDATE gcc_world.soluciones SET updated_at = now() WHERE id = $1`, [solucionId]);
     await cliente.query('COMMIT');
   } catch (e) {
     await cliente.query('ROLLBACK');
@@ -239,11 +239,11 @@ export async function fijarTalentos(
   return unicos.map((t) => ({ ...t, slug: aSlug(t.talento) }));
 }
 
-/** Reordena los ámbitos según la lista de ids recibida. */
-export async function reordenarAmbitos(ids: number[]): Promise<void> {
+/** Reordena los soluciones según la lista de ids recibida. */
+export async function reordenarSoluciones(ids: number[]): Promise<void> {
   if (!ids.length) return;
   await pool.query(
-    `UPDATE gcc_world.ambitos a
+    `UPDATE gcc_world.soluciones a
         SET orden = v.ord - 1, updated_at = now()
        FROM UNNEST($1::bigint[]) WITH ORDINALITY AS v(id, ord)
       WHERE a.id = v.id`,
@@ -537,10 +537,10 @@ export async function contenidoDeTalento(talento: string): Promise<ContenidoDeTa
  */
 export async function talentoPorSlug(
   slug: string,
-): Promise<{ talento: string; descripcion: string | null; ambitoId: number } | null> {
+): Promise<{ talento: string; descripcion: string | null; solucionId: number } | null> {
   const { rows: [r] } = await pool.query(
-    `SELECT talento, descripcion, ambito_id FROM gcc_world.ambito_talentos WHERE slug = $1`,
+    `SELECT talento, descripcion, solucion_id FROM gcc_world.solucion_talentos WHERE slug = $1`,
     [slug],
   );
-  return r ? { talento: r.talento, descripcion: r.descripcion ?? null, ambitoId: Number(r.ambito_id) } : null;
+  return r ? { talento: r.talento, descripcion: r.descripcion ?? null, solucionId: Number(r.solucion_id) } : null;
 }

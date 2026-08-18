@@ -1,5 +1,5 @@
 /**
- * Los talentos de un ámbito. Solo administradores.
+ * Los talentos de una solución. Solo administradores.
  *
  * `PUT` y no `POST`/`DELETE` sueltos: la pantalla edita **la lista entera**, así que manda
  * el estado final. Con altas y bajas por separado, un fallo a medio camino deja el cliente
@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { fijarTalentos, talentosOcupados } from '@/lib/ambitos';
+import { fijarTalentos, talentosOcupados } from '@/lib/soluciones';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -30,20 +30,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     /**
      * ⚠️ EL CHOQUE CONTRA «UN TALENTO, UN ÁMBITO» SE EXPLICA, NO SE DEJA REVENTAR.
      *
-     * La regla vive en la base (índice único `ambito_talentos_talento_unico`, migración
+     * La regla vive en la base (índice único `solucion_talentos_talento_unico`, migración
      * 042), que es donde tiene que estar: una restricción que solo vive en el formulario se
      * salta con una llamada como esta. Pero al saltarla, Postgres devuelve un `23505` y sin
      * este `catch` el usuario vería un 500 pelado — «algo falló», sin saber el qué.
      *
-     * Con el nombre del ámbito que lo tiene, la corrección es evidente.
+     * Con el nombre de la solución que lo tiene, la corrección es evidente.
      */
     if (e?.code === '23505') {
       const cogidos = await talentosOcupados(Number(id));
       const choca = talentos.map((t: any) => t?.talento).find((t: string) => cogidos[t]);
       return NextResponse.json({
         error: choca
-          ? `«${choca}» ya pertenece al ámbito «${cogidos[choca]}». Un talento solo puede estar en uno.`
-          : 'Ese talento ya pertenece a otro ámbito. Un talento solo puede estar en uno.',
+          ? `«${choca}» ya pertenece a la solución «${cogidos[choca]}». Un talento solo puede estar en uno.`
+          : 'Ese talento ya pertenece a otra solución. Un talento solo puede estar en uno.',
       }, { status: 409 });
     }
     throw e;
