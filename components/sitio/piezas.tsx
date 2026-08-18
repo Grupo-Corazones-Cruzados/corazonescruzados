@@ -42,18 +42,57 @@ import {
   MessageSquare, Layers, Zap, FileText, Users, Gamepad2, Store, Compass,
   Ticket, Vote, ArrowRight, CalendarClock, Handshake,
   AppWindow, Bot, Network, Database, MonitorSmartphone, BotMessageSquare, Globe, Blocks,
-  Building2, Cloud, Puzzle, type LucideIcon,
+  Building2, Cloud, Puzzle,
+  // Ampliación del 2026-08-18, para que la galería de iconos del admin sea de verdad una
+  // galería: con 23 no había de dónde elegir al crear un concepto.
+  BarChart3, ShieldCheck, Lock, Wrench, Cog, Rocket, Lightbulb, Target, Search, Mail,
+  Phone, MapPin, Truck, ShoppingCart, CreditCard, Receipt, Wallet, PiggyBank, Scale,
+  BookOpen, GraduationCap, Stethoscope, HeartPulse, Leaf, Factory, Hammer, Ruler,
+  Palette, Camera, Video, Music, Mic, Radio, Newspaper, Megaphone, Share2, Link2,
+  Server, HardDrive, Cpu, Code2, Terminal, GitBranch, Workflow, Boxes, Package,
+  ClipboardList, CheckCircle2, AlarmClock, Timer, TrendingUp, Activity, Gauge,
+  Sparkles, Star, Award, Flag, Home, Briefcase, Landmark, Plane, Ship, Car,
+  type LucideIcon,
 } from 'lucide-react';
 
+/**
+ * EL MAPA NOMBRE → ICONO — fuente única de la iconografía del sitio.
+ *
+ * Las claves son las que se guardan en la base (`solucion_conceptos.icono`, `ACCESOS.icono`)
+ * y las que ofrece la **galería del admin**. Guardar un nombre y no un SVG hace que el icono
+ * pese cero, cambie de color con el tema y se pueda sustituir en un sitio.
+ *
+ * ⚠️ **Quitar una clave de aquí no rompe nada**, pero deja al concepto que la usara con el
+ * icono por defecto. Añadir una la ofrece automáticamente en el admin: no hay una segunda
+ * lista que mantener.
+ */
 export const ICONOS: Record<string, LucideIcon> = {
   mensaje: MessageSquare, capas: Layers, rayo: Zap, documento: FileText,
   personas: Users, juego: Gamepad2, tienda: Store, brujula: Compass,
   ticket: Ticket, voto: Vote, calendario: CalendarClock, acuerdo: Handshake,
-  // Galería de Automatización
+  // Nacieron con la galería de Automatización (2026-08-06) y hoy son conceptos.
   aplicacion: AppWindow, robot: Bot, red: Network, 'base-datos': Database,
   pantallas: MonitorSmartphone, agente: BotMessageSquare, web: Globe, modulos: Blocks,
   integracion: Puzzle, inquilinos: Building2, nube: Cloud,
+  // Ampliación del 2026-08-18 para la galería del admin.
+  grafico: BarChart3, escudo: ShieldCheck, candado: Lock, herramienta: Wrench,
+  engranaje: Cog, cohete: Rocket, idea: Lightbulb, diana: Target, buscar: Search,
+  correo: Mail, telefono: Phone, ubicacion: MapPin, camion: Truck, carrito: ShoppingCart,
+  tarjeta: CreditCard, recibo: Receipt, billetera: Wallet, ahorro: PiggyBank,
+  balanza: Scale, libro: BookOpen, formacion: GraduationCap, salud: Stethoscope,
+  pulso: HeartPulse, hoja: Leaf, fabrica: Factory, martillo: Hammer, regla: Ruler,
+  paleta: Palette, camara: Camera, video: Video, musica: Music, microfono: Mic,
+  radio: Radio, prensa: Newspaper, altavoz: Megaphone, compartir: Share2, enlace: Link2,
+  servidor: Server, disco: HardDrive, procesador: Cpu, codigo: Code2, terminal: Terminal,
+  rama: GitBranch, flujo: Workflow, cajas: Boxes, paquete: Package,
+  lista: ClipboardList, verificado: CheckCircle2, alarma: AlarmClock, cronometro: Timer,
+  tendencia: TrendingUp, actividad: Activity, medidor: Gauge, destello: Sparkles,
+  estrella: Star, premio: Award, bandera: Flag, casa: Home, maletin: Briefcase,
+  institucion: Landmark, avion: Plane, barco: Ship, coche: Car,
 };
+
+/** Los nombres de icono disponibles, para la galería del admin. */
+export const NOMBRES_DE_ICONO = Object.keys(ICONOS).sort();
 
 /** Convierte los `**dobles asteriscos**` del contenido en negrita. */
 export function conNegritas(texto: string): ReactNode[] {

@@ -544,3 +544,115 @@ export async function talentoPorSlug(
   );
   return r ? { talento: r.talento, descripcion: r.descripcion ?? null, solucionId: Number(r.solucion_id) } : null;
 }
+
+/* ═══════════════════════ LOS CONCEPTOS DE UNA SOLUCIÓN ═══════════════════════ */
+
+/**
+ * Un **concepto**: título, icono y descripción.
+ *
+ * Se publican en `/soluciones` como una tira vertical en el panel derecho — el mismo
+ * carrusel que tenía la galería de Automatización, girado. Se editan en Admin → Soluciones.
+ *
+ * ⚠️ `icono` es una **clave del mapa `ICONOS`** (`components/sitio/piezas.tsx`), no un
+ * archivo: pesa cero, cambia de color con el tema y se sustituye en un solo sitio.
+ */
+export interface Concepto {
+  id: number;
+  titulo: string;
+  icono: string;
+  descripcion: string | null;
+  orden: number;
+}
+
+/** Los conceptos de una solución, en su orden. */
+export async function conceptosDeSolucion(solucionId: number): Promise<Concepto[]> {
+  const { rows } = await pool.query(
+    `SELECT id, titulo, icono, descripcion, orden
+       FROM gcc_world.solucion_conceptos
+      WHERE solucion_id = $1
+      ORDER BY orden, id`,
+    [solucionId],
+  );
+  return rows.map((r: any) => ({
+    id: Number(r.id),
+    titulo: r.titulo,
+    icono: r.icono,
+    descripcion: r.descripcion ?? null,
+    orden: Number(r.orden),
+  }));
+}
+
+/**
+ * TODOS los conceptos, agrupados por solución.
+ *
+ * Una sola consulta para la página pública: pedirlos solución por solución serían tantos
+ * viajes a la base como carpetas tenga el panel izquierdo.
+ */
+export async function conceptosPorSolucion(): Promise<Record<number, Concepto[]>> {
+  const { rows } = await pool.query(
+    `SELECT solucion_id, id, titulo, icono, descripcion, orden
+       FROM gcc_world.solucion_conceptos
+      ORDER BY solucion_id, orden, id`,
+  );
+  const salida: Record<number, Concepto[]> = {};
+  for (const r of rows) {
+    const k = Number(r.solucion_id);
+    (salida[k] ??= []).push({
+      id: Number(r.id),
+      titulo: r.titulo,
+      icono: r.icono,
+      descripcion: r.descripcion ?? null,
+      orden: Number(r.orden),
+    });
+  }
+  return salida;
+}
+
+export async function crearConcepto(
+  solucionId: number,
+  datos: { titulo: string; icono: string; descripcion: string | null },
+): Promise<Concepto> {
+  const { rows: [max] } = await pool.query(
+    `SELECT COALESCE(MAX(orden), -1) + 1 AS siguiente
+       FROM gcc_world.solucion_conceptos WHERE solucion_id = $1`,
+    [solucionId],
+  );
+  const { rows: [c] } = await pool.query(
+    `INSERT INTO gcc_world.solucion_conceptos (solucion_id, titulo, icono, descripcion, orden)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, titulo, icono, descripcion, orden`,
+    [solucionId, datos.titulo, datos.icono, datos.descripcion, Number(max.siguiente)],
+  );
+  return {
+    id: Number(c.id), titulo: c.titulo, icono: c.icono,
+    descripcion: c.descripcion ?? null, orden: Number(c.orden),
+  };
+}
+
+export async function editarConcepto(
+  id: number,
+  datos: { titulo: string; icono: string; descripcion: string | null },
+): Promise<void> {
+  await pool.query(
+    `UPDATE gcc_world.solucion_conceptos
+        SET titulo = $2, icono = $3, descripcion = $4, updated_at = now()
+      WHERE id = $1`,
+    [id, datos.titulo, datos.icono, datos.descripcion],
+  );
+}
+
+export async function borrarConcepto(id: number): Promise<void> {
+  await pool.query(`DELETE FROM gcc_world.solucion_conceptos WHERE id = $1`, [id]);
+}
+
+/** Reordena los conceptos de una solución según la lista de ids recibida. */
+export async function reordenarConceptos(ids: number[]): Promise<void> {
+  if (!ids.length) return;
+  await pool.query(
+    `UPDATE gcc_world.solucion_conceptos c
+        SET orden = v.ord - 1, updated_at = now()
+       FROM UNNEST($1::bigint[]) WITH ORDINALITY AS v(id, ord)
+      WHERE c.id = v.id`,
+    [ids],
+  );
+}

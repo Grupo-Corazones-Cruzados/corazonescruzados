@@ -315,6 +315,34 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🎠 CONCEPTOS: LA TIRA VERTICAL DEL PANEL DERECHO (2026-08-18, migración 045).**
+  Cada solución puede llevar **conceptos** —título, icono y descripción— que se publican en
+  `/soluciones` como una tira que avanza de arriba abajo. Es el carrusel que tenía la galería
+  de Automatización, girado.
+  - **Los once primeros NO se escribieron: se rescataron.** Son las tarjetas de
+    `/negocio/automatizacion` que se habían retirado horas antes; la migración las devuelve
+    como datos editables. Del original se traen título, icono y el texto **corto**: la
+    descripción larga y los beneficios no caben en una tira que se desliza, y siguen en
+    `git show 61a7037:lib/sitio/contenido.ts`.
+  - **⭐ LA REGLA QUE DEFINE LA TIRA: SOLO SE MUEVE SI NO CABE.** Fernando: *«en caso de que
+    la cantidad de conceptos no supere el tamaño disponible en pantalla que no se ejecute la
+    animación»*. **No se puede decidir en CSS**: depende del alto real de los textos, que
+    cambia con el ancho, con el tamaño de letra del usuario y con cuántos conceptos haya. Se
+    mide en el navegador con un `ResizeObserver`. Medido: a 1600×900 la lista pide 2012 px en
+    un marco de 692 → **anima**; a 1600×2400 pide 2065 en 2192 → **quieta**.
+  - **La lista solo se DUPLICA cuando hay animación** (el truco de desplazar la mitad para
+    que el bucle no dé un tirón). Sin animación, una copia sería contenido repetido a la
+    vista, que es un error y no un truco. La copia lleva `aria-hidden` y `tabIndex={-1}`.
+  - **La velocidad se calcula, no se fija**: píxeles por segundo constantes. Con una duración
+    fija, tres conceptos irían despacísimo y treinta, disparados.
+  - **Sin conceptos no se pinta nada** —ni marco ni título— y la rejilla vuelve a dos
+    columnas en vez de dejar un hueco.
+  - **La galería de iconos sale del mapa `ICONOS`** de `piezas.tsx`, que pasó de 23 a **88**
+    iconos. **No hay una segunda lista**: añadir uno allí lo ofrece en el admin solo. Se
+    guarda **el nombre**, no un SVG: pesa cero y cambia de color con el tema.
+  - En el admin, los conceptos comparten la columna central con los talentos mediante un
+    conmutador. **No se añadió un cuarto panel**: con cuatro columnas ninguna se lee, y el
+    explorador de esta app son tres.
 - **🚪 `/clientes` SE QUEDA CON CUATRO PUERTAS (2026-08-18).** Fuera «Automatización»:
   *«esa sección ya la estamos manejando desde la página de soluciones»*. Quedan **Progreso,
   Videojuego, Marketplace y Democracia**.

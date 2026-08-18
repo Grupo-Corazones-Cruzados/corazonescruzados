@@ -40,7 +40,9 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, EditField } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TALENTOS_BY_CATEGORY } from '@/lib/centralized/talentos';
-import type { Solucion, CoberturaTalento, TalentoDeSolucion } from '@/lib/soluciones';
+import { ICONOS } from '@/components/sitio/piezas';
+import GaleriaIconos from './GaleriaIconos';
+import type { Solucion, CoberturaTalento, TalentoDeSolucion, Concepto } from '@/lib/soluciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const CAMPO =
@@ -70,6 +72,21 @@ export default function SolucionesPanel() {
   // AL ASOCIAR, que es lo que pidió Fernando: no se añade y luego se rellena.
   const [talentoEnEdicion, setTalentoEnEdicion] = useState<{ talento: string; nuevo: boolean } | null>(null);
   const [descripcion, setDescripcion] = useState('');
+
+  /**
+   * EL PANEL DEL MEDIO TIENE DOS CARAS: TALENTOS Y CONCEPTOS.
+   *
+   * Los conceptos nacieron el 2026-08-18 y necesitaban sitio. Se resolvió con un conmutador
+   * en la columna que ya existía, y no con un cuarto panel: con cuatro columnas ninguna
+   * tiene ancho para leerse, y el explorador de esta app son tres.
+   */
+  const [cara, setCara] = useState<'talentos' | 'conceptos'>('talentos');
+  const [conceptos, setConceptos] = useState<Concepto[]>([]);
+  const [conceptoEnEdicion, setConceptoEnEdicion] = useState<Concepto | 'nuevo' | null>(null);
+  const [cTitulo, setCTitulo] = useState('');
+  const [cIcono, setCIcono] = useState('capas');
+  const [cDescripcion, setCDescripcion] = useState('');
+  const [conceptoPorBorrar, setConceptoPorBorrar] = useState<Concepto | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [porBorrar, setPorBorrar] = useState<Solucion | null>(null);
 
@@ -113,6 +130,65 @@ export default function SolucionesPanel() {
   useEffect(() => { cargar(); }, [cargar]);
 
   const solucion = soluciones.find((a) => a.id === elegido) ?? null;
+
+  /* ── Los conceptos de la solución abierta ───────────────────────────────────── */
+  const cargarConceptos = useCallback(async (id: number) => {
+    const r = await fetch(`/api/admin/soluciones/${id}/conceptos`);
+    setConceptos(r.ok ? (await r.json()).data ?? [] : []);
+  }, []);
+
+  useEffect(() => {
+    if (elegido) cargarConceptos(elegido); else setConceptos([]);
+  }, [elegido, cargarConceptos]);
+
+  async function guardarConcepto() {
+    if (!cTitulo.trim()) { toast.error('El título es obligatorio'); return; }
+    if (!solucion) return;
+    setGuardando(true);
+    try {
+      const esNuevo = conceptoEnEdicion === 'nuevo';
+      const cuerpo = JSON.stringify({
+        titulo: cTitulo.trim(), icono: cIcono, descripcion: cDescripcion.trim() || null,
+      });
+      const r = await fetch(
+        esNuevo
+          ? `/api/admin/soluciones/${solucion.id}/conceptos`
+          : `/api/admin/conceptos/${(conceptoEnEdicion as Concepto).id}`,
+        { method: esNuevo ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' }, body: cuerpo },
+      );
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { toast.error(j.error || 'No se pudo guardar'); return; }
+      setConceptoEnEdicion(null);
+      await cargarConceptos(solucion.id);
+      toast.success(esNuevo ? 'Concepto creado' : 'Concepto actualizado');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function borrarConceptoConfirmado(c: Concepto) {
+    const r = await fetch(`/api/admin/conceptos/${c.id}`, { method: 'DELETE' });
+    if (!r.ok) { toast.error('No se pudo eliminar'); return; }
+    setConceptoPorBorrar(null);
+    if (solucion) await cargarConceptos(solucion.id);
+    toast.success('Concepto eliminado');
+  }
+
+  async function moverConcepto(c: Concepto, dir: -1 | 1) {
+    const orden = [...conceptos];
+    const i = orden.findIndex((x) => x.id === c.id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= orden.length) return;
+    [orden[i], orden[j]] = [orden[j], orden[i]];
+    // Se pinta ya, sin esperar al servidor: en la web el orden es el de la tira, así que
+    // moverlo y que tarde medio segundo hace dudar de si se pulsó bien.
+    setConceptos(orden);
+    const r = await fetch('/api/admin/conceptos/reordenar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: orden.map((x) => x.id) }),
+    });
+    if (!r.ok) { toast.error('No se pudo reordenar'); if (solucion) await cargarConceptos(solucion.id); }
+  }
 
   const filas: FilaTalento[] = useMemo(
     () => (solucion?.talentos ?? []).map((t) => ({
@@ -235,7 +311,7 @@ export default function SolucionesPanel() {
           </div>
         </div>
 
-        {/* ── 2. LOS TALENTOS DEL ÁMBITO, CON SU RESPALDO ─────────────────────── */}
+        {/* ── 2. TALENTOS o CONCEPTOS, según el conmutador ────────────────────── */}
         <div className="flex flex-col min-h-0">
           {solucion ? (
             <>
@@ -262,9 +338,38 @@ export default function SolucionesPanel() {
                 </button>
               </div>
 
+              {/* El conmutador. Dos caras de la misma columna: los talentos dicen QUÉ
+                  trabajo enseña la solución; los conceptos, QUÉ sabe hacer. */}
+              <div className="flex gap-1.5 mb-3">
+                {(['talentos', 'conceptos'] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCara(c)}
+                    aria-pressed={cara === c}
+                    className={`px-3 py-1.5 rounded-md text-[12.5px] transition-colors border
+                      ${cara === c
+                        ? 'border-accent bg-accent-light/20 text-accent font-medium'
+                        : 'border-digi-border text-digi-muted hover:text-digi-text'}`}
+                    style={mf}
+                  >
+                    {c === 'talentos' ? 'Talentos' : 'Conceptos'}
+                    <span className="ml-1.5 text-[11px] opacity-70 tabular-nums">
+                      {c === 'talentos' ? solucion.talentos.length : conceptos.length}
+                    </span>
+                  </button>
+                ))}
+                {cara === 'conceptos' && (
+                  <button type="button" className={`${BTN_PRIMARY} ml-auto`} style={mf}
+                    onClick={() => { setConceptoEnEdicion('nuevo'); setCTitulo(''); setCIcono('capas'); setCDescripcion(''); }}>
+                    <Plus className="w-4 h-4" /> Nuevo concepto
+                  </button>
+                )}
+              </div>
+
               {/* El aviso solo aparece si hay algo que avisar. Una caja permanente que casi
                   siempre dice «todo bien» se deja de leer. */}
-              {sinRespaldo > 0 && (
+              {cara === 'talentos' && sinRespaldo > 0 && (
                 <div className="mb-3 flex items-start gap-2 rounded border border-amber-400/30 bg-amber-400/[0.08] px-3 py-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
                   <p className="text-[12.5px] leading-relaxed text-digi-text" style={mf}>
@@ -276,6 +381,49 @@ export default function SolucionesPanel() {
                 </div>
               )}
 
+              {cara === 'conceptos' ? (
+                <PixelDataTable<Concepto>
+                  data={conceptos}
+                  emptyTitle="Sin conceptos"
+                  emptyDesc="Añade el primero: en la web se pintan como una tira vertical al lado del contenido. Sin ninguno, la tira no aparece."
+                  singleLine
+                  columns={[
+                    { key: 'icono', header: '', width: '44px', render: (c: Concepto) => {
+                      const Icono = ICONOS[c.icono] ?? Layers;
+                      return (
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-accent" title={c.icono}>
+                          <Icono className="w-4 h-4" />
+                        </span>
+                      );
+                    } },
+                    { key: 'titulo', header: 'Concepto', render: (c: Concepto) => (
+                      <span className="text-digi-text">{c.titulo}</span>
+                    ) },
+                    { key: 'descripcion', header: 'Descripción', render: (c: Concepto) => (
+                      c.descripcion
+                        ? <span className="text-digi-muted">{c.descripcion}</span>
+                        : <span className="text-amber-400">Sin descripción</span>
+                    ) },
+                    { key: 'acciones', header: '', width: '120px', render: (c: Concepto) => (
+                      <span className="inline-flex gap-0.5">
+                        <button type="button" aria-label={`Subir ${c.titulo}`} title="Subir"
+                          className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
+                          onClick={() => moverConcepto(c, -1)}><ArrowUp className="w-3.5 h-3.5" /></button>
+                        <button type="button" aria-label={`Bajar ${c.titulo}`} title="Bajar"
+                          className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
+                          onClick={() => moverConcepto(c, 1)}><ArrowDown className="w-3.5 h-3.5" /></button>
+                        <button type="button" aria-label={`Editar ${c.titulo}`} title="Editar"
+                          className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
+                          onClick={() => { setConceptoEnEdicion(c); setCTitulo(c.titulo); setCIcono(c.icono); setCDescripcion(c.descripcion ?? ''); }}>
+                          <Pencil className="w-3.5 h-3.5" /></button>
+                        <button type="button" aria-label={`Eliminar ${c.titulo}`} title="Eliminar"
+                          className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
+                          onClick={() => setConceptoPorBorrar(c)}><Trash2 className="w-3.5 h-3.5" /></button>
+                      </span>
+                    ) },
+                  ]}
+                />
+              ) : (
               <PixelDataTable<FilaTalento>
                 data={filas}
                 emptyTitle={cargando ? 'Cargando…' : 'Sin talentos'}
@@ -315,6 +463,7 @@ export default function SolucionesPanel() {
                   ) },
                 ]}
               />
+              )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
@@ -326,7 +475,9 @@ export default function SolucionesPanel() {
         </div>
 
         {/* ── 3. EL CATÁLOGO DE TALENTOS ──────────────────────────────────────── */}
-        <div className="flex flex-col min-h-0 rounded-lg border border-digi-border bg-digi-card p-4">
+        {/* Solo en la cara de talentos: en la de conceptos no hay nada que catalogar, y
+            dejar la columna con un catálogo que no se puede usar despista. */}
+        <div className={`flex-col min-h-0 rounded-lg border border-digi-border bg-digi-card p-4 ${cara === 'talentos' ? 'flex' : 'hidden'}`}>
           <p className="text-[13px] font-semibold text-digi-text mb-2" style={mf}>Añadir talentos</p>
           <div className="relative mb-3">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-digi-muted pointer-events-none" />
@@ -401,6 +552,59 @@ export default function SolucionesPanel() {
             </p>
           )}
         </EditPanel>
+      )}
+
+      {/* Crear o editar un concepto. La galería de iconos vive aquí porque el icono se elige
+          VIÉNDOLO: escribir «base-datos» a ciegas es pedir un error de dedo que acaba
+          publicado con el icono por defecto. */}
+      {conceptoEnEdicion && solucion && (
+        <EditPanel
+          open
+          title={conceptoEnEdicion === 'nuevo' ? 'Nuevo concepto' : 'Editar concepto'}
+          onClose={() => setConceptoEnEdicion(null)}
+          onSave={guardarConcepto}
+          saving={guardando}
+        >
+          <EditField label="Título">
+            <input
+              autoFocus
+              value={cTitulo}
+              onChange={(e) => setCTitulo(e.target.value)}
+              placeholder="Robots Automatizados"
+              className={CAMPO}
+              style={mf}
+            />
+          </EditField>
+          <EditField label="Icono">
+            <GaleriaIconos valor={cIcono} onChange={setCIcono} />
+          </EditField>
+          <EditField label="Descripción">
+            <textarea
+              value={cDescripcion}
+              onChange={(e) => setCDescripcion(e.target.value)}
+              rows={4}
+              placeholder="Una frase. En la tira se lee de un vistazo, así que un párrafo largo no se lee."
+              className={`${CAMPO} resize-none`}
+              style={mf}
+            />
+          </EditField>
+          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            Se publica en <code>/soluciones</code>, en la tira vertical del lado derecho.
+            Si esta solución no tiene ningún concepto, la tira no se pinta.
+          </p>
+        </EditPanel>
+      )}
+
+      {conceptoPorBorrar && (
+        <PixelConfirm
+          open
+          danger
+          title="Eliminar concepto"
+          message={`Se eliminará «${conceptoPorBorrar.titulo}» de la tira de esta solución.`}
+          confirmLabel="Eliminar"
+          onConfirm={() => borrarConceptoConfirmado(conceptoPorBorrar)}
+          onCancel={() => setConceptoPorBorrar(null)}
+        />
       )}
 
       {/* Asociar un talento (o corregir su descripción). La descripción se pide AQUÍ, al

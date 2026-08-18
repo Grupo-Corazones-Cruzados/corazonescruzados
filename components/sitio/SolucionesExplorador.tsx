@@ -33,12 +33,17 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Folder, FolderOpen, Mail, Phone, Search } from 'lucide-react';
-import type { Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo } from '@/lib/soluciones';
+import type {
+  Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo, Concepto,
+} from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
+import TiraConceptos from './TiraConceptos';
 
 export interface SolucionConContenido extends Solucion {
   /** El contenido de cada talento, ya consultado en el servidor. */
   contenido: Record<string, ContenidoDeTalento>;
+  /** Los conceptos de esta solución, para la tira vertical del panel derecho. */
+  conceptos: Concepto[];
 }
 
 type Pestana = 'talentos' | 'productos' | 'tickets' | 'proyectos';
@@ -198,6 +203,16 @@ export default function SolucionesExplorador({
 
   const contenido: ContenidoDeTalento = (elegido && soluciones.find((a) => a.contenido[elegido])?.contenido[elegido]) || VACIO_TOTAL;
 
+  /**
+   * Los conceptos que se enseñan: los de la SOLUCIÓN que contiene el talento abierto.
+   *
+   * Cuelgan de la solución y no del talento a propósito —así los pidió Fernando—: describen
+   * lo que sabe hacer la solución entera, no una de sus especialidades.
+   */
+  const conceptosActivos: Concepto[] = activo
+    ? soluciones.find((a) => a.id === activo.solucionId)?.conceptos ?? []
+    : [];
+
   /** El buscador filtra DENTRO de la pestaña abierta, que es lo que se está mirando. */
   const q = busca.trim().toLowerCase();
   const casa = (...campos: (string | null | undefined)[]) =>
@@ -226,7 +241,12 @@ export default function SolucionesExplorador({
   );
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+    /* Tres columnas desde el 2026-08-18: carpetas · contenido · conceptos.
+       La tercera **se reserva solo si la solución abierta tiene conceptos**; si no, la
+       rejilla vuelve a dos y el contenido ocupa lo que sobra en vez de dejar un hueco. */
+    <div className={`grid gap-8 ${conceptosActivos.length > 0
+      ? 'lg:grid-cols-[240px_minmax(0,1fr)_280px]'
+      : 'lg:grid-cols-[260px_minmax(0,1fr)]'}`}>
       {/* ── EL PANEL IZQUIERDO ─────────────────────────────────────────────────── */}
       <nav aria-label="Soluciones" className="lg:sticky lg:top-24 lg:self-start">
         <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
@@ -412,6 +432,11 @@ export default function SolucionesExplorador({
           )}
         </div>
       </div>
+
+      {/* ── LA TIRA DE CONCEPTOS ────────────────────────────────────────────────
+          Se pinta sola solo si hay conceptos: el propio componente devuelve `null` con la
+          lista vacía, así que aquí no hace falta condicionar nada más. */}
+      <TiraConceptos conceptos={conceptosActivos} />
     </div>
   );
 }

@@ -1558,3 +1558,56 @@ html {
 /* La portada le reserva el hueco igual que el resto: su pie de pixel art lleva el
    altavoz del chat del mundo y el copyright, y quedarían por detrás de la barra. */
 .landing-page { padding-bottom: var(--alto-pie); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LA TIRA VERTICAL DE CONCEPTOS — el carrusel de `/soluciones`, girado (2026-08-18)
+
+   Es el mismo mecanismo que `.tira-desliza` de la galería horizontal: la lista se
+   pinta DOS VECES y se desplaza exactamente la mitad. Al terminar, la segunda copia
+   está justo donde estaba la primera y el salto de vuelta no se ve. Es la única
+   forma de que un bucle infinito no dé un tirón cada vuelta.
+
+   ⚠️ **La animación NO se aplica sola.** La pone `TiraConceptos` con la clase
+   `tira-anima`, y solo cuando ha MEDIDO que los conceptos no caben en el alto
+   disponible. Fernando fue explícito: *«en caso de que la cantidad de conceptos no
+   supere el tamaño disponible en pantalla que no se ejecute la animación»*. Una
+   lista corta moviéndose sin necesidad es ruido, y encima obliga a perseguir con la
+   vista algo que cabía entero.
+
+   La duración se calcula en el componente a partir del alto real —píxeles por
+   segundo constantes—, no con un número fijo: con un número fijo, tres conceptos
+   irían despacísimo y treinta, disparados.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@keyframes tira-conceptos {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+
+.tira-conceptos-anima {
+  animation-name: tira-conceptos;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  /* Mueve la tira al compositor: sin esto, animar una columna alta obliga al
+     navegador a repintar en cada cuadro y se nota en portátiles modestos. */
+  will-change: transform;
+}
+
+/* Se para al acercar el puntero y al llegar con el teclado: si alguien quiere leer un
+   concepto, lo peor que puede hacer la página es escapárselo. */
+.tira-conceptos-marco:hover .tira-conceptos-anima,
+.tira-conceptos-marco:focus-within .tira-conceptos-anima { animation-play-state: paused; }
+
+/* Quien pide que no le muevan las cosas no ve ningún movimiento; entonces la tira se
+   puede recorrer a mano, porque si no los últimos conceptos serían inalcanzables. */
+@media (prefers-reduced-motion: reduce) {
+  .tira-conceptos-anima { animation: none; }
+  .tira-conceptos-marco { overflow-y: auto; }
+}
+
+/* Los bordes se desvanecen para que los conceptos aparezcan y desaparezcan en vez de
+   cortarse en seco contra el borde del marco. Solo cuando hay animación: sin ella la
+   lista cabe entera y difuminar sus extremos escondería contenido sin motivo. */
+.tira-conceptos-marco--anima {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
+}
