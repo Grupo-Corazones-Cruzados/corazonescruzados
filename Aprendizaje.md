@@ -4810,3 +4810,98 @@ solapara la franja del pie: ninguno.
 ### Lo medido al final
 Pie en pantalla, tras el cambio: **841 px en las cinco páginas** a 1440×900 (era 841 · 876 ·
 942 · 4267 · 1857). A 390×760: **671 en las cinco**.
+
+---
+
+# Objetivo (2026-08-18) — ÁMBITOS: los tipos de proyecto que maneja el grupo
+
+> Fernando: *«esta página va a ser para mostrar los diferentes tipos de proyectos que el
+> grupo es capaz de manejar… al estilo de legal y privacidad, con un panel izquierdo con
+> todo el listado de ámbitos… los ámbitos los determina una lista que el administrador pueda
+> editar en /dashboard… crear el nombre del ámbito, y a cada ámbito, áreas… estas áreas son
+> también talentos que ya existen»*.
+
+**Rol asumido:** *arquitecto de datos + ingeniero de producto*. La mitad del trabajo es
+decidir qué NO se guarda.
+
+## ⭐ P22 — ¿Cuánto hay que construir? · ✅ Resuelta: mucho menos de lo que parecía
+La cadena «ámbito → talento → trabajo hecho» **ya existe entera salvo el primer eslabón**:
+- un **proyecto** pertenece a un talento si alguno de sus requerimientos lo pide
+  (`project_requirements.talents`, con índice GIN) — regla fijada en la migración 037 para el
+  CV público;
+- un **ticket** lo declara en `tickets.required_talents`.
+
+Así que solo nacen `ambitos` y `ambito_talentos`. **Nada de guardar a qué ámbito pertenece un
+proyecto**: se consulta al vuelo y no puede desincronizarse. Es la misma decisión que ya
+tomó 037, y reusarla ahorró una tabla y un problema futuro.
+
+## P23 — ¿El talento es clave foránea? · ✅ Resuelta: no, es texto
+El catálogo de talentos vive en el **código** (`lib/centralized/talentos.ts`), no en la base.
+Meterlo también en una tabla obligaría a mantener dos listas sincronizadas. Misma decisión y
+mismo motivo que `faqs.acceso_id` (migración 033). Se asume la consecuencia: renombrar un
+talento del catálogo deja filas huérfanas, y por eso el panel las **enseña** en vez de
+esconderlas.
+
+## ⭐ P24 — ¿Qué evita publicar una carpeta vacía? · ✅ El panel lo mide
+El catálogo tiene cientos de talentos —«Jugar fútbol», «Repostería»— y nada impide asociar
+uno con el que jamás se hizo un proyecto. En la web eso es un visitante que abre una carpeta
+y no encuentra nada.
+
+Por eso el panel del medio trae dos columnas, **Proyectos** y **Tickets**, con lo que respalda
+a cada talento, y un aviso ámbar cuando alguno está a cero. No impide guardar: informa.
+
+## ⚠️ P25 — Lo que la base dice hoy, y condiciona la Fase 2
+Consultado contra producción, no supuesto:
+
+| Dato | Valor |
+|---|---|
+| Proyectos terminados (`completed`) | **11** de 24 |
+| …con requerimientos que declaran talento | **11** ✓ |
+| Tickets terminados | **19** |
+| …que declaran `required_talents` | **0** ⚠️ |
+
+**Los 19 tickets tienen la lista de talentos vacía.** Tal cual está, la mitad «tickets» de la
+página saldría vacía siempre. Hay que decidirlo antes de la Fase 2: etiquetarlos, deducir su
+talento de quien los resolvió, o dejar la página solo con proyectos.
+
+Talentos con más respaldo: Automatización de procesos (11 proyectos terminados), Desarrollo
+frontend (1).
+
+## ⚠️ P26 — La página es PÚBLICA y esto reabre una puerta cerrada
+La migración `034_cv_publico` **retiró** `/members/<id>` —pública, sin token, con nombre,
+foto, teléfono y correo— y dejó escrito: *«con esa página viva, un token no protege nada: hay
+otra puerta abierta al lado»*. Y: *«un enlace se reenvía; un teléfono publicado no se
+despublica»*.
+
+Se le expuso a Fernando antes de tocar nada. **Eligió publicar todos los datos de contacto**
+en la burbuja del avatar. Queda su decisión, con fecha.
+
+⏳ **Pendiente de decir en la Fase 2:** cada miembro tiene hoy `share_email` y `share_phone`,
+que **nacen en `false`**. Son su control, no el de la organización. Hay que decidir
+explícitamente si se respetan o se ignoran.
+
+## Decisiones de Fernando (2026-08-18)
+| Pregunta | Respuesta |
+|---|---|
+| Datos en la burbuja del miembro | **Todos los de contacto** (avisado del precedente) |
+| Qué trabajo se publica | **Solo lo terminado**, automáticamente (`status = 'completed'`) |
+| Reparto | **Por fases**: 1ª datos + admin · 2ª página pública |
+
+## Fase 1 — ✅ construida y ensayada (2026-08-18)
+- **Migración 039** — `ambitos` (nombre, slug, orden) + `ambito_talentos`.
+  El `slug` se guarda y **no se recalcula**: es una URL (`/ambitos#tecnologia`), y corregir
+  una tilde del nombre no puede romper enlaces repartidos. Por eso renombrar no lo toca.
+- **`lib/ambitos.ts`** — CRUD, `fijarTalentos` (reemplazo transaccional del estado final, no
+  altas y bajas sueltas) y `coberturaDeTalentos` (una sola consulta para todos).
+- **API** `/api/admin/ambitos` (+ `[id]`, `[id]/talentos`, `reordenar`), solo admin.
+- **`AmbitosPanel`** — tres paneles con `FilterRail` + `PixelDataTable` + `EditPanel`, las
+  piezas que ya existen. No se escribió un explorador nuevo.
+
+**Ensayado de verdad**, no solo compilado: `tsc`, build de producción aislado, ensayo SQL con
+ROLLBACK (cascada incluida) y **ensayo en el navegador con sesión de admin** que crea un
+ámbito, le asocia dos talentos, comprueba base y pantalla, ve saltar el aviso y **borra lo que
+creó**. La base quedó en 0 ámbitos y 0 asociaciones.
+
+**Un falso positivo por el camino:** el primer ensayo dijo que el segundo talento no se
+guardaba. No era cierto — leía la tabla 1,8 s después del clic, antes de que terminara la
+recarga. Con 2,5 s, correcto. *Una prueba que va más rápido que la interfaz inventa fallos.*

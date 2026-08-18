@@ -292,6 +292,35 @@ Stack estándar de la casa, con particularidades de este repo:
     verbo, para el imperativo «Inicia sesión … y **entra** a la Plataforma»). Reusar la
     primera en la frase imperativa producía «y entrar al Videojuego». **Lo cazó leer el
     diálogo renderizado en el navegador; ni `tsc` ni el build ven una concordancia rota.**
+- **🗂️ ÁMBITOS — migración 039 + Admin → Ámbitos (2026-08-18). FASE 1 de 2.**
+  Un **ámbito** es un tipo de proyecto que el grupo maneja (Tecnología…) y agrupa **talentos**
+  del catálogo. Se publicarán en `/ambitos` con panel izquierdo de carpetas, al estilo de
+  `/legal`.
+  - **⭐ NO SE GUARDA A QUÉ ÁMBITO PERTENECE UN PROYECTO.** La cadena ya existía entera salvo
+    el primer eslabón: un proyecto es de un talento si **alguno de sus requerimientos lo
+    pide** (`project_requirements.talents`, regla de la migración 037), y un ticket lo dice en
+    `tickets.required_talents`. Se consulta al vuelo. Solo nacieron `ambitos` y
+    `ambito_talentos`.
+  - **El talento es TEXTO, no clave foránea**, porque el catálogo vive en el código
+    (`lib/centralized/talentos.ts`). Misma decisión y mismo motivo que `faqs.acceso_id`.
+    Consecuencia asumida: renombrar un talento deja filas huérfanas, y el panel las enseña.
+  - **El `slug` se guarda y renombrar NO lo cambia**: es una URL (`/ambitos#tecnologia`) que
+    puede estar repartida. Corregir una tilde del nombre no puede romper enlaces.
+  - **El panel mide el respaldo de cada talento** (proyectos y tickets terminados) y avisa en
+    ámbar si alguno está a cero. El catálogo tiene cientos de talentos —«Repostería»— y nada
+    impide asociar uno sin nada detrás: en la web sería una carpeta que se abre vacía.
+  - **⚠️ DATO QUE CONDICIONA LA FASE 2: los 19 tickets terminados tienen `required_talents`
+    VACÍO.** Los 11 proyectos terminados sí declaran talento. Tal cual, la mitad «tickets» de
+    la página saldría siempre vacía. Hay que decidir: etiquetarlos, deducirlos de quien los
+    resolvió, o publicar solo proyectos.
+  - **⚠️ DECISIÓN DE FERNANDO CON PRECEDENTE EN CONTRA:** la página es **pública**, y en la
+    burbuja del avatar quiso **todos los datos de contacto** del miembro. Se le mostró antes
+    que la migración `034_cv_publico` retiró `/members/<id>` justo por eso —*«un enlace se
+    reenvía; un teléfono publicado no se despublica»*—. Decidió publicarlos. **Queda
+    pendiente decirle en la Fase 2 que `share_email`/`share_phone` son del MIEMBRO y nacen en
+    `false`**: hay que acordar si se respetan.
+  - Ensayado en navegador con sesión de admin (crear → asociar → comprobar → borrar), con la
+    base en 0 al terminar.
 - **📌 EL PIE VA FIJO ABAJO EN TODAS LAS PÁGINAS (2026-08-18).** Fernando venía diciendo que
   **el pie se movía al cambiar de pestaña**. Tenía razón, y no era lo que parecía.
   - **Lo que NO era:** el pie es **idéntico** en las cinco páginas —59 px de alto, hueco de
