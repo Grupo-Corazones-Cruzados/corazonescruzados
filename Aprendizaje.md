@@ -5317,3 +5317,82 @@ modificados contra los que debían serlo.
 | Rutas viejas | `/ambitos` → `/soluciones`, `/negocio` → `/clientes` (308) |
 | Admin | pestaña «Soluciones», botón «Nueva solución», **cero** apariciones de «ámbito» |
 | Código | ni un identificador con `ambito` fuera de comentarios históricos |
+
+---
+
+## Décima pasada (2026-08-18) — todo el ancho, y la tira que gira cuando no cabe
+
+Dos peticiones de Fernando el mismo día, encadenadas: primero *«aprovecha todo el ancho
+disponible de la página»*, y en cuanto la página se ensanchó, *«cuando el carrusel no se puede
+mostrar a la derecha por falta de espacio de ancho haz que se muestre debajo de la descripción,
+sin el título de "Lo que sabemos hacer", y que la dirección sea horizontal de izquierda a
+derecha»*.
+
+### P56 — ¿Se ensancha el sitio entero o solo esta página? · ✅ Solo esta
+El ancho de lectura (`max-w-6xl`, 1152 px) existe por un motivo: una línea de texto de 1560 px
+se lee mal, la vista pierde el renglón al volver. Pero `/soluciones` **no es un texto**: es un
+explorador de tres columnas —carpetas, contenido, conceptos—, y ahí el ancho no perjudica la
+lectura porque ninguna columna crece con él.
+
+Así que `Contenedor` ganó una **variante nombrada** (`ancho="amplio"`, 1560 px) en vez de
+cambiarse el valor por defecto. Lo primero es un estándar reusable; lo segundo habría
+ensanchado de golpe `/clientes`, `/desarrollo-humano`, `/contacto` y los legales, que sí son
+texto. Comprobado después una por una: solo `/soluciones` mide 1560.
+
+### ⭐ P57 — ¿Dos componentes o uno con dos orientaciones? · ✅ Uno
+La tentación era escribir una tira horizontal aparte. Sería un one-off: la regla de «solo se
+mueve si no cabe» —la parte cara y la que de verdad define el componente— habría quedado
+duplicada en dos sitios, para desincronizarse al primer retoque.
+
+Lo que cambia entre vertical y horizontal es **qué eje se mide** (`scrollHeight`/`clientHeight`
+frente a `scrollWidth`/`clientWidth`) y qué `@keyframes` se aplica. Todo lo demás —duplicar solo
+al animar, dividir la medida entre dos, el margen de 8 px, la velocidad calculada, el difuminado
+condicional— es idéntico. Una prop `orientacion` y ya.
+
+Las dos instancias se montan siempre y el corte lo hace el CSS (`hidden lg:block` / `lg:hidden`),
+con **el mismo umbral que decide si existe la tercera columna**: así nunca se ven las dos ni se
+queda la pantalla sin ninguna. Y la oculta no gasta nada porque `display:none` la hace medir 0 y
+su propia regla concluye que no hay nada que mover — la regla se defiende sola.
+
+### 🪤 P58 — La lista horizontal estiró la página entera
+Primera medición tras el cambio: el documento medía **2.872 px de ancho en una ventana de 900**.
+Barra de desplazamiento horizontal en todo el sitio.
+
+La causa no está en la tira sino en la rejilla: **una celda de rejilla tiene `min-width: auto`**,
+es decir «no me encojas por debajo de mi hijo más ancho». La lista horizontal es ancha *a
+propósito* (2.848 px), así que la celda creció hasta ella y arrastró a la página. `min-w-0` en la
+celda lo corta: la columna se queda en su sitio y es el marco, con su `overflow-hidden`, quien
+recorta.
+
+Su contrario en la misma pantalla: la `<ul>` **necesita** `w-max`. Sin él tomaría el ancho del
+marco, y como el bucle se apoya en `translateX(-50%)`, desplazaría media pantalla en vez de media
+lista — tirón visible en cada vuelta. Uno quiere medir lo que ocupa de verdad; el otro, que eso
+no contagie al layout.
+
+**Lección:** un desbordamiento horizontal no se ve en una captura de la zona que tocaste. Se caza
+midiendo `document.documentElement.scrollWidth` contra `clientWidth`, y hay que mirarlo en cada
+anchura, no solo en la de tu monitor.
+
+### Lo medido
+Página `/soluciones/automatizacion-de-procesos`, seis anchuras:
+
+| Ancho | Tiras visibles | Cuál | Rótulo | Anima | Desborde X |
+|---|---|---|---|---|---|
+| 1600 | 1 de 2 | vertical | sí | sí (77 s) | no |
+| 1280 | 1 de 2 | vertical | sí | sí | no |
+| 1100 | 1 de 2 | vertical | sí | sí | no |
+| 900 | 1 de 2 | horizontal | no | sí (110 s) | no |
+| 560 | 1 de 2 | horizontal | no | sí | no |
+| 390 | 1 de 2 | horizontal | no | sí | no |
+
+Y la regla de «solo se mueve si no cabe», en los **cuatro** casos posibles:
+
+| Caso | Anima | Tarjetas en el DOM | Difuminado |
+|---|---|---|---|
+| Vertical, ventana de 4400 px de alto (cabe) | **no** | 11 | no |
+| Vertical, 900 px de alto (no cabe) | sí | 22 | sí |
+| Horizontal, 390 px (no cabe) | sí | 22 | sí |
+| Horizontal con tarjetas diminutas (cabe) | **no** | 11 | no |
+
+Que las tarjetas bajen a 11 y el difuminado desaparezca cuando cabe no es un detalle: confirma
+que sin animación **no se duplica contenido a la vista** ni se esconden bordes que sí se veían.
