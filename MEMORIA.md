@@ -292,6 +292,25 @@ Stack estándar de la casa, con particularidades de este repo:
     verbo, para el imperativo «Inicia sesión … y **entra** a la Plataforma»). Reusar la
     primera en la frase imperativa producía «y entrar al Videojuego». **Lo cazó leer el
     diálogo renderizado en el navegador; ni `tsc` ni el build ven una concordancia rota.**
+- **🟣 «INICIO» SE LLAMA «VIOLETA» Y NACE LA PESTAÑA «ÁMBITOS» (2026-08-17).** Fernando
+  sigue con el diseño de las páginas principales; irá dictando qué va en cada pestaña.
+  - **⚠️ VIOLETA ES SOLO LA ETIQUETA: LA RUTA SIGUE SIENDO `/`.** Lo pidió primero como
+    renombrado también de la dirección; se le expuso que mover la portada dejaría el dominio
+    **sin página en la raíz** y obligaría a tocar el logo, el panel, `/auth`, el marketplace
+    y el mapa del sitio — y **decidió que la ruta se queda**. No hay ninguna redirección
+    nueva: no se ha movido nada.
+  - **«Ámbitos» → `/ambitos`**, con tilde en el rótulo y sin tilde en la URL. La página está
+    **montada pero vacía a propósito**: marco, tema claro y titular, sin una sola frase
+    inventada. El contenido visible lo dicta él.
+    - **Mientras esté vacía: `robots: noindex` y FUERA del mapa del sitio.** Una página con
+      solo un titular es «contenido escaso» y ensucia la valoración del dominio que estamos
+      levantando. En el menú sí se ve. **Al llenarla hay que quitar el `robots` y meterla en
+      `sitemap.ts`**, o quedará escrita e invisible; está avisado en su propio archivo.
+  - **🪤 LA BARRA SE DESBORDABA A 768 px, Y ESO NO LO VE NINGÚN COMPILADOR.** El menú de
+    móvil entraba en `md` (768 px) y con cuatro destinos cabía. Con cinco más el botón
+    «Plataforma», **la fila pedía 815 px dentro de 768**: se rompía en tabletas en vertical.
+    Se subió el corte a **`lg` (1024 px)** y se comprobó a diez anchos distintos.
+    **Regla: cada pestaña nueva son ~90 px; al añadir otra, se vuelve a medir.**
 - **🔑 «PLATAFORMA» SALE DEL HÉROE Y SUBE A LA BARRA (2026-08-17).** Fernando abrió con esto
   el trabajo de diseño y contenido de las páginas principales.
   - **La portada se queda con un botón**: «Aventura» → **«Comenzar Aventura»**. Fuera el de

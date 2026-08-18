@@ -100,7 +100,21 @@ export const REDES = [
 /* ═══════════════════════ NAVEGACIÓN ═══════════════════════ */
 
 export const NAVEGACION = [
-  { href: '/', label: 'Inicio' },
+  /**
+   * «Inicio» → «Violeta» (Fernando, 2026-08-17).
+   *
+   * ⚠️ **Solo cambia la ETIQUETA. La ruta sigue siendo `/`**, decidido por él después de
+   * plantearle que mover la portada dejaría el dominio sin página en la raíz y obligaría a
+   * tocar el logo, el panel, `/auth`, el marketplace y el mapa del sitio. Aquí no hay
+   * ninguna redirección que añadir: no se ha movido nada.
+   */
+  { href: '/', label: 'Violeta' },
+  /**
+   * Pestaña nueva del 2026-08-17. La página está **montada pero vacía a propósito**:
+   * Fernando dijo que iría explicando qué va en cada pestaña. Mientras no tenga contenido
+   * NO se indexa y NO entra en el mapa del sitio — ver `app/(sitio)/ambitos/page.tsx`.
+   */
+  { href: '/ambitos', label: 'Ámbitos' },
   // «Negocios» → «Soluciones» y `/negocio` → `/soluciones` (Fernando, 2026-08-17). La ruta
   // vieja sigue viva como redirección permanente en `next.config.ts`.
   { href: '/soluciones', label: 'Soluciones' },

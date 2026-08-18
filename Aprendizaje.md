@@ -4720,3 +4720,46 @@ build de producción aislado y `tsc` limpio.
   si luego quiere subirlas.
 - **Abierto — el objetivo grande:** diseño y contenido de todas las páginas principales.
   Empezado por Inicio. Falta que dicte el resto.
+
+## Quinta tanda (2026-08-17) — «Violeta», «Ámbitos» y la barra que dejó de caber
+
+**Pedido:** renombrar la pestaña «Inicio» a «Violeta» —*«y en la ruta también»*— y añadir una
+pestaña nueva, «Ámbitos», a su derecha.
+
+### ⭐ P17 — ¿Se puede mover la portada de `/` a `/violeta`? · ✅ Resuelta: NO se movió
+Se paró antes de tocar nada y se le expusieron las consecuencias, porque **el push despliega**:
+- `/` es la portada del juego, **5.476 líneas**, con su intro y su propio marco.
+- La referencian el logo de la cabecera, el panel (`DashboardSidebar`), `/auth`, el
+  marketplace público (`/?acceso=cliente`), `abrirPlataforma()` y el mapa del sitio con
+  prioridad 1.
+- Moverla dejaría **el dominio sin página en la raíz**: `grupocc.org` redirigiría en vez de
+  mostrar algo.
+
+**Fernando decidió que la ruta se queda en `/` y solo cambia la etiqueta.** Cero
+redirecciones nuevas, cero riesgo.
+
+**Lección de método:** un renombrado de etiqueta y un renombrado de ruta se piden con las
+mismas palabras y cuestan cosas muy distintas. Cuando la diferencia es una URL publicada, se
+pregunta antes — aunque la petición parezca clara.
+
+### P18 — Una pestaña cuyo contenido llegará después · ✅ Patrón que queda
+`/ambitos` se monta con **el marco y nada más**: cabecera, pie, tema claro y titular.
+- **No se inventa ni una entradilla de relleno.** El texto provisional acaba publicado y
+  nadie recuerda que lo era. La regla del sitio es que el contenido visible lo decide él.
+- **`robots: noindex` + fuera del mapa del sitio** mientras esté vacía: una página con solo un
+  titular es «contenido escaso» y resta al dominio entero. En el menú sí se ve.
+- **Queda escrito en el propio archivo qué hacer al llenarla** (quitar el `robots`, poner
+  `description`, añadirla al sitemap). Un aviso en el archivo que hay que editar de todos
+  modos es el único que se lee a tiempo.
+
+### ⭐ P19 — La barra se rompía a 768 px · ✅ Cazado midiendo, no leyendo
+El menú de móvil entraba en `md` (768 px). Con cuatro destinos cabía; con **cinco más el
+botón «Plataforma»**, la fila pedía **815 px dentro de 768** y la barra se desbordaba en la
+franja de 768 a ~830 px — tabletas en vertical.
+
+`tsc` verde, build verde, y la página rota en un tamaño de pantalla muy común. Se subió el
+corte a `lg` (1024 px) y se comprobó a **diez anchos**: 1440·1280·1100·1024·1000·900·820·
+768·600·390. Ni un desborde.
+
+**Generalizable:** al añadir un elemento a una fila con un punto de corte responsive, **el
+punto de corte deja de ser válido**. Cada pestaña son ~90 px. Se mide, no se supone.

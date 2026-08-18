@@ -11,8 +11,16 @@
  * · normal — para las páginas de contenido. Fija arriba, con fondo y borde.
  *
  * ── LO QUE NO HACE ─────────────────────────────────────────────────────────────
- * No lleva buscador ni menús desplegables. Cuatro destinos caben en una fila y un menú que
- * se abre para mostrar dos enlaces es un clic de más.
+ * No lleva buscador ni menús desplegables. Los destinos caben en una fila y un menú que se
+ * abre para mostrar dos enlaces es un clic de más.
+ *
+ * ── ⚠️ EL MENÚ DE MÓVIL ENTRA EN `lg`, NO EN `md` (2026-08-17) ─────────────────
+ * Entraba en `md` (768 px), y con cuatro destinos cabía. Al añadir «Ámbitos» y el botón
+ * «Plataforma» dejó de caber: **medido, la fila pedía 815 px dentro de 768** y la barra se
+ * desbordaba en la franja de 768 a ~830 px — tabletas en vertical. Ni `tsc` ni el build ven
+ * eso; solo aparece midiendo el ancho real a varios tamaños.
+ *
+ * 👉 **Al añadir otra pestaña, vuelve a medirlo.** Cada una son ~90 px más.
  *
  * Y **no lleva botón de «Crear cuenta»** (decisión de Fernando, 2026-08-02). Lo llevó, y
  * empujaba a registrarse desde la primera pantalla, antes de haber contado nada. El alta
@@ -93,7 +101,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1 ml-auto" aria-label="Principal">
+        <nav className="hidden lg:flex items-center gap-1 ml-auto" aria-label="Principal">
           {NAVEGACION.map((n) => {
             const activo = n.href === '/' ? pathname === '/' : pathname.startsWith(n.href);
             return (
@@ -127,14 +135,14 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           onClick={() => setAbierto((v) => !v)}
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={abierto}
-          className="md:hidden ml-auto w-9 h-9 inline-flex items-center justify-center rounded-md text-white/80 hover:bg-white/[0.07]"
+          className="lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center rounded-md text-white/80 hover:bg-white/[0.07]"
         >
           {abierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {abierto && (
-        <nav className="md:hidden border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1" aria-label="Principal">
+        <nav className="lg:hidden border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1" aria-label="Principal">
           {NAVEGACION.map((n) => (
             <Link
               key={n.href}

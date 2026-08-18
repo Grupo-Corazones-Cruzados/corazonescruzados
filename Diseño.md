@@ -181,14 +181,14 @@ Tipografía: **Inter**, fijada en el `style` del layout, no heredada del tema.
 tema del panel; esto se sirve a terceros y tiene que verse igual pase lo que pase con la
 sesión de quien mire.
 
-### La barra: cuatro pestañas de navegación + «Plataforma», que es una acción (2026-08-17)
+### La barra: cinco pestañas de navegación + «Plataforma», que es una acción (2026-08-17)
 
 Fernando movió «Plataforma» del héroe de la portada a la barra, **a la derecha de
 Contacto**, y con **forma de botón**. La distinción es la regla:
 
 | | Qué es | Cómo se ve |
 |---|---|---|
-| Inicio · Soluciones · Desarrollo Humano · Contacto | navegación | enlaces; el activo, con fondo tenue |
+| Violeta · Ámbitos · Soluciones · Desarrollo Humano · Contacto | navegación | enlaces; el activo, con fondo tenue |
 | **Plataforma** | la única **acción** de la barra | botón violeta lleno (`#7B5FBF`) |
 
 - **Un `<button>`, no un `<Link>`.** Estando ya en la portada no navega a ningún sitio: abre
@@ -199,6 +199,27 @@ Contacto**, y con **forma de botón**. La distinción es la regla:
   solo el cuerpo de las páginas.
 - **El héroe de la portada se queda con un botón**, «Comenzar Aventura» —antes «Aventura»—,
   y pierde el `grid` de dos columnas iguales que servía para igualarlos de ancho.
+
+#### ⚠️ CADA PESTAÑA NUEVA HAY QUE MEDIRLA — el menú de móvil entra en `lg`, no en `md`
+Entraba en `md` (768 px) y con cuatro destinos cabía. Al llamar «Violeta» a Inicio, añadir
+**«Ámbitos»** y el botón «Plataforma», dejó de caber: **medido, la fila pedía 815 px dentro
+de 768** y la barra se desbordaba entre 768 y ~830 px — tabletas en vertical.
+
+Se subió el corte a **`lg` (1024 px)**. Comprobado a 1440·1280·1100·1024·1000·900·820·768·
+600·390: ni un desborde, y la barra mantiene sus 65 px de alto en todos.
+
+**Ni `tsc` ni el build ven esto.** Solo aparece midiendo el ancho real a varios tamaños.
+Cada pestaña son ~90 px más: **al añadir otra, se vuelve a medir.**
+
+#### Una pestaña sin contenido todavía: `/ambitos` (2026-08-17)
+Fernando la pidió antes de dictar qué va dentro. El patrón que queda para las que vengan:
+- **Se monta el marco, no se inventa el contenido.** Cabecera, pie, tema claro y titular. Ni
+  una entradilla «mientras tanto»: acaba publicada y nadie recuerda que era provisional.
+- **`robots: noindex` y fuera del mapa del sitio** mientras esté vacía. Una página con solo
+  un titular es «contenido escaso» y ensucia la valoración del dominio entero. En el menú sí
+  se ve: quien navega la encuentra.
+- **Dos cosas al llenarla**, o quedará escrita e invisible para Google: quitar el bloque
+  `robots` y ponerle `description`, y añadirla a `app/sitemap.ts` con su fecha.
 
 #### El titular del acceso dice A DÓNDE se entra (2026-08-17)
 
