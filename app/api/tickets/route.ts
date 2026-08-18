@@ -4,6 +4,7 @@ import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { createNotification } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
+import { TALENTOS_SET } from '@/lib/centralized/talentos';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import { sendClientInvitationEmail } from '@/lib/integrations/email';
 
@@ -115,14 +116,39 @@ export async function POST(req: NextRequest) {
     const openForProposals = mode === 'request' && body.open_for_proposals === true;
     // Modo "por talento": abierto solo a miembros con el talento requerido (toman de inmediato).
     const openForTalent = mode === 'request' && body.open_for_talent === true;
-    const requiredTalents: string[] = openForTalent && Array.isArray(body.required_talents)
-      ? body.required_talents.filter((t: any) => typeof t === 'string' && t.trim()) : [];
+
+    /**
+     * ⭐ EL TALENTO ES OBLIGATORIO EN TODO TICKET (Fernando, 2026-08-18).
+     *
+     * Antes solo se guardaba cuando el ticket se abría «por talento» —uno de tres caminos—,
+     * así que los otros dos dejaban la lista vacía. Resultado medido en producción: **los 19
+     * tickets terminados no declaraban ninguno**, y la página `/ambitos`, que enseña el
+     * trabajo hecho por talento, habría mostrado siempre la mitad vacía.
+     *
+     * El campo pasa a tener DOS oficios, y por eso se pide siempre:
+     *   · decide **quién puede tomar** el ticket, si está abierto por talento;
+     *   · **clasifica** el ticket, que es lo que lo coloca bajo un ámbito en la web.
+     *
+     * Se filtra contra el catálogo (`TALENTOS_SET`) por el mismo motivo que en los ámbitos:
+     * un talento inventado no casaría nunca con nada y dejaría el ticket fuera de toda
+     * carpeta, sin que nadie supiera por qué.
+     */
+    const talentosPedidos: string[] = Array.isArray(body.required_talents)
+      ? body.required_talents.filter((t: any) => typeof t === 'string' && t.trim())
+      : [];
+    const requiredTalents = [...new Set(talentosPedidos.filter((t) => TALENTOS_SET.has(t)))];
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
     }
-    if (openForTalent && requiredTalents.length === 0) {
-      return NextResponse.json({ error: 'Selecciona al menos un talento requerido.' }, { status: 400 });
+    if (requiredTalents.length === 0) {
+      // Se distingue «no mandaste ninguno» de «mandaste nombres que no existen»: el segundo
+      // caso, con un mensaje genérico, deja a quien lo sufre sin saber qué corregir.
+      return NextResponse.json({
+        error: talentosPedidos.length
+          ? 'Ninguno de los talentos enviados existe en el catálogo de la organización.'
+          : 'Selecciona al menos un talento para el ticket.',
+      }, { status: 400 });
     }
 
     // Columnas para los modos "abierto" (a propuestas / por talento).

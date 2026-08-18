@@ -167,6 +167,12 @@ export default function TicketsPage() {
     if (createMode === 'request' && !form.confirm_client_account) {
       toast.error('Marca la casilla para crear/usar tu cuenta de cliente'); return;
     }
+    // El talento es OBLIGATORIO en todo ticket (Fernando, 2026-08-18): es lo que lo
+    // coloca bajo un ámbito en la web pública. Se comprueba aquí para no gastar un viaje
+    // al servidor, pero la API lo valida igual — una pantalla no es una defensa.
+    if (form.required_talents.length === 0) {
+      toast.error('Elige al menos un talento para el ticket'); return;
+    }
     setCreating(true);
     try {
       const res = await fetch('/api/tickets', {
@@ -175,7 +181,8 @@ export default function TicketsPage() {
           mode: createMode,
           open_for_proposals: createMode === 'request' && form.request_option === 'proposals',
           open_for_talent: createMode === 'request' && form.request_option === 'talent',
-          required_talents: createMode === 'request' && form.request_option === 'talent' ? form.required_talents : undefined,
+          // Siempre: el talento clasifica el ticket, no solo decide quién lo toma.
+          required_talents: form.required_talents,
           title: form.title,
           description: form.description || undefined,
           service_id: form.service_id ? Number(form.service_id) : undefined,
@@ -404,6 +411,27 @@ export default function TicketsPage() {
               className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
           </div>
 
+          {/* ── TALENTO(S) DEL TICKET — OBLIGATORIO ────────────────────────────────
+              Vivía dentro de la opción «abierto por talento», así que los otros dos
+              caminos —asignar a dedo y abrir a propuestas— creaban tickets sin talento.
+              Medido: los 19 tickets de la base no declaraban ninguno.
+
+              Sube aquí, junto al título y la descripción, porque describe AL TICKET: dice
+              de qué va el trabajo, y es lo que lo coloca bajo un ámbito en `/ambitos`. Que
+              además decida quién puede tomarlo es una consecuencia, no su definición. */}
+          <div className="flex flex-col gap-1">
+            <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Talento *</label>
+            <MultiSelectSearch options={TALENT_OPTIONS} selected={form.required_talents}
+              onChange={(vals) => setForm({ ...form, required_talents: vals })}
+              placeholder="Talentos que requiere la tarea…" />
+            {form.required_talents.length === 0 && (
+              <p className="text-[10.5px] text-amber-600" style={mf}>
+                Elige al menos un talento: es lo que clasifica el ticket y lo hace aparecer
+                en la web dentro de su ámbito.
+              </p>
+            )}
+          </div>
+
           {/* Servicio: solo al crear un ticket propio, no al solicitarlo. */}
           {createMode === 'create' && (
             <PixelSelect label="Servicio" value={form.service_id}
@@ -423,7 +451,9 @@ export default function TicketsPage() {
                     return (
                       <label key={o.value} className={`flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${active ? 'bg-accent-light' : 'hover:bg-black/[0.03]'}`} style={mf}>
                         <input type="radio" name="request_option" checked={active}
-                          onChange={() => setForm({ ...form, request_option: o.value, member_id: '', required_talents: [], open_for_proposals: o.value === 'proposals' })}
+                          // Ya NO se vacían los talentos al cambiar de opción: son del ticket, no de la
+                          // opción. Perderlos al cambiar de idea obligaba a elegirlos otra vez.
+                          onChange={() => setForm({ ...form, request_option: o.value, member_id: '', open_for_proposals: o.value === 'proposals' })}
                           className="mt-0.5 accent-accent" />
                         <span className="min-w-0">
                           <span className="text-[12.5px] font-medium text-digi-text">{o.label}</span>
@@ -437,13 +467,13 @@ export default function TicketsPage() {
                       <AssigneePicker value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })} />
                     </div>
                   )}
+                  {/* El selector de talentos ya NO vive aquí: subió a campo propio del
+                      ticket, porque desde el 2026-08-18 se pide siempre. Lo que queda es
+                      recordar que en esta opción, además, decide quién puede tomarlo. */}
                   {form.request_option === 'talent' && (
-                    <div className="pt-1">
-                      <MultiSelectSearch options={TALENT_OPTIONS} selected={form.required_talents}
-                        onChange={(vals) => setForm({ ...form, required_talents: vals })}
-                        placeholder="Talentos requeridos para la tarea…" />
-                      {form.required_talents.length === 0 && <p className="text-[10.5px] text-amber-600 mt-1" style={mf}>Elige al menos un talento requerido.</p>}
-                    </div>
+                    <p className="pt-1 px-2 text-[10.5px] text-digi-muted" style={mf}>
+                      Lo tomará el primer miembro que tenga alguno de los talentos del ticket.
+                    </p>
                   )}
                 </div>
               </div>

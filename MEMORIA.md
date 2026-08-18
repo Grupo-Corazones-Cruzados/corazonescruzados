@@ -292,6 +292,29 @@ Stack estándar de la casa, con particularidades de este repo:
     verbo, para el imperativo «Inicia sesión … y **entra** a la Plataforma»). Reusar la
     primera en la frase imperativa producía «y entrar al Videojuego». **Lo cazó leer el
     diálogo renderizado en el navegador; ni `tsc` ni el build ven una concordancia rota.**
+- **🎫 TODO TICKET DECLARA SU TALENTO (2026-08-18, migración 040).** Salió de montar el
+  primer ámbito: Fernando asoció un talento y **no aparecía ni un ticket**.
+  - **La causa:** `required_talents` solo se rellenaba cuando el ticket se abría «por
+    talento» —uno de **tres** caminos—. Asignar a dedo y abrir a propuestas dejaban la lista
+    vacía. Medido: **los 19 tickets de la base, todos vacíos**.
+  - **⭐ EL CAMPO CAMBIA DE OFICIO, y por eso ahora se pide siempre.** Nació para decidir
+    **quién puede tomar** un ticket abierto; ahora además **lo clasifica**, que es lo que lo
+    coloca bajo un ámbito en `/ambitos`. Que decida quién lo toma pasa a ser una consecuencia,
+    no su definición — de ahí que el selector **suba a campo propio** del formulario, junto al
+    título y la descripción, en vez de vivir dentro de una de las tres opciones.
+  - **Los 19 existentes quedan con «Automatización de procesos»** (lo indicó Fernando, y
+    cuadra: es el talento de los 11 proyectos terminados). La migración **solo toca las filas
+    vacías**: pisar un dato bueno con uno inventado sería peor que el problema.
+  - **Se valida contra el catálogo** (`TALENTOS_SET`), como en los ámbitos: un talento
+    inventado no casaría con nada y dejaría el ticket fuera de toda carpeta sin explicación.
+    La API distingue «no mandaste ninguno» de «mandaste nombres que no existen».
+  - **Al cambiar de opción ya no se borran los talentos elegidos**: son del ticket, no de la
+    opción.
+  - Índice GIN en `required_talents`: el filtro de la página pública es «dame los tickets de
+    este talento», y sin él recorre la tabla entera por cada carpeta que se abra.
+  - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
+    en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
+    quedó en 19.
 - **🗂️ ÁMBITOS — migración 039 + Admin → Ámbitos (2026-08-18). FASE 1 de 2.**
   Un **ámbito** es un tipo de proyecto que el grupo maneja (Tecnología…) y agrupa **talentos**
   del catálogo. Se publicarán en `/ambitos` con panel izquierdo de carpetas, al estilo de
@@ -309,10 +332,8 @@ Stack estándar de la casa, con particularidades de este repo:
   - **El panel mide el respaldo de cada talento** (proyectos y tickets terminados) y avisa en
     ámbar si alguno está a cero. El catálogo tiene cientos de talentos —«Repostería»— y nada
     impide asociar uno sin nada detrás: en la web sería una carpeta que se abre vacía.
-  - **⚠️ DATO QUE CONDICIONA LA FASE 2: los 19 tickets terminados tienen `required_talents`
-    VACÍO.** Los 11 proyectos terminados sí declaran talento. Tal cual, la mitad «tickets» de
-    la página saldría siempre vacía. Hay que decidir: etiquetarlos, deducirlos de quien los
-    resolvió, o publicar solo proyectos.
+  - ~~Los 19 tickets terminados tienen `required_talents` vacío~~ → **RESUELTO el 2026-08-18**
+    con la migración 040: se etiquetaron todos y el campo pasó a ser obligatorio al crear.
   - **⚠️ DECISIÓN DE FERNANDO CON PRECEDENTE EN CONTRA:** la página es **pública**, y en la
     burbuja del avatar quiso **todos los datos de contacto** del miembro. Se le mostró antes
     que la migración `034_cv_publico` retiró `/members/<id>` justo por eso —*«un enlace se

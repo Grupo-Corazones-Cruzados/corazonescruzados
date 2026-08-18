@@ -4905,3 +4905,49 @@ creó**. La base quedó en 0 ámbitos y 0 asociaciones.
 **Un falso positivo por el camino:** el primer ensayo dijo que el segundo talento no se
 guardaba. No era cierto — leía la tabla 1,8 s después del clic, antes de que terminara la
 recarga. Con 2,5 s, correcto. *Una prueba que va más rápido que la interfaz inventa fallos.*
+
+## Fase 1.5 (2026-08-18) — el talento pasa a ser obligatorio en todo ticket
+
+Lo destapó el propio Fernando al montar su primer ámbito: asoció un talento y **no salía ni
+un ticket**. Era justo el riesgo anotado en P25.
+
+### ⭐ P27 — ¿Por qué ningún ticket tenía talento? · ✅ Resuelta
+`required_talents` solo se rellenaba en **uno de los tres** caminos de creación —el de
+«abierto por talento»—. Los otros dos, asignar a dedo y abrir a propuestas, lo dejaban vacío.
+No era un olvido: **el campo servía para decidir quién podía tomar el ticket**, y en esos dos
+caminos esa pregunta no tenía sentido.
+
+### ⭐ P28 — El arreglo no es «marcar el campo como requerido» · ✅ Es que cambió de oficio
+El campo pasa a tener **dos** trabajos:
+1. decidir **quién puede tomar** el ticket (solo si está abierto por talento);
+2. **clasificarlo**, que es lo que lo coloca bajo un ámbito en la web.
+
+El segundo aplica siempre. Por eso el selector **sube a campo propio del ticket**, junto al
+título y la descripción, en vez de seguir escondido dentro de una de las tres opciones. Si se
+hubiera dejado donde estaba y solo se marcara obligatorio, habría quedado un campo requerido
+que aparece o no según un radio button — incoherente de usar y de explicar.
+
+**Generalizable:** cuando un campo empieza a servir para algo nuevo, lo que hay que revisar no
+es su validación sino **dónde vive en la pantalla**. El sitio de un campo declara qué es.
+
+### P29 — Detalles que solo se ven haciéndolo
+- **Al cambiar de opción se vaciaban los talentos** (`required_talents: []` en el `onChange`
+  del radio). Tenía sentido cuando pertenecían a la opción; con el campo subido, hacía perder
+  lo elegido por cambiar de idea. Quitado.
+- **Dos errores distintos, dos mensajes distintos**: «no mandaste ninguno» y «mandaste nombres
+  que no existen en el catálogo». Con un mensaje genérico, el segundo caso deja a quien lo
+  sufre sin saber qué corregir.
+- **Índice GIN** en `required_talents`: la consulta de la página pública es
+  `talento = ANY(required_talents)`; sin índice recorre la tabla entera por cada carpeta.
+
+### Lo medido
+| Caso | Resultado |
+|---|---|
+| POST sin talento | **400** «Selecciona al menos un talento para el ticket.» |
+| POST con talento inventado | **400** «Ninguno de los talentos enviados existe en el catálogo…» |
+| POST con talento válido | **201**, guardado |
+| Formulario modo «crear» | campo «Talento *» presente ✓ |
+| Formulario modo «solicitar» | campo «Talento *» presente ✓ |
+| Backfill | 19/19 tickets con «Automatización de procesos», 0 sin talento |
+
+Los tickets de ensayo se borraron: la base quedó en 19, como estaba.
