@@ -154,7 +154,7 @@ export default function DocumentoLegal({
         <div className="xl:grid xl:grid-cols-[236px_minmax(0,1fr)_260px] xl:gap-12">
           {/* ── Izquierda: los documentos ── */}
           <nav className="hidden xl:block" aria-label="Documentos legales">
-            <div className="sticky top-24 max-h-[calc(100vh-130px)] overflow-y-auto pr-1">
+            <div className="sticky top-24 max-h-[calc(100vh-130px-var(--alto-pie))] overflow-y-auto pr-1">
               <ListaDocumentos activo={id} />
             </div>
           </nav>
@@ -172,7 +172,7 @@ export default function DocumentoLegal({
 
           {/* ── Derecha: el contenido de este documento ── */}
           <nav className="hidden xl:block" aria-label="Contenido del documento">
-            <div className="sticky top-24 max-h-[calc(100vh-130px)] overflow-y-auto pl-1">
+            <div className="sticky top-24 max-h-[calc(100vh-130px-var(--alto-pie))] overflow-y-auto pl-1">
               <IndiceSecciones grupos={indice} />
             </div>
           </nav>

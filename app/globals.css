@@ -1505,3 +1505,26 @@ html {
 .claro-tarjeta:hover {
   box-shadow: 0 6px 18px rgba(123, 95, 191, 0.13);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EL ALTO DEL PIE FIJO — una variable, porque hay que compensarlo en varios sitios
+
+   Desde el 2026-08-18 `PieSitio` es `position: fixed` (Fernando: *«deja el header y
+   pie de página flotando de forma fija en todas las páginas»*). Al salir del flujo
+   deja de empujar al contenido, así que **cada página tiene que reservarle su hueco
+   por abajo** o el último párrafo se lee por detrás de la barra.
+
+   Es una variable y no un número suelto porque el pie **mide distinto** según el
+   ancho: en fila mide 59 px, y apilado —debajo de `sm`— 89. Medido, no estimado.
+   Escribir «59» a mano en tres archivos garantiza que el día que cambie el pie, dos
+   de ellos se queden desfasados.
+
+   Lo usan: `app/(sitio)/layout.tsx`, la portada (`.landing-page`) y las columnas
+   fijas de los documentos legales.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root { --alto-pie: 89px; }
+@media (min-width: 640px) { :root { --alto-pie: 59px; } }
+
+/* La portada le reserva el hueco igual que el resto: su pie de pixel art lleva el
+   altavoz del chat del mundo y el copyright, y quedarían por detrás de la barra. */
+.landing-page { padding-bottom: var(--alto-pie); }

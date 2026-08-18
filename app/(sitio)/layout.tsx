@@ -81,7 +81,11 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
           texto tienen que estar puestos antes de que el contenido entre, o la transición
           arrancaría sobre un fondo sin pintar. Y el `<main>` no se remonta al navegar —para
           eso está el `key` de dentro—, así que el papel no parpadea entre página y página. */}
-      <main className="claro-publico flex-1 pt-16 bg-[var(--papel)] text-[var(--suave)]">
+      {/* `pb-[var(--alto-pie)]`: el pie es `fixed` desde el 2026-08-18 y ya no empuja, así
+          que hay que reservarle el hueco a mano o el final de la página se lee por detrás
+          de la barra. La variable vive en `app/globals.css` porque el pie mide distinto en
+          móvil (89 px) que en escritorio (59). */}
+      <main className="claro-publico flex-1 pt-16 pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
         <TransicionSeccion>{children}</TransicionSeccion>
       </main>
       <PieSitio />

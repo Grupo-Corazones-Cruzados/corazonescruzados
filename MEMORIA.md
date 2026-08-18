@@ -292,7 +292,30 @@ Stack estándar de la casa, con particularidades de este repo:
     verbo, para el imperativo «Inicia sesión … y **entra** a la Plataforma»). Reusar la
     primera en la frase imperativa producía «y entrar al Videojuego». **Lo cazó leer el
     diálogo renderizado en el navegador; ni `tsc` ni el build ven una concordancia rota.**
-- **🟣 «INICIO» SE LLAMA «VIOLETA» Y NACE LA PESTAÑA «ÁMBITOS» (2026-08-17).** Fernando
+- **📌 EL PIE VA FIJO ABAJO EN TODAS LAS PÁGINAS (2026-08-18).** Fernando venía diciendo que
+  **el pie se movía al cambiar de pestaña**. Tenía razón, y no era lo que parecía.
+  - **Lo que NO era:** el pie es **idéntico** en las cinco páginas —59 px de alto, hueco de
+    21 arriba y 20 abajo, misma tipografía, mismas posiciones—. Se midió antes de tocar nada
+    y se le enseñó recortado igual en tres páginas. **No había nada que arreglar dentro del
+    pie.**
+  - **Lo que SÍ era:** iba en el flujo, así que caía **donde terminara cada página**.
+    Historia mide 935 px con una pantalla de 900 —35 px de más—, así que su pie quedaba 24 px
+    por debajo del pliegue; Ámbitos mide exactamente una pantalla y el suyo quedaba pegado
+    abajo. **Al cambiar de una a otra, saltaba 35 px.**
+  - **Arreglo:** `position: fixed`. Medido después: **y = 841 en las cinco** a 1440×900, y
+    671 a 390×760. Cero movimiento.
+  - **⚠️ Un elemento fijo deja de empujar**, así que hay que reservarle el hueco:
+    **`--alto-pie`** en `app/globals.css` —**89 px apilado, 59 en fila**, medido— consumida
+    por el `<main>` del sitio, por `.landing-page` (la portada, cuyo pie de pixel art lleva
+    el altavoz del chat) y por las columnas fijas de los legales
+    (`calc(100vh - 130px - var(--alto-pie))`). Verificado que **no tapa ni una línea** en
+    siete rutas y dos tamaños.
+  - **La lección del método:** tres intentos de diagnóstico fallaron —el ancho, el
+    `scroll-smooth`, el salto de maquetación— porque buscaba la diferencia **dentro** del
+    componente. La diferencia estaba **fuera**: en cuánto medía cada página. *Cuando algo «se
+    mueve» y el componente es idéntico, mide su ENTORNO, no el componente.*
+- **🟣 «INICIO» → «VIOLETA» → «HISTORIA», Y NACE «ÁMBITOS» (2026-08-17/18).** La etiqueta
+  cambió dos veces; la ruta **nunca**: sigue siendo `/`. Fernando
   sigue con el diseño de las páginas principales; irá dictando qué va en cada pestaña.
   - **⚠️ VIOLETA ES SOLO LA ETIQUETA: LA RUTA SIGUE SIENDO `/`.** Lo pidió primero como
     renombrado también de la dirección; se le expuso que mover la portada dejaría el dominio

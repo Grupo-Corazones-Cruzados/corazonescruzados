@@ -34,7 +34,25 @@ import { Contenedor } from './piezas';
 export default function PieSitio() {
   return (
     <footer
-      className="border-t border-white/[0.07] bg-[#080a10] py-5"
+      /*
+       * FIJO ABAJO EN TODAS LAS PÁGINAS (Fernando, 2026-08-18).
+       *
+       * Antes iba en el flujo, al final de la página, y por eso **aparecía a una altura
+       * distinta en cada una**: en las cortas lo empujaba `flex-1` al borde inferior, en la
+       * portada quedaba 24 px por debajo del pliegue —mide 35 px más que la pantalla— y en
+       * las largas ni se veía. Cambiar de pestaña lo movía. Medido antes de tocar: el pie es
+       * idéntico en las cinco páginas; lo que cambiaba era **dónde caía**.
+       *
+       * `fixed` lo clava al mismo punto de la pantalla en todas, que es lo que se pidió.
+       *
+       * ⚠️ Al salir del flujo **ya no empuja**: cada página le reserva el hueco con
+       * `--alto-pie` (`app/globals.css`). Si algún día se le cambia el relleno o el tamaño
+       * de letra, hay que actualizar esa variable — no está calculada sola.
+       *
+       * `z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos de
+       * acceso (`z-[220]`), que deben taparlo.
+       */
+      className="fixed bottom-0 inset-x-0 z-50 border-t border-white/[0.07] bg-[#080a10] py-5"
       itemScope
       itemType="https://schema.org/Organization"
     >

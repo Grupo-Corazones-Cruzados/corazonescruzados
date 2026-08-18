@@ -4763,3 +4763,50 @@ corte a `lg` (1024 px) y se comprobó a **diez anchos**: 1440·1280·1100·1024�
 
 **Generalizable:** al añadir un elemento a una fila con un punto de corte responsive, **el
 punto de corte deja de ser válido**. Cada pestaña son ~90 px. Se mide, no se supone.
+
+## Sexta tanda (2026-08-18) — «Historia», y el pie que se movía
+
+**Pedidos:** renombrar la pestaña «Violeta» a **«Historia»** (la ruta sigue en `/`), y
+averiguar por qué *«al salir de la página de inicio a las otras el pie de página parece
+moverse un poco»*.
+
+### ⭐ P20 — El pie que se movía · ✅ Resuelta, tras TRES diagnósticos fallidos
+Fernando lo veía; yo no lo encontraba. Lo que se descartó, midiendo:
+1. **¿Se desplaza en horizontal?** No: `pie.x`, ancho del contenedor y posición del
+   copyright **idénticos** en las cinco páginas.
+2. **¿Lo rompe el `scroll-smooth` global?** No: forzando `scroll-behavior: auto` el
+   comportamiento era el mismo.
+3. **¿Es un salto de maquetación al cargar?** No: CLS de 0,0001 en las páginas del sitio.
+4. **¿El texto está descentrado dentro del pie?** No: hueco de 21 arriba y 20 abajo, igual en
+   las cinco (el 1 px es el borde superior, que entra en la altura de la caja).
+
+**El error de método fue buscar la diferencia DENTRO del componente.** Estaba fuera: el pie
+iba en el flujo, así que caía **donde terminara cada página**, y las páginas miden distinto.
+
+| Página | Alto del documento (pantalla de 900) | El pie caía en |
+|---|---|---|
+| Historia | 935 — **35 px de más** | 876, bajo el pliegue |
+| Ámbitos | 900 — exacto | 841, pegado abajo |
+| Soluciones | 1001 | 942 |
+
+Fernando llegó a la conclusión correcta antes que yo —*«quizás no sea el texto sino el
+componente del pie está posicionado más arriba o abajo según la página»*— y pidió el arreglo
+que además lo cierra para siempre: **cabecera y pie fijos en todas las páginas**.
+
+**Regla que queda: cuando algo «se mueve» y el componente es idéntico, mide su ENTORNO.**
+
+### P21 — Lo que cuesta un elemento fijo · ✅ Previsto y compensado
+Al salir del flujo **deja de empujar**, y el final de cada página se leería por detrás de la
+barra. Se reserva el hueco con **`--alto-pie`** (`app/globals.css`): **89 px apilado, 59 en
+fila**, medido a siete anchos, no estimado.
+
+Es una variable y no un número porque hay que compensarlo en **tres** sitios —el `<main>` del
+sitio, la portada y las columnas fijas de los legales—, y escribir «59» a mano en los tres
+garantiza que dos se queden desfasados el día que el pie cambie.
+
+Verificado recorriendo **siete rutas × dos tamaños** y buscando cualquier nodo de texto que
+solapara la franja del pie: ninguno.
+
+### Lo medido al final
+Pie en pantalla, tras el cambio: **841 px en las cinco páginas** a 1440×900 (era 841 · 876 ·
+942 · 4267 · 1857). A 390×760: **671 en las cinco**.

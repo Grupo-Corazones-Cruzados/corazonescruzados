@@ -181,6 +181,37 @@ Tipografía: **Inter**, fijada en el `style` del layout, no heredada del tema.
 tema del panel; esto se sirve a terceros y tiene que verse igual pase lo que pase con la
 sesión de quien mire.
 
+### El pie va FIJO abajo en todas las páginas (2026-08-18)
+
+Fernando: *«prefiero que dejes el header y pie de página flotando de forma fija en todas las
+páginas»*. Venía de notar que **el pie se movía al cambiar de pestaña**, y tenía razón.
+
+**Qué pasaba, medido antes de tocar nada:** el pie es **idéntico** en las cinco páginas
+—59 px de alto, hueco de 21 arriba y 20 abajo, misma tipografía—. Lo que cambiaba era
+**dónde caía**, porque iba en el flujo:
+
+| Página | Alto del documento | El pie aparecía en |
+|---|---|---|
+| Historia (`/`) | 935 (35 px más que la pantalla) | y = 876 — por debajo del pliegue |
+| Ámbitos | 900 = exacto | y = 841 — pegado abajo |
+| Soluciones | 1001 | y = 942 |
+| Desarrollo Humano | 4326 | y = 4267 |
+
+Al pasar de Historia a una página corta, saltaba 35 px. **Con `fixed` cae en y = 841 en las
+cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escritorio y en móvil.
+
+⚠️ **Un elemento fijo deja de empujar**, así que hay que reservarle el hueco por abajo:
+- **`--alto-pie`** (`app/globals.css`) — **89 px apilado, 59 px en fila**, medido, no
+  estimado. Es variable y no un número suelto porque hay que compensarlo en **tres** sitios,
+  y escribir «59» a mano en los tres garantiza que dos se queden desfasados el día que
+  cambie el pie.
+- Lo consumen: el `<main>` de `app/(sitio)/layout.tsx`, la portada (`.landing-page`) y las
+  **columnas fijas de los documentos legales**, cuyo `max-h` pasa a
+  `calc(100vh - 130px - var(--alto-pie))`.
+- Verificado que **no tapa ni una línea de texto** en las siete rutas, a 1440×900 y 390×760.
+
+`z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos (`z-[220]`).
+
 ### La barra: cinco pestañas de navegación + «Plataforma», que es una acción (2026-08-17)
 
 Fernando movió «Plataforma» del héroe de la portada a la barra, **a la derecha de
@@ -188,7 +219,7 @@ Contacto**, y con **forma de botón**. La distinción es la regla:
 
 | | Qué es | Cómo se ve |
 |---|---|---|
-| Violeta · Ámbitos · Soluciones · Desarrollo Humano · Contacto | navegación | enlaces; el activo, con fondo tenue |
+| Historia · Ámbitos · Soluciones · Desarrollo Humano · Contacto | navegación | enlaces; el activo, con fondo tenue |
 | **Plataforma** | la única **acción** de la barra | botón violeta lleno (`#7B5FBF`) |
 
 - **Un `<button>`, no un `<Link>`.** Estando ya en la portada no navega a ningún sitio: abre

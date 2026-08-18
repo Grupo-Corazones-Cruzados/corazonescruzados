@@ -101,14 +101,14 @@ export const REDES = [
 
 export const NAVEGACION = [
   /**
-   * «Inicio» → «Violeta» (Fernando, 2026-08-17).
+   * «Inicio» → «Violeta» → «Historia» (Fernando, 2026-08-17; el segundo cambio, el mismo día).
    *
    * ⚠️ **Solo cambia la ETIQUETA. La ruta sigue siendo `/`**, decidido por él después de
    * plantearle que mover la portada dejaría el dominio sin página en la raíz y obligaría a
    * tocar el logo, el panel, `/auth`, el marketplace y el mapa del sitio. Aquí no hay
-   * ninguna redirección que añadir: no se ha movido nada.
+   * ninguna redirección que añadir: no se ha movido nada, ni con «Violeta» ni ahora.
    */
-  { href: '/', label: 'Violeta' },
+  { href: '/', label: 'Historia' },
   /**
    * Pestaña nueva del 2026-08-17. La página está **montada pero vacía a propósito**:
    * Fernando dijo que iría explicando qué va en cada pestaña. Mientras no tenga contenido
