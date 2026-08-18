@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   // La cobertura solo se pide si se quiere: es una consulta más y la lista se recarga en
   // cada guardado. Se calcula para TODOS los talentos de una vez, no uno por ámbito.
   if (req.nextUrl.searchParams.get('cobertura') === '1') {
-    const todos = [...new Set(ambitos.flatMap((a) => a.talentos))];
+    const todos = [...new Set(ambitos.flatMap((a) => a.talentos.map((t) => t.talento)))];
     return NextResponse.json({ data: ambitos, cobertura: await coberturaDeTalentos(todos) });
   }
   return NextResponse.json({ data: ambitos });

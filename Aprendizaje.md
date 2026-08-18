@@ -5002,3 +5002,65 @@ Verificado quitando los `<script>` del HTML servido y contando ahí.
 | Tarjetas y círculos pintados | 30 y 30 |
 | Burbuja | nombre, correo y teléfono, dentro de la pantalla |
 | Contenido en HTML sin `<script>` | proyectos y tickets presentes ✓ |
+
+## Tercera pasada de Ámbitos (2026-08-18) — descripción, pestañas, buscador y un recorte
+
+### 🐛 P34 — La burbuja se recortaba · ✅ `overflow-hidden` en la tarjeta
+Lo vio Fernando en una captura. La tarjeta llevaba `overflow-hidden` para redondear la
+esquina de la imagen, y **un contenedor que recorta no distingue** entre lo que quería
+recortar y lo que se sale a propósito.
+
+Dos arreglos, no uno:
+1. el recorte baja al **botón de la imagen**, que era el único que lo necesitaba;
+2. la burbuja se ancla a la **izquierda** del círculo en vez de centrada — los círculos viven
+   en el borde izquierdo de la tarjeta, así que centrada se salía por la izquierda.
+
+Verificado recorriendo los ancestros de la burbuja en el navegador y comprobando que ninguno
+tiene `overflow` distinto de `visible`.
+
+**Generalizable:** `overflow-hidden` puesto para redondear una esquina es una de las causas
+más frecuentes de «mi tooltip se corta». El recorte va en el elemento que hay que recortar,
+no en su contenedor.
+
+### ⭐ P35 — ¿De quién es la descripción del talento? · ✅ De la PAREJA, no del talento
+La tentación es guardarla junto al talento. Sería un error: el talento es del catálogo del
+grupo y lo comparte toda la app, mientras que esta descripción cuenta **cómo se ejerce ese
+talento dentro de ESTE ámbito**. «Análisis de datos» dice una cosa en Tecnología y otra en
+Investigación. Va en `ambito_talentos`, que es justo la tabla de la pareja.
+
+### ⭐ P36 — Cuatro pestañas siempre, aunque estén vacías · ✅ Y contradice otra regla
+El sitio tiene una regla repetida: *una lista vacía no deja hueco ni «próximamente»*. Aquí se
+hace lo contrario y es correcto, porque **son cosas distintas**:
+- allí se trata de **secciones de contenido**: si no hay clientes que enseñar, la sección
+  sobra;
+- aquí se trata de **navegación**: si las pestañas aparecen y desaparecen según los datos, la
+  página cambia de forma entre un talento y otro y nadie llega a aprenderse dónde está cada
+  cosa.
+
+Lo que sí se adapta es el contenido de cada pestaña, que dice con todas las letras que no hay
+nada todavía.
+
+### P37 — De dónde salen los productos · ✅ Por la cadena, no por una columna nueva
+Un producto no declara talento. Cuelga de un ítem del portafolio
+(`products.portfolio_item_id`) y **es ese ítem quien lo declara**
+(`member_portfolio_items.talent`). Se sigue la cadena en vez de añadir una columna que habría
+que mantener a la par. **Resultó haber 1 producto**, cuando Fernando creía que ninguno — otra
+razón para no dar por buena una suposición sobre los datos.
+
+### P38 — Quitar el encabezado dejaba la página sin `<h1>` · ✅
+Fernando quitó el héroe. El `<h1>` se movió al **nombre del talento abierto**, dentro del
+explorador: describe mejor lo que se mira y evita publicar un documento sin título para un
+buscador y para un lector de pantalla. El explorador es de cliente, pero Next lo renderiza en
+servidor, así que el `<h1>` está en el HTML.
+
+### Lo medido
+| | |
+|---|---|
+| `<h1>` | «Automatización de procesos» ✓ · héroe eliminado ✓ |
+| Pestañas | Talentos 1 · Productos 1 · Tickets 19 · Proyectos 11 |
+| Buscador | presente, filtra dentro de la pestaña abierta |
+| Burbuja | dentro de la pantalla, **ningún ancestro la recorta** |
+| Descripción | se guarda desde el admin y se publica bajo el título |
+
+⚠️ La descripción que se escribió para la prueba **se borró**: el texto visible es de
+Fernando, no mío.

@@ -1,45 +1,128 @@
 'use client';
 
 /**
- * EL EXPLORADOR DE `/ambitos` — carpetas a la izquierda, trabajo a la derecha.
+ * EL EXPLORADOR DE `/ambitos` — carpetas a la izquierda, contenido a la derecha.
  *
- * Fernando lo pidió «al estilo de legal y privacidad»: un panel izquierdo con el listado, y
- * el contenido al lado. Cada **ámbito** es una carpeta que se despliega y enseña sus
- * **talentos**; al elegir un talento, a la derecha salen los proyectos y tickets terminados
- * que se hicieron con él.
+ * Fernando lo pidió «al estilo de legal y privacidad». Cada **ámbito** es una carpeta que se
+ * despliega y enseña sus **talentos**; al elegir uno, a la derecha salen su nombre, su
+ * descripción, un buscador y **cuatro pestañas fijas**: Talentos · Productos · Tickets ·
+ * Proyectos.
+ *
+ * ── LAS CUATRO PESTAÑAS SON SIEMPRE CUATRO ─────────────────────────────────────
+ * También cuando están vacías, y es deliberado: son la promesa de qué se puede encontrar
+ * aquí. Una pestaña que aparece y desaparece según los datos hace que la página cambie de
+ * forma entre un talento y otro, y que nadie llegue a aprenderse dónde está cada cosa. Lo
+ * que sí se adapta es su contenido, que dice con todas las letras que no hay nada todavía.
+ *
+ * ⚠️ Esto es lo contrario de la regla del resto del sitio —«una lista vacía no deja hueco»—,
+ * y la diferencia está en qué es cada cosa: allí se trataba de SECCIONES de contenido, aquí
+ * de la NAVEGACIÓN. La navegación tiene que ser estable para poder confiar en ella.
+ *
+ * ── EL TITULAR DEL TALENTO ES EL `<h1>` DE LA PÁGINA ───────────────────────────
+ * La página tenía un encabezado propio («Ámbitos») y Fernando lo quitó el 2026-08-18. Sin
+ * él la página se quedaría sin `<h1>`, así que lo hereda el nombre del talento abierto, que
+ * además es de lo que trata lo que se está mirando.
  *
  * ── ⭐ TODO EL CONTENIDO ESTÁ EN EL HTML, TAMBIÉN LO QUE NO SE VE ──────────────
- * Los paneles de los talentos NO elegidos se pintan igualmente, dentro de un bloque
- * `hidden`. Es exactamente el remedio que ya se usó dos veces en este proyecto:
- *  · las respuestas de las preguntas frecuentes, que es lo que permite declarar `FAQPage`;
- *  · las descripciones de `VentanaTarjeta`, donde se midió que **lo que solo viaja como
- *    prop a un componente de cliente no existe para el buscador** (aparecía 1 vez en el
- *    HTML, dentro del `<script>` de hidratación, y 0 en el marcado visible).
- *
- * Aquí es lo que de verdad puede posicionar la página: once proyectos con su descripción y
- * sus etiquetas. Si solo se pintara el talento abierto, Google vería uno y se perdería diez.
- *
- * ── POR QUÉ ES COMPONENTE DE CLIENTE ──────────────────────────────────────────
- * Desplegar carpetas y cambiar de talento es estado. Los datos llegan **ya resueltos** desde
- * el servidor: aquí no se pide nada por red.
+ * Los talentos no elegidos y las pestañas no abiertas se pintan igualmente en un bloque
+ * `hidden`. Es el remedio que ya se usó en las preguntas frecuentes y en `VentanaTarjeta`,
+ * donde se midió que **lo que solo viaja como prop a un componente de cliente no existe
+ * para el buscador**. Sin esto, de treinta trabajos Google vería los de una pestaña.
  */
 
-import { useState } from 'react';
-import { ChevronRight, Folder, FolderOpen } from 'lucide-react';
-import type { Ambito, Trabajo } from '@/lib/ambitos';
+import { useMemo, useState } from 'react';
+import { ChevronRight, Folder, FolderOpen, Mail, Phone, Search } from 'lucide-react';
+import type { Ambito, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo } from '@/lib/ambitos';
 import TarjetaTrabajo from './TarjetaTrabajo';
 
-export interface AmbitoConTrabajo extends Ambito {
-  /** El trabajo de cada talento, ya consultado en el servidor. */
-  trabajoPorTalento: Record<string, Trabajo[]>;
+export interface AmbitoConContenido extends Ambito {
+  /** El contenido de cada talento, ya consultado en el servidor. */
+  contenido: Record<string, ContenidoDeTalento>;
 }
 
-export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConTrabajo[] }) {
-  // Abre el primer ámbito y su primer talento: una página que arranca con todo cerrado
-  // obliga a adivinar que hay que pulsar algo.
+type Pestana = 'talentos' | 'productos' | 'tickets' | 'proyectos';
+
+const PESTANAS: { id: Pestana; label: string }[] = [
+  { id: 'talentos', label: 'Talentos' },
+  { id: 'productos', label: 'Productos' },
+  { id: 'tickets', label: 'Tickets' },
+  { id: 'proyectos', label: 'Proyectos' },
+];
+
+const VACIO_TOTAL: ContenidoDeTalento = { miembros: [], productos: [], proyectos: [], tickets: [] };
+
+/** Iniciales para quien no tiene foto. Nunca un hueco gris vacío. */
+function iniciales(nombre: string): string {
+  return nombre.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
+}
+
+/**
+ * La tarjeta de un miembro en la pestaña «Talentos».
+ *
+ * «Una tarjeta grande de ese usuario con sus datos de contacto nada más» (Fernando). Así
+ * que: foto, nombre, correo y teléfono. Lo que esté vacío no se pinta.
+ */
+function TarjetaMiembro({ miembro }: { miembro: MiembroConTalento }) {
+  return (
+    <article className="tarjeta-portafolio p-5 flex items-center gap-4">
+      <span className="w-16 h-16 shrink-0 rounded-full overflow-hidden border border-[var(--linea)]">
+        {miembro.foto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={miembro.foto} alt="" loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <span className="w-full h-full flex items-center justify-center bg-[#7b5fbf]/[0.12] text-[15px] font-semibold text-[var(--violeta-txt)]">
+            {iniciales(miembro.nombre)}
+          </span>
+        )}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[16px] font-semibold text-[var(--texto)] leading-snug">{miembro.nombre}</p>
+        {miembro.correo && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-[var(--suave)] break-all">
+            <Mail className="w-3.5 h-3.5 shrink-0 text-[var(--violeta-txt)]" /> {miembro.correo}
+          </p>
+        )}
+        {miembro.telefono && (
+          <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[var(--suave)]">
+            <Phone className="w-3.5 h-3.5 shrink-0 text-[var(--violeta-txt)]" /> {miembro.telefono}
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function TarjetaProducto({ producto }: { producto: Producto }) {
+  return (
+    <article className="tarjeta-portafolio flex flex-col">
+      {producto.imagen && (
+        <div className="w-full aspect-[16/10] overflow-hidden rounded-t-xl bg-[#f2f0f7]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={producto.imagen} alt="" loading="lazy" className="w-full h-full object-cover" />
+        </div>
+      )}
+      <div className="p-5 flex flex-col gap-2">
+        <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">Producto</span>
+        <h3 className="text-[17px] font-semibold text-[var(--texto)] leading-snug">{producto.nombre}</h3>
+        {producto.descripcion && (
+          <p className="text-[13.5px] text-[var(--suave)] leading-relaxed">{producto.descripcion}</p>
+        )}
+        {producto.precio !== null && (
+          <p className="text-[15px] font-semibold text-[var(--violeta)]">
+            {producto.precio.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConContenido[] }) {
   const primero = ambitos[0];
   const [abiertos, setAbiertos] = useState<Set<number>>(new Set(primero ? [primero.id] : []));
-  const [elegido, setElegido] = useState<string | null>(primero?.talentos[0] ?? null);
+  const [elegido, setElegido] = useState<string | null>(primero?.talentos[0]?.talento ?? null);
+  const [pestana, setPestana] = useState<Pestana>('proyectos');
+  const [busca, setBusca] = useState('');
 
   const alternar = (id: number) =>
     setAbiertos((s) => {
@@ -48,15 +131,43 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConTraba
       return n;
     });
 
-  const trabajoElegido: Trabajo[] = elegido
-    ? ambitos.flatMap((a) => a.trabajoPorTalento[elegido] ?? []).filter(
-        // Un talento puede estar en dos ámbitos a propósito; su trabajo es el mismo, así que
-        // se quitan los repetidos por tipo+id.
-        (t, i, arr) => arr.findIndex((x) => x.tipo === t.tipo && x.id === t.id) === i,
-      )
-    : [];
+  /** La descripción del talento abierto, en el ámbito donde esté. */
+  const descripcion = useMemo(() => {
+    for (const a of ambitos) {
+      const t = a.talentos.find((x) => x.talento === elegido);
+      if (t?.descripcion) return t.descripcion;
+    }
+    return null;
+  }, [ambitos, elegido]);
+
+  const contenido: ContenidoDeTalento = (elegido && ambitos.find((a) => a.contenido[elegido])?.contenido[elegido]) || VACIO_TOTAL;
+
+  /** El buscador filtra DENTRO de la pestaña abierta, que es lo que se está mirando. */
+  const q = busca.trim().toLowerCase();
+  const casa = (...campos: (string | null | undefined)[]) =>
+    !q || campos.some((c) => (c ?? '').toLowerCase().includes(q));
+
+  const miembros = contenido.miembros.filter((m) => casa(m.nombre, m.correo, m.telefono));
+  const productos = contenido.productos.filter((p) => casa(p.nombre, p.descripcion));
+  const filtraTrabajo = (l: Trabajo[]) => l.filter((t) => casa(t.titulo, t.descripcion, t.etiquetas.join(' ')));
+  const tickets = filtraTrabajo(contenido.tickets);
+  const proyectos = filtraTrabajo(contenido.proyectos);
+
+  const cuantos: Record<Pestana, number> = {
+    talentos: contenido.miembros.length,
+    productos: contenido.productos.length,
+    tickets: contenido.tickets.length,
+    proyectos: contenido.proyectos.length,
+  };
+
+  const totalDe = (c: ContenidoDeTalento) =>
+    c.miembros.length + c.productos.length + c.tickets.length + c.proyectos.length;
 
   if (ambitos.length === 0) return null;
+
+  const vacio = (texto: string) => (
+    <p className="text-[14px] text-[var(--tenue)] py-6">{texto}</p>
+  );
 
   return (
     <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -90,13 +201,12 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConTraba
                 {abierto && (
                   <ul className="ml-[26px] border-l border-[var(--linea)] pl-2.5 py-0.5 space-y-0.5">
                     {a.talentos.map((t) => {
-                      const activo = t === elegido;
-                      const cuantos = (a.trabajoPorTalento[t] ?? []).length;
+                      const activo = t.talento === elegido;
                       return (
-                        <li key={t}>
+                        <li key={t.talento}>
                           <button
                             type="button"
-                            onClick={() => setElegido(t)}
+                            onClick={() => { setElegido(t.talento); setBusca(''); }}
                             aria-current={activo ? 'true' : undefined}
                             className={`w-full flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left transition-colors
                                         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
@@ -104,8 +214,10 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConTraba
                                 ? 'bg-[#7b5fbf]/[0.09] text-[var(--violeta-txt)] font-medium'
                                 : 'text-[var(--suave)] hover:bg-[#7b5fbf]/[0.05] hover:text-[var(--texto)]'}`}
                           >
-                            <span className="text-[13px] leading-snug flex-1">{t}</span>
-                            <span className="text-[11px] text-[var(--apagado)] tabular-nums">{cuantos}</span>
+                            <span className="text-[13px] leading-snug flex-1">{t.talento}</span>
+                            <span className="text-[11px] text-[var(--apagado)] tabular-nums">
+                              {totalDe(a.contenido[t.talento] ?? VACIO_TOTAL)}
+                            </span>
                           </button>
                         </li>
                       );
@@ -124,39 +236,119 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConTraba
       {/* ── EL PANEL DERECHO ───────────────────────────────────────────────────── */}
       <div>
         {elegido && (
-          <h2 className="text-[24px] sm:text-[30px] font-semibold tracking-tight text-[var(--texto)] mb-1">
+          <h1 className="text-[30px] sm:text-[40px] font-semibold tracking-tight text-[var(--texto)] leading-tight">
             {elegido}
-          </h2>
+          </h1>
         )}
-        <p className="text-[13.5px] text-[var(--tenue)] mb-6">
-          {trabajoElegido.length === 0
-            ? 'Todavía no hay trabajo publicado con este talento.'
-            : `${trabajoElegido.length} ${trabajoElegido.length === 1 ? 'trabajo terminado' : 'trabajos terminados'}`}
-        </p>
-
-        {trabajoElegido.length > 0 && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {trabajoElegido.map((t) => (
-              <TarjetaTrabajo key={`${t.tipo}-${t.id}`} trabajo={t} />
-            ))}
-          </div>
+        {/* La descripción, si la hay. Sin ella no se pinta nada: ni recuadro ni relleno. */}
+        {descripcion && (
+          <p className="mt-3 text-[15.5px] leading-relaxed text-[var(--suave)] max-w-3xl">{descripcion}</p>
         )}
 
-        {/* ⭐ EL RESTO DEL CONTENIDO, PARA QUIEN NO PULSA NADA — un buscador, sobre todo.
+        {/* El buscador, ENCIMA de las pestañas: busca dentro de la que esté abierta, y por
+            eso su texto de ayuda dice cuál es — si no, no se sabe dónde está buscando. */}
+        <div className="relative mt-6 max-w-md">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder={`Buscar en ${PESTANAS.find((p) => p.id === pestana)?.label.toLowerCase()}…`}
+            aria-label={`Buscar en ${PESTANAS.find((p) => p.id === pestana)?.label}`}
+            className="w-full h-11 pl-10 pr-4 rounded-lg border border-[var(--linea-fuerte)] bg-[var(--tarjeta)]
+                       text-[14.5px] text-[var(--texto)] placeholder:text-[var(--apagado)]
+                       focus:border-[#7b5fbf]/60 focus:outline-none transition-colors"
+          />
+        </div>
+
+        {/* Las cuatro pestañas. Siempre las cuatro. */}
+        <div role="tablist" aria-label="Contenido del talento" className="mt-5 flex flex-wrap gap-1.5 border-b border-[var(--linea)] pb-3">
+          {PESTANAS.map((p) => {
+            const activa = p.id === pestana;
+            return (
+              <button
+                key={p.id}
+                role="tab"
+                aria-selected={activa}
+                type="button"
+                onClick={() => setPestana(p.id)}
+                className={`inline-flex items-baseline gap-1.5 rounded-full border px-3.5 py-1.5 text-[13.5px] transition-colors
+                            focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
+                  ${activa
+                    ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.1] text-[var(--violeta-txt)] font-medium'
+                    : 'border-[var(--linea)] text-[var(--suave)] hover:border-[var(--linea-fuerte)] hover:text-[var(--texto)]'}`}
+              >
+                {p.label}
+                <span className="text-[11px] text-[var(--apagado)] tabular-nums">{cuantos[p.id]}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div role="tabpanel" className="mt-6">
+          {pestana === 'talentos' && (
+            miembros.length === 0
+              ? vacio(q ? 'Ningún miembro coincide con la búsqueda.' : 'Todavía no hay miembros con este talento.')
+              : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {miembros.map((m) => <TarjetaMiembro key={m.memberId} miembro={m} />)}
+                </div>
+              )
+          )}
+
+          {pestana === 'productos' && (
+            productos.length === 0
+              ? vacio(q ? 'Ningún producto coincide con la búsqueda.' : 'Todavía no hay productos en este talento.')
+              : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {productos.map((p) => <TarjetaProducto key={p.id} producto={p} />)}
+                </div>
+              )
+          )}
+
+          {pestana === 'tickets' && (
+            tickets.length === 0
+              ? vacio(q ? 'Ningún ticket coincide con la búsqueda.' : 'Todavía no hay tickets terminados con este talento.')
+              : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {tickets.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}
+                </div>
+              )
+          )}
+
+          {pestana === 'proyectos' && (
+            proyectos.length === 0
+              ? vacio(q ? 'Ningún proyecto coincide con la búsqueda.' : 'Todavía no hay proyectos terminados con este talento.')
+              : (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {proyectos.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}
+                </div>
+              )
+          )}
+        </div>
+
+        {/* ⭐ TODO LO DEMÁS, PARA QUIEN NO PULSA NADA — un buscador, sobre todo.
             Se pinta como nodos de verdad y se oculta con `hidden`, que NO lo saca del HTML.
-            Sin esto, de once proyectos Google vería solo el del talento abierto. */}
+            Sin esto Google vería una pestaña de un talento, y se perdería el resto. */}
         <div hidden aria-hidden="true">
           {ambitos.map((a) =>
             a.talentos.map((t) => {
-              if (t === elegido) return null;
+              const c = a.contenido[t.talento] ?? VACIO_TOTAL;
               return (
-                <section key={`${a.id}-${t}`}>
-                  <h3>{a.nombre} · {t}</h3>
-                  {(a.trabajoPorTalento[t] ?? []).map((w) => (
+                <section key={`${a.id}-${t.talento}`}>
+                  <h2>{a.nombre} · {t.talento}</h2>
+                  {t.descripcion && <p>{t.descripcion}</p>}
+                  {[...c.proyectos, ...c.tickets].map((w) => (
                     <article key={`${w.tipo}-${w.id}`}>
-                      <h4>{w.titulo}</h4>
+                      <h3>{w.titulo}</h3>
                       {w.descripcion && <p>{w.descripcion}</p>}
                       {w.etiquetas.length > 0 && <p>{w.etiquetas.join(', ')}</p>}
+                    </article>
+                  ))}
+                  {c.productos.map((pr) => (
+                    <article key={`prod-${pr.id}`}>
+                      <h3>{pr.nombre}</h3>
+                      {pr.descripcion && <p>{pr.descripcion}</p>}
                     </article>
                   ))}
                 </section>

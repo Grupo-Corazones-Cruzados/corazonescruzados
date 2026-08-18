@@ -40,16 +40,17 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, EditField } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TALENTOS_BY_CATEGORY } from '@/lib/centralized/talentos';
-import type { Ambito, CoberturaTalento } from '@/lib/ambitos';
+import type { Ambito, CoberturaTalento, TalentoDeAmbito } from '@/lib/ambitos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const CAMPO =
   'field-control w-full px-3 py-2 bg-digi-darker border border-digi-border rounded text-[13px] ' +
   'text-digi-text placeholder:text-digi-muted/60 focus:border-accent focus:outline-none transition-colors';
 
-/** Una fila del panel del medio: el talento y lo que lo respalda. */
+/** Una fila del panel del medio: el talento, su descripción y lo que lo respalda. */
 interface FilaTalento {
   talento: string;
+  descripcion: string | null;
   proyectos: number;
   tickets: number;
 }
@@ -63,6 +64,10 @@ export default function AmbitosPanel() {
 
   const [editando, setEditando] = useState<Ambito | 'nuevo' | null>(null);
   const [nombre, setNombre] = useState('');
+  // El talento que se está asociando (o cuya descripción se edita). La descripción se pide
+  // AL ASOCIAR, que es lo que pidió Fernando: no se añade y luego se rellena.
+  const [talentoEnEdicion, setTalentoEnEdicion] = useState<{ talento: string; nuevo: boolean } | null>(null);
+  const [descripcion, setDescripcion] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [porBorrar, setPorBorrar] = useState<Ambito | null>(null);
 
@@ -108,16 +113,17 @@ export default function AmbitosPanel() {
 
   const filas: FilaTalento[] = useMemo(
     () => (ambito?.talentos ?? []).map((t) => ({
-      talento: t,
-      proyectos: cobertura[t]?.proyectos ?? 0,
-      tickets: cobertura[t]?.tickets ?? 0,
+      talento: t.talento,
+      descripcion: t.descripcion,
+      proyectos: cobertura[t.talento]?.proyectos ?? 0,
+      tickets: cobertura[t.talento]?.tickets ?? 0,
     })),
     [ambito, cobertura],
   );
 
   /* ── Guardar la lista de talentos ───────────────────────────────────────────
      Siempre se manda la lista COMPLETA: la pantalla edita el estado final. */
-  async function guardarTalentos(id: number, talentos: string[]) {
+  async function guardarTalentos(id: number, talentos: TalentoDeAmbito[]) {
     const r = await fetch(`/api/admin/ambitos/${id}/talentos`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -177,7 +183,7 @@ export default function AmbitosPanel() {
 
   /* ── El catálogo del panel derecho, filtrado y sin lo ya asociado ─────────── */
   const catalogo = useMemo(() => {
-    const yaEstan = new Set(ambito?.talentos ?? []);
+    const yaEstan = new Set((ambito?.talentos ?? []).map((t) => t.talento));
     const q = busqueda.trim().toLowerCase();
     return TALENTOS_BY_CATEGORY
       .map((g) => ({
@@ -266,6 +272,21 @@ export default function AmbitosPanel() {
                   { key: 'talento', header: 'Talento', render: (f: FilaTalento) => (
                     <span className="text-digi-text">{f.talento}</span>
                   ) },
+                  // La descripción se enseña aquí, cortada: sin una señal de que falta,
+                  // un talento sin describir se publica y nadie se entera.
+                  { key: 'descripcion', header: 'Descripción', render: (f: FilaTalento) => (
+                    f.descripcion
+                      ? <span className="text-digi-muted">{f.descripcion}</span>
+                      : <span className="text-amber-400">Sin descripción</span>
+                  ) },
+                  { key: 'editar', header: '', width: '44px', render: (f: FilaTalento) => (
+                    <button type="button" aria-label={`Editar la descripción de ${f.talento}`}
+                      title="Editar la descripción"
+                      className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
+                      onClick={() => { setTalentoEnEdicion({ talento: f.talento, nuevo: false }); setDescripcion(f.descripcion ?? ''); }}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  ) },
                   { key: 'proyectos', header: 'Proyectos', width: '100px', render: (f: FilaTalento) => (
                     <span className={f.proyectos ? 'text-digi-text' : 'text-digi-muted'}>{f.proyectos}</span>
                   ) },
@@ -275,7 +296,7 @@ export default function AmbitosPanel() {
                   { key: 'quitar', header: '', width: '44px', render: (f: FilaTalento) => (
                     <button type="button" aria-label={`Quitar ${f.talento}`} title="Quitar del ámbito"
                       className="w-7 h-7 inline-flex items-center justify-center rounded text-digi-muted hover:text-digi-text hover:bg-digi-darker transition-colors"
-                      onClick={() => guardarTalentos(ambito.id, ambito.talentos.filter((t) => t !== f.talento))}>
+                      onClick={() => guardarTalentos(ambito.id, ambito.talentos.filter((t) => t.talento !== f.talento))}>
                       <X className="w-4 h-4" />
                     </button>
                   ) },
@@ -323,7 +344,7 @@ export default function AmbitosPanel() {
                       <button
                         key={t}
                         type="button"
-                        onClick={() => guardarTalentos(ambito.id, [...ambito.talentos, t])}
+                        onClick={() => { setTalentoEnEdicion({ talento: t, nuevo: true }); setDescripcion(''); }}
                         className="px-2 py-1 rounded border border-digi-border text-[12px] text-digi-text
                                    hover:border-accent hover:bg-accent-light/10 transition-colors"
                         style={mf}
@@ -366,6 +387,55 @@ export default function AmbitosPanel() {
               cambia</strong> al renombrarlo: es un enlace que puede estar ya compartido.
             </p>
           )}
+        </EditPanel>
+      )}
+
+      {/* Asociar un talento (o corregir su descripción). La descripción se pide AQUÍ, al
+          asociar, que es lo que pidió Fernando: «uno de los campos a llenar al asociar un
+          talento a un ámbito». Puede quedar vacía — entonces la web no pinta el párrafo. */}
+      {talentoEnEdicion && ambito && (
+        <EditPanel
+          open
+          title={talentoEnEdicion.nuevo ? 'Asociar talento' : 'Descripción del talento'}
+          onClose={() => setTalentoEnEdicion(null)}
+          saving={guardando}
+          onSave={async () => {
+            setGuardando(true);
+            try {
+              const texto = descripcion.trim() || null;
+              const yaEsta = ambito.talentos.some((t) => t.talento === talentoEnEdicion.talento);
+              const lista = yaEsta
+                ? ambito.talentos.map((t) =>
+                    t.talento === talentoEnEdicion.talento ? { ...t, descripcion: texto } : t)
+                : [...ambito.talentos, { talento: talentoEnEdicion.talento, descripcion: texto }];
+              await guardarTalentos(ambito.id, lista);
+              setTalentoEnEdicion(null);
+              toast.success(talentoEnEdicion.nuevo ? 'Talento asociado' : 'Descripción guardada');
+            } finally {
+              setGuardando(false);
+            }
+          }}
+        >
+          <EditField label="Talento">
+            <p className="text-[13px] text-digi-text px-3 py-2 rounded bg-digi-darker border border-digi-border" style={mf}>
+              {talentoEnEdicion.talento}
+            </p>
+          </EditField>
+          <EditField label="Descripción">
+            <textarea
+              autoFocus
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              rows={5}
+              placeholder={`Cómo se ejerce «${talentoEnEdicion.talento}» dentro de ${ambito.nombre}…`}
+              className={`${CAMPO} resize-none`}
+              style={mf}
+            />
+          </EditField>
+          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
+            Se publica en <code>/ambitos</code>, bajo el título del talento. Si la dejas vacía,
+            la web no pinta el párrafo — ni recuadro ni «próximamente».
+          </p>
         </EditPanel>
       )}
 

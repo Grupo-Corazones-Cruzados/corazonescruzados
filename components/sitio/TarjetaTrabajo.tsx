@@ -69,8 +69,11 @@ function Circulo({ persona }: { persona: Persona }) {
           la tarjeta que hay debajo. */}
       <div
         role="tooltip"
-        className="pointer-events-none absolute left-1/2 bottom-full z-30 mb-2 w-max max-w-[240px]
-                   -translate-x-1/2 rounded-lg border border-[var(--linea)] bg-[var(--tarjeta)]
+        /* `left-0` y no centrada: los círculos viven en el borde IZQUIERDO de la tarjeta, y
+           una burbuja centrada sobre el primero se sale por la izquierda de la pantalla.
+           Anclada a la izquierda, crece hacia dentro, que es donde hay sitio. */
+        className="pointer-events-none absolute left-0 bottom-full z-30 mb-2 w-max max-w-[260px]
+                   rounded-lg border border-[var(--linea)] bg-[var(--tarjeta)]
                    px-3 py-2.5 opacity-0 shadow-[0_8px_24px_rgba(28,27,34,0.14)] transition-opacity
                    group-hover/p:opacity-100 group-focus-within/p:opacity-100"
       >
@@ -118,7 +121,17 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
   }, [abierta, mover]);
 
   return (
-    <article className="tarjeta-portafolio overflow-hidden flex flex-col">
+    /**
+     * ⚠️ **SIN `overflow-hidden` AQUÍ, Y ESE ERA EL FALLO.**
+     *
+     * La tarjeta lo llevaba para redondear la esquina de la imagen, y de paso **recortaba la
+     * burbuja de contacto**: al pasar el puntero por un círculo, la burbuja se cortaba contra
+     * el borde de la tarjeta (lo vio Fernando). Un contenedor que recorta no distingue entre
+     * la imagen que quería recortar y lo que se sale a propósito.
+     *
+     * El recorte se movió al botón de la imagen, que es el único que lo necesitaba.
+     */
+    <article className="tarjeta-portafolio flex flex-col">
       {/* ⚠️ Sin imagen NO se pinta un recuadro gris de relleno. Con seis de once proyectos
           sin foto, esos marcos vacíos ocuparían media rejilla y la página parecería rota. Es
           la misma regla del resto del sitio: lo que no hay, no deja hueco. */}
@@ -126,7 +139,7 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
         <button
           type="button"
           onClick={() => setAbierta(0)}
-          className="relative block w-full aspect-[16/10] overflow-hidden bg-[#f2f0f7] group"
+          className="relative block w-full aspect-[16/10] overflow-hidden rounded-t-xl bg-[#f2f0f7] group"
           aria-label={`Ver las ${trabajo.imagenes.length} imágenes de ${trabajo.titulo}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

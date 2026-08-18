@@ -28,10 +28,10 @@
  */
 
 import type { Metadata } from 'next';
-import { Contenedor, FondoHeroe } from '@/components/sitio/piezas';
-import AmbitosExplorador, { type AmbitoConTrabajo } from '@/components/sitio/AmbitosExplorador';
+import { Contenedor } from '@/components/sitio/piezas';
+import AmbitosExplorador, { type AmbitoConContenido } from '@/components/sitio/AmbitosExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { listarAmbitos, trabajoDeTalento } from '@/lib/ambitos';
+import { listarAmbitos, contenidoDeTalento } from '@/lib/ambitos';
 
 export const revalidate = 300;
 
@@ -56,18 +56,23 @@ export const metadata: Metadata = {
  * que un despliegue no dependa de que Postgres esté en pie. En ejecución el error sube.
  * Ya costó 20 despliegues fallidos una vez (ver MEMORIA.md → Lecciones).
  */
-async function ambitosTolerantesAlBuild(): Promise<AmbitoConTrabajo[]> {
-  const cargar = async (): Promise<AmbitoConTrabajo[]> => {
+async function ambitosTolerantesAlBuild(): Promise<AmbitoConContenido[]> {
+  const cargar = async (): Promise<AmbitoConContenido[]> => {
     const ambitos = await listarAmbitos();
 
-    // El trabajo se consulta UNA vez por talento, aunque el talento esté en dos ámbitos.
-    const cache = new Map<string, Awaited<ReturnType<typeof trabajoDeTalento>>>();
-    for (const t of new Set(ambitos.flatMap((a) => a.talentos))) {
-      cache.set(t, await trabajoDeTalento(t));
+    // El contenido se consulta UNA vez por talento, aunque el talento esté en dos ámbitos.
+    const cache = new Map<string, Awaited<ReturnType<typeof contenidoDeTalento>>>();
+    for (const t of new Set(ambitos.flatMap((a) => a.talentos.map((x) => x.talento)))) {
+      cache.set(t, await contenidoDeTalento(t));
     }
     return ambitos.map((a) => ({
       ...a,
-      trabajoPorTalento: Object.fromEntries(a.talentos.map((t) => [t, cache.get(t) ?? []])),
+      contenido: Object.fromEntries(
+        a.talentos.map((t) => [
+          t.talento,
+          cache.get(t.talento) ?? { miembros: [], productos: [], proyectos: [], tickets: [] },
+        ]),
+      ),
     }));
   };
 
@@ -86,24 +91,21 @@ async function ambitosTolerantesAlBuild(): Promise<AmbitoConTrabajo[]> {
 export default async function AmbitosPage() {
   const ambitos = await ambitosTolerantesAlBuild();
   const totalTrabajos = ambitos.reduce(
-    (n, a) => n + Object.values(a.trabajoPorTalento).reduce((m, l) => m + l.length, 0), 0,
+    (n, a) => n + Object.values(a.contenido).reduce(
+      (m, c) => m + c.proyectos.length + c.tickets.length + c.productos.length, 0), 0,
   );
 
   return (
     <>
-      <section className="relative overflow-hidden">
-        <FondoHeroe />
-        <Contenedor className="relative pt-20 pb-12 sm:pt-24 sm:pb-14 text-center">
-          <h1 className="text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-[var(--texto)] tracking-tight">
-            Ámbitos
-          </h1>
-          <p className="mt-5 text-[17px] sm:text-[18.5px] leading-relaxed text-[var(--suave)] max-w-2xl mx-auto">
-            Los tipos de proyecto que somos capaces de manejar, y el trabajo terminado en cada uno.
-          </p>
-        </Contenedor>
-      </section>
+      {/* ── SIN ENCABEZADO, POR PETICIÓN (Fernando, 2026-08-18) ────────────────
+          Había un héroe con «Ámbitos» y una frase debajo. Lo quitó, y la página entra
+          directa al explorador.
 
-      <section className="border-t border-[var(--linea)] bg-[var(--tarjeta)] py-12 sm:py-16">
+          ⚠️ Con él se iba el único `<h1>`. No se ha dejado a la página sin encabezado: lo
+          hereda **el nombre del talento abierto**, dentro del explorador, que además
+          describe mejor lo que se está mirando. Un documento sin `<h1>` es un documento sin
+          título para un buscador y para un lector de pantalla. */}
+      <section className="border-b border-[var(--linea)] bg-[var(--tarjeta)] py-10 sm:py-14">
         <Contenedor>
           {ambitos.length === 0 ? (
             // Ni recuadro gris ni «próximamente»: la misma regla del resto del sitio.

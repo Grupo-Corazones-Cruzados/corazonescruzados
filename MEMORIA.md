@@ -315,6 +315,31 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🗂️ ÁMBITOS — TERCERA PASADA: descripción, cuatro pestañas y buscador (2026-08-18).**
+  - **Cada talento de un ámbito lleva su DESCRIPCIÓN** (migración 041). Cuelga de la pareja
+    ámbito↔talento, **no del talento**: «Análisis de datos» cuenta una cosa en Tecnología y
+    otra en Investigación. Se pide **al asociar** el talento, en Admin → Ámbitos, y el panel
+    marca en ámbar los que están **Sin descripción** — sin esa señal se publican vacíos.
+  - **Cuatro pestañas SIEMPRE**: Talentos · Productos · Tickets · Proyectos, con su conteo.
+    También vacías, a propósito: son navegación, y **la navegación tiene que ser estable**
+    para poder confiar en ella. Es lo contrario de la regla del resto del sitio («una lista
+    vacía no deja hueco»), y la diferencia es que allí se trata de secciones de CONTENIDO.
+  - **De dónde sale cada pestaña:** los miembros, de `member_cv_profiles.talents` (el jsonb
+    que organiza el CV por talento); los **productos**, siguiendo
+    `products.portfolio_item_id → member_portfolio_items.talent`, porque un producto no
+    declara talento y añadirle una columna sería un dato que mantener a la par.
+    **Resultó haber 1 producto**, aunque Fernando creía que ninguno.
+  - **Buscador encima de las pestañas**, que filtra dentro de la abierta. Su marcador de
+    posición dice en cuál busca: si no, no se sabe dónde está mirando.
+  - **Fuera el encabezado de la página** (lo pidió). ⚠️ Con él se iba el único `<h1>`, así
+    que lo hereda **el nombre del talento abierto** — un documento sin `<h1>` no tiene título
+    ni para un buscador ni para un lector de pantalla.
+  - **🐛 ARREGLADO: la burbuja de contacto se recortaba.** La tarjeta llevaba
+    `overflow-hidden` para redondear la esquina de la imagen, y **un contenedor que recorta
+    no distingue** entre la imagen que quería recortar y lo que se sale a propósito. El
+    recorte se movió al botón de la imagen, y la burbuja se ancla a la **izquierda** del
+    círculo en vez de centrada: los círculos viven en el borde izquierdo y una burbuja
+    centrada se salía de la pantalla. Verificado: ningún ancestro la recorta.
 - **🗂️ ÁMBITOS — FASE 2: la página pública `/ambitos` (2026-08-18).** Carpetas a la
   izquierda —ámbito → talentos—, y al elegir un talento, sus proyectos y tickets terminados
   en tarjetas. Al estilo de `/legal`, como pidió.

@@ -25,13 +25,24 @@
 import { pool } from '@/lib/db';
 import { TALENTOS_SET } from '@/lib/centralized/talentos';
 
+/**
+ * Un talento DENTRO de un ámbito.
+ *
+ * Deja de ser una cadena suelta desde el 2026-08-18: lleva su **descripción**, que cuenta
+ * cómo se ejerce ese talento en ESTE ámbito y se publica bajo su título en `/ambitos`.
+ */
+export interface TalentoDeAmbito {
+  talento: string;
+  descripcion: string | null;
+}
+
 export interface Ambito {
   id: number;
   nombre: string;
   slug: string;
   orden: number;
   /** Los talentos asociados, en su orden. */
-  talentos: string[];
+  talentos: TalentoDeAmbito[];
 }
 
 /**
@@ -72,11 +83,11 @@ export async function listarAmbitos(): Promise<Ambito[]> {
   const { rows } = await pool.query(
     `SELECT a.id, a.nombre, a.slug, a.orden,
             COALESCE(
-              ARRAY(SELECT t.talento
-                      FROM gcc_world.ambito_talentos t
-                     WHERE t.ambito_id = a.id
-                     ORDER BY t.orden, t.talento),
-              '{}'
+              (SELECT json_agg(json_build_object('talento', t.talento, 'descripcion', t.descripcion)
+                               ORDER BY t.orden, t.talento)
+                 FROM gcc_world.ambito_talentos t
+                WHERE t.ambito_id = a.id),
+              '[]'::json
             ) AS talentos
        FROM gcc_world.ambitos a
       ORDER BY a.orden, a.id`,
@@ -86,7 +97,7 @@ export async function listarAmbitos(): Promise<Ambito[]> {
     nombre: r.nombre,
     slug: r.slug,
     orden: Number(r.orden),
-    talentos: r.talentos ?? [],
+    talentos: (r.talentos ?? []) as TalentoDeAmbito[],
   }));
 }
 
@@ -151,9 +162,16 @@ export async function borrarAmbito(id: number): Promise<void> {
  * ⚠️ Se descarta cualquier nombre que no esté en el catálogo. Un talento inventado aquí
  * jamás casaría con un requerimiento y dejaría una carpeta vacía sin explicación.
  */
-export async function fijarTalentos(ambitoId: number, talentos: string[]): Promise<string[]> {
-  const validos = talentos.filter((t) => TALENTOS_SET.has(t));
-  const unicos = [...new Set(validos)];
+export async function fijarTalentos(
+  ambitoId: number,
+  talentos: TalentoDeAmbito[],
+): Promise<TalentoDeAmbito[]> {
+  const vistos = new Set<string>();
+  const unicos = talentos.filter((t) => {
+    if (!TALENTOS_SET.has(t.talento) || vistos.has(t.talento)) return false;
+    vistos.add(t.talento);
+    return true;
+  });
 
   const cliente = await pool.connect();
   try {
@@ -161,10 +179,11 @@ export async function fijarTalentos(ambitoId: number, talentos: string[]): Promi
     await cliente.query(`DELETE FROM gcc_world.ambito_talentos WHERE ambito_id = $1`, [ambitoId]);
     if (unicos.length) {
       await cliente.query(
-        `INSERT INTO gcc_world.ambito_talentos (ambito_id, talento, orden)
-         SELECT $1, t.valor, t.ord - 1
-           FROM UNNEST($2::text[]) WITH ORDINALITY AS t(valor, ord)`,
-        [ambitoId, unicos],
+        `INSERT INTO gcc_world.ambito_talentos (ambito_id, talento, orden, descripcion)
+         SELECT $1, t.valor, t.ord - 1, d.valor
+           FROM UNNEST($2::text[]) WITH ORDINALITY AS t(valor, ord)
+           JOIN UNNEST($3::text[]) WITH ORDINALITY AS d(valor, ord) ON d.ord = t.ord`,
+        [ambitoId, unicos.map((t) => t.talento), unicos.map((t) => t.descripcion ?? null)],
       );
     }
     await cliente.query(`UPDATE gcc_world.ambitos SET updated_at = now() WHERE id = $1`, [ambitoId]);
@@ -360,4 +379,109 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
   return [...conPersonas, ...deTickets].sort(
     (a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''),
   );
+}
+
+
+/* ═══════════════════ EL CONTENIDO DE LAS CUATRO PESTAÑAS ═══════════════════ */
+
+/**
+ * Un miembro que TIENE este talento, para la pestaña «Talentos».
+ *
+ * ⚠️ Solo datos de contacto, igual que la burbuja de las tarjetas: nombre, foto, correo y
+ * teléfono. Lo que esté vacío no se pinta.
+ */
+export interface MiembroConTalento {
+  memberId: number;
+  nombre: string;
+  foto: string | null;
+  correo: string | null;
+  telefono: string | null;
+}
+
+/** Un producto del catálogo, para la pestaña «Productos». */
+export interface Producto {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  imagen: string | null;
+  precio: number | null;
+}
+
+/** Todo lo que se enseña de un talento, ya repartido por pestaña. */
+export interface ContenidoDeTalento {
+  miembros: MiembroConTalento[];
+  productos: Producto[];
+  proyectos: Trabajo[];
+  tickets: Trabajo[];
+}
+
+/**
+ * QUIÉN TIENE ESTE TALENTO.
+ *
+ * Sale de `member_cv_profiles.talents`, un jsonb de `[{key, …}]` donde `key` es el nombre
+ * del talento — la misma estructura que organiza el CV público por talento desde la
+ * migración 037. No hay una tabla «miembro↔talento»: el CV es quien lo declara.
+ */
+export async function miembrosConTalento(talento: string): Promise<MiembroConTalento[]> {
+  const { rows } = await pool.query(
+    `SELECT m.id, m.name, m.photo_url, m.email, m.phone
+       FROM gcc_world.member_cv_profiles c
+       JOIN gcc_world.members m ON m.id = c.member_id
+      WHERE EXISTS (
+              SELECT 1 FROM jsonb_array_elements(COALESCE(c.talents, '[]'::jsonb)) t
+               WHERE t->>'key' = $1
+            )
+      ORDER BY m.name`,
+    [talento],
+  );
+  return rows.map((m: any) => ({
+    memberId: Number(m.id),
+    nombre: m.name,
+    foto: m.photo_url ?? null,
+    correo: m.email ?? null,
+    telefono: m.phone ?? null,
+  }));
+}
+
+/**
+ * LOS PRODUCTOS DE ESTE TALENTO.
+ *
+ * Un producto no declara talento: cuelga de un ítem del portafolio
+ * (`products.portfolio_item_id`), y **es ese ítem el que lo declara**
+ * (`member_portfolio_items.talent`, migración 037). Se sigue esa cadena en vez de añadir
+ * una columna que habría que mantener a la par.
+ *
+ * Solo los activos: un producto retirado no se anuncia en la web.
+ */
+export async function productosDeTalento(talento: string): Promise<Producto[]> {
+  const { rows } = await pool.query(
+    `SELECT p.id, p.name, p.description, p.image_url, p.price
+       FROM gcc_world.products p
+       JOIN gcc_world.member_portfolio_items i ON i.id = p.portfolio_item_id
+      WHERE i.talent = $1 AND COALESCE(p.is_active, true) = true
+      ORDER BY p.updated_at DESC NULLS LAST, p.id DESC`,
+    [talento],
+  );
+  return rows.map((r: any) => ({
+    id: Number(r.id),
+    nombre: r.name,
+    descripcion: r.description ?? null,
+    imagen: r.image_url ?? null,
+    precio: r.price === null || r.price === undefined ? null : Number(r.price),
+  }));
+}
+
+/** Todo lo de un talento, en una llamada: es lo que consume la página pública. */
+export async function contenidoDeTalento(talento: string): Promise<ContenidoDeTalento> {
+  const [miembros, productos, trabajo] = await Promise.all([
+    miembrosConTalento(talento),
+    productosDeTalento(talento),
+    trabajoDeTalento(talento),
+  ]);
+  return {
+    miembros,
+    productos,
+    proyectos: trabajo.filter((t) => t.tipo === 'proyecto'),
+    tickets: trabajo.filter((t) => t.tipo === 'ticket'),
+  };
 }
