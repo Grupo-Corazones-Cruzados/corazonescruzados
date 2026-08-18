@@ -51,7 +51,9 @@ export default function TransicionSeccion({ children }: { children: ReactNode })
   const seccion = pathname.split('/')[1] || 'inicio';
 
   return (
-    <div key={seccion} className="transicion-seccion">
+    // `flex-1 flex flex-col`: este envoltorio está entre el `<main>` y la página, así que
+    // si no dejara pasar el alto, ninguna página podría estirarse hasta el pie.
+    <div key={seccion} className="transicion-seccion flex-1 flex flex-col">
       {children}
     </div>
   );

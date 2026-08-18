@@ -5129,3 +5129,44 @@ explica qué decía la 039, por qué era falso y quién lo corrigió.
 
 **Regla: una migración aplicada no se toca NUNCA, ni sus comentarios.** Lo que haya que
 matizar se escribe en la migración que lo corrige.
+
+## Quinta pasada (2026-08-18) — un solo color, y fuera los nombres de clientes
+
+### P44 — La franja de color con poco contenido · ✅
+La sección de `/ambitos` tiene fondo blanco y la página, papel `#f6f5f9`. Con poco contenido
+la sección terminaba antes que la página y se veía el corte a media pantalla.
+
+Arreglado dejando que la sección **ocupe el alto que sobre**: el `<main>` del sitio pasa a
+`flex flex-col`, `TransicionSeccion` —que está en medio— deja pasar el alto con `flex-1 flex
+flex-col`, y la sección pide `flex-1`. Sin ese eslabón intermedio ninguna página podría
+estirarse: un envoltorio que no propaga el alto rompe la cadena entera.
+
+Comprobado leyendo el color computado a cinco alturas: **un solo color** en `/ambitos`, y las
+otras cuatro páginas **sin cambios** (sus dos colores son sus secciones alternas).
+
+### ⭐ P45 — Anonimizar 43 textos · ✅ Con respaldo y con control
+**Respaldo primero.** Los originales van a `gcc_world.textos_originales_20260818`, una TABLA y
+no un archivo del repo: contienen nombres de clientes y el historial de git es permanente.
+
+**El criterio importa más que la lista:**
+- fuera las empresas servidas **y sus sistemas o clientes** —Whole Foods, Sigrid, Mobilvendor,
+  Dartis, Comet—, porque señalan igual de bien;
+- se quedan las **tecnologías** —Azure, Power Apps, SharePoint, Odoo, Contifico, SRI, Python,
+  Selenium, Docker—: dan valor a la ficha y no identifican a nadie.
+
+**Nueve tickets y un proyecto no tenían descripción.** Se les escribió una fiel al título, sin
+inventar detalles: *una descripción plausible pero falsa de trabajo real es peor que una
+vaga*, y además se publica.
+
+### ⭐⭐ P46 — Una comprobación sin control no comprueba nada
+El primer detector dio 11 coincidencias, y las once eran suyas: «ATER» dentro de
+«c**ater**ing», «Cando» dentro de «apli**cando**», y palabras como GESTIÓN o SERVICIOS
+sacadas de trocear una razón social larga.
+
+Rehecho con límites de palabra —ojo: `\b` no sirve con acentos en JavaScript, hay que escribir
+la clase de letras a mano— **y con una prueba de control**: pasar el mismo detector por el
+respaldo. Encuentra **17 registros** con nombres allí y **0** en los textos nuevos.
+
+**Esto es lo que hay que recordar:** sin el control, un detector roto habría dado exactamente
+el mismo «✓ limpio» que uno bueno. Toda verificación que busca la AUSENCIA de algo necesita
+una muestra donde ese algo SÍ esté.

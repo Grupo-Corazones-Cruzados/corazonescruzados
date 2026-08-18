@@ -315,6 +315,34 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🕵️ FUERA LOS NOMBRES DE CLIENTES DE TÍTULOS Y DESCRIPCIONES (2026-08-18).** Los pidió
+  quitar al ver que `/ambitos` los publica. Reescritos **los 43**: 24 proyectos y 19 tickets.
+  - **⚠️ RESPALDO ANTES DE TOCAR:** los textos originales están en
+    **`gcc_world.textos_originales_20260818`** (tipo, id, title, description). Es una tabla y
+    no un archivo del repo **a propósito**: contienen nombres de clientes y el historial de
+    git es permanente.
+  - **El criterio, que es lo que hay que recordar:**
+    · **Fuera** los nombres de empresas a las que se prestó servicio **y los de SUS sistemas
+      o clientes**, porque señalan igual de bien (Whole Foods, Sigrid, Mobilvendor, Dartis,
+      Comet, FlowData…).
+    · **Se quedan** tecnologías y proveedores —Azure, Power Apps, SharePoint, Odoo, Contifico,
+      Alegra, WhatsApp Cloud API, SRI, Python, Selenium, Docker, PostgreSQL—: son lo que da
+      valor a la ficha y no identifican a nadie.
+  - **Todos tienen ya título y descripción**: había **9 tickets y 1 proyecto sin ninguna**.
+    Para esos se escribió una descripción fiel al título, **sin inventar detalles** del
+    trabajo: una descripción plausible pero falsa de trabajo real es peor que una vaga.
+  - **⭐ LA COMPROBACIÓN LLEVA UN CONTROL, Y HACÍA FALTA.** El primer detector dio 11
+    «coincidencias» que eran suyas: «ATER» dentro de «c**ater**ing», «Cando» dentro de
+    «apli**cando**», y palabras sueltas —GESTIÓN, SERVICIOS— sacadas de una razón social
+    larga. Rehecho con límites de palabra **y una prueba de control**: el mismo detector
+    encuentra **17 registros** con nombres en el respaldo y **0** en los textos nuevos. Sin
+    ese control, un detector roto habría dado el mismo «✓ limpio».
+  - Verificado además contra la página publicada: 0 apariciones de los diez nombres buscados.
+- **🎨 UN SOLO COLOR EN `/ambitos` CON POCO CONTENIDO (2026-08-18).** La sección blanca
+  terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`: un cambio de
+  color a media pantalla. El `<main>` del sitio pasa a `flex flex-col`, `TransicionSeccion`
+  deja pasar el alto y la sección pide `flex-1`. **Las demás páginas no cambian**: sus dos
+  colores son sus secciones alternas, que es su diseño aprobado.
 - **🪤 UNA MIGRACIÓN APLICADA NO SE TOCA, NI SUS COMENTARIOS (2026-08-18).** Al corregir la
   regla se editó el comentario de la 039 —ya aplicada— para que no siguiera afirmando lo
   contrario. `scripts/migrate.mjs` guarda un **checksum** de cada una y, si el archivo cambia,

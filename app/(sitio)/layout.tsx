@@ -85,7 +85,11 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
           que hay que reservarle el hueco a mano o el final de la página se lee por detrás
           de la barra. La variable vive en `app/globals.css` porque el pie mide distinto en
           móvil (89 px) que en escritorio (59). */}
-      <main className="claro-publico flex-1 pt-16 pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
+      {/* `flex flex-col`: deja que una página pida ocupar el alto que sobre con `flex-1`.
+          Sin esto, una página corta con fondo propio —`/ambitos`, que es blanco— terminaba
+          antes que la página y dejaba una franja del papel `#f6f5f9` debajo. Se veía como un
+          cambio de color a media pantalla; lo vio Fernando. */}
+      <main className="claro-publico flex-1 flex flex-col pt-16 pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
         <TransicionSeccion>{children}</TransicionSeccion>
       </main>
       <PieSitio />

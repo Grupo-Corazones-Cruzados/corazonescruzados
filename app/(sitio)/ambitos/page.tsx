@@ -105,7 +105,11 @@ export default async function AmbitosPage() {
           hereda **el nombre del talento abierto**, dentro del explorador, que además
           describe mejor lo que se está mirando. Un documento sin `<h1>` es un documento sin
           título para un buscador y para un lector de pantalla. */}
-      <section className="border-b border-[var(--linea)] bg-[var(--tarjeta)] py-10 sm:py-14">
+      {/* `flex-1`: la sección ocupa TODO el alto que sobre. Con poco contenido, su fondo
+          blanco terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`
+          de la página — un cambio de color a media pantalla. Un solo color, como pidió
+          Fernando (2026-08-18). Sin `border-b`: no hay nada después de ella. */}
+      <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
         <Contenedor>
           {ambitos.length === 0 ? (
             // Ni recuadro gris ni «próximamente»: la misma regla del resto del sitio.
