@@ -420,7 +420,9 @@ export default function AmbitosPanel() {
               const lista = yaEsta
                 ? ambito.talentos.map((t) =>
                     t.talento === talentoEnEdicion.talento ? { ...t, descripcion: texto } : t)
-                : [...ambito.talentos, { talento: talentoEnEdicion.talento, descripcion: texto }];
+                // El `slug` lo calcula el servidor al guardar (`fijarTalentos`): es una URL
+                // y no algo que deba inventar la pantalla. Aquí va vacío a propósito.
+                : [...ambito.talentos, { talento: talentoEnEdicion.talento, descripcion: texto, slug: '' }];
               await guardarTalentos(ambito.id, lista);
               setTalentoEnEdicion(null);
               toast.success(talentoEnEdicion.nuevo ? 'Talento asociado' : 'Descripción guardada');

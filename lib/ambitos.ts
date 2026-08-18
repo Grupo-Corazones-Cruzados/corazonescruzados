@@ -42,6 +42,12 @@ import { TALENTOS_SET } from '@/lib/centralized/talentos';
 export interface TalentoDeAmbito {
   talento: string;
   descripcion: string | null;
+  /**
+   * El tramo de la URL: `/ambitos/<slug>`. Se guarda en la base y **no se recalcula**
+   * (migración 043): es una dirección publicada, y derivarla del nombre en cada petición
+   * movería enlaces ya repartidos ante cualquier retoque del catálogo.
+   */
+  slug: string;
 }
 
 export interface Ambito {
@@ -91,7 +97,9 @@ export async function listarAmbitos(): Promise<Ambito[]> {
   const { rows } = await pool.query(
     `SELECT a.id, a.nombre, a.slug, a.orden,
             COALESCE(
-              (SELECT json_agg(json_build_object('talento', t.talento, 'descripcion', t.descripcion)
+              (SELECT json_agg(json_build_object('talento', t.talento,
+                                                 'descripcion', t.descripcion,
+                                                 'slug', t.slug)
                                ORDER BY t.orden, t.talento)
                  FROM gcc_world.ambito_talentos t
                 WHERE t.ambito_id = a.id),
@@ -204,11 +212,20 @@ export async function fijarTalentos(
     await cliente.query(`DELETE FROM gcc_world.ambito_talentos WHERE ambito_id = $1`, [ambitoId]);
     if (unicos.length) {
       await cliente.query(
-        `INSERT INTO gcc_world.ambito_talentos (ambito_id, talento, orden, descripcion)
-         SELECT $1, t.valor, t.ord - 1, d.valor
+        `INSERT INTO gcc_world.ambito_talentos (ambito_id, talento, orden, descripcion, slug)
+         SELECT $1, t.valor, t.ord - 1, d.valor, s.valor
            FROM UNNEST($2::text[]) WITH ORDINALITY AS t(valor, ord)
-           JOIN UNNEST($3::text[]) WITH ORDINALITY AS d(valor, ord) ON d.ord = t.ord`,
-        [ambitoId, unicos.map((t) => t.talento), unicos.map((t) => t.descripcion ?? null)],
+           JOIN UNNEST($3::text[]) WITH ORDINALITY AS d(valor, ord) ON d.ord = t.ord
+           JOIN UNNEST($4::text[]) WITH ORDINALITY AS s(valor, ord) ON s.ord = t.ord`,
+        [
+          ambitoId,
+          unicos.map((t) => t.talento),
+          unicos.map((t) => t.descripcion ?? null),
+          // El slug se calcula aquí con la MISMA regla que usó la migración 043. Se
+          // recalcula en cada guardado porque el nombre del talento no cambia nunca —viene
+          // del catálogo—, así que siempre da lo mismo.
+          unicos.map((t) => aSlug(t.talento)),
+        ],
       );
     }
     await cliente.query(`UPDATE gcc_world.ambitos SET updated_at = now() WHERE id = $1`, [ambitoId]);
@@ -219,7 +236,7 @@ export async function fijarTalentos(
   } finally {
     cliente.release();
   }
-  return unicos;
+  return unicos.map((t) => ({ ...t, slug: aSlug(t.talento) }));
 }
 
 /** Reordena los ámbitos según la lista de ids recibida. */
@@ -509,4 +526,21 @@ export async function contenidoDeTalento(talento: string): Promise<ContenidoDeTa
     proyectos: trabajo.filter((t) => t.tipo === 'proyecto'),
     tickets: trabajo.filter((t) => t.tipo === 'ticket'),
   };
+}
+
+/**
+ * El talento que hay detrás de una URL, o `null` si esa URL no existe.
+ *
+ * Lo usa `/ambitos/<slug>` para saber qué enseñar y para responder **404 de verdad** cuando
+ * alguien escribe un tramo inventado — no una página vacía, que es lo que hace pensar que
+ * algo se rompió.
+ */
+export async function talentoPorSlug(
+  slug: string,
+): Promise<{ talento: string; descripcion: string | null; ambitoId: number } | null> {
+  const { rows: [r] } = await pool.query(
+    `SELECT talento, descripcion, ambito_id FROM gcc_world.ambito_talentos WHERE slug = $1`,
+    [slug],
+  );
+  return r ? { talento: r.talento, descripcion: r.descripcion ?? null, ambitoId: Number(r.ambito_id) } : null;
 }

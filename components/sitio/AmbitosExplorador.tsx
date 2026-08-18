@@ -31,6 +31,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ChevronRight, Folder, FolderOpen, Mail, Phone, Search } from 'lucide-react';
 import type { Ambito, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo } from '@/lib/ambitos';
 import TarjetaTrabajo from './TarjetaTrabajo';
@@ -117,10 +118,58 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
   );
 }
 
-export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConContenido[] }) {
-  const primero = ambitos[0];
-  const [abiertos, setAbiertos] = useState<Set<number>>(new Set(primero ? [primero.id] : []));
-  const [elegido, setElegido] = useState<string | null>(primero?.talentos[0]?.talento ?? null);
+/**
+ * ⭐ EL TALENTO ELEGIDO VIENE DE LA RUTA, NO DE UN `useState` (Fernando, 2026-08-18).
+ *
+ * `/ambitos/automatizacion-de-procesos`. Cada talento es una URL: se comparte, se guarda en
+ * marcadores y **Google indexa una página por talento** en vez de una sola con todo lo demás
+ * detrás de un panel, que es lo que más pesa de este cambio.
+ *
+ * Por eso los talentos del panel izquierdo son `<Link>` y no botones: un enlace se abre en
+ * otra pestaña, se copia con el botón derecho y el navegador enseña a dónde lleva. Un botón
+ * que navega no hace nada de eso.
+ */
+export default function AmbitosExplorador({
+  ambitos, slugActivo,
+}: {
+  ambitos: AmbitoConContenido[];
+  /** El talento de la URL. Sin él —en `/ambitos`— se elige el primero que haya. */
+  slugActivo?: string;
+}) {
+  /**
+   * AL ENTRAR: TODO CERRADO MENOS LA PRIMERA CARPETA, CON SU PRIMER TALENTO ELEGIDO.
+   *
+   * Fernando, 2026-08-18. Una página que arranca con todo desplegado obliga a leer la lista
+   * entera antes de saber por dónde empezar; una que arranca con todo cerrado obliga a
+   * adivinar que hay que pulsar algo. Abrir solo la primera resuelve las dos cosas.
+   *
+   * ⚠️ **Se abre la primera carpeta QUE TENGA TALENTOS, no la primera a secas.** Un ámbito
+   * recién creado y todavía sin talentos dejaría la derecha vacía y —peor— la página sin
+   * `<h1>`, porque el titular ES el nombre del talento abierto. Saltárselo cuesta una línea
+   * y evita que crear un ámbito en el admin descoloque la web hasta que se le asocie algo.
+   */
+  const primero = ambitos.find((a) => a.talentos.length > 0) ?? ambitos[0];
+
+  /** El ámbito y el talento que pide la URL; si no la hay, el primero con contenido. */
+  const activo = useMemo(() => {
+    if (slugActivo) {
+      for (const a of ambitos) {
+        const t = a.talentos.find((x) => x.slug === slugActivo);
+        if (t) return { ambitoId: a.id, talento: t.talento };
+      }
+    }
+    return primero?.talentos[0]
+      ? { ambitoId: primero.id, talento: primero.talentos[0].talento }
+      : null;
+  }, [ambitos, slugActivo, primero]);
+
+  const elegido = activo?.talento ?? null;
+
+  // La carpeta del talento abierto empieza desplegada; las demás, cerradas. Sigue siendo
+  // estado porque desplegar y plegar es del visitante, no de la dirección.
+  const [abiertos, setAbiertos] = useState<Set<number>>(
+    new Set(activo ? [activo.ambitoId] : []),
+  );
   const [pestana, setPestana] = useState<Pestana>('proyectos');
   const [busca, setBusca] = useState('');
 
@@ -208,16 +257,15 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConConte
                 {abierto && (
                   <ul className="ml-[26px] border-l border-[var(--linea)] pl-2.5 py-0.5 space-y-0.5">
                     {a.talentos.map((t) => {
-                      const activo = t.talento === elegido;
+                      const esteActivo = t.talento === elegido;
                       return (
                         <li key={t.talento}>
-                          <button
-                            type="button"
-                            onClick={() => { setElegido(t.talento); setBusca(''); }}
-                            aria-current={activo ? 'true' : undefined}
+                          <Link
+                            href={`/ambitos/${t.slug}`}
+                            aria-current={esteActivo ? 'true' : undefined}
                             className={`w-full flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left transition-colors
                                         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
-                              ${activo
+                              ${esteActivo
                                 ? 'bg-[#7b5fbf]/[0.09] text-[var(--violeta-txt)] font-medium'
                                 : 'text-[var(--suave)] hover:bg-[#7b5fbf]/[0.05] hover:text-[var(--texto)]'}`}
                           >
@@ -225,7 +273,7 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConConte
                             <span className="text-[11px] text-[var(--apagado)] tabular-nums">
                               {totalDe(a.contenido[t.talento] ?? VACIO_TOTAL)}
                             </span>
-                          </button>
+                          </Link>
                         </li>
                       );
                     })}

@@ -315,6 +315,35 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🔗 CADA TALENTO ES SU PROPIA PÁGINA (2026-08-18, migración 043).**
+  `/ambitos/automatizacion-de-procesos`, con las tildes quitadas y todo lo demás a guiones.
+  - **Lo que gana, y es mucho más que una URL bonita:** el enlace se comparte y se guarda en
+    marcadores, y **Google indexa una página por talento** —con su título, su descripción y
+    su trabajo— en vez de una sola con todo detrás de un panel. Se pasa de una URL con 30
+    trabajos a una URL por especialidad.
+  - **El `slug` se GUARDA, no se calcula** (columna en `ambito_talentos`, única en toda la
+    tabla). Es una URL: derivarla del nombre en cada petición movería direcciones publicadas
+    ante cualquier retoque del catálogo. Único en toda la tabla y no por ámbito porque la
+    ruta **no lleva el ámbito dentro**.
+  - **⚠️ La migración quita las tildes con `translate`, NO con `unaccent`.** La extensión
+    existe hoy en esta base, pero una migración que depende de una extensión falla el día que
+    se restaure en otra que no la tenga — y falla en mitad de un despliegue.
+  - **Los talentos del panel son `<Link>`, no botones.** Un enlace se abre en otra pestaña,
+    se copia con el botón derecho y el navegador enseña a dónde lleva; un botón que navega no
+    hace nada de eso. La selección deja de ser `useState` y **viene de la ruta**.
+  - **El cargador de datos se extrajo a `app/(sitio)/ambitos/datos.ts`**: las dos rutas pintan
+    la misma pantalla y necesitan los mismos datos. Dos copias se separan a la primera
+    corrección.
+  - `dynamicParams = false` → un tramo inventado da **404 de verdad**. Precio asumido: un
+    talento asociado después del último despliegue no tiene página hasta el siguiente, el
+    mismo trato que ya acepta `/soluciones`.
+  - El **mapa del sitio pasa a ser asíncrono** y lista una entrada por talento; si la base no
+    contesta durante el build, se genera sin ellas en vez de tumbar el despliegue.
+- **📂 AL ENTRAR, SOLO LA PRIMERA CARPETA ABIERTA (2026-08-18).** Lo pidió Fernando y **ya se
+  comportaba así** — se comprobó creando cuatro ámbitos de ensayo antes de responder, en vez
+  de afirmarlo. Lo que sí apareció y se arregló: se abre la primera carpeta **que tenga
+  talentos**, no la primera a secas; un ámbito recién creado y vacío dejaba la derecha en
+  blanco y la página **sin `<h1>`**, porque el titular ES el nombre del talento abierto.
 - **🕵️ FUERA LOS NOMBRES DE CLIENTES DE TÍTULOS Y DESCRIPCIONES (2026-08-18).** Los pidió
   quitar al ver que `/ambitos` los publica. Reescritos **los 43**: 24 proyectos y 19 tickets.
   - **⚠️ RESPALDO ANTES DE TOCAR:** los textos originales están en

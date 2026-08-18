@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITIO, ACCESOS } from '@/lib/sitio/contenido';
+import { listarAmbitos } from '@/lib/ambitos';
 import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
 /**
@@ -36,7 +37,30 @@ const ULTIMO_CAMBIO = {
   legales: '2026-08-02',
 } as const;
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * ⚠️ ASÍNCRONO DESDE EL 2026-08-18, porque las páginas de talento salen de la BASE.
+ *
+ * Si la base no contesta durante el build, el mapa se genera **sin ellas** en vez de tumbar
+ * el despliegue. Un mapa incompleto se arregla solo en la siguiente compilación; un
+ * despliegue caído, no.
+ */
+async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const ambitos = await listarAmbitos();
+    return ambitos.flatMap((a) =>
+      a.talentos.map((t) => ({
+        url: `${SITIO.url}/ambitos/${t.slug}`,
+        lastModified: ULTIMO_CAMBIO.ambitos,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })),
+    );
+  } catch {
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: SITIO.url, lastModified: ULTIMO_CAMBIO.portada, changeFrequency: 'monthly', priority: 1 },
     { url: `${SITIO.url}/soluciones`, lastModified: ULTIMO_CAMBIO.soluciones, changeFrequency: 'monthly', priority: 0.9 },
@@ -55,6 +79,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Entra ahora, no antes: hasta el 2026-08-18 era un titular sin contenido, y
     // ofrecerle a Google una página vacía resta al dominio entero.
     { url: `${SITIO.url}/ambitos`, lastModified: ULTIMO_CAMBIO.ambitos, changeFrequency: 'weekly', priority: 0.8 },
+    // Una entrada por talento: cada uno es su propia página desde el 2026-08-18, y esto es
+    // lo que hace que Google las descubra sin depender de que rastree el panel izquierdo.
+    ...(await paginasDeTalento()),
     { url: `${SITIO.url}/contacto`, lastModified: ULTIMO_CAMBIO.contacto, changeFrequency: 'yearly', priority: 0.7 },
     // Los legales salen del registro: uno nuevo entra en el mapa sin tocar este archivo.
     ...DOCUMENTOS_LEGALES.map((d) => ({

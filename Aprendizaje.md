@@ -5170,3 +5170,51 @@ respaldo. Encuentra **17 registros** con nombres allí y **0** en los textos nue
 **Esto es lo que hay que recordar:** sin el control, un detector roto habría dado exactamente
 el mismo «✓ limpio» que uno bueno. Toda verificación que busca la AUSENCIA de algo necesita
 una muestra donde ese algo SÍ esté.
+
+## Sexta pasada de Ámbitos (2026-08-18) — una URL por talento
+
+### P47 — «Que solo la primera carpeta esté abierta» · ✅ Ya lo estaba, y se demostró
+El código ya abría solo la primera y preseleccionaba su primer talento. En vez de responder
+«ya funciona», se **crearon cuatro ámbitos de ensayo**, se compiló y se leyó el `aria-expanded`
+de cada carpeta: `Tecnología:ABIERTA | Ensayo B:cerrada | Ensayo C:cerrada | Ensayo D:cerrada`.
+Luego se borraron.
+
+**Y la prueba destapó un hueco real:** si el primer ámbito no tuviera talentos, no se
+seleccionaba nada y la página se quedaba **sin `<h1>`** —el titular ES el nombre del talento—.
+Ahora se abre la primera carpeta *que tenga talentos*. Comprobado creando un ámbito vacío en
+primera posición.
+
+**Lección:** «eso ya funciona» es una afirmación que hay que probar como cualquier otra. Y
+probarla suele enseñar el caso que no estaba cubierto.
+
+### ⭐ P48 — Una ruta por talento · ✅ Es un cambio de SEO, no de comodidad
+`/ambitos/automatizacion-de-procesos`. Lo que gana no es la dirección bonita: pasa de **una
+URL con treinta trabajos** a **una URL por especialidad**, cada una con su título, su
+descripción y su contenido. Es la diferencia entre competir por una consulta o por diez.
+
+Decisiones que lo sostienen:
+- **El slug se guarda, no se calcula.** Es una URL; derivarla del nombre movería direcciones
+  publicadas ante cualquier retoque del catálogo. Misma regla que los ámbitos (039).
+- **Único en toda la tabla, no por ámbito**, porque la ruta no lleva el ámbito dentro.
+- **Los talentos pasan a ser `<Link>`.** Un enlace se abre en otra pestaña, se copia y enseña
+  a dónde va; un botón que navega no hace nada de eso. La selección deja de ser estado y
+  **viene de la ruta**.
+- **El cargador de datos se extrae** a `datos.ts`: las dos rutas pintan la misma pantalla con
+  los mismos datos, y dos copias se separan a la primera corrección.
+
+### ⚠️ P49 — `unaccent` en una migración · ✅ Evitado
+La extensión existe en esta base, y era tentador usarla para quitar tildes. No se hizo: una
+migración que depende de una extensión **falla el día que se restaure en otra base que no la
+tenga**, y falla en mitad de un despliegue. `translate()` es SQL de siempre y da el mismo
+resultado que `aSlug()` en el código.
+
+### Lo medido
+| | |
+|---|---|
+| `/ambitos` | 200 |
+| `/ambitos/automatizacion-de-procesos` | 200 · title, description y canonical propios |
+| `/ambitos/inventado` | **404** |
+| Panel izquierdo | `<a href="/ambitos/automatizacion-de-procesos">` |
+| Al pulsar | la URL cambia, el `<h1>` es el talento y la carpeta queda abierta |
+| Entrada directa por URL | 42 tarjetas, sin pasar por `/ambitos` |
+| Mapa del sitio | `/ambitos` + una entrada por talento |

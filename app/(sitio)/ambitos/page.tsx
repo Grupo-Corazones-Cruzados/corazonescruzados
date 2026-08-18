@@ -29,9 +29,9 @@
 
 import type { Metadata } from 'next';
 import { Contenedor } from '@/components/sitio/piezas';
-import AmbitosExplorador, { type AmbitoConContenido } from '@/components/sitio/AmbitosExplorador';
+import AmbitosExplorador from '@/components/sitio/AmbitosExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { listarAmbitos, contenidoDeTalento } from '@/lib/ambitos';
+import { cargarAmbitosConContenido } from './datos';
 
 export const revalidate = 300;
 
@@ -51,45 +51,8 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Igual que en `/soluciones/<id>`: durante el BUILD se tolera que la base no conteste, para
- * que un despliegue no dependa de que Postgres esté en pie. En ejecución el error sube.
- * Ya costó 20 despliegues fallidos una vez (ver MEMORIA.md → Lecciones).
- */
-async function ambitosTolerantesAlBuild(): Promise<AmbitoConContenido[]> {
-  const cargar = async (): Promise<AmbitoConContenido[]> => {
-    const ambitos = await listarAmbitos();
-
-    // El contenido se consulta UNA vez por talento, aunque el talento esté en dos ámbitos.
-    const cache = new Map<string, Awaited<ReturnType<typeof contenidoDeTalento>>>();
-    for (const t of new Set(ambitos.flatMap((a) => a.talentos.map((x) => x.talento)))) {
-      cache.set(t, await contenidoDeTalento(t));
-    }
-    return ambitos.map((a) => ({
-      ...a,
-      contenido: Object.fromEntries(
-        a.talentos.map((t) => [
-          t.talento,
-          cache.get(t.talento) ?? { miembros: [], productos: [], proyectos: [], tickets: [] },
-        ]),
-      ),
-    }));
-  };
-
-  if (process.env.NEXT_PHASE !== 'phase-production-build') return cargar();
-  try {
-    return await cargar();
-  } catch (e) {
-    console.warn(
-      `⚠ Los ámbitos no se pudieron leer durante el build: ${(e as Error).message}\n` +
-        '  La página se prerenderiza vacía; la primera revalidación (5 min) la llenará.',
-    );
-    return [];
-  }
-}
-
 export default async function AmbitosPage() {
-  const ambitos = await ambitosTolerantesAlBuild();
+  const ambitos = await cargarAmbitosConContenido();
   const totalTrabajos = ambitos.reduce(
     (n, a) => n + Object.values(a.contenido).reduce(
       (m, c) => m + c.proyectos.length + c.tickets.length + c.productos.length, 0), 0,
