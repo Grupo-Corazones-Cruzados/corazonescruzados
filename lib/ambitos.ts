@@ -15,7 +15,7 @@
  *
  * Lo consumen dos sitios, como las FAQs:
  *  · **Admin → Ámbitos**, por la API (`/api/admin/ambitos`).
- *  · **La web pública** (`/ambitos`), que leerá esta capa **directamente en el servidor** al
+ *  · **La web pública** (`/soluciones`), que leerá esta capa **directamente en el servidor** al
  *    generar la página. Sería absurdo que la aplicación se llamara a sí misma por HTTP para
  *    leer su propia base.
  *
@@ -29,7 +29,7 @@ import { TALENTOS_SET } from '@/lib/centralized/talentos';
  * Un talento DENTRO de un ámbito.
  *
  * Deja de ser una cadena suelta desde el 2026-08-18: lleva su **descripción**, que cuenta
- * cómo se ejerce ese talento en ESTE ámbito y se publica bajo su título en `/ambitos`.
+ * cómo se ejerce ese talento en ESTE ámbito y se publica bajo su título en `/soluciones`.
  *
  * ⚠️ **Un talento pertenece a UN SOLO ámbito** (Fernando, 2026-08-18; índice único en la
  * migración 042). El ámbito clasifica, y algo que cae en dos cajones no está clasificado.
@@ -43,7 +43,7 @@ export interface TalentoDeAmbito {
   talento: string;
   descripcion: string | null;
   /**
-   * El tramo de la URL: `/ambitos/<slug>`. Se guarda en la base y **no se recalcula**
+   * El tramo de la URL: `/soluciones/<slug>`. Se guarda en la base y **no se recalcula**
    * (migración 043): es una dirección publicada, y derivarla del nombre en cada petición
    * movería enlaces ya repartidos ante cualquier retoque del catálogo.
    */
@@ -152,7 +152,7 @@ export async function crearAmbito(nombre: string): Promise<Ambito> {
 /**
  * Renombrar NO cambia el `slug`.
  *
- * El slug es una URL: `/ambitos#tecnologia` se comparte y se queda en el navegador de la
+ * El slug es una URL: `/soluciones#tecnologia` se comparte y se queda en el navegador de la
  * gente. Corregir una tilde del nombre no puede romper enlaces ya repartidos. Si algún día
  * hace falta cambiarlo, será una acción aparte y consciente.
  */
@@ -352,7 +352,7 @@ const PARTICIPANTES_DE_PROYECTO = `
  * Todo el trabajo TERMINADO hecho con un talento: proyectos y tickets, lo más reciente
  * primero.
  *
- * Se usa desde la página pública `/ambitos`, en el servidor, al generar el HTML.
+ * Se usa desde la página pública `/soluciones`, en el servidor, al generar el HTML.
  */
 export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
   const { rows: proyectos } = await pool.query(
@@ -531,7 +531,7 @@ export async function contenidoDeTalento(talento: string): Promise<ContenidoDeTa
 /**
  * El talento que hay detrás de una URL, o `null` si esa URL no existe.
  *
- * Lo usa `/ambitos/<slug>` para saber qué enseñar y para responder **404 de verdad** cuando
+ * Lo usa `/soluciones/<slug>` para saber qué enseñar y para responder **404 de verdad** cuando
  * alguien escribe un tramo inventado — no una página vacía, que es lo que hace pensar que
  * algo se rompió.
  */

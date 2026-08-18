@@ -23,11 +23,11 @@ const TABS = [
   { value: 'fuentes', label: 'Fuentes', Icon: Database },
   { value: 'tutoriales', label: 'Tutoriales', Icon: Video },
   { value: 'listas', label: 'Listas', Icon: ListChecks },
-  // Las preguntas frecuentes que se PUBLICAN en /soluciones/<seccion>. Es la única pestaña
+  // Las preguntas frecuentes que se PUBLICAN en /clientes/<seccion>. Es la única pestaña
   // del admin cuyo contenido sale de cara al mundo, y de la que salen los datos
   // estructurados `FAQPage` que Google convierte en respuestas dentro de sus resultados.
   { value: 'faqs', label: 'FAQs', Icon: HelpCircle },
-  // Los ÁMBITOS que se publican en /ambitos: los tipos de proyecto que maneja el grupo y
+  // Los ÁMBITOS que se publican en /soluciones: los tipos de proyecto que maneja el grupo y
   // los talentos de cada uno. Segunda pestaña cuyo contenido sale de cara al mundo.
   { value: 'ambitos', label: 'Ámbitos', Icon: Layers },
 ];

@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@ffmpeg-installer/ffmpeg', 'puppeteer'],
 
   /**
-   * `/negocio` → `/soluciones` — RENOMBRADO EL 2026-08-17, CON REDIRECCIÓN PERMANENTE.
+   * RENOMBRADOS DEL SITIO PÚBLICO, CON REDIRECCIÓN PERMANENTE.
    *
    * Fernando renombró la sección comercial. Las seis URLs viejas llevan publicadas desde el
    * 2026-08-04 y **una de ellas es la que se le declaró a Meta** para la verificación de
@@ -51,7 +51,8 @@ const nextConfig: NextConfig = {
    * seis ilustraciones de la puerta «Progreso»— y las mandaría a una ruta que no existe. Con
    * los cinco nombres escritos, solo se redirige lo que de verdad era una página; cualquier
    * otra cosa bajo `/negocio/` responde 404, que es lo que ya hacía (`dynamicParams = false`).
-   * Las imágenes, además, se mudaron a `public/soluciones/`.
+   * Las imágenes, además, se mudaron a `public/clientes/` (pasaron por `public/soluciones/`
+   * el 2026-08-17, antes del intercambio de nombres del 08-18).
    *
    * Y por eso esta lista **no se sincroniza con `ACCESOS`**, aunque lo parezca: es la lista
    * cerrada de las URLs que llegaron a publicarse bajo `/negocio`. Una puerta nueva nacerá
@@ -59,14 +60,38 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     return [
-      { source: '/negocio', destination: '/soluciones', permanent: true },
+      { source: '/negocio', destination: '/clientes', permanent: true },
+      /**
+       * ⚠️ `/soluciones` CAMBIÓ DE SIGNIFICADO EL 2026-08-18, y es lo delicado de este bloque.
+       *
+       * El 08-17 apuntaba a las cinco puertas; hoy apunta a los ámbitos, y las cinco puertas
+       * se mudaron a `/clientes`. La dirección **se reutiliza**, así que NO se redirige
+       * `/soluciones` a secas: hoy sirve otra página, a propósito.
+       *
+       * Lo que sí se redirige son **sus cinco hijas**, que sí eran de las puertas. Y aquí
+       * enumerarlas importa el doble: bajo `/soluciones/` vive ahora la ruta dinámica de los
+       * talentos, y un comodín se comería cualquier talento cuyo slug coincidiera.
+       *
+       * ⚠️ Consecuencia asumida: si algún día un talento se llamara «Marketplace», su slug
+       * chocaría con esta lista y ganaría la redirección. Improbable, y preferible a romper
+       * cinco URLs ya publicadas.
+       */
+      {
+        source:
+          '/soluciones/:necesidad(requerimientos|automatizacion|videojuego|marketplace|votacion)',
+        destination: '/clientes/:necesidad',
+        permanent: true,
+      },
+      // `/ambitos` → `/soluciones`: la página se mudó entera, con sus talentos dentro.
+      { source: '/ambitos', destination: '/soluciones', permanent: true },
+      { source: '/ambitos/:talento', destination: '/soluciones/:talento', permanent: true },
       // `/recursos` → `/desarrollo-humano` (Fernando, 2026-08-17). No tiene hijas y no hay
       // ninguna carpeta `public/recursos`, así que aquí no hace falta acotar nada.
       { source: '/recursos', destination: '/desarrollo-humano', permanent: true },
       {
         source:
           '/negocio/:necesidad(requerimientos|automatizacion|videojuego|marketplace|votacion)',
-        destination: '/soluciones/:necesidad',
+        destination: '/clientes/:necesidad',
         permanent: true,
       },
     ];

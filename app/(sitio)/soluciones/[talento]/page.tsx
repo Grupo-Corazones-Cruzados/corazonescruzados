@@ -1,7 +1,7 @@
 /**
- * UN TALENTO — `/ambitos/<slug>`.
+ * UN TALENTO — `/soluciones/<slug>`.
  *
- * `/ambitos/automatizacion-de-procesos`. Es la misma pantalla que `/ambitos`, con el panel
+ * `/soluciones/automatizacion-de-procesos`. Es la misma pantalla que `/soluciones`, con el panel
  * izquierdo y las cuatro pestañas; lo único que cambia es **qué talento llega abierto**.
  *
  * ── POR QUÉ UNA RUTA POR TALENTO, Y NO UN CLIC ────────────────────────────────
@@ -56,11 +56,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: t.talento,
     // La descripción del ámbito, si la hay, es exactamente lo que describe esta página.
     description: t.descripcion ?? `Trabajo terminado de ${SITIO.nombre} en ${t.talento}.`,
-    alternates: { canonical: `/ambitos/${slug}` },
+    alternates: { canonical: `/soluciones/${slug}` },
     openGraph: {
       title: `${t.talento} — ${SITIO.nombre}`,
       description: t.descripcion ?? `Trabajo terminado en ${t.talento}.`,
-      url: `${SITIO.url}/ambitos/${slug}`,
+      url: `${SITIO.url}/soluciones/${slug}`,
       type: 'website',
       locale: 'es_EC',
       images: [OG_IMAGEN],

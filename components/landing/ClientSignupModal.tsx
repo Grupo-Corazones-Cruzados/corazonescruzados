@@ -3,7 +3,7 @@
 /**
  * ALTA DE CUENTA DE CLIENTE.
  *
- * Es **el mismo diálogo** desde la portada y desde `/soluciones`: una sola definición, para
+ * Es **el mismo diálogo** desde la portada y desde `/clientes`: una sola definición, para
  * que no haya dos altas que piden cosas distintas.
  *
  * Estilo: el del panel, en su variante oscura, sobre una **isla `.corp dark`**. Antes era

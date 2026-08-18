@@ -5218,3 +5218,56 @@ resultado que `aSlug()` en el código.
 | Al pulsar | la URL cambia, el `<h1>` es el talento y la carpeta queda abierta |
 | Entrada directa por URL | 42 tarjetas, sin pasar por `/ambitos` |
 | Mapa del sitio | `/ambitos` + una entrada por talento |
+
+## Séptima pasada (2026-08-18) — las dos páginas intercambian nombre y ruta
+
+| Página | 08-04 | 08-17 | **08-18** |
+|---|---|---|---|
+| Ámbitos y su trabajo terminado | — | `/ambitos` | **`/soluciones`** |
+| Las cinco puertas | `/negocio` | `/soluciones` | **`/clientes`** |
+
+Fernando: *«esta página en la que hemos estado trabajando realmente tiene el contenido pensado
+para lo que sería de soluciones»*.
+
+### ⭐ P50 — Un intercambio no es dos renombrados · ✅ Hay colisión
+`/soluciones` existe **y cambia de significado**. Eso obliga a decidir algo que un renombrado
+normal no plantea: **la URL se reutiliza, así que NO se redirige**. Hoy sirve otra página, a
+propósito.
+
+Lo que sí se redirige son **sus cinco hijas** —`/soluciones/requerimientos` →
+`/clientes/requerimientos`—, y aquí enumerarlas importa el doble: bajo `/soluciones/` vive
+ahora la ruta dinámica de los talentos, y un comodín se comería cualquier talento cuyo slug
+coincidiera. Queda anotada la consecuencia asumida: un talento llamado «Marketplace» chocaría.
+
+**El orden de las operaciones también importa.** Mover primero `/soluciones` → `/clientes` y
+después `/ambitos` → `/soluciones`; al revés, el segundo movimiento pisa al primero.
+
+### 🪤 P51 — Un reemplazo masivo se pasó de listo · ✅ Lo cazó `tsc`
+Cambiar `/ambitos` → `/soluciones` en todo el repo convirtió también:
+- `@/lib/ambitos` → `@/lib/soluciones` (un import a un archivo que no se movió);
+- `/api/admin/ambitos` → `/api/admin/soluciones` (endpoints que no son rutas públicas).
+
+**Regla: al renombrar una ruta con un reemplazo de texto, revisar después qué MÁS contenía esa
+cadena.** El nombre de una ruta pública casi siempre se repite en imports, endpoints y nombres
+de tabla, y ninguno de ellos debe moverse con ella.
+
+Para la parte del intercambio se usó un **marcador temporal** (`@@CLIENTES@@`) en el primer
+paso, para que el segundo no volviera a convertir lo ya convertido. Sin él, `/soluciones` →
+`/clientes` → `/soluciones` habría dado la vuelta completa.
+
+### P52 — El titular arrastró un duplicado · ✅
+Al pasar el titular de `/clientes` a «Clientes», la línea violeta que decía «Clientes» justo
+debajo repetía la palabra encima de sí misma. Se quitó, dejando señalado en el código dónde
+va si Fernando la quiere con otro texto.
+
+### Lo medido
+| Ruta | Resultado |
+|---|---|
+| `/soluciones` · `/soluciones/automatizacion-de-procesos` | 200 |
+| `/clientes` · `/clientes/requerimientos` | 200 |
+| `/ambitos` · `/ambitos/<slug>` | **308** → `/soluciones…` |
+| `/negocio` · `/negocio/requerimientos` | **308** → `/clientes…` |
+| `/soluciones/requerimientos` | **308** → `/clientes/requerimientos` |
+| `/clientes/paso-1-publicas.webp` | 200 (las imágenes siguen sirviéndose) |
+| Menú | Historia · Soluciones · Clientes · Desarrollo Humano · Contacto |
+| Mapa del sitio | 13 URLs, todas las nuevas |

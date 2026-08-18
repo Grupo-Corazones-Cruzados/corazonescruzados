@@ -10,8 +10,8 @@
  * buscador separa las palabras, y esta es justo la página con la que se quiere aparecer por
  * «desarrollo humano Ecuador».
  *
- * ── EL REPARTO CON `/soluciones` ──────────────────────────────────────────────────
- * `/soluciones` dice **qué ofrecemos** —a clientes, a miembros y a candidatos—. Esta dice
+ * ── EL REPARTO CON `/clientes` ──────────────────────────────────────────────────
+ * `/clientes` dice **qué ofrecemos** —a clientes, a miembros y a candidatos—. Esta dice
  * **qué somos**, que es de donde sale todo lo anterior.
  *
  * Corrección de Fernando (2026-08-02): la primera versión del sitio presentaba al GCC como
@@ -30,7 +30,7 @@ import {
 
 export const metadata: Metadata = {
   /**
-   * La pestaña, como en `/soluciones`: solo el nombre de la sección. La plantilla de
+   * La pestaña, como en `/clientes`: solo el nombre de la sección. La plantilla de
    * `app/layout.tsx` le añade « · Grupo Corazones Cruzados».
    */
   title: 'Desarrollo Humano',
@@ -108,7 +108,7 @@ export default function ProyectoPage() {
           <p className="inline-flex items-center gap-2 rounded-full border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08] px-3.5 py-1.5 text-[12.5px] text-[var(--violeta)]">
             El proyecto
           </p>
-          {/* El titular dice el NOMBRE de la sección, igual que en `/soluciones`: coincide
+          {/* El titular dice el NOMBRE de la sección, igual que en `/clientes`: coincide
               con la pestaña, con el menú y con la URL. Antes decía «Un proyecto de
               desarrollo humano», que era una cuarta forma de nombrar lo mismo. */}
           <h1 className="mt-7 text-[38px] sm:text-[56px] leading-[1.08] font-semibold text-[var(--texto)] tracking-tight max-w-3xl mx-auto">
@@ -120,10 +120,10 @@ export default function ProyectoPage() {
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <BotonPrimario href="/">Entrar en GCC World</BotonPrimario>
-            {/* `/negocio#servicios` → `/soluciones`. Dos correcciones en una: la sección se
+            {/* `/negocio#servicios` → `/clientes`. Dos correcciones en una: la sección se
                 renombró el 2026-08-17, y el ancla `#servicios` **ya no existía** desde que
                 Fernando vació todo lo que había bajo las tarjetas el 2026-08-04. */}
-            <BotonSecundario href="/soluciones">Ver todo lo que ofrecemos</BotonSecundario>
+            <BotonSecundario href="/clientes">Ver todo lo que ofrecemos</BotonSecundario>
           </div>
         </Contenedor>
       </section>

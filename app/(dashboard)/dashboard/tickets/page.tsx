@@ -417,7 +417,7 @@ export default function TicketsPage() {
               Medido: los 19 tickets de la base no declaraban ninguno.
 
               Sube aquí, junto al título y la descripción, porque describe AL TICKET: dice
-              de qué va el trabajo, y es lo que lo coloca bajo un ámbito en `/ambitos`. Que
+              de qué va el trabajo, y es lo que lo coloca bajo un ámbito en `/soluciones`. Que
               además decida quién puede tomarlo es una consecuencia, no su definición. */}
           <div className="flex flex-col gap-1">
             <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Talento *</label>

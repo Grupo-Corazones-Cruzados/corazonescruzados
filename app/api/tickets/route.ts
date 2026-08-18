@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
      *
      * Antes solo se guardaba cuando el ticket se abría «por talento» —uno de tres caminos—,
      * así que los otros dos dejaban la lista vacía. Resultado medido en producción: **los 19
-     * tickets terminados no declaraban ninguno**, y la página `/ambitos`, que enseña el
+     * tickets terminados no declaraban ninguno**, y la página `/soluciones`, que enseña el
      * trabajo hecho por talento, habría mostrado siempre la mitad vacía.
      *
      * El campo pasa a tener DOS oficios, y por eso se pide siempre:

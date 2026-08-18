@@ -1,7 +1,7 @@
 /**
  * CARGA DE LOS ÁMBITOS CON SU CONTENIDO — una sola definición para las dos rutas.
  *
- * La usan `/ambitos` y `/ambitos/<slug>`. Las dos pintan **la misma pantalla** y necesitan
+ * La usan `/soluciones` y `/soluciones/<slug>`. Las dos pintan **la misma pantalla** y necesitan
  * **los mismos datos** —todos los ámbitos, todos sus talentos y el contenido de cada uno—,
  * porque el panel izquierdo enseña el árbol completo aunque solo haya un talento abierto.
  *

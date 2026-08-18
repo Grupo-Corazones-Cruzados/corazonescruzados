@@ -1,8 +1,8 @@
 /**
- * PREGUNTAS FRECUENTES DE `/soluciones` — acceso a datos, definición única.
+ * PREGUNTAS FRECUENTES DE `/clientes` — acceso a datos, definición única.
  *
  * Las usan dos sitios muy distintos y por eso viven aquí y no dentro de un endpoint:
- *  · La **web pública** (`/soluciones/<id>`), que las lee **directamente en el servidor** al
+ *  · La **web pública** (`/clientes/<id>`), que las lee **directamente en el servidor** al
  *    generar la página. No pasa por la API: sería pedirle a la aplicación que se llame a sí
  *    misma por HTTP para leer su propia base.
  *  · El **panel de Admin**, que sí va por `/api/admin/faqs` porque escribe.

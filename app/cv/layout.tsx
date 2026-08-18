@@ -1,7 +1,7 @@
 /**
  * MARCO DEL CV PÚBLICO.
  *
- * No usa el marco de `/soluciones` (`CabeceraSitio` + `PieSitio`) a propósito: quien
+ * No usa el marco de `/clientes` (`CabeceraSitio` + `PieSitio`) a propósito: quien
  * abre este enlace viene a leer el CV de una persona, no a navegar por el sitio del
  * grupo. Una cabecera con «Negocio · Recursos · Contacto» encima de un currículum
  * compite con lo único que hay que mirar.

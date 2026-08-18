@@ -3,7 +3,7 @@
 /**
  * PESTAÑA «ÁMBITOS» DEL ADMIN — los tipos de proyecto que el grupo maneja.
  *
- * Se publican en `/ambitos`, donde el visitante ve cada ámbito como una carpeta, la
+ * Se publican en `/soluciones`, donde el visitante ve cada ámbito como una carpeta, la
  * despliega y elige un talento para ver el trabajo hecho con él.
  *
  * ── TRES PANELES ───────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ export default function AmbitosPanel() {
                 label: a.nombre,
                 Icon: Layers,
                 count: a.talentos.length,
-                hint: `/ambitos#${a.slug}`,
+                hint: `/soluciones#${a.slug}`,
               }))}
             />
           </div>
@@ -396,7 +396,7 @@ export default function AmbitosPanel() {
           </EditField>
           {editando !== 'nuevo' && (
             <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
-              La dirección del ámbito en la web —<code>/ambitos#{editando.slug}</code>— <strong>no
+              La dirección del ámbito en la web —<code>/soluciones#{editando.slug}</code>— <strong>no
               cambia</strong> al renombrarlo: es un enlace que puede estar ya compartido.
             </p>
           )}
@@ -448,7 +448,7 @@ export default function AmbitosPanel() {
             />
           </EditField>
           <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
-            Se publica en <code>/ambitos</code>, bajo el título del talento. Si la dejas vacía,
+            Se publica en <code>/soluciones</code>, bajo el título del talento. Si la dejas vacía,
             la web no pinta el párrafo — ni recuadro ni «próximamente».
           </p>
         </EditPanel>

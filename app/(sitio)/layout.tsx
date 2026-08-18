@@ -1,5 +1,5 @@
 /**
- * MARCO DEL SITIO PÚBLICO — cabecera y pie compartidos por `/soluciones`, `/desarrollo-humano` y
+ * MARCO DEL SITIO PÚBLICO — cabecera y pie compartidos por `/clientes`, `/desarrollo-humano` y
  * `/contacto`.
  *
  * La portada (`app/page.tsx`) NO está aquí a propósito: es una experiencia a pantalla
@@ -34,7 +34,7 @@ import TransicionSeccion from '@/components/sitio/TransicionSeccion';
  * bloquear el pellizco en una página de leer deja fuera a quien necesita agrandar el texto.
  * Es un fallo de accesibilidad que además pesa: Google evalúa el sitio por su versión móvil.
  *
- * Sobrescribe el `viewport` de `app/layout.tsx` solo para `/soluciones`, `/desarrollo-humano`,
+ * Sobrescribe el `viewport` de `app/layout.tsx` solo para `/clientes`, `/desarrollo-humano`,
  * `/contacto` y los legales.
  */
 /**
@@ -60,7 +60,7 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
     // ── EL PIE, SIEMPRE ABAJO ────────────────────────────────────────────────────
     // `min-h-screen` por sí solo NO basta, y es un malentendido habitual: estira el
     // envoltorio a la altura de la pantalla, pero sus hijos siguen apilándose uno tras otro,
-    // así que en una página corta —`/soluciones`, sin ninguna puerta abierta— el pie quedaba
+    // así que en una página corta —`/clientes`, sin ninguna puerta abierta— el pie quedaba
     // pegado al final del contenido y debajo sobraba un vacío. Lo vio Fernando.
     //
     // Se arregla con `flex flex-col` aquí y `flex-1` en el `<main>`: el cuerpo se queda con
@@ -86,7 +86,7 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
           de la barra. La variable vive en `app/globals.css` porque el pie mide distinto en
           móvil (89 px) que en escritorio (59). */}
       {/* `flex flex-col`: deja que una página pida ocupar el alto que sobre con `flex-1`.
-          Sin esto, una página corta con fondo propio —`/ambitos`, que es blanco— terminaba
+          Sin esto, una página corta con fondo propio —`/soluciones`, que es blanco— terminaba
           antes que la página y dejaba una franja del papel `#f6f5f9` debajo. Se veía como un
           cambio de color a media pantalla; lo vio Fernando. */}
       <main className="claro-publico flex-1 flex flex-col pt-16 pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">

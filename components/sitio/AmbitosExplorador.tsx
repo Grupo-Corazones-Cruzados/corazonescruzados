@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * EL EXPLORADOR DE `/ambitos` — carpetas a la izquierda, contenido a la derecha.
+ * EL EXPLORADOR DE `/soluciones` — carpetas a la izquierda, contenido a la derecha.
  *
  * Fernando lo pidió «al estilo de legal y privacidad». Cada **ámbito** es una carpeta que se
  * despliega y enseña sus **talentos**; al elegir uno, a la derecha salen su nombre, su
@@ -121,7 +121,7 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
 /**
  * ⭐ EL TALENTO ELEGIDO VIENE DE LA RUTA, NO DE UN `useState` (Fernando, 2026-08-18).
  *
- * `/ambitos/automatizacion-de-procesos`. Cada talento es una URL: se comparte, se guarda en
+ * `/soluciones/automatizacion-de-procesos`. Cada talento es una URL: se comparte, se guarda en
  * marcadores y **Google indexa una página por talento** en vez de una sola con todo lo demás
  * detrás de un panel, que es lo que más pesa de este cambio.
  *
@@ -133,7 +133,7 @@ export default function AmbitosExplorador({
   ambitos, slugActivo,
 }: {
   ambitos: AmbitoConContenido[];
-  /** El talento de la URL. Sin él —en `/ambitos`— se elige el primero que haya. */
+  /** El talento de la URL. Sin él —en `/soluciones`— se elige el primero que haya. */
   slugActivo?: string;
 }) {
   /**
@@ -261,7 +261,7 @@ export default function AmbitosExplorador({
                       return (
                         <li key={t.talento}>
                           <Link
-                            href={`/ambitos/${t.slug}`}
+                            href={`/soluciones/${t.slug}`}
                             aria-current={esteActivo ? 'true' : undefined}
                             className={`w-full flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left transition-colors
                                         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50

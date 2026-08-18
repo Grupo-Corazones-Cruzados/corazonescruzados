@@ -315,6 +315,36 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🔄 LAS DOS PÁGINAS INTERCAMBIAN NOMBRE Y RUTA (2026-08-18). ⚠️ LEER ANTES DE TOCAR EL
+  SITIO.** Es el cambio que más despista al leer el historial, porque **una URL cambió de
+  significado**:
+
+  | Página | 08-04 | 08-17 | **08-18 (hoy)** |
+  |---|---|---|---|
+  | Los ámbitos y su trabajo terminado | — | `/ambitos` | **`/soluciones`** |
+  | Las cinco puertas | `/negocio` | `/soluciones` | **`/clientes`** |
+
+  Fernando: *«esta página en la que hemos estado trabajando realmente tiene el contenido
+  pensado para lo que sería de soluciones»*.
+  - **⚠️ `/soluciones` SE REUTILIZA: NO se redirige.** Hoy sirve otra página, a propósito.
+    Lo que sí redirige son **sus cinco hijas** (`/soluciones/requerimientos` → `/clientes/…`),
+    y enumerarlas importa el doble porque bajo `/soluciones/` vive ahora la ruta dinámica de
+    los talentos: un comodín se comería cualquier talento cuyo slug coincidiera.
+  - **`/negocio` pasa a apuntar a `/clientes`** —es donde acabó su contenido—, igual que sus
+    cinco hijas. Y `/ambitos` + `/ambitos/<slug>` → `/soluciones`.
+  - **El concepto interno sigue llamándose ÁMBITO**: tabla `ambitos`, `lib/ambitos.ts`,
+    `/api/admin/ambitos`, pestaña Admin → Ámbitos. Solo cambió el nombre de cara al público.
+  - **El titular de `/clientes` pasa a «Clientes»**, y con eso **se quitó la línea violeta
+    que decía «Clientes»** justo debajo: repetía la palabra encima de sí misma y se leía como
+    un fallo. Si la quiere de vuelta con otro texto, su sitio está señalado en el código.
+  - **🪤 UN REEMPLAZO MASIVO SE PASÓ DE LISTO.** Cambiar `/ambitos` → `/soluciones` en todo el
+    repo convirtió también `@/lib/ambitos` en `@/lib/soluciones` y `/api/admin/ambitos` en
+    `/api/admin/soluciones` — imports y endpoints que **no son rutas públicas**. Lo cazó
+    `tsc`. **Regla: al renombrar una ruta con `sed`/`replace`, revisar después qué más
+    contenía esa cadena** — el nombre de una ruta suele repetirse en imports y APIs.
+  - Verificado: `/soluciones` y `/clientes` 200 con sus títulos, las cuatro rutas viejas 308 a
+    su destino nuevo, `/soluciones/requerimientos` → `/clientes/requerimientos`, las imágenes
+    del portafolio siguen sirviéndose y el mapa del sitio lista las trece URLs correctas.
 - **🔗 CADA TALENTO ES SU PROPIA PÁGINA (2026-08-18, migración 043).**
   `/ambitos/automatizacion-de-procesos`, con las tildes quitadas y todo lo demás a guiones.
   - **Lo que gana, y es mucho más que una URL bonita:** el enlace se comparte y se guarda en

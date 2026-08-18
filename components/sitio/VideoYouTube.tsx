@@ -1,5 +1,5 @@
 /**
- * EL VÍDEO DE UNA PÁGINA DE `/soluciones`.
+ * EL VÍDEO DE UNA PÁGINA DE `/clientes`.
  *
  * ── ACEPTA LA URL TAL CUAL SE COPIA DEL NAVEGADOR ──────────────────────────────
  * `youtube.com/watch?v=…`, `youtu.be/…`, `/embed/…` o `/shorts/…`. Nadie debería tener que

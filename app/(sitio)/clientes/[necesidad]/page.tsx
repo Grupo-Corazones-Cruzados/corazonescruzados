@@ -1,5 +1,5 @@
 /**
- * EL DETALLE DE UNA PUERTA — `/soluciones/<id>`.
+ * EL DETALLE DE UNA PUERTA — `/clientes/<id>`.
  *
  * Una sola plantilla para las cinco páginas. Todas pintan **la misma cabecera con las mismas
  * tarjetas**, con la suya marcada, y debajo su detalle. Así, pulsar una tarjeta no cambia de
@@ -11,7 +11,7 @@
  * ── CÓMO SE COMPORTA ───────────────────────────────────────────────────────────
  * · **Se llega pulsando o escribiendo la URL**, indistintamente. No hay estado que
  *   sincronizar: la ruta ES el estado.
- * · **Al pulsar desde `/soluciones`, la página baja sola hasta el detalle.** Lo hace el
+ * · **Al pulsar desde `/clientes`, la página baja sola hasta el detalle.** Lo hace el
  *   `#detalle` del enlace de la tarjeta, no JavaScript. El `scroll-mt-24` deja aire para que
  *   el título no quede tapado por la cabecera fija.
  * · **Aparece con una transición.** La clase `.aparece-detalle` (en `app/globals.css`) y un
@@ -20,7 +20,7 @@
  *
  * ── SEO ────────────────────────────────────────────────────────────────────────
  * · El `<h1>` de esta página es **el título del detalle**, no el de la sección. Si las
- *   cinco compartieran encabezado, ninguna diría de qué va (por eso `CabeceraSoluciones`
+ *   cinco compartieran encabezado, ninguna diría de qué va (por eso `CabeceraClientes`
  *   baja su titular a `<p>` cuando hay una puerta abierta).
  * · `generateStaticParams` deja las cinco **prerenderizadas**: se sirven como HTML estático.
  * · Un tramo que no exista responde **404 de verdad**, no una página vacía.
@@ -34,9 +34,9 @@ import { notFound } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId } from '@/lib/sitio/contenido';
 import { faqsDeAcceso, type Faq } from '@/lib/faqs';
-import CabeceraSoluciones from '@/components/sitio/CabeceraSoluciones';
+import CabeceraClientes from '@/components/sitio/CabeceraClientes';
 import VideoYouTube from '@/components/sitio/VideoYouTube';
-import FaqsSoluciones from '@/components/sitio/FaqsSoluciones';
+import FaqsClientes from '@/components/sitio/FaqsClientes';
 import { Contenedor, BloqueTema, BotonPrimario } from '@/components/sitio/piezas';
 import GaleriaTarjetas from '@/components/sitio/GaleriaTarjetas';
 
@@ -104,11 +104,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: acceso.titulo,
     description: acceso.texto,
-    alternates: { canonical: `/soluciones/${acceso.id}` },
+    alternates: { canonical: `/clientes/${acceso.id}` },
     openGraph: {
       title: `${acceso.titulo} — ${SITIO.nombre}`,
       description: acceso.texto,
-      url: `${SITIO.url}/soluciones/${acceso.id}`,
+      url: `${SITIO.url}/clientes/${acceso.id}`,
       type: 'website',
       locale: 'es_EC',
       images: [OG_IMAGEN],
@@ -128,7 +128,7 @@ export default async function DetalleNecesidadPage({ params }: Props) {
 
   return (
     <>
-      <CabeceraSoluciones activa={acceso.id} />
+      <CabeceraClientes activa={acceso.id} />
 
       <section
         id="detalle"
@@ -198,14 +198,14 @@ export default async function DetalleNecesidadPage({ params }: Props) {
                 Preguntas frecuentes
               </h2>
               <div className="mt-8">
-                <FaqsSoluciones faqs={faqs} />
+                <FaqsClientes faqs={faqs} />
               </div>
             </div>
           )}
         </Contenedor>
       </section>
 
-      {/* Migas de pan para el buscador: le dicen que esta página cuelga de `/soluciones` y
+      {/* Migas de pan para el buscador: le dicen que esta página cuelga de `/clientes` y
           no es una URL suelta. Es lo que hace que en los resultados salga la ruta en vez de
           una dirección pelada. */}
       <script
@@ -216,10 +216,10 @@ export default async function DetalleNecesidadPage({ params }: Props) {
             '@type': 'BreadcrumbList',
             itemListElement: [
               { '@type': 'ListItem', position: 1, name: SITIO.nombre, item: SITIO.url },
-              { '@type': 'ListItem', position: 2, name: 'Soluciones', item: `${SITIO.url}/soluciones` },
+              { '@type': 'ListItem', position: 2, name: 'Soluciones', item: `${SITIO.url}/clientes` },
               {
                 '@type': 'ListItem', position: 3, name: acceso.titulo,
-                item: `${SITIO.url}/soluciones/${acceso.id}`,
+                item: `${SITIO.url}/clientes/${acceso.id}`,
               },
             ],
           }),

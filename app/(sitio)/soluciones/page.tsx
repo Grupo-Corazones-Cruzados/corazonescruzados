@@ -1,62 +1,53 @@
 /**
- * SOLUCIONES — la portada de la sección comercial.
+ * SOLUCIONES — los tipos de proyecto que el grupo es capaz de manejar.
  *
- * ── QUÉ ES AHORA ───────────────────────────────────────────────────────────────
- * El titular, el subtítulo y **cinco puertas**. Nada más. Cada tarjeta lleva a su propia
- * página (`/soluciones/<id>`), donde el detalle aparece **debajo de las mismas tarjetas**,
- * con la suya marcada.
+ * ⚠️ Vivía en `/ambitos` hasta el 2026-08-18. Fernando le dio el nombre «Soluciones» —que
+ * era el que tenía pensado para este contenido— y movió la página anterior a `/clientes`.
+ * El concepto interno sigue siendo **ámbito**: la tabla, el admin y este código.
  *
- * ── SE LLAMABA `/negocio` HASTA EL 2026-08-17 ──────────────────────────────────
- * Fernando lo reconsideró: la sección se llama **Soluciones** en el titular, en la pestaña,
- * en el menú y en la URL. Las seis rutas viejas (`/negocio` y sus cinco hijas) siguen vivas
- * como **redirección permanente 301** en `next.config.ts`, para no romper ningún enlace ya
- * publicado ni tirar lo que esas URLs hubieran posicionado.
+ * Panel izquierdo con las carpetas —un ámbito, y dentro sus talentos— y, al elegir un
+ * talento, a la derecha los proyectos y tickets **terminados** que se hicieron con él.
+ * Al estilo de `/legal`, como pidió Fernando.
  *
- * ⚠️ **`/negocio` es la URL declarada a Meta** para la verificación de proveedor de
- * tecnología. La redirección evita el 404, pero **hay que actualizarla en el formulario de
- * Meta** a `/soluciones`.
+ * ── DE DÓNDE SALE CADA COSA ────────────────────────────────────────────────────
+ * · Los **ámbitos** y sus talentos: `gcc_world.ambitos`, que se editan en Admin → Ámbitos.
+ * · El **trabajo** de cada talento: NO está guardado en ninguna parte. Un proyecto es de un
+ *   talento si alguno de sus requerimientos lo pide, y un ticket lo declara en
+ *   `required_talents`. Se consulta al vuelo (`lib/ambitos.ts`), así que no puede quedar
+ *   desincronizado con la realidad.
  *
- * ── QUÉ SE QUITÓ EL 2026-08-04, Y QUE CONSTE ───────────────────────────────────
- * Fernando pidió vaciar todo lo que había debajo de las tarjetas: servicios por públicos,
- * precios, el apartado de WhatsApp, el alta de cliente y **la identidad legal**.
+ * ── SOLO LO TERMINADO ──────────────────────────────────────────────────────────
+ * Decisión de Fernando (2026-08-18). En la base hay proyectos en borrador, en cotización y
+ * en curso; nada de eso es trabajo hecho, y anunciar en la web lo que aún no existe es lo
+ * que ya tumbó una verificación de Meta.
  *
- * ⚠️ **La identidad legal se quitó sabiendo lo que era.** Esta es la URL declarada a Meta,
- * su verificación se rechazó una vez con «no puede determinar que pertenezca a un negocio
- * real», y este archivo llevaba un aviso escrito de que esa sección no podía faltar. Se le
- * advirtió y decidió quitarla: sigue estando en `/contacto` y en `/legal`, y avisó de que
- * también la quitará de `/contacto`. **Si Meta vuelve a rechazar la verificación, esto es
- * lo primero que hay que mirar.**
+ * ── SERVER COMPONENT, Y TODO EL TEXTO EN EL HTML ───────────────────────────────
+ * Los datos se leen aquí, en el servidor. El explorador es de cliente solo para desplegar
+ * carpetas, y pinta **también** el contenido de los talentos no elegidos, oculto: es lo que
+ * evita que un buscador vea un proyecto de once.
  *
- * El texto de los servicios NO se ha borrado: sigue en `SERVICIOS`
- * (`lib/sitio/contenido.ts`), listo para repartirse entre las cinco páginas cuando Fernando
- * dicte qué va en cada una.
- *
- * ── LAS REGLAS QUE SIGUEN EN PIE ───────────────────────────────────────────────
- * 1. **Server Component, sin `use client`.** Tiene que estar en el HTML crudo: un buscador
- *    y un revisor pueden no ejecutar JavaScript.
- * 2. **Nada que no sea verificable.** Sin cifras de clientes ni años de experiencia.
- * 3. **El texto vive en `lib/sitio/contenido.ts`**, no aquí.
+ * ⏱️ `revalidate`: la página es HTML ya hecho, pero su contenido sale de la base y cambia
+ * cuando se cierra un proyecto o se toca un ámbito en el admin. Cinco minutos, el mismo
+ * criterio que las preguntas frecuentes de `/soluciones`.
  */
 
 import type { Metadata } from 'next';
-import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
-import CabeceraSoluciones from '@/components/sitio/CabeceraSoluciones';
+import { Contenedor } from '@/components/sitio/piezas';
+import AmbitosExplorador from '@/components/sitio/AmbitosExplorador';
+import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
+import { cargarAmbitosConContenido } from './datos';
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
-  /**
-   * El nombre de la pestaña, decidido por Fernando el 2026-08-17: **«Soluciones»**.
-   * Aquí va solo esa palabra porque la plantilla de `app/layout.tsx` le añade
-   * « · Grupo Corazones Cruzados» — que es lo que hace que en un resultado de Google se
-   * sepa de quién es la página, y no compita a ciegas con las miles que se llaman igual.
-   */
+  /** Solo el nombre: la plantilla de `app/layout.tsx` añade « · Grupo Corazones Cruzados». */
   title: 'Soluciones',
   description:
-    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
+    'Los tipos de proyecto que Grupo Corazones Cruzados es capaz de manejar, con el trabajo terminado en cada uno: automatización de procesos, desarrollo y más.',
   alternates: { canonical: '/soluciones' },
   openGraph: {
-    title: `${SITIO.nombre} — Qué puedes hacer aquí`,
-    description:
-      'Tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
+    title: `Soluciones — ${SITIO.nombre}`,
+    description: 'Los tipos de proyecto que manejamos y el trabajo terminado en cada uno.',
     url: `${SITIO.url}/soluciones`,
     type: 'website',
     locale: 'es_EC',
@@ -64,48 +55,60 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SolucionesPage() {
+export default async function SolucionesPage() {
+  const ambitos = await cargarAmbitosConContenido();
+  const totalTrabajos = ambitos.reduce(
+    (n, a) => n + Object.values(a.contenido).reduce(
+      (m, c) => m + c.proyectos.length + c.tickets.length + c.productos.length, 0), 0,
+  );
+
   return (
     <>
-      <CabeceraSoluciones />
+      {/* ── SIN ENCABEZADO, POR PETICIÓN (Fernando, 2026-08-18) ────────────────
+          Había un héroe con «Ámbitos» y una frase debajo. Lo quitó, y la página entra
+          directa al explorador.
 
-      {/* Datos estructurados: le dan al buscador la lectura de que esto es una organización
-          real con dirección, teléfono e identificador fiscal, y le enumeran las cinco
-          páginas de dentro para que las descubra sin depender del mapa del sitio. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'ProfessionalService',
-            name: SITIO.nombre,
-            legalName: SITIO.razonSocial,
-            taxID: SITIO.ruc,
-            url: `${SITIO.url}/soluciones`,
-            sameAs: [...REDES],
-            email: SITIO.correo,
-            telephone: SITIO.telefonoPlano,
-            address: {
-              '@type': 'PostalAddress',
-              streetAddress: SITIO.direccion,
-              addressLocality: SITIO.ciudad,
-              addressCountry: 'EC',
-            },
-            areaServed: 'EC',
-            description:
-              'Proyecto de desarrollo humano que ofrece soluciones para las necesidades individuales y grupales de sus colaboradores, en función de resolver determinadas problemáticas sociales, teniendo como meta final la unión del mundo.',
-            hasOfferCatalog: {
-              '@type': 'OfferCatalog',
-              name: 'Lo que ofrecemos',
-              itemListElement: ACCESOS.map((a) => ({
-                '@type': 'Offer',
-                url: `${SITIO.url}/soluciones/${a.id}`,
-                itemOffered: { '@type': 'Service', name: a.titulo, description: a.texto },
+          ⚠️ Con él se iba el único `<h1>`. No se ha dejado a la página sin encabezado: lo
+          hereda **el nombre del talento abierto**, dentro del explorador, que además
+          describe mejor lo que se está mirando. Un documento sin `<h1>` es un documento sin
+          título para un buscador y para un lector de pantalla. */}
+      {/* `flex-1`: la sección ocupa TODO el alto que sobre. Con poco contenido, su fondo
+          blanco terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`
+          de la página — un cambio de color a media pantalla. Un solo color, como pidió
+          Fernando (2026-08-18). Sin `border-b`: no hay nada después de ella. */}
+      <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
+        <Contenedor>
+          {ambitos.length === 0 ? (
+            // Ni recuadro gris ni «próximamente»: la misma regla del resto del sitio.
+            <p className="text-[15px] text-[var(--tenue)]">
+              Todavía no hay ámbitos publicados.
+            </p>
+          ) : (
+            <AmbitosExplorador ambitos={ambitos} />
+          )}
+        </Contenedor>
+      </section>
+
+      {/* Datos estructurados: le dicen al buscador que esto es una lista de los servicios
+          que presta la organización, no un texto suelto. Solo se declara si hay algo. */}
+      {totalTrabajos > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'ItemList',
+              name: 'Soluciones de Grupo Corazones Cruzados',
+              itemListElement: ambitos.map((a, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                name: a.nombre,
+                url: `${SITIO.url}/soluciones#${a.slug}`,
               })),
-            },
-          }),
-        }}
-      />
+            }),
+          }}
+        />
+      )}
     </>
   );
 }

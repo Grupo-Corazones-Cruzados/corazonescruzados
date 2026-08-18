@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * LAS PREGUNTAS FRECUENTES DE UNA PÁGINA DE `/soluciones` — lista con buscador a la izquierda,
+ * LAS PREGUNTAS FRECUENTES DE UNA PÁGINA DE `/clientes` — lista con buscador a la izquierda,
  * respuesta completa a la derecha.
  *
  * ── POR QUÉ ES UNA ISLA DE CLIENTE, Y QUÉ SE HIZO PARA QUE NO CUESTE SEO ───────
@@ -25,7 +25,7 @@ import { useMemo, useState } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 import type { Faq } from '@/lib/faqs';
 
-export default function FaqsSoluciones({ faqs }: { faqs: Faq[] }) {
+export default function FaqsClientes({ faqs }: { faqs: Faq[] }) {
   const [busqueda, setBusqueda] = useState('');
   const [elegidaId, setElegidaId] = useState<number | null>(faqs[0]?.id ?? null);
 

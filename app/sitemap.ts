@@ -23,15 +23,20 @@ const ULTIMO_CAMBIO = {
   portada: '2026-08-02',
   /**
    * Rehecha como cinco puertas el 2026-08-04; sus cinco páginas comparten esta fecha.
-   * El 2026-08-17 cambió de nombre y de dirección: `/negocio` → `/soluciones`. Un cambio de
+   * Cambió de nombre y dirección dos veces: `/negocio` → `/soluciones` (08-17) → `/clientes`
+   * (08-18, al ceder el nombre «Soluciones» a la página de ámbitos). Un cambio de
    * URL es justo lo que hay que anunciar aquí, porque es lo que hace que Google venga a ver
    * la nueva pronto en vez de seguir sirviendo la vieja durante semanas.
    */
-  soluciones: '2026-08-17',
+  /** Las cinco puertas: `/negocio` → `/soluciones` → `/clientes` (08-17 y 08-18). */
+  clientes: '2026-08-18',
   /** `/recursos` → `/desarrollo-humano` el 2026-08-17, y de paso pasó a tema claro. */
   desarrolloHumano: '2026-08-17',
-  /** Nació vacía el 2026-08-17 y se llenó el 2026-08-18, cuando ya tenía ámbitos. */
-  ambitos: '2026-08-18',
+  /**
+   * La página de los ámbitos. Nació vacía en `/ambitos` el 2026-08-17, se llenó el 08-18 y
+   * ese mismo día pasó a llamarse **Soluciones** y a vivir en `/soluciones`.
+   */
+  soluciones: '2026-08-18',
   contacto: '2026-08-02',
   /** Los documentos legales, que se mueven en bloque. */
   legales: '2026-08-02',
@@ -49,8 +54,8 @@ async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
     const ambitos = await listarAmbitos();
     return ambitos.flatMap((a) =>
       a.talentos.map((t) => ({
-        url: `${SITIO.url}/ambitos/${t.slug}`,
-        lastModified: ULTIMO_CAMBIO.ambitos,
+        url: `${SITIO.url}/soluciones/${t.slug}`,
+        lastModified: ULTIMO_CAMBIO.soluciones,
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       })),
@@ -63,22 +68,22 @@ async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: SITIO.url, lastModified: ULTIMO_CAMBIO.portada, changeFrequency: 'monthly', priority: 1 },
-    { url: `${SITIO.url}/soluciones`, lastModified: ULTIMO_CAMBIO.soluciones, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${SITIO.url}/clientes`, lastModified: ULTIMO_CAMBIO.clientes, changeFrequency: 'monthly', priority: 0.9 },
     // Las cinco puertas salen del mismo sitio que las tarjetas: añadir una en
     // `contenido.ts` la mete en el mapa sin tocar este archivo.
     // ⚠️ Aquí van SOLO las URLs nuevas. Las viejas de `/negocio` redirigen (301) y una URL
     // que redirige no se pone en el mapa del sitio: se le estaría pidiendo a Google que
     // indexe algo que él mismo va a descartar.
     ...ACCESOS.map((a) => ({
-      url: `${SITIO.url}/soluciones/${a.id}`,
-      lastModified: ULTIMO_CAMBIO.soluciones,
+      url: `${SITIO.url}/clientes/${a.id}`,
+      lastModified: ULTIMO_CAMBIO.clientes,
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     })),
     { url: `${SITIO.url}/desarrollo-humano`, lastModified: ULTIMO_CAMBIO.desarrolloHumano, changeFrequency: 'monthly', priority: 0.8 },
     // Entra ahora, no antes: hasta el 2026-08-18 era un titular sin contenido, y
     // ofrecerle a Google una página vacía resta al dominio entero.
-    { url: `${SITIO.url}/ambitos`, lastModified: ULTIMO_CAMBIO.ambitos, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITIO.url}/soluciones`, lastModified: ULTIMO_CAMBIO.soluciones, changeFrequency: 'weekly', priority: 0.8 },
     // Una entrada por talento: cada uno es su propia página desde el 2026-08-18, y esto es
     // lo que hace que Google las descubra sin depender de que rastree el panel izquierdo.
     ...(await paginasDeTalento()),

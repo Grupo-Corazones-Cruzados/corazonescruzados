@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * PESTAÑA «FAQs» DEL ADMIN — las preguntas frecuentes que se publican en `/soluciones/<id>`.
+ * PESTAÑA «FAQs» DEL ADMIN — las preguntas frecuentes que se publican en `/clientes/<id>`.
  *
  * ── TRES PANELES (Fernando, 2026-08-04) ────────────────────────────────────────
  *   ┌────────────┬──────────────────────────┬─────────────────────┐
@@ -197,7 +197,7 @@ export default function FaqsPanel() {
             label: a.titulo,
             Icon: ICONOS[a.icono] ?? HelpCircle,
             count: conteos[a.id] ?? 0,
-            hint: `/soluciones/${a.id}`,
+            hint: `/clientes/${a.id}`,
           }))}
         />
 
@@ -265,7 +265,7 @@ export default function FaqsPanel() {
               emptyDesc={
                 cargando ? '' :
                 busqueda ? 'Prueba con otras palabras.' :
-                `Las que crees aquí se publican en grupocc.org/soluciones/${seccion}.`
+                `Las que crees aquí se publican en grupocc.org/clientes/${seccion}.`
               }
               singleLine
             />

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * UNA TARJETA DE `/ambitos` — un proyecto o un ticket terminado.
+ * UNA TARJETA DE `/soluciones` — un proyecto o un ticket terminado.
  *
  * Fernando la pidió «al mismo estilo que el portafolio del CV público», con un añadido: los
  * **círculos de quienes participaron**, y al pasar el puntero, sus datos de contacto.

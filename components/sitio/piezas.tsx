@@ -172,7 +172,7 @@ export function FondoHeroe() {
 /* ── Rejilla de accesos ──────────────────────────────────────────────────────── */
 
 /**
- * LAS TARJETAS DE ACCESO — cabecera de `/soluciones` (2026-08-04).
+ * LAS TARJETAS DE ACCESO — cabecera de `/clientes` (2026-08-04).
  *
  * Cinco puertas de entrada. **Se reparten solas según el ancho que haya**: tres arriba y
  * dos centradas debajo en pantalla grande, dos y dos y una en tableta, una por fila en el
@@ -213,11 +213,11 @@ export function RejillaAccesos({
         const abierta = a.id === activa;
         return (
           <li key={a.id} className="w-full sm:w-[280px] flex">
-            {/* `#detalle` es lo que hace que al pulsar desde /soluciones la página baje
+            {/* `#detalle` es lo que hace que al pulsar desde /clientes la página baje
                 sola hasta el detalle. Sin JavaScript: lo resuelve el navegador, y el
                 `scroll-smooth` del documento hace que se deslice en vez de saltar. */}
             <Link
-              href={`/soluciones/${a.id}#detalle`}
+              href={`/clientes/${a.id}#detalle`}
               aria-current={abierta ? 'page' : undefined}
               className={`group w-full flex flex-col rounded-xl border p-5 transition-colors
                           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/60
