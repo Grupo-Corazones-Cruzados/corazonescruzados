@@ -103,9 +103,27 @@ export function conNegritas(texto: string): ReactNode[] {
   );
 }
 
-/** Envoltorio de ancho de lectura. Todo el sitio usa el mismo. */
-export function Contenedor({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto max-w-6xl px-5 sm:px-6 ${className}`}>{children}</div>;
+/**
+ * Envoltorio de ancho. Dos anchos, y la diferencia no es estética:
+ *
+ * · **`lectura`** (por omisión, 1152 px) — para páginas de LEER. Una línea de texto muy
+ *   larga se lee mal: el ojo pierde el renglón al volver. Es el ancho de Clientes,
+ *   Desarrollo Humano y Contacto.
+ * · **`amplio`** (1560 px) — para pantallas que **no se leen, se recorren**: `/soluciones`
+ *   es un explorador de tres columnas —carpetas, contenido, conceptos—, y ahí el ancho no
+ *   alarga renglones, reparte columnas. Fernando lo pidió el 2026-08-18: *«aprovecha todo el
+ *   ancho disponible»*. Es el mismo 1560 que ya usaban los documentos legales por el mismo
+ *   motivo: llevan índice a los lados.
+ */
+export function Contenedor({
+  children, className = '', ancho = 'lectura',
+}: {
+  children: ReactNode;
+  className?: string;
+  ancho?: 'lectura' | 'amplio';
+}) {
+  const max = ancho === 'amplio' ? 'max-w-[1560px]' : 'max-w-6xl';
+  return <div className={`mx-auto ${max} px-5 sm:px-6 ${className}`}>{children}</div>;
 }
 
 /**

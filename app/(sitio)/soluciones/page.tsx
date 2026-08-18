@@ -77,7 +77,7 @@ export default async function SolucionesPage() {
           de la página — un cambio de color a media pantalla. Un solo color, como pidió
           Fernando (2026-08-18). Sin `border-b`: no hay nada después de ella. */}
       <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
-        <Contenedor>
+        <Contenedor ancho="amplio">
           {soluciones.length === 0 ? (
             // Ni recuadro gris ni «próximamente»: la misma regla del resto del sitio.
             <p className="text-[15px] text-[var(--tenue)]">

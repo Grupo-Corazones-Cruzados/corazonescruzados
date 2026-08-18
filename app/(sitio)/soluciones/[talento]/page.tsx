@@ -94,7 +94,7 @@ export default async function TalentoPage({ params }: Props) {
 
   return (
     <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
-      <Contenedor>
+      <Contenedor ancho="amplio">
         <SolucionesExplorador soluciones={soluciones} slugActivo={slug} />
       </Contenedor>
     </section>

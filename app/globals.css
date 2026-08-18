@@ -1611,3 +1611,35 @@ html {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
 }
+
+/* ── LA MISMA TIRA, EN HORIZONTAL ─────────────────────────────────────────────
+   Cuando no hay ancho para la columna derecha, la tira baja bajo la descripción y
+   avanza de izquierda a derecha (Fernando, 2026-08-18). Mismo mecanismo —lista
+   duplicada, desplazamiento de la mitad— girado noventa grados.
+
+   Se mide el ANCHO en vez del alto, y la regla no cambia: si los conceptos caben,
+   no se mueven.                                                                  */
+@keyframes tira-conceptos-h {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.tira-conceptos-anima-h {
+  animation-name: tira-conceptos-h;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.tira-conceptos-marco:hover .tira-conceptos-anima-h,
+.tira-conceptos-marco:focus-within .tira-conceptos-anima-h { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tira-conceptos-anima-h { animation: none; }
+  .tira-conceptos-marco--h { overflow-x: auto; }
+}
+
+.tira-conceptos-marco--anima-h {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
+}

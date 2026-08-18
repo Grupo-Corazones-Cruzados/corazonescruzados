@@ -308,8 +308,13 @@ export default function SolucionesExplorador({
         </ul>
       </nav>
 
-      {/* ── EL PANEL DERECHO ───────────────────────────────────────────────────── */}
-      <div>
+      {/* ── EL PANEL DERECHO ─────────────────────────────────────────────────────
+          `min-w-0` NO es decorativo: una celda de rejilla mide por defecto `min-width:auto`,
+          es decir, «lo que ocupe mi hijo más ancho». La tira horizontal es deliberadamente
+          más ancha que la pantalla, así que sin esto estiraría la columna —y con ella la
+          página entera— hasta los 2.848 px de la lista, y aparecía barra horizontal en todo
+          el sitio. Con `min-w-0` la columna se queda en su sitio y es el marco quien recorta. */}
+      <div className="min-w-0">
         {elegido && (
           <h1 className="text-[30px] sm:text-[40px] font-semibold tracking-tight text-[var(--texto)] leading-tight">
             {elegido}
@@ -319,6 +324,17 @@ export default function SolucionesExplorador({
         {descripcion && (
           <p className="mt-3 text-[15.5px] leading-relaxed text-[var(--suave)] max-w-3xl">{descripcion}</p>
         )}
+
+        {/* ── LA TIRA DE CONCEPTOS, VERSIÓN ESTRECHA ────────────────────────────
+            Bajo el ancho de `lg` no hay sitio para la tercera columna, así que la tira baja
+            aquí —debajo de la descripción—, en horizontal y sin rótulo (Fernando, 2026-08-18).
+            Es la MISMA instancia lógica, solo que girada: las dos se pintan siempre y es el
+            CSS quien enseña una u otra. Se puede porque la oculta mide 0 y su propia regla
+            («solo se mueve si no cabe») decide entonces que no cabe nada que mover: no anima
+            de fondo ni gasta cuadros. */}
+        <div className="lg:hidden mt-5 min-w-0">
+          <TiraConceptos conceptos={conceptosActivos} orientacion="horizontal" />
+        </div>
 
         {/* El buscador, ENCIMA de las pestañas: busca dentro de la que esté abierta, y por
             eso su texto de ayuda dice cuál es — si no, no se sabe dónde está buscando. */}
@@ -365,7 +381,7 @@ export default function SolucionesExplorador({
             miembros.length === 0
               ? vacio(q ? 'Ningún miembro coincide con la búsqueda.' : 'Todavía no hay miembros con este talento.')
               : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                   {miembros.map((m) => <TarjetaMiembro key={m.memberId} miembro={m} />)}
                 </div>
               )
@@ -375,7 +391,7 @@ export default function SolucionesExplorador({
             productos.length === 0
               ? vacio(q ? 'Ningún producto coincide con la búsqueda.' : 'Todavía no hay productos en este talento.')
               : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                   {productos.map((p) => <TarjetaProducto key={p.id} producto={p} />)}
                 </div>
               )
@@ -385,7 +401,7 @@ export default function SolucionesExplorador({
             tickets.length === 0
               ? vacio(q ? 'Ningún ticket coincide con la búsqueda.' : 'Todavía no hay tickets terminados con este talento.')
               : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                   {tickets.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}
                 </div>
               )
@@ -395,7 +411,7 @@ export default function SolucionesExplorador({
             proyectos.length === 0
               ? vacio(q ? 'Ningún proyecto coincide con la búsqueda.' : 'Todavía no hay proyectos terminados con este talento.')
               : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                   {proyectos.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}
                 </div>
               )
@@ -433,10 +449,15 @@ export default function SolucionesExplorador({
         </div>
       </div>
 
-      {/* ── LA TIRA DE CONCEPTOS ────────────────────────────────────────────────
+      {/* ── LA TIRA DE CONCEPTOS, VERSIÓN ANCHA ─────────────────────────────────
           Se pinta sola solo si hay conceptos: el propio componente devuelve `null` con la
-          lista vacía, así que aquí no hace falta condicionar nada más. */}
-      <TiraConceptos conceptos={conceptosActivos} />
+          lista vacía, así que aquí no hace falta condicionar nada más. Su gemela horizontal
+          vive arriba, bajo la descripción; el `hidden lg:block` de aquí y el `lg:hidden` de
+          allá son el mismo corte que decide si existe la tercera columna, así que nunca se
+          ven las dos ni se queda la pantalla sin ninguna. */}
+      <div className="hidden lg:block self-start min-w-0">
+        <TiraConceptos conceptos={conceptosActivos} />
+      </div>
     </div>
   );
 }

@@ -93,7 +93,7 @@ buscador, un revisor de Meta. No es el pixel art de la portada ni el Fluent clar
 
 | Pieza | Qué es |
 |---|---|
-| `Contenedor` | Ancho de lectura: `mx-auto max-w-6xl px-5 sm:px-6`. Lo usan TODAS las secciones |
+| `Contenedor` | `mx-auto px-5 sm:px-6` con **dos anchos**: `lectura` (por defecto, `max-w-6xl` = 1152 px) para todo lo que se lee de corrido, y `ancho="amplio"` (`max-w-[1560px]`) **solo en `/soluciones`**, que no es un texto sino un explorador de tres columnas y desperdiciaba pantalla (Fernando, 2026-08-18) |
 | `Seccion` | Bloque con su aire: `py-20 sm:py-28`; `tono="realce"` añade `bg-white/[0.02]` para separar dos secciones seguidas **sin dibujar una línea** |
 | `TituloSeccion` | Etiqueta violeta en versalitas + `h2` de 30/38 px + entradilla. `centrado` opcional |
 | `Tarjeta` | `rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7`, realce al hover **de borde**, nunca de sombra |
@@ -341,6 +341,50 @@ las mismas del CV.
 Escala tipográfica: `h1` 38/56 px · `h2` 30/38 px · `h3` 22 px · `h4` 18 px · cuerpo
 14,5–18,5 px. **El contraste de tamaño es lo que hace que la página respire**; no hay
 librería de UI detrás.
+
+### La tira de conceptos de `/soluciones` — `components/sitio/TiraConceptos.tsx` (2026-08-18)
+
+El carrusel de conceptos de la solución abierta. Una sola definición con **dos orientaciones**,
+y el sitio decide cuál según el ancho:
+
+| Dónde | Cuándo | Cómo |
+|---|---|---|
+| Tercera columna, a la derecha | `≥ lg` (hay sitio para `lg:grid-cols-[240px_minmax(0,1fr)_280px]`) | Vertical, de arriba abajo, **con** el rótulo «Lo que sabemos hacer», pegajosa (`lg:sticky lg:top-24`) |
+| Bajo la descripción | `< lg` | Horizontal, de izquierda a derecha, **sin** rótulo — ahí va pegada al texto que ya explica de qué va, y un encabezado en medio partiría la lectura |
+
+Las **dos se montan siempre**; el corte lo hacen `hidden lg:block` y `lg:hidden`, exactamente el
+mismo umbral que decide si existe la tercera columna. La que está oculta mide 0 y su propia regla
+concluye que no hay nada que mover, así que no anima de fondo.
+
+**⭐ La regla que define el componente: solo se mueve si NO cabe.** Es de Fernando y es la correcta:
+una lista que se ve entera y aun así se desplaza es ruido. **No se puede expresar en CSS** —depende
+del alto/ancho real de los textos, que cambia con la ventana, con el tamaño de letra del usuario y
+con cuántos conceptos haya—, así que se mide en el navegador con un `ResizeObserver` sobre el marco
+y sobre la lista. Consecuencias de la regla, todas verificadas:
+
+- La lista **se duplica solo cuando anima** (el bucle desplaza justo `50%`, así la vuelta no da
+  tirón). Sin animación, duplicar sería contenido repetido a la vista: un error, no un truco. La
+  copia lleva `aria-hidden` + `tabIndex={-1}`.
+- Al medir se **divide entre dos** si ya está duplicada; medir sobre la copia diría siempre «no
+  cabe» y se quedaría animando para siempre.
+- El **difuminado de los bordes** (`mask-image`) también es condicional: sin animación escondería
+  contenido que sí cabía.
+- Margen de 8 px: sobresalir dos píxeles no justifica poner algo en movimiento.
+
+Velocidad **calculada**, no fija: `VELOCIDAD = 26` px/s. Con una duración fija, tres conceptos irían
+lentísimos y treinta, disparados.
+
+Clases en `app/globals.css`: `.tira-conceptos-anima` / `.tira-conceptos-marco--anima` (vertical) y
+`.tira-conceptos-anima-h` / `.tira-conceptos-marco--h` / `.tira-conceptos-marco--anima-h` (horizontal).
+Ambas paran con `:hover` y `:focus-within`, y `prefers-reduced-motion` las apaga dejando el
+desplazamiento manual.
+
+**⚠️ `min-w-0` y `w-max`, los dos imprescindibles y por motivos opuestos.** La `<ul>` horizontal
+necesita `w-max` para medir lo que ocupa de verdad: sin él tomaría el ancho del marco y el
+`translateX(-50%)` desplazaría media pantalla en vez de media lista. Y la celda de rejilla que la
+contiene necesita `min-w-0` porque su `min-width` por defecto es `auto` («lo que ocupe mi hijo más
+ancho»): sin él, esa lista de 2.848 px estiraba la columna y **la página entera**, con barra
+horizontal en todo el sitio. Se detectó midiendo `scrollWidth` del documento a 900/560/390 px.
 
 ### ⛔ El diseño de estas páginas lo decide Fernando, conmigo, ANTES (2026-08-03)
 

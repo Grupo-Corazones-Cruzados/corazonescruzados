@@ -3,9 +3,16 @@
 /**
  * LA TIRA VERTICAL DE CONCEPTOS — el panel derecho de `/soluciones`.
  *
- * Los conceptos de la solución abierta, uno debajo de otro, avanzando de arriba abajo. Es el
- * mismo carrusel que tenía la galería de Automatización, girado — lo pidió Fernando así
- * (2026-08-18).
+ * Los conceptos de la solución abierta. **Dos orientaciones, según haya sitio:**
+ *
+ * · **vertical** — columna de la derecha, avanzando de arriba abajo, con su rótulo. Es el
+ *   sitio natural cuando la pantalla es ancha.
+ * · **horizontal** — cuando no hay ancho para esa tercera columna, la tira **baja bajo la
+ *   descripción**, avanza de izquierda a derecha y **pierde el rótulo** (Fernando,
+ *   2026-08-18). Sin el rótulo porque ahí va pegada al texto que ya explica de qué va; un
+ *   encabezado en medio partiría la lectura en dos.
+ *
+ * Es el carrusel que tenía la galería de Automatización, en sus dos giros.
  *
  * ── ⭐ LA REGLA QUE DEFINE ESTE COMPONENTE: SOLO SE MUEVE SI NO CABE ───────────
  * Textual: *«en caso de que la cantidad de conceptos no supere el tamaño disponible en
@@ -39,7 +46,13 @@ import type { Concepto } from '@/lib/soluciones';
 /** Píxeles por segundo. Bajo a propósito: esto es un fondo vivo, no algo que leer al vuelo. */
 const VELOCIDAD = 26;
 
-export default function TiraConceptos({ conceptos }: { conceptos: Concepto[] }) {
+export default function TiraConceptos({
+  conceptos, orientacion = 'vertical',
+}: {
+  conceptos: Concepto[];
+  orientacion?: 'vertical' | 'horizontal';
+}) {
+  const esVertical = orientacion === 'vertical';
   const marcoRef = useRef<HTMLDivElement>(null);
   const listaRef = useRef<HTMLUListElement>(null);
   const [anima, setAnima] = useState(false);
@@ -50,17 +63,18 @@ export default function TiraConceptos({ conceptos }: { conceptos: Concepto[] }) 
     const lista = listaRef.current;
     if (!marco || !lista) return;
 
-    // `scrollHeight` de la lista SIN duplicar. Si ya está duplicada, su alto es el doble,
-    // así que se divide: medir sobre la copia daría siempre «no cabe» y se quedaría animando
-    // para siempre aunque el contenido cupiera.
-    const altoLista = anima ? lista.scrollHeight / 2 : lista.scrollHeight;
-    const altoMarco = marco.clientHeight;
+    // La medida SIN duplicar. Si la lista ya está duplicada mide el doble, así que se
+    // divide: medir sobre la copia daría siempre «no cabe» y se quedaría animando para
+    // siempre aunque el contenido cupiera.
+    const bruto = esVertical ? lista.scrollHeight : lista.scrollWidth;
+    const medidaLista = anima ? bruto / 2 : bruto;
+    const medidaMarco = esVertical ? marco.clientHeight : marco.clientWidth;
 
     // Un margen de 8 px: si sobresale por dos píxeles, moverlo molesta más que ayuda.
-    const noCabe = altoLista > altoMarco + 8;
+    const noCabe = medidaLista > medidaMarco + 8;
     setAnima(noCabe);
-    setDuracion(noCabe ? Math.max(altoLista / VELOCIDAD, 12) : 0);
-  }, [anima]);
+    setDuracion(noCabe ? Math.max(medidaLista / VELOCIDAD, 12) : 0);
+  }, [anima, esVertical]);
 
   useEffect(() => {
     medir();
@@ -81,7 +95,8 @@ export default function TiraConceptos({ conceptos }: { conceptos: Concepto[] }) 
     return (
       <li
         key={`${copia ? 'c' : 'o'}-${c.id}`}
-        className="claro-tarjeta rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] p-4"
+        className={`claro-tarjeta rounded-xl border border-[var(--linea)] bg-[var(--tarjeta)] p-4
+                    ${esVertical ? '' : 'w-[248px] shrink-0'}`}
       >
         <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0
                          border border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]">
@@ -96,18 +111,36 @@ export default function TiraConceptos({ conceptos }: { conceptos: Concepto[] }) 
   };
 
   return (
-    <aside aria-label="Lo que sabemos hacer" className="lg:sticky lg:top-24 lg:self-start">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
-        Lo que sabemos hacer
-      </p>
+    <aside
+      aria-label="Lo que sabemos hacer"
+      className={esVertical ? 'lg:sticky lg:top-24 lg:self-start' : ''}
+    >
+      {/* El rótulo solo en vertical: en horizontal la tira va pegada bajo la descripción y un
+          encabezado ahí en medio partiría la lectura. Decisión de Fernando (2026-08-18).
+          El `aria-label` del <aside> se queda en las dos: quien navega a ciegas necesita
+          saber qué es esta región aunque no haya título a la vista. */}
+      {esVertical && (
+        <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
+          Lo que sabemos hacer
+        </p>
+      )}
       <div
         ref={marcoRef}
-        className={`tira-conceptos-marco relative overflow-hidden lg:h-[calc(100vh-13rem)]
-                    ${anima ? 'tira-conceptos-marco--anima' : ''}`}
+        className={`tira-conceptos-marco relative overflow-hidden
+                    ${esVertical
+                      ? `lg:h-[calc(100vh-13rem)] ${anima ? 'tira-conceptos-marco--anima' : ''}`
+                      : `w-full tira-conceptos-marco--h ${anima ? 'tira-conceptos-marco--anima-h' : ''}`}`}
       >
         <ul
           ref={listaRef}
-          className={`space-y-3 ${anima ? 'tira-conceptos-anima' : ''}`}
+          className={
+            esVertical
+              ? `space-y-3 ${anima ? 'tira-conceptos-anima' : ''}`
+              // `w-max` es imprescindible en horizontal: sin él la <ul> mediría el ancho del
+              // marco y el `translateX(-50%)` desplazaría media pantalla en vez de media
+              // lista — el bucle daría un tirón en cada vuelta.
+              : `flex gap-3 w-max items-stretch ${anima ? 'tira-conceptos-anima-h' : ''}`
+          }
           style={anima ? { animationDuration: `${duracion}s` } : undefined}
         >
           {conceptos.map((c) => tarjeta(c, false))}
