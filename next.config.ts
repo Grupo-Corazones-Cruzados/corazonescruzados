@@ -78,10 +78,25 @@ const nextConfig: NextConfig = {
        */
       {
         source:
-          '/soluciones/:necesidad(requerimientos|automatizacion|videojuego|marketplace|votacion)',
+          '/soluciones/:necesidad(requerimientos|videojuego|marketplace|votacion)',
         destination: '/clientes/:necesidad',
         permanent: true,
       },
+      /**
+       * ⚠️ «AUTOMATIZACIÓN» YA NO ES UNA PUERTA DE CLIENTES (2026-08-18).
+       *
+       * Su tarjeta se retiró porque ese contenido se maneja ahora desde `/soluciones`. La
+       * URL llevaba publicada desde el 2026-08-04 —primero como `/negocio/automatizacion`,
+       * luego `/soluciones/automatizacion`, luego `/clientes/automatizacion`—, así que las
+       * **tres** van a `/soluciones`, que es donde está lo que buscaban.
+       *
+       * Estas reglas van ANTES que las de las cinco puertas: la primera que casa gana, y
+       * aquellas mandarían `automatizacion` a `/clientes/automatizacion`, que ya no existe.
+       */
+      { source: '/clientes/automatizacion', destination: '/soluciones', permanent: true },
+      { source: '/soluciones/automatizacion', destination: '/soluciones', permanent: true },
+      { source: '/negocio/automatizacion', destination: '/soluciones', permanent: true },
+
       // `/ambitos` → `/soluciones`: la página se mudó entera, con sus talentos dentro.
       { source: '/ambitos', destination: '/soluciones', permanent: true },
       { source: '/ambitos/:talento', destination: '/soluciones/:talento', permanent: true },
@@ -90,7 +105,7 @@ const nextConfig: NextConfig = {
       { source: '/recursos', destination: '/desarrollo-humano', permanent: true },
       {
         source:
-          '/negocio/:necesidad(requerimientos|automatizacion|videojuego|marketplace|votacion)',
+          '/negocio/:necesidad(requerimientos|videojuego|marketplace|votacion)',
         destination: '/clientes/:necesidad',
         permanent: true,
       },

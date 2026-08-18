@@ -315,6 +315,24 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🚪 `/clientes` SE QUEDA CON CUATRO PUERTAS (2026-08-18).** Fuera «Automatización»:
+  *«esa sección ya la estamos manejando desde la página de soluciones»*. Quedan **Progreso,
+  Videojuego, Marketplace y Democracia**.
+  - **Para qué es esa página, dicho por él:** publicar los **beneficios de ser cliente** y
+    servir de base para ir generando **páginas de interés que los clientes encuentren por
+    Google**. El diseño se cambiará más adelante; esto era solo quitar la tarjeta.
+  - **⚠️ Su texto no se perdió**: 132 líneas —temas y galería de once servicios, escritas por
+    él— recuperables con `git show 61a7037:lib/sitio/contenido.ts`. Se retiraron del archivo
+    en vez de dejarlas sin usar porque un bloque de datos que no se pinta hace creer que sale
+    en algún sitio.
+  - **⚠️ La URL llevaba publicada desde el 2026-08-04** y ha tenido tres direcciones. Las
+    **tres** redirigen a `/soluciones`, que es donde vive ese contenido ahora:
+    `/negocio/automatizacion`, `/soluciones/automatizacion` y `/clientes/automatizacion`.
+    Van **antes** que las reglas de las puertas en `next.config.ts`: la primera que casa gana,
+    y aquellas la mandarían a `/clientes/automatizacion`, que ya no existe.
+  - Sin preguntas frecuentes asociadas (la tabla `faqs` está vacía), así que no quedó nada
+    huérfano. Verificado: las cuatro puertas 200, las tres URLs viejas 308 y el mapa del sitio
+    con cinco entradas de `/clientes`.
 - **🐛 EL BUILD DE RAILWAY NO LLEGA A LA BASE, Y ESO TIRÓ TODAS LAS PÁGINAS DE TALENTO
   (2026-08-18).** Descubierto al contestarle a Fernando si sus páginas saldrían en Google:
   se miró producción antes de afirmar nada y **`/soluciones/automatizacion-de-procesos` daba

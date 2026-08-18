@@ -400,138 +400,22 @@ export const ACCESOS: Acceso[] = [
       ],
     }],
   },
-  {
-    id: 'automatizacion', icono: 'rayo',
-    titulo: 'Automatización',
-    texto: 'Adquiere soluciones personalizadas de automatización de procesos y digitalización de tu negocio.',
-    sinTitular: true,
-    galeria: {
-      desliza: true,
-      items: [
-        {
-          icono: 'aplicacion', titulo: 'Aplicaciones Empresariales',
-          texto: 'El sistema con el que tu empresa trabaja de verdad, construido sobre vuestra operación y no sobre un producto cerrado.',
-          descripcion:
-            'Un sistema hecho a la medida de cómo trabaja tu empresa, en vez de obligarte a encajar en un producto pensado para otra. Reúne en un solo sitio lo que hoy vive repartido entre hojas de cálculo, correos y cuadernos: proyectos, tareas, clientes, cobros o lo que tu operación necesite.',
-          beneficios: [
-            'Deja de haber dos versiones de la misma información.',
-            'Cada persona ve lo suyo, con los permisos que le correspondan.',
-            'Crece por partes: se empieza por lo que más duele y se amplía después.',
-          ],
-        },
-        {
-          icono: 'robot', titulo: 'Robots Automatizados',
-          texto: 'Tareas repetitivas que se ejecutan solas: capturan, comparan, registran y avisan sin que nadie esté delante.',
-          descripcion:
-            'Programas que hacen solos las tareas que hoy alguien repite a mano: entrar a un portal, descargar un archivo, comparar dos listas, cargar datos en otro sistema y avisar si algo no cuadra. Trabajan a la hora que se les diga, incluso de madrugada.',
-          beneficios: [
-            'Horas de trabajo repetido que se recuperan para otra cosa.',
-            'El mismo procedimiento siempre igual, sin despistes ni días malos.',
-            'Queda registro de cada ejecución y de lo que encontró.',
-          ],
-        },
-        {
-          icono: 'red', titulo: 'Intranets',
-          texto: 'El sitio interno donde tu equipo encuentra lo que necesita, con permisos por área y por persona.',
-          descripcion:
-            'El sitio interno de tu organización: los documentos, los procedimientos, los anuncios y los accesos a los sistemas, en un solo lugar. En vez de preguntar por el chat quién tiene la última versión, se entra y está.',
-          beneficios: [
-            'Lo que busca tu equipo está siempre en el mismo sitio.',
-            'Permisos por área, por cargo o por persona.',
-            'La información deja de vivir en el correo de alguien.',
-          ],
-        },
-        {
-          icono: 'base-datos', titulo: 'Bases de Datos',
-          texto: 'Diseño, migración y puesta a punto del sitio donde vive tu información, para que responda rápido y no se corrompa.',
-          descripcion:
-            'El lugar donde vive la información de tu negocio. Diseñamos su estructura, migramos lo que ya tienes y la dejamos a punto para que responda rápido y no se corrompa con el tiempo. También rescatamos bases que crecieron sin plan y hoy van lentas.',
-          beneficios: [
-            'Consultas que tardaban minutos y pasan a segundos.',
-            'Respaldo y recuperación probados, no supuestos.',
-            'Una estructura que aguanta crecer sin rehacerlo todo.',
-          ],
-        },
-        {
-          icono: 'pantallas', titulo: 'Máquinas Virtuales para Desktop y Móvil',
-          texto: 'Entornos aislados que se levantan cuando hacen falta: para probar, para dar soporte o para separar lo que no puede caerse.',
-          descripcion:
-            'Entornos completos que se levantan cuando hacen falta y se apagan cuando no: para probar una versión antes de publicarla, para dar soporte reproduciendo lo que le pasa a un usuario, o para aislar un sistema que no puede caerse junto a los demás.',
-          beneficios: [
-            'Se prueba sin arriesgar lo que está en producción.',
-            'Se paga por el tiempo que se usan, no por tenerlos.',
-            'Un entorno idéntico para todo el equipo, sin el «en mi máquina funciona».',
-          ],
-        },
-        {
-          icono: 'agente', titulo: 'Agentes de IA o Conversacionales',
-          texto: 'Atención que responde con el conocimiento de tu negocio y pasa a una persona en cuanto hace falta.',
-          descripcion:
-            'Atención automática que responde con el conocimiento de tu negocio —tus precios, tus horarios, tus procedimientos— y que pasa la conversación a una persona en cuanto se sale de lo que sabe. Funciona en WhatsApp, en tu web o dentro de tus propios sistemas.',
-          beneficios: [
-            'Se responde a cualquier hora, también fuera del horario.',
-            'Lo que no sabe no se lo inventa: lo deriva a alguien.',
-            'Cada conversación queda registrada y se puede revisar.',
-          ],
-        },
-        {
-          icono: 'web', titulo: 'Sitios Web',
-          texto: 'La cara pública de tu negocio, hecha para que se encuentre en las búsquedas y para que cargue rápido.',
-          descripcion:
-            'La cara pública de tu negocio: pensada para que se encuentre en las búsquedas, para que cargue rápido y para que se lea igual de bien en un teléfono que en un ordenador. Con los datos estructurados que los buscadores necesitan para entender de qué va.',
-          beneficios: [
-            'Preparada para posicionar desde el primer día, no después.',
-            'El contenido se edita sin tocar el código.',
-            'Carga rápida, que también cuenta para aparecer.',
-          ],
-        },
-        {
-          icono: 'modulos', titulo: 'ERP Modular',
-          texto: 'Compras, inventario, facturación o nómina: se enciende lo que necesitas hoy y se añade lo demás cuando toque.',
-          descripcion:
-            'Compras, inventario, ventas, facturación, nómina. En vez de comprar un paquete entero del que usarás un tercio, se enciende lo que hoy necesitas y se añade lo demás cuando toque. Cada módulo habla con los otros.',
-          beneficios: [
-            'Se empieza pequeño y con una inversión acotada.',
-            'No se paga por lo que no se usa.',
-            'Se amplía sin migrar ni empezar de cero.',
-          ],
-        },
-        {
-          icono: 'integracion', titulo: 'Integraciones Tecnológicas',
-          texto: 'Que tus sistemas se hablen entre ellos, para dejar de teclear lo mismo en dos sitios.',
-          descripcion:
-            'Conectar los sistemas que ya tienes para que se pasen la información entre ellos: la facturación con la contabilidad, la tienda con el inventario, el CRM con el correo. Sin volver a teclear lo mismo en dos sitios ni pasarse hojas de cálculo.',
-          beneficios: [
-            'Se acaba la doble digitación, y con ella sus errores.',
-            'La información está al día en todos lados a la vez.',
-            'Se aprovecha lo que ya se compró en vez de reemplazarlo.',
-          ],
-        },
-        {
-          icono: 'inquilinos', titulo: 'Administración de Inquilinos',
-          texto: 'Varias empresas o sedes sobre un mismo sistema, cada una con sus datos, sus accesos y su configuración.',
-          descripcion:
-            'Varias empresas, sedes o franquicias funcionando sobre un mismo sistema, cada una con sus datos completamente separados, sus usuarios y su configuración. Quien administra ve el conjunto; cada inquilino ve solo lo suyo.',
-          beneficios: [
-            'Una sola instalación que mantener en vez de diez.',
-            'Los datos de cada uno, aislados de los demás.',
-            'Dar de alta una sede nueva es cuestión de minutos.',
-          ],
-        },
-        {
-          icono: 'nube', titulo: 'Administración de Recursos de Azure o multi-nube',
-          texto: 'Servidores, respaldos y costos bajo control, en Azure o repartidos entre varias nubes.',
-          descripcion:
-            'Nos hacemos cargo de la infraestructura: servidores, bases de datos, respaldos, certificados y costos, en Azure o repartido entre varias nubes. Con vigilancia de lo que se gasta y avisos antes de que algo se caiga, no después.',
-          beneficios: [
-            'Se ve en qué se va el dinero y se recorta lo que sobra.',
-            'Respaldos y recuperación comprobados de verdad.',
-            'Alguien mirando, en vez de enterarse cuando ya falló.',
-          ],
-        },
-      ],
-    },
-  },
+  /* ── «AUTOMATIZACIÓN» SE RETIRÓ DE AQUÍ EL 2026-08-18 ──────────────────────────
+     Fernando: *«la sección de automatización ya la estamos manejando desde la página de
+     soluciones, así que quitemos esa tarjeta»*. Quedan cuatro puertas: Progreso,
+     Videojuego, Marketplace y Democracia.
+
+     ⚠️ **Su texto NO se ha perdido**: eran 132 líneas —los temas y la galería de once
+     servicios, escritos por él— y siguen en el historial. Para recuperarlas:
+
+         git show 61a7037:lib/sitio/contenido.ts
+
+     Se retiran de aquí en vez de dejarlas sin usar porque un bloque de datos que no se
+     pinta confunde a quien lo lea después: parece que sale en algún sitio y no sale.
+
+     ⚠️ La URL `/clientes/automatizacion` llevaba publicada desde el 2026-08-04 (como
+     `/negocio/automatizacion`). **No se deja en 404**: redirige a `/soluciones`, que es
+     donde vive ahora ese contenido. Ver `next.config.ts`. */
   {
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
