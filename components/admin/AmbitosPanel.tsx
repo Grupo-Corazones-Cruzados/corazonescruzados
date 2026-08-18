@@ -58,6 +58,8 @@ interface FilaTalento {
 export default function AmbitosPanel() {
   const [ambitos, setAmbitos] = useState<Ambito[]>([]);
   const [cobertura, setCobertura] = useState<Record<string, CoberturaTalento>>({});
+  // Talento → nombre del ámbito que ya lo tiene. Un talento pertenece a UNO solo.
+  const [ocupados, setOcupados] = useState<Record<string, string>>({});
   const [elegido, setElegido] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
@@ -99,6 +101,7 @@ export default function AmbitosPanel() {
       const lista: Ambito[] = j.data ?? [];
       setAmbitos(lista);
       setCobertura(Object.fromEntries((j.cobertura ?? []).map((c: CoberturaTalento) => [c.talento, c])));
+      setOcupados(j.ocupados ?? {});
       // Se elige el primero solo si no había nada elegido, para no saltar de ámbito
       // después de guardar.
       setElegido((prev) => (prev && lista.some((a) => a.id === prev) ? prev : lista[0]?.id ?? null));
@@ -129,7 +132,13 @@ export default function AmbitosPanel() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ talentos }),
     });
-    if (!r.ok) { toast.error('No se pudieron guardar los talentos'); return; }
+    if (!r.ok) {
+      // La API explica el choque con «un talento, un ámbito» nombrando al ámbito que lo
+      // tiene. Tragarse ese texto y poner uno genérico sería desperdiciarlo.
+      const j = await r.json().catch(() => ({}));
+      toast.error(j.error || 'No se pudieron guardar los talentos');
+      return;
+    }
     await cargar();
   }
 
@@ -185,13 +194,17 @@ export default function AmbitosPanel() {
   const catalogo = useMemo(() => {
     const yaEstan = new Set((ambito?.talentos ?? []).map((t) => t.talento));
     const q = busqueda.trim().toLowerCase();
+    // ⚠️ Se esconden los que ya tiene OTRO ámbito: un talento pertenece a uno solo
+    // (migración 042). Ofrecer uno que la base va a rechazar es prometer lo imposible.
     return TALENTOS_BY_CATEGORY
       .map((g) => ({
         category: g.category,
-        items: g.items.filter((t) => !yaEstan.has(t) && (!q || t.toLowerCase().includes(q))),
+        items: g.items.filter(
+          (t) => !yaEstan.has(t) && !ocupados[t] && (!q || t.toLowerCase().includes(q)),
+        ),
       }))
       .filter((g) => g.items.length > 0);
-  }, [ambito, busqueda]);
+  }, [ambito, busqueda, ocupados]);
 
   const sinRespaldo = filas.filter((f) => f.proyectos === 0 && f.tickets === 0).length;
 

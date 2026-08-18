@@ -315,6 +315,33 @@ Stack estándar de la casa, con particularidades de este repo:
   - Verificado por API (400 sin talento · 400 con talento inventado · 201 con uno válido) y
     en pantalla en los dos modos del formulario. Los tickets de ensayo se borraron: la base
     quedó en 19.
+- **🪤 UNA MIGRACIÓN APLICADA NO SE TOCA, NI SUS COMENTARIOS (2026-08-18).** Al corregir la
+  regla se editó el comentario de la 039 —ya aplicada— para que no siguiera afirmando lo
+  contrario. `scripts/migrate.mjs` guarda un **checksum** de cada una y, si el archivo cambia,
+  **para y sale con error**. Como corre antes de cada despliegue con migraciones, habría
+  bloqueado todos los siguientes, señalando a un archivo que nadie recordaba haber tocado.
+  Revertido antes de publicar. Lo que haya que matizar se escribe en la migración que corrige.
+- **🔒 UN TALENTO PERTENECE A UN SOLO ÁMBITO (2026-08-18, migración 042).** Corrige una
+  decisión **mía**, no un olvido: la migración 039 dejó la clave en `(ambito_id, talento)` a
+  propósito y con un comentario que decía que un talento podía estar en varios. Era falso.
+  Fernando: *«un talento no puede existir en más de un ámbito»*.
+  - **El motivo, que es lo que había que entender:** el ámbito **clasifica** el talento, y
+    algo que cae en dos cajones no está clasificado — el mismo proyecto saldría bajo dos
+    carpetas y el visitante no sabría cuál está mirando.
+  - **La regla vive en la BASE** (índice único), no en el formulario: una restricción que
+    solo vive en la pantalla se salta con una llamada a la API. Comprobado intentándolo.
+  - **Pero un 500 no es una explicación.** Se captura el `23505` y se devuelve **409** con el
+    nombre del ámbito que ya lo tiene: *«"Automatización de procesos" ya pertenece al ámbito
+    "Tecnología". Un talento solo puede estar en uno.»* El catálogo del admin, además, ya no
+    ofrece los talentos cogidos.
+  - **⚠️ Lo que NO cambia: la descripción sigue en `ambito_talentos`.** Él mismo lo separó:
+    *«la descripción queda entre ámbito y talento, no es lo mismo que la descripción del
+    talento per se»*. Que la pareja sea única no la convierte en propiedad del talento — y el
+    catálogo de talentos vive en el código, no en la base.
+- **✍️ La descripción de «Automatización de procesos» la escribí yo, a petición suya**
+  (2026-08-18), apoyada en los tags reales de los 11 proyectos terminados —RPA, extracción de
+  PDF, correo masivo, facturación, presupuestos, integración con ERP, agentes de IA— y no en
+  promesas. Es editable desde Admin → Ámbitos; si la cambia, manda la suya.
 - **🗂️ ÁMBITOS — TERCERA PASADA: descripción, cuatro pestañas y buscador (2026-08-18).**
   - **Cada talento de un ámbito lleva su DESCRIPCIÓN** (migración 041). Cuelga de la pareja
     ámbito↔talento, **no del talento**: «Análisis de datos» cuenta una cosa en Tecnología y

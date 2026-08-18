@@ -131,11 +131,18 @@ export default function AmbitosExplorador({ ambitos }: { ambitos: AmbitoConConte
       return n;
     });
 
-  /** La descripción del talento abierto, en el ámbito donde esté. */
+  /**
+   * La descripción del talento abierto.
+   *
+   * Se busca por todos los ámbitos y se coge la primera, y es correcto: **un talento
+   * pertenece a UN solo ámbito** (Fernando, 2026-08-18; índice único en la migración 042),
+   * así que no hay una segunda que pudiera competir.
+   */
   const descripcion = useMemo(() => {
+    if (!elegido) return null;
     for (const a of ambitos) {
       const t = a.talentos.find((x) => x.talento === elegido);
-      if (t?.descripcion) return t.descripcion;
+      if (t) return t.descripcion;
     }
     return null;
   }, [ambitos, elegido]);

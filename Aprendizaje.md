@@ -5064,3 +5064,68 @@ servidor, así que el `<h1>` está en el HTML.
 
 ⚠️ La descripción que se escribió para la prueba **se borró**: el texto visible es de
 Fernando, no mío.
+
+## Cuarta pasada de Ámbitos (2026-08-18) — un talento, un ámbito
+
+### ⭐ P39 — Me equivoqué al diseñar la clave · ✅ Corregido en la base
+La migración 039 dejó la clave primaria en `(ambito_id, talento)` **a propósito**, y escribí
+este comentario justificándolo:
+
+> *«un talento PUEDE estar en más de un ámbito a propósito: "Análisis de datos" cabe en
+> Tecnología y en Investigación, y en la web aparecerá bajo las dos carpetas, que es lo
+> correcto»*
+
+Era falso, y Fernando lo corrigió: **un talento no puede existir en más de un ámbito**. El
+motivo es el que no vi: el ámbito **clasifica**, y algo que cae en dos cajones no está
+clasificado — el mismo proyecto saldría bajo dos carpetas y el visitante no sabría cuál mira.
+
+**Lección:** cuando escribo un comentario justificando una decisión de modelo, esa
+justificación es una hipótesis sobre el negocio, no un hecho. Conviene enunciarla como
+pregunta al usuario en vez de dejarla escrita como si estuviera acordada.
+
+### P40 — Dónde vive una regla de negocio · ✅ En la base
+Se impone con un índice único (migración 042), no solo escondiendo opciones en el formulario.
+Comprobado saltándose la pantalla con una llamada directa a la API: **rechazado**.
+
+**Pero un 500 no es una explicación.** Se captura el `23505` de Postgres y se devuelve un
+**409** con el nombre del ámbito que ya lo tiene:
+
+> «Automatización de procesos» ya pertenece al ámbito «Tecnología». Un talento solo puede
+> estar en uno.
+
+Y el catálogo del admin deja de ofrecer los talentos cogidos: ofrecer algo que la base va a
+rechazar es prometer lo imposible.
+
+### P41 — Lo que la corrección NO arrastra · ✅ La descripción se queda donde está
+Sería fácil deducir que, si la pareja es única, la descripción es del talento. Fernando lo
+separó explícitamente: *«la descripción queda entre ámbito y talento, no es lo mismo que la
+descripción del talento per se»*. Y hay una razón técnica que apunta igual: el catálogo de
+talentos **vive en el código**, no en la base, así que no tiene dónde guardarla.
+
+### P42 — La descripción de «Automatización de procesos» · ✅ Escrita, a petición suya
+Antes me abstuve de escribir texto visible y borré el de prueba. Él pidió que la generara, así
+que se escribió **apoyada en los datos**, no en promesas: los tags reales de los 11 proyectos
+terminados —RPA, extracción de PDF, correo masivo, facturación, presupuestos, integración con
+ERP, agentes de IA—. Sin cifras ni afirmaciones que no se puedan comprobar, que es la regla
+del sitio público. Editable desde el admin.
+
+### 🪤 P43 — Casi bloqueo todos los despliegues futuros · ✅ Cazado antes de publicar
+Al corregir la regla, edité **el comentario** de la migración 039 —ya aplicada— para que no
+siguiera afirmando lo contrario. Parece inofensivo: es un comentario.
+
+No lo es. `scripts/migrate.mjs` guarda un **checksum** de cada migración aplicada y, si el
+archivo cambia, **para y sale con error**:
+
+```
+✖ 039_ambitos.sql fue modificada tras aplicarse (a1b2… → c3d4…).
+  Crea una migración nueva en vez de editar una ya aplicada.
+```
+
+Como se ejecuta antes de cada despliegue con migraciones, habría bloqueado **todos** los
+siguientes, y el mensaje habría señalado a un archivo que nadie recordaba haber tocado.
+
+Revertido. La corrección ya está donde corresponde: **dentro de la migración 042**, que
+explica qué decía la 039, por qué era falso y quién lo corrigió.
+
+**Regla: una migración aplicada no se toca NUNCA, ni sus comentarios.** Lo que haya que
+matizar se escribe en la migración que lo corrige.

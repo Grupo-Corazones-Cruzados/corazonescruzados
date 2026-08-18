@@ -30,6 +30,14 @@ import { TALENTOS_SET } from '@/lib/centralized/talentos';
  *
  * Deja de ser una cadena suelta desde el 2026-08-18: lleva su **descripción**, que cuenta
  * cómo se ejerce ese talento en ESTE ámbito y se publica bajo su título en `/ambitos`.
+ *
+ * ⚠️ **Un talento pertenece a UN SOLO ámbito** (Fernando, 2026-08-18; índice único en la
+ * migración 042). El ámbito clasifica, y algo que cae en dos cajones no está clasificado.
+ *
+ * Que la pareja sea única **no** convierte la descripción en propiedad del talento: sigue
+ * describiendo *el talento ejercido dentro de su ámbito*, y el catálogo de talentos vive en
+ * el código, no en la base. Lo confirmó él mismo: *«la descripción queda entre ámbito y
+ * talento, no es lo mismo que la descripción del talento per se»*.
  */
 export interface TalentoDeAmbito {
   talento: string;
@@ -151,6 +159,23 @@ export async function borrarAmbito(id: number): Promise<void> {
   // `ON DELETE CASCADE` se lleva sus talentos. No toca ningún proyecto ni ticket: la
   // relación con ellos se calcula, no se guarda.
   await pool.query(`DELETE FROM gcc_world.ambitos WHERE id = $1`, [id]);
+}
+
+/**
+ * Los talentos que ya están cogidos por OTRO ámbito.
+ *
+ * El panel del admin los esconde del catálogo: un talento pertenece a uno solo, y ofrecer
+ * uno que va a ser rechazado por la base es prometer algo que no se puede cumplir.
+ */
+export async function talentosOcupados(exceptoAmbitoId?: number): Promise<Record<string, string>> {
+  const { rows } = await pool.query(
+    `SELECT t.talento, a.nombre
+       FROM gcc_world.ambito_talentos t
+       JOIN gcc_world.ambitos a ON a.id = t.ambito_id
+      WHERE $1::bigint IS NULL OR t.ambito_id <> $1`,
+    [exceptoAmbitoId ?? null],
+  );
+  return Object.fromEntries(rows.map((r: any) => [r.talento, r.nombre]));
 }
 
 /**

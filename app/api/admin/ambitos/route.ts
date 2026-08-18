@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { listarAmbitos, crearAmbito, coberturaDeTalentos } from '@/lib/ambitos';
+import { listarAmbitos, crearAmbito, coberturaDeTalentos, talentosOcupados } from '@/lib/ambitos';
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -25,7 +25,12 @@ export async function GET(req: NextRequest) {
   // cada guardado. Se calcula para TODOS los talentos de una vez, no uno por ámbito.
   if (req.nextUrl.searchParams.get('cobertura') === '1') {
     const todos = [...new Set(ambitos.flatMap((a) => a.talentos.map((t) => t.talento)))];
-    return NextResponse.json({ data: ambitos, cobertura: await coberturaDeTalentos(todos) });
+    return NextResponse.json({
+      data: ambitos,
+      cobertura: await coberturaDeTalentos(todos),
+      // Qué talento está cogido y por quién: el catálogo del panel los esconde.
+      ocupados: await talentosOcupados(),
+    });
   }
   return NextResponse.json({ data: ambitos });
 }
