@@ -36,7 +36,21 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, EditField } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { ICONOS } from '@/components/sitio/piezas';
-import { ACCESOS } from '@/lib/sitio/contenido';
+import { ACCESOS, DESARROLLO } from '@/lib/sitio/contenido';
+
+/**
+ * TODAS las secciones que pueden tener preguntas frecuentes, con la ruta de la que cuelgan.
+ *
+ * ⚠️ Desde el 2026-08-19 son **dos ramas**: `/clientes` y `/desarrollo-humano`. Si esta lista
+ * se quedara solo con `ACCESOS`, las preguntas de Desarrollo Humano no se podrían crear desde
+ * aquí — y el fallo sería mudo: la web las leería sin problema, pero nadie tendría cómo
+ * escribirlas. Se arma a partir de las dos fuentes para que **añadir una sección al sitio la
+ * traiga aquí sola**.
+ */
+const SECCIONES_CON_FAQS = [
+  ...ACCESOS.map((a) => ({ ...a, base: '/clientes' })),
+  ...DESARROLLO.map((a) => ({ ...a, base: '/desarrollo-humano' })),
+];
 import type { Faq } from '@/lib/faqs';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -45,7 +59,7 @@ const CAMPO =
   'text-digi-text placeholder:text-digi-muted/60 focus:border-accent focus:outline-none transition-colors';
 
 export default function FaqsPanel() {
-  const [seccion, setSeccion] = useState(ACCESOS[0].id);
+  const [seccion, setSeccion] = useState(SECCIONES_CON_FAQS[0].id);
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [conteos, setConteos] = useState<Record<string, number>>({});
   const [cargando, setCargando] = useState(true);
@@ -183,7 +197,7 @@ export default function FaqsPanel() {
     setFaqs((await r.json()).data ?? orden);
   }
 
-  const seccionActual = ACCESOS.find((a) => a.id === seccion);
+  const seccionActual = SECCIONES_CON_FAQS.find((a) => a.id === seccion);
 
   return (
     <div ref={cajaRef} style={{ height: alto }} className="flex flex-col">
@@ -194,12 +208,12 @@ export default function FaqsPanel() {
           title="Secciones"
           value={seccion}
           onChange={setSeccion}
-          items={ACCESOS.map((a) => ({
+          items={SECCIONES_CON_FAQS.map((a) => ({
             value: a.id,
             label: a.titulo,
             Icon: ICONOS[a.icono] ?? HelpCircle,
             count: conteos[a.id] ?? 0,
-            hint: `/clientes/${a.id}`,
+            hint: `${a.base}/${a.id}`,
           }))}
         />
 

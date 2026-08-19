@@ -414,7 +414,14 @@ export function BloqueTema({
                 // descuadradas. Así se alinean todos abajo.
                 <li
                   key={p.titulo}
-                  className="relative overflow-hidden border-t border-[var(--linea-fuerte)] pt-5 pb-24"
+                  /* ⚠️ `pb-24` **solo cuando hay ilustración**: esa banda existe para que la
+                     marca de agua del fondo no se siente encima del texto. Sin imagen no hay
+                     nada que dejar libre, y hasta el 2026-08-19 se reservaba igualmente: 96 px
+                     de vacío bajo cada paso de Marketplace, Videojuego y Democracia.
+                     Se veía poco con una sola fila, y se volvió evidente con las dos filas de
+                     las cuatro dimensiones — el hueco parecía un fallo de maquetación. */
+                  className={`relative overflow-hidden border-t border-[var(--linea-fuerte)] pt-5
+                              ${p.imagen ? 'pb-24' : 'pb-6'}`}
                 >
                   {/* ── LA ILUSTRACIÓN, COMO MARCA DE AGUA ────────────────────────────
                       Pasó por tres sitios antes de acabar aquí (Fernando, 2026-08-04):

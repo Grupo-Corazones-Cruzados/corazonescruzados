@@ -5849,3 +5849,67 @@ módulo **sigue sin existir**, como el marketplace entre clientes y las funcione
 Con esto **las cuatro secciones de `/clientes` tienen ya sus preguntas**: Plataforma (2),
 Videojuego (2), Marketplace (2) y Democracia (1). Medido a 1600 px: tres columnas
 `280px 908px 260px`, índice con su entrada, y sin desbordamiento.
+
+---
+
+## Decimoséptima pasada (2026-08-19) — Desarrollo Humano estrena la interfaz de Clientes
+
+Fernando: *«aplicar el mismo diseño de interfaz que la de clientes, pero orientada a los
+miembros o candidatos»*, aprovechando lo que sé de la organización.
+
+### ⭐ P83 — La pregunta que había que hacer no era el diseño, era el contenido
+El diseño estaba decidido. Lo que no lo estaba: la página **no estaba vacía**. Tenía cinco
+bloques dictados por él —tres motivos, Condiciología, Modelo 4P, nueve valores y el violeta—
+y son el contenido más valioso del sitio: lo único que un competidor no puede copiar, y lo que
+sostiene el posicionamiento por «condiciología» y «Modelo 4P» que la propia página declara en
+sus `keywords`.
+
+Se le plantearon tres repartos con un boceto del panel izquierdo de cada uno. Eligió el que
+**conserva los cinco bloques** repartidos en cuatro secciones. Preguntar costó un minuto;
+adivinar mal habría costado borrar su contenido.
+
+Lo que se **añadió** es la mitad que faltaba: la página contaba *quiénes somos* y no contaba
+*qué gana quien se acerca* —cómo se postula, cómo le llega trabajo por su talento, cómo vende
+lo que construye y cómo crece—.
+
+### P84 — Tercera extracción de la semana, y la más rentable
+`ClientesExplorador` → `ExploradorSecciones`: la lista de secciones, la ruta base, el rótulo y
+el `aria-label` entran por prop. `/clientes` y `/desarrollo-humano` son ahora **el mismo
+componente de 250 líneas**. Verificado que `/clientes` no cambió antes de seguir.
+
+Con él viajan gratis a la rama nueva: el índice de preguntas, las anclas por pregunta, la fila
+de enlaces para pantallas estrechas, el corte de los 1536 px, el `min-w-0`, el pegado de los
+laterales y el sitio para desplazarse al final.
+
+### 🪤 P85 — Dos fallos que solo se vieron al meter contenido de otra forma
+1. **Los pasos 5 y 6 no tenían rango de animación.** Solo estaban definidos del 1 al 4, y los
+   seis pasos de la Condiciología heredaban el rango por defecto —toda la pasada por la
+   ventana—, entrando mucho más lentos que sus hermanos.
+2. **Cuatro pasos salían 3+1**, que no se lee como «cuatro cosas» sino como una fila que se
+   quedó a medias. Con `:has(> li:nth-child(4):last-child)` van en **2×2**, que además dice lo
+   que son: un conjunto —las cuatro dimensiones, los cuatro pasos del Modelo 4P—, no una
+   secuencia cortada.
+3. **La banda de la ilustración se reservaba sin ilustración.** `pb-24` era incondicional: 96 px
+   de vacío bajo cada paso de Marketplace, Videojuego y Democracia. Con una sola fila apenas se
+   notaba; con las dos filas de las cuatro dimensiones el hueco parecía un fallo de maquetación.
+   Ahora `pb-24` solo si hay imagen. **El contenido nuevo hizo visible un defecto viejo.**
+
+### 🧩 P86 — El panel de FAQs se habría quedado ciego a la rama nueva
+`FaqsPanel` recorría `ACCESOS`. Con dos ramas, las preguntas de Desarrollo Humano **no se
+podrían crear desde el admin**, y el fallo habría sido mudo: la web las leería sin problema,
+pero nadie tendría dónde escribirlas. Ahora la lista se arma de las dos fuentes, así que añadir
+una sección al sitio la trae al admin sola.
+
+### Lo medido
+| Ruta | Código |
+|---|---|
+| `/desarrollo-humano` | 200 |
+| `/desarrollo-humano/{el-proyecto, como-se-entra, tu-talento, como-se-crece}` | 200 |
+| `/recursos` | 308 |
+| `/desarrollo-humano/inventado` | **404** |
+
+Los once fragmentos del contenido antiguo —los tres motivos, los seis pasos de la Condiciología,
+los cuatro del Modelo 4P, sus cuatro pisos, los nueve valores y los tres bloques del violeta—
+**siguen todos en el HTML**, comprobado uno a uno. Un `<h1>` por página, tres columnas
+`280px 908px 260px`, los pasos repartiéndose 3 · 2×2 · 6 según cuántos haya, el mapa del sitio
+con las cuatro nuevas, y sin desbordamiento horizontal.

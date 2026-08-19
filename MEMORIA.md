@@ -360,6 +360,20 @@ Stack estándar de la casa, con particularidades de este repo:
     `generateStaticParams` y clave de `faqs.acceso_id`—, así que cambiarlo exigió las seis
     redirecciones (tres prefijos × dos tramos, **en un solo salto**) y la migración 046.
     Las preguntas tienen ancla propia: `/clientes/plataforma#como-funciona`.
+
+- **`/desarrollo-humano` estrena la MISMA interfaz (2026-08-19).** Cuatro secciones —**El
+  proyecto · Cómo se entra · Tu talento · Cómo se crece**— con el mismo explorador, que se
+  extrajo a `ExploradorSecciones` (la lista de secciones y la ruta base entran por prop).
+  Contenido en `DESARROLLO` (`lib/sitio/contenido.ts`), rutas `/desarrollo-humano/<id>`.
+  - ⚠️ **No se perdió nada de la página anterior.** Sus cinco bloques —tres motivos,
+    Condiciología, Modelo 4P, nueve valores y el violeta— **siguen con su texto intacto**,
+    repartidos entre las secciones, y ahora **cada uno tiene URL propia**: «condiciología» y
+    «Modelo 4P» son de las pocas búsquedas donde este sitio puede ser el mejor resultado.
+  - Lo **añadido** (escrito por mí, pendiente de su corrección) es la mitad que faltaba: cómo
+    se postula alguien, cómo le llega trabajo por su talento, cómo vende en el marketplace y
+    cómo crece. La página contaba *quiénes somos* y no *qué gana quien se acerca*.
+  - `FaqsPanel` recorre ahora **las dos ramas**: sin eso, las preguntas de Desarrollo Humano no
+    se podrían crear desde el admin y el fallo habría sido mudo.
   - **(2026-08-19, por la tarde) `progreso` → `plataforma`**, segundo renombrado de la misma
     sección en el mismo día. Las **cuatro** direcciones publicadas —`/clientes/progreso`,
     `/clientes/requerimientos`, `/soluciones/requerimientos`, `/negocio/requerimientos`—

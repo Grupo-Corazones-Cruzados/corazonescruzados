@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITIO, ACCESOS } from '@/lib/sitio/contenido';
+import { SITIO, ACCESOS, DESARROLLO } from '@/lib/sitio/contenido';
 import { listarSoluciones } from '@/lib/soluciones';
 import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
@@ -97,6 +97,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
     { url: `${SITIO.url}/desarrollo-humano`, lastModified: ULTIMO_CAMBIO.desarrolloHumano, changeFrequency: 'monthly', priority: 0.8 },
+    // Sus cuatro secciones, igual que las de `/clientes`: desde el 2026-08-19 cada una es su
+    // propia página con su contenido, y no un bloque escondido detrás de un clic.
+    ...DESARROLLO.map((a) => ({
+      url: `${SITIO.url}/desarrollo-humano/${a.id}`,
+      lastModified: ULTIMO_CAMBIO.desarrolloHumano,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
     // Entra ahora, no antes: hasta el 2026-08-18 era un titular sin contenido, y
     // ofrecerle a Google una página vacía resta al dominio entero.
     { url: `${SITIO.url}/soluciones`, lastModified: ULTIMO_CAMBIO.soluciones, changeFrequency: 'weekly', priority: 0.8 },
