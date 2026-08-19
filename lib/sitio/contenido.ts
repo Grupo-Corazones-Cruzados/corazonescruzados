@@ -369,6 +369,22 @@ export const ACCESOS: Acceso[] = [
     titulo: 'Plataforma',
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
     /**
+     * ⚠️ **ESCRITA POR MÍ** (2026-08-19), a petición de Fernando —«una descripción más larga y
+     * al mismo estilo que hemos usado en los otros temas»—, y está para que la corrija.
+     *
+     * Cada afirmación corresponde a algo que EXISTE y que además cuentan sus dos preguntas:
+     * el ticket con su presupuesto y su fecha límite, el proyecto con su cotización y su
+     * responsable, y el seguimiento desde el panel del cliente. Ni cifras ni plazos: la regla
+     * de la página.
+     *
+     * Dice **«la plataforma»** con todas las letras a propósito. La sección se llama igual que
+     * el botón violeta de la barra de arriba, y ahí hay una ambigüedad real: uno **explica** la
+     * plataforma y el otro **entra** en ella. Nombrarla en la primera frase deja claro de qué
+     * se está hablando antes de que nadie se lo pregunte.
+     */
+    descripcion:
+      'La plataforma es donde vive tu trabajo con nosotros. Publicas lo que necesitas —un ticket suelto o un proyecto entero—, lo toma quien tiene el talento para resolverlo, y desde tu panel sigues el presupuesto, los plazos y a quién lo está haciendo, sin tener que perseguir a nadie.',
+    /**
      * Dictado por Fernando el 2026-08-04, con permiso para retocarlo. Su texto era:
      *
      *   «¿Tienes requerimientos específicos en tus proyectos o en tus procesos para tu
