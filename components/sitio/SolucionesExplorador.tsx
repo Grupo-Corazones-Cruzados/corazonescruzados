@@ -338,7 +338,7 @@ export default function SolucionesExplorador({
             CSS quien enseña una u otra. Se puede porque la oculta mide 0 y su propia regla
             («solo se mueve si no cabe») decide entonces que no cabe nada que mover: no anima
             de fondo ni gasta cuadros. */}
-        <div className="lg:hidden mt-5 min-w-0">
+        <div className="alternativa-estrecha mt-5 min-w-0">
           <TiraConceptos conceptos={conceptosActivos} orientacion="horizontal" />
         </div>
 

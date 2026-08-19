@@ -5607,3 +5607,60 @@ motivo por el que los sitios de documentación llevan un hueco al final.
 Las cuatro secciones prerenderizadas con su nombre nuevo, el mapa del sitio ya las lista, y las
 anclas funcionan en los tres caminos: carga directa de `/clientes/progreso#como-funciona`,
 pulsando en el índice de la derecha, y pulsando el título de la pregunta.
+
+---
+
+## Decimocuarta pasada (2026-08-19) — el tercer panel estrangulaba las preguntas
+
+Fernando, con dos capturas: *«cuando la pantalla no tiene suficiente espacio para mostrar bien
+las tarjetas de preguntas del contenido central, puedes quitar el panel derecho […] y dejarlo
+como aparece en teléfono»*.
+
+### 🔎 P69 — ¿Cuánto es «no hay suficiente espacio»? · ✅ Medido, no estimado
+De la captura salía la cuenta: a **1173 px** de ventana el centro quedaba en 520 px y cada paso
+en **116 px** — «Lo publicas» en cinco líneas. Con tres paneles, el centro es
+`ventana − 48 − 280 − 260 − 64`, así que hacen falta ~1536 px para que el centro llegue a 884 y
+los pasos vuelvan a ~250.
+
+### ⭐ P70 — Eran DOS fallos, no uno
+El que se veía era el panel derecho apareciendo demasiado pronto. Debajo había otro, más de
+fondo: **`BloqueTema` repartía sus pasos con `sm:grid-cols-3`**, o sea tres columnas a partir de
+640 px *de ventana*, dijera lo que dijese el sitio que de verdad tenían. Una tarjeta que vive en
+la columna central de un explorador no puede preguntarle a la ventana cuánto mide.
+
+Arreglar solo lo primero habría movido el problema, no quitado: a 1024 px, con dos paneles, los
+pasos seguirían siendo tres en 664 px de centro. Se arregló con `@container`, que pregunta por
+el ancho del contenedor —la pregunta correcta— y funciona igual si lo estrecha un panel, un
+cambio de página o una ventana pequeña.
+
+**Regla:** cuando un componente puede vivir en una columna estrecha, sus columnas internas se
+deciden con `@container`, no con `sm:`/`lg:`.
+
+### 🧱 P71 — El umbral tenía que ser uno solo, y estaba escrito dos veces
+El panel derecho se ocultaba con `hidden lg:block` en el armazón y la fila de enlaces aparecía
+con `lg:hidden` en la página. Dos sitios para un mismo umbral: mover uno y olvidar el otro deja
+la pantalla con los dos o sin ninguno. Ahora los dos son clases del armazón
+—`.panel-derecho-explorador` y `.alternativa-estrecha`— gobernadas por la misma media query, así
+que **no pueden desincronizarse**. `/soluciones` se pasó también a ellas.
+
+### 🪤 P72 — Mi medidor volvió a mentir, y de la misma familia que ayer
+Al contar columnas por la posición vertical de cada paso, salían dos filas donde había una. La
+causa: los pasos entran **escalonados** con animaciones ligadas al scroll, así que a mitad de
+recorrido cada uno tiene un `translateY` distinto y sus `top` no coinciden. Se resolvió
+preguntando por `grid-template-columns` computado, que describe el layout y no el fotograma.
+Es la segunda vez en dos días que el sospechoso es el medidor.
+
+### Lo medido — `/clientes/progreso`, de 390 a 1920 px
+| Ancho | Paneles | Centro | Pasos | Panel dcho. | Fila de enlaces |
+|---|---|---|---|---|---|
+| 390 | 1 | 350 | 1 × 300 | no | sí |
+| 768 | 1 | 720 | 2 × 299 | no | sí |
+| 1024 | 2 | 664 | 2 × 271 | no | sí |
+| **1173** | 2 | 813 | **2 × 346** | no | sí |
+| 1280 | 2 | 920 | 3 × 258 | no | sí |
+| 1535 | 2 | 1175 | 3 × 343 | no | sí |
+| **1536** | 3 | 884 | **3 × 246** | sí | no |
+| 1920 | 3 | 908 | 3 × 254 | sí | no |
+
+Ningún paso baja de 246 px (antes, 116) y en ninguna anchura hay desbordamiento horizontal.
+`/soluciones` verificado sin cambios a 900, 1024 y 1600.

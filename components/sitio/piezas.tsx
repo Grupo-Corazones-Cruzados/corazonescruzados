@@ -149,14 +149,24 @@ export function Contenedor({
  * 3. **La tercera columna solo existe si hay algo que poner.** Sin `derecha` la rejilla
  *    vuelve a dos columnas en vez de dejar un hueco blanco.
  *
+ * ── DESDE QUÉ ANCHURA CABE EL TERCER PANEL: `corte` ───────────────────────────
+ * No es igual en las dos páginas, y depende de **qué haya en el centro**. La tira de
+ * `/soluciones` acompaña a tarjetas que se reparten solas: a 1024 px ya cabe. El índice de
+ * `/clientes` acompaña a las tarjetas de pregunta, que llevan dentro tres columnas de pasos,
+ * y a 1170 px las dejaba en 116 px de ancho — una palabra por línea (Fernando, 2026-08-19).
+ * Ahí el tercer panel espera hasta 1536 px. Los umbrales viven en `.paneles-explorador`
+ * (`app/globals.css`).
+ *
  * ── LO QUE **NO** HACE ────────────────────────────────────────────────────────
- * El panel derecho se oculta por debajo de `lg`, donde no hay ancho para él. Qué pasa
- * entonces con su contenido es cosa de cada página: `/soluciones` lo tumba en horizontal
- * bajo la descripción, `/clientes` lo convierte en una fila de enlaces. Aquí no se decide,
- * porque no hay una respuesta buena para las dos.
+ * Fuera del corte oculta el panel derecho y enseña, si lo hay, un sustituto marcado con
+ * `.alternativa-estrecha` **dentro del centro**. Qué sea ese sustituto es cosa de cada
+ * página: `/soluciones` tumba su tira en horizontal, `/clientes` convierte el índice en una
+ * fila de enlaces. Aquí no se decide, porque no hay una respuesta buena para las dos — pero
+ * sí se garantiza que **el umbral que esconde uno es el mismo que enseña el otro**, que es lo
+ * que se desincronizaba cuando cada página lo escribía con sus propias clases.
  */
 export function ExploradorTresPaneles({
-  izquierda, centro, derecha,
+  izquierda, centro, derecha, corte = 'lg',
   etiquetaIzquierda, anchoIzquierda = '240px', anchoDerecha = '280px',
 }: {
   izquierda: ReactNode;
@@ -165,12 +175,15 @@ export function ExploradorTresPaneles({
   derecha?: ReactNode;
   /** El `aria-label` del panel de navegación. Obligatorio: es un `<nav>`. */
   etiquetaIzquierda: string;
+  /** `lg` = tercer panel desde 1024 px · `ancho` = desde 1536 px. Ver arriba. */
+  corte?: 'lg' | 'ancho';
   anchoIzquierda?: string;
   anchoDerecha?: string;
 }) {
   return (
     <div
       className="paneles-explorador"
+      data-corte={corte}
       data-derecha={derecha ? 'sí' : undefined}
       style={{ '--panel-izq': anchoIzquierda, '--panel-der': anchoDerecha } as CSSProperties}
     >
@@ -181,7 +194,7 @@ export function ExploradorTresPaneles({
       <div className="min-w-0">{centro}</div>
 
       {derecha && (
-        <div className="hidden lg:block panel-explorador-fijo min-w-0">{derecha}</div>
+        <div className="panel-derecho-explorador panel-explorador-fijo min-w-0">{derecha}</div>
       )}
     </div>
   );
@@ -385,7 +398,7 @@ export function BloqueTema({
         </p>
 
         {pasos && pasos.length > 0 && (
-          <ol className="mt-12 grid gap-8 sm:gap-6 sm:grid-cols-3">
+          <ol className="pasos-tema mt-12 grid gap-8 sm:gap-6">
             {pasos.map((p, i) => {
               const Icono = p.icono ? ICONOS[p.icono] : null;
               return (

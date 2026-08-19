@@ -368,14 +368,55 @@ corrección que solo se aplica a una, y esta lleva dentro tres reglas que costar
 | `sticky` **y** `self-start`, en el ENVOLTORIO | Un pegajoso se mueve dentro de su bloque contenedor, y solo si le sobra sitio | Envolver la tira para ocultarla por ancho desactivó su `sticky` sin dar ningún error |
 | Tercera columna solo si hay `derecha` | Una sección sin acompañante dejaría 280 px en blanco | — |
 
-**Lo que el armazón NO decide:** qué pasa con el panel derecho por debajo de `lg`, donde se
-oculta. `/soluciones` tumba su tira en horizontal bajo la descripción; `/clientes` convierte
-su índice en una fila de enlaces. No hay una respuesta buena para las dos.
+**⭐ `corte` — desde qué anchura cabe el tercer panel, y NO es igual en las dos páginas.**
+Depende de qué haya en el centro:
+
+| `corte` | Tercer panel desde | Quién lo usa | Por qué |
+|---|---|---|---|
+| `lg` (por defecto) | 1024 px | `/soluciones` | La tira acompaña a tarjetas que se reparten solas |
+| `ancho` | **1536 px** | `/clientes` | El índice acompaña a las tarjetas de pregunta, que llevan dentro tres columnas de pasos |
+
+A 1170 px con tres paneles, el centro de `/clientes` quedaba en 520 px y cada paso en **116 px**
+—«Lo publicas» ocupaba cinco líneas—. Lo vio Fernando (2026-08-19).
+
+1536 no es un número redondo por azar: es donde el centro llega a 884 px, justo lo que los
+pasos necesitan para **seguir en tres columnas al aparecer el tercer panel**. Con un corte más
+bajo, cruzar el umbral hacia arriba empeoraría la página: ganarías el índice y perderías una
+columna de pasos.
+
+**Lo que el armazón NO decide:** qué sustituye al panel derecho fuera del corte. `/soluciones`
+tumba su tira en horizontal bajo la descripción; `/clientes` convierte su índice en una fila de
+enlaces. No hay una respuesta buena para las dos.
+
+**Lo que sí garantiza:** que el umbral que oculta el panel derecho es **el mismo** que enseña su
+sustituto. Se hace con dos clases del propio armazón —`.panel-derecho-explorador` y
+`.alternativa-estrecha`— en vez de un `hidden lg:block` en cada página, que es lo que permitía
+que se separaran.
 
 Los anchos viajan como **variables CSS** (`--panel-izq` / `--panel-der`) y las reglas viven en
 `.paneles-explorador` (`app/globals.css`). No es manía: una clase `lg:grid-cols-[${x}px_…]`
 armada con una variable **no existe** —Tailwind genera sus clases leyendo el fuente— y un
 `style` en línea no entiende de `@media`.
+
+### Los pasos de `BloqueTema` se reparten por su CONTENEDOR, no por la ventana (2026-08-19)
+
+Eran `sm:grid-cols-3`: tres columnas a partir de 640 px **de ventana**, dijera lo que dijese el
+sitio que de verdad tenían. Y ahí estaba el fallo: la tarjeta vive en la columna central de un
+explorador de tres paneles, así que su ancho no se parece al de la ventana.
+
+```css
+.tema-anima { container-type: inline-size; }        /* el contenedor viaja con el componente */
+.pasos-tema { grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 560px) { .pasos-tema { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@container (min-width: 820px) { .pasos-tema { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+```
+
+Umbrales sacados de exigir ~220 px por paso, que es donde «responsable» deja de partirse.
+Medido de 390 a 1920 px: **ningún paso baja de 246 px** (antes, 116).
+
+**Regla general:** cuando un componente puede vivir en una columna estrecha, sus columnas
+internas se deciden con `@container`, no con `sm:`/`lg:`. La media query pregunta por la
+ventana; la pregunta correcta es cuánto sitio tiene *aquí*.
 
 ### El explorador de `/clientes` — `components/sitio/ClientesExplorador.tsx` (2026-08-18)
 

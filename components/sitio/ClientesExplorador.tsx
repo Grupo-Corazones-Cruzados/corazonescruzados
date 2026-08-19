@@ -135,9 +135,14 @@ function IndicePreguntas({ temas }: { temas: NonNullable<Acceso['temas']> }) {
 /**
  * EL MISMO ÍNDICE, PARA PANTALLAS ESTRECHAS.
  *
- * Por debajo de `lg` no hay ancho para la tercera columna, así que el índice baja al centro
- * convertido en una fila de enlaces que se desliza a lo ancho. No es adorno: las preguntas
- * son largas, y sin él hay que recorrer la primera entera para descubrir que hay una segunda.
+ * Cuando no hay ancho para la tercera columna, el índice baja al centro convertido en una
+ * fila de enlaces que se desliza a lo ancho — «como aparece en teléfono», pidió Fernando
+ * (2026-08-19). No es adorno: las preguntas son largas, y sin él hay que recorrer la primera
+ * entera para descubrir que hay una segunda.
+ *
+ * ⚠️ Quién decide ese «cuando» es `.alternativa-estrecha`, que gobierna el propio armazón: el
+ * umbral que oculta el panel derecho es **el mismo** que enseña esta fila. Escribirlo aquí con
+ * un `lg:hidden` propio es lo que hacía que los dos se pudieran separar.
  *
  * ⚠️ `min-w-0` en el contenedor de la fila y `overflow-x-auto` en ella: sin lo primero, una
  * fila más ancha que la pantalla estira la columna y con ella la página, que es la trampa
@@ -146,7 +151,7 @@ function IndicePreguntas({ temas }: { temas: NonNullable<Acceso['temas']> }) {
  */
 function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
   return (
-    <nav aria-label="Preguntas de esta sección" className="lg:hidden mt-6 min-w-0">
+    <nav aria-label="Preguntas de esta sección" className="alternativa-estrecha mt-6 min-w-0">
       <ul className="flex gap-2 overflow-x-auto pb-1">
         {temas.map((t) => (
           <li key={t.id} className="shrink-0">
@@ -181,6 +186,10 @@ export default function ClientesExplorador({
   return (
     <ExploradorTresPaneles
       etiquetaIzquierda="Secciones para clientes"
+      /* `ancho`: el tercer panel espera a los 1536 px. Antes aparecía a 1024 y dejaba las
+         tarjetas de pregunta en 520 px, con los pasos a 116 px de ancho. Ver el porqué
+         completo en `.paneles-explorador` (`app/globals.css`). */
+      corte="ancho"
       anchoIzquierda="280px"
       anchoDerecha="260px"
       izquierda={<GaleriaSecciones activa={acceso.id} />}

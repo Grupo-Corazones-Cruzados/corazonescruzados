@@ -1401,6 +1401,33 @@ html {
   }
 }
 
+/* ── LOS PASOS SE REPARTEN POR EL ANCHO DE SU TARJETA, NO POR EL DE LA VENTANA ──
+   (2026-08-19)
+
+   Eran `sm:grid-cols-3`: tres columnas a partir de 640 px **de ventana**, dijera lo que
+   dijese el sitio que de verdad tenían. Y ahí está el fallo: la tarjeta vive en la columna
+   central de un explorador de tres paneles, así que su ancho no se parece al de la ventana.
+   A 1170 px de pantalla la tarjeta medía 520 px y los pasos salían a 116 px — «Lo publicas»
+   ocupaba cinco líneas. Lo vio Fernando.
+
+   `@container` pregunta por el ancho del CONTENEDOR, que es la pregunta correcta: da igual si
+   lo estrecha un panel lateral, un cambio de página o una ventana pequeña. Los umbrales salen
+   de exigir ~220 px por paso, que es donde «responsable» deja de partirse.
+
+   ⚠️ El contenedor se declara en la tarjeta (`.tema-anima`), no en la columna: así la regla
+   viaja con el componente y funciona en cualquier sitio donde se le ponga.                */
+.tema-anima { container-type: inline-size; }
+
+.pasos-tema { grid-template-columns: minmax(0, 1fr); }
+
+@container (min-width: 560px) {
+  .pasos-tema { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@container (min-width: 820px) {
+  .pasos-tema { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 /* Galería de tarjetas: entran escalonadas al desplazarse. Mismo motor que los temas
    —`animation-timeline: view()`—, así que también es CSS puro y también queda desactivado
    donde no exista o donde se pida no mover las cosas.
@@ -1626,11 +1653,34 @@ html {
    Con variables CSS se resuelven las dos cosas: la página pasa los anchos por `style`, y
    el `@media` de aquí decide cuándo se usan.
 
-   Por debajo de `lg` es una sola columna: los tres paneles se apilan.                    */
+   Por debajo de `lg` es una sola columna: los tres paneles se apilan.
+
+   ── ⭐ EL TERCER PANEL NO APARECE A LA MISMA ANCHURA EN LAS DOS PÁGINAS ──────
+   `corte` decide desde cuándo cabe, y **no es un capricho: depende de qué haya en el
+   centro**. La tira de conceptos de `/soluciones` acompaña a unas tarjetas que se reparten
+   solas, así que a 1024 px ya cabe todo. El índice de `/clientes` acompaña a las tarjetas de
+   pregunta, que llevan dentro tres columnas de pasos: a 1170 px las tres columnas dejaban el
+   centro en 520 px y cada paso en 116 px — una palabra por línea. Lo vio Fernando
+   (2026-08-19) y pidió que ahí el panel derecho se quite y el índice baje, como en el móvil.
+
+   · `data-corte="lg"`    → tres paneles desde 1024 px  (`/soluciones`)
+   · `data-corte="ancho"` → dos paneles desde 1024 px y el tercero desde **1536 px**
+                            (`/clientes`)
+
+   1536 no es redondo por azar: es donde el centro llega a 884 px, que es justo lo que los
+   pasos necesitan para seguir en tres columnas al aparecer el tercer panel. Con un corte más
+   bajo, cruzar el umbral hacia arriba **empeoraría** la página: ganarías el índice y perderías
+   una columna de pasos.                                                                     */
 .paneles-explorador {
   display: grid;
   gap: 2rem;
 }
+
+/* Fuera del corte, el panel derecho no existe y manda su sustituto. Se hace aquí y no con
+   `hidden lg:block` en el componente para que **no puedan desincronizarse**: el umbral que
+   esconde uno es, por construcción, el mismo que enseña el otro. */
+.paneles-explorador .panel-derecho-explorador { display: none; }
+.paneles-explorador .alternativa-estrecha { display: block; }
 
 @media (min-width: 1024px) {
   .paneles-explorador {
@@ -1639,9 +1689,19 @@ html {
   /* La tercera columna **solo se reserva si hay algo que poner en ella**. Sin este
      interruptor, una sección sin conceptos ni preguntas dejaría 280 px de hueco blanco a
      la derecha, y el contenido apretado sin motivo. */
-  .paneles-explorador[data-derecha='sí'] {
+  .paneles-explorador[data-derecha='sí'][data-corte='lg'] {
     grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr) var(--panel-der, 280px);
   }
+  .paneles-explorador[data-corte='lg'] .panel-derecho-explorador { display: block; }
+  .paneles-explorador[data-corte='lg'] .alternativa-estrecha { display: none; }
+}
+
+@media (min-width: 1536px) {
+  .paneles-explorador[data-derecha='sí'][data-corte='ancho'] {
+    grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr) var(--panel-der, 280px);
+  }
+  .paneles-explorador[data-corte='ancho'] .panel-derecho-explorador { display: block; }
+  .paneles-explorador[data-corte='ancho'] .alternativa-estrecha { display: none; }
 }
 
 /* ⚠️ `sticky` Y `self-start` VAN JUNTOS, SIEMPRE.
