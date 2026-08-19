@@ -4063,14 +4063,17 @@ Módulos principales:
     - **Si el proyecto tiene plan, se factura SOLO por etapas**: ni el módulo de proyectos ni el de
       facturas ofrecen el detalle por requerimientos. Sin plan, todo sigue como antes.
     - Una etapa **ya facturada no se puede editar ni borrar** (su comprobante ya salió): primero se
-      anula la factura. Anularla la devuelve a facturable.
+      anula la factura. Anularla la devuelve a facturable. Con alguna etapa facturada **desaparece
+      también «Quitar plan de etapas»**, que dejaría el proyecto sin el tramo ya emitido.
   - **Modo por requerimientos (proyectos sin plan):** cada requerimiento se factura una sola vez,
     enlazado en `gcc_world.invoice_requirements`; su importe es el que usa el emisor (suma de
     asignaciones aceptadas y, si no tiene, su costo estimado — `STAGE_AMOUNT_SQL` en
     `lib/payments.ts`, una sola definición).
-  - **El dinero cobrado por adelantado NO es una factura:** se registra como **cobro** en
-    `gcc_world.project_payments` (tabla que existía sin usarse; su `proof_url` dejó de ser
-    obligatorio). Sirve para ver cobrado vs. facturado sin emitir comprobantes.
+  - **El registro de cobros se retiró (Fernando, 2026-08-19).** Se llegó a construir (tarjeta
+    «Cobrado» + ventanita) y él pidió quitarlo: la tarjeta de Pagos se queda con total, facturado,
+    por facturar y el plan de etapas. La tabla `gcc_world.project_payments` sigue ahí, vacía y sin
+    usar. **Que el dinero cobrado no genere factura sigue siendo la regla**; simplemente no se
+    lleva en el sistema.
   - **Dónde se opera:** módulo de Facturas → «Facturar etapa de proyecto» (elige proyecto y
     etapas; **las cotizaciones no aparecen**, del borrador en adelante sí); y al completar el
     proyecto, el modal trae solo lo que falte por facturar. **El modal relee la facturación del
@@ -4455,6 +4458,14 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **El (?) no se veía DENTRO de un panel: `<dialog>` está en la *top layer* (2026-08-19).**
+  `PixelModal` abre un `<dialog>` con `showModal()`, y un diálogo modal se pinta en la *top layer*
+  del navegador, **por encima de cualquier `z-index`**. La burbuja de `BotonAyuda` se colgaba de
+  `document.body` con `z-[80]`, así que dentro de un panel quedaba detrás y el botón parecía roto
+  —afectaba a **todos** los `hint` de `EditField`, no solo a uno—. Arreglado en la definición
+  única: `Burbuja` acepta `contenedor` y `BotonAyuda` le pasa `botonRef.current.closest('dialog')`.
+  **Ojo al comprobarlo:** `PixelModal` deja su contenido en el DOM aunque esté cerrado, así que una
+  prueba automática puede pulsar el (?) de un panel cerrado y creer que el fallo sigue.
 - **Los totales guardados ignoraban el descuento de la línea (2026-08-19).** El XML enviaba
   `precioTotalSinImpuesto = cantidad × precio − descuento`, pero la base guardaba
   `cantidad × precio`: una factura con descuento quedaba con un total MAYOR que el autorizado

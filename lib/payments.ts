@@ -129,7 +129,6 @@ export type ProjectBilling = {
   etapas: BillingStage[];
   /** Base sobre la que se reparte el plan: el costo del proyecto. */
   baseTotal: number;
-  collected: number;    // dinero efectivamente cobrado (cobros registrados)
   stages: ProjectStage[];
 };
 
@@ -145,21 +144,6 @@ export async function ensureStageBilling() {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_invoice_requirements_unique ON gcc_world.invoice_requirements (invoice_id, requirement_id);
     CREATE INDEX IF NOT EXISTS idx_invoice_requirements_req ON gcc_world.invoice_requirements (requirement_id);
-    CREATE TABLE IF NOT EXISTS gcc_world.project_payments (
-      id BIGSERIAL PRIMARY KEY,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      project_id BIGINT NOT NULL,
-      amount NUMERIC(12,2) NOT NULL,
-      proof_url TEXT,
-      status VARCHAR(20) DEFAULT 'confirmed',
-      confirmed_by UUID,
-      confirmed_at TIMESTAMPTZ,
-      notes TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_project_payments_project ON gcc_world.project_payments (project_id);
-    -- La tabla venía de un diseño anterior (comprobante de pago obligatorio) que nunca
-    -- llegó a usarse: un cobro se registra con el monto, el respaldo es opcional.
-    ALTER TABLE gcc_world.project_payments ALTER COLUMN proof_url DROP NOT NULL;
     CREATE TABLE IF NOT EXISTS gcc_world.project_stages (
       id BIGSERIAL PRIMARY KEY,
       project_id BIGINT NOT NULL,
@@ -261,17 +245,6 @@ export async function getProjectEtapas(projectId: string | number): Promise<Bill
   }));
 }
 
-/** Suma de los cobros registrados de un proyecto (dinero recibido, sin comprobante). */
-export async function getProjectCollected(projectId: string | number): Promise<number> {
-  await ensureStageBilling();
-  const { rows: [r] } = await pool.query(
-    `SELECT COALESCE(SUM(amount), 0) AS total FROM gcc_world.project_payments
-      WHERE project_id = ($1)::bigint AND status <> 'cancelled'`,
-    [String(projectId)],
-  );
-  return round2(Number(r?.total) || 0);
-}
-
 /** Foto completa de la facturación de un proyecto: etapas, facturado y cobrado. */
 export async function getProjectBilling(projectId: string | number): Promise<ProjectBilling | null> {
   await ensureStageBilling();
@@ -283,15 +256,14 @@ export async function getProjectBilling(projectId: string | number): Promise<Pro
   if (!p) return null;
   const stages = await getProjectStages(projectId);
   const etapas = await getProjectEtapas(projectId);
-  const collected = await getProjectCollected(projectId);
-  return buildBilling(p, stages, etapas, collected);
+  return buildBilling(p, stages, etapas);
 }
 
 /**
  * Arma la foto de facturación. Si el proyecto tiene PLAN DE ETAPAS, lo facturado y lo
  * pendiente se miden sobre el plan; si no, sobre el detalle de requerimientos.
  */
-function buildBilling(p: any, stages: ProjectStage[], etapas: BillingStage[], collected: number): ProjectBilling {
+function buildBilling(p: any, stages: ProjectStage[], etapas: BillingStage[]): ProjectBilling {
   const finalCost = round2(Number(p.final_cost) || 0);
   const requisitosTotal = round2(stages.reduce((s, e) => s + e.amount, 0));
   // Base sobre la que se reparte el plan: el costo del proyecto y, si aún no está
@@ -314,7 +286,6 @@ function buildBilling(p: any, stages: ProjectStage[], etapas: BillingStage[], co
     mode: conPlan ? 'etapas' : 'requerimientos',
     etapas,
     baseTotal,
-    collected,
     stages,
   };
 }
@@ -372,14 +343,6 @@ export async function getBillableProjects(): Promise<(ProjectBilling & {
       ORDER BY e.sort_order, e.id`,
     [ids],
   );
-  const { rows: collectedRows } = await pool.query(
-    `SELECT project_id, COALESCE(SUM(amount), 0) AS total
-       FROM gcc_world.project_payments
-      WHERE project_id = ANY(($1)::bigint[]) AND status <> 'cancelled'
-      GROUP BY project_id`,
-    [ids],
-  );
-
   const stagesByProject = new Map<string, ProjectStage[]>();
   for (const row of stageRows) {
     const key = String(row.project_id);
@@ -399,16 +362,11 @@ export async function getBillableProjects(): Promise<(ProjectBilling & {
       invoiceNumber: row.invoice_number ?? null,
     });
   }
-  const collectedByProject = new Map<string, number>(
-    collectedRows.map((r: any) => [String(r.project_id), round2(Number(r.total) || 0)]),
-  );
-
   return projects.map((p: any) => ({
     ...buildBilling(
       p,
       stagesByProject.get(String(p.id)) || [],
       etapasByProject.get(String(p.id)) || [],
-      collectedByProject.get(String(p.id)) || 0,
     ),
     clientId: p.client_id != null ? Number(p.client_id) : null,
     clientName: p.client_name ?? null,

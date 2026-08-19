@@ -64,7 +64,8 @@ export default function BotonAyuda({
       </button>
 
       {abierto && caja && (
-        <Burbuja caja={caja} burbujaRef={burbujaRef} lado={lado} etiqueta={titulo} ancho={ancho}>
+        <Burbuja caja={caja} burbujaRef={burbujaRef} lado={lado} etiqueta={titulo} ancho={ancho}
+          contenedor={botonRef.current?.closest('dialog')}>
           <div className="flex items-center justify-between px-3 py-2 border-b border-digi-border">
             <span className="text-[12px] font-semibold text-digi-text" style={mf}>{titulo}</span>
             <button type="button" onClick={cerrar} aria-label="Cerrar"

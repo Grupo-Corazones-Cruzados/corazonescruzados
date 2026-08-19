@@ -108,13 +108,20 @@ export function usarBurbuja(
 
 /** El contenedor flotante ya posicionado. Se pinta en un portal sobre `document.body`. */
 export function Burbuja({
-  caja, burbujaRef, lado, etiqueta, ancho = 340, children,
+  caja, burbujaRef, lado, etiqueta, ancho = 340, contenedor, children,
 }: {
   caja: Caja;
   burbujaRef: RefObject<HTMLDivElement | null>;
   lado: LadoBurbuja;
   etiqueta: string;
   ancho?: number;
+  /**
+   * Dónde se cuelga la burbuja. Por defecto `document.body`, pero **dentro de un
+   * `PixelModal` hay que pasar su `<dialog>`**: un diálogo abierto con `showModal()`
+   * vive en la *top layer* del navegador, que está por encima de CUALQUIER z-index.
+   * Colgada del body, la burbuja se dibujaba detrás del panel y el (?) parecía roto.
+   */
+  contenedor?: Element | null;
   children: ReactNode;
 }) {
   return createPortal(
@@ -142,6 +149,6 @@ export function Burbuja({
         style={{ top: caja.flechaY, marginTop: -6 }}
       />
     </div>,
-    document.body,
+    contenedor ?? document.body,
   );
 }

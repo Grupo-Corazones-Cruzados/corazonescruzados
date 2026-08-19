@@ -16,6 +16,7 @@ import AssigneePicker from '@/components/tickets/AssigneePicker';
 import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3, Pencil } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import BotonAyuda from '@/components/ui/BotonAyuda';
 import BrandLoader from '@/components/ui/BrandLoader';
 import IncidentsTab from '@/components/projects/IncidentsTab';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
@@ -169,12 +170,6 @@ export default function ProjectDetailPage() {
   // entran en esta factura.
   const [billing, setBilling] = useState<any>(null);
   const [selectedStages, setSelectedStages] = useState<number[]>([]);
-  // Cobros del proyecto: dinero recibido, sin comprobante.
-  const [collections, setCollections] = useState<any[]>([]);
-  const [newCollection, setNewCollection] = useState('');
-  const [newCollectionNote, setNewCollectionNote] = useState('');
-  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
-  const [savingCollection, setSavingCollection] = useState(false);
   // Plan de etapas: el acuerdo con el cliente («50% al empezar, 50% al entregar»).
   // No son los requerimientos, que son el trabajo interno.
   const [showStagesPanel, setShowStagesPanel] = useState(false);
@@ -263,7 +258,6 @@ export default function ProjectDetailPage() {
       fetch(`/api/projects/${id}/payments`).then(r => r.json()).then(d => {
         setPayments(d.data || null);
         setBilling(d.billing || null);
-        setCollections(d.collections || []);
       }).catch(() => {});
     } catch { toast.error('Error al cargar proyecto'); }
     finally { setLoading(false); }
@@ -475,7 +469,7 @@ export default function ProjectDetailPage() {
     try {
       const r = await fetch(`/api/projects/${id}/payments`);
       const d = await r.json();
-      if (d?.billing) { bill = d.billing; setBilling(d.billing); setCollections(d.collections || []); setPayments(d.data || null); }
+      if (d?.billing) { bill = d.billing; setBilling(d.billing); setPayments(d.data || null); }
     } catch { /* si falla, se usa lo que ya había */ }
 
     const conPlan = bill?.mode === 'etapas';
@@ -581,32 +575,6 @@ export default function ProjectDetailPage() {
       fetchProject();
     } catch (e: any) { toast.error(e.message); }
     finally { setSavingPlan(false); }
-  };
-
-  /** Registra dinero recibido del cliente. No emite comprobante. */
-  const registerCollection = async () => {
-    const monto = Number(newCollection);
-    if (!monto || monto <= 0) { toast.error('Ingresa el monto cobrado'); return; }
-    setSavingCollection(true);
-    try {
-      const res = await fetch(`/api/projects/${id}/payments`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: monto, notes: newCollectionNote }),
-      });
-      if (!res.ok) throw new Error('No se pudo registrar el cobro');
-      setNewCollection(''); setNewCollectionNote('');
-      setShowCollectionDialog(false);
-      toast.success('Cobro registrado');
-      fetchProject();
-    } catch (e: any) { toast.error(e.message); }
-    finally { setSavingCollection(false); }
-  };
-
-  const deleteCollection = async (paymentId: number) => {
-    const res = await fetch(`/api/projects/${id}/payments?payment_id=${paymentId}`, { method: 'DELETE' });
-    if (!res.ok) { toast.error('No se pudo eliminar el cobro'); return; }
-    toast.success('Cobro eliminado');
-    fetchProject();
   };
 
   /** Marca/desmarca una etapa y rehace el detalle con las que queden elegidas. */
@@ -1813,9 +1781,23 @@ export default function ProjectDetailPage() {
                 return (
                   <div className="mb-3">
                     <div className="flex items-center justify-between border-b border-digi-border pb-1.5 mb-2">
-                      <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>
-                        {conPlan ? 'Etapas a facturar' : 'Requerimientos a facturar'}
-                      </h4>
+                      <div className="flex items-center gap-1">
+                        <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>
+                          {conPlan ? 'Etapas a facturar' : 'Requerimientos a facturar'}
+                        </h4>
+                        <BotonAyuda titulo={conPlan ? 'Etapas a facturar' : 'Requerimientos a facturar'}>
+                          {conPlan
+                            ? <>Se factura por las etapas acordadas con el cliente. Las ya facturadas no vuelven a entrar; para corregir una, anula antes su factura.</>
+                            : <>Se factura al entregar cada requerimiento. Los ya facturados no vuelven a entrar, y el detalle de abajo sigue siendo editable.</>}
+                          {Number(billing.invoicedLegacy) > 0 && (
+                            <p className="mt-2">
+                              <strong>Ojo:</strong> este proyecto ya tiene ${fmt2(Number(billing.invoicedLegacy))} facturados
+                              en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no
+                              cobrar dos veces lo mismo.
+                            </p>
+                          )}
+                        </BotonAyuda>
+                      </div>
                       <span className="text-[11px] text-digi-muted" style={pf}>
                         Facturado ${fmt2(billing.invoiced)} · Por facturar ${fmt2(billing.billable)}
                       </span>
@@ -1840,16 +1822,6 @@ export default function ProjectDetailPage() {
                         );
                       })}
                     </div>
-                    {Number(billing.invoicedLegacy) > 0 && (
-                      <div className="px-2 py-1.5 border border-amber-300 rounded bg-amber-50 text-[11.5px] text-amber-700 mt-1" style={pf}>
-                        Ojo: este proyecto ya tiene ${fmt2(Number(billing.invoicedLegacy))} facturados en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar dos veces lo mismo.
-                      </div>
-                    )}
-                    <p className="text-[11px] text-digi-muted mt-1" style={pf}>
-                      {conPlan
-                        ? 'Este proyecto se factura por las etapas acordadas con el cliente. Las ya facturadas no vuelven a entrar.'
-                        : 'Se factura al entregar cada requerimiento. Los ya facturados no vuelven a entrar; el detalle de abajo sigue siendo editable.'}
-                    </p>
                   </div>
                 );
               })()}
@@ -2260,7 +2232,7 @@ export default function ProjectDetailPage() {
           {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
               `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
           {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
-            || Number(billing?.stagesTotal || 0) > 0 || collections.length > 0) && (() => {
+            || Number(billing?.stagesTotal || 0) > 0) && (() => {
             const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
             const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
             return (
@@ -2317,32 +2289,6 @@ export default function ProjectDetailPage() {
                   </div>
                 )}
 
-                {/* COBROS: dinero recibido del cliente (p. ej. el 25% a la firma). No son
-                    comprobantes — la factura se emite al entregar cada etapa. */}
-                {isAdmin && (
-                  <div className="mt-2 pt-2 border-t border-digi-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-digi-muted" style={pf}>Cobrado</span>
-                      <span className="flex items-center gap-2">
-                        <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(billing?.collected || 0))}</span>
-                        <button onClick={() => { setNewCollection(''); setNewCollectionNote(''); setShowCollectionDialog(true); }}
-                          className="text-[11px] text-accent hover:underline" style={pf}>Registrar</button>
-                      </span>
-                    </div>
-                    {(collections || []).map((c: any) => (
-                      <div key={c.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
-                        <span className="min-w-0 truncate text-digi-muted">
-                          {new Date(c.created_at).toLocaleDateString('es-EC')}{c.notes ? ` · ${c.notes}` : ''}
-                        </span>
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <span className="tabular-nums text-digi-text">${fmt2(Number(c.amount))}</span>
-                          <button onClick={() => deleteCollection(c.id)} className="text-red-500/70 hover:text-red-600" title="Eliminar cobro">×</button>
-                        </span>
-                      </div>
-                    ))}
-                    <p className="text-[10.5px] text-digi-muted mt-1" style={pf}>Dinero recibido. No emite factura: se factura al entregar cada etapa.</p>
-                  </div>
-                )}
               </div>
             );
           })()}
@@ -2363,7 +2309,8 @@ export default function ProjectDetailPage() {
         saving={savingPlan}
         canSave={planDraft.filter(e => e.name.trim()).length >= 2}
         saveLabel="Guardar etapas"
-        danger={(billing?.etapas || []).length > 0 ? { label: 'Quitar plan de etapas', onClick: borrarPlan } : undefined}
+        danger={(billing?.etapas || []).length > 0 && !(billing?.etapas || []).some((e: any) => e.invoiceId)
+          ? { label: 'Quitar plan de etapas', onClick: borrarPlan } : undefined}
       >
         <EditField label="Total del proyecto" hint={
           <>Es la base sobre la que se reparten las etapas: el costo final del proyecto y, mientras no
@@ -2415,34 +2362,7 @@ export default function ProjectDetailPage() {
           </button>
         </div>
 
-        <p className="text-[11px] text-digi-muted" style={pf}>
-          Con etapas definidas, este proyecto se factura solo por etapas: ni aquí ni en el módulo de
-          facturas se ofrece el detalle por requerimientos. Las ya facturadas no se pueden cambiar.
-        </p>
       </EditPanel>
-
-      {/* Ventanita: registrar un cobro (dos campos, no es un formulario). */}
-      <QuickEditDialog
-        open={showCollectionDialog}
-        title="Registrar cobro"
-        onClose={() => !savingCollection && setShowCollectionDialog(false)}
-        onSave={registerCollection}
-        saving={savingCollection}
-        canSave={Number(newCollection) > 0}
-        saveLabel="Registrar"
-      >
-        <EditField label="Monto cobrado ($)" hint={
-          <>Dinero recibido del cliente. No emite comprobante: la factura se emite al entregar cada
-          etapa, que es cuando la norma lo exige.</>
-        }>
-          <input value={newCollection} onChange={e => setNewCollection(e.target.value)}
-            type="number" min="0" step="0.01" placeholder="0.00" autoFocus className={`${EDIT_INPUT} tabular-nums`} />
-        </EditField>
-        <EditField label="Nota">
-          <input value={newCollectionNote} onChange={e => setNewCollectionNote(e.target.value)}
-            placeholder="Anticipo del 25%, transferencia…" className={EDIT_INPUT} />
-        </EditField>
-      </QuickEditDialog>
 
       {/* Panel: Progreso del equipo (se abre desde el header) */}
       <PixelModal open={showProgresoModal} onClose={() => setShowProgresoModal(false)} title="Progreso del equipo" size="md">

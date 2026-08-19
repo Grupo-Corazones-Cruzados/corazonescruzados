@@ -9,6 +9,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
+import BotonAyuda from '@/components/ui/BotonAyuda';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
@@ -588,9 +589,23 @@ function InvoicesPageInner() {
             {stageProject && (
               <div className="mb-3">
                 <div className="flex items-center justify-between border-b border-digi-border pb-1.5 mb-2">
-                  <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>
-                    {stageProject.mode === 'etapas' ? 'Etapas a facturar' : 'Requerimientos a facturar'}
-                  </h4>
+                  <div className="flex items-center gap-1">
+                    <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>
+                      {stageProject.mode === 'etapas' ? 'Etapas a facturar' : 'Requerimientos a facturar'}
+                    </h4>
+                    <BotonAyuda titulo={stageProject.mode === 'etapas' ? 'Etapas a facturar' : 'Requerimientos a facturar'}>
+                      {stageProject.mode === 'etapas'
+                        ? <>Se factura por las etapas acordadas con el cliente. Las ya facturadas no vuelven a entrar; para corregir una, anula antes su factura.</>
+                        : <>Se marcan por defecto los requerimientos entregados y sin facturar. El detalle sigue siendo editable: puedes fusionarlos en un solo concepto.</>}
+                      {Number(stageProject.invoicedLegacy) > 0 && (
+                        <p className="mt-2">
+                          <strong>Ojo:</strong> este proyecto ya tiene ${fmt2(Number(stageProject.invoicedLegacy))} facturados
+                          en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar
+                          dos veces lo mismo.
+                        </p>
+                      )}
+                    </BotonAyuda>
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-digi-muted" style={pf}>
                       Facturado ${fmt2(Number(stageProject.invoiced))} de ${fmt2(Number(stageProject.stagesTotal))}
@@ -622,16 +637,6 @@ function InvoicesPageInner() {
                     );
                   })}
                 </div>
-                {Number(stageProject.invoicedLegacy) > 0 && (
-                  <div className="px-2 py-1.5 border border-amber-300 rounded bg-amber-50 text-[11.5px] text-amber-700 mt-1" style={pf}>
-                    Ojo: este proyecto ya tiene ${fmt2(Number(stageProject.invoicedLegacy))} facturados en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar dos veces lo mismo.
-                  </div>
-                )}
-                <p className="text-[11px] text-digi-muted mt-1" style={pf}>
-                  {stageProject.mode === 'etapas'
-                    ? 'Este proyecto se factura por las etapas acordadas con el cliente. Las ya facturadas no vuelven a entrar.'
-                    : 'Se marcan por defecto los requerimientos entregados y sin facturar. El detalle sigue siendo editable: puedes fusionarlos en un solo concepto.'}
-                </p>
               </div>
             )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
