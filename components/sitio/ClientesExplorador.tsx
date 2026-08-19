@@ -204,8 +204,12 @@ export default function ClientesExplorador({
           <h1 className="text-[30px] sm:text-[40px] font-semibold tracking-tight text-[var(--texto)] leading-tight">
             {acceso.titulo}
           </h1>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-[var(--suave)] max-w-3xl">
-            {acceso.texto}
+          {/* La descripción LARGA si la sección la tiene; si no, su frase corta. Son dos
+              campos distintos a propósito: `texto` va también en la tarjeta del panel
+              izquierdo y en la descripción de la pestaña, donde un párrafo de cinco frases
+              haría daño. Ver el aviso en `Acceso` (`lib/sitio/contenido.ts`). */}
+          <p className="mt-3 text-[15.5px] leading-relaxed text-[var(--suave)] max-w-3xl whitespace-pre-line">
+            {acceso.descripcion ?? acceso.texto}
           </p>
 
           {acceso.enlaceExterno && (

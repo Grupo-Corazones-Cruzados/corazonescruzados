@@ -340,7 +340,8 @@ export function BloqueTema({
   id: string;
   etiqueta: string;
   pregunta: string;
-  texto: string;
+  /** Opcional: sin respuesta escrita no se pinta párrafo. Ver el aviso en `Tema`. */
+  texto?: string;
   pasos?: {
     titulo: string;
     texto: string;
@@ -393,9 +394,13 @@ export function BloqueTema({
           </a>
         </h2>
 
-        <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-[var(--suave)] max-w-2xl">
-          {texto}
-        </p>
+        {/* Sin respuesta escrita no se pinta el párrafo —ni un hueco, ni un relleno—. Es la
+            regla del sitio, y aquí además evita publicar texto que nadie ha escrito. */}
+        {texto && (
+          <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-[var(--suave)] max-w-2xl">
+            {texto}
+          </p>
+        )}
 
         {pasos && pasos.length > 0 && (
           <ol className="pasos-tema mt-12 grid gap-8 sm:gap-6">

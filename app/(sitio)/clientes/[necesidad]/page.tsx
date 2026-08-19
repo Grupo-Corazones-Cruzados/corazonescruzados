@@ -139,8 +139,12 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           Declara las preguntas frecuentes **y también los temas de la sección**. Solo se
           declara si hay alguna: un `FAQPage` vacío es un dato falso. */}
       {(() => {
+        // ⚠️ Un tema sin respuesta escrita NO se declara: una pregunta sin su respuesta es
+        // un dato falso, y es el caso de Videojuego mientras Fernando no dicte su párrafo.
         const preguntas = [
-          ...(acceso.temas ?? []).map((t) => ({ name: t.pregunta, text: t.texto })),
+          ...(acceso.temas ?? [])
+            .filter((t) => t.texto)
+            .map((t) => ({ name: t.pregunta, text: t.texto as string })),
           ...faqs.map((f) => ({ name: f.pregunta, text: f.respuesta })),
         ];
         if (preguntas.length === 0) return null;

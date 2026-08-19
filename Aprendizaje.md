@@ -5664,3 +5664,44 @@ Es la segunda vez en dos días que el sospechoso es el medidor.
 
 Ningún paso baja de 246 px (antes, 116) y en ninguna anchura hay desbordamiento horizontal.
 `/soluciones` verificado sin cambios a 900, 1024 y 1600.
+
+---
+
+## Decimoquinta pasada (2026-08-19) — Videojuego pasa a ser contenido de Fernando
+
+Dictó la descripción de la sección —la historia del juego, cinco frases— y sustituyó mis dos
+preguntas por una suya, «¿Buscas poner a prueba a tus colaboradores?», con sus tres pasos y la
+respuesta marcada como «descripción pendiente».
+
+### ⭐ P73 — «Descripción» era DOS textos, no uno
+`Acceso.texto` se usaba en cuatro sitios: el párrafo bajo el título, la tarjeta del panel
+izquierdo, la `description` de la pestaña y los datos estructurados. Meter ahí las cinco frases
+habría dejado una tarjeta de navegación cuatro veces más alta que sus hermanas y un resultado de
+Google cortado a media frase (~160 caracteres).
+
+Así que `Acceso` gana `descripcion`: el párrafo largo de la página. `texto` se queda como la
+frase corta de la tarjeta y del buscador. **Son dos campos porque son dos trabajos**, y el fallo
+habría sido invisible hasta verlo publicado.
+
+### ✅ P74 — Una pregunta sin respuesta: no se rellena, no se pinta
+`Tema.texto` pasa a opcional. Sin respuesta escrita no se pinta párrafo —ni relleno, ni
+«próximamente»—, que es la regla del sitio, y además evita publicar texto que nadie ha escrito.
+
+⚠️ Y **no entra en el `FAQPage`**: declarar una pregunta sin su respuesta es un dato falso.
+Comprobado: `/clientes/videojuego` ya no emite `FAQPage` (0 apariciones), y volverá a emitirlo
+solo cuando llegue el párrafo.
+
+### ⚠️ P75 — Aviso dado y asumido: los pasos 2 y 3 describen lo que no existe
+El juego está en el prólogo (`godot/Videojuego.md`): no hay creación de personaje con tutorial
+de eventos, ni informes por colaborador. Se le señaló **antes** de publicarlo y decidió
+publicarlo así; su paso 3 ya lo dice en futuro («podrá generar»), el 2 no. Queda escrito junto a
+la entrada en `ACCESOS` porque esta página tiene la regla de que nada sea incomprobable, y
+porque una verificación de Meta ya se rechazó una vez por anunciar lo que no se podía comprobar.
+
+Su texto va **palabra por palabra**. Lo único mío es la etiqueta «Pruebas», que el diseño exige
+y él no dictó.
+
+### Lo medido
+Descripción larga en el HTML ✔ · pregunta nueva ✔ · las dos preguntas viejas fuera (0) ✔ ·
+`FAQPage` ausente ✔ · la tarjeta del panel izquierdo conserva su frase corta y mide 111 px,
+frente a los 131 de Progreso ✔ · sin desbordamiento horizontal ✔.

@@ -181,8 +181,22 @@ export interface Acceso {
    * Marketplace · Democracia.
    */
   titulo: string;
-  /** La frase de la tarjeta. */
+  /**
+   * La frase CORTA. Se usa en tres sitios donde el espacio manda y donde un párrafo largo
+   * hace daño: la tarjeta del panel izquierdo, la `description` de la pestaña —que Google
+   * corta a ~160 caracteres— y los datos estructurados.
+   */
   texto: string;
+  /**
+   * El párrafo LARGO, el que se lee bajo el título de la página. Opcional: sin él se pinta
+   * `texto`, que es lo que hacían las cuatro secciones hasta el 2026-08-19.
+   *
+   * ⚠️ Nació porque Fernando dictó para Videojuego una descripción de cinco frases contando
+   * la historia del juego. Puesta en `texto` habría reventado las tres cosas de arriba: una
+   * tarjeta de navegación cuatro veces más alta que sus hermanas y una descripción de
+   * buscador cortada a la mitad de una frase. Son dos textos porque son dos trabajos.
+   */
+  descripcion?: string;
   /**
    * Enlace a otra parte del sitio, si lo tiene. Se pinta **en la página de detalle**, no en
    * la tarjeta: la tarjeta entera ya es un enlace, y un `<a>` dentro de otro `<a>` es
@@ -296,8 +310,18 @@ export interface Tema {
   etiqueta: string;
   /** La pregunta grande. Es el gancho: tiene que sonar al problema de quien lee. */
   pregunta: string;
-  /** La respuesta, en una o dos frases. */
-  texto: string;
+  /**
+   * La respuesta, en una o dos frases. **Opcional desde el 2026-08-19.**
+   *
+   * Fernando dictó la pregunta de Videojuego y sus tres pasos, y dejó la respuesta como
+   * «descripción pendiente». Se podía hacer dos cosas: inventar un párrafo de relleno o no
+   * pintar ninguno. Se hace lo segundo, que es la regla del sitio —lo que no hay no deja
+   * hueco— y además evita publicar texto que nadie ha escrito.
+   *
+   * ⚠️ Un tema sin `texto` **no entra en el `FAQPage`**: una pregunta declarada sin respuesta
+   * es un dato falso.
+   */
+  texto?: string;
   /**
    * Los pasos, para que la promesa se vea concreta. Opcional.
    * `icono` es una clave de `ICONOS` (`components/sitio/piezas.tsx`) y se pinta **debajo**
@@ -430,68 +454,57 @@ export const ACCESOS: Acceso[] = [
      `/negocio/automatizacion`). **No se deja en 404**: redirige a `/soluciones`, que es
      donde vive ahora ese contenido. Ver `next.config.ts`. */
   /**
-   * ⚠️ **LOS DOS TEMAS DE VIDEOJUEGO LOS ESCRIBÍ YO** (2026-08-18), con el permiso de
-   * Fernando: *«redacto yo una propuesta»*. Están para que los corrija o los tire.
+   * ⭐ CONTENIDO DE FERNANDO, PALABRA POR PALABRA (2026-08-19).
    *
-   * De dónde sale cada afirmación, porque la regla de esta página es que **nada sea
-   * incomprobable** —y ya costó una verificación de Meta—:
-   *  · «Corre en el navegador, sin instalar nada» → el juego se compila a `public/game/` y se
-   *    sirve en `/juego`; el motor se descarga en tiempo de ejecución (ver `app/juego/page.tsx`).
-   *  · «Se entra con la cuenta» → `GameEntryGate` exige la marca de entrada que deja la
-   *    portada tras iniciar sesión; sin ella, devuelve al visitante a `/`.
-   *  · «Las fichas se ganan solo jugando» → MEMORIA.md. **Deliberadamente NO se dice en qué
-   *    se gastan**: eso está por construir, y anunciarlo sería prometer lo que no existe.
+   * Sustituye entero a lo que yo había escrito el día anterior —dos preguntas sobre cómo se
+   * entra y para qué sirve un juego—. Aquello está en el historial:
+   *
+   *     git show 6c99478:lib/sitio/contenido.ts
+   *
+   * La `descripcion` cuenta la historia del juego y NO se toca ni se acorta. Va en
+   * `descripcion` y no en `texto` porque `texto` se usa además en la tarjeta del panel
+   * izquierdo y en la descripción de la pestaña: cinco frases ahí dejarían una tarjeta cuatro
+   * veces más alta que sus hermanas y un resultado de Google cortado a la mitad.
+   *
+   * ⏳ **La respuesta de la pregunta está pendiente**: él escribió «descripción pendiente».
+   * Sin ella no se pinta párrafo —ni relleno ni «próximamente»— y el tema **no entra en el
+   * `FAQPage`**, porque una pregunta declarada sin respuesta es un dato falso.
+   *
+   * ⚠️ **AVISO, dado y asumido.** Los pasos 2 y 3 describen cosas que HOY NO EXISTEN: el
+   * juego está en el prólogo (`godot/Videojuego.md`), no hay creación de personaje con
+   * tutorial de eventos ni informes por colaborador. Se le señaló antes de publicarlo y
+   * decidió publicarlo así; su paso 3 ya lo dice en futuro («podrá generar»). Queda escrito
+   * porque esta página tiene la regla de que nada sea incomprobable, y porque una
+   * verificación de Meta ya se rechazó una vez por anunciar lo que no se podía comprobar.
+   *
+   * La `etiqueta` («Pruebas») es lo único mío: el diseño la exige y él no la dictó.
    */
   {
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
+    descripcion:
+      'GCC World es un videojuego que cuenta la historia de un mundo que sufrió las peores consecuencias de olvidar sus raíces. Tres niños que perdieron a sus padres durante una persecución en este mundo, se lanzaron hacia un hoyo ancestral, el cual sin saberlo, fue el lugar de unión y causantes de prosperidad de las primeras familias. ¿Qué existirá en el fondo del hoyo?',
     temas: [
       {
-        id: 'como-se-entra',
-        etiqueta: 'La aventura',
-        pregunta: '¿Prefieres conocer el proyecto jugando a leerlo?',
-        texto:
-          'GCC World es un videojuego que cuenta la historia del grupo y sus retos. Se juega dentro del navegador, en la misma pantalla en la que estás: no hay nada que instalar ni que descargar a mano.',
+        id: 'poner-a-prueba',
+        etiqueta: 'Pruebas',
+        pregunta: '¿Buscas poner a prueba a tus colaboradores?',
         pasos: [
           {
             titulo: 'Entras con tu cuenta',
-            texto: 'La misma con la que se entra a la plataforma. Es la única puerta: sin sesión iniciada, el juego devuelve a la portada.',
+            texto: 'La misma con la que se entra en la plataforma. Es la única puerta para los clientes.',
             icono: 'candado',
           },
           {
-            titulo: 'Se carga solo',
-            texto: 'El motor se descarga la primera vez y arranca dentro de la propia página. Sin instalador, sin tienda de aplicaciones y sin permisos que conceder.',
-            icono: 'web',
-          },
-          {
-            titulo: 'Empieza el prólogo',
-            texto: 'La aventura abre contando de dónde viene el proyecto, y a partir de ahí se avanza por escenas.',
-            icono: 'juego',
-          },
-        ],
-      },
-      {
-        id: 'para-que-un-juego',
-        etiqueta: 'Por qué',
-        pregunta: '¿Qué pinta un videojuego en un proyecto de desarrollo humano?',
-        texto:
-          'Es la forma en que el proyecto cuenta lo que hace y pone a prueba lo que enseña. La historia plantea retos, y superarlos da fichas: la moneda del juego, que se consigue únicamente jugando.',
-        pasos: [
-          {
-            titulo: 'Una historia, no un folleto',
-            texto: 'Lo que el grupo defiende se cuenta como aventura. Se entiende jugando, que es como se retiene.',
-            icono: 'libro',
-          },
-          {
-            titulo: 'Retos que se superan',
-            texto: 'Cada tramo plantea algo que resolver. No es un vídeo que se mira: hay que hacerlo.',
-            icono: 'diana',
-          },
-          {
-            titulo: 'Fichas que se ganan',
-            texto: 'La recompensa de superar un reto. No se compran ni se regalan: se ganan jugando y solo jugando.',
+            titulo: 'Consigues el primer logro',
+            texto: 'Inicias el prólogo, y creas tu personaje. Luego durante el tutorial vas a saber cuáles son los eventos que puedes crear para tus colaboradores.',
             icono: 'premio',
+          },
+          {
+            titulo: 'Obtén los resultados',
+            texto: 'Cada prueba podrá generar un reporte según las decisiones y logros alcanzados durante la prueba de cada colaborador que realizó la prueba.',
+            icono: 'grafico',
           },
         ],
       },
