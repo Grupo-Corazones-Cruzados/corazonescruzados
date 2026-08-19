@@ -485,9 +485,13 @@ export const ACCESOS: Acceso[] = [
    * ⚠️ **AVISO, dado y asumido.** Los pasos 2 y 3 describen cosas que HOY NO EXISTEN: el
    * juego está en el prólogo (`godot/Videojuego.md`), no hay creación de personaje con
    * tutorial de eventos ni informes por colaborador. Se le señaló antes de publicarlo y
-   * decidió publicarlo así; su paso 3 ya lo dice en futuro («podrá generar»). Queda escrito
-   * porque esta página tiene la regla de que nada sea incomprobable, y porque una
-   * verificación de Meta ya se rechazó una vez por anunciar lo que no se podía comprobar.
+   * decidió publicarlo así. Queda escrito porque esta página tiene la regla de que nada sea
+   * incomprobable, y porque una verificación de Meta ya se rechazó una vez por anunciar lo
+   * que no se podía comprobar.
+   *
+   * ⚠️ El 2026-08-19 **Fernando reescribió el paso 3 él mismo**: pasó de «podrá generar» a
+   * «va a generar … según tus criterios de evaluación». Es decir, lo afirmó más, no menos.
+   * Su decisión y su texto; se deja tal cual.
    *
    */
   {
@@ -502,7 +506,7 @@ export const ACCESOS: Acceso[] = [
         etiqueta: 'Retos CC',
         pregunta: '¿Buscas poner a prueba a tus colaboradores?',
         texto:
-          'Se llama Retos CC: en vez de preguntarle a tu equipo cómo reaccionaría, lo pones dentro de una situación y ves qué decide. Una entrevista te dice lo que alguien cree que haría; un reto te enseña lo que hace.',
+          'En vez de preguntarle a tu equipo cómo reaccionaría ante una situación, puedes mediante este videojuego, desarrollar los retos que quieres para evaluar a tus colaboradores frente a una situación y así puedes generar espacios de reflexión, aprendizaje, analizar sus deciciones y entender cómo ellos resuelven un problema que les planteas.',
         pasos: [
           {
             titulo: 'Entras con tu cuenta',
@@ -510,14 +514,68 @@ export const ACCESOS: Acceso[] = [
             icono: 'candado',
           },
           {
-            titulo: 'Consigues el primer logro',
-            texto: 'Inicias el prólogo, y creas tu personaje. Luego durante el tutorial vas a saber cuáles son los eventos que puedes crear para tus colaboradores.',
+            titulo: 'Comparte fácil',
+            texto: 'Inicias el prólogo, y creas tu personaje. Luego durante el tutorial vas a aprender a crear eventos y compartirlos por enlace a tus colaboradores.',
             icono: 'premio',
           },
           {
             titulo: 'Obtén los resultados',
-            texto: 'Cada prueba podrá generar un reporte según las decisiones y logros alcanzados durante la prueba de cada colaborador que realizó la prueba.',
+            texto: 'Cada prueba va a generar un reporte según las decisiones y logros alcanzados según tus criterios de evaluación para cada colaborador que realizó la prueba.',
             icono: 'grafico',
+          },
+        ],
+      },
+      /**
+       * ⭐ SEGUNDA FUNCIÓN DE VIDEOJUEGO: **Talentos** — dictada por Fernando (2026-08-19),
+       * pregunta, respuesta y pasos.
+       *
+       * Su texto va **palabra por palabra**, con dos correcciones que no cambian nada de lo
+       * que dice:
+       *  · «gcc coins» → «GCC Coins». El acrónimo va en mayúsculas en todo el proyecto —GCC
+       *    World, GCC Coins—, y en minúscula parecía una errata en una página pública.
+       *  · «eventos comunitarios del videojuegos» → «del videojuego».
+       *
+       * ⚠️ **«GCC Coins» y «fichas» son la MISMA moneda con dos nombres.** `MEMORIA.md` la
+       * llama «fichas» en todas partes —«se ganan SOLO jugando», «se gastarán en el
+       * dashboard/marketplace por productos y servicios reales gratuitos»—, que es
+       * exactamente lo que dice el paso 02. Aquí se respeta el nombre que Fernando usa de cara
+       * al público, pero **hay que elegir uno solo antes de que el juego lo escriba en su
+       * interfaz**: es el mismo problema que ya costó dos renombrados este mes (ámbito →
+       * solución, requerimientos → progreso), y sale mucho más barato ahora.
+       *
+       * ⚠️ Los eventos comunitarios y el canje de monedas **no existen todavía** —el juego
+       * está en el prólogo—. Mismo aviso que con Retos CC, y misma decisión suya. La
+       * diferencia a su favor: aquí lo que se anuncia **ya estaba escrito como intención en
+       * `MEMORIA.md`**, no es nuevo.
+       *
+       * Las 4 dimensiones que cita son las del proyecto (`MEMORIA.md`): laboral, corporal,
+       * social y mental. Él las enumeró en otro orden y se respeta el suyo.
+       *
+       * El paso 01 es **el mismo que el de Retos CC**, a propósito y por petición suya: la
+       * puerta de entrada no cambia según lo que vengas a hacer, y contarla distinto en cada
+       * función haría dudar de si son dos accesos.
+       */
+      {
+        id: 'talentos',
+        etiqueta: 'Talentos',
+        pregunta: '¿Necesitas conocer nuestro talento o buscas personal con alto valor humano y profesional?',
+        texto:
+          'Puedes jugar en los retos junto a nuestros jugadores, enfrentar retos del videojuego a nivel estratégico, puzzles, decisiones difíciles, desarrollo de valores, y participar junto a la plataforma que es donde trabajamos en progresar las 4 dimensiones del desarrollo humano (laboral, social, mental, corporal).',
+        pasos: [
+          {
+            titulo: 'Entras con tu cuenta',
+            texto: 'La misma con la que se entra en la plataforma. Es la única puerta para los clientes.',
+            icono: 'candado',
+          },
+          {
+            titulo: 'Juega y gana',
+            texto: 'Participa para obtener GCC Coins, y así poder adquirir servicios y productos gratuitos o de pruebas.',
+            icono: 'billetera',
+          },
+          {
+            titulo: 'Conoce nuestro talento',
+            texto: 'Participa en eventos comunitarios del videojuego para ganar puntos, conocer perfiles, y socializar con nuestros talentos.',
+            icono: 'personas',
           },
         ],
       },

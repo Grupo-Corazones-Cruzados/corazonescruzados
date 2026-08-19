@@ -5729,3 +5729,38 @@ compitiendo con el nombre real solo confunde.
 
 Al tener respuesta, el tema **vuelve a entrar en el `FAQPage`** (verificado: aparece con su
 `name` y su `acceptedAnswer`), que es exactamente lo que debía pasar cuando llegara el párrafo.
+
+### P77 — Segunda función de Videojuego: **Talentos** (2026-08-19)
+Dictada entera por Fernando: pregunta, respuesta y tres pasos. Su texto va palabra por palabra
+con dos correcciones que no cambian nada de lo que dice —«gcc coins» → «GCC Coins», porque el
+acrónimo va en mayúsculas en todo el proyecto y en minúscula parecía una errata en una página
+pública; y «del videojuegos» → «del videojuego»—.
+
+El paso 01 es **el mismo que el de Retos CC**, a petición suya y con razón: la puerta de entrada
+no cambia según a qué vengas, y contarla distinto en cada función haría dudar de si son dos
+accesos.
+
+Lo que dice es coherente con lo ya escrito: las **4 dimensiones** (laboral, corporal, social y
+mental) están en `MEMORIA.md`, y el canje de monedas por «productos y servicios reales
+gratuitos» también. Los eventos comunitarios no existen todavía — mismo aviso que con Retos CC,
+misma decisión suya.
+
+### ⚠️ P78 — «GCC Coins» y «fichas» son la misma moneda con dos nombres · ⏸ Espera a Fernando
+`MEMORIA.md` la llama **fichas** en todas partes; el texto público estrena **GCC Coins**. Es el
+mismo patrón que ya costó dos renombrados este mes —ámbito → solución, requerimientos →
+progreso— y la lección de los dos fue idéntica: **dos nombres para lo mismo se separan con el
+tiempo**. Ahora elegir cuesta un buscar-y-reemplazar; cuando el juego lo escriba en su interfaz
+y la base guarde saldos, costará una migración. Queda anotado en `MEMORIA.md` junto a las fichas.
+
+### 🪤 P79 — Fernando editaba el archivo mientras yo lo editaba
+Mi reemplazo falló con «no encontrado»: él había reescrito el paso 03 de Retos CC en el IDE
+—de «podrá generar» a «va a generar … según tus criterios de evaluación»— mientras yo preparaba
+el cambio. El script siguió corriendo y compiló código viejo, así que la comprobación posterior
+dio todo a cero y **lo cazó la propia verificación**, no el compilador.
+
+Dos cosas de esto: su edición se respeta y se ancla sobre ella, nunca se revierte; y un comentario
+mío que decía «su paso 3 ya lo dice en futuro» quedó falso con su cambio, así que se corrigió —un
+comentario desfasado miente igual que un dato.
+
+**Lección:** cuando un `python - << PY` de reemplazo falla, hay que **parar la cadena**, no
+seguir con el `build` detrás; si no, se verifica lo que no se cambió.

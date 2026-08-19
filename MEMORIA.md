@@ -2093,6 +2093,12 @@ Stack estándar de la casa, con particularidades de este repo:
 - **JUEGO — decisiones del usuario y primer bloque APLICADO (2026-07-20):**
   - **Se elige la opción A: Phaser 4 + Tiled** (editor de escritorio). El usuario levantó la
     restricción de "todo en navegador": descargar herramientas y subir datos le parece bien.
+  - ⚠️ **NOMBRE POR DECIDIR — «fichas» vs «GCC Coins» (2026-08-19).** Este documento las llama
+    **fichas** en todas partes; Fernando las llamó **GCC Coins** en el texto público de
+    `/clientes/videojuego`. Es **la misma moneda**. Hay que elegir uno solo **antes de que el
+    juego lo escriba en su interfaz**: dos nombres para lo mismo se separan con el tiempo, y es
+    el mismo problema que ya costó dos renombrados este mes (ámbito → solución,
+    requerimientos → progreso). Ahora cuesta un buscar-y-reemplazar; después, una migración.
   - **Fichas: se ganan SOLO jugando**; se gastarán en el dashboard/marketplace por productos y
     servicios reales. **A futuro serán TRANSFERIBLES entre usuarios** ⇒ el listón antifraude es de
     sistema de pagos, no de puntuación.
