@@ -346,6 +346,23 @@ Stack estándar de la casa, con particularidades de este repo:
 - **🚪 `/clientes` SE QUEDA CON CUATRO PUERTAS (2026-08-18).** Fuera «Automatización»:
   *«esa sección ya la estamos manejando desde la página de soluciones»*. Quedan **Progreso,
   Videojuego, Marketplace y Democracia**.
+
+- **`/clientes` pasa a EXPLORADOR DE TRES PANELES (2026-08-18).** Fernando quitó el titular
+  «Clientes» y su párrafo, y rediseñó la página: las cuatro secciones en **galería vertical** a
+  la izquierda, el contenido de la abierta en el centro, y a la derecha **el índice de sus
+  preguntas** (los `temas` de `ACCESOS`, no las FAQs — la tabla `faqs` está vacía). El armazón
+  es la **misma pieza** que usa `/soluciones`: `ExploradorTresPaneles` (`piezas.tsx`), extraída
+  ese día. `ClientesExplorador` **no lleva `use client`**: la sección elegida es la URL, así que
+  las cuatro secciones enteras viajan en el HTML crudo.
+  - Se borraron `CabeceraClientes` y `RejillaAccesos`; recuperables con `git show`.
+  - **Videojuego y Marketplace ganaron dos preguntas cada uno, escritas por mí** con permiso de
+    Fernando y marcadas como tales en el código, con cada afirmación anclada a algo comprobable.
+  - ⏸ **Democracia se queda sin preguntas a propósito, y espera decisión de Fernando.** Su
+    módulo **no existe** (ni pantalla, ni tabla, ni endpoint) y su frase —«un sistema que te
+    permite votar sobre las mejoras»— **choca con el principio del proyecto** recogido más
+    arriba en este documento: *el poder se construye, no se decide*, con crítica explícita a la
+    democracia por voto. Redactar cualquiera de las dos versiones sería decidir por él una
+    cuestión de fondo, no de diseño.
   - **Para qué es esa página, dicho por él:** publicar los **beneficios de ser cliente** y
     servir de base para ir generando **páginas de interés que los clientes encuentren por
     Google**. El diseño se cambiará más adelante; esto era solo quitar la tarjeta.

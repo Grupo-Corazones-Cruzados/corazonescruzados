@@ -3,22 +3,19 @@
  *
  * ⚠️ Se llamó «Negocios» (`/negocio`) y luego «Soluciones» (`/soluciones`). Desde el
  * 2026-08-18 es **«Clientes»** en `/clientes`: el nombre «Soluciones» pasó a la página de
- * los ámbitos, que es donde Fernando quería ese contenido. Las dos rutas viejas redirigen.
+ * las soluciones, que es donde Fernando quería ese contenido. Las rutas viejas redirigen.
  *
- * ── QUÉ ES AHORA ───────────────────────────────────────────────────────────────
- * El titular, el subtítulo y **cinco puertas**. Nada más. Cada tarjeta lleva a su propia
- * página (`/clientes/<id>`), donde el detalle aparece **debajo de las mismas tarjetas**,
- * con la suya marcada.
+ * ── QUÉ ES DESDE EL 2026-08-18 ─────────────────────────────────────────────────
+ * Un explorador de tres paneles, como pidió Fernando: las cuatro secciones en galería
+ * vertical a la izquierda, el contenido de la abierta en el centro, y sus preguntas a la
+ * derecha. **Se fueron el titular «Clientes» y su párrafo** —lo pidió él— y con ellos la
+ * rejilla horizontal de tarjetas que se repetía en las cinco rutas (`CabeceraClientes`,
+ * borrada; sigue en el historial).
  *
- * ── SE LLAMABA `/negocio` HASTA EL 2026-08-17 ──────────────────────────────────
- * Fernando lo reconsideró: la sección se llama **Soluciones** en el titular, en la pestaña,
- * en el menú y en la URL. Las seis rutas viejas (`/negocio` y sus cinco hijas) siguen vivas
- * como **redirección permanente 301** en `next.config.ts`, para no romper ningún enlace ya
- * publicado ni tirar lo que esas URLs hubieran posicionado.
- *
- * ⚠️ **`/negocio` es la URL declarada a Meta** para la verificación de proveedor de
- * tecnología. La redirección evita el 404, pero **hay que actualizarla en el formulario de
- * Meta** a `/clientes`.
+ * ⚠️ **Esta portada abre la PRIMERA sección**, igual que `/soluciones` abre el primer
+ * talento. Es lo que evita que la página de entrada se vea a medias, pero significa que
+ * `/clientes` y `/clientes/requerimientos` enseñan lo mismo. Cada una declara su propio
+ * `canonical` y su propio título; si algún día conviene, la portada puede pasar a redirigir.
  *
  * ── QUÉ SE QUITÓ EL 2026-08-04, Y QUE CONSTE ───────────────────────────────────
  * Fernando pidió vaciar todo lo que había debajo de las tarjetas: servicios por públicos,
@@ -27,40 +24,43 @@
  * ⚠️ **La identidad legal se quitó sabiendo lo que era.** Esta es la URL declarada a Meta,
  * su verificación se rechazó una vez con «no puede determinar que pertenezca a un negocio
  * real», y este archivo llevaba un aviso escrito de que esa sección no podía faltar. Se le
- * advirtió y decidió quitarla: sigue estando en `/contacto` y en `/legal`, y avisó de que
- * también la quitará de `/contacto`. **Si Meta vuelve a rechazar la verificación, esto es
- * lo primero que hay que mirar.**
+ * advirtió y decidió quitarla: sigue estando en `/contacto` y en `/legal`. **Si Meta vuelve
+ * a rechazar la verificación, esto es lo primero que hay que mirar.**
  *
  * El texto de los servicios NO se ha borrado: sigue en `SERVICIOS`
- * (`lib/sitio/contenido.ts`), listo para repartirse entre las cinco páginas cuando Fernando
+ * (`lib/sitio/contenido.ts`), listo para repartirse entre las secciones cuando Fernando
  * dicte qué va en cada una.
  *
  * ── LAS REGLAS QUE SIGUEN EN PIE ───────────────────────────────────────────────
- * 1. **Server Component, sin `use client`.** Tiene que estar en el HTML crudo: un buscador
- *    y un revisor pueden no ejecutar JavaScript.
+ * 1. **Server Component, sin `use client`** — y ahora el explorador tampoco lo lleva, así
+ *    que las cuatro secciones enteras están en el HTML crudo.
  * 2. **Nada que no sea verificable.** Sin cifras de clientes ni años de experiencia.
  * 3. **El texto vive en `lib/sitio/contenido.ts`**, no aquí.
  */
 
 import type { Metadata } from 'next';
 import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
-import CabeceraClientes from '@/components/sitio/CabeceraClientes';
+import { Contenedor } from '@/components/sitio/piezas';
+import ClientesExplorador from '@/components/sitio/ClientesExplorador';
+import { faqsTolerantesAlBuild } from './faqs-build';
+
+/** Las preguntas frecuentes salen de la base y se editan en Admin → FAQs. Ver la página hija. */
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   /**
-   * El nombre de la pestaña, decidido por Fernando el 2026-08-17: **«Soluciones»**.
-   * Aquí va solo esa palabra porque la plantilla de `app/layout.tsx` le añade
-   * « · Grupo Corazones Cruzados» — que es lo que hace que en un resultado de Google se
-   * sepa de quién es la página, y no compita a ciegas con las miles que se llaman igual.
+   * El nombre de la pestaña. Aquí va solo esa palabra porque la plantilla de
+   * `app/layout.tsx` le añade « · Grupo Corazones Cruzados» — que es lo que hace que en un
+   * resultado de Google se sepa de quién es la página.
    */
   title: 'Clientes',
   description:
-    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
+    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: tickets y proyectos, el videojuego GCC World, el marketplace y la votación de mejoras.',
   alternates: { canonical: '/clientes' },
   openGraph: {
     title: `${SITIO.nombre} — Qué puedes hacer aquí`,
     description:
-      'Tickets y proyectos, automatización con agentes de IA, el videojuego GCC World, el marketplace y la votación de mejoras.',
+      'Tickets y proyectos, el videojuego GCC World, el marketplace y la votación de mejoras.',
     url: `${SITIO.url}/clientes`,
     type: 'website',
     locale: 'es_EC',
@@ -68,14 +68,27 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ClientesPage() {
+export default async function ClientesPage() {
+  // La primera sección, como `/soluciones` abre el primer talento: una página de entrada
+  // que arranca vacía obliga a adivinar que hay que pulsar algo.
+  const primera = ACCESOS[0];
+  const faqs = await faqsTolerantesAlBuild(primera.id);
+
   return (
     <>
-      <CabeceraClientes />
+      {/* `flex-1`: la sección ocupa TODO el alto que sobre. Con poco contenido, su fondo
+          blanco terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`
+          de la página — un cambio de color a media pantalla. Un solo color, como pidió
+          Fernando (2026-08-18). */}
+      <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
+        <Contenedor ancho="amplio">
+          <ClientesExplorador activa={primera.id} faqs={faqs} />
+        </Contenedor>
+      </section>
 
       {/* Datos estructurados: le dan al buscador la lectura de que esto es una organización
-          real con dirección, teléfono e identificador fiscal, y le enumeran las cinco
-          páginas de dentro para que las descubra sin depender del mapa del sitio. */}
+          real con dirección, teléfono e identificador fiscal, y le enumeran las páginas de
+          dentro para que las descubra sin depender del mapa del sitio. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

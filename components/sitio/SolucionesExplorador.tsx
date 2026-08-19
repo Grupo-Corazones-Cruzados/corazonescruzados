@@ -38,6 +38,7 @@ import type {
 } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
 import TiraConceptos from './TiraConceptos';
+import { ExploradorTresPaneles } from './piezas';
 
 export interface SolucionConContenido extends Solucion {
   /** El contenido de cada talento, ya consultado en el servidor. */
@@ -241,14 +242,26 @@ export default function SolucionesExplorador({
   );
 
   return (
-    /* Tres columnas desde el 2026-08-18: carpetas · contenido · conceptos.
-       La tercera **se reserva solo si la solución abierta tiene conceptos**; si no, la
-       rejilla vuelve a dos y el contenido ocupa lo que sobra en vez de dejar un hueco. */
-    <div className={`grid gap-8 ${conceptosActivos.length > 0
-      ? 'lg:grid-cols-[240px_minmax(0,1fr)_280px]'
-      : 'lg:grid-cols-[260px_minmax(0,1fr)]'}`}>
-      {/* ── EL PANEL IZQUIERDO ─────────────────────────────────────────────────── */}
-      <nav aria-label="Soluciones" className="lg:sticky lg:top-24 lg:self-start">
+    /* Tres paneles: carpetas · contenido · conceptos. La rejilla, el `min-w-0` de las
+       columnas y el pegado de los laterales los pone `ExploradorTresPaneles`, que es la
+       MISMA pieza que usa `/clientes` — se extrajo el 2026-08-18, al pedir Fernando esa
+       forma para las dos páginas.
+
+       La tercera columna **solo se reserva si la solución abierta tiene conceptos**: pasar
+       `derecha` a `undefined` devuelve la rejilla a dos columnas en vez de dejar un hueco. */
+    <ExploradorTresPaneles
+      etiquetaIzquierda="Soluciones"
+      anchoIzquierda="240px"
+      anchoDerecha="280px"
+      /* ── LA TIRA DE CONCEPTOS, VERSIÓN ANCHA ─────────────────────────────────
+         Se pinta sola solo si hay conceptos: el propio componente devuelve `null` con la
+         lista vacía. Su gemela horizontal vive en el centro, bajo la descripción; el corte
+         de `lg` que oculta esta es el mismo que enseña aquella, así que nunca se ven las
+         dos ni se queda la pantalla sin ninguna. */
+      derecha={conceptosActivos.length > 0
+        ? <TiraConceptos conceptos={conceptosActivos} />
+        : undefined}
+      izquierda={<>
         <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
           Soluciones
         </p>
@@ -306,15 +319,8 @@ export default function SolucionesExplorador({
             );
           })}
         </ul>
-      </nav>
-
-      {/* ── EL PANEL DERECHO ─────────────────────────────────────────────────────
-          `min-w-0` NO es decorativo: una celda de rejilla mide por defecto `min-width:auto`,
-          es decir, «lo que ocupe mi hijo más ancho». La tira horizontal es deliberadamente
-          más ancha que la pantalla, así que sin esto estiraría la columna —y con ella la
-          página entera— hasta los 2.848 px de la lista, y aparecía barra horizontal en todo
-          el sitio. Con `min-w-0` la columna se queda en su sitio y es el marco quien recorta. */}
-      <div className="min-w-0">
+      </>}
+      centro={<>
         {elegido && (
           <h1 className="text-[30px] sm:text-[40px] font-semibold tracking-tight text-[var(--texto)] leading-tight">
             {elegido}
@@ -447,29 +453,7 @@ export default function SolucionesExplorador({
             }),
           )}
         </div>
-      </div>
-
-      {/* ── LA TIRA DE CONCEPTOS, VERSIÓN ANCHA ─────────────────────────────────
-          Se pinta sola solo si hay conceptos: el propio componente devuelve `null` con la
-          lista vacía, así que aquí no hace falta condicionar nada más. Su gemela horizontal
-          vive arriba, bajo la descripción; el `hidden lg:block` de aquí y el `lg:hidden` de
-          allá son el mismo corte que decide si existe la tercera columna, así que nunca se
-          ven las dos ni se queda la pantalla sin ninguna.
-
-          ⚠️ **`sticky` va AQUÍ, en la celda de la rejilla, junto con `self-start`.** Un elemento
-          pegajoso se desplaza dentro de su bloque contenedor —aquí, la casilla de la tercera
-          columna, que es tan alta como la fila entera— pero solo si le sobra sitio: sin
-          `self-start` la celda se estira hasta llenar la fila, no queda holgura por la que
-          moverse y la tira baja con la página como si `sticky` no estuviera.
-
-          Y esto es exactamente lo que se rompió al envolverla ayer para poder ocultarla por
-          ancho: el `sticky` seguía puesto, pero sobre el <aside> DENTRO del envoltorio, y el
-          envoltorio medía justo lo que la tira. Cero holgura, cero efecto — y desde fuera parece
-          que «sticky no funciona». Lo vio Fernando (2026-08-18). En horizontal NO se aplica:
-          allí se desplaza con el contenido y desaparece, también a petición suya. */}
-      <div className="hidden lg:block min-w-0 lg:sticky lg:top-24 lg:self-start">
-        <TiraConceptos conceptos={conceptosActivos} />
-      </div>
-    </div>
+      </>}
+    />
   );
 }

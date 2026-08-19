@@ -1612,6 +1612,52 @@ html {
   mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
 }
 
+/* ═══════════ EL ARMAZÓN DE TRES PANELES — definición ÚNICA ═══════════════════
+   Lo usan `/soluciones` (carpetas · contenido · conceptos) y `/clientes` (secciones ·
+   contenido · preguntas). Nació en `/soluciones` el 2026-08-18 y se extrajo aquí el mismo
+   día, al pedir Fernando la misma forma para `/clientes`: dos rejillas que se parecen se
+   separan a la primera corrección que solo se aplica a una.
+
+   ── POR QUÉ EN CSS Y NO EN CLASES DE TAILWIND ───────────────────────────────
+   Los anchos de los paneles los decide cada página. Una clase `lg:grid-cols-[${x}px_…]`
+   armada con una variable NO existe: Tailwind genera sus clases leyendo el código fuente,
+   y ahí solo ve una plantilla. Y un `style` en línea tampoco vale, porque esto **solo
+   aplica a partir de `lg`** y una regla en línea no entiende de anchuras de pantalla.
+   Con variables CSS se resuelven las dos cosas: la página pasa los anchos por `style`, y
+   el `@media` de aquí decide cuándo se usan.
+
+   Por debajo de `lg` es una sola columna: los tres paneles se apilan.                    */
+.paneles-explorador {
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .paneles-explorador {
+    grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr);
+  }
+  /* La tercera columna **solo se reserva si hay algo que poner en ella**. Sin este
+     interruptor, una sección sin conceptos ni preguntas dejaría 280 px de hueco blanco a
+     la derecha, y el contenido apretado sin motivo. */
+  .paneles-explorador[data-derecha='sí'] {
+    grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr) var(--panel-der, 280px);
+  }
+}
+
+/* ⚠️ `sticky` Y `self-start` VAN JUNTOS, SIEMPRE.
+   Un elemento pegajoso se desplaza dentro de su bloque contenedor —aquí, la casilla de la
+   rejilla, tan alta como la fila entera— pero solo si le sobra sitio. Sin `self-start` la
+   casilla se estira hasta llenar la fila, no queda holgura y baja con la página como si
+   `sticky` no estuviera. Es lo que se rompió el 2026-08-18 al envolver la tira de conceptos
+   para poder ocultarla por ancho, y por eso el pegado vive **en el envoltorio** y no dentro. */
+@media (min-width: 1024px) {
+  .panel-explorador-fijo {
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+  }
+}
+
 /* ── LA MISMA TIRA, EN HORIZONTAL ─────────────────────────────────────────────
    Cuando no hay ancho para la columna derecha, la tira baja bajo la descripción y
    avanza de izquierda a derecha (Fernando, 2026-08-18). Mismo mecanismo —lista

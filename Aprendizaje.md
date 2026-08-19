@@ -5463,3 +5463,80 @@ anterior en Ecuador y con el correcto en Madrid — la misma tarjeta contando do
 
 Tira vertical a 1600: `top` 96 clavado entre `scrollY` 400 y 1500. Tira horizontal a 900: de
 `top` 458 a −442 al desplazar 900 px — se va con la página, como se pidió.
+
+---
+
+## Duodécima pasada (2026-08-18) — `/clientes` pasa a explorador de tres paneles
+
+Fernando: *«vamos a eliminar ese título y descripción […] dejaremos las 4 tarjetas pero en
+diseño galería vertical dentro de un panel izquierdo, luego el contenido va a mostrarse dentro
+de un panel derecho central, y luego otro panel derecho que tenga las preguntas que existen en
+cada sección según la seleccionada»*.
+
+### 🔎 P62 — ¿Qué son «las dos preguntas» de Progreso? · ✅ Los `temas`, no las FAQs
+Había dos candidatos y llevan a sitios distintos. Se resolvió midiendo, no preguntando:
+`gcc_world.faqs` tiene **0 filas**, y `ACCESOS.requerimientos.temas` tiene exactamente **dos**
+—«¿Necesitas ayuda para completar una tarea difícil?» y «¿Buscas hacer realidad tus ideas de
+proyectos?»—. Las otras tres secciones tienen cero.
+
+Consecuencia: el índice de la derecha lista los **temas**. Las preguntas frecuentes siguen en
+el centro y aparte, porque son otra cosa —aquellas explican cómo funciona algo, estas resuelven
+dudas sueltas y se editan desde el admin sin tocar código—.
+
+### ⭐ P63 — ¿Índice o selector? · ✅ Índice (decisión de Fernando)
+Se le plantearon las dos con un boceto de cada una. Eligió índice: las preguntas se pintan
+enteras en el centro y el panel derecho salta a ellas. Es además lo correcto para lo que esta
+página persigue: enseñar solo la seleccionada habría dejado la mitad del contenido detrás de un
+clic, y un buscador no pulsa.
+
+### ⭐ P64 — La página entera se puede servir SIN JavaScript
+El explorador de `/soluciones` tiene que ser de cliente: sus pestañas y su buscador son estado.
+Aquí **no hay estado ninguno** —la sección elegida es la URL, el panel izquierdo son enlaces y
+el derecho son anclas—, así que `ClientesExplorador` es un Server Component puro. Comprobado
+pidiendo el HTML con `fetch`: las dos preguntas de Marketplace, sus pasos, el `FAQPage` y el
+`BreadcrumbList` están en el documento crudo.
+
+### 🧱 P65 — La rejilla de tres paneles se EXTRAJO, no se copió
+`/clientes` necesitaba exactamente el mismo armazón que `/soluciones`. Copiarlo habría
+duplicado las tres reglas que costaron medir el día anterior —`min-w-0`, `sticky`+`self-start`
+en el envoltorio, tercera columna condicional—, para desincronizarse a la primera corrección.
+
+Se extrajo a `ExploradorTresPaneles` y `/soluciones` se migró a la pieza compartida, midiendo
+antes y después que nada cambiaba: columnas `240px 928px 280px`, `<nav>` pegajoso, 11 tarjetas,
+sin desbordamiento.
+
+Detalle técnico que obligó a bajar a CSS: los anchos los decide cada página, y una clase
+`lg:grid-cols-[${x}px_…]` armada con una variable **no existe** —Tailwind genera sus clases
+leyendo el código fuente, y ahí solo ve una plantilla—. Un `style` en línea tampoco vale,
+porque la rejilla solo aplica a partir de `lg`. Se resuelve con variables CSS (`--panel-izq`,
+`--panel-der`) y un `@media` en `globals.css`.
+
+### ⛔ P66 — Democracia se queda sin preguntas, y no por falta de tiempo · ⏸ Espera a Fernando
+Fernando pidió redactar dos preguntas por sección. Para Videojuego y Marketplace se hizo, con
+cada afirmación anclada a algo comprobable (el `GameEntryGate` que exige sesión, el export web
+del juego, el aviso «Acceso solo para clientes» del marketplace público, el endpoint de
+requerimientos). Para **Democracia no**, por dos motivos:
+
+1. **El módulo no existe.** Ni pantalla, ni tabla, ni endpoint. Escribir «así votas» es
+   describir algo que no se puede usar, y esta página tiene una regla dura —nada que no sea
+   verificable— que ya costó una verificación de Meta rechazada.
+2. **Hay una contradicción de fondo.** La tarjeta promete «un sistema que te permite votar»;
+   `MEMORIA.md` recoge como principio del proyecto *«El poder se construye, no se decide»*, con
+   crítica explícita a la democracia por voto. Redactar cualquiera de las dos versiones sería
+   decidir por él algo que no es de diseño.
+
+La sección funciona igual: sale en el panel izquierdo, muestra su título y su frase, y el panel
+de preguntas simplemente no se pinta.
+
+### Lo medido
+| Ruta | Columnas | `<h1>` | Tarjetas | Índice | Título viejo | Desborde |
+|---|---|---|---|---|---|---|
+| `/clientes` | 280 · 908 · 260 | Progreso | 4 | 2 (pegado) | no | no |
+| `/clientes/requerimientos` | 280 · 908 · 260 | Progreso | 4 | 2 (pegado) | no | no |
+| `/clientes/videojuego` | 280 · 908 · 260 | Videojuego | 4 | 2 (pegado) | no | no |
+| `/clientes/marketplace` | 280 · 908 · 260 | Marketplace | 4 | 2 (pegado) | no | no |
+| `/clientes/votacion` | 280 · 1200 | Democracia | 4 | **no** (sin hueco) | no | no |
+
+A 900 px: el índice lateral desaparece y sale la fila de enlaces (2 en Progreso, ninguna en
+Democracia), sin desbordamiento. Panel izquierdo e índice pegados a 96 px al desplazar. El
+salto por ancla deja el bloque a 96 px del borde, bajo la cabecera de 65 px.

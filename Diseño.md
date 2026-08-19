@@ -93,7 +93,7 @@ buscador, un revisor de Meta. No es el pixel art de la portada ni el Fluent clar
 
 | Pieza | Qué es |
 |---|---|
-| `Contenedor` | `mx-auto px-5 sm:px-6` con **dos anchos**: `lectura` (por defecto, `max-w-6xl` = 1152 px) para todo lo que se lee de corrido, y `ancho="amplio"` (`max-w-[1560px]`) **solo en `/soluciones`**, que no es un texto sino un explorador de tres columnas y desperdiciaba pantalla (Fernando, 2026-08-18) |
+| `Contenedor` | `mx-auto px-5 sm:px-6` con **dos anchos**: `lectura` (por defecto, `max-w-6xl` = 1152 px) para todo lo que se lee de corrido, y `ancho="amplio"` (`max-w-[1560px]`) en los **exploradores de tres paneles** (`/soluciones` y, desde el 2026-08-18, `/clientes`), que no es un texto sino un explorador de tres columnas y desperdiciaba pantalla (Fernando, 2026-08-18) |
 | `Seccion` | Bloque con su aire: `py-20 sm:py-28`; `tono="realce"` añade `bg-white/[0.02]` para separar dos secciones seguidas **sin dibujar una línea** |
 | `TituloSeccion` | Etiqueta violeta en versalitas + `h2` de 30/38 px + entradilla. `centrado` opcional |
 | `Tarjeta` | `rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7`, realce al hover **de borde**, nunca de sombra |
@@ -341,6 +341,59 @@ las mismas del CV.
 Escala tipográfica: `h1` 38/56 px · `h2` 30/38 px · `h3` 22 px · `h4` 18 px · cuerpo
 14,5–18,5 px. **El contraste de tamaño es lo que hace que la página respire**; no hay
 librería de UI detrás.
+
+### ⭐ El armazón de tres paneles — `ExploradorTresPaneles` (2026-08-18)
+
+**Una sola definición** para `/soluciones` y `/clientes`. Izquierda: por dónde se navega.
+Centro: lo que se mira. Derecha: un acompañante de eso.
+
+```tsx
+<ExploradorTresPaneles
+  etiquetaIzquierda="Clientes"       // el aria-label del <nav>; obligatorio
+  anchoIzquierda="280px"             // por defecto 240px
+  anchoDerecha="260px"               // por defecto 280px
+  izquierda={<GaleriaSecciones … />}
+  derecha={hayAlgo ? <Indice … /> : undefined}   // sin esto, rejilla de dos columnas
+  centro={<>…</>}
+/>
+```
+
+Nació dentro del explorador de `/soluciones` y se extrajo cuando Fernando pidió la misma
+forma para `/clientes`. **No se copió**: dos rejillas que se parecen se separan a la primera
+corrección que solo se aplica a una, y esta lleva dentro tres reglas que costaron medir.
+
+| Regla | Por qué | Qué pasó sin ella |
+|---|---|---|
+| `min-w-0` en centro y derecha | Una casilla de rejilla mide `min-width: auto` = «lo que ocupe mi hijo más ancho» | Una tira de 2.848 px estiró la página entera: barra horizontal en todo el sitio |
+| `sticky` **y** `self-start`, en el ENVOLTORIO | Un pegajoso se mueve dentro de su bloque contenedor, y solo si le sobra sitio | Envolver la tira para ocultarla por ancho desactivó su `sticky` sin dar ningún error |
+| Tercera columna solo si hay `derecha` | Una sección sin acompañante dejaría 280 px en blanco | — |
+
+**Lo que el armazón NO decide:** qué pasa con el panel derecho por debajo de `lg`, donde se
+oculta. `/soluciones` tumba su tira en horizontal bajo la descripción; `/clientes` convierte
+su índice en una fila de enlaces. No hay una respuesta buena para las dos.
+
+Los anchos viajan como **variables CSS** (`--panel-izq` / `--panel-der`) y las reglas viven en
+`.paneles-explorador` (`app/globals.css`). No es manía: una clase `lg:grid-cols-[${x}px_…]`
+armada con una variable **no existe** —Tailwind genera sus clases leyendo el fuente— y un
+`style` en línea no entiende de `@media`.
+
+### El explorador de `/clientes` — `components/sitio/ClientesExplorador.tsx` (2026-08-18)
+
+Rediseño pedido por Fernando: fuera el titular «Clientes» y su párrafo; las cuatro tarjetas
+pasan a **galería vertical** en el panel izquierdo; el contenido, al centro; y a la derecha
+**las preguntas de la sección abierta**.
+
+- **Sin `use client`, y es lo mejor del cambio.** No hay estado: la sección es la URL, el panel
+  izquierdo son `<Link>` y el derecho son anclas. Las cuatro secciones enteras —preguntas,
+  párrafos y pasos— viajan en el HTML crudo. En una página cuyo trabajo es que la encuentren,
+  eso es la diferencia entre existir y no existir.
+- **El panel derecho es un ÍNDICE, no un selector** (decisión de Fernando entre las dos
+  opciones): las preguntas se pintan enteras en el centro y el índice salta a ellas. Enseñar
+  solo la seleccionada habría escondido la mitad del contenido detrás de un clic.
+- **Índice → fila de enlaces por debajo de `lg`.** Las preguntas son largas; sin él hay que
+  recorrer la primera entera para descubrir que hay una segunda.
+- **El `<h1>` es el nombre de la sección.** La página ya no tiene titular propio.
+- **Sin preguntas, no se pinta el panel** — es el caso de Democracia hoy.
 
 ### La tira de conceptos de `/soluciones` — `components/sitio/TiraConceptos.tsx` (2026-08-18)
 
@@ -2248,6 +2301,16 @@ Hay un `@media print` en la hoja de la página, pero solo como red de seguridad 
 Ctrl+P: **el documento bueno es el del botón.**
 
 ## Desviaciones detectadas y resolución
+
+- **2026-08-18 · `RejillaAccesos` y `CabeceraClientes` — BORRADOS.** Eran la rejilla horizontal
+  de las cuatro puertas y la cabecera que la repetía en las cinco rutas de `/clientes`. El
+  rediseño de Fernando las sustituye por la galería vertical del panel izquierdo. No se dejan
+  sin usar: un componente que no pinta nadie confunde a quien lo lea después. Recuperables con
+  `git show`.
+- **2026-08-18 · La rejilla de tres columnas estaba escrita a mano en `SolucionesExplorador`.**
+  Al necesitarla `/clientes`, se **extrajo** a `ExploradorTresPaneles` en vez de copiarla, y
+  `/soluciones` se migró a la pieza compartida (verificado: mismo layout, mismo pegado, mismas
+  11 tarjetas, sin desbordamiento).
 
 ### 2026-08-17 · La paleta clara estaba a punto de escribirse dos veces · **EXTRAÍDA a fuente única**
 Al pasar el sitio público a claro hacían falta los mismos once colores que ya tenía el CV, en

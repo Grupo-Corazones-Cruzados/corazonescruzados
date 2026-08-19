@@ -35,7 +35,7 @@
  *    blanca del papel → la clase `claro-tarjeta`.
  */
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -124,6 +124,67 @@ export function Contenedor({
 }) {
   const max = ancho === 'amplio' ? 'max-w-[1560px]' : 'max-w-6xl';
   return <div className={`mx-auto ${max} px-5 sm:px-6 ${className}`}>{children}</div>;
+}
+
+/**
+ * EL ARMAZÓN DE TRES PANELES — **una sola definición** para `/soluciones` y `/clientes`.
+ *
+ * Izquierda: por dónde se navega. Centro: lo que se está mirando. Derecha: un acompañante
+ * de eso —los conceptos de la solución, las preguntas de la sección—.
+ *
+ * Nació dentro del explorador de `/soluciones` el 2026-08-18 y se extrajo aquí el mismo día,
+ * cuando Fernando pidió la misma forma para `/clientes`. No se copió: **dos rejillas que se
+ * parecen se separan a la primera corrección que solo se aplica a una**, y esta rejilla
+ * lleva dentro tres reglas que costaron medir (ver abajo).
+ *
+ * ── LO QUE ESTE COMPONENTE GARANTIZA, Y QUE ES FÁCIL OLVIDAR ───────────────────
+ * 1. **`min-w-0` en el centro y en la derecha.** Una casilla de rejilla mide por defecto
+ *    `min-width: auto` —«no me encojas por debajo de mi hijo más ancho»—, así que un
+ *    contenido deliberadamente ancho (una tira horizontal, una tabla) estira la columna y
+ *    con ella la página entera. Costó una barra de desplazamiento horizontal en todo el
+ *    sitio el 2026-08-18.
+ * 2. **`sticky` + `self-start` en los laterales, y en el ENVOLTORIO.** Van juntos siempre:
+ *    sin `self-start` la casilla se estira, no queda holgura y el pegado no hace nada.
+ *    Poner el `sticky` dentro del envoltorio es el mismo error con otra cara.
+ * 3. **La tercera columna solo existe si hay algo que poner.** Sin `derecha` la rejilla
+ *    vuelve a dos columnas en vez de dejar un hueco blanco.
+ *
+ * ── LO QUE **NO** HACE ────────────────────────────────────────────────────────
+ * El panel derecho se oculta por debajo de `lg`, donde no hay ancho para él. Qué pasa
+ * entonces con su contenido es cosa de cada página: `/soluciones` lo tumba en horizontal
+ * bajo la descripción, `/clientes` lo convierte en una fila de enlaces. Aquí no se decide,
+ * porque no hay una respuesta buena para las dos.
+ */
+export function ExploradorTresPaneles({
+  izquierda, centro, derecha,
+  etiquetaIzquierda, anchoIzquierda = '240px', anchoDerecha = '280px',
+}: {
+  izquierda: ReactNode;
+  centro: ReactNode;
+  /** Si no se pasa, la rejilla es de dos columnas. */
+  derecha?: ReactNode;
+  /** El `aria-label` del panel de navegación. Obligatorio: es un `<nav>`. */
+  etiquetaIzquierda: string;
+  anchoIzquierda?: string;
+  anchoDerecha?: string;
+}) {
+  return (
+    <div
+      className="paneles-explorador"
+      data-derecha={derecha ? 'sí' : undefined}
+      style={{ '--panel-izq': anchoIzquierda, '--panel-der': anchoDerecha } as CSSProperties}
+    >
+      <nav aria-label={etiquetaIzquierda} className="panel-explorador-fijo min-w-0">
+        {izquierda}
+      </nav>
+
+      <div className="min-w-0">{centro}</div>
+
+      {derecha && (
+        <div className="hidden lg:block panel-explorador-fijo min-w-0">{derecha}</div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -228,103 +289,17 @@ export function FondoHeroe() {
 
 /* ── Rejilla de accesos ──────────────────────────────────────────────────────── */
 
-/**
- * LAS TARJETAS DE ACCESO — cabecera de `/clientes` (2026-08-04).
- *
- * Cinco puertas de entrada. **Se reparten solas según el ancho que haya**: tres arriba y
- * dos centradas debajo en pantalla grande, dos y dos y una en tableta, una por fila en el
- * móvil.
- *
- * ── POR QUÉ `flex-wrap` Y NO UNA REJILLA ───────────────────────────────────────
- * Nació como una tira que se arrastraba y Fernando la cambió a esto en el momento: *«mejor
- * muéstralas todas según el espacio disponible»*. Con `grid-cols-3` las dos últimas
- * quedarían pegadas a la izquierda y con un hueco a la derecha. Con `flex-wrap` +
- * `justify-center` **la última fila se centra sola**, y —lo que más importa— el reparto
- * **no depende de que sean cinco**: si mañana hay seis o cuatro, se recolocan sin tocar
- * este archivo.
- *
- * ── EL RESTO DE DECISIONES ─────────────────────────────────────────────────────
- * · **Sin JavaScript.** Es un Server Component: las cinco frases están en el HTML crudo que
- *   lee un buscador, no detrás de una hidratación.
- * · **Ancho fijo de 280 px a partir de `sm`**, y `w-full` en el móvil. Fijo mantiene todas
- *   las tarjetas iguales aunque sus textos midan distinto; en el móvil, ocupar el ancho
- *   completo es lo natural.
- * · **`items-stretch`** para que todas las de una fila midan lo mismo de alto, y `mt-auto`
- *   en el botón para que quede pegado abajo. Sin eso, la del marketplace —que es la única
- *   con botón— dejaría el enlace a una altura distinta y la fila se vería descuadrada.
- * · **El botón solo aparece si la tarjeta trae `enlace`.** Hoy solo el marketplace, por
- *   petición expresa. Añadir otro es poner `enlace` en `contenido.ts`, no tocar esto.
- */
-export function RejillaAccesos({
-  accesos, etiqueta, activa,
-}: {
-  accesos: { id: string; icono: string; titulo: string; texto: string }[];
-  etiqueta: string;
-  /** `id` de la puerta abierta. Marca su tarjeta y le pone `aria-current`. */
-  activa?: string;
-}) {
-  return (
-    <ul aria-label={etiqueta} className="flex flex-wrap items-stretch justify-center gap-4 text-left">
-      {accesos.map((a) => {
-        const Icono = ICONOS[a.icono] ?? Layers;
-        const abierta = a.id === activa;
-        return (
-          <li key={a.id} className="w-full sm:w-[280px] flex">
-            {/* `#detalle` es lo que hace que al pulsar desde /clientes la página baje
-                sola hasta el detalle. Sin JavaScript: lo resuelve el navegador, y el
-                `scroll-smooth` del documento hace que se deslice en vez de saltar. */}
-            <Link
-              href={`/clientes/${a.id}#detalle`}
-              aria-current={abierta ? 'page' : undefined}
-              className={`group w-full flex flex-col rounded-xl border p-5 transition-colors
-                          focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/60
-                ${abierta
-                  ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.07]'
-                  : 'claro-tarjeta border-[var(--linea)] bg-[var(--tarjeta)] hover:border-[var(--linea-fuerte)]'}`}
-            >
-              {/* Icono y nombre en la misma línea (Fernando, 2026-08-04). Antes iban uno
-                  debajo del otro y la tarjeta gastaba dos alturas en su rótulo; así el
-                  encabezado ocupa una sola y queda más sitio para la frase. */}
-              <div className="flex items-center gap-3">
-                <span
-                  className={`inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border transition-colors
-                    ${abierta ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/20' : 'border-[#7b5fbf]/25 bg-[#7b5fbf]/[0.08]'}`}
-                >
-                  <Icono className={`w-[18px] h-[18px] ${abierta ? 'text-[var(--violeta)]' : 'text-[var(--violeta-txt)]'}`} />
-                </span>
-                {/* El nombre de la puerta.
-                    La tarjeta ABIERTA lleva el `<h1>` de la página: es la que dice dónde
-                    estás, y así cada una de las cinco tiene su propio encabezado sin
-                    repetir el título en un bloque aparte más abajo.
-                    Las otras cuatro van como `<p>`: son navegación, y una ristra de
-                    encabezados repetidos en las seis páginas confundiría la jerarquía que
-                    lee un buscador. */}
-                {abierta ? (
-                  <h1 className="text-[15.5px] font-semibold leading-snug text-[var(--texto)]">{a.titulo}</h1>
-                ) : (
-                  <p className="text-[15.5px] font-semibold leading-snug text-[var(--texto)]">
-                    {a.titulo}
-                  </p>
-                )}
-              </div>
-              <p className={`mt-3.5 text-[14px] leading-relaxed transition-colors
-                             ${abierta ? 'text-[var(--suave)]' : 'text-[var(--tenue)] group-hover:text-[var(--suave)]'}`}>
-                {a.texto}
-              </p>
-              {/* `mt-auto` empuja esta línea al fondo: con textos de distinto largo, si no,
-                  cada flecha queda a una altura y la fila se ve descuadrada. */}
-              <span className={`mt-auto pt-4 inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors
-                                ${abierta ? 'text-[var(--violeta)]' : 'text-[var(--apagado)] group-hover:text-[var(--violeta-txt)]'}`}>
-                {abierta ? 'Estás aquí' : 'Ver más'}
-                {!abierta && <ArrowRight className="w-3.5 h-3.5" />}
-              </span>
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
+/* ── `RejillaAccesos` SE BORRÓ EL 2026-08-18 ──────────────────────────────────────
+   Era la rejilla horizontal de las cuatro puertas de `/clientes`, repetida en las cinco
+   rutas por `CabeceraClientes`. Fernando rediseñó la página: las tarjetas pasaron a una
+   **galería vertical** en el panel izquierdo del explorador, que vive en
+   `components/sitio/ClientesExplorador.tsx`.
+
+   No se deja aquí sin usar porque un componente que no pinta nadie confunde a quien lo lea
+   después: parece que sale en algún sitio y no sale. Para recuperarla:
+
+       git show HEAD~1:components/sitio/piezas.tsx
+       git show HEAD~1:components/sitio/CabeceraClientes.tsx                            */
 
 /* ── Bloque destacado ────────────────────────────────────────────────────────── */
 

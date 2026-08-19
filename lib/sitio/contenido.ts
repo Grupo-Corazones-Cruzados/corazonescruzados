@@ -416,17 +416,160 @@ export const ACCESOS: Acceso[] = [
      ⚠️ La URL `/clientes/automatizacion` llevaba publicada desde el 2026-08-04 (como
      `/negocio/automatizacion`). **No se deja en 404**: redirige a `/soluciones`, que es
      donde vive ahora ese contenido. Ver `next.config.ts`. */
+  /**
+   * ⚠️ **LOS DOS TEMAS DE VIDEOJUEGO LOS ESCRIBÍ YO** (2026-08-18), con el permiso de
+   * Fernando: *«redacto yo una propuesta»*. Están para que los corrija o los tire.
+   *
+   * De dónde sale cada afirmación, porque la regla de esta página es que **nada sea
+   * incomprobable** —y ya costó una verificación de Meta—:
+   *  · «Corre en el navegador, sin instalar nada» → el juego se compila a `public/game/` y se
+   *    sirve en `/juego`; el motor se descarga en tiempo de ejecución (ver `app/juego/page.tsx`).
+   *  · «Se entra con la cuenta» → `GameEntryGate` exige la marca de entrada que deja la
+   *    portada tras iniciar sesión; sin ella, devuelve al visitante a `/`.
+   *  · «Las fichas se ganan solo jugando» → MEMORIA.md. **Deliberadamente NO se dice en qué
+   *    se gastan**: eso está por construir, y anunciarlo sería prometer lo que no existe.
+   */
   {
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
+    temas: [
+      {
+        id: 'como-se-entra',
+        etiqueta: 'La aventura',
+        pregunta: '¿Prefieres conocer el proyecto jugando a leerlo?',
+        texto:
+          'GCC World es un videojuego que cuenta la historia del grupo y sus retos. Se juega dentro del navegador, en la misma pantalla en la que estás: no hay nada que instalar ni que descargar a mano.',
+        pasos: [
+          {
+            titulo: 'Entras con tu cuenta',
+            texto: 'La misma con la que se entra a la plataforma. Es la única puerta: sin sesión iniciada, el juego devuelve a la portada.',
+            icono: 'candado',
+          },
+          {
+            titulo: 'Se carga solo',
+            texto: 'El motor se descarga la primera vez y arranca dentro de la propia página. Sin instalador, sin tienda de aplicaciones y sin permisos que conceder.',
+            icono: 'web',
+          },
+          {
+            titulo: 'Empieza el prólogo',
+            texto: 'La aventura abre contando de dónde viene el proyecto, y a partir de ahí se avanza por escenas.',
+            icono: 'juego',
+          },
+        ],
+      },
+      {
+        id: 'para-que-un-juego',
+        etiqueta: 'Por qué',
+        pregunta: '¿Qué pinta un videojuego en un proyecto de desarrollo humano?',
+        texto:
+          'Es la forma en que el proyecto cuenta lo que hace y pone a prueba lo que enseña. La historia plantea retos, y superarlos da fichas: la moneda del juego, que se consigue únicamente jugando.',
+        pasos: [
+          {
+            titulo: 'Una historia, no un folleto',
+            texto: 'Lo que el grupo defiende se cuenta como aventura. Se entiende jugando, que es como se retiene.',
+            icono: 'libro',
+          },
+          {
+            titulo: 'Retos que se superan',
+            texto: 'Cada tramo plantea algo que resolver. No es un vídeo que se mira: hay que hacerlo.',
+            icono: 'diana',
+          },
+          {
+            titulo: 'Fichas que se ganan',
+            texto: 'La recompensa de superar un reto. No se compran ni se regalan: se ganan jugando y solo jugando.',
+            icono: 'premio',
+          },
+        ],
+      },
+    ],
   },
+  /**
+   * ⚠️ **LOS DOS TEMAS DE MARKETPLACE LOS ESCRIBÍ YO** (2026-08-18), igual que los de
+   * Videojuego y con el mismo permiso. De dónde sale cada afirmación:
+   *  · «El catálogo se ve sin cuenta» y «para comprar hace falta una de cliente» → es
+   *    literalmente lo que hace `app/marketplace-publico/page.tsx`: con sesión lleva al
+   *    marketplace del panel; sin ella abre el aviso «Acceso solo para clientes».
+   *  · «Si es un proyecto, se ven sus requerimientos» → el panel de detalle los pide a
+   *    `GET /api/marketplace/projects/[id]/requirements`.
+   */
   {
     id: 'marketplace', icono: 'tienda',
     titulo: 'Marketplace',
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
     enlaceExterno: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' },
+    temas: [
+      {
+        id: 'que-hay-dentro',
+        etiqueta: 'Catálogo',
+        pregunta: '¿Qué se puede comprar aquí?',
+        texto:
+          'Productos, automatizaciones y proyectos hechos por los miembros y candidatos de la organización. No es un escaparate de terceros: cada cosa tiene detrás a quien la construyó.',
+        pasos: [
+          {
+            titulo: 'Miras el catálogo',
+            texto: 'Está abierto: se recorre entero sin cuenta y sin registrarse para ver precios.',
+            icono: 'buscar',
+          },
+          {
+            titulo: 'Abres la ficha',
+            texto: 'Cada registro tiene su panel con las imágenes y el detalle. Si es un proyecto, además la lista de sus requerimientos.',
+            icono: 'lista',
+          },
+          {
+            titulo: 'Pides lo que te interesa',
+            texto: 'La solicitud se hace desde la ficha, y a partir de ahí el seguimiento vive en tu panel.',
+            icono: 'carrito',
+          },
+        ],
+      },
+      {
+        id: 'hace-falta-cuenta',
+        etiqueta: 'Acceso',
+        pregunta: '¿Hace falta una cuenta para comprar?',
+        texto:
+          'Para mirar, no. Para comprar o solicitar, sí: hace falta una cuenta de cliente. Con ella el marketplace se abre completo dentro de tu panel, junto a tus tickets y tus proyectos.',
+        pasos: [
+          {
+            titulo: 'Sin cuenta',
+            texto: 'Ves el catálogo público y lo que ofrece cada registro. Nada te obliga a registrarte para mirar.',
+            icono: 'web',
+          },
+          {
+            titulo: 'Con cuenta de cliente',
+            texto: 'La acción de comprar o solicitar se activa, y el marketplace pasa a estar dentro de tu panel.',
+            icono: 'tarjeta',
+          },
+          {
+            titulo: 'Todo en el mismo sitio',
+            texto: 'Lo que pidas aquí se sigue desde donde ya sigues tus tickets y tus proyectos. No hay una segunda cuenta que recordar.',
+            icono: 'maletin',
+          },
+        ],
+      },
+    ],
   },
+  /**
+   * ⏳ **DEMOCRACIA SE QUEDA SIN TEMAS A PROPÓSITO** (2026-08-18), y no por falta de tiempo.
+   *
+   * Fernando pidió que redactara dos preguntas para cada sección. Para esta **no se ha
+   * hecho**, y conviene que quede escrito por qué:
+   *
+   * 1. **El módulo no existe.** No hay pantalla de votación en el panel, ni tabla, ni
+   *    endpoint. Escribir «así votas» sería describir algo que no se puede usar, y esta
+   *    página tiene una regla dura —nada que no sea verificable— que ya costó una
+   *    verificación de Meta rechazada.
+   * 2. **Y hay una contradicción de fondo que solo Fernando puede resolver.** La frase de
+   *    esta tarjeta promete «un sistema que te permite votar»; `MEMORIA.md` recoge lo
+   *    contrario como principio del proyecto: *«El poder se construye, no se decide»*, con
+   *    crítica explícita a la democracia por voto y con las decisiones tomadas por el líder
+   *    tras escuchar propuestas. Redactar cualquiera de las dos versiones sería decidir por
+   *    él una cuestión que no es de diseño.
+   *
+   * Mientras tanto la sección funciona: aparece en el panel izquierdo, muestra su título y su
+   * frase, y **el panel de preguntas simplemente no se pinta** — la regla del sitio, que lo
+   * que no hay no deja hueco.
+   */
   {
     id: 'votacion', icono: 'voto',
     titulo: 'Democracia',
