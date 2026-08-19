@@ -5705,3 +5705,27 @@ y él no dictó.
 Descripción larga en el HTML ✔ · pregunta nueva ✔ · las dos preguntas viejas fuera (0) ✔ ·
 `FAQPage` ausente ✔ · la tarjeta del panel izquierdo conserva su frase corta y mide 111 px,
 frente a los 131 de Progreso ✔ · sin desbordamiento horizontal ✔.
+
+### ⭐ P76 — La función se llama RETOS CC, y la respuesta salió de los fundamentos (2026-08-19)
+Fernando pidió que la escribiera yo *«según la intención que tenemos con esta función del
+videojuego, que realmente se llama RETOS CC»*. No se inventó: se apoya en dos cosas que ya
+estaban escritas.
+
+`MEMORIA.md` dice que el juego nace con finalidad de **«enseñanza + retos + economía de fichas»**
+y que hay etapas que **solo se desbloquean con resultados REALES registrados en la app**. Y el
+fundamento del proyecto dice lo mismo aplicado a las personas: *«las elecciones no deberían
+basarse en votaciones sino en acciones naturales»*, y los nueve valores del candidato se evalúan
+**por resultados, no por declaraciones**.
+
+Retos CC es eso puesto al servicio de una empresa, así que la frase lo dice y nada más:
+
+> Se llama Retos CC: en vez de preguntarle a tu equipo cómo reaccionaría, lo pones dentro de una
+> situación y ves qué decide. Una entrevista te dice lo que alguien cree que haría; un reto te
+> enseña lo que hace.
+
+Dos frases, ningún resultado prometido, ninguna cifra — la regla de la página. Y **la etiqueta
+pasó de «Pruebas» a «Retos CC»**: la primera era mía a falta de nombre, y un rótulo inventado
+compitiendo con el nombre real solo confunde.
+
+Al tener respuesta, el tema **vuelve a entrar en el `FAQPage`** (verificado: aparece con su
+`name` y su `acceptedAnswer`), que es exactamente lo que debía pasar cuando llegara el párrafo.

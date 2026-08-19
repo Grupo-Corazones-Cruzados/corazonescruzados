@@ -466,9 +466,21 @@ export const ACCESOS: Acceso[] = [
    * izquierdo y en la descripción de la pestaña: cinco frases ahí dejarían una tarjeta cuatro
    * veces más alta que sus hermanas y un resultado de Google cortado a la mitad.
    *
-   * ⏳ **La respuesta de la pregunta está pendiente**: él escribió «descripción pendiente».
-   * Sin ella no se pinta párrafo —ni relleno ni «próximamente»— y el tema **no entra en el
-   * `FAQPage`**, porque una pregunta declarada sin respuesta es un dato falso.
+   * ⚠️ **LA RESPUESTA LA ESCRIBÍ YO** (2026-08-19), a petición suya —*«puedes generar tú la
+   * descripción según la intención que tenemos con esta función del videojuego, que realmente
+   * se llama RETOS CC»*—, y está para que la corrija.
+   *
+   * De dónde sale, porque no es una frase de folleto: la intención del juego está en
+   * `MEMORIA.md` —«enseñanza + retos + economía de fichas», con etapas que **solo se
+   * desbloquean con resultados REALES registrados en la app»**— y el fundamento del proyecto
+   * dice lo mismo aplicado a las personas: *«las elecciones no deberían basarse en votaciones
+   * sino en acciones naturales»*, y los nueve valores del candidato se evalúan por resultados,
+   * no por declaraciones. Retos CC es eso puesto al servicio de una empresa: en vez de
+   * preguntar cómo reaccionaría alguien, se le pone en la situación. La frase dice justo eso y
+   * no promete ningún resultado, que es la regla de la página.
+   *
+   * **La etiqueta pasó de «Pruebas» a «Retos CC»**: la primera era mía a falta de nombre; la
+   * función tiene el suyo, y un rótulo inventado compitiendo con el nombre real solo confunde.
    *
    * ⚠️ **AVISO, dado y asumido.** Los pasos 2 y 3 describen cosas que HOY NO EXISTEN: el
    * juego está en el prólogo (`godot/Videojuego.md`), no hay creación de personaje con
@@ -477,19 +489,20 @@ export const ACCESOS: Acceso[] = [
    * porque esta página tiene la regla de que nada sea incomprobable, y porque una
    * verificación de Meta ya se rechazó una vez por anunciar lo que no se podía comprobar.
    *
-   * La `etiqueta` («Pruebas») es lo único mío: el diseño la exige y él no la dictó.
    */
   {
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
     descripcion:
-      'GCC World es un videojuego que cuenta la historia de un mundo que sufrió las peores consecuencias de olvidar sus raíces. Tres niños que perdieron a sus padres durante una persecución en este mundo, se lanzaron hacia un hoyo ancestral, el cual sin saberlo, fue el lugar de unión y causantes de prosperidad de las primeras familias. ¿Qué existirá en el fondo del hoyo?',
+      'GCC World es un videojuego que cuenta la historia de un mundo que sufrió las peores consecuencias después de olvidar sus raíces. Tres niños que perdieron a sus padres durante una persecución en este mundo perdido, se lanzaron hacia un hoyo ancestral, el cual sin saberlo, fue el lugar de unión y prosperidad de sus antepasados. ¿Qué existirá en el fondo del hoyo?',
     temas: [
       {
         id: 'poner-a-prueba',
-        etiqueta: 'Pruebas',
+        etiqueta: 'Retos CC',
         pregunta: '¿Buscas poner a prueba a tus colaboradores?',
+        texto:
+          'Se llama Retos CC: en vez de preguntarle a tu equipo cómo reaccionaría, lo pones dentro de una situación y ves qué decide. Una entrevista te dice lo que alguien cree que haría; un reto te enseña lo que hace.',
         pasos: [
           {
             titulo: 'Entras con tu cuenta',
