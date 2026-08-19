@@ -623,7 +623,7 @@ export const ACCESOS: Acceso[] = [
         etiqueta: 'Catálogo',
         pregunta: '¿Qué se puede comprar aquí?',
         texto:
-          'Las soluciones que publican los propios miembros: productos terminados, proyectos y automatizaciones que puedes llevarte a tu organización. No es un escaparate de terceros — cada cosa tiene detrás a quien la construyó, y puedes hablar con esa persona.',
+          'Encontrarás soluciones que publican los propios miembros; también productos, servicios, proyectos y acceso a automatizaciones que puedes implementar en tu organización.',
         pasos: [
           {
             titulo: 'Miras lo que hay publicado',
@@ -642,27 +642,52 @@ export const ACCESOS: Acceso[] = [
           },
         ],
       },
+      /**
+       * ⭐ SEGUNDO TEMA DE MARKETPLACE — dictado por Fernando (2026-08-19).
+       *
+       * Sustituye a «¿Hace falta una cuenta para comprar?», que escribí yo el 08-18. Se
+       * recupera con:
+       *
+       *     git show d92e77c:lib/sitio/contenido.ts
+       *
+       * No se pierde lo que aquel contaba: que el catálogo se ve sin cuenta y que para
+       * adquirir hace falta una de cliente sigue dicho en los pasos 01 y 03 del tema de
+       * arriba. Era la respuesta a una duda pequeña; esta responde a una grande.
+       *
+       * Su texto va **palabra por palabra**, con dos correcciones que no cambian lo que dice:
+       *  · «GCC coins» → «GCC Coins», el acrónimo en mayúsculas como en el resto del proyecto.
+       *  · «algún otro tipo de producto o servicios» → «…o servicio» (concordancia).
+       *
+       * **Las descripciones de los tres pasos son mías**, a petición suya —él dictó solo los
+       * títulos— y están para que las corrija. Cada una dice lo que hace el paso y nada más:
+       * ni cifras, ni comisiones, ni plazos, que es la regla de la página.
+       *
+       * ⚠️ El marketplace **entre clientes** —regalar, revender, permutar— no existe todavía.
+       * Mismo aviso que en Retos CC y Talentos, y misma decisión suya. Y aquí aparece otra vez
+       * el nombre de la moneda: **«GCC Coins» son las «fichas» de `MEMORIA.md`**, y esto es ya
+       * el segundo sitio público donde se escribe. Cuanto antes se elija uno, mejor.
+       */
       {
-        id: 'hace-falta-cuenta',
-        etiqueta: 'Acceso',
-        pregunta: '¿Hace falta una cuenta para comprar?',
+        id: 'vender-mis-consumos',
+        etiqueta: 'Entre clientes',
+        pregunta: '¿Puedo vender mis consumos?',
         texto:
-          'Para mirar lo que publican los miembros, no. Para adquirir algo, sí: hace falta una cuenta de cliente. Con ella el marketplace se abre completo dentro de tu panel, junto a tus tickets y tus proyectos.',
+          'En esta plataforma puedes regalar o vender los recursos que hayas comprado a través del marketplace de clientes, en donde puedes intercambiar tus propios productos y servicios con otros clientes usando dinero real, GCC Coins, o algún otro tipo de producto o servicio que ofrezca el otro cliente.',
         pasos: [
           {
-            titulo: 'Sin cuenta',
-            texto: 'Ves el catálogo público y lo que ofrece cada registro. Nada te obliga a registrarte para mirar.',
-            icono: 'web',
+            titulo: 'Publica lo que quieras vender',
+            texto: 'Escoges, de lo que ya adquiriste, aquello que quieres traspasar. Le pones precio o lo dejas como regalo, y queda a la vista del resto de clientes.',
+            icono: 'tienda',
           },
           {
-            titulo: 'Con cuenta de cliente',
-            texto: 'La acción de adquirir o solicitar se activa, y el marketplace pasa a estar dentro de tu panel.',
-            icono: 'tarjeta',
+            titulo: 'Negocia el costo final con tus clientes',
+            texto: 'Quien se interese te escribe, y el precio se acuerda entre los dos. Nada se cierra hasta que ambos estén de acuerdo.',
+            icono: 'acuerdo',
           },
           {
-            titulo: 'Todo en el mismo sitio',
-            texto: 'Lo que pidas aquí se sigue desde donde ya sigues tus tickets y tus proyectos. No hay una segunda cuenta que recordar.',
-            icono: 'maletin',
+            titulo: 'Intercambia, compra o vende',
+            texto: 'El pago puede ser dinero real, GCC Coins, o directamente otro producto o servicio del otro cliente. Los tres caminos valen, y cuál se usa forma parte del trato.',
+            icono: 'billetera',
           },
         ],
       },

@@ -5808,3 +5808,20 @@ dos pasos; la frase corta de la tarjeta (suya, del 08-04) se queda.
 `<h1>` = «Plataforma», cero apariciones de «Progreso» en la página, anclas `#como-funciona` y
 `#de-idea-a-proyecto` intactas, el mapa del sitio ya lista `/clientes/plataforma`, y migración
 047 aplicada contra producción.
+
+### P82 — Marketplace cambia su segundo tema: «¿Puedo vender mis consumos?» (2026-08-19)
+Fernando sustituyó «¿Hace falta una cuenta para comprar?» —mío, del 08-18— por el marketplace
+**entre clientes**: regalar o revender lo ya adquirido, e intercambiarlo con otros clientes por
+dinero real, GCC Coins o por otro producto o servicio.
+
+No se pierde lo que contaba el tema retirado: que el catálogo se ve sin cuenta y que para
+adquirir hace falta una de cliente **sigue dicho** en los pasos 01 y 03 del primer tema. Era la
+respuesta a una duda pequeña; esta responde a una grande.
+
+Su texto va palabra por palabra con dos correcciones —«GCC coins» → «GCC Coins» y una
+concordancia—. **Las descripciones de los tres pasos son mías**, a petición suya: él dictó solo
+los títulos. Cada una dice lo que hace el paso y nada más — ni comisiones, ni plazos, ni cifras.
+
+⚠️ Y **el nombre de la moneda aparece ya en DOS páginas públicas** (Videojuego y Marketplace)
+como «GCC Coins», mientras `MEMORIA.md` la llama «fichas» en todas partes. Cada texto nuevo
+encarece la decisión que sigue pendiente.
