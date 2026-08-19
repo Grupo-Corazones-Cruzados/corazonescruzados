@@ -5913,3 +5913,67 @@ los cuatro del Modelo 4P, sus cuatro pisos, los nueve valores y los tres bloques
 **siguen todos en el HTML**, comprobado uno a uno. Un `<h1>` por página, tres columnas
 `280px 908px 260px`, los pasos repartiéndose 3 · 2×2 · 6 según cuántos haya, el mapa del sitio
 con las cuatro nuevas, y sin desbordamiento horizontal.
+
+---
+
+## Decimoctava pasada (2026-08-19) — la visión, y por qué las dos versiones anteriores fallaban
+
+Fernando dictó **la visión del proyecto**, y con ella la página cambió por tercera vez el mismo
+día. Merece la pena entender por qué las dos primeras estaban mal, porque el error es el mismo:
+
+- **v1** reordenaba sus cinco bloques antiguos dentro de la interfaz nueva.
+- **v2** contaba el camino de un candidato que toma tickets y va creciendo.
+- **v3** (esta) cuenta lo que él tenía en la cabeza desde el principio.
+
+Las dos primeras **daban por hecho que quien llega ya sabe lo que sabe hacer**. La visión dice
+lo contrario: el proyecto empieza con *«personas sin oficio y perdidos en su vida»*, y lo
+primero que reciben no es trabajo, es **una entrevista donde se estudia su caso**.
+
+### ⭐ P87 — La palabra que lo ata todo era «condición»
+*«entrevistas iniciales para estudiar su condición o caso»*. No es una manera de hablar: es la
+**Condiciología aplicada a una persona** —reconocer qué la frena, controlarlo, predecir,
+probar, cambiar la condición para cambiar el resultado—. Y ahí encaja también el paso a
+miembro: *«cuando tiene determinada condición se le puede convertir a miembro»*.
+
+Eso resuelve algo que llevaba dos días sin encajar: por qué a un candidato le importaría un
+método interno de la organización. Le importa porque **el método se le aplica a él**.
+
+El camino queda así, y es el que ordena las cuatro secciones:
+
+    El proyecto  ·  Cómo se entra  ·  Tu progreso  ·  Ser miembro
+    (para quién) ·  (diagnóstico)  ·  (tratamiento) ·  (autonomía y co-gobierno)
+
+`tu-talento` → `tu-progreso` y `como-se-crece` → `ser-miembro`: los nombres viejos describían
+la página anterior. Llevaban publicadas **menos de una hora** y aun así redirigen, porque la
+regla no admite excepciones por tamaño — «esta era muy nueva, da igual» es justo lo que deja
+404 sueltos que nadie recuerda haber creado.
+
+### ⚠️ P88 — Rompí una regla que yo mismo había razonado
+Metí las cuatro dimensiones del desarrollo humano como **pasos numerados**. Fernando lo cazó:
+*«son pasos, no enumeraciones»*. Y lo peor es que yo lo había escrito una hora antes al elegir
+la estructura —«el componente numera, así que es para secuencias, no para conjuntos»— y luego
+lo hice igual, además apuntalándolo con un `:has()` que ponía cuatro pasos en 2×2.
+
+**Ese CSS era arreglar el síntoma.** El problema no era que cuatro pasos quedaran mal
+repartidos: era meter cuatro pasos.
+
+Ahora **lo impide el compilador**: `Tema.pasos` es una tupla `[Paso] | [Paso, Paso] |
+[Paso, Paso, Paso]`, y un cuarto no compila. Comprobado con un archivo de prueba —que a la
+primera dio falso negativo porque lo llamé con punto delante y `tsconfig` no compila ocultos;
+al renombrarlo, el error salió—.
+
+**Lección:** cuando una regla de diseño se puede expresar en el tipo, se expresa en el tipo. Un
+comentario que dice «máximo tres» lo incumplí yo mismo el mismo día que lo escribí.
+
+### P89 — Lo que faltaba de ser miembro
+Añadió sobre la marcha: *«cuando ya es miembro hay muchas actividades que estarían más
+asociadas al Grupo Corazones Cruzados que ellos harían en beneficio de nosotros»*. Faltaba, y
+era la mitad de lo que hace un miembro. Nueva pregunta «¿Qué haces para el grupo?» — con los
+**tipos** de actividad en el párrafo (acompañar a quien llega, sostener un sistema, llevar un
+proyecto interno, formar) y los **pasos** contando cómo llega ese trabajo hasta ti, que sí
+tiene orden. Aplicada ya su corrección de P88.
+
+### Lo medido
+Las cinco rutas nuevas dan 200; `tu-talento`, `como-se-crece` y `/recursos` redirigen en **un
+salto**; el mapa del sitio lista las cuatro nuevas; y **ningún tema del sitio entero pasa de
+tres pasos** —comprobado en las ocho páginas de las dos ramas—. Sin desbordamiento horizontal.

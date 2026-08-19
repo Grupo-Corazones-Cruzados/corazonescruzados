@@ -36,6 +36,7 @@
  */
 
 import type { CSSProperties, ReactNode } from 'react';
+import type { Paso } from '@/lib/sitio/contenido';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -342,12 +343,8 @@ export function BloqueTema({
   pregunta: string;
   /** Opcional: sin respuesta escrita no se pinta párrafo. Ver el aviso en `Tema`. */
   texto?: string;
-  pasos?: {
-    titulo: string;
-    texto: string;
-    icono?: string;
-    imagen?: { src: string; ancho: number; alto: number };
-  }[];
+  /** Como mucho TRES, y en orden. Ver el aviso de `Tema.pasos` en `lib/sitio/contenido.ts`. */
+  pasos?: readonly Paso[];
 }) {
   return (
     <section

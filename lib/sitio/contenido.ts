@@ -323,22 +323,41 @@ export interface Tema {
    */
   texto?: string;
   /**
-   * Los pasos, para que la promesa se vea concreta. Opcional.
-   * `icono` es una clave de `ICONOS` (`components/sitio/piezas.tsx`) y se pinta **debajo**
-   * del paso: da un ancla visual al final de cada columna y evita que las tres se lean como
-   * tres párrafos sueltos.
+   * ⭐ **UNO, DOS O TRES PASOS. NUNCA MÁS, Y NUNCA UNA LISTA.**
+   *
+   * El tipo es una tupla a propósito: un cuarto paso **no compila**. No es manía, son dos
+   * reglas que Fernando dejó claras el 2026-08-19 y que yo había roto:
+   *
+   * 1. **Caben tres.** Cuatro salen 3+1 —una fila a medias— y seis salen en dos filas que ya
+   *    no se leen de un vistazo. Se intentó apañar con CSS (un `:has()` que los ponía en 2×2)
+   *    y era arreglar el síntoma: el problema no era la rejilla, era meter cuatro cosas.
+   * 2. **Son PASOS, no enumeraciones.** Van numerados 01·02·03, y ese número promete un
+   *    orden: primero esto, luego esto. Las cuatro dimensiones del desarrollo humano
+   *    —laboral, corporal, social y mental— se pusieron aquí y estaba mal: son un conjunto,
+   *    no una secuencia, y numerarlas decía que se hacen una detrás de otra. Un conjunto va
+   *    en el `texto`, en prosa.
+   *
+   * Si algo tiene más de tres partes o no lleva orden, **no son pasos**: o se cuenta en el
+   * párrafo, o se parte en dos preguntas.
+   *
+   * `icono` es una clave de `ICONOS` (`components/sitio/piezas.tsx`) y se pinta **debajo** del
+   * paso: da un ancla visual al final de cada columna y evita que se lean como párrafos
+   * sueltos.
    */
-  pasos?: {
-    titulo: string;
-    texto: string;
-    /** Clave de `ICONOS`. Solo se usa si el paso no trae `imagen`. */
-    icono?: string;
-    /**
-     * Ilustración del paso, bajo `public/`. Manda sobre `icono`.
-     * Son escenas, no pictogramas, así que ocupan el ancho de su columna.
-     */
-    imagen?: { src: string; ancho: number; alto: number };
-  }[];
+  pasos?: [Paso] | [Paso, Paso] | [Paso, Paso, Paso];
+}
+
+/** Un paso de un `Tema`. Ver el aviso de `Tema.pasos`: como mucho tres, y en orden. */
+export interface Paso {
+  titulo: string;
+  texto: string;
+  /** Clave de `ICONOS`. Solo se usa si el paso no trae `imagen`. */
+  icono?: string;
+  /**
+   * Ilustración del paso, bajo `public/`. Manda sobre `icono`.
+   * Son escenas, no pictogramas, así que ocupan el ancho de su columna.
+   */
+  imagen?: { src: string; ancho: number; alto: number };
 }
 
 export const ACCESOS: Acceso[] = [
@@ -768,275 +787,311 @@ export const ACCESOS: Acceso[] = [
 ];
 
 /**
- * ═══════════ DESARROLLO HUMANO — las secciones para miembros y candidatos ═══════════
+ * ═══════════ DESARROLLO HUMANO — de estar perdido a decidir sobre el proyecto ═══════════
  *
- * Fernando (2026-08-19): *«aplicar el mismo diseño de interfaz que la de clientes, pero
- * orientada a los miembros o candidatos que quieran o sean parte de este proyecto»*.
+ * ⭐ **LA VISIÓN, DICTADA POR FERNANDO EL 2026-08-19**, y es la que ordena toda esta página:
  *
- * ── ⭐ NADA DE LO QUE HABÍA SE HA PERDIDO ─────────────────────────────────────
- * La página anterior tenía cinco bloques suyos —tres motivos, Condiciología, Modelo 4P, los
- * nueve valores y el violeta— y **están los cinco aquí, con su texto intacto**, repartidos
- * entre las cuatro secciones. Eligió esta opción sobre otras dos, y era la correcta: ese
- * contenido es lo único de la web que un competidor no puede copiar, y encima es lo que
- * sostiene el posicionamiento por «condiciología» y «Modelo 4P» que declara la página.
+ *   *«personas sin oficio y perdidos en su vida puedan encontrar en este proyecto una guía y
+ *   orientación, en donde se hacen entrevistas iniciales para estudiar su condición o caso, y
+ *   luego se plantean alternativas de solución para cada problemática identificada. Y luego ir
+ *   tratando su caso mediante diferentes sistemas y se vaya desarrollando un progreso que
+ *   luego le permita resolver sus necesidades básicas; y cuando tiene determinada condición se
+ *   le puede convertir a miembro. Y cuando es miembro, colaborar en sistemas internos de la
+ *   organización, y seguir haciendo su negocio […] y colaborar de cierta forma con la
+ *   organización, ya sea por cada producto vendido en la plataforma una tasa de beneficio a la
+ *   organización. Y que ellos sean quienes, tras ciertos sistemas, puedan observar el estado
+ *   global del negocio, votar y tomar decisiones para realizar mejoras conjuntas, y ser
+ *   partícipes activos de las necesidades del negocio.»*
  *
- * Lo que se ha AÑADIDO es la mitad que faltaba: qué obtiene de verdad quien entra —cómo se
- * postula, cómo le llega trabajo, cómo vende lo que construye y cómo crece—. La página
- * contaba **quiénes somos** y no contaba **qué gana el que se acerca**.
+ * ── POR QUÉ ESTO CAMBIÓ LA PÁGINA ENTERA (dos veces en el mismo día) ──────────
+ * La primera versión reordenaba sus bloques antiguos. La segunda contaba el camino de un
+ * candidato que toma tickets. **Las dos estaban mirando el sitio equivocado.** El proyecto no
+ * empieza cuando alguien ya sabe lo que sabe hacer: empieza cuando alguien **no lo sabe**, y
+ * lo primero que recibe no es trabajo, es una entrevista donde se estudia su caso.
  *
- * ⚠️ **Este contenido nuevo lo escribí yo** y está para que lo corrija. Cada afirmación sale
- * de algo que existe o que él ya dictó, y queda anotada su procedencia junto a cada sección.
- * Ni cifras, ni plazos, ni sueldos: la misma regla que en `/clientes`.
+ * Con la visión encima, las cuatro secciones son los cuatro tramos del mismo camino:
  *
- * ⚠️ Comparte tipo con `ACCESOS` (`Acceso`) **a propósito**: las dos ramas usan el mismo
- * explorador, y darles tipos distintos habría obligado a duplicarlo.
+ *   El proyecto  ·  Cómo se entra  ·  Tu progreso  ·  Ser miembro
+ *   (para quién) ·  (diagnóstico)  ·  (tratamiento) ·  (autonomía y co-gobierno)
+ *
+ * ⚠️ **`tu-talento` y `como-se-crece` cambiaron de nombre** al reescribirse: ya no describían
+ * lo que hay dentro. Las dos direcciones viejas redirigen (`next.config.ts`) — llevaban
+ * publicadas menos de una hora, pero la regla del sitio es que ninguna URL publicada muere.
+ *
+ * ── DÓNDE ENCAJA LA CONDICIOLOGÍA, QUE ES LO QUE HACE QUE ESTO SE SOSTENGA ────
+ * «Estudiar su condición» no es una manera de hablar: es el método del proyecto aplicado a una
+ * persona. Reconocer qué la frena, controlarlo, predecir, probar, y cambiar la condición para
+ * cambiar el resultado. Por eso el diagnóstico no es una entrevista de trabajo — no busca si
+ * sirves, busca **qué te está pasando**.
+ *
+ * ⚠️ **TODO EL TEXTO ES MÍO** y está para que Fernando lo corrija. Habla de personas en
+ * situación difícil, así que se ha escrito con dos cuidados: **nada de condescendencia** —no
+ * se les trata como a un problema que resolver— y **ninguna promesa**: ni plazos, ni ingresos,
+ * ni «te cambiamos la vida». Se cuenta qué hace el proyecto, no qué le va a pasar a nadie.
  */
 export const DESARROLLO: Acceso[] = [
-  /**
-   * Los tres motivos y el violeta son **texto de Fernando, palabra por palabra**, rescatado
-   * de la página anterior (`git show baaa033:app/(sitio)/desarrollo-humano/page.tsx`).
-   */
   {
     id: 'el-proyecto', icono: 'pulso',
     titulo: 'El proyecto',
-    texto: 'Por qué existe el Grupo Corazones Cruzados, y qué significa su color.',
+    texto: 'Para quién es el Grupo Corazones Cruzados, y por qué existe.',
     descripcion:
-      'El Grupo Corazones Cruzados es un proyecto de desarrollo humano, no una empresa que además hace cosas buenas. De ahí sale todo lo demás: la plataforma, el videojuego, el marketplace y la forma de trabajar. Y por eso conviene empezar por aquí antes que por lo que se ofrece.',
+      'Hay gente que no está sin trabajo por falta de ganas, sino porque nadie se ha sentado nunca con ella a mirar qué le está pasando. El Grupo Corazones Cruzados empieza justo ahí: no repartiendo tareas, sino estudiando el caso de cada persona para saber qué la frena antes de proponerle nada.',
     temas: [
       {
-        id: 'tres-motivos',
-        etiqueta: 'Por qué existe',
-        pregunta: '¿Por qué existe este proyecto?',
+        id: 'para-quien-es',
+        etiqueta: 'Para quién',
+        pregunta: '¿Esto es para mí?',
         texto:
-          'No son eslóganes: son las razones que le dan origen, y de las que sale todo lo demás.',
+          'Si no sabes a qué dedicarte, si lo que haces no te alcanza para vivir, o si llevas tiempo dando vueltas sin encontrar por dónde seguir, sí. No hace falta traer un título, ni experiencia, ni tener claro tu talento: eso es precisamente lo que se busca contigo.',
         pasos: [
           {
-            titulo: 'Un corazón puede cruzar el mundo',
-            texto: 'Crecemos en entornos diferentes, pero los valores deben ser compartidos. Una organización debe representar la alianza única que existe en la humanidad. Y lo que más necesitamos es una razón para trabajar juntos por un futuro mejor.',
-            icono: 'pulso',
+            titulo: 'Llegas sin nada resuelto',
+            texto: 'No se te pide un currículum impecable ni que sepas ya lo que quieres. Se te pide que lo que cuentes sea cierto.',
+            icono: 'brujula',
           },
           {
-            titulo: 'Una realidad imposible, contra una disciplina centralizada',
-            texto: 'Los jóvenes heredan las consecuencias de adultos que ignoraron las problemáticas sociales y prefirieron creerlas imposibles antes que intentarlo. La forma de confrontar esa realidad imposible es una disciplina centralizada: un sueño único y compartido, trabajado a diario.',
-            icono: 'escudo',
+            titulo: 'Se estudia tu caso',
+            texto: 'Una entrevista para entender de dónde vienes y qué te está frenando de verdad, que casi nunca es lo que parece desde fuera.',
+            icono: 'buscar',
           },
           {
-            titulo: 'El poder se construye, no se decide',
-            texto: 'Tener acceso a recursos no ganados es poder ilegítimo. El poder se construye y se obtiene cuando la gente reconoce a su líder, no cuando elige entre opciones que no la representan. Quien logra movilizar a las personas es líder nato.',
-            icono: 'bandera',
+            titulo: 'Sales con alternativas',
+            texto: 'No con un consejo suelto: con caminos concretos para cada cosa que se haya identificado, y con alguien que los recorre contigo.',
+            icono: 'brujula',
           },
         ],
       },
       {
-        id: 'el-violeta',
-        etiqueta: 'Violeta',
-        pregunta: '¿Por qué el violeta?',
+        id: 'por-que-ayudar',
+        etiqueta: 'La honestidad',
+        pregunta: '¿Por qué me van a ayudar a mí?',
         texto:
-          'El violeta resulta de combinar dos colores distintos. Es decir: une lo distinto en uno solo para alcanzar algo más grande. Es el color que representa al grupo, y está en todos sus proyectos.',
+          'Porque no es caridad, y conviene decirlo claro: el proyecto crece cuando crece su gente. Alguien que sale adelante acaba sosteniendo al siguiente que llega, y aportando al proyecto que lo sostuvo a él. Ese es el trato, y es el mismo para todos.',
         pasos: [
           {
-            titulo: 'Marca',
-            texto: 'El violeta está en todos los proyectos del grupo, sin importar de quién sean, para que se reconozcan como parte de él.',
-            icono: 'paleta',
-          },
-          {
-            titulo: 'Filosofía',
-            texto: 'Cada persona debe sentirse afín a ese sentimiento de unión. No es obligatorio sentirlo, pero sí creer en él.',
-            icono: 'idea',
-          },
-          {
-            titulo: 'Acción',
-            texto: 'Ayudar y esperar ser ayudado. El apoyo de hoy se devuelve mañana, y el conocimiento se comparte entre proyectos.',
+            titulo: 'Primero recibes',
+            texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Sin adelantar nada y sin firmar nada.',
             icono: 'acuerdo',
+          },
+          {
+            titulo: 'Luego te sostienes',
+            texto: 'Cuando lo que haces empieza a cubrir lo tuyo, dejas de ser alguien a quien se acompaña y pasas a ser alguien que aporta.',
+            icono: 'tendencia',
+          },
+          {
+            titulo: 'Después devuelves',
+            texto: 'Con tu talento en los sistemas del grupo, y con una parte de lo que vendas por la plataforma. Es lo que paga el acompañamiento del que viene detrás.',
+            icono: 'personas',
           },
         ],
       },
     ],
   },
 
-  /**
-   * **Las tres reglas y los nueve valores son de Fernando** (onboarding, slider 4; están
-   * verbatim en `MEMORIA.md`). Los pasos de la postulación describen el flujo que YA existe:
-   * `/auth/candidato`, el tipo de cuenta `candidate` y la conversión a miembro que decide un
-   * miembro Global del paso de Implementación.
-   *
-   * ⚠️ Se dice que un fallo a los valores implica destitución porque **así está dictado**, y
-   * callarlo sería más engañoso que decirlo: quien se postula tiene derecho a saberlo antes.
-   */
   {
     id: 'como-se-entra', icono: 'acuerdo',
     titulo: 'Cómo se entra',
-    texto: 'Cómo se postula alguien, qué se le pide y cómo pasa de candidato a miembro.',
+    texto: 'La entrevista inicial, el estudio de tu caso y las alternativas que salen de ahí.',
     descripcion:
-      'Se entra como candidato y se llega a miembro. No hay una prueba técnica ni una entrevista al uso: lo que se mira es si representas lo que el grupo dice ser, porque cada persona que entra pasa a ser la cara del proyecto ante los demás.',
+      'Entrar no es rellenar un formulario y esperar. Es sentarse con alguien a mirar tu situación entera: qué sabes hacer, qué te está costando, qué necesitas resolver primero. De esa conversación salen las problemáticas concretas, y de cada una, alternativas por las que empezar.',
     enlaceExterno: { href: '/', etiqueta: 'Postularme' },
     temas: [
       {
-        id: 'postulacion',
-        etiqueta: 'Postulación',
-        pregunta: '¿Cómo se entra al proyecto?',
+        id: 'la-entrevista',
+        etiqueta: 'La entrevista',
+        pregunta: '¿Cómo empieza todo?',
         texto:
-          'La postulación se hace desde la portada y no cuesta nada. A partir de ahí tienes tu propia cuenta para seguir en qué punto está.',
+          'Con una entrevista inicial, y no es una entrevista de trabajo: nadie está mirando si sirves. Se está estudiando tu condición —de dónde vienes, qué te frena, con qué cuentas— porque sin eso cualquier propuesta sería adivinar.',
         pasos: [
           {
             titulo: 'Te postulas',
-            texto: 'Desde la portada, con tus datos y lo que sabes hacer. Entras como candidato y esa es tu puerta desde el primer día.',
+            texto: 'Desde la portada, contando tu situación con tus palabras. No hay preguntas trampa ni pruebas que superar.',
             icono: 'bandera',
           },
           {
-            titulo: 'Sigues tu postulación',
-            texto: 'Tu cuenta de candidato te deja ver en qué punto estás, sin tener que preguntar a nadie cómo va.',
-            icono: 'lista',
+            titulo: 'Hablamos de tu caso',
+            texto: 'Una conversación para entender lo que pasa, no para juzgarlo. Lo que cuentes ahí queda entre quien te atiende y tú.',
+            icono: 'mensaje',
           },
           {
-            titulo: 'Te conviertes en miembro',
-            texto: 'Cuando representas los valores del grupo, un miembro Global del paso de Implementación decide convertirte en miembro. No es un plazo: es un reconocimiento.',
+            titulo: 'Se identifica qué te frena',
+            texto: 'Se nombran las problemáticas concretas, una por una. Un problema con nombre ya se puede atacar; uno sin nombre, no.',
+            icono: 'lista',
+          },
+        ],
+      },
+      {
+        id: 'alternativas',
+        etiqueta: 'Alternativas',
+        pregunta: '¿Y qué sale de esa entrevista?',
+        texto:
+          'Alternativas, no un plan cerrado. Para cada problemática identificada se plantean caminos posibles, con lo que exige cada uno, y eliges tú. Nadie decide por ti qué es lo urgente de tu vida.',
+        pasos: [
+          {
+            titulo: 'Se plantean los caminos',
+            texto: 'Para cada cosa identificada, más de una salida. Con lo que pide cada una en tiempo y en esfuerzo, dicho de frente.',
+            icono: 'rama',
+          },
+          {
+            titulo: 'Eliges por dónde empezar',
+            texto: 'Por lo que más te aprieta o por lo que veas más alcanzable. Las dos son respuestas válidas.',
+            icono: 'diana',
+          },
+          {
+            titulo: 'Empiezas acompañado',
+            texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a alguien a quien preguntar. Ser candidato no es estar en una lista de espera.',
+            icono: 'candado',
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: 'tu-progreso', icono: 'tendencia',
+    titulo: 'Tu progreso',
+    texto: 'Cómo se trata tu caso, cómo se mide el avance y cuándo te conviertes en miembro.',
+    descripcion:
+      'A partir de aquí se trabaja tu caso con los sistemas del grupo, y se mide. No es motivación ni consejos: es aplicar algo concreto, ver qué resultado dio y corregir lo que no funcionó. El objetivo del tramo no es que aprendas mucho, es que llegues a cubrir lo tuyo sin depender de nadie.',
+    temas: [
+      {
+        id: 'tratar-tu-caso',
+        etiqueta: 'El tratamiento',
+        pregunta: '¿Cómo se resuelve lo que te frena?',
+        texto:
+          'Con el método del propio proyecto, la Condiciología, aplicado a tu caso: se reconoce la condición que te está limitando, se prueba algo sobre ella y se mira el resultado. Si cambió, se sigue; si no, se cambia el enfoque. Lo que no se mide no se puede corregir.',
+        pasos: [
+          {
+            titulo: 'Se aplica un sistema',
+            texto: 'Formación, un trabajo concreto donde practicar, o el acompañamiento de alguien que ya pasó por ahí. Lo que pida tu caso, no lo que toque por calendario.',
+            icono: 'herramienta',
+          },
+          {
+            titulo: 'Se mira el resultado',
+            texto: 'Qué cambió de verdad en tu situación. No cuántas horas le dedicaste: qué se movió.',
+            icono: 'medidor',
+          },
+          {
+            titulo: 'Se corrige y se sigue',
+            texto: 'Si funcionó, se avanza al siguiente paso. Si no, se cambia la condición y se vuelve a probar. Equivocarse forma parte del método.',
+            icono: 'flujo',
+          },
+        ],
+      },
+      {
+        id: 'paso-a-miembro',
+        etiqueta: 'El paso a miembro',
+        pregunta: '¿Cuándo te conviertes en miembro?',
+        texto:
+          'Cuando tu condición cambia: cuando lo que haces ya cubre tus necesidades y puedes sostenerte. No es un plazo cumplido ni un examen aprobado, y por eso no llega el mismo día para todos. Un miembro con esa responsabilidad lo decide mirando dónde estás, no cuánto llevas.',
+        pasos: [
+          {
+            titulo: 'Empiezas a generar',
+            texto: 'Los primeros ingresos por lo que ya sabes hacer, dentro de los sistemas del grupo o con lo tuyo.',
+            icono: 'billetera',
+          },
+          {
+            titulo: 'Cubres lo básico',
+            texto: 'Lo que necesitas para vivir deja de ser el problema del mes. Ese es el punto de inflexión de todo este tramo.',
+            icono: 'casa',
+          },
+          {
+            titulo: 'Se te convierte en miembro',
+            texto: 'Porque ya representas al grupo ante los demás, y porque estás en condición de sostener a otro. No es un ascenso: es un reconocimiento.',
             icono: 'premio',
           },
         ],
       },
-      {
-        id: 'que-se-espera',
-        etiqueta: 'Reglas y valores',
-        pregunta: '¿Qué se espera de quien entra?',
-        texto:
-          'Nueve valores, y no son un cartel en la pared: Determinación, Coraje, Pureza, Fe, Paciencia, Seriedad, Espontaneidad, Autonomía y Empatía. Son el criterio con el que se entra y con el que se sigue, y se apoyan en tres reglas que aplican a todo el proyecto.',
-        pasos: [
-          {
-            titulo: '¿Quiénes somos?',
-            texto: 'Candidatos y miembros representan lo que el grupo es. Si quien entra miente, el grupo miente. Un solo fallo intencionado a los valores implica la salida; los no intencionales se evalúan.',
-            icono: 'personas',
-          },
-          {
-            titulo: 'Comandos',
-            texto: 'La gobernanza escucha, decide y recibe correcciones DESPUÉS de un resultado. El comando se ejecuta, se mide, y solo se cambia si el resultado fue negativo.',
-            icono: 'flujo',
-          },
-          {
-            titulo: 'Opciones de crecimiento',
-            texto: 'Todos pueden crecer desde el primer momento. El crecimiento se adapta a la necesidad de cada uno, valorando su talento y dándole los recursos que le hacen falta.',
-            icono: 'tendencia',
-          },
-        ],
-      },
     ],
   },
 
-  /**
-   * Todo lo de esta sección **existe y se puede comprobar en la app**: el CV público
-   * organizado por talento (migración 037, `/cv/<token>`), los tickets con `required_talents`,
-   * los proyectos que piden talentos en sus requerimientos, las pujas, y el marketplace donde
-   * los miembros publican. Es la sección más verificable de la página, y a propósito.
-   */
   {
-    id: 'tu-talento', icono: 'estrella',
-    titulo: 'Tu talento',
-    texto: 'Cómo se declara lo que sabes hacer, cómo te llega trabajo y cómo vendes lo que construyes.',
+    id: 'ser-miembro', icono: 'institucion',
+    titulo: 'Ser miembro',
+    texto: 'Qué haces, qué aportas y cómo participas en las decisiones de la organización.',
     descripcion:
-      'Aquí no se reparte trabajo por antigüedad ni por a quién conoces: se reparte por talento. Lo que declaras que sabes hacer es lo que hace que un ticket o un proyecto llegue hasta ti, y lo que construyes puedes venderlo con tu nombre encima.',
+      'Ser miembro no es haber llegado a un puesto: es pasar al otro lado. Buena parte de lo que hace un miembro es trabajo del propio grupo —acompañar a quien llega, sostener un sistema, llevar un proyecto interno—, y a la vez sigue con lo suyo, aporta una parte de lo que vende por la plataforma y decide con los demás hacia dónde va la organización que lo sostuvo cuando lo necesitaba.',
     temas: [
       {
-        id: 'como-llega-el-trabajo',
-        etiqueta: 'Talentos',
-        pregunta: '¿Cómo llega el trabajo hasta ti?',
+        id: 'que-cambia',
+        etiqueta: 'Qué cambia',
+        pregunta: '¿Qué cambia cuando eres miembro?',
         texto:
-          'Cada ticket y cada proyecto declara qué talento necesita. Si es el tuyo, lo ves y puedes tomarlo — no hay que esperar a que alguien se acuerde de ti.',
+          'Que pasas al otro lado: dejas de ser alguien a quien el proyecto acompaña y empiezas a ser parte de lo que lo sostiene. Sigues con lo tuyo, y además tu talento entra en los sistemas internos del grupo, donde hace falta.',
         pasos: [
           {
-            titulo: 'Declaras tu talento',
-            texto: 'Tu CV se organiza por talento, no por orden cronológico: se ve lo que sabes hacer antes que dónde estuviste.',
+            titulo: 'Sigues con lo tuyo',
+            texto: 'Tu negocio, tus clientes, tus actividades. Nadie te pide que lo dejes: el proyecto está para que exista, no para sustituirlo.',
+            icono: 'maletin',
+          },
+          {
+            titulo: 'Entras en el trabajo del grupo',
+            texto: 'Tu talento pasa a estar disponible para lo que la organización necesita por dentro, que es buena parte de lo que hace un miembro.',
             icono: 'estrella',
           },
           {
-            titulo: 'Tienes un CV que se comparte',
-            texto: 'Tu currículum tiene su propio enlace público, con tu portafolio y tus datos de contacto. Tú decides qué aparece: lo que dejas vacío no se pinta.',
-            icono: 'enlace',
+            titulo: 'Aportas de lo que vendes',
+            texto: 'Por cada producto o servicio que vendas a través de la plataforma, una parte queda en el proyecto. Eso es lo que financia acompañar al siguiente que llegue.',
+            icono: 'ahorro',
+          },
+        ],
+      },
+      /**
+       * Fernando lo añadió sobre la marcha (2026-08-19): *«cuando ya es miembro hay muchas
+       * actividades que estarían más asociadas al Grupo Corazones Cruzados que ellos harían en
+       * beneficio de nosotros»*. Faltaba, y era la mitad de lo que hace un miembro.
+       *
+       * ⚠️ Los TIPOS de actividad —acompañar, sostener un sistema, llevar un paso, formar—
+       * van en el párrafo y no en los pasos: son un conjunto, no una secuencia, y numerarlos
+       * diría que se hacen uno detrás de otro. Los pasos cuentan **cómo llega ese trabajo
+       * hasta ti**, que sí tiene orden. Es la regla que él mismo corrigió hace un rato.
+       */
+      {
+        id: 'trabajo-para-el-grupo',
+        etiqueta: 'Trabajo interno',
+        pregunta: '¿Qué haces para el grupo?',
+        texto:
+          'Bastante más de lo que parece desde fuera, y es donde el proyecto se sostiene: acompañar a quien acaba de llegar y estudiar su caso, sostener uno de los sistemas internos, llevar un proyecto del propio grupo, formar a otros en lo que tú ya sabes, o hacerte cargo de un tramo del negocio. Ese trabajo se reparte igual que el de los clientes: por talento, y a la vista de todos.',
+        pasos: [
+          {
+            titulo: 'El grupo publica lo que necesita',
+            texto: 'Sus propias necesidades salen publicadas como las de cualquier cliente, con lo que hace falta y para cuándo. Nada se reparte en privado.',
+            icono: 'altavoz',
           },
           {
-            titulo: 'Tomas lo que encaja contigo',
-            texto: 'Revisas el ticket abierto, miras tu disponibilidad frente a la fecha de entrega y defines el costo dentro del presupuesto del cliente.',
-            icono: 'ticket',
+            titulo: 'Lo tomas si es lo tuyo',
+            texto: 'Por talento y por disponibilidad, igual que el trabajo de fuera. Nadie te asigna algo que no puedes sostener.',
+            icono: 'acuerdo',
+          },
+          {
+            titulo: 'Pasa a estar en tus manos',
+            texto: 'Mientras lo lleves, ese sistema o ese proyecto es tuyo: respondes por él y decides sobre él. Así es como se gana la responsabilidad aquí.',
+            icono: 'escudo',
           },
         ],
       },
       {
-        id: 'vender-lo-tuyo',
-        etiqueta: 'Marketplace',
-        pregunta: '¿Puedes vender lo que construyes?',
+        id: 'decidir',
+        etiqueta: 'Decisiones',
+        pregunta: '¿Puedes decidir sobre la organización?',
         texto:
-          'Sí, y es lo que hace el marketplace: lo que ya sabes hacer deja de ser un trabajo por encargo y pasa a ser algo que se publica una vez y se vende muchas.',
+          'Sí, y no como un gesto simbólico. Los miembros ven el estado real del negocio —cómo va, qué le falta, dónde está flojo— y sobre eso votan las mejoras y toman decisiones conjuntas. Se decide con los números delante, que es la única forma de que un voto signifique algo.',
         pasos: [
           {
-            titulo: 'Publicas tu solución',
-            texto: 'Un producto terminado, una automatización o un proyecto que se pueda repetir. Con sus imágenes y su precio.',
-            icono: 'tienda',
+            titulo: 'Ves cómo va el negocio',
+            texto: 'El estado global de la organización, no un resumen maquillado. Sin eso, votar sería opinar.',
+            icono: 'grafico',
           },
           {
-            titulo: 'Aparece con tu nombre',
-            texto: 'Detrás de cada cosa publicada está quien la construyó, y el cliente lo ve. No es un catálogo anónimo.',
-            icono: 'personas',
+            titulo: 'Votas las mejoras',
+            texto: 'Sobre lo que hay que cambiar, en qué se invierte y qué se hace primero. Tu voto cuenta como el de cualquier otro.',
+            icono: 'voto',
           },
           {
-            titulo: 'Un cliente lo adquiere',
-            texto: 'Lo encuentra en el catálogo, abre la ficha y lo solicita desde ahí. El seguimiento vive en el panel de los dos.',
-            icono: 'carrito',
+            titulo: 'Te haces cargo de una parte',
+            texto: 'Administrar gente, mejorar unos ingresos, sostener un sistema. Ser partícipe activo es esto, y no asistir a una reunión.',
+            icono: 'institucion',
           },
-        ],
-      },
-    ],
-  },
-
-  /**
-   * Las cuatro dimensiones, la Condiciología y el Modelo 4P son **de Fernando**, verbatim en
-   * `MEMORIA.md` y en la página anterior. Aquí solo cambian de sitio y ganan la pregunta que
-   * las introduce.
-   */
-  {
-    id: 'como-se-crece', icono: 'tendencia',
-    titulo: 'Cómo se crece',
-    texto: 'Las cuatro dimensiones del desarrollo humano, la Condiciología y el Modelo 4P.',
-    descripcion:
-      'Crecer aquí no es ascender de puesto. Se trabaja en cuatro dimensiones a la vez —laboral, corporal, social y mental—, se mide con un método propio, la Condiciología, y se organiza con una estructura donde cada uno sabe qué le toca: el Modelo 4P.',
-    temas: [
-      {
-        id: 'cuatro-dimensiones',
-        etiqueta: 'Dimensiones',
-        pregunta: '¿En qué se crece exactamente?',
-        texto:
-          'En cuatro dimensiones, y no se avanza en una a costa de otra. Alguien que rinde en lo laboral pero se está rompiendo por dentro no está creciendo: está aguantando.',
-        pasos: [
-          { titulo: 'Laboral', texto: 'Lo que sabes hacer y hasta dónde puedes llevarlo dentro del proyecto.', icono: 'maletin' },
-          { titulo: 'Corporal', texto: 'La salud y el estado físico, que sostienen todo lo demás cuando el trabajo aprieta.', icono: 'salud' },
-          { titulo: 'Social', texto: 'Cómo te relacionas y cuánto aportas a quienes tienes cerca.', icono: 'personas' },
-          { titulo: 'Mental', texto: 'La cabeza con la que enfrentas lo difícil, y la que decide si te rindes o no.', icono: 'idea' },
-        ],
-      },
-      {
-        id: 'condiciologia',
-        etiqueta: 'El método',
-        pregunta: '¿Cómo se decide qué hay que cambiar?',
-        texto:
-          'Con la Condiciología. Una condición es el conjunto de factores que se manifiestan en una instancia de la realidad. Lo que no se ha estudiado no es una condición: se convierte en una cuando se reconoce por qué ocurrió. Se aplica a personas, a proyectos y a ideas.',
-        pasos: [
-          { titulo: 'Reconocer', texto: 'Identificar las condiciones que intervienen.', icono: 'buscar' },
-          { titulo: 'Controlar', texto: 'Establecer control sobre ellas.', icono: 'medidor' },
-          { titulo: 'Predecir', texto: 'Anticipar cómo se comportarán.', icono: 'grafico' },
-          { titulo: 'Experimentar', texto: 'Probar sobre ellas.', icono: 'destello' },
-          { titulo: 'Convertir', texto: 'Transformarlas.', icono: 'flujo' },
-          { titulo: 'Cambiar', texto: 'Cambiar la condición, y con ella el resultado.', icono: 'verificado' },
-        ],
-      },
-      {
-        id: 'modelo-4p',
-        etiqueta: 'Modelo 4P',
-        pregunta: '¿Cómo se organiza el trabajo?',
-        texto:
-          'Con cuatro pasos y cuatro pisos. Cada uno de los cuatro pasos contiene los cuatro pisos —Global, Pilar, Controlador y Colaborador—, y cada piso resuelve con su rol la necesidad de ese paso para hacer avanzar el proyecto.',
-        pasos: [
-          { titulo: 'Fundamentación', texto: 'Respalda el porqué y la base de conocimiento.', icono: 'libro' },
-          { titulo: 'Creación', texto: 'Crea el planteamiento ya fundamentado.', icono: 'idea' },
-          { titulo: 'Implementación', texto: 'Lo implanta dentro de la organización.', icono: 'herramienta' },
-          { titulo: 'Gestión', texto: 'Publicación, marketing y monetización.', icono: 'altavoz' },
         ],
       },
     ],

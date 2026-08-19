@@ -99,6 +99,18 @@ const nextConfig: NextConfig = {
       // `/ambitos` → `/soluciones`: la página se mudó entera, con sus talentos dentro.
       { source: '/ambitos', destination: '/soluciones', permanent: true },
       { source: '/ambitos/:talento', destination: '/soluciones/:talento', permanent: true },
+      /**
+       * Dos secciones de Desarrollo Humano cambiaron de nombre al reescribirse el 2026-08-19:
+       * `tu-talento` → `tu-progreso` y `como-se-crece` → `ser-miembro`. Los nombres viejos
+       * describían la página anterior, no la que hay.
+       *
+       * Llevaban publicadas **menos de una hora**, así que redirigirlas no salva ningún enlace
+       * de nadie. Se hace igual porque la regla del sitio no admite excepciones por tamaño:
+       * ninguna URL publicada muere. La alternativa —«esta era muy nueva, da igual»— es la que
+       * deja 404 sueltos que nadie recuerda haber creado.
+       */
+      { source: '/desarrollo-humano/tu-talento', destination: '/desarrollo-humano/tu-progreso', permanent: true },
+      { source: '/desarrollo-humano/como-se-crece', destination: '/desarrollo-humano/ser-miembro', permanent: true },
       // `/recursos` → `/desarrollo-humano` (Fernando, 2026-08-17). No tiene hijas y no hay
       // ninguna carpeta `public/recursos`, así que aquí no hace falta acotar nada.
       { source: '/recursos', destination: '/desarrollo-humano', permanent: true },

@@ -1397,12 +1397,10 @@ html {
     .tema-anima ol > li:nth-child(1) { animation-range: entry 15% cover 22%; }
     .tema-anima ol > li:nth-child(2) { animation-range: entry 22% cover 29%; }
     .tema-anima ol > li:nth-child(3) { animation-range: entry 29% cover 36%; }
-    .tema-anima ol > li:nth-child(4) { animation-range: entry 36% cover 43%; }
-    /* Cinco y seis existen desde el 2026-08-19: los seis pasos de la Condiciología. Sin su
-       rango propio heredarían el de por defecto —toda la pasada por la ventana— y entrarían
-       mucho más lentos que sus hermanos, que es peor que no animarlos. */
-    .tema-anima ol > li:nth-child(5) { animation-range: entry 43% cover 50%; }
-    .tema-anima ol > li:nth-child(6) { animation-range: entry 50% cover 57%; }
+    /* ⚠️ No hay cuarto rango porque **no hay cuarto paso**: el tipo `Tema.pasos` es una tupla
+       de como mucho tres, así que un `nth-child(4)` no puede existir. Llegó a haber rangos
+       hasta el sexto durante unas horas del 2026-08-19, cuando metí seis cosas donde caben
+       tres; se quitaron con ellas. */
   }
 }
 
@@ -1431,17 +1429,13 @@ html {
 
 @container (min-width: 820px) {
   .pasos-tema { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-
-  /* ⚠️ EXACTAMENTE CUATRO PASOS VAN EN 2×2, NO EN 3+1.
-     Tres columnas dejan el cuarto solo en una fila, y eso no se lee como «cuatro cosas»: se
-     lee como una fila que se quedó a medias. Con cuatro dimensiones del desarrollo humano
-     —laboral, corporal, social y mental— o con los cuatro pasos del Modelo 4P, el cuadrado
-     además dice lo que son: un conjunto, no una secuencia que se cortó.
-     `:has()` es la única forma de contar hijos en CSS, y esto es justo para lo que sirve. */
-  .pasos-tema:has(> li:nth-child(4):last-child) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
+
+/* ⚠️ AQUÍ HUBO UNA REGLA `:has()` QUE PONÍA CUATRO PASOS EN 2×2, Y SE QUITÓ EL MISMO DÍA.
+   Funcionaba, y estaba arreglando el síntoma: el problema no era que cuatro pasos quedaran
+   mal repartidos, era **meter cuatro pasos**. Van numerados, así que prometen un orden; lo
+   que no tiene orden no es un paso. Lo corrigió Fernando y ahora lo impide el tipo
+   `Tema.pasos`, que es una tupla de como mucho tres — un cuarto ya no compila.             */
 
 /* Galería de tarjetas: entran escalonadas al desplazarse. Mismo motor que los temas
    —`animation-timeline: view()`—, así que también es CSS puro y también queda desactivado
