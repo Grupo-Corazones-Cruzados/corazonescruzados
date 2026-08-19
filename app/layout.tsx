@@ -22,6 +22,28 @@ export const metadata: Metadata = {
   icons: { icon: '/icon.png' },
   openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
   robots: { index: true, follow: true },
+
+  /**
+   * ⛔ NO BORRAR — es la llave de Google Search Console (2026-08-19).
+   *
+   * Next lo emite como `<meta name="google-site-verification" …>`. Es lo que le demuestra a
+   * Google que somos dueños de `www.grupocc.org`, y con eso se puede enviar el mapa del
+   * sitio, pedir que se indexe una página y ver qué encuentra el buscador. Hasta hoy no
+   * había ninguna: el sitio estaba técnicamente listo para ser indexado pero **nadie podía
+   * comprobarlo ni acelerarlo**.
+   *
+   * ⚠️ **Google lo vuelve a comprobar cada cierto tiempo.** No es un trámite de una vez: si
+   * esta línea desaparece, se pierde la propiedad y con ella el histórico de datos. Por eso
+   * va aquí, en el layout raíz, y no en una página suelta que alguien pueda rehacer.
+   *
+   * No es un secreto —viaja en el HTML de todas las páginas, a la vista de cualquiera—, así
+   * que va en el código y no en una variable de entorno: en una variable, un despliegue en
+   * otro entorno sin ella tumbaría la verificación sin que nadie se enterara.
+   *
+   * El código lo obtuvo Fernando en Search Console (propiedad de tipo «Prefijo de la URL»
+   * sobre `https://www.grupocc.org`, método «Etiqueta HTML»).
+   */
+  verification: { google: 'UcFY0abNGykOVn6f6ChhFOvNUHpswGgte4Fc7_OOOro' },
 };
 
 /**
