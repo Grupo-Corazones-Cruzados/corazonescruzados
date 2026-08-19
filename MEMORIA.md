@@ -4039,6 +4039,23 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **LA PÁGINA PÚBLICA DEL PROYECTO ENSEÑA EL ACUERDO, NO LA COCINA (Fernando, 2026-08-19).**
+  `/proyecto/<id>?token=…` es el enlace que viaja en el correo de la factura. Se rehízo porque
+  seguía en **pixel art oscuro** (única isla que quedó fuera del rediseño claro del 17 de agosto)
+  y porque enseñaba **los requerimientos con sus subtareas, sus miembros y su costo** — el reparto
+  interno del trabajo.
+  - **Qué muestra ahora** (elección de Fernando entre tres opciones): avance en %, las **etapas
+    pactadas** con importe y estado (facturada/pendiente), **todas las facturas** con su PDF
+    descargable, y las imágenes del proyecto. Nada de requerimientos, miembros ni costos internos.
+  - **Dónde vive:** `app/(sitio)/proyecto/[id]/page.tsx` — dentro del grupo `(sitio)`, así que
+    hereda el marco público (cabecera oscura, cuerpo claro, pie oscuro) sin cambiar la URL.
+  - **Excepción a la regla de diseño:** él dijo *«propongo yo, con el lenguaje del sitio»* **para
+    esta página**. Sigue vigente [[gcc-diseno-sitio-con-fernando]] para el resto.
+  - **El cliente no veía su factura:** la consulta buscaba `WHERE i.project_id = <id>` y las
+    facturas del módulo de facturas tienen ese campo **vacío**. Ahora se buscan por los TRES
+    enlaces (directo, `invoice_projects` y `project_stages`) y salen todas, no solo la última.
+  - **Descarga del RIDE sin sesión:** `/api/projects/<id>/public/invoice?invoice_id=&token=`
+    valida el token del proyecto **y** que la factura sea de ese proyecto antes de servir el PDF.
 - **UN PROYECTO SE FACTURA POR ETAPAS, NO POR ABONOS (Fernando + su contadora, 2026-08-19).**
   Fernando pidió recuperar la «factura por abono»; su contadora avisó de que así no se hace
   bien y **tiene razón**, así que el modelo del sistema es otro. Verificado contra la norma:
@@ -4462,6 +4479,12 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **`invoice_projects.project_id` es TEXT y todo lo demás es BIGINT (2026-08-19).** Costó dos
+  fallos idénticos —la migración 047 y la API pública del proyecto— con el mismo mensaje:
+  `operator does not exist: text = bigint`. Y hay una trampa extra: Postgres deduce el tipo del
+  parámetro por su **primer** uso, así que `i.project_id = ($1)::bigint … ip.project_id = $1`
+  convierte el segundo en `text = bigint` aunque el valor se pase como cadena. **Hay que
+  castear en los dos sitios**: `ip.project_id = ($1)::text`.
 - **⛔ BORRÉ DATOS REALES CON LA LIMPIEZA DE UNA PRUEBA (2026-08-19).** Para probar la
   facturación por etapas creé planes en los proyectos **8 y 32** y terminé cada ensayo con
   `DELETE FROM gcc_world.project_stages WHERE project_id IN (8,32)`. En el 32 Fernando ya había

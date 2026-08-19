@@ -1,24 +1,30 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getProjectBilling } from '@/lib/payments';
 
+/**
+ * Lo que ve el CLIENTE del proyecto con el enlace que le llega por correo.
+ *
+ * Enseña el acuerdo, no la cocina: avance, las ETAPAS pactadas con su importe y su estado,
+ * y las facturas emitidas. **No** salen los requerimientos, ni quién los hace, ni lo que
+ * cuesta cada pieza por dentro — eso es el reparto interno del trabajo (ver MEMORIA.md,
+ * «la etapa no es el requerimiento»).
+ */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const token = req.nextUrl.searchParams.get('token');
 
-    // Ensure columns exist
     await pool.query(`
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMPTZ;
+      ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS images TEXT[];
     `);
 
-    // Ensure images column exists
-    await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS images TEXT[]`);
-
     const { rows } = await pool.query(
-      `SELECT p.id, p.title, p.description, p.status, p.budget_min, p.budget_max,
-              p.final_cost, p.deadline, p.is_private, p.public_token, p.public_token_expires_at,
-              p.created_at, p.updated_at, p.confirmed_at,
+      `SELECT p.id, p.title, p.description, p.status, p.deadline,
+              p.is_private, p.public_token, p.public_token_expires_at,
+              p.created_at, p.confirmed_at,
               COALESCE(p.images, '{}') as images,
               c.name as client_name
        FROM gcc_world.projects p
@@ -31,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const project = rows[0];
 
-    // Private projects require a valid, non-expired token
+    // Los proyectos privados exigen el token del enlace, y sin caducar.
     if (project.is_private) {
       if (!token || token !== project.public_token) {
         return NextResponse.json({ error: 'Este proyecto es privado' }, { status: 403 });
@@ -41,61 +47,49 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    // Get requirements with assignments
-    const reqs = await pool.query(
-      `SELECT r.id, r.title, r.description, r.cost, r.completed_at,
-              (r.completed_at IS NOT NULL) as is_completed,
-              COALESCE(
-                (SELECT json_agg(json_build_object(
-                  'member_name', m.name, 'photo_url', m.photo_url, 'status', ra.status
-                )) FROM gcc_world.requirement_assignments ra
-                JOIN gcc_world.members m ON m.id = ra.member_id
-                WHERE ra.requirement_id = r.id AND ra.status = 'accepted'),
-                '[]'::json
-              ) as assignments,
-              COALESCE(
-                (SELECT json_agg(json_build_object(
-                  'id', ri.id, 'title', ri.title, 'is_completed', ri.is_completed
-                ) ORDER BY ri.sort_order, ri.id) FROM gcc_world.requirement_items ri
-                WHERE ri.requirement_id = r.id),
-                '[]'::json
-              ) as items
-       FROM gcc_world.project_requirements r
-       WHERE r.project_id = $1
-       ORDER BY r.id`,
+    // Avance: solo la CIFRA de requerimientos entregados, nunca cuáles ni de quién.
+    const { rows: [avance] } = await pool.query(
+      `SELECT count(*) AS total, count(completed_at) AS hechos
+         FROM gcc_world.project_requirements WHERE project_id = $1`,
       [id]
     );
+    const total = Number(avance?.total) || 0;
+    const hechos = Number(avance?.hechos) || 0;
 
-    // Get accepted participants/bids (public info only)
-    const bids = await pool.query(
-      `SELECT m.name as member_name, m.photo_url, pb.status
-       FROM gcc_world.project_bids pb
-       JOIN gcc_world.members m ON m.id = pb.member_id
-       WHERE pb.project_id = $1 AND pb.status = 'accepted'
-       ORDER BY pb.created_at`,
-      [id]
+    // Etapas pactadas y su estado de facturación.
+    const billing = await getProjectBilling(id);
+
+    // TODAS las facturas del proyecto, por cualquiera de sus tres enlaces: directo,
+    // por la tabla de proyectos de una factura manual, o por la etapa que cubren.
+    // Buscarlas solo por `project_id` dejaba al cliente sin ver su factura, porque las
+    // que salen del módulo de facturas tienen ese campo vacío.
+    const { rows: invoices } = await pool.query(
+      `SELECT i.id, i.invoice_number, i.total, i.created_at AS issue_date, i.sri_status,
+              i.authorization_number, (i.pdf_data IS NOT NULL) AS has_pdf,
+              (SELECT e.name FROM gcc_world.project_stages e WHERE e.invoice_id = i.id LIMIT 1) AS stage_name
+         FROM gcc_world.invoices i
+        WHERE i.status <> 'cancelled'
+          AND (i.project_id = ($1)::bigint
+               OR i.id IN (SELECT ip.invoice_id FROM gcc_world.invoice_projects ip WHERE ip.project_id = ($1)::text)
+               OR i.id IN (SELECT e.invoice_id FROM gcc_world.project_stages e WHERE e.project_id = ($1)::bigint))
+        ORDER BY i.created_at`,
+      [String(id)]
     );
 
-    // Get invoice summary (no sensitive data)
-    const invoice = await pool.query(
-      `SELECT i.invoice_number, i.total, i.created_at as issue_date, i.sri_status,
-              i.subtotal_0, i.subtotal_iva, i.iva_amount
-       FROM gcc_world.invoices i
-       WHERE i.project_id = $1
-       ORDER BY i.created_at DESC LIMIT 1`,
-      [id]
-    );
-
-    // Remove sensitive fields
     delete project.public_token;
     delete project.is_private;
+    delete project.public_token_expires_at;
 
     return NextResponse.json({
       data: {
         ...project,
-        requirements: reqs.rows,
-        participants: bids.rows,
-        invoice: invoice.rows[0] || null,
+        avance: { total, hechos, pct: total > 0 ? Math.round((hechos / total) * 100) : 0 },
+        etapas: (billing?.etapas || []).map(e => ({
+          id: e.id, name: e.name, amount: e.amount,
+          facturada: !!e.invoiceId, invoiceNumber: e.invoiceNumber,
+        })),
+        totalEtapas: billing?.mode === 'etapas' ? billing.stagesTotal : 0,
+        invoices,
       },
     });
   } catch (err: any) {
