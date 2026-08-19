@@ -4028,6 +4028,42 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **UN PROYECTO SE FACTURA POR ETAPAS, NO POR ABONOS (Fernando + su contadora, 2026-08-19).**
+  Fernando pidió recuperar la «factura por abono»; su contadora avisó de que así no se hace
+  bien y **tiene razón**, así que el modelo del sistema es otro. Verificado contra la norma:
+  - **LRTI Art. 61:** en servicios el hecho generador se verifica *«en el momento en que se
+    preste efectivamente el servicio, o en el momento del pago total o parcial del precio…
+    **a elección del contribuyente**»*. Es decir: la ley permite los dos criterios, pero se
+    elige uno y se es consistente («debe corresponder al comportamiento habitual»). GCC opera
+    con el primero: se factura al prestar el servicio.
+  - **LRTI Art. 61 y Rgto. de Comprobantes Art. 17 lit. e):** en trabajos *por etapas, avance
+    de obra o tracto sucesivo*, el comprobante se entrega **al cumplirse las condiciones de
+    cada período, fase o etapa**. Ese es el camino que la norma respalda para los proyectos.
+  - **Absolución de consulta del SRI** (NOVACERO S.A., sept. 2015): *«La entrega de anticipos…
+    no constituye transferencia de dominio…, por lo tanto no cabe la emisión de comprobantes
+    de venta»*; se factura al cumplirse cada etapa.
+  - **Lo prohibido en cualquier criterio:** facturar el abono y después volver a facturar el
+    proyecto entero. Es facturar dos veces el mismo servicio.
+  - **Cómo quedó implementado:** la **etapa es el REQUERIMIENTO** del proyecto (ya tiene título,
+    importe y `completed_at`). Cada etapa se factura **una sola vez**: queda enlazada en
+    `gcc_world.invoice_requirements` y la factura del resto del proyecto solo arrastra las que
+    falten; una factura **anulada libera** sus etapas. El importe de la etapa es el mismo que usa
+    el emisor: suma de asignaciones aceptadas y, si no tiene, su costo estimado
+    (`STAGE_AMOUNT_SQL` en `lib/payments.ts` — una sola definición).
+  - **El dinero cobrado por adelantado NO es una factura:** se registra como **cobro** en
+    `gcc_world.project_payments` (tabla que existía sin usarse; su `proof_url` dejó de ser
+    obligatorio). Sirve para ver cobrado vs. facturado sin emitir comprobantes.
+  - **Dónde se opera:** módulo de Facturas → «Facturar etapa de proyecto» (elige proyecto y
+    etapas; **las cotizaciones no aparecen**, del borrador en adelante sí); y al completar el
+    proyecto, el modal trae solo las etapas que faltan. Se eliminó el modo «Abono parcial» del
+    modal de proyectos. **En tickets sigue existiendo el abono** — decidir con la contadora.
+  - **Histórico:** la migración `047_facturacion_por_etapas.sql` enlazó las etapas de los
+    proyectos cuya facturación anterior ya cubría el total (≥99%), para que no se ofrezcan otra
+    vez. Los que quedaron facturados a medias muestran un aviso en ámbar («ya tiene $X
+    facturados sin etapas declaradas») en vez de adivinar.
+  - **Finanzas:** con facturación parcial el ingreso se registra **por factura**
+    (`addInvoiceIncomeToFinance`), no por proyecto; el registro es único por origen, así que
+    apuntar el `final_cost` entero haría que las etapas siguientes no sumaran nada.
 - **CAMPAÑAS RECURRENTES: frecuencia, intervalo y fecha de fin (2026-07-30).** Amplía la
   programación de una sola fecha a una serie. Decisión del usuario.
   - **Modelo** (migración `026_campaign_recurrence.sql`, aplicada): `schedule_kind`
@@ -4399,6 +4435,13 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Los totales guardados ignoraban el descuento de la línea (2026-08-19).** El XML enviaba
+  `precioTotalSinImpuesto = cantidad × precio − descuento`, pero la base guardaba
+  `cantidad × precio`: una factura con descuento quedaba con un total MAYOR que el autorizado
+  por el SRI, y como el RIDE se dibuja con los datos de la base, el PDF contradecía al
+  comprobante. Además `invoice_items_sri` ni siquiera tenía columna `discount`. Corregido con
+  `invoiceTotals()` e `insertInvoiceItems()` (una sola definición para los cinco emisores) y la
+  columna nueva. **Regla: lo que se guarda tiene que ser lo mismo que viajó al SRI.**
 - **El XML firmado es la ÚNICA copia de los campos adicionales de una factura (2026-08-17).**
   `gcc_world.invoices` no tiene columna para ellos: los que escribe el usuario en el formulario
   viajan al constructor del XML y quedan solo dentro de `<infoAdicional>` de `xml_signed`. De ahí

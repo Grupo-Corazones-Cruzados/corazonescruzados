@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
-import { getProjectPayments } from '@/lib/payments';
+import { getProjectBilling } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -16,7 +16,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Completar y FACTURAR un proyecto es exclusivo del admin (regla de negocio).
     if (user.role !== 'admin') return NextResponse.json({ error: 'Solo un administrador puede completar y facturar el proyecto.' }, { status: 403 });
     const { id } = await params;
-    const { action, skip_invoice, is_abono, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
+    const { action, skip_invoice, requirement_ids, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
+    const etapas: string[] = Array.isArray(requirement_ids) ? requirement_ids.map(String) : [];
 
     let invoiceId: number | null = null;
     let sriResult: any = null;
@@ -64,17 +65,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         );
       }
 
-      // Auto-publish to marketplace unless this project came from marketplace.
-      // En modo ABONO NO se completa ni se publica aún (se hace al alcanzar el 100% más abajo),
-      // y el ingreso se registra por-factura, no el final_cost completo.
-      const autoPublish = !proj.marketplace_source_id;
-      if (!is_abono) {
-        await pool.query(
-          `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
-          [autoPublish, autoPublish ? new Date() : null, id]
-        );
+      // Foto de la facturación ANTES de emitir: si el proyecto ya tiene etapas
+      // facturadas, su ingreso se registró factura a factura y no debe volver a
+      // registrarse el `final_cost` entero (el registro es único por origen, así que
+      // contaría el proyecto dos veces).
+      const billingPrev = await getProjectBilling(id);
+      const facturadoAntes = billingPrev?.invoiced || 0;
 
-        // Register project as income in monthly finance
+      // Auto-publish to marketplace unless this project came from marketplace.
+      const autoPublish = !proj.marketplace_source_id;
+      await pool.query(
+        `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
+        [autoPublish, autoPublish ? new Date() : null, id]
+      );
+
+      // Register project as income in monthly finance
+      if (facturadoAntes <= 0.009) {
         try {
           const { rows: [projData] } = await pool.query(`SELECT title, final_cost FROM gcc_world.projects WHERE id = $1`, [id]);
           if (projData) {
@@ -89,12 +95,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         sriResult = { ok: true, authorized: false, skipped: true, message: 'Completado sin factura' };
       } else {
       const existingInvoice = await projectHasInvoice(id);
+      // Sin etapas pendientes no hay nada que facturar: o el proyecto ya se facturó
+      // entero por etapas, o su única factura se emitió a mano.
+      const sinEtapasPendientes = billingPrev
+        ? (billingPrev.stages.length > 0 && billingPrev.billable <= 0.009)
+        : existingInvoice.hasInvoice;
       try {
-        if (!is_abono && existingInvoice.hasInvoice) {
-          invoiceId = existingInvoice.invoiceId!;
-          sriResult = { ok: true, authorized: true, skipped: true, message: 'Factura manual ya existente' };
+        if (sinEtapasPendientes || (billingPrev?.stages.length === 0 && existingInvoice.hasInvoice)) {
+          invoiceId = existingInvoice.invoiceId ?? null;
+          sriResult = { ok: true, authorized: true, skipped: true, message: 'Todas las etapas del proyecto ya están facturadas' };
         } else {
-        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate });
+        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate, requirementIds: etapas });
 
         // Sign and send to SRI
         if (invoiceId) {
@@ -109,20 +120,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             });
           } catch (e: any) { console.error('[project complete] billing upsert error:', e.message); }
 
-          // Fase 3 (ABONO): ingreso por-factura y, si el saldo llega a 0, completar + publicar.
-          if (is_abono && sriResult?.authorized) {
+          // Si el proyecto ya traía etapas facturadas, su ingreso se lleva factura a
+          // factura: esta última aporta solo lo suyo.
+          if (facturadoAntes > 0.009 && sriResult?.authorized) {
             try {
               const { rows: [inv] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
               const { rows: [pj] } = await pool.query(`SELECT title FROM gcc_world.projects WHERE id = $1`, [id]);
-              await addInvoiceIncomeToFinance(String(invoiceId), `Abono — ${pj?.title || 'Proyecto'}`, Number(inv?.total) || 0);
-              const pay = await getProjectPayments(id);
-              if (pay.pending <= 0.009) {
-                await pool.query(
-                  `UPDATE gcc_world.projects SET status = 'completed', is_marketplace_published = $1, marketplace_published_at = $2, updated_at = NOW() WHERE id = $3`,
-                  [autoPublish, autoPublish ? new Date() : null, id]
-                );
-              }
-            } catch (e: any) { console.error('[project complete] abono income/complete error:', e.message); }
+              await addInvoiceIncomeToFinance(String(invoiceId), `Etapas — ${pj?.title || 'Proyecto'}`, Number(inv?.total) || 0);
+            } catch (e: any) { console.error('[project complete] income error:', e.message); }
           }
 
           // Send invoice email to client

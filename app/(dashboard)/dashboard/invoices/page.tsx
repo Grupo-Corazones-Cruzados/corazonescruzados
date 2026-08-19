@@ -65,7 +65,16 @@ function InvoicesPageInner() {
 
   // Factura manual: sólo se usa hoy para REFACTURAR (re-emitir una factura anulada) → paso 'form'.
   const [showManual, setShowManual] = useState(false);
-  const [manualStep, setManualStep] = useState<'form' | 'processing'>('form');
+  const [manualStep, setManualStep] = useState<'project' | 'form' | 'processing'>('form');
+
+  // Facturación POR ETAPAS de un proyecto. El comprobante se emite al cumplirse cada
+  // fase (LRTI art. 61; Rgto. de Comprobantes art. 17 lit. e), así que aquí se elige
+  // el proyecto y qué etapas entregadas entran en esta factura. Cada etapa se factura
+  // una sola vez: las ya facturadas aparecen bloqueadas con su número de factura.
+  const [billableProjects, setBillableProjects] = useState<any[]>([]);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [stageProject, setStageProject] = useState<any>(null);
+  const [selectedStages, setSelectedStages] = useState<number[]>([]);
   // Al refacturar recordamos el ticket/proyecto de origen para volver a marcarlo como
   // completado y re-enlazar la nueva factura a su origen.
   const [refactorSource, setRefactorSource] = useState<{ type: 'ticket' | 'project'; id: number; client_id: number | null } | null>(null);
@@ -152,6 +161,93 @@ function InvoicesPageInner() {
     setHistorySearch('');
   };
 
+  /** Abre el modal en el paso de elegir proyecto y trae los proyectos facturables. */
+  const openStageModal = async () => {
+    setStageProject(null);
+    setSelectedStages([]);
+    setProjectSearch('');
+    setRefactorSource(null);
+    setMItems([]);
+    setMAdditionalFields([]);
+    setMSendEmail(true);
+    setMCurrency('USD');
+    setMExchangeRate('1');
+    setMPaymentCode('20');
+    setProcessing(false);
+    setProcessStep('');
+    setManualStep('project');
+    setShowManual(true);
+    try {
+      const r = await fetch('/api/invoices/billable-projects');
+      const { data } = await r.json();
+      setBillableProjects(data || []);
+    } catch { setBillableProjects([]); toast.error('No se pudieron cargar los proyectos'); }
+  };
+
+  /** Una etapa se convierte en línea de la factura con su importe facturable. */
+  const stageToItem = (e: any) => ({
+    description: e.title + (e.description ? ` - ${e.description}` : ''),
+    quantity: '1',
+    unitPrice: String(Number(e.amount) || 0),
+    ivaRate: '0',
+    discount: '0',
+  });
+
+  /** Elige el proyecto: preselecciona sus etapas entregadas y sin facturar. */
+  const pickStageProject = async (p: any) => {
+    setStageProject(p);
+    const candidatas = (p.stages || []).filter((e: any) => !e.invoiceId && e.deliveredAt);
+    const iniciales = candidatas.length > 0 ? candidatas : (p.stages || []).filter((e: any) => !e.invoiceId);
+    setSelectedStages(iniciales.map((e: any) => e.id));
+    setMItems(iniciales.map(stageToItem));
+    // Adquirente: primero los datos del cliente del proyecto, con el tipo de
+    // identificación deducido del RUC igual que en el módulo de proyectos.
+    const ruc = (p.clientRuc || '').trim();
+    setMClientName(p.clientName || 'CONSUMIDOR FINAL');
+    setMClientRuc(ruc || '9999999999999');
+    setMClientEmail(p.clientEmail || '');
+    setMClientPhone(p.clientPhone || '');
+    setMClientAddress(p.clientAddress || '');
+    if (ruc.length === 13 && ruc.endsWith('001')) setMIdType('04');
+    else if (ruc.length === 10) setMIdType('05');
+    else if (ruc.length > 0) setMIdType('06');
+    else { setMIdType('07'); setMClientName('CONSUMIDOR FINAL'); setMClientRuc('9999999999999'); }
+    // El formulario se muestra YA; los datos del adquirente entran después. Si se
+    // esperaba a la cuenta de facturación, el modal se quedaba un par de segundos
+    // en blanco (visto en la revisión con navegador).
+    setManualStep('form');
+    if (p.clientId) {
+      try {
+        const r = await fetch(`/api/billing-clients?portal_client_id=${p.clientId}`);
+        const { data: bc } = await r.json();
+        if (bc) {
+          setMIdType(bc.id_type || '07');
+          setMClientRuc(bc.ruc || '9999999999999');
+          setMClientName(bc.name || 'CONSUMIDOR FINAL');
+          setMClientEmail(bc.email || '');
+          setMClientPhone(bc.phone || '');
+          setMClientAddress(bc.address || '');
+        }
+      } catch { /* sin cuenta de facturación → se llena a mano */ }
+    }
+  };
+
+  /** Marca/desmarca una etapa y rehace el detalle con las que queden elegidas. */
+  const toggleStage = (stageId: number) => {
+    const next = selectedStages.includes(stageId)
+      ? selectedStages.filter(x => x !== stageId)
+      : [...selectedStages, stageId];
+    setSelectedStages(next);
+    setMItems((stageProject?.stages || []).filter((e: any) => next.includes(e.id)).map(stageToItem));
+  };
+
+  const filteredProjects = projectSearch.trim()
+    ? billableProjects.filter(p => {
+        const q = projectSearch.trim().toLowerCase();
+        return (p.title || '').toLowerCase().includes(q) || (p.clientName || '').toLowerCase().includes(q);
+      })
+    : billableProjects;
+
   const filteredHistory = historySearch.trim()
     ? clientHistory.filter(c => {
         const q = historySearch.trim().toLowerCase();
@@ -236,7 +332,8 @@ function InvoicesPageInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          project_ids: [],
+          project_ids: stageProject ? [stageProject.projectId] : [],
+          requirement_ids: selectedStages,
           client_id_type: mIdType,
           client_name: mClientName,
           client_ruc: mClientRuc,
@@ -289,6 +386,8 @@ function InvoicesPageInner() {
       if (refactorSource && sriOk) toast.success(`${refactorSource.type === 'ticket' ? 'Ticket' : 'Proyecto'} marcado como completado nuevamente`);
 
       setRefactorSource(null);
+      setStageProject(null);
+      setSelectedStages([]);
       setShowManual(false);
       fetchData();
     } catch {
@@ -331,6 +430,11 @@ function InvoicesPageInner() {
                 className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf} />
             </div>
+            {isAdmin && (
+              <button onClick={openStageModal} className={`${BTN_PRIMARY} shrink-0`}>
+                <Plus className="w-4 h-4" /> Facturar etapa de proyecto
+              </button>
+            )}
           </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
@@ -426,7 +530,8 @@ function InvoicesPageInner() {
       </div>
 
       {/* Manual Invoice Modal */}
-      <PixelModal open={showManual} onClose={() => !processing && setShowManual(false)} title="Factura Manual" size="lg">
+      <PixelModal open={showManual} onClose={() => !processing && setShowManual(false)}
+        title={stageProject ? `Facturar etapas — ${stageProject.title}` : manualStep === 'project' ? 'Facturar etapa de proyecto' : 'Factura Manual'} size="lg">
         {manualStep === 'processing' ? (
           <div className="py-8 space-y-6">
             <div className="space-y-3">
@@ -459,6 +564,52 @@ function InvoicesPageInner() {
         ) : manualStep === 'form' ? (
           /* Form step - client data + invoice items */
           <div className="max-h-[80vh] overflow-y-auto pr-1">
+            {/* Etapas del proyecto elegido. Cada etapa se factura UNA vez: las que ya
+                tienen factura salen bloqueadas con su número. */}
+            {stageProject && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between border-b border-digi-border pb-1.5 mb-2">
+                  <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Etapas a facturar</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-digi-muted" style={pf}>
+                      Facturado ${fmt2(Number(stageProject.invoiced))} de ${fmt2(Number(stageProject.stagesTotal))}
+                    </span>
+                    <button type="button" onClick={() => { setStageProject(null); setSelectedStages([]); setMItems([]); setManualStep('project'); }}
+                      className="text-[11px] px-2 py-0.5 border border-digi-border text-digi-muted hover:text-digi-text transition-colors" style={pf}>
+                      Cambiar proyecto
+                    </button>
+                  </div>
+                </div>
+                <div className="border border-digi-border rounded-lg divide-y divide-digi-border/60 max-h-44 overflow-y-auto">
+                  {(stageProject.stages || []).map((e: any) => {
+                    const facturada = !!e.invoiceId;
+                    return (
+                      <label key={e.id} className={`flex items-center gap-2 px-2 py-1.5 text-[12px] ${facturada ? 'opacity-60' : 'cursor-pointer hover:bg-accent/5'}`} style={pf}>
+                        <input type="checkbox" disabled={facturada} checked={selectedStages.includes(e.id)}
+                          onChange={() => toggleStage(e.id)} className="accent-[#4B2D8E]" />
+                        <span className="flex-1 min-w-0 truncate text-digi-text">{e.title}</span>
+                        {facturada ? (
+                          <span className="text-[11px] text-digi-muted shrink-0">Facturada · {e.invoiceNumber}</span>
+                        ) : e.deliveredAt ? (
+                          <span className="text-[11px] text-green-600 shrink-0">Entregada</span>
+                        ) : (
+                          <span className="text-[11px] text-amber-600 shrink-0">Sin entregar</span>
+                        )}
+                        <span className="tabular-nums text-digi-text shrink-0">${fmt2(Number(e.amount))}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {Number(stageProject.invoicedLegacy) > 0 && (
+                  <div className="px-2 py-1.5 border border-amber-300 rounded bg-amber-50 text-[11.5px] text-amber-700 mt-1" style={pf}>
+                    Ojo: este proyecto ya tiene ${fmt2(Number(stageProject.invoicedLegacy))} facturados en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar dos veces lo mismo.
+                  </div>
+                )}
+                <p className="text-[11px] text-digi-muted mt-1" style={pf}>
+                  Se marcan por defecto las etapas entregadas y sin facturar. El detalle sigue siendo editable: puedes fusionarlas en un solo concepto.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* LEFT: Adquirente + Pago */}
               <div className="space-y-2">
@@ -724,6 +875,57 @@ function InvoicesPageInner() {
                 </div>
               </div>
             </div>
+          </div>
+
+        ) : manualStep === 'project' ? (
+          /* Paso 1 — elegir el proyecto y sus etapas. Las cotizaciones no aparecen:
+             todavía no son trabajo contratado, así que no hay nada que facturar. */
+          <div className="max-h-[80vh] overflow-y-auto pr-1 space-y-3">
+            {!stageProject ? (
+              <>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input autoFocus value={projectSearch} onChange={e => setProjectSearch(e.target.value)}
+                    placeholder="Buscar proyecto o cliente..."
+                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none"
+                    style={mf} />
+                </div>
+                <div className="border border-digi-border rounded-lg divide-y divide-digi-border/60 max-h-[55vh] overflow-y-auto">
+                  {filteredProjects.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-[12px] text-digi-muted" style={pf}>
+                      {billableProjects.length === 0 ? 'No hay proyectos facturables' : 'Sin resultados'}
+                    </div>
+                  ) : filteredProjects.map((p: any) => {
+                    const sinEtapas = (p.stages || []).length === 0;
+                    const todoFacturado = !sinEtapas && p.billable <= 0.009;
+                    return (
+                      <button key={p.projectId} type="button" disabled={sinEtapas || todoFacturado}
+                        onClick={() => pickStageProject(p)}
+                        className="w-full text-left px-3 py-2 hover:bg-accent/5 transition-colors disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[13px] text-digi-text truncate" style={mf}>{p.title}</span>
+                          <span className="text-[12px] text-accent tabular-nums shrink-0" style={mf}>${fmt2(Number(p.billable))}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-[11px] text-digi-muted" style={pf}>
+                          <span className="truncate">{p.clientName || 'Sin cliente'} · {(p.stages || []).length} etapas</span>
+                          <span className="shrink-0">
+                            {sinEtapas ? 'sin etapas' : todoFacturado ? 'todo facturado' : `facturado $${fmt2(Number(p.invoiced))}`}
+                          </span>
+                        </div>
+                        {Number(p.invoicedLegacy) > 0 && (
+                          <div className="text-[11px] text-amber-600 mt-0.5" style={pf}>
+                            Ya tiene ${fmt2(Number(p.invoicedLegacy))} facturados sin etapas declaradas (facturas anteriores a este flujo)
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-digi-muted" style={pf}>
+                  Se factura al entregar cada etapa, no al cobrar el dinero. El dinero recibido por adelantado se registra como cobro en el proyecto.
+                </p>
+              </>
+            ) : null}
           </div>
 
         ) : null}

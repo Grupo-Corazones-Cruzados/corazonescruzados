@@ -2,7 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { addProjectIncomeToFinance, addTicketIncomeToFinance } from '@/lib/finance';
+import { addProjectIncomeToFinance, addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
+import { getProjectStages } from '@/lib/payments';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
@@ -17,11 +18,26 @@ export async function POST(req: NextRequest) {
       project_ids, client_id_type, client_name, client_ruc, client_email,
       client_phone, client_address, payment_code, invoice_items,
       additional_fields, send_email, currency, exchange_rate,
-      refactor_source,
+      refactor_source, requirement_ids,
     } = await req.json();
 
     if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
     if (!invoice_items?.length) return NextResponse.json({ error: 'Agrega al menos un item a la factura' }, { status: 400 });
+
+    // FACTURACIÓN POR ETAPAS: una etapa se factura una sola vez. Se comprueba contra
+    // la base y no solo en la pantalla, porque entre abrir el modal y enviar pudo
+    // emitirse otra factura con las mismas etapas.
+    const etapas: string[] = Array.isArray(requirement_ids) ? requirement_ids.map(String) : [];
+    if (etapas.length > 0) {
+      const stageProjectId = (project_ids || [])[0];
+      const stages = stageProjectId ? await getProjectStages(stageProjectId) : [];
+      const yaFacturadas = stages.filter(e => etapas.includes(String(e.id)) && e.invoiceId);
+      if (yaFacturadas.length > 0) {
+        return NextResponse.json({
+          error: `Estas etapas ya están facturadas: ${yaFacturadas.map(e => `${e.title} (${e.invoiceNumber})`).join(', ')}`,
+        }, { status: 409 });
+      }
+    }
 
     // Create manual invoice
     const { invoiceId, projectsData } = await createManualInvoice({
@@ -37,13 +53,40 @@ export async function POST(req: NextRequest) {
       additionalFields: additional_fields,
       currency: currency || 'USD',
       exchangeRate: exchange_rate || 1,
+      requirementIds: etapas,
     });
 
-    // Register each project as income in monthly finance
-    for (const p of projectsData) {
+    // Ingreso en finanzas. Al facturar POR ETAPAS el ingreso es el de ESTA factura
+    // (identificado por su id), no el total del proyecto: registrarlo como 'project'
+    // haría que la primera etapa se llevara el proyecto entero y las siguientes no
+    // sumaran nada, porque el registro es único por origen.
+    try {
+      if (invoiceId && etapas.length > 0) {
+        const { rows: [inv] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
+        const titulo = projectsData[0]?.title || 'Proyecto';
+        await addInvoiceIncomeToFinance(String(invoiceId), `Etapas — ${titulo}`, Number(inv?.total) || 0);
+      } else {
+        for (const p of projectsData) {
+          await addProjectIncomeToFinance(String(p.id), p.title, p.subtotal || 0);
+        }
+      }
+    } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
+
+    // Enlaza la factura con el cliente del proyecto y guarda su cuenta de facturación
+    // (para prellenar las próximas). Igual que hace la facturación desde el ticket.
+    if (invoiceId && (project_ids || []).length > 0) {
       try {
-        await addProjectIncomeToFinance(String(p.id), p.title, p.subtotal || 0);
-      } catch (finErr: any) { console.error('Finance registration error:', finErr.message); }
+        const { rows: [proj] } = await pool.query(
+          `SELECT client_id FROM gcc_world.projects WHERE id = ($1)::bigint`, [project_ids[0]]
+        );
+        if (proj?.client_id) {
+          await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [proj.client_id, invoiceId]);
+          await upsertBillingForClient(proj.client_id, {
+            id_type: client_id_type, ruc: client_ruc, name: client_name,
+            email: client_email, phone: client_phone, address: client_address,
+          });
+        }
+      } catch (e: any) { console.error('[manual] billing upsert error:', e.message); }
     }
 
     // Sign and send to SRI

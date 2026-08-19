@@ -163,9 +163,16 @@ export default function ProjectDetailPage() {
   const [completeClientAddress, setCompleteClientAddress] = useState('');
   const [completePaymentCode, setCompletePaymentCode] = useState('20');
   const [completeItems, setCompleteItems] = useState<{ description: string; quantity: string; unitPrice: string; ivaRate: string; discount: string }[]>([]);
-  // Fase 3: cobro por abono (monto parcial) en el modal de facturar.
-  const [abonoMode, setAbonoMode] = useState(false);
-  const [abonoAmount, setAbonoAmount] = useState('');
+  // Facturación POR ETAPAS: se factura al entregar cada fase, no al cobrar
+  // (LRTI art. 61; Rgto. Comprobantes art. 17 lit. e). `billing` trae las etapas
+  // del proyecto con su importe y si ya tienen factura; aquí se eligen las que
+  // entran en esta factura.
+  const [billing, setBilling] = useState<any>(null);
+  const [selectedStages, setSelectedStages] = useState<number[]>([]);
+  // Cobros del proyecto: dinero recibido, sin comprobante.
+  const [collections, setCollections] = useState<any[]>([]);
+  const [newCollection, setNewCollection] = useState('');
+  const [newCollectionNote, setNewCollectionNote] = useState('');
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -246,7 +253,11 @@ export default function ProjectDetailPage() {
       if (!res.ok) throw new Error();
       const { data } = await res.json();
       setProject(data);
-      fetch(`/api/projects/${id}/payments`).then(r => r.json()).then(d => setPayments(d.data || null)).catch(() => {});
+      fetch(`/api/projects/${id}/payments`).then(r => r.json()).then(d => {
+        setPayments(d.data || null);
+        setBilling(d.billing || null);
+        setCollections(d.collections || []);
+      }).catch(() => {});
     } catch { toast.error('Error al cargar proyecto'); }
     finally { setLoading(false); }
   }, [id]);
@@ -448,36 +459,66 @@ export default function ProjectDetailPage() {
       } catch { /* sin cuenta de facturación → se llena a mano */ }
     }
     setCompletePaymentCode('20');
-    // Pre-load items from requirements
-    const reqItems = reqs.map((r: any) => {
-      const acceptedCost = (r.assignments || [])
-        .filter((a: any) => a.status === 'accepted')
-        .reduce((s: number, a: any) => s + Number(a.member_cost ?? a.proposed_cost ?? 0), 0);
-      return {
-        description: r.title + (r.description ? ` - ${r.description}` : ''),
-        quantity: '1',
-        unitPrice: String(acceptedCost || Number(r.cost) || 0),
-        ivaRate: '0',
-        discount: '0',
-      };
-    });
-    setCompleteItems(reqItems.length > 0 ? reqItems : [{ description: `Servicios: ${project.title}`, quantity: '1', unitPrice: String(Number(project.final_cost) || 0), ivaRate: '0', discount: '0' }]);
+    // El detalle arranca con las etapas que faltan por facturar: las que ya tienen
+    // factura no vuelven a entrar (se facturaron al entregarse). Sigue siendo
+    // editable, así que puedes fusionarlas en un solo concepto si lo prefieres.
+    const pendientes = (billing?.stages || []).filter((e: any) => !e.invoiceId);
+    setSelectedStages(pendientes.map((e: any) => e.id));
+    setCompleteItems(
+      pendientes.length > 0
+        ? pendientes.map(stageToItem)
+        : [{ description: `Servicios: ${project.title}`, quantity: '1', unitPrice: String(Number(project.final_cost) || 0), ivaRate: '0', discount: '0' }]
+    );
     setCompleteAdditionalFields([]);
     setCompleteSendEmail(true);
-    setAbonoMode(false);
-    setAbonoAmount('');
     setShowCompleteModal(true);
   };
 
+  /** Una etapa se convierte en línea de la factura con su importe facturable. */
+  const stageToItem = (e: any) => ({
+    description: e.title + (e.description ? ` - ${e.description}` : ''),
+    quantity: '1',
+    unitPrice: String(Number(e.amount) || 0),
+    ivaRate: '0',
+    discount: '0',
+  });
+
+  /** Registra dinero recibido del cliente. No emite comprobante. */
+  const registerCollection = async () => {
+    const monto = Number(newCollection);
+    if (!monto || monto <= 0) { toast.error('Ingresa el monto cobrado'); return; }
+    const res = await fetch(`/api/projects/${id}/payments`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: monto, notes: newCollectionNote }),
+    });
+    if (!res.ok) { toast.error('No se pudo registrar el cobro'); return; }
+    setNewCollection(''); setNewCollectionNote('');
+    toast.success('Cobro registrado');
+    fetchProject();
+  };
+
+  const deleteCollection = async (paymentId: number) => {
+    const res = await fetch(`/api/projects/${id}/payments?payment_id=${paymentId}`, { method: 'DELETE' });
+    if (!res.ok) { toast.error('No se pudo eliminar el cobro'); return; }
+    toast.success('Cobro eliminado');
+    fetchProject();
+  };
+
+  /** Marca/desmarca una etapa y rehace el detalle con las que queden elegidas. */
+  const toggleStage = (stageId: number) => {
+    const next = selectedStages.includes(stageId)
+      ? selectedStages.filter(x => x !== stageId)
+      : [...selectedStages, stageId];
+    setSelectedStages(next);
+    const elegidas = (billing?.stages || []).filter((e: any) => next.includes(e.id));
+    setCompleteItems(elegidas.map(stageToItem));
+  };
+
   const handleComplete = async (skipInvoice = false) => {
-    const pending = Number(payments?.pending ?? 0);
-    const abonoNum = Number(abonoAmount) || 0;
-    const useAbono = abonoMode && !skipInvoice;
-    if (useAbono) {
-      if (abonoNum <= 0) { toast.error('Ingresa el monto del abono'); return; }
-      if (payments && abonoNum > pending + 0.009) { toast.error(`El abono no puede superar el pendiente ($${fmt2(pending)})`); return; }
+    if (!skipInvoice && completeItems.length === 0) {
+      toast.error('Elige al menos una etapa para facturar');
+      return;
     }
-    const abonoItems = [{ description: `Abono a cuenta — ${project.title}`, quantity: 1, unitPrice: abonoNum, ivaRate: 0, discount: 0 }];
     setCompleting(true);
     setCompleteStep('Completando proyecto...');
     try {
@@ -490,7 +531,7 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'confirm_completion',
           skip_invoice: skipInvoice,
-          is_abono: useAbono,
+          requirement_ids: skipInvoice ? [] : selectedStages,
           send_email: completeSendEmail,
           client_id_type: completeIdType,
           client_name: completeClientName,
@@ -499,7 +540,7 @@ export default function ProjectDetailPage() {
           client_phone: completeClientPhone,
           client_address: completeClientAddress,
           payment_code: completePaymentCode,
-          invoice_items: (useAbono ? abonoItems : completeItems).map(it => ({
+          invoice_items: completeItems.map(it => ({
             description: it.description,
             quantity: Number(it.quantity) || 1,
             unitPrice: Number(it.unitPrice) || 0,
@@ -1653,34 +1694,47 @@ export default function ProjectDetailPage() {
               </div>
             ) : (
             <div className="max-h-[80vh] overflow-y-auto pr-1">
-              {/* Fase 3: Tipo de cobro — factura total o abono parcial */}
-              {payments && (() => {
-                const hasInvoiced = (payments.invoices || []).some((i: any) => i.status !== 'cancelled');
-                return (
-                  <div className="mb-3">
-                    <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mb-2" style={pf}>Tipo de cobro</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => setAbonoMode(false)} disabled={hasInvoiced}
-                        className={`py-2 text-[12px] rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${!abonoMode ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                        Factura total<br /><span className="text-[11px] opacity-70">${fmt2(payments.total)}</span>
-                      </button>
-                      <button type="button" onClick={() => { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); }}
-                        className={`py-2 text-[12px] rounded border transition-colors ${abonoMode ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                        Abono parcial<br /><span className="text-[11px] opacity-70">pendiente ${fmt2(payments.pending)}</span>
-                      </button>
-                    </div>
-                    {abonoMode && (
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <label className="text-[11px] text-digi-muted" style={pf}>Monto del abono ($)</label>
-                        <input value={abonoAmount} onChange={e => setAbonoAmount(e.target.value)} type="number" placeholder="0.00"
-                          className="field-control w-32 px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                        <span className="text-[11px] text-digi-muted" style={pf}>de ${fmt2(payments.pending)} pendiente · factura una línea &quot;Abono a cuenta&quot;</span>
-                      </div>
-                    )}
-                    <p className="text-[11px] text-digi-muted mt-1" style={pf}>El abono no completa el proyecto hasta cubrir el total.</p>
+              {/* Etapas a facturar. El comprobante se emite al cumplirse cada fase
+                  (LRTI art. 61; Rgto. Comprobantes art. 17 lit. e), así que cada etapa
+                  se factura una sola vez y las ya facturadas quedan bloqueadas. */}
+              {billing && (billing.stages || []).length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between border-b border-digi-border pb-1.5 mb-2">
+                    <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Etapas a facturar</h4>
+                    <span className="text-[11px] text-digi-muted" style={pf}>
+                      Facturado ${fmt2(billing.invoiced)} · Por facturar ${fmt2(billing.billable)}
+                    </span>
                   </div>
-                );
-              })()}
+                  <div className="border border-digi-border rounded-lg divide-y divide-digi-border/60 max-h-48 overflow-y-auto">
+                    {billing.stages.map((e: any) => {
+                      const facturada = !!e.invoiceId;
+                      return (
+                        <label key={e.id} className={`flex items-center gap-2 px-2 py-1.5 text-[12px] ${facturada ? 'opacity-60' : 'cursor-pointer hover:bg-accent/5'}`} style={pf}>
+                          <input type="checkbox" disabled={facturada} checked={selectedStages.includes(e.id)}
+                            onChange={() => toggleStage(e.id)} className="accent-[#4B2D8E]" />
+                          <span className="flex-1 min-w-0 truncate text-digi-text">{e.title}</span>
+                          {facturada ? (
+                            <span className="text-[11px] text-digi-muted shrink-0">Facturada · {e.invoiceNumber}</span>
+                          ) : e.deliveredAt ? (
+                            <span className="text-[11px] text-green-600 shrink-0">Entregada</span>
+                          ) : (
+                            <span className="text-[11px] text-amber-600 shrink-0">Sin entregar</span>
+                          )}
+                          <span className="tabular-nums text-digi-text shrink-0">${fmt2(Number(e.amount))}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {Number(billing.invoicedLegacy) > 0 && (
+                    <div className="px-2 py-1.5 border border-amber-300 rounded bg-amber-50 text-[11.5px] text-amber-700 mt-1" style={pf}>
+                      Ojo: este proyecto ya tiene ${fmt2(Number(billing.invoicedLegacy))} facturados en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar dos veces lo mismo.
+                    </div>
+                  )}
+                  <p className="text-[11px] text-digi-muted mt-1" style={pf}>
+                    Se factura al entregar cada etapa, no al cobrar. Las que ya tienen factura no vuelven a entrar; el detalle de abajo sigue siendo editable.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* ─── LEFT: Adquirente + Pago ─── */}
                 <div className="space-y-2">
@@ -2085,15 +2139,19 @@ export default function ProjectDetailPage() {
           )}
 
           {/* Pagos (facturado vs pendiente) */}
-          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
-            const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
+          {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
+              `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
+          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
+            || Number(billing?.stagesTotal || 0) > 0 || collections.length > 0) && (() => {
+            const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
+            const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
             return (
               <div className="pixel-card">
                 <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
                 <div className="space-y-1 text-[12px]" style={mf}>
-                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(payments.total)}</span></div>
-                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(payments.invoiced)}</span></div>
-                  <div className="flex justify-between"><span className="text-digi-muted">Pendiente</span><span className={`tabular-nums ${payments.pending > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(payments.pending)}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(baseTotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Por facturar</span><span className={`tabular-nums ${Number(billing?.billable ?? payments.pending) > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(Number(billing?.billable ?? payments.pending))}</span></div>
                 </div>
                 <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
                 {(payments.invoices || []).length > 0 && (
@@ -2107,6 +2165,37 @@ export default function ProjectDetailPage() {
                         </span>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {/* COBROS: dinero recibido del cliente (p. ej. el 25% a la firma). No son
+                    comprobantes — la factura se emite al entregar cada etapa. Sirve para
+                    ver cuánto entró frente a lo facturado. */}
+                {isAdmin && (
+                  <div className="mt-2 pt-2 border-t border-digi-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-digi-muted" style={pf}>Cobrado</span>
+                      <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(billing?.collected || 0))}</span>
+                    </div>
+                    {(collections || []).map((c: any) => (
+                      <div key={c.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                        <span className="min-w-0 truncate text-digi-muted">
+                          {new Date(c.created_at).toLocaleDateString('es-EC')}{c.notes ? ` · ${c.notes}` : ''}
+                        </span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className="tabular-nums text-digi-text">${fmt2(Number(c.amount))}</span>
+                          <button onClick={() => deleteCollection(c.id)} className="text-red-500/70 hover:text-red-600" title="Eliminar cobro">×</button>
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-1 mt-1">
+                      <input value={newCollection} onChange={e => setNewCollection(e.target.value)} type="number" min="0" step="0.01" placeholder="Monto"
+                        className="field-control w-20 px-2 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      <input value={newCollectionNote} onChange={e => setNewCollectionNote(e.target.value)} placeholder="Nota (opcional)"
+                        className="field-control flex-1 min-w-0 px-2 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      <button onClick={registerCollection} className="text-[12px] text-accent border border-accent/40 rounded px-2 py-1 hover:bg-accent-light transition-colors shrink-0" style={pf}>+</button>
+                    </div>
+                    <p className="text-[10.5px] text-digi-muted mt-1" style={pf}>Dinero recibido. No emite factura: se factura al entregar cada etapa.</p>
                   </div>
                 )}
               </div>

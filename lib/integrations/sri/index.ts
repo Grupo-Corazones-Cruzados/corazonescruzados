@@ -4,6 +4,7 @@ import { signXml } from './xades-signer';
 import { enviarComprobante, consultarAutorizacion } from './soap-client';
 import { generateRidePdf } from './ride-pdf';
 import { SRI_CONFIG } from './config';
+import { ensureStageBilling } from '@/lib/payments';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', COP: 'COP$', MXN: 'MX$',
@@ -50,6 +51,7 @@ async function ensureSriColumns() {
       iva_rate NUMERIC(5,2) DEFAULT 0,
       iva_amount NUMERIC(12,2) DEFAULT 0
     );
+    ALTER TABLE gcc_world.invoice_items_sri ADD COLUMN IF NOT EXISTS discount NUMERIC(12,2) DEFAULT 0;
     CREATE TABLE IF NOT EXISTS gcc_world.invoice_projects (
       id SERIAL PRIMARY KEY,
       invoice_id INT NOT NULL,
@@ -58,6 +60,9 @@ async function ensureSriColumns() {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_invoice_projects_unique ON gcc_world.invoice_projects (invoice_id, project_id);
   `);
+
+  // Enlace factura ↔ etapa (una definición, en lib/payments.ts).
+  await ensureStageBilling();
 
   // Allow the 'failed' status (facturas cuyo proceso SRI fue rechazado/erró). Idempotent:
   // only rebuilds the CHECK when it doesn't already include 'failed'.
@@ -76,6 +81,52 @@ async function ensureSriColumns() {
       END IF;
     END $$;
   `);
+}
+
+/**
+ * Totales de la factura, **netos de descuento** — exactamente como los calcula el XML
+ * que se envía al SRI (`precioTotalSinImpuesto = cantidad × precio − descuento`).
+ * Antes se sumaba `cantidad × precio` a secas, así que una factura con descuento
+ * guardaba en la base un total mayor que el autorizado: el RIDE y el saldo del
+ * proyecto contradecían al comprobante.
+ */
+function invoiceTotals(items: InvoiceItem[]) {
+  const neto = (i: InvoiceItem) => Math.round((i.quantity * i.unitPrice - (i.discount || 0)) * 100) / 100;
+  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + neto(i), 0);
+  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + neto(i), 0);
+  const ivaMonto = items.reduce((s, i) => s + Math.round(neto(i) * (i.ivaRate / 100) * 100) / 100, 0);
+  return { subtotal0, subtotalIva, ivaMonto, total: Math.round((subtotal0 + subtotalIva + ivaMonto) * 100) / 100 };
+}
+
+/** Guarda las líneas de la factura con los mismos importes que viajaron al SRI. */
+async function insertInvoiceItems(invoiceId: number, items: InvoiceItem[]) {
+  for (const item of items) {
+    const discount = item.discount || 0;
+    const sub = Math.round((item.quantity * item.unitPrice - discount) * 100) / 100;
+    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
+    await pool.query(
+      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, discount, subtotal, iva_rate, iva_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [invoiceId, item.description, item.quantity, item.unitPrice, discount, sub, item.ivaRate, iva]
+    );
+  }
+}
+
+/**
+ * Marca las etapas (requerimientos) que cubre una factura. Cada etapa se factura una
+ * sola vez: al emitir el resto del proyecto solo se arrastran las que no estén aquí
+ * con una factura vigente (ver `getProjectStages` en `lib/payments.ts`).
+ */
+async function linkInvoiceRequirements(invoiceId: number, requirementIds?: (string | number)[]) {
+  if (!requirementIds?.length) return;
+  for (const rid of requirementIds) {
+    await pool.query(
+      `INSERT INTO gcc_world.invoice_requirements (invoice_id, requirement_id, project_id)
+       VALUES ($1, $2, (SELECT project_id FROM gcc_world.project_requirements WHERE id = $2))
+       ON CONFLICT DO NOTHING`,
+      [invoiceId, rid]
+    );
+  }
 }
 
 /**
@@ -102,6 +153,8 @@ interface InvoiceOptions {
   additionalFields?: { name: string; value: string }[];
   currency?: string;      // e.g. 'USD', 'EUR', 'COP'
   exchangeRate?: number;  // rate to convert FROM USD TO target currency
+  /** Etapas (requerimientos) que cubre esta factura; quedan marcadas como facturadas. */
+  requirementIds?: (string | number)[];
 }
 
 export async function createInvoiceFromProject(projectId: string, options?: InvoiceOptions): Promise<number> {
@@ -197,9 +250,7 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
   // Calculate totals in USD
-  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
 
   // Insert invoice — all amounts in USD, currency/rate stored for reference
   const { rows: [invoice] } = await pool.query(
@@ -213,15 +264,8 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   );
 
   // Insert items
-  for (const item of items) {
-    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
-    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
-    await pool.query(
-      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [invoice.id, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
-    );
-  }
+  await insertInvoiceItems(invoice.id, items);
+  await linkInvoiceRequirements(invoice.id, options?.requirementIds);
 
   return invoice.id;
 }
@@ -262,6 +306,8 @@ interface ManualInvoiceOptions {
   paymentCode?: string;
   invoiceItems?: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount: number }[];
   additionalFields?: { name: string; value: string }[];
+  /** Etapas (requerimientos) que cubre esta factura; quedan marcadas como facturadas. */
+  requirementIds?: (string | number)[];
 }
 
 export async function createManualInvoice(options: ManualInvoiceOptions): Promise<{ invoiceId: number; projectsData: any[] }> {
@@ -366,9 +412,7 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
   // Totals always in USD
-  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
 
   // Insert invoice with is_manual = true, project_id = null
   const { rows: [invoice] } = await pool.query(
@@ -389,16 +433,10 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
     );
   }
 
+  await linkInvoiceRequirements(invoice.id, options.requirementIds);
+
   // Insert items
-  for (const item of items) {
-    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
-    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
-    await pool.query(
-      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [invoice.id, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
-    );
-  }
+  await insertInvoiceItems(invoice.id, items);
 
   return { invoiceId: invoice.id, projectsData };
 }
@@ -474,9 +512,7 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
 
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
-  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
   const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
   const { rows: [invoice] } = await pool.query(
@@ -489,15 +525,7 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
      currency, exchangeRate, totalUsd.toFixed(2), options.ticketId]
   );
 
-  for (const item of items) {
-    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
-    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
-    await pool.query(
-      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [invoice.id, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
-    );
-  }
+  await insertInvoiceItems(invoice.id, items);
 
   return { invoiceId: invoice.id, total: totalUsd };
 }
@@ -577,9 +605,7 @@ export async function createManualInvoiceFromSubscription(options: SubscriptionI
 
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
-  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
   const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
   const sourceId = `${options.subscriptionId}-${options.period}`;
@@ -594,15 +620,7 @@ export async function createManualInvoiceFromSubscription(options: SubscriptionI
      currency, exchangeRate, totalUsd.toFixed(2), sourceId]
   );
 
-  for (const item of items) {
-    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
-    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
-    await pool.query(
-      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [invoice.id, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
-    );
-  }
+  await insertInvoiceItems(invoice.id, items);
 
   return { invoiceId: invoice.id, total: totalUsd };
 }
@@ -668,7 +686,7 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
           unitPrice: Number(it.unit_price),
           subtotal: Number(it.subtotal),
           ivaRate: Number(it.iva_rate),
-          discount: Number(it.iva_amount) === 0 ? 0 : undefined,
+          discount: Number(it.discount) || 0,
         })),
         subtotal0: Number(invoice.subtotal_0),
         subtotalIva: Number(invoice.subtotal_iva),
@@ -733,7 +751,7 @@ export async function regenerateRidePdf(invoiceId: number, persist = false): Pro
       unitPrice: Number(it.unit_price),
       subtotal: Number(it.subtotal),
       ivaRate: Number(it.iva_rate),
-      discount: Number(it.iva_amount) === 0 ? 0 : undefined,
+      discount: Number(it.discount) || 0,
     })),
     subtotal0: Number(invoice.subtotal_0),
     subtotalIva: Number(invoice.subtotal_iva),
@@ -784,7 +802,7 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
     }));
   } else {
     const { rows: existingItems } = await pool.query(
-      `SELECT description, quantity, unit_price, iva_rate FROM gcc_world.invoice_items_sri WHERE invoice_id = $1 ORDER BY id`,
+      `SELECT description, quantity, unit_price, iva_rate, discount FROM gcc_world.invoice_items_sri WHERE invoice_id = $1 ORDER BY id`,
       [invoiceId]
     );
     if (existingItems.length === 0) throw new Error('Sin items para facturar');
@@ -793,7 +811,7 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
       quantity: Number(it.quantity),
       unitPrice: Number(it.unit_price),
       ivaRate: Number(it.iva_rate),
-      discount: 0,
+      discount: Number(it.discount) || 0,
     }));
   }
 
@@ -841,9 +859,7 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
 
   const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
 
-  const subtotal0 = items.filter(i => i.ivaRate === 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const subtotalIva = items.filter(i => i.ivaRate > 0).reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const ivaMonto = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.ivaRate / 100), 0);
+  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
   const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
   await pool.query(
@@ -867,13 +883,5 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
   );
 
   await pool.query(`DELETE FROM gcc_world.invoice_items_sri WHERE invoice_id = $1`, [invoiceId]);
-  for (const item of items) {
-    const sub = Math.round(item.quantity * item.unitPrice * 100) / 100;
-    const iva = Math.round(sub * (item.ivaRate / 100) * 100) / 100;
-    await pool.query(
-      `INSERT INTO gcc_world.invoice_items_sri (invoice_id, description, quantity, unit_price, subtotal, iva_rate, iva_amount)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [invoiceId, item.description, item.quantity, item.unitPrice, sub, item.ivaRate, iva]
-    );
-  }
+  await insertInvoiceItems(invoiceId, items);
 }
