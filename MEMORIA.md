@@ -4458,6 +4458,18 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **⛔ BORRÉ DATOS REALES CON LA LIMPIEZA DE UNA PRUEBA (2026-08-19).** Para probar la
+  facturación por etapas creé planes en los proyectos **8 y 32** y terminé cada ensayo con
+  `DELETE FROM gcc_world.project_stages WHERE project_id IN (8,32)`. En el 32 Fernando ya había
+  definido su plan de verdad —Etapa 1 $288,75, facturada con **001-001-000000080**, y Etapa 2
+  $866,25— y ese `DELETE` se lo llevó por delante. Se restauró a mano desde sus capturas y la
+  factura nunca corrió peligro, pero el plan se perdió y él lo vio antes que yo.
+  - **Regla:** las pruebas que ESCRIBEN no se hacen sobre datos reales. Contra producción, o
+    todo va en una transacción con `ROLLBACK`, o se crea un proyecto de pruebas propio y se
+    borra por su `id`. **Nunca** un `DELETE ... WHERE project_id IN (...)` sobre proyectos del
+    cliente: borra lo mío y lo suyo sin distinguir.
+  - Lo que sí es seguro contra producción: **leer**. Las comprobaciones de interfaz que solo
+    miran (abrir un modal, contar filas) no necesitan escribir nada.
 - **El (?) no se veía DENTRO de un panel: `<dialog>` está en la *top layer* (2026-08-19).**
   `PixelModal` abre un `<dialog>` con `showModal()`, y un diálogo modal se pinta en la *top layer*
   del navegador, **por encima de cualquier `z-index`**. La burbuja de `BotonAyuda` se colgaba de

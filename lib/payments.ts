@@ -168,14 +168,21 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  */
 const STAGE_AMOUNT_SQL = `COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), r.cost, 0)`;
 
-/** Facturas vigentes de un proyecto que no declaran etapas (emitidas antes de esto). */
+/**
+ * Facturas vigentes del proyecto que no declaran QUÉ facturaron: ni etapas del plan ni
+ * requerimientos. Son las emitidas antes de este flujo, y por eso se avisan.
+ *
+ * Las dos exclusiones importan: sin la de `project_stages`, la factura de una etapa se
+ * contaba como «antigua» y el aviso salía justo en el proyecto que mejor lo está haciendo.
+ */
 const LEGACY_INVOICES_SQL = `
   SELECT COALESCE(SUM(i.total), 0)
     FROM gcc_world.invoices i
    WHERE i.status <> 'cancelled'
      AND (i.project_id = p.id
           OR i.id IN (SELECT ip.invoice_id FROM gcc_world.invoice_projects ip WHERE ip.project_id = p.id::text))
-     AND NOT EXISTS (SELECT 1 FROM gcc_world.invoice_requirements ir WHERE ir.invoice_id = i.id)`;
+     AND NOT EXISTS (SELECT 1 FROM gcc_world.invoice_requirements ir WHERE ir.invoice_id = i.id)
+     AND NOT EXISTS (SELECT 1 FROM gcc_world.project_stages ps WHERE ps.invoice_id = i.id)`;
 
 function toStage(r: any): ProjectStage {
   return {
