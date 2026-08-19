@@ -670,9 +670,9 @@ export const ACCESOS: Acceso[] = [
       {
         id: 'vender-mis-consumos',
         etiqueta: 'Entre clientes',
-        pregunta: '¿Puedo vender mis consumos?',
+        pregunta: '¿Puedo alquilar o vender cosas en esta tienda?',
         texto:
-          'En esta plataforma puedes regalar o vender los recursos que hayas comprado a través del marketplace de clientes, en donde puedes intercambiar tus propios productos y servicios con otros clientes usando dinero real, GCC Coins, o algún otro tipo de producto o servicio que ofrezca el otro cliente.',
+          'En esta plataforma puedes regalar, vender, o alquilar los recursos que hayas comprado a través del marketplace de clientes. Esta es una tienda dedicada para que puedes intercambiar tus propios productos y servicios con otros clientes usando dinero real, GCC Coins, o algún otro tipo de producto o servicio que ofrezca el otro cliente.',
         pasos: [
           {
             titulo: 'Publica lo que quieras vender',
@@ -686,7 +686,7 @@ export const ACCESOS: Acceso[] = [
           },
           {
             titulo: 'Intercambia, compra o vende',
-            texto: 'El pago puede ser dinero real, GCC Coins, o directamente otro producto o servicio del otro cliente. Los tres caminos valen, y cuál se usa forma parte del trato.',
+            texto: 'El pago puede ser dinero real, GCC Coins, o directamente otro producto o servicio del otro cliente. Los tres caminos valen, y cuál se usa forma parte del trato (La plataforma gestiona los traspasos).',
             icono: 'billetera',
           },
         ],
@@ -694,30 +694,60 @@ export const ACCESOS: Acceso[] = [
     ],
   },
   /**
-   * ⏳ **DEMOCRACIA SE QUEDA SIN TEMAS A PROPÓSITO** (2026-08-18), y no por falta de tiempo.
+   * ⭐ DEMOCRACIA — resuelta el 2026-08-19, tras estar en pausa desde el 08-18.
    *
-   * Fernando pidió que redactara dos preguntas para cada sección. Para esta **no se ha
-   * hecho**, y conviene que quede escrito por qué:
+   * Quedó sin contenido a propósito por dos motivos que hay que dar por cerrados:
    *
-   * 1. **El módulo no existe.** No hay pantalla de votación en el panel, ni tabla, ni
-   *    endpoint. Escribir «así votas» sería describir algo que no se puede usar, y esta
-   *    página tiene una regla dura —nada que no sea verificable— que ya costó una
-   *    verificación de Meta rechazada.
-   * 2. **Y hay una contradicción de fondo que solo Fernando puede resolver.** La frase de
-   *    esta tarjeta promete «un sistema que te permite votar»; `MEMORIA.md` recoge lo
-   *    contrario como principio del proyecto: *«El poder se construye, no se decide»*, con
-   *    crítica explícita a la democracia por voto y con las decisiones tomadas por el líder
-   *    tras escuchar propuestas. Redactar cualquiera de las dos versiones sería decidir por
-   *    él una cuestión que no es de diseño.
+   * 1. **El módulo sigue sin existir** (ni pantalla, ni tabla, ni endpoint). Es el mismo aviso
+   *    que en Retos CC, Talentos y el marketplace entre clientes, y la misma decisión suya.
+   * 2. **La contradicción aparente con el fundamento del proyecto, que YA NO LO ES.**
+   *    `MEMORIA.md` dice *«el poder se construye, no se decide»*, con crítica explícita a la
+   *    democracia por voto. Parecía chocar de frente con una sección llamada «Democracia», y
+   *    por eso se paró a preguntar.
    *
-   * Mientras tanto la sección funciona: aparece en el panel izquierdo, muestra su título y su
-   * frase, y **el panel de preguntas simplemente no se pinta** — la regla del sitio, que lo
-   * que no hay no deja hueco.
+   *    Fernando lo aclaró y la distinción es limpia: aquella crítica es a **elegir quién
+   *    manda** por votación —el líder se gana moviendo a la gente, no en una urna—. Esto es
+   *    otra cosa: **elegir entre opciones** de gestión, beneficios, concursos y qué eventos
+   *    hacer. Votar el próximo evento no es votar un líder. Las dos ideas conviven sin
+   *    tocarse, y conviene que quede escrito para que nadie lo lea como una incoherencia.
+   *
+   * **El contenido es mío**, a partir de lo que él describió —*«que los clientes sepan que
+   * pueden votar en la organización para tomar decisiones de gestión organizacional,
+   * beneficios, concursos para elegir qué eventos realizar, o entre diferentes opciones todos
+   * puedan votar»*— y está para que lo corrija. No promete cifras, ni plazos, ni quórum.
    */
   {
     id: 'democracia', icono: 'voto',
     titulo: 'Democracia',
     texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar dentro de la organización.',
+    descripcion:
+      'Ser cliente aquí no es solo contratar. Sobre la gestión de la organización, los beneficios, los concursos y los eventos que se van a hacer se abren votaciones, y quien forma parte elige entre las opciones que hay sobre la mesa.',
+    temas: [
+      {
+        id: 'tener-voz',
+        etiqueta: 'Votaciones',
+        pregunta: '¿Quieres tener voz en las decisiones de la organización?',
+        texto:
+          'Las decisiones que afectan a todos se abren a votación: cómo se gestiona la organización, qué beneficios se dan, qué concursos se convocan y qué eventos se hacen. Tu voto cuenta como el de cualquier otro.',
+        pasos: [
+          {
+            titulo: 'Se abre la votación',
+            texto: 'Cuando hay algo que decidir se publica con sus opciones y el plazo para votar, para que nadie se entere cuando ya está resuelto.',
+            icono: 'lista',
+          },
+          {
+            titulo: 'Eliges tu opción',
+            texto: 'Entras con tu cuenta y votas la que prefieras. Un voto por cuenta, y sin tener que justificarlo ante nadie.',
+            icono: 'voto',
+          },
+          {
+            titulo: 'Se hace lo que se votó',
+            texto: 'No es una encuesta de opinión: la opción elegida es la que se lleva a cabo, y después se cuenta cómo salió.',
+            icono: 'verificado',
+          },
+        ],
+      },
+    ],
   },
 ];
 

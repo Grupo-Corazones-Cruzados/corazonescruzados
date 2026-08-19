@@ -5825,3 +5825,27 @@ los títulos. Cada una dice lo que hace el paso y nada más — ni comisiones, n
 ⚠️ Y **el nombre de la moneda aparece ya en DOS páginas públicas** (Videojuego y Marketplace)
 como «GCC Coins», mientras `MEMORIA.md` la llama «fichas» en todas partes. Cada texto nuevo
 encarece la decisión que sigue pendiente.
+
+### ⭐ P66 (cerrada) — Democracia: la contradicción aparente no lo era (2026-08-19)
+Estuvo un día en pausa. Yo la paré porque la sección prometía votar y `MEMORIA.md` recoge como
+principio *«el poder se construye, no se decide»*, con crítica explícita a la democracia por
+voto. Parecía que la web contradecía al proyecto.
+
+Fernando lo aclaró y **la distinción es limpia**: aquella crítica es a **elegir quién manda** por
+votación —el líder se gana moviendo a la gente, no en una urna—. Esta sección es **elegir entre
+opciones**: gestión de la organización, beneficios, concursos y qué eventos hacer. Votar el
+próximo evento no es votar un líder. Las dos ideas conviven sin tocarse.
+
+**Lección sobre cuándo parar:** parar estuvo bien —la pregunta era real y solo él podía
+responderla—, pero lo que la resolvió fue **una frase suya**, no un análisis mío. El coste de
+preguntar fue un día; el de haber escrito la versión equivocada, una página pública contradiciendo
+el fundamento del proyecto. Aun así conviene afinar la puntería: la distinción entre «votar quién
+manda» y «votar entre opciones» estaba a la vista en el propio texto de `MEMORIA.md` y pude haberla
+planteado como hipótesis en vez de dejarlo todo abierto.
+
+El contenido es mío, a partir de lo que él describió, y no promete cifras, plazos ni quórum. El
+módulo **sigue sin existir**, como el marketplace entre clientes y las funciones del videojuego.
+
+Con esto **las cuatro secciones de `/clientes` tienen ya sus preguntas**: Plataforma (2),
+Videojuego (2), Marketplace (2) y Democracia (1). Medido a 1600 px: tres columnas
+`280px 908px 260px`, índice con su entrada, y sin desbordamiento.

@@ -19,9 +19,8 @@
  * · `generateStaticParams` deja las cuatro **prerenderizadas**: se sirven como HTML estático.
  * · Un tramo que no exista responde **404 de verdad**, no una página vacía.
  *
- * ⚠️ **Democracia no tiene preguntas todavía, y es deliberado**: su módulo no existe y su
- * frase choca con lo que `MEMORIA.md` recoge como principio del proyecto. El motivo entero
- * está escrito junto a su entrada en `ACCESOS` (`lib/sitio/contenido.ts`).
+ * Las cuatro secciones tienen ya sus preguntas. Si alguna se quedara sin ellas, su panel
+ * derecho simplemente no se pinta y la rejilla vuelve a dos columnas — no deja hueco.
  */
 
 import type { Metadata } from 'next';

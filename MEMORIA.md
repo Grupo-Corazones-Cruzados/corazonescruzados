@@ -369,12 +369,16 @@ Stack estándar de la casa, con particularidades de este repo:
     explica la plataforma y la que entra en ella. Fernando lo eligió sabiéndolo.
   - **Videojuego y Marketplace ganaron dos preguntas cada uno, escritas por mí** con permiso de
     Fernando y marcadas como tales en el código, con cada afirmación anclada a algo comprobable.
-  - ⏸ **Democracia se queda sin preguntas a propósito, y espera decisión de Fernando.** Su
-    módulo **no existe** (ni pantalla, ni tabla, ni endpoint) y su frase —«un sistema que te
-    permite votar sobre las mejoras»— **choca con el principio del proyecto** recogido más
-    arriba en este documento: *el poder se construye, no se decide*, con crítica explícita a la
-    democracia por voto. Redactar cualquiera de las dos versiones sería decidir por él una
-    cuestión de fondo, no de diseño.
+  - ✅ **(2026-08-19) Democracia resuelta, y la contradicción aparente NO lo era.** Estuvo un
+    día en pausa porque su frase parecía chocar con *«el poder se construye, no se decide»*.
+    Fernando lo aclaró y la distinción es limpia: aquella crítica es a **elegir quién manda**
+    por votación —el líder se gana moviendo a la gente, no en una urna—; esta sección es
+    **elegir entre opciones** de gestión, beneficios, concursos y qué eventos hacer. Votar el
+    próximo evento no es votar un líder. **Las dos ideas conviven sin tocarse**, y conviene no
+    volver a leerlo como una incoherencia.
+    ⚠️ El módulo sigue **sin existir** (ni pantalla, ni tabla, ni endpoint), como el
+    marketplace entre clientes y las funciones del videojuego. Todo eso es lo que se está
+    construyendo y ya está anunciado en la web.
   - **Para qué es esa página, dicho por él:** publicar los **beneficios de ser cliente** y
     servir de base para ir generando **páginas de interés que los clientes encuentren por
     Google**. El diseño se cambiará más adelante; esto era solo quitar la tarjeta.
