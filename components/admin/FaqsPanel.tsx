@@ -21,7 +21,9 @@
  *
  * ── LO QUE SE ESCRIBE AQUÍ SALE PUBLICADO ──────────────────────────────────────
  * No es una tabla interna: aparece en la web pública y alimenta los datos estructurados
- * `FAQPage`, que es lo que Google convierte en respuestas desplegables. Un error de
+ * `FAQPage`. ⚠️ **Ese marcado ya NO produce respuestas desplegables en Google** (lo restringió
+ * a sitios de gobierno y salud en agosto de 2023); sigue sirviendo para que el buscador
+ * entienda la página, pero lo que hace que se encuentre es el texto. Un error de
  * ortografía aquí es un error de ortografía publicado.
  */
 

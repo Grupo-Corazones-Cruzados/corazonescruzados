@@ -1161,10 +1161,15 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Web**: buscador + lista a la izquierda y respuesta a la derecha; en móvil, la respuesta
     cae bajo su pregunta.
   - **⭐ Las respuestas van TODAS en el HTML** (también las no seleccionadas, en un bloque
-    `hidden`). Es lo que permite declarar **`FAQPage`**, el formato que Google convierte en
-    respuestas desplegables dentro de sus resultados. **Es la pieza con más potencial de
-    todo el trabajo de SEO**, y se perdería entera si vivieran solo en un panel de
-    JavaScript.
+    `hidden`), y **eso es lo que de verdad importa**: lo que solo viaja como prop a un
+    componente de cliente no existe para un buscador.
+  - ⚠️ **CORRECCIÓN (2026-08-19) — aquí ponía que el `FAQPage` era «la pieza con más
+    potencial de todo el trabajo de SEO», y es FALSO.** En **agosto de 2023 Google restringió
+    los resultados enriquecidos de FAQ a sitios oficiales de gobierno y de salud**; para un
+    sitio como este, ese marcado ya no produce las respuestas desplegables en los resultados.
+    Se mantiene porque sigue siendo cierto y ayuda al buscador a entender la página, pero **no
+    hay que esperar de él ningún adorno en los resultados**. Lo que hace que estas páginas se
+    encuentren es el texto: preguntas en `<h2>`, respuesta debajo, y todo en el HTML crudo.
   - **`export const revalidate = 300`** en `/negocio/[necesidad]`: la página es HTML ya
     hecho, pero las preguntas salen de la base. Sin esto, lo que se escribe en el admin **no
     aparecería hasta el siguiente despliegue**.

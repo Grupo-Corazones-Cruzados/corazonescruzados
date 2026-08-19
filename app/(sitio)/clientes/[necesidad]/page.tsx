@@ -122,14 +122,22 @@ export default async function DetalleNecesidadPage({ params }: Props) {
         }}
       />
 
-      {/* ⭐ `FAQPage` — de todo lo que se ha hecho por el posicionamiento, esto es lo que más
-          puede rendir. Es el formato que Google convierte en **respuestas desplegables dentro
-          de sus propios resultados**: ocupa más sitio en la página, se lee sin entrar y
-          responde justo lo que alguien tecleó.
+      {/* `FAQPage` — declara las preguntas de la sección en un formato que un buscador lee
+          sin tener que interpretar el diseño.
 
-          ⚠️ Declara las preguntas frecuentes **y también los temas de la sección**, que son
-          preguntas de verdad con su respuesta escrita — es justo lo que este formato pide.
-          Solo se declara si hay alguna: un `FAQPage` vacío es un dato falso. */}
+          ⚠️ **CORRECCIÓN (2026-08-19): esto NO va a salir como respuestas desplegables en
+          Google.** Aquí ponía que era «lo que más puede rendir» de todo el posicionamiento, y
+          era falso: en agosto de 2023 Google **restringió los resultados enriquecidos de FAQ a
+          sitios oficiales de gobierno y de salud**. Para un sitio como este, el marcado ya no
+          produce ese despliegue en los resultados.
+
+          Se mantiene porque **sigue siendo cierto y sigue sirviendo**: le dice al buscador, sin
+          ambigüedad, que esta página contiene preguntas con su respuesta. Lo que ya no hay que
+          esperar de él es el adorno en los resultados. Lo que de verdad hace que a esta página
+          la encuentren es el texto: preguntas en `<h2>`, respuesta debajo, y todo en el HTML.
+
+          Declara las preguntas frecuentes **y también los temas de la sección**. Solo se
+          declara si hay alguna: un `FAQPage` vacío es un dato falso. */}
       {(() => {
         const preguntas = [
           ...(acceso.temas ?? []).map((t) => ({ name: t.pregunta, text: t.texto })),
