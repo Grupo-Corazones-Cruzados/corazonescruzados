@@ -84,6 +84,21 @@ export async function getProjectPayments(projectId: string | number): Promise<Pa
 // se emite en ese momento (Rgto. de Comprobantes de Venta, art. 17 lit. e). Por eso
 // cada requerimiento —la etapa— se factura UNA sola vez y queda enlazado a su factura.
 
+/**
+ * ETAPA del acuerdo con el cliente: un tramo con nombre e importe («50% al empezar»).
+ * No es un requerimiento —eso es trabajo interno—; el plan lo define Fernando por
+ * proyecto y, si existe, el proyecto se factura por etapas y no por requerimientos.
+ */
+export type BillingStage = {
+  id: number;
+  name: string;
+  amount: number;
+  sortOrder: number;
+  invoiceId: number | null;
+  invoiceNumber: string | null;
+};
+
+/** Requerimiento del proyecto, con su importe facturable (modo por requerimientos). */
 export type ProjectStage = {
   id: number;
   title: string;
@@ -108,6 +123,12 @@ export type ProjectBilling = {
    * avisa en pantalla para no facturar dos veces lo mismo.
    */
   invoicedLegacy: number;
+  /** `etapas` si el proyecto tiene plan definido; si no, el detalle por requerimientos. */
+  mode: 'etapas' | 'requerimientos';
+  /** El plan de etapas acordado con el cliente (vacío si no se definió). */
+  etapas: BillingStage[];
+  /** Base sobre la que se reparte el plan: el costo del proyecto. */
+  baseTotal: number;
   collected: number;    // dinero efectivamente cobrado (cobros registrados)
   stages: ProjectStage[];
 };
@@ -139,6 +160,18 @@ export async function ensureStageBilling() {
     -- La tabla venía de un diseño anterior (comprobante de pago obligatorio) que nunca
     -- llegó a usarse: un cobro se registra con el monto, el respaldo es opcional.
     ALTER TABLE gcc_world.project_payments ALTER COLUMN proof_url DROP NOT NULL;
+    CREATE TABLE IF NOT EXISTS gcc_world.project_stages (
+      id BIGSERIAL PRIMARY KEY,
+      project_id BIGINT NOT NULL,
+      name VARCHAR(200) NOT NULL,
+      amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      invoice_id INT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_project_stages_project ON gcc_world.project_stages (project_id, sort_order);
+    CREATE INDEX IF NOT EXISTS idx_project_stages_invoice ON gcc_world.project_stages (invoice_id);
   `);
 }
 
@@ -204,6 +237,30 @@ export async function getProjectStages(projectId: string | number): Promise<Proj
   return rows.map(toStage);
 }
 
+/**
+ * Plan de etapas de un proyecto. Una etapa facturada por una factura ANULADA vuelve a
+ * quedar libre, igual que en el resto del módulo.
+ */
+export async function getProjectEtapas(projectId: string | number): Promise<BillingStage[]> {
+  await ensureStageBilling();
+  const { rows } = await pool.query(
+    `SELECT e.id, e.name, e.amount, e.sort_order, i.id AS invoice_id, i.invoice_number
+       FROM gcc_world.project_stages e
+       LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
+      WHERE e.project_id = ($1)::bigint
+      ORDER BY e.sort_order, e.id`,
+    [String(projectId)],
+  );
+  return rows.map((r: any) => ({
+    id: Number(r.id),
+    name: r.name,
+    amount: round2(Number(r.amount) || 0),
+    sortOrder: Number(r.sort_order) || 0,
+    invoiceId: r.invoice_id != null ? Number(r.invoice_id) : null,
+    invoiceNumber: r.invoice_number ?? null,
+  }));
+}
+
 /** Suma de los cobros registrados de un proyecto (dinero recibido, sin comprobante). */
 export async function getProjectCollected(projectId: string | number): Promise<number> {
   await ensureStageBilling();
@@ -225,16 +282,38 @@ export async function getProjectBilling(projectId: string | number): Promise<Pro
   );
   if (!p) return null;
   const stages = await getProjectStages(projectId);
+  const etapas = await getProjectEtapas(projectId);
   const collected = await getProjectCollected(projectId);
+  return buildBilling(p, stages, etapas, collected);
+}
+
+/**
+ * Arma la foto de facturación. Si el proyecto tiene PLAN DE ETAPAS, lo facturado y lo
+ * pendiente se miden sobre el plan; si no, sobre el detalle de requerimientos.
+ */
+function buildBilling(p: any, stages: ProjectStage[], etapas: BillingStage[], collected: number): ProjectBilling {
+  const finalCost = round2(Number(p.final_cost) || 0);
+  const requisitosTotal = round2(stages.reduce((s, e) => s + e.amount, 0));
+  // Base sobre la que se reparte el plan: el costo del proyecto y, si aún no está
+  // sincronizado (pasa mientras no hay asignaciones aceptadas), la suma de sus requerimientos.
+  const baseTotal = finalCost > 0 ? finalCost : requisitosTotal;
+  const conPlan = etapas.length > 0;
   return {
     projectId: Number(p.id),
     title: p.title,
     status: p.status,
-    total: round2(Number(p.final_cost) || 0),
-    stagesTotal: round2(stages.reduce((s, e) => s + e.amount, 0)),
-    invoiced: round2(stages.filter(e => e.invoiceId).reduce((s, e) => s + e.amount, 0)),
-    billable: round2(stages.filter(e => !e.invoiceId).reduce((s, e) => s + e.amount, 0)),
+    total: finalCost,
+    stagesTotal: conPlan ? round2(etapas.reduce((s, e) => s + e.amount, 0)) : requisitosTotal,
+    invoiced: conPlan
+      ? round2(etapas.filter(e => e.invoiceId).reduce((s, e) => s + e.amount, 0))
+      : round2(stages.filter(e => e.invoiceId).reduce((s, e) => s + e.amount, 0)),
+    billable: conPlan
+      ? round2(etapas.filter(e => !e.invoiceId).reduce((s, e) => s + e.amount, 0))
+      : round2(stages.filter(e => !e.invoiceId).reduce((s, e) => s + e.amount, 0)),
     invoicedLegacy: round2(Number(p.legacy) || 0),
+    mode: conPlan ? 'etapas' : 'requerimientos',
+    etapas,
+    baseTotal,
     collected,
     stages,
   };
@@ -285,6 +364,14 @@ export async function getBillableProjects(): Promise<(ProjectBilling & {
       ORDER BY r.id`,
     [ids],
   );
+  const { rows: etapaRows } = await pool.query(
+    `SELECT e.project_id, e.id, e.name, e.amount, e.sort_order, i.id AS invoice_id, i.invoice_number
+       FROM gcc_world.project_stages e
+       LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
+      WHERE e.project_id = ANY(($1)::bigint[])
+      ORDER BY e.sort_order, e.id`,
+    [ids],
+  );
   const { rows: collectedRows } = await pool.query(
     `SELECT project_id, COALESCE(SUM(amount), 0) AS total
        FROM gcc_world.project_payments
@@ -299,29 +386,35 @@ export async function getBillableProjects(): Promise<(ProjectBilling & {
     if (!stagesByProject.has(key)) stagesByProject.set(key, []);
     stagesByProject.get(key)!.push(toStage(row));
   }
+  const etapasByProject = new Map<string, BillingStage[]>();
+  for (const row of etapaRows) {
+    const key = String(row.project_id);
+    if (!etapasByProject.has(key)) etapasByProject.set(key, []);
+    etapasByProject.get(key)!.push({
+      id: Number(row.id),
+      name: row.name,
+      amount: round2(Number(row.amount) || 0),
+      sortOrder: Number(row.sort_order) || 0,
+      invoiceId: row.invoice_id != null ? Number(row.invoice_id) : null,
+      invoiceNumber: row.invoice_number ?? null,
+    });
+  }
   const collectedByProject = new Map<string, number>(
     collectedRows.map((r: any) => [String(r.project_id), round2(Number(r.total) || 0)]),
   );
 
-  return projects.map((p: any) => {
-    const stages = stagesByProject.get(String(p.id)) || [];
-    return {
-      projectId: Number(p.id),
-      title: p.title,
-      status: p.status,
-      clientId: p.client_id != null ? Number(p.client_id) : null,
-      clientName: p.client_name ?? null,
-      clientRuc: p.client_ruc ?? null,
-      clientEmail: p.client_email ?? null,
-      clientPhone: p.client_phone ?? null,
-      clientAddress: p.client_address ?? null,
-      total: round2(Number(p.final_cost) || 0),
-      stagesTotal: round2(stages.reduce((s, e) => s + e.amount, 0)),
-      invoiced: round2(stages.filter(e => e.invoiceId).reduce((s, e) => s + e.amount, 0)),
-      billable: round2(stages.filter(e => !e.invoiceId).reduce((s, e) => s + e.amount, 0)),
-      invoicedLegacy: round2(Number(p.legacy) || 0),
-      collected: collectedByProject.get(String(p.id)) || 0,
-      stages,
-    };
-  });
+  return projects.map((p: any) => ({
+    ...buildBilling(
+      p,
+      stagesByProject.get(String(p.id)) || [],
+      etapasByProject.get(String(p.id)) || [],
+      collectedByProject.get(String(p.id)) || 0,
+    ),
+    clientId: p.client_id != null ? Number(p.client_id) : null,
+    clientName: p.client_name ?? null,
+    clientRuc: p.client_ruc ?? null,
+    clientEmail: p.client_email ?? null,
+    clientPhone: p.client_phone ?? null,
+    clientAddress: p.client_address ?? null,
+  }));
 }

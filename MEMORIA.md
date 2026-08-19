@@ -4051,18 +4051,31 @@ Módulos principales:
     de venta»*; se factura al cumplirse cada etapa.
   - **Lo prohibido en cualquier criterio:** facturar el abono y después volver a facturar el
     proyecto entero. Es facturar dos veces el mismo servicio.
-  - **Cómo quedó implementado:** la **etapa es el REQUERIMIENTO** del proyecto (ya tiene título,
-    importe y `completed_at`). Cada etapa se factura **una sola vez**: queda enlazada en
-    `gcc_world.invoice_requirements` y la factura del resto del proyecto solo arrastra las que
-    falten; una factura **anulada libera** sus etapas. El importe de la etapa es el mismo que usa
-    el emisor: suma de asignaciones aceptadas y, si no tiene, su costo estimado
-    (`STAGE_AMOUNT_SQL` en `lib/payments.ts` — una sola definición).
+  - **⚠️ LA ETAPA NO ES EL REQUERIMIENTO (corregido por Fernando el 2026-08-19).** El primer
+    intento las igualó y estaba mal: el **requerimiento es trabajo interno** (lo que se reparte
+    entre los miembros); la **etapa es el tramo comercial** que se pacta con el cliente («50% al
+    empezar, 50% al entregar»). No coinciden ni en número ni en importe.
+    - Cada proyecto puede definir su **PLAN DE ETAPAS** (`gcc_world.project_stages`): n tramos con
+      nombre e importe, donde **el último se calcula solo** = base − los anteriores (así las
+      acuerda Fernando). La base es `final_cost` y, si aún no está sincronizado, la suma de los
+      requerimientos. El plan se define en el detalle del proyecto → tarjeta **Pagos** → «Etapas
+      de facturación» (panel lateral, `EditPanel`).
+    - **Si el proyecto tiene plan, se factura SOLO por etapas**: ni el módulo de proyectos ni el de
+      facturas ofrecen el detalle por requerimientos. Sin plan, todo sigue como antes.
+    - Una etapa **ya facturada no se puede editar ni borrar** (su comprobante ya salió): primero se
+      anula la factura. Anularla la devuelve a facturable.
+  - **Modo por requerimientos (proyectos sin plan):** cada requerimiento se factura una sola vez,
+    enlazado en `gcc_world.invoice_requirements`; su importe es el que usa el emisor (suma de
+    asignaciones aceptadas y, si no tiene, su costo estimado — `STAGE_AMOUNT_SQL` en
+    `lib/payments.ts`, una sola definición).
   - **El dinero cobrado por adelantado NO es una factura:** se registra como **cobro** en
     `gcc_world.project_payments` (tabla que existía sin usarse; su `proof_url` dejó de ser
     obligatorio). Sirve para ver cobrado vs. facturado sin emitir comprobantes.
   - **Dónde se opera:** módulo de Facturas → «Facturar etapa de proyecto» (elige proyecto y
     etapas; **las cotizaciones no aparecen**, del borrador en adelante sí); y al completar el
-    proyecto, el modal trae solo las etapas que faltan. Se eliminó el modo «Abono parcial» del
+    proyecto, el modal trae solo lo que falte por facturar. **El modal relee la facturación del
+    servidor al abrirse**: fiarse del estado de la pantalla hacía que, justo después de definir el
+    plan, todavía ofreciera requerimientos. Se eliminó el modo «Abono parcial» del
     modal de proyectos. **En tickets sigue existiendo el abono** — decidir con la contadora.
   - **Histórico:** la migración `047_facturacion_por_etapas.sql` enlazó las etapas de los
     proyectos cuya facturación anterior ya cubría el total (≥99%), para que no se ofrezcan otra

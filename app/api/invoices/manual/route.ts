@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance, addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
-import { getProjectStages } from '@/lib/payments';
+import { getProjectStages, getProjectBilling } from '@/lib/payments';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       project_ids, client_id_type, client_name, client_ruc, client_email,
       client_phone, client_address, payment_code, invoice_items,
       additional_fields, send_email, currency, exchange_rate,
-      refactor_source, requirement_ids,
+      refactor_source, requirement_ids, stage_ids,
     } = await req.json();
 
     if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
@@ -27,6 +27,18 @@ export async function POST(req: NextRequest) {
     // FACTURACIÓN POR ETAPAS: una etapa se factura una sola vez. Se comprueba contra
     // la base y no solo en la pantalla, porque entre abrir el modal y enviar pudo
     // emitirse otra factura con las mismas etapas.
+    const etapasPlan: string[] = Array.isArray(stage_ids) ? stage_ids.map(String) : [];
+    if (etapasPlan.length > 0) {
+      const stageProjectId = (project_ids || [])[0];
+      const billing = stageProjectId ? await getProjectBilling(stageProjectId) : null;
+      const yaFacturadas = (billing?.etapas || []).filter(e => etapasPlan.includes(String(e.id)) && e.invoiceId);
+      if (yaFacturadas.length > 0) {
+        return NextResponse.json({
+          error: `Estas etapas ya están facturadas: ${yaFacturadas.map(e => `${e.name} (${e.invoiceNumber})`).join(', ')}`,
+        }, { status: 409 });
+      }
+    }
+
     const etapas: string[] = Array.isArray(requirement_ids) ? requirement_ids.map(String) : [];
     if (etapas.length > 0) {
       const stageProjectId = (project_ids || [])[0];
@@ -54,6 +66,7 @@ export async function POST(req: NextRequest) {
       currency: currency || 'USD',
       exchangeRate: exchange_rate || 1,
       requirementIds: etapas,
+      stageIds: etapasPlan,
     });
 
     // Ingreso en finanzas. Al facturar POR ETAPAS el ingreso es el de ESTA factura
@@ -61,7 +74,7 @@ export async function POST(req: NextRequest) {
     // haría que la primera etapa se llevara el proyecto entero y las siguientes no
     // sumaran nada, porque el registro es único por origen.
     try {
-      if (invoiceId && etapas.length > 0) {
+      if (invoiceId && (etapas.length > 0 || etapasPlan.length > 0)) {
         const { rows: [inv] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
         const titulo = projectsData[0]?.title || 'Proyecto';
         await addInvoiceIncomeToFinance(String(invoiceId), `Etapas — ${titulo}`, Number(inv?.total) || 0);

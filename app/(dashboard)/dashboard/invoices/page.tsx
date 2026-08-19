@@ -184,7 +184,16 @@ function InvoicesPageInner() {
     } catch { setBillableProjects([]); toast.error('No se pudieron cargar los proyectos'); }
   };
 
-  /** Una etapa se convierte en línea de la factura con su importe facturable. */
+  /** Una ETAPA del plan se convierte en línea de la factura. */
+  const etapaToItem = (e: any, titulo: string) => ({
+    description: `${e.name} — ${titulo}`.trim(),
+    quantity: '1',
+    unitPrice: String(Number(e.amount) || 0),
+    ivaRate: '0',
+    discount: '0',
+  });
+
+  /** Un requerimiento se convierte en línea de la factura con su importe facturable. */
   const stageToItem = (e: any) => ({
     description: e.title + (e.description ? ` - ${e.description}` : ''),
     quantity: '1',
@@ -193,13 +202,21 @@ function InvoicesPageInner() {
     discount: '0',
   });
 
+  /** Filas facturables del proyecto: su plan de etapas si lo tiene; si no, requerimientos. */
+  const filasFacturables = (p: any): any[] => (p?.mode === 'etapas' ? (p.etapas || []) : (p?.stages || []));
+  const filaToItem = (p: any, e: any) => (p?.mode === 'etapas' ? etapaToItem(e, p.title) : stageToItem(e));
+
   /** Elige el proyecto: preselecciona sus etapas entregadas y sin facturar. */
   const pickStageProject = async (p: any) => {
     setStageProject(p);
-    const candidatas = (p.stages || []).filter((e: any) => !e.invoiceId && e.deliveredAt);
-    const iniciales = candidatas.length > 0 ? candidatas : (p.stages || []).filter((e: any) => !e.invoiceId);
+    const filas = filasFacturables(p);
+    const pendientes = filas.filter((e: any) => !e.invoiceId);
+    // En modo requerimientos se marcan solo los entregados; el plan de etapas no tiene
+    // esa marca, porque la entrega la define el propio acuerdo con el cliente.
+    const entregadas = p.mode === 'etapas' ? pendientes : pendientes.filter((e: any) => e.deliveredAt);
+    const iniciales = entregadas.length > 0 ? entregadas : pendientes;
     setSelectedStages(iniciales.map((e: any) => e.id));
-    setMItems(iniciales.map(stageToItem));
+    setMItems(iniciales.map((e: any) => filaToItem(p, e)));
     // Adquirente: primero los datos del cliente del proyecto, con el tipo de
     // identificación deducido del RUC igual que en el módulo de proyectos.
     const ruc = (p.clientRuc || '').trim();
@@ -238,7 +255,8 @@ function InvoicesPageInner() {
       ? selectedStages.filter(x => x !== stageId)
       : [...selectedStages, stageId];
     setSelectedStages(next);
-    setMItems((stageProject?.stages || []).filter((e: any) => next.includes(e.id)).map(stageToItem));
+    setMItems(filasFacturables(stageProject).filter((e: any) => next.includes(e.id))
+      .map((e: any) => filaToItem(stageProject, e)));
   };
 
   const filteredProjects = projectSearch.trim()
@@ -333,7 +351,8 @@ function InvoicesPageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_ids: stageProject ? [stageProject.projectId] : [],
-          requirement_ids: selectedStages,
+          requirement_ids: stageProject?.mode === 'etapas' ? [] : selectedStages,
+          stage_ids: stageProject?.mode === 'etapas' ? selectedStages : [],
           client_id_type: mIdType,
           client_name: mClientName,
           client_ruc: mClientRuc,
@@ -569,7 +588,9 @@ function InvoicesPageInner() {
             {stageProject && (
               <div className="mb-3">
                 <div className="flex items-center justify-between border-b border-digi-border pb-1.5 mb-2">
-                  <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Etapas a facturar</h4>
+                  <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>
+                    {stageProject.mode === 'etapas' ? 'Etapas a facturar' : 'Requerimientos a facturar'}
+                  </h4>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-digi-muted" style={pf}>
                       Facturado ${fmt2(Number(stageProject.invoiced))} de ${fmt2(Number(stageProject.stagesTotal))}
@@ -581,20 +602,21 @@ function InvoicesPageInner() {
                   </div>
                 </div>
                 <div className="border border-digi-border rounded-lg divide-y divide-digi-border/60 max-h-44 overflow-y-auto">
-                  {(stageProject.stages || []).map((e: any) => {
+                  {filasFacturables(stageProject).map((e: any) => {
                     const facturada = !!e.invoiceId;
+                    const conPlan = stageProject.mode === 'etapas';
                     return (
                       <label key={e.id} className={`flex items-center gap-2 px-2 py-1.5 text-[12px] ${facturada ? 'opacity-60' : 'cursor-pointer hover:bg-accent/5'}`} style={pf}>
                         <input type="checkbox" disabled={facturada} checked={selectedStages.includes(e.id)}
                           onChange={() => toggleStage(e.id)} className="accent-[#4B2D8E]" />
-                        <span className="flex-1 min-w-0 truncate text-digi-text">{e.title}</span>
+                        <span className="flex-1 min-w-0 truncate text-digi-text">{conPlan ? e.name : e.title}</span>
                         {facturada ? (
                           <span className="text-[11px] text-digi-muted shrink-0">Facturada · {e.invoiceNumber}</span>
-                        ) : e.deliveredAt ? (
+                        ) : !conPlan && e.deliveredAt ? (
                           <span className="text-[11px] text-green-600 shrink-0">Entregada</span>
-                        ) : (
+                        ) : !conPlan ? (
                           <span className="text-[11px] text-amber-600 shrink-0">Sin entregar</span>
-                        )}
+                        ) : null}
                         <span className="tabular-nums text-digi-text shrink-0">${fmt2(Number(e.amount))}</span>
                       </label>
                     );
@@ -606,7 +628,9 @@ function InvoicesPageInner() {
                   </div>
                 )}
                 <p className="text-[11px] text-digi-muted mt-1" style={pf}>
-                  Se marcan por defecto las etapas entregadas y sin facturar. El detalle sigue siendo editable: puedes fusionarlas en un solo concepto.
+                  {stageProject.mode === 'etapas'
+                    ? 'Este proyecto se factura por las etapas acordadas con el cliente. Las ya facturadas no vuelven a entrar.'
+                    : 'Se marcan por defecto los requerimientos entregados y sin facturar. El detalle sigue siendo editable: puedes fusionarlos en un solo concepto.'}
                 </p>
               </div>
             )}
@@ -896,7 +920,7 @@ function InvoicesPageInner() {
                       {billableProjects.length === 0 ? 'No hay proyectos facturables' : 'Sin resultados'}
                     </div>
                   ) : filteredProjects.map((p: any) => {
-                    const sinEtapas = (p.stages || []).length === 0;
+                    const sinEtapas = (p.mode === 'etapas' ? (p.etapas || []).length : (p.stages || []).length) === 0;
                     const todoFacturado = !sinEtapas && p.billable <= 0.009;
                     return (
                       <button key={p.projectId} type="button" disabled={sinEtapas || todoFacturado}
@@ -907,7 +931,11 @@ function InvoicesPageInner() {
                           <span className="text-[12px] text-accent tabular-nums shrink-0" style={mf}>${fmt2(Number(p.billable))}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3 text-[11px] text-digi-muted" style={pf}>
-                          <span className="truncate">{p.clientName || 'Sin cliente'} · {(p.stages || []).length} etapas</span>
+                          <span className="truncate">
+                            {p.clientName || 'Sin cliente'} · {p.mode === 'etapas'
+                              ? `${(p.etapas || []).length} etapas`
+                              : `${(p.stages || []).length} requerimientos`}
+                          </span>
                           <span className="shrink-0">
                             {sinEtapas ? 'sin etapas' : todoFacturado ? 'todo facturado' : `facturado $${fmt2(Number(p.invoiced))}`}
                           </span>
@@ -922,7 +950,8 @@ function InvoicesPageInner() {
                   })}
                 </div>
                 <p className="text-[11px] text-digi-muted" style={pf}>
-                  Se factura al entregar cada etapa, no al cobrar el dinero. El dinero recibido por adelantado se registra como cobro en el proyecto.
+                  Se factura al entregar cada etapa, no al cobrar el dinero: el dinero recibido por adelantado se registra como cobro en el proyecto.
+                  Las etapas se definen en el propio proyecto; sin plan, se factura por su detalle de requerimientos.
                 </p>
               </>
             ) : null}

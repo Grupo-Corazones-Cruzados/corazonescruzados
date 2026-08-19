@@ -129,6 +129,16 @@ async function linkInvoiceRequirements(invoiceId: number, requirementIds?: (stri
   }
 }
 
+/** Marca las etapas del PLAN que cubre una factura (una etapa, una factura). */
+async function linkInvoiceStages(invoiceId: number, stageIds?: (string | number)[]) {
+  if (!stageIds?.length) return;
+  await pool.query(
+    `UPDATE gcc_world.project_stages SET invoice_id = $1, updated_at = NOW()
+      WHERE id = ANY(($2)::bigint[])`,
+    [invoiceId, stageIds.map(String)],
+  );
+}
+
 /**
  * Get next sequential number
  */
@@ -153,8 +163,10 @@ interface InvoiceOptions {
   additionalFields?: { name: string; value: string }[];
   currency?: string;      // e.g. 'USD', 'EUR', 'COP'
   exchangeRate?: number;  // rate to convert FROM USD TO target currency
-  /** Etapas (requerimientos) que cubre esta factura; quedan marcadas como facturadas. */
+  /** Requerimientos que cubre esta factura; quedan marcados como facturados. */
   requirementIds?: (string | number)[];
+  /** Etapas del plan que cubre esta factura; quedan marcadas como facturadas. */
+  stageIds?: (string | number)[];
 }
 
 export async function createInvoiceFromProject(projectId: string, options?: InvoiceOptions): Promise<number> {
@@ -266,6 +278,7 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   // Insert items
   await insertInvoiceItems(invoice.id, items);
   await linkInvoiceRequirements(invoice.id, options?.requirementIds);
+  await linkInvoiceStages(invoice.id, options?.stageIds);
 
   return invoice.id;
 }
@@ -306,8 +319,10 @@ interface ManualInvoiceOptions {
   paymentCode?: string;
   invoiceItems?: { description: string; quantity: number; unitPrice: number; ivaRate: number; discount: number }[];
   additionalFields?: { name: string; value: string }[];
-  /** Etapas (requerimientos) que cubre esta factura; quedan marcadas como facturadas. */
+  /** Requerimientos que cubre esta factura; quedan marcados como facturados. */
   requirementIds?: (string | number)[];
+  /** Etapas del plan que cubre esta factura; quedan marcadas como facturadas. */
+  stageIds?: (string | number)[];
 }
 
 export async function createManualInvoice(options: ManualInvoiceOptions): Promise<{ invoiceId: number; projectsData: any[] }> {
@@ -434,6 +449,7 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
   }
 
   await linkInvoiceRequirements(invoice.id, options.requirementIds);
+  await linkInvoiceStages(invoice.id, options.stageIds);
 
   // Insert items
   await insertInvoiceItems(invoice.id, items);

@@ -16,8 +16,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Completar y FACTURAR un proyecto es exclusivo del admin (regla de negocio).
     if (user.role !== 'admin') return NextResponse.json({ error: 'Solo un administrador puede completar y facturar el proyecto.' }, { status: 403 });
     const { id } = await params;
-    const { action, skip_invoice, requirement_ids, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
+    const { action, skip_invoice, requirement_ids, stage_ids, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
     const etapas: string[] = Array.isArray(requirement_ids) ? requirement_ids.map(String) : [];
+    const etapasPlan: string[] = Array.isArray(stage_ids) ? stage_ids.map(String) : [];
 
     let invoiceId: number | null = null;
     let sriResult: any = null;
@@ -97,15 +98,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const existingInvoice = await projectHasInvoice(id);
       // Sin etapas pendientes no hay nada que facturar: o el proyecto ya se facturó
       // entero por etapas, o su única factura se emitió a mano.
-      const sinEtapasPendientes = billingPrev
-        ? (billingPrev.stages.length > 0 && billingPrev.billable <= 0.009)
+      const conDetalle = billingPrev
+        ? (billingPrev.mode === 'etapas' ? billingPrev.etapas.length > 0 : billingPrev.stages.length > 0)
+        : false;
+      const sinEtapasPendientes = billingPrev && conDetalle
+        ? billingPrev.billable <= 0.009
         : existingInvoice.hasInvoice;
       try {
-        if (sinEtapasPendientes || (billingPrev?.stages.length === 0 && existingInvoice.hasInvoice)) {
+        if (sinEtapasPendientes || (!conDetalle && existingInvoice.hasInvoice)) {
           invoiceId = existingInvoice.invoiceId ?? null;
           sriResult = { ok: true, authorized: true, skipped: true, message: 'Todas las etapas del proyecto ya están facturadas' };
         } else {
-        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate, requirementIds: etapas });
+        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate, requirementIds: etapas, stageIds: etapasPlan });
 
         // Sign and send to SRI
         if (invoiceId) {
