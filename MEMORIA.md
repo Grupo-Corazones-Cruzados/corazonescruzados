@@ -359,7 +359,14 @@ Stack estándar de la casa, con particularidades de este repo:
     y `votacion` → `democracia`. Ese `id` es **tres cosas a la vez** —tramo de URL, valor de
     `generateStaticParams` y clave de `faqs.acceso_id`—, así que cambiarlo exigió las seis
     redirecciones (tres prefijos × dos tramos, **en un solo salto**) y la migración 046.
-    Las preguntas tienen ancla propia: `/clientes/progreso#como-funciona`.
+    Las preguntas tienen ancla propia: `/clientes/plataforma#como-funciona`.
+  - **(2026-08-19, por la tarde) `progreso` → `plataforma`**, segundo renombrado de la misma
+    sección en el mismo día. Las **cuatro** direcciones publicadas —`/clientes/progreso`,
+    `/clientes/requerimientos`, `/soluciones/requerimientos`, `/negocio/requerimientos`—
+    apuntan **directamente** a `/clientes/plataforma`, sin encadenar saltos; migración 047 para
+    `faqs.acceso_id`, cubriendo los dos nombres viejos. ⚠️ **«Plataforma» ya existe en la barra
+    de arriba como botón de acceso**: ahora hay dos cosas con ese nombre a la vista, la que
+    explica la plataforma y la que entra en ella. Fernando lo eligió sabiéndolo.
   - **Videojuego y Marketplace ganaron dos preguntas cada uno, escritas por mí** con permiso de
     Fernando y marcadas como tales en el código, con cada afirmación anclada a algo comprobable.
   - ⏸ **Democracia se queda sin preguntas a propósito, y espera decisión de Fernando.** Su

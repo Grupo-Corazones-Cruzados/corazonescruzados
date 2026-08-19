@@ -345,19 +345,28 @@ export const ACCESOS: Acceso[] = [
   /**
    * ⚠️ EL TRAMO SE LLAMA COMO LA SECCIÓN, Y ESO ES UNA REGLA (Fernando, 2026-08-19).
    *
-   * Era `requerimientos` y la sección se llama **Progreso**; era `votacion` y la sección se
-   * llama **Democracia**. Dos nombres para lo mismo obligan a traducir mentalmente cada vez
-   * que se mira una URL, y una dirección que no se parece a lo que enseña no se recuerda ni
-   * se teclea. Ahora `id` = el título en minúsculas y sin tildes, siempre.
+   * Dos nombres para lo mismo obligan a traducir mentalmente cada vez que se mira una URL, y
+   * una dirección que no se parece a lo que enseña no se recuerda ni se teclea. Así que
+   * `id` = el título en minúsculas y sin tildes, **siempre**.
+   *
+   * Esta sección ha cambiado de nombre dos veces en dos días, y las tres direcciones siguen
+   * vivas: `requerimientos` (04-08) → `progreso` (08-19, mañana) → **`plataforma`** (08-19,
+   * tarde).
    *
    * ⚠️ **Este `id` es TRES cosas a la vez**: el tramo de la URL (`/clientes/<id>`), la clave
    * con la que se guardan las preguntas frecuentes (`gcc_world.faqs.acceso_id`) y el valor de
-   * `generateStaticParams`. Cambiarlo exige las tres: la redirección de la dirección vieja en
-   * `next.config.ts`, y la migración 046 que renombra las filas de `faqs`.
+   * `generateStaticParams`. Cambiarlo exige las tres: las redirecciones de las direcciones
+   * viejas en `next.config.ts` —**todas en un salto**, sin encadenar— y una migración que
+   * renombre las filas de `faqs` (046 para el primer cambio, 047 para este).
+   *
+   * ⚠️ **Ojo con el nombre: «Plataforma» ya existe en la barra de arriba**, como botón que
+   * abre el acceso. Ahora hay dos cosas con ese nombre a la vista al mismo tiempo: la que
+   * **explica** la plataforma (esta sección) y la que **entra** en ella (el botón). Fernando
+   * lo eligió sabiendo cómo está la barra; queda anotado por si algún día confunde a alguien.
    */
   {
-    id: 'progreso', icono: 'ticket',
-    titulo: 'Progreso',
+    id: 'plataforma', icono: 'ticket',
+    titulo: 'Plataforma',
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
     /**
      * Dictado por Fernando el 2026-08-04, con permiso para retocarlo. Su texto era:
@@ -506,7 +515,7 @@ export const ACCESOS: Acceso[] = [
         etiqueta: 'Retos CC',
         pregunta: '¿Buscas poner a prueba a tus colaboradores?',
         texto:
-          'En vez de preguntarle a tu equipo cómo reaccionaría ante una situación, puedes mediante este videojuego, desarrollar los retos que quieres para evaluar a tus colaboradores frente a una situación y así puedes generar espacios de reflexión, aprendizaje, analizar sus deciciones y entender cómo ellos resuelven un problema que les planteas.',
+          'En vez de preguntarle a tu equipo cómo reaccionaría ante una situación, puedes mediante este videojuego, desarrollar los retos que quieres para evaluar a tus colaboradores y así generar espacios de reflexión, aprendizaje, analizar sus deciciones y entender cómo ellos resolverían un problema que planteas.',
         pasos: [
           {
             titulo: 'Entras con tu cuenta',
@@ -520,7 +529,7 @@ export const ACCESOS: Acceso[] = [
           },
           {
             titulo: 'Obtén los resultados',
-            texto: 'Cada prueba va a generar un reporte según las decisiones y logros alcanzados según tus criterios de evaluación para cada colaborador que realizó la prueba.',
+            texto: 'Cada prueba va a generar un reporte según las decisiones tomadas, logros alcanzados, y criterios de evaluación aplicados en tus pruebas.',
             icono: 'grafico',
           },
         ],
@@ -558,9 +567,9 @@ export const ACCESOS: Acceso[] = [
       {
         id: 'talentos',
         etiqueta: 'Talentos',
-        pregunta: '¿Necesitas conocer nuestro talento o buscas personal con alto valor humano y profesional?',
+        pregunta: '¿Te gustaría conocer nuestro talento, y encontrar personal con alto valor humano y profesional?',
         texto:
-          'Puedes jugar en los retos junto a nuestros jugadores, enfrentar retos del videojuego a nivel estratégico, puzzles, decisiones difíciles, desarrollo de valores, y participar junto a la plataforma que es donde trabajamos en progresar las 4 dimensiones del desarrollo humano (laboral, social, mental, corporal).',
+          'Puedes jugar con nosotros, enfrentar retos del videojuego, cumplir un rol en el progreso de misiones, enfrentar pruebas de estrategia, puzzles, decisiones difíciles. Aquí encontrarás diversión, y oportunidades para tu negocio.',
         pasos: [
           {
             titulo: 'Entras con tu cuenta',
@@ -569,7 +578,7 @@ export const ACCESOS: Acceso[] = [
           },
           {
             titulo: 'Juega y gana',
-            texto: 'Participa para obtener GCC Coins, y así poder adquirir servicios y productos gratuitos o de pruebas.',
+            texto: 'Participa para obtener GCC Coins, y ganar acceso a servicios y productos gratuitos.',
             icono: 'billetera',
           },
           {
@@ -589,11 +598,24 @@ export const ACCESOS: Acceso[] = [
    *    marketplace del panel; sin ella abre el aviso «Acceso solo para clientes».
    *  · «Si es un proyecto, se ven sus requerimientos» → el panel de detalle los pide a
    *    `GET /api/marketplace/projects/[id]/requirements`.
+   *
+   * ── QUÉ CAMBIÓ EL 2026-08-19 ──────────────────────────────────────────────────
+   * Fernando pidió que la descripción general y las de las preguntas dijeran **qué es este
+   * sitio**, no solo qué se compra: *«un espacio donde todos los miembros publican sus
+   * soluciones para que puedas adquirir diferentes tipos de productos, proyectos o
+   * automatizaciones para tu organización»*.
+   *
+   * El matiz importa y no es de estilo: «compra productos» describe una tienda cualquiera;
+   * «los miembros publican lo que saben hacer» describe **de dónde sale** lo que compras, que
+   * es lo único que aquí no puede copiar un competidor. Es además coherente con `/soluciones`,
+   * donde ese mismo trabajo aparece por talento.
    */
   {
     id: 'marketplace', icono: 'tienda',
     titulo: 'Marketplace',
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
+    descripcion:
+      'El marketplace es el espacio donde los miembros publican sus soluciones: lo que cada uno sabe hacer, ya construido y listo para usarse. Ahí puedes adquirir productos, proyectos y automatizaciones para tu organización, y detrás de cada uno está la persona que lo hizo.',
     enlaceExterno: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' },
     temas: [
       {
@@ -601,11 +623,11 @@ export const ACCESOS: Acceso[] = [
         etiqueta: 'Catálogo',
         pregunta: '¿Qué se puede comprar aquí?',
         texto:
-          'Productos, automatizaciones y proyectos hechos por los miembros y candidatos de la organización. No es un escaparate de terceros: cada cosa tiene detrás a quien la construyó.',
+          'Las soluciones que publican los propios miembros: productos terminados, proyectos y automatizaciones que puedes llevarte a tu organización. No es un escaparate de terceros — cada cosa tiene detrás a quien la construyó, y puedes hablar con esa persona.',
         pasos: [
           {
-            titulo: 'Miras el catálogo',
-            texto: 'Está abierto: se recorre entero sin cuenta y sin registrarse para ver precios.',
+            titulo: 'Miras lo que hay publicado',
+            texto: 'El catálogo está abierto: se recorre entero sin cuenta y sin registrarse para ver precios.',
             icono: 'buscar',
           },
           {
@@ -625,7 +647,7 @@ export const ACCESOS: Acceso[] = [
         etiqueta: 'Acceso',
         pregunta: '¿Hace falta una cuenta para comprar?',
         texto:
-          'Para mirar, no. Para comprar o solicitar, sí: hace falta una cuenta de cliente. Con ella el marketplace se abre completo dentro de tu panel, junto a tus tickets y tus proyectos.',
+          'Para mirar lo que publican los miembros, no. Para adquirir algo, sí: hace falta una cuenta de cliente. Con ella el marketplace se abre completo dentro de tu panel, junto a tus tickets y tus proyectos.',
         pasos: [
           {
             titulo: 'Sin cuenta',
@@ -634,7 +656,7 @@ export const ACCESOS: Acceso[] = [
           },
           {
             titulo: 'Con cuenta de cliente',
-            texto: 'La acción de comprar o solicitar se activa, y el marketplace pasa a estar dentro de tu panel.',
+            texto: 'La acción de adquirir o solicitar se activa, y el marketplace pasa a estar dentro de tu panel.',
             icono: 'tarjeta',
           },
           {

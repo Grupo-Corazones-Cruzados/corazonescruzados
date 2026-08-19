@@ -5764,3 +5764,47 @@ comentario desfasado miente igual que un dato.
 
 **Lección:** cuando un `python - << PY` de reemplazo falla, hay que **parar la cadena**, no
 seguir con el `build` detrás; si no, se verifica lo que no se cambió.
+
+---
+
+## Decimosexta pasada (2026-08-19, tarde) — «Progreso» pasa a «Plataforma», y Marketplace dice qué es
+
+### P80 — Segundo renombrado de la MISMA sección en el mismo día
+`requerimientos` (04-08) → `progreso` (esta mañana) → **`plataforma`** (esta tarde). Las tres
+partes de siempre: el `id` de `ACCESOS`, la clave de `faqs.acceso_id` —migración 047, que cubre
+**los dos** nombres viejos, no solo el último— y las redirecciones.
+
+⚠️ **Y aquí estaba la tentación:** encadenar. Dejar `requerimientos` → `progreso` → `plataforma`
+era una línea menos y habría funcionado. Se hizo al revés: **las cuatro direcciones apuntan
+directamente al destino final**, porque cada salto diluye la señal que se le pasa a Google y
+añade una ida y vuelta a quien entra. Queda escrito en `next.config.ts` que el próximo cambio de
+nombre **reapunta esas cuatro**, no añade una quinta detrás.
+
+`/soluciones/progreso` y `/negocio/progreso` **no** se listan: nunca existieron —`progreso`
+nació ya bajo `/clientes`—, y redirigir direcciones que nadie publicó es inventarse tráfico.
+
+⚠️ **«Plataforma» ya existe en la barra de arriba, como botón de acceso.** Ahora hay dos cosas
+con ese nombre a la vista al mismo tiempo: la que **explica** la plataforma y la que **entra** en
+ella. Fernando lo eligió sabiendo cómo está la barra; queda anotado por si algún día confunde.
+
+### P81 — Marketplace: de «qué se compra» a «de dónde sale»
+Fernando pidió que la descripción general y las de las preguntas dijeran que el marketplace es
+*«un espacio donde todos los miembros publican sus soluciones»*.
+
+El matiz no es de estilo. «Compra productos» describe una tienda cualquiera; «los miembros
+publican lo que saben hacer» describe **de dónde sale** lo que compras, que es lo único que aquí
+no puede copiar un competidor — y encaja con `/soluciones`, donde ese mismo trabajo aparece
+ordenado por talento. Se tocaron la `descripcion` de la sección, el texto de las dos preguntas y
+dos pasos; la frase corta de la tarjeta (suya, del 08-04) se queda.
+
+### Lo medido
+| Dirección | Código | Destino | Saltos | Final |
+|---|---|---|---|---|
+| `/clientes/progreso` | 308 | `/clientes/plataforma` | 1 | 200 |
+| `/clientes/requerimientos` | 308 | `/clientes/plataforma` | 1 | 200 |
+| `/soluciones/requerimientos` | 308 | `/clientes/plataforma` | 1 | 200 |
+| `/negocio/requerimientos` | 308 | `/clientes/plataforma` | 1 | 200 |
+
+`<h1>` = «Plataforma», cero apariciones de «Progreso» en la página, anclas `#como-funciona` y
+`#de-idea-a-proyecto` intactas, el mapa del sitio ya lista `/clientes/plataforma`, y migración
+047 aplicada contra producción.

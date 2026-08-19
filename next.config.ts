@@ -121,9 +121,24 @@ const nextConfig: NextConfig = {
        * regla genérica ya no menciona estos dos tramos: solo quedan `videojuego` y
        * `marketplace`, que no cambiaron de nombre.
        */
-      { source: '/clientes/requerimientos', destination: '/clientes/progreso', permanent: true },
-      { source: '/soluciones/requerimientos', destination: '/clientes/progreso', permanent: true },
-      { source: '/negocio/requerimientos', destination: '/clientes/progreso', permanent: true },
+      /**
+       * ⚠️ **ESTA SECCIÓN HA CAMBIADO DE NOMBRE DOS VECES EN DOS DÍAS.**
+       * `requerimientos` (04-08) → `progreso` (08-19, mañana) → `plataforma` (08-19, tarde).
+       *
+       * Las cuatro direcciones apuntan **directamente** al destino final. Encadenar
+       * —`requerimientos` → `progreso` → `plataforma`— sería lo cómodo y lo equivocado: cada
+       * salto diluye la señal que se le pasa a Google y añade una ida y vuelta a quien entra.
+       * Cuando cambie el nombre otra vez, hay que **reapuntar estas cuatro**, no añadir una
+       * quinta detrás.
+       *
+       * `/soluciones/progreso` y `/negocio/progreso` NO se listan porque **nunca existieron**:
+       * `progreso` nació ya bajo `/clientes`. Redirigir direcciones que nadie publicó es
+       * inventarse tráfico que no hubo.
+       */
+      { source: '/clientes/progreso', destination: '/clientes/plataforma', permanent: true },
+      { source: '/clientes/requerimientos', destination: '/clientes/plataforma', permanent: true },
+      { source: '/soluciones/requerimientos', destination: '/clientes/plataforma', permanent: true },
+      { source: '/negocio/requerimientos', destination: '/clientes/plataforma', permanent: true },
       { source: '/clientes/votacion', destination: '/clientes/democracia', permanent: true },
       { source: '/soluciones/votacion', destination: '/clientes/democracia', permanent: true },
       { source: '/negocio/votacion', destination: '/clientes/democracia', permanent: true },
