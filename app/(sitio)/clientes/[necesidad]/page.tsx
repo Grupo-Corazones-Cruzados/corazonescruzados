@@ -86,8 +86,16 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           terminaba a media pantalla y debajo asomaba el papel de la página.
           `overflow-x-clip`: una galería que se sale a lo ancho de la ventana daría barra
           horizontal a la página entera. Se usa `clip` y NO `hidden` porque `hidden` crearía
-          un contenedor de scroll y rompería el salto a las anclas de las preguntas. */}
-      <section className="flex-1 overflow-x-clip bg-[var(--tarjeta)] py-10 sm:py-14">
+          un contenedor de scroll y rompería el salto a las anclas de las preguntas.
+
+          ⚠️ **`pb-40` NO es aire decorativo: es sitio para desplazarse.** Un enlace con ancla
+          deja el bloque a 96 px del borde (`scroll-mt-24`, para que la cabecera fija no lo
+          tape), pero eso solo puede cumplirse si por debajo queda página que recorrer. Sin
+          este margen, la ÚLTIMA pregunta de cada sección se quedaba a 33-64 px del borde
+          —medido— porque el navegador ya no tenía a dónde bajar, y el título se acercaba
+          demasiado a la cabecera. Es el mismo motivo por el que los sitios de documentación
+          llevan un hueco al final. */}
+      <section className="flex-1 overflow-x-clip bg-[var(--tarjeta)] pt-10 sm:pt-14 pb-40 sm:pb-56">
         <Contenedor ancho="amplio">
           <ClientesExplorador activa={acceso.id} faqs={faqs} />
         </Contenedor>

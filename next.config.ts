@@ -77,8 +77,7 @@ const nextConfig: NextConfig = {
        * cinco URLs ya publicadas.
        */
       {
-        source:
-          '/soluciones/:necesidad(requerimientos|videojuego|marketplace|votacion)',
+        source: '/soluciones/:necesidad(videojuego|marketplace)',
         destination: '/clientes/:necesidad',
         permanent: true,
       },
@@ -104,11 +103,30 @@ const nextConfig: NextConfig = {
       // ninguna carpeta `public/recursos`, así que aquí no hace falta acotar nada.
       { source: '/recursos', destination: '/desarrollo-humano', permanent: true },
       {
-        source:
-          '/negocio/:necesidad(requerimientos|videojuego|marketplace|votacion)',
+        source: '/negocio/:necesidad(videojuego|marketplace)',
         destination: '/clientes/:necesidad',
         permanent: true,
       },
+
+      /**
+       * ── DOS TRAMOS QUE CAMBIARON DE NOMBRE EL 2026-08-19 ──────────────────────────
+       * `requerimientos` → `progreso` y `votacion` → `democracia`: Fernando pidió que la
+       * dirección se llame como la sección que enseña. Las viejas llevan publicadas desde el
+       * 2026-08-04 bajo tres prefijos distintos —`/negocio`, `/soluciones` y `/clientes`—, así
+       * que se redirigen **las seis, una por una y en un solo salto**.
+       *
+       * ⚠️ Un salto, no dos. Se podría dejar que `/negocio/requerimientos` cayera en la regla
+       * genérica de arriba y de ahí en la de `/clientes`, pero encadenar redirecciones diluye
+       * la señal que se le pasa a Google y añade una ida y vuelta a quien entra. Por eso la
+       * regla genérica ya no menciona estos dos tramos: solo quedan `videojuego` y
+       * `marketplace`, que no cambiaron de nombre.
+       */
+      { source: '/clientes/requerimientos', destination: '/clientes/progreso', permanent: true },
+      { source: '/soluciones/requerimientos', destination: '/clientes/progreso', permanent: true },
+      { source: '/negocio/requerimientos', destination: '/clientes/progreso', permanent: true },
+      { source: '/clientes/votacion', destination: '/clientes/democracia', permanent: true },
+      { source: '/soluciones/votacion', destination: '/clientes/democracia', permanent: true },
+      { source: '/negocio/votacion', destination: '/clientes/democracia', permanent: true },
     ];
   },
 

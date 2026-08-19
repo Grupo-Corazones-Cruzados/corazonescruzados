@@ -318,8 +318,21 @@ export interface Tema {
 }
 
 export const ACCESOS: Acceso[] = [
+  /**
+   * ⚠️ EL TRAMO SE LLAMA COMO LA SECCIÓN, Y ESO ES UNA REGLA (Fernando, 2026-08-19).
+   *
+   * Era `requerimientos` y la sección se llama **Progreso**; era `votacion` y la sección se
+   * llama **Democracia**. Dos nombres para lo mismo obligan a traducir mentalmente cada vez
+   * que se mira una URL, y una dirección que no se parece a lo que enseña no se recuerda ni
+   * se teclea. Ahora `id` = el título en minúsculas y sin tildes, siempre.
+   *
+   * ⚠️ **Este `id` es TRES cosas a la vez**: el tramo de la URL (`/clientes/<id>`), la clave
+   * con la que se guardan las preguntas frecuentes (`gcc_world.faqs.acceso_id`) y el valor de
+   * `generateStaticParams`. Cambiarlo exige las tres: la redirección de la dirección vieja en
+   * `next.config.ts`, y la migración 046 que renombra las filas de `faqs`.
+   */
   {
-    id: 'requerimientos', icono: 'ticket',
+    id: 'progreso', icono: 'ticket',
     titulo: 'Progreso',
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
     /**
@@ -571,7 +584,7 @@ export const ACCESOS: Acceso[] = [
    * que no hay no deja hueco.
    */
   {
-    id: 'votacion', icono: 'voto',
+    id: 'democracia', icono: 'voto',
     titulo: 'Democracia',
     texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar dentro de la organización.',
   },

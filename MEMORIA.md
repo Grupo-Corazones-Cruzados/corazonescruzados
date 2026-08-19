@@ -355,6 +355,11 @@ Stack estándar de la casa, con particularidades de este repo:
   ese día. `ClientesExplorador` **no lleva `use client`**: la sección elegida es la URL, así que
   las cuatro secciones enteras viajan en el HTML crudo.
   - Se borraron `CabeceraClientes` y `RejillaAccesos`; recuperables con `git show`.
+  - **(2026-08-19) El tramo de la URL se llama como la sección:** `requerimientos` → `progreso`
+    y `votacion` → `democracia`. Ese `id` es **tres cosas a la vez** —tramo de URL, valor de
+    `generateStaticParams` y clave de `faqs.acceso_id`—, así que cambiarlo exigió las seis
+    redirecciones (tres prefijos × dos tramos, **en un solo salto**) y la migración 046.
+    Las preguntas tienen ancla propia: `/clientes/progreso#como-funciona`.
   - **Videojuego y Marketplace ganaron dos preguntas cada uno, escritas por mí** con permiso de
     Fernando y marcadas como tales en el código, con cada afirmación anclada a algo comprobable.
   - ⏸ **Democracia se queda sin preguntas a propósito, y espera decisión de Fernando.** Su

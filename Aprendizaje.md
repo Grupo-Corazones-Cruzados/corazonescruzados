@@ -5540,3 +5540,70 @@ de preguntas simplemente no se pinta.
 A 900 px: el índice lateral desaparece y sale la fila de enlaces (2 en Progreso, ninguna en
 Democracia), sin desbordamiento. Panel izquierdo e índice pegados a 96 px al desplazar. El
 salto por ancla deja el bloque a 96 px del borde, bajo la cabecera de 65 px.
+
+---
+
+## Decimotercera pasada (2026-08-19) — el tramo se llama como la sección
+
+Fernando: *«necesito que la ruta exista según el elemento seleccionado, ya sea
+clientes/progreso#como-funciona»*. Dos cosas en una frase.
+
+### ✅ P67 — El tramo tenía un nombre y la sección otro
+`requerimientos` enseñaba **Progreso**; `votacion` enseñaba **Democracia**. Dos nombres para lo
+mismo obligan a traducir mentalmente cada vez que se mira una URL, y una dirección que no se
+parece a lo que enseña no se recuerda ni se teclea. Ahora `id` = el título en minúsculas.
+
+⚠️ **Ese `id` es tres cosas a la vez** y cambiarlo exige las tres:
+1. el tramo de la URL y el valor de `generateStaticParams`;
+2. **la clave con la que se guardan las preguntas frecuentes** (`faqs.acceso_id`) → migración
+   046, que hoy **no mueve ni una fila** porque la tabla está vacía, pero se escribe igual: entre
+   escribir esto y desplegar, alguien puede crear una FAQ con el nombre viejo y quedaría
+   huérfana —guardada, correcta, y sin salir en ninguna página—;
+3. las redirecciones de las direcciones publicadas.
+
+**Seis redirecciones, y en UN salto.** Las viejas llevan publicadas desde el 2026-08-04 bajo
+tres prefijos (`/negocio`, `/soluciones`, `/clientes`). Se podría dejar que `/negocio/…` cayera
+en la regla genérica y de ahí en la de `/clientes`, pero **encadenar redirecciones diluye la
+señal que se le pasa a Google** y añade una ida y vuelta a quien entra. Por eso la regla
+genérica dejó de mencionar estos dos tramos: solo le quedan `videojuego` y `marketplace`, que no
+cambiaron de nombre. Verificado: `num_redirects: 1` en las seis, y las seis acaban en 200.
+
+### 🪤 P68 — Perseguí un fallo que no existía: medí una animación
+Al comprobar las anclas, la **última** pregunta de cada sección daba 43 px del borde en vez de
+96 —tapada por la cabecera—. Tres intentos de explicarlo fallaron: el tope de la página, la
+carga de la fuente, el desplazamiento suave.
+
+Lo era todo menos eso. `.tema-anima` entra con una animación **guiada por el scroll**
+(`animation-timeline: view()`) que aplica `scale(0.985) translateY(48px)`, y
+`getBoundingClientRect()` **incluye la transformación**. Estaba midiendo la caja animada, no la
+caja del layout. Comprobado leyendo el `transform` computado: `matrix(0.985,0,0,0.985,0,48)`
+arriba y `matrix(1,0,0,1,0,0)` al fondo, con opacidad 1 en los dos sitios.
+
+Lo zanjó **mirar una captura**, no medir otra vez: el título se ve entero y bajo la cabecera.
+
+**Lección:** cuando el número no cuadra en una página con animaciones ligadas al scroll, el
+sospechoso número uno es el propio medidor. `getBoundingClientRect` no devuelve dónde está el
+elemento, devuelve dónde se está pintando.
+
+### ✔ Lo que sí era un fallo, y se corrigió
+Antes de esto la última pregunta **no podía** llegar a sus 96 px: la página se acababa y el
+navegador se quedaba a mitad (`scrollY == maxScroll`). El `scroll-mt-24` solo se cumple si por
+debajo queda página que recorrer, así que la sección pasó de `py-10 sm:py-14` a
+`pt-10 sm:pt-14 pb-40 sm:pb-56`. No es aire decorativo: es sitio para desplazarse, el mismo
+motivo por el que los sitios de documentación llevan un hueco al final.
+
+### Lo medido
+| Dirección | Código | Destino | Saltos | Final |
+|---|---|---|---|---|
+| `/clientes/requerimientos` | 308 | `/clientes/progreso` | 1 | 200 |
+| `/soluciones/requerimientos` | 308 | `/clientes/progreso` | 1 | 200 |
+| `/negocio/requerimientos` | 308 | `/clientes/progreso` | 1 | 200 |
+| `/clientes/votacion` | 308 | `/clientes/democracia` | 1 | 200 |
+| `/soluciones/votacion` | 308 | `/clientes/democracia` | 1 | 200 |
+| `/negocio/votacion` | 308 | `/clientes/democracia` | 1 | 200 |
+| `/negocio/videojuego` | 308 | `/clientes/videojuego` | 1 | 200 |
+| `/soluciones/marketplace` | 308 | `/clientes/marketplace` | 1 | 200 |
+
+Las cuatro secciones prerenderizadas con su nombre nuevo, el mapa del sitio ya las lista, y las
+anclas funcionan en los tres caminos: carga directa de `/clientes/progreso#como-funciona`,
+pulsando en el índice de la derecha, y pulsando el título de la pregunta.
