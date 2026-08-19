@@ -1,6 +1,11 @@
 /**
- * EL EXPLORADOR DE `/clientes` — secciones a la izquierda, contenido en medio, sus
- * preguntas a la derecha.
+ * EL EXPLORADOR DE SECCIONES — **una definición para `/clientes` y `/desarrollo-humano`**.
+ *
+ * Secciones a la izquierda, contenido en medio, sus preguntas a la derecha. Nació como
+ * `ClientesExplorador` el 2026-08-18 y se generalizó el 08-19, cuando Fernando pidió la misma
+ * interfaz para Desarrollo Humano. **No se copió**: la lista de secciones y la ruta base
+ * entran por prop, y todo lo demás —galería, índice, anclas, pasos— es el mismo código. Dos
+ * exploradores que se parecen se separan a la primera corrección que solo se aplica a uno.
  *
  * Fernando lo rediseñó el 2026-08-18: *«dejaremos las 4 tarjetas pero en diseño galería
  * vertical dentro de un panel izquierdo, luego el contenido va a mostrarse dentro de un
@@ -32,7 +37,7 @@
 
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { SITIO, ACCESOS, accesoPorId, type Acceso } from '@/lib/sitio/contenido';
+import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
 import { BloqueTema, BotonPrimario, ExploradorTresPaneles, ICONOS } from './piezas';
 import GaleriaTarjetas from './GaleriaTarjetas';
@@ -46,20 +51,24 @@ import FaqsClientes from './FaqsClientes';
  * porque ahora hacen de navegación y no de portada. La abierta se marca con el borde y el
  * fondo violetas, y con `aria-current`: el color solo se lo dice a quien lo ve.
  */
-function GaleriaSecciones({ activa }: { activa: string }) {
+function GaleriaSecciones({
+  secciones, activa, base, rotulo,
+}: {
+  secciones: Acceso[]; activa: string; base: string; rotulo: string;
+}) {
   return (
     <>
       <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
-        Clientes
+        {rotulo}
       </p>
       <ul className="space-y-2">
-        {ACCESOS.map((a) => {
+        {secciones.map((a) => {
           const abierta = a.id === activa;
           const Icono = ICONOS[a.icono] ?? ICONOS.capas;
           return (
             <li key={a.id}>
               <Link
-                href={`/clientes/${a.id}`}
+                href={`${base}/${a.id}`}
                 aria-current={abierta ? 'page' : undefined}
                 className={`block rounded-xl border p-3.5 transition-colors
                             focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
@@ -100,7 +109,7 @@ function GaleriaSecciones({ activa }: { activa: string }) {
 /**
  * EL ÍNDICE DE PREGUNTAS — el panel de la derecha.
  *
- * Solo existe si la sección tiene preguntas; si no, `ClientesExplorador` no lo pasa y la
+ * Solo existe si la sección tiene preguntas; si no, `ExploradorSecciones` no lo pasa y la
  * rejilla vuelve a dos columnas en vez de dejar un hueco blanco. Es lo que pasa hoy con
  * Democracia (ver el aviso en `ACCESOS`).
  */
@@ -171,28 +180,36 @@ function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
   );
 }
 
-export default function ClientesExplorador({
-  activa, faqs,
+export default function ExploradorSecciones({
+  secciones, activa, faqs, base, rotulo, etiquetaNav,
 }: {
-  /** El `id` de la sección abierta. En `/clientes` es la primera. */
+  /** Las secciones del panel izquierdo. `ACCESOS` en `/clientes`, `DESARROLLO` en la otra. */
+  secciones: Acceso[];
+  /** El `id` de la sección abierta. En la portada de cada rama es la primera. */
   activa: string;
   /** Las preguntas frecuentes de esa sección, ya leídas en el servidor. */
   faqs: Faq[];
+  /** La ruta de la que cuelgan las secciones: `/clientes` o `/desarrollo-humano`. */
+  base: string;
+  /** El rótulo en versalitas sobre la galería. */
+  rotulo: string;
+  /** El `aria-label` del `<nav>` izquierdo. */
+  etiquetaNav: string;
 }) {
-  const acceso = accesoPorId(activa);
+  const acceso = secciones.find((a) => a.id === activa);
   if (!acceso) return null;
   const temas = acceso.temas ?? [];
 
   return (
     <ExploradorTresPaneles
-      etiquetaIzquierda="Secciones para clientes"
+      etiquetaIzquierda={etiquetaNav}
       /* `ancho`: el tercer panel espera a los 1536 px. Antes aparecía a 1024 y dejaba las
          tarjetas de pregunta en 520 px, con los pasos a 116 px de ancho. Ver el porqué
          completo en `.paneles-explorador` (`app/globals.css`). */
       corte="ancho"
       anchoIzquierda="280px"
       anchoDerecha="260px"
-      izquierda={<GaleriaSecciones activa={acceso.id} />}
+      izquierda={<GaleriaSecciones secciones={secciones} activa={acceso.id} base={base} rotulo={rotulo} />}
       /* Sin preguntas no se pasa nada: la rejilla vuelve a dos columnas sola. */
       derecha={temas.length > 0 ? <IndicePreguntas temas={temas} /> : undefined}
       centro={

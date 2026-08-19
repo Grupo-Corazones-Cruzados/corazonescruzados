@@ -27,7 +27,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId } from '@/lib/sitio/contenido';
 import { Contenedor } from '@/components/sitio/piezas';
-import ClientesExplorador from '@/components/sitio/ClientesExplorador';
+import { ACCESOS as SECCIONES } from '@/lib/sitio/contenido';
+import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from '../faqs-build';
 
 type Props = { params: Promise<{ necesidad: string }> };
@@ -96,7 +97,14 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           llevan un hueco al final. */}
       <section className="flex-1 overflow-x-clip bg-[var(--tarjeta)] pt-10 sm:pt-14 pb-40 sm:pb-56">
         <Contenedor ancho="amplio">
-          <ClientesExplorador activa={acceso.id} faqs={faqs} />
+          <ExploradorSecciones
+            secciones={SECCIONES}
+            activa={acceso.id}
+            faqs={faqs}
+            base="/clientes"
+            rotulo="Clientes"
+            etiquetaNav="Secciones para clientes"
+          />
         </Contenedor>
       </section>
 

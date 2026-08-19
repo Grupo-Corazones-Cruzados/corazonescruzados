@@ -306,7 +306,7 @@ export function FondoHeroe() {
    Era la rejilla horizontal de las cuatro puertas de `/clientes`, repetida en las cinco
    rutas por `CabeceraClientes`. Fernando rediseñó la página: las tarjetas pasaron a una
    **galería vertical** en el panel izquierdo del explorador, que vive en
-   `components/sitio/ClientesExplorador.tsx`.
+   `components/sitio/ExploradorSecciones.tsx`.
 
    No se deja aquí sin usar porque un componente que no pinta nadie confunde a quien lo lea
    después: parece que sale en algún sitio y no sale. Para recuperarla:

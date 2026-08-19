@@ -41,7 +41,7 @@
 import type { Metadata } from 'next';
 import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { Contenedor } from '@/components/sitio/piezas';
-import ClientesExplorador from '@/components/sitio/ClientesExplorador';
+import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from './faqs-build';
 
 /** Las preguntas frecuentes salen de la base y se editan en Admin → FAQs. Ver la página hija. */
@@ -82,7 +82,14 @@ export default async function ClientesPage() {
           Fernando (2026-08-18). */}
       <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
         <Contenedor ancho="amplio">
-          <ClientesExplorador activa={primera.id} faqs={faqs} />
+          <ExploradorSecciones
+            secciones={ACCESOS}
+            activa={primera.id}
+            faqs={faqs}
+            base="/clientes"
+            rotulo="Clientes"
+            etiquetaNav="Secciones para clientes"
+          />
         </Contenedor>
       </section>
 
