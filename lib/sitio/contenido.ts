@@ -871,52 +871,52 @@ export const DESARROLLO: Acceso[] = [
     titulo: 'El proyecto',
     texto: 'Para quién es el Grupo Corazones Cruzados, y por qué existe.',
     descripcion:
-      'Hay gente que no está sin trabajo por falta de ganas, sino porque nadie se ha sentado nunca con ella a mirar qué le está pasando. El Grupo Corazones Cruzados empieza justo ahí: no repartiendo tareas, sino estudiando el caso de cada persona para saber qué la frena antes de proponerle nada.',
+      'El Grupo Corazones Cruzados es un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de las condiciones; las cuales se usan como ancla para el progreso mental, laboral, social, y corporal de los sujetos, tanto de forma individual como colectiva.',
     temas: [
       {
         id: 'para-quien-es',
         etiqueta: 'Para quién',
         pregunta: '¿Esto es para mí?',
         texto:
-          'Si no sabes a qué dedicarte, si lo que haces no te alcanza para vivir, o si llevas tiempo dando vueltas sin encontrar por dónde seguir, sí. No hace falta traer un título, ni experiencia, ni tener claro tu talento: eso es precisamente lo que se busca contigo.',
+          'Si no sabes a qué dedicarte, si lo que haces no te alcanza para vivir, o si llevas tiempo dando vueltas sin encontrar por dónde seguir; entonces, únete a este proyecto. Para nosotros, no hace falta traer un título, ni experiencia, ni tener claro tu talento: eso es precisamente lo que descubriremos juntos.',
         pasos: [
           {
-            titulo: 'Llegas sin nada resuelto',
-            texto: 'No se te pide un currículum impecable ni que sepas ya lo que quieres. Se te pide que lo que cuentes sea cierto.',
+            titulo: 'Inicias desde cero',
+            texto: 'No se te pide un perfil impecable ni que domines algún conocimiento. Se te pide únicamente que tus acciones e intenciones sean sinceras.',
             icono: 'brujula',
           },
           {
             titulo: 'Se estudia tu caso',
-            texto: 'Una entrevista para entender de dónde vienes y qué te está frenando de verdad, que casi nunca es lo que parece desde fuera.',
+            texto: 'Una entrevista para entender de dónde vienes y qué estás afrontando. Se definen situaciones causantes de problemas, causas específicas, y alternativas de solución',
             icono: 'buscar',
           },
           {
-            titulo: 'Sales con alternativas',
-            texto: 'No con un consejo suelto: con caminos concretos para cada cosa que se haya identificado, y con alguien que los recorre contigo.',
+            titulo: 'Acciones diarias',
+            texto: 'Las alternativas se convierten en tareas dentro de la plataforma. Con esto podrás afrontar las dificultades que tienes y percibir el progreso.',
             icono: 'brujula',
           },
         ],
       },
       {
         id: 'por-que-ayudar',
-        etiqueta: 'La honestidad',
+        etiqueta: 'Unión',
         pregunta: '¿Por qué me van a ayudar a mí?',
         texto:
-          'Porque no es caridad, y conviene decirlo claro: el proyecto crece cuando crece su gente. Alguien que sale adelante acaba sosteniendo al siguiente que llega, y aportando al proyecto que lo sostuvo a él. Ese es el trato, y es el mismo para todos.',
+          'El servicio de este proyecto, no tiene costo debido a que nosotros operamos en base a una apuesta grande, y es que cada candidato de este proyecto se convierta en lo que quiera ser, para que sus frutos puedan traerle beneficio a sí mismo; como también al grupo. Nuestro interés radica en que sacar provecho de un talento, es lo mismo a minar en busca de minerales en una cueva, debemos gastar recursos, materiales, para que la recomenpensa nos ayude a compensar los gastos y sacar beneficios para seguir creciendo como organización.',
         pasos: [
           {
             titulo: 'Primero recibes',
-            texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Sin adelantar nada y sin firmar nada.',
+            texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Invertimos $50 por persona para empezar con sus proyectos.',
             icono: 'acuerdo',
           },
           {
-            titulo: 'Luego te sostienes',
-            texto: 'Cuando lo que haces empieza a cubrir lo tuyo, dejas de ser alguien a quien se acompaña y pasas a ser alguien que aporta.',
+            titulo: 'Sostenibilidad',
+            texto: 'Planificamos y ejecutamos una estrategia de desarrollo humano que incluye un método de monetización para obtener beneficios de tu talento y así colaborar en la organización.',
             icono: 'tendencia',
           },
           {
-            titulo: 'Después devuelves',
-            texto: 'Con tu talento en los sistemas del grupo, y con una parte de lo que vendas por la plataforma. Es lo que paga el acompañamiento del que viene detrás.',
+            titulo: 'Apoyo y Autoayuda',
+            texto: 'Empoderarte permite registrar datos que permiten ser reutilizados en otros casos similares al tuyo, y tener recursos te permite crear y generar oportunidades para ti y para los demás miembros.',
             icono: 'personas',
           },
         ],
@@ -929,7 +929,7 @@ export const DESARROLLO: Acceso[] = [
     titulo: 'Cómo se entra',
     texto: 'La entrevista inicial, el estudio de tu caso y las alternativas que salen de ahí.',
     descripcion:
-      'Entrar no es rellenar un formulario y esperar. Es sentarse con alguien a mirar tu situación entera: qué sabes hacer, qué te está costando, qué necesitas resolver primero. De esa conversación salen las problemáticas concretas, y de cada una, alternativas por las que empezar.',
+      'Para ser candidato de este proyecto, los postulantes deberán rellenar un formulario en donde deberán leer y aceptar las condiciones que tenemos para pertenecer a esta organización. Adicional deberás redactar tus motivos, razones, y situación actual que te lleva a querer ser candidato.',
     enlaceExterno: { href: '/', etiqueta: 'Postularme' },
     temas: [
       {
@@ -937,7 +937,7 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'La entrevista',
         pregunta: '¿Cómo empieza todo?',
         texto:
-          'Con una entrevista inicial, y no es una entrevista de trabajo: nadie está mirando si sirves. Se está estudiando tu condición —de dónde vienes, qué te frena, con qué cuentas— porque sin eso cualquier propuesta sería adivinar.',
+          'Después de enviar tu postulación, analizaremos tus datos y se determinará si eres un candidato o no. En caso de serlo, iniciarás con una entrevista inicial, analizamos tu condición, y como resultado de esto, se desarrollará un plan de desarrollo en el cual recibirás tareas diarias que han sido pensadas para ti.',
         pasos: [
           {
             titulo: 'Te postulas',
@@ -945,13 +945,13 @@ export const DESARROLLO: Acceso[] = [
             icono: 'bandera',
           },
           {
-            titulo: 'Hablamos de tu caso',
-            texto: 'Una conversación para entender lo que pasa, no para juzgarlo. Lo que cuentes ahí queda entre quien te atiende y tú.',
+            titulo: 'Hablemos de ti',
+            texto: 'Una conversación para entender lo que pasa, no para juzgarlo. Lo que cuentes ahí queda entre el gestor y tú.',
             icono: 'mensaje',
           },
           {
-            titulo: 'Se identifica qué te frena',
-            texto: 'Se nombran las problemáticas concretas, una por una. Un problema con nombre ya se puede atacar; uno sin nombre, no.',
+            titulo: 'Se reconoce tu caso',
+            texto: 'Se nombran los problemas concretos, uno por uno. Cuando un problema es identificado y tiene nombre, veremos la manera de tratar y resolverlo juntos.',
             icono: 'lista',
           },
         ],
@@ -961,21 +961,21 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'Alternativas',
         pregunta: '¿Y qué sale de esa entrevista?',
         texto:
-          'Alternativas, no un plan cerrado. Para cada problemática identificada se plantean caminos posibles, con lo que exige cada uno, y eliges tú. Nadie decide por ti qué es lo urgente de tu vida.',
+          'Les llamamos alternativas de solución. Son registros preestudiados que según las fuentes nos dicen una tasa de éxito para atender el problema que experimentas, dependiendo del caso nosotros te preparamos la estrategia, y tú la ejecutas.',
         pasos: [
           {
             titulo: 'Se plantean los caminos',
-            texto: 'Para cada cosa identificada, más de una salida. Con lo que pide cada una en tiempo y en esfuerzo, dicho de frente.',
+            texto: 'Para cada problema identificado, pueden existir más de una forma de salir. Con lo que se te pide, vamos a revisar si el efecto es positivo o negativo, y cómo abordarlo según lo que suceda.',
             icono: 'rama',
           },
           {
             titulo: 'Eliges por dónde empezar',
-            texto: 'Por lo que más te aprieta o por lo que veas más alcanzable. Las dos son respuestas válidas.',
+            texto: 'Nosotros desarrollamos la estrategia, tú recibes las tareas, y desde la plataforma escoges la fecha u hora de realización. En este proceso la ejecución tiene una valoración dentro de tu perfil, en caso de que no cumplas con tu compromiso existe un castigo que se representa en tus datos, y si la falta de compromiso es recurrente, se considera el rechazo de tu candidatura.',
             icono: 'diana',
           },
           {
             titulo: 'Empiezas acompañado',
-            texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a alguien a quien preguntar. Ser candidato no es estar en una lista de espera.',
+            texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a un espacio en donde puedes preguntar y conversar sobre tus dificultades. Los logros o el éxito que tú tengas, los compartimos y festejamos todos los miembros, ya que es el resultado también del esfuerzo que todos los miembros ponemos para que funcione esta organización.',
             icono: 'candado',
           },
         ],
@@ -988,28 +988,28 @@ export const DESARROLLO: Acceso[] = [
     titulo: 'Tu progreso',
     texto: 'Cómo se trata tu caso, cómo se mide el avance y cuándo te conviertes en miembro.',
     descripcion:
-      'A partir de aquí se trabaja tu caso con los sistemas del grupo, y se mide. No es motivación ni consejos: es aplicar algo concreto, ver qué resultado dio y corregir lo que no funcionó. El objetivo del tramo no es que aprendas mucho, es que llegues a cubrir lo tuyo sin depender de nadie.',
+      'A partir de aquí se trabaja tu caso con los sistemas del grupo. Cada paso que das para resolver tus necesidades, servirá para mejorar tu perfil, el cual será usado como métrica de confianza (prospección) para que los clientes y miembros decidan invertir en ti. Algunos de los beneficios pueden ser: promociones a tu perfil, oportunidades para tu negocio, e incluso convertirte en miembro de la organización.',
     temas: [
       {
         id: 'tratar-tu-caso',
         etiqueta: 'El tratamiento',
-        pregunta: '¿Cómo se resuelve lo que te frena?',
+        pregunta: '¿Cómo se resuelven tus necesidades?',
         texto:
-          'Con el método del propio proyecto, la Condiciología, aplicado a tu caso: se reconoce la condición que te está limitando, se prueba algo sobre ella y se mira el resultado. Si cambió, se sigue; si no, se cambia el enfoque. Lo que no se mide no se puede corregir.',
+          'Mediante el método del propio proyecto; es decir, la Condiciología pero aplicado a tu caso. 1) Se reconoce la condición; 2) se prueba algo sobre ella y se mira el resultado; 3) Si cambió, se sigue; si no, se escoge otra alternativa de solución.',
         pasos: [
           {
-            titulo: 'Se aplica un sistema',
-            texto: 'Formación, un trabajo concreto donde practicar, o el acompañamiento de alguien que ya pasó por ahí. Lo que pida tu caso, no lo que toque por calendario.',
+            titulo: 'Se usa el sistema',
+            texto: 'La plataforma tiene varios sistemas desde el cual puedes trabajar en tu perfil, no solo las tareas que se te asignan para abordar tus problemas, hay eventos u otras herramientas que te permitirán obtener ingresos, o experiencias nuevas.',
             icono: 'herramienta',
           },
           {
             titulo: 'Se mira el resultado',
-            texto: 'Qué cambió de verdad en tu situación. No cuántas horas le dedicaste: qué se movió.',
+            texto: 'Qué cambió de verdad en tu situación. De acuerdo a las acciones realizadas se tiene un registro completo de todos tus pasos, y se puede analizar y obtener datos que permitan observar lo que sirvió para tu caso, y lo que no.',
             icono: 'medidor',
           },
           {
             titulo: 'Se corrige y se sigue',
-            texto: 'Si funcionó, se avanza al siguiente paso. Si no, se cambia la condición y se vuelve a probar. Equivocarse forma parte del método.',
+            texto: 'Si funcionó, se avanza al siguiente paso, necesidad o problema. Si no, se cambia la condición y se vuelve a probar. Equivocarse forma parte del método.',
             icono: 'flujo',
           },
         ],
@@ -1019,21 +1019,21 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'El paso a miembro',
         pregunta: '¿Cuándo te conviertes en miembro?',
         texto:
-          'Cuando tu condición cambia: cuando lo que haces ya cubre tus necesidades y puedes sostenerte. No es un plazo cumplido ni un examen aprobado, y por eso no llega el mismo día para todos. Un miembro con esa responsabilidad lo decide mirando dónde estás, no cuánto llevas.',
+          'Esto sucede cuando haz resuelto tus problemas, y lo que haces ya cubre tus necesidades y puedes sostenerte. Dicho de otra manera, no es cuando se cumple algún plazo de tiempo, o se aprueba algún examen, o que lo pueda exigir un criterio humano. El paso de convertirse en miembro sucede cuando un candidato es capaz de resolver sus necesidades y además el perfil logra adherirse a los criterios internos de la organización. A partir de ese momento, un miembro global del paso de Implementación decide el momento de la selección.',
         pasos: [
           {
-            titulo: 'Empiezas a generar',
-            texto: 'Los primeros ingresos por lo que ya sabes hacer, dentro de los sistemas del grupo o con lo tuyo.',
+            titulo: 'Empiezas a resolver',
+            texto: 'Los primeros problemas por lo que empezamos, ya empiezas a manejarlos y a conocer tus herramientas para actuar si tuvieras que volver a afrontarlos.',
             icono: 'billetera',
           },
           {
             titulo: 'Cubres lo básico',
-            texto: 'Lo que necesitas para vivir deja de ser el problema del mes. Ese es el punto de inflexión de todo este tramo.',
+            texto: 'Además de los problemas, ya lograr obtener lo que necesitas para vivir, y sentir tranquilidad o felicidad en tu día a día.',
             icono: 'casa',
           },
           {
             titulo: 'Se te convierte en miembro',
-            texto: 'Porque ya representas al grupo ante los demás, y porque estás en condición de sostener a otro. No es un ascenso: es un reconocimiento.',
+            texto: 'Porque ya representas al grupo ante los demás, y porque estás en condición de sostener a otro. Es un reconocimiento que se realiza con tu consentimiento, el cual conlleva mayor responsabilidad y compromiso.',
             icono: 'premio',
           },
         ],
@@ -1041,67 +1041,81 @@ export const DESARROLLO: Acceso[] = [
     ],
   },
 
+  /**
+   * ⚠️ REESCRITA EL 2026-08-20 PARA QUE SUENE COMO ÉL, no como yo.
+   *
+   * Fernando reescribió a mano «El proyecto», «Cómo se entra» y «Tu progreso», y me pidió que
+   * aprendiera de ahí: *«el estilo de escritura tuya es muy diferente […] es más humano diría
+   * lo mío y lo tuyo es más una presentación para vender algo»*. Tenía razón. Lo que le separa
+   * de lo mío, leído en sus tres secciones:
+   *
+   * 1. **Él habla en «nosotros»** —«analizaremos tus datos», «invertimos $50 por persona»,
+   *    «nosotros te preparamos la estrategia, y tú la ejecutas»—. Yo escribía en impersonal
+   *    («se estudia», «se te da»), y eso suena a folleto: no hay nadie detrás de la frase.
+   * 2. **Usa el vocabulario del proyecto sin traducirlo**: condición, alternativas de
+   *    solución, prospección, gestor, paso de Implementación. Yo lo traducía a lenguaje llano
+   *    y perdía el término propio, que es justo lo que hace suyo al proyecto.
+   * 3. **Se moja**: pone cifras y nombres concretos. Yo los esquivaba por prudencia.
+   * 4. **No usa la fórmula «No es X: es Y»** ni remata cada paso con una frase ingeniosa. Yo
+   *    lo hacía en casi todos, y es lo que más olía a presentación de ventas.
+   *
+   * Esta sección se ha reescrito con esas cuatro reglas. **Sigue siendo mía y sigue estando
+   * para que la corrija**, pero al menos ya no habla otro idioma que sus vecinas.
+   *
+   * ⚠️ Lo que NO he hecho es inventarme cifras al modo suyo —el «$50 por persona» es un dato
+   * que solo él puede dar—. Donde haría falta un número, la frase se queda en el mecanismo.
+   */
   {
     id: 'ser-miembro', icono: 'institucion',
     titulo: 'Ser miembro',
     texto: 'Qué haces, qué aportas y cómo participas en las decisiones de la organización.',
     descripcion:
-      'Ser miembro no es haber llegado a un puesto: es pasar al otro lado. Buena parte de lo que hace un miembro es trabajo del propio grupo —acompañar a quien llega, sostener un sistema, llevar un proyecto interno—, y a la vez sigue con lo suyo, aporta una parte de lo que vende por la plataforma y decide con los demás hacia dónde va la organización que lo sostuvo cuando lo necesitaba.',
+      'Ser miembro significa que ya resolviste lo tuyo y ahora formas parte de quienes sostienen la organización. Mantienes tu negocio y tus actividades, y a la vez colaboras con tu talento en los sistemas internos; por cada producto o servicio que vendes en la plataforma, una tasa de beneficio queda en la organización, y eso es lo que nos permite recibir a los candidatos que vienen detrás de ti.',
     temas: [
       {
         id: 'que-cambia',
         etiqueta: 'Qué cambia',
         pregunta: '¿Qué cambia cuando eres miembro?',
         texto:
-          'Que pasas al otro lado: dejas de ser alguien a quien el proyecto acompaña y empiezas a ser parte de lo que lo sostiene. Sigues con lo tuyo, y además tu talento entra en los sistemas internos del grupo, donde hace falta.',
+          'Cambia tu relación con nosotros. Cuando eras candidato, nosotros invertíamos en ti; como miembro, tú pasas a ser parte de lo que hace posible esa inversión en otros. Mantienes tu negocio, tus clientes y tus actividades, y además tu talento queda disponible para lo que la organización necesita por dentro.',
         pasos: [
           {
-            titulo: 'Sigues con lo tuyo',
-            texto: 'Tu negocio, tus clientes, tus actividades. Nadie te pide que lo dejes: el proyecto está para que exista, no para sustituirlo.',
+            titulo: 'Mantienes lo tuyo',
+            texto: 'Tu negocio, tus clientes y tus actividades siguen siendo tuyos. Este proyecto se creó para que existan, y nunca te vamos a pedir que los dejes.',
             icono: 'maletin',
           },
           {
-            titulo: 'Entras en el trabajo del grupo',
-            texto: 'Tu talento pasa a estar disponible para lo que la organización necesita por dentro, que es buena parte de lo que hace un miembro.',
+            titulo: 'Aportas con tu talento',
+            texto: 'Tu talento entra en los sistemas internos de la organización, en aquello que ya dominas y que hace falta para que sigamos creciendo.',
             icono: 'estrella',
           },
           {
-            titulo: 'Aportas de lo que vendes',
-            texto: 'Por cada producto o servicio que vendas a través de la plataforma, una parte queda en el proyecto. Eso es lo que financia acompañar al siguiente que llegue.',
+            titulo: 'Compartes el beneficio',
+            texto: 'Por cada producto o servicio que vendes a través de la plataforma, una tasa de beneficio queda en la organización. Con eso financiamos el acompañamiento del siguiente candidato.',
             icono: 'ahorro',
           },
         ],
       },
-      /**
-       * Fernando lo añadió sobre la marcha (2026-08-19): *«cuando ya es miembro hay muchas
-       * actividades que estarían más asociadas al Grupo Corazones Cruzados que ellos harían en
-       * beneficio de nosotros»*. Faltaba, y era la mitad de lo que hace un miembro.
-       *
-       * ⚠️ Los TIPOS de actividad —acompañar, sostener un sistema, llevar un paso, formar—
-       * van en el párrafo y no en los pasos: son un conjunto, no una secuencia, y numerarlos
-       * diría que se hacen uno detrás de otro. Los pasos cuentan **cómo llega ese trabajo
-       * hasta ti**, que sí tiene orden. Es la regla que él mismo corrigió hace un rato.
-       */
       {
         id: 'trabajo-para-el-grupo',
         etiqueta: 'Trabajo interno',
-        pregunta: '¿Qué haces para el grupo?',
+        pregunta: '¿Qué haces para la organización?',
         texto:
-          'Bastante más de lo que parece desde fuera, y es donde el proyecto se sostiene: acompañar a quien acaba de llegar y estudiar su caso, sostener uno de los sistemas internos, llevar un proyecto del propio grupo, formar a otros en lo que tú ya sabes, o hacerte cargo de un tramo del negocio. Ese trabajo se reparte igual que el de los clientes: por talento, y a la vista de todos.',
+          'Bastantes cosas, y son las que sostienen el proyecto: acompañar a un candidato nuevo y estudiar su condición, mantener uno de los sistemas internos, llevar un proyecto nuestro, formar a otros en lo que tú ya dominas, o hacerte cargo de un tramo del negocio. Este trabajo lo repartimos igual que el de los clientes, es decir, según el talento de cada uno y a la vista de todos.',
         pasos: [
           {
-            titulo: 'El grupo publica lo que necesita',
-            texto: 'Sus propias necesidades salen publicadas como las de cualquier cliente, con lo que hace falta y para cuándo. Nada se reparte en privado.',
+            titulo: 'Publicamos lo que necesitamos',
+            texto: 'Lo hacemos igual que un cliente publica lo suyo, indicando qué hace falta y para cuándo, de manera que cualquier miembro pueda verlo.',
             icono: 'altavoz',
           },
           {
-            titulo: 'Lo tomas si es lo tuyo',
-            texto: 'Por talento y por disponibilidad, igual que el trabajo de fuera. Nadie te asigna algo que no puedes sostener.',
+            titulo: 'Tomas lo que va contigo',
+            texto: 'Según tu talento y tu disponibilidad, tal como funciona el trabajo de fuera. Nadie te asignará algo que no estés en condición de sostener.',
             icono: 'acuerdo',
           },
           {
-            titulo: 'Pasa a estar en tus manos',
-            texto: 'Mientras lo lleves, ese sistema o ese proyecto es tuyo: respondes por él y decides sobre él. Así es como se gana la responsabilidad aquí.',
+            titulo: 'Queda bajo tu responsabilidad',
+            texto: 'Mientras lo lleves, ese sistema o ese proyecto pasa a ser tuyo: respondes por él, decides sobre él, y así es como se gana responsabilidad dentro de la organización.',
             icono: 'escudo',
           },
         ],
@@ -1111,21 +1125,21 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'Decisiones',
         pregunta: '¿Puedes decidir sobre la organización?',
         texto:
-          'Sí, y no como un gesto simbólico. Los miembros ven el estado real del negocio —cómo va, qué le falta, dónde está flojo— y sobre eso votan las mejoras y toman decisiones conjuntas. Se decide con los números delante, que es la única forma de que un voto signifique algo.',
+          'Sí. Desde los sistemas internos puedes observar el estado global del negocio: cómo va, qué le falta y dónde estamos flojos. Sobre esa información los miembros votan las mejoras y toman decisiones conjuntas, porque queremos que decidas con los datos delante y no con una impresión.',
         pasos: [
           {
-            titulo: 'Ves cómo va el negocio',
-            texto: 'El estado global de la organización, no un resumen maquillado. Sin eso, votar sería opinar.',
+            titulo: 'Observas el estado del negocio',
+            texto: 'Los sistemas internos te muestran cómo va la organización de verdad, no un resumen preparado. Sin esa información, votar sería solo opinar.',
             icono: 'grafico',
           },
           {
             titulo: 'Votas las mejoras',
-            texto: 'Sobre lo que hay que cambiar, en qué se invierte y qué se hace primero. Tu voto cuenta como el de cualquier otro.',
+            texto: 'Sobre qué hay que cambiar, en qué invertimos y qué hacemos primero. Tu voto vale lo mismo que el de cualquier otro miembro.',
             icono: 'voto',
           },
           {
             titulo: 'Te haces cargo de una parte',
-            texto: 'Administrar gente, mejorar unos ingresos, sostener un sistema. Ser partícipe activo es esto, y no asistir a una reunión.',
+            texto: 'Administrar gente, mejorar unos ingresos o sostener un sistema. Ser partícipe activo significa asumir una necesidad concreta del negocio y responder por ella con tu talento.',
             icono: 'institucion',
           },
         ],

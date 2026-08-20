@@ -6030,3 +6030,40 @@ sigue intacta.
 
 Comprobado además que el diálogo **se abre de verdad** —no basta con llegar a la portada—, y con
 un control: `/auth/miembro` sigue abriendo «Ingresar como miembro».
+
+---
+
+## Vigésima pasada (2026-08-20) — aprender a escribir como él, no como yo
+
+Fernando reescribió a mano «El proyecto», «Cómo se entra» y «Tu progreso», y pidió que
+aprendiera de ahí para rehacer «Ser miembro»: *«el estilo de escritura tuya es muy diferente
+[…] es más humano diría lo mío y lo tuyo es más una presentación para vender algo»*.
+
+### ⭐ P93 — Qué separa su voz de la mía, leído en sus tres secciones
+| | Él | Yo |
+|---|---|---|
+| Persona | **«nosotros»** — «analizaremos tus datos», «invertimos $50 por persona», «nosotros te preparamos la estrategia, y tú la ejecutas» | impersonal — «se estudia», «se te da» |
+| Vocabulario | usa los términos del proyecto **sin traducirlos**: condición, alternativas de solución, prospección, gestor, paso de Implementación | los traduzco a lenguaje llano y pierdo el término propio |
+| Concreción | se moja: cifras y nombres | los esquivo «por prudencia» |
+| Figuras | analogías («sacar provecho de un talento es como minar en una cueva») | antítesis publicitarias: «No es X: es Y» |
+| Remates | la frase termina cuando termina la idea | remate ingenioso al final de casi cada paso |
+
+Lo del impersonal es lo que más pesa: **una frase sin sujeto no tiene a nadie detrás**, y por
+eso suena a folleto. «Se estudia tu caso» y «analizamos tu condición» dicen lo mismo y no se
+parecen en nada.
+
+Y lo de las antítesis es lo que él llamó «vender algo». Yo las usaba en casi todos los pasos
+—«No es una encuesta de opinión: …», «No es un ascenso: es un reconocimiento»—. Es un tic de
+copy publicitario: suena inteligente y no añade información.
+
+### 🪤 P94 — Corregir de más también es fallar
+Al medirlo después de reescribir: sus secciones tienen 4, 5 y 0 marcas de «nosotros»; la mía
+salió con **12**. Me había ido al extremo contrario. Se ajustaron las frases donde sonaba
+recargado —«a nosotros nos hace falta», «Publicamos… Nuestras propias necesidades» en la misma
+línea—, pero sigue por encima de la suya y **queda dicho**, no disimulado: la sección tiene tres
+preguntas en vez de dos y habla justo de la relación con la organización, así que algo de eso es
+natural. Que juzgue él si sobra.
+
+**Lección:** un contador de palabras es un proxy útil para *detectar* un sesgo y malo para
+*corregirlo*. Sirvió para ver que me había pasado; no sirve para decidir cuántas veces se dice
+«nosotros».
