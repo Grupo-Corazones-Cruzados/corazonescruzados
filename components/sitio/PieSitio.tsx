@@ -19,7 +19,8 @@
  *   el pie**, la busca en la página que se le declara.
  *
  * Dónde sí va la identidad, porque hace falta:
- *   · `/clientes` y `/contacto` — las declaradas a Meta (la primera, como `/negocio`) y las que abre quien quiere contratar.
+ *   · `/clientes` — la declarada a Meta (como `/negocio`) y la que abre quien quiere contratar.
+ *     (`/contacto` estaba aquí hasta el 2026-08-20; se borró y redirige a `/legal`.)
  *   · `/legal` y `/legal/whatsapp` — la **LOPDP exige** que el responsable del tratamiento
  *     sea identificable con su dirección. Ahí no es opcional.
  *

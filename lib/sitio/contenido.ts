@@ -1,7 +1,7 @@
 /**
  * EL CONTENIDO DEL SITIO PÚBLICO — fuente única.
  *
- * Las páginas de `/clientes`, `/desarrollo-humano` y `/contacto` **no llevan texto escrito dentro**:
+ * Las páginas de `/clientes` y `/desarrollo-humano` **no llevan texto escrito dentro**:
  * lo leen de aquí. Así se edita en un sitio, se traduce de una vez si algún día hace falta,
  * y no hay dos versiones del mismo servicio en dos páginas distintas.
  *
@@ -63,7 +63,7 @@ export const SITIO = {
  * LA IMAGEN QUE SALE AL COMPARTIR — hay que nombrarla en cada página, y no es obvio.
  *
  * `app/opengraph-image.tsx` se aplica sola a la portada y a cualquier ruta que **no**
- * declare su propio `openGraph`. Pero `/clientes`, `/desarrollo-humano` y `/contacto` sí lo declaran
+ * declare su propio `openGraph`. Pero `/clientes` y `/desarrollo-humano` sí lo declaran
  * —cada una con su título y su descripción—, y Next **sustituye** el bloque `openGraph`
  * entero en vez de completarlo: al no llevar `images`, se quedaban sin imagen.
  *
@@ -133,7 +133,10 @@ export const NAVEGACION = [
   // era el nombre viejo. El 2026-08-17 se igualaron: titular, pestaña, menú y URL dicen lo
   // mismo. La ruta vieja redirige (308) desde `next.config.ts`.
   { href: '/desarrollo-humano', label: 'Desarrollo Humano' },
-  { href: '/contacto', label: 'Contacto' },
+  /* ⚠️ AQUÍ ESTABA LA PESTAÑA «Contacto», y la página se borró el 2026-08-20 a petición de
+     Fernando. `/contacto` **no muere**: redirige a `/legal` (`next.config.ts`), que es donde
+     siguen el RUC y los correos. Recuperable con:
+         git show 4c44581:'app/(sitio)/contacto/page.tsx'                                    */
 ] as const;
 
 /* ══════════════════════ ACCESOS — las cinco puertas de /clientes ══════════════════════ */

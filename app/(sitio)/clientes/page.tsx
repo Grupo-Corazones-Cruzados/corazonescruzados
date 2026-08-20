@@ -24,8 +24,15 @@
  * ⚠️ **La identidad legal se quitó sabiendo lo que era.** Esta es la URL declarada a Meta,
  * su verificación se rechazó una vez con «no puede determinar que pertenezca a un negocio
  * real», y este archivo llevaba un aviso escrito de que esa sección no podía faltar. Se le
- * advirtió y decidió quitarla: sigue estando en `/contacto` y en `/legal`. **Si Meta vuelve
- * a rechazar la verificación, esto es lo primero que hay que mirar.**
+ * advirtió y decidió quitarla. **Si Meta vuelve a rechazar la verificación, esto es lo
+ * primero que hay que mirar.**
+ *
+ * ⚠️⚠️ **Y EL 2026-08-20 EMPEORÓ:** Fernando borró también `/contacto`, que era la otra
+ * página con la identidad y la única con teléfono, correo y dirección juntos. Hoy el RUC y
+ * los correos **solo están en `/legal`**, y el domicilio y el teléfono **no están en ninguna
+ * página visible** —siguen en los datos estructurados de esta y en `SITIO`, nada más—. Se le
+ * advirtió antes de borrarla. Si hay que rehacer la verificación, el camino corto es
+ * recuperar aquella página: `git show 4c44581:'app/(sitio)/contacto/page.tsx'`.
  *
  * El texto de los servicios NO se ha borrado: sigue en `SERVICIOS`
  * (`lib/sitio/contenido.ts`), listo para repartirse entre las secciones cuando Fernando

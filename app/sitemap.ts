@@ -111,7 +111,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Una entrada por talento: cada uno es su propia página desde el 2026-08-18, y esto es
     // lo que hace que Google las descubra sin depender de que rastree el panel izquierdo.
     ...(await paginasDeTalento()),
-    { url: `${SITIO.url}/contacto`, lastModified: ULTIMO_CAMBIO.contacto, changeFrequency: 'yearly', priority: 0.7 },
+    // ⚠️ `/contacto` se borró el 2026-08-20 y ahora redirige a `/legal`. Fuera del mapa: una
+    // URL que redirige no se pone aquí — sería pedirle a Google que indexe algo que él mismo
+    // va a descartar. Es la misma regla que ya aplican las viejas de `/negocio`.
     // Los legales salen del registro: uno nuevo entra en el mapa sin tocar este archivo.
     ...DOCUMENTOS_LEGALES.map((d) => ({
       url: `${SITIO.url}${d.ruta}`,

@@ -111,6 +111,16 @@ const nextConfig: NextConfig = {
        */
       { source: '/desarrollo-humano/tu-talento', destination: '/desarrollo-humano/tu-progreso', permanent: true },
       { source: '/desarrollo-humano/como-se-crece', destination: '/desarrollo-humano/ser-miembro', permanent: true },
+      /**
+       * `/contacto` → `/legal` (Fernando, 2026-08-20). Borró la página, y esa URL llevaba
+       * publicada desde el principio: la enlazaba el pie, el menú y el aviso de enlace
+       * caducado de `/proyecto/[id]`.
+       *
+       * Va a `/legal` y no a `/clientes` porque es lo único honesto: allí siguen **el RUC y
+       * los correos**, que es lo que iba a buscar quien escribía «contacto». Mandarlo a la
+       * página comercial sería llevarlo a otro sitio del que sí quería.
+       */
+      { source: '/contacto', destination: '/legal', permanent: true },
       // `/recursos` → `/desarrollo-humano` (Fernando, 2026-08-17). No tiene hijas y no hay
       // ninguna carpeta `public/recursos`, así que aquí no hace falta acotar nada.
       { source: '/recursos', destination: '/desarrollo-humano', permanent: true },

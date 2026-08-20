@@ -5,7 +5,7 @@
  * factura (`/proyecto/<id>?token=…`).
  *
  * Vive dentro de `(sitio)`, así que hereda el marco público: cabecera oscura, **cuerpo
- * claro** y pie oscuro, igual que `/soluciones` o `/contacto`. Antes era la última isla de
+ * claro** y pie oscuro, igual que `/soluciones` o `/legal`. Antes era la última isla de
  * pixel art oscuro del sitio, con fuentes Silkscreen, y no se parecía a nada de lo demás.
  *
  * ── QUÉ ENSEÑA, Y QUÉ NO (Fernando, 2026-08-19) ───────────────────────────────
@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Clock, Download, FileText, Layers, ShieldCheck } from 'lucide-react';
 import { Contenedor, Tarjeta } from '@/components/sitio/piezas';
+import { SITIO } from '@/lib/sitio/contenido';
 import { fmt2 } from '@/lib/format';
 
 const ESTADO: Record<string, string> = {
@@ -68,7 +69,10 @@ export default function PaginaProyectoPublico() {
           <p className="mt-2 text-[15px] text-[var(--suave)]">
             Si el enlace caducó, pídenos uno nuevo y te lo enviamos al momento.
           </p>
-          <a href="/contacto"
+          {/* ⚠️ `mailto:` y no `/contacto`: esa página se borró el 2026-08-20. Y aunque
+              redirige a `/legal`, mandar a alguien cuyo enlace acaba de caducar a leer
+              condiciones legales no es contestarle. El correo va directo. */}
+          <a href={`mailto:${SITIO.correo}`}
             className="mt-6 inline-flex items-center justify-center rounded-lg bg-[var(--violeta)] px-5 py-2.5 text-[14px] font-semibold text-white hover:opacity-90">
             Escríbenos
           </a>
