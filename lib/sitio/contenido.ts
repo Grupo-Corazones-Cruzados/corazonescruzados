@@ -402,7 +402,7 @@ export const ACCESOS: Acceso[] = [
      * se está hablando antes de que nadie se lo pregunte.
      */
     descripcion:
-      'La plataforma es donde vive tu trabajo con nosotros. Publicas lo que necesitas —un ticket suelto o un proyecto entero—, lo toma quien tiene el talento para resolverlo, y desde tu panel sigues el presupuesto, los plazos y a quién lo está haciendo, sin tener que perseguir a nadie.',
+      'La plataforma es donde vive tu trabajo con nosotros. Publicas lo que necesitas, ya sea un ticket o un proyecto; luego lo toma quien tiene el talento para resolverlo, y desde tu panel sigues el presupuesto, los plazos, y el avance de tus requerimientos.',
     /**
      * Dictado por Fernando el 2026-08-04, con permiso para retocarlo. Su texto era:
      *
@@ -650,8 +650,12 @@ export const ACCESOS: Acceso[] = [
     titulo: 'Marketplace',
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
     descripcion:
-      'El marketplace es el espacio donde los miembros publican sus soluciones: lo que cada uno sabe hacer, ya construido y listo para usarse. Ahí puedes adquirir productos, proyectos y automatizaciones para tu organización, y detrás de cada uno está la persona que lo hizo.',
-    enlaceExterno: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' },
+      'El marketplace es el espacio donde los miembros publican sus soluciones, y los clientes negocian sus recursos. Ahí puedes adquirir, intercambiar, o alquilar productos, proyectos, recursos, u automatizaciones para tu organización.',
+    /* ⚠️ AQUÍ HABÍA UN BOTÓN «Ver el marketplace» → `/marketplace-publico`, y Fernando lo
+       quitó el 2026-08-19. El campo `enlaceExterno` NO se borra del tipo: lo sigue usando
+       «Cómo se entra» de Desarrollo Humano para el botón «Postularme».
+       Si algún día vuelve, es una línea:
+         enlaceExterno: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' }, */
     temas: [
       {
         id: 'que-hay-dentro',
@@ -707,21 +711,21 @@ export const ACCESOS: Acceso[] = [
         etiqueta: 'Entre clientes',
         pregunta: '¿Puedo alquilar o vender cosas en esta tienda?',
         texto:
-          'En esta plataforma puedes regalar, vender, o alquilar los recursos que hayas comprado a través del marketplace de clientes. Esta es una tienda dedicada para que puedes intercambiar tus propios productos y servicios con otros clientes usando dinero real, GCC Coins, o algún otro tipo de producto o servicio que ofrezca el otro cliente.',
+          'En esta plataforma puedes regalar, vender, o alquilar los recursos que hayas adquirido. Esta es una tienda dedicada para que puedes intercambiar tus propios productos y servicios con otros clientes usando diferentes métodos de cambios, ya sea dinero real, GCC Coins, o algún otro tipo de producto o servicio que ofrezca el comprador.',
         pasos: [
           {
             titulo: 'Publica lo que quieras vender',
-            texto: 'Escoges, de lo que ya adquiriste, aquello que quieres traspasar. Le pones precio o lo dejas como regalo, y queda a la vista del resto de clientes.',
+            texto: 'Ingresas aquello que tienes u adquiriste. Le pones precio o lo dejas como regalo, y queda a la vista del resto de compradores.',
             icono: 'tienda',
           },
           {
             titulo: 'Negocia el costo final con tus clientes',
-            texto: 'Quien se interese te escribe, y el precio se acuerda entre los dos. Nada se cierra hasta que ambos estén de acuerdo.',
+            texto: 'Quien se interese te escribe, y el precio o método de cambio se acuerda entre los dos. Nada se cierra hasta que ambos estén de acuerdo.',
             icono: 'acuerdo',
           },
           {
             titulo: 'Intercambia, compra o vende',
-            texto: 'El pago puede ser dinero real, GCC Coins, o directamente otro producto o servicio del otro cliente. Los tres caminos valen, y cuál se usa forma parte del trato (La plataforma gestiona los traspasos).',
+            texto: 'El pago puede ser dinero real, GCC Coins, o directamente otro producto o servicio del comprador. Los tres caminos valen, y cuál se usa forma parte del trato (La plataforma gestiona los traspasos).',
             icono: 'billetera',
           },
         ],
