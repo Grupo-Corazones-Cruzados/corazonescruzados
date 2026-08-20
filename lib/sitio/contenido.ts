@@ -197,12 +197,22 @@ export interface Acceso {
    * buscador cortada a la mitad de una frase. Son dos textos porque son dos trabajos.
    */
   descripcion?: string;
-  /**
-   * Enlace a otra parte del sitio, si lo tiene. Se pinta **en la página de detalle**, no en
-   * la tarjeta: la tarjeta entera ya es un enlace, y un `<a>` dentro de otro `<a>` es
-   * marcado inválido — el navegador lo desarma y uno de los dos deja de funcionar.
-   */
-  enlaceExterno?: { href: string; etiqueta: string };
+  /* ⚠️ AQUÍ ESTABA `enlaceExterno`, EL BOTÓN GRANDE DENTRO DEL CONTENIDO — borrado el
+     2026-08-20 al quedarse **sin un solo uso**. Lo tuvieron Marketplace («Ver el
+     marketplace», retirado el 08-19) y «Cómo se entra» de Desarrollo Humano («Postularme»,
+     retirado hoy por Fernando). Los dos destinos siguen vivos: el del marketplace pasó al
+     botón «Ir» de la tarjeta, y la postulación se hace desde la portada.
+
+     No se deja el campo «por si vuelve»: un dato que nadie rellena y un `if` que nunca se
+     cumple confunden a quien lea esto después —parece que sale en algún sitio y no sale—. Es
+     la misma razón por la que se borraron `RejillaAccesos` y el bloque de Automatización.
+     Para recuperarlo, con su render y su documentación:
+
+         git show 4c44581:lib/sitio/contenido.ts
+         git show 4c44581:components/sitio/ExploradorSecciones.tsx
+
+     ⚠️ Si vuelve, que vuelva DENTRO del contenido y no en la tarjeta: la tarjeta ya es un
+     enlace, y un `<a>` dentro de otro `<a>` es marcado inválido. Ver `accion`, más abajo. */
   /**
    * EL BOTÓN DE LA TARJETA DEL PANEL IZQUIERDO (Fernando, 2026-08-19).
    *
@@ -686,8 +696,7 @@ export const ACCESOS: Acceso[] = [
        contenido, y Fernando lo quitó el 2026-08-19. Ese destino **no se perdió**: unas horas
        después es a donde lleva el botón «Ir» de la tarjeta (ver `accion`, arriba). El botón
        no sobraba, estaba en el sitio equivocado.
-       El campo `enlaceExterno` NO se borra del tipo: lo sigue usando «Cómo se entra» de
-       Desarrollo Humano para su botón «Postularme». */
+       El campo `enlaceExterno` ya no existe: se quedó sin usos el 2026-08-20 y se borró. */
     temas: [
       {
         id: 'que-hay-dentro',
@@ -871,7 +880,7 @@ export const DESARROLLO: Acceso[] = [
     titulo: 'El proyecto',
     texto: 'Para quién es el Grupo Corazones Cruzados, y por qué existe.',
     descripcion:
-      'El Grupo Corazones Cruzados es un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de las condiciones; las cuales se usan como ancla para el progreso mental, laboral, social, y corporal de los sujetos, tanto de forma individual como colectiva.',
+      'El Grupo Corazones Cruzados es un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de las condiciones; las cuales se usan como ancla para el progreso mental, laboral, social, y corporal de los sujetos; buscando logros de forma individual como colectiva.',
     temas: [
       {
         id: 'para-quien-es',
@@ -902,11 +911,11 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'Unión',
         pregunta: '¿Por qué me van a ayudar a mí?',
         texto:
-          'El servicio de este proyecto, no tiene costo debido a que nosotros operamos en base a una apuesta grande, y es que cada candidato de este proyecto se convierta en lo que quiera ser, para que sus frutos puedan traerle beneficio a sí mismo; como también al grupo. Nuestro interés radica en que sacar provecho de un talento, es lo mismo a minar en busca de minerales en una cueva, debemos gastar recursos, materiales, para que la recomenpensa nos ayude a compensar los gastos y sacar beneficios para seguir creciendo como organización.',
+          'El servicio de este proyecto, no tiene costo debido a que nosotros operamos en base a una apuesta grande, y es que cada candidato de este proyecto se convierta en lo que quiera ser, para que sus frutos puedan traerle beneficio a sí mismo; como también al grupo. Nuestro apuesta radica en que el acto de sacar provecho de un talento, es lo mismo a minar en busca de minerales en una cueva, debes gastar recursos, materiales, para que la recompensa nos ayude a compensar los gastos y sacar beneficios para seguir creciendo como organización.',
         pasos: [
           {
             titulo: 'Primero recibes',
-            texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Invertimos $50 por persona para empezar con sus proyectos.',
+            texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Invertimos $50 por persona para empezar con su proyecto.',
             icono: 'acuerdo',
           },
           {
@@ -916,7 +925,7 @@ export const DESARROLLO: Acceso[] = [
           },
           {
             titulo: 'Apoyo y Autoayuda',
-            texto: 'Empoderarte permite registrar datos que permiten ser reutilizados en otros casos similares al tuyo, y tener recursos te permite crear y generar oportunidades para ti y para los demás miembros.',
+            texto: 'Empoderarte permite registrar datos que luego son reutilizados en otros casos similares al tuyo. De esa manera recolectar datos, nos permiten crear y generar oportunidades para ti y para los demás miembros.',
             icono: 'personas',
           },
         ],
@@ -930,7 +939,6 @@ export const DESARROLLO: Acceso[] = [
     texto: 'La entrevista inicial, el estudio de tu caso y las alternativas que salen de ahí.',
     descripcion:
       'Para ser candidato de este proyecto, los postulantes deberán rellenar un formulario en donde deberán leer y aceptar las condiciones que tenemos para pertenecer a esta organización. Adicional deberás redactar tus motivos, razones, y situación actual que te lleva a querer ser candidato.',
-    enlaceExterno: { href: '/', etiqueta: 'Postularme' },
     temas: [
       {
         id: 'la-entrevista',
@@ -941,12 +949,12 @@ export const DESARROLLO: Acceso[] = [
         pasos: [
           {
             titulo: 'Te postulas',
-            texto: 'Desde la portada, contando tu situación con tus palabras. No hay preguntas trampa ni pruebas que superar.',
+            texto: 'Hazlo desde la página de inicio, contando tu situación con tus palabras. No hay preguntas trampa ni pruebas que superar.',
             icono: 'bandera',
           },
           {
             titulo: 'Hablemos de ti',
-            texto: 'Una conversación para entender lo que pasa, no para juzgarlo. Lo que cuentes ahí queda entre el gestor y tú.',
+            texto: 'Una conversación para entender lo que pasa, no es para juzgarte. Lo que cuentes ahí queda entre el entrevistador y tú.',
             icono: 'mensaje',
           },
           {
@@ -961,21 +969,21 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'Alternativas',
         pregunta: '¿Y qué sale de esa entrevista?',
         texto:
-          'Les llamamos alternativas de solución. Son registros preestudiados que según las fuentes nos dicen una tasa de éxito para atender el problema que experimentas, dependiendo del caso nosotros te preparamos la estrategia, y tú la ejecutas.',
+          'Según el caso, generamos alternativas de solución; las cuales representan registros fundamentados que nos dicen una tasa de éxito para atender el problema que experimentas, dependiendo del caso nosotros te preparamos la estrategia, y tú la ejecutas.',
         pasos: [
           {
             titulo: 'Se plantean los caminos',
-            texto: 'Para cada problema identificado, pueden existir más de una forma de salir. Con lo que se te pide, vamos a revisar si el efecto es positivo o negativo, y cómo abordarlo según lo que suceda.',
+            texto: 'Para cada problema identificado, pueden existir más de una forma de responder. Con lo que se te pide ejecutar, vamos a revisar si el efecto, y cómo abordar el siguiente paso según lo que suceda.',
             icono: 'rama',
           },
           {
             titulo: 'Eliges por dónde empezar',
-            texto: 'Nosotros desarrollamos la estrategia, tú recibes las tareas, y desde la plataforma escoges la fecha u hora de realización. En este proceso la ejecución tiene una valoración dentro de tu perfil, en caso de que no cumplas con tu compromiso existe un castigo que se representa en tus datos, y si la falta de compromiso es recurrente, se considera el rechazo de tu candidatura.',
+            texto: 'Nosotros desarrollamos la estrategia, pero tú recibes las tareas, y desde la plataforma escoges la fecha u hora de ejecución. Ten en cuenta que cada tarea tiene una valoración dentro de tu perfil, en caso de que no cumplas con tu tarea existe un castigo, y si se percibe una falta de compromiso recurrente, entonces se considera el rechazo de tu candidatura.',
             icono: 'diana',
           },
           {
             titulo: 'Empiezas acompañado',
-            texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a un espacio en donde puedes preguntar y conversar sobre tus dificultades. Los logros o el éxito que tú tengas, los compartimos y festejamos todos los miembros, ya que es el resultado también del esfuerzo que todos los miembros ponemos para que funcione esta organización.',
+            texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a un espacio en donde puedes preguntar y conversar sobre tus dificultades. Los logros o el éxito que tú tengas, los compartimos y festejamos todos los miembros, ya que es el resultado también del esfuerzo que todos hacemos para que funcione esta organización.',
             icono: 'candado',
           },
         ],
@@ -1023,7 +1031,7 @@ export const DESARROLLO: Acceso[] = [
         pasos: [
           {
             titulo: 'Empiezas a resolver',
-            texto: 'Los primeros problemas por lo que empezamos, ya empiezas a manejarlos y a conocer tus herramientas para actuar si tuvieras que volver a afrontarlos.',
+            texto: 'Los primeros problemas por lo que empezamos, ya logras manejarlos y sabes usar tus herramientas para resolver si tuvieras que volver a afrontarlos.',
             icono: 'billetera',
           },
           {

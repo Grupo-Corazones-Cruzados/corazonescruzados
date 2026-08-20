@@ -39,7 +39,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
-import { BloqueTema, BotonPrimario, ExploradorTresPaneles, ICONOS } from './piezas';
+import { BloqueTema, ExploradorTresPaneles, ICONOS } from './piezas';
 import GaleriaTarjetas from './GaleriaTarjetas';
 import VideoYouTube from './VideoYouTube';
 import FaqsClientes from './FaqsClientes';
@@ -74,8 +74,8 @@ function GaleriaSecciones({
                * Lo era: un enlace envolvía toda la tarjeta. Al pedir Fernando un botón «Ir»
                * dentro (2026-08-19) eso dejó de valer — **un `<a>` dentro de otro `<a>` es
                * marcado inválido**: el navegador lo desarma y uno de los dos deja de
-               * funcionar. Es el mismo motivo por el que `enlaceExterno` se pinta en el
-               * contenido y no en la tarjeta.
+               * funcionar. Es el mismo motivo por el que el botón grande vivía en el
+               * contenido y no en la tarjeta, hasta que dejó de haber ninguno (2026-08-20).
                *
                * La solución es el enlace estirado: el `<Link>` envuelve **solo el título** —de
                * ahí saca su nombre accesible— y su `::after` se extiende sobre toda la
@@ -268,13 +268,6 @@ export default function ExploradorSecciones({
             {acceso.descripcion ?? acceso.texto}
           </p>
 
-          {acceso.enlaceExterno && (
-            <div className="mt-6">
-              <BotonPrimario href={acceso.enlaceExterno.href}>
-                {acceso.enlaceExterno.etiqueta} <ArrowRight className="w-4 h-4" />
-              </BotonPrimario>
-            </div>
-          )}
 
           {temas.length > 0 && <IndiceEnFila temas={temas} />}
 
