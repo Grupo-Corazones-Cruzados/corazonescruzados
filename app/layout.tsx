@@ -43,8 +43,30 @@ export const metadata: Metadata = {
     default: `${SITIO.nombre} — Proyecto de desarrollo humano`,
     template: `%s · ${SITIO.nombre}`,
   },
+  /**
+   * ⚠️ **SIN CIUDAD NI PAÍS, por decisión de Fernando (2026-08-20).** La primera versión de
+   * esta frase, publicada hace minutos, empezaba con «en Guayaquil, Ecuador». Él lo vio en un
+   * resultado real junto a su dirección y su teléfono, y pidió que el sitio dejara de decirlo.
+   *
+   * ⚠️ **Tiene un coste que hay que saber**: «desarrollo humano Guayaquil» era de las pocas
+   * búsquedas donde este sitio podía ganar sin competir con medio mundo. Sin la ciudad, se
+   * compite en abierto. Es su decisión, tomada sabiéndolo.
+   */
   description:
-    'Proyecto de desarrollo humano en Guayaquil, Ecuador: reconocemos y aprovechamos las condiciones como ancla del progreso mental, laboral, social y corporal.',
+    'Proyecto de desarrollo humano que reconoce y aprovecha las condiciones como ancla del progreso mental, laboral, social y corporal, individual y colectivo.',
+  /**
+   * ⚠️ **EL ICONO ES DE 192×192 POR EXIGENCIA DE GOOGLE, no por gusto (2026-08-20).**
+   *
+   * Fernando avisó de que en los resultados no salía el logo, sino el globo genérico. La causa
+   * medida: `app/icon.png` era de **32×32**, y Google solo muestra el favicon si es un cuadrado
+   * cuyo lado es **múltiplo de 48**. 32 no lo es, así que lo descartaba y ponía el suyo.
+   *
+   * 192 = 48 × 4, generado desde `public/logo-gcc.png` (256×256), que es el logo de la
+   * cabecera. Se añade además `app/favicon.ico` (48×48) porque `/favicon.ico` daba **404** y
+   * hay rastreadores que lo piden ahí antes de mirar esta etiqueta.
+   *
+   * ⚠️ No basta con desplegarlo: Google solo lo cambia cuando vuelve a rastrear la portada.
+   */
   icons: { icon: '/icon.png' },
   openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
   robots: { index: true, follow: true },

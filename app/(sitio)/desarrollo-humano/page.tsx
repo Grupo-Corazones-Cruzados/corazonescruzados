@@ -51,10 +51,12 @@ export const metadata: Metadata = {
    */
   title: 'Desarrollo Humano',
   description:
-    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: cómo se entra, cómo llega el trabajo según tu talento, y cómo se crece con la Condiciología y el Modelo 4P.',
+    'Grupo Corazones Cruzados es un proyecto de desarrollo humano: cómo se entra, cómo se estudia tu condición, cómo avanza tu caso y cómo se llega a ser miembro.',
+  // ⚠️ Sin ciudad ni país desde el 2026-08-20, por decisión de Fernando. Antes había tres
+  // términos con «Guayaquil»/«Ecuador», que eran los más fáciles de ganar; ver el aviso en
+  // `app/layout.tsx`. (Google no usa `keywords` para posicionar, pero se deja coherente.)
   keywords: [
-    'desarrollo humano Ecuador', 'condiciología', 'Modelo 4P', 'proyecto colaborativo Guayaquil',
-    'GCC World', 'crecimiento personal Guayaquil', 'trabajar por talento',
+    'condiciología', 'Modelo 4P', 'desarrollo humano', 'GCC World', 'trabajar por talento',
   ],
   alternates: { canonical: '/desarrollo-humano' },
   openGraph: {
@@ -104,14 +106,18 @@ export default async function DesarrolloHumanoPage() {
               taxID: SITIO.ruc,
               url: SITIO.url,
               sameAs: [...REDES],
+            // ⚠️ AQUÍ IBAN EL TELÉFONO, EL CORREO, LA DIRECCIÓN Y EL PAÍS, y se quitaron el
+            // 2026-08-20: *«ya no me interesa poner mis datos de contacto […] ni decir
+            // Guayaquil, Ecuador»* (Fernando). No eran visibles en la página, pero sí en el
+            // código fuente, que es donde los lee cualquiera.
+            //
+            // ⚠️⚠️ **SE QUEDAN `legalName` y `taxID` a propósito.** Son la identidad legal, no
+            // datos de contacto, y son justo lo que Meta pide para creer que hay un negocio
+            // real detrás —su verificación ya se rechazó una vez por eso—. Quitarlos también
+            // dejaría al sitio sin nada que lo respalde. Si aun así hay que quitarlos, que sea
+            // una decisión aparte y sabiendo esto.
               description:
                 'Proyecto de desarrollo humano que desarrolla proyectos, personas y sistemas bajo una misma filosofía.',
-              address: {
-                '@type': 'PostalAddress',
-                streetAddress: SITIO.direccion,
-                addressLocality: SITIO.ciudad,
-                addressCountry: 'EC',
-              },
             },
           }),
         }}

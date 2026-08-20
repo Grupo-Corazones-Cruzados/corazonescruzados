@@ -81,7 +81,10 @@ export default async function Image() {
             color: 'rgba(255,255,255,0.38)',
           }}
         >
-          {SITIO.ciudad}, {SITIO.pais} · grupocc.org
+          {/* ⚠️ Aquí ponía «{SITIO.ciudad}, {SITIO.pais} · grupocc.org». Fernando vio esta
+              imagen en un resultado de Google, junto a su dirección, y pidió que el sitio
+              dejara de decir la ciudad (2026-08-20). Queda solo el dominio. */}
+          grupocc.org
         </div>
       </div>
     ),

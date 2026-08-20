@@ -62,7 +62,7 @@ export const metadata: Metadata = {
    */
   title: 'Clientes',
   description:
-    'Grupo Corazones Cruzados es un proyecto de desarrollo humano de Guayaquil, Ecuador: tickets y proyectos, el videojuego GCC World, el marketplace y la votación de mejoras.',
+    'Grupo Corazones Cruzados es un proyecto de desarrollo humano: tickets y proyectos, el videojuego GCC World, el marketplace y la votación de mejoras.',
   alternates: { canonical: '/clientes' },
   openGraph: {
     title: `${SITIO.nombre} — Qué puedes hacer aquí`,
@@ -114,15 +114,16 @@ export default async function ClientesPage() {
             taxID: SITIO.ruc,
             url: `${SITIO.url}/clientes`,
             sameAs: [...REDES],
-            email: SITIO.correo,
-            telephone: SITIO.telefonoPlano,
-            address: {
-              '@type': 'PostalAddress',
-              streetAddress: SITIO.direccion,
-              addressLocality: SITIO.ciudad,
-              addressCountry: 'EC',
-            },
-            areaServed: 'EC',
+            // ⚠️ AQUÍ IBAN EL TELÉFONO, EL CORREO, LA DIRECCIÓN Y EL PAÍS, y se quitaron el
+            // 2026-08-20: *«ya no me interesa poner mis datos de contacto […] ni decir
+            // Guayaquil, Ecuador»* (Fernando). No eran visibles en la página, pero sí en el
+            // código fuente, que es donde los lee cualquiera.
+            //
+            // ⚠️⚠️ **SE QUEDAN `legalName` y `taxID` a propósito.** Son la identidad legal, no
+            // datos de contacto, y son justo lo que Meta pide para creer que hay un negocio
+            // real detrás —su verificación ya se rechazó una vez por eso—. Quitarlos también
+            // dejaría al sitio sin nada que lo respalde. Si aun así hay que quitarlos, que sea
+            // una decisión aparte y sabiendo esto.
             description:
               'Proyecto de desarrollo humano que ofrece soluciones para las necesidades individuales y grupales de sus colaboradores, en función de resolver determinadas problemáticas sociales, teniendo como meta final la unión del mundo.',
             hasOfferCatalog: {
