@@ -668,16 +668,26 @@ export const ACCESOS: Acceso[] = [
   {
     id: 'marketplace', icono: 'tienda',
     titulo: 'Marketplace',
-    // El marketplace vive dentro del panel, así que la puerta es la misma que la de Plataforma.
-    accion: { href: '/auth/cliente', etiqueta: 'Ir' },
+    /**
+     * ⚠️ ESTA VA AL CATÁLOGO, NO AL ACCESO — y es la excepción de las tres (Fernando,
+     * 2026-08-19). Las de Plataforma y Videojuego abren el inicio de sesión porque detrás no
+     * hay nada que enseñar sin cuenta; el marketplace **sí tiene una página pública**, y
+     * mandar a alguien a identificarse antes de dejarle mirar el catálogo es pedirle que se
+     * comprometa antes de saber si le interesa.
+     *
+     * Es además coherente con lo que dice la propia sección: «el catálogo está abierto, se
+     * recorre entero sin cuenta». El acceso sigue estando a un clic, dentro de esa página.
+     */
+    accion: { href: '/marketplace-publico', etiqueta: 'Ir' },
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
     descripcion:
       'El marketplace es el espacio donde los miembros publican sus soluciones, y los clientes negocian sus recursos. Ahí puedes adquirir, intercambiar, o alquilar productos, proyectos, recursos, u automatizaciones para tu organización.',
-    /* ⚠️ AQUÍ HABÍA UN BOTÓN «Ver el marketplace» → `/marketplace-publico`, y Fernando lo
-       quitó el 2026-08-19. El campo `enlaceExterno` NO se borra del tipo: lo sigue usando
-       «Cómo se entra» de Desarrollo Humano para el botón «Postularme».
-       Si algún día vuelve, es una línea:
-         enlaceExterno: { href: '/marketplace-publico', etiqueta: 'Ver el marketplace' }, */
+    /* ⚠️ AQUÍ HABÍA UN BOTÓN «Ver el marketplace» → `/marketplace-publico`, dentro del
+       contenido, y Fernando lo quitó el 2026-08-19. Ese destino **no se perdió**: unas horas
+       después es a donde lleva el botón «Ir» de la tarjeta (ver `accion`, arriba). El botón
+       no sobraba, estaba en el sitio equivocado.
+       El campo `enlaceExterno` NO se borra del tipo: lo sigue usando «Cómo se entra» de
+       Desarrollo Humano para su botón «Postularme». */
     temas: [
       {
         id: 'que-hay-dentro',
