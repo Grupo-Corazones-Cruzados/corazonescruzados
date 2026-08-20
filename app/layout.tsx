@@ -13,12 +13,38 @@ import './globals.css';
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITIO.url),
+  /**
+   * ⭐ ESTO ES LO QUE SE VE EN GOOGLE AL BUSCAR EL PROYECTO, y hasta el 2026-08-20 estaba
+   * viejo. Lo vio Fernando en un resultado real: decía *«De ahí nacen los servicios que
+   * ofrecemos: plataformas de gestión a medida, agentes de atención con IA…»*, que es el
+   * encuadre de proveedor de tecnología **que él mismo corrigió el 2026-08-02** por estar del
+   * revés. Sobrevivió aquí porque nadie lo tocó: la portada no declara metadatos propios, así
+   * que hereda estos, y son los únicos del sitio que quedaban sin revisar —el resto de páginas
+   * declaran los suyos, comprobado—.
+   *
+   * ── DE DÓNDE SALE EL TEXTO NUEVO ─────────────────────────────────────────────
+   * No lo he inventado: es **su propia definición del proyecto**, la que escribió a mano en
+   * `DESARROLLO → el-proyecto.descripcion`, comprimida para caber en un resultado de búsqueda:
+   *
+   *   *«un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de
+   *   las condiciones; las cuales se usan como ancla para el progreso mental, laboral, social,
+   *   y corporal de los sujetos, tanto de forma individual como colectiva»*
+   *
+   * Pidió que **describiera el proyecto y no le hablara a nadie**, y esa frase hace justo eso.
+   *
+   * ⚠️ **Los límites no son un capricho de estilo, son de Google**: el título se corta a unos
+   * 60 caracteres y la descripción a unos 155. Medidos: 56 y 154. Si alguien los alarga, lo
+   * que sobre no se pierde — desaparece del resultado, que es peor.
+   *
+   * ⚠️ Y esta descripción **solo gobierna la portada**. Las demás páginas tienen la suya; si
+   * alguna se quedara sin ella, heredaría esta y diría algo que no le toca.
+   */
   title: {
-    default: `${SITIO.nombre} — Proyecto de desarrollo humano y servicios de tecnología`,
+    default: `${SITIO.nombre} — Proyecto de desarrollo humano`,
     template: `%s · ${SITIO.nombre}`,
   },
   description:
-    'Proyecto de desarrollo humano de Guayaquil, Ecuador. De ahí nacen los servicios que ofrecemos: plataformas de gestión a medida, agentes de atención con IA en WhatsApp, automatización y facturación electrónica ante el SRI.',
+    'Proyecto de desarrollo humano en Guayaquil, Ecuador: reconocemos y aprovechamos las condiciones como ancla del progreso mental, laboral, social y corporal.',
   icons: { icon: '/icon.png' },
   openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
   robots: { index: true, follow: true },
