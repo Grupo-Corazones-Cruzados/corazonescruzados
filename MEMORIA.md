@@ -4053,6 +4053,27 @@ Módulos principales:
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
 ## Decisiones y reglas de negocio
+- **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**
+  Algunos clientes piden un papel con TODOS los conceptos de la operación, incluidos los que
+  Fernando **no factura ni quiere facturar** (transferencias internacionales, remesas al
+  exterior). Se crea desde el detalle de la factura → botón «Detalle de servicios», se guarda
+  y se descarga; el envío al cliente lo hace él a mano, porque solo algunos lo piden.
+  - **⚠️ NO ES UN COMPROBANTE y el documento lo dice.** Se titula «DETALLE DE SERVICIOS»
+    —nunca «factura»—, el número de la factura sale como **referencia** (con su autorización,
+    para que el cliente coteje) y al pie lleva enmarcada la leyenda de que es informativo, sin
+    validez tributaria, y que el comprobante válido es la factura referenciada. Un papel con
+    los datos del emisor, ítems y un total que se parezca a una factura es justo lo que no se
+    puede emitir fuera del esquema del SRI.
+  - **Cómo se presenta** (decisión suya entre tres opciones): dos tablas separadas —ítems
+    facturados con su «Total facturado», conceptos adicionales con su «Total adicional»— y un
+    **TOTAL GENERAL** debajo. Así el cliente cuadra sus números sin confundir lo que pasó por
+    el SRI con lo que no.
+  - **Qué se guarda:** solo los conceptos que él escribe y sus observaciones
+    (`gcc_world.invoice_annexes`, uno por factura). Los ítems facturados **no se copian**: se
+    leen de la factura al armar el PDF, para que el documento nunca contradiga al comprobante
+    y los arreglos de plantilla lleguen también a los documentos ya creados.
+  - Generador en `lib/documents/detalle-servicios.ts`; el PDF pide sesión de admin (a
+    diferencia del RIDE, que el cliente descarga con el token de su proyecto).
 - **LA PÁGINA PÚBLICA DEL PROYECTO ENSEÑA EL ACUERDO, NO LA COCINA (Fernando, 2026-08-19).**
   `/proyecto/<id>?token=…` es el enlace que viaja en el correo de la factura. Se rehízo porque
   seguía en **pixel art oscuro** (única isla que quedó fuera del rediseño claro del 17 de agosto)

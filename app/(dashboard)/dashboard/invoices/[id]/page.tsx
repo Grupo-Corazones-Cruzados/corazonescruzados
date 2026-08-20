@@ -9,7 +9,8 @@ import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 import DetailHeader from '@/components/ui/DetailHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2 } from 'lucide-react';
+import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2, FileText, Plus, X } from 'lucide-react';
+import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { fmt2 } from '@/lib/format';
 import { SRI_MAX } from '@/lib/integrations/sri/text';
 
@@ -40,6 +41,14 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showResend, setShowResend] = useState(false);
   const [resendEmails, setResendEmails] = useState('');
+  // DETALLE DE SERVICIOS: documento informativo con conceptos que NO se facturan
+  // (transferencias, remesas…). No es un comprobante; ver lib/documents/detalle-servicios.ts.
+  const [showDetalle, setShowDetalle] = useState(false);
+  const [detalleItems, setDetalleItems] = useState<{ description: string; quantity: string; unitPrice: string }[]>([]);
+  const [detalleNotas, setDetalleNotas] = useState('');
+  const [detalleFacturados, setDetalleFacturados] = useState<any[]>([]);
+  const [detalleExiste, setDetalleExiste] = useState(false);
+  const [guardandoDetalle, setGuardandoDetalle] = useState(false);
   const [sending, setSending] = useState(false);
   const [showVoid, setShowVoid] = useState(false);
   const [voidReason, setVoidReason] = useState('');
@@ -118,6 +127,56 @@ export default function InvoiceDetailPage() {
       }
     } catch { toast.error('Error al subir comprobante'); }
     finally { setUploadingProof(false); e.target.value = ''; }
+  };
+
+  /** Trae lo guardado del documento y los ítems reales de la factura, y abre el panel. */
+  const abrirDetalle = async () => {
+    try {
+      const r = await fetch(`/api/invoices/${id}/detail-doc`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'No se pudo cargar');
+      setDetalleFacturados(d.invoiceItems || []);
+      setDetalleExiste(!!d.data);
+      setDetalleItems((d.data?.items || []).map((i: any) => ({
+        description: i.description, quantity: String(i.quantity), unitPrice: String(i.unitPrice),
+      })));
+      setDetalleNotas(d.data?.notes || '');
+      if (!d.data) setDetalleItems([{ description: '', quantity: '1', unitPrice: '' }]);
+      setShowDetalle(true);
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const guardarDetalle = async () => {
+    const items = detalleItems
+      .map(i => ({ description: i.description.trim(), quantity: Number(i.quantity) || 0, unitPrice: Number(i.unitPrice) || 0 }))
+      .filter(i => i.description && i.quantity > 0);
+    if (items.length === 0) { toast.error('Añade al menos un concepto'); return; }
+    setGuardandoDetalle(true);
+    try {
+      const r = await fetch(`/api/invoices/${id}/detail-doc`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, notes: detalleNotas }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'No se pudo guardar');
+      setDetalleExiste(true);
+      toast.success('Detalle de servicios guardado');
+      window.open(`/api/invoices/${id}/detail-doc/pdf`, '_blank');
+      setShowDetalle(false);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setGuardandoDetalle(false); }
+  };
+
+  const borrarDetalle = async () => {
+    setGuardandoDetalle(true);
+    try {
+      const r = await fetch(`/api/invoices/${id}/detail-doc`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('No se pudo eliminar');
+      setDetalleExiste(false);
+      setShowDetalle(false);
+      toast.success('Detalle de servicios eliminado');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setGuardandoDetalle(false); }
   };
 
   const openEditModal = () => {
@@ -232,6 +291,11 @@ export default function InvoiceDetailPage() {
             )}
             {invoice.sri_status === 'voided' && isAdmin && (
               <button onClick={() => router.push(`/dashboard/invoices?refactor=${id}`)} className={BTN_SECONDARY}>Refacturar</button>
+            )}
+            {isAdmin && (
+              <button onClick={abrirDetalle} className={BTN_SECONDARY}>
+                <FileText className="w-4 h-4" /> Detalle de servicios
+              </button>
             )}
           </>
         }
@@ -391,6 +455,98 @@ export default function InvoiceDetailPage() {
           <img src={`/api/invoices/${id}/proof`} alt="Comprobante de pago" className="max-w-full max-h-[75vh] object-contain" />
         </div>
       </PixelModal>
+
+      {/* ── DETALLE DE SERVICIOS ──────────────────────────────────────────────────
+          Formulario con lista → panel lateral derecho, que es lo que manda el sistema.
+          Los ítems facturados se enseñan pero NO se editan: si hubiera que cambiarlos,
+          lo que se corrige es la factura, no este papel. */}
+      <EditPanel
+        open={showDetalle}
+        title="Detalle de servicios"
+        onClose={() => !guardandoDetalle && setShowDetalle(false)}
+        onSave={guardarDetalle}
+        saving={guardandoDetalle}
+        canSave={detalleItems.some(i => i.description.trim() && Number(i.quantity) > 0)}
+        saveLabel="Guardar y descargar"
+        danger={detalleExiste ? { label: 'Eliminar documento', onClick: borrarDetalle } : undefined}
+      >
+        <EditField label="Qué es este documento" hint={
+          <>Un papel informativo para el cliente que lo pide: reúne los ítems de la factura y los
+          conceptos que tú no facturas. <strong>No es un comprobante</strong> y así lo dice en su
+          leyenda; el comprobante válido sigue siendo la factura que referencia. Se descarga y se
+          envía a mano.</>
+        }>
+          <div className={`${EDIT_INPUT} text-[12.5px] leading-relaxed opacity-80`}>
+            Referencia: {invoice.invoice_number || `#${id}`} · {detalleFacturados.length} ítems facturados
+            por ${fmt2(detalleFacturados.reduce((s: number, i: any) => s + Number(i.subtotal || 0), 0))}
+          </div>
+        </EditField>
+
+        <div>
+          <label className="text-[12px] font-semibold text-digi-text opacity-70 mb-1.5 block" style={pf}>
+            Conceptos adicionales (no facturados)
+          </label>
+          <div className="space-y-2">
+            {detalleItems.map((it, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <div className="flex-1 min-w-0">
+                  <input value={it.description} placeholder="Transferencias internacionales"
+                    onChange={e => { const n = [...detalleItems]; n[i] = { ...n[i], description: e.target.value }; setDetalleItems(n); }}
+                    className={EDIT_INPUT} />
+                </div>
+                <div className="w-16 shrink-0">
+                  <input value={it.quantity} type="number" min="0" step="1" placeholder="1"
+                    onChange={e => { const n = [...detalleItems]; n[i] = { ...n[i], quantity: e.target.value }; setDetalleItems(n); }}
+                    className={`${EDIT_INPUT} tabular-nums`} />
+                </div>
+                <div className="w-24 shrink-0">
+                  <input value={it.unitPrice} type="number" min="0" step="0.01" placeholder="0.00"
+                    onChange={e => { const n = [...detalleItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setDetalleItems(n); }}
+                    className={`${EDIT_INPUT} tabular-nums`} />
+                </div>
+                <button type="button" onClick={() => setDetalleItems(detalleItems.filter((_, idx) => idx !== i))}
+                  disabled={detalleItems.length <= 1}
+                  className="mb-1.5 text-red-500/70 hover:text-red-600 disabled:opacity-30 shrink-0" title="Quitar">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <button type="button"
+              onClick={() => setDetalleItems([...detalleItems, { description: '', quantity: '1', unitPrice: '' }])}
+              className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>
+              <Plus className="w-3.5 h-3.5" /> Añadir concepto
+            </button>
+          </div>
+        </div>
+
+        <EditField label="Observaciones">
+          <input value={detalleNotas} onChange={e => setDetalleNotas(e.target.value)}
+            placeholder="Opcional: una línea que verá el cliente" className={EDIT_INPUT} />
+        </EditField>
+
+        {/* Las tres cifras, como en el documento */}
+        {(() => {
+          const facturado = detalleFacturados.reduce((s: number, i: any) => s + Number(i.subtotal || 0), 0);
+          const adicional = detalleItems.reduce((s, i) => s + (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0), 0);
+          return (
+            <div className="border border-digi-border rounded-lg p-3 text-[12.5px] space-y-1" style={mf}>
+              <div className="flex justify-between"><span className="text-digi-muted">Total facturado</span><span className="text-digi-text tabular-nums">${fmt2(facturado)}</span></div>
+              <div className="flex justify-between"><span className="text-digi-muted">Total adicional</span><span className="text-digi-text tabular-nums">${fmt2(adicional)}</span></div>
+              <div className="flex justify-between border-t border-digi-border pt-1">
+                <span className="text-accent font-semibold">Total general</span>
+                <span className="text-accent font-semibold tabular-nums">${fmt2(facturado + adicional)}</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {detalleExiste && (
+          <button type="button" onClick={() => window.open(`/api/invoices/${id}/detail-doc/pdf`, '_blank')}
+            className={`${BTN_SECONDARY} w-full`}>
+            <Download className="w-4 h-4" /> Descargar el documento guardado
+          </button>
+        )}
+      </EditPanel>
 
       {/* Void Modal */}
       <PixelModal open={showVoid} onClose={() => setShowVoid(false)} title="Anular Factura" size="sm">
