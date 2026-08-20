@@ -8,11 +8,13 @@ import { SRI_CONFIG } from '@/lib/integrations/sri/config';
  * incluidos los que **no** pasan por la factura (transferencias internacionales, remesas
  * al exterior…). Se descarga desde el detalle de la factura y se envía a mano.
  *
- * ⚠️ NO ES UN COMPROBANTE DE VENTA y el documento lo dice de dos formas: se titula
- * «DETALLE DE SERVICIOS» —nunca «factura»— y lleva al pie, enmarcada, la leyenda de que
- * es informativo y que el comprobante válido es la factura que referencia. Emitir un
- * papel que se parezca a una factura fuera del esquema del SRI es justo lo que no se
- * puede hacer, y por eso el número de la factura sale como REFERENCIA, no como propio.
+ * ⚠️ NO ES UN COMPROBANTE DE VENTA. Lo que lo mantiene a distancia de una factura es el
+ * título —«DETALLE DE SERVICIOS», nunca «factura»— y que el número de la factura sale como
+ * REFERENCIA, junto a su autorización, no como número propio.
+ *
+ * **Llevaba además una leyenda al pie** («documento informativo, sin validez tributaria…»)
+ * y **Fernando pidió quitarla el 2026-08-20**. Queda anotado por si hay que reponerla: el
+ * texto está en el historial de git, en este mismo archivo.
  *
  * Las dos tablas van separadas a propósito (decisión de Fernando, 2026-08-20): lo
  * facturado con su total, los adicionales con el suyo, y un total general debajo. Así el
@@ -39,12 +41,6 @@ export interface DetalleServiciosData {
   adicionales: DetalleItem[];
   notas?: string;
 }
-
-const LEYENDA =
-  'Documento informativo, sin validez tributaria. NO constituye comprobante de venta ' +
-  'autorizado por el SRI ni lo sustituye: el comprobante válido de esta operación es la ' +
-  'factura referenciada arriba. Se entrega a petición del cliente para detallar conceptos ' +
-  'asociados que no forman parte del comprobante.';
 
 /** Importe con separador de miles y coma decimal, como el resto de la interfaz. */
 function money(n: number): string {
@@ -177,7 +173,7 @@ export async function generateDetalleServiciosPdf(data: DetalleServiciosData): P
       subtotal: Math.round(i.quantity * i.unitPrice * 100) / 100,
     }));
     const totalAdicional = adicionales.length > 0
-      ? tabla('CONCEPTOS ADICIONALES (no facturados)', adicionales, 'Total adicional')
+      ? tabla('CONCEPTOS ADICIONALES', adicionales, 'Total adicional')
       : 0;
 
     // ══════════ Total general ══════════
@@ -195,12 +191,6 @@ export async function generateDetalleServiciosPdf(data: DetalleServiciosData): P
       doc.fontSize(8.5).font('Helvetica').fillColor('#1c1b22').text(data.notas.trim(), L, y, { width: PW });
       y = doc.y + 14;
     }
-
-    // ══════════ Leyenda: lo que este papel NO es ══════════
-    const altoLeyenda = doc.heightOfString(LEYENDA, { width: PW - 20 }) + 16;
-    doc.rect(L, y, PW, altoLeyenda).fillAndStroke('#faf9fc', '#cfc9de');
-    doc.fontSize(7.5).font('Helvetica').fillColor('#56545f')
-      .text(LEYENDA, L + 10, y + 8, { width: PW - 20, align: 'justify' });
 
     doc.end();
   });

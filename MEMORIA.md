@@ -4058,12 +4058,15 @@ Módulos principales:
   Fernando **no factura ni quiere facturar** (transferencias internacionales, remesas al
   exterior). Se crea desde el detalle de la factura → botón «Detalle de servicios», se guarda
   y se descarga; el envío al cliente lo hace él a mano, porque solo algunos lo piden.
-  - **⚠️ NO ES UN COMPROBANTE y el documento lo dice.** Se titula «DETALLE DE SERVICIOS»
-    —nunca «factura»—, el número de la factura sale como **referencia** (con su autorización,
-    para que el cliente coteje) y al pie lleva enmarcada la leyenda de que es informativo, sin
-    validez tributaria, y que el comprobante válido es la factura referenciada. Un papel con
-    los datos del emisor, ítems y un total que se parezca a una factura es justo lo que no se
-    puede emitir fuera del esquema del SRI.
+  - **⚠️ NO ES UN COMPROBANTE.** Lo mantienen a distancia de una factura el título —«DETALLE
+    DE SERVICIOS», nunca «factura»— y que el número de la factura sale como **referencia**,
+    junto a su autorización, para que el cliente coteje.
+    - **Llevaba además una leyenda al pie** («documento informativo, sin validez tributaria;
+      el comprobante válido es la factura referenciada») y **Fernando pidió quitarla el
+      2026-08-20**, igual que el «(no facturados)» del título de los conceptos adicionales.
+      Se le advirtió que esa leyenda era la que dejaba por escrito que el papel no compite
+      con el comprobante; es su decisión. El texto sigue en el historial de git por si hay
+      que reponerlo.
   - **Cómo se presenta** (decisión suya entre tres opciones): dos tablas separadas —ítems
     facturados con su «Total facturado», conceptos adicionales con su «Total adicional»— y un
     **TOTAL GENERAL** debajo. Así el cliente cuadra sus números sin confundir lo que pasó por

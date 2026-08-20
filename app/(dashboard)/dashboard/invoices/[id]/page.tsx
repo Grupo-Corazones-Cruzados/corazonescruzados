@@ -472,8 +472,8 @@ export default function InvoiceDetailPage() {
       >
         <EditField label="Qué es este documento" hint={
           <>Un papel informativo para el cliente que lo pide: reúne los ítems de la factura y los
-          conceptos que tú no facturas. <strong>No es un comprobante</strong> y así lo dice en su
-          leyenda; el comprobante válido sigue siendo la factura que referencia. Se descarga y se
+          conceptos que tú no facturas. <strong>No es un comprobante</strong>: el válido sigue
+          siendo la factura, que aparece referenciada arriba del documento. Se descarga y se
           envía a mano.</>
         }>
           <div className={`${EDIT_INPUT} text-[12.5px] leading-relaxed opacity-80`}>
@@ -484,7 +484,7 @@ export default function InvoiceDetailPage() {
 
         <div>
           <label className="text-[12px] font-semibold text-digi-text opacity-70 mb-1.5 block" style={pf}>
-            Conceptos adicionales (no facturados)
+            Conceptos adicionales
           </label>
           <div className="space-y-2">
             {detalleItems.map((it, i) => (
