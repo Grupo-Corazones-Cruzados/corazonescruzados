@@ -18,7 +18,7 @@ import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
-import { ACCESO_PLATAFORMA, EVENTO_ABRIR_PLATAFORMA } from '@/lib/sitio/acceso';
+import { ACCESO_PLATAFORMA, ACCESO_VIDEOJUEGO, EVENTO_ABRIR_PLATAFORMA } from '@/lib/sitio/acceso';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
 import CandidateAccountModal from '@/components/landing/CandidateAccountModal';
 import ClientSignupModal from '@/components/landing/ClientSignupModal';
@@ -439,6 +439,10 @@ export default function LandingPage() {
     // (2026-08-17). Aquí llega quien lo pulsa desde `/soluciones`, `/legal` o cualquier
     // otra página, vía `/auth`. El diálogo es el mismo: no hay una segunda copia.
     else if (acceso === ACCESO_PLATAFORMA) { setEntryDestination('dashboard'); setEntryChoiceOpen(true); }
+    // ⚠️ La única puerta que NO manda al panel. Llega desde el botón «IR» de la tarjeta de
+    // Videojuego en `/clientes`: es el mismo diálogo de acceso de cliente, pero al terminar
+    // se entra a la aventura. Sin esto, quien pulsaba «IR» en Videojuego acababa en el panel.
+    else if (acceso === ACCESO_VIDEOJUEGO) { setEntryDestination('game'); setClientLoginOpen(true); }
     // Se limpia la URL: dejar `?acceso=` haría que el diálogo reapareciera al volver atrás.
     const limpia = new URL(window.location.href);
     limpia.searchParams.delete('acceso');

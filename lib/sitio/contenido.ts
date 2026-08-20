@@ -204,6 +204,22 @@ export interface Acceso {
    */
   enlaceExterno?: { href: string; etiqueta: string };
   /**
+   * EL BOTÓN DE LA TARJETA DEL PANEL IZQUIERDO (Fernando, 2026-08-19).
+   *
+   * Distinto de `enlaceExterno`, y conviene no confundirlos: aquel es un botón grande dentro
+   * del contenido —«Postularme»—; este es la acción de la **tarjeta de navegación**, pequeña
+   * y en la esquina: «IR».
+   *
+   * ⚠️ **Es un enlace, no un botón con JavaScript**, y eso mantiene el explorador como Server
+   * Component. Se apoya en las «puertas con nombre» que ya existen (`/auth/cliente`,
+   * `/?acceso=videojuego`), que redirigen al **único** formulario de acceso, el de la portada.
+   * Ver `lib/sitio/acceso.ts`: aquí no se escribe un segundo acceso.
+   *
+   * Sin `accion` la tarjeta no pinta botón — es el caso de Democracia, que no tiene a dónde
+   * mandar a nadie todavía.
+   */
+  accion?: { href: string; etiqueta: string };
+  /**
    * ⏳ PENDIENTE — el vídeo de YouTube de esta página.
    *
    * Fernando (2026-08-04): *«no tengo los enlaces de youtube porque no he creado los vídeos
@@ -386,6 +402,8 @@ export const ACCESOS: Acceso[] = [
   {
     id: 'plataforma', icono: 'ticket',
     titulo: 'Plataforma',
+    // La puerta de clientes: abre el acceso de cliente y, al entrar, va al panel.
+    accion: { href: '/auth/cliente', etiqueta: 'Ir' },
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
     /**
      * ⚠️ **ESCRITA POR MÍ** (2026-08-19), a petición de Fernando —«una descripción más larga y
@@ -541,6 +559,8 @@ export const ACCESOS: Acceso[] = [
   {
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
+    // ⚠️ La ÚNICA que no manda al panel: al entrar se va a la aventura. Ver `ACCESO_VIDEOJUEGO`.
+    accion: { href: '/?acceso=videojuego', etiqueta: 'Ir' },
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
     descripcion:
       'GCC World es un videojuego que cuenta la historia de un mundo que sufrió las peores consecuencias después de olvidar sus raíces. Tres niños que perdieron a sus padres durante una persecución en este mundo perdido, se lanzaron hacia un hoyo ancestral, el cual sin saberlo, fue el lugar de unión y prosperidad de sus antepasados. ¿Qué existirá en el fondo del hoyo?',
@@ -648,6 +668,8 @@ export const ACCESOS: Acceso[] = [
   {
     id: 'marketplace', icono: 'tienda',
     titulo: 'Marketplace',
+    // El marketplace vive dentro del panel, así que la puerta es la misma que la de Plataforma.
+    accion: { href: '/auth/cliente', etiqueta: 'Ir' },
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
     descripcion:
       'El marketplace es el espacio donde los miembros publican sus soluciones, y los clientes negocian sus recursos. Ahí puedes adquirir, intercambiar, o alquilar productos, proyectos, recursos, u automatizaciones para tu organización.',
@@ -760,7 +782,7 @@ export const ACCESOS: Acceso[] = [
     titulo: 'Democracia',
     texto: 'Sé parte de un sistema que te permite votar sobre las mejoras a realizar dentro de la organización.',
     descripcion:
-      'Ser cliente aquí no es solo contratar. Sobre la gestión de la organización, los beneficios, los concursos y los eventos que se van a hacer se abren votaciones, y quien forma parte elige entre las opciones que hay sobre la mesa.',
+      'Nuestros clientes también pueden votar sobre la gestión de la organización, los beneficios, los concursos y los eventos que se van a realizar.',
     temas: [
       {
         id: 'tener-voz',
@@ -781,7 +803,7 @@ export const ACCESOS: Acceso[] = [
           },
           {
             titulo: 'Se hace lo que se votó',
-            texto: 'No es una encuesta de opinión: la opción elegida es la que se lleva a cabo, y después se cuenta cómo salió.',
+            texto: 'No es una encuesta de opinión: la opción elegida es la que se lleva a cabo, y después se reporta los resultados.',
             icono: 'verificado',
           },
         ],

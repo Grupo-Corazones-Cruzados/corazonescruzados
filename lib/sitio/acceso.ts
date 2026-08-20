@@ -38,6 +38,20 @@ export const EVENTO_ABRIR_PLATAFORMA = 'gcc:abrir-plataforma';
 export const ACCESO_PLATAFORMA = 'plataforma';
 
 /**
+ * El valor de `?acceso=` que abre el acceso **con el juego como destino** (2026-08-19).
+ *
+ * Nació con los botones «IR» del panel izquierdo de `/clientes`: desde la tarjeta de
+ * Videojuego, entrar tiene que acabar en la aventura, no en el panel. `?acceso=cliente` ya
+ * existía pero manda al `dashboard` a propósito —es lo que separa «entrar a trabajar» de
+ * «entrar a jugar»—, así que hacía falta un valor propio.
+ *
+ * ⚠️ **No abre un formulario nuevo**: abre el mismo diálogo de acceso de cliente de la
+ * portada, solo que con `entryDestination = 'game'`. La regla de este archivo sigue en pie —
+ * el acceso es UNO SOLO.
+ */
+export const ACCESO_VIDEOJUEGO = 'videojuego';
+
+/**
  * Abre el acceso a la plataforma. Se llama desde el botón de la barra de navegación.
  *
  * @param destino Ruta a la que volver tras iniciar sesión. Se pasa como `?redirect=`, que

@@ -66,38 +66,77 @@ function GaleriaSecciones({
           const abierta = a.id === activa;
           const Icono = ICONOS[a.icono] ?? ICONOS.capas;
           return (
-            <li key={a.id}>
-              <Link
-                href={`${base}/${a.id}`}
-                aria-current={abierta ? 'page' : undefined}
-                className={`block rounded-xl border p-3.5 transition-colors
-                            focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
-                  ${abierta
-                    ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.08]'
-                    : 'border-[var(--linea)] bg-[var(--tarjeta)] hover:border-[var(--linea-fuerte)]'}`}
-              >
-                <span className="flex items-center gap-2.5">
-                  <span
-                    aria-hidden
-                    className={`inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg border
-                      ${abierta
-                        ? 'border-[#7b5fbf]/35 bg-[#7b5fbf]/[0.12]'
-                        : 'border-[var(--linea)] bg-[#7b5fbf]/[0.05]'}`}
-                  >
-                    <Icono className="w-4 h-4 text-[var(--violeta-txt)]" />
-                  </span>
-                  <span className={`text-[14.5px] font-semibold leading-snug
-                    ${abierta ? 'text-[var(--violeta-txt)]' : 'text-[var(--texto)]'}`}>
-                    {a.titulo}
-                  </span>
+            <li
+              key={a.id}
+              /**
+               * ⚠️ `relative` Y LA TARJETA YA NO ES UN `<Link>`, Y ES OBLIGADO.
+               *
+               * Lo era: un enlace envolvía toda la tarjeta. Al pedir Fernando un botón «Ir»
+               * dentro (2026-08-19) eso dejó de valer — **un `<a>` dentro de otro `<a>` es
+               * marcado inválido**: el navegador lo desarma y uno de los dos deja de
+               * funcionar. Es el mismo motivo por el que `enlaceExterno` se pinta en el
+               * contenido y no en la tarjeta.
+               *
+               * La solución es el enlace estirado: el `<Link>` envuelve **solo el título** —de
+               * ahí saca su nombre accesible— y su `::after` se extiende sobre toda la
+               * tarjeta, así que pulsar en cualquier parte sigue navegando a la sección. El
+               * botón «Ir» se pone por encima con `relative z-10` y recibe sus propios clics.
+               */
+              className={`relative rounded-xl border p-3.5 transition-colors
+                ${abierta
+                  ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.08]'
+                  : 'border-[var(--linea)] bg-[var(--tarjeta)] hover:border-[var(--linea-fuerte)]'}`}
+            >
+              <span className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className={`inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg border
+                    ${abierta
+                      ? 'border-[#7b5fbf]/35 bg-[#7b5fbf]/[0.12]'
+                      : 'border-[var(--linea)] bg-[#7b5fbf]/[0.05]'}`}
+                >
+                  <Icono className="w-4 h-4 text-[var(--violeta-txt)]" />
                 </span>
-                {/* La frase, más apagada: en la abierta ya la repite el centro, pero
-                    quitarla solo de esa haría que la tarjeta cambiara de alto al elegirla y
-                    la lista entera daría un salto. */}
-                <span className="mt-2 block text-[12.5px] leading-relaxed text-[var(--tenue)]">
-                  {a.texto}
-                </span>
-              </Link>
+                <Link
+                  href={`${base}/${a.id}`}
+                  aria-current={abierta ? 'page' : undefined}
+                  className={`text-[14.5px] font-semibold leading-snug rounded-sm
+                              after:absolute after:inset-0 after:rounded-xl
+                              focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
+                    ${abierta ? 'text-[var(--violeta-txt)]' : 'text-[var(--texto)]'}`}
+                >
+                  {a.titulo}
+                </Link>
+              </span>
+
+              {/* La frase, más apagada: en la abierta ya la repite el centro, pero quitarla
+                  solo de esa haría que la tarjeta cambiara de alto al elegirla y la lista
+                  entera daría un salto. */}
+              <span className="mt-2 block text-[12.5px] leading-relaxed text-[var(--tenue)]">
+                {a.texto}
+              </span>
+
+              {/* ── EL BOTÓN DE ACCIÓN ──────────────────────────────────────────────
+                  Solo si la sección tiene a dónde mandar: Democracia no lo pinta, y no deja
+                  hueco. `relative z-10` lo levanta por encima del enlace estirado de arriba;
+                  sin eso, pulsarlo navegaría a la sección en vez de abrir el acceso.
+
+                  Es un `<a>` de toda la vida —no un botón con JavaScript— y por eso este
+                  componente sigue sin `use client`: lleva a una «puerta con nombre» que
+                  redirige al único formulario de acceso, el de la portada. */}
+              {a.accion && (
+                <Link
+                  href={a.accion.href}
+                  className="relative z-10 mt-3 inline-flex items-center gap-1 rounded-md
+                             border border-[#7b5fbf]/40 bg-[#7b5fbf]/[0.06] px-2.5 py-1
+                             text-[12px] font-medium text-[var(--violeta-txt)] transition-colors
+                             hover:border-[#7b5fbf]/70 hover:bg-[#7b5fbf]/[0.12]
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50"
+                >
+                  {a.accion.etiqueta}
+                  <ArrowRight className="w-3 h-3" aria-hidden />
+                </Link>
+              )}
             </li>
           );
         })}

@@ -5977,3 +5977,56 @@ tiene orden. Aplicada ya su corrección de P88.
 Las cinco rutas nuevas dan 200; `tu-talento`, `como-se-crece` y `/recursos` redirigen en **un
 salto**; el mapa del sitio lista las cuatro nuevas; y **ningún tema del sitio entero pasa de
 tres pasos** —comprobado en las ocho páginas de las dos ramas—. Sin desbordamiento horizontal.
+
+---
+
+## Decimonovena pasada (2026-08-19) — botones «Ir» en las tarjetas del panel izquierdo
+
+Fernando: *«los botones de acción justo en el panel izquierdo […] en Plataforma que el botón
+diga IR y me lleve a la pantalla de inicio de sesión. Lo mismo para videojuego y marketplace, y
+Democracia es el único que no tendría botón»*.
+
+### 🧱 P90 — La tarjeta ERA un enlace, y eso impedía meterle otro
+No es un detalle de maquetación: **un `<a>` dentro de otro `<a>` es marcado inválido**, el
+navegador lo desarma y uno de los dos deja de funcionar. Ya estaba escrito en el tipo `Acceso`
+desde el 2026-08-04, y era el motivo por el que `enlaceExterno` se pintaba en el contenido y no
+en la tarjeta.
+
+Se resolvió con el **enlace estirado**: el `<Link>` envuelve solo el título —de ahí saca su
+nombre accesible— y su `::after` se extiende sobre toda la tarjeta, así que pulsar en cualquier
+parte sigue navegando a la sección. El botón «Ir» va encima con `relative z-10`.
+
+Verificado que no quedan enlaces anidados (`li a a` → 0 en las cuatro tarjetas) y que pulsar en
+el cuerpo de una tarjeta sigue llevando a su sección.
+
+### ⭐ P91 — El botón no necesitaba JavaScript, y eso salvó el Server Component
+El primer reflejo fue un `<button onClick>` que llamara a `abrirPlataforma()`. Eso habría
+obligado a poner `use client` en `ExploradorSecciones` —o a partirlo—, y con ello se pierde lo
+mejor que tiene: que las ocho páginas de las dos ramas viajan enteras en el HTML crudo.
+
+No hacía falta. El proyecto **ya tiene «puertas con nombre»** (`lib/sitio/acceso.ts`,
+`/auth/<tipo>`) que redirigen al único formulario de acceso, el de la portada. Así que los
+botones son `<a href>` de toda la vida: funcionan con el teclado, se abren en otra pestaña con
+el botón derecho, y el explorador sigue sin una línea de cliente.
+
+**Lección:** antes de añadir interactividad, mirar si el enrutado ya la resuelve.
+
+### 🔎 P92 — Faltaba una puerta: entrar «a jugar» no es entrar «a trabajar»
+`?acceso=cliente` existía pero manda al panel **a propósito** —así estaba escrito: *«Quien llega
+por un enlace de acceso va al PANEL, no al juego»*—. Desde la tarjeta de Videojuego eso está
+mal: entrar debe acabar en la aventura.
+
+Se añadió `ACCESO_VIDEOJUEGO` (`/?acceso=videojuego`): **el mismo diálogo de acceso de cliente**,
+solo que con `entryDestination = 'game'`. No es un segundo formulario — la regla del archivo
+sigue intacta.
+
+### Lo medido
+| Tarjeta | Botón | Va a | Diálogo que abre |
+|---|---|---|---|
+| Plataforma | Ir | `/auth/cliente` | «Inicia sesión · Ya tienes una cuenta de cliente» |
+| Videojuego | Ir | `/?acceso=videojuego` | el mismo, pero con destino la aventura |
+| Marketplace | Ir | `/auth/cliente` | «Inicia sesión · Ya tienes una cuenta de cliente» |
+| Democracia | — | — | no pinta botón, y no deja hueco |
+
+Comprobado además que el diálogo **se abre de verdad** —no basta con llegar a la portada—, y con
+un control: `/auth/miembro` sigue abriendo «Ingresar como miembro».
