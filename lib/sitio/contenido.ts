@@ -1078,28 +1078,28 @@ export const DESARROLLO: Acceso[] = [
     titulo: 'Ser miembro',
     texto: 'Qué haces, qué aportas y cómo participas en las decisiones de la organización.',
     descripcion:
-      'Ser miembro significa que ya resolviste lo tuyo y ahora formas parte de quienes sostienen la organización. Mantienes tu negocio y tus actividades, y a la vez colaboras con tu talento en los sistemas internos; por cada producto o servicio que vendes en la plataforma, una tasa de beneficio queda en la organización, y eso es lo que nos permite recibir a los candidatos que vienen detrás de ti.',
+      'Ser miembro significa que ya resolviste lo tuyo y ahora formas parte de quienes sostienen la organización. Mantienes tu negocio y tus actividades, y a la vez colaboras con tu talento en los sistemas internos.',
     temas: [
       {
         id: 'que-cambia',
         etiqueta: 'Qué cambia',
         pregunta: '¿Qué cambia cuando eres miembro?',
         texto:
-          'Cambia tu relación con nosotros. Cuando eras candidato, nosotros invertíamos en ti; como miembro, tú pasas a ser parte de lo que hace posible esa inversión en otros. Mantienes tu negocio, tus clientes y tus actividades, y además tu talento queda disponible para lo que la organización necesita por dentro.',
+          'Cambia tu relación con nosotros. Cuando eras candidato, no tienes acceso a sistemas internos, y oportunidades más específicas; como miembro, tú pasas a ser parte de los sistemas internos; según el rol asignado. A la vez, mantienes tu negocio, tus clientes y tus actividades.',
         pasos: [
           {
             titulo: 'Mantienes lo tuyo',
-            texto: 'Tu negocio, tus clientes y tus actividades siguen siendo tuyos. Este proyecto se creó para que existan, y nunca te vamos a pedir que los dejes.',
+            texto: 'Tu negocio, tus clientes y tus actividades siguen siendo tuyos. Este proyecto se creó para que existan, y para que sigan creciendo.',
             icono: 'maletin',
           },
           {
             titulo: 'Aportas con tu talento',
-            texto: 'Tu talento entra en los sistemas internos de la organización, en aquello que ya dominas y que hace falta para que sigamos creciendo.',
+            texto: 'Tu talento entra en los sistemas internos de la organización, te asignamos algo en aquello que ya dominas y que nos hace falta para que sigamos creciendo.',
             icono: 'estrella',
           },
           {
             titulo: 'Compartes el beneficio',
-            texto: 'Por cada producto o servicio que vendes a través de la plataforma, una tasa de beneficio queda en la organización. Con eso financiamos el acompañamiento del siguiente candidato.',
+            texto: 'Los miembros tienen acceso exclusivo a oportunidades que ofrecemos a nuestros clientes por la confianza que existe en el grupo. La expectativa que tenemos sobre nuestros miembros es muy alta debido a todos los retos que sabemos tuvieron que pasar para llegar hasta aquí.',
             icono: 'ahorro',
           },
         ],
@@ -1109,21 +1109,21 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'Trabajo interno',
         pregunta: '¿Qué haces para la organización?',
         texto:
-          'Bastantes cosas, y son las que sostienen el proyecto: acompañar a un candidato nuevo y estudiar su condición, mantener uno de los sistemas internos, llevar un proyecto nuestro, formar a otros en lo que tú ya dominas, o hacerte cargo de un tramo del negocio. Este trabajo lo repartimos igual que el de los clientes, es decir, según el talento de cada uno y a la vista de todos.',
+          'Depende de tu talento, los miembros con rol global del paso de implementación deciden mediante el sistema de reclutamiento y selección, el paso y piso que vas a trabajar; sin embargo, si tu interés lo requiere, siempre podrás solicitar el cambio de tu posición.',
         pasos: [
           {
-            titulo: 'Publicamos lo que necesitamos',
-            texto: 'Lo hacemos igual que un cliente publica lo suyo, indicando qué hace falta y para cuándo, de manera que cualquier miembro pueda verlo.',
+            titulo: 'Ejecutamos roles',
+            texto: 'Lo que hacemos depende del paso y piso asignado. Ya sea que tu área sea la investigación, la creación, la implementación, o la gestión, cada persona colabora en donde mejor se adapta.',
             icono: 'altavoz',
           },
           {
             titulo: 'Tomas lo que va contigo',
-            texto: 'Según tu talento y tu disponibilidad, tal como funciona el trabajo de fuera. Nadie te asignará algo que no estés en condición de sostener.',
+            texto: 'Existen tickets y proyectos que se promocionan internamente las cuales se puedes tomar y aceptar según tu interés, y más allá de tu rol, según tu necesidad.',
             icono: 'acuerdo',
           },
           {
             titulo: 'Queda bajo tu responsabilidad',
-            texto: 'Mientras lo lleves, ese sistema o ese proyecto pasa a ser tuyo: respondes por él, decides sobre él, y así es como se gana responsabilidad dentro de la organización.',
+            texto: 'Mientras pertenezcas al grupo, todas tus acciones e intenciones representan lo que somos y lo que queremos construir para nuestros hijos. Si un miembro olvida sus raíces, o sus valores, y prioriza los intereses de poder, será expulsado del grupo.',
             icono: 'escudo',
           },
         ],
@@ -1133,22 +1133,42 @@ export const DESARROLLO: Acceso[] = [
         etiqueta: 'Decisiones',
         pregunta: '¿Puedes decidir sobre la organización?',
         texto:
-          'Sí. Desde los sistemas internos puedes observar el estado global del negocio: cómo va, qué le falta y dónde estamos flojos. Sobre esa información los miembros votan las mejoras y toman decisiones conjuntas, porque queremos que decidas con los datos delante y no con una impresión.',
+          'Sí. Desde los sistemas internos puedes observar el estado global del negocio, cómo se invierte o gasta el dinero, qué nos falta para progresar, y en dónde estamos creciendo. Sobre esa información, y las solicitudes que se hacen, los miembros discuten, votan y toman decisiones conjuntas, mejorando así nuestra organización, solo en caso las votaciones sean inseguras en <80% de parcialidad, la decisión final la toma el líder del grupo según toda la información recolectada.',
+        /**
+         * Pasos rehechos el 2026-08-20 sobre el texto que reescribió Fernando. Los anteriores
+         * eran míos y se quedaban cortos: su versión añade tres cosas que ninguno recogía.
+         *
+         *  · **Se discute ANTES de votar** —«los miembros discuten, votan y toman
+         *    decisiones»—. Mi paso saltaba directo a la votación.
+         *  · Entran a decisión también **las solicitudes** que se hacen, no solo lo que se ve
+         *    en los datos.
+         *  · **El umbral del 80%**, que es lo más importante de todo: cuando la votación no es
+         *    concluyente, decide el líder con toda la información recolectada.
+         *
+         * ⭐ Ese umbral es lo que **enlaza esta sección con el fundamento del proyecto**. En
+         * `MEMORIA.md`: *«el poder se construye, no se decide»*, con crítica explícita a la
+         * democracia por voto. Aquí se ve cómo conviven las dos ideas sin contradecirse — se
+         * vota entre opciones, y cuando el voto no es concluyente no gana una mayoría
+         * dudosa: decide quien responde por el grupo. Merecía ser un paso y no una nota al pie.
+         *
+         * El paso que se retiró, «Te haces cargo de una parte», no se pierde: eso mismo lo
+         * cuenta «Queda bajo tu responsabilidad», en la pregunta de trabajo interno.
+         */
         pasos: [
           {
             titulo: 'Observas el estado del negocio',
-            texto: 'Los sistemas internos te muestran cómo va la organización de verdad, no un resumen preparado. Sin esa información, votar sería solo opinar.',
+            texto: 'Desde los sistemas internos ves cómo va la organización de verdad: en qué se invierte, en qué se gasta, qué nos falta para progresar y en dónde estamos creciendo.',
             icono: 'grafico',
           },
           {
-            titulo: 'Votas las mejoras',
-            texto: 'Sobre qué hay que cambiar, en qué invertimos y qué hacemos primero. Tu voto vale lo mismo que el de cualquier otro miembro.',
+            titulo: 'Se discute y se vota',
+            texto: 'Sobre esa información y sobre las solicitudes que llegan, primero discutimos entre los miembros y después votamos. Tu voto vale lo mismo que el de cualquier otro miembro.',
             icono: 'voto',
           },
           {
-            titulo: 'Te haces cargo de una parte',
-            texto: 'Administrar gente, mejorar unos ingresos o sostener un sistema. Ser partícipe activo significa asumir una necesidad concreta del negocio y responder por ella con tu talento.',
-            icono: 'institucion',
+            titulo: 'Se toma la decisión',
+            texto: 'Cuando la votación es clara, la mejora se ejecuta tal como se votó. Si queda por debajo del 80% de parcialidad, la decisión final la toma el líder del grupo con toda la información recolectada.',
+            icono: 'balanza',
           },
         ],
       },
