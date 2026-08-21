@@ -374,6 +374,15 @@ Stack estándar de la casa, con particularidades de este repo:
     cómo crece. La página contaba *quiénes somos* y no *qué gana quien se acerca*.
   - `FaqsPanel` recorre ahora **las dos ramas**: sin eso, las preguntas de Desarrollo Humano no
     se podrían crear desde el admin y el fallo habría sido mudo.
+- **ILUSTRACIONES DE LOS PASOS (2026-08-20).** Los 48 pasos de las preguntas llevan ilustración
+  en vez de icono. Se generan con **`scripts/ilustrar-pasos.mjs`** (OpenAI `gpt-image-2`; ⚠️ la
+  `GEMINI_API_KEY` del repo **no es válida**), con el bloque de estilo que escribió Fernando.
+  - ⭐ **Recortar al ras es obligatorio**: recién generadas traen 63-77 % de lienzo transparente
+    y, como la web las mete con `object-contain`, se ven diminutas. Lo hace el script.
+  - Tras recortar cambia el tamaño → hay que actualizar `imagen: { ancho, alto }` o la página
+    salta al cargar.
+  - Van **centradas** (`inset-x-0 mx-auto` + `object-bottom`), no pegadas a la derecha: con un
+    borde común, las diferencias de ancho entre ilustraciones saltan a la vista.
   - **(2026-08-19, por la tarde) `progreso` → `plataforma`**, segundo renombrado de la misma
     sección en el mismo día. Las **cuatro** direcciones publicadas —`/clientes/progreso`,
     `/clientes/requerimientos`, `/soluciones/requerimientos`, `/negocio/requerimientos`—

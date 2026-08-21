@@ -439,8 +439,16 @@ export function BloqueTema({
                       aria-hidden
                       width={p.imagen.ancho}
                       height={p.imagen.alto}
-                      className="pointer-events-none select-none absolute bottom-0 right-0
-                                 w-[200px] h-[92px] object-contain object-right-bottom opacity-[0.22]"
+                      /* ⚠️ CENTRADA, no pegada a la derecha (Fernando, 2026-08-20).
+                         Iba en `right-0` + `object-right-bottom`, y con el borde derecho como
+                         referencia común cualquier diferencia de ancho entre una ilustración y
+                         otra saltaba a la vista. Centradas, esa referencia desaparece y las
+                         proporciones distintas dejan de notarse.
+                         `inset-x-0 mx-auto` centra el marco dentro del paso; `object-bottom`
+                         centra el dibujo dentro del marco y lo apoya abajo, que es la posición
+                         que él quería conservar. */
+                      className="pointer-events-none select-none absolute bottom-0 inset-x-0 mx-auto
+                                 w-[200px] h-[92px] object-contain object-bottom opacity-[0.22]"
                     />
                   )}
 

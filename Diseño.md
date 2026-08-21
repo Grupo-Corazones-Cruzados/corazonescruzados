@@ -489,6 +489,43 @@ contiene necesita `min-w-0` porque su `min-width` por defecto es `auto` («lo qu
 ancho»): sin él, esa lista de 2.848 px estiraba la columna y **la página entera**, con barra
 horizontal en todo el sitio. Se detectó midiendo `scrollWidth` del documento a 900/560/390 px.
 
+### Las ilustraciones de los pasos — `scripts/ilustrar-pasos.mjs` (2026-08-20)
+
+Cada paso de cada pregunta lleva una ilustración de fondo. Son **48**, y salir todas iguales
+depende de tres cosas que es fácil olvidar:
+
+**1. El bloque de estilo es de Fernando y no se toca.** Vive en el script. Lo único que cambia
+por imagen es la escena final, que sigue su patrón: una escena pequeña —no un pictograma— y un
+`Nada más: …` que cierra la lista de lo que puede aparecer.
+
+**2. ⭐ El recorte al ras no es opcional.** El prompt pide «con aire alrededor», y hace bien:
+sin eso el modelo pega el trazo al borde. Pero ese aire hay que quitarlo **antes de guardar**.
+Medido: las imágenes recién generadas traían entre un **63 % y un 77 %** de lienzo transparente,
+y como la web las mete enteras con `object-contain`, el dibujo acababa ocupando un tercio del
+hueco y se veía diminuto al lado de las que Fernando recortó a mano (0 % de sobrante). Ahora lo
+hace el script.
+
+**3. Las dimensiones declaradas deben coincidir con el archivo.** El recorte cambia el tamaño,
+así que `imagen: { ancho, alto }` hay que actualizarlo. Si no, Next reserva un hueco equivocado
+y la página salta al cargar.
+
+**Centradas, no pegadas a la derecha** (Fernando, 2026-08-20). Iban en `right-0` +
+`object-right-bottom`, y con el borde derecho como referencia común cualquier diferencia de
+ancho entre una ilustración y otra saltaba a la vista. Con `inset-x-0 mx-auto` + `object-bottom`
+esa referencia desaparece y las proporciones distintas dejan de notarse.
+
+**Al elegir la escena, mirar las vecinas.** A 96 px y al 22 % de opacidad todo tiende a la
+mancha: dos escenas parecidas se confunden. Por eso «Lo sigues sin arrear» es una línea de
+tiempo y no un calendario (ya lo era «Eliges por dónde empezar»), y «Compartes el beneficio»
+dejó de ser una llave para no chocar con la puerta de «Entras con tu cuenta».
+
+⚠️ **La misma ilustración se reutiliza cuando el paso es el mismo.** «Entras con tu cuenta»
+aparece en Retos CC y en Talentos con idéntico texto, a petición de Fernando; dos dibujos
+distintos harían dudar de si son dos accesos.
+
+⚠️ Usa **`gpt-image-2` de OpenAI**. La `GEMINI_API_KEY` del repo **no es válida** (devuelve
+«API key not valid»).
+
 ### La tarjeta de trabajo — `components/sitio/TarjetaTrabajo.tsx`
 
 `.tarjeta-portafolio`, **la misma clase que el portafolio del CV público** (vive en

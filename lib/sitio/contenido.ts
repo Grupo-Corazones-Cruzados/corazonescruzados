@@ -463,17 +463,17 @@ export const ACCESOS: Acceso[] = [
         {
           titulo: 'Lo publicas',
           texto: 'Un ticket con lo que necesitas desde tu perspectiva como cliente, tu presupuesto, la fecha límite de entrega, y configuras el talento que necesitas.',
-          imagen: { src: '/clientes/paso-1-publicas.webp', ancho: 760, alto: 677 },
+          imagen: { src: '/clientes/paso-1-publicas.webp', ancho: 657, alto: 760 },
         },
         {
           titulo: 'Lo toma quien sabe hacerlo',
           texto: 'Un perfil con el talento requerido revisa el ticket abierto, analiza su disponibilidad según la fecha límite de entrega, y define el costo final en base a tu presupuesto.',
-          imagen: { src: '/clientes/paso-2-lo-toma.webp', ancho: 760, alto: 753 },
+          imagen: { src: '/clientes/paso-2-lo-toma.webp', ancho: 760, alto: 755 },
         },
         {
           titulo: 'Lo sigues sin arrear',
           texto: 'El talento se hace responsable de establecer los días y horas de trabajo previo a la fecha límite de entrega, coordina reuniones, y tomará contacto hasta completar la tarea.',
-          imagen: { src: '/clientes/paso-3-seguimiento.webp', ancho: 760, alto: 182 },
+          imagen: { src: '/clientes/paso-3-seguimiento.webp', ancho: 760, alto: 216 },
         },
       ],
     },
@@ -497,17 +497,17 @@ export const ACCESOS: Acceso[] = [
         {
           titulo: 'Hablas con un talento',
           texto: 'Eliges con quién y le cuentas la idea. Te devuelve una cotización con su alcance y su precio, para que sepas qué entra y qué no.',
-          imagen: { src: '/clientes/proyecto-1-hablas.webp', ancho: 760, alto: 525 },
+          imagen: { src: '/clientes/proyecto-1-hablas.webp', ancho: 760, alto: 436 },
         },
         {
           titulo: 'Negocias el presupuesto',
           texto: 'Se ajusta hasta que cuadre para los dos. Nada se pone en marcha sin que tú lo aceptes.',
-          imagen: { src: '/clientes/proyecto-2-negocias.webp', ancho: 760, alto: 601 },
+          imagen: { src: '/clientes/proyecto-2-negocias.webp', ancho: 760, alto: 556 },
         },
         {
           titulo: 'El responsable toma el control',
           texto: 'Gestiona el presupuesto y suma a los participantes que hagan falta hasta cubrir todos los requerimientos del proyecto.',
-          imagen: { src: '/clientes/proyecto-3-responsable.webp', ancho: 760, alto: 763 },
+          imagen: { src: '/clientes/proyecto-3-responsable.webp', ancho: 760, alto: 749 },
         },
       ],
     }],
@@ -588,17 +588,17 @@ export const ACCESOS: Acceso[] = [
           {
             titulo: 'Entras con tu cuenta',
             texto: 'La misma con la que se entra en la plataforma. Es la única puerta para los clientes.',
-            icono: 'candado',
+            imagen: { src: '/clientes/reto-1-entras.webp', ancho: 589, alto: 760 },
           },
           {
             titulo: 'Comparte fácil',
             texto: 'Inicias el prólogo, y creas tu personaje. Luego durante el tutorial vas a aprender a crear eventos y compartirlos por enlace a tus colaboradores.',
-            icono: 'premio',
+            imagen: { src: '/clientes/reto-2-comparte.webp', ancho: 760, alto: 250 },
           },
           {
             titulo: 'Obtén los resultados',
             texto: 'Cada prueba va a generar un reporte según las decisiones tomadas, logros alcanzados, y criterios de evaluación aplicados en tus pruebas.',
-            icono: 'grafico',
+            imagen: { src: '/clientes/reto-3-resultados.webp', ancho: 640, alto: 760 },
           },
         ],
       },
@@ -642,17 +642,20 @@ export const ACCESOS: Acceso[] = [
           {
             titulo: 'Entras con tu cuenta',
             texto: 'La misma con la que se entra en la plataforma. Es la única puerta para los clientes.',
-            icono: 'candado',
+            /* La MISMA ilustración que el paso de entrada de Retos CC, a propósito: es el
+               mismo paso, contado con las mismas palabras por petición de Fernando. Dos
+               dibujos distintos para lo mismo harían dudar de si son dos accesos. */
+            imagen: { src: '/clientes/reto-1-entras.webp', ancho: 589, alto: 760 },
           },
           {
             titulo: 'Juega y gana',
             texto: 'Participa para obtener GCC Coins, y ganar acceso a servicios y productos gratuitos.',
-            icono: 'billetera',
+            imagen: { src: '/clientes/talento-2-juega-gana.webp', ancho: 682, alto: 760 },
           },
           {
             titulo: 'Conoce nuestro talento',
             texto: 'Participa en eventos comunitarios del videojuego para ganar puntos, conocer perfiles, y socializar con nuestros talentos.',
-            icono: 'personas',
+            imagen: { src: '/clientes/talento-3-conoce.webp', ancho: 760, alto: 529 },
           },
         ],
       },
@@ -711,17 +714,17 @@ export const ACCESOS: Acceso[] = [
           {
             titulo: 'Miras lo que hay publicado',
             texto: 'El catálogo está abierto: se recorre entero sin cuenta y sin registrarse para ver precios.',
-            icono: 'buscar',
+            imagen: { src: '/clientes/mkt-1-catalogo.webp', ancho: 760, alto: 751 },
           },
           {
             titulo: 'Abres la ficha',
             texto: 'Cada registro tiene su panel con las imágenes y el detalle. Si es un proyecto, además la lista de sus requerimientos.',
-            icono: 'lista',
+            imagen: { src: '/clientes/mkt-2-ficha.webp', ancho: 580, alto: 760 },
           },
           {
             titulo: 'Pides lo que te interesa',
             texto: 'La solicitud se hace desde la ficha, y a partir de ahí el seguimiento vive en tu panel.',
-            icono: 'carrito',
+            imagen: { src: '/clientes/mkt-3-solicitas.webp', ancho: 760, alto: 228 },
           },
         ],
       },
@@ -760,17 +763,17 @@ export const ACCESOS: Acceso[] = [
           {
             titulo: 'Publica lo que quieras vender',
             texto: 'Ingresas aquello que tienes u adquiriste. Le pones precio o lo dejas como regalo, y queda a la vista del resto de compradores.',
-            icono: 'tienda',
+            imagen: { src: '/clientes/mkt-4-publicas.webp', ancho: 760, alto: 689 },
           },
           {
             titulo: 'Negocia el costo final con tus clientes',
             texto: 'Quien se interese te escribe, y el precio o método de cambio se acuerda entre los dos. Nada se cierra hasta que ambos estén de acuerdo.',
-            icono: 'acuerdo',
+            imagen: { src: '/clientes/mkt-5-negocias.webp', ancho: 760, alto: 625 },
           },
           {
             titulo: 'Intercambia, compra o vende',
             texto: 'El pago puede ser dinero real, GCC Coins, o directamente otro producto o servicio del comprador. Los tres caminos valen, y cuál se usa forma parte del trato (La plataforma gestiona los traspasos).',
-            icono: 'billetera',
+            imagen: { src: '/clientes/mkt-6-intercambias.webp', ancho: 662, alto: 760 },
           },
         ],
       },
@@ -816,17 +819,17 @@ export const ACCESOS: Acceso[] = [
           {
             titulo: 'Se abre la votación',
             texto: 'Cuando hay algo que decidir se publica con sus opciones y el plazo para votar, para que nadie se entere cuando ya está resuelto.',
-            icono: 'lista',
+            imagen: { src: '/clientes/dem-1-se-abre.webp', ancho: 701, alto: 760 },
           },
           {
             titulo: 'Eliges tu opción',
             texto: 'Entras con tu cuenta y votas la que prefieras. Un voto por cuenta, y sin tener que justificarlo ante nadie.',
-            icono: 'voto',
+            imagen: { src: '/clientes/dem-2-eliges.webp', ancho: 634, alto: 760 },
           },
           {
             titulo: 'Se hace lo que se votó',
             texto: 'No es una encuesta de opinión: la opción elegida es la que se lleva a cabo, y después se reporta los resultados.',
-            icono: 'verificado',
+            imagen: { src: '/clientes/dem-3-se-hace.webp', ancho: 760, alto: 279 },
           },
         ],
       },
@@ -895,17 +898,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Inicias desde cero',
             texto: 'No se te pide un perfil impecable ni que domines algún conocimiento. Se te pide únicamente que tus acciones e intenciones sean sinceras.',
-            icono: 'brujula',
+            imagen: { src: '/desarrollo-humano/dh-proyecto-1-cero.webp', ancho: 680, alto: 760 },
           },
           {
             titulo: 'Se estudia tu caso',
             texto: 'Una entrevista para entender de dónde vienes y qué estás afrontando. Se definen situaciones causantes de problemas, causas específicas, y alternativas de solución',
-            icono: 'buscar',
+            imagen: { src: '/desarrollo-humano/dh-proyecto-2-caso.webp', ancho: 740, alto: 760 },
           },
           {
             titulo: 'Acciones diarias',
             texto: 'Las alternativas se convierten en tareas dentro de la plataforma. Con esto podrás afrontar las dificultades que tienes y percibir el progreso.',
-            icono: 'brujula',
+            imagen: { src: '/desarrollo-humano/dh-proyecto-3-acciones.webp', ancho: 692, alto: 760 },
           },
         ],
       },
@@ -919,17 +922,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Primero recibes',
             texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Invertimos $50 por persona para empezar con su proyecto.',
-            icono: 'acuerdo',
+            imagen: { src: '/desarrollo-humano/dh-proyecto-4-recibes.webp', ancho: 686, alto: 760 },
           },
           {
             titulo: 'Sostenibilidad',
             texto: 'Planificamos y ejecutamos una estrategia de desarrollo humano que incluye un método de monetización para obtener beneficios de tu talento y así colaborar en la organización.',
-            icono: 'tendencia',
+            imagen: { src: '/desarrollo-humano/dh-proyecto-5-sostenibilidad.webp', ancho: 494, alto: 760 },
           },
           {
             titulo: 'Apoyo y Autoayuda',
             texto: 'Empoderarte permite registrar datos que luego son reutilizados en otros casos similares al tuyo. De esa manera recolectar datos, nos permiten crear y generar oportunidades para ti y para los demás miembros.',
-            icono: 'personas',
+            imagen: { src: '/desarrollo-humano/dh-proyecto-6-apoyo.webp', ancho: 760, alto: 648 },
           },
         ],
       },
@@ -953,17 +956,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Te postulas',
             texto: 'Hazlo desde la página de inicio, contando tu situación con tus palabras. No hay preguntas trampa ni pruebas que superar.',
-            icono: 'bandera',
+            imagen: { src: '/desarrollo-humano/dh-entra-1-postulas.webp', ancho: 760, alto: 744 },
           },
           {
             titulo: 'Hablemos de ti',
             texto: 'Una conversación para entender lo que pasa, no es para juzgarte. Lo que cuentes ahí queda entre el entrevistador y tú.',
-            icono: 'mensaje',
+            imagen: { src: '/desarrollo-humano/dh-entra-2-hablemos.webp', ancho: 760, alto: 558 },
           },
           {
             titulo: 'Se reconoce tu caso',
             texto: 'Se nombran los problemas concretos, uno por uno. Cuando un problema es identificado y tiene nombre, veremos la manera de tratar y resolverlo juntos.',
-            icono: 'lista',
+            imagen: { src: '/desarrollo-humano/dh-entra-3-reconoce.webp', ancho: 760, alto: 515 },
           },
         ],
       },
@@ -977,17 +980,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Se plantean los caminos',
             texto: 'Para cada problema identificado, pueden existir más de una forma de responder. Con lo que se te pide ejecutar, vamos a revisar si el efecto, y cómo abordar el siguiente paso según lo que suceda.',
-            icono: 'rama',
+            imagen: { src: '/desarrollo-humano/dh-entra-4-caminos.webp', ancho: 760, alto: 584 },
           },
           {
             titulo: 'Eliges por dónde empezar',
             texto: 'Nosotros desarrollamos la estrategia, pero tú recibes las tareas, y desde la plataforma escoges la fecha u hora de ejecución. Ten en cuenta que cada tarea tiene una valoración dentro de tu perfil, en caso de que no cumplas con tu tarea existe un castigo, y si se percibe una falta de compromiso recurrente, entonces se considera el rechazo de tu candidatura.',
-            icono: 'diana',
+            imagen: { src: '/desarrollo-humano/dh-entra-5-eliges.webp', ancho: 740, alto: 760 },
           },
           {
             titulo: 'Empiezas acompañado',
             texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a un espacio en donde puedes preguntar y conversar sobre tus dificultades. Los logros o el éxito que tú tengas, los compartimos y festejamos todos los miembros, ya que es el resultado también del esfuerzo que todos hacemos para que funcione esta organización.',
-            icono: 'candado',
+            imagen: { src: '/desarrollo-humano/dh-entra-6-acompanado.webp', ancho: 592, alto: 760 },
           },
         ],
       },
@@ -1011,17 +1014,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Se usa el sistema',
             texto: 'La plataforma tiene varios sistemas desde el cual puedes trabajar en tu perfil, no solo las tareas que se te asignan para abordar tus problemas, hay eventos u otras herramientas que te permitirán obtener ingresos, o experiencias nuevas.',
-            icono: 'herramienta',
+            imagen: { src: '/desarrollo-humano/dh-prog-1-sistema.webp', ancho: 760, alto: 683 },
           },
           {
             titulo: 'Se mira el resultado',
             texto: 'Qué cambió de verdad en tu situación. De acuerdo a las acciones realizadas se tiene un registro completo de todos tus pasos, y se puede analizar y obtener datos que permitan observar lo que sirvió para tu caso, y lo que no.',
-            icono: 'medidor',
+            imagen: { src: '/desarrollo-humano/dh-prog-2-resultado.webp', ancho: 760, alto: 674 },
           },
           {
             titulo: 'Se corrige y se sigue',
             texto: 'Si funcionó, se avanza al siguiente paso, necesidad o problema. Si no, se cambia la condición y se vuelve a probar. Equivocarse forma parte del método.',
-            icono: 'flujo',
+            imagen: { src: '/desarrollo-humano/dh-prog-3-corrige.webp', ancho: 760, alto: 748 },
           },
         ],
       },
@@ -1035,17 +1038,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Empiezas a resolver',
             texto: 'Los primeros problemas por lo que empezamos, ya logras manejarlos y sabes usar tus herramientas para resolver si tuvieras que volver a afrontarlos.',
-            icono: 'billetera',
+            imagen: { src: '/desarrollo-humano/dh-prog-4-resolver.webp', ancho: 760, alto: 282 },
           },
           {
             titulo: 'Cubres lo básico',
             texto: 'Además de los problemas, ya lograr obtener lo que necesitas para vivir, y sentir tranquilidad o felicidad en tu día a día.',
-            icono: 'casa',
+            imagen: { src: '/desarrollo-humano/dh-prog-5-basico.webp', ancho: 760, alto: 739 },
           },
           {
             titulo: 'Se te convierte en miembro',
             texto: 'Porque ya representas al grupo ante los demás, y porque estás en condición de sostener a otro. Es un reconocimiento que se realiza con tu consentimiento, el cual conlleva mayor responsabilidad y compromiso.',
-            icono: 'premio',
+            imagen: { src: '/desarrollo-humano/dh-prog-6-miembro.webp', ancho: 571, alto: 760 },
           },
         ],
       },
@@ -1093,17 +1096,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Mantienes lo tuyo',
             texto: 'Tu negocio, tus clientes y tus actividades siguen siendo tuyos. Este proyecto se creó para que existan, y para que sigan creciendo.',
-            icono: 'maletin',
+            imagen: { src: '/desarrollo-humano/dh-miem-1-mantienes.webp', ancho: 760, alto: 607 },
           },
           {
             titulo: 'Aportas con tu talento',
             texto: 'Tu talento entra en los sistemas internos de la organización, te asignamos algo en aquello que ya dominas y que nos hace falta para que sigamos creciendo.',
-            icono: 'estrella',
+            imagen: { src: '/desarrollo-humano/dh-miem-2-aportas.webp', ancho: 600, alto: 760 },
           },
           {
             titulo: 'Compartes el beneficio',
             texto: 'Los miembros tienen acceso exclusivo a oportunidades que ofrecemos a nuestros clientes por la confianza que existe en el grupo. La expectativa que tenemos sobre nuestros miembros es muy alta debido a todos los retos que sabemos tuvieron que pasar para llegar hasta aquí.',
-            icono: 'ahorro',
+            imagen: { src: '/desarrollo-humano/dh-miem-3-beneficio.webp', ancho: 417, alto: 760 },
           },
         ],
       },
@@ -1117,17 +1120,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Ejecutamos roles',
             texto: 'Lo que hacemos depende del paso y piso asignado. Ya sea que tu área sea la investigación, la creación, la implementación, o la gestión, cada persona colabora en donde mejor se adapta.',
-            icono: 'altavoz',
+            imagen: { src: '/desarrollo-humano/dh-miem-4-roles.webp', ancho: 660, alto: 760 },
           },
           {
             titulo: 'Tomas lo que va contigo',
             texto: 'Existen tickets y proyectos que se promocionan internamente las cuales se puedes tomar y aceptar según tu interés, y más allá de tu rol, según tu necesidad.',
-            icono: 'acuerdo',
+            imagen: { src: '/desarrollo-humano/dh-miem-5-tomas.webp', ancho: 760, alto: 703 },
           },
           {
             titulo: 'Queda bajo tu responsabilidad',
             texto: 'Mientras pertenezcas al grupo, todas tus acciones e intenciones representan lo que somos y lo que queremos construir para nuestros hijos. Si un miembro olvida sus raíces, o sus valores, y prioriza los intereses de poder, será expulsado del grupo.',
-            icono: 'escudo',
+            imagen: { src: '/desarrollo-humano/dh-miem-6-responsabilidad.webp', ancho: 622, alto: 760 },
           },
         ],
       },
@@ -1161,17 +1164,17 @@ export const DESARROLLO: Acceso[] = [
           {
             titulo: 'Observas el estado del negocio',
             texto: 'Desde los sistemas internos ves cómo va la organización de verdad: en qué se invierte, en qué se gasta, qué nos falta para progresar y en dónde estamos creciendo.',
-            icono: 'grafico',
+            imagen: { src: '/desarrollo-humano/dh-miem-7-observas.webp', ancho: 760, alto: 516 },
           },
           {
             titulo: 'Se discute y se vota',
             texto: 'Sobre esa información y sobre las solicitudes que llegan, primero discutimos entre los miembros y después votamos. Tu voto vale lo mismo que el de cualquier otro miembro.',
-            icono: 'voto',
+            imagen: { src: '/desarrollo-humano/dh-miem-8-discute.webp', ancho: 651, alto: 760 },
           },
           {
             titulo: 'Se toma la decisión',
             texto: 'Cuando la votación es clara, la mejora se ejecuta tal como se votó. Si queda por debajo del 80% de parcialidad, la decisión final la toma el líder del grupo con toda la información recolectada.',
-            icono: 'balanza',
+            imagen: { src: '/desarrollo-humano/dh-miem-9-decision.webp', ancho: 760, alto: 546 },
           },
         ],
       },

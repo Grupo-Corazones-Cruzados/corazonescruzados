@@ -6067,3 +6067,39 @@ natural. Que juzgue él si sobra.
 **Lección:** un contador de palabras es un proxy útil para *detectar* un sesgo y malo para
 *corregirlo*. Sirvió para ver que me había pasado; no sirve para decidir cuántas veces se dice
 «nosotros».
+
+---
+
+## Vigesimoprimera pasada (2026-08-20) — las 48 ilustraciones
+
+Fernando pidió sustituir los iconos de los pasos por ilustraciones generadas con IA, con un
+bloque de estilo que escribió él. Se generaron **42** (36 que faltaban + las 6 de Plataforma,
+que quiso rehacer por tener otro estilo) y quedan los 48 pasos ilustrados, sin un solo icono.
+
+### 🪤 P95 — Se veían pequeñas, y no era la resolución
+Su primera reacción: *«los veo muy pequeños en proporción a las otras imágenes»*. La causa,
+medida: las recién generadas traían entre un **63 % y un 77 %** de lienzo transparente
+alrededor del dibujo; las suyas, **0 %** —las había recortado a mano, cosa que él confirmó
+después—. Como la web las mete enteras con `object-contain`, ese vacío contaba como imagen.
+
+Se arregla recortando al ras, sin regenerar nada. Lo revelador es que **la respuesta estaba en
+las imágenes que ya existían**: bastaba compararlas en vez de suponer.
+
+### P96 — El segundo problema del tamaño no se veía imagen a imagen
+Aun recortadas, él seguía notando diferencias. Su propia propuesta lo resolvió: **centrarlas**.
+Con el borde derecho como referencia común, cualquier diferencia de ancho salta a la vista; sin
+esa referencia, deja de notarse. Es un problema del conjunto, no de cada pieza.
+
+### 🪤 P97 — Un `fetch` caído se llevó una tanda entera
+`UND_ERR_HEADERS_TIMEOUT` en la mitad de una tanda de seis: el proceso murió y se perdieron las
+que venían detrás, que no tenían nada malo. Ahora el script reintenta tres veces y, si aun así
+falla, avisa y continúa. **En trabajo por lotes, un fallo aislado no puede parar el lote.**
+
+### 🪤 P98 — «3 imágenes rotas» que no lo estaban
+La comprobación automática dio 3 rotas en `ser-miembro`. No lo estaban: era **carga diferida**,
+el tercer bloque quedaba fuera de pantalla. Confirmado desplazándose hasta el fondo: 0 rotas.
+Reportarlo sin comprobar habría mandado a Fernando a buscar un fallo inexistente.
+
+### Lo medido al cerrar
+48 pasos · 48 con imagen · 0 con icono · 47 archivos referenciados, 47 en disco, **ninguno
+huérfano en ninguna dirección** · los 47 tamaños declarados coinciden con los reales.
