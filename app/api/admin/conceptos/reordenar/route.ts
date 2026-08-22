@@ -1,4 +1,4 @@
-/** Reordena los conceptos de una solución. Solo administradores. */
+/** Reordena los conceptos de un talento. Solo administradores. */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';

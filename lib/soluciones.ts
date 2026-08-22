@@ -194,6 +194,13 @@ export async function talentosOcupados(exceptoSolucionId?: number): Promise<Reco
  *
  * ⚠️ Se descarta cualquier nombre que no esté en el catálogo. Un talento inventado aquí
  * jamás casaría con un requerimiento y dejaría una carpeta vacía sin explicación.
+ *
+ * ── ⭐ SE GUARDA POR DIFERENCIAS, NO BORRANDO Y REINSERTANDO (2026-08-21) ─────
+ * Hasta la migración 051 esta función hacía `DELETE` de todos los talentos de la solución y
+ * los volvía a insertar. Daba igual porque de la fila del talento no colgaba nada. **Ahora
+ * cuelgan sus conceptos** con `ON DELETE CASCADE`, así que aquel borrado en bloque habría
+ * vaciado los conceptos de todos los talentos en CADA guardado —incluso al no cambiar nada,
+ * incluso al reordenar—. Se borra solo lo que de verdad se ha quitado.
  */
 export async function fijarTalentos(
   solucionId: number,
@@ -209,21 +216,29 @@ export async function fijarTalentos(
   const cliente = await pool.connect();
   try {
     await cliente.query('BEGIN');
-    await cliente.query(`DELETE FROM gcc_world.solucion_talentos WHERE solucion_id = $1`, [solucionId]);
+    // Fuera SOLO los que ya no están en la lista. Los que siguen conservan su fila —y con
+    // ella sus conceptos, que cuelgan del talento (migración 051).
+    await cliente.query(
+      `DELETE FROM gcc_world.solucion_talentos
+        WHERE solucion_id = $1 AND NOT (talento = ANY($2::text[]))`,
+      [solucionId, unicos.map((t) => t.talento)],
+    );
     if (unicos.length) {
       await cliente.query(
         `INSERT INTO gcc_world.solucion_talentos (solucion_id, talento, orden, descripcion, slug)
          SELECT $1, t.valor, t.ord - 1, d.valor, s.valor
            FROM UNNEST($2::text[]) WITH ORDINALITY AS t(valor, ord)
            JOIN UNNEST($3::text[]) WITH ORDINALITY AS d(valor, ord) ON d.ord = t.ord
-           JOIN UNNEST($4::text[]) WITH ORDINALITY AS s(valor, ord) ON s.ord = t.ord`,
+           JOIN UNNEST($4::text[]) WITH ORDINALITY AS s(valor, ord) ON s.ord = t.ord
+         ON CONFLICT (solucion_id, talento) DO UPDATE
+            SET orden = EXCLUDED.orden, descripcion = EXCLUDED.descripcion`,
         [
           solucionId,
           unicos.map((t) => t.talento),
           unicos.map((t) => t.descripcion ?? null),
-          // El slug se calcula aquí con la MISMA regla que usó la migración 043. Se
-          // recalcula en cada guardado porque el nombre del talento no cambia nunca —viene
-          // del catálogo—, así que siempre da lo mismo.
+          // El slug se calcula aquí con la MISMA regla que usó la migración 043, y solo
+          // se usa al INSERTAR: el `DO UPDATE` no lo toca, porque es una URL publicada
+          // (migración 043) y no algo que se reescriba en cada guardado.
           unicos.map((t) => aSlug(t.talento)),
         ],
       );
@@ -587,13 +602,19 @@ export async function talentoPorSlug(
   return r ? { talento: r.talento, descripcion: r.descripcion ?? null, solucionId: Number(r.solucion_id) } : null;
 }
 
-/* ═══════════════════════ LOS CONCEPTOS DE UNA SOLUCIÓN ═══════════════════════ */
+/* ═══════════════════════ LOS CONCEPTOS DE UN TALENTO ═══════════════════════ */
 
 /**
  * Un **concepto**: título, icono y descripción.
  *
  * Se publican en `/soluciones` como una tira vertical en el panel derecho — el mismo
- * carrusel que tenía la galería de Automatización, girado. Se editan en Admin → Soluciones.
+ * carrusel que tenía la galería de Automatización, girado. Se editan en Admin → Soluciones,
+ * dentro del panel del talento.
+ *
+ * ⚠️ **Cuelgan del TALENTO desde la migración 051** (Fernando, 2026-08-21), no de la
+ * solución. Los once primeros —Robots Automatizados, ERP Modular, Sitios Web…— son todos
+ * formas de ejercer «Automatización de procesos»; colgados de la solución, un segundo
+ * talento bajo el mismo cajón habría enseñado once conceptos que no son suyos.
  *
  * ⚠️ `icono` es una **clave del mapa `ICONOS`** (`components/sitio/piezas.tsx`), no un
  * archivo: pesa cero, cambia de color con el tema y se sustituye en un solo sitio.
@@ -606,69 +627,61 @@ export interface Concepto {
   orden: number;
 }
 
-/** Los conceptos de una solución, en su orden. */
-export async function conceptosDeSolucion(solucionId: number): Promise<Concepto[]> {
+/** Los conceptos de un talento, en su orden. */
+export async function conceptosDeTalento(talento: string): Promise<Concepto[]> {
   const { rows } = await pool.query(
     `SELECT id, titulo, icono, descripcion, orden
        FROM gcc_world.solucion_conceptos
-      WHERE solucion_id = $1
+      WHERE talento = $1
       ORDER BY orden, id`,
-    [solucionId],
+    [talento],
   );
-  return rows.map((r: any) => ({
+  return rows.map(aConcepto);
+}
+
+/**
+ * TODOS los conceptos, agrupados por talento.
+ *
+ * Una sola consulta para la página pública y para el admin: pedirlos talento por talento
+ * serían tantos viajes a la base como carpetas tenga el panel izquierdo.
+ */
+export async function conceptosPorTalento(): Promise<Record<string, Concepto[]>> {
+  const { rows } = await pool.query(
+    `SELECT talento, id, titulo, icono, descripcion, orden
+       FROM gcc_world.solucion_conceptos
+      ORDER BY talento, orden, id`,
+  );
+  const salida: Record<string, Concepto[]> = {};
+  for (const r of rows) (salida[r.talento] ??= []).push(aConcepto(r));
+  return salida;
+}
+
+function aConcepto(r: any): Concepto {
+  return {
     id: Number(r.id),
     titulo: r.titulo,
     icono: r.icono,
     descripcion: r.descripcion ?? null,
     orden: Number(r.orden),
-  }));
-}
-
-/**
- * TODOS los conceptos, agrupados por solución.
- *
- * Una sola consulta para la página pública: pedirlos solución por solución serían tantos
- * viajes a la base como carpetas tenga el panel izquierdo.
- */
-export async function conceptosPorSolucion(): Promise<Record<number, Concepto[]>> {
-  const { rows } = await pool.query(
-    `SELECT solucion_id, id, titulo, icono, descripcion, orden
-       FROM gcc_world.solucion_conceptos
-      ORDER BY solucion_id, orden, id`,
-  );
-  const salida: Record<number, Concepto[]> = {};
-  for (const r of rows) {
-    const k = Number(r.solucion_id);
-    (salida[k] ??= []).push({
-      id: Number(r.id),
-      titulo: r.titulo,
-      icono: r.icono,
-      descripcion: r.descripcion ?? null,
-      orden: Number(r.orden),
-    });
-  }
-  return salida;
+  };
 }
 
 export async function crearConcepto(
-  solucionId: number,
+  talento: string,
   datos: { titulo: string; icono: string; descripcion: string | null },
 ): Promise<Concepto> {
   const { rows: [max] } = await pool.query(
     `SELECT COALESCE(MAX(orden), -1) + 1 AS siguiente
-       FROM gcc_world.solucion_conceptos WHERE solucion_id = $1`,
-    [solucionId],
+       FROM gcc_world.solucion_conceptos WHERE talento = $1`,
+    [talento],
   );
   const { rows: [c] } = await pool.query(
-    `INSERT INTO gcc_world.solucion_conceptos (solucion_id, titulo, icono, descripcion, orden)
+    `INSERT INTO gcc_world.solucion_conceptos (talento, titulo, icono, descripcion, orden)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id, titulo, icono, descripcion, orden`,
-    [solucionId, datos.titulo, datos.icono, datos.descripcion, Number(max.siguiente)],
+    [talento, datos.titulo, datos.icono, datos.descripcion, Number(max.siguiente)],
   );
-  return {
-    id: Number(c.id), titulo: c.titulo, icono: c.icono,
-    descripcion: c.descripcion ?? null, orden: Number(c.orden),
-  };
+  return aConcepto(c);
 }
 
 export async function editarConcepto(
@@ -687,7 +700,7 @@ export async function borrarConcepto(id: number): Promise<void> {
   await pool.query(`DELETE FROM gcc_world.solucion_conceptos WHERE id = $1`, [id]);
 }
 
-/** Reordena los conceptos de una solución según la lista de ids recibida. */
+/** Reordena los conceptos de un talento según la lista de ids recibida. */
 export async function reordenarConceptos(ids: number[]): Promise<void> {
   if (!ids.length) return;
   await pool.query(

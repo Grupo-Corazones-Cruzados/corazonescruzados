@@ -10,7 +10,7 @@
  */
 
 import {
-  listarSoluciones, contenidoDeTalento, conceptosPorSolucion,
+  listarSoluciones, contenidoDeTalento, conceptosPorTalento,
   type ContenidoDeTalento,
 } from '@/lib/soluciones';
 import type { SolucionConContenido } from '@/components/sitio/SolucionesExplorador';
@@ -31,9 +31,10 @@ const VACIO: ContenidoDeTalento = { miembros: [], productos: [], proyectos: [], 
 export async function cargarSolucionesConContenido(): Promise<SolucionConContenido[]> {
   const cargar = async (): Promise<SolucionConContenido[]> => {
     const soluciones = await listarSoluciones();
-    // Los conceptos de TODAS las soluciones en una sola consulta: pedirlos una por una
-    // serían tantos viajes a la base como carpetas tenga el panel izquierdo.
-    const conceptos = await conceptosPorSolucion();
+    // Los conceptos de TODOS los talentos en una sola consulta: pedirlos uno por uno
+    // serían tantos viajes a la base como talentos tenga el panel izquierdo.
+    // Cuelgan del talento desde la migración 051, no de la solución.
+    const conceptos = await conceptosPorTalento();
 
     // El contenido se consulta UNA vez por talento. Un talento pertenece a un solo solución
     // (migración 042), pero la caché sigue valiendo: evita repetir la consulta si la misma
@@ -45,7 +46,7 @@ export async function cargarSolucionesConContenido(): Promise<SolucionConConteni
     return soluciones.map((a) => ({
       ...a,
       contenido: Object.fromEntries(a.talentos.map((t) => [t.talento, cache.get(t.talento) ?? VACIO])),
-      conceptos: conceptos[a.id] ?? [],
+      conceptos: Object.fromEntries(a.talentos.map((t) => [t.talento, conceptos[t.talento] ?? []])),
     }));
   };
 

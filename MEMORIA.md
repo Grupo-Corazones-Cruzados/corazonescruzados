@@ -275,6 +275,45 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧩 LOS CONCEPTOS PASAN A SER DEL TALENTO, Y EL ADMIN DE SOLUCIONES SE QUEDA EN DOS
+  COLUMNAS (2026-08-21/22, migración 051).** Fernando, mirando la pestaña: *«la vista de
+  conceptos realmente debe estar asociada a un talento determinado, todos los conceptos
+  actuales están directamente relacionados al concepto de automatización de procesos»*, y
+  *«prefiero quitar el panel derecho que ocupa espacio vacío»*.
+  - **Corrige la decisión del 2026-08-18** (migración 045), donde quedó escrito que los
+    conceptos «describen lo que sabe hacer la solución entera». Los datos ya decían lo
+    contrario: los once de Tecnología —Robots Automatizados, ERP Modular, Sitios Web…— son
+    formas de ejercer **Automatización de procesos**, el único talento de esa solución. Con un
+    segundo talento en el mismo cajón, la web le habría enseñado once conceptos ajenos.
+  - **La clave foránea es el TEXTO del talento**, no un `id`: `solucion_talentos` no tiene
+    columna `id` (su clave es `solucion_id + talento`), pero `talento` es único en toda la
+    tabla desde la migración 042 y **un índice único basta para colgar de él una FK**
+    (comprobado contra la base en una transacción revertida antes de escribir la migración).
+  - **⚠️ EL PELIGRO QUE HABÍA QUE VER ANTES DE MIGRAR:** `fijarTalentos()` guardaba haciendo
+    `DELETE` de todos los talentos de la solución y reinsertándolos. Con los conceptos
+    colgando del talento en cascada, **cada guardado los habría borrado todos** —incluso al
+    reordenar, incluso al no cambiar nada—. Pasó a guardar **por diferencias**: se borra solo
+    lo que se quitó. Verificado guardando la misma lista contra la base real: 11 conceptos
+    antes, 11 después.
+  - **Quitar un talento se lleva sus conceptos** (cascada). El admin lo dice **antes**, con
+    la cifra, en un `PixelConfirm`; no se borra nada por sorpresa.
+  - **La pantalla queda en dos columnas** —soluciones · talentos— y el catálogo de talentos
+    deja de ser una tercera columna fija (ocupaba 320px sin usarse, y en la cara de conceptos
+    se escondía dejando el hueco vacío que él señaló). Ahora es un panel que se abre con
+    **«+ Añadir talentos»**, con el catálogo **en una sola columna y alfabético ascendente**,
+    como lo pidió. **Se fueron las pestañas Talentos/Conceptos**: los conceptos ya no son otra
+    cara de la columna, son el contenido del talento.
+  - **Al pulsar la fila de un talento se abre un panel MUY ANCHO** (1040px, `WideEditPanel`
+    nuevo) con su descripción arriba y **la tabla de sus conceptos debajo**, editable desde
+    ahí. El formulario de un concepto se abre encima, como segundo `<dialog>`.
+  - **Ninguna tabla recorta ya el texto**: se quitó `singleLine`, que era el «se corta» de la
+    captura. La descripción se lee entera en varias líneas.
+  - **En la web** (`/soluciones`) la tira vertical pasa a ser **la del talento abierto**. Hoy
+    se ve exactamente igual —un solo talento con los once conceptos—, pero deja de ser una
+    coincidencia.
+  - API: `/api/admin/soluciones/[id]/conceptos` → **`/api/admin/talentos/[slug]/conceptos`**.
+    Verificado: 404 con slug inventado · 400 sin título · 400 con icono fuera de la galería ·
+    403 sin sesión · alta, edición y baja correctas (la base quedó en los 11 de siempre).
 - **🤖 UN SOLO PROVEEDOR DE IA: TODO A OPENAI `gpt-5.6-luna` (2026-08-21).** La app tenía
   tres proveedores repartidos —Anthropic para el agente de WhatsApp, Kimi K2.6 para el
   cotizador y OpenAI para lo demás—. Fernando: *"quiero que dejemos un solo modelo que quiero

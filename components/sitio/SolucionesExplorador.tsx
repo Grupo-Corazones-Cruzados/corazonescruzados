@@ -43,8 +43,15 @@ import { ExploradorTresPaneles } from './piezas';
 export interface SolucionConContenido extends Solucion {
   /** El contenido de cada talento, ya consultado en el servidor. */
   contenido: Record<string, ContenidoDeTalento>;
-  /** Los conceptos de esta solución, para la tira vertical del panel derecho. */
-  conceptos: Concepto[];
+  /**
+   * Los conceptos de CADA TALENTO, para la tira vertical del panel derecho.
+   *
+   * Cuelgan del talento desde la migración 051 (Fernando, 2026-08-21): los once de
+   * Tecnología son formas de ejercer «Automatización de procesos», no cosas que sepa hacer
+   * la solución entera. Con un segundo talento en el mismo cajón, la tira le habría
+   * enseñado once conceptos que no son suyos.
+   */
+  conceptos: Record<string, Concepto[]>;
 }
 
 type Pestana = 'talentos' | 'productos' | 'tickets' | 'proyectos';
@@ -205,13 +212,13 @@ export default function SolucionesExplorador({
   const contenido: ContenidoDeTalento = (elegido && soluciones.find((a) => a.contenido[elegido])?.contenido[elegido]) || VACIO_TOTAL;
 
   /**
-   * Los conceptos que se enseñan: los de la SOLUCIÓN que contiene el talento abierto.
+   * Los conceptos que se enseñan: los del TALENTO abierto (migración 051).
    *
-   * Cuelgan de la solución y no del talento a propósito —así los pidió Fernando—: describen
-   * lo que sabe hacer la solución entera, no una de sus especialidades.
+   * Se busca por todas las soluciones porque un talento pertenece a una sola (migración
+   * 042): la primera que lo tenga es la única que puede tenerlo.
    */
-  const conceptosActivos: Concepto[] = activo
-    ? soluciones.find((a) => a.id === activo.solucionId)?.conceptos ?? []
+  const conceptosActivos: Concepto[] = elegido
+    ? soluciones.find((a) => a.conceptos[elegido]?.length)?.conceptos[elegido] ?? []
     : [];
 
   /** El buscador filtra DENTRO de la pestaña abierta, que es lo que se está mirando. */

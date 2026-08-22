@@ -11,7 +11,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { listarSoluciones, crearSolucion, coberturaDeTalentos, talentosOcupados } from '@/lib/soluciones';
+import {
+  listarSoluciones, crearSolucion, coberturaDeTalentos, talentosOcupados, conceptosPorTalento,
+} from '@/lib/soluciones';
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -30,6 +32,10 @@ export async function GET(req: NextRequest) {
       cobertura: await coberturaDeTalentos(todos),
       // Qué talento está cogido y por quién: el catálogo del panel los esconde.
       ocupados: await talentosOcupados(),
+      // Los conceptos de TODOS los talentos, en una consulta. La pantalla los necesita para
+      // la columna «Conceptos» de la tabla y para el panel del talento; pedirlos uno a uno
+      // serían tantas llamadas como talentos tenga la solución abierta.
+      conceptos: await conceptosPorTalento(),
     });
   }
   return NextResponse.json({ data: soluciones });

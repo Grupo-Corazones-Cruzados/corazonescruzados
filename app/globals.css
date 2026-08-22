@@ -962,7 +962,8 @@ html {
   to   { transform: translateX(0); opacity: 1; }
 }
 .corp .modal-surface[data-size='md'],
-.corp .modal-surface[data-size='lg'] {
+.corp .modal-surface[data-size='lg'],
+.corp .modal-surface[data-size='xl'] {
   position: fixed;
   top: 0;
   right: 0;
@@ -977,10 +978,16 @@ html {
   animation: panelSlideInRight 0.27s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
 .corp .modal-surface[data-size='lg'] { width: 840px; }  /* Fluent Panel "large" */
+/* Panel "extra grande": el mismo ancho que ya usa FlowPanelShell para los editores de
+   Automatizaciones (1040px). Es para un panel que lleva DENTRO una tabla —los conceptos de
+   un talento—: con 644px las columnas se parten y vuelve el corte que se quiso quitar. */
+.corp .modal-surface[data-size='xl'] { width: 1040px; }
 .corp .modal-surface[data-size='md'] .modal-header,
-.corp .modal-surface[data-size='lg'] .modal-header { flex: 0 0 auto; }
+.corp .modal-surface[data-size='lg'] .modal-header,
+.corp .modal-surface[data-size='xl'] .modal-header { flex: 0 0 auto; }
 .corp .modal-surface[data-size='md'] .modal-body,
-.corp .modal-surface[data-size='lg'] .modal-body {
+.corp .modal-surface[data-size='lg'] .modal-body,
+.corp .modal-surface[data-size='xl'] .modal-body {
   flex: 1 1 auto;
   max-height: none;             /* override the centered-dialog 70vh cap */
 }

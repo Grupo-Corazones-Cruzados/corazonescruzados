@@ -38,7 +38,7 @@ interface EditSurfaceProps {
 function EditSurface({
   size, open, title, onClose, onSave, saving = false, canSave = true,
   saveLabel = 'Guardar', danger, children,
-}: EditSurfaceProps & { size: 'sm' | 'md' | 'lg' }) {
+}: EditSurfaceProps & { size: 'sm' | 'md' | 'lg' | 'xl' }) {
   // Enter guarda cuando el foco está en un input simple (no en textarea, donde Enter
   // debe seguir insertando un salto de línea).
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -74,6 +74,22 @@ function EditSurface({
 /** Formulario en **panel lateral derecho** con overlay. Caso por defecto. */
 export function EditPanel(props: EditSurfaceProps) {
   return <EditSurface size="md" {...props} />;
+}
+
+/**
+ * Panel lateral derecho **EXTRA ANCHO** (1040px). Variante nombrada de `EditPanel`, no una
+ * excepción: sigue siendo la superficie de edición estándar, solo que ancha.
+ *
+ * **Cuándo:** el formulario lleva dentro una **tabla** o una rejilla que en 644px se parte.
+ * Hoy: el panel de un talento en Admin → Soluciones (descripción + la tabla de sus
+ * conceptos, con sus cuatro acciones por fila). Es el mismo ancho que `FlowPanelShell` usa
+ * para los editores de Automatizaciones, así que no hay dos «extra grandes» distintos.
+ *
+ * Si dentro no hay una tabla, **no** es esta: un formulario de campos sueltos a 1040px deja
+ * los campos flotando en medio metro de vacío.
+ */
+export function WideEditPanel(props: EditSurfaceProps) {
+  return <EditSurface size="xl" {...props} />;
 }
 
 /** **Ventanita centrada** para uno o dos campos sueltos (no un formulario). */

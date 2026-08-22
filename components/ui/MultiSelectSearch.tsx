@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, Check } from 'lucide-react';
+import { Search, X } from 'lucide-react';
+import { FilaMarcable } from './ListaMarcable';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -11,6 +12,11 @@ export interface MultiOption { value: string; label: string }
  * Selector MÚLTIPLE con BUSCADOR. Reutilizable para cualquier lista (valores, talentos…).
  * Muestra las selecciones como chips y un desplegable filtrable donde se marcan/desmarcan.
  * Limita los resultados visibles para listas grandes (p. ej. 500+ talentos).
+ *
+ * ⚠️ Es la variante **desplegable**, para elegir dos o tres cosas dentro de un formulario
+ * apretado. Cuando hay sitio para ver el catálogo entero en una columna, la variante es
+ * `ListaMarcable` — y las dos comparten la FILA (`FilaMarcable`), para que la casilla no se
+ * vea de dos maneras.
  */
 export default function MultiSelectSearch({
   options,
@@ -73,18 +79,10 @@ export default function MultiSelectSearch({
               <p className="px-3 py-3 text-[12px] text-digi-muted" style={mf}>{emptyText}</p>
             ) : (
               <>
-                {filtered.map((o) => {
-                  const on = selectedSet.has(o.value);
-                  return (
-                    <button key={o.value} type="button" onClick={() => toggle(o.value)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-[12.5px] transition-colors ${on ? 'bg-accent-light text-accent' : 'text-digi-text hover:bg-black/[0.03]'}`} style={mf}>
-                      <span className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center ${on ? 'bg-accent border-accent text-white' : 'border-digi-border'}`}>
-                        {on && <Check className="w-3 h-3" />}
-                      </span>
-                      <span className="truncate">{o.label}</span>
-                    </button>
-                  );
-                })}
+                {filtered.map((o) => (
+                  <FilaMarcable key={o.value} marcada={selectedSet.has(o.value)}
+                    etiqueta={o.label} onClick={() => toggle(o.value)} />
+                ))}
                 {totalMatches > filtered.length && (
                   <p className="px-3 py-2 text-[11px] text-digi-muted border-t border-digi-border" style={mf}>
                     Mostrando {filtered.length} de {totalMatches}. Escribe para afinar la búsqueda.

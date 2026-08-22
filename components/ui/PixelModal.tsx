@@ -6,13 +6,14 @@ interface PixelModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  size?: 'sm' | 'md' | 'lg';
+  /** `sm` = ventanita centrada · `md`/`lg`/`xl` = panel lateral derecho (ver `.corp` en globals.css). */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Cuando está ocupado (p. ej. guardando), bloquea el cierre por overlay/Escape/X. */
   busy?: boolean;
   children: React.ReactNode;
 }
 
-const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' };
+const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-5xl' };
 
 export default function PixelModal({ open, onClose, title, size = 'md', busy = false, children }: PixelModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);

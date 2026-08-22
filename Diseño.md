@@ -863,6 +863,7 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
 | Estilos de las superficies de acceso | `components/landing/authEstilos` | `PANEL_AUTH`, `TITULO_AUTH`, `SUBTITULO_AUTH`, `CAMPO_AUTH`, `ENLACE_AUTH`. Los del diálogo de acceso de la portada, que es el aspecto canónico: campos **sin etiqueta** (el marcador de posición hace de rótulo) y primario a ancho completo. Los importa `ClientLoginModal`, para que no haya dos |
 | Alto hasta el pie | `lib/hooks/useAltoHastaElPie` | Mide el hueco real hasta el pie fijo (`[data-app-footer]`) y el fondo del contenedor con desplazamiento. **Referencia como FUNCIÓN** y observador sobre el PADRE: con `useEffect` + `ResizeObserver` sobre `document.body` no funciona (ver la regla de abajo) |
 | Sondeo periódico | `lib/hooks/useSondeo` | Para con la pestaña oculta, refresca al volver, no solapa vueltas y calla los fallos |
+| Lista marcable | `components/ui/ListaMarcable` | Catálogo largo en **una columna con casillas** + buscador, alfabético ascendente. Es la hermana **desplegada** de `MultiSelectSearch` (que es la de desplegable + chips) y **comparten la fila** (`FilaMarcable`), para que la casilla no se vea de dos maneras. Usada en Admin → Soluciones para elegir los talentos |
 | Rail de filtro | `components/ui/FilterRail` | **único** rail de filtro: icono + label + conteo, activo con barra izq. accent. Admite `hint` (2ª línea) y `sections` (grupos con encabezado y separador). Ancho 220px. **Un rail nuevo se hace con este componente, nunca copiando el marcado** — estaba duplicado en 12 pantallas y por eso unas y otras se veían distintas (migradas todas el 2026-07-26) |
 | Header de detalle | `components/ui/DetailHeader` | breadcrumb + título + command bar + overflow ⋯ |
 | Confirmar | `components/ui/PixelConfirm` | NO usar `confirm()` del navegador (excepción puntual) |
@@ -1645,6 +1646,7 @@ cabecera (icono accent + título + conteo a la derecha), buscador opcional y lis
 | Qué se edita | Superficie | Componente |
 |---|---|---|
 | Un **formulario** (3+ campos, o campos ricos: descripción larga, multi-select, listas) | **Panel lateral DERECHO** con overlay | `EditPanel` (`PixelModal size="md"`) |
+| Un formulario que lleva **una tabla dentro** | Panel lateral DERECHO **extra ancho** (1040px) | `WideEditPanel` (`PixelModal size="xl"`) |
 | **Uno o dos campos** sueltos que no forman un formulario (cliente, fecha límite, presupuesto min/max, un nombre) | **Ventanita centrada** | `QuickEditDialog` (`PixelModal size="sm"`) |
 | Confirmar una acción | Ventanita centrada | `PixelConfirm` |
 
@@ -1685,6 +1687,51 @@ Detalles aprendidos al aplicarla:
   se pinte en el *top layer*.
 - **Formularios largos**: dentro del panel no hacen falta límites de ancho (`max-w-sm`) heredados de
   cuando el editor vivía en una tarjeta estrecha — el panel ya acota a 644 px.
+
+### `WideEditPanel` — panel lateral de 1040px (2026-08-21)
+
+`PixelModal` gana el tamaño **`xl`**: el mismo panel deslizante de siempre, con
+`width: 1040px` en `.corp .modal-surface[data-size='xl']`. **No es un ancho inventado**: es el
+que ya usaba `FlowPanelShell` para los editores de Automatizaciones, así que la app no tiene
+dos «extra grandes» distintos.
+
+> **Cuándo:** el formulario lleva **una tabla dentro**. Con los 644px del panel estándar las
+> columnas se parten y vuelve el texto cortado. Si dentro solo hay campos, **no** es esta: un
+> formulario de campos sueltos a 1040px deja todo flotando en medio metro de vacío.
+
+```tsx
+<WideEditPanel open title={talento} onClose={cerrar} onSave={guardar} saveLabel="Guardar descripción">
+  <EditField label="Descripción"><textarea … /></EditField>
+  <PixelDataTable data={conceptos} bottomReserve={72} columns={…} />
+</WideEditPanel>
+```
+
+- **`bottomReserve` en la tabla de dentro.** `PixelDataTable` se estira hasta el borde de la
+  ventana; sin reservar el alto del pie del panel (Cancelar / Guardar), el pie queda por
+  debajo. Medido a 1600×950: tabla hasta 826 px, «Guardar descripción» acabando en 888.
+- **Un `EditPanel` puede abrirse ENCIMA** (el formulario de un concepto sobre el panel del
+  talento): dos `<dialog showModal>` apilados, que el navegador ordena en su *top layer*.
+  Comprobado en el navegador: dos diálogos abiertos, el de arriba con el foco.
+
+### Admin → Soluciones — dos columnas y el panel del talento (2026-08-21)
+
+`components/admin/SolucionesPanel.tsx`. Era el «Explorador Azure» de tres columnas
+(soluciones · talentos/conceptos · catálogo). Fernando lo cambió y **la tercera columna
+desapareció**: solo servía para añadir talentos, y en la cara de «Conceptos» se escondía
+entera dejando un hueco vacío. Queda `grid lg:grid-cols-[240px_minmax(0,1fr)]`.
+
+- **Lo que era una columna fija pasó a ser un panel** (`+ Añadir talentos`): catálogo en
+  **una sola columna, alfabético ascendente** (`ListaMarcable`), con el recuento de elegidos
+  encima porque en 525 filas ordenadas por nombre no se sabe cuántos llevas marcados.
+- **Fuera las pestañas Talentos/Conceptos.** Los conceptos cuelgan del talento (migración
+  051), así que no son otra cara de la misma columna: son el contenido del talento y viven en
+  **su** panel, al que se llega **pulsando la fila** (`onRowClick`).
+- **Ninguna de las dos tablas lleva `singleLine`.** Ese era el «se corta» de la captura de
+  Fernando: con `table-fixed` la descripción terminaba en «…». Ahora envuelve en varias
+  líneas. Regla general: `singleLine` es para listas donde importa **encontrar** una fila, no
+  para tablas donde el texto **es** el contenido.
+- **La acción destructiva avisa con cifras:** quitar un talento se lleva sus conceptos por
+  cascada, y el `PixelConfirm` dice cuántos.
 
 ### Páginas legales públicas — fuera del tema `.corp`, con definición única (2026-08-01)
 
@@ -2379,6 +2426,15 @@ Hay un `@media print` en la hoja de la página, pero solo como red de seguridad 
 Ctrl+P: **el documento bueno es el del botón.**
 
 ## Desviaciones detectadas y resolución
+- **2026-08-21 · El texto de las tablas del admin de Soluciones se cortaba.** `singleLine`
+  estaba puesto en las dos tablas «para que las filas midan igual», y con el panel derecho
+  ocupando 320px la descripción cabía en media columna. Lo vio Fernando en la vista de
+  conceptos. **Resuelto:** fuera la tercera columna, fuera `singleLine`, y el contenido largo
+  se lee entero. Queda como regla arriba.
+- **2026-08-21 · Casi se escribe una segunda casilla de selección.** El panel de talentos
+  necesitaba una lista marcable y `MultiSelectSearch` ya tenía la suya dentro de su
+  desplegable. En vez de copiar el marcado se **extrajo la fila** a `FilaMarcable`
+  (`ListaMarcable.tsx`) y la importan las dos. *Equivalente no es igual.*
 
 - **2026-08-18 · `RejillaAccesos` y `CabeceraClientes` — BORRADOS.** Eran la rejilla horizontal
   de las cuatro puertas y la cabecera que la repetía en las cinco rutas de `/clientes`. El

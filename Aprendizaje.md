@@ -33,6 +33,64 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo (declarado 2026-08-21) — ADMIN → SOLUCIONES: los conceptos pasan al TALENTO y la pantalla se rehace · ✅ 100 % — HECHO Y VERIFICADO
+
+> Textual de Fernando (con dos capturas): *«se corta en la vista de conceptos… prefiero quitar
+> el panel derecho que ocupa espacio vacío»*, *«la vista de conceptos realmente debe estar
+> asociada a un talento determinado, todos los conceptos actuales están directamente
+> relacionados al concepto de automatización de procesos»*, *«un botón arriba junto al de
+> eliminar o editar… un panel derecho con overlay tipo formulario para escoger los talentos…
+> en una sola columna, ordenados alfabéticamente de forma ascendente»*, *«al seleccionar la
+> fila de un talento… un panel derecho con el contenido para editar la descripción y debajo la
+> tabla de conceptos… este panel debe ser muy ancho»*, *«ya podemos quitar las pestañas»*.
+
+### Rol asumido
+**Diseñador de producto + arquitecto de datos.** No era maquetación: el cambio de interfaz
+arrastraba un cambio de **modelo** (de qué cuelga un concepto), y ahí estaba el riesgo real.
+
+### Preguntas y respuestas
+### P1 — ¿De qué cuelga hoy un concepto y qué hay en la base? · ✅ Resuelta
+- **Por qué importa:** decide si el cambio es una vista o una migración.
+- **Respuesta:** de la **solución** (`solucion_conceptos.solucion_id`, migración 045). Leído en
+  producción: 1 solución (Tecnología, id 5), 1 talento (Automatización de procesos), 11
+  conceptos. El reparto al talento es **exacto**, no hay ambigüedad que resolver a ojo.
+
+### P2 — ¿Se puede colgar una FK del texto del talento, sin `id`? · ✅ Resuelta
+- **Por qué importa:** `solucion_talentos` tiene clave `(solucion_id, talento)`; sin `id`, la
+  alternativa fea era duplicar `solucion_id` en los conceptos.
+- **Respuesta:** sí. `talento` es único en toda la tabla (migración 042) y PostgreSQL acepta
+  la FK contra ese **índice único**. Comprobado contra la base real en una transacción
+  revertida ANTES de escribir la migración.
+
+### P3 — ⚠️ ¿Qué se rompe al poner los conceptos en cascada bajo el talento? · ✅ Resuelta
+- **Por qué importa:** es el fallo que habría destruido datos de verdad.
+- **Respuesta:** `fijarTalentos()` guardaba con `DELETE` de todos los talentos + reinserción.
+  Con la cascada, **cada guardado de talentos habría borrado todos los conceptos** —incluso al
+  reordenar—. Se cambió a guardado **por diferencias**. Verificado con la API real: guardar la
+  misma lista deja los 11 conceptos intactos.
+
+### P4 — ¿Qué pasa en la web pública? · ✅ Resuelta
+- **Respuesta:** la tira vertical de `/soluciones` pasa a ser **la del talento abierto**. Hoy
+  se ve idéntica (un solo talento), así que el cambio de modelo no toca el diseño acordado con
+  Fernando; deja de ser casualidad que coincidan.
+
+### P5 — ¿Hay ya un control para «elegir varios de un catálogo largo»? · ✅ Resuelta
+- **Respuesta:** `MultiSelectSearch`, pero es un **desplegable con chips** y él pidió la lista
+  entera en una columna. Se creó `ListaMarcable` **extrayendo la fila** (`FilaMarcable`) para
+  que las dos compartan la casilla, en vez de escribir una equivalente.
+
+### Verificación (las cuatro, no solo el typecheck)
+1. `npx tsc --noEmit` limpio · 2. `npm run build` correcto (209 páginas, `/soluciones` y
+`/soluciones/automatizacion-de-procesos` prerenderizadas) · 3. contra la **base real**: ensayo
+de la migración en transacción revertida, aplicación real, y pruebas de API (404 slug
+inventado · 400 sin título · 400 icono fuera de la galería · 403 sin sesión · alta/edición/baja
+que dejan la base en los 11 de siempre) · 4. **en el navegador** (Chrome real, 1600×950):
+2 columnas sin scroll de página, panel de talentos de 644px con 525 talentos alfabéticos,
+panel del talento de **1040px** con sus 11 conceptos, **cero texto cortado**, «Guardar»
+visible a 888 de 950, y el formulario de concepto abriéndose como segundo diálogo encima.
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-08-21) — UN SOLO PROVEEDOR DE IA: todo a **OpenAI `gpt-5.6-luna`** · ✅ 100 % — HECHO Y VERIFICADO CONTRA LA API REAL
 
 > Textual de Fernando: *"actualmente estamos usando la api key de claude para algunas
