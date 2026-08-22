@@ -11,11 +11,11 @@
 import { pool } from '@/lib/db';
 import { canalPorId, secretoDelCanal, anotarError, limpiarError, type Canal } from './canales';
 import { ensamblarSistema, type BloqueConocimiento } from './conocimiento';
-import { decidir } from './anthropic';
+import { decidir } from './ia';
 import { enviarTexto } from './whatsapp';
 import { registrarSaliente } from './ingesta';
 import { terminar, fallar, type Trabajo } from './cola';
-import { MODELO_POR_DEFECTO } from './modelos';
+import { MODELO_POR_DEFECTO, RAZONAMIENTO_POR_DEFECTO, esRazonamientoValido } from './modelos';
 
 export interface ResultadoCorrida {
   conversacionId: number;
@@ -101,6 +101,11 @@ export async function procesarConversacion(conversacionId: number): Promise<Resu
     apiKey: claveIA,
     modelo: canal.modelo || MODELO_POR_DEFECTO,
     maxTokens: canal.max_tokens,
+    // Un nivel inventado en la base sería un 400 en la primera conversación: se valida
+    // aquí, que es donde se lee, y no se confía solo en el CHECK de la tabla.
+    esfuerzo: esRazonamientoValido(canal.razonamiento) ? canal.razonamiento : RAZONAMIENTO_POR_DEFECTO,
+    // Agrupa las peticiones de este canal para que el prefijo cacheado se reencuentre.
+    claveCache: `agente-canal-${canal.id}`,
     perfil: sistema.perfil,
     conocimiento: sistema.conocimiento,
     reglas: sistema.reglas,

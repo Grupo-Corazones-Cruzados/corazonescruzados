@@ -330,13 +330,16 @@ export default function LegalWhatsAppPage() {
             </tr>
             <tr>
               <td className={td}>
-                <strong className={b}>Anthropic</strong> (modelo de IA)
+                <strong className={b}>OpenAI</strong> (modelo de IA)
               </td>
               <td className={td}>Redacta la respuesta.</td>
               <td className={td}>
                 El texto de la conversación reciente y la información del negocio. La
                 empresa usa <strong className={b}>su propia clave</strong> de acceso, de modo
-                que la relación con el proveedor de IA es suya.
+                que la relación con el proveedor de IA es suya. Las conversaciones{' '}
+                <strong className={b}>no quedan almacenadas como historial</strong> en el
+                proveedor ni se usan para entrenar sus modelos: el historial vive
+                únicamente en esta plataforma.
               </td>
             </tr>
             <tr>

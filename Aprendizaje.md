@@ -33,7 +33,198 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-08-03) — LA WEB PÚBLICA QUE SE ENCUENTRA EN GOOGLE: diseño y contenido de `/negocio`, `/recursos` y `/contacto` · 🔎 60%
+## Objetivo ACTUAL (declarado 2026-08-21) — UN SOLO PROVEEDOR DE IA: todo a **OpenAI `gpt-5.6-luna`** · ✅ 100 % — HECHO Y VERIFICADO CONTRA LA API REAL
+
+> Textual de Fernando: *"actualmente estamos usando la api key de claude para algunas
+> funcionalidades de la app, y tambien open ai para otras, quiero que dejemos un solo modelo
+> que quiero que sea el modelo de open ai luna 4.6"*.
+
+### Rol asumido
+**Ingeniero de integración de LLMs / arquitecto backend.** El trabajo no es "cambiar un string
+de modelo": es sustituir el **contrato de una API por el de otra** (formato de herramientas,
+razonamiento, caché, `usage`, errores) sin dejar mudo a un agente que ya habla con personas
+reales por WhatsApp.
+
+### ⚠️ Corrección de nomenclatura (resuelta antes de tocar nada)
+**No existe un "Luna 4.6" de OpenAI.** El modelo se llama **GPT‑5.6 Luna**, id de API
+**`gpt-5.6-luna`**, publicado el **2026‑07‑09**. Verificado en la referencia oficial
+(`developers.openai.com/api/docs/models/gpt-5.6-luna`):
+
+| Dato | Valor |
+|---|---|
+| Id | `gpt-5.6-luna` |
+| Contexto | 1.050.000 tokens |
+| Salida máxima | 128.000 tokens |
+| Precio | $0,20 / MTok entrada · **$0,02 / MTok caché** · $1,20 / MTok salida |
+| Endpoints | Chat Completions ✅ · Responses ✅ · Batch ✅ |
+| Capacidades | streaming, structured_outputs, function_calling, file_search, image_input, web_search, prompt_caching |
+| Razonamiento | `none, low, medium (default), high, xhigh, max` |
+| Corte de conocimiento | 2026‑02‑16 |
+
+Es el **escalón económico** (equivale al antiguo "nano") pensado para volumen: clasificación,
+resumen, enrutado, tiempo real. Encaja con lo que hace la app.
+
+### Inventario REAL de IA en el repo (auditado el 2026-08-21)
+
+**A · Anthropic (clave de Claude) — lo que hay que migrar**
+| Dónde | Qué hace | Cómo llama |
+|---|---|---|
+| `lib/agente/anthropic.ts` + `modelos.ts` + `herramientas.ts` + `runner.ts` | **El agente IA de WhatsApp**: decide con 3 herramientas (`responder` / `no_responder` / `escalar_a_humano`) | SDK `@anthropic-ai/sdk`, `messages.create`, `tool_choice:{type:'any'}`, `cache_control`, `thinking`, `fallbacks` |
+| `services/cotizador-worker/index.mjs` | **Worker de cotizaciones**: Claude Agent SDK **apuntado a Kimi K2.6** vía `ANTHROPIC_BASE_URL=https://api.moonshot.ai/anthropic` | `@anthropic-ai/claude-agent-sdk` (bucle de agente + MCP en proceso + sesiones reanudables) |
+| `lib/centralized/pesos-agent.ts` | Agente de **pesos desde Scopus** | `execFile` del **binario `claude`** del servidor (headless), no API |
+| `app/(sitio)/legal/whatsapp/page.tsx:333` | Declara a **Anthropic como subprocesador** ante Meta | documento legal, no código |
+
+**B · OpenAI de chat — solo cambia el id de modelo**
+`lib/openai.ts` (×2, `gpt-4o`) · `lib/reminders/meeting-ai.ts` (`gpt-4o`) ·
+`app/api/centralized/gestion-datos/fuentes/apa-extract/route.ts` (`gpt-4o`) ·
+`lib/centralized/pensamientos-ai.ts` (`gpt-4o-mini`).
+
+**C · OpenAI que NO es un modelo de chat — se queda como está**
+`lib/talentos/embeddings.ts` (`text-embedding-3-small`) · `app/api/transcribe` y
+`app/api/tools/transcribe` (`whisper-1`) · `app/api/projects/[id]/video` (`tts-1`, voz `onyx`).
+*"Un solo modelo" no puede significar transcribir con un modelo de texto: son capacidades
+distintas. Se documenta la excepción.*
+
+**D · Fuera de la app web**
+`godot/tools/generar_estampas.py` → **Gemini** (`gemini-2.5-flash-image`) para las estampas del
+prólogo. Es el pipeline de arte del videojuego, no una funcionalidad de la app.
+
+### Lo que de verdad cuesta: el agente de WhatsApp no es un cambio de string
+`lib/agente/anthropic.ts` está construido **alrededor del contrato de Anthropic**, y cada una de
+sus decisiones tiene una cicatriz documentada. Al pasar a OpenAI, todas cambian de forma:
+
+| Anthropic (hoy) | OpenAI `gpt-5.6-luna` (destino) |
+|---|---|
+| `system: [{text, cache_control:{type:'ephemeral'}}]` | El caché de OpenAI es **automático por prefijo** — no hay `cache_control` que poner |
+| `tools[].input_schema` + `strict` en la herramienta | `tools[].function.parameters` + `strict: true` |
+| `tool_choice: {type:'any'}` | `tool_choice: 'required'` |
+| `max_tokens` (acota razonamiento + respuesta) | `max_output_tokens` / `max_completion_tokens` |
+| `thinking: {type:'adaptive'}` vs `budget_tokens` | `reasoning: {effort: …}` con 6 niveles |
+| `usage.cache_creation_input_tokens` / `cache_read_input_tokens` | `usage.prompt_tokens_details.cached_tokens` |
+| `stop_reason: 'refusal'`, bloques `content[].tool_use` | `finish_reason`, `message.tool_calls[]` / `output[]` |
+| `fallbacks: 'default'` (beta del servidor) | no existe |
+
+Es decir: **`modelos.ts` (la tabla de capacidades), `anthropic.ts` (armar y leer) y
+`herramientas.ts` (formato del esquema) se rehacen**; `runner.ts` y el resto del flujo no se
+tocan si se mantiene la misma interfaz `decidir(PeticionAgente) → ResultadoAgente`.
+
+### Riesgos ya identificados
+1. **La clave la pone el CLIENTE, no nosotros.** El agente de WhatsApp guarda una clave cifrada
+   por canal (`ia_api_key`, campo `ia_api_key_cifrada`, marcador de UI `sk-ant-…`). Al migrar,
+   **toda clave `sk-ant-` guardada deja de servir** y el canal se queda mudo hasta que se
+   reemplace por una de OpenAI. Hay que planificar el corte, no descubrirlo en producción.
+2. **`/legal/whatsapp` es un documento presentado a Meta** en el App Review. Si el subprocesador
+   deja de ser Anthropic y pasa a ser OpenAI, la página **tiene que decirlo**.
+3. **El worker de cotizaciones no se migra cambiando un id**: el Claude Agent SDK *es* de
+   Anthropic. Con OpenAI hay que sustituir el bucle de agente entero (herramientas, sesiones
+   reanudables por `sessionId`, MCP en proceso). Es el punto más caro del encargo.
+4. **Contradice una memoria vigente.** `MEMORIA.md` registra "Kimi K2.6 es el modelo por defecto
+   de los agentes de GCC World (excepto el de WhatsApp)". Si se unifica en `gpt-5.6-luna`, esa
+   regla queda **derogada** y hay que corregirla, no acumular las dos.
+5. **Calidad ≠ precio.** Luna es el escalón económico. Sustituye bien a Haiku 4.5 y a
+   `gpt-4o-mini`; donde hoy corre `gpt-4o` (extracción de perfil de CV, análisis de reuniones,
+   APA) hay que **comprobar la calidad**, no darla por hecha. El ahorro sí es real: gpt-4o
+   ronda $2,5/$10 por MTok frente a $0,2/$1,2.
+
+### Preguntas y respuestas
+
+#### P1 — ¿Qué modelo es "luna 4.6"? · ✅ Resuelta
+**Respuesta:** `gpt-5.6-luna` (GPT‑5.6 Luna), no "4.6". Ficha completa arriba.
+*(fuente: referencia oficial de la API de OpenAI, consultada el 2026‑08‑21)*
+
+#### P2 — ¿Qué usa Claude hoy y qué usa OpenAI? · ✅ Resuelta
+**Respuesta:** el inventario A–D de arriba. *(fuente: auditoría del repo, 2026‑08‑21)*
+
+#### P3 — ¿El alcance incluye el WORKER DE COTIZACIONES (Kimi + Claude Agent SDK)? · ✅ Resuelta
+Fernando preguntó lo acertado: *"¿pero no se puede reutilizar el agent sdk pero que consuma el
+modelo de luna?"*. **No.** El Claude Agent SDK habla `/v1/messages` de Anthropic; Kimi funcionaba
+porque **Moonshot expone a propósito un endpoint compatible**, y OpenAI no expone nada
+equivalente. Las dos salidas eran una pasarela traductora (un servicio más que desplegar, y la
+traducción de tool-calls es justo donde fallan) o cambiar de SDK. **Eligió `@openai/agents`.**
+*(fuente: usuario + referencia de la API, 2026-08-21)*
+
+#### P4 — ¿Y el agente de PESOS, que ejecuta el binario `claude` del servidor? · ✅ Resuelta
+**No se toca.** Fernando: *"se queda con el CLI"*. No consume clave de API de la app.
+*(fuente: usuario, 2026-08-21)*
+
+#### P5 — ¿Hay clave de OpenAI para el canal de WhatsApp, y cuándo se corta? · ✅ Resuelta
+Fernando: *"a futuro les pediré incluso a este que me dé una clave de open ai… solo quita esa
+clave guardada, no dejes ninguna alerta ni mensaje, luego yo actualizo"*. Se borra en la
+migración 050, sin marca ni aviso. *(fuente: usuario, 2026-08-21)*
+
+#### P6 — ¿Se cambia también `/legal/whatsapp`? · ✅ Resuelta
+Sí: es un documento presentado a Meta y el subprocesador cambió. Ahora dice **OpenAI**, y añade
+que las conversaciones no quedan almacenadas como historial en el proveedor — que es verdad
+porque la petición va con `store: false`. *(fuente: decisión propia, informada a Fernando)*
+
+#### P7 — ¿Qué acepta y qué rechaza `gpt-5.6-luna`? · ✅ Resuelta — MEDIDO, NO RAZONADO
+Tres sondas contra la API real el 2026-08-21. Lo que devuelve **400**: `temperature` (ni 0 ni
+0.9 ni el default), `top_p`, `max_tokens`. Y la grande: **`tools` + razonamiento es 400 en
+`/v1/chat/completions`** («To use function tools, use /v1/responses»), donde el razonamiento por
+defecto ya cuenta — allí solo pasan con `'none'`. El caché es automático por prefijo y entra a
+**1.024 tokens** (573 → 0 cacheados; 1.063 → 1.054). Y **forzar la herramienta convive con los
+seis niveles de razonamiento**, al revés que en Anthropic.
+
+#### P8 — ¿Por qué el cotizador puso una fecha límite en el pasado? · ✅ Resuelta
+Porque **el modelo no sabe en qué día vive** (corte en febrero de 2026) y antes no se notaba: el
+CLI de Claude Code inyectaba la fecha en su propio prompt de sistema. Al quitar el subproceso, la
+muleta se fue con él. Se arregla metiendo la fecha de Ecuador en el prompt.
+
+#### P9 — ¿Se rompió el uso de herramientas al apagar el razonamiento? · ✅ Resuelta — ERA MI DIAGNÓSTICO, NO EL CÓDIGO
+La primera cotización salió con `talents: []` en todos los requerimientos y lo atribuí a
+`reasoning.effort: 'none'`. **Falso.** Aislado con las tres alturas de razonamiento, el agente
+llama a `buscar_talentos` una vez por requerimiento en las tres. Lo que devolvía vacío era el
+**respaldo por texto**, que en local se usa por no haber `APP_URL` y busca el *nombre* del
+talento dentro de una descripción de trabajo entera — nunca casa. El razonamiento vuelve a
+`'none'`, que es lo que Fernando había pedido.
+
+**Lección de método:** antes de cambiar un parámetro por una hipótesis, aislar la variable. Casi
+dejo escrito en un comentario un hecho falso sobre el modelo, que es peor que el bug.
+
+#### P10 — ¿Estaba roto `scripts/probar-estudio-layout.mjs`? · ✅ Resuelta — TAMPOCO
+No: lo lancé sin `--import ./scripts/registrar-ts.mjs`. **Y sobrescribí `scripts/resolver-ts.mjs`
+con una versión peor** —la que había resolvía además el alias `@/`— antes de mirar que ya existía.
+Restaurado. Es el mismo error que P9: culpar a la herramienta antes de comprobarla.
+
+### Lo que se hizo
+1. **`lib/ia/openai.ts`** — la capa única: el id del modelo, lo que se midió y `chatJSON()`.
+2. **Agente de WhatsApp** — `anthropic.ts` → `ia.ts` con la misma firma `decidir()`, por
+   `/v1/responses`; `herramientas.ts` al formato de Responses y `leerDecision()` leyendo
+   `output[]` (los `arguments` llegan como **cadena JSON**, no como objeto); `modelos.ts` con
+   un solo perfil y los niveles de razonamiento.
+3. **Los cuatro `gpt-4o` / `gpt-4o-mini`** → `chatJSON()`, sin `temperature` ni `max_tokens`, y
+   con los techos subidos porque **el razonamiento sale del mismo tope**.
+4. **Migración 050** — proveedor y modelo nuevos, columna `razonamiento`, y el borrado de la
+   clave que pidió Fernando.
+5. **Estudio** — el selector pasa de modelo a razonamiento; marcador `sk-…`.
+6. **`/legal/whatsapp`** — subprocesador OpenAI.
+7. **Worker de cotizaciones** — `@openai/agents`, conversación en OpenAI, fecha de hoy en el
+   prompt, y fuera el subproceso, las seis variables de entorno y el callback de permisos.
+
+### Cómo se verificó (las cuatro, como manda la memoria del proyecto)
+| # | Qué | Resultado |
+|---|---|---|
+| 1 | `npx tsc --noEmit` | limpio |
+| 2 | `npm run build` | compila |
+| 3 | `scripts/agente-sonda-api.mjs` — la petición REAL que arma el código, contra la API | las 3 decisiones correctas (responder / no_responder / escalar_a_humano) y ningún parámetro prohibido |
+| 4 | Worker levantado de verdad: `/generate` + `/chat` reanudando + conversación inexistente | cotización completa, la reanudación mantiene el hilo, y la conversación perdida se recupera sola |
+
+### Lo que queda en manos de Fernando
+1. **Poner la clave de OpenAI del canal** en el Estudio (la de Anthropic se borró).
+2. **Railway, servicio `cotizador-worker`:** añadir `OPENAI_API_KEY` y **cambiar
+   `COTIZADOR_MODEL`**, que está fijado en `kimi-k2.6` y pisaría el default nuevo. `KIMI_API_KEY`
+   ya no se usa.
+3. **Aplicar la migración 050** (`node scripts/migrate.mjs`).
+
+### Lo que encontré y NO toqué (fuera del encargo)
+El **respaldo por texto de `buscar_talentos`** busca el *nombre* del talento dentro de una
+descripción de trabajo entera, así que en la práctica **siempre devuelve `[]`**. Solo se usa si
+la app no responde, así que no rompe nada hoy, pero es un respaldo que no respalda. Ya existía
+antes de esta migración.
+
+---
+
+## Objetivo ANTERIOR (declarado 2026-08-03) — LA WEB PÚBLICA QUE SE ENCUENTRA EN GOOGLE: diseño y contenido de `/negocio`, `/recursos` y `/contacto` · 🔎 60%
 
 **Rol asumido:** *ingeniero de SEO técnico + estratega de contenido para una web corporativa
 en Next.js App Router*. El trabajo tiene dos mitades que no se pueden separar —lo que la

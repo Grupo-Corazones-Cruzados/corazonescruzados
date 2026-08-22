@@ -1,6 +1,10 @@
 import type { DigimonPhrases, ActionDescriptions } from '@/types/digimon';
+import { chatJSON } from '@/lib/ia/openai';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+/**
+ * Perfiles y personas de los Digimon. La llamada al modelo la hace `lib/ia/openai.ts`:
+ * este módulo solo pone los prompts y valida lo que vuelve.
+ */
 
 interface DigimonProfile {
   visualDescription: string;
@@ -9,23 +13,7 @@ interface DigimonProfile {
 }
 
 export async function generateDigimonProfile(digimonName: string): Promise<DigimonProfile> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `You are a Digimon expert and pixel art game designer. You will generate a visual description, personality phrases, and UNIQUE sprite action descriptions for a Digimon character.
+  const system = `You are a Digimon expert and pixel art game designer. You will generate a visual description, personality phrases, and UNIQUE sprite action descriptions for a Digimon character.
 
 Return a JSON object with this exact structure:
 {
@@ -69,28 +57,17 @@ Rules for phrases:
 - tier4 (25 phrases): Close friend, shares feelings, playful teasing.
 - tier5 (35 phrases): Best friend, deep trust, affectionate, protective.
 - tier6 (40 phrases): Soulmate level, unconditional love, deeply emotional.
-- Phrases should feel natural for ${digimonName}'s personality from the Digimon series.`
-        },
-        {
-          role: 'user',
-          content: `Generate the complete profile for ${digimonName}.`
-        }
-      ],
-      temperature: 0.9,
-      max_tokens: 4500,
-    }),
+- Phrases should feel natural for ${digimonName}'s personality from the Digimon series.`;
+
+  // El techo era 4.500 con gpt-4o. Aquí sube: el perfil son ~120 frases MÁS lo que el
+  // modelo razone, y en este modelo el razonamiento sale del mismo techo. Quedarse corto
+  // no devuelve error: devuelve el JSON cortado.
+  const parsed = await chatJSON<DigimonProfile>({
+    system,
+    user: `Generate the complete profile for ${digimonName}.`,
+    maxTokens: 12000,
+    etiqueta: 'digimon-perfil',
   });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI API error: ${res.status} ${err}`);
-  }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('No content from OpenAI');
-
-  const parsed = JSON.parse(content) as DigimonProfile;
 
   if (!parsed.visualDescription || !parsed.phrases || !parsed.actionDescriptions) {
     throw new Error('Invalid profile structure from OpenAI');
@@ -101,23 +78,7 @@ Rules for phrases:
 
 /** Generate a chat persona/system prompt for a Digimon based on its canonical personality */
 export async function generateDigimonPersona(digimonName: string): Promise<string> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `You are a Digimon expert. Generate a system prompt persona for a Digimon character that will be used as an AI coding assistant.
+  const system = `You are a Digimon expert. Generate a system prompt persona for a Digimon character that will be used as an AI coding assistant.
 
 Return a JSON object: { "persona": "..." }
 
@@ -127,26 +88,13 @@ The persona should be 3-5 sentences that:
 3. Mention they work in "GCC WORLD"
 4. End with: "Keep responses concise. Use markdown for code. Respond in the same language the user writes to you."
 
-Make it faithful to the character's personality from the anime/games.`
-        },
-        {
-          role: 'user',
-          content: `Generate the chat persona for ${digimonName}.`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-    }),
+Make it faithful to the character's personality from the anime/games.`;
+
+  const parsed = await chatJSON<{ persona: string }>({
+    system,
+    user: `Generate the chat persona for ${digimonName}.`,
+    maxTokens: 2000,
+    etiqueta: 'digimon-persona',
   });
-
-  if (!res.ok) {
-    throw new Error(`OpenAI API error: ${res.status}`);
-  }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('No content from OpenAI');
-
-  const parsed = JSON.parse(content);
   return parsed.persona;
 }

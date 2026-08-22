@@ -19,6 +19,8 @@ export interface Canal {
   nombre_verificado: string | null;
   ia_proveedor: string;
   modelo: string;
+  /** Cuánto se lo piensa el modelo antes de decidir. Sustituye a la elección de modelo. */
+  razonamiento: string;
   max_tokens: number;
   debounce_segundos: number;
   ventana_mensajes: number;

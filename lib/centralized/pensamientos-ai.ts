@@ -1,19 +1,19 @@
 import { CATEGORIES_SET } from '@/lib/centralized/pensamientos';
 import type { PendingThought } from '@/lib/centralized/pensamientos-db';
+import { chatJSON } from '@/lib/ia/openai';
 
 /**
  * Clasificador de pensamientos con OpenAI. Asigna a cada pensamiento UNA de las 4
  * dimensiones del desarrollo (las mismas de `apoyo.ts`).
  *
- * Sigue el patrón de la casa (`lib/openai.ts`, `apa-extract/route.ts`): `fetch` directo a
- * /v1/chat/completions con `response_format: json_object`, la estructura descrita en prosa
- * en el system prompt, y validación a mano tras el `JSON.parse`.
+ * Sigue el patrón de la casa: la llamada la hace `lib/ia/openai.ts` —la ÚNICA capa que
+ * habla con el modelo— con `response_format: json_object`, la estructura descrita en prosa
+ * en el system prompt, y validación a mano de lo que vuelve.
  *
  * Se clasifica POR LOTES (varios pensamientos en una sola llamada) porque una llamada por
  * pensamiento multiplicaría el coste y la latencia del trabajo nocturno sin ganar precisión.
  */
 
-const MODEL = 'gpt-4o-mini';
 /** Nº de pensamientos por llamada. Suficientemente pequeño para no desbordar el contexto. */
 export const BATCH_SIZE = 20;
 /** Recorte por pensamiento: una "lectura amplia" puede ser larguísima y el inicio ya define el tema. */
@@ -40,37 +40,18 @@ export interface ClassifyResult { id: number; category: string }
 /** Clasifica un lote. Devuelve solo los resultados con id e id de categoría válidos. */
 export async function classifyBatch(items: PendingThought[]): Promise<ClassifyResult[]> {
   if (items.length === 0) return [];
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OpenAI no está configurado (falta OPENAI_API_KEY)');
-
   const payload = items.map((t) => ({ id: t.id, texto: (t.content || '').slice(0, MAX_CHARS) }));
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: MODEL,
-      response_format: { type: 'json_object' },
-      temperature: 0,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `Clasifica estos pensamientos:\n\n${JSON.stringify(payload)}` },
-      ],
-    }),
+  // El techo es amplio a propósito: son hasta 20 pensamientos por llamada y en este modelo
+  // el razonamiento CUENTA dentro de `max_completion_tokens`. Quedarse corto no da error,
+  // devuelve la respuesta cortada — que es peor.
+  const parsed = await chatJSON<any>({
+    system: SYSTEM_PROMPT,
+    user: `Clasifica estos pensamientos:\n\n${JSON.stringify(payload)}`,
+    maxTokens: 4000,
+    esfuerzo: 'low',
+    etiqueta: 'pensamientos',
   });
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('Pensamientos OpenAI error:', res.status, err.slice(0, 300));
-    throw new Error(`OpenAI respondió ${res.status}`);
-  }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error('Respuesta vacía del modelo');
-
-  let parsed: any;
-  try { parsed = JSON.parse(content); } catch { throw new Error('El modelo no devolvió JSON válido'); }
 
   const sent = new Set(items.map((t) => t.id));
   const out: ClassifyResult[] = [];

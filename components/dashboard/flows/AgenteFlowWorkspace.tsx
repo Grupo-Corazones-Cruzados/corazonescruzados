@@ -44,10 +44,10 @@ type Vista = 'bandeja' | 'plantillas' | 'estudio';
 
 interface Estudio {
   canal: any;
-  capacidades: { effort: boolean; minimoCache: number; maxSalida: number };
+  capacidades: { minimoCache: number; maxSalida: number; muestreo: boolean };
   cache: { cachea: boolean; tokensEstimados: number; minimo: number; faltanCaracteres: number };
   pendientes: string[];
-  modelos: readonly { id: string; nombre: string; nota: string }[];
+  razonamientos: readonly { id: string; nombre: string; nota: string }[];
   cifradoListo: boolean;
   appId: string | null;
   configId: string | null;
@@ -165,7 +165,7 @@ function calcularAvisos(estudio: Estudio | null): Aviso[] {
     // Este es el que evita pagar de más sin enterarse.
     avisos.push({
       tono: 'aviso',
-      texto: `El prompt no llega al mínimo de caché de este modelo (~${cache.tokensEstimados} de ${cache.minimo} tokens), así que se paga entero en cada mensaje. Faltan unos ${cache.faltanCaracteres.toLocaleString('es-ES')} caracteres de conocimiento — o usa un modelo con mínimo más bajo.`,
+      texto: `El prompt no llega al mínimo de caché del modelo (~${cache.tokensEstimados} de ${cache.minimo} tokens), así que se paga entero en cada mensaje. Faltan unos ${cache.faltanCaracteres.toLocaleString('es-ES')} caracteres de conocimiento.`,
     });
   }
   if (!canal.bot_activo) {
@@ -293,7 +293,7 @@ function Conocimiento({ flowId, bloques, recargar }: { flowId: number; bloques: 
 function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Estudio; recargar: () => void }) {
   const c = estudio.canal;
   const [form, setForm] = useState({
-    modelo: c.modelo, max_tokens: c.max_tokens, debounce_segundos: c.debounce_segundos,
+    razonamiento: c.razonamiento, max_tokens: c.max_tokens, debounce_segundos: c.debounce_segundos,
     ventana_mensajes: c.ventana_mensajes, bot_activo: c.bot_activo,
   });
   const [clave, setClave] = useState('');
@@ -312,7 +312,7 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
     } finally { setGuardando(false); }
   };
 
-  const modeloElegido = estudio.modelos.find((m) => m.id === form.modelo);
+  const nivelElegido = estudio.razonamientos.find((m) => m.id === form.razonamiento);
 
   return (
     <div>
@@ -328,9 +328,13 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
 
       <div className="grid md:grid-cols-2 gap-4 max-w-4xl">
         <Campo
-          label="Modelo"
+          label="Razonamiento"
           ayuda={<>
-            {modeloElegido?.nota && <p className="mb-2">{modeloElegido.nota}</p>}
+            {nivelElegido?.nota && <p className="mb-2">{nivelElegido.nota}</p>}
+            <p className="mb-2">
+              Cuanto más razona, mejor decide y más cuesta — el razonamiento se paga como
+              tokens de salida y sale del mismo tope de <em>Respuesta máxima</em>.
+            </p>
             <p>
               <strong>Mínimo de caché: {estudio.capacidades.minimoCache.toLocaleString('es-ES')} tokens.</strong>{' '}
               Por debajo de eso el prompt se paga entero en cada mensaje.
@@ -338,9 +342,9 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
           </>}
         >
           <PixelSelect
-            value={form.modelo}
-            onChange={(e: any) => setForm({ ...form, modelo: e.target.value })}
-            options={estudio.modelos.map((m) => ({ value: m.id, label: m.nombre }))}
+            value={form.razonamiento}
+            onChange={(e: any) => setForm({ ...form, razonamiento: e.target.value })}
+            options={estudio.razonamientos.map((m) => ({ value: m.id, label: m.nombre }))}
           />
         </Campo>
 
@@ -387,7 +391,7 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
           {/* El marcador de posición YA dice si hay clave guardada: repetirlo debajo en un
               párrafo era decir dos veces lo mismo. Y el aviso de «sin clave» vive en el
               botón de advertencias de la cabecera, que es donde se mira. */}
-          <PixelInput type="password" placeholder={c.tiene_ia_api_key ? '•••••••• (ya guardada)' : 'sk-ant-…'}
+          <PixelInput type="password" placeholder={c.tiene_ia_api_key ? '•••••••• (ya guardada)' : 'sk-…'}
             value={clave} onChange={(e: any) => setClave(e.target.value)} />
         </Campo>
 

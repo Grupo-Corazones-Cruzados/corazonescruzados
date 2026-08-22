@@ -1,70 +1,50 @@
 // Worker dedicado del Agente de Cotizaciones Software.
-// Ejecuta el Claude Agent SDK contra KIMI K2.6, mantiene la sesion viva y la reanuda por sessionId.
-// La app web le habla por HTTP + token compartido (x-worker-token), fail-closed.
+// Ejecuta el Agents SDK de OpenAI sobre gpt-5.6-luna, mantiene la conversacion viva y la
+// reanuda por sessionId. La app web le habla por HTTP + token compartido (x-worker-token),
+// fail-closed.
 //
 // Endpoints:
 //   GET  /health              -> { ok: true }
 //   POST /generate  { model, context }                 -> { sessionId, payload }
 //   POST /chat      { sessionId, model, message, context } -> { sessionId, reply, payload? }
 //
-// Env: PORT (4610), COTIZADOR_WORKER_TOKEN, KIMI_API_KEY, DATABASE_URL, COTIZADOR_MODEL, APP_URL.
+// Env: PORT (4610), COTIZADOR_WORKER_TOKEN, OPENAI_API_KEY, DATABASE_URL, COTIZADOR_MODEL, APP_URL.
 //
-// NOTA (pedido del usuario): el thinking extendido queda DESACTIVADO — no se configura
-// ninguna opcion de thinking/interleaved-thinking; el SDK no lo activa por defecto.
-// (Por eso el modelo es k2.6 y no k2.7-code: ese ultimo EXIGE thinking y devuelve 400 sin el.)
+// ── QUE CAMBIO EL 2026-08-21 ─────────────────────────────────────────────────
+// Antes esto era el **Claude Agent SDK apuntado a Kimi K2.6**: funcionaba porque Moonshot
+// expone a proposito un endpoint compatible con /v1/messages de Anthropic, asi que bastaba
+// con reapuntar ANTHROPIC_BASE_URL. **OpenAI no expone nada equivalente**, de modo que
+// unificar el proveedor obligaba a cambiar de SDK, no de variable de entorno.
+//
+// El cambio se lleva por delante tres fragilidades que estaban documentadas aqui:
+//
+//   1. **El subproceso.** El Agent SDK lanzaba el binario de Claude Code, que hacia
+//      llamadas de modelo pequeño por su cuenta (compactacion, titulos, subagentes) con
+//      IDs de Claude que Moonshot no conocia. Habia que fijar SEIS variables de entorno
+//      para que no se cayera a mitad de una cotizacion. Ya no hay subproceso.
+//   2. **La puerta doble de permisos.** Declarar las herramientas en `allowedTools` las
+//      auto-aprobaba ANTES de consultar al callback `canUseTool`, asi que el comentario
+//      que decia "solo se aprueban las nuestras" era mentira. Aqui el agente solo tiene
+//      las herramientas que se le pasan: no hay nada que denegar.
+//   3. **Las sesiones en disco.** Vivian en el contenedor, y Railway levanta uno nuevo en
+//      CADA despliegue: toda cotizacion anterior al despliegue quedaba sin hilo para
+//      siempre. Ahora la conversacion vive en OpenAI y sobrevive al despliegue.
+//
+// El thinking sigue DESACTIVADO por peticion del usuario: `reasoning.effort: 'none'`.
 
 import http from 'node:http';
-import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk';
+import { Agent, run, tool, setDefaultOpenAIKey } from '@openai/agents';
+import { OpenAIConversationsSession } from '@openai/agents-openai';
 import { z } from 'zod';
 import pg from 'pg';
 
 const PORT = Number(process.env.PORT || 4610);
 const TOKEN = process.env.COTIZADOR_WORKER_TOKEN || '';
-const DEFAULT_MODEL = process.env.COTIZADOR_MODEL || 'kimi-k2.6';
+const DEFAULT_MODEL = process.env.COTIZADOR_MODEL || 'gpt-5.6-luna';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
-// ── El proveedor del modelo ───────────────────────────────────────────────────
-// El Agent SDK no habla con Anthropic directamente: lanza el binario de Claude Code, que
-// respeta ANTHROPIC_BASE_URL. Moonshot expone un endpoint COMPATIBLE con /v1/messages, asi
-// que el cambio de proveedor es de entorno, no de logica: el prompt, las herramientas MCP y
-// la reanudacion por sessionId siguen igual.
-const KIMI_BASE_URL = process.env.KIMI_BASE_URL || 'https://api.moonshot.ai/anthropic';
-const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || '';
-// Ventana de auto-compactacion. Kimi K2.6 son 262k de contexto, no el millon de Opus: generar
-// una cotizacion cabe de sobra, pero GCC Bot ACUMULA turnos sobre la misma sesion.
-const COMPACT_WINDOW = process.env.CLAUDE_CODE_AUTO_COMPACT_WINDOW || '200000';
+if (OPENAI_API_KEY) setDefaultOpenAIKey(OPENAI_API_KEY);
 
-/**
- * El entorno del subproceso del SDK.
- *
- * ── POR QUE SE ARMA AQUI Y NO SE DEJA EN VARIABLES DE RAILWAY ──────────────────
- * Claude Code hace llamadas de MODELO PEQUEÑO por su cuenta (compactacion, titulos,
- * subagentes) con IDs de Claude. Contra Moonshot eso devuelve *model not found* y el agente
- * se cae a mitad de una cotizacion — un fallo que no aparece en la primera prueba, solo
- * cuando la sesion crece. Fijar aqui las cuatro variantes evita que dependa de que alguien
- * recuerde ponerlas al crear un servicio nuevo.
- *
- * Y se BORRA ANTHROPIC_API_KEY: gana a ANTHROPIC_AUTH_TOKEN en el orden de resolucion, asi
- * que una clave de Anthropic olvidada en el entorno se mandaria a Moonshot -> 401.
- *
- * ⚠️ `options.env` REEMPLAZA el entorno del subproceso, no lo mezcla: hay que esparcir
- * process.env o el worker pierde PATH, DATABASE_URL y todo lo demas.
- */
-function entornoDelAgente(modelo) {
-  const env = {
-    ...process.env,
-    ANTHROPIC_BASE_URL: KIMI_BASE_URL,
-    ANTHROPIC_AUTH_TOKEN: KIMI_API_KEY,
-    ANTHROPIC_MODEL: modelo,
-    ANTHROPIC_DEFAULT_OPUS_MODEL: modelo,
-    ANTHROPIC_DEFAULT_SONNET_MODEL: modelo,
-    ANTHROPIC_DEFAULT_HAIKU_MODEL: modelo,
-    ANTHROPIC_DEFAULT_FABLE_MODEL: modelo,
-    CLAUDE_CODE_SUBAGENT_MODEL: modelo,
-    CLAUDE_CODE_AUTO_COMPACT_WINDOW: COMPACT_WINDOW,
-  };
-  delete env.ANTHROPIC_API_KEY;
-  return env;
-}
 // URL de la app web: la usa la herramienta de talentos (la búsqueda semántica vive allí,
 // para que las claves de IA no tengan que estar también en el worker).
 const APP_URL = (process.env.APP_URL || '').replace(/\/+$/, '');
@@ -91,10 +71,24 @@ Reglas de la cotizacion:
 
 Formato de salida: tu MENSAJE FINAL debe ser EXACTAMENTE un objeto JSON valido (sin markdown, sin fences, sin texto extra alrededor). El esquema exacto lo indica cada solicitud.`;
 
+/**
+ * La fecha de HOY en Ecuador, para el prompt.
+ *
+ * ⚠️ No es un adorno. El modelo tiene el conocimiento cortado en febrero de 2026 y **no
+ * sabe en que dia vive**: sin esto propuso una `deadline` de 2026-04-10 para una
+ * cotizacion pedida el 2026-08-21 — cuatro meses en el pasado. Antes no hacia falta
+ * porque el CLI de Claude Code inyectaba la fecha en su propio prompt de sistema; al
+ * quitar el subproceso, esa muleta desaparecio con el.
+ */
+function hoyEnEcuador() {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Guayaquil' }); // YYYY-MM-DD
+}
+
 function generatePrompt(ctx) {
   const rate = ctx?.service?.rate != null ? `$${ctx.service.rate} por hora` : 'no especificado (estima un precio de mercado razonable)';
   return `Genera una cotizacion nueva.
 
+FECHA DE HOY: ${hoyEnEcuador()} (Ecuador). La deadline que propongas tiene que ser POSTERIOR a esta fecha.
 SERVICIO: ${ctx?.service?.name || '(sin nombre)'} — costo/hora: ${rate}
 DETALLE DEL PROYECTO:
 """
@@ -145,7 +139,9 @@ ${JSON.stringify(ctx.currentQuote, null, 1)}
 
 `
     : '';
-  return `${actual}El usuario pide lo siguiente sobre la cotizacion actual:
+  return `FECHA DE HOY: ${hoyEnEcuador()} (Ecuador). Cualquier fecha que propongas tiene que ser posterior.
+
+${actual}El usuario pide lo siguiente sobre la cotizacion actual:
 """
 ${message}
 """
@@ -167,156 +163,149 @@ Responde SOLO con este JSON (sin nada mas):
 Incluye "quote" con la cotizacion completa SOLO si hubo cambios; si es solo una consulta, pon "quote": null.`;
 }
 
-// Herramienta: proyectos previos del miembro (solo lectura), para calibrar precios/desglose.
-function buildMcp(memberId) {
-  return createSdkMcpServer({
-    name: 'gcc',
-    version: '1.0.0',
-    tools: [
-      tool(
-        'list_my_projects',
-        'Lista los proyectos/cotizaciones previos del miembro actual con sus requerimientos y costos, para calibrar precios y forma de desglose.',
-        { limit: z.number().int().min(1).max(50).optional() },
-        async (args) => {
-          if (!pool || !memberId) return { content: [{ type: 'text', text: '[]' }] };
-          try {
-            const { rows } = await pool.query(
-              `SELECT p.id, p.title, p.status, p.final_cost,
-                      COALESCE(json_agg(json_build_object('title', r.title, 'cost', r.cost)) FILTER (WHERE r.id IS NOT NULL), '[]') AS requirements
-                 FROM gcc_world.projects p
-                 LEFT JOIN gcc_world.project_requirements r ON r.project_id = p.id
-                WHERE p.assigned_member_id = $1
-                GROUP BY p.id
-                ORDER BY p.created_at DESC
-                LIMIT $2`,
-              [memberId, args?.limit || 20],
-            );
-            return { content: [{ type: 'text', text: JSON.stringify(rows) }] };
-          } catch (e) {
-            return { content: [{ type: 'text', text: `[] (error: ${e.message})` }] };
-          }
-        },
-      ),
-      tool(
-        'buscar_talentos',
-        'Busca en la lista de talentos de la organizacion los que mejor encajan con una descripcion de trabajo. Devuelve candidatos con su NOMBRE EXACTO y un score de 0 a 1. Usalo para elegir los talentos de cada requerimiento; copia el nombre tal cual.',
-        { consulta: z.string().min(2), limite: z.number().int().min(1).max(25).optional() },
-        async (args) => {
-          const consulta = String(args?.consulta || '').trim();
-          if (!consulta) return { content: [{ type: 'text', text: '[]' }] };
-          // Camino principal: la app resuelve la busqueda semantica (embeddings + pgvector).
-          if (APP_URL && TOKEN) {
-            try {
-              const res = await fetch(`${APP_URL}/api/talentos/buscar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-worker-token': TOKEN },
-                body: JSON.stringify({ query: consulta, k: args?.limite || 8 }),
-              });
-              if (res.ok) {
-                const j = await res.json();
-                return { content: [{ type: 'text', text: JSON.stringify(j.data || []) }] };
-              }
-            } catch { /* cae al respaldo por texto */ }
-          }
-          // Respaldo: busqueda por texto contra la base (peor calidad, pero nunca deja al
-          // agente sin candidatos si la app no responde).
-          if (!pool) return { content: [{ type: 'text', text: '[]' }] };
-          try {
-            const { rows } = await pool.query(
-              `SELECT nombre FROM gcc_world.gd_talentos
-                WHERE LOWER(nombre) ILIKE '%' || LOWER($1) || '%'
-                ORDER BY LENGTH(nombre) LIMIT $2`,
-              [consulta, args?.limite || 8],
-            );
-            return { content: [{ type: 'text', text: JSON.stringify(rows.map((r) => ({ nombre: r.nombre, score: null }))) }] };
-          } catch (e) {
-            return { content: [{ type: 'text', text: `[] (error: ${e.message})` }] };
-          }
-        },
-      ),
-    ],
+// Las DOS herramientas del agente, ambas de SOLO LECTURA.
+//
+// Antes iban dentro de un servidor MCP en proceso y habia que aprobarlas con un callback,
+// porque el CLI de Claude Code traia ademas su propio arsenal (Bash, Read, Write…) y habia
+// que apagarlo. Aqui el agente tiene EXACTAMENTE lo que se le pasa en `tools`, asi que la
+// lista blanca y la lista negra sobran: no existe nada que denegar.
+//
+// ⚠️ Los parametros van con `.nullable()` y no con `.optional()`: el modo estricto exige
+// que TODOS los campos esten en `required`, y un `.optional()` genera un esquema que la
+// API rechaza. Es la misma trampa que en las herramientas del agente de WhatsApp.
+function construirHerramientas(memberId) {
+  const listarProyectos = tool({
+    name: 'list_my_projects',
+    description: 'Lista los proyectos/cotizaciones previos del miembro actual con sus requerimientos y costos, para calibrar precios y forma de desglose.',
+    parameters: z.object({
+      limit: z.number().int().min(1).max(50).nullable().describe('Cuantos proyectos traer. null = 20.'),
+    }),
+    execute: async ({ limit }) => {
+      if (!pool || !memberId) return '[]';
+      try {
+        const { rows } = await pool.query(
+          `SELECT p.id, p.title, p.status, p.final_cost,
+                  COALESCE(json_agg(json_build_object('title', r.title, 'cost', r.cost)) FILTER (WHERE r.id IS NOT NULL), '[]') AS requirements
+             FROM gcc_world.projects p
+             LEFT JOIN gcc_world.project_requirements r ON r.project_id = p.id
+            WHERE p.assigned_member_id = $1
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
+            LIMIT $2`,
+          [memberId, limit || 20],
+        );
+        return JSON.stringify(rows);
+      } catch (e) {
+        return `[] (error: ${e.message})`;
+      }
+    },
   });
+
+  const buscarTalentos = tool({
+    name: 'buscar_talentos',
+    description: 'Busca en la lista de talentos de la organizacion los que mejor encajan con una descripcion de trabajo. Devuelve candidatos con su NOMBRE EXACTO y un score de 0 a 1. Usalo para elegir los talentos de cada requerimiento; copia el nombre tal cual.',
+    parameters: z.object({
+      consulta: z.string().min(2).describe('Descripcion del trabajo del requerimiento.'),
+      limite: z.number().int().min(1).max(25).nullable().describe('Cuantos candidatos traer. null = 8.'),
+    }),
+    execute: async ({ consulta, limite }) => {
+      const texto = String(consulta || '').trim();
+      if (!texto) return '[]';
+      // Camino principal: la app resuelve la busqueda semantica (embeddings + pgvector).
+      if (APP_URL && TOKEN) {
+        try {
+          const res = await fetch(`${APP_URL}/api/talentos/buscar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-worker-token': TOKEN },
+            body: JSON.stringify({ query: texto, k: limite || 8 }),
+          });
+          if (res.ok) {
+            const j = await res.json();
+            return JSON.stringify(j.data || []);
+          }
+        } catch { /* cae al respaldo por texto */ }
+      }
+      // Respaldo: busqueda por texto contra la base (peor calidad, pero nunca deja al
+      // agente sin candidatos si la app no responde).
+      if (!pool) return '[]';
+      try {
+        const { rows } = await pool.query(
+          `SELECT nombre FROM gcc_world.gd_talentos
+            WHERE LOWER(nombre) ILIKE '%' || LOWER($1) || '%'
+            ORDER BY LENGTH(nombre) LIMIT $2`,
+          [texto, limite || 8],
+        );
+        return JSON.stringify(rows.map((r) => ({ nombre: r.nombre, score: null })));
+      } catch (e) {
+        return `[] (error: ${e.message})`;
+      }
+    },
+  });
+
+  return [listarProyectos, buscarTalentos];
 }
 
 /**
- * ¿El error viene de que la sesion que queriamos reanudar no sirve?
+ * ¿El error viene de que la conversacion que queriamos reanudar no sirve?
  *
- * Dos casos, los dos reales y los dos con el mismo remedio — empezar de cero:
- *   1. **No existe.** Pasa en CADA despliegue: las sesiones del SDK viven en el DISCO del
- *      contenedor y Railway levanta uno nuevo. La cotizacion, en cambio, vive en Postgres.
- *      Esa asimetria dejaba a GCC Bot inservible para siempre en toda cotizacion anterior
- *      al despliegue.
- *   2. **No es un UUID valido.** Un `worker_session_id` corrupto o truncado en la base
- *      hace que el CLI rechace el `--resume` antes de arrancar.
+ * Antes eran las sesiones en DISCO del contenedor, que Railway borraba en cada despliegue.
+ * Ahora la conversacion vive en OpenAI, asi que esto deberia ser raro — pero sigue siendo
+ * posible: un `worker_session_id` corrupto en la base, una conversacion caducada, o una
+ * clave distinta de la que la creo. El remedio es el mismo de siempre: empezar de cero.
  *
- * Se listan los dos mensajes a proposito en vez de tragarse cualquier error: un fallo de red
- * o de saldo NO debe disfrazarse de sesion perdida y gastar una segunda llamada.
+ * Que la conversacion se pierda NO es motivo para dejar tirado al usuario: el prompt del
+ * chat ya lleva la cotizacion entera, asi que una conversacion nueva puede seguir
+ * trabajando. Lo que se pierde es el hilo de la charla, no el trabajo.
  */
 function esSesionPerdida(err) {
+  if (err?.status === 404) return true;
   const m = String(err?.message ?? '');
-  return /no conversation found|session .{0,20}not found/i.test(m)
-    || /--resume requires a valid session id|is not a UUID/i.test(m);
+  return /conversation.{0,30}(not found|does not exist)/i.test(m)
+    || /no such conversation/i.test(m)
+    || /invalid.{0,20}conversation/i.test(m);
 }
 
 async function runAgent({ prompt, model, resume, memberId }) {
   // Fail-closed: sin clave el SDK intentaria autenticarse por su cuenta y el fallo saldria
-  // como un error opaco del subproceso a mitad de la generacion.
-  if (!KIMI_API_KEY) throw new Error('Falta KIMI_API_KEY en el worker: no hay con que autenticarse contra Kimi.');
-  const mcp = buildMcp(memberId);
+  // como un error opaco a mitad de la generacion.
+  if (!OPENAI_API_KEY) throw new Error('Falta OPENAI_API_KEY en el worker: no hay con que autenticarse contra OpenAI.');
   const modelo = model || DEFAULT_MODEL;
 
+  const agente = new Agent({
+    name: 'Agente de Cotizaciones Software',
+    instructions: SYSTEM_PROMPT,
+    model: modelo,
+    tools: construirHerramientas(memberId),
+    // ⚠️ NI temperature NI top_p: gpt-5.6-luna devuelve 400 con cualquiera de los dos, no
+    // los ignora.
+    //
+    // El razonamiento sigue APAGADO, como pidio el usuario. Y aqui apagarlo no cuesta
+    // nada: medido el 2026-08-21, con `effort: 'none'` el agente llama igual a
+    // `buscar_talentos` una vez por requerimiento y copia los nombres exactos. Los seis
+    // niveles se comportan igual en eso; lo unico que cambia es lo que se gasta pensando.
+    modelSettings: { reasoning: { effort: 'none' } },
+  });
+
   const ejecutar = async (reanudar) => {
-    let sessionId = reanudar || null;
-    let finalText = '';
-    const q = query({
-      prompt,
-      options: {
-        model: modelo,
-        env: entornoDelAgente(modelo),
-        systemPrompt: SYSTEM_PROMPT,
-        mcpServers: { gcc: mcp },
-        // NO usamos 'bypassPermissions' (pasa --dangerously-skip-permissions, que falla como
-        // root en Railway). En su lugar, un callback aprueba SOLO nuestras herramientas
-        // (read-only) y niega cualquier otra — sin prompts (headless).
-        //
-        // ⚠️ Y NO se declaran en `allowedTools`, aunque parezca lo natural: un nombre "pelado"
-        // ahi **auto-aprueba la herramienta ANTES de consultar al callback**, que es justo lo
-        // que este avisaba en cada pase —`CLAUDE_SDK_CAN_USE_TOOL_SHADOWED`— y el remedio que
-        // el propio SDK recomienda. Mientras estuvieron las dos listas, el comentario de arriba
-        // era mentira: quien aprobaba era `allowedTools`, no el callback, asi que endurecer el
-        // callback no habria tenido ningun efecto. Con una sola puerta, lo que dice el codigo
-        // es lo que pasa.
-        canUseTool: async (toolName, input) =>
-          ['mcp__gcc__list_my_projects', 'mcp__gcc__buscar_talentos'].includes(toolName)
-            ? { behavior: 'allow', updatedInput: input }
-            : { behavior: 'deny', message: 'Herramienta no permitida en este agente' },
-        settingSources: [],      // no cargar settings del filesystem
-        maxTurns: 14,
-        ...(reanudar ? { resume: reanudar } : {}),
-      },
-    });
-    for await (const msg of q) {
-      if (msg.type === 'system' && msg.subtype === 'init') sessionId = msg.session_id;
-      else if (msg.type === 'result') {
-        if (typeof msg.result === 'string') finalText = msg.result;
-        if (msg.session_id) sessionId = msg.session_id;
-      }
-    }
-    return { sessionId, finalText, reanudada: Boolean(reanudar) };
+    const session = new OpenAIConversationsSession(
+      reanudar ? { conversationId: reanudar, apiKey: OPENAI_API_KEY } : { apiKey: OPENAI_API_KEY },
+    );
+    // maxTurns 14: el agente busca talentos una vez POR requerimiento, asi que necesita
+    // varias vueltas de herramienta antes de escribir la cotizacion.
+    const resultado = await run(agente, prompt, { session, maxTurns: 14 });
+    const sessionId = await session.getSessionId();
+    return { sessionId, finalText: resultado.finalOutput ?? '', reanudada: Boolean(reanudar) };
   };
 
   try {
     return await ejecutar(resume || null);
   } catch (err) {
     if (!resume || !esSesionPerdida(err)) throw err;
-    // Que la sesion se haya perdido NO es motivo para dejar tirado al usuario: el prompt del
-    // chat ya lleva la cotizacion entera, asi que una sesion nueva puede seguir trabajando.
-    // Lo que se pierde es el hilo de la charla, no el trabajo.
     // `console.log`, no `console.warn`: en Railway **todo lo que va a stderr se pinta como
-    // error**, y esto pasa despues de cada despliegue por diseno. Manchar de rojo el panel con
-    // lo que es normal deja el contador de errores sin valor — que es exactamente lo que costo
-    // no ver los 20 fallos de `agente-worker`. Los rojos se reservan para lo que si lo es.
-    console.log(`[cotizador-worker] la sesion ${resume} ya no existe; se arranca una nueva desde la cotizacion guardada`);
+    // error**, y esto es un caso previsto. Manchar de rojo el panel con lo que es normal
+    // deja el contador de errores sin valor — que es exactamente lo que costo no ver los
+    // 20 fallos de `agente-worker`. Los rojos se reservan para lo que si lo es.
+    console.log(`[cotizador-worker] la conversacion ${resume} ya no existe; se arranca una nueva desde la cotizacion guardada`);
     return await ejecutar(null);
   }
 }
@@ -358,8 +347,8 @@ const server = http.createServer(async (req, res) => {
         model: DEFAULT_MODEL,
         // La sonda tambien dice CONTRA QUIEN corre y si hay clave: comprobar el cambio de
         // proveedor sin gastar una cotizacion es el punto de todo esto.
-        baseUrl: KIMI_BASE_URL,
-        apiKey: KIMI_API_KEY ? 'ok' : 'FALTA',
+        proveedor: 'openai',
+        apiKey: OPENAI_API_KEY ? 'ok' : 'FALTA',
       });
     }
 
@@ -395,5 +384,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => console.log(
-  `[cotizador-worker] escuchando en :${PORT} (modelo ${DEFAULT_MODEL} en ${KIMI_BASE_URL}${KIMI_API_KEY ? '' : ' — ⚠️ SIN KIMI_API_KEY'})`,
+  `[cotizador-worker] escuchando en :${PORT} (modelo ${DEFAULT_MODEL} en OpenAI${OPENAI_API_KEY ? '' : ' — ⚠️ SIN OPENAI_API_KEY'})`,
 ));

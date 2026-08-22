@@ -8,9 +8,17 @@
  * Se probó la alternativa —una cadena de clasificadores— y producía falsos positivos.
  * Decisión cerrada; no re-litigar.
  *
+ * Se llaman con `tool_choice: 'required'` por **`/v1/responses`**, no por
+ * `/v1/chat/completions`: ahí las herramientas dan 400 salvo con el razonamiento apagado
+ * («To use function tools, use /v1/responses»). Medido el 2026-08-21.
+ *
  * `strict: true` va **en la definición de la herramienta**, no en `tool_choice`, y exige
  * `additionalProperties: false` + `required`. Con eso el esquema se valida de verdad y el
  * modelo no puede inventarse un campo.
+ *
+ * ⚠️ El formato es el de la API de Responses, que NO es el de Chat Completions ni el de
+ * Anthropic: aquí `name`/`parameters` van al RAÍZ del objeto (en Chat Completions van
+ * anidados bajo `function`, y en Anthropic el esquema se llamaba `input_schema`).
  *
  * Módulo puro: sin red ni base de datos.
  */
@@ -18,10 +26,11 @@
 export type NombreHerramienta = 'responder' | 'no_responder' | 'escalar_a_humano';
 
 export interface Herramienta {
+  type: 'function';
   name: NombreHerramienta;
   description: string;
   strict: true;
-  input_schema: {
+  parameters: {
     type: 'object';
     properties: Record<string, { type: string; description: string }>;
     required: string[];
@@ -31,11 +40,12 @@ export interface Herramienta {
 
 export const HERRAMIENTAS: Herramienta[] = [
   {
+    type: 'function',
     name: 'responder',
     description:
       'Envía una respuesta al contacto por WhatsApp. Úsala cuando puedas contestar con el conocimiento disponible.',
     strict: true,
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         texto: {
@@ -49,11 +59,12 @@ export const HERRAMIENTAS: Herramienta[] = [
     },
   },
   {
+    type: 'function',
     name: 'no_responder',
     description:
       'No contesta nada. Úsala solo con publicidad, cadenas, estafas, contenido ofensivo o mensajes sin ninguna intención.',
     strict: true,
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         motivo: {
@@ -66,11 +77,12 @@ export const HERRAMIENTAS: Herramienta[] = [
     },
   },
   {
+    type: 'function',
     name: 'escalar_a_humano',
     description:
       'Pasa la conversación a una persona del equipo y apaga el bot en este chat. Úsala si falta el dato, si hay un reclamo, o si el contacto pide hablar con alguien.',
     strict: true,
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         motivo: {
@@ -96,36 +108,50 @@ export type Decision =
   | { tipo: 'escalar_a_humano'; motivo: string; aviso: string };
 
 /**
- * Lee la decisión de la respuesta del modelo.
+ * Lee la decisión de la respuesta del modelo (formato de `/v1/responses`).
  *
- * ⚠️ Hay que comprobar `stop_reason === 'refusal'` **ANTES** de leer `content`: en una
- * negativa el contenido puede venir vacío o a medias, y `stop_details` puede ser `null`
- * incluso entonces — así que se ramifica por `stop_reason`, nunca por `stop_details`.
+ * ⚠️ La respuesta NO es `content[]` como en Anthropic: es **`output[]`**, una lista de
+ * items donde la llamada a la herramienta es `{ type: 'function_call', name, arguments }`
+ * y los `arguments` vienen como **cadena JSON**, no como objeto. Un `JSON.parse` que
+ * falle aquí dejaría la conversación en silencio, así que se captura.
  *
- * ⚠️ Con el razonamiento apagado, la familia Claude 5 puede escribir la llamada a la
- * herramienta como **texto visible**; esa llamada nunca se ejecuta y no hay error. Aquí
- * eso se detecta —no hay bloque `tool_use`— y se devuelve un fallo explícito en vez de
- * dejar la conversación en silencio.
+ * ⚠️ Hay que mirar la NEGATIVA antes que nada: en Responses no llega como un
+ * `stop_reason`, sino como un item de mensaje con `content[].type === 'refusal'`. Si se
+ * buscara primero el `function_call` se reportaría «no eligió herramienta», que es un
+ * diagnóstico falso.
+ *
+ * ⚠️ Y sigue en pie el fallo silencioso que motivó esta función: el modelo puede escribir
+ * la llamada como **texto visible** en vez de ejecutarla. Nunca se ejecuta y no hay error.
+ * Aquí eso se detecta —no hay item `function_call`— y se devuelve un fallo explícito.
  */
 export function leerDecision(respuesta: any):
   | { ok: true; decision: Decision }
   | { ok: false; motivo: string } {
   if (!respuesta) return { ok: false, motivo: 'La API no devolvió respuesta' };
 
-  if (respuesta.stop_reason === 'refusal') {
-    const categoria = respuesta.stop_details?.category ?? 'sin categoría';
-    return { ok: false, motivo: `El modelo rechazó la petición (${categoria})` };
+  const salida: any[] = Array.isArray(respuesta.output) ? respuesta.output : [];
+
+  // La negativa, primero.
+  for (const item of salida) {
+    const partes: any[] = Array.isArray(item?.content) ? item.content : [];
+    const negativa = partes.find((c) => c?.type === 'refusal');
+    if (negativa) {
+      return { ok: false, motivo: `El modelo rechazó la petición: ${negativa.refusal ?? 'sin motivo'}` };
+    }
   }
 
-  const bloques: any[] = Array.isArray(respuesta.content) ? respuesta.content : [];
-  const uso = bloques.find((b) => b?.type === 'tool_use');
+  const uso = salida.find((o) => o?.type === 'function_call');
 
   if (!uso) {
-    if (respuesta.stop_reason === 'max_tokens') {
-      return { ok: false, motivo: 'La respuesta se cortó por max_tokens antes de decidir' };
+    // `incomplete` con `max_output_tokens` es el equivalente al viejo `stop_reason`.
+    if (respuesta.status === 'incomplete') {
+      const razon = respuesta.incomplete_details?.reason ?? 'desconocida';
+      return { ok: false, motivo: `La respuesta se cortó antes de decidir (${razon})` };
     }
     // El fallo silencioso descrito arriba: texto en vez de llamada.
-    const texto = bloques.find((b) => b?.type === 'text')?.text?.slice(0, 200);
+    const texto = salida
+      .flatMap((o) => (Array.isArray(o?.content) ? o.content : []))
+      .find((c: any) => c?.type === 'output_text')?.text?.slice(0, 200);
     return {
       ok: false,
       motivo: texto
@@ -134,7 +160,15 @@ export function leerDecision(respuesta: any):
     };
   }
 
-  const entrada = uso.input ?? {};
+  // Los argumentos llegan como cadena. Que no parseen es un fallo del modelo, no nuestro,
+  // pero tiene que salir como motivo legible y no como una excepción sin contexto.
+  let entrada: any;
+  try {
+    entrada = typeof uso.arguments === 'string' ? JSON.parse(uso.arguments || '{}') : (uso.arguments ?? {});
+  } catch {
+    return { ok: false, motivo: `Los argumentos de ${uso.name} no son JSON válido` };
+  }
+
   switch (uso.name) {
     case 'responder': {
       const texto = limpiarTexto(String(entrada.texto ?? ''));

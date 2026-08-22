@@ -1,18 +1,17 @@
 import type { ReminderTask } from '@/lib/reminders/schema';
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+import { chatJSON, iaConfigurada } from '@/lib/ia/openai';
 
 export type MeetingAnalysis = { title: string; notes: string; remind_at: string; tasks: ReminderTask[] };
 
 /**
- * Analiza la transcripción de una reunión (OpenAI) y genera el contenido de un recordatorio:
+ * Analiza la transcripción de una reunión y genera el contenido de un recordatorio:
  * título, resumen, fecha/hora de seguimiento (la IA SIEMPRE propone una) y lista de tareas.
  */
 export async function analyzeMeetingTranscript(
   transcript: string,
   ctx: { meetingTitle: string; meetingEndISO: string },
 ): Promise<MeetingAnalysis> {
-  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY no configurado');
+  if (!iaConfigurada()) throw new Error('La IA no está configurada (falta OPENAI_API_KEY)');
   const clip = transcript.slice(0, 24000);
 
   const system = `Eres un asistente que analiza la transcripción de una reunión de trabajo y genera un RECORDATORIO de seguimiento. Responde ÚNICAMENTE un objeto JSON con esta forma exacta (en español):
@@ -24,20 +23,10 @@ export async function analyzeMeetingTranscript(
 }`;
   const user = `Fin de la reunión (ISO): ${ctx.meetingEndISO}\nTítulo de la reunión: ${ctx.meetingTitle}\n\nTranscripción:\n"""\n${clip}\n"""`;
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      response_format: { type: 'json_object' },
-      temperature: 0.3,
-      max_tokens: 900,
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-    }),
-  });
-  if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text().catch(() => '')}`);
-  const data = await res.json();
-  const j = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+  // Sin `esfuerzo`: aquí SÍ interesa que el modelo se lo piense, porque tiene que deducir
+  // una fecha de seguimiento que muchas veces no está dicha en la transcripción.
+  // El techo sube de 900 a 4000: en este modelo el razonamiento consume del mismo techo.
+  const j = await chatJSON<any>({ system, user, maxTokens: 4000, etiqueta: 'reunion' });
 
   const title = String(j.title || ctx.meetingTitle || 'Seguimiento de reunión').slice(0, 120);
   const notes = String(j.notes || '');

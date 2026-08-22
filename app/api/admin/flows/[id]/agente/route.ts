@@ -12,7 +12,7 @@ import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal, canalPorFlujo, canalPublico, guardarSecreto } from '@/lib/agente/canales';
 import { claveMaestraConfigurada } from '@/lib/agente/cifrado';
-import { capacidadesDe, cacheaElPrefijo, MODELOS_OFRECIDOS } from '@/lib/agente/modelos';
+import { capacidadesDe, cacheaElPrefijo, NIVELES_OFRECIDOS, esRazonamientoValido } from '@/lib/agente/modelos';
 import { textoConocimiento, clavesPendientes, type BloqueConocimiento } from '@/lib/agente/conocimiento';
 
 /**
@@ -53,7 +53,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       capacidades: capacidadesDe(canal.modelo),
       cache: cacheaElPrefijo(canal.modelo, caracteres),
       pendientes: clavesPendientes(bloques as BloqueConocimiento[]),
-      modelos: MODELOS_OFRECIDOS,
+      razonamientos: NIVELES_OFRECIDOS,
       cifradoListo: claveMaestraConfigurada(),
       // Públicos los dos: el SDK de Meta los necesita en el navegador para abrir el
       // alta. El app_secret NO sale de aquí ni aunque quien mire sea admin.
@@ -80,7 +80,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const valores: any[] = [];
   const poner = (col: string, val: any) => { campos.push(`${col} = $${campos.length + 1}`); valores.push(val); };
 
-  if (typeof body.modelo === 'string' && body.modelo.trim()) poner('modelo', body.modelo.trim());
+  // El modelo ya no se elige: es uno solo en toda la app (`lib/ia/openai.ts`). Lo que el
+  // cliente ajusta ahora es cuánto se lo piensa el modelo antes de decidir.
+  if (typeof body.razonamiento === 'string') {
+    if (!esRazonamientoValido(body.razonamiento)) {
+      return NextResponse.json({ error: 'Nivel de razonamiento no válido' }, { status: 400 });
+    }
+    poner('razonamiento', body.razonamiento);
+  }
   if (typeof body.max_tokens === 'number') poner('max_tokens', Math.max(256, Math.min(128_000, body.max_tokens)));
   if (typeof body.debounce_segundos === 'number') {
     if (body.debounce_segundos < 0 || body.debounce_segundos > 120) {

@@ -23,7 +23,7 @@ import { altoAbanico, anchoAbanico, colocarSatelites } from '../components/dashb
 import { construirPipeline } from '../lib/agente/estudio/pipeline.ts';
 
 const pipeline = construirPipeline({
-  botActivo: false, modelo: 'claude-haiku-4-5', estadoCanal: 'sin_conectar', numero: null,
+  botActivo: false, modelo: 'gpt-5.6-luna', estadoCanal: 'sin_conectar', numero: null,
   tieneClaveIA: true, tieneToken: false, pendientes: [], enCola: 0, ultimoError: null,
 });
 

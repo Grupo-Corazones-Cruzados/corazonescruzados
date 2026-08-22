@@ -15,7 +15,7 @@ import { getCurrentUser, type TokenPayload } from '@/lib/auth/jwt';
 import { flujoPermitido } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 import { asegurarCanal, canalPublico } from '@/lib/agente/canales';
-import { capacidadesDe, cacheaElPrefijo, MODELOS_OFRECIDOS } from '@/lib/agente/modelos';
+import { capacidadesDe, cacheaElPrefijo, NIVELES_OFRECIDOS } from '@/lib/agente/modelos';
 import { textoConocimiento, clavesPendientes, type BloqueConocimiento } from '@/lib/agente/conocimiento';
 import { HERRAMIENTAS } from '@/lib/agente/herramientas';
 import { construirPipeline, FUENTES } from '@/lib/agente/estudio/pipeline';
@@ -73,7 +73,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       }),
       canal: canalPublico(canal),
       capacidades: capacidadesDe(canal.modelo),
-      modelos: MODELOS_OFRECIDOS,
+      razonamientos: NIVELES_OFRECIDOS,
       appId: process.env.WHATSAPP_APP_ID ?? null,
       configId: process.env.WHATSAPP_ES_CONFIG_ID ?? null,
     },

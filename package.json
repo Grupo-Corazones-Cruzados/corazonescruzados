@@ -17,7 +17,6 @@
     "mirar:panel": "node scripts/mirar-panel.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
     "@fal-ai/client": "^1.9.4",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@hookform/resolvers": "^3.9.0",

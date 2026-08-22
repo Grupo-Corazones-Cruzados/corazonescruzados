@@ -186,11 +186,11 @@ const NODOS: NodoPipeline[] = [
   {
     id: 'decidir', label: 'El modelo decide', sublabel: 'Una llamada, una herramienta, sin bucle',
     icono: 'chispa', tipo: 'paso', ejecucion: 'ia', grupo: 'decision',
-    archivo: 'lib/agente/anthropic.ts',
+    archivo: 'lib/agente/ia.ts',
     bloques: [
-      { id: 'e', titulo: 'Entrada', esquema: { model: '@parametros', system: '@prompt_perfil', tools: '@herramientas', tool_choice: { type: 'any' } } },
-      { id: 's', titulo: 'Salida', esquema: { stop_reason: 'tool_use | refusal | max_tokens', herramienta: 'responder | no_responder | escalar_a_humano', uso: '@uso' } },
-      { id: 'g', titulo: 'Guarda', esquema: { razonamiento: 'INCOMPATIBLE con forzar herramienta en el estilo antiguo (400). Lo resuelve modelos.ts', refusal: 'se comprueba ANTES de leer content' } },
+      { id: 'e', titulo: 'Entrada', esquema: { endpoint: 'POST /v1/responses — las herramientas dan 400 en /v1/chat/completions', model: '@parametros', instructions: '@prompt_perfil', tools: '@herramientas', tool_choice: 'required' } },
+      { id: 's', titulo: 'Salida', esquema: { output: 'function_call | message(refusal) | output_text', status: 'completed | incomplete', herramienta: 'responder | no_responder | escalar_a_humano', uso: '@uso' } },
+      { id: 'g', titulo: 'Guarda', esquema: { razonamiento: 'CONVIVE con forzar herramienta (los 6 niveles, medido). Lo elige el cliente en Parámetros', refusal: 'llega como content[].refusal, se comprueba ANTES de buscar la herramienta', arguments: 'vienen como CADENA JSON, no como objeto' } },
     ],
     satelites: [
       { id: 's-herr', label: 'Herramientas', icono: 'herramienta', hijos: [

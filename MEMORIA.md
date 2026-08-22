@@ -275,6 +275,37 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🤖 UN SOLO PROVEEDOR DE IA: TODO A OPENAI `gpt-5.6-luna` (2026-08-21).** La app tenía
+  tres proveedores repartidos —Anthropic para el agente de WhatsApp, Kimi K2.6 para el
+  cotizador y OpenAI para lo demás—. Fernando: *"quiero que dejemos un solo modelo que quiero
+  que sea el modelo de open ai"*. **Deroga la regla del 2026-08-04 de Kimi K2.6 por defecto.**
+  - **El modelo se llama `gpt-5.6-luna`**, no "luna 4.6". 1.050.000 de contexto, 128k de
+    salida, **$0,20 / $1,20 por millón** (caché a $0,02). Es el escalón económico de la
+    familia: ~10× más barato que el `gpt-4o` que se usaba.
+  - **El id vive en `lib/ia/openai.ts` y en ningún otro sitio.** Es la misma lección que ya
+    estaba escrita en `modelos.ts`: un id repartido por el código siempre deja uno sin migrar.
+  - **Qué NO se migró, a propósito.** El agente de pesos de Scopus
+    (`lib/centralized/pesos-agent.ts`) sigue con el **binario `claude`** del servidor —
+    decisión de Fernando; no gasta clave de API—. Y embeddings (`text-embedding-3-small`),
+    Whisper y TTS siguen igual: son capacidades distintas, no modelos de chat. Gemini sigue
+    generando las estampas del videojuego, que no es una funcionalidad de la app.
+  - **La clave del agente de WhatsApp se BORRÓ** (migración 050). La ponía el cliente y era
+    de Anthropic (`sk-ant-…`): contra OpenAI es un 401. Fernando la repone desde el Estudio.
+    Sin aviso ni marca, como pidió. Sin clave, el runner ya sabía escalar a una persona.
+  - **El selector del Estudio dejó de elegir MODELO y ahora elige RAZONAMIENTO.** Aquel
+    selector (Haiku / Sonnet / Opus) era el mando de coste-vs-calidad del cliente; con un
+    solo modelo el equivalente es cuánto se lo piensa. Columna `razonamiento` nueva, con los
+    tres niveles ofrecidos: Directo (`none`) · Equilibrado (`low`) · Cuidadoso (`high`).
+  - **El worker de cotizaciones cambió de SDK, no de variable.** Kimi funcionaba porque
+    Moonshot expone a propósito un endpoint compatible con `/v1/messages` de Anthropic;
+    **OpenAI no expone nada equivalente**, así que el Claude Agent SDK no podía reapuntarse.
+    Se pasó a `@openai/agents`, y de paso se fueron tres fragilidades documentadas: el
+    subproceso del CLI con sus seis variables de entorno, la puerta doble de permisos
+    (`allowedTools` auto-aprobaba antes de consultar a `canUseTool`) y las sesiones en el
+    disco del contenedor, que Railway borraba **en cada despliegue**. Ahora la conversación
+    vive en OpenAI (`OpenAIConversationsSession`) y sobrevive al despliegue.
+  - **`/legal/whatsapp` declara ahora a OpenAI** como subprocesador, no a Anthropic. Es un
+    documento presentado a Meta en el App Review: el cambio de proveedor tenía que constar.
 - **🏷️ EL DIÁLOGO DE ACCESO DICE A DÓNDE SE ENTRA (2026-08-17).** `EntryChoiceModal` es el
   mismo para dos destinos y decía «¿Cómo quieres ingresar?» en los dos. Ahora **«¿Cómo
   quieres ingresar a la Plataforma?»** o **«al Videojuego»**, con la palabra resaltada.
@@ -4526,6 +4557,33 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **⛔ `gpt-5.6-luna` DEVUELVE 400 CON `temperature`, `top_p` Y `max_tokens` (2026-08-21).** No
+  los ignora: falla. *"Only the default (1) value is supported"* / *"is not supported with this
+  model"* / *"Use 'max_completion_tokens' instead"*. Los **cuatro** sitios que llamaban a
+  `gpt-4o` mandaban `temperature` y `max_tokens`: cambiar solo el id del modelo los habría
+  dejado a todos en 400. Lo cazó la sonda contra la API, no el typecheck.
+- **⛔ Y LAS HERRAMIENTAS EXIGEN `/v1/responses` (2026-08-21).** En `/v1/chat/completions`:
+  *"Function tools with reasoning_effort are not supported for gpt-5.6-luna in
+  /v1/chat/completions. To use function tools, use /v1/responses"*. Y el razonamiento **por
+  defecto ya cuenta** como `reasoning_effort`, así que allí solo pasan con `'none'`. Es el
+  gemelo exacto de la trampa de Anthropic del 2026-08-01 (`budget_tokens` incompatible con
+  forzar herramienta), y por el mismo motivo habría dejado al agente **mudo al 100 %**.
+- **El caché de OpenAI entra a los 1.024 tokens y no se pide (2026-08-21).** No hay
+  `cache_control`: es automático por prefijo. Medido: 573 tokens → `cached_tokens: 0`; 1.063
+  → 1.054, un 99,7 % de ahorro. Cuatro veces menos exigente que Haiku 4.5, que pedía 4.096, así
+  que **conocimiento que antes NO cacheaba, ahora sí**. Los contadores cuelgan de
+  `usage.input_tokens_details` (`cached_tokens`, `cache_write_tokens`), no del primer nivel:
+  leerlos con los nombres de Anthropic da 0 en todo y el panel diría que el caché nunca entra.
+- **El modelo no sabe en qué día vive (2026-08-21).** El cotizador propuso una `deadline` de
+  **2026-04-10** para una cotización pedida el 21 de agosto — cuatro meses en el pasado. El
+  corte de conocimiento es de febrero de 2026, y antes no se notaba porque **el CLI de Claude
+  Code inyectaba la fecha en su propio prompt de sistema**; al quitar el subproceso, esa muleta
+  se fue con él. Ahora la fecha de hoy va explícita en el prompt (`hoyEnEcuador()`).
+- **Los scripts que importan `.ts` del repo se lanzan con el resolvedor, siempre (2026-08-21).**
+  `node scripts/loquesea.mjs` a secas da `ERR_MODULE_NOT_FOUND`: Node quita los tipos pero no
+  adivina la extensión ni entiende el alias `@/`. Va **`node --import ./scripts/registrar-ts.mjs
+  scripts/loquesea.mjs`**. Lo di por roto y por poco reescribo `scripts/resolver-ts.mjs`, que ya
+  estaba resuelto y además mejor: **mirar si la herramienta existe antes de culparla**.
 - **`invoice_projects.project_id` es TEXT y todo lo demás es BIGINT (2026-08-19).** Costó dos
   fallos idénticos —la migración 047 y la API pública del proyecto— con el mismo mensaje:
   `operator does not exist: text = bigint`. Y hay una trampa extra: Postgres deduce el tipo del
