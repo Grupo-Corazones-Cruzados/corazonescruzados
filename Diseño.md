@@ -1726,10 +1726,17 @@ entera dejando un hueco vacío. Queda `grid lg:grid-cols-[240px_minmax(0,1fr)]`.
 - **Fuera las pestañas Talentos/Conceptos.** Los conceptos cuelgan del talento (migración
   051), así que no son otra cara de la misma columna: son el contenido del talento y viven en
   **su** panel, al que se llega **pulsando la fila** (`onRowClick`).
-- **Ninguna de las dos tablas lleva `singleLine`.** Ese era el «se corta» de la captura de
-  Fernando: con `table-fixed` la descripción terminaba en «…». Ahora envuelve en varias
-  líneas. Regla general: `singleLine` es para listas donde importa **encontrar** una fila, no
-  para tablas donde el texto **es** el contenido.
+- **Cada tabla decide su alto de fila por para qué sirve (afinado el 2026-08-22).** La de
+  **talentos** va a **una línea** (`singleLine`, «…» si no cabe): es una tabla para
+  **encontrar** un talento, y su descripción son párrafos que se leen dentro de su panel —
+  desplegada entera hacía filas de seis líneas para una tabla de una sola fila. La de
+  **conceptos**, dentro de ese panel, va **entera**: ahí la frase corta **es** el contenido.
+  Primero se quitó `singleLine` de las dos, y Fernando corrigió: *«haz que la tabla ocupe
+  solamente una línea de altura en la descripción… ponle 3 puntitos»*.
+- **Los paneles no llevan párrafos de ayuda.** Tenían una nota gris explicando dónde se
+  publica cada cosa; Fernando los quitó (2026-08-22). Es la regla del 2026-08-01 —**en un
+  formulario solo se ve el título del campo y el campo**— que se había colado sin cumplirse:
+  si algo hay que explicar, va detrás del `(?)` de `BotonAyuda`, no en una línea permanente.
 - **La acción destructiva avisa con cifras:** quitar un talento se lleva sus conceptos por
   cascada, y el `PixelConfirm` dice cuántos.
 
@@ -2429,8 +2436,13 @@ Ctrl+P: **el documento bueno es el del botón.**
 - **2026-08-21 · El texto de las tablas del admin de Soluciones se cortaba.** `singleLine`
   estaba puesto en las dos tablas «para que las filas midan igual», y con el panel derecho
   ocupando 320px la descripción cabía en media columna. Lo vio Fernando en la vista de
-  conceptos. **Resuelto:** fuera la tercera columna, fuera `singleLine`, y el contenido largo
-  se lee entero. Queda como regla arriba.
+  conceptos. **Resuelto:** fuera la tercera columna; y el 2026-08-22, tras verlo desplegado,
+  él fijó el criterio definitivo — **una línea con «…» en la tabla de talentos** (sirve para
+  encontrar) y **texto entero en la de conceptos** (ahí el texto es el contenido).
+- **2026-08-22 · Los paneles nuevos traían párrafos de ayuda permanentes.** Explicaban dónde
+  se publica la descripción y la tira de conceptos. Rompían la regla del 2026-08-01 («solo el
+  título del campo y el campo; la explicación, detrás del `(?)`»), que ya estaba escrita en
+  este documento. **Resuelto:** eliminados a petición de Fernando.
 - **2026-08-21 · Casi se escribe una segunda casilla de selección.** El panel de talentos
   necesitaba una lista marcable y `MultiSelectSearch` ya tenía la suya dentro de su
   desplegable. En vez de copiar el marcado se **extrajo la fila** a `FilaMarcable`

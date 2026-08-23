@@ -22,9 +22,10 @@
  *  2. **Fuera el conmutador Talentos/Conceptos.** Los conceptos dejaron de ser de la
  *     solución para ser **del talento** (migración 051), así que ya no son una segunda cara
  *     de la misma columna: son el contenido del talento, y viven dentro de su panel.
- *  3. **La tabla ya no corta el texto.** Con dos columnas hay ancho, y ni los talentos ni
- *     los conceptos llevan `singleLine`: la descripción se lee entera en varias líneas en
- *     vez de terminar en «…».
+ *  3. **Cada tabla decide su alto de fila por lo que sirve.** La de talentos va a **una
+ *     línea** (`singleLine`, con «…» si no cabe): es una tabla para ENCONTRAR un talento, y
+ *     su descripción son párrafos que se leen dentro de su panel. La de conceptos, dentro
+ *     de ese panel, va **entera**: ahí la frase corta ES el contenido.
  *
  * Sigue siendo el patrón **«Explorador Azure»** documentado en `Diseño.md` —`FilterRail` +
  * `PixelDataTable`—, en su variante de dos columnas. **No se ha escrito ningún control
@@ -460,12 +461,18 @@ export default function SolucionesPanel() {
                 /* La fila entera abre el panel del talento: allí se escribe su descripción y
                    se gestionan sus conceptos (Fernando, 2026-08-21). */
                 onRowClick={(f) => { setTalentoAbierto(f); setDescripcion(f.descripcion ?? ''); }}
+                /* UNA línea por fila (Fernando, 2026-08-22): la descripción de un talento son
+                   párrafos, y desplegada entera hacía filas de seis líneas para una tabla que
+                   sirve para ENCONTRAR el talento, no para leerlo — se lee en su panel. Lo que
+                   no cabe termina en «…». La de conceptos NO lleva esto: allí la frase es corta
+                   y es el contenido. */
+                singleLine
                 columns={[
                   { key: 'talento', header: 'Talento', width: '260px', render: (f: FilaTalento) => (
                     <span className="text-digi-text font-medium">{f.talento}</span>
                   ) },
-                  // La descripción se enseña ENTERA, sin recortar: sin una señal de que
-                  // falta, un talento sin describir se publica y nadie se entera.
+                  // Sin una señal de que falta, un talento sin describir se publica y nadie
+                  // se entera; por eso el hueco vacío se dice con palabras, en ámbar.
                   { key: 'descripcion', header: 'Descripción', render: (f: FilaTalento) => (
                     f.descripcion
                       ? <span className="text-digi-muted">{f.descripcion}</span>
@@ -540,11 +547,6 @@ export default function SolucionesPanel() {
               style={mf}
             />
           </EditField>
-          <p className="text-[12px] text-digi-muted leading-relaxed -mt-1" style={mf}>
-            Se publica en <code>/soluciones/{talentoAbierto.slug}</code>, bajo el título del
-            talento. Si la dejas vacía, la web no pinta el párrafo — ni recuadro ni «próximamente».
-          </p>
-
           {/* ── SUS CONCEPTOS ─────────────────────────────────────────────────── */}
           <div className="flex items-center gap-2 pt-2">
             <p className="text-[13px] font-semibold text-digi-text flex-1" style={mf}>
@@ -703,10 +705,6 @@ export default function SolucionesPanel() {
               style={mf}
             />
           </EditField>
-          <p className="text-[12px] text-digi-muted leading-relaxed" style={mf}>
-            Se publica en <code>/soluciones</code>, en la tira vertical que acompaña a
-            «{talentoAbierto.talento}». Si el talento no tiene ningún concepto, la tira no se pinta.
-          </p>
         </EditPanel>
       )}
 
