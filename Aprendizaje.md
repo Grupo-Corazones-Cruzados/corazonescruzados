@@ -91,7 +91,7 @@ visible a 888 de 950, y el formulario de concepto abriéndose como segundo diál
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-08-21) — UN SOLO PROVEEDOR DE IA: todo a **OpenAI `gpt-5.6-luna`** · ✅ 100 % — HECHO Y VERIFICADO CONTRA LA API REAL
+## Objetivo ACTUAL (declarado 2026-08-21) — UN SOLO PROVEEDOR DE IA: todo a **OpenAI `gpt-5.6-luna`** · ✅ 100 % — EN PRODUCCIÓN DESDE EL 2026-08-23
 
 > Textual de Fernando: *"actualmente estamos usando la api key de claude para algunas
 > funcionalidades de la app, y tambien open ai para otras, quiero que dejemos un solo modelo
@@ -244,6 +244,23 @@ No: lo lancé sin `--import ./scripts/registrar-ts.mjs`. **Y sobrescribí `scrip
 con una versión peor** —la que había resolvía además el alias `@/`— antes de mirar que ya existía.
 Restaurado. Es el mismo error que P9: culpar a la herramienta antes de comprobarla.
 
+#### P11 — ¿Por qué el worker seguía siendo Kimi después del despliegue? · ✅ Resuelta — LA TRAMPA MÁS CARA DEL DÍA
+Al poner `COTIZADOR_MODEL=gpt-5.6-luna` en Railway, el worker arrancó y el log dijo:
+
+    [cotizador-worker] escuchando en :4610 (modelo gpt-5.6-luna en https://api.moonshot.ai/anthropic)
+
+**Modelo nuevo, código viejo**: estaba mandando un id de OpenAI a Moonshot. Dos causas encadenadas:
+
+1. **`cotizador-worker` no está conectado al repo** (`source.repo = null`, y así lo decía ya su
+   README). El push del 2026-08-21 **nunca lo reconstruyó**: llevaba con el mismo build desde el
+   6 de agosto. Se despliega a mano con `railway up --detach`.
+2. **Cambiar una variable no despliega código**: reinicia el servicio con el build anterior. Es
+   decir, tocar la variable *sola* fue lo que creó la combinación rota.
+
+**Lección:** después de tocar variables en Railway, **leer el log de arranque**. Aquí delata cuál
+de los dos códigos está vivo (`… en OpenAI` frente a `… en https://api.moonshot.ai/anthropic`), y
+por eso ese log incluye el proveedor — se puso justo para esto en la migración anterior.
+
 ### Lo que se hizo
 1. **`lib/ia/openai.ts`** — la capa única: el id del modelo, lo que se midió y `chatJSON()`.
 2. **Agente de WhatsApp** — `anthropic.ts` → `ia.ts` con la misma firma `decidir()`, por
@@ -267,12 +284,30 @@ Restaurado. Es el mismo error que P9: culpar a la herramienta antes de comprobar
 | 3 | `scripts/agente-sonda-api.mjs` — la petición REAL que arma el código, contra la API | las 3 decisiones correctas (responder / no_responder / escalar_a_humano) y ningún parámetro prohibido |
 | 4 | Worker levantado de verdad: `/generate` + `/chat` reanudando + conversación inexistente | cotización completa, la reanudación mantiene el hilo, y la conversación perdida se recupera sola |
 
+### El cierre en producción (2026-08-23)
+Fernando pidió que entrara yo a Railway. Lo hecho:
+
+| Servicio | Cambio |
+|---|---|
+| `corazonescruzados` | `COTIZADOR_MODEL` → `gpt-5.6-luna` |
+| `cotizador-worker` | `COTIZADOR_MODEL` → `gpt-5.6-luna` · **`OPENAI_API_KEY` añadida** (copiada del servicio web por la API, sin pasar por la terminal) |
+
+`agente-worker` y `nightly-cron` no necesitaban nada: solo hablan con la app por `CRON_TOKEN`. Y
+el servicio web **nunca tuvo `ANTHROPIC_API_KEY`**, lo cual es coherente: la clave del agente
+siempre fue por canal.
+
+**La migración 050 NO estaba hecha**, aunque Fernando creía que sí — lo aplicado era la **051**
+(`conceptos_por_talento`, de otra sesión). Como el bloqueo que me frenaba era justamente esa 051
+en la misma cola, la apliqué. Resultado verificado: los dos canales en `openai`/`gpt-5.6-luna`/
+`low`, claves fuera, **token de WhatsApp del canal 33 intacto** y el historial de uso sin
+falsear (sigue diciendo `claude-haiku-4-5-20251001`, que es la verdad de esas seis corridas).
+
 ### Lo que queda en manos de Fernando
-1. **Poner la clave de OpenAI del canal** en el Estudio (la de Anthropic se borró).
-2. **Railway, servicio `cotizador-worker`:** añadir `OPENAI_API_KEY` y **cambiar
-   `COTIZADOR_MODEL`**, que está fijado en `kimi-k2.6` y pisaría el default nuevo. `KIMI_API_KEY`
-   ya no se usa.
-3. **Aplicar la migración 050** (`node scripts/migrate.mjs`).
+1. **La clave de OpenAI del canal 33.** Está conectado y con el bot encendido **pero sin clave**:
+   un mensaje entrante escala a una persona con el motivo visible en el panel. (Antes de la
+   migración fallaba peor: 401 mudo, sin contestar y sin dejar rastro.)
+2. **`KIMI_API_KEY`** sigue en el servicio y ya no se usa. No la borré porque es su credencial:
+   conviene revocarla en Moonshot.
 
 ### Lo que encontré y NO toqué (fuera del encargo)
 El **respaldo por texto de `buscar_talentos`** busca el *nombre* del talento dentro de una

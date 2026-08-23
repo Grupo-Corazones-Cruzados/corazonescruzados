@@ -364,6 +364,14 @@ Stack estándar de la casa, con particularidades de este repo:
     vive en OpenAI (`OpenAIConversationsSession`) y sobrevive al despliegue.
   - **`/legal/whatsapp` declara ahora a OpenAI** como subprocesador, no a Anthropic. Es un
     documento presentado a Meta en el App Review: el cambio de proveedor tenía que constar.
+  - **✅ CERRADO EN PRODUCCIÓN el 2026-08-23.** Migración 050 aplicada (los dos canales en
+    `openai`/`gpt-5.6-luna`/`low`, claves fuera, token de WhatsApp y historial de uso intactos);
+    `COTIZADOR_MODEL=gpt-5.6-luna` y `OPENAI_API_KEY` puestas en Railway; worker redesplegado a
+    mano. Verificado que `/legal/whatsapp` ya dice OpenAI en el sitio publicado.
+  - **Pendiente de Fernando:** poner la clave de OpenAI del **canal 33**, que está conectado y
+    con el bot encendido pero **sin clave** — un mensaje entrante escala a una persona con el
+    motivo visible. Y `KIMI_API_KEY` sigue en el servicio sin usarse: conviene revocarla en
+    Moonshot.
 - **🏷️ EL DIÁLOGO DE ACCESO DICE A DÓNDE SE ENTRA (2026-08-17).** `EntryChoiceModal` es el
   mismo para dos destinos y decía «¿Cómo quieres ingresar?» en los dos. Ahora **«¿Cómo
   quieres ingresar a la Plataforma?»** o **«al Videojuego»**, con la palabra resaltada.

@@ -2433,6 +2433,19 @@ Hay un `@media print` en la hoja de la página, pero solo como red de seguridad 
 Ctrl+P: **el documento bueno es el del botón.**
 
 ## Desviaciones detectadas y resolución
+- **2026-08-21 · El Estudio del agente ya no elige MODELO, elige RAZONAMIENTO.** Al pasar toda
+  la app a un solo modelo (`gpt-5.6-luna`), aquel `PixelSelect` de Haiku / Sonnet / Opus se
+  quedaba sin nada que elegir. **No se borró el control: se le cambió el significado**, porque
+  lo que ese selector era de verdad es el mando de coste-vs-calidad del cliente, y el
+  equivalente en OpenAI es cuánto se lo piensa el modelo — Directo · Equilibrado · Cuidadoso.
+  Mismo `Campo` + `PixelSelect`, mismo sitio en la rejilla, misma `nota` por opción.
+  - **Respeta la regla del 2026-08-01:** las dos frases que explican qué cuesta razonar y cuál
+    es el mínimo de caché van **dentro del `ayuda={…}` del `(?)`**, no como párrafo permanente
+    bajo el campo. Era la tentación obvia y es justo lo que se corrigió en los paneles nuevos
+    el 2026-08-22.
+  - **El marcador de la clave pasó de `sk-ant-…` a `sk-…`.** Entra en la excepción ya escrita
+    («el marcador de posición, cuando lleva estado real»): no es prosa, es el aspecto que debe
+    tener lo que se pega ahí. Dejarlo en `sk-ant-…` habría enseñado a pegar la clave incorrecta.
 - **2026-08-21 · El texto de las tablas del admin de Soluciones se cortaba.** `singleLine`
   estaba puesto en las dos tablas «para que las filas midan igual», y con el panel derecho
   ocupando 320px la descripción cabía en media columna. Lo vio Fernando en la vista de
