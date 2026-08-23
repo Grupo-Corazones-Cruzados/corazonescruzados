@@ -33,7 +33,7 @@
 export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
-import { ACCESO_PLATAFORMA } from '@/lib/sitio/acceso';
+import { ACCESO_PLATAFORMA, destinoTrasAccesoValido } from '@/lib/sitio/acceso';
 
 export default async function AccesoGenerico({
   searchParams,
@@ -41,11 +41,12 @@ export default async function AccesoGenerico({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
-  const destino = typeof sp.redirect === 'string' ? sp.redirect : null;
+  const destino = destinoTrasAccesoValido(typeof sp.redirect === 'string' ? sp.redirect : null);
 
   const q = new URLSearchParams({ acceso: ACCESO_PLATAFORMA });
-  // `?redirect=` se conserva: es a dónde iba quien fue mandado aquí por el guardián del
-  // panel, y la portada ya sabe devolverlo allí tras iniciar sesión.
-  if (destino?.startsWith('/')) q.set('redirect', destino);
+  // `?redirect=` se conserva **solo si apunta dentro de la plataforma**: es a dónde iba
+  // quien fue mandado aquí por el guardián del panel, y la portada ya sabe devolverlo allí
+  // tras iniciar sesión. Cualquier otra cosa se descarta (ver `destinoTrasAccesoValido`).
+  if (destino) q.set('redirect', destino);
   redirect(`/?${q.toString()}`);
 }

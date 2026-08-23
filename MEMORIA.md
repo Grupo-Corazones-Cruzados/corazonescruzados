@@ -275,6 +275,23 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔐 EL BOTÓN «PLATAFORMA» YA NO TE DEVUELVE A LA WEB (2026-08-23).** Fernando: desde
+  `/desarrollo-humano/ser-miembro` pulsaba «Plataforma», iniciaba sesión como miembro **y
+  acababa otra vez en `/desarrollo-humano/ser-miembro`**.
+  - **La causa:** `abrirPlataforma(pathname)` mandaba la página en la que estabas como
+    `?redirect=`, y en la portada ese destino **gana** al `entryDestination='dashboard'`. El
+    parámetro se pensó para otra cosa: el guardián del panel (`middleware.ts`) manda a la
+    portada a quien intenta entrar a `/dashboard/...` sin sesión, y hay que devolverlo allí.
+  - **Arreglo:** «Plataforma» no lleva destino —quien lo pulsa quiere entrar a la
+    plataforma—, y el `?redirect=` que llega por URL se valida contra una lista blanca
+    (`destinoTrasAccesoValido`, en `lib/sitio/acceso.ts`): solo `/dashboard` y `/juego`.
+  - **De paso cierra una redirección abierta:** `/?acceso=plataforma&redirect=//otro-sitio`
+    sacaba al usuario de la app **justo después de identificarse**. Ahora se descarta, igual
+    que cualquier ruta del sitio público.
+  - Verificado: el guardián sigue funcionando (`/dashboard/tickets` sin sesión →
+    `/auth?redirect=/dashboard/tickets` → portada **con** el destino), un `redirect` a una
+    página del sitio o a otro host se descarta, y el botón navega a `/?acceso=plataforma`
+    **sin** destino, abriendo el diálogo de siempre.
 - **🧾 EN CLIENTES SOLO CUENTAN LAS FACTURAS COMPLETADAS Y PENDIENTES (2026-08-23).**
   Fernando: *«haz que cuente solo facturas completadas o pendientes, pero no anuladas»*.
   Completada = `paid`, pendiente = `pending`.

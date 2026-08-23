@@ -52,12 +52,40 @@ export const ACCESO_PLATAFORMA = 'plataforma';
 export const ACCESO_VIDEOJUEGO = 'videojuego';
 
 /**
+ * ⭐ A DÓNDE SE PUEDE VOLVER TRAS INICIAR SESIÓN — definición única (2026-08-23).
+ *
+ * `?redirect=` existe **para una sola cosa**: el guardián del panel (`middleware.ts`) manda
+ * a la portada a quien intenta entrar a `/dashboard/...` sin sesión, y al iniciarla hay que
+ * devolverlo a donde iba. Siempre es una ruta **de dentro de la plataforma**.
+ *
+ * ── EL FALLO QUE ESTO CIERRA (Fernando, 2026-08-23) ────────────────────────────
+ * El botón «Plataforma» de la barra mandaba la página en la que estabas como `?redirect=`.
+ * Resultado: desde `/desarrollo-humano/ser-miembro` pulsabas «Plataforma», iniciabas sesión
+ * como miembro… **y volvías a `/desarrollo-humano/ser-miembro`**, que es exactamente lo
+ * contrario de lo que pide ese botón. El destino de «Plataforma» es la plataforma.
+ *
+ * Se comprueba aquí y no en cada pantalla porque el valor entra por la URL: cualquiera puede
+ * escribir `/?acceso=plataforma&redirect=/lo-que-sea` y sacar a alguien de la plataforma
+ * justo después de identificarse.
+ */
+const DESTINOS_PERMITIDOS = ['/dashboard', '/juego'];
+
+export function destinoTrasAccesoValido(ruta: string | null | undefined): string | null {
+  if (!ruta) return null;
+  // Solo rutas internas: `//otro.host` y `https://…` son enlaces a otro sitio disfrazados.
+  if (!ruta.startsWith('/') || ruta.startsWith('//')) return null;
+  const base = ruta.split(/[?#]/)[0];
+  return DESTINOS_PERMITIDOS.some((d) => base === d || base.startsWith(`${d}/`)) ? ruta : null;
+}
+
+/**
  * Abre el acceso a la plataforma. Se llama desde el botón de la barra de navegación.
  *
- * @param destino Ruta a la que volver tras iniciar sesión. Se pasa como `?redirect=`, que
- *   es el parámetro que la portada ya sabe leer y conservar.
+ * ⚠️ **No lleva destino.** Quien pulsa «Plataforma» quiere entrar a la plataforma; devolverlo
+ * a la página del sitio en la que estaba es el fallo que se corrigió el 2026-08-23. El único
+ * `?redirect=` legítimo lo pone el guardián del panel, y va a `/dashboard/...`.
  */
-export function abrirPlataforma(destino?: string) {
+export function abrirPlataforma() {
   if (typeof window === 'undefined') return;
 
   if (window.location.pathname === '/') {
@@ -65,9 +93,5 @@ export function abrirPlataforma(destino?: string) {
     return;
   }
 
-  const q = new URLSearchParams({ acceso: ACCESO_PLATAFORMA });
-  // Volver a donde estaba tiene sentido para una página del sitio, no para el propio
-  // acceso: `destino` solo se manda si nos lo dan explícitamente.
-  if (destino?.startsWith('/')) q.set('redirect', destino);
-  window.location.href = `/?${q.toString()}`;
+  window.location.href = `/?acceso=${ACCESO_PLATAFORMA}`;
 }

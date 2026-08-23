@@ -123,7 +123,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
               navega a ningún sitio, solo abre el diálogo. */}
           <button
             type="button"
-            onClick={() => abrirPlataforma(pathname)}
+            onClick={() => abrirPlataforma()}
             className={`${CLASES_PLATAFORMA} ml-2 px-3.5 py-2 text-[13.5px]`}
           >
             Plataforma
@@ -155,7 +155,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           ))}
           <button
             type="button"
-            onClick={() => { setAbierto(false); abrirPlataforma(pathname); }}
+            onClick={() => { setAbierto(false); abrirPlataforma(); }}
             className={`${CLASES_PLATAFORMA} mt-1.5 px-3 py-2.5 text-[14px]`}
           >
             Plataforma

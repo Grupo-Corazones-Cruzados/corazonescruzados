@@ -18,7 +18,7 @@ import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
-import { ACCESO_PLATAFORMA, ACCESO_VIDEOJUEGO, EVENTO_ABRIR_PLATAFORMA } from '@/lib/sitio/acceso';
+import { ACCESO_PLATAFORMA, ACCESO_VIDEOJUEGO, EVENTO_ABRIR_PLATAFORMA, destinoTrasAccesoValido } from '@/lib/sitio/acceso';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
 import CandidateAccountModal from '@/components/landing/CandidateAccountModal';
 import ClientSignupModal from '@/components/landing/ClientSignupModal';
@@ -426,8 +426,11 @@ export default function LandingPage() {
     const acceso = q.get('acceso');
     // `?redirect=` se guarda aunque no venga `?acceso=`: el guardián del panel manda aquí
     // sin elegir puerta, y quien elija una debe acabar donde iba.
-    const destino = q.get('redirect');
-    if (destino?.startsWith('/')) setDestinoTrasAcceso(destino);
+    // Solo se acepta un destino DE DENTRO de la plataforma (`destinoTrasAccesoValido`). Un
+    // `?redirect=` a una página del sitio devolvía al visitante a la web pública justo
+    // después de identificarse — el fallo del 2026-08-23.
+    const destino = destinoTrasAccesoValido(q.get('redirect'));
+    if (destino) setDestinoTrasAcceso(destino);
     if (!acceso) return;
     // ⚠️ Quien llega por un enlace de acceso va al PANEL, no al juego. Es lo que distingue
     // «entrar a trabajar» de «entrar a jugar», y sin esto un cliente acababa en la aventura.
