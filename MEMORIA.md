@@ -387,8 +387,9 @@ Stack estándar de la casa, con particularidades de este repo:
     mano. Verificado que `/legal/whatsapp` ya dice OpenAI en el sitio publicado.
   - **Pendiente de Fernando:** poner la clave de OpenAI del **canal 33**, que está conectado y
     con el bot encendido pero **sin clave** — un mensaje entrante escala a una persona con el
-    motivo visible. Y `KIMI_API_KEY` sigue en el servicio sin usarse: conviene revocarla en
-    Moonshot.
+    motivo visible. Y **revocar la clave de Kimi en Moonshot** (`sk-qo80tFR…Bbhf`): el
+    2026-08-23 se quitó del servicio, del `.env.local` y de la memoria del contenedor (reinicio),
+    pero **seguía siendo válida** — revocarla es cosa de la consola de Moonshot.
 - **🏷️ EL DIÁLOGO DE ACCESO DICE A DÓNDE SE ENTRA (2026-08-17).** `EntryChoiceModal` es el
   mismo para dos destinos y decía «¿Cómo quieres ingresar?» en los dos. Ahora **«¿Cómo
   quieres ingresar a la Plataforma?»** o **«al Videojuego»**, con la palabra resaltada.

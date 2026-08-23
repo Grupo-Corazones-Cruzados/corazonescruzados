@@ -306,8 +306,11 @@ falsear (sigue diciendo `claude-haiku-4-5-20251001`, que es la verdad de esas se
 1. **La clave de OpenAI del canal 33.** Está conectado y con el bot encendido **pero sin clave**:
    un mensaje entrante escala a una persona con el motivo visible en el panel. (Antes de la
    migración fallaba peor: 401 mudo, sin contestar y sin dejar rastro.)
-2. **`KIMI_API_KEY`** sigue en el servicio y ya no se usa. No la borré porque es su credencial:
-   conviene revocarla en Moonshot.
+2. **Revocar la clave de Kimi en la consola de Moonshot** (`sk-qo80tFR…Bbhf`). El 2026-08-23 la
+   quité del servicio y del `.env.local`, y reinicié el worker para que tampoco siguiera en la
+   memoria del contenedor — pero **comprobado que la clave seguía viva** (`/v1/models` → 200), y
+   revocarla necesita la consola de Moonshot, que va con vuestra cuenta. No hay API de gestión de
+   claves alcanzable con la propia clave (404).
 
 ### Lo que encontré y NO toqué (fuera del encargo)
 El **respaldo por texto de `buscar_talentos`** busca el *nombre* del talento dentro de una

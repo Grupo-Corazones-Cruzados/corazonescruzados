@@ -55,8 +55,10 @@ pasado**. Por eso los prompts llevan ahora `hoyEnEcuador()`.
 | `COTIZADOR_MODEL` | Opcional, default `gpt-5.6-luna`. **Debe coincidir con el de la web**: se guarda en `quote_sessions` y si difieren, el historial miente. |
 | `PORT` | Opcional, default `4610`. |
 
-`KIMI_API_KEY` y `KIMI_BASE_URL` **ya no se usan**: si siguen en el servicio, sobran (y conviene
-revocar la clave en Moonshot).
+`KIMI_API_KEY` y `KIMI_BASE_URL` ya no se usan y **se borraron del servicio el 2026-08-23**.
+Ojo: quitar la variable **no reinicia el contenedor**, así que la clave siguió en el entorno del
+proceso vivo hasta forzar un redespliegue. Borrarla de Railway tampoco la invalida: eso es la
+consola de Moonshot.
 
 ## Local
 ```bash
