@@ -392,6 +392,12 @@ export default function SolucionesPanel() {
           <div className="flex-1 min-h-0">
             <FilterRail
               title="Soluciones"
+              /* El rail trae 220px por defecto y la columna mide 240: la tarjeta salía más
+                 estrecha que el botón «Nueva solución» de encima (Fernando, 2026-08-23). Con
+                 `lg:w-full` ocupa su columna, que es para lo que el componente admite
+                 `className` — no se toca su ancho por defecto, que rige en las otras once
+                 pantallas. */
+              className="lg:w-full"
               value={String(elegido ?? '')}
               onChange={(v) => setElegido(Number(v))}
               wrapLabels
