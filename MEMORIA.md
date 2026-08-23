@@ -275,6 +275,25 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧾 EN CLIENTES SOLO CUENTAN LAS FACTURAS COMPLETADAS Y PENDIENTES (2026-08-23).**
+  Fernando: *«haz que cuente solo facturas completadas o pendientes, pero no anuladas»*.
+  Completada = `paid`, pendiente = `pending`.
+  - **Quedan fuera dos estados, no uno.** Las `cancelled` (anuladas en el SRI,
+    `sri_status = 'voided'`) son las que él nombró; y las `failed` (**rechazadas** por el SRI)
+    caen por el mismo motivo: nunca llegaron a existir como factura, así que contarlas sería
+    inventar facturación. En la base había 28 `paid` · 7 `pending` · 9 `cancelled` · 2 `failed`.
+    El pie del módulo pasa de **46 a 35 facturas**.
+  - **Es una definición única** (`ESTADOS_FACTURA_QUE_CUENTAN` / `SQL_FACTURA_CUENTA` /
+    `facturaCuenta()` en `lib/billing-clients.ts`) porque el criterio se usa en **cuatro**
+    sitios: cuántas, cuánto, la fecha de la última y el resumen del detalle. Ya se había
+    desincronizado: el total excluía las anuladas pero el contador y la fecha no, así que un
+    cliente cuya única factura estaba anulada salía con «0 facturas» y una fecha de última
+    factura (le pasaba a KARINA RAQUEL MUYULEMA).
+  - **El detalle del cliente sigue listando TODAS sus facturas**, anuladas incluidas, cada una
+    con su chapa de estado: ahí se entra a ver qué pasó con cada una. Lo que cambia es el
+    resumen de arriba.
+  - Verificado contra la base en los 22 clientes: la columna cuadra exactamente con
+    `paid + pending`.
 - **🧩 LOS CONCEPTOS PASAN A SER DEL TALENTO, Y EL ADMIN DE SOLUCIONES SE QUEDA EN DOS
   COLUMNAS (2026-08-21/22, migración 051).** Fernando, mirando la pestaña: *«la vista de
   conceptos realmente debe estar asociada a un talento determinado, todos los conceptos

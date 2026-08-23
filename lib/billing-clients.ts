@@ -98,6 +98,34 @@ export async function ensureBillingClientsTable() {
   _init = true;
 }
 
+/**
+ * QUÉ FACTURAS CUENTAN EN EL MÓDULO DE CLIENTES — definición única (2026-08-23, Fernando).
+ *
+ * Textual: *«haz que cuente solo facturas completadas o pendientes, pero no anuladas»*.
+ * Completada = `paid`; pendiente = `pending`.
+ *
+ * Se quedan fuera dos estados, y por el mismo motivo: **no son documentos vivos**.
+ *  · `cancelled` (anulada en el SRI, `sri_status = 'voided'`) — lo que él pidió excluir.
+ *  · `failed` (el SRI la **rechazó**, `sri_status = 'rejected'`) — nunca llegó a existir como
+ *    factura, así que contarla como consumo del cliente sería inventar facturación.
+ *
+ * ⚠️ Es una constante y no un `status <> 'cancelled'` suelto **porque se usa en tres sitios**
+ * —cuántas, cuánto y la fecha de la última— y ya se había desincronizado: el total excluía
+ * las anuladas, pero el contador y la fecha las incluían, así que un cliente con su única
+ * factura anulada salía con «0 facturas» y una fecha de última factura.
+ *
+ * El DETALLE del cliente sigue listando TODAS sus facturas, incluidas las anuladas: ahí se
+ * va a mirar qué pasó con cada una.
+ */
+export const ESTADOS_FACTURA_QUE_CUENTAN = ['paid', 'pending'] as const;
+
+/** El mismo criterio, para incrustarlo en SQL. `i` es el alias de `gcc_world.invoices`. */
+export const SQL_FACTURA_CUENTA = `status = ANY(ARRAY['paid','pending'])`;
+
+export function facturaCuenta(inv: { status: string | null }): boolean {
+  return (ESTADOS_FACTURA_QUE_CUENTAN as readonly string[]).includes(inv.status ?? '');
+}
+
 export const CONSUMIDOR_FINAL_RUC = '9999999999999';
 
 /**

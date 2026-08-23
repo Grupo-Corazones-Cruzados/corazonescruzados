@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureBillingClientsTable, invoiceOrigin, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
+import { ensureBillingClientsTable, invoiceOrigin, CONSUMIDOR_FINAL_RUC, facturaCuenta } from '@/lib/billing-clients';
 
 async function loadDetail(id: number) {
   const { rows: [c] } = await pool.query(`SELECT * FROM gcc_world.billing_clients WHERE id = $1`, [id]);
@@ -32,7 +32,11 @@ async function loadDetail(id: number) {
     };
   });
 
-  const totalFacturado = invList.filter((i: any) => i.status !== 'cancelled').reduce((s: number, i: any) => s + i.total, 0);
+  // Mismo criterio que la columna «Facturas» de la lista: completadas y pendientes. La
+  // LISTA de abajo sigue enseñándolas todas —incluidas las anuladas—, que es a lo que se
+  // entra aquí; lo que no cuentan es en el resumen.
+  const cuentan = invList.filter(facturaCuenta);
+  const totalFacturado = cuentan.reduce((s: number, i: any) => s + i.total, 0);
   const totalAutorizado = invList.filter((i: any) => i.sri_status === 'authorized').reduce((s: number, i: any) => s + i.total, 0);
 
   return {
@@ -41,7 +45,7 @@ async function loadDetail(id: number) {
     is_consumidor_final: c.ruc === CONSUMIDOR_FINAL_RUC,
     invoices: invList,
     summary: {
-      count: invList.length,
+      count: cuentan.length,
       authorized: invList.filter((i: any) => i.sri_status === 'authorized').length,
       total_facturado: totalFacturado,
       total_autorizado: totalAutorizado,

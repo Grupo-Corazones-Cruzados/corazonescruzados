@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureBillingClientsTable, getBillingForClient } from '@/lib/billing-clients';
+import { ensureBillingClientsTable, getBillingForClient, SQL_FACTURA_CUENTA } from '@/lib/billing-clients';
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
               to_char(s.ultima, 'YYYY-MM-DD') AS ultima
          FROM gcc_world.billing_clients bc
          LEFT JOIN LATERAL (
-           SELECT COUNT(*)::int AS facturas,
-                  COALESCE(SUM(total) FILTER (WHERE status <> 'cancelled'), 0)::numeric AS total,
+           SELECT COUNT(*) FILTER (WHERE ${SQL_FACTURA_CUENTA})::int AS facturas,
+                  COALESCE(SUM(total) FILTER (WHERE ${SQL_FACTURA_CUENTA}), 0)::numeric AS total,
                   COUNT(*) FILTER (WHERE sri_status = 'authorized')::int AS autorizadas,
-                  MAX(created_at) AS ultima
+                  MAX(created_at) FILTER (WHERE ${SQL_FACTURA_CUENTA}) AS ultima
              FROM gcc_world.invoices i
             WHERE i.client_ruc = bc.ruc OR i.client_ruc = ANY(bc.aliases)
          ) s ON true
