@@ -4596,6 +4596,14 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **⛔ CAMBIAR UNA VARIABLE EN RAILWAY NO DESPLIEGA EL CÓDIGO (2026-08-23).** Tocar una variable
+  reinicia el servicio con el **build que ya había**. Al poner `COTIZADOR_MODEL=gpt-5.6-luna` en
+  `cotizador-worker`, el servicio arrancó con el **código viejo de Kimi y el modelo nuevo**:
+  mandando un id de OpenAI a Moonshot. Y además **`cotizador-worker` no está conectado al repo**
+  (`source.repo = null`), así que el push del 2026-08-21 **nunca lo reconstruyó** — llevaba desde
+  el 6 de agosto con el mismo build. Se despliega a mano: `cd services/cotizador-worker &&
+  railway up --detach`. **El log de arranque delata cuál está vivo:** `… en OpenAI` o
+  `… en https://api.moonshot.ai/anthropic`. Mirarlo siempre después de tocar variables.
 - **⛔ `gpt-5.6-luna` DEVUELVE 400 CON `temperature`, `top_p` Y `max_tokens` (2026-08-21).** No
   los ignora: falla. *"Only the default (1) value is supported"* / *"is not supported with this
   model"* / *"Use 'max_completion_tokens' instead"*. Los **cuatro** sitios que llamaban a

@@ -1,70 +1,76 @@
 # Worker de Cotizaciones (Agente de Cotizaciones Software)
 
-Servicio **aislado** que ejecuta el **Claude Agent SDK sobre Kimi K2.6** para generar y editar
-cotizaciones, manteniendo la sesión viva y reanudándola por `sessionId`. La app web GCC World
-le habla por HTTP + token compartido (`x-worker-token`). Está separado del monorepo web porque
-el Agent SDK requiere `zod@4` (la web usa `zod@3`).
+Servicio **aislado** que ejecuta el **Agents SDK de OpenAI (`@openai/agents`) sobre
+`gpt-5.6-luna`** para generar y editar cotizaciones, manteniendo la conversación viva y
+reanudándola por `sessionId`. La app web GCC World le habla por HTTP + token compartido
+(`x-worker-token`). Está separado del monorepo web porque el SDK requiere `zod@4` (la web usa
+`zod@3`).
 
 ## Cómo funciona
 - `POST /generate { model, context }` → crea una sesión nueva del agente, genera la cotización y
   devuelve `{ sessionId, payload }` (payload = `{ title, summary, deadline, requirements[] }`).
 - `POST /chat { sessionId, model, message, context }` → reanuda la sesión y devuelve
   `{ sessionId, reply, payload? }` (payload solo si el agente cambió la cotización).
-- `GET /health` → `{ ok, tools, talentSearch, model, baseUrl, apiKey }`.
+- `GET /health` → `{ ok, tools, talentSearch, model, proveedor, apiKey }`.
 - Herramientas del agente: `list_my_projects` (proyectos previos del miembro, para calibrar
   precios) y `buscar_talentos` (búsqueda semántica vía la app, requiere `APP_URL`).
-- **Thinking extendido DESACTIVADO** (no se configura ninguna opción de thinking).
+- **Razonamiento DESACTIVADO** (`reasoning.effort: 'none'`), por decisión del usuario. Medido
+  el 2026-08-21: apagarlo no impide que el agente llame a las herramientas.
 
-## El proveedor: Kimi K2.6, no Anthropic
+## El proveedor: OpenAI (2026-08-21)
 
-El Agent SDK **no llama a Anthropic directamente**: lanza el binario de Claude Code, que respeta
-`ANTHROPIC_BASE_URL`. Moonshot expone un endpoint **compatible con `/v1/messages`**, así que el
-cambio de proveedor no toca ni el prompt, ni las herramientas MCP, ni la reanudación por
-`sessionId`. El worker arma ese entorno en `entornoDelAgente()` (`index.mjs`), y ahí están las
-dos trampas que ya se pagaron una vez al razonarlas:
+Hasta el 2026-08-21 esto corría el **Claude Agent SDK apuntado a Kimi K2.6**, que funcionaba
+porque **Moonshot expone a propósito un endpoint compatible con `/v1/messages`** de Anthropic:
+bastaba con reapuntar `ANTHROPIC_BASE_URL`. **OpenAI no expone nada equivalente**, así que
+unificar el proveedor obligó a cambiar de SDK, no de variable.
 
-1. **Claude Code hace llamadas de modelo pequeño por su cuenta** (compactación, títulos,
-   subagentes) con IDs de Claude. Contra Moonshot eso es *model not found*, y no salta en la
-   primera prueba: salta cuando la sesión de GCC Bot crece. Por eso se fijan **las cuatro**
-   `ANTHROPIC_DEFAULT_*_MODEL` y `CLAUDE_CODE_SUBAGENT_MODEL` al mismo modelo.
-2. **`ANTHROPIC_API_KEY` gana a `ANTHROPIC_AUTH_TOKEN`** en el orden de resolución. Una clave de
-   Anthropic olvidada en el entorno se mandaría a Moonshot → 401. El worker la **borra** del
-   entorno del subproceso.
+El cambio se llevó por delante tres fragilidades que este mismo README documentaba:
 
-⚠️ El modelo es **`kimi-k2.6`** y no `kimi-k2.7-code` porque ese último **exige thinking
-activado** (devuelve `400 invalid thinking: only type=enabled is allowed`), y aquí el thinking
-va desactivado por decisión del usuario.
+1. **El subproceso.** El Agent SDK lanzaba el binario de Claude Code, que hacía llamadas de
+   modelo pequeño por su cuenta (compactación, títulos, subagentes) con IDs de Claude que
+   Moonshot no conocía. Había que fijar **seis** variables de entorno para que no se cayera a
+   mitad de una cotización. Ya no hay subproceso, ni esas variables.
+2. **La puerta doble de permisos.** Declarar las herramientas en `allowedTools` las
+   auto-aprobaba *antes* de consultar al callback `canUseTool`. Ahora el agente tiene
+   exactamente las herramientas que se le pasan: no hay nada que denegar.
+3. **Las sesiones en disco.** Vivían en el contenedor y Railway levanta uno nuevo en **cada
+   despliegue**, así que toda cotización anterior al despliegue quedaba sin hilo para siempre.
+   Ahora la conversación vive en OpenAI (`OpenAIConversationsSession`) y sobrevive.
 
-⚠️ Contexto: **262 k**, no el millón de Opus. Generar una cotización cabe de sobra; GCC Bot
-acumula turnos, por eso se fija `CLAUDE_CODE_AUTO_COMPACT_WINDOW` (200 k por defecto).
+⚠️ **`gpt-5.6-luna` devuelve 400 con `temperature` y `top_p`** — no los ignora. Y el techo va
+como `max_output_tokens`, no `max_tokens`.
+
+⚠️ **El modelo no sabe en qué día vive** (corte de conocimiento en febrero de 2026). Antes no se
+notaba porque el CLI de Claude Code inyectaba la fecha en su prompt de sistema; al quitar el
+subproceso, esa muleta se fue con él y el agente propuso una `deadline` **cuatro meses en el
+pasado**. Por eso los prompts llevan ahora `hoyEnEcuador()`.
 
 ## Variables de entorno
 | Var | Descripción |
 |---|---|
-| `KIMI_API_KEY` | Clave de la API de Kimi/Moonshot (**obligatoria**). Sin ella el worker falla en claro, no en silencio. |
+| `OPENAI_API_KEY` | Clave de OpenAI (**obligatoria**). Sin ella el worker falla en claro, no en silencio. |
 | `COTIZADOR_WORKER_TOKEN` | Secreto compartido con la app web (`x-worker-token`). Sin él → 503. |
 | `DATABASE_URL` | Postgres de GCC (misma que la web) para `list_my_projects`. |
 | `APP_URL` | URL de la app, para que `buscar_talentos` use embeddings. Sin ella cae a búsqueda por texto. |
-| `COTIZADOR_MODEL` | Opcional, default `kimi-k2.6`. Debe coincidir con el de la web. |
-| `KIMI_BASE_URL` | Opcional, default `https://api.moonshot.ai/anthropic`. |
-| `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | Opcional, default `200000`. |
+| `COTIZADOR_MODEL` | Opcional, default `gpt-5.6-luna`. **Debe coincidir con el de la web**: se guarda en `quote_sessions` y si difieren, el historial miente. |
 | `PORT` | Opcional, default `4610`. |
 
-**No pongas `ANTHROPIC_API_KEY`** en este servicio.
+`KIMI_API_KEY` y `KIMI_BASE_URL` **ya no se usan**: si siguen en el servicio, sobran (y conviene
+revocar la clave en Moonshot).
 
 ## Local
 ```bash
 cd services/cotizador-worker
 npm install
-npm run dev     # lee ../../.env y ../../.env.local (necesita KIMI_API_KEY en uno de los dos)
+npm run dev     # lee ../../.env y ../../.env.local (necesita OPENAI_API_KEY en uno de los dos)
 ```
 Comprueba sin gastar una cotización:
 ```bash
 curl -s localhost:4610/health
-# → { ok, model: "kimi-k2.6", baseUrl: "https://api.moonshot.ai/anthropic", apiKey: "ok", ... }
+# → { ok, model: "gpt-5.6-luna", proveedor: "openai", apiKey: "ok", ... }
 ```
 En la app web (`.env.local`): `COTIZADOR_WORKER_URL=http://localhost:4610`, el mismo
-`COTIZADOR_WORKER_TOKEN` y `COTIZADOR_MODEL=kimi-k2.6`.
+`COTIZADOR_WORKER_TOKEN` y `COTIZADOR_MODEL=gpt-5.6-luna`.
 
 ## Despliegue en Railway
 
@@ -103,8 +109,14 @@ nuevo o un clon recién hecho no existe, y el `railway up` volvería a archivar 
 `railway link` de arriba **antes** de desplegar (o usa `railway up . --path-as-root --service
 cotizador-worker --detach`, que sigue funcionando como salida de emergencia).
 
-Variables en el servicio `cotizador-worker`: `KIMI_API_KEY`, `COTIZADOR_WORKER_TOKEN`,
-`DATABASE_URL`, `APP_URL`, `COTIZADOR_MODEL=kimi-k2.6` — y **quitar `ANTHROPIC_API_KEY`**.
+Variables en el servicio `cotizador-worker`: `OPENAI_API_KEY`, `COTIZADOR_WORKER_TOKEN`,
+`DATABASE_URL`, `APP_URL`, `COTIZADOR_MODEL=gpt-5.6-luna`.
+
+⚠️ **Cambiar SOLO las variables no despliega el código.** Tocar una variable reinicia el
+servicio con el **build que ya había**, y el 2026-08-23 eso dejó media hora al worker corriendo
+el código viejo de Kimi con `COTIZADOR_MODEL=gpt-5.6-luna` — o sea, mandando un modelo de OpenAI
+a Moonshot. Si cambias el modelo, **haz también el `railway up`**. El log de arranque dice cuál
+de los dos está vivo: `… en OpenAI` (nuevo) o `… en https://api.moonshot.ai/anthropic` (viejo).
 En el servicio **web** (`corazonescruzados`): `COTIZADOR_WORKER_URL`
 (`http://cotizador-worker.railway.internal:4610`, red privada), `COTIZADOR_WORKER_TOKEN` y
-`COTIZADOR_MODEL=kimi-k2.6`.
+`COTIZADOR_MODEL=gpt-5.6-luna`.
