@@ -320,8 +320,38 @@ Stack estándar de la casa, con particularidades de este repo:
     la suite libre para quien entra a las 12:00). **`gcc_world` quedó con las mismas 187 tablas.**
   - **Credenciales sembradas** (se mostraron una sola vez, no están en ningún archivo): operador
     GCC en `/gcc/acceso` y administrador del hotel de demostración en `/demo/acceso`.
-  - **⏳ Falta desplegar**: servicio nuevo en Railway con «Root Directory» `productos/reservas`,
-    su propio `JWT_SECRETO` y `DATABASE_URL` con `?schema=reservas`. Ver `productos/reservas/README.md`.
+  - **🚀 DESPLEGADO EL 2026-08-24** en el proyecto **Servidor-GCC**, servicio **`reservas`**:
+    **https://reservas-production-e98f.up.railway.app** · «Root Directory» `productos/reservas`
+    · `DATABASE_URL` por **referencia** a `${{Postgres.*}}` (red privada, no el proxy) con
+    `?schema=reservas` · `JWT_SECRETO` propio, distinto del de desarrollo.
+    - **⭐ `watchPatterns: ['productos/reservas/**']`.** Sin eso, **cada** push al repositorio
+      reconstruiría también este servicio aunque el cambio fuera del videojuego o del panel.
+      ⚠️ Los otros tres servicios del repo **siguen sin patrones**: hoy se reconstruyen todos
+      con cada push. Está sin arreglar a propósito, es decisión de Fernando.
+    - Verificado **contra el dominio real**, entrando con usuario y contraseña de verdad: panel
+      con datos de la base, agenda, reportes, usuarios, configuración, contraseña incorrecta
+      avisando, y el `.xlsx` descargando (7.345 bytes).
+  - **🐛 EL FALLO QUE TIRÓ EL PRIMER DESPLIEGUE FUE UN «AJUSTE DE ROBUSTEZ» MÍO.** Copié de la
+    plataforma `replace(/[?&]schema=[^&]+/, '')` para quitarle a `pg` un parámetro que es de
+    Prisma. En la plataforma `schema` es el **único** parámetro y funciona; aquí la cadena
+    lleva **dos** (`?schema=reservas&sslmode=disable`) y el recorte **se lleva el «?»**:
+    `...railway&sslmode=disable` pasa a ser el NOMBRE de la base. Todas las páginas que tocan
+    la base dieron 500 (P1003) y las que no —la portada y el acceso del equipo— siguieron
+    dando 200, que es lo que despistaba. **`pg` ignora los parámetros que no conoce**: la
+    cadena se pasa entera. Revertido en `ea3445a`.
+    - **La lección:** un recorte con expresión regular sobre una URL es correcto solo para la
+      forma exacta en la que se probó. Si hay que quitar un parámetro, se parsea.
+  - **🪤 Y UN «FALLO» QUE NO LO ERA: medí antes de que la cadena de saltos se asentara.** Con la
+    mensualidad vencida leí la dirección justo tras el primer salto y vi `/demo/panel`, así que
+    di la puerta por rota. La cadena real era `/acceso → /panel → /suscripcion` y **no llegaba
+    a verse un solo dato del hotel**. Se comprobó pidiendo la página con `curl` (307 limpio) y
+    después esperando a que la dirección **dejara de cambiar**. Aun así se quitó el salto de
+    más: `entrar()` mira la mensualidad y manda directo (`27c1c43`).
+    - **La lección:** cuando algo redirige, no se mide el primer salto — se mide dónde para.
+  - **⚠️ ROTAR LA CONTRASEÑA DEL POSTGRES.** Al comprobar las variables del servicio nuevo, la
+    API de Railway **resolvió la referencia** y devolvió la contraseña en claro, que quedó
+    impresa en la sesión. No salió a ningún servicio externo, pero conviene rotarla. Mismo caso
+    que la de Neon en junio. **Para ver variables, mirar solo las CLAVES.**
   - **Interfaz de referencia medida:** `velmort-stays`, ~3.600 líneas, Next 16 + NextAuth v5 +
     Prisma 7. `User/Location/Suite/Reservation`; Panel · Agenda · Reportes · Usuarios ·
     Configuración · Reserva. Imágenes en **Cloudinary por URL**, no en la base — decisión que se

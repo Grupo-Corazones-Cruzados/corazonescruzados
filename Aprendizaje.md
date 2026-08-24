@@ -33,7 +33,7 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
-## Objetivo ACTUAL (declarado 2026-08-23) — PRIMER PRODUCTO DEL GRUPO: «Gestión de Reservas», servicio propio, multi-inquilino y de pago mensual · 🔎 95 % — CONSTRUIDO Y VERIFICADO
+## Objetivo ACTUAL (declarado 2026-08-23) — PRIMER PRODUCTO DEL GRUPO: «Gestión de Reservas», servicio propio, multi-inquilino y de pago mensual · ✅ 98 % — DESPLEGADO Y VERIFICADO EN PRODUCCIÓN
 
 > Textual de Fernando: *«vamos a trabajar en el primer producto del proyecto… creado por el líder
 > la cuenta lfgonzalezm0@grupocc.org… debe asociarse al talento del Automatización de Procesos…
@@ -53,7 +53,7 @@ suscripción) con sombrero de **ingeniero de front Fluent** para portar la inter
 al lenguaje visual del grupo.
 
 ### Progreso
-- **% de información para el objetivo: 95 %**
+- **% de información para el objetivo: 98 %**
 - **Estado:** decidida la arquitectura (servicio aparte, subcarpeta del repo, multi-inquilino,
   cuentas propias por hotel, marca configurable por inquilino sobre tema GCC). Falta cerrar el
   contenido de los planes (qué limita cada nivel) y la pasarela — los dos, por decisión de
@@ -205,6 +205,53 @@ defecto: es un dato equivocado que se cuela por una condición de verdad.**
 ### Progreso: **95 %**
 Lo que falta no es información técnica, son **dos decisiones de Fernando** (P6 y P7): qué limita
 cada nivel de la tier list y qué pasarela. El modelo ya soporta las dos cosas sin migrar datos.
+
+### 🚀 DESPLEGADO Y VERIFICADO CONTRA EL DOMINIO REAL (2026-08-24)
+Servicio **`reservas`** en el proyecto **Servidor-GCC**:
+**https://reservas-production-e98f.up.railway.app**, «Root Directory» `productos/reservas`,
+`DATABASE_URL` por **referencia** a `${{Postgres.*}}` (red privada) y `watchPatterns` para que
+un push del videojuego no lo reconstruya. Probado **entrando con usuario y contraseña de
+verdad**, no con una cookie fabricada: panel con datos de la base, agenda, reportes, usuarios,
+configuración, contraseña incorrecta avisando, `.xlsx` de 7.345 bytes, y la puerta del impago
+cerrando (307 a `/suscripcion`, Excel 401).
+
+### 🐛 P104 — EL FALLO DE PRODUCCIÓN LO CAUSÓ MI PROPIO «AJUSTE DE ROBUSTEZ»
+Justo antes de desplegar copié de la plataforma `replace(/[?&]schema=[^&]+/, '')` para quitarle
+a `pg` un parámetro que es de Prisma. **Allí funciona porque `schema` es el único parámetro**;
+aquí la cadena lleva dos y el recorte **se come el «?»**: `...railway&sslmode=disable` pasa a
+ser el nombre de la base. Todas las páginas que tocan la base dieron **500 (P1003)**; la
+portada y el acceso del equipo siguieron dando **200**, y esa mezcla es lo que despistaba.
+- **`pg` ignora los parámetros que no conoce** — llevaba toda la sesión demostrándolo: las
+  migraciones, la semilla y las diez verificaciones corrieron con la cadena completa. El
+  cambio no arreglaba nada; solo podía romper.
+- **La lección doble:** (1) un recorte con expresión regular sobre una URL solo es correcto
+  para la forma exacta en la que se probó — si hay que quitar un parámetro, se parsea; y (2)
+  **copiar una línea de otro módulo trae sus supuestos, no solo su código**. Es «equivalente no
+  es igual» al revés: aquí lo idéntico era lo que estaba mal.
+- **Lo que sí funcionó del método:** el log lo decía literal —*Database `railway&sslmode=disable`
+  does not exist*—. Leerlo costó menos que razonar sobre TLS, IPv6 o la red privada, que era
+  hacia donde iba mi primera sospecha.
+
+### 🪤 P105 — UN «FALLO» QUE ERA UN ARTEFACTO DE MEDICIÓN
+Con la mensualidad vencida, leí la dirección justo después del primer salto, vi `/demo/panel` y
+di la puerta por rota — **mientras el Excel devolvía 401 correctamente**. Esa asimetría era la
+pista: la lógica era la misma en los dos sitios, así que el problema no podía ser la lógica.
+Pedida la página con `curl`, **307 limpio a `/suscripcion`**. La cadena real era
+`/acceso → /panel → /suscripcion` y no llegaba a verse un dato del hotel.
+- **La lección:** cuando algo redirige, no se mide el primer salto, se mide **dónde para**. Y
+  cuando dos caminos que comparten lógica dan resultados distintos, lo que difiere es el
+  entorno, no la lógica.
+- Aun así se quitó el salto de más: `entrar()` mira la mensualidad y manda directo.
+
+### ⚠️ P106 — CONSULTAR VARIABLES DE RAILWAY RESUELVE LAS REFERENCIAS
+Puse `DATABASE_URL` como referencia (`${{Postgres.POSTGRES_PASSWORD}}`) justamente para no
+tocar el secreto. Al comprobar que había quedado bien, la consulta `variables(...)` de la API
+**devolvió el valor ya resuelto** y la contraseña salió en claro en la sesión. La máscara que
+había preparado buscaba el texto de la referencia, no el valor.
+- **Regla:** para comprobar variables, listar **solo las claves**. Si hace falta ver una
+  dirección, enmascarar por posición (`new URL` + `password=''`), nunca confiando en que el
+  valor tenga la forma que se espera.
+- **Pendiente para Fernando:** rotar la contraseña del Postgres.
 
 ### Riesgos y cómo se mitigan
 - **Fuga entre inquilinos** (el fallo que mata un SaaS): un solo sitio construye el filtro por
@@ -4194,7 +4241,7 @@ Funcionó durante meses porque **ninguna descripción había llevado nunca un ap
 compatibilidad de contrato de API, variables de entorno, protocolo de tool-use y despliegue.
 
 ## Progreso
-- **% de información para el objetivo: 95 %**
+- **% de información para el objetivo: 98 %**
 - **Estado:** decisión tomada (**reemplazo total**, Kimi K2.6 pasa a ser el modelo por defecto de
   los agentes futuros del proyecto — P10 ✅). Ruta A implementada y verificada en estático
   (`node --check`, `tsc`, `next build`). Falta **solo** la verificación 3 de

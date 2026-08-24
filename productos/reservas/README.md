@@ -61,18 +61,28 @@ reparto es:
 
 Una migración aplicada **no se edita ni se borra**: el runner lo detecta y para.
 
-## Desplegar en Railway
+## Desplegado
 
-Servicio **nuevo**, distinto del de GCC WORLD, sobre este mismo repositorio:
+**https://reservas-production-e98f.up.railway.app** — proyecto **Servidor-GCC**, servicio
+**`reservas`**, sobre este mismo repositorio.
 
-1. **Root Directory:** `productos/reservas`
-2. **Build:** `npm run build` · **Start:** `npm start`
-3. **Variables:** `DATABASE_URL` (la misma base, con `?schema=reservas&sslmode=disable`),
-   `JWT_SECRETO` (uno propio, distinto del de desarrollo), `CLOUDINARY_URL`, `APP_URL`
-4. Tras el primer despliegue: `npm run migrar` y `npm run semilla`
+| Ajuste | Valor |
+|---|---|
+| Root Directory | `productos/reservas` |
+| Build · Start | `npm run build` · `npm start` |
+| Watch patterns | `productos/reservas/**` — sin esto, cada push al repo lo reconstruiría |
+| `DATABASE_URL` | referencia a `${{Postgres.*}}` por la **red privada**, con `?schema=reservas` |
+| `JWT_SECRETO` | propio, **distinto** del de desarrollo |
 
 ⚠️ **`JWT_SECRETO` distinto por entorno.** Con el mismo secreto, una sesión firmada en
 desarrollo valdría en producción.
+
+⚠️ **La cadena de conexión se pasa ENTERA a `pg`.** No recortarle el `?schema=` con una
+expresión regular: con dos parámetros se lleva el «?» por delante y la base pasa a llamarse
+`railway&sslmode=disable`. Tiró el primer despliegue. `pg` ignora lo que no conoce.
+
+Las migraciones y la semilla se ejecutan **desde local** contra la misma base (la URL pública
+del proxy); no hace falta correr nada dentro del contenedor.
 
 ## Lo que falta (decisión de Fernando)
 
