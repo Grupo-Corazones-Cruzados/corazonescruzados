@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧰 SKILL `/producto` (2026-08-24).** Todo lo aprendido montando el primer producto queda
+  empaquetado en `~/.claude/skills/producto/SKILL.md` para que el segundo no vuelva a pagar lo
+  mismo. Trae: qué es un producto para el grupo (4º paso del Modelo 4P, y la regla del Violeta
+  aplicada a un producto multi-inquilino), **qué archivos leer antes de escribir una línea**, la
+  **arquitectura canónica ya decidida** —que por tanto **no se vuelve a preguntar**—, la
+  estructura de carpetas, los **dos caminos** (nace de un proyecto que existe · nace de una
+  idea), el orden de construcción, el **guion exacto del despliegue en Railway**, el protocolo de
+  verificación, el modo escaparate y las **diez trampas ya pagadas**.
+  - **Lo que la skill NO deja preguntar otra vez:** dónde vive el código, cómo se despliega, si
+    es multi-inquilino, con qué cuenta se entra, de quién es la marca y qué cierra la puerta.
+    Eso ya lo decidió Fernando. Lo que sí se pregunta: talento, si hay proyecto de referencia,
+    nombre y código, alcance de la v1, y lo que quede «para después».
+  - **Se actualiza cuando un producto nuevo enseñe algo que no esté ahí.**
 - **👁️ MODO ESCAPARATE — un alojamiento que se recorre entero y no se puede cambiar
   (2026-08-24, migración 002).** Fernando quiere enseñarle el producto a gente de fuera:
   *«que usuarios externos puedan ingresar y navegar y ver la app en general»*, con la información
