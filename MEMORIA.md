@@ -275,6 +275,52 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🍽️ SEGUNDO PRODUCTO: «GESTIÓN DE PEDIDOS» (2026-08-25).** Para negocios de comida:
+  mesas, carta, cocina y cobro. Mismo talento (**Automatización de procesos**), mismo armazón,
+  esquema propio `pedidos`. **Desplegado y verificado**:
+  **https://pedidos-production-0124.up.railway.app** · plan **Esencial, 5 $/mes**, que es lo
+  que dijo Fernando —aquí no hubo nada que inventar—.
+  - **⭐ AQUÍ LOS ROLES NO SON UNA ESCALERA, Y ESO CAMBIA EL ARMAZÓN.** En reservas bastaba
+    «al menos GERENTE». Un **cocinero no es un mesero con menos permisos**: es otro oficio —
+    marca platos que salen y no cobra; el mesero cobra y no entra a la cocina—. Los permisos
+    se piden por **CAPACIDAD** (`lib/permisos.ts`: `cocinar`, `cobrar`, `tomar-pedidos`,
+    `administrar`…) y **el menú se arma con ellas**, así que cada quien ve su puesto.
+    **El compilador cazó solo los sitios** donde el código copiado daba por hecha la escalera.
+  - **⭐ EL IVA SE CALCULA DE DOS MANERAS Y CONFUNDIRLAS CAMBIA LO QUE SE COBRA.** Si el precio
+    de la carta **ya lleva** el impuesto (lo normal en un menú) se **desglosa hacia atrás**; si
+    no, se **suma**. Medido: sumarle el 15 % a una cuenta de 29,00 que ya lo llevaba cobraría
+    **4,35 de más**. Se trabaja en **centavos enteros** y **cada pedido guarda la tasa que se le
+    aplicó**, para que cambiar la configuración no reescriba la caja de ayer.
+  - **«Esperando atención» es el único estado que NO se puede deducir**: no hay pedido todavía,
+    y ese es justo el problema que resuelve. Se guarda en la mesa; el resto del tablero sale
+    del pedido. La cocina marca **por plato**, así una segunda ronda no borra que lo anterior
+    ya salió.
+  - **⏳ Pendiente de Fernando:** niveles por encima del Esencial y la pasarela. Los topes del
+    plan (mesas, productos, cuentas) se guardan pero todavía **no se comprueban** al crear.
+- **🗓️ RETENCIÓN DE UN MES Y PURGA AUTOMÁTICA, EN LOS DOS PRODUCTOS (2026-08-25).** Fernando:
+  *«que los registros se eliminen automáticamente para todos los negocios justo en la última
+  hora del día que acaba el mes»*. El plan dice cuántos meses guarda; en esa hora se borra lo
+  anterior.
+  - **⭐ SE PURGA POR CUÁNDO TERMINÓ, NO POR CUÁNDO SE CREÓ — y esto lo decidió él tras ver el
+    caso.** Primero eligió la fecha de creación; se le puso el ejemplo concreto —reserva
+    anotada el 20 de agosto para el 10 de octubre, borrada el 30 de septiembre con el huésped
+    aún por llegar— y respondió: *«tienes razón, la fecha que se base para eliminar los
+    registros debe ser la fecha de salida de las reservas o cuando ya se cierran»*. **Un pedido
+    sin cerrar sigue vivo aunque sea viejo.**
+  - **Quien dispara es el cron que ya existía** (`nightly-cron`, una vez por hora); **quien
+    decide si toca correr es el endpoint**, porque la hora que importa es la del cliente, no la
+    del servidor. Es **idempotente** —con un cron cada 10 min se dispara seis veces en esa
+    hora— y deja constancia en `purgas`. **Un escaparate no se purga.**
+  - Verificado con los dos casos límite en los dos productos: lo viejo se va, lo del mes en
+    curso se queda, **lo futuro anotado hace meses sobrevive** y **un pedido abierto viejo
+    también**. Sin token, 401. Repetir, cero.
+- **🪤 AL CREAR UN SERVICIO EN RAILWAY, EL PRIMER BUILD SALE CON EL DIRECTORIO RAÍZ POR DEFECTO
+  (2026-08-25).** `railway add` **encola un despliegue de inmediato**, antes de que se le fije
+  el «Root Directory». Ese build compiló **la plataforma entera** y la sirvió en el dominio del
+  producto: `/` respondía 200 y **todo lo demás 404**, porque las rutas servidas eran las de
+  GCC WORLD. Se ve en el registro del build —salían `/dashboard/tickets`, `/soluciones`—.
+  **Después de configurar el servicio hay que relanzar** (`railway redeploy`). Con reservas
+  pasó igual y se tapó solo porque un push posterior lo reconstruyó.
 - **🧰 SKILL `/producto` (2026-08-24).** Todo lo aprendido montando el primer producto queda
   empaquetado en `~/.claude/skills/producto/SKILL.md` para que el segundo no vuelva a pagar lo
   mismo. Trae: qué es un producto para el grupo (4º paso del Modelo 4P, y la regla del Violeta

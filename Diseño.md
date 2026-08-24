@@ -2504,6 +2504,43 @@ su propia nota, para que el visitante lo sepa antes de entrar.
 La pantalla de Marca pinta una **vista previa** con los tokens calculados en vivo (logo,
 nombre y un botón primario). Elegir un color de marca a ciegas es elegirlo mal.
 
+---
+
+## Producto «Gestión de Pedidos» — el mismo lenguaje, otro oficio (2026-08-25)
+
+Hereda **entero** el sistema del primer producto: mismos tokens, mismo catálogo de
+controles (`src/componentes/ui.tsx`), misma marca por inquilino. Lo que aporta:
+
+### ⭐ EL MENÚ SE ARMA POR CAPACIDAD, NO POR RANGO
+`src/lib/permisos.ts` declara qué puede cada oficio y `Navegacion.tsx` filtra con eso.
+Un cocinero **no ve** Carta, Usuarios ni Reportes — no porque «tenga menos permisos»,
+sino porque **no es su trabajo**. Y si escribe la dirección, se le devuelve a **su**
+pantalla, no a un error: no se ha equivocado de aplicación.
+
+### El tablero de mesas — tarjeta grande, estado combinado
+`grid-cols-2 sm:3 2xl:4`, tarjetas de mesa con nombre grande, capacidad, insignia de
+situación y **acción principal a ancho completo** («Tomar pedido» / «Abrir pedido»),
+más un botón cuadrado de «espera atención». La situación **no es una columna**: combina
+el estado de la mesa con el de su pedido (libre · espera atención · en cocina · listo
+para servir · por cobrar), y esa es la lista de filtros de la barra superior.
+
+### La cocina se mira de lejos y se toca con las manos ocupadas
+Cabecera de la comanda en `bg-acento` con **«Mesa 4» en 18 px**, cantidades en grande,
+platos ya servidos tachados en tenue, y el tiempo de espera con `Clock`. Una comanda con
+más de **30 minutos** pendiente se marca con borde `error`. Botones grandes: «Listo» por
+plato y «Todo listo (N)» a ancho completo. **Ni tablas ni menús.**
+
+### La cuenta explica el IVA en vez de esconderlo
+En el pedido, el desglose dice *«IVA 15% (incluido en los precios)»* cuando la carta ya
+lo lleva. Y en Configuración → Facturación hay un **ejemplo con números reales** que se
+recalcula al cambiar las casillas: es la única forma de que se entienda la diferencia
+entre desglosar y sumar.
+
+### Aviso de retención donde duele
+En **Reportes** y en **Suscripción**, una franja `bg-aviso-suave` recuerda cuántos meses
+se conservan y empuja a **exportar a Excel**. Un borrado automático sin aviso previo se
+lee como pérdida de datos.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-21 · El Estudio del agente ya no elige MODELO, elige RAZONAMIENTO.** Al pasar toda
   la app a un solo modelo (`gpt-5.6-luna`), aquel `PixelSelect` de Haiku / Sonnet / Opus se

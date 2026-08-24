@@ -33,6 +33,96 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo (declarado 2026-08-25) — SEGUNDO PRODUCTO: «Gestión de Pedidos» + retención de un mes en los dos productos · ✅ 100 % — DESPLEGADO Y VERIFICADO
+
+> Fernando: un producto para que **tiendas pequeñas de comida** registren pedidos, con
+> **cocinero** que ve los pedidos por mesa y marca lo listo, **mesero** que sirve y cobra
+> eligiendo método de pago, **IVA del 15 % configurable**, catálogo del administrador, mesas y
+> **reserva de mesas**, tablero de ocupación, gestión de usuarios y exportación. **5 $ al mes**
+> con **un mes de histórico**, y *«que los registros se eliminen automáticamente para todos los
+> negocios justo en la última hora del día que acaba el mes»* — lo mismo para reservas.
+
+### Lo que se preguntó, y por qué solo eso
+La skill `/producto` ya trae decidida la arquitectura, así que **no se volvió a preguntar** dónde
+vive, cómo se despliega, si es multi-inquilino, con qué cuenta se entra ni de quién es la marca.
+Se preguntó **solo lo que podía destruir datos** y lo que cambiaba el modelo:
+
+#### P1 — ¿Qué borra exactamente la purga? · ✅ «Lo anterior al mes que termina»
+Queda el mes en curso íntegro. Es lo que cumple «máximo un mes» sin dejar al negocio con la
+pantalla en blanco el día 1.
+
+#### P2 — ¿Qué fecha decide el borrado? · ✅ Resuelta EN DOS PASOS, y el segundo importa
+Eligió primero **la fecha de creación**. Se le puso el caso concreto —*reserva anotada el 20 de
+agosto para el 10 de octubre, borrada el 30 de septiembre con el huésped aún por llegar*— y
+cambió de opinión: *«tienes razón, la fecha que se base para eliminar los registros debe ser la
+fecha de salida de las reservas o cuando ya se cierran»*.
+- **La lección del método:** una opción se elige mejor con un ejemplo concreto delante que con
+  una descripción. La primera respuesta no era descuido suyo: era que el ejemplo no estaba.
+- Un **pedido sin cerrar** sigue vivo aunque sea viejo, y tampoco se toca.
+
+#### P3 — ¿Qué alcance tiene «reservar mesas»? · ✅ Con día, hora y duración
+Con control de choques. Tocarse en el extremo no es pisarse: quien reserva de 20:00 a 22:00 deja
+la mesa libre a las 22:00.
+
+### Lo que este producto ENSEÑÓ (y no estaba en el primero)
+
+#### ⭐ A1 — LOS ROLES NO SIEMPRE SON UNA ESCALERA
+El armazón de reservas pedía «al menos GERENTE». Aquí no vale: **un cocinero no es un mesero con
+menos permisos**, es **otro oficio**. Los permisos pasan a pedirse por **capacidad**
+(`cocinar`, `cobrar`, `tomar-pedidos`, `administrar`…) y el menú se arma con ellas.
+- **Lo bueno del cambio:** al reescribir `alMenos()` por `puede()`, **el compilador señaló solo
+  los seis sitios** donde el código copiado daba por hecha la escalera. Un tipo bien elegido
+  convierte un rediseño en una lista de tareas.
+
+#### ⭐ A2 — EL IVA SE CALCULA DE DOS MANERAS Y CONFUNDIRLAS CAMBIA LO QUE SE COBRA
+Precio de carta **con** el impuesto dentro → se **desglosa** hacia atrás. **Sin** → se **suma**.
+Medido: una cuenta de 29,00 con IVA dentro son 29,00; sumándole el 15 % encima serían 33,35,
+**4,35 de más**. Se trabaja en **centavos enteros** (0,1 + 0,2 no da 0,3) y **cada pedido guarda
+la tasa aplicada**, para que cambiar la configuración no reescriba la caja de ayer.
+
+#### 🪤 A3 — EL PRIMER BUILD DE UN SERVICIO NUEVO EN RAILWAY SALE CON EL DIRECTORIO POR DEFECTO
+`railway add` **encola el despliegue en el acto**, antes de que se le fije el «Root Directory».
+Ese build compiló **la plataforma entera** y la sirvió en el dominio del producto: `/` daba 200 y
+**todo lo demás 404**. La pista estaba en el registro del build, que listaba `/dashboard/tickets`
+y `/soluciones`. **Tras configurar, hay que relanzar.**
+
+### 🪤 A4 — TRES VECES SEGUIDAS EL FALLO ERA MI BANCO DE PRUEBAS, NO EL PRODUCTO
+Merece quedar escrito junto, porque el patrón se repitió y cada vez me llevó a «arreglar» algo
+que no estaba roto:
+1. **Medí antes de tiempo.** En desarrollo, la primera compilación de cada ruta tarda segundos;
+   mi espera «hasta que la dirección deje de cambiar» se cumplía **mientras aún compilaba**.
+2. **Pulsé antes de que React se enganchara.** El texto del botón ya está en el HTML del
+   servidor: verlo **no** significa que el botón escuche. Hay que pulsar y **comprobar el
+   efecto**, no el clic.
+3. **Mi propio reintento cancelaba lo que medía.** Un bucle que repulsaba cada 1,2 s abortaba la
+   navegación recién iniciada: el pedido se creaba en la base y el navegador se quedaba quieto.
+   Se pulsa **una vez** y se espera de verdad.
+- **Y la decisión que lo resolvió todo:** dejar de pelearme con `next dev` y **probar contra el
+  build de producción**, que es además lo que se despliega.
+- **Corolario incómodo:** por el fallo (1) toqué `router.push`/`router.refresh` en los dos
+  productos creyendo haber encontrado la causa. El cambio era defendible, **pero mi comentario
+  atribuía el arreglo a algo falso**; hubo que corregirlo. *Un comentario que explica mal una
+  causa es peor que no tener comentario.*
+
+### 🪤 A5 — Y UNA VEZ MÁS: LAS PRUEBAS NO BORRAN DATOS REALES
+Para limpiar entre vueltas fui borrando **por rangos adivinados** (`id > 4`, `numero > 4`) y me
+llevé por delante un pedido de la demostración y dejé una comanda en otro estado. La regla ya
+estaba escrita desde agosto y la incumplí. **Se rehízo la demostración desde la semilla** —que es
+reproducible— y la prueba se cambió para que **solo borre lo que ella misma creó, por
+identificador**, y para que **no escriba nunca en el inquilino demo**.
+
+### Lo medido al cerrar
+- **Local, contra el build de producción:** 22 comprobaciones del flujo completo (tomar → cocina
+  → servir → cobrar) y de los permisos por oficio.
+- **Protocolo estándar:** aislamiento entre negocios (404 · 200 · 307), puerta del impago
+  (307 · 401 · vuelve a abrir), purga con sus dos casos límite, sin token 401, repetición cero.
+- **Producción, contra el dominio real y con contraseñas de verdad:** las siete pantallas, el
+  cocinero devuelto a su puesto, el `.xlsx` (8.577 bytes) y la purga respondiendo al
+  `x-cron-token` del cron y **negándose a correr por no ser fin de mes**.
+- **Ni `gcc_world` ni el esquema `reservas` cambiaron.**
+
+---
+
 ## Objetivo ACTUAL (declarado 2026-08-23) — PRIMER PRODUCTO DEL GRUPO: «Gestión de Reservas», servicio propio, multi-inquilino y de pago mensual · ✅ 98 % — DESPLEGADO Y VERIFICADO EN PRODUCCIÓN
 
 > Textual de Fernando: *«vamos a trabajar en el primer producto del proyecto… creado por el líder
