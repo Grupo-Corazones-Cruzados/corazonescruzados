@@ -2493,6 +2493,13 @@ con `twMerge` se perdía `background-repeat`: el icono salía **repetido por tod
 Se movió a `select.campo` en el CSS. **Regla: una imagen de fondo se declara en CSS, no
 componiendo utilidades que otra capa puede reordenar.**
 
+### Franja de modo escaparate (2026-08-24)
+`src/componentes/AvisoEscaparate.tsx`, montada en el armazón de la aplicación cuando
+`inquilino.soloLectura`. Barra a ancho completo en `bg-acento` con `text-acento-contraste` —usa
+el acento del inquilino, así que se lee igual con cualquier marca— e icono `Eye`.
+**Se dice ANTES de que alguien intente guardar, no después.** La pantalla de acceso lleva además
+su propia nota, para que el visitante lo sepa antes de entrar.
+
 ### Vista previa antes de guardar
 La pantalla de Marca pinta una **vista previa** con los tokens calculados en vivo (logo,
 nombre y un botón primario). Elegir un color de marca a ciegas es elegirlo mal.

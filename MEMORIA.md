@@ -275,6 +275,36 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **👁️ MODO ESCAPARATE — un alojamiento que se recorre entero y no se puede cambiar
+  (2026-08-24, migración 002).** Fernando quiere enseñarle el producto a gente de fuera:
+  *«que usuarios externos puedan ingresar y navegar y ver la app en general»*, con la información
+  **intacta**. El «Hotel de Demostración» pasa a ser ese escaparate.
+  - **DOS capas, y las dos hacen falta.** La **aplicación** lo impide y lo **explica**
+    (`contextoEscritura()` en `lib/inquilino.ts`, por el que pasan las **16 acciones** que guardan
+    algo del inquilino); la **base lo garantiza** con `inquilinos.solo_lectura` + disparadores en
+    `ubicaciones`, `suites` y `reservas`. **Una promesa que solo vive en el código de la
+    aplicación se rompe con la siguiente pantalla que alguien añada.**
+  - **⭐ SE AVISA ANTES DE INTENTAR GUARDAR**, con franja permanente en el armazón y nota en la
+    pantalla de acceso. Quien pulsa «Guardar» y no ve nada concluye que la aplicación está rota —
+    que es lo contrario de lo que se le quiere enseñar.
+  - **Ni la hora del último acceso se escribe**: con visitantes entrando a diario, esa columna
+    sería lo único que cambiaría.
+  - **`usuarios` e `inquilinos` quedan FUERA del disparador a propósito:** el equipo GCC sí
+    necesita poder cambiarle la contraseña al escaparate o quitarle el modo, y un disparador ahí
+    le cerraría la puerta a quien tiene que poder abrirla. Esas dos las guarda la aplicación.
+  - **El modo se pone y se quita desde `/gcc`**, no desde el hotel: si el propio alojamiento
+    pudiera quitárselo, no sería una garantía, sería una sugerencia.
+  - **Verificado atacándolo desde la interfaz real en producción:** crear reserva, cambiar nombre
+    y color de la empresa, crear cuenta y «Marcar como pagada» — los cuatro rebotan con su
+    explicación; panel, agenda, reportes y el Excel siguen funcionando; y la foto de la base
+    **antes y después es idéntica**, incluida `ultimo_acceso`. Más seis intentos por **SQL
+    directo**, que también rebotan.
+  - **🪤 Y UNA TRAMPA DE MÉTODO QUE VOLVIÓ A MORDER:** di el acceso por roto justo tras desplegar.
+    El contenedor **acababa de reiniciarse** —el log decía «Starting Container… Ready in 408ms»— y
+    tres intentos posteriores dieron 303 y cookie puesta. **Tras un despliegue, la primera prueba
+    que falla se repite antes de creerla.** Además, mi comprobación de la franja daba un **falso
+    positivo**: buscaba «no se guardan», texto que también está en la pantalla de acceso. *Una
+    aserción que puede pasar por el motivo equivocado no es una aserción.*
 - **🏨 EL PRIMER PRODUCTO DEL GRUPO SE CONVIERTE EN APLICACIÓN: «Gestión de Reservas»
   (2026-08-23).** Hasta hoy el producto era **solo una ficha**: `gcc_world.products` id=2, $400,
   colgando de `member_portfolio_items` id=1 —de **Fernando, `lfgonzalezm0@grupocc.org`**, con
