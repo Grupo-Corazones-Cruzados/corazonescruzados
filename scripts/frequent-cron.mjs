@@ -55,6 +55,18 @@ const NIGHTLY_JOBS = [
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');
+
+// ── PRODUCTOS ────────────────────────────────────────────────────────────────
+// Cada producto vive en su PROPIO servicio, con su dirección y su token. Se les
+// dispara la purga de fin de mes; quien decide si toca correr es el propio
+// endpoint, porque la hora que importa es la del cliente, no la del servidor.
+//
+// Se llama UNA VEZ POR HORA (no cada 10 min): la purga solo hace algo en la última
+// hora del mes y llamarla seis veces por hora sería llenar el registro de nada.
+const PRODUCTOS = [
+  { name: 'Reservas · purga de fin de mes', url: process.env.RESERVAS_URL, token: process.env.RESERVAS_CRON_TOKEN },
+  { name: 'Pedidos · purga de fin de mes',  url: process.env.PEDIDOS_URL,  token: process.env.PEDIDOS_CRON_TOKEN },
+].filter((p) => p.url && p.token);
 const TOKEN = process.env.CRON_TOKEN || '';
 
 if (!TOKEN) {
@@ -109,6 +121,30 @@ for (const job of jobs) {
   } catch (e) {
     failed++;
     console.error(`[cron] ✗ ${job.name} → ${e.message}`);
+  }
+}
+
+// Purga de los productos, una vez por hora.
+if (now.getUTCMinutes() < 10 && PRODUCTOS.length) {
+  for (const prod of PRODUCTOS) {
+    try {
+      const res = await fetch(`${prod.url.replace(/\/+$/, '')}/api/cron/purgar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-cron-token': prod.token },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        failed++;
+        console.error(`[cron] ✗ ${prod.name} → HTTP ${res.status}: ${body.error || '(sin detalle)'}`);
+        continue;
+      }
+      // Solo se escribe si de verdad borró algo: la inmensa mayoría de las horas
+      // del mes no hay nada que decir.
+      if (body.borrados) console.log(`[cron] ✓ ${prod.name} ${formatDetail(body)}`);
+    } catch (e) {
+      failed++;
+      console.error(`[cron] ✗ ${prod.name} → ${e.message}`);
+    }
   }
 }
 

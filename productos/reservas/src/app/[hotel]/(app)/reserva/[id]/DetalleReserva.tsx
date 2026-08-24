@@ -123,8 +123,11 @@ export default function DetalleReserva({
             }
             toast.success('Reserva eliminada');
             setBorrando(false);
+      // Cuando se navega NO se refresca: refrescar invalida el árbol ACTUAL, que es
+      // justo el que se está abandonando, y el destino es dinámico —llega recién
+      // hecho igual—. (Sospeché que además cancelaba el salto; lo medí y NO era
+      // cierto: el salto ocurría y quien llegaba tarde era mi comprobación.)
             router.push(`/${slug}/panel`);
-            router.refresh();
           })
         }
       />

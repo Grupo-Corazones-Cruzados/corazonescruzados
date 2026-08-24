@@ -11,5 +11,5 @@ export default async function EntradaDelHotel({ params }: { params: Promise<{ ho
   if (!existe) notFound();
 
   const sesion = await leerSesionUsuario();
-  redirect(sesion?.slug === hotel ? `/${hotel}/panel` : `/${hotel}/acceso`);
+  redirect(sesion?.slug === hotel && sesion.inquilinoId === existe.id ? `/${hotel}/panel` : `/${hotel}/acceso`);
 }

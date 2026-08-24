@@ -1,0 +1,463 @@
+// Gestión de Pedidos — producto del Grupo Corazones Cruzados.
+//
+// Para negocios de comida pequeños: mesas, catálogo, pedidos, cocina y cobro.
+// Vive en su PROPIO esquema (`pedidos`) del mismo servicio Postgres de Railway que
+// GCC WORLD y que el producto de reservas. No comparte ni una tabla con ninguno.
+//
+// REGLA QUE GOBIERNA TODO EL MODELO: cada tabla de negocio lleva `inquilinoId`.
+// Un inquilino es un negocio. El filtro lo construye `lib/inquilino.ts`, nunca una
+// página.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plataforma: quién vende, a quién y por cuánto
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Plan {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  nombre          String
+  descripcion     String?
+  precioMensual   Decimal  @default(0) @db.Decimal(10, 2) @map("precio_mensual")
+  moneda          String   @default("USD") @db.VarChar(3)
+  maxMesas        Int?     @map("max_mesas")
+  maxUsuarios     Int?     @map("max_usuarios")
+  maxProductos    Int?     @map("max_productos")
+  /// Cuántos meses de histórico conserva el plan. NULO = sin límite.
+  /// Con 1, la purga de fin de mes deja solo el mes en curso.
+  mesesRetencion  Int?     @default(1) @map("meses_retencion")
+  permiteMarca    Boolean  @default(true) @map("permite_marca")
+  permiteExcel    Boolean  @default(true) @map("permite_excel")
+  caracteristicas String[] @default([])
+  activo          Boolean  @default(true)
+  orden           Int      @default(0)
+  creado          DateTime @default(now()) @map("creado_en")
+  actualizado     DateTime @updatedAt @map("actualizado_en")
+
+  suscripciones Suscripcion[]
+
+  @@map("planes")
+}
+
+/// Un negocio de comida. Unidad de aislamiento, de marca y de configuración.
+model Inquilino {
+  id     Int    @id @default(autoincrement())
+  slug   String @unique @db.VarChar(60)
+  nombre String
+
+  // ── Marca (la configura el propio cliente)
+  logoUrl     String? @map("logo_url")
+  colorAcento String  @default("#4B2D8E") @map("color_acento") @db.VarChar(7)
+  tema        Tema    @default(CLARO)
+
+  // ── Cómo factura este negocio
+  /// Si el negocio cobra IVA. En Ecuador el general es el 15 %, pero un negocio
+  /// pequeño puede no cobrarlo: es una decisión suya, no una constante nuestra.
+  aplicaIva     Boolean @default(true) @map("aplica_iva")
+  ivaPorcentaje Decimal @default(15) @map("iva_porcentaje") @db.Decimal(5, 2)
+  /// Si el precio del catálogo ya lleva el IVA dentro (lo normal en un menú) o si
+  /// se suma al final. Cambia la aritmética entera del pedido.
+  precioConIva  Boolean @default(true) @map("precio_con_iva")
+
+  moneda      String @default("USD") @db.VarChar(3)
+  zonaHoraria String @default("America/Guayaquil") @map("zona_horaria")
+
+  estado      EstadoInquilino @default(PRUEBA)
+  /// Escaparate: se recorre entero, no se guarda nada. Lo aplican la aplicación y
+  /// los disparadores. Un inquilino en escaparate tampoco se purga.
+  soloLectura Boolean         @default(false) @map("solo_lectura")
+
+  gccClienteId     Int?    @map("gcc_cliente_id")
+  contactoNombre   String? @map("contacto_nombre")
+  contactoEmail    String? @map("contacto_email")
+  contactoTelefono String? @map("contacto_telefono")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  suscripcion   Suscripcion?
+  usuarios      Usuario[]
+  zonas         Zona[]
+  mesas         Mesa[]
+  categorias    Categoria[]
+  productos     Producto[]
+  pedidos       Pedido[]
+  reservasMesa  ReservaMesa[]
+  pagos         PagoMensual[]
+  purgas        Purga[]
+
+  @@map("inquilinos")
+}
+
+model Suscripcion {
+  id          Int               @id @default(autoincrement())
+  inquilinoId Int               @unique @map("inquilino_id")
+  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planId      Int               @map("plan_id")
+  plan        Plan              @relation(fields: [planId], references: [id])
+  estado      EstadoSuscripcion @default(PRUEBA)
+  inicio      DateTime          @default(now()) @db.Date
+  /// LA PUERTA: hasta cuándo está pagado el acceso. NULO = nunca se ha pagado.
+  pagadoHasta DateTime?         @map("pagado_hasta") @db.Date
+  metodoPago  MetodoPago        @default(AUTOSERVICIO) @map("metodo_pago")
+  referenciaExterna String?     @map("referencia_externa")
+  notas       String?
+  creado      DateTime          @default(now()) @map("creado_en")
+  actualizado DateTime          @updatedAt @map("actualizado_en")
+
+  pagos PagoMensual[]
+
+  @@map("suscripciones")
+}
+
+model PagoMensual {
+  id            Int               @id @default(autoincrement())
+  inquilinoId   Int               @map("inquilino_id")
+  inquilino     Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  suscripcionId Int               @map("suscripcion_id")
+  suscripcion   Suscripcion       @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  periodo       String            @db.VarChar(7)
+  monto         Decimal           @db.Decimal(10, 2)
+  moneda        String            @default("USD") @db.VarChar(3)
+  metodo        MetodoPago        @default(AUTOSERVICIO)
+  estado        EstadoPagoMensual @default(PENDIENTE)
+  referencia    String?
+  comprobanteUrl String?          @map("comprobante_url")
+  pagadoEn      DateTime?         @map("pagado_en")
+  registradoPor String?           @map("registrado_por")
+  creado        DateTime          @default(now()) @map("creado_en")
+
+  @@unique([suscripcionId, periodo])
+  @@index([inquilinoId, periodo])
+  @@map("pagos_mensuales")
+}
+
+model OperadorGcc {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  nombre       String
+  passwordHash String    @map("password_hash")
+  activo       Boolean   @default(true)
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime  @default(now()) @map("creado_en")
+
+  @@map("operadores_gcc")
+}
+
+/// Constancia de cada purga de fin de mes. Un borrado automático sin rastro es
+/// indistinguible de una pérdida de datos: si mañana falta algo, aquí está por qué.
+model Purga {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  ejecutadaEn DateTime  @default(now()) @map("ejecutada_en")
+  /// Todo lo que TERMINÓ antes de esta fecha se borró.
+  corte       DateTime  @db.Date
+  pedidos     Int       @default(0)
+  reservas    Int       @default(0)
+
+  @@index([inquilinoId, ejecutadaEn])
+  @@map("purgas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dentro del negocio
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Usuario {
+  id           Int        @id @default(autoincrement())
+  inquilinoId  Int        @map("inquilino_id")
+  inquilino    Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  usuario      String     @db.VarChar(60)
+  nombre       String
+  email        String?
+  passwordHash String     @map("password_hash")
+  rol          RolUsuario @default(MESERO)
+  activo       Boolean    @default(true)
+  ultimoAcceso DateTime?  @map("ultimo_acceso")
+  creado       DateTime   @default(now()) @map("creado_en")
+  actualizado  DateTime   @updatedAt @map("actualizado_en")
+
+  pedidosTomados Pedido[] @relation("MeseroDelPedido")
+
+  @@unique([inquilinoId, usuario])
+  @@index([inquilinoId])
+  @@map("usuarios")
+}
+
+/// Un ambiente del local: Salón, Terraza, Barra. Agrupa mesas igual que una
+/// ubicación agrupa suites en el producto de reservas.
+model Zona {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nombre      String
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+  actualizado DateTime  @updatedAt @map("actualizado_en")
+
+  mesas Mesa[]
+
+  @@unique([inquilinoId, nombre])
+  @@index([inquilinoId])
+  @@map("zonas")
+}
+
+model Mesa {
+  id          Int        @id @default(autoincrement())
+  inquilinoId Int        @map("inquilino_id")
+  inquilino   Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  zonaId      Int        @map("zona_id")
+  zona        Zona       @relation(fields: [zonaId], references: [id], onDelete: Cascade)
+  /// Lo que está escrito en la mesa: «4», «Terraza 2», «Barra A».
+  nombre      String
+  capacidad   Int?
+  /// LIBRE / ESPERANDO_ATENCION / OCUPADA. Se guarda, no se deduce: «esperando
+  /// atención» es un hecho que declara el mesero, no algo que se pueda inferir de
+  /// los pedidos —justo porque todavía no hay pedido—.
+  estado      EstadoMesa @default(LIBRE)
+  /// Desde cuándo está en ese estado: es lo que convierte el panel en algo útil
+  /// («esta mesa lleva 12 minutos esperando»).
+  desde       DateTime   @default(now())
+  orden       Int        @default(0)
+  creado      DateTime   @default(now()) @map("creado_en")
+  actualizado DateTime   @updatedAt @map("actualizado_en")
+
+  pedidos  Pedido[]
+  reservas ReservaMesa[]
+
+  @@unique([zonaId, nombre])
+  @@index([inquilinoId, estado])
+  @@map("mesas")
+}
+
+model Categoria {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nombre      String
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+  actualizado DateTime  @updatedAt @map("actualizado_en")
+
+  productos Producto[]
+
+  @@unique([inquilinoId, nombre])
+  @@index([inquilinoId])
+  @@map("categorias")
+}
+
+model Producto {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  categoriaId Int       @map("categoria_id")
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  nombre      String
+  descripcion String?
+  precio      Decimal   @db.Decimal(10, 2)
+  fotoUrl     String?   @map("foto_url")
+  /// Se agota el ceviche: se apaga y deja de ofrecerse, sin borrarlo ni perder el
+  /// histórico de lo que ya se vendió.
+  disponible  Boolean   @default(true)
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+  actualizado DateTime  @updatedAt @map("actualizado_en")
+
+  items PedidoItem[]
+
+  @@unique([inquilinoId, nombre])
+  @@index([inquilinoId, disponible])
+  @@map("productos")
+}
+
+/// Un pedido de una mesa. Vive abierto mientras la mesa come y se cierra al cobrar.
+model Pedido {
+  id          Int          @id @default(autoincrement())
+  inquilinoId Int          @map("inquilino_id")
+  inquilino   Inquilino    @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  mesaId      Int          @map("mesa_id")
+  mesa        Mesa         @relation(fields: [mesaId], references: [id], onDelete: Restrict)
+  /// Correlativo por negocio y por día: es el número que se grita en la cocina.
+  numero      Int
+  dia         DateTime     @db.Date
+  meseroId    Int?         @map("mesero_id")
+  mesero      Usuario?     @relation("MeseroDelPedido", fields: [meseroId], references: [id], onDelete: SetNull)
+  estado      EstadoPedido @default(EN_PREPARACION)
+  comensales  Int?
+  notas       String?
+
+  // ── Importes. Se guardan CALCULADOS y con la tasa de IVA APLICADA en su momento:
+  //    si el negocio cambia mañana su configuración, un pedido de ayer no puede
+  //    cambiar de total.
+  subtotal      Decimal            @default(0) @db.Decimal(10, 2)
+  ivaPorcentaje Decimal            @default(0) @map("iva_porcentaje") @db.Decimal(5, 2)
+  iva           Decimal            @default(0) @db.Decimal(10, 2)
+  total         Decimal            @default(0) @db.Decimal(10, 2)
+  metodoPago    MetodoPagoPedido?  @map("metodo_pago")
+
+  listoEn   DateTime? @map("listo_en")
+  servidoEn DateTime? @map("servido_en")
+  /// Cuándo se cerró (cobrado o anulado). ⚠️ ES EL CAMPO POR EL QUE PURGA la
+  /// limpieza de fin de mes: un pedido sin cerrar está vivo y no se toca.
+  cerradoEn DateTime? @map("cerrado_en")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  items PedidoItem[]
+
+  @@unique([inquilinoId, dia, numero])
+  @@index([inquilinoId, estado])
+  @@index([inquilinoId, cerradoEn])
+  @@index([mesaId, estado])
+  @@map("pedidos")
+}
+
+/// Una línea del pedido. Guarda COPIA del nombre y del precio: si el catálogo
+/// cambia, la cuenta de ayer sigue diciendo lo que se cobró.
+model PedidoItem {
+  id         Int        @id @default(autoincrement())
+  pedidoId   Int        @map("pedido_id")
+  pedido     Pedido     @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId Int?       @map("producto_id")
+  producto   Producto?  @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  nombre     String
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
+  cantidad   Int        @default(1)
+  notas      String?
+  /// La cocina marca por plato; el pedido está LISTO cuando no queda ninguno
+  /// pendiente. Así una segunda ronda no borra que lo anterior ya salió.
+  estado     EstadoItem @default(PENDIENTE)
+  listoEn    DateTime?  @map("listo_en")
+  creado     DateTime   @default(now()) @map("creado_en")
+
+  @@index([pedidoId])
+  @@map("pedido_items")
+}
+
+/// Reserva de mesa: día, hora y un rato. Corta, no como la estancia de un hotel.
+model ReservaMesa {
+  id          Int               @id @default(autoincrement())
+  inquilinoId Int               @map("inquilino_id")
+  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  mesaId      Int               @map("mesa_id")
+  mesa        Mesa              @relation(fields: [mesaId], references: [id], onDelete: Cascade)
+  cliente     String
+  telefono    String?
+  personas    Int?
+  desde       DateTime
+  hasta       DateTime
+  estado      EstadoReservaMesa @default(PENDIENTE)
+  notas       String?
+  creado      DateTime          @default(now()) @map("creado_en")
+  actualizado DateTime          @updatedAt @map("actualizado_en")
+
+  @@index([inquilinoId, desde, hasta])
+  @@index([mesaId, estado])
+  @@map("reservas_mesa")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enumeraciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ADMIN: todo, incluidos catálogo, cuentas y marca. MESERO: mesas, pedidos y
+/// cobro. COCINERO: ve la cocina y marca lo que sale; no cobra ni toca el catálogo.
+enum RolUsuario {
+  ADMIN
+  MESERO
+  COCINERO
+
+  @@map("rol_usuario")
+}
+
+enum EstadoMesa {
+  LIBRE
+  ESPERANDO_ATENCION
+  OCUPADA
+
+  @@map("estado_mesa")
+}
+
+enum EstadoPedido {
+  EN_PREPARACION
+  LISTO
+  SERVIDO
+  COBRADO
+  ANULADO
+
+  @@map("estado_pedido")
+}
+
+enum EstadoItem {
+  PENDIENTE
+  LISTO
+
+  @@map("estado_item")
+}
+
+enum MetodoPagoPedido {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+  OTRO
+
+  @@map("metodo_pago_pedido")
+}
+
+enum EstadoReservaMesa {
+  PENDIENTE
+  CUMPLIDA
+  CANCELADA
+  NO_PRESENTADO
+
+  @@map("estado_reserva_mesa")
+}
+
+enum EstadoInquilino {
+  PRUEBA
+  ACTIVO
+  SUSPENDIDO
+
+  @@map("estado_inquilino")
+}
+
+enum EstadoSuscripcion {
+  PRUEBA
+  ACTIVA
+  VENCIDA
+  CANCELADA
+
+  @@map("estado_suscripcion")
+}
+
+enum MetodoPago {
+  AUTOSERVICIO
+  TARJETA
+
+  @@map("metodo_pago")
+}
+
+enum EstadoPagoMensual {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+
+  @@map("estado_pago_mensual")
+}
+
+enum Tema {
+  CLARO
+  OSCURO
+
+  @@map("tema")
+}

@@ -35,6 +35,9 @@ model Plan {
   maxUbicaciones  Int?     @map("max_ubicaciones")
   maxSuites       Int?     @map("max_suites")
   maxUsuarios     Int?     @map("max_usuarios")
+  /// Cuántos meses de histórico conserva el plan. NULO = sin límite.
+  /// Con 1, la purga de fin de mes deja solo el mes en curso.
+  mesesRetencion  Int?     @default(1) @map("meses_retencion")
   permiteMarca    Boolean  @default(true) @map("permite_marca")
   permiteExcel    Boolean  @default(true) @map("permite_excel")
   caracteristicas String[] @default([])
@@ -91,6 +94,7 @@ model Inquilino {
   suites      Suite[]
   reservas    Reserva[]
   pagos       PagoMensual[]
+  purgas      Purga[]
 
   @@map("inquilinos")
 }
@@ -157,6 +161,21 @@ model OperadorGcc {
   creado       DateTime @default(now()) @map("creado_en")
 
   @@map("operadores_gcc")
+}
+
+/// Constancia de cada purga de fin de mes. Un borrado automático sin rastro es
+/// indistinguible de una pérdida de datos: si mañana falta algo, aquí está por qué.
+model Purga {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  ejecutadaEn DateTime  @default(now()) @map("ejecutada_en")
+  /// Todo lo que TERMINÓ antes de esta fecha se borró.
+  corte       DateTime  @db.Date
+  reservas    Int       @default(0)
+
+  @@index([inquilinoId, ejecutadaEn])
+  @@map("purgas")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -88,8 +88,11 @@ export default function FormularioReserva({
         return;
       }
       toast.success(reserva ? 'Reserva actualizada' : 'Reserva creada');
+      // Cuando se navega NO se refresca: refrescar invalida el árbol ACTUAL, que es
+      // justo el que se está abandonando, y el destino es dinámico —llega recién
+      // hecho igual—. (Sospeché que además cancelaba el salto; lo medí y NO era
+      // cierto: el salto ocurría y quien llegaba tarde era mi comprobación.)
       router.push(`/${slug}/reserva/${r.id}`);
-      router.refresh();
     });
   }
 
