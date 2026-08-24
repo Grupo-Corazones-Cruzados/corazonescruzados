@@ -3,6 +3,7 @@
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
+import { evaluarAcceso } from '@/lib/inquilino';
 import {
   abrirSesionUsuario,
   abrirSesionOperador,
@@ -22,7 +23,10 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
   const clave = String(datos.get('clave') || '');
   if (!usuario || !clave) return { error: 'Escribe tu usuario y tu contraseña.' };
 
-  const inquilino = await prisma.inquilino.findUnique({ where: { slug } });
+  const inquilino = await prisma.inquilino.findUnique({
+    where: { slug },
+    include: { suscripcion: true },
+  });
   if (!inquilino) return { error: 'Ese alojamiento no existe.' };
 
   const cuenta = await prisma.usuario.findUnique({
@@ -46,7 +50,11 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     nombre: cuenta.nombre,
     rol: cuenta.rol,
   });
-  redirect(`/${slug}/panel`);
+  // Se mira la mensualidad AQUÍ, no solo en el armazón. El armazón ya la
+  // comprueba y redirige igual, pero entonces el navegador encadena un salto de
+  // más por el panel. Medido: /acceso → /panel → /suscripcion. Con esto va
+  // directo, y no se pide una pantalla que se sabe que no se puede dar.
+  redirect(evaluarAcceso(inquilino) === 'ok' ? `/${slug}/panel` : `/${slug}/suscripcion`);
 }
 
 export async function salir(slug: string) {
