@@ -1,0 +1,320 @@
+// Gestión de Reservas — producto del Grupo Corazones Cruzados.
+//
+// Vive en su PROPIO esquema (`reservas`) del mismo servicio Postgres de Railway
+// que la plataforma GCC WORLD. No comparte ni una tabla con `gcc_world`: comparte
+// el servicio y la factura. El esquema se fija en la cadena de conexión
+// (`?schema=reservas`), no aquí.
+//
+// REGLA QUE GOBIERNA TODO EL MODELO: cada tabla de negocio lleva `inquilinoId`.
+// Un inquilino es un hotel. Ninguna consulta se escribe sin ese filtro, y quien
+// lo construye es `lib/sesion.ts` — no cada página.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plataforma: quién vende, a quién y por cuánto
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Nivel de acceso de la tier list. Hoy hay uno solo; los niveles los dicta
+/// Fernando. Los topes son NULOS cuando el plan no limita esa dimensión, que es
+/// distinto de limitarla a cero.
+model Plan {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  nombre          String
+  descripcion     String?
+  precioMensual   Decimal  @default(0) @db.Decimal(10, 2) @map("precio_mensual")
+  moneda          String   @default("USD") @db.VarChar(3)
+  maxUbicaciones  Int?     @map("max_ubicaciones")
+  maxSuites       Int?     @map("max_suites")
+  maxUsuarios     Int?     @map("max_usuarios")
+  permiteMarca    Boolean  @default(true) @map("permite_marca")
+  permiteExcel    Boolean  @default(true) @map("permite_excel")
+  caracteristicas String[] @default([])
+  activo          Boolean  @default(true)
+  orden           Int      @default(0)
+  creado          DateTime @default(now()) @map("creado_en")
+  actualizado     DateTime @updatedAt @map("actualizado_en")
+
+  suscripciones Suscripcion[]
+
+  @@map("planes")
+}
+
+/// Un hotel. Es la unidad de aislamiento de datos Y la unidad de marca: el
+/// nombre, el logo, el color y el tema que ve su gente salen de aquí, no de una
+/// constante del código.
+model Inquilino {
+  id     Int    @id @default(autoincrement())
+  /// Primer tramo de sus URLs: /carliza/panel. Se guarda, no se calcula: es una
+  /// dirección que puede estar repartida y renombrar el hotel no puede romperla.
+  slug   String @unique @db.VarChar(60)
+  nombre String
+
+  // ── Marca (la configura el propio cliente, Configuración → Marca)
+  logoUrl     String? @map("logo_url")
+  colorAcento String  @default("#4B2D8E") @map("color_acento") @db.VarChar(7)
+  tema        Tema    @default(CLARO)
+
+  // ── Datos operativos
+  moneda      String @default("USD") @db.VarChar(3)
+  zonaHoraria String @default("America/Guayaquil") @map("zona_horaria")
+
+  estado EstadoInquilino @default(PRUEBA)
+
+  // ── Enlace con la plataforma del grupo (informativo; no hay clave foránea
+  //    entre esquemas a propósito: los dos servicios se despliegan por separado)
+  gccClienteId Int?    @map("gcc_cliente_id")
+  contactoNombre  String? @map("contacto_nombre")
+  contactoEmail   String? @map("contacto_email")
+  contactoTelefono String? @map("contacto_telefono")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  suscripcion Suscripcion?
+  usuarios    Usuario[]
+  ubicaciones Ubicacion[]
+  suites      Suite[]
+  reservas    Reserva[]
+  pagos       PagoMensual[]
+
+  @@map("inquilinos")
+}
+
+/// La suscripción del hotel. `pagadoHasta` es LA PUERTA: si la fecha ya pasó,
+/// nadie del hotel entra. Se guarda una sola fila por inquilino (la vigente);
+/// el histórico de cobros vive en `PagoMensual`.
+model Suscripcion {
+  id          Int               @id @default(autoincrement())
+  inquilinoId Int               @unique @map("inquilino_id")
+  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planId      Int               @map("plan_id")
+  plan        Plan              @relation(fields: [planId], references: [id])
+  estado      EstadoSuscripcion @default(PRUEBA)
+  inicio      DateTime          @default(now()) @db.Date
+  /// Hasta cuándo está pagado el acceso (inclusive). NULO = nunca se ha pagado.
+  pagadoHasta DateTime?         @map("pagado_hasta") @db.Date
+  metodoPago  MetodoPago        @default(AUTOSERVICIO) @map("metodo_pago")
+  /// Identificador del cobro en la pasarela, cuando la haya. Se guarda desde el
+  /// día 1 para que enchufarla no sea una migración de datos.
+  referenciaExterna String?     @map("referencia_externa")
+  notas       String?
+  creado      DateTime          @default(now()) @map("creado_en")
+  actualizado DateTime          @updatedAt @map("actualizado_en")
+
+  pagos PagoMensual[]
+
+  @@map("suscripciones")
+}
+
+/// Un mes cobrado. `periodo` es 'AAAA-MM' y es único por suscripción: cobrar dos
+/// veces el mismo mes tiene que ser imposible, no improbable.
+model PagoMensual {
+  id            Int               @id @default(autoincrement())
+  inquilinoId   Int               @map("inquilino_id")
+  inquilino     Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  suscripcionId Int               @map("suscripcion_id")
+  suscripcion   Suscripcion       @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  periodo       String            @db.VarChar(7)
+  monto         Decimal           @db.Decimal(10, 2)
+  moneda        String            @default("USD") @db.VarChar(3)
+  metodo        MetodoPago        @default(AUTOSERVICIO)
+  estado        EstadoPagoMensual @default(PENDIENTE)
+  referencia    String?
+  comprobanteUrl String?          @map("comprobante_url")
+  pagadoEn      DateTime?         @map("pagado_en")
+  registradoPor String?           @map("registrado_por")
+  creado        DateTime          @default(now()) @map("creado_en")
+
+  @@unique([suscripcionId, periodo])
+  @@index([inquilinoId, periodo])
+  @@map("pagos_mensuales")
+}
+
+/// Quien opera el producto por parte de GCC: da de alta hoteles, cambia su plan
+/// y marca los meses cobrados. No pertenece a ningún inquilino.
+model OperadorGcc {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  nombre       String
+  passwordHash String   @map("password_hash")
+  activo       Boolean  @default(true)
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime @default(now()) @map("creado_en")
+
+  @@map("operadores_gcc")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dentro del hotel
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Cuenta de una persona del hotel. El nombre de usuario es único DENTRO del
+/// inquilino: dos hoteles pueden tener su "recepcion" sin pisarse.
+model Usuario {
+  id           Int        @id @default(autoincrement())
+  inquilinoId  Int        @map("inquilino_id")
+  inquilino    Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  usuario      String     @db.VarChar(60)
+  nombre       String
+  email        String?
+  passwordHash String     @map("password_hash")
+  rol          RolUsuario @default(CONSULTA)
+  activo       Boolean    @default(true)
+  ultimoAcceso DateTime?  @map("ultimo_acceso")
+  creado       DateTime   @default(now()) @map("creado_en")
+  actualizado  DateTime   @updatedAt @map("actualizado_en")
+
+  @@unique([inquilinoId, usuario])
+  @@index([inquilinoId])
+  @@map("usuarios")
+}
+
+/// Un edificio / sede del hotel.
+model Ubicacion {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nombre      String
+  /// URL de Cloudinary. Las fotos NO viven en la base: es lo que mantiene plano
+  /// el coste del Postgres de Railway, que se factura por RAM retenida.
+  fotoUrl     String?   @map("foto_url")
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+  actualizado DateTime  @updatedAt @map("actualizado_en")
+
+  suites Suite[]
+
+  @@unique([inquilinoId, nombre])
+  @@index([inquilinoId])
+  @@map("ubicaciones")
+}
+
+/// Una unidad alquilable (suite, habitación, cabaña…).
+model Suite {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  ubicacionId Int       @map("ubicacion_id")
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
+  nombre      String
+  fotoUrl     String?   @map("foto_url")
+  capacidad   Int?
+  precioNoche Decimal?  @map("precio_noche") @db.Decimal(10, 2)
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+  actualizado DateTime  @updatedAt @map("actualizado_en")
+
+  reservas Reserva[]
+
+  @@unique([ubicacionId, nombre])
+  @@index([inquilinoId])
+  @@map("suites")
+}
+
+/// Una estancia. `entrada`/`salida` llevan hora: la agenda las pinta por franja,
+/// no por día.
+model Reserva {
+  id            Int               @id @default(autoincrement())
+  inquilinoId   Int               @map("inquilino_id")
+  inquilino     Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  suiteId       Int               @map("suite_id")
+  suite         Suite             @relation(fields: [suiteId], references: [id], onDelete: Restrict)
+  clienteNombre String            @map("cliente_nombre")
+  telefono      String?
+  documento     String?
+  entrada       DateTime
+  salida        DateTime
+  precioTotal   Decimal           @default(0) @map("precio_total") @db.Decimal(10, 2)
+  anticipo      Decimal           @default(0) @db.Decimal(10, 2)
+  estadoPago    EstadoPagoReserva @default(PENDIENTE) @map("estado_pago")
+  estado        EstadoReserva     @default(OCUPADA)
+  comentarios   String?
+  creadoPor     String?           @map("creado_por")
+  creado        DateTime          @default(now()) @map("creado_en")
+  actualizado   DateTime          @updatedAt @map("actualizado_en")
+
+  @@index([inquilinoId, entrada, salida])
+  @@index([suiteId, estado])
+  @@map("reservas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enumeraciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ADMIN: todo, incluida la marca y los usuarios. GERENTE: opera reservas y ve
+/// reportes. CONSULTA: solo mira.
+enum RolUsuario {
+  ADMIN
+  GERENTE
+  CONSULTA
+
+  @@map("rol_usuario")
+}
+
+enum EstadoInquilino {
+  PRUEBA
+  ACTIVO
+  SUSPENDIDO
+
+  @@map("estado_inquilino")
+}
+
+enum EstadoSuscripcion {
+  PRUEBA
+  ACTIVA
+  VENCIDA
+  CANCELADA
+
+  @@map("estado_suscripcion")
+}
+
+enum MetodoPago {
+  AUTOSERVICIO
+  TARJETA
+
+  @@map("metodo_pago")
+}
+
+enum EstadoPagoMensual {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+
+  @@map("estado_pago_mensual")
+}
+
+/// OCUPADA: dentro. POR_SALIR: sale hoy. FINALIZADA: ya salió. ELIMINADA: se
+/// borró desde la aplicación — no se borra la fila, para que el histórico y los
+/// reportes no cambien hacia atrás.
+enum EstadoReserva {
+  OCUPADA
+  POR_SALIR
+  FINALIZADA
+  ELIMINADA
+
+  @@map("estado_reserva")
+}
+
+enum EstadoPagoReserva {
+  PENDIENTE
+  PAGADO
+
+  @@map("estado_pago_reserva")
+}
+
+enum Tema {
+  CLARO
+  OSCURO
+
+  @@map("tema")
+}

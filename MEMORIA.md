@@ -275,6 +275,57 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏨 EL PRIMER PRODUCTO DEL GRUPO SE CONVIERTE EN APLICACIÓN: «Gestión de Reservas»
+  (2026-08-23).** Hasta hoy el producto era **solo una ficha**: `gcc_world.products` id=2, $400,
+  colgando de `member_portfolio_items` id=1 —de **Fernando, `lfgonzalezm0@grupocc.org`**, con
+  `talent='Automatización de procesos'`—. Es el único producto de la base y ese es el único
+  talento de la única solución. Ahora nace la aplicación que hay detrás.
+  - **Vive en `productos/reservas/`, como SERVICIO APARTE en Railway** (mismo repo, «Root
+    Directory» propio). Lo decidió Fernando frente a montarlo dentro de la plataforma: el día que
+    se venda no arrastra GCC WORLD, y se despliega y cae por su cuenta.
+  - **⭐ ESQUEMA PROPIO `reservas` EN LA MISMA BASE DE RAILWAY.** Verificado antes de tocar nada:
+    la base `railway` (PostgreSQL 16.13, 105 MB) tenía **solo `public` y `gcc_world`**. El
+    producto no comparte ni una tabla con la plataforma; comparte el servicio y la factura.
+  - **⭐ MULTI-INQUILINO DESDE LA PRIMERA MIGRACIÓN.** Un hotel = un inquilino, `tenant_id` en
+    todas las tablas de negocio. No es adorno: es la única forma de vender accesos por mensualidad
+    sin desplegar algo nuevo por cada cliente, y meterlo después obligaría a reescribir todas las
+    consultas.
+  - **Cuentas propias del producto, por hotel** (no las de GCC): el comprador nace como
+    administrador de su inquilino y da de alta a su recepción. Nadie del hotel necesita cuenta en
+    la plataforma del grupo.
+  - **⭐ LA MARCA ES UN DATO DEL INQUILINO, NO UNA CONSTANTE.** Fernando lo añadió sobre la marcha:
+    *«cada cliente con acceso deberá poder configurar datos como usuarios, diseño de marca como
+    nombre de la empresa, logo, colores o tema»*. Así que el **armazón, los componentes y la
+    tipografía son GCC** (Fluent `.corp`) y **los tokens de color y la identidad son del hotel**,
+    con el violeta `#4B2D8E` como **valor por defecto**. Es el principio de `Diseño.md` —una sola
+    fuente de color— con la fuente leída de la base.
+    - **El proyecto de referencia demuestra por qué:** `velmort-stays` lleva `#C9952C` y «Carliza
+      Hotel» **escritos a mano en cada archivo**. Funciona para un hotel y se vuelve un
+      renombrado masivo para el segundo. Se porta su INTERFAZ, no sus literales.
+  - **⭐ EL IMPAGO CIERRA LA PUERTA.** *«cada cliente que adquiera este producto y tenga pagada su
+    mensualidad podrá acceder»*: el estado de la suscripción se comprueba en el camino de sesión,
+    no es un aviso en una pantalla de administración.
+  - **El método de cobro se guarda desde el día 1** (autoservicio | tarjeta + referencia externa)
+    aunque hoy solo exista el autoservicio: **la pasarela se ve después**, y enchufarla no puede
+    convertirse en una migración de datos.
+  - **⏳ Pendiente de Fernando:** qué limita cada nivel de la **tier list** (ubicaciones, suites,
+    usuarios, histórico, Excel, marca propia son los candidatos que salen de la referencia) y qué
+    pasarela. El modelo queda preparado con un plan único hasta que él dicte los niveles.
+  - **✅ CONSTRUIDO Y VERIFICADO EL 2026-08-24.** 15 rutas, `tsc` limpio en el producto y en
+    este repo, `next build` limpio, y **diez comprobaciones medidas contra la base real**: la
+    reserva de otro hotel da **404**; una sesión de otro hotel en la dirección ajena da **307 al
+    acceso**; con la mensualidad vencida el panel da **307 a `/suscripcion`** y el Excel **401**;
+    al restaurar el pago vuelve a abrir; el `.xlsx` sale con firma `PK`; dos estancias en la
+    misma suite chocan, y **tocarse en el extremo no es solaparse** (quien sale a las 12:00 deja
+    la suite libre para quien entra a las 12:00). **`gcc_world` quedó con las mismas 187 tablas.**
+  - **Credenciales sembradas** (se mostraron una sola vez, no están en ningún archivo): operador
+    GCC en `/gcc/acceso` y administrador del hotel de demostración en `/demo/acceso`.
+  - **⏳ Falta desplegar**: servicio nuevo en Railway con «Root Directory» `productos/reservas`,
+    su propio `JWT_SECRETO` y `DATABASE_URL` con `?schema=reservas`. Ver `productos/reservas/README.md`.
+  - **Interfaz de referencia medida:** `velmort-stays`, ~3.600 líneas, Next 16 + NextAuth v5 +
+    Prisma 7. `User/Location/Suite/Reservation`; Panel · Agenda · Reportes · Usuarios ·
+    Configuración · Reserva. Imágenes en **Cloudinary por URL**, no en la base — decisión que se
+    hereda, y que es la que mantiene plano el coste del Postgres de Railway.
 - **🔐 EL BOTÓN «PLATAFORMA» YA NO TE DEVUELVE A LA WEB (2026-08-23).** Fernando: desde
   `/desarrollo-humano/ser-miembro` pulsaba «Plataforma», iniciaba sesión como miembro **y
   acababa otra vez en `/desarrollo-humano/ser-miembro`**.
@@ -4641,6 +4692,23 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+
+### 🪤 El motor de `prisma migrate` no atraviesa el proxy TCP de Railway (2026-08-24)
+Al crear el esquema del producto «Gestión de Reservas», `prisma migrate deploy` devolvió
+**P1011** (TLS), luego **P1017** (conexión cerrada) y luego **P1001** (no alcanza el servidor):
+tres errores distintos para el mismo problema. **`pg` conectaba sin problema desde el mismo
+proceso, a la misma dirección y con la misma cadena**, comprobado entre dos intentos fallidos.
+- **La regla de método:** cuando una herramienta dice «no llego a la base», la primera pregunta
+  no es qué le pasa a la base, sino **si otra herramienta sí llega**. Si llega, el problema es
+  de la herramienta y no hay que depurar la red.
+- **El reparto que queda escrito** (y que ya era el de este repo): Prisma hace lo que **no
+  necesita red** —generar el cliente tipado y generar el SQL con
+  `prisma migrate diff --from-empty --to-schema … --script`— y el SQL lo aplica un **runner
+  propio con `pg`** que lo anota con checksum. Vale para cualquier producto futuro sobre esta
+  misma base.
+- **Detalle aparte:** Prisma 7 ya **no acepta `url` en el `schema.prisma`**; va en
+  `prisma.config.ts`. Y la cadena necesita `sslmode=disable` para este proxy.
+
 - **⛔ CAMBIAR UNA VARIABLE EN RAILWAY NO DESPLIEGA EL CÓDIGO (2026-08-23).** Tocar una variable
   reinicia el servicio con el **build que ya había**. Al poner `COTIZADOR_MODEL=gpt-5.6-luna` en
   `cotizador-worker`, el servicio arrancó con el **código viejo de Kimi y el modelo nuevo**:

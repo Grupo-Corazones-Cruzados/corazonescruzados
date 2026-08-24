@@ -2432,6 +2432,71 @@ recortado a mano** con `widthOfString` (`lineBreak: false` y `ellipsis` no basta
 Hay un `@media print` en la hoja de la página, pero solo como red de seguridad para quien pulse
 Ctrl+P: **el documento bueno es el del botón.**
 
+---
+
+## Producto «Gestión de Reservas» — Fluent GCC con MARCA POR INQUILINO (2026-08-24)
+
+Servicio aparte (`productos/reservas/`), así que **no comparte archivos** con el panel: es un
+lenguaje visual **hermano**, no el mismo. Lo que se copió es el **criterio**, no el código.
+
+### ⭐ LA DIFERENCIA DE FONDO: EL COLOR NO ES UNA CONSTANTE, ES UN DATO
+En el panel de GCC el acento (`#4B2D8E`) vive en `app/globals.css` y cambiarlo recolorea todo.
+Aquí el acento vive en la **fila del inquilino** (`reservas.inquilinos.color_acento`) y el
+servidor lo inyecta como variables sobre el contenedor de la aplicación
+(`src/componentes/Marca.tsx` → `AplicaMarca`). Los componentes **no se enteran**: siguen
+escribiendo `bg-acento` y `text-tenue`.
+- El violeta del grupo es el **valor por defecto**, no el único. Es lo que pidió Fernando el
+  2026-08-23: *«cada cliente con acceso deberá poder configurar… nombre de la empresa, logo,
+  colores o tema»*.
+- **El cliente elige UN color; los otros tres se calculan** (`src/lib/marca.ts`): el de
+  pulsación (22 % más oscuro), el fondo tenue del estado activo, y **el color del texto que va
+  encima, por contraste WCAG**. Pedirle cuatro colores sería pedirle que haga de diseñador.
+  - **Medido:** violeta → texto blanco; **oro `#C9952C` → texto NEGRO**. El proyecto de
+    referencia ponía blanco sobre ese mismo oro, que no llega a AA. La cuenta lo caza sola.
+
+### 🪤 EL TEMA TIENE QUE ALCANZAR AL `<body>`, QUE ES ANCESTRO
+Las variables van en un `<div>` de dentro, así que con el tema oscuro el papel de debajo se
+quedaba **blanco** y asomaba al rebotar el desplazamiento. `AplicaMarca` emite además un
+`<style>` con los neutros literales (`neutrosDeTema`) y **`color-scheme`**, que de paso hace
+que los calendarios y las barras de desplazamiento nativas sigan el tema.
+**Medido:** `body` pasó de `rgb(250,249,248)` a `rgb(27,26,25)` con el tema oscuro.
+
+### Tokens (`productos/reservas/src/app/globals.css`, bloque `@theme`)
+`--color-acento` · `-fuerte` · `-suave` · `-contraste` (los cuatro los pisa el inquilino) ·
+`--color-fondo #faf9f8` · `--color-tarjeta #fff` · `--color-texto #242424` ·
+`--color-tenue #616161` · `--color-borde #e6e4e2` · `--color-realce #f3f2f1` ·
+`--color-exito/-aviso/-error/-info` con su pareja `-suave`. Fuente **Segoe UI**, radios 4–6 px.
+La clase **`.oscuro`** redefine **solo los neutros**: el acento es del inquilino y se respeta
+en los dos temas.
+
+### Catálogo de controles — `src/componentes/ui.tsx` (una definición por control)
+`Boton` (primario/secundario/peligro/fantasma · sm/md/lg · con icono) · `BotonIcono` (32×32,
+el mismo cuadrado que la X de cerrar) · `Campo` + `Entrada`/`AreaTexto`/`Selector` (alto 34 px,
+clase `.campo`) · `Buscador` · `Insignia` (píldora neutra + punto semántico) · `Tarjeta` ·
+`PanelLateral` (formularios) · `Ventanita` (una o dos casillas) · `Confirmar` (**nunca**
+`confirm()` del navegador) · `RailFiltro` · `BarraModulo` · `Tabla` · `EstadoVacio` ·
+`Cargando`. Navegación y cabecera de página en `src/componentes/Navegacion.tsx`.
+
+### Reglas que se heredan del panel de GCC
+- **Iconos `lucide-react`**, 16–20 px, nunca emojis.
+- **Los formularios van en panel lateral derecho**; la ventanita centrada se reserva para una
+  o dos casillas.
+- **Una acción que no procede se DESHABILITA, no desaparece** (Marcar pagada / Registrar
+  salida en el detalle de una reserva llevan su motivo en el `title`).
+- **Miles «.» y decimales «,»** vía `src/lib/formato.ts` — y **NO** en la hoja de Excel, donde
+  los importes van como **números**, no como texto ya formateado, o no se podrían sumar.
+- **El estado se ve sin depender solo del color**: punto + texto.
+
+### 🪤 UNA UTILIDAD «BG-» PERDIDA HACE UN MOSAICO
+El desplegable llevaba la flecha con utilidades (`bg-[right_…] bg-no-repeat`) y al fusionarlas
+con `twMerge` se perdía `background-repeat`: el icono salía **repetido por todo el campo**.
+Se movió a `select.campo` en el CSS. **Regla: una imagen de fondo se declara en CSS, no
+componiendo utilidades que otra capa puede reordenar.**
+
+### Vista previa antes de guardar
+La pantalla de Marca pinta una **vista previa** con los tokens calculados en vivo (logo,
+nombre y un botón primario). Elegir un color de marca a ciegas es elegirlo mal.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-21 · El Estudio del agente ya no elige MODELO, elige RAZONAMIENTO.** Al pasar toda
   la app a un solo modelo (`gpt-5.6-luna`), aquel `PixelSelect` de Haiku / Sonnet / Opus se

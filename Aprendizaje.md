@@ -33,6 +33,189 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo ACTUAL (declarado 2026-08-23) — PRIMER PRODUCTO DEL GRUPO: «Gestión de Reservas», servicio propio, multi-inquilino y de pago mensual · 🔎 95 % — CONSTRUIDO Y VERIFICADO
+
+> Textual de Fernando: *«vamos a trabajar en el primer producto del proyecto… creado por el líder
+> la cuenta lfgonzalezm0@grupocc.org… debe asociarse al talento del Automatización de Procesos…
+> un sistema de gestión de reservas hoteleras… que se use el diseño del grupo corazones cruzados,
+> pero que desarrolles la misma interfaz y un esquema en el servicio de postgres de railway para
+> este producto… tomes de referencia el proyecto de gestión de reservas… luego de eso en esa
+> sección de productos ofreceremos a futuro diferentes tierlist de accesos por pago mensual, y
+> cobraremos por autoservicio únicamente o tarjeta mediante una pasarela de pago que luego
+> veremos»*. Y en el mismo arranque, la corrección que cambia el modelo: *«cada cliente que
+> adquiera este producto y tenga pagada su mensualidad podrá acceder a la aplicación, y cada
+> cliente con acceso deberá poder configurar datos como usuarios, diseño de marca como nombre de
+> la empresa, logo, colores o tema»*.
+
+### Rol asumido
+**Arquitecto de producto SaaS multi-inquilino** (modelo de datos + aislamiento + acceso por
+suscripción) con sombrero de **ingeniero de front Fluent** para portar la interfaz de referencia
+al lenguaje visual del grupo.
+
+### Progreso
+- **% de información para el objetivo: 95 %**
+- **Estado:** decidida la arquitectura (servicio aparte, subcarpeta del repo, multi-inquilino,
+  cuentas propias por hotel, marca configurable por inquilino sobre tema GCC). Falta cerrar el
+  contenido de los planes (qué limita cada nivel) y la pasarela — los dos, por decisión de
+  Fernando, son «a futuro».
+
+### Fuentes consultadas (2026-08-23)
+- **BD real de Railway** (`shuttle.proxy.rlwy.net`, base `railway`, **PostgreSQL 16.13**, 105 MB):
+  solo dos esquemas, `public` y `gcc_world`. Un esquema nuevo para el producto no pisa nada.
+- **`gcc_world.products`** — tiene **una sola fila**: id=2 «Gestión de Reservas», $400,
+  `category='proyecto'`, `portfolio_item_id=1`. Ese ítem es de **member_id=1 (Fernando,
+  `lfgonzalezm0@grupocc.org`)** y declara `talent='Automatización de procesos'`, que es el único
+  talento de la única solución («Tecnología»). **El producto del que habla ya existe como ficha**;
+  lo que no existe es la aplicación detrás.
+- **`/Users/lfgonzalezm0/Documents/02_Clientes/Gestión de Reservas/velmort-stays`** — referencia
+  de interfaz. ~3.600 líneas. Next 16 + NextAuth v5 + Prisma 7. Modelo `User/Location/Suite/
+  Reservation`; enums `Role(ADMIN|MANAGER|VIEWER)`, `ReservationStatus(OCCUPIED|CHECKOUT|
+  FINALIZED|DELETED)`, `PaymentStatus(PENDING|PAID)`. Pantallas: Panel · Agenda · Reportes ·
+  Usuarios · Configuración · Reserva (nueva/detalle). Imágenes en Cloudinary (URL, no blobs).
+  **Marca «Carliza Hotel» y acento oro `#C9952C` incrustados a mano en cada archivo** — es
+  justamente lo que aquí tiene que ser configuración.
+- **`scripts/migrate.mjs`** — runner propio, `sql/migrations/`, última aplicada **051**.
+- **`Diseño.md` § Dashboard — Fluent (`.corp`)** — catálogo de controles y tokens del panel.
+
+### Preguntas y respuestas
+#### P1 — ¿Dónde vive el producto: dentro de GCC WORLD o como servicio propio? · ✅ Resuelta
+- **Por qué importa:** decide si el producto que se vende comparte despliegue, auth y ciclo de
+  vida con la plataforma interna del grupo. Es la decisión más cara de revertir.
+- **Respuesta (Fernando, 2026-08-23):** **servicio aparte en Railway**, pero **el código vive en
+  una subcarpeta de este repo** (`productos/reservas/`), desplegada con «Root Directory». Un solo
+  git; dos servicios. Apunta al **mismo servicio Postgres** con **esquema propio**.
+
+#### P2 — ¿Multi-inquilino desde el día 1? · ✅ Resuelta
+- **Por qué importa:** vender accesos por mensualidad a varios hoteles sin desplegar nada nuevo
+  por cliente exige `tenant_id` en cada tabla desde la primera migración; meterlo después obliga
+  a reescribir todas las consultas.
+- **Respuesta:** **sí**. Un hotel = un inquilino en la misma base.
+
+#### P3 — ¿Con qué cuenta entra la gente al producto? · ✅ Resuelta
+- **Por qué importa:** define si la recepción de cada hotel necesita cuenta en la plataforma del
+  grupo (y por tanto si el producto arrastra la auth de GCC WORLD).
+- **Respuesta:** **cuentas propias del producto, por hotel**. Roles dentro del inquilino; el
+  comprador nace como administrador y da de alta a los suyos. Nadie del hotel necesita cuenta GCC.
+
+#### P4 — ¿Qué marca se ve dentro del producto? · ✅ Resuelta, y CORREGIDA en el mismo arranque
+- **Por qué importa:** la regla del **Violeta** dice que la marca del grupo debe estar en todos
+  los proyectos; pero un hotel que paga una mensualidad espera ver lo suyo.
+- **Respuesta:** primero eligió «diseño GCC, violeta»; a continuación añadió que **cada cliente con
+  acceso configura nombre de empresa, logo, colores y tema**. Conclusión firme: **el armazón, los
+  componentes y la tipografía son GCC; los tokens de color y la identidad son del inquilino**, y
+  el tema GCC (violeta `#4B2D8E`) es el **valor por defecto**, no el único. Es exactamente el
+  principio de `Diseño.md`: una sola fuente de color — solo que aquí esa fuente se lee de la BD.
+
+#### P5 — ¿Qué condiciona el acceso a la aplicación? · ✅ Resuelta
+- **Respuesta (Fernando, 2026-08-23):** **la mensualidad pagada**. Un inquilino sin el mes al día
+  no entra. ⇒ el estado de la suscripción es una **puerta**, no un informe: se comprueba en el
+  camino de sesión, no solo en una pantalla de administración.
+
+#### P6 — ¿Qué limita cada nivel de la tier list? · ⏸ Bloqueada (decisión de Fernando, «a futuro»)
+- **Por qué importa:** sin saber qué se limita no se pueden escribir los topes. Lo que sí se puede
+  —y se hace— es **dejar el modelo preparado**: tabla de planes con límites y características, y
+  la suscripción apuntando a un plan. Arranca con un plan único hasta que él dicte los niveles.
+- **Candidatos naturales medidos en la referencia:** nº de ubicaciones, nº de suites, nº de
+  usuarios, histórico de reportes, exportación a Excel, marca propia.
+
+#### P7 — ¿Cómo se cobra? · ⏸ Bloqueada (decisión de Fernando, «a futuro»)
+- **Respuesta parcial:** **autoservicio** (el cliente paga y GCC marca el mes) **o tarjeta por
+  pasarela**, que se ve después. ⇒ el registro de pago guarda **método** y **referencia externa**
+  desde el principio, para que enchufar la pasarela no sea una migración de datos.
+
+#### P8 — ¿Prisma o SQL crudo para el servicio nuevo? · 🔎 Investigando
+- **Por qué importa:** la base es **compartida con producción de GCC WORLD**. `prisma migrate dev`
+  necesita una *shadow database* (permiso de `CREATEDB`) que Railway probablemente no da al
+  usuario; si falla, el camino es `migrate diff` + `migrate deploy`, que sí funciona sin shadow.
+- **Estado:** se comprueba al aplicar la primera migración. Plan B ya escrito: el runner propio
+  del repo (`scripts/migrate.mjs`) con `search_path` al esquema del producto.
+
+### Decisiones de diseño / arquitectura (firmes)
+1. **Esquema propio `reservas`** en la misma base `railway`. `gcc_world` no se toca.
+2. **`tenant_id` en TODAS las tablas de negocio**, y ninguna consulta sin él.
+3. **La marca es un dato del inquilino**, no una constante del código. Lo contrario es lo que hizo
+   la referencia (`#C9952C` y «Carliza Hotel» repetidos por todos los archivos) y es lo que
+   impedía venderla a un segundo hotel.
+4. **El impago cierra la puerta**, no oculta un botón.
+5. **El método de pago se guarda desde el día 1** aunque solo exista el autoservicio.
+
+### Lo construido y lo medido (2026-08-24)
+**Servicio en `productos/reservas/`** · Next 15 + Prisma 7 + esquema `reservas` en la misma
+base de Railway · **15 rutas** · `tsc` limpio en el producto **y en el repo padre** ·
+`next build` limpio.
+
+**Lo verificado, midiendo y no razonando** (10 comprobaciones, todas en verde):
+
+| Qué | Resultado |
+|---|---|
+| Reserva de OTRO hotel desde la sesión de `demo` | **404** |
+| Reserva propia | 200 |
+| Sesión de otro hotel en la dirección de `demo` | **307 → `/demo/acceso`** |
+| Mensualidad vencida → panel | **307 → `/demo/suscripcion`** |
+| Mensualidad vencida → exportación a Excel | **401** |
+| Al restaurar el pago | 200 |
+| Excel | 200, firma `PK`, 7.344 bytes |
+| Rango idéntico en la misma suite | 1 choque detectado |
+| Entrar justo cuando la otra sale | **0 choques** (tocarse no es solaparse) |
+| `gcc_world` tras crear el esquema | **187 tablas, las mismas que antes** |
+
+### 🪤 P99 — EL MOTOR DE `prisma migrate` NO ATRAVIESA EL PROXY DE RAILWAY · ✅ Resuelta (cierra P8)
+`prisma migrate deploy` devolvió **P1011** («Error opening a TLS connection»), luego **P1017**
+(«Server has closed the connection») y luego **P1001** («Can't reach database server»), tres
+errores distintos para el mismo problema. **Y `pg` conectaba sin ningún problema desde el mismo
+proceso, a la misma dirección, con la misma cadena** — comprobado en el intervalo entre dos
+intentos fallidos.
+- **La lección de método:** cuando una herramienta dice «no llego a la base», la primera
+  pregunta no es qué le pasa a la base, sino **si otra herramienta sí llega**. Si llega, el
+  problema es de la herramienta y no hay que depurar la red.
+- **El reparto que quedó:** Prisma hace lo que **no necesita red** (generar el cliente tipado y
+  generar el SQL con `migrate diff`) y el SQL lo aplica un **runner propio con `pg`**
+  (`scripts/migrar.mjs`), que es el patrón ya probado en GCC WORLD. Tres errores distintos
+  costaron menos que insistir con el cuarto.
+
+### 🪤 P100 — UNA UTILIDAD PERDIDA AL FUSIONAR CLASES HIZO UN MOSAICO
+El desplegable llevaba la flecha como utilidades (`bg-[right_…] bg-no-repeat`); al pasarlas por
+`twMerge` se perdió `background-repeat` y el icono se **repitió por todo el campo**. No lo caza
+`tsc` ni el build: se vio en la **captura**. Se movió a `select.campo` en el CSS.
+**Regla: una imagen de fondo se declara en CSS, no componiendo utilidades que otra capa puede
+reordenar.**
+
+### 🪤 P101 — EL TEMA OSCURO NO ALCANZABA AL `<body>`
+Las variables de marca van en un `<div>` de dentro, así que el `<body>` —que es **ancestro**—
+se quedaba blanco y asomaba al rebotar el desplazamiento. Se arregló emitiendo un `<style>` con
+los neutros literales y **`color-scheme`**. Medido: `rgb(250,249,248)` → `rgb(27,26,25)`.
+**Es la misma familia de error que el pie que «se movía» del 2026-08-18: la causa estaba FUERA
+del componente que se miraba.**
+
+### ⭐ P102 — EL CONTRASTE DEL TEXTO SOBRE LA MARCA SE CALCULA, NO SE SUPONE
+Si el inquilino elige un color claro (el oro `#C9952C` del proyecto de referencia, un amarillo),
+el texto blanco encima **no llega a AA**. `tokensDeMarca()` decide blanco o negro por
+luminancia relativa WCAG. Medido: violeta → blanco; oro y amarillo → **negro**.
+**El proyecto de referencia ponía blanco sobre ese mismo oro.** Dejar que el cliente elija el
+color obliga a calcular lo que antes se podía escribir a mano una vez.
+
+### 🐛 P103 — UN FORMULARIO DE ALTA QUE HABRÍA INTENTADO ACTUALIZAR LA RESERVA 0
+El formulario de reserva recibía `reserva` para editar; para crear se le pasó un objeto con
+`id: 0` y valores de partida. Como el componente decide por `reserva ? actualizar : crear`, ese
+objeto —que es **verdadero**— habría mandado toda alta a `actualizarReserva(slug, 0, …)`.
+Cazado al releer antes de probar. Se separó en dos propiedades: `reserva` (editar) e `inicial`
+(valores de partida). **Un objeto de relleno con un identificador falso no es un valor por
+defecto: es un dato equivocado que se cuela por una condición de verdad.**
+
+### Progreso: **95 %**
+Lo que falta no es información técnica, son **dos decisiones de Fernando** (P6 y P7): qué limita
+cada nivel de la tier list y qué pasarela. El modelo ya soporta las dos cosas sin migrar datos.
+
+### Riesgos y cómo se mitigan
+- **Fuga entre inquilinos** (el fallo que mata un SaaS): un solo sitio construye el filtro por
+  inquilino y ninguna consulta lo escribe a mano.
+- **Migrar sobre una base de producción viva:** el esquema es nuevo y separado; nada de la primera
+  migración toca `gcc_world`. Se verifica el estado antes y después.
+- **Copiar la referencia con su marca dentro:** se porta la *interfaz*, no sus literales. Cada hex
+  y cada nombre que aparezcan en el código de referencia son un candidato a token o a dato.
+
+---
+
 ## Objetivo (declarado 2026-08-21) — ADMIN → SOLUCIONES: los conceptos pasan al TALENTO y la pantalla se rehace · ✅ 100 % — HECHO Y VERIFICADO
 
 > Textual de Fernando (con dos capturas): *«se corta en la vista de conceptos… prefiero quitar
