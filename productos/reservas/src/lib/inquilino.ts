@@ -70,6 +70,34 @@ export async function exigirSesionDelHotel(slug: string) {
   return ctx;
 }
 
+/**
+ * Contexto para ESCRIBIR. Distingue tres negativas que no son la misma cosa —sin
+ * sesión, sin permiso, y alojamiento de escaparate— porque a quien está delante
+ * le sirve saber cuál de las tres es.
+ *
+ * Toda acción que guarde algo del inquilino pasa por aquí. Es el único sitio donde
+ * se decide, para que añadir una pantalla nueva no signifique acordarse de una
+ * comprobación.
+ */
+export type PermisoEscritura =
+  | { ok: true; ctx: NonNullable<Awaited<ReturnType<typeof contextoApi>>> }
+  | { ok: false; error: string };
+
+export async function contextoEscritura(
+  slug: string,
+  minimo: RolUsuario = 'GERENTE',
+): Promise<PermisoEscritura> {
+  const ctx = await contextoApi(slug, minimo);
+  if (!ctx) return { ok: false, error: 'No tienes permiso para hacer este cambio.' };
+  if (ctx.inquilino.soloLectura)
+    return {
+      ok: false,
+      error:
+        'Esto es una demostración: puedes recorrer la aplicación entera y abrir cualquier formulario, pero los cambios no se guardan para que los datos sigan aquí para el siguiente visitante.',
+    };
+  return { ok: true, ctx };
+}
+
 /** Contexto para las rutas de API: devuelve null en vez de redirigir. */
 export async function contextoApi(slug: string, minimo: RolUsuario = 'CONSULTA') {
   const sesion = await leerSesionUsuario();

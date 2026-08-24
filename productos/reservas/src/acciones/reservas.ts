@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { contextoApi } from '@/lib/inquilino';
+import { contextoEscritura } from '@/lib/inquilino';
 import { VIVAS } from '@/lib/reservas';
 
 export type Resultado = { ok: true; id: number } | { ok: false; error: string };
@@ -67,8 +67,9 @@ function validarFechas(entradaTxt: string, salidaTxt: string): Fechas {
 }
 
 export async function crearReserva(slug: string, datos: FormData): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'GERENTE');
-  if (!ctx) return { ok: false, error: 'No tienes permiso para crear reservas.' };
+  const permiso = await contextoEscritura(slug, 'GERENTE');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const leido = leer(datos);
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
@@ -120,8 +121,9 @@ export async function actualizarReserva(
   id: number,
   datos: FormData,
 ): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'GERENTE');
-  if (!ctx) return { ok: false, error: 'No tienes permiso para editar reservas.' };
+  const permiso = await contextoEscritura(slug, 'GERENTE');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const existente = await prisma.reserva.findFirst({
     where: { id, inquilinoId: ctx.inquilino.id },
@@ -175,8 +177,9 @@ export async function actualizarReserva(
  * porque hoy alguien limpie una reserva.
  */
 export async function eliminarReserva(slug: string, id: number): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'GERENTE');
-  if (!ctx) return { ok: false, error: 'No tienes permiso para eliminar reservas.' };
+  const permiso = await contextoEscritura(slug, 'GERENTE');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const r = await prisma.reserva.updateMany({
     where: { id, inquilinoId: ctx.inquilino.id },
@@ -190,8 +193,9 @@ export async function eliminarReserva(slug: string, id: number): Promise<Resulta
 
 /** Atajos del detalle: registrar el cobro y dar la salida. */
 export async function marcarPagada(slug: string, id: number): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'GERENTE');
-  if (!ctx) return { ok: false, error: 'No tienes permiso.' };
+  const permiso = await contextoEscritura(slug, 'GERENTE');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
   const r = await prisma.reserva.findFirst({
     where: { id, inquilinoId: ctx.inquilino.id },
     select: { precioTotal: true },
@@ -206,8 +210,9 @@ export async function marcarPagada(slug: string, id: number): Promise<Resultado>
 }
 
 export async function darSalida(slug: string, id: number): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'GERENTE');
-  if (!ctx) return { ok: false, error: 'No tienes permiso.' };
+  const permiso = await contextoEscritura(slug, 'GERENTE');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
   const r = await prisma.reserva.updateMany({
     where: { id, inquilinoId: ctx.inquilino.id },
     data: { estado: 'FINALIZADA' },

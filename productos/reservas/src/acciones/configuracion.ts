@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { contextoApi } from '@/lib/inquilino';
+import { contextoEscritura } from '@/lib/inquilino';
 import { esHexValido } from '@/lib/marca';
 import { subirImagen } from '@/lib/imagenes';
 
@@ -19,8 +19,9 @@ const Marca = z.object({
 });
 
 export async function guardarMarca(slug: string, datos: FormData): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede cambiar la marca.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const leido = Marca.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
@@ -47,8 +48,9 @@ export async function guardarMarca(slug: string, datos: FormData): Promise<Resul
 }
 
 export async function subirLogo(slug: string, datos: FormData): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede cambiar el logo.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
   const archivo = datos.get('archivo');
   if (!(archivo instanceof File) || !archivo.size)
     return { ok: false, error: 'Elige una imagen.' };
@@ -56,8 +58,9 @@ export async function subirLogo(slug: string, datos: FormData): Promise<Resultad
 }
 
 export async function subirFoto(slug: string, datos: FormData): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede subir fotos.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
   const archivo = datos.get('archivo');
   if (!(archivo instanceof File) || !archivo.size)
     return { ok: false, error: 'Elige una imagen.' };
@@ -70,8 +73,9 @@ export async function guardarUbicacion(
   id: number | null,
   datos: FormData,
 ): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede tocar las ubicaciones.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const nombre = String(datos.get('nombre') || '').trim();
   const fotoUrl = String(datos.get('fotoUrl') || '').trim();
@@ -102,8 +106,9 @@ export async function guardarUbicacion(
 }
 
 export async function eliminarUbicacion(slug: string, id: number): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede eliminar ubicaciones.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   // Se comprueba ANTES de borrar: la cascada del esquema se llevaría las suites y,
   // con ellas, reservas que alguien todavía necesita. Mejor negarse y decir por qué.
@@ -127,8 +132,9 @@ export async function guardarSuite(
   id: number | null,
   datos: FormData,
 ): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede tocar las suites.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const nombre = String(datos.get('nombre') || '').trim();
   const ubicacionId = Number(datos.get('ubicacionId') || 0);
@@ -178,8 +184,9 @@ export async function guardarSuite(
 }
 
 export async function eliminarSuite(slug: string, id: number): Promise<Resultado> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede eliminar suites.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const conReservas = await prisma.reserva.count({
     where: { suiteId: id, inquilinoId: ctx.inquilino.id },

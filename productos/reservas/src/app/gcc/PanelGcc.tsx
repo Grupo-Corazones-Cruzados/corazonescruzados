@@ -12,6 +12,8 @@ import {
   Layers,
   ShieldOff,
   ShieldCheck,
+  Eye,
+  EyeOff,
   KeyRound,
   ExternalLink,
   LogOut,
@@ -38,6 +40,7 @@ import {
   registrarPago,
   cambiarEstadoInquilino,
   cambiarPlan,
+  cambiarSoloLectura,
   guardarPlan,
   restablecerClaveAdmin,
 } from '@/acciones/gcc';
@@ -57,6 +60,7 @@ export type InquilinoGcc = {
   slug: string;
   nombre: string;
   estado: string;
+  soloLectura: boolean;
   creado: string;
   contactoEmail: string | null;
   contactoTelefono: string | null;
@@ -234,7 +238,16 @@ export default function PanelGcc({
                         </div>
                       ),
                     },
-                    { clave: 'plan', titulo: 'Plan', render: (i) => i.plan?.nombre ?? '—' },
+                    {
+                      clave: 'plan',
+                      titulo: 'Plan',
+                      render: (i) => (
+                        <span className="flex items-center gap-2">
+                          {i.plan?.nombre ?? '—'}
+                          {i.soloLectura && <Insignia tono="info">Escaparate</Insignia>}
+                        </span>
+                      ),
+                    },
                     {
                       clave: 'acceso',
                       titulo: 'Acceso',
@@ -407,6 +420,7 @@ export default function PanelGcc({
             <dl className="grid grid-cols-2 gap-3 text-[13px]">
               <Dato et="Acceso" v={ACCESO[detalle.acceso].texto} />
               <Dato et="Estado" v={detalle.estado} />
+              <Dato et="Escritura" v={detalle.soloLectura ? 'Escaparate (solo lectura)' : 'Normal'} />
               <Dato et="Plan" v={detalle.plan?.nombre ?? '—'} />
               <Dato
                 et="Pagado hasta"
@@ -499,6 +513,16 @@ export default function PanelGcc({
                   onClick={() => conResultado(() => restablecerClaveAdmin(detalle.id))}
                 >
                   Contraseña del administrador
+                </Boton>
+                <Boton
+                  variante="secundario"
+                  icono={detalle.soloLectura ? EyeOff : Eye}
+                  disabled={enCurso}
+                  onClick={() =>
+                    conResultado(() => cambiarSoloLectura(detalle.id, !detalle.soloLectura))
+                  }
+                >
+                  {detalle.soloLectura ? 'Quitar escaparate' : 'Poner en escaparate'}
                 </Boton>
                 {detalle.estado === 'SUSPENDIDO' ? (
                   <Boton

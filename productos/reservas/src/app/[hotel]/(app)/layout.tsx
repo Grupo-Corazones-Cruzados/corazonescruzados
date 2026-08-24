@@ -1,6 +1,7 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
 import { BarraLateral, BarraInferior } from '@/componentes/Navegacion';
+import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,10 @@ export default async function LayoutApp({
         usuario={sesion.nombre}
         rol={sesion.rol}
       />
-      <div className="pb-16 lg:ml-60 lg:pb-0">{children}</div>
+      <div className="pb-16 lg:ml-60 lg:pb-0">
+        {inquilino.soloLectura && <AvisoEscaparate />}
+        {children}
+      </div>
       <BarraInferior slug={hotel} rol={sesion.rol} />
     </AplicaMarca>
   );

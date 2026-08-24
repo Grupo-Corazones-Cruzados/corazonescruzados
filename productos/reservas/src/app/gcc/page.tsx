@@ -28,6 +28,7 @@ export default async function PaginaGcc() {
     slug: i.slug,
     nombre: i.nombre,
     estado: i.estado,
+    soloLectura: i.soloLectura,
     creado: i.creado.toISOString(),
     contactoEmail: i.contactoEmail,
     contactoTelefono: i.contactoTelefono,

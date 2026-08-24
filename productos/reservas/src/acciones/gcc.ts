@@ -190,6 +190,25 @@ export async function cambiarEstadoInquilino(
   };
 }
 
+/**
+ * Poner o quitar el modo escaparate. Es del equipo GCC, no del hotel: si el propio
+ * alojamiento pudiera quitárselo, no sería una garantía, sería una sugerencia.
+ */
+export async function cambiarSoloLectura(
+  inquilinoId: number,
+  soloLectura: boolean,
+): Promise<ResultadoGcc> {
+  if (!(await exigirOperador())) return { ok: false, error: 'Sin sesión de operador.' };
+  await prisma.inquilino.update({ where: { id: inquilinoId }, data: { soloLectura } });
+  revalidatePath('/gcc');
+  return {
+    ok: true,
+    mensaje: soloLectura
+      ? 'Alojamiento en modo escaparate: se puede ver, no se puede guardar.'
+      : 'Modo escaparate retirado: vuelve a guardar cambios.',
+  };
+}
+
 export async function cambiarPlan(inquilinoId: number, planId: number): Promise<ResultadoGcc> {
   if (!(await exigirOperador())) return { ok: false, error: 'Sin sesión de operador.' };
   await prisma.suscripcion.update({ where: { inquilinoId }, data: { planId } });

@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { contextoApi } from '@/lib/inquilino';
+import { contextoEscritura } from '@/lib/inquilino';
 
 export type ResultadoUsuario =
   | { ok: true; clave?: string }
@@ -30,8 +30,9 @@ const Alta = z.object({
 const claveAlAzar = () => randomBytes(9).toString('base64url');
 
 export async function crearUsuario(slug: string, datos: FormData): Promise<ResultadoUsuario> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede crear cuentas.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const leido = Alta.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
@@ -65,8 +66,9 @@ export async function editarUsuario(
   id: number,
   datos: FormData,
 ): Promise<ResultadoUsuario> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede editar cuentas.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const cuenta = await prisma.usuario.findFirst({
     where: { id, inquilinoId: ctx.inquilino.id },
@@ -104,8 +106,9 @@ export async function editarUsuario(
 }
 
 export async function restablecerClave(slug: string, id: number): Promise<ResultadoUsuario> {
-  const ctx = await contextoApi(slug, 'ADMIN');
-  if (!ctx) return { ok: false, error: 'Solo un administrador puede restablecer contraseñas.' };
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const cuenta = await prisma.usuario.findFirst({
     where: { id, inquilinoId: ctx.inquilino.id },
@@ -122,8 +125,9 @@ export async function restablecerClave(slug: string, id: number): Promise<Result
 
 /** Cambiar la propia contraseña: exige la actual. */
 export async function cambiarMiClave(slug: string, datos: FormData): Promise<ResultadoUsuario> {
-  const ctx = await contextoApi(slug);
-  if (!ctx) return { ok: false, error: 'Sin sesión.' };
+  const permiso = await contextoEscritura(slug, 'CONSULTA');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
 
   const actual = String(datos.get('actual') || '');
   const nueva = String(datos.get('nueva') || '');

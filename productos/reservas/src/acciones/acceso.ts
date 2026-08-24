@@ -42,7 +42,10 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     return { error: 'Usuario o contraseña incorrectos.' };
   }
 
-  await prisma.usuario.update({ where: { id: cuenta.id }, data: { ultimoAcceso: new Date() } });
+  // En un escaparate no se escribe NADA, ni siquiera la hora del último acceso:
+  // con visitantes entrando a diario, esa columna sería lo único que cambiaría.
+  if (!inquilino.soloLectura)
+    await prisma.usuario.update({ where: { id: cuenta.id }, data: { ultimoAcceso: new Date() } });
   await abrirSesionUsuario({
     uid: cuenta.id,
     inquilinoId: inquilino.id,

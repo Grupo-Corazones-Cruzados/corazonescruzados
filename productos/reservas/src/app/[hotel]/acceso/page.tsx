@@ -35,6 +35,11 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ hotel
             <p className="text-[12px] text-tenue">Gestión de Reservas</p>
           </div>
         </div>
+        {inquilino.soloLectura && (
+          <p className="mb-4 rounded border border-borde bg-acento-suave px-3 py-2 text-center text-[12px] leading-relaxed text-acento">
+            Alojamiento de demostración. Se puede recorrer entero; los cambios no se guardan.
+          </p>
+        )}
         <FormularioAcceso slug={hotel} />
       </div>
       <p className="pointer-events-none fixed bottom-4 left-0 right-0 text-center text-[11px] text-tenue">

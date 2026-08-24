@@ -69,6 +69,12 @@ model Inquilino {
 
   estado EstadoInquilino @default(PRUEBA)
 
+  /// Escaparate: se puede recorrer entero, no se puede guardar nada. Lo aplica la
+  /// aplicación (con un mensaje que lo explica) Y lo garantizan disparadores en
+  /// ubicaciones, suites y reservas — una promesa que solo vive en el código se
+  /// rompe con la siguiente pantalla que alguien añada.
+  soloLectura Boolean @default(false) @map("solo_lectura")
+
   // ── Enlace con la plataforma del grupo (informativo; no hay clave foránea
   //    entre esquemas a propósito: los dos servicios se despliegan por separado)
   gccClienteId Int?    @map("gcc_cliente_id")
