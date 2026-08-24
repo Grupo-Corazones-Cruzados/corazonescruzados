@@ -11,11 +11,17 @@ const ESQUEMA = new URL(process.env.DATABASE_URL || 'postgresql://x/y?schema=res
 const global_ = globalThis as unknown as { prisma?: PrismaClient; pool?: pg.Pool };
 
 function crear() {
-  // A `pg` se le quita el `?schema=`: es un parámetro de Prisma, no de PostgreSQL,
-  // y el esquema se fija por `search_path`. Mismo tratamiento que en GCC WORLD.
-  const cadena = (process.env.DATABASE_URL || '').replace(/[?&]schema=[^&]+/, '');
+  // ⚠️ LA CADENA SE PASA ENTERA, CON SU `?schema=`. `pg` ignora los parámetros que
+  // no conoce —comprobado: migraciones, semilla y toda la aplicación corren con
+  // esa cadena—, y el esquema lo fija el `search_path` de abajo.
+  //
+  // NO recortar el parámetro con `replace(/[?&]schema=[^&]+/, '')`, que es lo que
+  // hace la plataforma: con un solo parámetro funciona, pero con dos se lleva por
+  // delante el «?» y `...railway?schema=reservas&sslmode=disable` se convierte en
+  // la base «railway&sslmode=disable», que no existe. Se probó en producción y
+  // tiró todas las páginas que tocan la base (P1003).
   const pool = new pg.Pool({
-    connectionString: cadena,
+    connectionString: process.env.DATABASE_URL,
     options: `-c search_path=${ESQUEMA},public`,
   });
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool, { schema: ESQUEMA }) });
