@@ -11,8 +11,11 @@ const ESQUEMA = new URL(process.env.DATABASE_URL || 'postgresql://x/y?schema=res
 const global_ = globalThis as unknown as { prisma?: PrismaClient; pool?: pg.Pool };
 
 function crear() {
+  // A `pg` se le quita el `?schema=`: es un parámetro de Prisma, no de PostgreSQL,
+  // y el esquema se fija por `search_path`. Mismo tratamiento que en GCC WORLD.
+  const cadena = (process.env.DATABASE_URL || '').replace(/[?&]schema=[^&]+/, '');
   const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: cadena,
     options: `-c search_path=${ESQUEMA},public`,
   });
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool, { schema: ESQUEMA }) });
