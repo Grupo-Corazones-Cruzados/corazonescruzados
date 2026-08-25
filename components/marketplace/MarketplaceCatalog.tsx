@@ -9,7 +9,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -46,6 +46,68 @@ export interface MarketplaceCatalogProps {
   renderExtra?: (value: string) => React.ReactNode;
   /** Notifica el cambio de pestaña (p. ej. para cargar pedidos on-demand). */
   onTabChange?: (value: string) => void;
+}
+
+/**
+ * El precio de una mensualidad se escribe SIEMPRE con su periodo. Enseñar «$5,00»
+ * a secas en algo que se cobra todos los meses es engañar a quien lo lee.
+ */
+function Precio({ valor, mensual, clase }: { valor: number; mensual?: boolean; clase: string }) {
+  return (
+    <span className={clase} style={mf}>
+      ${fmt2(valor)}
+      {mensual && <span className="text-[11px] font-normal text-digi-muted"> /mes</span>}
+    </span>
+  );
+}
+
+/**
+ * Botón de la demostración + la credencial con la que se entra.
+ *
+ * Se enseña la contraseña a propósito: es una cuenta de escaparate, publicada para
+ * que cualquiera pueda mirar sin pedir permiso. Y se enseña AQUÍ, junto al botón,
+ * porque una demostración cuyas credenciales hay que ir a buscar no se prueba.
+ */
+function Demostracion({ item }: { item: any }) {
+  const [copiado, setCopiado] = useState(false);
+  if (!item?.demo_url) return null;
+  const credencial = [item.demo_usuario, item.demo_clave].filter(Boolean).join(' / ');
+  return (
+    <div className="rounded-lg border border-accent/30 bg-accent-light/40 p-2.5 space-y-2">
+      <a
+        href={item.demo_url}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className={`${BTN_PRIMARY} w-full`}
+      >
+        <PlayCircle className="w-4 h-4" /> Probar la demostración <ExternalLink className="w-3.5 h-3.5" />
+      </a>
+      {credencial && (
+        <div className="flex items-center gap-2">
+          <KeyRound className="w-3.5 h-3.5 text-accent shrink-0" />
+          <code className="flex-1 min-w-0 truncate rounded bg-digi-card border border-digi-border px-2 py-1 text-[12px] font-semibold text-digi-text">
+            {credencial}
+          </code>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(credencial);
+              setCopiado(true);
+              toast.success('Credencial copiada');
+            }}
+            title="Copiar la credencial"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-digi-muted hover:bg-black/[0.04] hover:text-digi-text transition-colors"
+          >
+            {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      )}
+      {item.demo_nota && (
+        <p className="text-[11px] leading-relaxed text-digi-muted" style={mf}>{item.demo_nota}</p>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -259,13 +321,18 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         <div className="p-3 flex flex-col flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-[13.5px] font-semibold text-digi-text leading-snug line-clamp-2 flex-1" style={mf}>{item.title}</h3>
-            <span className="text-[15px] font-bold text-accent tabular-nums shrink-0" style={mf}>${fmt2(price)}</span>
+            <Precio valor={price} mensual={!!item.es_suscripcion} clase="text-[15px] font-bold text-accent tabular-nums shrink-0" />
           </div>
           {item.description && <p className="text-[12px] text-digi-muted mt-1 line-clamp-2 leading-relaxed" style={mf}>{item.description}</p>}
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {tags.slice(0, 3).map((t) => <PixelBadge key={t}>{t}</PixelBadge>)}
             </div>
+          )}
+          {item.demo_url && (
+            <span className="inline-flex items-center gap-1 self-start mt-2 px-1.5 py-0.5 rounded-md bg-accent-light text-accent text-[10px] font-semibold">
+              <PlayCircle className="w-3 h-3" /> Con demostración
+            </span>
           )}
           <div className="flex items-center justify-between gap-2 mt-auto pt-2.5 border-t border-digi-border/60">
             <CardMembers item={item} />
@@ -294,7 +361,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const price = Number(t.final_cost ?? t.price ?? 0);
     const docsUrl = t.public_docs_token ? `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/docs/${t.public_docs_token}` : null;
     const rows: [string, React.ReactNode][] = [
-      ['Precio', <span key="p" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(price)}</span>],
+      ['Precio', <Precio key="p" valor={price} mensual={!!t.es_suscripcion} clase="text-accent font-semibold tabular-nums" />],
     ];
     if (t.member_name) rows.push(['Miembro', t.member_name]);
     if (Array.isArray(t.tags) && t.tags.length) rows.push(['Tags', t.tags.slice(0, 4).join(', ')]);
@@ -369,8 +436,12 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           )}
 
           <div className="space-y-2 pt-1">
-            <button onClick={() => onPrimaryAction(t)} className={`${BTN_PRIMARY} w-full`}>
-              {isProject ? 'Solicitar proyecto' : 'Comprar'}
+            <Demostracion item={t} />
+            <button
+              onClick={() => onPrimaryAction(t)}
+              className={`${t.demo_url ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
+            >
+              {isProject ? 'Solicitar proyecto' : t.es_suscripcion ? 'Quiero suscribirme' : 'Comprar'}
             </button>
             {docsUrl && (
               <a href={docsUrl} target="_blank" rel="noreferrer" className={`${BTN_SECONDARY} w-full`}>

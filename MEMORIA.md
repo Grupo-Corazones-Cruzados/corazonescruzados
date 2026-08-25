@@ -275,6 +275,35 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🛒 LAS FICHAS DEL MARKETPLACE, CON DEMOSTRACIÓN PÚBLICA (2026-08-25, migración 052).**
+  Fernando: *«actualiza la ficha, y por favor deja configurado en el marketplace un botón de
+  acceso a cada producto en su versión demo, con el dato de la credencial de prueba»*.
+  - **⚠️ LO QUE SE VE EN EL CATÁLOGO SON LOS `member_portfolio_items`, NO `products`.** El
+    catálogo lee `/api/portfolio/public?type=product`; `products` es el registro vendible que
+    cuelga de él y alimenta carrito y pedidos. **Por eso «Gestión de Reservas» salía en la
+    pestaña PROYECTOS**: su ítem tenía `item_type='project'` desde marzo. Corregido, y creada
+    la ficha de **«Gestión de Pedidos»**, que no existía. Las dos a **5 $/mes**, del talento
+    **Automatización de procesos**, y sus dos filas en `products`.
+  - **Campos nuevos en el ítem:** `es_suscripcion`, `demo_url`, `demo_usuario`, `demo_clave`,
+    `demo_nota`. **Editables desde Portafolio**, no solo por SQL — un dato que solo se cambia
+    con una consulta acaba desactualizado.
+  - **⭐ EL PRECIO DE UNA MENSUALIDAD SE ESCRIBE CON SU PERIODO.** «$5,00» a secas en algo que
+    se cobra todos los meses **engaña a quien lo lee**: la tarjeta y la ficha ponen «$5,00 /mes»,
+    y el botón de compra dice «Quiero suscribirme».
+  - **⭐ LA CREDENCIAL SE ENSEÑA JUNTO AL BOTÓN**, con copiar al portapapeles: *una demostración
+    cuyas credenciales hay que ir a buscar no se prueba*. Se publica a propósito
+    (`admin / GccDemo2026`, y en pedidos los tres puestos con la misma) — está comentado en la
+    columna que **NO es un secreto** y que no debe reutilizarse en ninguna cuenta real.
+  - **⭐ LOS DOS DEMOS PASAN A ESCAPARATE.** Con la contraseña publicada, el primero que entre
+    puede dejar el escaparate vacío para el siguiente. En Pedidos se pierde poder mover un
+    pedido de cocina a cobro —lo que más engancha—; es **un botón en `/gcc`** para revertirlo si
+    Fernando prefiere lo contrario.
+  - **Las imágenes ahora son capturas REALES de cada producto** (tres por ficha). La de reservas
+    era la del proyecto viejo de Power Apps: enseñar una pantalla que ya no es la que se vende
+    es enseñar otra cosa.
+  - **🪤 Al subir a Cloudinary desde un script:** el módulo lee `CLOUDINARY_URL` **al importarse**,
+    así que asignar la variable después no sirve; hay que pasar `cloud_name/api_key/api_secret`
+    explícitos.
 - **💵 EL PLAN QUEDA DEFINIDO PARA LOS DOS PRODUCTOS (2026-08-25).** Fernando: *«los dos
   productos se ofrecen por suscripción 5 $ para uso, pueden crear hasta máximo 100 usuarios, y
   no hay límite de suites o de mesas, la única restricción es que se eliminan los datos al fin

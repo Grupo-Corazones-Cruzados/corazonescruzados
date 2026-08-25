@@ -41,12 +41,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (imageUrl && isBase64Image(imageUrl)) imageUrl = await uploadImage(imageUrl, folder);
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.member_portfolio_items (member_id, title, description, image_url, project_url, cost, tags, item_type, images, talent)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *, cost as price, item_type as type`,
+      `INSERT INTO gcc_world.member_portfolio_items
+         (member_id, title, description, image_url, project_url, cost, tags, item_type, images, talent,
+          es_suscripcion, demo_url, demo_usuario, demo_clave, demo_nota)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       RETURNING *, cost as price, item_type as type`,
       // `talent`: a qué talento del miembro pertenece. Es lo que decide en qué CV
       // público aparece — un proyecto de la app lo deduce de sus requerimientos, pero
       // un ítem escrito a mano tiene que declararlo.
-      [id, body.title, body.description || null, imageUrl, body.project_url || null, body.price || 0, body.tags || [], body.type || 'project', images, body.talent || null]
+      [id, body.title, body.description || null, imageUrl, body.project_url || null, body.price || 0, body.tags || [], body.type || 'project', images, body.talent || null,
+       body.es_suscripcion === true, body.demo_url || null, body.demo_usuario || null, body.demo_clave || null, body.demo_nota || null]
     );
 
     return NextResponse.json({ data: rows[0] }, { status: 201 });

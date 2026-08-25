@@ -28,7 +28,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     const folder = `corazones-cruzados/portfolio/${id}`;
 
-    const allowed = ['title', 'description', 'project_url', 'tags', 'item_type'];
+    // `demo_*` y `es_suscripcion`: los datos de la demostración pública que se
+    // enseñan en el marketplace. Se editan desde Portafolio como todo lo demás — un
+    // dato que solo se pueda cambiar por SQL acaba desactualizado.
+    const allowed = [
+      'title', 'description', 'project_url', 'tags', 'item_type',
+      'es_suscripcion', 'demo_url', 'demo_usuario', 'demo_clave', 'demo_nota',
+    ];
     for (const key of allowed) {
       if (key in body) {
         fields.push(`${key} = $${idx++}`);

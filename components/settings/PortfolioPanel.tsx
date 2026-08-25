@@ -18,7 +18,11 @@ const TABS = [
 ];
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const emptyForm = { title: '', description: '', price: '', tags: '', project_url: '', images: [''], talent: '' };
+const emptyForm = {
+  title: '', description: '', price: '', tags: '', project_url: '', images: [''], talent: '',
+  // Datos de la demostración pública que se enseña en el marketplace.
+  es_suscripcion: false, demo_url: '', demo_usuario: '', demo_clave: '', demo_nota: '',
+};
 
 /** Panel de Portafolio: proyectos/productos/automatizaciones propios + proyectos del equipo.
  *  Adaptado a columna angosta: pestañas en píldoras, lista vertical y detalle/galería en modal. */
@@ -69,6 +73,9 @@ export default function PortfolioPanel() {
       title: item.title || '', description: item.description || '',
       price: item.price != null ? String(item.price) : '',
       tags: item.tags?.join(', ') || '', project_url: item.project_url || '', images: imgs,
+      es_suscripcion: !!item.es_suscripcion, demo_url: item.demo_url || '',
+      demo_usuario: item.demo_usuario || '', demo_clave: item.demo_clave || '',
+      demo_nota: item.demo_nota || '',
       talent: item.talent || '',
     });
     setModal(true);
@@ -110,6 +117,11 @@ export default function PortfolioPanel() {
         tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
         project_url: form.project_url || null, image_url: cleanImages[0] || null, images: cleanImages, type: tab,
         talent: form.talent || null,
+        es_suscripcion: form.es_suscripcion,
+        demo_url: form.demo_url || null,
+        demo_usuario: form.demo_usuario || null,
+        demo_clave: form.demo_clave || null,
+        demo_nota: form.demo_nota || null,
       };
       const res = editingItem
         ? await fetch(`/api/members/${user.member_id}/portfolio/${editingItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
@@ -339,6 +351,37 @@ export default function PortfolioPanel() {
           {tab === 'project' && <PixelInput label="URL del proyecto" value={form.project_url} onChange={(e) => setForm({ ...form, project_url: e.target.value })} placeholder="https://…" />}
           <PixelInput label="Precio (USD)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0.00" />
           <PixelInput label="Tags (separados por coma)" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="React, API, …" />
+
+          <label className="flex items-center gap-2 text-[13px] text-digi-text" style={mf}>
+            <input
+              type="checkbox"
+              checked={form.es_suscripcion}
+              onChange={(e) => setForm({ ...form, es_suscripcion: e.target.checked })}
+              className="w-4 h-4 accent-[var(--color-accent)]"
+            />
+            El precio es una mensualidad
+            <span className="text-[11px] text-digi-muted">(se enseña como «$5,00 /mes»)</span>
+          </label>
+
+          {/* Demostración pública. La contraseña se escribe en claro A PROPÓSITO:
+              es una cuenta de escaparate publicada para que cualquiera mire. */}
+          <div className="rounded-lg border border-digi-border p-3 space-y-2.5">
+            <p className="text-[12px] font-semibold text-digi-text" style={mf}>Demostración pública</p>
+            <PixelInput label="Dirección de la demostración" value={form.demo_url}
+              onChange={(e) => setForm({ ...form, demo_url: e.target.value })} placeholder="https://…/demo/acceso" />
+            <div className="grid grid-cols-2 gap-2">
+              <PixelInput label="Usuario de prueba" value={form.demo_usuario}
+                onChange={(e) => setForm({ ...form, demo_usuario: e.target.value })} placeholder="admin" />
+              <PixelInput label="Contraseña de prueba" value={form.demo_clave}
+                onChange={(e) => setForm({ ...form, demo_clave: e.target.value })} placeholder="GccDemo2026" />
+            </div>
+            <PixelInput label="Nota" value={form.demo_nota}
+              onChange={(e) => setForm({ ...form, demo_nota: e.target.value })}
+              placeholder="Los cambios no se guardan." />
+            <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
+              Se publica tal cual en el marketplace. Usa una cuenta de escaparate, nunca una real.
+            </p>
+          </div>
           <button onClick={handleSave} disabled={saving || !form.title.trim()} className={`${BTN_PRIMARY} w-full`}>{saving ? 'Guardando…' : editingItem ? 'Guardar cambios' : 'Crear'}</button>
         </div>
       </PixelModal>

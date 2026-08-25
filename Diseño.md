@@ -2541,6 +2541,23 @@ En **Reportes** y en **Suscripción**, una franja `bg-aviso-suave` recuerda cuá
 se conservan y empuja a **exportar a Excel**. Un borrado automático sin aviso previo se
 lee como pérdida de datos.
 
+### Marketplace — ficha con demostración pública (2026-08-25)
+`components/marketplace/MarketplaceCatalog.tsx`. Dos piezas nuevas, ambas reusables:
+
+- **`<Precio valor mensual />`** — el precio de una mensualidad se escribe SIEMPRE con su
+  periodo («$5,00 /mes», el periodo en `text-[11px] font-normal text-digi-muted`). Enseñar
+  el número a secas en algo que se cobra cada mes engaña a quien lo lee.
+- **`<Demostracion item />`** — caja `border-accent/30 bg-accent-light/40` con el botón
+  primario **«Probar la demostración»** (`PlayCircle` + `ExternalLink`, abre en pestaña
+  nueva), la **credencial a la vista** en un `<code>` con botón de copiar, y la nota. Va
+  **encima** del botón de compra, y cuando existe demostración el de compra baja a
+  secundario: **se prueba antes de comprar**. En la tarjeta queda un chip
+  «Con demostración» para que se vea sin abrir la ficha.
+
+La contraseña se enseña en claro **a propósito**: es una cuenta de escaparate publicada.
+Queda dicho en el propio formulario del editor y en el comentario de la columna.
+
+
 ## Desviaciones detectadas y resolución
 - **2026-08-21 · El Estudio del agente ya no elige MODELO, elige RAZONAMIENTO.** Al pasar toda
   la app a un solo modelo (`gpt-5.6-luna`), aquel `PixelSelect` de Haiku / Sonnet / Opus se
