@@ -2558,6 +2558,26 @@ La contraseña se enseña en claro **a propósito**: es una cuenta de escaparate
 Queda dicho en el propio formulario del editor y en el comentario de la columna.
 
 
+### Iconos de pestaña de los productos (2026-08-25)
+`src/app/icon.svg` en cada producto (Next lo detecta solo y emite el `<link rel="icon">`).
+Cuadrado violeta del grupo `#4B2D8E` con `rx="7"` y un glifo blanco: **cama** en
+Reservas, **cubiertos** en Pedidos.
+
+**Dibujados para 16 px, que es el tamaño real de una pestaña**: trazo `2.6` y glifo casi
+a sangre, porque a ese tamaño lo que se reconoce es la **silueta y el color**, no el
+dibujo. Se comprobó **rasterizándolos a 16 px** antes de darlos por buenos, no mirando
+el SVG a tamaño grande.
+
+⚠️ **El violeta es FIJO aunque el inquilino tenga su color de marca**: el navegador
+cachea el icono **por origen**, así que es el mismo para todos los clientes del
+producto. Y es la marca del grupo, que debe reconocerse siempre — es justo lo que pide
+la herramienta Violeta.
+
+Va también `apple-icon.png` (180×180, **sin transparencia**: iOS la pinta de negro), para
+cuando alguien añade la aplicación a la pantalla de inicio del móvil — que en Pedidos es
+lo normal, porque el mesero trabaja con el teléfono en la mano.
+
+
 ## Desviaciones detectadas y resolución
 - **2026-08-21 · El Estudio del agente ya no elige MODELO, elige RAZONAMIENTO.** Al pasar toda
   la app a un solo modelo (`gpt-5.6-luna`), aquel `PixelSelect` de Haiku / Sonnet / Opus se
