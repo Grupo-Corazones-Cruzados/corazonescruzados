@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     // 2026-08-25 («dejemos una sola cuenta de facturación por cliente»).
     let facturacion: any = null;
     const { rows: [proj] } = await pool.query(
-      `SELECT p.client_id, p.title, c.email AS client_email
+      `SELECT p.client_id, p.title, p.description, p.status, c.email AS client_email, c.name AS client_name
          FROM gcc_world.projects p
          LEFT JOIN gcc_world.clients c ON c.id = p.client_id
         WHERE p.id = ($1)::bigint`,
@@ -56,8 +56,36 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // El plan completo, para que el cliente vea DÓNDE encaja lo que va a pagar. Pagar una
+    // etapa suelta sin ver el resto es firmar a ciegas; es la misma información que ya le
+    // enseña la página pública del proyecto, y por las mismas razones.
+    const { rows: etapasPlan } = await pool.query(
+      `SELECT e.id, e.name, e.amount, (e.invoice_id IS NOT NULL) AS facturada
+         FROM gcc_world.project_stages e
+         LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
+        WHERE e.project_id = ($1)::bigint
+        ORDER BY e.sort_order, e.id`,
+      [String(auth.projectId)],
+    );
+
     return NextResponse.json({
-      proyecto: { id: etapa.projectId, titulo: etapa.projectTitle },
+      proyecto: {
+        id: etapa.projectId,
+        titulo: etapa.projectTitle,
+        // ⚠️ Nada de requerimientos, miembros ni costos internos: es la misma línea que
+        // Fernando trazó el 2026-08-19 para la página pública del proyecto — el cliente ve
+        // el ACUERDO, no el reparto del trabajo.
+        descripcion: proj?.description || null,
+        estado: proj?.status || null,
+        cliente: proj?.client_name || null,
+        etapas: etapasPlan.map((e: any) => ({
+          id: Number(e.id),
+          nombre: e.name,
+          importe: Number(e.amount) || 0,
+          facturada: e.facturada,
+          esLaQueSePaga: Number(e.id) === etapa.stageId,
+        })),
+      },
       etapa: { id: etapa.stageId, nombre: etapa.stageName },
       importes: { neto: etapa.neto, recargo: etapa.recargo, total: etapa.total },
       pasarela: {
@@ -74,6 +102,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     if (err instanceof SinAcceso) return NextResponse.json({ error: err.message }, { status: err.status });
+    // Con la traza: un «no se pudo cargar el pago» sin stack en el registro obliga a
+    // adivinar, y esto es la pantalla por la que entra el dinero.
+    console.error('[pagos] etapa:', err);
     return NextResponse.json({ error: err.message }, { status: 400 });
   }
 }

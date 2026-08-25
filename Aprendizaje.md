@@ -7103,3 +7103,59 @@ verificada; **la pantalla no se inventa sin él**. Es el corte natural de esta p
 14/14 pruebas del recargo · **11/11 candados comprobados contra la base real**, en
 transacción con ROLLBACK y sin un solo DELETE · `tsc` limpio · `next build` limpio con las
 cuatro rutas nuevas.
+
+---
+
+## Tercera pasada del objetivo de pagos (2026-08-25) — las pantallas, y un fallo que solo se vio mirándolas · 🔎 85 %
+
+### 🪤 P116 — El proveedor de pruebas no podía cobrar nada, y el mensaje de error me mandó al sitio equivocado
+- **El síntoma:** la página del enlace cargaba y decía **«Proveedor de pago desconocido:
+  simulado»**. Fui a mirar `proveedorPorNombre` y el registro de proveedores, donde
+  `simulado` estaba perfectamente.
+- **La causa era otra:** `TARIFAS` (en `comision.ts`) tenía `kushki`, `payphone` y `manual`
+  — **no `simulado`**. Quien lanzaba era `tarifaDe`, no `proveedorPorNombre`.
+- **⭐ Lo que de verdad se aprende aquí no es el descuido, es el mensaje.** Dos funciones
+  distintas lanzaban **exactamente el mismo texto**, y eso me hizo perder el rato buscando
+  en el archivo equivocado. **Dos errores distintos no pueden decir lo mismo**: ahora el de
+  la tarifa nombra su archivo.
+- Y la tarifa del simulado **es la misma que la de Kushki, a propósito**: con tarifa cero
+  las pruebas verían una factura de UNA línea, que es justo lo contrario de lo que hay que
+  comprobar. Un entorno de pruebas que se comporta distinto del real no prueba el real.
+- **Solo apareció al abrir la página en un navegador.** `tsc` estaba limpio, `next build`
+  estaba limpio y las 14 pruebas del recargo pasaban — porque todas llamaban a
+  `calcularRecargo(neto, TARIFAS.kushki)` directamente, sin pasar por `tarifaDe`.
+  [[gcc-tsc-no-basta]] otra vez, y van unas cuantas.
+
+### 🪤 P117 — Una prueba fallida dejó vivo un enlace de pago
+El primer intento de captura reventó en `puppeteer.launch` (faltaba descargar Chrome), y
+como el `launch` estaba **fuera** del `try`, el `finally` que revoca el enlace temporal no
+llegó a correr: quedó un enlace de pago **válido** en la base. Se revocó a mano y se movió
+el `launch` dentro del `try`.
+- **La regla:** cuando un script crea algo con valor —un enlace que cobra dinero—, la
+  limpieza va en un `finally` que cubra **también el arranque de las herramientas**, no solo
+  el trabajo. Y se revoca, no se borra ([[gcc-pruebas-no-borran-datos-reales]]).
+
+### 🔎 P118 — El pie «cruzado» no existía · ✅ Falsa alarma, comprobada
+La primera captura enseñaba el pie oscuro **atravesando el formulario** por la mitad. No
+era un fallo: `fullPage: true` pinta los elementos fijos en su posición del *viewport*, así
+que un pie fijo siempre aparenta cruzarse. Se comprobó desplazándose al fondo y capturando
+el viewport real: el pie está donde debe. **Es el mismo error de medición de P68 y P72** —
+mi medidor mintiendo, no la pantalla. Ahora el script hace las dos capturas.
+
+### Lo medido al cerrar la pasada
+Sobre el proyecto real **#32** («Sincronización y comparación de pedidos»), con su Etapa 2
+pendiente de **866,25 $**:
+- La pantalla cobra **892,84 $** = 866,25 + **26,59** de recargo, en dos líneas separadas.
+- **El mismo número por dos caminos independientes:** el script `pagos:pendientes`
+  (que reimplementa la fórmula a propósito, para no coincidir por construcción) y la
+  pantalla renderizada en Chrome.
+- 7 campos de facturación **prellenados con la cuenta real del cliente**, sin escribir nada.
+- **Sin desbordamiento horizontal** ni en 1440 px ni en 390 px. Un único error de consola:
+  el 401 de `/api/auth/me`, que es lo correcto en una página para gente sin cuenta.
+- La base quedó **sin un solo intento de cobro** y con los 6 enlaces de revisión revocados.
+
+### ⏸ Lo que NO se ha probado, y no se va a probar solo
+**El pago completo de punta a punta.** Confirmar un cobro **emite una factura electrónica
+real al SRI** del proyecto real, y eso no se deshace: se anula con nota de crédito. Hace
+falta que Fernando diga sobre qué proyecto —o que exista un ambiente de pruebas del SRI—
+antes de pulsar ese botón una sola vez.

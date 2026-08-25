@@ -50,6 +50,11 @@ export const TARIFAS: Record<string, Tarifa> = {
   payphone: { porcentaje: 0.0575, fijo: 0 },
   // El canal manual no tiene pasarela, así que no hay nada que trasladar.
   manual: { porcentaje: 0, fijo: 0 },
+  // ⚠️ EL SIMULADO COBRA LA MISMA TARIFA QUE KUSHKI, y no es un descuido. Con tarifa cero
+  // las pruebas verían una factura de UNA línea, que es justo lo contrario de lo que hay
+  // que comprobar: que el recargo sale aparte y que los importes cuadran. Un entorno de
+  // pruebas que se comporta distinto del real no prueba el real.
+  simulado: { porcentaje: 0.0295, fijo: 0.25 },
 };
 
 /** Redondeo al centavo HACIA ARRIBA. El epsilon evita que 20,610000000000003 suba a 20,62. */
@@ -89,7 +94,10 @@ export function calcularRecargo(neto: number, tarifa: Tarifa): Recargo {
  */
 export function tarifaDe(proveedor: string): Tarifa {
   const base = TARIFAS[proveedor];
-  if (!base) throw new Error(`Proveedor de pago desconocido: ${proveedor}`);
+  // El mensaje nombra el archivo a propósito: `proveedorPorNombre` lanzaba uno idéntico,
+  // y al depurar mandó a revisar el registro de proveedores cuando lo que faltaba era la
+  // tarifa. Dos errores distintos no pueden decir lo mismo.
+  if (!base) throw new Error(`Sin tarifa configurada para el proveedor «${proveedor}» (lib/pagos/comision.ts).`);
   const clave = proveedor.toUpperCase();
   const pct = Number(process.env[`PAGOS_${clave}_PORCENTAJE`]);
   const fijo = Number(process.env[`PAGOS_${clave}_FIJO`]);

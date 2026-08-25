@@ -745,6 +745,44 @@ Comprobado a 1200 y 1600 px de alto en las seis páginas de la sección y en los
 
 ---
 
+### La pantalla de pago — `/pagar/<token>` + `components/pagos/FormularioPago.tsx` (2026-08-25)
+
+Canal 3 de la pasarela: el cliente **sin cuenta** abre el enlace del correo, ve el detalle
+del proyecto y paga una etapa.
+
+- **Es HERMANA DELIBERADA de `/proyecto/[id]`**, no una pantalla nueva. Vive en `(sitio)`,
+  reusa `Contenedor` y `Tarjeta`, y **repite su forma de listar las etapas** (mismo icono
+  de estado, mismo `divide-y`, mismo importe tabular a la derecha). Motivo: quien recibe
+  las dos por correo tiene que reconocer que son de la misma casa.
+- **Hereda su línea roja:** enseña el ACUERDO —etapas, importes, estado—, nunca
+  requerimientos, miembros ni costos internos.
+- **La etapa que se está pagando va resaltada** con `bg-[var(--violeta)]/8` y etiqueta
+  «Ahora», entre las «Pagada» y las «Pendiente». Pagar una etapa suelta sin ver el resto
+  del plan es firmar a ciegas.
+- **Rejilla:** `lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]` — el plan a la izquierda,
+  algo más estrecho; el formulario a la derecha, que es donde está la acción.
+
+**`FormularioPago` es la definición ÚNICA del cobro**, y la usan el enlace público y —cuando
+se monte— el proyecto del cliente con sesión. La diferencia entre los dos canales es **un
+parámetro** (`link` o `projectId`+`stageId`); todo lo demás es el mismo componente. Dos
+formularios de pago se separan al primer arreglo, y el que se queda atrás es el que cobra mal.
+
+- **Constantes locales `CAMPO` y `ETIQUETA`** (no `EDIT_INPUT`, que es del tema `.corp` del
+  dashboard): esta pantalla vive en el sitio público claro y usa sus tokens
+  (`--linea-fuerte`, `--tarjeta`, `--texto`, `--violeta-vivo`).
+- **Los métodos son dos botones-tarjeta**, no un `<select>`: son dos opciones con icono y
+  consecuencias distintas (la transferencia te saca al banco), y merecen peso visual.
+- **El desglose SIEMPRE muestra el recargo en su propia línea** — es la decisión de Fernando
+  del 2026-08-25 y la que mantiene cuadrada la tarjeta de Pagos del proyecto.
+- **El aviso de cifrado va bajo el botón**, no arriba: se lee justo cuando se duda.
+- **En modo de pruebas la pantalla lo grita** con una caja ámbar. Una pasarela simulada que
+  se ve igual que la real es una forma de cobrar de mentira creyendo que se cobró.
+
+**Compartir el enlace (dashboard):** icono `Share2` en cada etapa **no facturada** de la
+tarjeta de Pagos → `QuickEditDialog` (ventanita centrada, **dos campos**: correo y
+caducidad), según la regla de «DÓNDE SE EDITA». Tras generarlo, la misma ventanita enseña
+el enlace con «Copiar enlace» — porque si el correo falla, el enlace ya es válido igual.
+
 ## Editor del mundo — Fluent (estandarizado)
 
 ### Stack de estilos

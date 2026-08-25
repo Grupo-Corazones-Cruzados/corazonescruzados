@@ -175,6 +175,13 @@ export default function ProjectDetailPage() {
   const [showStagesPanel, setShowStagesPanel] = useState(false);
   const [planDraft, setPlanDraft] = useState<{ id: number | null; name: string; amount: string; invoiceNumber: string | null }[]>([]);
   const [savingPlan, setSavingPlan] = useState(false);
+  // ENLACE DE PAGO (canal 3): el responsable comparte un enlace de UNA etapa, con la
+  // caducidad que él elige, y sale un correo al cliente. Ver `lib/pagos/`.
+  const [linkStage, setLinkStage] = useState<{ id: number; name: string; amount: number } | null>(null);
+  const [linkEmail, setLinkEmail] = useState('');
+  const [linkHoras, setLinkHoras] = useState('72');
+  const [linkSaving, setLinkSaving] = useState(false);
+  const [linkResult, setLinkResult] = useState<{ url: string; email: string; total: number; correoEnviado: boolean } | null>(null);
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -559,6 +566,42 @@ export default function ProjectDetailPage() {
       fetchProject();
     } catch (e: any) { toast.error(e.message); }
     finally { setSavingPlan(false); }
+  };
+
+  /**
+   * Abre la ventanita de compartir el enlace de pago de una etapa.
+   * El correo se prerrellena con el del cliente del proyecto, como pidió Fernando; si el
+   * proyecto no tiene cliente asociado, se escribe a mano.
+   */
+  const abrirEnlacePago = (e: any) => {
+    setLinkStage({ id: Number(e.id), name: e.name, amount: Number(e.amount) || 0 });
+    setLinkEmail(project?.client_email || completeClientEmail || '');
+    setLinkHoras('72');
+    setLinkResult(null);
+  };
+
+  const compartirEnlacePago = async () => {
+    if (!linkStage) return;
+    setLinkSaving(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/payment-link`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage_id: linkStage.id, email: linkEmail.trim(), horas: Number(linkHoras) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo generar el enlace');
+      // El enlace se enseña SIEMPRE, aunque el correo falle: ya es válido y el responsable
+      // puede copiarlo y mandarlo por donde quiera.
+      setLinkResult({
+        url: data.url, email: data.email,
+        total: Number(data.importes?.total || 0),
+        correoEnviado: Boolean(data.correoEnviado),
+      });
+      toast[data.correoEnviado ? 'success' : 'warning'](
+        data.correoEnviado ? `Enlace enviado a ${data.email}` : 'Enlace creado, pero el correo no salió: cópialo y envíalo tú',
+      );
+    } catch (e: any) { toast.error(e.message); }
+    finally { setLinkSaving(false); }
   };
 
   const borrarPlan = async () => {
@@ -2282,6 +2325,15 @@ export default function ProjectDetailPage() {
                             {e.invoiceId
                               ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>facturada</span>
                               : <span className="text-[9px] text-amber-600">pendiente</span>}
+                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en
+                                las que aún no tienen comprobante: una etapa ya facturada no
+                                se cobra otra vez. */}
+                            {!e.invoiceId && (
+                              <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
+                                className="text-accent hover:opacity-70 transition-opacity">
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </span>
                         </div>
                       ))
@@ -2298,6 +2350,59 @@ export default function ProjectDetailPage() {
 
         </div>
       </div>
+
+      {/* Ventanita: ENLACE DE PAGO de una etapa (canal 3).
+          Son DOS campos —correo y duración—, así que va en ventanita centrada y no en
+          panel lateral, según la regla de «DÓNDE SE EDITA». */}
+      <QuickEditDialog
+        open={!!linkStage}
+        title={linkResult ? 'Enlace de pago listo' : `Cobrar «${linkStage?.name || ''}»`}
+        onClose={() => !linkSaving && setLinkStage(null)}
+        onSave={linkResult ? () => setLinkStage(null) : compartirEnlacePago}
+        saving={linkSaving}
+        canSave={linkResult ? true : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(linkEmail.trim()) && Number(linkHoras) > 0}
+        saveLabel={linkResult ? 'Listo' : 'Generar y enviar'}
+      >
+        {linkResult ? (
+          <div className="space-y-3">
+            <p className="text-[12.5px] text-digi-text" style={mf}>
+              {linkResult.correoEnviado
+                ? <>Le enviamos a <strong>{linkResult.email}</strong> un correo con el enlace para pagar <strong>${fmt2(linkResult.total)}</strong>.</>
+                : <>El enlace está listo, pero <strong>el correo no salió</strong>. Cópialo y envíaselo tú.</>}
+            </p>
+            <EditField label="Enlace" hint="Cualquiera con este enlace ve el detalle del proyecto y puede pagar la etapa. No lo publiques.">
+              <input readOnly className={EDIT_INPUT} value={linkResult.url}
+                onFocus={(ev) => ev.currentTarget.select()} />
+            </EditField>
+            <button type="button" className={BTN_SECONDARY}
+              onClick={() => { navigator.clipboard.writeText(linkResult.url); toast.success('Enlace copiado'); }}>
+              Copiar enlace
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-[12px] text-digi-muted" style={mf}>
+              Se cobrarán <strong className="text-digi-text">${fmt2(linkStage?.amount || 0)}</strong> más los
+              gastos de procesamiento, que paga el cliente. La factura se emite sola en cuanto el pago se confirme.
+            </p>
+            <EditField label="Correo del cliente" hint="Es a donde llega el enlace.">
+              <input type="email" className={EDIT_INPUT} value={linkEmail}
+                onChange={(ev) => setLinkEmail(ev.target.value)} placeholder="cliente@empresa.com" />
+            </EditField>
+            {/* «el usuario miembro responsable del proyecto define el tiempo máximo de
+                duración del token» — Fernando, 2026-08-25. */}
+            <EditField label="El enlace caduca en" hint="Pasado ese tiempo deja de servir y hay que generar otro.">
+              <select className={EDIT_INPUT} value={linkHoras} onChange={(ev) => setLinkHoras(ev.target.value)}>
+                <option value="24">24 horas</option>
+                <option value="72">3 días</option>
+                <option value="168">7 días</option>
+                <option value="360">15 días</option>
+                <option value="720">30 días</option>
+              </select>
+            </EditField>
+          </div>
+        )}
+      </QuickEditDialog>
 
       {/* Panel: ETAPAS DE FACTURACIÓN. Formulario con lista → panel lateral derecho
           (regla del sistema). La última etapa recoge el resto y no se escribe. */}
