@@ -27,20 +27,21 @@ const haceMinutos = (n: number) => new Date(Date.now() - n * 60000);
 const nuevas: string[] = [];
 
 async function main() {
-  // ── El plan. Aquí SÍ hay precio: Fernando lo dijo, 5 $ al mes con un mes de
-  //    histórico. No hay nada que inventar.
+  // ── El plan, tal y como lo definió Fernando el 2026-08-25: 5 $ al mes, hasta 100
+  //    cuentas, sin límite de mesas ni de productos, y un mes de histórico.
   const plan = await prisma.plan.upsert({
-    where: { slug: 'esencial' },
+    where: { slug: 'estandar' },
     update: {},
     create: {
-      slug: 'esencial',
-      nombre: 'Esencial',
-      descripcion: 'Todo el control del servicio, con un mes de histórico.',
+      slug: 'estandar',
+      nombre: 'Estándar',
+      descripcion: 'Todo el sistema, sin límite de mesas ni de productos. Se conserva un mes de histórico.',
       precioMensual: 5,
+      maxUsuarios: 100,
       mesesRetencion: 1,
       caracteristicas: [
-        'Mesas y zonas sin límite',
-        'Carta con categorías, precios y disponibilidad',
+        'Mesas, zonas y carta sin límite',
+        'Hasta 100 cuentas de usuario',
         'Pantalla de cocina y control de estados',
         'Cobro con método de pago e IVA configurable',
         'Reservas de mesa',

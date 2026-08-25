@@ -38,11 +38,17 @@ export default function UsuariosCliente({
   slug,
   usuarios,
   yoSoy,
+  cupo,
 }: {
   slug: string;
   usuarios: UsuarioVista[];
   yoSoy: number;
+  /** Cuentas ACTIVAS usadas y el tope del plan (null = sin límite). */
+  cupo: { tope: number | null; usadas: number; quedan: number | null };
 }) {
+  // El cupo se enseña SIEMPRE, no solo cuando se agota: enterarse del tope justo
+  // cuando estorba es la peor forma de enterarse.
+  const sinSitio = cupo.quedan !== null && cupo.quedan <= 0;
   const router = useRouter();
   const [creando, setCreando] = useState(false);
   const [editando, setEditando] = useState<UsuarioVista | null>(null);
@@ -64,9 +70,21 @@ export default function UsuariosCliente({
         titulo="Usuarios"
         descripcion="Quién entra al negocio y con qué permisos"
         acciones={
-          <Boton icono={UserPlus} onClick={() => setCreando(true)}>
-            Nueva cuenta
-          </Boton>
+          <>
+            {cupo.tope !== null && (
+              <Insignia tono={sinSitio ? 'error' : cupo.quedan !== null && cupo.quedan <= 5 ? 'aviso' : 'neutro'}>
+                {cupo.usadas} de {cupo.tope} cuentas
+              </Insignia>
+            )}
+            <Boton
+              icono={UserPlus}
+              onClick={() => setCreando(true)}
+              disabled={sinSitio}
+              title={sinSitio ? `Tu plan permite ${cupo.tope} cuentas activas` : undefined}
+            >
+              Nueva cuenta
+            </Boton>
+          </>
         }
       />
 

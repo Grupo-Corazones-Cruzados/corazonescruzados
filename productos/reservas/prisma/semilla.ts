@@ -35,22 +35,25 @@ const conHora = (base: Date, h: number) => {
 const nuevas: string[] = [];
 
 async function main() {
-  // ── Plan. Los niveles de la tier list los dicta Fernando; hasta entonces hay uno
-  //    solo y su precio queda a cero A PROPÓSITO: inventarlo sería peor que dejarlo
-  //    en blanco, porque un número inventado se acaba cobrando.
+  // ── El plan, tal y como lo definió Fernando el 2026-08-25: 5 $ al mes, hasta 100
+  //    cuentas, sin límite de ubicaciones ni de suites, y un mes de histórico.
   const plan = await prisma.plan.upsert({
     where: { slug: 'estandar' },
     update: {},
     create: {
       slug: 'estandar',
       nombre: 'Estándar',
-      descripcion: 'Nivel único mientras no se definan los niveles de la tier list.',
-      precioMensual: 0,
+      descripcion: 'Todo el sistema, sin límite de ubicaciones ni de suites. Se conserva un mes de histórico.',
+      precioMensual: 5,
+      maxUsuarios: 100,
+      mesesRetencion: 1,
       caracteristicas: [
         'Ubicaciones y suites sin límite',
-        'Agenda y panel de ocupación',
-        'Reportes con exportación a Excel',
+        'Hasta 100 cuentas de usuario',
+        'Agenda, panel de ocupación y reportes',
+        'Exportación a Excel',
         'Marca propia (nombre, logo, color y tema)',
+        'Un mes de histórico: lo anterior se borra a fin de mes',
       ],
       orden: 0,
     },

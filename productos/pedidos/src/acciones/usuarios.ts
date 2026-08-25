@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
+import { faltaCupoDeCuenta } from '@/lib/limites';
 
 export type ResultadoUsuario =
   | { ok: true; clave?: string }
@@ -37,6 +38,14 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
   const leido = Alta.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
+
+  // El tope del plan se comprueba ANTES de crear nada: crear y luego arrepentirse
+  // dejaría la cuenta hecha y el mensaje sin sentido.
+  const sinCupo = await faltaCupoDeCuenta(
+    ctx.inquilino.id,
+    ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null,
+  );
+  if (sinCupo) return { ok: false, error: sinCupo };
 
   const repetido = await prisma.usuario.findUnique({
     where: { inquilinoId_usuario: { inquilinoId: ctx.inquilino.id, usuario: d.usuario } },
@@ -94,6 +103,16 @@ export async function editarUsuario(
     });
     if (otros === 0)
       return { ok: false, error: 'Tiene que quedar al menos un administrador activo.' };
+  }
+
+  // Reactivar una cuenta ocupa cupo igual que crearla: si no se comprobara aquí, el
+  // tope se saltaría desactivando y volviendo a activar.
+  if (activo && !cuenta.activo) {
+    const sinCupo = await faltaCupoDeCuenta(
+      ctx.inquilino.id,
+      ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null,
+    );
+    if (sinCupo) return { ok: false, error: sinCupo };
   }
 
   await prisma.usuario.update({

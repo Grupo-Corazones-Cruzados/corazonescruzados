@@ -1,5 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
+import { cupoDeCuentas } from '@/lib/limites';
 import UsuariosCliente, { type UsuarioVista } from './UsuariosCliente';
 
 export const dynamic = 'force-dynamic';
@@ -24,5 +25,10 @@ export default async function PaginaUsuarios({ params }: { params: Promise<{ neg
     ultimoAcceso: u.ultimoAcceso?.toISOString() ?? null,
   }));
 
-  return <UsuariosCliente slug={negocio} usuarios={filas} yoSoy={sesion.uid} />;
+  const cupo = await cupoDeCuentas(
+    inquilino.id,
+    inquilino.suscripcion?.plan.maxUsuarios ?? null,
+  );
+
+  return <UsuariosCliente cupo={cupo} slug={negocio} usuarios={filas} yoSoy={sesion.uid} />;
 }
