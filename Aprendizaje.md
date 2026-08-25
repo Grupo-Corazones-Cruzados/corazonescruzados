@@ -33,6 +33,42 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo (declarado 2026-08-25, cierre) — EL PLAN: 5 $/mes, 100 cuentas y un mes de histórico · ✅ 100 %
+
+> Fernando: *«los dos productos se ofrecen por suscripción 5 $ para uso, pueden crear hasta
+> máximo 100 usuarios, y no hay límite de suites o de mesas, la única restricción es que se
+> eliminan los datos al fin de mes»*.
+
+### ⭐ A6 — UN TOPE QUE NO SE COMPRUEBA NO ES UN TOPE, ES UNA NOTA
+Los `max_usuarios`, `max_suites`, `max_mesas` existían desde el primer producto y **no los
+miraba nadie**. Lo dejé escrito como pendiente dos veces («se guardan, no se comprueban») con la
+excusa razonable de que sin niveles definidos no sabía qué limitar. En cuanto hubo un número,
+implementarlo fueron veinte líneas — **la excusa era buena para el valor, no para el mecanismo**.
+- **Dónde se comprueba:** al crear **y al reactivar**. Solo lo primero deja la puerta abierta:
+  desactivar y volver a activar saltaría el tope.
+- **Qué se cuenta:** las cuentas **activas**. Contar también las desactivadas obligaría a borrar
+  personas del histórico para dar de alta a la siguiente.
+- **NULO es «sin límite», no «cero».** Es la confusión que dejaría a un cliente sin poder crear
+  nada, así que tiene su propia comprobación.
+- **El mensaje lleva el número.** «Has llegado al tope» manda al usuario a buscar cuál es.
+- **Y se enseña antes de estorbar:** «12 de 100 cuentas» en la cabecera, siempre.
+
+### 🪤 A7 — DOS NOMBRES PARA LA MISMA COSA
+El plan de pedidos se llamaba «Estándar» y su código seguía siendo `esencial`. No rompía nada
+—el código no se enseña— pero es exactamente lo que hace dudar al siguiente que lo mire. Se
+unificó con una migración, **y hubo que tocar también la semilla**: si solo lo arregla la
+migración, quien instale desde cero se queda con el plan viejo. *Un dato corregido en la base y
+no en la semilla vuelve a aparecer.*
+
+### Lo medido
+Plan de prueba de **2** cuentas (el número no cambia la lógica y sí el tiempo): tercera
+rechazada en el botón y en el servidor · liberar un sitio deja entrar a la siguiente ·
+reactivar sin cupo rechazado con el número en el mensaje · tope NULO sigue creando. Y en
+**producción**, en los dos dominios: «1 de 100» y «3 de 100», suscripción a **$5,00 / mes** con
+su aviso de retención.
+
+---
+
 ## Objetivo (declarado 2026-08-25) — SEGUNDO PRODUCTO: «Gestión de Pedidos» + retención de un mes en los dos productos · ✅ 100 % — DESPLEGADO Y VERIFICADO
 
 > Fernando: un producto para que **tiendas pequeñas de comida** registren pedidos, con

@@ -102,10 +102,17 @@ Servicio **`pedidos`** del proyecto **Servidor-GCC**, sobre este mismo repositor
 aplicación equivocada en el dominio del producto. Hay que **relanzarlo** después de
 configurarlo (`railway redeploy --service pedidos -y`).
 
+## El plan
+
+**Estándar · 5 $/mes**: mesas, zonas y carta **sin límite**, **hasta 100 cuentas activas**, y
+**un mes de histórico** (lo anterior se borra a fin de mes).
+
+El tope de cuentas **se cumple**: se comprueba al crear y al reactivar, cuenta solo las
+**activas** —una desactivada no ocupa— y un tope NULO significa **sin límite**, no cero. El cupo
+se ve siempre en Usuarios («12 de 100 cuentas»).
+
 ## Lo que falta
 
-- **Niveles de la tier list** por encima del Esencial (el modelo ya soporta topes de
+- **Niveles por encima del Estándar**, si algún día hacen falta (el modelo ya soporta topes de
   mesas, productos y cuentas, y meses de retención).
 - **Pasarela de pago**: hoy el cobro de la mensualidad es por autoservicio desde `/gcc`.
-- **Aplicar los topes del plan** al crear mesas, productos o cuentas: se guardan, no se
-  comprueban todavía.

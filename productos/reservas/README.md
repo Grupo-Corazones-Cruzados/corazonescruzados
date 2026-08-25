@@ -84,13 +84,17 @@ expresión regular: con dos parámetros se lleva el «?» por delante y la base 
 Las migraciones y la semilla se ejecutan **desde local** contra la misma base (la URL pública
 del proxy); no hace falta correr nada dentro del contenedor.
 
+## El plan
+
+**Estándar · 5 $/mes**: ubicaciones y suites **sin límite**, **hasta 100 cuentas activas**, y
+**un mes de histórico** (lo anterior se borra a fin de mes, por la fecha de SALIDA).
+
+El tope de cuentas **se cumple**: se comprueba al crear y al reactivar, cuenta solo las
+**activas** —una desactivada no ocupa— y un tope NULO significa **sin límite**, no cero.
+
 ## Lo que falta (decisión de Fernando)
 
-- **Los niveles de la tier list.** El modelo ya los soporta (tabla `planes` con topes de
-  ubicaciones, suites y cuentas, y características). Hoy hay **un solo plan**, «Estándar», y
-  su precio está **a cero a propósito**: un número inventado se acaba cobrando.
+- **Niveles por encima del Estándar**, si algún día hacen falta.
 - **La pasarela de pago.** Hoy el cobro es por **autoservicio**: el equipo GCC registra el
   mes desde `/gcc` y eso abre la puerta. `pagos_mensuales` ya guarda **método** y
   **referencia externa**, para que enchufar la pasarela no sea una migración de datos.
-- **Aplicar los topes del plan.** Están guardados pero todavía no se comprueban al crear una
-  ubicación, una suite o una cuenta.

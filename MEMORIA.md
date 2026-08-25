@@ -275,6 +275,29 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **💵 EL PLAN QUEDA DEFINIDO PARA LOS DOS PRODUCTOS (2026-08-25).** Fernando: *«los dos
+  productos se ofrecen por suscripción 5 $ para uso, pueden crear hasta máximo 100 usuarios, y
+  no hay límite de suites o de mesas, la única restricción es que se eliminan los datos al fin
+  de mes»*. Plan **Estándar, 5 $/mes, 100 cuentas, un mes de histórico** en ambos.
+  - **⭐ Y EL TOPE SE CUMPLE, QUE ES LO QUE FALTABA.** Los topes llevaban desde el primer
+    producto guardados **sin que nadie los mirara**: *un tope que no se comprueba no es un tope,
+    es una nota*. Ahora se comprueba **al crear** una cuenta **y al REACTIVAR** una desactivada
+    —sin lo segundo, el tope se saltaría desactivando y volviendo a activar—.
+  - **Se cuentan las cuentas ACTIVAS.** Una desactivada no ocupa ni consume; que gastara cupo
+    obligaría a **borrar personas del histórico** para poder dar de alta a la siguiente.
+  - **NULO es «sin límite», no «cero»** — y así queda probado, porque es el tipo de confusión
+    que deja a un cliente sin poder crear nada.
+  - **El mensaje dice el número** («tu plan permite 100 y ya tienes 100»): «has llegado al tope»
+    sin decir cuál obliga a ir a buscarlo. Y el cupo **se enseña siempre** en Usuarios («12 de
+    100 cuentas»), no solo cuando se agota.
+  - Verificado con un plan de prueba de **2** cuentas —el número no cambia la lógica y sí el
+    tiempo—: la tercera se rechaza en el botón **y en el servidor**, liberar un sitio deja
+    entrar a la siguiente, reactivar sin cupo se rechaza, y con el tope en NULO se sigue
+    creando. Comprobado además en producción en los dos dominios.
+  - **⏳ Lo que sigue pendiente:** la **pasarela** (hoy el cobro es por autoservicio desde
+    `/gcc`) y **la ficha del marketplace**: `gcc_world.products` sigue con «Gestión de Reservas»
+    a **400 $** —precio de proyecto, de marzo— y **no existe la de «Gestión de Pedidos»**. Hay
+    que decidir si la ficha pasa a anunciar los 5 $/mes.
 - **🍽️ SEGUNDO PRODUCTO: «GESTIÓN DE PEDIDOS» (2026-08-25).** Para negocios de comida:
   mesas, carta, cocina y cobro. Mismo talento (**Automatización de procesos**), mismo armazón,
   esquema propio `pedidos`. **Desplegado y verificado**:
