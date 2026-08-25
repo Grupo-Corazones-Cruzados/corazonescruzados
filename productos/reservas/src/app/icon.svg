@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    Icono de pestaña de «Gestión de Reservas».
+
+    Cuadrado violeta del grupo (#4B2D8E) con una cama en blanco. A 16 px no se ve
+    ningún detalle fino, así que el trazo va GRUESO (2,6) y el glifo ocupa casi todo
+    el cuadrado: lo que se reconoce a ese tamaño es la silueta y el color, no el
+    dibujo.
+
+    ⚠️ El violeta es FIJO aunque el inquilino tenga su propio color: el icono de
+    pestaña lo cachea el navegador por origen y es el mismo para todos los
+    alojamientos. Además es la marca del grupo, que sí debe reconocerse siempre.
+  -->
+  <rect width="32" height="32" rx="7" fill="#4B2D8E"/>
+  <g fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- respaldo y patas -->
+    <path d="M6 10v13"/>
+    <path d="M26 23v-6"/>
+    <!-- colchón -->
+    <path d="M6 18h20"/>
+    <!-- almohada y cabecero -->
+    <path d="M10.5 14.5h4"/>
+    <path d="M17 14.5h9"/>
+  </g>
+</svg>
