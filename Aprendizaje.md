@@ -7159,3 +7159,166 @@ pendiente de **866,25 $**:
 real al SRI** del proyecto real, y eso no se deshace: se anula con nota de crédito. Hace
 falta que Fernando diga sobre qué proyecto —o que exista un ambiente de pruebas del SRI—
 antes de pulsar ese botón una sola vez.
+
+---
+
+### 🔎 P119 — «No encuentro dónde crear la cuenta de Kushki» · ✅ Resuelta: no existe tal botón (2026-08-25)
+- **Por qué importa:** Fernando revisó el sitio y no halló el registro. No se le pasó nada:
+  **Kushki no tiene alta de autoservicio.** No hay «crear cuenta» ni consola pública de
+  acceso. Se entra por un **formulario comercial** y luego llama un ejecutivo (≤5 días
+  hábiles). Decirle «regístrate en su web» habría sido mandarlo a buscar algo inexistente.
+- **La puerta:** `kushkipagos.com` → botón **«contacto»** → `/formulario-contacto`.
+  Pide: nombre de la empresa, sitio web, **volumen mensual promedio**, países de operación,
+  sede, nombre y apellido, correo corporativo, teléfono, país, y un campo abierto
+  «cuéntanos más sobre tus necesidades». **La afiliación no cuesta nada**: solo se cobra
+  comisión por transacción aprobada.
+- **⭐ HAY DOS MODELOS Y ELEGIR MAL CUESTA EL TRÁMITE ENTERO:**
+  - **Agregador** — para quien **no tiene código de comercio**, que es el caso de GCC.
+    Kushki procesa con su propio subcódigo. **Documentación simplificada.**
+  - **Gateway** — para quien ya tiene código de comercio propio. Pide además constitución
+    legal de la empresa, nombramiento del representante legal, composición accionaria y
+    **las últimas 3 declaraciones de IVA**.
+  - **⚠️ Y ahí está la trampa concreta para GCC:** como **RIMPE Negocio Popular
+    [[sri-ec-rimpe-negocio-popular]] no presenta declaraciones mensuales de IVA**. Pedir
+    Gateway sería pedir un requisito que él no puede cumplir por diseño de su régimen. **Hay
+    que decir «modelo AGREGADOR» explícitamente en el formulario**, no esperar a que lo
+    asignen.
+- **Documentos del modelo agregador:** RUC completo y legible (vigencia ≤3 meses), cédula
+  por ambos lados, y **certificado bancario actualizado (≤3 meses)** — este último no se
+  descarga: se pide al banco y tarda.
+- **Banco adquirente para tarjetas:** Internacional, Pacífico o Guayaquil. Se elige al
+  afiliarse y determina dónde cae la liquidación (T+2/T+3).
+- **Descartado:** `mintel.kushkipagos.com` sale en las búsquedas como «Afíliate a Kushki»,
+  pero es **solo para instituciones públicas** (pide acto normativo de creación
+  institucional y autorización del Banco Central). No aplica.
+
+---
+
+### ⛔ P120 — KUSHKI QUEDA DESCARTADA, Y EL ERROR FUE MÍO (2026-08-25)
+- **Lo que pasó:** Fernando abrió el formulario de afiliación y el desplegable «promedio
+  transaccional mensual» **empieza en 200.000 USD**. GCC factura ~20.000 USD **al año**:
+  está **120 veces por debajo** del escalón más bajo que Kushki contempla.
+- **⭐ EL FALLO DE MÉTODO, QUE ES LO QUE HAY QUE APRENDER:** comparé **comisiones y
+  capacidades técnicas** y no comprobé **a qué tamaño de comercio atiende cada una**. Una
+  tarifa del 2,95 % es irrelevante si no te aceptan como cliente. **Antes de recomendar un
+  proveedor hay que verificar que el cliente entra en su franja**, no solo que su producto
+  encaja. Lo detectó Fernando, no yo, y solo al intentar usarlo.
+- **Lo que NO se pierde:** el contrato `ProveedorDePago` existía exactamente para esto.
+  Cambiar de pasarela es **escribir un archivo nuevo en `lib/pagos/`**, no rehacer los tres
+  canales, ni el modelo de datos, ni el recargo, ni la emisión de la factura.
+  [[gcc-equivalente-no-es-igual]] pagándose solo, y antes de lo previsto.
+
+### 🔎 P121 — Las tarifas reales para un comercio del tamaño de GCC · ✅ Resuelta
+Medido sobre **20.000 USD al año**, que es lo que factura GCC:
+
+| Opción | Fijo/año | Comisión | Coste en 20.000 $ | Entrada |
+|---|---|---|---|---|
+| **PayPhone** | 0 $ | 5 % + IVA = **5,75 %** | **1.150 $** | inmediata: correo + RUC |
+| **Deuna** (vía Pagomedios) | 99 $+IVA ≈ **114 $** | **0 %** | **114 $** | RUC + cédula |
+| Pagomedios Estándar (tarjetas) | 249 $+IVA ≈ 286 $ | ~5 % **del banco** | 1.436 $ | RUC + cédula + papeleta |
+| ~~Kushki~~ | 0 $ | 2,95 % + 0,25 $ | ~~600 $~~ | ❌ **no atiende este tamaño** |
+
+- **⚠️ EL «0 % DE COMISIÓN» DE PAGOMEDIOS ES CIERTO Y ENGAÑOSO A LA VEZ.** Ellos no cobran
+  por transacción, pero **el banco sí**: su propia web dice **5 % para tarjeta de crédito**.
+  Con su cuota anual encima, sale **más caro** que PayPhone para tarjetas. Donde sí gana es
+  en **Deuna**, que es 0 % de verdad.
+- **El retiro de PayPhone al banco es GRATIS** (mínimo 5 $, 24-48 h). Un blog afirmaba que
+  ahí estaba el coste oculto; su propio centro de ayuda lo desmiente. **Comprobado antes de
+  repetirlo.**
+- **⭐ Y de aquí sale algo que mejora el producto:** con **Deuna el cliente no paga recargo
+  ninguno** (0 %), y con tarjeta paga 5,75 %. Enseñar los dos importes en la pantalla de
+  pago empuja solo hacia el método más barato **para los dos**.
+- **Deuna solo sirve a clientes ecuatorianos con móvil**; el de fuera necesita tarjeta. Por
+  eso no se elige uno: **son complementarios**.
+
+---
+
+### ⚠️ P122 — PAYPHONE REVERSA EL COBRO SI NO LO CONFIRMAS EN 5 MINUTOS (2026-08-25) · ✅ Resuelta
+- **Por qué importa:** rompe un supuesto del diseño hecho para Kushki. Allí **el webhook era
+  la única fuente de verdad** y bastaba con escucharlo. En PayPhone **hay que confirmar
+  activamente**, y si no se hace **dentro de los primeros 5 minutos la transacción se
+  reversa sola** para evitar cobros indebidos. Un cobro que «funciona» pero no se confirma
+  se deshace sin que nadie lo note hasta cuadrar el mes.
+- **El flujo real de la Cajita de Pagos:**
+  1. La web carga el CSS y el JS de `cdn.payphonetodoesposible.com/box/v2.0/`, configura la
+     caja con `token`, `storeId`, `amount` (**en CENTAVOS**, entero) y un
+     `clientTransactionId` propio (máx. 50 caracteres).
+  2. El cliente paga **dentro de nuestra página** (no sale a otro sitio).
+  3. PayPhone redirige a la **Url de respuesta** con `?id=…&clientTransactionId=…`.
+  4. **Nuestro servidor** hace `POST https://paymentbox.payphonetodoesposible.com/api/confirm`
+     con `Bearer <token>` y `{ id, clientTxId }`. Si vuelve `transactionStatus: "Approved"`,
+     **ahí** se confirma el pago y se emite la factura.
+- **Encaja con lo ya construido, y mejor de lo esperado:** el `clientTransactionId` es
+  exactamente nuestro `payment_intents.id`, así que la idempotencia y el candado de etapa
+  no cambian. Lo que cambia es **quién dispara `confirmarPago`**: en Kushki el webhook, en
+  PayPhone la ruta de respuesta. Por eso `confirmarPago` vive en `lib/pagos/intentos.ts` y
+  no dentro del webhook — sirve igual a los dos.
+- **Lo que SÍ hay que rehacer:** el formulario pide hoy los datos de la tarjeta para
+  tokenizarlos con Kushki.js. Con PayPhone **eso desaparece**: la Cajita renderiza su propio
+  formulario. Los datos de facturación se recogen antes, y el pago lo pinta PayPhone.
+- **`amount` va en CENTAVOS y como entero.** 892,84 $ se manda como `89284`. Un decimal
+  colado ahí es un cobro por otro importe.
+
+### 🔑 P123 — Los campos de «Crear Aplicación» en PayPhone Developer · ✅ Resueltos
+- **Plataforma Desarrollo:** la lista (.Net, Android, iOS, Java, PHP, Prestashop, Python,
+  Virtual Mart, WordPress) **no tiene Node.js**, que es lo que usa la app. El campo es
+  informativo: la API es REST y se consume igual desde cualquier lenguaje. **Lo que sí
+  importa es NO elegir un CMS** (Prestashop, WordPress, Virtual Mart), porque esa rama lleva
+  a la integración por plugin, no a la API.
+- **Tipo de Aplicación:** `Web`.
+- **Dominio web (AuthDomains):** `https://app.grupocc.org` — **solo el dominio registrado
+  puede invocar la cajita**. Es el que usan los enlaces de los correos
+  (`NEXT_PUBLIC_APP_URL`); `www.grupocc.org` es el canónico de SEO, no el de la aplicación.
+- **Url de respuesta:** `https://app.grupocc.org/pagos/respuesta` — **hay que construirla**,
+  y es la que ejecuta la confirmación de los 5 minutos.
+
+---
+
+## Cuarta pasada (2026-08-25) — PayPhone conectado, a falta del storeId · 🔎 92 %
+
+### ✅ P124 — El token de PayPhone es válido, y se comprobó SIN cobrar nada
+Sonda: `POST /api/confirm` con `id: 1` y un `clientTxId` inventado.
+- **Respondió `404` con `{"errorCode":20,"message":"La transacción no existe…"}`** — un
+  error **de negocio**, no un `401`. Eso demuestra tres cosas de una vez: el token
+  autentica, el endpoint es el correcto, y nuestra integración habla con PayPhone de verdad.
+- **⭐ El método es lo que vale:** para saber si una credencial de pagos funciona **no hace
+  falta cobrar**. Basta pedirle algo inofensivo y mirar **qué clase de error** devuelve.
+  Un 401 habría dicho «token malo»; un 404 de negocio dice «token bueno, dato inexistente».
+
+### 🧱 P125 — El contrato ganó `cobraEnCliente`, y no es un parche
+Kushki tokeniza en el navegador y **cobra en el servidor**; PayPhone hace lo contrario: su
+**Cajita cobra en el navegador** y el servidor solo confirma. La tentación era que el
+endpoint preguntara `if (proveedor.nombre === 'payphone')`. Se resistió: el contrato declara
+`cobraEnCliente` + `parametrosCliente()`, y ni el endpoint ni la pantalla saben qué pasarela
+hay detrás. **El día que entre Binance —que Fernando ya anunció— cae en uno de los dos
+modos, no en un tercer `if`.**
+
+### 🪤 P126 — Un `<script type="module">` no está listo cuando dispara `onload`
+La Cajita llega como módulo ES, y **los módulos se evalúan después del evento de carga**:
+fiarse de `onload` deja `window.PPaymentButtonBox` sin definir en el primer intento y
+definido al recargar — el fallo clásico que solo se ve en frío y en producción. Se espera al
+constructor con un sondeo de 100 ms (tope de 10 s) en vez de al evento.
+
+### 🔑 P127 — Detalles ≠ Credenciales en el portal de PayPhone
+La pestaña **Detalles** enseña Identificador, Id Cliente, Clave secreta y Contraseña de
+codificación — **ninguno de ellos es el `storeId`**. El `token` y el `storeId` viven en la
+pestaña **Credenciales**. Sin `storeId` la Cajita no se dibuja siquiera, y por eso
+`payphone.disponible()` exige **los dos**.
+
+### ⚠️ P128 — Se comprueba el IMPORTE antes de emitir la factura
+`/pagos/respuesta` compara lo que PayPhone dice haber cobrado con `charge_amount` del
+intento, **en centavos**. Si no coinciden, **no se emite factura**: el cobro se marca con el
+descuadre y se revisa a mano. Lo que la pasarela dice que cobró es la única cifra que existe
+de verdad; emitir un comprobante por otra sería peor que no emitirlo.
+
+### ⭐ P129 — Los textos del desenlace se ordenan por «¿pudo haber pagado?»
+`/pagos/resultado` tiene seis estados y la regla que los ordena no es técnica: **si el cobro
+pudo haber entrado, no se le dice al cliente que falló**. Por eso «verificando» dice
+literalmente *«NO vuelvas a pagar»* — un texto que diga «error» ahí provoca el segundo pago,
+y el segundo pago sí es un problema de verdad.
+
+### Lo que falta para cobrar
+1. El **`storeId`** (pestaña Credenciales del portal).
+2. Invitar a **un probador** para usar el ambiente de pruebas.
+3. Las dos variables en Railway: `PAYPHONE_TOKEN` y `PAYPHONE_STORE_ID`, más
+   `PAGOS_PROVEEDOR=payphone`.

@@ -50,11 +50,16 @@ export async function POST(req: NextRequest) {
     });
 
     const metodo = cuerpo.metodo === 'transfer' ? 'transfer' : 'card';
-    const token = String(cuerpo.token || '').trim();
-    if (!token) return NextResponse.json({ error: 'Falta el token de la pasarela.' }, { status: 400 });
-
     const facturacion = validarFacturacion(cuerpo.facturacion);
     const proveedor = proveedorActivo();
+
+    // Con PayPhone el cobro lo ejecuta la Cajita en el navegador, así que aquí no llega
+    // ningún token: se pide DESPUÉS de crear el intento, porque el identificador que la
+    // Cajita necesita ES el id del intento.
+    const token = String(cuerpo.token || '').trim();
+    if (!proveedor.cobraEnCliente && !token) {
+      return NextResponse.json({ error: 'Falta el token de la pasarela.' }, { status: 400 });
+    }
     if (!proveedor.metodos().includes(metodo)) {
       return NextResponse.json({ error: `La pasarela no admite ${metodo === 'transfer' ? 'transferencias' : 'tarjetas'}.` }, { status: 400 });
     }
@@ -77,6 +82,27 @@ export async function POST(req: NextRequest) {
         `UPDATE gcc_world.payment_links SET intent_id = $1, opened_at = COALESCE(opened_at, NOW()) WHERE id = $2`,
         [intento.id, auth.solicitante.linkId],
       );
+    }
+
+    // ── Proveedores que cobran EN EL NAVEGADOR (PayPhone) ────────────────────
+    // El intento ya existe, así que se devuelven los parámetros de su widget y se acaba
+    // aquí: quien cobra es el cliente, y quien confirma es `/pagos/respuesta`. Marcarlo
+    // como pagado en este punto sería mentir — todavía no ha pagado nadie.
+    if (proveedor.cobraEnCliente && proveedor.parametrosCliente) {
+      await anotarRespuestaProveedor(intento.id, { metodo, procesando: true, estado: 'Esperando al cliente' });
+      return NextResponse.json({
+        estado: 'cajita',
+        intentId: intento.id,
+        importes: { neto: intento.neto, recargo: intento.recargo, total: intento.total },
+        parametros: proveedor.parametrosCliente({
+          intentId: intento.id,
+          total: intento.total,
+          referencia: `${etapa.projectTitle} — ${etapa.stageName}`,
+          email: facturacion.email,
+          telefono: facturacion.phone,
+          documento: facturacion.ruc,
+        }),
+      });
     }
 
     const origen = req.nextUrl.origin;

@@ -85,6 +85,27 @@ export interface ProveedorDePago {
   interpretarWebhook(payload: any): EventoWebhook | null;
   /** Consulta directa al proveedor. La red de seguridad cuando el webhook no llega. */
   consultarCobro?(referencia: string): Promise<ResultadoCobro>;
+
+  /**
+   * `true` cuando **el cobro lo ejecuta el navegador**, no el servidor.
+   *
+   * Kushki tokeniza en el navegador y cobra en el servidor. PayPhone hace lo contrario: su
+   * Cajita cobra dentro de la página del cliente y el servidor solo confirma después. No es
+   * un detalle de implementación — cambia qué devuelve `/api/pagos/cobrar` y qué pinta la
+   * pantalla, así que el contrato tiene que declararlo en vez de que cada endpoint adivine
+   * mirando el nombre del proveedor.
+   */
+  readonly cobraEnCliente?: boolean;
+
+  /** Lo que el navegador necesita para cobrar. Solo si `cobraEnCliente`. */
+  parametrosCliente?(datos: {
+    intentId: number;
+    total: number;
+    referencia: string;
+    email?: string;
+    telefono?: string | null;
+    documento?: string | null;
+  }): Record<string, unknown>;
 }
 
 /**

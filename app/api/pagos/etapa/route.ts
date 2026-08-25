@@ -91,6 +91,9 @@ export async function GET(req: NextRequest) {
       pasarela: {
         proveedor: proveedor.nombre,
         metodos: proveedor.metodos(),
+        // Con PayPhone el cobro lo ejecuta su Cajita en el navegador; la pantalla necesita
+        // saberlo para pedir los datos de facturación ANTES y dejarle el pago a ella.
+        cobraEnCliente: Boolean(proveedor.cobraEnCliente),
         // La clave PÚBLICA es la que tokeniza en el navegador; la privada no sale de aquí.
         clavePublica: process.env.KUSHKI_PUBLIC_MERCHANT_ID || null,
         entorno: process.env.KUSHKI_ENV === 'production' ? 'production' : 'uat',

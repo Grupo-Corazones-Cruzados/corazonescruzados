@@ -16,19 +16,23 @@
  * envía a ningún sitio nuestro.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CreditCard, Landmark, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 
 declare global {
-  interface Window { Kushki?: any }
+  interface Window {
+    Kushki?: any;
+    /** Constructor de la Cajita de Pagos de PayPhone, que llega por su CDN. */
+    PPaymentButtonBox?: any;
+  }
 }
 
 export type DatosPago = {
   proyecto: { id: number; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
   etapa: { id: number; nombre: string };
   importes: { neto: number; recargo: number; total: number };
-  pasarela: { proveedor: string; metodos: string[]; clavePublica: string | null; entorno: string };
+  pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string };
   facturacion: any;
   correoDestino: string | null;
   canal: string;
@@ -44,6 +48,47 @@ const TIPOS_ID = [
 
 const CAMPO = 'w-full rounded-lg border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] px-3 py-2.5 text-[15px] text-[var(--texto)] outline-none focus:border-[var(--violeta-vivo)] focus:ring-2 focus:ring-[var(--violeta)]/20 transition';
 const ETIQUETA = 'block text-[13px] font-medium text-[var(--texto)] mb-1.5';
+
+/**
+ * Carga los dos recursos de la Cajita de PayPhone (CSS + módulo JS) una sola vez.
+ *
+ * ⚠️ El JS es un `type="module"`, así que su `onload` no garantiza que
+ * `window.PPaymentButtonBox` exista todavía: los módulos se evalúan después. Por eso se
+ * espera al constructor con un sondeo corto en vez de fiarse del evento — sin esto, el
+ * primer intento de pintar la caja falla en frío y funciona al recargar, que es la clase de
+ * fallo que solo aparece en producción.
+ */
+function useCajitaPayphone(activa: boolean) {
+  const [listo, setListo] = useState(false);
+  useEffect(() => {
+    if (!activa) return;
+    if (!document.getElementById('pp-box-css')) {
+      const l = document.createElement('link');
+      l.id = 'pp-box-css';
+      l.rel = 'stylesheet';
+      l.href = 'https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.css';
+      document.head.appendChild(l);
+    }
+    if (!document.getElementById('pp-box-js')) {
+      const s = document.createElement('script');
+      s.id = 'pp-box-js';
+      s.type = 'module';
+      s.src = 'https://cdn.payphonetodoesposible.com/box/v2.0/payphone-payment-box.js';
+      document.head.appendChild(s);
+    }
+    let vivo = true;
+    let intentos = 0;
+    const mirar = () => {
+      if (!vivo) return;
+      if (window.PPaymentButtonBox) { setListo(true); return; }
+      if (++intentos > 100) return;   // ~10 s y se rinde: el aviso lo da la pantalla
+      setTimeout(mirar, 100);
+    };
+    mirar();
+    return () => { vivo = false; };
+  }, [activa]);
+  return listo;
+}
 
 /** Carga la librería de la pasarela una sola vez. */
 function useKushki(clavePublica: string | null, entorno: string) {
@@ -74,7 +119,12 @@ export default function FormularioPago({
 }) {
   const { importes, pasarela } = datos;
   const esSimulado = pasarela.proveedor === 'simulado';
-  const kushkiListo = useKushki(esSimulado ? null : pasarela.clavePublica, pasarela.entorno);
+  // PayPhone cobra en el navegador con su propia Cajita; Kushki cobra en el servidor con un
+  // token. La pantalla no pregunta «¿eres PayPhone?»: lo declara el proveedor.
+  const cobraEnCliente = Boolean(pasarela.cobraEnCliente);
+  const kushkiListo = useKushki(esSimulado || cobraEnCliente ? null : pasarela.clavePublica, pasarela.entorno);
+  const cajitaLista = useCajitaPayphone(cobraEnCliente);
+  const [paramsCajita, setParamsCajita] = useState<Record<string, unknown> | null>(null);
 
   const [metodo, setMetodo] = useState<'card' | 'transfer'>(
     pasarela.metodos.includes('card') ? 'card' : 'transfer',
@@ -98,6 +148,24 @@ export default function FormularioPago({
   const [hecho, setHecho] = useState<{ invoiceId: number | null; aviso: string | null } | null>(null);
 
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+
+  /**
+   * Pinta la Cajita cuando ya hay intento creado y la librería cargó.
+   *
+   * ⚠️ Se renderiza UNA sola vez (`pintadaRef`). La Cajita lleva dentro el importe y el
+   * identificador del cobro; volver a pintarla sobre el mismo contenedor deja dos cajas
+   * vivas apuntando al mismo intento, y la segunda es la que se lleva el clic.
+   */
+  const pintadaRef = useRef(false);
+  useEffect(() => {
+    if (!paramsCajita || !cajitaLista || pintadaRef.current) return;
+    try {
+      new window.PPaymentButtonBox(paramsCajita).render('pp-button');
+      pintadaRef.current = true;
+    } catch (e: any) {
+      setError(`No se pudo abrir la pasarela: ${e?.message || e}`);
+    }
+  }, [paramsCajita, cajitaLista]);
 
   /** Pide el token a la pasarela. Devuelve null y deja el error puesto si no se pudo. */
   async function pedirToken(): Promise<string | null> {
@@ -154,8 +222,9 @@ export default function FormularioPago({
     setError('');
     setEnviando(true);
     try {
-      const token = await pedirToken();
-      if (!token) { setEnviando(false); return; }
+      // Con la Cajita no hay token que pedir: se crea el intento y ella cobra después.
+      const token = cobraEnCliente ? '' : await pedirToken();
+      if (!cobraEnCliente && !token) { setEnviando(false); return; }
 
       const res = await fetch('/api/pagos/cobrar', {
         method: 'POST',
@@ -171,6 +240,14 @@ export default function FormularioPago({
       if (!res.ok) { setError(d.error || 'No se pudo completar el pago.'); setEnviando(false); return; }
 
       if (d.estado === 'rechazado') { setError(d.error); setEnviando(false); return; }
+
+      if (d.estado === 'cajita') {
+        // A partir de aquí manda PayPhone: pinta su formulario y, al pagar, devuelve al
+        // cliente a `/pagos/respuesta`, que es quien confirma el cobro.
+        setParamsCajita(d.parametros);
+        setEnviando(false);
+        return;
+      }
 
       if (d.estado === 'redirigir') {
         // La transferencia se autoriza en el portal del banco. A partir de aquí el pago lo
@@ -205,12 +282,16 @@ export default function FormularioPago({
     );
   }
 
-  const puedePagar = !enviando && (esSimulado || kushkiListo);
+  // Con la Cajita basta con poder crear el intento: la librería puede seguir cargando
+  // mientras el cliente rellena la facturación, y esperar a que termine solo alarga la
+  // pantalla sin ganar nada.
+  const puedePagar = !enviando && (esSimulado || cobraEnCliente || kushkiListo);
 
   return (
     <form onSubmit={pagar} className="space-y-7">
-      {/* ── Método ── */}
-      <fieldset>
+      {/* ── Método ── (se esconde si la pasarela solo ofrece uno: elegir entre una sola
+           opción no es elegir, es ruido) */}
+      <fieldset className={pasarela.metodos.length > 1 ? '' : 'hidden'}>
         <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
           Cómo quieres pagar
         </legend>
@@ -283,7 +364,7 @@ export default function FormularioPago({
       </fieldset>
 
       {/* ── Tarjeta ── */}
-      {metodo === 'card' && !esSimulado && (
+      {metodo === 'card' && !esSimulado && !cobraEnCliente && (
         <fieldset>
           <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
             Tu tarjeta
@@ -371,22 +452,43 @@ export default function FormularioPago({
           </p>
         )}
 
-        {!esSimulado && !kushkiListo && pasarela.clavePublica && (
+        {!esSimulado && !cobraEnCliente && !kushkiListo && pasarela.clavePublica && (
           <p className="mt-4 text-[13px] text-[var(--tenue)]">Preparando la pasarela…</p>
         )}
-        {!esSimulado && !pasarela.clavePublica && (
+        {!esSimulado && !cobraEnCliente && !pasarela.clavePublica && (
           <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-50/70 px-3 py-2.5 text-[13.5px] text-amber-900">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             El cobro en línea todavía no está activo. Escríbenos y lo resolvemos.
           </p>
         )}
 
-        <button type="submit" disabled={!puedePagar}
-          className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--violeta)] px-5 py-3 text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
-          {enviando
-            ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Procesando…</>
-            : <><Lock className="w-[18px] h-[18px]" /> Pagar ${fmt2(importes.total)}</>}
-        </button>
+        {/* Con la Cajita el botón desaparece en cuanto ella se pinta: quien cobra a partir
+            de ese momento es PayPhone, y dejar debajo un botón nuestro que dice «Pagar»
+            invita a pulsar el que no cobra. */}
+        {!paramsCajita && (
+          <button type="submit" disabled={!puedePagar}
+            className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--violeta)] px-5 py-3 text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+            {enviando
+              ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Procesando…</>
+              : cobraEnCliente
+                ? <><Lock className="w-[18px] h-[18px]" /> Continuar al pago</>
+                : <><Lock className="w-[18px] h-[18px]" /> Pagar ${fmt2(importes.total)}</>}
+          </button>
+        )}
+
+        {/* Donde PayPhone dibuja su formulario. El div existe siempre que haya parámetros:
+            si se montara solo al estar lista la librería, `render('pp-button')` no
+            encontraría el contenedor la primera vez. */}
+        {paramsCajita && (
+          <div className="mt-5">
+            {!cajitaLista && (
+              <p className="mb-3 flex items-center gap-2 text-[13px] text-[var(--tenue)]">
+                <Loader2 className="w-4 h-4 animate-spin" /> Abriendo la pasarela de pago…
+              </p>
+            )}
+            <div id="pp-button" />
+          </div>
+        )}
 
         <p className="mt-3 flex items-center justify-center gap-1.5 text-[12.5px] text-[var(--tenue)]">
           <Lock className="w-3.5 h-3.5" />

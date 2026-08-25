@@ -275,6 +275,72 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **💳 PAYPHONE ES LA PASARELA, Y YA HABLA CON NOSOTROS (2026-08-25).** Aplicación creada en
+  su portal de developers: dominio `https://app.grupocc.org`, Url de respuesta
+  `https://app.grupocc.org/pagos/respuesta`, tipo Web. **El token está verificado**; falta el
+  `storeId`.
+  - **⭐ CÓMO SE COMPRUEBA UNA CREDENCIAL DE PAGOS SIN COBRAR NADA:** se le pide algo
+    inofensivo y se mira **qué clase de error** devuelve. Confirmar una transacción
+    inexistente dio **404 con `errorCode 20` («La transacción no existe»)** — un error de
+    NEGOCIO, no un 401. Eso prueba que el token autentica y que el endpoint es el correcto.
+  - **🔑 «Detalles» NO es «Credenciales».** La pestaña Detalles enseña Identificador, Id
+    Cliente, Clave secreta y Contraseña de codificación, y **ninguno es el `storeId`**: token
+    y storeId viven en la pestaña **Credenciales**. Sin `storeId` la Cajita ni se dibuja.
+  - **🔴 SU FLUJO ES EL INVERSO AL DE KUSHKI, Y HAY 5 MINUTOS DE MARGEN.** Kushki: el
+    navegador tokeniza, el servidor cobra, el webhook confirma. PayPhone: **su Cajita cobra
+    en el navegador** y **nosotros confirmamos** llamando a su API — y **si no se confirma en
+    5 minutos, PayPhone reversa el cobro solo**. Por eso `/pagos/respuesta` confirma en el
+    acto y no encola nada.
+  - **El contrato ganó `cobraEnCliente`, no un `if` por nombre.** Ni el endpoint ni la
+    pantalla saben qué pasarela hay detrás; declaran el modo. Así Binance —que Fernando ya
+    anunció— caerá en uno de los dos modos, no en un tercer caso especial.
+  - **⚠️ SE COMPARA EL IMPORTE ANTES DE FACTURAR.** `/pagos/respuesta` contrasta lo que
+    PayPhone dice haber cobrado con `charge_amount`, en centavos. Si no cuadra, **no se emite
+    factura**: se marca el descuadre y se revisa a mano.
+  - **🪤 Un `<script type="module">` no está listo en su `onload`:** los módulos se evalúan
+    después, así que `window.PPaymentButtonBox` sale indefinido en frío y definido al
+    recargar. Se espera al constructor con un sondeo, no al evento.
+  - **PayPhone trabaja en CENTAVOS enteros** (892,84 $ → `89284`) y **`amount` debe ser la
+    suma exacta** de `amountWithoutTax + amountWithTax + tax + service + tip`. Con tarifa
+    0 %, todo va en `amountWithoutTax`.
+  - **Y no da transferencia bancaria:** solo tarjeta y saldo PayPhone. La transferencia
+    ecuatoriana vendrá de **Deuna** (0 % de comisión), en una fase posterior.
+- **⛔ KUSHKI QUEDA DESCARTADA: NO ATIENDE COMERCIOS DE ESTE TAMAÑO (2026-08-25).** Lo
+  descubrió Fernando al abrir el formulario: el desplegable «promedio transaccional
+  mensual» **empieza en 200.000 USD**. GCC factura **~20.000 USD al año** — 120 veces por
+  debajo de su escalón más bajo.
+  - **⭐ EL FALLO DE MÉTODO FUE MÍO Y CONVIENE NO REPETIRLO:** comparé comisiones y
+    capacidades técnicas sin comprobar **a qué tamaño de comercio atiende cada proveedor**.
+    Una tarifa del 2,95 % no vale nada si no te aceptan como cliente. **Antes de recomendar
+    un proveedor, verificar que el cliente entra en su franja.**
+  - **Lo que NO se pierde:** el contrato `ProveedorDePago` existía justo para esto. Cambiar
+    de pasarela es **escribir un archivo en `lib/pagos/`** — el modelo de datos, los tres
+    canales, el recargo y la emisión de la factura no se tocan.
+  - **Las tarifas reales para 20.000 $/año:** **PayPhone** 5 %+IVA = 5,75 % → **1.150 $**,
+    sin fijos, alta inmediata con correo y RUC, retiro al banco **gratis** (comprobado en su
+    centro de ayuda: un blog decía lo contrario). **Deuna** (vía Pagomedios, 99 $+IVA/año)
+    → **0 % de comisión**, ~114 $ al año, pero solo para clientes ecuatorianos con móvil.
+    **Pagomedios para tarjetas** sale más caro que PayPhone: su «0 % de comisión» es cierto
+    pero **el banco cobra 5 %**, y encima lleva cuota anual.
+  - **⭐ Y de aquí sale una mejora del producto:** con **Deuna el cliente no paga recargo**;
+    con tarjeta paga 5,75 %. Enseñar los dos importes en la pantalla empuja solo al método
+    más barato para ambos.
+- **🔑 CÓMO SE ABRE LA CUENTA DE KUSHKI (2026-08-25).** Fernando buscó el registro en su web
+  y no lo encontró. **No se le pasó nada: Kushki no tiene alta de autoservicio.** No hay
+  «crear cuenta» ni consola pública. Se entra por `kushkipagos.com` → botón **«contacto»** →
+  `/formulario-contacto`, y llama un ejecutivo en ≤5 días hábiles. **Afiliarse es gratis**;
+  solo se cobra comisión por transacción aprobada.
+  - **⭐ HAY QUE PEDIR EL MODELO «AGREGADOR» POR SU NOMBRE.** Es el de quien **no tiene código
+    de comercio propio** —el caso de GCC— y lleva documentación simplificada: RUC completo,
+    cédula por ambos lados y **certificado bancario de menos de 3 meses** (ese se pide al
+    banco, no se descarga). El otro modelo, **Gateway**, exige además constitución de la
+    empresa, nombramiento del representante legal, composición accionaria y **las últimas 3
+    declaraciones de IVA** — que un **RIMPE Negocio Popular no presenta**, así que sería
+    pedir un requisito imposible por diseño del propio régimen.
+  - **Banco adquirente para tarjetas:** Internacional, Pacífico o Guayaquil. Decide dónde cae
+    la liquidación (T+2/T+3), así que se elige el banco donde ya haya cuenta.
+  - **Descartado:** `mintel.kushkipagos.com` aparece en las búsquedas como «Afíliate a
+    Kushki», pero es **solo para instituciones públicas**. No aplica.
 - **💳 LA PASARELA QUEDA DECIDIDA Y SU FONTANERÍA CONSTRUIDA (2026-08-25, migración 053).**
   Fernando cerró las seis decisiones abiertas y se levantó toda la maquinaria del cobro.
   **Falta la pantalla del cliente**, que es suya (ver abajo).
