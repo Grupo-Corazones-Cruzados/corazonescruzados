@@ -275,6 +275,91 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **💳 LA PASARELA QUEDA DECIDIDA Y SU FONTANERÍA CONSTRUIDA (2026-08-25, migración 053).**
+  Fernando cerró las seis decisiones abiertas y se levantó toda la maquinaria del cobro.
+  **Falta la pantalla del cliente**, que es suya (ver abajo).
+  - **Lo que decidió:** **Kushki**; la **comisión la paga el cliente**; la **factura se emite
+    TRAS confirmarse el pago**; se cobra **etapa por etapa**; **una sola cuenta de facturación
+    por cliente** (retiró el tope de 3 — *«por ahora no pasa nada»*); y el **régimen lo asume
+    él**: *«si luego el SRI nos indica, debemos empezar a facturar con IVA, por ahora no lo
+    hacemos»*. Alcance v1: **solo proyectos con plan de etapas**.
+  - **⭐ EL RECARGO VA EN LÍNEA APARTE DE LA FACTURA, y eso salvó un descuadre silencioso.**
+    Eligió entre dos formas de presentarlo. La otra —subir el precio de la etapa— habría roto
+    la tarjeta de Pagos sin dar ningún error: `getProjectPayments()` calcula «por facturar»
+    como `final_cost − Σ invoices.total`, así que un proyecto de 6.000 $ cobrado por pasarela
+    se habría dado por facturado con **5.820 $** de trabajo emitido. Con el recargo aparte
+    queda en `payment_intents.fee_amount` y **se descuenta** (`FEE_SQL` en `lib/payments.ts`).
+    - `ProjectBilling.invoiced` nunca estuvo en peligro: suma `project_stages.amount`, lo
+      pactado, no el total de la factura.
+  - **⚠️ TRASLADAR LA COMISIÓN NO ES SUMARLE EL PORCENTAJE.** A 2.000 $ + 2,95 % = 2.059 $ la
+    pasarela le cobra su comisión **sobre el total**, y llegan 1.998,01 $. Hay que despejar al
+    revés: `total = (neto + fijo) / (1 − porcentaje)` → **2.061,06 $**. Y el redondeo va
+    **hacia arriba**: al centavo más cercano, la mitad de las veces faltaría un centavo.
+    Definición única en `lib/pagos/comision.ts`, módulo **puro**, con **14 pruebas** que hacen
+    el viaje de ida y vuelta sobre 26 combinaciones — nunca llega menos de lo pactado.
+  - **⚠️ EL MISMO WEBHOOK LLEGA HASTA 7 VECES EN 3 HORAS** mientras Kushki no reciba un 200.
+    El evento repetido **es el funcionamiento normal**, no un caso raro. Dos barreras, ninguna
+    sobra: `UNIQUE (provider, event_id)` y `UPDATE … WHERE status <> 'paid'`. **Comprobadas
+    contra la base real** (`npm run pagos:prueba-bd`, 11/11, en transacción con ROLLBACK y sin
+    un solo DELETE — [[gcc-pruebas-no-borran-datos-reales]]).
+    - **Se responde 200 a casi todo.** Un 500 por un evento que no entendemos hace que la
+      pasarela reintente siete veces y luego lo dé por perdido sin que nadie se entere. Lo
+      único que no es 200 es la **firma inválida**.
+    - **La firma se verifica sobre el cuerpo CRUDO** (`await req.text()`), nunca sobre el JSON
+      parseado: `JSON.parse` + `JSON.stringify` reordena claves y los bytes ya no son los que
+      se firmaron. Y **sin secreto configurado devuelve `false`**, no `true`: «déjalo pasar
+      mientras tanto» convierte el webhook en un endpoint público que marca facturas pagadas.
+  - **🪤 COBRADO Y SIN FACTURA: EL COBRO NO SE REVIERTE.** Si el SRI falla tras entrar el
+    dinero, el intento queda `paid` con el motivo escrito y **se reintenta la emisión**, que es
+    lo reversible. Devolver el dinero no lo es. Al cliente se le dice que su pago está bien.
+  - **Lo construido:** `lib/pagos/` (comisión · contrato `ProveedorDePago` · Kushki · simulado
+    · acceso · intentos), `app/api/pagos/{etapa,cobrar,webhook/[proveedor]}`,
+    `app/api/projects/[id]/payment-link` y `sendPaymentLinkEmail` en `lib/integrations/email.ts`.
+    Kushki está escrito **contra la documentación, no contra la pasarela**: aún no hay
+    credenciales, así que **solo se da por bueno cuando pase la certificación en UAT**.
+  - **⏸ LA PANTALLA `/pagar/<token>` NO SE INVENTA.** Es una página pública nueva, y sobre eso
+    manda [[gcc-diseno-sitio-con-fernando]] y el ⛔ de `Diseño.md`: **su diseño se acuerda con
+    él antes**. Ese es el corte de la jornada, no un olvido.
+- **💳 SE ABRE LA PASARELA DE PAGO: EL CLIENTE PODRÁ PAGAR SOLO (2026-08-25).** Encargo de
+  Fernando. Es **una sola pasarela para todo** lo que se cobra —productos, proyectos y
+  automatizaciones—, no una por módulo. Detalle vivo en `Aprendizaje.md` (objetivo del
+  2026-08-25).
+  - **⚠️ EL MODELO DE HOY NO SE SUSTITUYE, SE SUMA.** Seguirá existiendo el cobro manual:
+    el responsable rellena la factura y **adjunta el comprobante**, que es lo que la marca
+    pagada. Quedan **tres canales conviviendo**:
+    1. **Manual** (el de hoy, intacto).
+    2. **Cliente con cuenta:** entra a SU proyecto/ticket **ya finalizado**, paga, y la
+       factura se genera sola con sus datos. Puede editarlos o **crear otra cuenta de
+       facturación, hasta 3 por cliente** (hoy es una).
+    3. **Enlace de pago sin cuenta:** el responsable comparte un enlace, **él decide cuánto
+       dura el token**, sale un correo al cliente, y el cliente ve el detalle del proyecto,
+       rellena su facturación y paga. Sin cuenta en la plataforma.
+  - **🧱 El canal 3 ya está medio hecho y conviene saberlo antes de escribir nada:**
+    `projects.public_token` + `public_token_expires_at` ya existen, `/proyecto/[id]?token=` ya
+    enseña etapas y facturas, y `/api/projects/[id]/public/invoice` ya sirve el RIDE sin
+    sesión. Lo que **no** existe es el equivalente para **tickets**.
+  - **La pasarela recomendada: KUSHKI, con PAYPHONE de segunda** (investigado el 2026-08-25,
+    pendiente del visto bueno de Fernando). Kushki es la única que cubre de una sola
+    integración los dos requisitos duros —**tarjetas y transferencia bancaria ecuatoriana**
+    (Pichincha y Guayaquil)— con **~2,95 % + 0,25 $** frente al **5 % + IVA** de PayPhone: en
+    un proyecto de 4.000 $ son **118 $ contra 230 $**. PayPhone entra igual porque **se activa
+    hoy** (solo correo y RUC) mientras Kushki pide ~5 días hábiles y certificación técnica.
+    **Deuna** (0 % de comisión, vía agregador) es candidata de fase 2.
+  - **La transferencia INTERNACIONAL no la da ninguna pasarela ecuatoriana.** Lo que sí
+    funciona para el cliente de fuera es su **tarjeta emitida en el extranjero** (PayPhone y
+    Kushki las aceptan). La transferencia de verdad exigiría PayPal/Wise/Payoneer, que es un
+    **proveedor más**, no la pasarela. Por eso **no se elige pasarela por este requisito**.
+  - **⚠️ EL RIESGO NO ES TÉCNICO, ES EL RÉGIMEN.** GCC es **RIMPE Negocio Popular**: tope de
+    **20.000 $ de ingresos anuales** y le corresponden **notas de venta sin IVA**, mientras el
+    sistema emite **facturas con IVA 15 %**. Cobrar por pasarela **bancariza cada dólar**, que
+    es justo lo que el SRI cruza, y con proyectos de 3.000–6.000 $ **cuatro pasan el tope**.
+    Amplía el pendiente ya abierto el 2026-08-11: **es de Fernando y su contadora**, no mío.
+  - **Decisiones de arquitectura firmes:** capa propia `lib/pagos/` con contrato
+    `ProveedorDePago` (Kushki y PayPhone son implementaciones, no el flujo — PayPal y Binance
+    entran después sin tocar los tres canales); **una** tabla `payment_intents` para los tres
+    canales; **el webhook es la única fuente de verdad del pago** y debe ser idempotente; **el
+    importe se recalcula siempre en servidor**; y **la factura se emite CUANDO el pago se
+    confirma**, nunca antes — una factura autorizada no se borra, se anula con nota de crédito.
 - **🔖 ICONO DE PESTAÑA EN LOS DOS PRODUCTOS (2026-08-25).** Salían sin icono. Ahora llevan el
   cuadrado violeta del grupo con su glifo —**cama** en Reservas, **cubiertos** en Pedidos—, en
   `src/app/icon.svg` (Next lo detecta solo), más `apple-icon.png` de 180×180.

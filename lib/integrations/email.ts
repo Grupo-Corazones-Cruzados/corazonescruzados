@@ -544,6 +544,65 @@ export async function sendAcceptedQuoteToClient(params: {
   });
 }
 
+/**
+ * ENLACE DE PAGO de una etapa de proyecto (canal 3 de la pasarela, 2026-08-25).
+ *
+ * Va al cliente SIN cuenta en la plataforma: el enlace es la única llave, así que el
+ * correo tiene que decir claramente qué se paga, cuánto, y **hasta cuándo sirve** — la
+ * caducidad la eligió el responsable al compartirlo, y un cliente que la desconoce
+ * descubre el vencimiento chocándose con él.
+ */
+export async function sendPaymentLinkEmail(params: {
+  email: string;
+  projectTitle: string;
+  stageName: string;
+  neto: number;
+  recargo: number;
+  total: number;
+  url: string;
+  expiresAt: Date;
+  responsibleName?: string | null;
+}) {
+  const dinero = (n: number) => `$${Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const caduca = params.expiresAt.toLocaleString('es-EC', {
+    dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Guayaquil',
+  });
+
+  const desglose = `
+    <table style="width:100%;border-collapse:collapse;border:1px solid ${CORP.border};border-radius:8px;overflow:hidden;margin:0 0 24px;font-family:${FONT};">
+      <tr>
+        <td style="padding:12px 16px;font-size:14px;color:${CORP.text};border-bottom:1px solid ${CORP.border};">${escapeHtml(params.stageName)}</td>
+        <td style="padding:12px 16px;font-size:14px;color:${CORP.text};text-align:right;border-bottom:1px solid ${CORP.border};">${dinero(params.neto)}</td>
+      </tr>
+      ${params.recargo > 0 ? `<tr>
+        <td style="padding:12px 16px;font-size:13px;color:${CORP.muted};border-bottom:1px solid ${CORP.border};">Gastos de procesamiento de pago en línea</td>
+        <td style="padding:12px 16px;font-size:13px;color:${CORP.muted};text-align:right;border-bottom:1px solid ${CORP.border};">${dinero(params.recargo)}</td>
+      </tr>` : ''}
+      <tr style="background:${CORP.bg};">
+        <td style="padding:12px 16px;font-size:13px;font-weight:700;color:${CORP.muted};">TOTAL A PAGAR</td>
+        <td style="padding:12px 16px;font-size:18px;font-weight:700;color:${CORP.text};text-align:right;">${dinero(params.total)}</td>
+      </tr>
+    </table>`;
+
+  const html = emailShell(
+    emailBadge('PAGO PENDIENTE', CORP.accent) +
+    emailHeading('Tienes un pago disponible', escapeHtml(params.projectTitle)) +
+    emailParagraph(params.responsibleName
+      ? `${accentStrong(escapeHtml(params.responsibleName))} te comparte el enlace para pagar esta etapa del proyecto.`
+      : 'Te compartimos el enlace para pagar esta etapa del proyecto.') +
+    desglose +
+    emailButton(params.url, 'Ver el proyecto y pagar') +
+    emailParagraph('No necesitas crear una cuenta. Al entrar verás el detalle del proyecto y podrás completar tus datos de facturación antes de pagar; la factura electrónica te llegará por correo en cuanto el pago se confirme.') +
+    emailNote(`Este enlace caduca el ${escapeHtml(caduca)} (hora de Ecuador). Si vence, pídele uno nuevo a tu contacto en GCC. No lo reenvíes: cualquiera con el enlace puede ver el detalle de este proyecto.`),
+  );
+
+  return deliver({
+    to: params.email,
+    subject: `Pago de ${params.stageName} — ${params.projectTitle}`,
+    html,
+  });
+}
+
 /* ── Helpers de diseño reusables para correos construidos en otras rutas
  *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
  *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */

@@ -4,6 +4,11 @@ export type PaymentInvoice = {
   id: number;
   invoice_number: string | null;
   total: number;
+  /**
+   * El recargo de la pasarela incluido en `total`, si la factura salió de un cobro en
+   * línea. Es el importe que el cliente pagó de más para cubrir la comisión.
+   */
+  fee: number;
   status: string | null;
   sri_status: string | null;
   created_at: string;
@@ -11,30 +16,49 @@ export type PaymentInvoice = {
 
 export type PaymentsSummary = {
   total: number;        // total a cobrar del ticket/proyecto
-  invoiced: number;     // suma facturada (facturas no anuladas)
+  invoiced: number;     // suma facturada SIN el recargo de la pasarela
   pending: number;      // saldo por cobrar = max(0, total - invoiced)
+  fees: number;         // lo que se trasladó al cliente en concepto de comisión
   invoices: PaymentInvoice[];
 };
 
+/**
+ * ⚠️ EL RECARGO DE LA PASARELA NO ES FACTURACIÓN DEL PROYECTO.
+ *
+ * Desde el 2026-08-25 el cliente paga la comisión y esta viaja como línea propia de la
+ * factura, así que `invoices.total` es mayor que la etapa pactada. Si «facturado» sumara
+ * el total a secas, un proyecto de 6.000 $ cobrado por pasarela se daría por facturado
+ * con 5.820 $ de trabajo emitido — y «por facturar» llegaría a cero antes de tiempo.
+ * Por eso se descuenta: lo facturado del proyecto es lo pactado, no lo que costó cobrarlo.
+ */
 function summarize(total: number, rows: any[]): PaymentsSummary {
   const invoices: PaymentInvoice[] = rows.map((r) => ({
     id: Number(r.id),
     invoice_number: r.invoice_number ?? null,
     total: Number(r.total) || 0,
+    fee: Number(r.fee) || 0,
     status: r.status ?? null,
     sri_status: r.sri_status ?? null,
     created_at: r.created_at,
   }));
-  const invoiced = invoices
-    .filter((i) => i.status !== 'cancelled')
-    .reduce((s, i) => s + i.total, 0);
+  const vigentes = invoices.filter((i) => i.status !== 'cancelled');
+  const invoiced = vigentes.reduce((s, i) => s + i.total - i.fee, 0);
   return {
     total: round2(total),
     invoiced: round2(invoiced),
     pending: round2(Math.max(0, total - invoiced)),
+    fees: round2(vigentes.reduce((s, i) => s + i.fee, 0)),
     invoices,
   };
 }
+
+/**
+ * El recargo de la pasarela que lleva una factura dentro. Se lee del cobro que la originó,
+ * no se recalcula: la tarifa puede cambiar y la factura ya emitida no.
+ */
+const FEE_SQL = `COALESCE((
+  SELECT pi.fee_amount FROM gcc_world.payment_intents pi WHERE pi.invoice_id = i.id LIMIT 1
+), 0)`;
 
 /** Resumen de pagos de un TICKET: total = estimated_cost; facturas ligadas por source_type/ticket_id. */
 export async function getTicketPayments(ticketId: string | number): Promise<PaymentsSummary> {
@@ -44,10 +68,10 @@ export async function getTicketPayments(ticketId: string | number): Promise<Paym
   );
   const total = Number(t?.estimated_cost) || 0;
   const { rows } = await pool.query(
-    `SELECT id, invoice_number, total, status, sri_status, created_at
-       FROM gcc_world.invoices
-      WHERE (source_type = 'ticket' AND source_id = $1) OR ticket_id = ($1)::int
-      ORDER BY created_at`,
+    `SELECT i.id, i.invoice_number, i.total, ${FEE_SQL} AS fee, i.status, i.sri_status, i.created_at
+       FROM gcc_world.invoices i
+      WHERE (i.source_type = 'ticket' AND i.source_id = $1) OR i.ticket_id = ($1)::int
+      ORDER BY i.created_at`,
     [idStr],
   );
   return summarize(total, rows);
@@ -61,17 +85,17 @@ export async function getProjectPayments(projectId: string | number): Promise<Pa
   );
   const total = Number(p?.final_cost) || 0;
   const { rows } = await pool.query(
-    `SELECT id, invoice_number, total, status, sri_status, created_at
-       FROM gcc_world.invoices
-      WHERE project_id = ($1)::int
-         OR id IN (SELECT invoice_id FROM gcc_world.invoice_projects WHERE project_id = ($1)::int)
-      ORDER BY created_at`,
+    `SELECT i.id, i.invoice_number, i.total, ${FEE_SQL} AS fee, i.status, i.sri_status, i.created_at
+       FROM gcc_world.invoices i
+      WHERE i.project_id = ($1)::int
+         OR i.id IN (SELECT invoice_id FROM gcc_world.invoice_projects WHERE project_id = ($1)::int)
+      ORDER BY i.created_at`,
     [idStr],
   ).catch(async () => {
     // invoice_projects puede no existir en algunos entornos → sólo por project_id.
     return pool.query(
-      `SELECT id, invoice_number, total, status, sri_status, created_at
-         FROM gcc_world.invoices WHERE project_id = ($1)::int ORDER BY created_at`,
+      `SELECT i.id, i.invoice_number, i.total, ${FEE_SQL} AS fee, i.status, i.sri_status, i.created_at
+         FROM gcc_world.invoices i WHERE i.project_id = ($1)::int ORDER BY i.created_at`,
       [idStr],
     );
   });

@@ -14,7 +14,9 @@
     "agente:worker": "node scripts/agente-worker.mjs",
     "cv:ensayo": "node scripts/cv-ensayo.mjs",
     "redes:prueba": "node --experimental-strip-types scripts/prueba-redes.mts",
-    "mirar:panel": "node scripts/mirar-panel.mjs"
+    "mirar:panel": "node scripts/mirar-panel.mjs",
+    "pagos:prueba": "node --experimental-strip-types scripts/prueba-comision.mts",
+    "pagos:prueba-bd": "node scripts/prueba-pagos-bd.mjs"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.4",
