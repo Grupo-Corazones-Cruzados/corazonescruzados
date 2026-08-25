@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔖 ICONO DE PESTAÑA EN LOS DOS PRODUCTOS (2026-08-25).** Salían sin icono. Ahora llevan el
+  cuadrado violeta del grupo con su glifo —**cama** en Reservas, **cubiertos** en Pedidos—, en
+  `src/app/icon.svg` (Next lo detecta solo), más `apple-icon.png` de 180×180.
+  - **⭐ Un icono se juzga AL TAMAÑO AL QUE SE VA A VER.** Están dibujados para **16 px**: trazo
+    grueso y glifo casi a sangre, porque a ese tamaño se reconoce **la silueta y el color**, no
+    el dibujo. Se comprobaron **rasterizándolos a 16 px**, no mirando el SVG en grande, que es
+    donde todo parece que se ve bien.
+  - **El violeta es FIJO aunque el inquilino tenga su color:** el navegador cachea el icono **por
+    origen**, así que es el mismo para todos los clientes del producto — y es la marca del grupo,
+    que debe reconocerse siempre (herramienta Violeta).
+  - **`apple-icon.png` sin transparencia**: iOS la pinta de negro. Y hace falta de verdad porque
+    en Pedidos el mesero trabaja con el teléfono en la mano y se lo ancla a la pantalla de inicio.
 - **🛒 LAS FICHAS DEL MARKETPLACE, CON DEMOSTRACIÓN PÚBLICA (2026-08-25, migración 052).**
   Fernando: *«actualiza la ficha, y por favor deja configurado en el marketplace un botón de
   acceso a cada producto en su versión demo, con el dato de la credencial de prueba»*.
@@ -4863,6 +4875,17 @@ Módulos principales:
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+
+### 🪤 Un `000` de `curl` no es un servidor caído: es una petición que nunca salió (2026-08-25)
+Dos veces di por caído un servicio que respondía perfectamente. La causa era mía: un bucle de
+shell (`for par in "Nombre https://…"; set -- $par`) partía la variable y le pasaba a `curl` una
+dirección mutilada, y `%{http_code}` devolvía **000**.
+- **000 no es una respuesta HTTP**: significa que no hubo conexión — dirección mal formada, DNS,
+  puerto cerrado o el proceso aún arrancando.
+- **Regla:** ante un 000, repetir con **una petición directa escrita a mano** antes de sospechar
+  del despliegue. Las otras veces que hubo un 000 real en esta jornada, la causa fue que el
+  contenedor **acababa de reiniciarse** — ver la lección del despliegue.
+
 
 ### 🪤 El motor de `prisma migrate` no atraviesa el proxy TCP de Railway (2026-08-24)
 Al crear el esquema del producto «Gestión de Reservas», `prisma migrate deploy` devolvió

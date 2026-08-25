@@ -33,6 +33,89 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo (declarado 2026-08-24/25) — QUE LOS PRODUCTOS SE PUEDAN ENSEÑAR Y VENDER · ✅ 100 %
+
+> Tres encargos encadenados de Fernando: que el hotel de demostración **no se pueda
+> cambiar** («quiero que usuarios externos puedan ingresar y navegar»); que en el
+> marketplace haya **un botón a la demo de cada producto con su credencial**; y que las
+> apps tengan **icono de pestaña**.
+
+### ⭐ A8 — UNA PROMESA QUE SOLO VIVE EN EL CÓDIGO SE ROMPE CON LA SIGUIENTE PANTALLA
+El escaparate se hizo con **dos capas y las dos hacen falta**: la aplicación lo impide y lo
+**explica**; la base lo **garantiza** con `solo_lectura` + disparadores que rechazan
+`INSERT/UPDATE/DELETE`. La primera capa la puede olvidar quien añada una pantalla mañana; la
+segunda no.
+- **Se avisa ANTES de intentar guardar**, con franja permanente. Quien pulsa «Guardar» y no ve
+  nada concluye que la aplicación está rota — lo contrario de lo que se le quiere enseñar.
+- **Ni la hora del último acceso se escribe.** Con visitantes entrando a diario, esa columna
+  sería lo único que cambiaría en todo el escaparate.
+- **`usuarios` e `inquilinos` quedan FUERA del disparador a propósito**: el equipo GCC necesita
+  poder cambiar la contraseña del escaparate y quitarle el modo. *Un guardián que también cierra
+  la puerta a quien tiene que poder abrirla está mal colocado.*
+- **El modo se pone y se quita desde `/gcc`**, no desde el propio cliente: si el vigilado puede
+  quitarse la vigilancia, no es una garantía, es una sugerencia.
+- **⚠️ Y al publicar la credencial, los dos demos pasaron a escaparate.** Con la contraseña
+  publicada, el primero que entre puede dejarlo vacío para el siguiente. Se pierde poder mover
+  un pedido de cocina a cobro —lo que más engancha en Pedidos—: es el precio de que siga
+  funcionando mañana, y es un botón revertirlo.
+
+### ⭐ A9 — LO QUE SE VE EN EL CATÁLOGO NO ES LO QUE YO CREÍA
+Fui a «actualizar la ficha» dando por hecho que el catálogo leía `gcc_world.products`. **No**:
+lee **`member_portfolio_items`** (`/api/portfolio/public?type=product`); `products` es solo el
+registro vendible que cuelga del ítem y alimenta carrito y pedidos.
+- **Por eso «Gestión de Reservas» llevaba desde marzo en la pestaña PROYECTOS**: su ítem decía
+  `item_type='project'`. Nadie lo había notado porque la ficha se creó cuando el producto era un
+  proyecto de Power Apps.
+- **La lección de método:** antes de editar un dato que se ve en pantalla, **seguir el camino
+  desde la pantalla hasta la tabla**, no desde la tabla que parece que se llama como debe. El
+  nombre `products` era exactamente la trampa.
+
+### ⭐ A10 — EL PRECIO DE UNA MENSUALIDAD SE ESCRIBE CON SU PERIODO
+«$5,00» a secas en algo que se cobra todos los meses **engaña a quien lo lee**. La tarjeta y la
+ficha ponen «$5,00 /mes» y el botón de compra dice «Quiero suscribirme». Es una pieza reusable
+(`<Precio mensual />`), no un apaño en una plantilla.
+
+### ⭐ A11 — UNA DEMOSTRACIÓN CUYAS CREDENCIALES HAY QUE IR A BUSCAR NO SE PRUEBA
+El usuario y la contraseña van **junto al botón**, con copiar al portapapeles, y el botón de
+compra **baja a secundario** cuando hay demo: se prueba antes de comprar.
+- La contraseña se publica **a propósito** y está dicho en el comentario de la columna que **NO
+  es un secreto** y que no se reutiliza en ninguna cuenta real.
+- En Pedidos, **los tres puestos comparten contraseña**: pedirle a un visitante que apunte tres
+  contraseñas distintas es pedirle que no pruebe.
+- **Los campos se editan desde Portafolio**, no solo por SQL: *un dato que solo se cambia con una
+  consulta acaba desactualizado.*
+
+### 🪤 A12 — UN ICONO SE JUZGA AL TAMAÑO AL QUE SE VA A VER
+Los iconos de pestaña se dibujaron para **16 px**: trazo grueso y glifo casi a sangre, porque a
+ese tamaño se reconoce **la silueta y el color**, no el dibujo. Se comprobaron **rasterizándolos
+a 16 px**, no mirando el SVG en grande —que es donde todo parece que se ve bien—.
+- **El violeta es FIJO** aunque cada inquilino tenga su color: el navegador cachea el icono **por
+  origen**, así que es el mismo para todos los clientes del producto.
+- `apple-icon.png` **sin transparencia**: iOS la pinta de negro.
+
+### 🪤 A13 — EL MÓDULO DE CLOUDINARY LEE SU VARIABLE AL IMPORTARSE
+Asignar `process.env.CLOUDINARY_URL` **después** del `import` no sirve de nada: hay que pasarle
+`cloud_name` / `api_key` / `api_secret` explícitos. Mismo patrón que ya mordió con Prisma 7 y la
+`url` en el schema: **la configuración que se lee al cargar el módulo no se puede cambiar luego**.
+
+### 🪤 A14 — Y UNA TONTERÍA QUE COSTÓ DOS DIAGNÓSTICOS: `set -- $par` EN ZSH
+Dos veces di por caído un servicio que respondía perfectamente, porque mi bucle de shell partía
+la variable y le pedía a `curl` una dirección mutilada (`%{http_code}` = 000). **Un 000 no es un
+servidor caído: es una petición que nunca salió.** Se comprueba con una petición directa antes de
+sospechar del despliegue.
+
+### Lo medido al cerrar la jornada
+- **Escaparate**, atacado desde la interfaz real en producción: crear reserva, cambiar marca,
+  crear cuenta y marcar pagada — los cuatro rebotan; la foto de la base **antes y después es
+  idéntica**, `ultimo_acceso` incluida. Más seis intentos por SQL directo, que también rebotan.
+- **Marketplace en producción**: dos fichas en la pestaña Productos, «$5,00 /mes», botón a la
+  demo real, credencial a la vista, y **las credenciales publicadas entrando de verdad** en los
+  dos productos (en Pedidos, los tres puestos).
+- **Iconos**: `/icon.svg` y `/apple-icon.png` a 200 con su tipo, y el `<link rel="icon">` en el
+  HTML de los dos dominios.
+
+---
+
 ## Objetivo (declarado 2026-08-25, cierre) — EL PLAN: 5 $/mes, 100 cuentas y un mes de histórico · ✅ 100 %
 
 > Fernando: *«los dos productos se ofrecen por suscripción 5 $ para uso, pueden crear hasta
