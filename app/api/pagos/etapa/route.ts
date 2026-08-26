@@ -94,9 +94,15 @@ export async function GET(req: NextRequest) {
         // Con PayPhone el cobro lo ejecuta su Cajita en el navegador; la pantalla necesita
         // saberlo para pedir los datos de facturación ANTES y dejarle el pago a ella.
         cobraEnCliente: Boolean(proveedor.cobraEnCliente),
-        // La clave PÚBLICA es la que tokeniza en el navegador; la privada no sale de aquí.
-        clavePublica: process.env.KUSHKI_PUBLIC_MERCHANT_ID || null,
-        entorno: process.env.KUSHKI_ENV === 'production' ? 'production' : 'uat',
+        // ⚠️ Estos dos son SOLO de Kushki, y por eso se anulan con cualquier otro
+        // proveedor. Con PayPhone activo la respuesta decía `entorno: "uat"` —un residuo
+        // que no significaba nada— y leerlo invita a creer que la pasarela está en pruebas
+        // cuando está cobrando de verdad. Un dato que no aplica no se deja «por si acaso»:
+        // se apaga, porque el que lo lea va a actuar según lo que diga.
+        clavePublica: proveedor.nombre === 'kushki' ? (process.env.KUSHKI_PUBLIC_MERCHANT_ID || null) : null,
+        entorno: proveedor.nombre === 'kushki'
+          ? (process.env.KUSHKI_ENV === 'production' ? 'production' : 'uat')
+          : null,
       },
       facturacion,
       correoDestino: auth.solicitante.tipo === 'enlace' ? auth.solicitante.email : (facturacion?.email || null),

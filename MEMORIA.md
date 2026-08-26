@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔴 LA APP DE PAYPHONE ESTABA EN PRODUCCIÓN DESDE EL PRINCIPIO (2026-08-25).** Lo vio
+  Fernando al ir a invitar un probador. **Eso invierte el sentido de la salvaguarda:** con
+  pagos reales, `PAGOS_EMITIR_FACTURA=0` deja **dinero cobrado sin comprobante**, que ya no
+  es prudencia sino un problema fiscal. Se puso a `1`.
+  - **La lección que queda:** una salvaguarda no es buena o mala en abstracto — **depende del
+    ambiente**. El mismo interruptor protegía en pruebas y hacía daño en producción. Al
+    cambiar de ambiente hay que **revisar los interruptores, no heredarlos**.
+  - **Los probadores dejan de hacer falta:** son del ambiente de pruebas; en producción se
+    paga con tarjetas reales.
+  - **🪤 Y un campo heredado que ya no aplica NO es ruido inocuo.** La respuesta de
+    `/api/pagos/etapa` seguía diciendo `entorno: "uat"` (un resto de Kushki) con la pasarela
+    cobrando de verdad. **El que lo lea va a actuar según lo que diga.** Ahora esos campos
+    solo se rellenan si el proveedor es Kushki.
+  - **⚠️ ESTADO ACTUAL: la pasarela COBRA DINERO REAL y EMITE FACTURAS REALES al SRI.**
 - **🟢 LA PASARELA YA ESTÁ ENCENDIDA EN PRODUCCIÓN, EN MODO ENSAYO (2026-08-25).** Variables
   puestas en el servicio **`corazonescruzados`** de Railway (`Servidor-GCC`):
   `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID`, `PAGOS_PROVEEDOR=payphone` y

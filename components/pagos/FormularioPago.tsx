@@ -32,7 +32,7 @@ export type DatosPago = {
   proyecto: { id: number; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
   etapa: { id: number; nombre: string };
   importes: { neto: number; recargo: number; total: number };
-  pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string };
+  pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string | null };
   facturacion: any;
   correoDestino: string | null;
   canal: string;
@@ -122,7 +122,7 @@ export default function FormularioPago({
   // PayPhone cobra en el navegador con su propia Cajita; Kushki cobra en el servidor con un
   // token. La pantalla no pregunta «¿eres PayPhone?»: lo declara el proveedor.
   const cobraEnCliente = Boolean(pasarela.cobraEnCliente);
-  const kushkiListo = useKushki(esSimulado || cobraEnCliente ? null : pasarela.clavePublica, pasarela.entorno);
+  const kushkiListo = useKushki(esSimulado || cobraEnCliente ? null : pasarela.clavePublica, pasarela.entorno || '');
   const cajitaLista = useCajitaPayphone(cobraEnCliente);
   const [paramsCajita, setParamsCajita] = useState<Record<string, unknown> | null>(null);
 

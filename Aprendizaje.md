@@ -7373,3 +7373,25 @@ trámite y un hueco en la numeración fiscal.
   prometer una factura que no va a llegar.
 - **Puesta así en producción desde el primer minuto.** Activar la pasarela y *luego* pensar
   en esto habría sido tarde: basta un pago de prueba para estrenar la numeración.
+
+### ⚠️ P134 — La app de PayPhone YA ESTABA EN PRODUCCIÓN, y eso invierte el riesgo (2026-08-25)
+Fernando lo descubrió al ir a invitar un probador: *«ya estaba en producción»*. Cambia el
+sentido de la salvaguarda por completo:
+- **En pruebas**, `PAGOS_EMITIR_FACTURA=0` protegía: pago ficticio, factura real evitada.
+- **En producción es lo contrario:** el pago es **dinero de verdad**, así que no emitir el
+  comprobante deja **un cobro real sin factura** — y eso ya no es prudencia, es un problema
+  fiscal. Se puso a `1` de inmediato.
+- **La lección general:** una salvaguarda no es buena o mala en abstracto; **depende del
+  ambiente en el que corre**, y el mismo interruptor puede proteger en un lado y hacer daño
+  en el otro. Cuando cambie el ambiente, hay que revisar los interruptores, no heredarlos.
+- *(Y lo del probador queda resuelto solo: los probadores son del ambiente de pruebas. En
+  producción se paga con tarjetas reales y no hace falta invitar a nadie.)*
+
+### 🪤 P135 — Un campo que no aplica no se deja «por si acaso»
+Con PayPhone activo, `/api/pagos/etapa` seguía devolviendo `entorno: "uat"` y
+`clavePublica: null`: dos campos de **Kushki** que ya no significaban nada. El de `entorno`
+es el peligroso — leerlo invita a creer que **la pasarela está en pruebas cuando está
+cobrando dinero real**. Ahora solo se rellenan si el proveedor es Kushki; con cualquier otro
+van a `null`.
+- **La regla:** un dato heredado que ya no aplica no es ruido inocuo. **El que lo lea va a
+  actuar según lo que diga**, y aquí decía justo lo contrario de la verdad.
