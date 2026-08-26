@@ -331,14 +331,20 @@ export default function FormularioPago({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={ETIQUETA} htmlFor="tipo-id">Tipo de identificación</label>
-            <select id="tipo-id" className={CAMPO} value={f.id_type} onChange={e => set('id_type', e.target.value)}>
+            <select id="tipo-id" className={CAMPO} value={f.id_type} onChange={e => {
+              const v = e.target.value;
+              // Consumidor final tiene identificación y nombre fijos por norma del SRI:
+              // se rellenan solos en vez de pedirlos.
+              if (v === '07') setF(p => ({ ...p, id_type: v, ruc: '9999999999999', name: p.name || 'CONSUMIDOR FINAL' }));
+              else set('id_type', v);
+            }}>
               {TIPOS_ID.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
             </select>
           </div>
           <div>
             <label className={ETIQUETA} htmlFor="ruc">Identificación</label>
             <input id="ruc" className={CAMPO} value={f.ruc} onChange={e => set('ruc', e.target.value)}
-              inputMode="numeric" autoComplete="off" required />
+              inputMode="numeric" autoComplete="off" required readOnly={f.id_type === '07'} />
           </div>
           <div className="sm:col-span-2">
             <label className={ETIQUETA} htmlFor="razon">Nombre o razón social</label>

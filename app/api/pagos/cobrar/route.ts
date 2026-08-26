@@ -20,10 +20,18 @@ const ID_TYPES = ['04', '05', '06', '07'];
 
 /** Valida lo que el cliente escribió. Un dato malo aquí sale como comprobante rechazado por el SRI. */
 function validarFacturacion(f: any): DatosFacturacion {
-  const name = String(f?.name || '').trim();
-  const ruc = String(f?.ruc || '').trim();
+  let name = String(f?.name || '').trim();
+  let ruc = String(f?.ruc || '').trim();
   const email = String(f?.email || '').trim();
   const id_type = String(f?.id_type || '').trim();
+
+  // CONSUMIDOR FINAL no lleva identificación: el SRI espera el 9999999999999 y ese nombre
+  // exacto. Pedírselos al cliente sería obligarle a escribir trece nueves a mano para que
+  // el emisor los sustituya igualmente (`createManualInvoice` ya lo hace).
+  if (id_type === '07') {
+    ruc = '9999999999999';
+    if (!name) name = 'CONSUMIDOR FINAL';
+  }
 
   if (!name) throw new Error('Falta la razón social o el nombre para la factura.');
   if (name.length > 300) throw new Error('La razón social no puede pasar de 300 caracteres.');
