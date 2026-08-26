@@ -791,10 +791,15 @@ Motivo: no es una página que se lea, es una que se **rellena** — dos columnas
 dentro de 1152 px salen estranguladas, con los campos partidos y las etiquetas en dos líneas.
 
 - Con el sitio, las dos columnas pasan a **`lg:grid-cols-2`** (antes 1 : 1,15).
-- **La columna izquierda es `lg:sticky lg:top-24`.** El panel derecho es mucho más largo, así
-  que sin eso el resumen de lo que se paga desaparece por arriba **justo cuando conviene
-  mirarlo**, y deja un hueco vacío enorme en pantallas anchas. Solo en `lg`: en móvil las
-  tarjetas van apiladas y el sticky sobra.
+- **⚠️ LA REJILLA EMPIEZA ARRIBA DEL TODO, y el encabezado va DENTRO de la columna
+  izquierda** (Fernando, 2026-08-26: *«sube la parte de llenar los datos arriba, ese espacio
+  está desocupado y se ve feo»*). Antes el título ocupaba una banda a lo ancho y el
+  formulario arrancaba debajo: al lado del título quedaba **medio ancho de pantalla vacío** y
+  el cliente tenía que bajar para empezar a rellenar. Ahora el formulario está a la vista
+  desde el primer momento, que es a lo que ha venido.
+  - Esto **jubiló el `sticky`** que se había puesto un rato antes para tapar ese mismo hueco:
+    con el encabezado dentro, la columna izquierda ya tiene altura propia y no hay vacío que
+    justificar. Un apaño que deja de hacer falta se quita, no se acumula.
 
 #### La pantalla sirve a CUATRO orígenes, y se adapta sola (2026-08-26)
 

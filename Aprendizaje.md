@@ -7811,8 +7811,23 @@ innecesario»*— y que la página **ocupe todo el espacio disponible**.
   sitio. Pero **esta no es una página que se lea, es una que se rellena**: dos columnas de
   formulario en 1152 px salen estranguladas. Pasa a `ancho="amplio"` y las columnas a 50/50.
 - **⭐ Y ensanchar destapó lo siguiente:** con el panel derecho mucho más largo, la columna
-  izquierda dejaba **un vacío enorme**. En vez de rellenarlo con algo, se hizo
-  `lg:sticky lg:top-24`: el resumen de lo que se paga **acompaña mientras se rellena el
-  formulario**, que es justo cuando uno quiere volver a mirarlo. El hueco pasa de defecto a
-  función. Comprobado: en 1920 px sigue visible tras desplazarse al fondo; en 390 px no
-  aplica, porque ahí las tarjetas van apiladas.
+  izquierda dejaba **un vacío enorme**. El primer arreglo fue `lg:sticky` —que el resumen
+  acompañara al desplazarse— y **estaba tratando el síntoma**.
+
+### 🎯 P163 — El hueco no estaba abajo, estaba ARRIBA (2026-08-26)
+Fernando lo señaló con una captura: *«sube la parte de llenar los datos arriba, ese espacio
+está desocupado y se ve feo»*. El vacío que yo había intentado tapar con un `sticky` no era
+el de debajo del resumen: era **el de al lado del título**.
+- El encabezado ocupaba **una banda a todo lo ancho** y la rejilla empezaba debajo. Con el
+  contenedor amplio, eso dejaba medio ancho de pantalla en blanco junto al título **y obligaba
+  al cliente a bajar para empezar a rellenar** — en una página cuyo único propósito es que
+  rellene algo.
+- La solución no era rellenar el hueco, era **quitarlo**: el encabezado entra en la columna
+  izquierda y la rejilla arranca arriba del todo. Ahora el formulario se ve desde el primer
+  momento y la página cabe casi entera sin desplazarse.
+- **Y eso jubiló el `sticky`**, que existía solo para disimular el vacío de antes. **Un apaño
+  que deja de hacer falta se quita, no se acumula** — si no, meses después nadie sabe por qué
+  esa columna se queda pegada.
+- **La lección de método:** cuando algo «se ve feo», el sitio donde duele no siempre es el
+  sitio donde está la causa. Yo medí el hueco de abajo porque era el que había visto en mi
+  captura; el de arriba solo se veía mirando la página entera, como la miró él.

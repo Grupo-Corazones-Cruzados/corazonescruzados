@@ -93,8 +93,17 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
 
   return (
     <Contenedor ancho="amplio" className="py-14 sm:py-20">
+      {/* ⚠️ LA REJILLA EMPIEZA ARRIBA DEL TODO, con el encabezado DENTRO de la columna
+          izquierda (Fernando, 2026-08-26: «sube la parte de llenar los datos arriba, ese
+          espacio está desocupado y se ve feo»).
+          Antes el título ocupaba una banda a lo ancho y el formulario arrancaba debajo, así
+          que al lado del título quedaba medio ancho de pantalla vacío y el cliente tenía que
+          bajar para empezar a rellenar. Ahora el formulario está a la vista desde el
+          principio, que es lo que ha venido a hacer. */}
+      <div className={`grid gap-8 lg:gap-10 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-2' : 'max-w-xl mx-auto'}`}>
+      <div className="min-w-0">
       {/* ── Encabezado ── */}
-      <header className="max-w-3xl">
+      <header>
         <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
           {proyecto.cliente || 'Pago de proyecto'}
         </p>
@@ -114,11 +123,6 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
         </p>
       </header>
 
-      {/* Con el contenedor amplio hay sitio de sobra, así que las dos columnas se reparten
-          casi por igual en vez de estrangular la de la izquierda. Sin nada que enseñar a la
-          izquierda se queda a una sola, centrada — una rejilla con media parte vacía se lee
-          como un fallo de carga. */}
-      <div className={`mt-12 grid gap-8 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-2' : 'max-w-xl'}`}>
         {/* ── QUÉ SE ESTÁ PAGANDO ──
             «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
             2026-08-26). Antes solo salía el título, y en un ticket o una suscripción eso deja
@@ -129,7 +133,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
              es mucho más largo, así que sin esto el resumen desaparece por arriba justo
              cuando conviene poder mirarlo — y deja un hueco vacío enorme en pantallas
              anchas. Solo en `lg`: en móvil las tarjetas van una debajo de otra. */
-          <Tarjeta className="lg:sticky lg:top-24">
+          <Tarjeta className="mt-8">
             <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
               <Receipt className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Qué estás pagando
             </h2>
@@ -145,7 +149,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
         )}
         {/* ── El plan completo, para que sepa dónde encaja lo que paga ── */}
         {hayPlan && (
-          <Tarjeta className="lg:sticky lg:top-24">
+          <Tarjeta className="mt-8">
             <div className="flex items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
                 <Layers className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Etapas del proyecto
@@ -179,6 +183,8 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
             </p>
           </Tarjeta>
         )}
+
+      </div>
 
         {/* ── El pago ── */}
         <Tarjeta>
