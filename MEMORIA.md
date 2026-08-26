@@ -275,6 +275,25 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🟢 LA PASARELA YA ESTÁ ENCENDIDA EN PRODUCCIÓN, EN MODO ENSAYO (2026-08-25).** Variables
+  puestas en el servicio **`corazonescruzados`** de Railway (`Servidor-GCC`):
+  `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID`, `PAGOS_PROVEEDOR=payphone` y
+  **`PAGOS_EMITIR_FACTURA=0`**. Verificado: `GET /api/pagos/etapa` responde 200 con
+  `{"proveedor":"payphone","cobraEnCliente":true}` e importes correctos.
+  - **🛡️ POR QUÉ EL MODO ENSAYO EXISTÍA ANTES DE ENCENDER NADA.** Con la app de PayPhone en
+    ambiente de pruebas sus pagos son ficticios, **pero la factura la emite NUESTRO sistema y
+    esa sale de verdad**, con numeración y autorización del SRI — y una factura autorizada no
+    se borra, se anula con nota de crédito. `PAGOS_EMITIR_FACTURA=0` registra el cobro entero
+    y **solo omite la emisión**. Pensarlo después de encender habría sido tarde: basta un
+    pago de prueba para estrenar la numeración fiscal.
+  - **🪤 `railway variables --set … --skip-deploys` GUARDA PERO NO APLICA.** Las variables
+    salían en el panel y el servicio seguía con el entorno viejo. Hay que **redesplegar**
+    (`railway redeploy --service …`), y si está construyendo, el redeploy se rechaza y hay
+    que esperar. Amplía [[gcc-railway-variable-no-despliega]].
+    - **Lo que lo resolvió fue el mensaje de error preciso:** `proveedorActivo()` distingue
+      «no hay ninguna configurada» de «el proveedor X no tiene credenciales». Salió el
+      primero → la variable no había llegado al proceso. Con un mensaje genérico habría
+      buscado en las credenciales.
 - **✅ LA CAJITA DE PAYPHONE YA COBRA DENTRO DE NUESTRA PÁGINA (2026-08-25).** Probado en
   Chrome contra el proyecto real #32 con el `storeId` y el token definitivos: la caja se
   pinta (49.740 caracteres, iframe propio), pide tarjeta y celular, y remata con **«TOTAL:

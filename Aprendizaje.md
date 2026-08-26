@@ -7343,3 +7343,33 @@ Con el `storeId` real y el token nuevo, probado en Chrome contra el proyecto rea
 ### 🔎 P131 — El token nuevo también se verificó antes de usarlo
 Misma sonda que con el anterior: `404` + `errorCode 20`, no `401`. Cuesta diez segundos y
 descarta el fallo más tonto posible —una credencial mal copiada— antes de montar nada encima.
+
+### 🪤 P132 — `railway variables --set … --skip-deploys` guarda pero NO aplica (2026-08-25)
+Puse las cuatro variables de PayPhone con `--skip-deploys` para no disparar un despliegue de
+más. Quedaron guardadas —`railway variables --json` las mostraba— pero el servicio **seguía
+corriendo con el entorno viejo**, y producción respondía *«No hay ninguna pasarela de pago
+configurada»*.
+- **⭐ El mensaje de error fue lo que lo resolvió.** `proveedorActivo()` distingue dos casos:
+  «no hay ninguna configurada» (no llegó `PAGOS_PROVEEDOR`) y «el proveedor X no tiene
+  credenciales». Salió el primero, así que la variable no estaba **en el proceso** aunque sí
+  en el panel. Con un único mensaje genérico habría buscado el fallo en las credenciales.
+  Es la lección de [[P116]] otra vez, pero al revés y cobrada: **el error preciso ahorra la
+  media hora**.
+- **La regla:** `--skip-deploys` es para preparar variables que aplicará un despliegue que ya
+  viene. Si se quiere que surtan efecto **ahora**, hay que redesplegar
+  (`railway redeploy --service …`). Y si el servicio está construyendo, el redeploy se
+  rechaza: hay que esperar a que termine. Complementa [[gcc-railway-variable-no-despliega]].
+- **Verificado en producción:** `GET /api/pagos/etapa?link=…` responde **200** con
+  `{"proveedor":"payphone","cobraEnCliente":true}` e importes `866,25 + 52,85 = 919,10`.
+
+### 🛡️ P133 — La salvaguarda que faltaba: cobrar sin emitir
+Fernando pidió activar la pasarela en producción con la app de PayPhone **en pruebas**. El
+riesgo no era el que parecía: los pagos de PayPhone serían ficticios, **pero la factura la
+emite nuestro sistema y esa sale de verdad**, con numeración y autorización del SRI. Una
+factura autorizada no se borra — se anula con nota de crédito. Cada ensayo habría costado un
+trámite y un hueco en la numeración fiscal.
+- `PAGOS_EMITIR_FACTURA=0` deja el cobro completo (queda `paid`, con referencia e importe) y
+  **solo omite la emisión**. La pantalla de resultado lo dice con todas sus letras en vez de
+  prometer una factura que no va a llegar.
+- **Puesta así en producción desde el primer minuto.** Activar la pasarela y *luego* pensar
+  en esto habría sido tarde: basta un pago de prueba para estrenar la numeración.
