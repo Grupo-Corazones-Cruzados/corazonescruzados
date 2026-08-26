@@ -7462,3 +7462,66 @@ revocó su enlace, pero **no se borró**, por una razón medida, no por prudenci
 - **Archivado hace el trabajo igual:** `getBillableProjects()` excluye los `cancelled`, así
   que desaparece del flujo de facturación y de las pantallas de trabajo. Complementa
   [[gcc-pruebas-no-borran-datos-reales]] con el porqué concreto.
+
+---
+
+## Sexta pasada (2026-08-26) — el canal 2 y los tickets · ✅
+
+### ⭐ P140 — LOS CLIENTES EXTRANJEROS NO PODÍAN PAGAR, y era el caso que más importaba
+Probando el cobro de un ticket real apareció el tipo de identificación **`08` —
+«Identificación del exterior»**, que mi validador no contemplaba: `ID_TYPES` solo tenía
+04/05/06/07. GCC ya tiene un cliente costarricense facturado con él
+(`3-101-619800`, Compañía Internacional de Seguros Filial IS-CR).
+- **Consecuencia:** su cuenta de facturación llegaba prellenada con `08`, el servidor la
+  rechazaba, y el cobro moría con «Tipo de identificación no válido» — un mensaje que
+  además no le dice nada al cliente.
+- **Y duele el doble:** el cliente de fuera es justo el que paga con **tarjeta
+  internacional**, que fue una de las razones para elegir PayPhone. La pasarela estaba
+  elegida para él y el formulario lo dejaba fuera.
+- También se corrigió la validación de dígitos: un pasaporte o una identificación del
+  exterior llevan el formato de su país, así que exigirles 10 o 13 dígitos ecuatorianos los
+  descarta igual.
+- **Ninguna verificación automática lo caza.** Salió de probar contra **un ticket real con
+  un cliente real**, no contra un caso inventado. Los datos de ejemplo siempre son
+  ecuatorianos; los de verdad, no.
+
+### 🪤 P141 — La Cajita se rompe con un documento que no sea ecuatoriano
+Corregido lo anterior, la Cajita de PayPhone respondió **«Algo salió mal — Docum…»**:
+valida `documentId` como cédula o RUC y no admite `3-101-619800`.
+- **La solución no es forzar el dato, es no mandárselo.** `documentId` es opcional para
+  PayPhone: solo se le pasa si son 10 o 13 dígitos. El documento real sigue viviendo en
+  `billing_snapshot` y es el que va a la factura del SRI — **a la pasarela solo le hace
+  falta cobrar**.
+- De paso, el teléfono se sanea en vez de descartarse: en la base conviven `0992706933`,
+  `+593 99 270 6933` y `099-270-6933`, que son el mismo número.
+
+### 🧱 P142 — Tickets entró generalizando, no copiando
+El cobro de tickets no duplicó ni un endpoint. Lo que se hizo:
+- `Cobrable` como **tipo común**, y `cotizarCobro()` como puerta única que despacha a
+  `cotizarEtapa` o `cotizarTicket`. Desde ahí hacia arriba **nada distingue el origen**.
+- `lib/pagos/enlaces.ts` con la lógica del canal 3, y los dos endpoints
+  (`/api/projects/[id]/payment-link` y `/api/tickets/[id]/payment-link`) como puertas de
+  40 líneas. Copiar el endpoint habría dejado **dos generadores de llaves de cobro**, y el
+  que se quedara viejo seguiría generando enlaces válidos.
+- `components/pagos/PantallaPago.tsx` sirve al canal 2 y al 3: cambia la llave, no lo que ve
+  el cliente.
+
+### ⚠️ P143 — El candado de tickets es OTRO, y el de etapas no lo cubría
+Un índice único **parcial ignora las filas donde la columna es NULL**, así que
+`idx_payment_intents_stage_pagada` no protege a los tickets, cuyo `stage_id` es NULL. Sin
+la migración 054 **un ticket se podía cobrar dos veces**: el mismo agujero de los proyectos,
+por la puerta de al lado.
+- Nuevo `idx_payment_intents_origen_pagado` sobre `(source_type, source_id)` donde
+  `stage_id IS NULL AND status='paid'`. **Comprobado que muerde y que los dos candados
+  conviven sin pisarse:** 15/15 contra la base real.
+- **Y una decisión de alcance:** por pasarela, un ticket se cobra **entero y una vez**. El
+  abono parcial sigue existiendo por el canal manual, donde lo controla una persona.
+  Abrirlo a la pasarela obligaría a renunciar a este candado — y lo del abono de ticket
+  sigue sin cerrarse con la contadora desde el 2026-08-19.
+
+### Lo medido al cerrar
+Ticket real **#24** (cliente de Costa Rica, 237,08 $ pendientes de un abono previo):
+la pantalla cobra **251,55 $** = 237,08 + **14,47** de recargo, la Cajita se pinta
+(50.423 caracteres, iframe propio), sin desbordamiento en 1440 ni en 390 px, y **sin plan de
+etapas la pantalla se queda a una sola columna** en vez de dejar un hueco. `tsc` limpio,
+`next build` limpio, 15/15 candados. Los intentos de la revisión, cancelados con su motivo.

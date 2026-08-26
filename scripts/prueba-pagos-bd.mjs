@@ -161,11 +161,66 @@ async function main() {
     }
     p('un canal que no existe se rechaza', !canalMalo);
 
+    // ── TICKETS: su candado es otro, porque su stage_id es NULL ─────────────
+    const nuevoTicket = (estado, ref) => c.query(
+      `INSERT INTO gcc_world.payment_intents
+         (source_type, source_id, stage_id, channel, provider,
+          net_amount, fee_amount, charge_amount, status, provider_reference)
+       VALUES ('ticket','-777',NULL,'client','simulado',50,2.95,52.95,$1,$2) RETURNING id`,
+      [estado, ref],
+    );
+
+    await nuevoTicket('paid', 'tk-A');
+    p('un ticket pagado entra sin problema', true);
+
+    let segundoTicket = false;
+    try {
+      await c.query('SAVEPOINT t1');
+      await nuevoTicket('paid', 'tk-B');
+      segundoTicket = true;
+      await c.query('RELEASE SAVEPOINT t1');
+    } catch {
+      await c.query('ROLLBACK TO SAVEPOINT t1');
+    }
+    p('🔑 el MISMO ticket no se puede pagar dos veces', !segundoTicket,
+      'el índice idx_payment_intents_origen_pagado no está actuando (migración 054)');
+
+    let otroTicket = true;
+    try {
+      await c.query('SAVEPOINT t2');
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('ticket','-778',NULL,'client','simulado',10,0.5,10.5,'paid')`);
+      await c.query('RELEASE SAVEPOINT t2');
+    } catch (e) {
+      otroTicket = false;
+      await c.query('ROLLBACK TO SAVEPOINT t2');
+      console.log('    ', e.message);
+    }
+    p('pero OTRO ticket sí puede pagarse', otroTicket);
+
+    // Y el candado de tickets no debe estorbar a los proyectos, que van por stage_id.
+    let proyectoSinEtapa = true;
+    try {
+      await c.query('SAVEPOINT t3');
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('project','-779',NULL,'client','simulado',10,0.5,10.5,'paid')`);
+      await c.query('RELEASE SAVEPOINT t3');
+    } catch {
+      proyectoSinEtapa = false;
+      await c.query('ROLLBACK TO SAVEPOINT t3');
+    }
+    p('los dos candados conviven sin pisarse', proyectoSinEtapa);
+
     await c.query('ROLLBACK');
 
     // ── Y que el rollback de verdad no dejó nada ────────────────────────────
     const { rows: quedan } = await c.query(
-      `SELECT COUNT(*)::int AS n FROM gcc_world.payment_intents WHERE stage_id <= $1`, [ETAPA],
+      `SELECT COUNT(*)::int AS n FROM gcc_world.payment_intents
+        WHERE stage_id <= $1 OR source_id IN ('-777','-778','-779')`, [ETAPA],
     );
     p('la prueba no dejó una sola fila detrás', quedan[0].n === 0, `quedaron ${quedan[0].n}`);
   } finally {

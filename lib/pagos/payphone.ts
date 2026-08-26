@@ -78,9 +78,38 @@ export function parametrosCajita(opts: {
     lang: 'es',
     timeZone: -5,
     ...(opts.email ? { email: opts.email } : {}),
-    ...(opts.telefono ? { phoneNumber: opts.telefono } : {}),
-    ...(opts.documento ? { documentId: opts.documento } : {}),
+    ...(telefonoValido(opts.telefono) ? { phoneNumber: telefonoValido(opts.telefono) } : {}),
+    // ⚠️ SOLO se le manda el documento si es un número ecuatoriano.
+    //
+    // La Cajita valida `documentId` como cédula/RUC y se rompe con un «Algo salió mal» si
+    // recibe otra cosa. Un cliente del exterior lleva identificaciones como `3-101-619800`
+    // (Costa Rica), así que mandárselo dejaba fuera exactamente al cliente extranjero — que
+    // es el que paga con la tarjeta internacional por la que se eligió PayPhone.
+    //
+    // No se pierde nada: el documento real vive en `billing_snapshot` y es el que va a la
+    // factura del SRI. A la pasarela solo le hace falta cobrar.
+    ...(documentoValido(opts.documento) ? { documentId: opts.documento } : {}),
   };
+}
+
+/** Cédula (10) o RUC (13) ecuatorianos. Cualquier otra cosa no se le manda a la Cajita. */
+function documentoValido(doc?: string | null): boolean {
+  return Boolean(doc && /^\d{10}$|^\d{13}$/.test(doc.trim()));
+}
+
+/**
+ * El teléfono en el formato que espera la Cajita: `+` y dígitos. Se limpia en vez de
+ * descartarlo a la primera, porque en la base conviven `0992706933`, `+593 99 270 6933` y
+ * `099-270-6933`, y los tres son el mismo número.
+ */
+function telefonoValido(tel?: string | null): string | null {
+  if (!tel) return null;
+  const limpio = tel.replace(/[^\d+]/g, '');
+  const conPrefijo = limpio.startsWith('+') ? limpio
+    : limpio.startsWith('593') ? `+${limpio}`
+    : limpio.startsWith('0') ? `+593${limpio.slice(1)}`
+    : null;
+  return conPrefijo && /^\+\d{8,15}$/.test(conPrefijo) ? conPrefijo : null;
 }
 
 export type ConfirmacionPayphone = {

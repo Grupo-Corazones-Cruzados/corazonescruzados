@@ -27,17 +27,22 @@ export type Solicitante =
 export type Autorizacion = {
   solicitante: Solicitante;
   canal: 'manual' | 'client' | 'link';
+  sourceType: 'project' | 'ticket';
+  sourceId: string;
+  /** La etapa del plan. `null` en tickets, que se cobran enteros. */
+  stageId: number | null;
+  /** @deprecated Se conserva para el código que ya lo usaba; es `sourceId` cuando es proyecto. */
   projectId: number;
-  stageId: number;
 };
 
 export class SinAcceso extends Error {
   constructor(mensaje: string, readonly status = 403) { super(mensaje); }
 }
 
-/** El enlace de pago, validado: existe, no está revocado, no ha caducado y es de esta etapa. */
+/** El enlace de pago, validado: existe, no está revocado, no ha caducado y sabe qué cobra. */
 export async function validarEnlace(token: string): Promise<{
-  id: number; projectId: number; stageId: number; email: string; expiresAt: string;
+  id: number; sourceType: 'project' | 'ticket'; sourceId: string;
+  stageId: number | null; email: string; expiresAt: string;
 }> {
   if (!token || token.length < 20) throw new SinAcceso('Enlace inválido.', 404);
   const { rows: [l] } = await pool.query(
@@ -50,14 +55,30 @@ export async function validarEnlace(token: string): Promise<{
   if (new Date(l.expires_at) < new Date()) {
     throw new SinAcceso('Este enlace de pago ya caducó. Pídele uno nuevo a tu contacto en GCC.', 410);
   }
-  if (l.source_type !== 'project' || !l.stage_id) throw new SinAcceso('Enlace inválido.', 404);
+  // Un enlace de proyecto SIEMPRE cobra una etapa; uno de ticket cobra el ticket entero.
+  // Exigirlo aquí evita que un enlace mal insertado a mano acabe cobrando algo distinto.
+  if (l.source_type === 'project' && !l.stage_id) throw new SinAcceso('Enlace inválido.', 404);
+  if (l.source_type !== 'project' && l.source_type !== 'ticket') throw new SinAcceso('Enlace inválido.', 404);
   return {
     id: Number(l.id),
-    projectId: Number(l.source_id),
-    stageId: Number(l.stage_id),
+    sourceType: l.source_type,
+    sourceId: String(l.source_id),
+    stageId: l.stage_id != null ? Number(l.stage_id) : null,
     email: l.email,
     expiresAt: l.expires_at,
   };
+}
+
+/** Si este usuario es el miembro al que está asignado el ticket. */
+async function esResponsableDeTicket(userId: number, ticketId: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM gcc_world.tickets t
+       JOIN gcc_world.users u ON u.id = $1
+      WHERE t.id = ($2)::bigint AND u.member_id IS NOT NULL AND t.member_id = u.member_id
+      LIMIT 1`,
+    [userId, ticketId],
+  );
+  return rows.length > 0;
 }
 
 /** Si este usuario es el responsable del proyecto (o participa en él como responsable). */
@@ -85,64 +106,111 @@ async function esResponsable(userId: number, projectId: number): Promise<boolean
  * tiene cuenta, y exigirle una sería romper justo lo que Fernando pidió.
  */
 export async function autorizarCobro(opts: {
-  projectId?: number | string;
-  stageId?: number | string;
+  sourceType?: 'project' | 'ticket' | string | null;
+  sourceId?: number | string | null;
+  stageId?: number | string | null;
   linkToken?: string | null;
+  /** @deprecated alias de `sourceId` con `sourceType: 'project'`. */
+  projectId?: number | string | null;
 }): Promise<Autorizacion> {
   if (opts.linkToken) {
     const enlace = await validarEnlace(opts.linkToken);
-    // El enlace manda sobre lo que venga en el cuerpo de la petición: si alguien pide
-    // pagar OTRA etapa con este token, se cobra la del token, no la que pidió.
+    // El enlace manda sobre lo que venga en el cuerpo de la petición: si alguien pide pagar
+    // OTRA cosa con este token, se cobra la del token, no la que pidió.
     return {
       solicitante: { tipo: 'enlace', linkId: enlace.id, email: enlace.email },
       canal: 'link',
-      projectId: enlace.projectId,
+      sourceType: enlace.sourceType,
+      sourceId: enlace.sourceId,
       stageId: enlace.stageId,
+      projectId: Number(enlace.sourceId),
     };
   }
 
-  const projectId = Number(opts.projectId);
-  const stageId = Number(opts.stageId);
-  if (!projectId || !stageId) throw new SinAcceso('Falta el proyecto o la etapa.', 400);
+  const sourceType = (opts.sourceType || (opts.projectId ? 'project' : null)) as 'project' | 'ticket' | null;
+  const sourceId = String(opts.sourceId ?? opts.projectId ?? '').trim();
+  const stageId = opts.stageId != null && String(opts.stageId) !== '' ? Number(opts.stageId) : null;
+
+  if (sourceType !== 'project' && sourceType !== 'ticket') throw new SinAcceso('Falta qué se va a cobrar.', 400);
+  if (!sourceId) throw new SinAcceso('Falta qué se va a cobrar.', 400);
+  // Un proyecto se cobra POR ETAPA; un ticket, entero. Pedir lo contrario es una petición
+  // mal formada, no un permiso denegado.
+  if (sourceType === 'project' && !stageId) throw new SinAcceso('Falta la etapa del proyecto.', 400);
 
   const user = await getCurrentUser();
   if (!user) throw new SinAcceso('Inicia sesión para continuar.', 401);
   const userId = Number(user.userId);
 
-  if (user.role === 'admin' || (user.role === 'member' && await esResponsable(userId, projectId))) {
+  const base = { sourceType, sourceId, stageId, projectId: Number(sourceId) || 0 };
+
+  const esStaff = user.role === 'admin' || (user.role === 'member' && (
+    sourceType === 'ticket'
+      ? await esResponsableDeTicket(userId, sourceId)
+      : await esResponsable(userId, Number(sourceId))
+  ));
+  if (esStaff) {
     return {
+      ...base,
       solicitante: { tipo: 'staff', userId, email: String(user.email), esAdmin: user.role === 'admin' },
       canal: 'manual',
-      projectId, stageId,
     };
   }
 
   if (user.role === 'client') {
-    const { rows: [c] } = await pool.query(
-      `SELECT c.id
-         FROM gcc_world.clients c
-         JOIN gcc_world.projects p ON p.client_id = c.id
-        WHERE LOWER(c.email) = LOWER($1) AND p.id = ($2)::bigint
-        LIMIT 1`,
-      [user.email, String(projectId)],
-    );
-    if (!c) throw new SinAcceso('Este proyecto no es tuyo.');
+    // ⚠️ El vínculo «esto es tuyo» se resuelve por el MISMO criterio que ya usa el resto de
+    // la aplicación: `LOWER(clients.email) = LOWER(users.email)`. Un ticket admite además
+    // el vínculo directo `tickets.user_id`, que es como se guarda cuando el propio cliente
+    // lo solicita desde su cuenta.
+    const { rows: [c] } = sourceType === 'ticket'
+      ? await pool.query(
+          `SELECT c.id
+             FROM gcc_world.tickets t
+             LEFT JOIN gcc_world.clients c ON c.id = t.client_id
+            WHERE t.id = ($2)::bigint
+              AND (LOWER(c.email) = LOWER($1) OR t.user_id = ($3)::uuid)
+            LIMIT 1`,
+          [user.email, sourceId, String(user.userId)],
+        ).catch(() => pool.query(
+          // `tickets.user_id` es UUID y `users.id` puede no serlo en todos los entornos: si
+          // el casting falla, queda el vínculo por correo, que es el que siempre existe.
+          `SELECT c.id FROM gcc_world.tickets t
+             JOIN gcc_world.clients c ON c.id = t.client_id
+            WHERE t.id = ($2)::bigint AND LOWER(c.email) = LOWER($1) LIMIT 1`,
+          [user.email, sourceId],
+        ))
+      : await pool.query(
+          `SELECT c.id
+             FROM gcc_world.clients c
+             JOIN gcc_world.projects p ON p.client_id = c.id
+            WHERE LOWER(c.email) = LOWER($1) AND p.id = ($2)::bigint
+            LIMIT 1`,
+          [user.email, sourceId],
+        );
+    if (!c) throw new SinAcceso(sourceType === 'ticket' ? 'Este ticket no es tuyo.' : 'Este proyecto no es tuyo.');
     return {
+      ...base,
       solicitante: { tipo: 'cliente', userId, email: String(user.email), clientId: Number(c.id) },
       canal: 'client',
-      projectId, stageId,
     };
   }
 
   throw new SinAcceso('No tienes acceso a este cobro.');
 }
 
-/** Solo quien puede COMPARTIR un enlace: admin o el responsable del proyecto. */
-export async function autorizarCompartir(projectId: number | string): Promise<{ userId: number }> {
+/** Solo quien puede COMPARTIR un enlace: admin o el responsable de eso que se va a cobrar. */
+export async function autorizarCompartir(
+  sourceId: number | string,
+  sourceType: 'project' | 'ticket' = 'project',
+): Promise<{ userId: number }> {
   const user = await getCurrentUser();
   if (!user) throw new SinAcceso('Inicia sesión para continuar.', 401);
   const userId = Number(user.userId);
   if (user.role === 'admin') return { userId };
-  if (user.role === 'member' && await esResponsable(userId, Number(projectId))) return { userId };
-  throw new SinAcceso('Solo el responsable del proyecto puede compartir el enlace de pago.');
+  if (user.role === 'member') {
+    const ok = sourceType === 'ticket'
+      ? await esResponsableDeTicket(userId, String(sourceId))
+      : await esResponsable(userId, Number(sourceId));
+    if (ok) return { userId };
+  }
+  throw new SinAcceso(`Solo el responsable ${sourceType === 'ticket' ? 'del ticket' : 'del proyecto'} puede compartir el enlace de pago.`);
 }

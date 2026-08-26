@@ -29,7 +29,7 @@ declare global {
 }
 
 export type DatosPago = {
-  proyecto: { id: number; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
+  proyecto: { id: number; tipo?: 'project' | 'ticket'; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
   etapa: { id: number; nombre: string };
   importes: { neto: number; recargo: number; total: number };
   pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string | null };
@@ -39,10 +39,18 @@ export type DatosPago = {
   yaPagada: { invoiceId: number | null } | null;
 };
 
+/**
+ * Tipos de identificación del comprador (tabla 6 del SRI).
+ *
+ * ⚠️ El **08, «Identificación del exterior»**, es para los clientes de fuera de Ecuador. Sin
+ * él, un cliente extranjero no puede ni elegir su tipo ni pagar — y es justo el que usa la
+ * tarjeta internacional que motivó elegir PayPhone.
+ */
 const TIPOS_ID = [
   { valor: '05', etiqueta: 'Cédula' },
   { valor: '04', etiqueta: 'RUC' },
   { valor: '06', etiqueta: 'Pasaporte' },
+  { valor: '08', etiqueta: 'Identificación del exterior' },
   { valor: '07', etiqueta: 'Consumidor final' },
 ];
 
@@ -109,11 +117,13 @@ function useKushki(clavePublica: string | null, entorno: string) {
 }
 
 export default function FormularioPago({
-  datos, link, projectId, stageId, onPagado,
+  datos, link, sourceType, sourceId, stageId, onPagado,
 }: {
   datos: DatosPago;
+  /** Canal 3: el token del enlace. Sin él manda la sesión (canal 2). */
   link?: string;
-  projectId?: number;
+  sourceType?: 'project' | 'ticket';
+  sourceId?: string;
   stageId?: number;
   onPagado?: (invoiceId: number | null) => void;
 }) {
@@ -230,7 +240,11 @@ export default function FormularioPago({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          link, project_id: projectId, stage_id: stageId,
+          link,
+          tipo: sourceType,
+          project_id: sourceType === 'project' ? sourceId : undefined,
+          ticket_id: sourceType === 'ticket' ? sourceId : undefined,
+          stage_id: stageId,
           token, metodo, facturacion: f,
           meses: metodo === 'card' && meses > 1 ? meses : undefined,
         }),

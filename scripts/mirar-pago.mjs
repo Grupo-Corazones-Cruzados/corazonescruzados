@@ -15,23 +15,41 @@ const DEST = process.argv[2];
 const BASE = 'http://localhost:3011';
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, options: '-c search_path=gcc_world,public' });
 
-// La etapa pendiente real que encontró `npm run pagos:pendientes`.
-const { rows: [etapa] } = await pool.query(`
-  SELECT e.id, e.name, e.project_id, e.amount
-    FROM gcc_world.project_stages e
-    JOIN gcc_world.projects p ON p.id = e.project_id
-   WHERE e.invoice_id IS NULL AND e.amount > 0
-     AND p.status NOT IN ('cancelled','cotizacion','cotizacion_rechazada')
-   ORDER BY e.id LIMIT 1`);
-if (!etapa) { console.error('sin etapa pendiente'); process.exit(1); }
+// Qué se mira: una etapa de proyecto (por defecto) o un TICKET con saldo pendiente.
+const TIPO = process.env.MIRAR_TIPO === 'ticket' ? 'ticket' : 'project';
+
+let sourceId, stageId, etiqueta;
+if (TIPO === 'ticket') {
+  const { rows: [t] } = await pool.query(`
+    SELECT t.id, t.title, t.estimated_cost
+      FROM gcc_world.tickets t
+     WHERE t.status = 'completed' AND COALESCE(t.estimated_cost,0) > 0
+       AND COALESCE(t.estimated_cost,0) > COALESCE((
+             SELECT SUM(i.total) FROM gcc_world.invoices i
+              WHERE ((i.source_type='ticket' AND i.source_id = t.id::text) OR i.ticket_id = t.id)
+                AND i.status <> 'cancelled'), 0)
+     ORDER BY t.id DESC LIMIT 1`);
+  if (!t) { console.error('sin ticket con saldo pendiente'); process.exit(1); }
+  sourceId = String(t.id); stageId = null; etiqueta = `ticket #${t.id} «${t.title}»`;
+} else {
+  const { rows: [e] } = await pool.query(`
+    SELECT e.id, e.name, e.project_id, e.amount
+      FROM gcc_world.project_stages e
+      JOIN gcc_world.projects p ON p.id = e.project_id
+     WHERE e.invoice_id IS NULL AND e.amount > 0
+       AND p.status NOT IN ('cancelled','cotizacion','cotizacion_rechazada')
+     ORDER BY e.id LIMIT 1`);
+  if (!e) { console.error('sin etapa pendiente'); process.exit(1); }
+  sourceId = String(e.project_id); stageId = e.id; etiqueta = `«${e.name}» ($${e.amount})`;
+}
 
 const token = randomBytes(32).toString('base64url');
 const { rows: [link] } = await pool.query(
   `INSERT INTO gcc_world.payment_links (token, source_type, source_id, stage_id, email, expires_at)
-   VALUES ($1,'project',$2,$3,'revision@grupocc.org', NOW() + INTERVAL '1 hour') RETURNING id`,
-  [token, String(etapa.project_id), etapa.id],
+   VALUES ($1,$4,$2,$3,'revision@grupocc.org', NOW() + INTERVAL '1 hour') RETURNING id`,
+  [token, sourceId, stageId, TIPO],
 );
-console.log(`enlace temporal #${link.id} para «${etapa.name}» ($${etapa.amount})`);
+console.log(`enlace temporal #${link.id} para ${etiqueta}`);
 
 // ⚠️ El `launch` va DENTRO del try: si falla (p. ej. sin Chrome descargado), el `finally`
 // tiene que revocar igualmente el enlace temporal. La primera versión lo dejaba fuera y
@@ -60,13 +78,13 @@ try {
         await new Promise(r => setTimeout(r, 6000));
       }
     }
-    await p.screenshot({ path: `${DEST}/pago-${nombre}.png`, fullPage: true });
+    await p.screenshot({ path: `${DEST}/pago-${TIPO}-${nombre}.png`, fullPage: true });
     // Y el fondo real de la página: `fullPage` pinta los elementos fijos en su sitio del
     // viewport, así que un pie fijo APARENTA cruzarse con el contenido. Solo esta segunda
     // captura dice si el cruce es de verdad.
     await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await new Promise(r => setTimeout(r, 600));
-    await p.screenshot({ path: `${DEST}/pago-${nombre}-fondo.png` });
+    await p.screenshot({ path: `${DEST}/pago-${TIPO}-${nombre}-fondo.png` });
     medidas[nombre] = await p.evaluate(() => ({
       desbordaHorizontal: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
       alto: document.documentElement.scrollHeight,

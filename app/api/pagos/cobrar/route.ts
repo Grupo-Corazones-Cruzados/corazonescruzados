@@ -12,11 +12,27 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
-import { cotizarEtapa, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
+import { cotizarCobro, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { pool } from '@/lib/db';
 
-const ID_TYPES = ['04', '05', '06', '07'];
+/**
+ * Tipos de identificación del comprador (tabla 6 de la Ficha Técnica del SRI).
+ *
+ * ⚠️ EL `08` NO ES OPCIONAL, y faltaba. Es «Identificación del exterior», el que llevan los
+ * clientes de fuera de Ecuador —GCC ya tiene uno costarricense facturado con él— y sin
+ * ponerlo en esta lista **el cliente extranjero no podía pagar**: su cuenta de facturación
+ * venía prellenada con `08`, el validador lo rechazaba, y el cobro moría con un «tipo de
+ * identificación no válido» que además no dice nada útil. Se descubrió probando el cobro de
+ * un ticket real, no leyendo el código.
+ *
+ * Y duele el doble: el cliente de fuera es justo el que paga con tarjeta internacional, que
+ * es una de las razones por las que se eligió PayPhone.
+ */
+const ID_TYPES = ['04', '05', '06', '07', '08'];
+
+/** Los que NO son un número ecuatoriano de 10 o 13 dígitos: pasaporte e identificación del exterior. */
+const ID_TYPES_LIBRES = ['06', '08'];
 
 /** Valida lo que el cliente escribió. Un dato malo aquí sale como comprobante rechazado por el SRI. */
 function validarFacturacion(f: any): DatosFacturacion {
@@ -36,8 +52,13 @@ function validarFacturacion(f: any): DatosFacturacion {
   if (!name) throw new Error('Falta la razón social o el nombre para la factura.');
   if (name.length > 300) throw new Error('La razón social no puede pasar de 300 caracteres.');
   if (!ID_TYPES.includes(id_type)) throw new Error('Tipo de identificación no válido.');
-  if (!/^\d{10}$|^\d{13}$/.test(ruc) && id_type !== '06') {
+  // Un pasaporte o una identificación del exterior tienen el formato de su país
+  // («3-101-619800» en Costa Rica): exigirles dígitos ecuatorianos los dejaría fuera.
+  if (!ID_TYPES_LIBRES.includes(id_type) && !/^\d{10}$|^\d{13}$/.test(ruc)) {
     throw new Error('La identificación debe tener 10 dígitos (cédula) o 13 (RUC).');
+  }
+  if (ID_TYPES_LIBRES.includes(id_type) && (ruc.length < 3 || ruc.length > 20)) {
+    throw new Error('La identificación no es válida.');
   }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('El correo no es válido.');
 
@@ -52,7 +73,8 @@ export async function POST(req: NextRequest) {
   try {
     const cuerpo = await req.json();
     const auth = await autorizarCobro({
-      projectId: cuerpo.project_id,
+      sourceType: cuerpo.tipo || (cuerpo.ticket_id ? 'ticket' : 'project'),
+      sourceId: cuerpo.ticket_id ?? cuerpo.project_id,
       stageId: cuerpo.stage_id,
       linkToken: cuerpo.link || null,
     });
@@ -75,7 +97,7 @@ export async function POST(req: NextRequest) {
     // El importe se recalcula SIEMPRE aquí. Y `cotizarEtapa` vuelve a comprobar contra la
     // base que la etapa siga sin facturar: entre abrir la pantalla y pulsar «pagar» pudo
     // facturarla alguien desde el módulo de facturas.
-    const etapa = await cotizarEtapa(auth.projectId, auth.stageId, proveedor.nombre);
+    const etapa = await cotizarCobro(auth, proveedor.nombre);
 
     const intento = await crearIntento({
       etapa,
@@ -105,7 +127,7 @@ export async function POST(req: NextRequest) {
         parametros: proveedor.parametrosCliente({
           intentId: intento.id,
           total: intento.total,
-          referencia: `${etapa.projectTitle} — ${etapa.stageName}`,
+          referencia: `${etapa.title} — ${etapa.conceptName}`,
           email: facturacion.email,
           telefono: facturacion.phone,
           documento: facturacion.ruc,
@@ -125,7 +147,7 @@ export async function POST(req: NextRequest) {
         token,
         metodo,
         total: intento.total,
-        descripcion: `${etapa.projectTitle} — ${etapa.stageName}`,
+        descripcion: `${etapa.title} — ${etapa.conceptName}`,
         email: facturacion.email,
         meses: Number(cuerpo.meses) > 1 ? Number(cuerpo.meses) : undefined,
         urlRetorno,

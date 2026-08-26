@@ -20,8 +20,8 @@
  *    comprobante del mismo cobro — y ese sí hay que anularlo con nota de crédito.
  */
 import { pool } from '@/lib/db';
-import { getProjectBilling } from '@/lib/payments';
-import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
+import { getProjectBilling, getTicketPayments } from '@/lib/payments';
+import { createManualInvoice, createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
@@ -39,16 +39,34 @@ export type DatosFacturacion = {
   address?: string | null;
 };
 
-export type EtapaCobrable = {
-  projectId: number;
-  projectTitle: string;
-  stageId: number;
-  stageName: string;
+/** Los dos orígenes que se pueden cobrar en línea hoy. */
+export type OrigenCobro = 'project' | 'ticket';
+
+/**
+ * Lo que se va a cobrar, venga de un proyecto o de un ticket.
+ *
+ * Un solo tipo para los dos a propósito: desde aquí hacia arriba —crear el intento,
+ * confirmarlo, emitir la factura, la pantalla, el enlace— **nada distingue el origen**. Si
+ * cada uno tuviera su tipo, tendríamos dos caminos paralelos que se separan en el primer
+ * arreglo, y el que se quede atrás será el que cobre mal.
+ */
+export type Cobrable = {
+  sourceType: OrigenCobro;
+  sourceId: string;
+  /** Título de lo que se cobra (el proyecto o el ticket), para la factura y la pantalla. */
+  title: string;
+  /** La etapa del plan. `null` en tickets, que se cobran enteros. */
+  stageId: number | null;
+  /** Nombre del concepto: la etapa, o el propio ticket. */
+  conceptName: string;
   neto: number;
   recargo: number;
   total: number;
   proveedor: string;
 };
+
+/** Alias histórico: el cobro de una etapa de proyecto es un `Cobrable` como cualquier otro. */
+export type EtapaCobrable = Cobrable & { projectId: number; projectTitle: string };
 
 /**
  * Qué cuesta cobrar esta etapa por esta pasarela.
@@ -65,7 +83,7 @@ export async function cotizarEtapa(
   const billing = await getProjectBilling(projectId);
   if (!billing) throw new Error('El proyecto no existe.');
   if (billing.mode !== 'etapas') {
-    throw new Error('Este proyecto no tiene plan de etapas. El cobro en línea de la v1 solo cubre proyectos con plan.');
+    throw new Error('Este proyecto no tiene plan de etapas. El cobro en línea solo cubre proyectos con plan.');
   }
   const etapa = billing.etapas.find(e => e.id === Number(stageId));
   if (!etapa) throw new Error('La etapa no pertenece a este proyecto.');
@@ -76,12 +94,59 @@ export async function cotizarEtapa(
 
   const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaDe(proveedor));
   return {
+    sourceType: 'project',
+    sourceId: String(billing.projectId),
+    title: billing.title,
+    stageId: etapa.id,
+    conceptName: etapa.name,
+    neto, recargo, total, proveedor,
     projectId: billing.projectId,
     projectTitle: billing.title,
-    stageId: etapa.id,
-    stageName: etapa.name,
-    neto, recargo, total,
-    proveedor,
+  };
+}
+
+/**
+ * Qué cuesta cobrar un TICKET por esta pasarela.
+ *
+ * ⚠️ Un ticket no tiene etapas: se cobra **el saldo que le queda por facturar**, entero y
+ * una sola vez. El «abono parcial» sigue existiendo por el canal manual, donde lo controla
+ * una persona; abrirlo a la pasarela obligaría a renunciar al candado que impide cobrarle
+ * dos veces a quien hace doble clic (ver migración 054).
+ *
+ * Y se exige que esté **completado**: cobrarle a un cliente por un trabajo que todavía no
+ * se entregó es justo lo que la facturación por etapas evita en los proyectos.
+ */
+export async function cotizarTicket(
+  ticketId: string | number,
+  proveedor: string,
+): Promise<Cobrable> {
+  const { rows: [t] } = await pool.query(
+    `SELECT id, title, status, estimated_cost FROM gcc_world.tickets WHERE id = $1`,
+    [ticketId],
+  );
+  if (!t) throw new Error('El ticket no existe.');
+  if (t.status !== 'completed') {
+    throw new Error('Este ticket todavía no está completado, así que no se puede cobrar.');
+  }
+
+  const pagos = await getTicketPayments(ticketId);
+  if (!(pagos.pending > 0)) {
+    throw new Error(pagos.invoiced > 0
+      ? 'Este ticket ya está facturado por completo.'
+      : 'Este ticket no tiene importe por cobrar.');
+  }
+
+  const yaPagado = await cobroPagadoDeOrigen('ticket', String(ticketId));
+  if (yaPagado) throw new Error('Este ticket ya fue pagado en línea.');
+
+  const { neto, recargo, total } = calcularRecargo(pagos.pending, tarifaDe(proveedor));
+  return {
+    sourceType: 'ticket',
+    sourceId: String(t.id),
+    title: t.title,
+    stageId: null,
+    conceptName: t.title,
+    neto, recargo, total, proveedor,
   };
 }
 
@@ -92,6 +157,43 @@ export async function cotizarEtapa(
  * chocar contra él devuelve un error feo al cliente; preguntar primero permite decirle
  * «esto ya está pagado» en vez de «error de restricción única».
  */
+/**
+ * LA PUERTA ÚNICA para cotizar cualquier cosa cobrable.
+ *
+ * Los endpoints no eligen entre `cotizarEtapa` y `cotizarTicket`: piden «cotiza esto» y el
+ * despacho vive aquí. Es lo que mantiene a `/api/pagos/etapa`, `/api/pagos/cobrar`, los dos
+ * generadores de enlaces y la pantalla **ciegos al origen** — y por tanto imposibles de
+ * dejar a medias cuando entre el tercero (productos, automatizaciones).
+ */
+export async function cotizarCobro(
+  destino: { sourceType: 'project' | 'ticket'; sourceId: string; stageId: number | null },
+  proveedor: string,
+): Promise<Cobrable> {
+  if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor);
+  if (destino.stageId == null) throw new Error('Falta la etapa del proyecto.');
+  return cotizarEtapa(destino.sourceId, destino.stageId, proveedor);
+}
+
+/** Si eso ya se pagó, venga de donde venga. */
+export async function cobroPagadoDe(
+  destino: { sourceType: string; sourceId: string; stageId: number | null },
+): Promise<{ id: number; invoice_id: number | null } | null> {
+  return destino.stageId != null
+    ? cobroPagadoDeEtapa(destino.stageId)
+    : cobroPagadoDeOrigen(destino.sourceType, destino.sourceId);
+}
+
+export async function cobroPagadoDeOrigen(
+  sourceType: string, sourceId: string,
+): Promise<{ id: number; invoice_id: number | null } | null> {
+  const { rows } = await pool.query(
+    `SELECT id, invoice_id FROM gcc_world.payment_intents
+      WHERE source_type = $1 AND source_id = $2 AND stage_id IS NULL AND status = 'paid' LIMIT 1`,
+    [sourceType, sourceId],
+  );
+  return rows[0] || null;
+}
+
 export async function cobroPagadoDeEtapa(stageId: number): Promise<{ id: number; invoice_id: number | null } | null> {
   const { rows } = await pool.query(
     `SELECT id, invoice_id FROM gcc_world.payment_intents
@@ -102,7 +204,7 @@ export async function cobroPagadoDeEtapa(stageId: number): Promise<{ id: number;
 }
 
 export async function crearIntento(opts: {
-  etapa: EtapaCobrable;
+  etapa: Cobrable;
   canal: CanalCobro;
   facturacion: DatosFacturacion;
   payerEmail: string;
@@ -110,8 +212,12 @@ export async function crearIntento(opts: {
 }): Promise<{ id: number; total: number; neto: number; recargo: number }> {
   const { etapa, canal, facturacion, payerEmail, createdBy } = opts;
 
-  const yaPagada = await cobroPagadoDeEtapa(etapa.stageId);
-  if (yaPagada) throw new Error('Esta etapa ya fue pagada.');
+  const yaPagada = etapa.stageId != null
+    ? await cobroPagadoDeEtapa(etapa.stageId)
+    : await cobroPagadoDeOrigen(etapa.sourceType, etapa.sourceId);
+  if (yaPagada) {
+    throw new Error(etapa.stageId != null ? 'Esta etapa ya fue pagada.' : 'Esto ya fue pagado.');
+  }
 
   // ⚠️ SE REUTILIZA EL INTENTO VIVO EN VEZ DE APILAR OTRO.
   //
@@ -130,15 +236,16 @@ export async function crearIntento(opts: {
             provider_status = NULL, failure_reason = NULL, updated_at = NOW()
       WHERE id = (
         SELECT id FROM gcc_world.payment_intents
-         WHERE stage_id = $1 AND source_id = $2
+         WHERE source_id = $2 AND source_type = $10
+           AND stage_id IS NOT DISTINCT FROM $1
            AND status IN ('pending','processing')
            AND provider_reference IS NULL
          ORDER BY id DESC LIMIT 1
       )
       RETURNING id`,
     [
-      etapa.stageId, String(etapa.projectId), JSON.stringify(facturacion), payerEmail,
-      etapa.neto, etapa.recargo, etapa.total, etapa.proveedor, canal,
+      etapa.stageId, etapa.sourceId, JSON.stringify(facturacion), payerEmail,
+      etapa.neto, etapa.recargo, etapa.total, etapa.proveedor, canal, etapa.sourceType,
     ],
   );
   if (vivo) {
@@ -149,12 +256,12 @@ export async function crearIntento(opts: {
     `INSERT INTO gcc_world.payment_intents
        (source_type, source_id, stage_id, channel, provider,
         net_amount, fee_amount, charge_amount, billing_snapshot, payer_email, created_by)
-     VALUES ('project', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     VALUES ($11, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING id`,
     [
-      String(etapa.projectId), etapa.stageId, canal, etapa.proveedor,
+      etapa.sourceId, etapa.stageId, canal, etapa.proveedor,
       etapa.neto, etapa.recargo, etapa.total,
-      JSON.stringify(facturacion), payerEmail, createdBy ?? null,
+      JSON.stringify(facturacion), payerEmail, createdBy ?? null, etapa.sourceType,
     ],
   );
   return { id: Number(fila.id), total: etapa.total, neto: etapa.neto, recargo: etapa.recargo };
@@ -288,17 +395,31 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
 
   const neto = Number(intento.net_amount) || 0;
   const recargo = Number(intento.fee_amount) || 0;
-  const projectId = String(intento.source_id);
-  const stageId = Number(intento.stage_id);
+  const sourceType: string = intento.source_type;
+  const sourceId = String(intento.source_id);
+  const stageId = intento.stage_id != null ? Number(intento.stage_id) : null;
+  const esTicket = sourceType === 'ticket';
 
-  const billing = await getProjectBilling(projectId);
-  const etapa = billing?.etapas.find(e => e.id === stageId);
-  const nombreEtapa = etapa?.name || `Etapa ${stageId}`;
-  const titulo = billing?.title || 'Proyecto';
+  let titulo = esTicket ? 'Ticket' : 'Proyecto';
+  let nombreEtapa = titulo;
+  if (esTicket) {
+    const { rows: [t] } = await pool.query(`SELECT title FROM gcc_world.tickets WHERE id = $1`, [sourceId]);
+    titulo = t?.title || `Ticket ${sourceId}`;
+    nombreEtapa = titulo;
+  } else {
+    const billing = await getProjectBilling(sourceId);
+    const etapa = billing?.etapas.find(e => e.id === stageId);
+    titulo = billing?.title || 'Proyecto';
+    nombreEtapa = etapa?.name || `Etapa ${stageId}`;
+  }
 
   const items = [
     // GCC factura con tarifa 0 % («no cobra IVA por ahora»), así que ambas líneas van a 0.
-    { description: `${titulo} — ${nombreEtapa}`, quantity: 1, unitPrice: neto, ivaRate: 0, discount: 0 },
+    // En un ticket el concepto es el propio ticket; en un proyecto, «proyecto — etapa».
+    {
+      description: esTicket ? titulo : `${titulo} — ${nombreEtapa}`,
+      quantity: 1, unitPrice: neto, ivaRate: 0, discount: 0,
+    },
   ];
   if (recargo > 0) {
     items.push({ description: CONCEPTO_RECARGO, quantity: 1, unitPrice: recargo, ivaRate: 0, discount: 0 });
@@ -309,20 +430,39 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   const metodo = (intento.provider_method as MetodoPago) || 'card';
   const paymentCode = metodo === 'card' && esDebito ? FORMA_PAGO_DEBITO : FORMA_PAGO_SRI[metodo];
 
-  const { invoiceId } = await createManualInvoice({
-    projectIds: [projectId],
-    clientIdType: facturacion.id_type,
-    clientName: facturacion.name,
-    clientRuc: facturacion.ruc,
-    clientEmail: facturacion.email,
-    clientPhone: facturacion.phone || '',
-    clientAddress: facturacion.address || '',
-    paymentCode,
-    invoiceItems: items,
-    stageIds: [String(stageId)],
-    currency: 'USD',
-    exchangeRate: 1,
-  });
+  // ⚠️ Cada origen usa SU emisor, y no es intercambiable: el de ticket enlaza la factura
+  // por `source_type`/`source_id` —que es lo que hace que anular la factura devuelva el
+  // ticket a facturable— y el de proyecto marca la etapa del plan. Emitir un ticket con el
+  // emisor de proyectos dejaría la factura sin origen y rompería la anulación.
+  const { invoiceId } = esTicket
+    ? await createManualInvoiceFromTicket({
+        ticketId: sourceId,
+        ticketTitle: titulo,
+        clientIdType: facturacion.id_type,
+        clientName: facturacion.name,
+        clientRuc: facturacion.ruc,
+        clientEmail: facturacion.email,
+        clientPhone: facturacion.phone || '',
+        clientAddress: facturacion.address || '',
+        paymentCode,
+        invoiceItems: items,
+        currency: 'USD',
+        exchangeRate: 1,
+      })
+    : await createManualInvoice({
+        projectIds: [sourceId],
+        clientIdType: facturacion.id_type,
+        clientName: facturacion.name,
+        clientRuc: facturacion.ruc,
+        clientEmail: facturacion.email,
+        clientPhone: facturacion.phone || '',
+        clientAddress: facturacion.address || '',
+        paymentCode,
+        invoiceItems: items,
+        stageIds: stageId != null ? [String(stageId)] : [],
+        currency: 'USD',
+        exchangeRate: 1,
+      });
 
   // El vínculo en los dos sentidos: la factura sabe de qué cobro salió y el cobro sabe qué
   // factura emitió. Sin esto, conciliar contra la liquidación del proveedor es imposible.
@@ -339,7 +479,10 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   // que hace el canal manual. Una cuenta por cliente: Fernando lo confirmó el 2026-08-25.
   try {
     const { rows: [proj] } = await pool.query(
-      `SELECT client_id FROM gcc_world.projects WHERE id = ($1)::bigint`, [projectId],
+      esTicket
+        ? `SELECT client_id FROM gcc_world.tickets  WHERE id = ($1)::bigint`
+        : `SELECT client_id FROM gcc_world.projects WHERE id = ($1)::bigint`,
+      [sourceId],
     );
     if (proj?.client_id) {
       await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [proj.client_id, invoiceId]);
@@ -399,7 +542,7 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
         authorization: inv?.authorization_number || null,
         total: Number(inv?.total) || Number(intento.charge_amount) || 0,
         pdf,
-        projectUrl: `${base}/proyecto/${projectId}`,
+        projectUrl: esTicket ? `${base}/ticket/${sourceId}` : `${base}/proyecto/${sourceId}`,
       });
     } catch (e: any) {
       console.error(`[pagos] la factura ${invoiceId} se emitió pero el correo no salió:`, e.message);

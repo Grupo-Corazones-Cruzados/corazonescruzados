@@ -275,6 +275,33 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎫 EL COBRO EN LÍNEA LLEGA A LOS TICKETS Y AL CLIENTE CON SESIÓN (2026-08-26, migración
+  054).** Ya son los tres canales sobre los DOS orígenes.
+  - **⭐ LOS CLIENTES EXTRANJEROS NO PODÍAN PAGAR.** Existe el tipo de identificación **`08`
+    — «Identificación del exterior»** y mi validador solo tenía 04/05/06/07. GCC ya factura
+    a un cliente costarricense con él (`3-101-619800`), así que su cuenta venía prellenada,
+    el servidor la rechazaba y el cobro moría. **Duele el doble:** el cliente de fuera es
+    justo el que paga con tarjeta internacional, que es por lo que se eligió PayPhone.
+    Salió de probar con **un ticket real**, no con un caso inventado — los datos de ejemplo
+    siempre son ecuatorianos.
+  - **🪤 Y la Cajita se rompe con un documento no ecuatoriano** («Algo salió mal — Docum…»):
+    valida `documentId` como cédula/RUC. **La solución es no mandárselo**: es opcional, y el
+    documento real vive en `billing_snapshot`, que es el que va a la factura. A la pasarela
+    solo le hace falta cobrar.
+  - **⚠️ EL CANDADO DE TICKETS ES OTRO.** Un índice único **parcial ignora los NULL**, así
+    que el de `stage_id` no cubre a los tickets: sin la 054 **un ticket se cobraba dos
+    veces**. Nuevo `idx_payment_intents_origen_pagado` sobre `(source_type, source_id)`.
+    Comprobado que muerde y que los dos conviven: **15/15** contra la base real.
+  - **Por pasarela, un ticket se cobra ENTERO y una vez.** El abono parcial sigue solo en el
+    canal manual: abrirlo a la pasarela obligaría a renunciar al candado, y lo del abono de
+    ticket sigue sin cerrarse con la contadora.
+  - **Se generalizó, no se copió:** tipo común `Cobrable` + `cotizarCobro()`,
+    `lib/pagos/enlaces.ts` compartido por los dos endpoints de enlace, y
+    `components/pagos/PantallaPago.tsx` sirviendo al canal 2 y al 3. **Copiar el endpoint
+    habría dejado dos generadores de llaves de cobro.**
+  - **Canal 2:** `/pagar/cobro?tipo=…&id=…&etapa=…` — misma pantalla, la sesión como llave.
+    Es una ruta **estática** bajo `/pagar` porque Next no admite dos slugs distintos en el
+    mismo nivel, y ese nivel ya lo ocupa `[token]`.
 - **⛔ UNA FACTURA AUTORIZADA NO SE BORRA, Y EL MOTIVO ES LA NUMERACIÓN (2026-08-26).** Al
   pedir eliminar el proyecto de prueba salió el dato duro: **`getNextSecuencial()` toma el
   siguiente número como `MAX(SPLIT_PART(invoice_number,'-',3)) + 1`**. Con la factura 69
