@@ -47,6 +47,19 @@ try {
     p.on('console', m => { if (m.type() === 'error') errores.push(m.text()); });
     await p.goto(`${BASE}/pagar/${token}`, { waitUntil: 'networkidle0', timeout: 60000 });
     await new Promise(r => setTimeout(r, 1200));
+
+    // ── Llegar hasta la pasarela, SIN pagar ─────────────────────────────────
+    // Pulsar «Continuar al pago» crea el intento y pide a PayPhone que dibuje su Cajita.
+    // Ahí se para: pagar de verdad emitiría una factura electrónica al SRI.
+    if (process.env.MIRAR_HASTA_CAJITA === '1') {
+      const boton = await p.evaluateHandle(() =>
+        Array.from(document.querySelectorAll('button')).find(b => /Continuar al pago/.test(b.textContent || '')) || null);
+      if (boton && (await boton.jsonValue?.().catch(() => 1)) !== null) {
+        await boton.asElement()?.click().catch(() => {});
+        // La Cajita llega por CDN y se evalúa como módulo: hay que darle tiempo real.
+        await new Promise(r => setTimeout(r, 6000));
+      }
+    }
     await p.screenshot({ path: `${DEST}/pago-${nombre}.png`, fullPage: true });
     // Y el fondo real de la página: `fullPage` pinta los elementos fijos en su sitio del
     // viewport, así que un pie fijo APARENTA cruzarse con el contenido. Solo esta segunda
@@ -60,6 +73,10 @@ try {
       total: document.body.innerText.match(/Total a pagar[\s\S]{0,30}/)?.[0]?.replace(/\s+/g, ' ') || null,
       hayBotonPagar: !!Array.from(document.querySelectorAll('button')).find(b => /Pagar \$/.test(b.textContent || '')),
       camposFacturacion: document.querySelectorAll('input, select').length,
+      // ¿PayPhone llegó a dibujar algo dentro de su contenedor?
+      cajitaPintada: (document.getElementById('pp-button')?.children.length || 0) > 0,
+      cajitaHtml: (document.getElementById('pp-button')?.innerHTML || '').length,
+      hayIframePayphone: !!document.querySelector('iframe[src*="payphone"], #pp-button iframe'),
     }));
     medidas[nombre].erroresConsola = errores.length;
     medidas[nombre].errores = errores.slice(0, 3);

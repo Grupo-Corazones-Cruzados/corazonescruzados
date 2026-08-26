@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **✅ LA CAJITA DE PAYPHONE YA COBRA DENTRO DE NUESTRA PÁGINA (2026-08-25).** Probado en
+  Chrome contra el proyecto real #32 con el `storeId` y el token definitivos: la caja se
+  pinta (49.740 caracteres, iframe propio), pide tarjeta y celular, y remata con **«TOTAL:
+  USD 919.10»** y los sellos PCI. **El cliente no sale del sitio en ningún momento.**
+  - **El importe cuadra por dos caminos independientes:** el servidor calcula 919,10 y
+    PayPhone pinta 919,10 (866,25 de la etapa + **52,85** de recargo al 5,75 %).
+  - **Se paró antes de pulsar «Pagar», a propósito:** eso cobra de verdad y emite factura al
+    SRI. Los dos intentos que dejó la revisión quedaron **cancelados con su motivo**, no
+    borrados, y **0 facturas** emitidas por pasarela.
+  - **Falta para cobrar en producción:** poner `PAYPHONE_TOKEN`, `PAYPHONE_STORE_ID` y
+    `PAGOS_PROVEEDOR=payphone` **en Railway** — hoy solo están en el `.env.local` local, así
+    que en producción la pasarela sigue apagada.
 - **💳 PAYPHONE ES LA PASARELA, Y YA HABLA CON NOSOTROS (2026-08-25).** Aplicación creada en
   su portal de developers: dominio `https://app.grupocc.org`, Url de respuesta
   `https://app.grupocc.org/pagos/respuesta`, tipo Web. **El token está verificado**; falta el

@@ -7322,3 +7322,24 @@ y el segundo pago sí es un problema de verdad.
 2. Invitar a **un probador** para usar el ambiente de pruebas.
 3. Las dos variables en Railway: `PAYPHONE_TOKEN` y `PAYPHONE_STORE_ID`, más
    `PAGOS_PROVEEDOR=payphone`.
+
+### ✅ P130 — LA CAJITA DE PAYPHONE SE DIBUJA DENTRO DE NUESTRA PÁGINA (2026-08-25)
+Con el `storeId` real y el token nuevo, probado en Chrome contra el proyecto real #32:
+- **`cajitaPintada: true`** · **49.740 caracteres** de HTML dentro de `#pp-button` ·
+  **iframe de PayPhone presente** · en escritorio (1440 px) y en móvil (390 px), **sin
+  desbordamiento horizontal en ninguno**.
+- La caja pide número de tarjeta, MM/AA, CVV, titular y celular `+593`, y remata con
+  **«TOTAL: USD 919.10»** y su botón naranja, con los sellos Verified by Visa / Mastercard
+  SecureCode / PCI DSS. **El cliente no sale de nuestra página en ningún momento.**
+- **El importe cuadra por dos caminos:** 866,25 / (1 − 0,0575) = **919,10** — el mismo que
+  calculó el servidor (`charge_amount`) y el que pinta PayPhone. El recargo es **52,85 $**.
+  *(A Fernando se le había dicho «919,15» de cabeza; el número bueno es 919,10.)*
+- **Se paró AHÍ a propósito.** Pulsar «Pagar» habría cobrado de verdad y emitido una factura
+  electrónica al SRI. Eso no se hace sin que Fernando diga sobre qué proyecto.
+- **Limpieza:** los dos intentos que dejó la revisión (uno por tamaño de pantalla) quedaron
+  en **`cancelled`** con su motivo escrito — **no borrados**
+  ([[gcc-pruebas-no-borran-datos-reales]]) — y **0 facturas** emitidas por pasarela.
+
+### 🔎 P131 — El token nuevo también se verificó antes de usarlo
+Misma sonda que con el anterior: `404` + `errorCode 20`, no `401`. Cuesta diez segundos y
+descarta el fallo más tonto posible —una credencial mal copiada— antes de montar nada encima.
