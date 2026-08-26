@@ -49,11 +49,18 @@ export async function validarEnlace(token: string): Promise<{
 }> {
   if (!token || token.length < 20) throw new SinAcceso('Enlace inválido.', 404);
   const { rows: [l] } = await pool.query(
-    `SELECT id, source_type, source_id, stage_id, email, expires_at, revoked_at
+    `SELECT id, source_type, source_id, stage_id, email, expires_at, revoked_at, paid_at
        FROM gcc_world.payment_links WHERE token = $1`,
     [token],
   );
   if (!l) throw new SinAcceso('Este enlace de pago no existe.', 404);
+  // ⚠️ UN ENLACE SE GASTA AL PAGAR. Antes seguía abriéndose y ofreciendo pagar de nuevo, así
+  // que un cliente que volviera al correo podía cobrarse dos veces por descuido. El mensaje
+  // dice **que ya se pagó**, no «enlace inválido»: quien vuelve al enlace normalmente lo hace
+  // para comprobar que su pago entró.
+  if (l.paid_at) {
+    throw new SinAcceso('Este pago ya se realizó. Si no recibiste tu factura, escríbenos y te la reenviamos.', 410);
+  }
   if (l.revoked_at) throw new SinAcceso('Este enlace de pago fue anulado.', 410);
   if (new Date(l.expires_at) < new Date()) {
     throw new SinAcceso('Este enlace de pago ya caducó. Pídele uno nuevo a tu contacto en GCC.', 410);

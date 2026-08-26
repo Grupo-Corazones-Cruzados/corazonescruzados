@@ -139,9 +139,16 @@ export async function cotizarEtapa(
   if (etapa.invoiceId) {
     throw new Error(`La etapa «${etapa.name}» ya está facturada (${etapa.invoiceNumber}).`);
   }
+  // ⚠️ NO BASTA CON MIRAR SI LA ETAPA TIENE FACTURA. Un cobro puede estar `paid` sin
+  // comprobante emitido —el SRI se cayó, o corría en modo ensayo—, y en ese hueco se podía
+  // volver a cobrar lo ya cobrado. El dinero manda sobre la factura: si hay un cobro pagado,
+  // la etapa está pagada.
   const enCurso = await cobroPagadoDeEtapa(etapa.id);
   if (enCurso?.status === 'awaiting') {
     throw new Error(`La etapa «${etapa.name}» ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.`);
+  }
+  if (enCurso?.status === 'paid') {
+    throw new Error(`La etapa «${etapa.name}» ya está pagada.`);
   }
   if (!(etapa.amount > 0)) throw new Error(`La etapa «${etapa.name}» no tiene importe.`);
 
@@ -537,6 +544,24 @@ export async function confirmarPago(
       RETURNING *`,
     [intentId, datos.referencia ?? null, datos.metodo ?? null, datos.estadoProveedor ?? null],
   );
+
+  if (intento) {
+    // ⚠️ EL ENLACE DE PAGO SE QUEMA AL COBRAR, y no solo el que se usó.
+    //
+    // `paid_at` existía desde la migración 053 y **nadie lo escribía**: un enlace ya pagado
+    // seguía abriéndose y ofreciendo pagar otra vez. Se marcan **todos** los enlaces vivos
+    // del mismo destino, no solo el del intento, porque el responsable pudo generar dos para
+    // la misma etapa y el segundo seguiría siendo una puerta abierta.
+    await pool.query(
+      `UPDATE gcc_world.payment_links
+          SET paid_at = NOW()
+        WHERE paid_at IS NULL
+          AND (intent_id = $1
+               OR (source_type = $2 AND source_id = $3
+                   AND stage_id IS NOT DISTINCT FROM $4))`,
+      [intentId, intento.source_type, intento.source_id, intento.stage_id],
+    ).catch((e: any) => console.error('[pagos] no se pudo quemar el enlace del cobro', intentId, e.message));
+  }
 
   if (!intento) {
     // Ya estaba pagado: puede ser un reintento del webhook (lo normal) o una carrera.

@@ -540,6 +540,19 @@ Stack estándar de la casa, con particularidades de este repo:
   - **⏸ LA PANTALLA `/pagar/<token>` NO SE INVENTA.** Es una página pública nueva, y sobre eso
     manda [[gcc-diseno-sitio-con-fernando]] y el ⛔ de `Diseño.md`: **su diseño se acuerda con
     él antes**. Ese es el corte de la jornada, no un olvido.
+- **🔥 EL ENLACE DE PAGO SE QUEMA AL COBRAR (2026-08-26).** Lo vio Fernando: el enlace seguía
+  abriéndose después de pagar **y dejaba pagar otra vez**. Eran dos huecos:
+  - **`payment_links.paid_at` existía desde la 053 y NADIE lo escribía.** `listarEnlaces`
+    hasta lo leía para decir «vigente»: una columna muerta que aparentaba estar viva. Ahora
+    se marca al confirmar y `validarEnlace` la comprueba. **Se queman TODOS los enlaces del
+    mismo destino**, no solo el usado — puede haber dos generados para la misma etapa.
+  - **Un cobro `paid` SIN factura dejaba cobrar de nuevo:** se miraba si la etapa tenía
+    factura y si había un cobro esperando, pero no si había uno pagado. Ahí entraban los
+    cobros cuya emisión falló y los del modo ensayo. **El dinero manda sobre la factura.**
+  - El mensaje dice **«este pago ya se realizó»**, no «enlace inválido»: quien vuelve al
+    enlace suele hacerlo para comprobar que su pago entró.
+  - **⭐ Y la lección general: una columna que se LEE pero no se ESCRIBE es peor que no
+    tenerla.** Aparenta estar viva y nadie sospecha de ella.
 - **🏦 PAGO POR TRANSFERENCIA, CON CONFIRMACIÓN HUMANA (2026-08-26, migraciones 055 y 056).**
   Segundo método de pago. La pantalla ahora **muestra qué se está pagando** y deja **elegir
   el método**, con los dos precios delante.

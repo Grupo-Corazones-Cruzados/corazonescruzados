@@ -7745,3 +7745,30 @@ Flujo completo contra la base de producción, con sesiones reales de cliente y d
 
 `tsc` y `next build` limpios · 14/14 recargo · **18/18 candados** · la base quedó con **1
 cobro pagado** (el dólar real) y los meses de la suscripción intactos.
+
+### 🪤 P160 — El enlace de pago no se gastaba al usarlo (2026-08-26)
+Lo vio Fernando: *«una vez se realiza el pago, el token de acceso al enlace debería caducar
+porque ese enlace veo que sigue pudiéndose abrir cuando ya se ha realizado el pago, y se
+puede incluso volver a pagar»*. Eran **dos** huecos, no uno:
+
+1. **`payment_links.paid_at` existía desde la migración 053 y nadie lo escribía.**
+   `listarEnlaces` incluso lo leía para decir «vigente», así que el dato estaba pensado y
+   **nunca se rellenó** — una columna muerta que aparentaba estar viva. Ahora se marca al
+   confirmar el cobro, y `validarEnlace` la comprueba.
+   - **Se queman TODOS los enlaces del mismo destino, no solo el que se usó.** El responsable
+     puede haber generado dos para la misma etapa —porque el primero caducaba, o porque lo
+     mandó a otro correo— y el segundo seguiría siendo una puerta abierta.
+   - El mensaje dice **«este pago ya se realizó»**, no «enlace inválido»: quien vuelve a un
+     enlace de pago normalmente lo hace **para comprobar que su pago entró**, y decirle que
+     el enlace no vale le hace pensar que algo salió mal.
+
+2. **Un cobro `paid` SIN factura dejaba cobrar otra vez.** `cotizarEtapa` miraba si la etapa
+   tenía factura y si había un cobro `awaiting`, pero **no si había uno pagado**. En el hueco
+   entraban los cobros cuya emisión falló (el SRI caído) y los del modo ensayo. **El dinero
+   manda sobre la factura: si hay un cobro pagado, eso está pagado**, haya comprobante o no.
+
+- **Comprobado con dos enlaces vivos del mismo mes:** se pagó por el A, y después **los dos**
+  devolvieron `410` con el mensaje correcto y quedaron marcados en la base. Y el mes con
+  cobro pagado sin factura devolvió `400` en vez de dejar pagar de nuevo.
+- **La lección de fondo:** una columna que se lee pero no se escribe es peor que no tenerla —
+  `listarEnlaces` llevaba días diciendo «vigente» sobre un dato que nadie mantenía.
