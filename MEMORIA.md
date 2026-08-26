@@ -275,6 +275,16 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⛔ UNA FACTURA AUTORIZADA NO SE BORRA, Y EL MOTIVO ES LA NUMERACIÓN (2026-08-26).** Al
+  pedir eliminar el proyecto de prueba salió el dato duro: **`getNextSecuencial()` toma el
+  siguiente número como `MAX(SPLIT_PART(invoice_number,'-',3)) + 1`**. Con la factura 69
+  borrada, el máximo caería de 81 a 80 y **la siguiente factura repetiría el número
+  001-001-000000081, ya autorizado por el SRI** — un comprobante duplicado, que es un
+  problema tributario, no un fallo de la app. Además la factura existe **en el SRI**:
+  borrarla aquí solo nos deja sin registro de algo que sigue emitido.
+  - **Lo que sí se hace: archivar.** El proyecto #35 quedó `status='cancelled'` con
+    `[ARCHIVADO]` en el título y su enlace revocado. `getBillableProjects()` excluye los
+    cancelados, así que desaparece del flujo sin dejar a la factura sin origen.
 - **✅ PRIMER COBRO REAL, COMPLETO Y CORRECTO (2026-08-26).** Fernando pagó **1,07 $** con su
   tarjeta en el enlace del proyecto de prueba #35. Verificado en la base: cobro `paid`
   (ref. 90508721, aut. W90508721) → factura **001-001-000000081** **AUTORIZADA POR EL SRI** →

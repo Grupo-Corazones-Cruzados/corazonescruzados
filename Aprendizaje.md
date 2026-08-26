@@ -7444,3 +7444,21 @@ estaba vacía. Las líneas viven en **`invoice_items_sri`**, y estaban perfectas
 familia de error que [[P68]], [[P98]] y [[P118]]: **mi medidor mintiendo, no el sistema**.
 Lo salvó comprobarlo antes de que Fernando fuera a buscar un fallo inexistente — que es
 exactamente lo que no hice la primera vez que lo dije en voz alta.
+
+### ⛔ P139 — El proyecto de prueba se ARCHIVA, no se borra, y el motivo es la numeración (2026-08-26)
+Fernando pidió eliminarlo. Se archivó (`status='cancelled'`, título con `[ARCHIVADO]`) y se
+revocó su enlace, pero **no se borró**, por una razón medida, no por prudencia genérica:
+
+- **`getNextSecuencial()` calcula el siguiente número de factura como
+  `MAX(SPLIT_PART(invoice_number,'-',3)) + 1`.** Hoy el máximo es **81**. Comprobado en la
+  base: **sin la factura 69, el máximo pasaría a 80** → la siguiente factura volvería a ser
+  la **001-001-000000081**, un número **ya autorizado por el SRI**. Un comprobante duplicado
+  no es un fallo de la app: es un problema tributario.
+- Además la factura **existe en el SRI**, no solo en nuestra base: borrarla aquí no la borra
+  allí, solo nos deja sin el registro de algo que sigue emitido a nuestro nombre.
+- Y borrar el **proyecto** dejaría a esa factura sin origen: `invoice_projects` apuntaría a
+  un proyecto inexistente y la etapa desaparecería, así que el día que alguien audite ese
+  cobro no habría de dónde tirar.
+- **Archivado hace el trabajo igual:** `getBillableProjects()` excluye los `cancelled`, así
+  que desaparece del flujo de facturación y de las pantallas de trabajo. Complementa
+  [[gcc-pruebas-no-borran-datos-reales]] con el porqué concreto.
