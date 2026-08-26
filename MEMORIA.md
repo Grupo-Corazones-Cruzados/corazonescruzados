@@ -275,6 +275,28 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **✅ PRIMER COBRO REAL, COMPLETO Y CORRECTO (2026-08-26).** Fernando pagó **1,07 $** con su
+  tarjeta en el enlace del proyecto de prueba #35. Verificado en la base: cobro `paid`
+  (ref. 90508721, aut. W90508721) → factura **001-001-000000081** **AUTORIZADA POR EL SRI** →
+  etapa marcada → ingreso registrado. Las dos líneas salieron separadas (etapa 1,00 +
+  procesamiento 0,07) y el **`formaPago` del XML fue 19** (tarjeta), puesto por el método
+  real del cobro. **La pasarela funciona de punta a punta.**
+  - **🪤 LA PANTALLA PROMETÍA UN CORREO QUE NADIE ENVIABA.** El formulario dice «la factura te
+    llega al correo en cuanto el pago se confirme» y ese envío **no existía**. Ninguna
+    verificación automática lo caza —`tsc` y `next build` no leen párrafos de interfaz—:
+    apareció al **revisar qué había pasado de verdad** tras el primer cobro. **Una promesa en
+    pantalla es parte del trabajo.** Ahora `sendPaidInvoiceEmail` sale en su propio `try`, y
+    si falla queda escrito en el intento.
+    - Y como puede fallar, hay con qué reintentarlo:
+      **`node --import ./scripts/registrar-ts.mjs scripts/reenviar-factura.mjs <invoiceId>`**,
+      que usa **la misma función** — el reenvío es idéntico, no una imitación.
+  - **🪤 Corregir un dato apilaba intentos fantasma.** Cambiar de cédula a Consumidor Final y
+    volver a pulsar creaba un intento nuevo; el anterior quedaba en `processing` para
+    siempre. Ahora se reutiliza el intento vivo **mientras la pasarela no lo conozca**
+    (`provider_reference IS NULL`); en cuanto tiene referencia, es suyo.
+  - **🪤 Y me equivoqué al reportar:** dije que la factura no guardó sus líneas mirando
+    `invoice_items`, cuando viven en **`invoice_items_sri`** y estaban perfectas. Mi medidor,
+    no el sistema — otra vez. Comprobar antes de mandar a nadie a buscar un fallo inexistente.
 - **🔴 LA APP DE PAYPHONE ESTABA EN PRODUCCIÓN DESDE EL PRINCIPIO (2026-08-25).** Lo vio
   Fernando al ir a invitar un probador. **Eso invierte el sentido de la salvaguarda:** con
   pagos reales, `PAGOS_EMITIR_FACTURA=0` deja **dinero cobrado sin comprobante**, que ya no

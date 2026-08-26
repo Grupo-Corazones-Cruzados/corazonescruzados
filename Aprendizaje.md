@@ -7395,3 +7395,52 @@ cobrando dinero real**. Ahora solo se rellenan si el proveedor es Kushki; con cu
 van a `null`.
 - **La regla:** un dato heredado que ya no aplica no es ruido inocuo. **El que lo lea va a
   actuar según lo que diga**, y aquí decía justo lo contrario de la verdad.
+
+---
+
+## Quinta pasada (2026-08-26) — EL PRIMER COBRO REAL · ✅ 100 %
+
+Fernando pagó 1,07 $ con su tarjeta en `/pagar/<token>` del proyecto #35. **Funcionó de
+punta a punta.** Lo comprobado en la base, no en la pantalla:
+
+| Qué | Resultado |
+|---|---|
+| Cobro | intento **#11** · `paid` · referencia **90508721** · autorización **W90508721** |
+| Factura | **001-001-000000081** · `status=paid` · **`sri_status=authorized`** |
+| Autorización SRI | `2508202601093009592200120010010000000810139588014` |
+| Importe | 1,00 + 0,07 = **1,07** · IVA 0,00 |
+| Líneas | dos, separadas: la etapa y «Gastos de procesamiento de pago en línea» |
+| `formaPago` del XML | **19** (tarjeta de crédito) — puesto por el método real del cobro |
+| Etapa #28 | `invoice_id = 69` → marcada como facturada |
+| Finanzas | ingreso de 1,07 registrado por factura, no por proyecto |
+| Evento | `resp:90508721` atendido → «factura 69» |
+
+### 🪤 P136 — La pantalla prometía un correo que nadie enviaba
+El formulario dice *«la factura te llega al correo en cuanto el pago se confirme»*. Ese envío
+**no existía**: `emitirFacturaDelCobro` emitía, autorizaba, registraba el ingreso… y se
+acababa. **Una promesa en pantalla es parte del trabajo, no decoración.**
+- No lo encontró ninguna verificación automática: `tsc`, `next build` y todas las pruebas
+  estaban verdes, porque nada de eso sabe lo que dice un párrafo de la interfaz. Apareció al
+  **revisar qué había pasado de verdad** tras el primer cobro.
+- Ahora `sendPaidInvoiceEmail` va en su propio `try`: si el correo falla, **el cobro y la
+  factura siguen valiendo** y el motivo queda escrito en el intento.
+- Y como el sistema admite que ese correo falle, hacía falta poder reintentarlo:
+  `scripts/reenviar-factura.mjs <invoiceId>` usa **la misma función**, así que el reenvío es
+  idéntico al original y no una imitación parecida. Probado enviando la factura del propio
+  cobro de prueba (PDF de 3.505 bytes).
+
+### 🪤 P137 — Corregir un dato apilaba intentos fantasma
+Fernando empezó a pagar con su cédula, cambió a **Consumidor Final** y volvió a pulsar
+«Continuar al pago». Eso creó **dos** intentos: el #10 quedó en `processing` para siempre.
+- Es el comportamiento más normal del mundo —corregir y reintentar— y dejaba basura que
+  luego hay que interpretar cada vez que se audita un pago.
+- Ahora se **reutiliza el intento vivo**, pero solo mientras la pasarela no lo conozca
+  (`provider_reference IS NULL`): en cuanto tiene referencia, ese intento es de la pasarela
+  y no se toca. El #10 quedó **cancelado con su motivo**, no borrado.
+
+### 🪤 P138 — Reporté un fallo que no existía: miré la tabla equivocada
+Al revisar la factura dije que **no había guardado sus líneas**, porque `invoice_items`
+estaba vacía. Las líneas viven en **`invoice_items_sri`**, y estaban perfectas. Es la misma
+familia de error que [[P68]], [[P98]] y [[P118]]: **mi medidor mintiendo, no el sistema**.
+Lo salvó comprobarlo antes de que Fernando fuera a buscar un fallo inexistente — que es
+exactamente lo que no hice la primera vez que lo dije en voz alta.
