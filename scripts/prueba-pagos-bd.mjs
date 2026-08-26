@@ -54,9 +54,10 @@ async function main() {
     const { rows: idx } = await c.query(
       `SELECT indexname FROM pg_indexes
         WHERE schemaname = 'gcc_world'
-          AND indexname IN ('idx_payment_intents_stage_pagada','idx_payment_intents_referencia','idx_payment_events_unico')`,
+          AND indexname IN ('idx_payment_intents_stage_pagada','idx_payment_intents_referencia',
+                            'idx_payment_events_unico','idx_payment_intents_origen_pagado')`,
     );
-    p('los tres candados están creados', idx.length === 3, `encontrados: ${idx.map(i => i.indexname).join(', ')}`);
+    p('los cuatro candados están creados', idx.length === 4, `encontrados: ${idx.map(i => i.indexname).join(', ')}`);
 
     // ── Y ahora lo que de verdad importa: que muerdan ───────────────────────
     await c.query('BEGIN');
@@ -161,6 +162,67 @@ async function main() {
     }
     p('un canal que no existe se rechaza', !canalMalo);
 
+    // ── `awaiting` OCUPA EL SITIO IGUAL QUE `paid` ──────────────────────────
+    // Un cliente que ya subió su comprobante no puede volver a pagar lo mismo mientras
+    // alguien lo revisa: si pudiera, acabaría pagando dos veces y habría que devolverle
+    // dinero. (Migración 055.)
+    let dobleEnEspera = false;
+    try {
+      await c.query('SAVEPOINT a1');
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('project','-1',$1,'client','simulado',10,0,10,'awaiting')`,
+        [ETAPA - 5],
+      );
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('project','-1',$1,'client','simulado',10,0,10,'awaiting')`,
+        [ETAPA - 5],
+      );
+      dobleEnEspera = true;
+      await c.query('RELEASE SAVEPOINT a1');
+    } catch {
+      await c.query('ROLLBACK TO SAVEPOINT a1');
+    }
+    p('🔑 la misma etapa no admite DOS comprobantes en espera', !dobleEnEspera);
+
+    let esperaMasPago = false;
+    try {
+      await c.query('SAVEPOINT a2');
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('project','-1',$1,'client','simulado',10,0,10,'awaiting')`,
+        [ETAPA],
+      );
+      esperaMasPago = true;
+      await c.query('RELEASE SAVEPOINT a2');
+    } catch {
+      await c.query('ROLLBACK TO SAVEPOINT a2');
+    }
+    p('🔑 una etapa YA PAGADA tampoco admite un comprobante', !esperaMasPago,
+      'se podría cobrar dos veces: una por tarjeta y otra por transferencia');
+
+    let ticketEnEspera = false;
+    try {
+      await c.query('SAVEPOINT a3');
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('ticket','-9001',NULL,'client','simulado',10,0,10,'awaiting')`);
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('ticket','-9001',NULL,'client','simulado',10,0,10,'awaiting')`);
+      ticketEnEspera = true;
+      await c.query('RELEASE SAVEPOINT a3');
+    } catch {
+      await c.query('ROLLBACK TO SAVEPOINT a3');
+    }
+    p('🔑 y lo mismo en un origen sin etapa (ticket)', !ticketEnEspera);
+
     // ── TICKETS: su candado es otro, porque su stage_id es NULL ─────────────
     const nuevoTicket = (estado, ref) => c.query(
       `INSERT INTO gcc_world.payment_intents
@@ -220,7 +282,7 @@ async function main() {
     // ── Y que el rollback de verdad no dejó nada ────────────────────────────
     const { rows: quedan } = await c.query(
       `SELECT COUNT(*)::int AS n FROM gcc_world.payment_intents
-        WHERE stage_id <= $1 OR source_id IN ('-777','-778','-779')`, [ETAPA],
+        WHERE stage_id <= $1 OR source_id IN ('-777','-778','-779','-9001')`, [ETAPA],
     );
     p('la prueba no dejó una sola fila detrás', quedan[0].n === 0, `quedaron ${quedan[0].n}`);
   } finally {

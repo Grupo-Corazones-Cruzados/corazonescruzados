@@ -15,6 +15,7 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
+import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -995,6 +996,10 @@ export default function TicketDetailPage() {
               { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString() },
             ]}
           >
+            <CobrosEnEspera tipo="ticket" id={String(id)} alConfirmar={() => {
+              fetch(`/api/tickets/${id}/payments`).then(r => r.json()).then(d => setPayments(d.data || null)).catch(() => {});
+            }} />
+
             {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
               const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
               return (

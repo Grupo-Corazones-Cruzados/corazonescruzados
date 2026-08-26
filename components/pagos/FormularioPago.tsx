@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { CreditCard, Landmark, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Landmark, Lock, Loader2, AlertCircle, CheckCircle2, Clock, Copy, Check, Upload } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 
 declare global {
@@ -37,6 +37,15 @@ export type DatosPago = {
   correoDestino: string | null;
   canal: string;
   yaPagada: { invoiceId: number | null } | null;
+  /** Lo que cuesta por cada método: la transferencia no lleva recargo. */
+  importesPorMetodo?: Record<string, { recargo: number; total: number }>;
+  cuentas?: CuentaBancaria[];
+  detalle?: { etiqueta: string; valor: string }[];
+};
+
+export type CuentaBancaria = {
+  id: string; banco: string; tipo: string; numero: string;
+  titular: string; identificacion: string; correo: string; swift?: string;
 };
 
 /**
@@ -138,9 +147,29 @@ export default function FormularioPago({
   const cajitaLista = useCajitaPayphone(cobraEnCliente);
   const [paramsCajita, setParamsCajita] = useState<Record<string, unknown> | null>(null);
 
+  // La transferencia SIEMPRE está disponible: no la ofrece la pasarela, la ofrece GCC.
   const [metodo, setMetodo] = useState<'card' | 'transfer'>(
     pasarela.metodos.includes('card') ? 'card' : 'transfer',
   );
+  const puedeTarjeta = pasarela.metodos.includes('card');
+
+  // Lo que cuesta con el método elegido. Con transferencia, el neto pelado.
+  const importeActual = datos.importesPorMetodo?.[metodo] || { recargo: importes.recargo, total: importes.total };
+
+  // ── Transferencia ────────────────────────────────────────────────────────
+  const [cuentaAbierta, setCuentaAbierta] = useState<string | null>(datos.cuentas?.[0]?.id || null);
+  const [transferIntent, setTransferIntent] = useState<number | null>(null);
+  const [comprobante, setComprobante] = useState<File | null>(null);
+  const [referencia, setReferencia] = useState('');
+  const [bancoUsado, setBancoUsado] = useState('');
+  const [enEspera, setEnEspera] = useState(false);
+  const [copiado, setCopiado] = useState<string | null>(null);
+
+  const copiar = (texto: string, cual: string) => {
+    navigator.clipboard.writeText(texto);
+    setCopiado(cual);
+    setTimeout(() => setCopiado(null), 1600);
+  };
 
   const [f, setF] = useState({
     id_type: datos.facturacion?.id_type || '05',
@@ -260,6 +289,13 @@ export default function FormularioPago({
 
       if (d.estado === 'rechazado') { setError(d.error); setEnviando(false); return; }
 
+      if (d.estado === 'transferencia') {
+        // No se ha cobrado nada: ahora el cliente va a su banco y vuelve con el comprobante.
+        setTransferIntent(d.intentId);
+        setEnviando(false);
+        return;
+      }
+
       if (d.estado === 'cajita') {
         // A partir de aquí manda PayPhone: pinta su formulario y, al pagar, devuelve al
         // cliente a `/pagos/respuesta`, que es quien confirma el cobro.
@@ -282,6 +318,48 @@ export default function FormularioPago({
     } finally {
       setEnviando(false);
     }
+  }
+
+  /** Sube el comprobante y deja el cobro esperando que una persona lo confirme. */
+  async function subirComprobante(e: React.FormEvent) {
+    e.preventDefault();
+    if (!transferIntent || !comprobante) return;
+    setError('');
+    setEnviando(true);
+    try {
+      const fd = new FormData();
+      fd.append('intent_id', String(transferIntent));
+      fd.append('archivo', comprobante);
+      fd.append('referencia', referencia);
+      fd.append('banco', bancoUsado || cuentaAbierta || '');
+      if (link) fd.append('link', link);
+
+      const res = await fetch('/api/pagos/comprobante', { method: 'POST', body: fd });
+      const d = await res.json();
+      if (!res.ok) { setError(d.error || 'No se pudo subir el comprobante.'); return; }
+      setEnEspera(true);
+    } catch (err: any) {
+      setError(err.message || 'No se pudo subir el comprobante.');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  // ── El comprobante ya está arriba: solo falta que lo confirmen ────────────
+  if (enEspera) {
+    return (
+      <div className="rounded-xl border border-amber-500/40 bg-amber-50/60 p-6 text-center">
+        <Clock className="w-8 h-8 mx-auto text-amber-600" />
+        <h2 className="mt-3 text-[19px] font-semibold text-[var(--texto)]">Comprobante recibido</h2>
+        <p className="mt-2 text-[15px] leading-relaxed text-[var(--suave)]">
+          Tu pago queda <strong>en espera de verificación</strong>. En cuanto confirmemos la
+          transferencia en nuestro banco se emite tu factura electrónica y te llega al correo.
+        </p>
+        <p className="mt-3 text-[13px] text-[var(--tenue)]">
+          No hace falta que pagues otra vez ni que vuelvas a subir el comprobante.
+        </p>
+      </div>
+    );
   }
 
   // ── Ya pagada ────────────────────────────────────────────────────────────
@@ -310,40 +388,147 @@ export default function FormularioPago({
     <form onSubmit={pagar} className="space-y-7">
       {/* ── Método ── (se esconde si la pasarela solo ofrece uno: elegir entre una sola
            opción no es elegir, es ruido) */}
-      <fieldset className={pasarela.metodos.length > 1 ? '' : 'hidden'}>
+      <fieldset className={transferIntent ? 'hidden' : ''}>
         <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
           Cómo quieres pagar
         </legend>
-        <div className="grid grid-cols-2 gap-3">
-          {pasarela.metodos.includes('card') && (
+        {/* ⚠️ CADA MÉTODO ENSEÑA SU PRECIO, y no es un adorno: la transferencia no lleva
+            recargo porque ahí no cobra ninguna pasarela. Ver los dos importes juntos hace
+            que el método más barato —para el cliente y para GCC— se elija solo. */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {puedeTarjeta && (
             <button type="button" onClick={() => setMetodo('card')}
-              className={`flex items-center gap-2.5 rounded-lg border px-4 py-3 text-[14px] font-medium transition ${
+              className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-left transition ${
                 metodo === 'card'
-                  ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/8 text-[var(--texto)]'
-                  : 'border-[var(--linea-fuerte)] text-[var(--suave)] hover:border-[var(--violeta-vivo)]/50'}`}>
-              <CreditCard className="w-[18px] h-[18px]" /> Tarjeta
+                  ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/8'
+                  : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)]/50'}`}>
+              <span className="min-w-0">
+                <span className="flex items-center gap-2 text-[14px] font-medium text-[var(--texto)]">
+                  <CreditCard className="w-[18px] h-[18px]" /> Tarjeta
+                </span>
+                <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Al instante · crédito o débito</span>
+              </span>
+              <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[var(--texto)]">
+                ${fmt2(datos.importesPorMetodo?.card?.total ?? importes.total)}
+              </span>
             </button>
           )}
-          {pasarela.metodos.includes('transfer') && (
-            <button type="button" onClick={() => setMetodo('transfer')}
-              className={`flex items-center gap-2.5 rounded-lg border px-4 py-3 text-[14px] font-medium transition ${
-                metodo === 'transfer'
-                  ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/8 text-[var(--texto)]'
-                  : 'border-[var(--linea-fuerte)] text-[var(--suave)] hover:border-[var(--violeta-vivo)]/50'}`}>
-              <Landmark className="w-[18px] h-[18px]" /> Transferencia
-            </button>
-          )}
+          <button type="button" onClick={() => setMetodo('transfer')}
+            className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-left transition ${
+              metodo === 'transfer'
+                ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/8'
+                : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)]/50'}`}>
+            <span className="min-w-0">
+              <span className="flex items-center gap-2 text-[14px] font-medium text-[var(--texto)]">
+                <Landmark className="w-[18px] h-[18px]" /> Transferencia
+              </span>
+              <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Sin recargo · se verifica a mano</span>
+            </span>
+            <span className="shrink-0 text-[15px] font-semibold tabular-nums text-emerald-700">
+              ${fmt2(datos.importesPorMetodo?.transfer?.total ?? importes.neto)}
+            </span>
+          </button>
         </div>
-        {metodo === 'transfer' && (
-          <p className="mt-2.5 text-[13px] text-[var(--tenue)]">
-            Te llevaremos al portal de tu banco para que autorices el débito. Solo Banco Pichincha
-            y Banco de Guayaquil, con cuentas personales.
-          </p>
-        )}
       </fieldset>
 
-      {/* ── Facturación ── */}
-      <fieldset>
+      {/* ── Transferencia: las cuentas y el comprobante ── */}
+      {metodo === 'transfer' && transferIntent && (
+        <fieldset className="space-y-4">
+          <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
+            Transfiere y sube tu comprobante
+          </legend>
+
+          <div className="rounded-lg border border-[var(--linea-fuerte)] overflow-hidden">
+            {(datos.cuentas || []).map((c) => (
+              <div key={c.id} className="border-b border-[var(--linea)] last:border-b-0">
+                <button type="button" onClick={() => setCuentaAbierta(cuentaAbierta === c.id ? null : c.id)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-[var(--violeta)]/5 transition-colors">
+                  <span className="flex items-center gap-2.5">
+                    <Landmark className="w-4 h-4 text-[var(--violeta-txt)]" />
+                    <span className="text-[15px] font-medium text-[var(--texto)]">{c.banco}</span>
+                  </span>
+                  <span className="text-[13px] text-[var(--tenue)]">{cuentaAbierta === c.id ? 'Ocultar' : 'Ver datos'}</span>
+                </button>
+                {cuentaAbierta === c.id && (
+                  <dl className="px-4 pb-4 space-y-2">
+                    {[
+                      ['Tipo de cuenta', c.tipo, false],
+                      ['Número de cuenta', c.numero, true],
+                      ['Titular', c.titular, true],
+                      ['Cédula', c.identificacion, true],
+                      ['Correo', c.correo, true],
+                      ...(c.swift ? [['Código SWIFT', c.swift, true] as const] : []),
+                    ].map(([et, val, copiable]) => (
+                      <div key={String(et)} className="flex items-center justify-between gap-3">
+                        <dt className="text-[13px] text-[var(--tenue)] shrink-0">{et}</dt>
+                        <dd className="flex items-center gap-2 min-w-0">
+                          <span className="text-[14px] text-[var(--texto)] truncate">{val}</span>
+                          {/* Copiar importa de verdad: un número de cuenta tecleado a mano es
+                              una transferencia que se va a otra parte. */}
+                          {copiable && (
+                            <button type="button" onClick={() => copiar(String(val), `${c.id}-${et}`)}
+                              className="shrink-0 text-[var(--violeta-txt)] hover:opacity-70" title="Copiar">
+                              {copiado === `${c.id}-${et}`
+                                ? <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[13.5px] leading-relaxed text-[var(--suave)]">
+            Transfiere <strong className="text-[var(--texto)]">${fmt2(importeActual.total)}</strong> a
+            cualquiera de las dos cuentas y sube aquí tu comprobante. Tu pago quedará en espera hasta
+            que lo verifiquemos.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={ETIQUETA} htmlFor="tr-banco">¿A qué banco transferiste?</label>
+              <select id="tr-banco" className={CAMPO} value={bancoUsado || cuentaAbierta || ''}
+                onChange={e => setBancoUsado(e.target.value)}>
+                {(datos.cuentas || []).map(c => <option key={c.id} value={c.id}>{c.banco}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={ETIQUETA} htmlFor="tr-ref">Número de comprobante</label>
+              <input id="tr-ref" className={CAMPO} value={referencia} onChange={e => setReferencia(e.target.value)}
+                placeholder="Opcional, pero ayuda" />
+            </div>
+          </div>
+
+          <div>
+            <label className={ETIQUETA} htmlFor="tr-file">Comprobante</label>
+            <input id="tr-file" type="file" accept="image/*,application/pdf"
+              onChange={e => setComprobante(e.target.files?.[0] || null)}
+              className="w-full text-[14px] text-[var(--suave)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--violeta)] file:px-4 file:py-2 file:text-[14px] file:font-semibold file:text-white hover:file:opacity-90" />
+            <p className="mt-2 text-[13px] text-[var(--tenue)]">Foto o PDF, hasta 8 MB.</p>
+          </div>
+
+          {error && (
+            <p className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-50/70 px-3 py-2.5 text-[13.5px] text-red-800">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> {error}
+            </p>
+          )}
+
+          <button type="button" onClick={subirComprobante} disabled={!comprobante || enviando}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--violeta)] px-5 py-3 text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+            {enviando
+              ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Enviando…</>
+              : <><Upload className="w-[18px] h-[18px]" /> Enviar comprobante</>}
+          </button>
+        </fieldset>
+      )}
+
+      {/* ── Facturación ── (se esconde una vez que el cliente está subiendo el
+           comprobante: sus datos ya quedaron guardados con el cobro) */}
+      <fieldset className={metodo === 'transfer' && transferIntent ? 'hidden' : ''}>
         <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
           Datos para tu factura
         </legend>
@@ -453,21 +638,22 @@ export default function FormularioPago({
       )}
 
       {/* ── Total y acción ── */}
-      <div className="rounded-xl border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] p-5">
+      <div className={`rounded-xl border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] p-5 ${
+        metodo === 'transfer' && transferIntent ? 'hidden' : ''}`}>
         <dl className="space-y-2 text-[14px]">
           <div className="flex justify-between gap-4">
             <dt className="text-[var(--suave)]">{datos.etapa.nombre}</dt>
             <dd className="tabular-nums text-[var(--texto)]">${fmt2(importes.neto)}</dd>
           </div>
-          {importes.recargo > 0 && (
+          {importeActual.recargo > 0 && (
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--tenue)]">Gastos de procesamiento de pago en línea</dt>
-              <dd className="tabular-nums text-[var(--tenue)]">${fmt2(importes.recargo)}</dd>
+              <dd className="tabular-nums text-[var(--tenue)]">${fmt2(importeActual.recargo)}</dd>
             </div>
           )}
           <div className="flex justify-between gap-4 border-t border-[var(--linea)] pt-3 mt-3">
             <dt className="font-semibold text-[var(--texto)]">Total a pagar</dt>
-            <dd className="text-[20px] font-semibold tabular-nums text-[var(--texto)]">${fmt2(importes.total)}</dd>
+            <dd className="text-[20px] font-semibold tabular-nums text-[var(--texto)]">${fmt2(importeActual.total)}</dd>
           </div>
         </dl>
 
@@ -495,9 +681,11 @@ export default function FormularioPago({
             className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--violeta)] px-5 py-3 text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
             {enviando
               ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Procesando…</>
-              : cobraEnCliente
-                ? <><Lock className="w-[18px] h-[18px]" /> Continuar al pago</>
-                : <><Lock className="w-[18px] h-[18px]" /> Pagar ${fmt2(importes.total)}</>}
+              : metodo === 'transfer'
+                ? <><Landmark className="w-[18px] h-[18px]" /> Ver datos para transferir</>
+                : cobraEnCliente
+                  ? <><Lock className="w-[18px] h-[18px]" /> Continuar al pago</>
+                  : <><Lock className="w-[18px] h-[18px]" /> Pagar ${fmt2(importeActual.total)}</>}
           </button>
         )}
 
@@ -515,10 +703,12 @@ export default function FormularioPago({
           </div>
         )}
 
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-[12.5px] text-[var(--tenue)]">
-          <Lock className="w-3.5 h-3.5" />
-          Los datos de tu tarjeta viajan cifrados a la pasarela. GCC no los recibe ni los guarda.
-        </p>
+        {metodo === 'card' && (
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-[12.5px] text-[var(--tenue)]">
+            <Lock className="w-3.5 h-3.5" />
+            Los datos de tu tarjeta viajan cifrados a la pasarela. GCC no los recibe ni los guarda.
+          </p>
+        )}
       </div>
     </form>
   );

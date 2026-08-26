@@ -7660,3 +7660,88 @@ Con sesión de cliente real, contra la base de producción:
 3. **Automatizaciones** (P149): falta decidir qué son y qué precio tienen.
 4. El **enlace de pago** para suscripciones y productos, si se quiere cobrar a alguien sin
    cuenta.
+
+---
+
+## Novena pasada (2026-08-26) — la pantalla de pago se ordena y entra la transferencia · ✅
+
+Fernando: *«quisiera que sea una página que muestre el contenido de cada cosa que se vaya a
+pagar, y además permita elegir el método de pago… por transacción bancaria, en donde el
+usuario debe poder ver los datos de la cuenta… luego adjunta el comprobante… el pago queda
+en espera de ser confirmado y la confirmación solo la puede hacer el usuario que recibirá el
+pago desde la página de detalle»*.
+
+### ⭐ P153 — En una transferencia NO HAY TERCERO que diga «este dinero entró»
+Es la diferencia de fondo con la tarjeta, y de ella sale todo el diseño. Con PayPhone confirma
+la pasarela; aquí lo único que llega es **una imagen que sube el propio cliente**, y una
+imagen no prueba nada: puede ser de otra transferencia, de otro importe o de otro día.
+- Por eso el estado nuevo es **`awaiting`**, no `paid`, y quien lo mueve es **una persona que
+  ha mirado su banco**.
+- Y por eso **la factura no se emite al recibir el comprobante, sino al confirmarlo**.
+  Emitirla antes sería facturar sobre la palabra del que paga.
+- Quien confirma **queda escrito** (`confirmed_by`): un cobro sin pasarela detrás siempre
+  tiene que tener un responsable con nombre.
+
+### ⛔ P154 — Las cuentas bancarias van en CÓDIGO, no en una tabla editable
+Es la decisión que más se parece a una preferencia y menos lo es. Un número de cuenta
+editable desde el panel es **la vía más corta para que quien entre a una sesión de
+administrador redirija todos los cobros a su cuenta**: sin tocar código, sin desplegar y sin
+dejar rastro en git. En `lib/pagos/cuentas.ts` cambiarlo exige un despliegue y queda firmado
+en el historial. La comodidad de editarlo desde una pantalla no compensa lo que abre.
+
+### ⭐ P155 — El recargo es del MÉTODO, no del cobro
+La transferencia no lleva recargo, y no por generosidad: **en una transferencia no hay
+pasarela y no cobra nadie**, así que no hay comisión que trasladar. Cobrarla sería inventarse
+un cargo.
+- Efecto que conviene aprovechar: al cliente le sale **más barato transferir** (5,00 $ frente
+  a 5,31 $) **y a GCC le llega lo mismo**. Por eso la pantalla enseña **los dos importes
+  juntos en el selector** — así el método más barato para los dos se elige solo, sin tener
+  que convencer a nadie.
+- Consecuencia técnica: `Cobrable` lleva ahora `importes` por método y `crearIntento` guarda
+  **el del método elegido**. Guardar el de tarjeta en una transferencia le cobraría al
+  cliente una comisión que nadie va a cobrar.
+
+### ⚠️ P156 — `awaiting` OCUPA EL SITIO igual que `paid`
+Los índices de la 053 y la 054 solo miraban `status = 'paid'`. Sin ampliarlos, un cliente
+podía **subir dos comprobantes de lo mismo**, o pagar con tarjeta algo que ya tenía una
+transferencia esperando — y acabaríamos devolviéndole dinero. Ahora el candado cuenta los dos
+estados, y también la comprobación en código, para poder decirle **por qué** en vez de
+soltarle un error de restricción única. **3 pruebas nuevas contra la base real: 18/18.**
+
+### 🪤 P157 — `created_by` era INT y `users.id` es UUID: el canal del cliente estaba roto
+`Number(user.userId)` daba `NaN` y Postgres rechazaba el INSERT. **No era un fallo de la
+transferencia: rompía el cobro del cliente con sesión en los cuatro orígenes.**
+- **Por qué no se vio antes, que es lo importante:** todo lo probado de punta a punta hasta
+  hoy —incluido el cobro real de 1,07 $— había pasado por el canal del **enlace**, donde
+  `created_by` va a NULL a propósito. **Un camino sin probar no es un camino que funcione**,
+  aunque comparta el 95 % del código con otro que sí.
+- Migración 056: `created_by` pasa a TEXT (también lo escriben procesos sin usuario detrás).
+
+### 🪤 P158 — El bloque de confirmación no habría aparecido nunca en suscripciones ni productos
+`cobrosEnEspera` buscaba `source_id = <id del origen>`, pero **en dos de los cuatro no
+coinciden**: el de una suscripción es `<id>-<AAAA-MM>` y el de un producto `p<id>-u<comprador>`.
+Devolvía cero, así que el pago del cliente se habría quedado esperando **para siempre**, sin
+que nadie viera el aviso. Ahora se busca por prefijo en esos dos.
+
+### 🪤 P159 — Mi medidor, otra vez: conté segundos en vez de esperar al resultado
+Di por roto el flujo porque tras pulsar «Ver datos para transferir» no salían las cuentas. La
+causa: esperé **3.500 ms** y la petición tardó **3.594**. Cambiado a `waitForFunction`, que
+espera **a que aparezca lo que se busca** en vez de a un reloj. Es la cuarta vez en este
+proyecto ([[P68]], [[P98]], [[P118]]) — **contar segundos es una medición frágil por
+definición, y en un servidor de desarrollo aún más**.
+
+### Lo medido al cerrar
+Flujo completo contra la base de producción, con sesiones reales de cliente y de admin:
+1. Cotización: **tarjeta 5,31 $ · transferencia 5,00 $** · dos cuentas · detalle del mes.
+2. Elegir transferencia → cuentas en pantalla con **copiar** en cada dato y el **SWIFT** solo
+   en Guayaquil.
+3. Subir comprobante → **200**, cobro en `awaiting`.
+4. Reintentar el mismo mes → **400** con el motivo exacto.
+5. El **cliente** intenta confirmar → **403**; ver el comprobante → **403**.
+6. El **admin** lo ve en espera (1 cobro, 5,00 $, Guayaquil, ref TRF-55) y **abre el
+   comprobante** → 200 `image/png`.
+7. Rechazar sin motivo → **400**. Con motivo → **200**, y el cliente **puede reintentar**.
+8. Confirmar dos veces → **409**.
+
+`tsc` y `next build` limpios · 14/14 recargo · **18/18 candados** · la base quedó con **1
+cobro pagado** (el dólar real) y los meses de la suscripción intactos.

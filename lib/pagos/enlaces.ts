@@ -53,7 +53,7 @@ export async function crearEnlaceDePago(opts: {
   stageId: number | null;
   email?: string | null;
   horas: number;
-  createdBy: number;
+  createdBy: string;
   baseUrl: string;
 }): Promise<EnlaceCreado> {
   const { sourceType, sourceId, stageId, horas, createdBy, baseUrl } = opts;

@@ -21,8 +21,10 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { partesMesSuscripcion, partesAltaProducto, idAltaProducto } from './intentos';
 
 export type Solicitante =
-  | { tipo: 'staff'; userId: number; email: string; esAdmin: boolean }
-  | { tipo: 'cliente'; userId: number; email: string; clientId: number }
+  // ⚠️ `userId` es STRING: `gcc_world.users.id` es un **uuid**. Forzarlo a `Number` daba
+  // `NaN` y reventaba el INSERT del cobro — ver migración 056.
+  | { tipo: 'staff'; userId: string; email: string; esAdmin: boolean }
+  | { tipo: 'cliente'; userId: string; email: string; clientId: number }
   | { tipo: 'enlace'; linkId: number; email: string };
 
 export type Autorizacion = {
@@ -94,7 +96,7 @@ async function suscripcionDelCliente(email: string, subId: string): Promise<numb
 }
 
 /** Si este usuario es el miembro al que está asignado el ticket. */
-async function esResponsableDeTicket(userId: number, ticketId: string): Promise<boolean> {
+async function esResponsableDeTicket(userId: string, ticketId: string): Promise<boolean> {
   const { rows } = await pool.query(
     `SELECT 1 FROM gcc_world.tickets t
        JOIN gcc_world.users u ON u.id = $1
@@ -106,7 +108,7 @@ async function esResponsableDeTicket(userId: number, ticketId: string): Promise<
 }
 
 /** Si este usuario es el responsable del proyecto (o participa en él como responsable). */
-async function esResponsable(userId: number, projectId: number): Promise<boolean> {
+async function esResponsable(userId: string, projectId: number): Promise<boolean> {
   const { rows } = await pool.query(
     `SELECT 1
        FROM gcc_world.projects p
@@ -165,7 +167,7 @@ export async function autorizarCobro(opts: {
 
   const user = await getCurrentUser();
   if (!user) throw new SinAcceso('Inicia sesión para continuar.', 401);
-  const userId = Number(user.userId);
+  const userId = String(user.userId);
 
   // ⚠️ UN PRODUCTO LO PUEDE CONTRATAR CUALQUIERA CON SESIÓN — no tiene dueño previo, esa es
   // la diferencia con los otros tres orígenes. Pero el identificador del cobro lleva dentro
@@ -258,17 +260,24 @@ export async function autorizarCobro(opts: {
 /** Solo quien puede COMPARTIR un enlace: admin o el responsable de eso que se va a cobrar. */
 export async function autorizarCompartir(
   sourceId: number | string,
-  sourceType: 'project' | 'ticket' | 'subscription' = 'project',
-): Promise<{ userId: number }> {
+  sourceType: 'project' | 'ticket' | 'subscription' | 'product' = 'project',
+): Promise<{ userId: string }> {
   const user = await getCurrentUser();
   if (!user) throw new SinAcceso('Inicia sesión para continuar.', 401);
-  const userId = Number(user.userId);
+  const userId = String(user.userId);
   if (user.role === 'admin') return { userId };
-  if (user.role === 'member' && sourceType !== 'subscription') {
+  if (user.role === 'member' && sourceType !== 'subscription' && sourceType !== 'product') {
     const ok = sourceType === 'ticket'
       ? await esResponsableDeTicket(userId, String(sourceId))
       : await esResponsable(userId, Number(sourceId));
     if (ok) return { userId };
   }
-  throw new SinAcceso(`Solo el responsable ${sourceType === 'ticket' ? 'del ticket' : 'del proyecto'} puede compartir el enlace de pago.`);
+  // El mensaje es neutro a propósito: esta misma puerta decide quién comparte el enlace de
+  // cobro Y quién confirma una transferencia, así que hablar solo de «compartir» dejaba al
+  // cliente leyendo un error que no tenía nada que ver con lo que intentó hacer.
+  const cual = sourceType === 'ticket' ? 'de este ticket'
+    : sourceType === 'project' ? 'de este proyecto'
+    : sourceType === 'product' ? 'de este producto'
+    : 'de esta suscripción';
+  throw new SinAcceso(`Solo quien recibe el pago ${cual} puede hacer esto.`);
 }

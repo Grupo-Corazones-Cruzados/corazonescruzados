@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
 import { cotizarCobro, idMesSuscripcion, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
+import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 import { pool } from '@/lib/db';
 
 /**
@@ -93,8 +94,14 @@ export async function POST(req: NextRequest) {
     if (!proveedor.cobraEnCliente && !token) {
       return NextResponse.json({ error: 'Falta el token de la pasarela.' }, { status: 400 });
     }
-    if (!proveedor.metodos().includes(metodo)) {
-      return NextResponse.json({ error: `La pasarela no admite ${metodo === 'transfer' ? 'transferencias' : 'tarjetas'}.` }, { status: 400 });
+    // ⚠️ LA TRANSFERENCIA NO LA OFRECE LA PASARELA, LA OFRECE GCC.
+    //
+    // `proveedor.metodos()` dice qué sabe cobrar PayPhone —hoy, tarjeta— y la transferencia
+    // bancaria no pasa por ahí: el cliente va a su banco, transfiere a nuestra cuenta y sube
+    // el comprobante. Por eso no se valida contra el proveedor; si se hiciera, activar
+    // PayPhone (que no da transferencias) apagaría un método que no es suyo.
+    if (metodo !== 'transfer' && !proveedor.metodos().includes(metodo)) {
+      return NextResponse.json({ error: 'La pasarela no admite este medio de pago.' }, { status: 400 });
     }
 
     // El importe se recalcula SIEMPRE aquí. Y `cotizarEtapa` vuelve a comprobar contra la
@@ -108,6 +115,7 @@ export async function POST(req: NextRequest) {
       facturacion,
       payerEmail: facturacion.email,
       createdBy: auth.solicitante.tipo === 'enlace' ? null : auth.solicitante.userId,
+      metodo,
     });
 
     if (auth.solicitante.tipo === 'enlace') {
@@ -115,6 +123,21 @@ export async function POST(req: NextRequest) {
         `UPDATE gcc_world.payment_links SET intent_id = $1, opened_at = COALESCE(opened_at, NOW()) WHERE id = $2`,
         [intento.id, auth.solicitante.linkId],
       );
+    }
+
+    // ── TRANSFERENCIA BANCARIA ───────────────────────────────────────────────
+    // No se cobra nada aquí: se le enseñan las cuentas y el cobro queda esperando su
+    // comprobante. El importe es el neto, sin recargo — no hay comisión que trasladar.
+    if (metodo === 'transfer') {
+      await anotarRespuestaProveedor(intento.id, {
+        metodo: 'transfer', procesando: true, estado: 'Esperando el comprobante del cliente',
+      });
+      return NextResponse.json({
+        estado: 'transferencia',
+        intentId: intento.id,
+        importes: { neto: intento.neto, recargo: intento.recargo, total: intento.total },
+        cuentas: CUENTAS_BANCARIAS,
+      });
     }
 
     // ── Proveedores que cobran EN EL NAVEGADOR (PayPhone) ────────────────────

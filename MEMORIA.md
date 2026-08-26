@@ -540,6 +540,34 @@ Stack estándar de la casa, con particularidades de este repo:
   - **⏸ LA PANTALLA `/pagar/<token>` NO SE INVENTA.** Es una página pública nueva, y sobre eso
     manda [[gcc-diseno-sitio-con-fernando]] y el ⛔ de `Diseño.md`: **su diseño se acuerda con
     él antes**. Ese es el corte de la jornada, no un olvido.
+- **🏦 PAGO POR TRANSFERENCIA, CON CONFIRMACIÓN HUMANA (2026-08-26, migraciones 055 y 056).**
+  Segundo método de pago. La pantalla ahora **muestra qué se está pagando** y deja **elegir
+  el método**, con los dos precios delante.
+  - **⭐ EN UNA TRANSFERENCIA NO HAY TERCERO que diga «este dinero entró».** Con PayPhone
+    confirma la pasarela; aquí lo único que llega es **una imagen que sube el propio
+    cliente**, y una imagen no prueba nada. Por eso el estado es **`awaiting`** y quien lo
+    mueve a pagado es **una persona que ha mirado su banco** — y queda escrito quién
+    (`confirmed_by`). **La factura se emite al CONFIRMAR, no al recibir el comprobante.**
+  - **⛔ LAS CUENTAS BANCARIAS VIVEN EN `lib/pagos/cuentas.ts`, NO EN LA BASE.** Un número de
+    cuenta editable desde el panel es la vía más corta para que quien entre a una sesión de
+    administrador **redirija todos los cobros a su cuenta**, sin desplegar y sin rastro en
+    git. En código exige un despliegue y queda firmado en el historial.
+  - **⭐ EL RECARGO ES DEL MÉTODO, NO DEL COBRO.** La transferencia no lleva recargo porque
+    ahí no cobra nadie. Al cliente le sale **más barato transferir** (5,00 frente a 5,31) y a
+    GCC le llega lo mismo, así que **el selector enseña los dos importes juntos** y el método
+    más barato para ambos se elige solo.
+  - **⚠️ `awaiting` OCUPA EL SITIO IGUAL QUE `paid`.** Sin ampliar los índices de la 053/054,
+    un cliente podía subir dos comprobantes de lo mismo o pagar con tarjeta algo que ya tenía
+    una transferencia esperando. 18/18 candados comprobados contra la base real.
+  - **🪤 `created_by` ERA INT Y `users.id` ES UUID:** `Number(...)` daba `NaN` y **el cobro
+    del cliente con sesión estaba roto en los cuatro orígenes**. No se vio antes porque todo
+    lo probado de punta a punta —incluido el dólar real— había ido por el canal del **enlace**,
+    donde ese campo va a NULL. **Un camino sin probar no es un camino que funcione, aunque
+    comparta el 95 % del código con otro que sí.** (Migración 056.)
+  - **🪤 El aviso de confirmación no habría aparecido nunca en suscripciones ni productos:**
+    `cobrosEnEspera` buscaba por igualdad y sus `source_id` llevan el mes o el comprador
+    dentro. El pago del cliente se habría quedado esperando para siempre. Ahora busca por
+    prefijo en esos dos.
 - **🗺️ MAPA DE LA PASARELA AL CIERRE DEL 2026-08-26 — TRES CANALES × CUATRO ORÍGENES.**
 
   | Origen | Qué se cobra | Cliente | Enlace | Manual |
@@ -549,8 +577,9 @@ Stack estándar de la casa, con particularidades de este repo:
   | **Suscripción** | un mes | ✅ | ✅ | ✅ («Marcar pagado») |
   | **Producto** | el 1er mes, y crea la suscripción | ✅ | — | — |
 
-  Todo en producción con **PayPhone**, cobrado con dinero real una vez (1,07 $ → factura
-  001-001-000000081 autorizada). Detalle vivo en `Aprendizaje.md`; el estándar visual, en
+  **Dos métodos:** tarjeta/PayPhone (con recargo, al instante) y **transferencia bancaria**
+  (sin recargo, la confirma una persona). Todo en producción, cobrado con dinero real una vez
+  (1,07 $ → factura 001-001-000000081 autorizada). Detalle vivo en `Aprendizaje.md`; el estándar visual, en
   `Diseño.md` → «La pantalla de pago».
   - **Pendientes por valor:** (1) **Deuna**, 0 % de comisión para clientes ecuatorianos
     (~1.000 $/año sobre este volumen); (2) **el abono de ticket** con la contadora —hoy por

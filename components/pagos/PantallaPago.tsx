@@ -89,6 +89,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   // Un ticket se cobra entero: no hay plan que enseñar, así que la pantalla se queda a una
   // sola columna en vez de dejar un hueco donde debería ir la lista.
   const hayPlan = etapas.length > 0;
+  const hayDetalle = (datos.detalle || []).length > 0;
 
   return (
     <Contenedor className="py-14 sm:py-20">
@@ -113,7 +114,27 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
         </p>
       </header>
 
-      <div className={`mt-12 grid gap-6 items-start ${hayPlan ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' : 'max-w-xl'}`}>
+      <div className={`mt-12 grid gap-6 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' : 'max-w-xl'}`}>
+        {/* ── QUÉ SE ESTÁ PAGANDO ──
+            «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
+            2026-08-26). Antes solo salía el título, y en un ticket o una suscripción eso deja
+            al cliente pagando algo que no reconoce. Cada origen aporta los datos que ÉL
+            necesita — nunca costos internos ni reparto del trabajo. */}
+        {!hayPlan && hayDetalle && (
+          <Tarjeta>
+            <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
+              <Receipt className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Qué estás pagando
+            </h2>
+            <dl className="mt-4 divide-y divide-[var(--linea)]">
+              {(datos.detalle || []).map((d: any) => (
+                <div key={d.etiqueta} className="flex items-start justify-between gap-4 py-3">
+                  <dt className="text-[13.5px] text-[var(--tenue)] shrink-0">{d.etiqueta}</dt>
+                  <dd className="text-[14.5px] text-[var(--texto)] text-right">{d.valor}</dd>
+                </div>
+              ))}
+            </dl>
+          </Tarjeta>
+        )}
         {/* ── El plan completo, para que sepa dónde encaja lo que paga ── */}
         {hayPlan && (
           <Tarjeta>

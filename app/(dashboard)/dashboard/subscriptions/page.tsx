@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -377,6 +378,12 @@ export default function SubscriptionsPage() {
                         <div className="text-[12px] text-red-700 leading-relaxed" style={mf}><span className="font-semibold">No se pudo facturar:</span> {payError}</div>
                         <button onClick={() => setPayError(null)} className="text-red-500 hover:text-red-600 shrink-0"><X className="w-3.5 h-3.5" /></button>
                       </div>
+                    )}
+
+                    {/* Solo el staff confirma transferencias; al cliente no le sale nada
+                        porque el endpoint le responde 403 y el bloque no se pinta. */}
+                    {!esCliente && (
+                      <CobrosEnEspera tipo="subscription" id={String(detail.id)} alConfirmar={() => openDetail(detail)} />
                     )}
 
                     <div className="space-y-2 max-h-[46vh] overflow-y-auto -mx-1 px-1">

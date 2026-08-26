@@ -14,6 +14,7 @@ import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
 import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion, partesAltaProducto } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { getBillingForClient } from '@/lib/billing-clients';
+import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 
 export async function GET(req: NextRequest) {
   try {
@@ -111,7 +112,56 @@ export async function GET(req: NextRequest) {
       [auth.sourceId],
     );
 
+    // ── QUÉ SE ESTÁ PAGANDO, CON DETALLE ─────────────────────────────────────
+    //
+    // Fernando (2026-08-26): «quisiera que sea una página que muestre el contenido de cada
+    // cosa que se vaya a pagar». Antes la pantalla enseñaba el título y poco más, y en un
+    // ticket o una suscripción eso deja al cliente pagando algo que no reconoce.
+    //
+    // Cada origen aporta los datos que **el cliente** necesita para reconocer el cobro — no
+    // los que nos sirven a nosotros: nada de costos internos, miembros ni requerimientos.
+    const detalle: { etiqueta: string; valor: string }[] = [];
+    const fecha = (v: any) => v ? new Date(v).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' }) : null;
+
+    if (esTicket) {
+      const { rows: [t] } = await pool.query(
+        `SELECT estimated_hours, actual_hours, completed_at, deadline,
+                (SELECT name FROM gcc_world.services s WHERE s.id = t.service_id) AS servicio
+           FROM gcc_world.tickets t WHERE t.id = ($1)::bigint`, [idPropio]).catch(() => ({ rows: [null] }));
+      if (t?.servicio) detalle.push({ etiqueta: 'Servicio', valor: t.servicio });
+      const horas = Number(t?.actual_hours) || Number(t?.estimated_hours) || 0;
+      if (horas > 0) detalle.push({ etiqueta: 'Horas', valor: `${horas}` });
+      if (fecha(t?.completed_at)) detalle.push({ etiqueta: 'Entregado', valor: fecha(t.completed_at)! });
+    } else if (esSuscripcion) {
+      const { subId, periodo: per } = partesMesSuscripcion(auth.sourceId);
+      const { rows: [sub] } = await pool.query(
+        `SELECT monthly_cost, start_date FROM gcc_world.subscriptions WHERE id = ($1)::bigint`, [subId]);
+      detalle.push({ etiqueta: 'Mes que se paga', valor: etapa.conceptName.split('—').pop()?.trim() || per });
+      detalle.push({ etiqueta: 'Mensualidad', valor: `$${Number(sub?.monthly_cost || 0).toFixed(2)}` });
+      if (sub?.start_date) detalle.push({ etiqueta: 'Suscrito desde', valor: fecha(sub.start_date)! });
+    } else if (esProducto) {
+      const { rows: [item] } = await pool.query(
+        `SELECT cost, tags, project_url FROM gcc_world.member_portfolio_items WHERE id = ($1)::bigint`, [idPropio]);
+      detalle.push({ etiqueta: 'Modalidad', valor: 'Suscripción mensual' });
+      detalle.push({ etiqueta: 'Mensualidad', valor: `$${Number(item?.cost || 0).toFixed(2)} al mes` });
+      if (Array.isArray(item?.tags) && item.tags.length) {
+        detalle.push({ etiqueta: 'Incluye', valor: item.tags.join(' · ') });
+      }
+      detalle.push({ etiqueta: 'Después del primer mes', valor: 'Los siguientes los pagas desde Suscripciones' });
+    } else {
+      const { rows: [p2] } = await pool.query(
+        `SELECT deadline, final_cost FROM gcc_world.projects WHERE id = ($1)::bigint`, [idPropio]);
+      detalle.push({ etiqueta: 'Etapa que se paga', valor: etapa.conceptName });
+      if (Number(p2?.final_cost) > 0) detalle.push({ etiqueta: 'Total del proyecto', valor: `$${Number(p2.final_cost).toFixed(2)}` });
+      if (fecha(p2?.deadline)) detalle.push({ etiqueta: 'Entrega prevista', valor: fecha(p2.deadline)! });
+    }
+
     return NextResponse.json({
+      detalle,
+      // Los dos importes, para que el cliente elija con el número delante: la transferencia
+      // no lleva recargo porque ahí no cobra ninguna pasarela.
+      importesPorMetodo: etapa.importes,
+      cuentas: CUENTAS_BANCARIAS,
       proyecto: {
         id: Number(idPropio),
         tipo: auth.sourceType,

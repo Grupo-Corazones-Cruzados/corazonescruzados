@@ -27,6 +27,7 @@ import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
 import { calcularRecargo, tarifaDe, CONCEPTO_RECARGO } from './comision';
+import { TARIFA_TRANSFERENCIA } from './cuentas';
 import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
 
 export type CanalCobro = 'manual' | 'client' | 'link';
@@ -39,6 +40,22 @@ export type DatosFacturacion = {
   phone?: string | null;
   address?: string | null;
 };
+
+/**
+ * Los importes de un cobro por cada método de pago.
+ *
+ * La transferencia va con `TARIFA_TRANSFERENCIA` (cero): en una transferencia no hay
+ * pasarela y no cobra nadie, así que no hay comisión que trasladarle al cliente. Cobrarle un
+ * recargo ahí sería inventarse un cargo.
+ */
+function importesPorMetodo(neto: number, proveedor: string) {
+  const tarjeta = calcularRecargo(neto, tarifaDe(proveedor));
+  const transferencia = calcularRecargo(neto, TARIFA_TRANSFERENCIA);
+  return {
+    card: { recargo: tarjeta.recargo, total: tarjeta.total },
+    transfer: { recargo: transferencia.recargo, total: transferencia.total },
+  };
+}
 
 /** Los orígenes que se pueden cobrar en línea hoy. */
 export type OrigenCobro = 'project' | 'ticket' | 'subscription' | 'product';
@@ -82,8 +99,18 @@ export type Cobrable = {
   /** Nombre del concepto: la etapa, o el propio ticket. */
   conceptName: string;
   neto: number;
+  /** El recargo del método por DEFECTO (tarjeta). Se conserva para el código que ya lo usaba. */
   recargo: number;
   total: number;
+  /**
+   * Lo que cuesta pagar esto **por cada método**.
+   *
+   * ⚠️ El recargo no es del cobro, es del MÉTODO: la tarjeta lleva la comisión de la
+   * pasarela y la transferencia no lleva ninguna, porque ahí no cobra nadie. Tenerlos los
+   * dos calculados permite enseñárselos juntos al cliente antes de que elija — y así el
+   * método más barato para los dos se elige solo.
+   */
+  importes: Record<MetodoPago, { recargo: number; total: number }>;
   proveedor: string;
 };
 
@@ -112,10 +139,15 @@ export async function cotizarEtapa(
   if (etapa.invoiceId) {
     throw new Error(`La etapa «${etapa.name}» ya está facturada (${etapa.invoiceNumber}).`);
   }
+  const enCurso = await cobroPagadoDeEtapa(etapa.id);
+  if (enCurso?.status === 'awaiting') {
+    throw new Error(`La etapa «${etapa.name}» ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.`);
+  }
   if (!(etapa.amount > 0)) throw new Error(`La etapa «${etapa.name}» no tiene importe.`);
 
   const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaDe(proveedor));
   return {
+    importes: importesPorMetodo(neto, proveedor),
     sourceType: 'project',
     sourceId: String(billing.projectId),
     title: billing.title,
@@ -159,10 +191,15 @@ export async function cotizarTicket(
   }
 
   const yaPagado = await cobroPagadoDeOrigen('ticket', String(ticketId));
-  if (yaPagado) throw new Error('Este ticket ya fue pagado en línea.');
+  if (yaPagado) {
+    throw new Error(yaPagado.status === 'awaiting'
+      ? 'Este ticket ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.'
+      : 'Este ticket ya fue pagado en línea.');
+  }
 
   const { neto, recargo, total } = calcularRecargo(pagos.pending, tarifaDe(proveedor));
   return {
+    importes: importesPorMetodo(neto, proveedor),
     sourceType: 'ticket',
     sourceId: String(t.id),
     title: t.title,
@@ -214,13 +251,18 @@ export async function cotizarSuscripcion(
 
   const sourceId = idMesSuscripcion(sub.id, periodo);
   const yaPagado = await cobroPagadoDeOrigen('subscription', sourceId);
-  if (yaPagado) throw new Error(`El mes de ${mes.label} ya fue pagado en línea.`);
+  if (yaPagado) {
+    throw new Error(yaPagado.status === 'awaiting'
+      ? `El mes de ${mes.label} ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.`
+      : `El mes de ${mes.label} ya fue pagado en línea.`);
+  }
 
   const neto = Number(sub.monthly_cost) || 0;
   if (!(neto > 0)) throw new Error('Esta suscripción no tiene importe mensual.');
 
   const { recargo, total } = calcularRecargo(neto, tarifaDe(proveedor));
   return {
+    importes: importesPorMetodo(neto, proveedor),
     sourceType: 'subscription',
     sourceId,
     title: sub.title,
@@ -285,10 +327,15 @@ export async function cotizarProducto(
 
   const sourceId = idAltaProducto(item.id, userId);
   const yaPagado = await cobroPagadoDeOrigen('product', sourceId);
-  if (yaPagado) throw new Error('Ya contrataste este producto. Tus meses siguientes se pagan desde Suscripciones.');
+  if (yaPagado) {
+    throw new Error(yaPagado.status === 'awaiting'
+      ? 'Ya tienes un pago por transferencia esperando confirmación para este producto.'
+      : 'Ya contrataste este producto. Tus meses siguientes se pagan desde Suscripciones.');
+  }
 
   const { recargo, total } = calcularRecargo(neto, tarifaDe(proveedor));
   return {
+    importes: importesPorMetodo(neto, proveedor),
     sourceType: 'product',
     sourceId,
     title: item.title,
@@ -332,21 +379,31 @@ export async function cobroPagadoDe(
     : cobroPagadoDeOrigen(destino.sourceType, destino.sourceId);
 }
 
+/**
+ * Un cobro que ocupa el sitio: pagado **o esperando confirmación**.
+ *
+ * ⚠️ `awaiting` cuenta igual que `paid`. Un cliente que ya subió su comprobante no puede
+ * volver a pagar lo mismo mientras alguien lo revisa — si no, acabaría pagando dos veces y
+ * habría que devolverle dinero. Los índices únicos de la base lo impiden igualmente, pero
+ * chocar contra ellos le devuelve al cliente un error de restricción; preguntarlo antes
+ * permite decirle **por qué**.
+ */
 export async function cobroPagadoDeOrigen(
   sourceType: string, sourceId: string,
-): Promise<{ id: number; invoice_id: number | null } | null> {
+): Promise<{ id: number; invoice_id: number | null; status: string } | null> {
   const { rows } = await pool.query(
-    `SELECT id, invoice_id FROM gcc_world.payment_intents
-      WHERE source_type = $1 AND source_id = $2 AND stage_id IS NULL AND status = 'paid' LIMIT 1`,
+    `SELECT id, invoice_id, status FROM gcc_world.payment_intents
+      WHERE source_type = $1 AND source_id = $2 AND stage_id IS NULL
+        AND status IN ('paid','awaiting') LIMIT 1`,
     [sourceType, sourceId],
   );
   return rows[0] || null;
 }
 
-export async function cobroPagadoDeEtapa(stageId: number): Promise<{ id: number; invoice_id: number | null } | null> {
+export async function cobroPagadoDeEtapa(stageId: number): Promise<{ id: number; invoice_id: number | null; status: string } | null> {
   const { rows } = await pool.query(
-    `SELECT id, invoice_id FROM gcc_world.payment_intents
-      WHERE stage_id = $1 AND status = 'paid' LIMIT 1`,
+    `SELECT id, invoice_id, status FROM gcc_world.payment_intents
+      WHERE stage_id = $1 AND status IN ('paid','awaiting') LIMIT 1`,
     [stageId],
   );
   return rows[0] || null;
@@ -357,9 +414,17 @@ export async function crearIntento(opts: {
   canal: CanalCobro;
   facturacion: DatosFacturacion;
   payerEmail: string;
-  createdBy?: number | null;
+  createdBy?: string | number | null;
+  /** Decide el recargo: con transferencia es cero. Por defecto, tarjeta. */
+  metodo?: MetodoPago;
 }): Promise<{ id: number; total: number; neto: number; recargo: number }> {
-  const { etapa, canal, facturacion, payerEmail, createdBy } = opts;
+  const { canal, facturacion, payerEmail, createdBy } = opts;
+  const metodo: MetodoPago = opts.metodo === 'transfer' ? 'transfer' : 'card';
+  // ⚠️ El importe se toma del MÉTODO elegido, no del campo por defecto del cobrable: si no,
+  // una transferencia guardaría el recargo de la tarjeta y le cobraríamos al cliente una
+  // comisión que nadie va a cobrar.
+  const delMetodo = opts.etapa.importes[metodo];
+  const etapa: Cobrable = { ...opts.etapa, recargo: delMetodo.recargo, total: delMetodo.total };
 
   const yaPagada = etapa.stageId != null
     ? await cobroPagadoDeEtapa(etapa.stageId)
@@ -878,4 +943,135 @@ export async function marcarFallido(intentId: number, motivo: string): Promise<v
       WHERE id = $1`,
     [intentId, motivo.slice(0, 500)],
   );
+}
+
+// ─── TRANSFERENCIA BANCARIA ───────────────────────────────────────────────────
+//
+// El camino sin pasarela. Aquí no hay un tercero que diga «este dinero entró»: lo único que
+// llega es una imagen que sube el propio cliente, y **una imagen no prueba nada** — puede
+// ser de otra transferencia, de otro importe o de otro día. Por eso el cobro no pasa a
+// `paid` sino a `awaiting`, y quien lo mueve es una persona que ha mirado su banco.
+
+/** Formatos que se aceptan como comprobante. Un comprobante es una foto o un PDF. */
+const TIPOS_COMPROBANTE = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
+/** 8 MB: una foto de móvil cabe de sobra y un PDF de banco también. */
+const MAX_COMPROBANTE = 8 * 1024 * 1024;
+
+export async function registrarComprobante(opts: {
+  intentId: number;
+  archivo: { nombre: string; tipo: string; bytes: Buffer };
+  referencia?: string | null;
+  banco?: string | null;
+}): Promise<void> {
+  const { intentId, archivo } = opts;
+
+  if (!TIPOS_COMPROBANTE.includes(archivo.tipo)) {
+    throw new Error('El comprobante debe ser una imagen (JPG, PNG, WEBP, HEIC) o un PDF.');
+  }
+  if (archivo.bytes.length > MAX_COMPROBANTE) {
+    throw new Error('El comprobante no puede pasar de 8 MB.');
+  }
+  if (archivo.bytes.length < 100) {
+    throw new Error('El archivo está vacío.');
+  }
+
+  // ⚠️ Solo se acepta el comprobante de un cobro que sigue vivo. Sin este `WHERE`, subir un
+  // comprobante sobre algo ya pagado lo devolvería a «en espera» y dejaría el cobro
+  // esperando una confirmación que ya no toca.
+  const { rowCount } = await pool.query(
+    `UPDATE gcc_world.payment_intents
+        SET proof_data = $2, proof_type = $3, proof_name = $4, proof_at = NOW(),
+            proof_reference = $5, proof_bank = $6,
+            provider_method = 'transfer', status = 'awaiting',
+            failure_reason = NULL, updated_at = NOW()
+      WHERE id = $1 AND status IN ('pending','processing','failed')`,
+    [
+      intentId, archivo.bytes, archivo.tipo, archivo.nombre.slice(0, 200),
+      (opts.referencia || '').trim().slice(0, 120) || null,
+      (opts.banco || '').trim().slice(0, 40) || null,
+    ],
+  );
+  if (!rowCount) {
+    throw new Error('Este cobro ya no admite un comprobante: puede que ya esté pagado o en revisión.');
+  }
+}
+
+/**
+ * Los cobros por transferencia que esperan que alguien los confirme.
+ *
+ * ⚠️ EL `id` QUE LLEGA ES EL DEL ORIGEN, NO EL DEL COBRO, y en dos de los cuatro no
+ * coinciden: el `source_id` de una suscripción es `<id>-<AAAA-MM>` y el de un producto es
+ * `p<id>-u<comprador>`. Buscar por igualdad devolvía **cero** en esos dos, así que el bloque
+ * de confirmación no aparecía nunca y el pago del cliente se quedaba esperando para siempre.
+ * Por eso ahí se busca por prefijo.
+ */
+export async function cobrosEnEspera(sourceType: string, id: string) {
+  const porPrefijo = sourceType === 'subscription' || sourceType === 'product';
+  const patron = sourceType === 'subscription' ? `${id}-%`
+    : sourceType === 'product' ? `p${id}-u%`
+    : id;
+  const { rows } = await pool.query(
+    `SELECT id, source_id, net_amount, fee_amount, charge_amount, payer_email, proof_at,
+            proof_name, proof_type, proof_reference, proof_bank, billing_snapshot, created_at
+       FROM gcc_world.payment_intents
+      WHERE source_type = $1 AND status = 'awaiting'
+        AND (${porPrefijo ? 'source_id LIKE $2' : 'source_id = $2'})
+      ORDER BY proof_at DESC NULLS LAST, id DESC`,
+    [sourceType, patron],
+  );
+  return rows;
+}
+
+/** Todos los cobros a la espera, para que nadie se quede olvidado en un detalle que nadie abre. */
+export async function todosLosCobrosEnEspera() {
+  const { rows } = await pool.query(
+    `SELECT id, source_type, source_id, stage_id, charge_amount, payer_email,
+            proof_at, proof_bank, proof_reference, billing_snapshot
+       FROM gcc_world.payment_intents
+      WHERE status = 'awaiting'
+      ORDER BY proof_at ASC NULLS LAST`,
+  );
+  return rows;
+}
+
+/**
+ * CONFIRMA una transferencia: alguien miró su banco y dio el dinero por recibido.
+ *
+ * A partir de aquí es un cobro como cualquier otro — `confirmarPago` emite la factura, marca
+ * la etapa o el mes y registra el ingreso—, así que el comprobante sale idéntico venga de
+ * PayPhone o del banco.
+ *
+ * Se deja escrito **quién** confirmó: un cobro sin pasarela detrás siempre tiene que tener
+ * un responsable con nombre.
+ */
+export async function confirmarTransferencia(
+  intentId: number,
+  quien: string,
+): Promise<ResultadoConfirmacion> {
+  const { rowCount } = await pool.query(
+    `UPDATE gcc_world.payment_intents
+        SET confirmed_by = $2, confirmed_at = NOW(), updated_at = NOW()
+      WHERE id = $1 AND status = 'awaiting'`,
+    [intentId, quien.slice(0, 255)],
+  );
+  if (!rowCount) throw new Error('Este cobro no está esperando confirmación.');
+
+  return confirmarPago(intentId, {
+    referencia: `transferencia:${intentId}`,
+    metodo: 'transfer',
+    estadoProveedor: `Transferencia confirmada por ${quien}`,
+  });
+}
+
+/** Rechaza un comprobante que no cuadra. El cobro vuelve a estar disponible para reintentar. */
+export async function rechazarTransferencia(intentId: number, quien: string, motivo: string): Promise<void> {
+  const { rowCount } = await pool.query(
+    `UPDATE gcc_world.payment_intents
+        SET status = 'failed',
+            failure_reason = $3,
+            confirmed_by = $2, confirmed_at = NOW(), updated_at = NOW()
+      WHERE id = $1 AND status = 'awaiting'`,
+    [intentId, quien.slice(0, 255), `Comprobante rechazado por ${quien}: ${motivo}`.slice(0, 500)],
+  );
+  if (!rowCount) throw new Error('Este cobro no está esperando confirmación.');
 }

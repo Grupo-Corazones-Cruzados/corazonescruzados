@@ -22,6 +22,7 @@ import IncidentsTab from '@/components/projects/IncidentsTab';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
 import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
+import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -2273,6 +2274,10 @@ export default function ProjectDetailPage() {
           {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0) && (
             <AdditionalCostsCard projectId={project.id} costs={project.additional_costs || []} canEdit={!!(isOwner && !isTerminal)} onSaved={fetchProject} />
           )}
+
+          {/* Pagos por transferencia que esperan que alguien los confirme. Va ANTES de la
+              tarjeta de Pagos porque es lo único de este panel que pide una acción hoy. */}
+          <CobrosEnEspera tipo="project" id={String(id)} alConfirmar={fetchProject} />
 
           {/* Pagos (facturado vs pendiente) */}
           {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque

@@ -802,6 +802,51 @@ Lo que cambia según el origen, y **por qué**:
 - **«Pagando» vs «contratando»** no es sinónimo elegido al azar: en proyecto y ticket el
   trabajo ya se hizo; en suscripción y producto se está **empezando** algo.
 
+#### Elegir método de pago — el precio va en el propio botón (2026-08-26)
+
+Dos tarjetas-botón lado a lado, cada una **con su importe a la derecha**: «Tarjeta $5,31» y
+«Transferencia **$5,00**» (esta en verde). Debajo, una línea de qué esperar: *«Al instante ·
+crédito o débito»* frente a *«Sin recargo · se verifica a mano»*.
+
+- **El precio no es decoración.** La transferencia no lleva recargo porque ahí no cobra
+  ninguna pasarela, así que enseñarlos juntos hace que el método más barato —**para el
+  cliente y para GCC**— se elija solo, sin tener que convencer a nadie.
+- **La transferencia se ofrece SIEMPRE**, aunque la pasarela solo sepa cobrar tarjeta: no la
+  ofrece la pasarela, la ofrece GCC.
+
+#### Datos bancarios y comprobante (2026-08-26)
+
+Al elegir transferencia y continuar, la tarjeta cambia entera: desaparecen el desglose y los
+datos de facturación —ya quedaron guardados con el cobro— y aparece el bloque de cuentas.
+
+- **Las cuentas van plegadas, una por banco**, y se despliegan al pulsar. Enseñar los diez
+  datos de las dos a la vez convierte la pantalla en un muro justo cuando el cliente busca
+  un solo número.
+- **Cada dato copiable lleva su botón de copiar**, que confirma con un ✓ verde durante 1,6 s.
+  No es comodidad: **un número de cuenta tecleado a mano es una transferencia que se va a
+  otra parte**.
+- **El SWIFT solo aparece en la cuenta que lo tiene** (Guayaquil): un campo vacío «por
+  simetría» invita a preguntarse qué falta.
+- **Al enviar el comprobante, la tarjeta se sustituye por un aviso ámbar** que dice que el
+  pago quedó **en espera de verificación** y —esto es lo importante— que **no hace falta
+  pagar otra vez**.
+
+#### Confirmar una transferencia — `components/pagos/CobrosEnEspera.tsx` (2026-08-26)
+
+Bloque con **borde ámbar de 2 px** al principio del panel derecho del detalle (proyecto,
+ticket, suscripción). Va **antes** de la tarjeta de Pagos porque es lo único de ese panel que
+pide una acción hoy.
+
+- **«Ver el comprobante» va primero y como enlace de texto**, no escondido en un icono:
+  mirarlo *es* el trabajo, y decidir sin abrirlo es el error que hay que hacer difícil.
+- **Confirmar es verde y ocupa el ancho; rechazar es un icono discreto al lado.** No son dos
+  opciones equivalentes: una cierra el cobro y la otra lo devuelve al cliente.
+- **Rechazar exige escribir un motivo** (mínimo 4 caracteres, validado en cliente y en
+  servidor) porque **el cliente lo va a leer**.
+- Al pie, la advertencia que ordena todo: *«Confirma solo si ya viste el dinero en tu banco.
+  Al confirmar se emite la factura electrónica, que no se puede deshacer sin una nota de
+  crédito.»*
+
 #### Botones de cobro en el dashboard — quién ve cuál (2026-08-26)
 
 Regla que ordena los cuatro módulos: **el cliente ve «Pagar»; el staff ve «Compartir enlace
