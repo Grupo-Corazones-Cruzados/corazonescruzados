@@ -14,57 +14,37 @@ import { NextRequest, NextResponse } from 'next/server';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
 import { cotizarCobro, idMesSuscripcion, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
+import { deducirIdentificacion } from '@/lib/pagos/identificacion';
 import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 import { pool } from '@/lib/db';
 
 /**
- * Tipos de identificación del comprador (tabla 6 de la Ficha Técnica del SRI).
+ * Valida lo que el cliente escribió y **deduce** su tipo de identificación.
  *
- * ⚠️ EL `08` NO ES OPCIONAL, y faltaba. Es «Identificación del exterior», el que llevan los
- * clientes de fuera de Ecuador —GCC ya tiene uno costarricense facturado con él— y sin
- * ponerlo en esta lista **el cliente extranjero no podía pagar**: su cuenta de facturación
- * venía prellenada con `08`, el validador lo rechazaba, y el cobro moría con un «tipo de
- * identificación no válido» que además no dice nada útil. Se descubrió probando el cobro de
- * un ticket real, no leyendo el código.
+ * ⚠️ EL `id_type` YA NO SE ACEPTA DEL FORMULARIO. Desde el 2026-08-26 se pregunta el **país**
+ * y el número, y el tipo del SRI se deduce aquí (ver `lib/pagos/identificacion.ts`).
+ * Aceptarlo de fuera dejaría que cualquiera mandara un cobro con el tipo que le apeteciera y
+ * el comprobante saldría mal emitido — con el dinero ya cobrado.
  *
- * Y duele el doble: el cliente de fuera es justo el que paga con tarjeta internacional, que
- * es una de las razones por las que se eligió PayPhone.
+ * Un dato malo aquí sale como comprobante rechazado por el SRI, así que se para antes.
  */
-const ID_TYPES = ['04', '05', '06', '07', '08'];
-
-/** Los que NO son un número ecuatoriano de 10 o 13 dígitos: pasaporte e identificación del exterior. */
-const ID_TYPES_LIBRES = ['06', '08'];
-
-/** Valida lo que el cliente escribió. Un dato malo aquí sale como comprobante rechazado por el SRI. */
-function validarFacturacion(f: any): DatosFacturacion {
-  let name = String(f?.name || '').trim();
-  let ruc = String(f?.ruc || '').trim();
+function validarFacturacion(f: any): DatosFacturacion & { pais: string } {
+  const name = String(f?.name || '').trim();
   const email = String(f?.email || '').trim();
-  const id_type = String(f?.id_type || '').trim();
-
-  // CONSUMIDOR FINAL no lleva identificación: el SRI espera el 9999999999999 y ese nombre
-  // exacto. Pedírselos al cliente sería obligarle a escribir trece nueves a mano para que
-  // el emisor los sustituya igualmente (`createManualInvoice` ya lo hace).
-  if (id_type === '07') {
-    ruc = '9999999999999';
-    if (!name) name = 'CONSUMIDOR FINAL';
-  }
+  const pais = String(f?.pais || '').trim();
+  const numero = String(f?.ruc || f?.identificacion || '').trim();
 
   if (!name) throw new Error('Falta la razón social o el nombre para la factura.');
   if (name.length > 300) throw new Error('La razón social no puede pasar de 300 caracteres.');
-  if (!ID_TYPES.includes(id_type)) throw new Error('Tipo de identificación no válido.');
-  // Un pasaporte o una identificación del exterior tienen el formato de su país
-  // («3-101-619800» en Costa Rica): exigirles dígitos ecuatorianos los dejaría fuera.
-  if (!ID_TYPES_LIBRES.includes(id_type) && !/^\d{10}$|^\d{13}$/.test(ruc)) {
-    throw new Error('La identificación debe tener 10 dígitos (cédula) o 13 (RUC).');
-  }
-  if (ID_TYPES_LIBRES.includes(id_type) && (ruc.length < 3 || ruc.length > 20)) {
-    throw new Error('La identificación no es válida.');
-  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('El correo no es válido.');
 
+  const id = deducirIdentificacion(pais, numero);
+  if (!id.ok) throw new Error(id.error);
+
   return {
-    id_type, ruc, name, email,
+    id_type: id.valor.idType,
+    ruc: numero,
+    name, email, pais,
     phone: String(f?.phone || '').trim().slice(0, 30) || null,
     address: String(f?.address || '').trim().slice(0, 300) || null,
   };

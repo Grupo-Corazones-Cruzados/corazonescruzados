@@ -540,6 +540,19 @@ Stack estándar de la casa, con particularidades de este repo:
   - **⏸ LA PANTALLA `/pagar/<token>` NO SE INVENTA.** Es una página pública nueva, y sobre eso
     manda [[gcc-diseno-sitio-con-fernando]] y el ⛔ de `Diseño.md`: **su diseño se acuerda con
     él antes**. Ese es el corte de la jornada, no un olvido.
+- **🪪 EL TIPO DE IDENTIFICACIÓN SE DEDUCE DEL PAÍS, NO SE PREGUNTA (2026-08-26).** Fernando
+  quitó «Consumidor final» del cobro en línea y cambió la pregunta: **se elige el país** y se
+  escribe el número, y el sistema deduce el código del SRI —Ecuador + termina en 001 → **RUC
+  (04)**; Ecuador + 10 dígitos → **cédula (05)**; otro país → **identificación del exterior
+  (08)**—. «Tipo de identificación» es vocabulario del SRI, no del cliente.
+  - **⚠️ LA DEDUCCIÓN CORRE EN EL SERVIDOR** (`lib/pagos/identificacion.ts`, módulo puro con
+    15 pruebas). El `id_type` **ya no se acepta del formulario**: aceptarlo dejaría emitir el
+    comprobante con el tipo que quisiera el que paga. Comprobado que colar un `07` se ignora.
+  - **⚠️ Y LA REGLA SOLA NO BASTA:** «termina en 001» dejaría pasar un «1001» y el SRI
+    rechazaría el comprobante **después de haber cobrado**. Se valida también la longitud
+    (RUC 13, cédula 10) y los mensajes explican el formato.
+  - Fuera de Ecuador **no se exige formato** (una identificación tica es `3-101-619800`), y
+    **Ecuador va primero** en el selector, separado del resto.
 - **🔥 EL ENLACE DE PAGO SE QUEMA AL COBRAR (2026-08-26).** Lo vio Fernando: el enlace seguía
   abriéndose después de pagar **y dejaba pagar otra vez**. Eran dos huecos:
   - **`payment_links.paid_at` existía desde la 053 y NADIE lo escribía.** `listarEnlaces`

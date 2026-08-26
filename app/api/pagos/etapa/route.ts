@@ -89,7 +89,9 @@ export async function GET(req: NextRequest) {
       const b = await getBillingForClient(clienteParaPrellenar);
       if (b) {
         facturacion = {
-          id_type: b.id_type || '05',
+          // El país es lo que ahora se pregunta; si la cuenta guardada no lo tiene, se
+          // asume Ecuador, que es de donde viene la inmensa mayoría.
+          pais: b.country || 'Ecuador',
           ruc: b.ruc || '',
           name: b.name || '',
           email: b.email || proj.client_email || '',

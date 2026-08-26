@@ -7772,3 +7772,31 @@ puede incluso volver a pagar»*. Eran **dos** huecos, no uno:
   cobro pagado sin factura devolvió `400` en vez de dejar pagar de nuevo.
 - **La lección de fondo:** una columna que se lee pero no se escribe es peor que no tenerla —
   `listarEnlaces` llevaba días diciendo «vigente» sobre un dato que nadie mantenía.
+
+### ⭐ P161 — El tipo de identificación se DEDUCE, no se pregunta (2026-08-26)
+Fernando: *«quita la opción de consumidor final, y en vez de preguntar RUC, o cédula, o
+identificación externa, preguntemos el país… si es de Ecuador y termina en 001 es un RUC, y
+si no una cédula; si escogió otro país, identificación externa»*.
+- **Por qué es mejor pregunta:** «tipo de identificación» es **vocabulario del SRI, no del
+  cliente**. Un comprador no tiene por qué saber que su número es un «04» o un «05» — sabe
+  de qué país es y cuál es su número. Traducirlo a los códigos del SRI es trabajo nuestro.
+- **La deducción vive en `lib/pagos/identificacion.ts`, módulo puro, y corre en el
+  SERVIDOR.** El navegador la repite solo para enseñar «se registrará como RUC» mientras se
+  escribe. **El `id_type` ya no se acepta del formulario**: aceptarlo dejaría mandar un cobro
+  con el tipo que a uno le apetezca y el comprobante saldría mal emitido, con el dinero ya
+  cobrado. Comprobado: un intento de colar `id_type: '07'` se ignora y el cobro se rechaza.
+- **⚠️ LA REGLA SOLA NO BASTA, Y AHÍ ESTÁ EL VALOR AÑADIDO.** «Termina en 001 → RUC» dejaría
+  pasar un «1001», y el SRI rechazaría el comprobante **después de haber cobrado**. Se
+  comprueba también la longitud (RUC 13, cédula 10) y los mensajes explican el formato en vez
+  de decir «dato inválido».
+- **Fuera de Ecuador no se exige formato**: una identificación tica es `3-101-619800`.
+  Pedirle dígitos ecuatorianos dejaría fuera justo al cliente extranjero — el mismo que ya
+  quedó fuera dos veces esta semana ([[P140]], [[P141]]).
+- **Consumidor final desaparece del cobro en línea**: en un pago por internet siempre hay
+  alguien identificado al otro lado, y una factura a consumidor final no le sirve al cliente
+  (no le da crédito tributario ni le justifica el gasto). El canal manual lo sigue admitiendo.
+- **Ecuador va primero en el selector**, separado del resto por una línea: hacer bajar
+  cincuenta países hasta la E cada vez es fricción tonta.
+- **Medido:** 15/15 en el módulo puro · 7/7 contra el servidor real (RUC→04, cédula→05,
+  exterior→08, «1001»→400, 9 dígitos→400, sin país→400, colar 07→400) · y en la pantalla, la
+  etiqueta cambia sola al escribir y al cambiar de país.

@@ -802,6 +802,23 @@ Lo que cambia según el origen, y **por qué**:
 - **«Pagando» vs «contratando»** no es sinónimo elegido al azar: en proyecto y ticket el
   trabajo ya se hizo; en suscripción y producto se está **empezando** algo.
 
+#### Datos de facturación: se pregunta el PAÍS, no el tipo de identificación (2026-08-26)
+
+Dos campos en fila —**País** y **Cédula o RUC**— en vez del antiguo selector de «tipo de
+identificación». Debajo del número, una línea que dice **«Se registrará como RUC»** y cambia
+sola mientras se escribe y al cambiar de país.
+
+- **«Tipo de identificación» es vocabulario del SRI, no del cliente.** Él sabe de qué país es
+  y cuál es su número; traducirlo a un «04» o un «05» es trabajo nuestro.
+- **La etiqueta deducida se enseña mientras escribe**, no al enviar: así ve que el sistema
+  entendió su número en vez de descubrirlo cuando el comprobante ya se rechazó.
+- **Ecuador va primero en el selector**, separado del resto por una línea de guiones. Hacer
+  bajar cincuenta países hasta la E cada vez es fricción tonta.
+- El texto de ayuda cambia con el país: *«Un RUC termina en 001 y tiene 13 dígitos; una
+  cédula, 10»* dentro de Ecuador, *«Tal como aparece en tu documento»* fuera.
+- **«Consumidor final» ya no existe aquí.** En un pago por internet siempre hay alguien
+  identificado al otro lado, y esa factura no le sirve al cliente.
+
 #### Elegir método de pago — el precio va en el propio botón (2026-08-26)
 
 Dos tarjetas-botón lado a lado, cada una **con su importe a la derecha**: «Tarjeta $5,31» y

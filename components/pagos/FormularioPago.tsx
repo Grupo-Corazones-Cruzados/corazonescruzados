@@ -18,6 +18,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { CreditCard, Landmark, Lock, Loader2, AlertCircle, CheckCircle2, Clock, Copy, Check, Upload } from 'lucide-react';
+import { PAISES } from '@/lib/countries';
+import { PAIS_LOCAL, etiquetaProvisional } from '@/lib/pagos/identificacion';
 import { fmt2 } from '@/lib/format';
 
 declare global {
@@ -55,13 +57,9 @@ export type CuentaBancaria = {
  * él, un cliente extranjero no puede ni elegir su tipo ni pagar — y es justo el que usa la
  * tarjeta internacional que motivó elegir PayPhone.
  */
-const TIPOS_ID = [
-  { valor: '05', etiqueta: 'Cédula' },
-  { valor: '04', etiqueta: 'RUC' },
-  { valor: '06', etiqueta: 'Pasaporte' },
-  { valor: '08', etiqueta: 'Identificación del exterior' },
-  { valor: '07', etiqueta: 'Consumidor final' },
-];
+// El tipo de identificación del SRI ya no se pregunta: se DEDUCE del país y del número
+// (`lib/pagos/identificacion.ts`). «Tipo de identificación» es vocabulario del SRI, no del
+// cliente — él sabe de qué país es y cuál es su número, y traducirlo es trabajo nuestro.
 
 const CAMPO = 'w-full rounded-lg border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] px-3 py-2.5 text-[15px] text-[var(--texto)] outline-none focus:border-[var(--violeta-vivo)] focus:ring-2 focus:ring-[var(--violeta)]/20 transition';
 const ETIQUETA = 'block text-[13px] font-medium text-[var(--texto)] mb-1.5';
@@ -172,7 +170,7 @@ export default function FormularioPago({
   };
 
   const [f, setF] = useState({
-    id_type: datos.facturacion?.id_type || '05',
+    pais: datos.facturacion?.pais || PAIS_LOCAL,
     ruc: datos.facturacion?.ruc || '',
     name: datos.facturacion?.name || '',
     email: datos.facturacion?.email || datos.correoDestino || '',
@@ -189,6 +187,10 @@ export default function FormularioPago({
   const [hecho, setHecho] = useState<{ invoiceId: number | null; aviso: string | null } | null>(null);
 
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+  const esLocal = f.pais === PAIS_LOCAL;
+  // La MISMA función que usa el servidor para decidir: si aquí dijera una cosa y allí otra,
+  // el cliente vería «se registrará como RUC» y el cobro se caería con otro mensaje.
+  const etiquetaId = etiquetaProvisional(f.pais, f.ruc);
 
   /**
    * Pinta la Cajita cuando ya hay intento creado y la librería cargó.
@@ -234,8 +236,10 @@ export default function FormularioPago({
       if (metodo === 'transfer') {
         kushki.requestTransferToken({
           callbackUrl: window.location.href,
-          userType: f.id_type === '04' ? '1' : '0',
-          documentType: f.id_type === '04' ? 'RUC' : 'CI',
+          // Kushki quiere saber si es empresa o persona; se deduce igual que el tipo del
+          // SRI, con la misma regla y no con una segunda copia de ella.
+          userType: etiquetaId === 'RUC' ? '1' : '0',
+          documentType: etiquetaId === 'RUC' ? 'RUC' : 'CI',
           documentNumber: f.ruc,
           paymentDescription: `${datos.proyecto.titulo} — ${datos.etapa.nombre}`.slice(0, 60),
           email: f.email,
@@ -534,21 +538,30 @@ export default function FormularioPago({
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className={ETIQUETA} htmlFor="tipo-id">Tipo de identificación</label>
-            <select id="tipo-id" className={CAMPO} value={f.id_type} onChange={e => {
-              const v = e.target.value;
-              // Consumidor final tiene identificación y nombre fijos por norma del SRI:
-              // se rellenan solos en vez de pedirlos.
-              if (v === '07') setF(p => ({ ...p, id_type: v, ruc: '9999999999999', name: p.name || 'CONSUMIDOR FINAL' }));
-              else set('id_type', v);
-            }}>
-              {TIPOS_ID.map(t => <option key={t.valor} value={t.valor}>{t.etiqueta}</option>)}
+            <label className={ETIQUETA} htmlFor="pais">País</label>
+            <select id="pais" className={CAMPO} value={f.pais} onChange={e => set('pais', e.target.value)}>
+              {/* Ecuador primero porque es de donde viene casi todo el mundo; el resto,
+                  alfabético. Hacer bajar 50 países hasta la E cada vez es fricción tonta. */}
+              <option value={PAIS_LOCAL}>{PAIS_LOCAL}</option>
+              <option disabled>──────────</option>
+              {PAISES.filter(x => x !== PAIS_LOCAL).map(x => <option key={x} value={x}>{x}</option>)}
             </select>
           </div>
           <div>
-            <label className={ETIQUETA} htmlFor="ruc">Identificación</label>
+            <label className={ETIQUETA} htmlFor="ruc">
+              {esLocal ? 'Cédula o RUC' : 'Identificación'}
+            </label>
             <input id="ruc" className={CAMPO} value={f.ruc} onChange={e => set('ruc', e.target.value)}
-              inputMode="numeric" autoComplete="off" required readOnly={f.id_type === '07'} />
+              inputMode={esLocal ? 'numeric' : 'text'} autoComplete="off" required />
+            {/* Se le enseña qué se dedujo mientras escribe: así ve que el sistema entendió
+                su número, en vez de descubrirlo cuando el SRI rechace el comprobante. */}
+            <p className="mt-1.5 text-[12.5px] text-[var(--tenue)]">
+              {etiquetaId
+                ? <>Se registrará como <strong className="text-[var(--texto)]">{etiquetaId}</strong></>
+                : esLocal
+                  ? 'Un RUC termina en 001 y tiene 13 dígitos; una cédula, 10.'
+                  : 'Tal como aparece en tu documento.'}
+            </p>
           </div>
           <div className="sm:col-span-2">
             <label className={ETIQUETA} htmlFor="razon">Nombre o razón social</label>

@@ -17,7 +17,8 @@
     "mirar:panel": "node scripts/mirar-panel.mjs",
     "pagos:prueba": "node --experimental-strip-types scripts/prueba-comision.mts",
     "pagos:prueba-bd": "node scripts/prueba-pagos-bd.mjs",
-    "pagos:pendientes": "node scripts/pagos-etapas-pendientes.mjs"
+    "pagos:pendientes": "node scripts/pagos-etapas-pendientes.mjs",
+    "pagos:prueba-id": "node --experimental-strip-types scripts/prueba-identificacion.mts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.9.4",

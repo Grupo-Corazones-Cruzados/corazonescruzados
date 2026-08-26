@@ -33,12 +33,15 @@ import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
 export type CanalCobro = 'manual' | 'client' | 'link';
 
 export type DatosFacturacion = {
+  /** Código del SRI. **Se deduce** del país y el número; no llega del formulario. */
   id_type: string;
   ruc: string;
   name: string;
   email: string;
   phone?: string | null;
   address?: string | null;
+  /** El país que eligió el cliente. Se guarda porque es lo que ÉL contestó. */
+  pais?: string | null;
 };
 
 /**
