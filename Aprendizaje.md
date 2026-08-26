@@ -7525,3 +7525,63 @@ la pantalla cobra **251,55 $** = 237,08 + **14,47** de recargo, la Cajita se pin
 (50.423 caracteres, iframe propio), sin desbordamiento en 1440 ni en 390 px, y **sin plan de
 etapas la pantalla se queda a una sola columna** en vez de dejar un hueco. `tsc` limpio,
 `next build` limpio, 15/15 candados. Los intentos de la revisión, cancelados con su motivo.
+
+---
+
+## Séptima pasada (2026-08-26) — suscripciones · ✅
+
+### 🪤 P144 — MI PROPIO REEMPLAZO ABRIÓ UN AGUJERO DE SEGURIDAD
+Al abrir `GET /api/subscriptions` al cliente usé un `replace` sobre el bloque
+`const user = …; if (!user || role !== admin/member) return 403;` — que aparecía **dos
+veces** en el archivo. Python reemplaza **todas** las ocurrencias por defecto, así que el
+mismo cambio se aplicó al **`POST`**: durante unos minutos **cualquiera podía crear
+suscripciones**, es decir, darse de alta cobros a sí mismo.
+- **Lo encontró una auditoría deliberada**, no un error: tras tocar permisos, conté los
+  `export async function` de los tres archivos y los checks que quedaban, en vez de dar por
+  bueno el cambio. `2 / 3 / 1` — y el 2 del primero era GET + POST, no dos GET.
+- **La regla que queda:** un `replace` sobre un bloque de **autorización** se hace con
+  `count=1` o anclado a algo único, y **después se cuenta cuántos permisos quedan en pie**.
+  Un cambio de permisos que no se audita es un cambio de permisos que no se ha hecho.
+- Restaurado en el momento, con el porqué escrito en el propio archivo.
+
+### 🧱 P145 — La suscripción se identifica por `<id>-<AAAA-MM>`, y no es un invento
+El mes que se cobra es parte de **qué** se cobra, así que el `source_id` del intento es
+`<idSuscripción>-<AAAA-MM>`. Ese identificador **ya existía** desde 2026-06-11: es el que
+usan `createManualInvoiceFromSubscription` y `addSubscriptionIncomeToFinance`. Reutilizarlo
+da tres cosas gratis:
+1. El cobro, la factura y el ingreso de un mes hablan del **mismo** identificador.
+2. El candado `idx_payment_intents_origen_pagado` protege **cada mes por separado**, sin
+   migración nueva.
+3. Anular la factura de un mes sigue revirtiendo su pago por el camino que ya existía.
+
+### ⚠️ P146 — El mes tiene que quedar marcado en SU tabla, no solo en el cobro
+El resto del módulo —el aviso de vencimiento, el color del mes, el contador «2/3»— no mira
+`payment_intents`: mira **`subscription_payments`**. Sin escribir esa fila, el cliente
+pagaría y su mes **seguiría saliendo en rojo como impago**. Es la misma escritura que hace
+«Marcar pagado», con el mismo `ON CONFLICT (subscription_id, period)`.
+
+### ⚠️ P147 — El importe de una suscripción lleva el IVA DENTRO
+`monthly_cost` es el precio final (así se guarda desde 2026-06-11) y el emisor lo desglosa
+hacia atrás. Pasarlo como base habría emitido un comprobante **por más de lo cobrado**. Con
+`iva_rate = 0`, que es lo que usa GCC hoy, base y total coinciden — y por eso el fallo
+habría dormido hasta la primera suscripción con IVA.
+- El **recargo de la pasarela va siempre a tarifa 0**, no hereda el IVA de lo que se cobra:
+  es un gasto de procesamiento, no parte del servicio suscrito.
+
+### 🪤 P148 — El cliente veía «Suscripciones» en el menú y recibía un 403
+No es un fallo introducido ahora: el sidebar ya ofrecía el módulo a `client` desde que se
+creó, y el endpoint solo admitía admin y member. **Un enlace que lleva a un error es peor
+que no tener el enlace.** Ahora entra, con el filtro en el servidor.
+- Y se revisó **todo lo que ve de más**: fuera «Nueva suscripción», fuera «Marcar pagado»,
+  fuera «Desmarcar», y el selector de Estado pasa a **insignia de solo lectura**. El
+  servidor ya los rechazaba; enseñarlos era prometer algo que iba a fallar.
+
+### Lo medido al cerrar
+Con una sesión de cliente real (PETER TOURS S.A.), contra la base de producción:
+- **Ve 1 de las 2 suscripciones** — la suya. Los contadores del rail cuadran con lo que ve.
+- Detalle de la suya **200**; el de la ajena, **403**.
+- Cotizar su mes: **5,00 + 0,31 = 5,31** («Agosto 2026»). El ajeno, **403**.
+- Mes **ya pagado** → rechazado. Mes **futuro** → rechazado.
+- Botones: `Pagar` sí; `Nueva suscripción`, `Marcar pagado` y `Desmarcar`, **no**.
+- 14/14 en el recargo · **15/15 candados** · `tsc` y `next build` limpios · **0 intentos
+  abiertos** tras la revisión.

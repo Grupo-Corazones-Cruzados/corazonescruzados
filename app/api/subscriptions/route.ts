@@ -8,10 +8,19 @@ const PER_PAGE_MAX = 100;
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || (user.role !== 'admin' && user.role !== 'member')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     await ensureSubscriptionTables();
+
+    // ⚠️ EL CLIENTE ENTRA, PERO SOLO A LO SUYO (2026-08-26).
+    //
+    // El sidebar ya le ofrecía «Suscripciones» (`roles: ['client','member','admin']`) y este
+    // endpoint le devolvía **403**: veía el enlace y al pulsarlo se encontraba un error. Se
+    // abre para que pueda ver y pagar sus cuotas, con el filtro puesto aquí —en el servidor—
+    // y no en la pantalla.
+    //
+    // Se aceptan los DOS vínculos porque en la base conviven: `client_id` en las creadas
+    // desde el módulo y `client_email_sri` en las más antiguas.
+    const esCliente = user.role !== 'admin' && user.role !== 'member';
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
@@ -21,6 +30,11 @@ export async function GET(req: NextRequest) {
 
     const where: string[] = [];
     const params: any[] = [];
+    if (esCliente) {
+      params.push(String(user.email));
+      where.push(`(LOWER(s.client_email_sri) = LOWER($${params.length})
+                   OR s.client_id IN (SELECT c.id FROM gcc_world.clients c WHERE LOWER(c.email) = LOWER($${params.length})))`);
+    }
     if (status !== 'all') { params.push(status); where.push(`s.status = $${params.length}`); }
     if (search) {
       params.push(`%${search}%`);
@@ -29,12 +43,20 @@ export async function GET(req: NextRequest) {
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     // Per-status counts for the rail (respect search, ignore status filter).
+    // Los contadores del rail respetan el MISMO filtro de cliente: si no, un cliente vería
+    // «Activas: 12» y una sola fila en la tabla, que es peor que no ver el contador.
     const searchParamsArr: any[] = [];
-    let searchWhere = '';
+    const cuentaWhere: string[] = [];
+    if (esCliente) {
+      searchParamsArr.push(String(user.email));
+      cuentaWhere.push(`(LOWER(s.client_email_sri) = LOWER($${searchParamsArr.length})
+                         OR s.client_id IN (SELECT c.id FROM gcc_world.clients c WHERE LOWER(c.email) = LOWER($${searchParamsArr.length})))`);
+    }
     if (search) {
       searchParamsArr.push(`%${search}%`);
-      searchWhere = `WHERE (s.title ILIKE $1 OR s.client_name_sri ILIKE $1)`;
+      cuentaWhere.push(`(s.title ILIKE $${searchParamsArr.length} OR s.client_name_sri ILIKE $${searchParamsArr.length})`);
     }
+    const searchWhere = cuentaWhere.length ? `WHERE ${cuentaWhere.join(' AND ')}` : '';
     const { rows: countRows } = await pool.query(
       `SELECT s.status, COUNT(*)::int AS n FROM gcc_world.subscriptions s ${searchWhere} GROUP BY s.status`,
       searchParamsArr,
@@ -117,6 +139,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
+    // ⚠️ CREAR una suscripción sigue siendo cosa del staff. Solo se abrió el GET al cliente
+    // —para que vea y pague las suyas—; abrir también esto le dejaría darse de alta cobros
+    // a sí mismo. (Un reemplazo descuidado quitó esta comprobación el 2026-08-26 y se
+    // restauró en el momento.)
     if (!user || (user.role !== 'admin' && user.role !== 'member')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

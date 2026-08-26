@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -13,10 +14,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
-import {
-  Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText,
-  ChevronLeft, ChevronRight, CreditCard,
-} from 'lucide-react';
+import { Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -53,7 +51,12 @@ function dueText(daysUntilDue: number) {
 }
 
 export default function SubscriptionsPage() {
+  const router = useRouter();
   const { user } = useAuth();
+  // El cliente entra a este módulo desde el 2026-08-26 (antes veía el enlace y recibía un
+  // 403). Ve SOLO sus suscripciones —el filtro está en el servidor— y en vez de «marcar
+  // pagado» tiene «Pagar», que va a la pasarela.
+  const esCliente = user?.role !== 'admin' && user?.role !== 'member';
   const [subs, setSubs] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [tab, setTab] = useState('all');
@@ -248,9 +251,13 @@ export default function SubscriptionsPage() {
                 className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf} />
             </div>
-            <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} shrink-0`}>
-              <Plus className="w-4 h-4" /> Nueva suscripción
-            </button>
+            {/* Crear suscripciones es del staff. El servidor ya lo rechaza, pero enseñarle
+                el botón a un cliente es prometerle algo que va a fallar. */}
+            {!esCliente && (
+              <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} shrink-0`}>
+                <Plus className="w-4 h-4" /> Nueva suscripción
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
@@ -347,12 +354,20 @@ export default function SubscriptionsPage() {
                     </div>
 
                     <div className="flex items-center justify-between border-y border-digi-border py-2">
+                      {/* El cliente VE su estado; cambiarlo es del staff (el PATCH lo
+                          rechaza, y un control que falla al usarlo es peor que no tenerlo). */}
                       <div className="flex items-center gap-2">
                         <label className="text-[11px] text-digi-muted" style={mf}>Estado</label>
-                        <select value={detail.status} onChange={e => changeStatus(e.target.value)} disabled={updatingStatus}
-                          className="field-control field-select appearance-none px-2.5 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                          <option value="active">Activa</option><option value="paused">Pausada</option><option value="cancelled">Cancelada</option>
-                        </select>
+                        {esCliente ? (
+                          <PixelBadge variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
+                            {detail.status === 'active' ? 'Activa' : detail.status === 'paused' ? 'Pausada' : 'Cancelada'}
+                          </PixelBadge>
+                        ) : (
+                          <select value={detail.status} onChange={e => changeStatus(e.target.value)} disabled={updatingStatus}
+                            className="field-control field-select appearance-none px-2.5 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                            <option value="active">Activa</option><option value="paused">Pausada</option><option value="cancelled">Cancelada</option>
+                          </select>
+                        )}
                       </div>
                       <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{detail.summary?.paidCount}/{detail.summary?.totalPeriods} pagados</span>
                     </div>
@@ -386,11 +401,24 @@ export default function SubscriptionsPage() {
                                     <button onClick={() => window.open(`/api/invoices/${p.invoiceId}/pdf`, '_blank')}
                                       className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] border border-green-500/40 rounded text-green-700 hover:bg-green-100 transition-colors" style={mf}><FileText className="w-3 h-3" /> PDF</button>
                                   )}
-                                  <button onClick={() => requestUnmarkPaid(p.period, p.label)} disabled={busy}
-                                    className="px-2 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={mf}>
-                                    {busy ? '...' : 'Desmarcar'}
-                                  </button>
+                                  {/* Desmarcar es cosa de quien administra el cobro, no del
+                                      cliente: para él, un mes pagado está pagado. */}
+                                  {!esCliente && (
+                                    <button onClick={() => requestUnmarkPaid(p.period, p.label)} disabled={busy}
+                                      className="px-2 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={mf}>
+                                      {busy ? '...' : 'Desmarcar'}
+                                    </button>
+                                  )}
                                 </>
+                              ) : esCliente ? (
+                                /* EL CLIENTE PAGA SU MES. Lo suyo no es «marcar pagado»
+                                   —eso lo hace quien ya cobró por otra vía— sino pagar de
+                                   verdad, así que va a la pasarela. */
+                                <button onClick={() => router.push(`/pagar/cobro?tipo=subscription&id=${detail.id}&periodo=${p.period}`)}
+                                  disabled={detail.status === 'cancelled'}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-[11px] font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+                                  <Lock className="w-3 h-3" /> Pagar ${fmt2(Number(detail.monthly_cost || 0))}
+                                </button>
                               ) : (
                                 <button onClick={() => requestMarkPaid(p.period, p.label)} disabled={busy || detail.status === 'cancelled'}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-[11px] font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
@@ -404,7 +432,9 @@ export default function SubscriptionsPage() {
                     </div>
 
                     <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
-                      Al marcar un mes como pagado se genera la factura electrónica (SRI), se envía por correo al cliente y se registra el ingreso. Un mes con factura emitida no puede desmarcarse (requiere nota de crédito).
+                      {esCliente
+                        ? 'Al pagar un mes se emite tu factura electrónica y te llega al correo. Al importe se le suman los gastos de procesamiento del pago en línea, que verás antes de confirmar.'
+                        : 'Al marcar un mes como pagado se genera la factura electrónica (SRI), se envía por correo al cliente y se registra el ingreso. Un mes con factura emitida no puede desmarcarse (requiere nota de crédito).'}
                     </p>
 
                     {user?.role === 'admin' && (

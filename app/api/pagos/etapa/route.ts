@@ -11,16 +11,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
-import { cotizarCobro, cobroPagadoDe } from '@/lib/pagos/intentos';
+import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { getBillingForClient } from '@/lib/billing-clients';
 
 export async function GET(req: NextRequest) {
   try {
     const sp = req.nextUrl.searchParams;
+    // Una suscripción se identifica por `<id>-<AAAA-MM>`: el mes es parte de lo que se
+    // cobra, no un parámetro suelto (ver `idMesSuscripcion`).
+    const subId = sp.get('sub_id');
+    const periodo = sp.get('periodo');
     const auth = await autorizarCobro({
-      sourceType: sp.get('tipo') || (sp.get('ticket_id') ? 'ticket' : 'project'),
-      sourceId: sp.get('ticket_id') || sp.get('project_id') || undefined,
+      sourceType: sp.get('tipo') || (subId ? 'subscription' : sp.get('ticket_id') ? 'ticket' : 'project'),
+      sourceId: subId && periodo
+        ? idMesSuscripcion(subId, periodo)
+        : (sp.get('ticket_id') || sp.get('project_id') || undefined),
       stageId: sp.get('stage_id') || undefined,
       linkToken: sp.get('link'),
     });
@@ -37,8 +43,17 @@ export async function GET(req: NextRequest) {
     // 2026-08-25 («dejemos una sola cuenta de facturación por cliente»).
     let facturacion: any = null;
     const esTicket = auth.sourceType === 'ticket';
+    const esSuscripcion = auth.sourceType === 'subscription';
+    const idPropio = esSuscripcion ? partesMesSuscripcion(auth.sourceId).subId : auth.sourceId;
     const { rows: [proj] } = await pool.query(
-      esTicket
+      esSuscripcion
+        ? `SELECT s.client_id, s.title, s.notes AS description, s.status,
+                  COALESCE(c.email, s.client_email_sri) AS client_email,
+                  COALESCE(c.name, s.client_name_sri) AS client_name
+             FROM gcc_world.subscriptions s
+             LEFT JOIN gcc_world.clients c ON c.id = s.client_id
+            WHERE s.id = ($1)::bigint`
+        : esTicket
         ? `SELECT t.client_id, t.title, t.description, t.status, c.email AS client_email, c.name AS client_name
              FROM gcc_world.tickets t
              LEFT JOIN gcc_world.clients c ON c.id = t.client_id
@@ -47,7 +62,7 @@ export async function GET(req: NextRequest) {
              FROM gcc_world.projects p
              LEFT JOIN gcc_world.clients c ON c.id = p.client_id
             WHERE p.id = ($1)::bigint`,
-      [auth.sourceId],
+      [idPropio],
     );
     if (proj?.client_id) {
       const b = await getBillingForClient(proj.client_id);
@@ -66,8 +81,8 @@ export async function GET(req: NextRequest) {
     // El plan completo, para que el cliente vea DÓNDE encaja lo que va a pagar. Pagar una
     // etapa suelta sin ver el resto es firmar a ciegas; es la misma información que ya le
     // enseña la página pública del proyecto, y por las mismas razones.
-    // Un ticket no tiene plan que enseñar: se cobra entero, así que la lista va vacía.
-    const { rows: etapasPlan } = esTicket ? { rows: [] as any[] } : await pool.query(
+    // Ni un ticket ni una suscripción tienen plan que enseñar: se cobran enteros.
+    const { rows: etapasPlan } = (esTicket || esSuscripcion) ? { rows: [] as any[] } : await pool.query(
       `SELECT e.id, e.name, e.amount, (e.invoice_id IS NOT NULL) AS facturada
          FROM gcc_world.project_stages e
          LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
@@ -78,7 +93,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       proyecto: {
-        id: Number(auth.sourceId),
+        id: Number(idPropio),
         tipo: auth.sourceType,
         titulo: etapa.title,
         // ⚠️ Nada de requerimientos, miembros ni costos internos: es la misma línea que

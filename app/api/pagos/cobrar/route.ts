@@ -12,7 +12,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
-import { cotizarCobro, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
+import { cotizarCobro, idMesSuscripcion, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { pool } from '@/lib/db';
 
@@ -73,8 +73,10 @@ export async function POST(req: NextRequest) {
   try {
     const cuerpo = await req.json();
     const auth = await autorizarCobro({
-      sourceType: cuerpo.tipo || (cuerpo.ticket_id ? 'ticket' : 'project'),
-      sourceId: cuerpo.ticket_id ?? cuerpo.project_id,
+      sourceType: cuerpo.tipo || (cuerpo.sub_id ? 'subscription' : cuerpo.ticket_id ? 'ticket' : 'project'),
+      sourceId: cuerpo.sub_id && cuerpo.periodo
+        ? idMesSuscripcion(cuerpo.sub_id, String(cuerpo.periodo))
+        : (cuerpo.ticket_id ?? cuerpo.project_id),
       stageId: cuerpo.stage_id,
       linkToken: cuerpo.link || null,
     });

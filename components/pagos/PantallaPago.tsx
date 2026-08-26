@@ -28,14 +28,16 @@ import FormularioPago, { type DatosPago } from '@/components/pagos/FormularioPag
 import { SITIO } from '@/lib/sitio/contenido';
 import { fmt2 } from '@/lib/format';
 
-export default function PantallaPago({ consulta, link, sourceId, stageId, sourceType }: {
+export default function PantallaPago({ consulta, link, sourceId, stageId, sourceType, periodo }: {
   /** El querystring con el que se le pregunta al servidor qué hay que cobrar. */
   consulta: string;
   /** Token del enlace (canal 3). Sin él, el cobro va con la sesión (canal 2). */
   link?: string;
   sourceId?: string;
   stageId?: number | null;
-  sourceType?: 'project' | 'ticket';
+  sourceType?: 'project' | 'ticket' | 'subscription';
+  /** El mes que se paga, en suscripciones (`AAAA-MM`). */
+  periodo?: string;
 }) {
   const [datos, setDatos] = useState<DatosPago | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -105,7 +107,9 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
           <Receipt className="w-4 h-4 text-[var(--violeta-txt)]" />
           {hayPlan
             ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
-            : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
+            : proyecto.tipo === 'subscription'
+              ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
+              : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
         </p>
       </header>
 
@@ -155,6 +159,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
             sourceType={sourceType}
             sourceId={sourceId}
             stageId={stageId ?? undefined}
+            periodo={periodo}
           />
         </Tarjeta>
       </div>

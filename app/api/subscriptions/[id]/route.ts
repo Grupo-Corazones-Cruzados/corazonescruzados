@@ -47,11 +47,24 @@ async function loadDetail(id: number) {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || (user.role !== 'admin' && user.role !== 'member')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     await ensureSubscriptionTables();
     const { id } = await params;
+
+    // El cliente ve el detalle de LO SUYO —necesita los meses para poder pagarlos—, y de
+    // nada más. Se comprueba contra la base, no contra lo que diga la pantalla.
+    if (user.role !== 'admin' && user.role !== 'member') {
+      const { rows } = await pool.query(
+        `SELECT 1 FROM gcc_world.subscriptions s
+           LEFT JOIN gcc_world.clients c ON c.id = s.client_id
+          WHERE s.id = ($2)::bigint
+            AND (LOWER(s.client_email_sri) = LOWER($1) OR LOWER(c.email) = LOWER($1))
+          LIMIT 1`,
+        [String(user.email), id],
+      );
+      if (rows.length === 0) return NextResponse.json({ error: 'Esta suscripción no es tuya.' }, { status: 403 });
+    }
+
     const detail = await loadDetail(Number(id));
     if (!detail) return NextResponse.json({ error: 'Suscripción no encontrada' }, { status: 404 });
     return NextResponse.json({ data: detail });

@@ -21,8 +21,9 @@
  */
 import { pool } from '@/lib/db';
 import { getProjectBilling, getTicketPayments } from '@/lib/payments';
-import { createManualInvoice, createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { addInvoiceIncomeToFinance } from '@/lib/finance';
+import { computePeriods } from '@/lib/subscriptions';
+import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
+import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
 import { calcularRecargo, tarifaDe, CONCEPTO_RECARGO } from './comision';
@@ -39,8 +40,29 @@ export type DatosFacturacion = {
   address?: string | null;
 };
 
-/** Los dos orígenes que se pueden cobrar en línea hoy. */
-export type OrigenCobro = 'project' | 'ticket';
+/** Los orígenes que se pueden cobrar en línea hoy. */
+export type OrigenCobro = 'project' | 'ticket' | 'subscription';
+
+/**
+ * El identificador de un mes de suscripción: `<idSuscripción>-<YYYY-MM>`.
+ *
+ * ⚠️ NO es una invención de este archivo: es **exactamente** el `source_id` que ya usan las
+ * facturas de suscripción (`createManualInvoiceFromSubscription`) y el registro de ingresos
+ * (`addSubscriptionIncomeToFinance`) desde 2026-06-11. Reutilizarlo hace que el cobro, la
+ * factura y el ingreso de un mes hablen del mismo identificador — y de paso, que el candado
+ * `idx_payment_intents_origen_pagado` proteja **cada mes por separado** sin migración nueva.
+ */
+export function idMesSuscripcion(subId: string | number, periodo: string): string {
+  if (!/^\d{4}-\d{2}$/.test(periodo)) throw new Error('Periodo inválido (se espera AAAA-MM).');
+  return `${subId}-${periodo}`;
+}
+
+/** Descompone `<idSuscripción>-<YYYY-MM>`. Lo necesita el enlace de pago, que solo guarda el id. */
+export function partesMesSuscripcion(sourceId: string): { subId: string; periodo: string } {
+  const m = /^(\d+)-(\d{4}-\d{2})$/.exec(sourceId);
+  if (!m) throw new Error('Identificador de suscripción inválido.');
+  return { subId: m[1], periodo: m[2] };
+}
 
 /**
  * Lo que se va a cobrar, venga de un proyecto o de un ticket.
@@ -158,6 +180,57 @@ export async function cotizarTicket(
  * «esto ya está pagado» en vez de «error de restricción única».
  */
 /**
+ * Qué cuesta pagar UN MES de una suscripción.
+ *
+ * ⚠️ El `monthly_cost` de una suscripción es el **precio final, con su IVA ya dentro** (así
+ * se guarda desde 2026-06-11: el emisor lo desglosa hacia atrás al facturar). Por eso el
+ * neto de este cobro es el `monthly_cost` tal cual — sumarle IVA aquí lo cobraría dos veces.
+ *
+ * Solo se cobran meses que ya tocan: `computePeriods` los calcula desde la fecha de inicio,
+ * y pedir uno futuro es un error, no un adelanto.
+ */
+export async function cotizarSuscripcion(
+  subId: string | number,
+  periodo: string,
+  proveedor: string,
+): Promise<Cobrable> {
+  const { rows: [sub] } = await pool.query(
+    `SELECT id, title, monthly_cost, start_date, status FROM gcc_world.subscriptions WHERE id = $1`,
+    [subId],
+  );
+  if (!sub) throw new Error('La suscripción no existe.');
+  if (sub.status === 'cancelled') throw new Error('Esta suscripción está cancelada.');
+
+  const periodos = computePeriods(sub.start_date, []);
+  const mes = periodos.find(p => p.period === periodo);
+  if (!mes) throw new Error('Ese mes todavía no corresponde a esta suscripción.');
+
+  const { rows: [yaMarcado] } = await pool.query(
+    `SELECT paid, invoice_id FROM gcc_world.subscription_payments
+      WHERE subscription_id = $1 AND period = $2`,
+    [subId, `${periodo}-01`],
+  );
+  if (yaMarcado?.paid) throw new Error(`El mes de ${mes.label} ya está pagado.`);
+
+  const sourceId = idMesSuscripcion(sub.id, periodo);
+  const yaPagado = await cobroPagadoDeOrigen('subscription', sourceId);
+  if (yaPagado) throw new Error(`El mes de ${mes.label} ya fue pagado en línea.`);
+
+  const neto = Number(sub.monthly_cost) || 0;
+  if (!(neto > 0)) throw new Error('Esta suscripción no tiene importe mensual.');
+
+  const { recargo, total } = calcularRecargo(neto, tarifaDe(proveedor));
+  return {
+    sourceType: 'subscription',
+    sourceId,
+    title: sub.title,
+    stageId: null,
+    conceptName: `${sub.title} — ${mes.label}`,
+    neto, recargo, total, proveedor,
+  };
+}
+
+/**
  * LA PUERTA ÚNICA para cotizar cualquier cosa cobrable.
  *
  * Los endpoints no eligen entre `cotizarEtapa` y `cotizarTicket`: piden «cotiza esto» y el
@@ -166,9 +239,13 @@ export async function cotizarTicket(
  * dejar a medias cuando entre el tercero (productos, automatizaciones).
  */
 export async function cotizarCobro(
-  destino: { sourceType: 'project' | 'ticket'; sourceId: string; stageId: number | null },
+  destino: { sourceType: OrigenCobro; sourceId: string; stageId: number | null },
   proveedor: string,
 ): Promise<Cobrable> {
+  if (destino.sourceType === 'subscription') {
+    const { subId, periodo } = partesMesSuscripcion(destino.sourceId);
+    return cotizarSuscripcion(subId, periodo, proveedor);
+  }
   if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor);
   if (destino.stageId == null) throw new Error('Falta la etapa del proyecto.');
   return cotizarEtapa(destino.sourceId, destino.stageId, proveedor);
@@ -399,10 +476,22 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   const sourceId = String(intento.source_id);
   const stageId = intento.stage_id != null ? Number(intento.stage_id) : null;
   const esTicket = sourceType === 'ticket';
+  const esSuscripcion = sourceType === 'subscription';
 
-  let titulo = esTicket ? 'Ticket' : 'Proyecto';
+  let titulo = esTicket ? 'Ticket' : esSuscripcion ? 'Suscripción' : 'Proyecto';
   let nombreEtapa = titulo;
-  if (esTicket) {
+  let subId = '';
+  let periodo = '';
+  let ivaSuscripcion = 0;
+  if (esSuscripcion) {
+    ({ subId, periodo } = partesMesSuscripcion(sourceId));
+    const { rows: [sub] } = await pool.query(
+      `SELECT title, iva_rate, start_date FROM gcc_world.subscriptions WHERE id = $1`, [subId]);
+    titulo = sub?.title || `Suscripción ${subId}`;
+    ivaSuscripcion = Number(sub?.iva_rate) || 0;
+    const mes = computePeriods(sub?.start_date, []).find(p => p.period === periodo);
+    nombreEtapa = `${titulo} — ${mes?.label || periodo}`;
+  } else if (esTicket) {
     const { rows: [t] } = await pool.query(`SELECT title FROM gcc_world.tickets WHERE id = $1`, [sourceId]);
     titulo = t?.title || `Ticket ${sourceId}`;
     nombreEtapa = titulo;
@@ -413,14 +502,24 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     nombreEtapa = etapa?.name || `Etapa ${stageId}`;
   }
 
+  // ⚠️ EL IMPORTE DE UNA SUSCRIPCIÓN LLEVA SU IVA DENTRO. `monthly_cost` es el precio final
+  // (así se guarda desde 2026-06-11), así que la línea va con la base desglosada hacia atrás
+  // — exactamente como lo hace «Marcar pagado». Si se pasara el total como base, el
+  // comprobante saldría por más de lo cobrado. Con `iva_rate = 0`, que es lo que usa GCC
+  // hoy, base y total coinciden.
+  const baseSuscripcion = ivaSuscripcion > 0 ? neto / (1 + ivaSuscripcion / 100) : neto;
+
   const items = [
-    // GCC factura con tarifa 0 % («no cobra IVA por ahora»), así que ambas líneas van a 0.
-    // En un ticket el concepto es el propio ticket; en un proyecto, «proyecto — etapa».
     {
-      description: esTicket ? titulo : `${titulo} — ${nombreEtapa}`,
-      quantity: 1, unitPrice: neto, ivaRate: 0, discount: 0,
+      description: esSuscripcion ? nombreEtapa : esTicket ? titulo : `${titulo} — ${nombreEtapa}`,
+      quantity: 1,
+      unitPrice: esSuscripcion ? baseSuscripcion : neto,
+      ivaRate: esSuscripcion ? ivaSuscripcion : 0,
+      discount: 0,
     },
   ];
+  // El recargo de la pasarela va SIEMPRE a tarifa 0: es un gasto de procesamiento, no parte
+  // del servicio suscrito, y no hereda el IVA de lo que se está cobrando.
   if (recargo > 0) {
     items.push({ description: CONCEPTO_RECARGO, quantity: 1, unitPrice: recargo, ivaRate: 0, discount: 0 });
   }
@@ -434,7 +533,23 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   // por `source_type`/`source_id` —que es lo que hace que anular la factura devuelva el
   // ticket a facturable— y el de proyecto marca la etapa del plan. Emitir un ticket con el
   // emisor de proyectos dejaría la factura sin origen y rompería la anulación.
-  const { invoiceId } = esTicket
+  const { invoiceId } = esSuscripcion
+    ? await createManualInvoiceFromSubscription({
+        subscriptionId: subId,
+        period: periodo,
+        title: titulo,
+        clientIdType: facturacion.id_type,
+        clientName: facturacion.name,
+        clientRuc: facturacion.ruc,
+        clientEmail: facturacion.email,
+        clientPhone: facturacion.phone || '',
+        clientAddress: facturacion.address || '',
+        paymentCode,
+        invoiceItems: items,
+        currency: 'USD',
+        exchangeRate: 1,
+      })
+    : esTicket
     ? await createManualInvoiceFromTicket({
         ticketId: sourceId,
         ticketTitle: titulo,
@@ -479,10 +594,12 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   // que hace el canal manual. Una cuenta por cliente: Fernando lo confirmó el 2026-08-25.
   try {
     const { rows: [proj] } = await pool.query(
-      esTicket
+      esSuscripcion
+        ? `SELECT client_id FROM gcc_world.subscriptions WHERE id = ($1)::bigint`
+        : esTicket
         ? `SELECT client_id FROM gcc_world.tickets  WHERE id = ($1)::bigint`
         : `SELECT client_id FROM gcc_world.projects WHERE id = ($1)::bigint`,
-      [sourceId],
+      [esSuscripcion ? subId : sourceId],
     );
     if (proj?.client_id) {
       await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [proj.client_id, invoiceId]);
@@ -505,11 +622,42 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     );
   }
 
+  // ⚠️ UNA SUSCRIPCIÓN TIENE QUE QUEDAR MARCADA COMO PAGADA EN SU PROPIA TABLA.
+  //
+  // El resto del módulo —el aviso de vencimiento, el color del mes, el «desmarcar»— no mira
+  // `payment_intents`: mira `subscription_payments`. Sin esta fila, el cliente pagaría y su
+  // mes seguiría saliendo en rojo como impago. Es la misma escritura que hace «Marcar
+  // pagado», y por eso el `ON CONFLICT` respeta la clave (subscription_id, period).
+  if (esSuscripcion && sri?.authorized) {
+    try {
+      await pool.query(
+        `INSERT INTO gcc_world.subscription_payments
+           (subscription_id, period, paid, paid_at, paid_by, invoice_id, amount)
+         VALUES ($1, $2, true, NOW(), $3, $4, $5)
+         ON CONFLICT (subscription_id, period)
+         DO UPDATE SET paid = true, paid_at = NOW(), paid_by = EXCLUDED.paid_by,
+                       invoice_id = EXCLUDED.invoice_id, amount = EXCLUDED.amount`,
+        [subId, `${periodo}-01`, facturacion.email, invoiceId, neto],
+      );
+    } catch (e: any) {
+      console.error(`[pagos] el mes ${periodo} se cobró pero no se marcó pagado:`, e.message);
+      await pool.query(
+        `UPDATE gcc_world.payment_intents SET failure_reason = $2 WHERE id = $1`,
+        [intento.id, `Cobrado y facturado, pero el mes no quedó marcado: ${e.message}`],
+      ).catch(() => {});
+    }
+  }
+
   // El ingreso se registra POR FACTURA, nunca por proyecto: con facturación parcial,
   // apuntar el costo entero haría que las etapas siguientes no sumaran nada, porque el
-  // registro es único por origen.
+  // registro es único por origen. La suscripción es la excepción: usa SU propio origen
+  // (`subscription`/`<id>-<periodo>`), que es el que sabe revertir la anulación de factura.
   try {
-    await addInvoiceIncomeToFinance(String(invoiceId), `${nombreEtapa} — ${titulo}`, Number(intento.charge_amount) || 0);
+    if (esSuscripcion) {
+      await addSubscriptionIncomeToFinance(sourceId, nombreEtapa, Number(intento.charge_amount) || 0, new Date());
+    } else {
+      await addInvoiceIncomeToFinance(String(invoiceId), `${nombreEtapa} — ${titulo}`, Number(intento.charge_amount) || 0);
+    }
   } catch (e: any) {
     console.error('[pagos] no se pudo registrar el ingreso:', e.message);
   }
@@ -542,7 +690,9 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
         authorization: inv?.authorization_number || null,
         total: Number(inv?.total) || Number(intento.charge_amount) || 0,
         pdf,
-        projectUrl: esTicket ? `${base}/ticket/${sourceId}` : `${base}/proyecto/${sourceId}`,
+        projectUrl: esSuscripcion ? null
+          : esTicket ? `${base}/ticket/${sourceId}`
+          : `${base}/proyecto/${sourceId}`,
       });
     } catch (e: any) {
       console.error(`[pagos] la factura ${invoiceId} se emitió pero el correo no salió:`, e.message);

@@ -275,6 +275,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔁 SUSCRIPCIONES: EL CLIENTE VE LAS SUYAS Y PAGA SU MES (2026-08-26).** Tercer origen de
+  la pasarela, sin migración nueva.
+  - **🪤 EL CLIENTE VEÍA «SUSCRIPCIONES» EN EL MENÚ Y RECIBÍA UN 403** — y no es de ahora: el
+    sidebar lo ofrecía a `client` desde siempre y el endpoint solo admitía admin y member.
+    **Un enlace que lleva a un error es peor que no tener el enlace.** Ahora entra, con el
+    filtro **en el servidor**, y se le quitó todo lo que no le toca: «Nueva suscripción»,
+    «Marcar pagado», «Desmarcar», y el Estado pasa a insignia de solo lectura.
+  - **🧱 El mes se identifica como `<idSuscripción>-<AAAA-MM>`, que YA existía** (lo usan la
+    factura y el ingreso desde 2026-06-11). Reutilizarlo hace que cobro, factura e ingreso
+    hablen del mismo id **y** que el candado por origen proteja cada mes — sin migración.
+  - **⚠️ HAY QUE MARCAR EL MES EN `subscription_payments`.** El aviso de vencimiento, el color
+    y el contador «2/3» miran esa tabla, no `payment_intents`: sin esa fila el cliente paga y
+    su mes **sigue en rojo**.
+  - **⚠️ `monthly_cost` LLEVA EL IVA DENTRO** (así se guarda desde 2026-06-11): se desglosa
+    hacia atrás al facturar. Pasarlo como base emitiría por más de lo cobrado — un fallo que
+    con `iva_rate = 0` habría dormido hasta la primera suscripción con IVA. El **recargo de
+    la pasarela va siempre a tarifa 0**: es procesamiento, no el servicio suscrito.
+  - **🪤 UN `replace` DESCUIDADO ME ABRIÓ UN AGUJERO DE SEGURIDAD.** El bloque de
+    autorización aparecía dos veces en el archivo y Python reemplaza **todas** las
+    ocurrencias: durante unos minutos **cualquiera podía crear suscripciones**. Lo cazó una
+    auditoría deliberada —contar los `export async function` y los checks que quedaban en
+    pie— no la suerte. **Un `replace` sobre autorización va con `count=1`, y después se
+    cuentan los permisos.**
+  - **Verificado con sesión de cliente real:** ve 1 de 2 suscripciones, 403 en la ajena,
+    cotiza 5,00 + 0,31 = 5,31, y rechaza el mes ya pagado y el futuro.
 - **🎫 EL COBRO EN LÍNEA LLEGA A LOS TICKETS Y AL CLIENTE CON SESIÓN (2026-08-26, migración
   054).** Ya son los tres canales sobre los DOS orígenes.
   - **⭐ LOS CLIENTES EXTRANJEROS NO PODÍAN PAGAR.** Existe el tipo de identificación **`08`

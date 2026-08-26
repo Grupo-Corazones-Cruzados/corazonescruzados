@@ -21,12 +21,16 @@ import PantallaPago from '@/components/pagos/PantallaPago';
 
 function Contenido() {
   const sp = useSearchParams();
-  const tipo = sp.get('tipo') === 'ticket' ? 'ticket' : 'project';
+  const bruto = sp.get('tipo');
+  const tipo: 'project' | 'ticket' | 'subscription' =
+    bruto === 'ticket' ? 'ticket' : bruto === 'subscription' ? 'subscription' : 'project';
   const id = sp.get('id') || '';
   const etapa = sp.get('etapa');
+  const periodo = sp.get('periodo') || '';
 
-  const consulta = tipo === 'ticket'
-    ? `ticket_id=${encodeURIComponent(id)}`
+  const consulta =
+    tipo === 'subscription' ? `sub_id=${encodeURIComponent(id)}&periodo=${encodeURIComponent(periodo)}`
+    : tipo === 'ticket' ? `ticket_id=${encodeURIComponent(id)}`
     : `project_id=${encodeURIComponent(id)}&stage_id=${encodeURIComponent(etapa || '')}`;
 
   return (
@@ -35,6 +39,7 @@ function Contenido() {
       sourceType={tipo}
       sourceId={id}
       stageId={etapa ? Number(etapa) : null}
+      periodo={periodo || undefined}
     />
   );
 }
