@@ -7800,3 +7800,19 @@ si no una cédula; si escogió otro país, identificación externa»*.
 - **Medido:** 15/15 en el módulo puro · 7/7 contra el servidor real (RUC→04, cédula→05,
   exterior→08, «1001»→400, 9 dígitos→400, sin país→400, colar 07→400) · y en la pantalla, la
   etiqueta cambia sola al escribir y al cambiar de país.
+
+### 🎨 P162 — La pantalla de pago se ensancha, y el hueco se vuelve útil (2026-08-26)
+Fernando pidió dos cosas: quitar el texto que explicaba el formato del RUC —*«es
+innecesario»*— y que la página **ocupe todo el espacio disponible**.
+- **El texto sobraba y él tenía razón:** era enseñarle la norma al cliente **antes de que la
+  necesitara**. Se queda solo lo que aporta —«Se registrará como RUC»—, que aparece **cuando
+  ya escribió algo**. Si se equivoca, el error al enviar se lo explica entonces.
+- **El ancho:** la pantalla usaba el `Contenedor` de lectura (`max-w-6xl`), el del resto del
+  sitio. Pero **esta no es una página que se lea, es una que se rellena**: dos columnas de
+  formulario en 1152 px salen estranguladas. Pasa a `ancho="amplio"` y las columnas a 50/50.
+- **⭐ Y ensanchar destapó lo siguiente:** con el panel derecho mucho más largo, la columna
+  izquierda dejaba **un vacío enorme**. En vez de rellenarlo con algo, se hizo
+  `lg:sticky lg:top-24`: el resumen de lo que se paga **acompaña mientras se rellena el
+  formulario**, que es justo cuando uno quiere volver a mirarlo. El hueco pasa de defecto a
+  función. Comprobado: en 1920 px sigue visible tras desplazarse al fondo; en 390 px no
+  aplica, porque ahí las tarjetas van apiladas.

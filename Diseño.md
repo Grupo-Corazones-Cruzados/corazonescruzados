@@ -784,6 +784,18 @@ caducidad), según la regla de «DÓNDE SE EDITA». Tras generarlo, la misma ven
 el enlace con «Copiar enlace» — porque si el correo falla, el enlace ya es válido igual.
 **El mismo patrón, idéntico, en el detalle del ticket** (2026-08-26).
 
+#### Ancho de la pantalla de pago (2026-08-26)
+
+Usa **`Contenedor ancho="amplio"`** (`max-w-[1560px]`), no el `lectura` del resto del sitio.
+Motivo: no es una página que se lea, es una que se **rellena** — dos columnas de formulario
+dentro de 1152 px salen estranguladas, con los campos partidos y las etiquetas en dos líneas.
+
+- Con el sitio, las dos columnas pasan a **`lg:grid-cols-2`** (antes 1 : 1,15).
+- **La columna izquierda es `lg:sticky lg:top-24`.** El panel derecho es mucho más largo, así
+  que sin eso el resumen de lo que se paga desaparece por arriba **justo cuando conviene
+  mirarlo**, y deja un hueco vacío enorme en pantallas anchas. Solo en `lg`: en móvil las
+  tarjetas van apiladas y el sticky sobra.
+
 #### La pantalla sirve a CUATRO orígenes, y se adapta sola (2026-08-26)
 
 `PantallaPago` cobra etapas de proyecto, tickets, meses de suscripción y altas de producto.
@@ -812,6 +824,9 @@ sola mientras se escribe y al cambiar de país.
   y cuál es su número; traducirlo a un «04» o un «05» es trabajo nuestro.
 - **La etiqueta deducida se enseña mientras escribe**, no al enviar: así ve que el sistema
   entendió su número en vez de descubrirlo cuando el comprobante ya se rechazó.
+- **Y solo se dice algo cuando hay algo que decir.** El texto que explicaba de antemano el
+  formato del RUC se quitó (Fernando, 2026-08-26: *«es innecesario»*): era enseñarle la norma
+  antes de que la necesitara, y si se equivoca el error al enviar ya se la explica.
 - **Ecuador va primero en el selector**, separado del resto por una línea de guiones. Hacer
   bajar cincuenta países hasta la E cada vez es fricción tonta.
 - El texto de ayuda cambia con el país: *«Un RUC termina en 001 y tiene 13 dígitos; una

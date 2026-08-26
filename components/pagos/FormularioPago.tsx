@@ -553,15 +553,14 @@ export default function FormularioPago({
             </label>
             <input id="ruc" className={CAMPO} value={f.ruc} onChange={e => set('ruc', e.target.value)}
               inputMode={esLocal ? 'numeric' : 'text'} autoComplete="off" required />
-            {/* Se le enseña qué se dedujo mientras escribe: así ve que el sistema entendió
-                su número, en vez de descubrirlo cuando el SRI rechace el comprobante. */}
-            <p className="mt-1.5 text-[12.5px] text-[var(--tenue)]">
-              {etiquetaId
-                ? <>Se registrará como <strong className="text-[var(--texto)]">{etiquetaId}</strong></>
-                : esLocal
-                  ? 'Un RUC termina en 001 y tiene 13 dígitos; una cédula, 10.'
-                  : 'Tal como aparece en tu documento.'}
-            </p>
+            {/* Solo se dice algo cuando hay algo que decir: qué se dedujo de lo que escribió.
+                Explicarle de antemano el formato del RUC era enseñarle la norma antes de que
+                la necesitara — y si se equivoca, el error al enviar ya se lo explica. */}
+            {etiquetaId && (
+              <p className="mt-1.5 text-[12.5px] text-[var(--tenue)]">
+                Se registrará como <strong className="text-[var(--texto)]">{etiquetaId}</strong>
+              </p>
+            )}
           </div>
           <div className="sm:col-span-2">
             <label className={ETIQUETA} htmlFor="razon">Nombre o razón social</label>

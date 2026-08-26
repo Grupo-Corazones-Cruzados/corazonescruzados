@@ -53,7 +53,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
 
   if (cargando) {
     return (
-      <Contenedor className="py-24">
+      <Contenedor ancho="amplio" className="py-24">
         <div className="h-6 w-48 rounded bg-[var(--linea)] animate-pulse" />
         <div className="mt-4 h-10 w-2/3 rounded bg-[var(--linea)] animate-pulse" />
         <div className="mt-10 h-64 rounded-xl bg-[var(--linea)]/60 animate-pulse" />
@@ -63,7 +63,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
 
   if (error || !datos) {
     return (
-      <Contenedor className="py-24">
+      <Contenedor ancho="amplio" className="py-24">
         <Tarjeta className="max-w-xl mx-auto text-center">
           <ShieldCheck className="w-8 h-8 mx-auto text-[var(--violeta-txt)]" />
           <h1 className="mt-4 text-[22px] font-semibold text-[var(--texto)]">
@@ -92,7 +92,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   const hayDetalle = (datos.detalle || []).length > 0;
 
   return (
-    <Contenedor className="py-14 sm:py-20">
+    <Contenedor ancho="amplio" className="py-14 sm:py-20">
       {/* ── Encabezado ── */}
       <header className="max-w-3xl">
         <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
@@ -114,14 +114,22 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
         </p>
       </header>
 
-      <div className={`mt-12 grid gap-6 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]' : 'max-w-xl'}`}>
+      {/* Con el contenedor amplio hay sitio de sobra, así que las dos columnas se reparten
+          casi por igual en vez de estrangular la de la izquierda. Sin nada que enseñar a la
+          izquierda se queda a una sola, centrada — una rejilla con media parte vacía se lee
+          como un fallo de carga. */}
+      <div className={`mt-12 grid gap-8 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-2' : 'max-w-xl'}`}>
         {/* ── QUÉ SE ESTÁ PAGANDO ──
             «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
             2026-08-26). Antes solo salía el título, y en un ticket o una suscripción eso deja
             al cliente pagando algo que no reconoce. Cada origen aporta los datos que ÉL
             necesita — nunca costos internos ni reparto del trabajo. */}
         {!hayPlan && hayDetalle && (
-          <Tarjeta>
+          /* Se queda a la vista mientras el cliente rellena el formulario: el panel derecho
+             es mucho más largo, así que sin esto el resumen desaparece por arriba justo
+             cuando conviene poder mirarlo — y deja un hueco vacío enorme en pantallas
+             anchas. Solo en `lg`: en móvil las tarjetas van una debajo de otra. */
+          <Tarjeta className="lg:sticky lg:top-24">
             <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
               <Receipt className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Qué estás pagando
             </h2>
@@ -137,7 +145,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
         )}
         {/* ── El plan completo, para que sepa dónde encaja lo que paga ── */}
         {hayPlan && (
-          <Tarjeta>
+          <Tarjeta className="lg:sticky lg:top-24">
             <div className="flex items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
                 <Layers className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Etapas del proyecto
