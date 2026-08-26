@@ -31,6 +31,14 @@ const DESENLACES: Record<string, Desenlace> = {
     titulo: '¡Pago recibido!',
     cuerpo: 'Gracias. Tu factura electrónica se emite automáticamente y te llega al correo que registraste. Si no la ves en unos minutos, revisa el correo no deseado.',
   },
+  // Solo aparece con PAGOS_EMITIR_FACTURA=0. No es un estado para clientes: es para poder
+  // recorrer el flujo entero sin emitir un comprobante real al SRI.
+  ensayo: {
+    icono: CheckCircle2,
+    color: 'text-[var(--violeta-txt)]',
+    titulo: 'Cobro registrado — modo de ensayo',
+    cuerpo: 'El pago se registró correctamente y el flujo completo funcionó, pero NO se emitió factura electrónica porque la pasarela está en modo de ensayo. Quita PAGOS_EMITIR_FACTURA=0 para cobrar de verdad.',
+  },
   rechazado: {
     icono: XCircle,
     color: 'text-red-600',

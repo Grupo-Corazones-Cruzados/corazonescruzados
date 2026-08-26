@@ -89,7 +89,9 @@ export async function GET(req: NextRequest) {
         r.yaEstaba ? 'ya estaba pagado' : `factura ${r.invoiceId ?? 'pendiente'}${r.error ? ` · ${r.error}` : ''}`);
     }
 
-    return aResultado('pagado', intentId);
+    // En ensayo el cobro se registró pero NO hay factura: decir «te llegará al correo»
+    // sería mentir, y quien está probando necesita ver que la salvaguarda actuó.
+    return aResultado(process.env.PAGOS_EMITIR_FACTURA === '0' ? 'ensayo' : 'pagado', intentId);
   } catch (err: any) {
     // ⚠️ El cliente PUEDE haber pagado aunque esto falle. No se le dice que falló el pago:
     // se le dice que estamos verificando, y queda el registro para revisarlo a mano.

@@ -200,6 +200,29 @@ export async function confirmarPago(
     return { intentId, invoiceId: Number(intento.invoice_id), yaEstaba: true, autorizada: false };
   }
 
+  // ⚠️ MODO ENSAYO — la salvaguarda que separa «probar el cobro» de «emitir un comprobante».
+  //
+  // Con la aplicación de PayPhone en ambiente de PRUEBAS, sus pagos son ficticios… pero la
+  // factura la emite NUESTRO sistema, y esa sale de verdad, con su numeración y su
+  // autorización del SRI. Una factura autorizada no se borra: se anula con nota de crédito.
+  // Es decir, probar el flujo completo sin esta salvaguarda ensucia la numeración fiscal
+  // real, y cada ensayo cuesta un trámite.
+  //
+  // Con `PAGOS_EMITIR_FACTURA=0` el cobro se registra entero —queda `paid`, con su
+  // referencia y su importe— y **solo se omite la emisión**. Así se puede recorrer el
+  // camino de punta a punta y comprobar que todo cuadra, sin tocar el SRI.
+  if (process.env.PAGOS_EMITIR_FACTURA === '0') {
+    await pool.query(
+      `UPDATE gcc_world.payment_intents
+          SET failure_reason = 'ENSAYO: cobro registrado, factura NO emitida (PAGOS_EMITIR_FACTURA=0).',
+              updated_at = NOW()
+        WHERE id = $1`,
+      [intentId],
+    );
+    console.warn(`[pagos] ENSAYO: el cobro ${intentId} quedó pagado SIN emitir factura.`);
+    return { intentId, invoiceId: null, yaEstaba: false, autorizada: false };
+  }
+
   try {
     const resultado = await emitirFacturaDelCobro(intento, datos.esDebito === true);
     return { intentId, invoiceId: resultado.invoiceId, yaEstaba: false, autorizada: resultado.autorizada };
