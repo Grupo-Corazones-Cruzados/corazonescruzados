@@ -603,6 +603,52 @@ export async function sendPaymentLinkEmail(params: {
   });
 }
 
+/**
+ * LA FACTURA QUE SE EMITIÓ SOLA, ENVIADA AL CLIENTE (pasarela de pago, 2026-08-25).
+ *
+ * La pantalla de pago le promete al cliente que «la factura te llega al correo en cuanto el
+ * pago se confirme». Ese envío **no existía**: el cobro emitía el comprobante y ahí se
+ * acababa. Se descubrió en el primer cobro real —el de 1 $— revisando qué había pasado de
+ * verdad, no leyendo el código.
+ *
+ * ⚠️ Es distinto del correo de `/api/invoices/manual`: aquel arma tablas por proyecto y
+ * enlaces múltiples porque una factura manual puede cubrir varios. Aquí siempre es **una
+ * etapa de un proyecto**, así que el mensaje dice exactamente eso y nada más.
+ */
+export async function sendPaidInvoiceEmail(params: {
+  email: string;
+  projectTitle: string;
+  stageName: string;
+  invoiceNumber: string;
+  authorization: string | null;
+  total: number;
+  pdf?: Buffer | null;
+  projectUrl?: string | null;
+}) {
+  const dinero = `$${Number(params.total).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const html = emailShell(
+    emailBadge('PAGO RECIBIDO', CORP.success) +
+    emailHeading('¡Gracias por tu pago!', escapeHtml(params.projectTitle)) +
+    emailParagraph(`Registramos tu pago de ${accentStrong(dinero)} por ${accentStrong(escapeHtml(params.stageName))}. Adjuntamos tu factura electrónica en PDF.`) +
+    emailInfoBox('FACTURA', escapeHtml(params.invoiceNumber),
+      params.authorization ? `Autorización SRI: ${escapeHtml(params.authorization)}` : undefined) +
+    (params.projectUrl ? emailButton(params.projectUrl, 'Ver el proyecto') : '') +
+    emailNote('Este documento fue generado electrónicamente y es válido sin firma ni sello, según la normativa del SRI de Ecuador.'),
+  );
+
+  return sendViaGmail({
+    from: FROM_EMAIL,
+    to: params.email,
+    bcc: 'lfgonzalezm0@grupocc.org',
+    subject: `Factura ${params.invoiceNumber} — ${params.projectTitle}`,
+    html,
+    ...(params.pdf
+      ? { attachments: [{ filename: `Factura-${params.invoiceNumber}.pdf`, content: params.pdf, contentType: 'application/pdf' }] }
+      : {}),
+  });
+}
+
 /* ── Helpers de diseño reusables para correos construidos en otras rutas
  *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
  *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */

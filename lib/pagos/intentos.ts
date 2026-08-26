@@ -24,6 +24,7 @@ import { getProjectBilling } from '@/lib/payments';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
+import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
 import { calcularRecargo, tarifaDe, CONCEPTO_RECARGO } from './comision';
 import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
 
@@ -111,6 +112,38 @@ export async function crearIntento(opts: {
 
   const yaPagada = await cobroPagadoDeEtapa(etapa.stageId);
   if (yaPagada) throw new Error('Esta etapa ya fue pagada.');
+
+  // ⚠️ SE REUTILIZA EL INTENTO VIVO EN VEZ DE APILAR OTRO.
+  //
+  // Corregir un dato y volver a pulsar «Continuar al pago» es lo más normal del mundo: en el
+  // primer cobro real, Fernando empezó con su cédula, cambió a Consumidor Final y volvió a
+  // pulsar. Sin esto, cada intento deja una fila más en `processing` que nunca se cierra, y
+  // el histórico de cobros acaba lleno de fantasmas que hay que interpretar cada vez que se
+  // audita un pago.
+  //
+  // Solo se reutiliza el que **todavía no ha llegado a la pasarela** (`provider_reference IS
+  // NULL`): en cuanto la pasarela conoce una referencia, ese intento es suyo y no se toca.
+  const { rows: [vivo] } = await pool.query(
+    `UPDATE gcc_world.payment_intents
+        SET billing_snapshot = $3, payer_email = $4, net_amount = $5, fee_amount = $6,
+            charge_amount = $7, provider = $8, channel = $9, status = 'pending',
+            provider_status = NULL, failure_reason = NULL, updated_at = NOW()
+      WHERE id = (
+        SELECT id FROM gcc_world.payment_intents
+         WHERE stage_id = $1 AND source_id = $2
+           AND status IN ('pending','processing')
+           AND provider_reference IS NULL
+         ORDER BY id DESC LIMIT 1
+      )
+      RETURNING id`,
+    [
+      etapa.stageId, String(etapa.projectId), JSON.stringify(facturacion), payerEmail,
+      etapa.neto, etapa.recargo, etapa.total, etapa.proveedor, canal,
+    ],
+  );
+  if (vivo) {
+    return { id: Number(vivo.id), total: etapa.total, neto: etapa.neto, recargo: etapa.recargo };
+  }
 
   const { rows: [fila] } = await pool.query(
     `INSERT INTO gcc_world.payment_intents
@@ -336,6 +369,47 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     await addInvoiceIncomeToFinance(String(invoiceId), `${nombreEtapa} — ${titulo}`, Number(intento.charge_amount) || 0);
   } catch (e: any) {
     console.error('[pagos] no se pudo registrar el ingreso:', e.message);
+  }
+
+  // ⚠️ Y SE LE MANDA LA FACTURA, porque la pantalla se lo prometió.
+  //
+  // «La factura electrónica se emite con estos datos y te llega al correo en cuanto el pago
+  // se confirme» — eso dice el formulario de pago. Este envío faltaba, y el hueco se vio en
+  // el PRIMER cobro real: el comprobante se emitió y se autorizó, pero nadie se lo mandó al
+  // cliente. Una promesa en pantalla es parte del trabajo, no decoración.
+  //
+  // Va en su propio `try`: si el correo falla, el cobro y la factura siguen siendo válidos.
+  // Lo que no se puede es callarlo, así que queda en el registro.
+  if (sri?.authorized) {
+    try {
+      const { rows: [inv] } = await pool.query(
+        `SELECT invoice_number, authorization_number, total, pdf_data
+           FROM gcc_world.invoices WHERE id = $1`,
+        [invoiceId],
+      );
+      const pdf = inv?.pdf_data
+        ? (Buffer.isBuffer(inv.pdf_data) ? inv.pdf_data : Buffer.from(inv.pdf_data))
+        : null;
+      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org';
+      await sendPaidInvoiceEmail({
+        email: facturacion.email,
+        projectTitle: titulo,
+        stageName: nombreEtapa,
+        invoiceNumber: inv?.invoice_number || `#${invoiceId}`,
+        authorization: inv?.authorization_number || null,
+        total: Number(inv?.total) || Number(intento.charge_amount) || 0,
+        pdf,
+        projectUrl: `${base}/proyecto/${projectId}`,
+      });
+    } catch (e: any) {
+      console.error(`[pagos] la factura ${invoiceId} se emitió pero el correo no salió:`, e.message);
+      await pool.query(
+        `UPDATE gcc_world.payment_intents
+            SET failure_reason = 'Factura emitida, pero el correo al cliente no salió: ' || $2
+          WHERE id = $1`,
+        [intento.id, e.message],
+      ).catch(() => {});
+    }
   }
 
   return { invoiceId, autorizada: Boolean(sri?.authorized) };
