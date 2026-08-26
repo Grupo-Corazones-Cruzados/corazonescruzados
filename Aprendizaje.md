@@ -7585,3 +7585,78 @@ Con una sesión de cliente real (PETER TOURS S.A.), contra la base de producció
 - Botones: `Pagar` sí; `Nueva suscripción`, `Marcar pagado` y `Desmarcar`, **no**.
 - 14/14 en el recargo · **15/15 candados** · `tsc` y `next build` limpios · **0 intentos
   abiertos** tras la revisión.
+
+---
+
+## Octava pasada (2026-08-26) — productos · ✅ · automatizaciones ⏸
+
+### ⏸ P149 — «Automatizaciones» significaba dos cosas, y preguntar costó menos que construir
+Fernando pidió cobrar «productos, proyectos, u automatizaciones». Al ir a construirlo, esa
+palabra apuntaba a **dos sitios distintos** del sistema:
+1. El módulo `/dashboard/automatizaciones` — flujos de email masivo, WhatsApp y agente IA.
+   Son herramientas internas y **no tienen precio en ninguna tabla**.
+2. El talento «Automatización de procesos» — el trabajo que se le vende a un cliente, que
+   entra como **proyecto** y por tanto **ya se cobra** desde la primera pasada.
+- Si era la primera, había que inventar un modelo de precio (¿mensual?, ¿por envío?, ¿por
+  conversación del agente?) — **una decisión de negocio que no se deduce del código**.
+- Se preguntó y Fernando lo dejó **pendiente**. Construir la lectura equivocada habría
+  costado una tarde y habría que tirarla.
+- **La señal para preguntar:** la ambigüedad no estaba en el encargo, estaba **en el
+  sistema** — la misma palabra nombraba dos cosas. Eso solo se ve investigando primero.
+
+### 🧱 P150 — Comprar un producto es CONTRATAR, no pagar un pedido
+Los productos del grupo se venden por mensualidad (5 $/mes). Fernando eligió que la compra
+**cree la suscripción y cobre el primer mes**, no que cobre un pedido suelto — y es lo
+coherente: el mes 2 de un pedido único no lo cobraría nadie.
+- **El camino de `orders` NO se toca.** Sigue ahí para lo que se compra una vez y necesita
+  que un miembro lo confirme; solo los productos con `es_suscripcion` van a la pasarela.
+- **La suscripción nace CUANDO ENTRA EL DINERO**, dentro de `emitirFacturaDelCobro`, no al
+  abrir la pantalla de pago. Crearla antes llenaría el módulo de suscripciones fantasma de
+  gente que abandonó a medias — la misma regla que ya rige para la factura.
+- Y desde ese punto el cobro **es** el de una suscripción: mismo emisor, mismo marcado del
+  mes, misma reversión al anular. Una bandera (`esSuscripcion = true`) en vez de un camino
+  paralelo.
+
+### ⚠️ P151 — El identificador de un producto lleva al COMPRADOR dentro
+Los otros tres orígenes son de un solo cliente, así que basta su id. **Un producto lo compran
+muchos**: con `source_id = <idProducto>`, el candado `idx_payment_intents_origen_pagado`
+habría dejado que **el primer comprador bloqueara a todos los demás**. Por eso el id es
+`p<idProducto>-u<idUsuario>` — cada uno tiene el suyo, y nadie contrata dos veces lo mismo.
+- **Y ese id se compone en el SERVIDOR, con la sesión.** El endpoint recibe el producto
+  «pelado» y `autorizarCobro` le pega el comprador. Aceptar el id completo de fuera dejaría
+  pagar «en nombre de otro» y saltarse el candado.
+
+### 🔎 P152 — En un producto el comprador puede no ser cliente todavía
+Es la diferencia con los otros tres orígenes: quien contrata desde el marketplace **puede no
+existir aún** como cliente de facturación. Así que el formulario sale **vacío** y él escribe
+sus datos; solo se prellena si resulta que ya tenía cuenta, buscándola por su correo.
+
+### Lo medido al cerrar
+Con sesión de cliente real, contra la base de producción:
+- Contratar **Gestión de Reservas**: `200` · 5,00 + **0,31** = **5,31** · «Gestión de
+  Reservas — primer mes» · facturación **vacía**, como debe.
+- Contratar **Gestión de Pedidos**: `200` · mismos importes.
+- Producto inexistente → `400`. Ítem que no es producto → `400`. **Sin sesión → `401`**.
+- La pantalla dice «Estás **contratando**», sin desbordamiento, a una sola columna.
+- 14/14 recargo · 15/15 candados · `tsc` y `next build` limpios · **las suscripciones siguen
+  siendo 2** (la revisión no creó ninguna).
+
+---
+
+## Estado del objetivo de pagos al cierre del 2026-08-26
+
+**Tres canales × cuatro orígenes, todo en producción y cobrado con dinero real una vez.**
+
+| Origen | Qué se cobra | Cliente con sesión | Enlace por correo | Manual |
+|---|---|---|---|---|
+| **Proyecto** | una etapa del plan | ✅ | ✅ | ✅ (el de siempre) |
+| **Ticket** | el saldo, entero | ✅ | ✅ | ✅ (admite abono) |
+| **Suscripción** | un mes | ✅ | ✅ | ✅ («Marcar pagado») |
+| **Producto** | el 1er mes + crea la suscripción | ✅ | — | — |
+
+**Pendientes, por orden de valor:**
+1. **Deuna** — 0 % de comisión para clientes ecuatorianos (~1.000 $/año sobre este volumen).
+2. **El abono de ticket** con la contadora: hoy por pasarela se cobra entero.
+3. **Automatizaciones** (P149): falta decidir qué son y qué precio tienen.
+4. El **enlace de pago** para suscripciones y productos, si se quiere cobrar a alguien sin
+   cuenta.

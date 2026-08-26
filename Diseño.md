@@ -782,6 +782,41 @@ formularios de pago se separan al primer arreglo, y el que se queda atrás es el
 tarjeta de Pagos → `QuickEditDialog` (ventanita centrada, **dos campos**: correo y
 caducidad), según la regla de «DÓNDE SE EDITA». Tras generarlo, la misma ventanita enseña
 el enlace con «Copiar enlace» — porque si el correo falla, el enlace ya es válido igual.
+**El mismo patrón, idéntico, en el detalle del ticket** (2026-08-26).
+
+#### La pantalla sirve a CUATRO orígenes, y se adapta sola (2026-08-26)
+
+`PantallaPago` cobra etapas de proyecto, tickets, meses de suscripción y altas de producto.
+Lo que cambia según el origen, y **por qué**:
+
+| | Columna izquierda | Frase del encabezado |
+|---|---|---|
+| Proyecto con plan | el plan de etapas, con la que se paga **resaltada** | «Estás pagando **Etapa 2**» |
+| Ticket | — (una sola columna) | «Estás pagando este **ticket**» |
+| Suscripción | — | «Estás **contratando** Servidor — Agosto 2026» |
+| Producto | — | «Estás **contratando** Gestión de Reservas — primer mes» |
+
+- **Sin plan que enseñar, la pantalla NO deja el hueco:** pasa de dos columnas a
+  `max-w-xl` centrado. Una rejilla de dos columnas con una vacía se lee como un fallo de
+  carga, no como «aquí no hay nada que mostrar».
+- **«Pagando» vs «contratando»** no es sinónimo elegido al azar: en proyecto y ticket el
+  trabajo ya se hizo; en suscripción y producto se está **empezando** algo.
+
+#### Botones de cobro en el dashboard — quién ve cuál (2026-08-26)
+
+Regla que ordena los cuatro módulos: **el cliente ve «Pagar»; el staff ve «Compartir enlace
+de pago»**. Es el mismo cobro por dos puertas, y quién eres decide cuál te toca.
+
+- Proyecto → lista de etapas del cliente con `Pagar` en la pendiente · staff: icono `Share2`.
+- Ticket → `Pagar $saldo` (solo si está completado y hay saldo) · staff: `Share2`.
+- Suscripción → `Pagar $mensualidad` en el mes impago · staff: `Marcar pagado`.
+- Producto (marketplace) → «Quiero suscribirme» lleva a la pasarela.
+
+**⛔ Y LO QUE EL CLIENTE NO PUEDE HACER, NO SE LE ENSEÑA.** Al abrir Suscripciones al rol
+cliente se le quitaron «Nueva suscripción», «Marcar pagado» y «Desmarcar», y el selector de
+Estado pasó a **insignia de solo lectura**. El servidor ya los rechazaba —el control no era
+un agujero— pero **un botón que falla al pulsarlo es peor que no tenerlo**: promete algo y
+deja al cliente creyendo que hizo algo mal.
 
 ## Editor del mundo — Fluent (estandarizado)
 

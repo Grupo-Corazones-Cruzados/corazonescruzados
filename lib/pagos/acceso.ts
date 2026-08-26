@@ -18,7 +18,7 @@
  */
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { partesMesSuscripcion } from './intentos';
+import { partesMesSuscripcion, partesAltaProducto, idAltaProducto } from './intentos';
 
 export type Solicitante =
   | { tipo: 'staff'; userId: number; email: string; esAdmin: boolean }
@@ -28,7 +28,7 @@ export type Solicitante =
 export type Autorizacion = {
   solicitante: Solicitante;
   canal: 'manual' | 'client' | 'link';
-  sourceType: 'project' | 'ticket' | 'subscription';
+  sourceType: 'project' | 'ticket' | 'subscription' | 'product';
   sourceId: string;
   /** La etapa del plan. `null` en tickets, que se cobran enteros. */
   stageId: number | null;
@@ -42,7 +42,7 @@ export class SinAcceso extends Error {
 
 /** El enlace de pago, validado: existe, no está revocado, no ha caducado y sabe qué cobra. */
 export async function validarEnlace(token: string): Promise<{
-  id: number; sourceType: 'project' | 'ticket' | 'subscription'; sourceId: string;
+  id: number; sourceType: 'project' | 'ticket' | 'subscription' | 'product'; sourceId: string;
   stageId: number | null; email: string; expiresAt: string;
 }> {
   if (!token || token.length < 20) throw new SinAcceso('Enlace inválido.', 404);
@@ -59,7 +59,9 @@ export async function validarEnlace(token: string): Promise<{
   // Un enlace de proyecto SIEMPRE cobra una etapa; uno de ticket cobra el ticket entero.
   // Exigirlo aquí evita que un enlace mal insertado a mano acabe cobrando algo distinto.
   if (l.source_type === 'project' && !l.stage_id) throw new SinAcceso('Enlace inválido.', 404);
-  if (!['project', 'ticket', 'subscription'].includes(l.source_type)) throw new SinAcceso('Enlace inválido.', 404);
+  if (!['project', 'ticket', 'subscription', 'product'].includes(l.source_type)) {
+    throw new SinAcceso('Enlace inválido.', 404);
+  }
   return {
     id: Number(l.id),
     sourceType: l.source_type,
@@ -149,11 +151,11 @@ export async function autorizarCobro(opts: {
     };
   }
 
-  const sourceType = (opts.sourceType || (opts.projectId ? 'project' : null)) as 'project' | 'ticket' | 'subscription' | null;
+  const sourceType = (opts.sourceType || (opts.projectId ? 'project' : null)) as 'project' | 'ticket' | 'subscription' | 'product' | null;
   const sourceId = String(opts.sourceId ?? opts.projectId ?? '').trim();
   const stageId = opts.stageId != null && String(opts.stageId) !== '' ? Number(opts.stageId) : null;
 
-  if (!sourceType || !['project', 'ticket', 'subscription'].includes(sourceType)) {
+  if (!sourceType || !['project', 'ticket', 'subscription', 'product'].includes(sourceType)) {
     throw new SinAcceso('Falta qué se va a cobrar.', 400);
   }
   if (!sourceId) throw new SinAcceso('Falta qué se va a cobrar.', 400);
@@ -165,10 +167,27 @@ export async function autorizarCobro(opts: {
   if (!user) throw new SinAcceso('Inicia sesión para continuar.', 401);
   const userId = Number(user.userId);
 
+  // ⚠️ UN PRODUCTO LO PUEDE CONTRATAR CUALQUIERA CON SESIÓN — no tiene dueño previo, esa es
+  // la diferencia con los otros tres orígenes. Pero el identificador del cobro lleva dentro
+  // al comprador, y **ese id se compone AQUÍ con la sesión**, nunca con lo que llegue de
+  // fuera: aceptarlo del cliente dejaría pagar «en nombre de otro» y saltarse el candado que
+  // impide contratar dos veces el mismo producto.
+  if (sourceType === 'product') {
+    const { itemId } = partesAltaProducto(sourceId);
+    return {
+      sourceType, stageId: null, projectId: 0,
+      sourceId: idAltaProducto(itemId, String(user.userId)),
+      solicitante: user.role === 'admin' || user.role === 'member'
+        ? { tipo: 'staff', userId, email: String(user.email), esAdmin: user.role === 'admin' }
+        : { tipo: 'cliente', userId, email: String(user.email), clientId: 0 },
+      canal: 'client',
+    };
+  }
+
   const base = { sourceType, sourceId, stageId, projectId: Number(sourceId) || 0 };
 
-  // Las suscripciones no tienen «responsable»: son un cobro recurrente de la casa, así que
-  // del lado del staff solo las gobierna el admin — igual que en su módulo.
+  // Ni las suscripciones ni los productos tienen «responsable»: son cobros de la casa, así
+  // que del lado del staff solo los gobierna el admin — igual que en sus módulos.
   const esStaff = user.role === 'admin' || (user.role === 'member' && (
     sourceType === 'ticket'
       ? await esResponsableDeTicket(userId, sourceId)

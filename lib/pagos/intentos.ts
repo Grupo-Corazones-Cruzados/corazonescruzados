@@ -41,7 +41,7 @@ export type DatosFacturacion = {
 };
 
 /** Los orígenes que se pueden cobrar en línea hoy. */
-export type OrigenCobro = 'project' | 'ticket' | 'subscription';
+export type OrigenCobro = 'project' | 'ticket' | 'subscription' | 'product';
 
 /**
  * El identificador de un mes de suscripción: `<idSuscripción>-<YYYY-MM>`.
@@ -231,6 +231,74 @@ export async function cotizarSuscripcion(
 }
 
 /**
+ * El identificador del alta de un producto: `p<idProducto>-u<idUsuario>`.
+ *
+ * ⚠️ LLEVA AL COMPRADOR DENTRO, y esa es la diferencia con los demás orígenes. Una etapa o
+ * un ticket son de un solo cliente, así que basta su id; un producto lo compran muchos, y
+ * si el identificador fuera solo el del producto el candado
+ * `idx_payment_intents_origen_pagado` dejaría que **el primer comprador bloqueara a todos
+ * los demás**. Con el par (producto, comprador), cada uno tiene el suyo y **nadie paga dos
+ * veces el alta del mismo producto**.
+ */
+export function idAltaProducto(itemId: string | number, userId: string | number): string {
+  return `p${itemId}-u${userId}`;
+}
+
+/** Descompone `p<idProducto>-u<idUsuario>`. */
+export function partesAltaProducto(sourceId: string): { itemId: string; userId: string } {
+  const m = /^p(\d+)-u(.+)$/.exec(sourceId);
+  if (!m) throw new Error('Identificador de producto inválido.');
+  return { itemId: m[1], userId: m[2] };
+}
+
+/**
+ * Qué cuesta darse de alta en un PRODUCTO.
+ *
+ * Los productos del grupo se venden por mensualidad (5 $/mes hoy), así que «comprar» es
+ * **contratar la suscripción y pagar su primer mes** — no una compra única. Por eso lo que
+ * se cobra aquí es exactamente una mensualidad, y al confirmarse el pago nace la
+ * suscripción con ese mes ya pagado (ver `emitirFacturaDelCobro`).
+ *
+ * ⚠️ La suscripción NO se crea al empezar el cobro, solo al confirmarlo. Crearla antes
+ * llenaría la lista de suscripciones fantasma de gente que abandonó el pago a medias.
+ */
+export async function cotizarProducto(
+  itemId: string | number,
+  userId: string | number,
+  proveedor: string,
+): Promise<Cobrable> {
+  const { rows: [item] } = await pool.query(
+    `SELECT id, title, cost, es_suscripcion, item_type
+       FROM gcc_world.member_portfolio_items WHERE id = $1`,
+    [itemId],
+  );
+  if (!item) throw new Error('El producto no existe.');
+  if (item.item_type !== 'product') throw new Error('Esto no es un producto del catálogo.');
+  if (!item.es_suscripcion) {
+    // Un producto de pago único todavía no existe en el catálogo; cuando exista habrá que
+    // decidir qué se le entrega al cobrar, y eso no se adivina.
+    throw new Error('Este producto no se cobra por mensualidad. Escríbenos para contratarlo.');
+  }
+
+  const neto = Number(item.cost) || 0;
+  if (!(neto > 0)) throw new Error('Este producto no tiene precio definido.');
+
+  const sourceId = idAltaProducto(item.id, userId);
+  const yaPagado = await cobroPagadoDeOrigen('product', sourceId);
+  if (yaPagado) throw new Error('Ya contrataste este producto. Tus meses siguientes se pagan desde Suscripciones.');
+
+  const { recargo, total } = calcularRecargo(neto, tarifaDe(proveedor));
+  return {
+    sourceType: 'product',
+    sourceId,
+    title: item.title,
+    stageId: null,
+    conceptName: `${item.title} — primer mes`,
+    neto, recargo, total, proveedor,
+  };
+}
+
+/**
  * LA PUERTA ÚNICA para cotizar cualquier cosa cobrable.
  *
  * Los endpoints no eligen entre `cotizarEtapa` y `cotizarTicket`: piden «cotiza esto» y el
@@ -245,6 +313,10 @@ export async function cotizarCobro(
   if (destino.sourceType === 'subscription') {
     const { subId, periodo } = partesMesSuscripcion(destino.sourceId);
     return cotizarSuscripcion(subId, periodo, proveedor);
+  }
+  if (destino.sourceType === 'product') {
+    const { itemId, userId } = partesAltaProducto(destino.sourceId);
+    return cotizarProducto(itemId, userId, proveedor);
   }
   if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor);
   if (destino.stageId == null) throw new Error('Falta la etapa del proyecto.');
@@ -476,14 +548,53 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   const sourceId = String(intento.source_id);
   const stageId = intento.stage_id != null ? Number(intento.stage_id) : null;
   const esTicket = sourceType === 'ticket';
-  const esSuscripcion = sourceType === 'subscription';
+  const esProducto = sourceType === 'product';
+  // ⚠️ UN PRODUCTO SE FACTURA COMO LO QUE ES: el primer mes de una suscripción. Por eso
+  // entra por el mismo camino que ella —mismo emisor, mismo marcado del mes— con la única
+  // diferencia de que la suscripción **todavía no existe** y hay que crearla antes.
+  let esSuscripcion = sourceType === 'subscription';
 
-  let titulo = esTicket ? 'Ticket' : esSuscripcion ? 'Suscripción' : 'Proyecto';
+  let titulo = esTicket ? 'Ticket' : (esSuscripcion || esProducto) ? 'Suscripción' : 'Proyecto';
   let nombreEtapa = titulo;
   let subId = '';
   let periodo = '';
   let ivaSuscripcion = 0;
-  if (esSuscripcion) {
+
+  // ── EL ALTA DE UN PRODUCTO CREA SU SUSCRIPCIÓN ────────────────────────────
+  //
+  // Aquí, y no antes: hasta que el dinero no entra no se materializa nada, igual que con la
+  // factura. Crear la suscripción al abrir la pantalla de pago llenaría el módulo de
+  // suscripciones fantasma de gente que abandonó a medias.
+  //
+  // A partir de esta línea el cobro **es** el de una suscripción, así que sigue el mismo
+  // camino que ella: mismo emisor, mismo marcado del mes, misma reversión al anular.
+  if (esProducto) {
+    const { itemId } = partesAltaProducto(sourceId);
+    const { rows: [item] } = await pool.query(
+      `SELECT id, title, cost FROM gcc_world.member_portfolio_items WHERE id = $1`, [itemId]);
+    const hoy = new Date();
+    periodo = `${hoy.getUTCFullYear()}-${String(hoy.getUTCMonth() + 1).padStart(2, '0')}`;
+
+    const { rows: [nueva] } = await pool.query(
+      `INSERT INTO gcc_world.subscriptions
+         (title, monthly_cost, iva_rate, currency, start_date, status,
+          client_id_type, client_ruc, client_name_sri, client_email_sri,
+          client_phone_sri, client_address_sri, created_by, notes)
+       VALUES ($1, $2, 0, 'USD', $3, 'active', $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id`,
+      [
+        item?.title || 'Producto', Number(item?.cost) || neto, hoy.toISOString().slice(0, 10),
+        facturacion.id_type, facturacion.ruc, facturacion.name, facturacion.email,
+        facturacion.phone || null, facturacion.address || null, facturacion.email,
+        `Alta contratada desde el marketplace el ${hoy.toISOString().slice(0, 10)} (cobro #${intento.id}).`,
+      ],
+    );
+    subId = String(nueva.id);
+    titulo = item?.title || 'Producto';
+    nombreEtapa = `${titulo} — primer mes`;
+    // Desde aquí se comporta como una suscripción a todos los efectos.
+    esSuscripcion = true;
+  } else if (esSuscripcion) {
     ({ subId, periodo } = partesMesSuscripcion(sourceId));
     const { rows: [sub] } = await pool.query(
       `SELECT title, iva_rate, start_date FROM gcc_world.subscriptions WHERE id = $1`, [subId]);

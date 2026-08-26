@@ -29,7 +29,7 @@ declare global {
 }
 
 export type DatosPago = {
-  proyecto: { id: number; tipo?: 'project' | 'ticket' | 'subscription'; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
+  proyecto: { id: number; tipo?: 'project' | 'ticket' | 'subscription' | 'product'; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
   etapa: { id: number; nombre: string };
   importes: { neto: number; recargo: number; total: number };
   pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string | null };
@@ -122,7 +122,7 @@ export default function FormularioPago({
   datos: DatosPago;
   /** Canal 3: el token del enlace. Sin él manda la sesión (canal 2). */
   link?: string;
-  sourceType?: 'project' | 'ticket' | 'subscription';
+  sourceType?: 'project' | 'ticket' | 'subscription' | 'product';
   sourceId?: string;
   stageId?: number;
   /** El mes que se paga, en suscripciones (`AAAA-MM`). */
@@ -247,6 +247,7 @@ export default function FormularioPago({
           project_id: sourceType === 'project' ? sourceId : undefined,
           ticket_id: sourceType === 'ticket' ? sourceId : undefined,
           sub_id: sourceType === 'subscription' ? sourceId : undefined,
+          producto_id: sourceType === 'product' ? sourceId : undefined,
           periodo: sourceType === 'subscription' ? periodo : undefined,
           stage_id: stageId,
           token, metodo, facturacion: f,

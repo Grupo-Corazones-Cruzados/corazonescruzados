@@ -275,6 +275,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🛒 PRODUCTOS: COMPRAR ES CONTRATAR (2026-08-26).** Cuarto y último origen de la pasarela.
+  Los productos del grupo se venden por mensualidad, así que «comprar» **crea la suscripción
+  y cobra su primer mes** — decisión de Fernando entre las dos opciones. Un pedido único
+  dejaría el mes 2 sin cobrar por nadie.
+  - **El camino de `orders` NO se toca:** sigue para lo que se compra una vez y necesita que
+    un miembro lo confirme. Solo los ítems con `es_suscripcion` van a la pasarela.
+  - **⚠️ LA SUSCRIPCIÓN NACE CUANDO ENTRA EL DINERO**, dentro de `emitirFacturaDelCobro`, no
+    al abrir la pantalla. Crearla antes llenaría el módulo de suscripciones fantasma de
+    quien abandonó el pago a medias — la misma regla que rige para la factura.
+  - **⚠️ EL ID DE UN PRODUCTO LLEVA AL COMPRADOR DENTRO: `p<idProducto>-u<idUsuario>`.** Los
+    otros tres orígenes son de un solo cliente; un producto lo compran muchos, y con solo el
+    id del producto el candado habría dejado que **el primer comprador bloqueara a todos los
+    demás**. Y ese id **se compone en el servidor con la sesión**: aceptarlo de fuera dejaría
+    pagar «en nombre de otro».
+  - **En un producto el comprador puede no ser cliente todavía**, así que el formulario de
+    facturación sale **vacío** y solo se prellena si ya tenía cuenta (buscada por correo).
+- **⏸ «AUTOMATIZACIONES» QUEDA PENDIENTE, Y POR QUÉ (2026-08-26).** Fernando pidió cobrarlas,
+  pero la palabra nombra **dos cosas distintas** en el sistema: el módulo
+  `/dashboard/automatizaciones` (flujos de email, WhatsApp y agente IA, que **no tienen
+  precio** en ninguna tabla) y el talento «Automatización de procesos» (que entra como
+  **proyecto** y ya se cobra). Si era lo primero, había que inventar un modelo de precio
+  —¿mensual?, ¿por envío?, ¿por conversación?— que **es decisión suya, no deducible del
+  código**. Se preguntó y dijo: *«dejalo pendiente no lo hagas todavía»*.
+  - **La lección de método:** la ambigüedad no estaba en el encargo sino **en el sistema** —
+    la misma palabra nombraba dos cosas—, y eso solo se ve investigando antes de construir.
 - **🔁 SUSCRIPCIONES: EL CLIENTE VE LAS SUYAS Y PAGA SU MES (2026-08-26).** Tercer origen de
   la pasarela, sin migración nueva.
   - **🪤 EL CLIENTE VEÍA «SUSCRIPCIONES» EN EL MENÚ Y RECIBÍA UN 403** — y no es de ahora: el
@@ -515,6 +540,22 @@ Stack estándar de la casa, con particularidades de este repo:
   - **⏸ LA PANTALLA `/pagar/<token>` NO SE INVENTA.** Es una página pública nueva, y sobre eso
     manda [[gcc-diseno-sitio-con-fernando]] y el ⛔ de `Diseño.md`: **su diseño se acuerda con
     él antes**. Ese es el corte de la jornada, no un olvido.
+- **🗺️ MAPA DE LA PASARELA AL CIERRE DEL 2026-08-26 — TRES CANALES × CUATRO ORÍGENES.**
+
+  | Origen | Qué se cobra | Cliente | Enlace | Manual |
+  |---|---|---|---|---|
+  | **Proyecto** | una etapa del plan | ✅ | ✅ | ✅ (el de siempre) |
+  | **Ticket** | el saldo, entero | ✅ | ✅ | ✅ (admite abono) |
+  | **Suscripción** | un mes | ✅ | ✅ | ✅ («Marcar pagado») |
+  | **Producto** | el 1er mes, y crea la suscripción | ✅ | — | — |
+
+  Todo en producción con **PayPhone**, cobrado con dinero real una vez (1,07 $ → factura
+  001-001-000000081 autorizada). Detalle vivo en `Aprendizaje.md`; el estándar visual, en
+  `Diseño.md` → «La pantalla de pago».
+  - **Pendientes por valor:** (1) **Deuna**, 0 % de comisión para clientes ecuatorianos
+    (~1.000 $/año sobre este volumen); (2) **el abono de ticket** con la contadora —hoy por
+    pasarela se cobra entero—; (3) **automatizaciones**, a la espera de saber qué son;
+    (4) el **enlace de pago** para suscripciones y productos.
 - **💳 SE ABRE LA PASARELA DE PAGO: EL CLIENTE PODRÁ PAGAR SOLO (2026-08-25).** Encargo de
   Fernando. Es **una sola pasarela para todo** lo que se cobra —productos, proyectos y
   automatizaciones—, no una por módulo. Detalle vivo en `Aprendizaje.md` (objetivo del

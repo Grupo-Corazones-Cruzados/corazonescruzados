@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
-import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion } from '@/lib/pagos/intentos';
+import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion, partesAltaProducto } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { getBillingForClient } from '@/lib/billing-clients';
 
@@ -22,10 +22,14 @@ export async function GET(req: NextRequest) {
     // cobra, no un parámetro suelto (ver `idMesSuscripcion`).
     const subId = sp.get('sub_id');
     const periodo = sp.get('periodo');
+    const productoId = sp.get('producto_id');
     const auth = await autorizarCobro({
-      sourceType: sp.get('tipo') || (subId ? 'subscription' : sp.get('ticket_id') ? 'ticket' : 'project'),
-      sourceId: subId && periodo
-        ? idMesSuscripcion(subId, periodo)
+      sourceType: sp.get('tipo')
+        || (productoId ? 'product' : subId ? 'subscription' : sp.get('ticket_id') ? 'ticket' : 'project'),
+      // El id del producto viaja «pelado»: `autorizarCobro` le pega el comprador desde la
+      // sesión, porque ese dato no se acepta de fuera.
+      sourceId: productoId ? `p${productoId}-u0`
+        : subId && periodo ? idMesSuscripcion(subId, periodo)
         : (sp.get('ticket_id') || sp.get('project_id') || undefined),
       stageId: sp.get('stage_id') || undefined,
       linkToken: sp.get('link'),
@@ -41,12 +45,23 @@ export async function GET(req: NextRequest) {
 
     // Datos de facturación prellenados. Una cuenta por cliente: Fernando lo confirmó el
     // 2026-08-25 («dejemos una sola cuenta de facturación por cliente»).
+    //
+    // ⚠️ En un PRODUCTO el comprador puede no ser cliente todavía —esa es justo la gracia del
+    // marketplace—, así que el formulario sale vacío y él escribe sus datos. Se prellena solo
+    // si resulta que ya tenía cuenta de facturación, buscándola por su correo.
     let facturacion: any = null;
     const esTicket = auth.sourceType === 'ticket';
     const esSuscripcion = auth.sourceType === 'subscription';
-    const idPropio = esSuscripcion ? partesMesSuscripcion(auth.sourceId).subId : auth.sourceId;
+    const esProducto = auth.sourceType === 'product';
+    const idPropio = esProducto ? partesAltaProducto(auth.sourceId).itemId
+      : esSuscripcion ? partesMesSuscripcion(auth.sourceId).subId
+      : auth.sourceId;
     const { rows: [proj] } = await pool.query(
-      esSuscripcion
+      esProducto
+        ? `SELECT NULL::bigint AS client_id, i.title, i.description, 'active' AS status,
+                  NULL::text AS client_email, NULL::text AS client_name
+             FROM gcc_world.member_portfolio_items i WHERE i.id = ($1)::bigint`
+        : esSuscripcion
         ? `SELECT s.client_id, s.title, s.notes AS description, s.status,
                   COALESCE(c.email, s.client_email_sri) AS client_email,
                   COALESCE(c.name, s.client_name_sri) AS client_name
@@ -64,8 +79,13 @@ export async function GET(req: NextRequest) {
             WHERE p.id = ($1)::bigint`,
       [idPropio],
     );
-    if (proj?.client_id) {
-      const b = await getBillingForClient(proj.client_id);
+    const clienteParaPrellenar = proj?.client_id
+      || (esProducto ? (await pool.query(
+            `SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+            [auth.solicitante.email],
+          )).rows[0]?.id : null);
+    if (clienteParaPrellenar) {
+      const b = await getBillingForClient(clienteParaPrellenar);
       if (b) {
         facturacion = {
           id_type: b.id_type || '05',
@@ -82,7 +102,7 @@ export async function GET(req: NextRequest) {
     // etapa suelta sin ver el resto es firmar a ciegas; es la misma información que ya le
     // enseña la página pública del proyecto, y por las mismas razones.
     // Ni un ticket ni una suscripción tienen plan que enseñar: se cobran enteros.
-    const { rows: etapasPlan } = (esTicket || esSuscripcion) ? { rows: [] as any[] } : await pool.query(
+    const { rows: etapasPlan } = (esTicket || esSuscripcion || esProducto) ? { rows: [] as any[] } : await pool.query(
       `SELECT e.id, e.name, e.amount, (e.invoice_id IS NOT NULL) AS facturada
          FROM gcc_world.project_stages e
          LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'

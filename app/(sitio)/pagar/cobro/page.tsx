@@ -22,14 +22,18 @@ import PantallaPago from '@/components/pagos/PantallaPago';
 function Contenido() {
   const sp = useSearchParams();
   const bruto = sp.get('tipo');
-  const tipo: 'project' | 'ticket' | 'subscription' =
-    bruto === 'ticket' ? 'ticket' : bruto === 'subscription' ? 'subscription' : 'project';
+  const tipo: 'project' | 'ticket' | 'subscription' | 'product' =
+    bruto === 'ticket' ? 'ticket'
+    : bruto === 'subscription' ? 'subscription'
+    : bruto === 'product' ? 'product'
+    : 'project';
   const id = sp.get('id') || '';
   const etapa = sp.get('etapa');
   const periodo = sp.get('periodo') || '';
 
   const consulta =
-    tipo === 'subscription' ? `sub_id=${encodeURIComponent(id)}&periodo=${encodeURIComponent(periodo)}`
+    tipo === 'product' ? `producto_id=${encodeURIComponent(id)}`
+    : tipo === 'subscription' ? `sub_id=${encodeURIComponent(id)}&periodo=${encodeURIComponent(periodo)}`
     : tipo === 'ticket' ? `ticket_id=${encodeURIComponent(id)}`
     : `project_id=${encodeURIComponent(id)}&stage_id=${encodeURIComponent(etapa || '')}`;
 

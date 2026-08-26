@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -28,6 +29,7 @@ const ORDER_LABEL: Record<string, string> = {
 };
 
 export default function MarketplacePage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
 
   // Purchase modal
@@ -67,6 +69,18 @@ export default function MarketplacePage() {
       toast.error('Este producto no tiene precio definido');
       return;
     }
+
+    // ⚠️ UN PRODUCTO POR MENSUALIDAD SE CONTRATA PAGANDO, no dejando un pedido pendiente.
+    //
+    // El camino de `orders` sigue existiendo para lo que se compra una vez y necesita que un
+    // miembro lo confirme. Pero los productos del grupo se venden por mensualidad (5 $/mes),
+    // y para esos «comprar» es contratar la suscripción y pagar su primer mes: se va a la
+    // pasarela y la suscripción nace **cuando el dinero entra**, no antes.
+    if (selectedItem.es_suscripcion) {
+      router.push(`/pagar/cobro?tipo=product&id=${selectedItem.id}`);
+      return;
+    }
+
     setPurchasing(true);
     try {
       const res = await fetch('/api/orders', {

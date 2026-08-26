@@ -35,7 +35,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   link?: string;
   sourceId?: string;
   stageId?: number | null;
-  sourceType?: 'project' | 'ticket' | 'subscription';
+  sourceType?: 'project' | 'ticket' | 'subscription' | 'product';
   /** El mes que se paga, en suscripciones (`AAAA-MM`). */
   periodo?: string;
 }) {
@@ -107,8 +107,8 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
           <Receipt className="w-4 h-4 text-[var(--violeta-txt)]" />
           {hayPlan
             ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
-            : proyecto.tipo === 'subscription'
-              ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
+            : (proyecto.tipo === 'subscription' || proyecto.tipo === 'product')
+              ? <>Estás contratando <strong className="font-semibold">{etapa.nombre}</strong></>
               : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
         </p>
       </header>
