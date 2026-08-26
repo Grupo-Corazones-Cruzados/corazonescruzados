@@ -141,3 +141,33 @@ export function EditField({ label, hint, children }: { label: string; hint?: Rea
 /** Clase estándar de los campos dentro de una superficie de edición. */
 export const EDIT_INPUT =
   'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none';
+
+/**
+ * Fila de IMPORTE al pie de una superficie de edición — el precio, a secas.
+ *
+ * ⚠️ REGLA DEL PROYECTO (Fernando, 2026-08-26): en un formulario de cobro **no se explica
+ * el precio con un párrafo encima de los campos**. Antes, las ventanitas de «Cobrar» abrían
+ * con una etiqueta de tres líneas —«Se cobrarán $X más los gastos de procesamiento, que
+ * paga el cliente. La factura se emite sola…»— que empujaba los campos hacia abajo y
+ * mezclaba el importe con letra pequeña.
+ *
+ * Ahora el importe va **debajo del último campo**, en su propia banda: la etiqueta a la
+ * izquierda, el número a la derecha. Se enseña **el precio limpio**, sin impuestos ni
+ * valores añadidos; lo que había que explicar (comisiones, factura) vive detrás del (?),
+ * igual que en `EditField`.
+ *
+ * No es un campo: no se puede escribir en él, y por eso no se pinta como un `EDIT_INPUT`.
+ */
+export function EditAmount({ label, value, hint }: { label: string; value: string; hint?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 pt-3 border-t border-digi-border">
+      <span className="flex items-center gap-1 text-[12px] font-semibold text-digi-text opacity-70"
+        style={{ fontFamily: 'var(--font-body)' }}>
+        {hint && <BotonAyuda titulo={label} lado="derecha">{hint}</BotonAyuda>}
+        {label}
+      </span>
+      <span className="text-[17px] font-bold tabular-nums text-digi-text shrink-0"
+        style={{ fontFamily: 'var(--font-body)' }}>{value}</span>
+    </div>
+  );
+}

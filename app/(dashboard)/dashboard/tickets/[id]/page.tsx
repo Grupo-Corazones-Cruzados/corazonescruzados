@@ -10,7 +10,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
-import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
+import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -1081,10 +1081,6 @@ export default function TicketDetailPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-[12px] text-digi-muted" style={mf}>
-              Se cobrará el saldo pendiente —<strong className="text-digi-text">${fmt2(Number(payments?.pending || 0))}</strong>— más los
-              gastos de procesamiento, que paga el cliente. La factura se emite sola al confirmarse el pago.
-            </p>
             <EditField label="Correo del cliente" hint="Es a donde llega el enlace.">
               <input type="email" className={EDIT_INPUT} value={linkEmail}
                 onChange={(ev) => setLinkEmail(ev.target.value)} placeholder="cliente@empresa.com" />
@@ -1098,6 +1094,10 @@ export default function TicketDetailPage() {
                 <option value="720">30 días</option>
               </select>
             </EditField>
+            <EditAmount label="Saldo pendiente" value={`$${fmt2(Number(payments?.pending || 0))}`}
+              hint={<>Es el saldo limpio del ticket. Al cliente se le suman aparte los gastos de
+                procesamiento del pago en línea, que paga él y ve antes de confirmar. La factura se
+                emite sola al confirmarse el pago.</>} />
           </div>
         )}
       </QuickEditDialog>

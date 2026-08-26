@@ -784,6 +784,9 @@ caducidad), según la regla de «DÓNDE SE EDITA». Tras generarlo, la misma ven
 el enlace con «Copiar enlace» — porque si el correo falla, el enlace ya es válido igual.
 **El mismo patrón, idéntico, en el detalle del ticket** (2026-08-26).
 
+Dentro de esa ventanita, el importe se enseña con **`EditAmount` debajo del último campo** y
+sin recargos sumados — ver «`EditAmount` — el importe va DEBAJO, y limpio».
+
 #### Ancho de la pantalla de pago (2026-08-26)
 
 Usa **`Contenedor ancho="amplio"`** (`max-w-[1560px]`), no el `lectura` del resto del sitio.
@@ -2018,6 +2021,45 @@ cambio llegó a los **siete** archivos que la usan sin tocar ninguno.
 **Aplica igual a las barras de sección:** si el `hint` de un `SectionBar` es una frase explicativa
 y no un dato, va al (?).
 
+### 📌 `EditAmount` — el importe va DEBAJO, y limpio (Fernando, 2026-08-26)
+
+> *«Puedes quitar esa etiqueta y mejor dejar el precio sin impuesto o valores adicionales
+> debajo del campo de enlace caduca en.»*
+
+Corolario de la regla anterior para los formularios que **cobran**. Las ventanitas de
+«Cobrar» abrían con un párrafo de tres líneas encima de los campos —«Se cobrarán $866,25 más
+los gastos de procesamiento, que paga el cliente. La factura se emite sola…»—. Eso es
+exactamente lo que la regla de formularios prohíbe: prosa fija que empuja los campos hacia
+abajo, y encima escondía **el dato que de verdad importa** —el importe— dentro de la letra
+pequeña.
+
+**El estándar:** el importe es lo último que se ve antes de los botones, en su propia banda,
+**la etiqueta a la izquierda y el número a la derecha**. Se enseña **el precio limpio**, sin
+impuestos ni recargos sumados: lo que se explica —las comisiones que paga el cliente, la
+factura automática— vive detrás del (?), como en cualquier `EditField`.
+
+**Definición única:** `EditAmount` (`components/ui/EditDialog.tsx`).
+
+```tsx
+<EditField label="El enlace caduca en" hint="Pasado ese tiempo deja de servir…">
+  <select className={EDIT_INPUT} …>…</select>
+</EditField>
+<EditAmount label="Importe de la etapa" value={`$${fmt2(linkStage?.amount || 0)}`}
+  hint={<>Es el importe limpio de la etapa. Al cliente se le suman aparte los gastos de
+    procesamiento del pago en línea, que paga él y ve antes de confirmar…</>} />
+```
+
+- `items-baseline`, no `items-center`: etiqueta y cifra tienen cuerpos distintos (12 px vs
+  17 px) y alinearlas por caja deja la etiqueta flotando alta.
+- `tabular-nums`: dos importes seguidos tienen que cuadrar por la coma.
+- **No es un campo**, así que **no** lleva `EDIT_INPUT`: un recuadro de campo invita a
+  escribir dentro de algo que no se puede tocar.
+- La banda la separa un `border-t`; el pie de la superficie trae el suyo, y las dos rayas
+  encierran el importe, que es justo lo que se quiere resaltar.
+
+**Dónde se usa (2026-08-26):** las dos ventanitas de cobro con enlace — etapa de proyecto
+(`projects/[id]`, «Importe de la etapa») y ticket (`tickets/[id]`, «Saldo pendiente»).
+
 ### Botón de ayuda (?) y la burbuja compartida (2026-08-01)
 
 **`components/ui/BotonAyuda.tsx`** — definición ÚNICA para las explicaciones que hacen falta *la
@@ -2750,6 +2792,14 @@ lo normal, porque el mesero trabaja con el teléfono en la mano.
 
 
 ## Desviaciones detectadas y resolución
+- **2026-08-26 · El párrafo explicativo encima de los campos de las ventanitas de «Cobrar».**
+  Las dos superficies de cobro con enlace (etapa de proyecto y ticket) arrancaban con una
+  etiqueta de tres líneas que explicaba el importe, las comisiones y la factura **antes** del
+  primer campo. Era una desviación de la regla del 2026-08-01 —«solo el título del campo y el
+  campo»— que se había colado por escribirse a mano en cada página en vez de salir de un
+  control compartido. **Corregida**: se extrajo `EditAmount` en `components/ui/EditDialog.tsx`,
+  el importe bajó al pie del formulario en su propia banda y la prosa se fue detrás del (?).
+  Se aplicó a las **dos** páginas a la vez, que es la mitad del motivo para extraerlo.
 - **2026-08-21 · El Estudio del agente ya no elige MODELO, elige RAZONAMIENTO.** Al pasar toda
   la app a un solo modelo (`gpt-5.6-luna`), aquel `PixelSelect` de Haiku / Sonnet / Opus se
   quedaba sin nada que elegir. **No se borró el control: se le cambió el significado**, porque

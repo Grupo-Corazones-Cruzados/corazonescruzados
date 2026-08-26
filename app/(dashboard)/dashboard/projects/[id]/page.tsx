@@ -11,7 +11,7 @@ import ClientPicker from '@/components/clients/ClientPicker';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
+import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3, Pencil } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -2468,10 +2468,6 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-[12px] text-digi-muted" style={mf}>
-              Se cobrarán <strong className="text-digi-text">${fmt2(linkStage?.amount || 0)}</strong> más los
-              gastos de procesamiento, que paga el cliente. La factura se emite sola en cuanto el pago se confirme.
-            </p>
             <EditField label="Correo del cliente" hint="Es a donde llega el enlace.">
               <input type="email" className={EDIT_INPUT} value={linkEmail}
                 onChange={(ev) => setLinkEmail(ev.target.value)} placeholder="cliente@empresa.com" />
@@ -2487,6 +2483,10 @@ export default function ProjectDetailPage() {
                 <option value="720">30 días</option>
               </select>
             </EditField>
+            <EditAmount label="Importe de la etapa" value={`$${fmt2(linkStage?.amount || 0)}`}
+              hint={<>Es el importe limpio de la etapa. Al cliente se le suman aparte los gastos de
+                procesamiento del pago en línea, que paga él y ve antes de confirmar. La factura se
+                emite sola en cuanto el pago se confirme.</>} />
           </div>
         )}
       </QuickEditDialog>
