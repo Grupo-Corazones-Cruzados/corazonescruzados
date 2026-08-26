@@ -7831,3 +7831,37 @@ el de debajo del resumen: era **el de al lado del título**.
 - **La lección de método:** cuando algo «se ve feo», el sitio donde duele no siempre es el
   sitio donde está la causa. Yo medí el hueco de abajo porque era el que había visto en mi
   captura; el de arriba solo se veía mirando la página entera, como la miró él.
+
+### 🗑️ P164 — El proyecto de prueba, borrado sin dejar la factura huérfana (2026-08-26)
+Fernando pidió eliminarlo del todo. Se comprobó primero **qué colgaba** y qué se rompería:
+`projects` **no tiene ni una clave foránea declarada**, así que borrarlo no habría dado
+ningún error — habría dejado referencias muertas en silencio, que es peor.
+- **Lo que sí sobrevive, y por qué:** la **factura 001-001-000000081** (autorizada, real) y
+  sus dos cobros. Borrar la factura movería el siguiente secuencial de 81 a 81 otra vez
+  ([[P139]]), y borrar el cobro dejaría sin registro 1,07 $ que entraron de verdad.
+- **⭐ Lo que hizo el borrado seguro:** la línea de la factura ya dice *«Prueba de pasarela de
+  pago — Etapa única de prueba»*. **El comprobante se explica solo**, sin necesitar el
+  proyecto — y por eso se pudo borrar sin dejar un huérfano incomprensible. Además se anotó
+  en el cobro que su proyecto fue eliminado, con fecha y motivo.
+- Borrado en **una transacción**: enlaces, etapas, `invoice_projects` y el proyecto.
+  Comprobado después: factura en pie, secuencial en 81.
+
+### ⭐ P165 — «Cancelar proyecto» ya existía; lo que faltaba era que estuviera bien hecha
+Fernando: *«agrega en el detalle de un proyecto una forma para cancelar… que solo esté
+disponible para el rol administrador»*. La opción **ya estaba** en el menú ⋯ — y el admin ya
+podía usarla, porque `isOwner = isAdmin || isMemberCreator`. Buscarla antes de construirla
+evitó un segundo botón que hiciera lo mismo. Lo que sí faltaba:
+1. **Restringirla al admin.** También podía cancelar el miembro creador.
+2. **Confirmación y motivo.** Cancelaba **de un solo clic**, sin preguntar y sin dejar
+   constancia. La columna `projects.cancellation_reason` existía **y nadie la llenaba** —
+   otra columna leída-pero-nunca-escrita, como el `paid_at` de los enlaces ([[P160]]).
+3. **🪤 `review → cancelled` no estaba permitido, y el botón SÍ aparecía en revisión.** Un
+   botón que fallaba al pulsarlo. Y es el estado con más papeletas de acabar cancelado,
+   porque está en manos del cliente. Se admitió la transición.
+4. **🪤 Se podía PAGAR un proyecto cancelado.** `getBillableProjects` los excluía del módulo
+   de facturas, pero la puerta del cliente y la del enlace no miraban el estado: se podía
+   pagar la etapa de algo que ya no se va a hacer, y después habría que devolver el dinero.
+   Ahora `cotizarEtapa` lo rechaza **y al cancelar se revocan los enlaces vivos** — no se
+   borran: el rastro de a quién se le mandaron importa.
+- **La ventanita avisa de lo que no se deshace:** si el proyecto ya tiene etapas facturadas,
+  lo dice en ámbar — esas facturas siguen valiendo y solo se anulan con nota de crédito.

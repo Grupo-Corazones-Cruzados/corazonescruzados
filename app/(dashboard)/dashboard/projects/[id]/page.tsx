@@ -183,6 +183,10 @@ export default function ProjectDetailPage() {
   const [linkHoras, setLinkHoras] = useState('72');
   const [linkSaving, setLinkSaving] = useState(false);
   const [linkResult, setLinkResult] = useState<{ url: string; email: string; total: number; correoEnviado: boolean } | null>(null);
+  // Cancelar el proyecto: solo admin, con motivo escrito.
+  const [showCancelar, setShowCancelar] = useState(false);
+  const [motivoCancelar, setMotivoCancelar] = useState('');
+  const [cancelando, setCancelando] = useState(false);
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completing, setCompleting] = useState(false);
@@ -707,6 +711,22 @@ export default function ProjectDetailPage() {
   };
 
   // --- Actions ---
+  const cancelarProyecto = async () => {
+    setCancelando(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', cancellation_reason: motivoCancelar.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo cancelar');
+      toast.success('Proyecto cancelado');
+      setShowCancelar(false);
+      fetchProject();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setCancelando(false); }
+  };
+
   const updateStatus = async (status: string) => {
     await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     toast.success('Estado actualizado');
@@ -1369,7 +1389,10 @@ export default function ProjectDetailPage() {
                     toast.success(project.is_marketplace_published ? 'Despublicado del marketplace' : 'Publicado en el marketplace'); fetchProject();
                   } catch (e: any) { toast.error(e.message || 'Error'); }
                 } }] : []),
-            ...(isOwner && !isTerminal ? [{ label: 'Cancelar proyecto', onClick: () => updateStatus('cancelled'), danger: true }] : []),
+            // Cancelar es SOLO del administrador (Fernando, 2026-08-26) y pide motivo: un
+            // proyecto cancelado es una conversación con el cliente, y de un clic sin
+            // explicación no queda constancia de por qué se paró.
+            ...(isAdmin && !isTerminal ? [{ label: 'Cancelar proyecto', onClick: () => { setMotivoCancelar(''); setShowCancelar(true); }, danger: true }] : []),
             ...(isAdmin ? [{ label: 'Eliminar proyecto', onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
           ]}
           trailing={project.status === 'cotizacion' && isOwner ? (
@@ -2384,6 +2407,36 @@ export default function ProjectDetailPage() {
 
         </div>
       </div>
+
+      {/* Ventanita: CANCELAR EL PROYECTO. Un solo campo, así que ventanita centrada. */}
+      <QuickEditDialog
+        open={showCancelar}
+        title="Cancelar proyecto"
+        onClose={() => !cancelando && setShowCancelar(false)}
+        onSave={cancelarProyecto}
+        saving={cancelando}
+        canSave={motivoCancelar.trim().length >= 4}
+        saveLabel="Cancelar proyecto"
+      >
+        <div className="space-y-3">
+          <p className="text-[12.5px] text-digi-text leading-relaxed" style={mf}>
+            El proyecto pasará a <strong>Cancelado</strong> y dejará de poder facturarse.
+            {(billing?.etapas || []).some((e: any) => e.invoiceId) && (
+              <> <span className="text-amber-700">Ojo: ya tiene etapas facturadas; esas facturas
+              siguen siendo válidas y solo se anulan con nota de crédito.</span></>
+            )}
+          </p>
+          <EditField label="¿Por qué se cancela?" hint="Queda guardado en el proyecto. Sé concreto: esto se lee meses después.">
+            <input className={EDIT_INPUT} value={motivoCancelar} autoFocus
+              onChange={(ev) => setMotivoCancelar(ev.target.value)}
+              placeholder="El cliente desistió, se acordó no continuar…" />
+          </EditField>
+          <p className="text-[11px] text-digi-muted" style={mf}>
+            Los enlaces de pago que sigan vivos se anularán, para que nadie pague un proyecto
+            que ya no se va a hacer.
+          </p>
+        </div>
+      </QuickEditDialog>
 
       {/* Ventanita: ENLACE DE PAGO de una etapa (canal 3).
           Son DOS campos —correo y duración—, así que va en ventanita centrada y no en

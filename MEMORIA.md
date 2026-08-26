@@ -553,6 +553,25 @@ Stack estándar de la casa, con particularidades de este repo:
     (RUC 13, cédula 10) y los mensajes explican el formato.
   - Fuera de Ecuador **no se exige formato** (una identificación tica es `3-101-619800`), y
     **Ecuador va primero** en el selector, separado del resto.
+- **🛑 CANCELAR UN PROYECTO: SOLO ADMIN Y CON MOTIVO (2026-08-26).** La opción **ya existía**
+  en el menú ⋯ del detalle y el admin ya podía usarla (`isOwner = isAdmin || isMemberCreator`);
+  lo que faltaba era que estuviera bien hecha. Ahora:
+  - **Solo el administrador** (antes también el miembro creador) y **con motivo obligatorio**,
+    que se guarda en `projects.cancellation_reason` — otra columna que existía **y nadie
+    llenaba**, como el `paid_at` de los enlaces.
+  - **🪤 `review → cancelled` no estaba permitido y el botón SÍ salía en revisión**: un botón
+    que fallaba al pulsarlo. Y es el estado con más papeletas de acabar cancelado. Admitido.
+  - **🪤 SE PODÍA PAGAR UN PROYECTO CANCELADO.** `getBillableProjects` los excluía del módulo
+    de facturas, pero la puerta del cliente y la del enlace no miraban el estado. Ahora
+    `cotizarEtapa` lo rechaza **y al cancelar se revocan los enlaces de pago vivos**.
+  - La ventanita avisa en ámbar si ya hay etapas facturadas: esas facturas siguen valiendo y
+    solo se anulan con nota de crédito.
+- **🗑️ El proyecto de prueba (#35) se ELIMINÓ el 2026-08-26**, conservando la factura
+  001-001-000000081 y sus cobros. Se pudo borrar sin dejar un huérfano incomprensible porque
+  **la línea de la factura ya nombra el proyecto** («Prueba de pasarela de pago — Etapa única
+  de prueba»): el comprobante se explica solo. ⚠️ `projects` **no tiene claves foráneas
+  declaradas**, así que un borrado no da error — deja referencias muertas en silencio, y hay
+  que mirar antes qué cuelga.
 - **🔥 EL ENLACE DE PAGO SE QUEMA AL COBRAR (2026-08-26).** Lo vio Fernando: el enlace seguía
   abriéndose después de pagar **y dejaba pagar otra vez**. Eran dos huecos:
   - **`payment_links.paid_at` existía desde la 053 y NADIE lo escribía.** `listarEnlaces`

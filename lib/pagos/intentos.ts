@@ -134,6 +134,12 @@ export async function cotizarEtapa(
 ): Promise<EtapaCobrable> {
   const billing = await getProjectBilling(projectId);
   if (!billing) throw new Error('El proyecto no existe.');
+  // ⚠️ Un proyecto cancelado no se cobra. `getBillableProjects` ya los excluía del módulo de
+  // facturas, pero esta puerta —la del cliente y la del enlace— no lo miraba: se podía pagar
+  // la etapa de algo que ya no se va a hacer, y después habría que devolver el dinero.
+  if (billing.status === 'cancelled') {
+    throw new Error('Este proyecto está cancelado. Escríbenos antes de pagar.');
+  }
   if (billing.mode !== 'etapas') {
     throw new Error('Este proyecto no tiene plan de etapas. El cobro en línea solo cubre proyectos con plan.');
   }

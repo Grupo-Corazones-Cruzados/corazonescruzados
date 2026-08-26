@@ -140,7 +140,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       // 'cotizacion' = propuesta aún no aprobada por el cliente. Al aprobarse pasa a un proyecto
       // real (draft/open); si el cliente la rechaza, se cancela.
       cotizacion: ['open', 'draft', 'cancelled'],
-      draft: ['open', 'cancelled'], open: ['in_progress', 'cancelled'], in_progress: ['review', 'cancelled'], review: ['completed'],
+      draft: ['open', 'cancelled'], open: ['in_progress', 'cancelled'], in_progress: ['review', 'cancelled'],
+      // ⚠️ `review → cancelled` faltaba, y el botón de cancelar SÍ aparecía en revisión: era
+      // un botón que fallaba al pulsarlo. Un proyecto en revisión es el que más papeletas
+      // tiene de acabar cancelado —está en manos del cliente—, así que se admite.
+      review: ['completed', 'cancelled'],
     };
     if (body.status && body.status !== current.status) {
       const allowed = VALID_TRANSITIONS[current.status] || [];
@@ -150,6 +154,38 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       // review → completed: only admin
       if (body.status === 'completed' && user.role !== 'admin') {
         return NextResponse.json({ error: 'Solo el administrador puede completar proyectos' }, { status: 403 });
+      }
+
+      // ── CANCELAR: solo el administrador, y con motivo ────────────────────
+      //
+      // Fernando lo pidió así el 2026-08-26. Antes podía cancelarlo también el miembro que
+      // lo creó, y de un solo clic: sin confirmar y sin dejar constancia de por qué. Un
+      // proyecto cancelado es una conversación con el cliente, y esa conversación necesita
+      // un motivo escrito — la columna `cancellation_reason` existía y nadie la llenaba.
+      if (body.status === 'cancelled') {
+        if (user.role !== 'admin') {
+          return NextResponse.json({ error: 'Solo el administrador puede cancelar un proyecto.' }, { status: 403 });
+        }
+        const motivo = String(body.cancellation_reason || '').trim();
+        if (motivo.length < 4) {
+          return NextResponse.json({ error: 'Escribe por qué se cancela el proyecto.' }, { status: 400 });
+        }
+        await pool.query(
+          `UPDATE gcc_world.projects SET cancellation_reason = $2, updated_at = NOW() WHERE id = $1`,
+          [id, motivo.slice(0, 500)],
+        );
+
+        // ⚠️ Y SE APAGAN SUS COBROS. Un enlace de pago vivo de un proyecto cancelado es una
+        // puerta por la que el cliente puede pagar algo que ya no existe — y después habría
+        // que devolvérselo. Se revocan, no se borran: el rastro de que se mandaron importa.
+        const { rowCount: enlaces } = await pool.query(
+          `UPDATE gcc_world.payment_links
+              SET revoked_at = NOW()
+            WHERE source_type = 'project' AND source_id = $1
+              AND revoked_at IS NULL AND paid_at IS NULL`,
+          [String(id)],
+        );
+        if (enlaces) console.warn(`[proyectos] cancelado #${id}: ${enlaces} enlace(s) de pago revocado(s)`);
       }
       // in_progress → review: require 100% completion
       if (body.status === 'review') {

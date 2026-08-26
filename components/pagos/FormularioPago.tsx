@@ -426,7 +426,7 @@ export default function FormularioPago({
               <span className="flex items-center gap-2 text-[14px] font-medium text-[var(--texto)]">
                 <Landmark className="w-[18px] h-[18px]" /> Transferencia
               </span>
-              <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Sin recargo · se verifica a mano</span>
+              <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Sin recargo · se verifica el pago</span>
             </span>
             <span className="shrink-0 text-[15px] font-semibold tabular-nums text-emerald-700">
               ${fmt2(datos.importesPorMetodo?.transfer?.total ?? importes.neto)}

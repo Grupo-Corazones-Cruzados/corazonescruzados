@@ -868,6 +868,22 @@ datos de facturación —ya quedaron guardados con el cobro— y aparece el bloq
   pago quedó **en espera de verificación** y —esto es lo importante— que **no hace falta
   pagar otra vez**.
 
+#### Cancelar un proyecto — ventanita con motivo (2026-08-26)
+
+En el menú **⋯** de la cabecera del detalle, en rojo y **solo para el administrador**. Abre
+una `QuickEditDialog` (un campo → ventanita centrada) que:
+
+- **Dice qué va a pasar** antes de pedir nada: «pasará a Cancelado y dejará de poder
+  facturarse».
+- **Avisa en ámbar de lo que NO se deshace** si el proyecto ya tiene etapas facturadas: esas
+  facturas siguen siendo válidas y solo se anulan con nota de crédito.
+- **Exige el motivo** (mínimo 4 caracteres; el botón está deshabilitado hasta entonces), con
+  la pista *«esto se lee meses después»* — porque se lee meses después.
+- Cierra avisando de que **los enlaces de pago vivos se anularán**.
+
+Es el mismo patrón que rechazar una transferencia: una acción que le cambia la vida a otra
+persona no se ejecuta de un clic y sin explicación escrita.
+
 #### Confirmar una transferencia — `components/pagos/CobrosEnEspera.tsx` (2026-08-26)
 
 Bloque con **borde ámbar de 2 px** al principio del panel derecho del detalle (proyecto,
