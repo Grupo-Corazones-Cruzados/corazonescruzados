@@ -96,3 +96,44 @@ export async function estadoDelNumero(phoneNumberId: string, token: string) {
     is_pin_enabled?: boolean;
   };
 }
+
+/* ═══════════════════ MEDIOS QUE MANDA EL CLIENTE FINAL ═══════════════════ */
+
+/**
+ * Baja una nota de voz o una imagen de WhatsApp.
+ *
+ * ⚠️ SON DOS PETICIONES, Y LA SEGUNDA TAMBIÉN VA FIRMADA. Meta no entrega el archivo en el
+ * webhook: manda un identificador. Con él se pide la ficha del medio, que devuelve una URL
+ * temporal… **que tampoco es pública**. Hay que volver a mandar el `Authorization` al
+ * descargarla o responde 401. Es el despiste clásico con esta API: la URL parece un enlace
+ * normal y no lo es.
+ *
+ * Se acota el tamaño porque el archivo entra entero en memoria del worker y luego viaja a
+ * OpenAI; el límite de la transcripción son 25 MB, así que por encima de eso no hay nada
+ * que ganar bajándolo.
+ */
+const TOPE_MEDIO = 20 * 1024 * 1024;
+
+export async function descargarMedio(
+  mediaId: string,
+  token: string,
+): Promise<{ bytes: Buffer; mime: string } | null> {
+  const cabecera = { Authorization: `Bearer ${token}` };
+
+  const ficha = await fetch(`https://graph.facebook.com/${VERSION}/${mediaId}`, { headers: cabecera });
+  if (!ficha.ok) return null;
+  const datos = await ficha.json().catch(() => null);
+  if (!datos?.url) return null;
+  if (datos.file_size && Number(datos.file_size) > TOPE_MEDIO) return null;
+
+  const archivo = await fetch(datos.url, { headers: cabecera });
+  if (!archivo.ok) return null;
+
+  const bytes = Buffer.from(await archivo.arrayBuffer());
+  if (bytes.byteLength > TOPE_MEDIO) return null;
+
+  // El `mime_type` de Meta puede traer parámetros («audio/ogg; codecs=opus») y hay sitios
+  // donde solo vale el tipo. Se guarda limpio.
+  const mime = String(datos.mime_type ?? '').split(';')[0].trim() || 'application/octet-stream';
+  return { bytes, mime };
+}

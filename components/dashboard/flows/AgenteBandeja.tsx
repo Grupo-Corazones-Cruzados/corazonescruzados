@@ -21,7 +21,7 @@ import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles, FileText,
-  Smartphone, History,
+  Smartphone, History, Mic, Image as ImageIcon,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -47,6 +47,8 @@ interface Fila {
 }
 interface Mensaje {
   id: number; direccion: string; texto: string | null; herramienta: string | null;
+  /** `text`, `audio`, `image`… Distingue lo que el cliente escribió de lo que se transcribió. */
+  tipo: string;
   motivo: string | null; enviado_ok: boolean | null; error_envio: string | null; created_at: string;
 }
 
@@ -368,6 +370,22 @@ function Burbuja({ m }: { m: Mensaje }) {
     <div className={`flex ${entrante ? 'justify-start' : 'justify-end'}`}>
       <div className={`max-w-[75%] rounded-lg px-3 py-2 ${
         entrante ? 'bg-digi-bg border border-digi-border' : 'bg-accent-light border border-accent/30'}`}>
+        {/* ── DE DÓNDE SALIÓ ESTE TEXTO ──────────────────────────────────────────
+            Una nota de voz y una foto se guardan ya convertidas a texto (ver
+            `lib/agente/medios.ts`), que es lo que hace que el agente pueda contestarlas.
+            Pero al leerlo así, sin más, parece que el cliente lo escribió — y no es lo
+            mismo: una transcripción puede equivocarse, y quien atiende necesita saber
+            que ahí detrás hay un audio antes de fiarse de la palabra exacta. */}
+        {entrante && (m.tipo === 'audio' || m.tipo === 'voice') && (
+          <span className="flex items-center gap-1 text-[10.5px] text-digi-muted mb-1" style={mf}>
+            <Mic className="w-3 h-3" /> nota de voz, transcrita
+          </span>
+        )}
+        {entrante && (m.tipo === 'image' || m.tipo === 'sticker') && (
+          <span className="flex items-center gap-1 text-[10.5px] text-digi-muted mb-1" style={mf}>
+            <ImageIcon className="w-3 h-3" /> imagen, descrita
+          </span>
+        )}
         <p className="text-[13px] text-digi-text whitespace-pre-wrap break-words" style={mf}>{m.texto}</p>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="text-[10.5px] text-digi-muted" style={mf}>{hora}</span>

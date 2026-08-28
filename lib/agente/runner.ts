@@ -14,6 +14,7 @@ import { ensamblarSistema, type BloqueConocimiento } from './conocimiento';
 import { decidir } from './ia';
 import { enviarTexto } from './whatsapp';
 import { registrarSaliente } from './ingesta';
+import { resolverMedios } from './medios';
 import { terminar, fallar, type Trabajo } from './cola';
 import { MODELO_POR_DEFECTO, RAZONAMIENTO_POR_DEFECTO, esRazonamientoValido } from './modelos';
 
@@ -68,6 +69,19 @@ export async function procesarConversacion(conversacionId: number): Promise<Resu
     return { conversacionId, accion: 'escalado', detalle: 'Sin clave de IA' };
   }
   const tokenWa = secretoDelCanal(canal, 'wa_token');
+
+  /**
+   * ⇒ PRIMERO SE LEEN LAS NOTAS DE VOZ Y LAS FOTOS, y solo después se arma el prompt.
+   *
+   * El orden no es negociable: la transcripción se guarda en `texto`, y `historialDe` lee
+   * `texto`. Al revés, el agente vería el mensaje vacío y contestaría «no he recibido
+   * nada» a un cliente que acaba de mandarle un audio de veinte segundos.
+   *
+   * Va aquí y no en el webhook a propósito: el webhook tiene que devolver 200 rápido o
+   * Meta reintenta y acaba deshabilitándolo. Descargar un archivo y transcribirlo son
+   * segundos — trabajo de worker, no de webhook.
+   */
+  await resolverMedios(conversacionId, claveIA, tokenWa);
 
   // ── El prompt ───────────────────────────────────────────────────────────────
   const [prompts, bloques, historial] = await Promise.all([
