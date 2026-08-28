@@ -25,16 +25,46 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
      *
      * Un CLIENTE solo ve las suyas. El equipo de GCC las ve todas: emitir y revisar
      * comprobantes es su trabajo.
+     *
+     * ⚠️ Y NO BASTA CON `invoices.client_id`. Ese campo está vacío en buena parte de las
+     * facturas: una emitida desde un ticket se enlaza por `source_type`/`source_id`, las
+     * antiguas por las columnas `ticket_id`/`project_id`, y las de proyecto también por
+     * la tabla `invoice_projects`. Mirando solo `client_id`, a Peter Tours su propia
+     * factura del ticket #12 —autorizada y con PDF— le salía como «no encontrada».
+     *
+     * Así que la pertenencia se resuelve por TODOS los caminos por los que una factura
+     * puede colgar de un cliente. Es una consulta y no cuatro `if`: cada camino que se
+     * comprobara aparte sería uno que algún día se olvida.
      */
     if (user.role === 'client') {
       const { rows: [ficha] } = await pool.query(
         `SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`, [user.userId],
       );
+      const suya = ficha && (await pool.query(
+        `SELECT 1
+           FROM gcc_world.invoices i
+          WHERE i.id = $1
+            AND (
+              i.client_id = $2
+              OR EXISTS (SELECT 1 FROM gcc_world.tickets t
+                          WHERE t.client_id = $2
+                            AND (t.id = i.ticket_id
+                                 OR (i.source_type = 'ticket' AND i.source_id = t.id::text)))
+              OR EXISTS (SELECT 1 FROM gcc_world.projects p
+                          WHERE p.client_id = $2
+                            AND (p.id = i.project_id
+                                 OR (i.source_type = 'project' AND i.source_id = p.id::text)
+                                 OR EXISTS (SELECT 1 FROM gcc_world.invoice_projects ip
+                                             WHERE ip.invoice_id = i.id
+                                               AND ip.project_id = p.id::text)))
+            )
+          LIMIT 1`,
+        [id, ficha.id],
+      )).rows.length > 0;
+
       // Se responde 404 y no 403: quien no tiene por qué saber que esa factura existe,
       // tampoco tiene por qué enterarse por el código de error.
-      if (!ficha || String(invoice.client_id ?? '') !== String(ficha.id)) {
-        return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
-      }
+      if (!suya) return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
     }
 
     // For authorized invoices, re-render the RIDE on the fly so every download uses

@@ -229,11 +229,6 @@ export default function DashboardSidebar() {
               esa persona — y el registro dirá que lo hizo ella. */}
           {suplantacion && (
             <div className="mb-2 rounded-md px-2 py-2" style={{ background: 'rgba(224, 176, 90, 0.16)' }}>
-              {!collapsed && (
-                <p className="text-[11px] leading-snug mb-1.5" style={{ ...mf, color: '#E9C07A' }}>
-                  Estás viendo la plataforma <strong>como este usuario</strong>.
-                </p>
-              )}
               <button
                 onClick={volverAMiCuenta}
                 disabled={volviendo}
