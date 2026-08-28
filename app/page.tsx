@@ -420,6 +420,8 @@ export default function LandingPage() {
    * intente entrar sin sesión y devolverlo a donde iba.
    */
   const [destinoTrasAcceso, setDestinoTrasAcceso] = useState<string | null>(null);
+  /** Correo que llega en el enlace (`?correo=`) para rellenar el usuario. Ver `/auth/[tipo]`. */
+  const [correoSugerido, setCorreoSugerido] = useState<string>('');
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -431,6 +433,8 @@ export default function LandingPage() {
     // después de identificarse — el fallo del 2026-08-23.
     const destino = destinoTrasAccesoValido(q.get('redirect'));
     if (destino) setDestinoTrasAcceso(destino);
+    const correo = q.get('correo');
+    if (correo && correo.includes('@')) setCorreoSugerido(correo.trim());
     if (!acceso) return;
     // ⚠️ Quien llega por un enlace de acceso va al PANEL, no al juego. Es lo que distingue
     // «entrar a trabajar» de «entrar a jugar», y sin esto un cliente acababa en la aventura.
@@ -449,6 +453,7 @@ export default function LandingPage() {
     // Se limpia la URL: dejar `?acceso=` haría que el diálogo reapareciera al volver atrás.
     const limpia = new URL(window.location.href);
     limpia.searchParams.delete('acceso');
+    limpia.searchParams.delete('correo');
     window.history.replaceState({}, '', limpia.pathname + limpia.search + limpia.hash);
   }, []);
   // (Eliminados) `enteredAsMember` y `freshAuth`: eran banderas del juego VIEJO
@@ -3363,6 +3368,7 @@ export default function LandingPage() {
 
       {clientLoginOpen && (
         <ClientLoginModal
+          correoInicial={correoSugerido}
           onClose={() => setClientLoginOpen(false)}
           onSignup={() => {
             setClientLoginOpen(false);

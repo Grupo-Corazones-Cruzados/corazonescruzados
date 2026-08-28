@@ -37,7 +37,23 @@ export default async function PuertaDeAcceso({
   // `redirect` se conserva: es a dónde iba quien fue enviado aquí por el guardián del panel.
   const sp = await searchParams;
   const destino = typeof sp.redirect === 'string' ? sp.redirect : null;
-  const query = new URLSearchParams({ acceso: tipo, ...(destino ? { redirect: destino } : {}) });
+
+  /**
+   * `?correo=` rellena el usuario en el formulario. Sirve para dar a un cliente un enlace
+   * en el que solo tiene que escribir su contraseña — un campo menos que teclear mal.
+   *
+   * Es una COMODIDAD, no una credencial: el correo no identifica a nadie por sí solo y la
+   * contraseña sigue haciendo todo el trabajo. Por eso puede viajar en la URL y la
+   * contraseña no puede, ni aunque se pidiera: quedaría en el historial del navegador, en
+   * el portapapeles y en cualquier registro por el que pase el enlace.
+   */
+  const correo = typeof sp.correo === 'string' ? sp.correo.trim() : null;
+
+  const query = new URLSearchParams({
+    acceso: tipo,
+    ...(destino ? { redirect: destino } : {}),
+    ...(correo ? { correo } : {}),
+  });
 
   redirect(`/?${query.toString()}`);
 }

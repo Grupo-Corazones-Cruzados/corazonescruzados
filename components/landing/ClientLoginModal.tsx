@@ -19,14 +19,21 @@ export default function ClientLoginModal({
   onClose,
   onLoggedIn,
   onSignup,
+  correoInicial = '',
 }: {
   onClose: () => void;
   onLoggedIn: () => void;
   /** Abre el formulario de creación de cuenta de cliente. */
   onSignup: () => void;
+  /**
+   * Correo con el que llega el formulario relleno, desde `/auth/cliente?correo=…`.
+   * Sirve para dar a un cliente un enlace donde solo escribe su contraseña. Sigue siendo
+   * editable: es una sugerencia, no una imposición — puede haber llegado el enlace de otro.
+   */
+  correoInicial?: string;
 }) {
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(correoInicial);
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
   const [masked, setMasked] = useState<string | null>(null);
