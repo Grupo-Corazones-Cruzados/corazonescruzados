@@ -1358,6 +1358,24 @@ export default function ProjectDetailPage() {
                 );
               })()}
               {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>}
+
+              {/* ⇒ EL MISMO BOTÓN PARA EL CLIENTE, PERO NO LA MISMA PANTALLA.
+                  Un proyecto «en revisión» está esperando que el cliente diga que sí, y
+                  pagarlo es decir que sí. Lo que ve al pulsar no es el modal de facturación
+                  del administrador —donde se escriben los datos de OTRO— sino su propia
+                  pantalla de pago: rellena sus datos de facturación y paga con tarjeta o
+                  transferencia. Al cobrarse, el proyecto se completa solo.
+
+                  Solo cuando queda algo por facturar: si ya está pagado, ofrecerle pagar
+                  otra vez sería mandarle a un error. */}
+              {project.status === 'review' && esCliente && Number(billing?.billable || 0) > 0 && (
+                <button
+                  onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}`)}
+                  className={BTN_PRIMARY}
+                >
+                  <Receipt className="w-4 h-4" /> Completar y facturar
+                </button>
+              )}
               {/* Accesos rápidos reformulados como botones del header */}
               {['in_progress', 'review', 'completed'].includes(project.status) && reqs.length > 0 && (
                 <button onClick={() => setShowProgresoModal(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>

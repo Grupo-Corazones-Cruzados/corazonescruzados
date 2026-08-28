@@ -176,6 +176,70 @@ export async function cotizarEtapa(
 }
 
 /**
+ * Qué cuesta pagar un proyecto **SIN plan de etapas**: entero y de una vez.
+ *
+ * ── POR QUÉ EXISTE (2026-08-28) ───────────────────────────────────────────────────────
+ * El cobro en línea solo cubría proyectos con plan de etapas, y la mayoría de los
+ * pequeños no lo tienen: el de Peter Tours son 300 $ y tres requerimientos. Su cliente
+ * llegaba a la pantalla de pago y leía «Este proyecto no tiene plan de etapas», que desde
+ * su lado es lo mismo que «no puedo pagarte».
+ *
+ * Decisión de Fernando: sin plan, **un solo pago**, y que la factura lleve el detalle de
+ * los REQUERIMIENTOS con su precio. Es lo correcto además de lo cómodo — el cliente ve
+ * facturado exactamente lo que aprobó en el proyecto, línea por línea.
+ *
+ * ⚠️ El importe NO es el presupuesto: es lo que queda **por facturar**, que `buildBilling`
+ * ya calcula sumando los requerimientos sin factura viva. Cobrar el total volvería a
+ * cobrar lo que ya se hubiera facturado a mano.
+ *
+ * Se exige que el proyecto esté **en revisión o completado**, igual que un ticket tiene
+ * que estar completado: cobrarle a alguien por un trabajo que aún se está haciendo es lo
+ * que la facturación por etapas evita en los proyectos que sí tienen plan.
+ */
+export async function cotizarProyectoSinEtapas(
+  projectId: string | number,
+  proveedor: string,
+): Promise<EtapaCobrable> {
+  const billing = await getProjectBilling(projectId);
+  if (!billing) throw new Error('El proyecto no existe.');
+  if (billing.status === 'cancelled') {
+    throw new Error('Este proyecto está cancelado. Escríbenos antes de pagar.');
+  }
+  if (billing.status !== 'review' && billing.status !== 'completed') {
+    throw new Error('Este proyecto todavía no está listo para cobrarse: falta que se entregue a revisión.');
+  }
+  if (!(billing.billable > 0)) {
+    throw new Error(billing.invoiced > 0
+      ? 'Este proyecto ya está facturado por completo.'
+      : 'Este proyecto no tiene importe por cobrar.');
+  }
+
+  // El mismo candado que en ticket: `awaiting` ocupa el sitio igual que `paid`, para que
+  // quien ya subió su comprobante no acabe pagando dos veces mientras alguien lo revisa.
+  const yaPagado = await cobroPagadoDeOrigen('project', String(billing.projectId));
+  if (yaPagado) {
+    throw new Error(yaPagado.status === 'awaiting'
+      ? 'Este proyecto ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.'
+      : 'Este proyecto ya fue pagado en línea.');
+  }
+
+  const { neto, recargo, total } = calcularRecargo(billing.billable, tarifaDe(proveedor));
+  return {
+    importes: importesPorMetodo(neto, proveedor),
+    sourceType: 'project',
+    sourceId: String(billing.projectId),
+    title: billing.title,
+    // Sin etapa: es lo que distingue este cobro del de un plan, y lo que el emisor mira
+    // para saber que las líneas salen de los requerimientos.
+    stageId: null,
+    conceptName: billing.title,
+    neto, recargo, total, proveedor,
+    projectId: billing.projectId,
+    projectTitle: billing.title,
+  };
+}
+
+/**
  * Qué cuesta cobrar un TICKET por esta pasarela.
  *
  * ⚠️ Un ticket no tiene etapas: se cobra **el saldo que le queda por facturar**, entero y
@@ -382,7 +446,8 @@ export async function cotizarCobro(
     return cotizarProducto(itemId, userId, proveedor);
   }
   if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor);
-  if (destino.stageId == null) throw new Error('Falta la etapa del proyecto.');
+  // Sin etapa ya no es un error: es un proyecto sin plan, y se cobra entero de una vez.
+  if (destino.stageId == null) return cotizarProyectoSinEtapas(destino.sourceId, proveedor);
   return cotizarEtapa(destino.sourceId, destino.stageId, proveedor);
 }
 
@@ -570,6 +635,8 @@ export async function confirmarPago(
                    AND stage_id IS NOT DISTINCT FROM $4))`,
       [intentId, intento.source_type, intento.source_id, intento.stage_id],
     ).catch((e: any) => console.error('[pagos] no se pudo quemar el enlace del cobro', intentId, e.message));
+
+    await completarProyectoPagado(intento);
   }
 
   if (!intento) {
@@ -628,6 +695,42 @@ export async function confirmarPago(
 }
 
 /**
+ * Un proyecto sin plan de etapas que se paga entero queda **completado**.
+ *
+ * ── POR QUÉ EL PAGO CIERRA EL PROYECTO (Fernando, 2026-08-28) ─────────────────────────
+ * Un proyecto «en revisión» está esperando que el cliente diga que sí. Pagarlo **es** decir
+ * que sí: nadie paga una entrega que no acepta. Pedirle además a un administrador que
+ * pulse «Completar» sería un trámite que no decide nada y que deja el proyecto en revisión
+ * durante días después de haber cobrado.
+ *
+ * ⚠️ SOLO SIN PLAN DE ETAPAS (`stage_id IS NULL`). Con plan, cada etapa es un pago parcial
+ * y cobrar la primera no significa que el proyecto esté entregado — cerrarlo ahí sería
+ * darlo por terminado a un tercio.
+ *
+ * Va aquí y no tras emitir la factura, a propósito: **el dinero es lo que decide**. Si el
+ * SRI falla o corre el modo ensayo, el cliente ha pagado igual y su proyecto tiene que
+ * reflejarlo; la factura se reintenta después, el estado no debería depender de ella.
+ *
+ * Y sirve para los dos métodos sin escribir nada más: con tarjeta esto corre al confirmar
+ * la pasarela, y con transferencia corre cuando el responsable confirma que el dinero está
+ * en el banco — que es cuando toca.
+ */
+async function completarProyectoPagado(intento: any) {
+  if (intento.source_type !== 'project' || intento.stage_id != null) return;
+  try {
+    await pool.query(
+      `UPDATE gcc_world.projects
+          SET status = 'completed', updated_at = NOW()
+        WHERE id = ($1)::bigint AND status = 'review'`,
+      [String(intento.source_id)],
+    );
+  } catch (e: any) {
+    // No puede tumbar el cobro: el dinero ya entró y la factura va después.
+    console.error('[pagos] cobro', intento.id, 'no pudo completar el proyecto:', e.message);
+  }
+}
+
+/**
  * Emite la factura de un cobro confirmado.
  *
  * Dos líneas, siempre: la etapa por su importe pactado y el recargo aparte. Fernando eligió
@@ -658,6 +761,8 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   let subId = '';
   let periodo = '';
   let ivaSuscripcion = 0;
+  /** Los requerimientos que van como líneas, cuando el proyecto no tiene plan de etapas. */
+  let requerimientos: { id: number; title: string; amount: number }[] = [];
 
   // ── EL ALTA DE UN PRODUCTO CREA SU SUSCRIPCIÓN ────────────────────────────
   //
@@ -707,9 +812,25 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     nombreEtapa = titulo;
   } else {
     const billing = await getProjectBilling(sourceId);
-    const etapa = billing?.etapas.find(e => e.id === stageId);
     titulo = billing?.title || 'Proyecto';
-    nombreEtapa = etapa?.name || `Etapa ${stageId}`;
+    if (stageId != null) {
+      const etapa = billing?.etapas.find(e => e.id === stageId);
+      nombreEtapa = etapa?.name || `Etapa ${stageId}`;
+    } else {
+      /**
+       * ⇒ PROYECTO SIN PLAN DE ETAPAS: la factura lleva **un renglón por requerimiento**,
+       * con su precio (decisión de Fernando, 2026-08-28).
+       *
+       * Es lo que el cliente aprobó y lo que ve en su proyecto, así que reconoce la
+       * factura sin tener que fiarse: si el proyecto dice 105 + 120 + 75, la factura dice
+       * lo mismo. Una sola línea de «Proyecto — 300 $» obligaría a creérselo.
+       *
+       * Se toman los requerimientos **sin factura viva**, que son exactamente los que
+       * suman el importe cobrado (`billing.billable`, ver `cotizarProyectoSinEtapas`).
+       */
+      requerimientos = (billing?.stages ?? []).filter(r => !r.invoiceId && r.amount > 0);
+      nombreEtapa = titulo;
+    }
   }
 
   // ⚠️ EL IMPORTE DE UNA SUSCRIPCIÓN LLEVA SU IVA DENTRO. `monthly_cost` es el precio final
@@ -719,15 +840,24 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   // hoy, base y total coinciden.
   const baseSuscripcion = ivaSuscripcion > 0 ? neto / (1 + ivaSuscripcion / 100) : neto;
 
-  const items = [
-    {
-      description: esSuscripcion ? nombreEtapa : esTicket ? titulo : `${titulo} — ${nombreEtapa}`,
-      quantity: 1,
-      unitPrice: esSuscripcion ? baseSuscripcion : neto,
-      ivaRate: esSuscripcion ? ivaSuscripcion : 0,
-      discount: 0,
-    },
-  ];
+  const items = requerimientos.length > 0
+    // Proyecto sin plan: un renglón por requerimiento, tal como el cliente los aprobó.
+    ? requerimientos.map(r => ({
+        description: `${titulo} — ${r.title}`,
+        quantity: 1,
+        unitPrice: r.amount,
+        ivaRate: 0,
+        discount: 0,
+      }))
+    : [
+      {
+        description: esSuscripcion ? nombreEtapa : esTicket ? titulo : `${titulo} — ${nombreEtapa}`,
+        quantity: 1,
+        unitPrice: esSuscripcion ? baseSuscripcion : neto,
+        ivaRate: esSuscripcion ? ivaSuscripcion : 0,
+        discount: 0,
+      },
+    ];
   // El recargo de la pasarela va SIEMPRE a tarifa 0: es un gasto de procesamiento, no parte
   // del servicio suscrito, y no hereda el IVA de lo que se está cobrando.
   if (recargo > 0) {
@@ -785,6 +915,10 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
         paymentCode,
         invoiceItems: items,
         stageIds: stageId != null ? [String(stageId)] : [],
+        // ⚠️ Sin esto la factura no quedaría atada a los requerimientos, y `getProjectStages`
+        // los seguiría dando por facturables: el proyecto se podría volver a cobrar entero.
+        // Es el equivalente, sin plan de etapas, de marcar la etapa como facturada.
+        requirementIds: requerimientos.map(r => String(r.id)),
         currency: 'USD',
         exchangeRate: 1,
       });
