@@ -13,7 +13,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import DetailHeader from '@/components/ui/DetailHeader';
-import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -24,7 +23,6 @@ import EmailFlowWorkspace, { type EmailWorkspaceHandle } from '@/components/dash
 import WhatsAppFlowPanel from '@/components/dashboard/flows/WhatsAppFlowPanel';
 import AgenteFlowWorkspace from '@/components/dashboard/flows/AgenteFlowWorkspace';
 import BotonAvisos, { type Aviso } from '@/components/ui/BotonAvisos';
-import BotonAyuda from '@/components/ui/BotonAyuda';
 import { Mail, MessageCircle, Sparkles, Puzzle, Play, Pause, AlertTriangle, Plus , Users} from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -41,12 +39,6 @@ const FLOW_TYPES: Record<string, { label: string; Icon: any }> = {
   whatsapp: { label: 'WhatsApp', Icon: MessageCircle },
   ai_agent: { label: 'Agente IA', Icon: Sparkles },
   custom: { label: 'Personalizado', Icon: Puzzle },
-};
-const FLOW_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  draft: 'default', active: 'success', paused: 'warning', archived: 'error',
-};
-const FLOW_STATUS_L: Record<string, string> = {
-  draft: 'Borrador', active: 'Activo', paused: 'Pausado', archived: 'Archivado',
 };
 
 export default function FlowDetail({ flowId }: { flowId: string }) {
@@ -135,20 +127,15 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
 
   return (
     <div>
+      {/* Sin `status` ni `chips` bajo el nombre: los dos eran ruido.
+          · El ESTADO ya lo dice el botón «Activar»/«Pausar» de la derecha, que además es
+            donde se cambia. Leerlo y tenerlo a un centímetro es decir lo mismo dos veces.
+          · El TIPO se ve solo: quien entra a un agente tiene delante su bandeja, sus
+            plantillas y su estudio. No hace falta una etiqueta que lo anuncie.
+          La descripción sigue estando en el panel de Automatizaciones. */}
       <DetailHeader
         breadcrumb={{ label: 'Automatizaciones', href: '/dashboard/automatizaciones' }}
         title={flow.name}
-        status={<PixelBadge variant={FLOW_STATUS_V[flow.status] || 'default'}>{FLOW_STATUS_L[flow.status] || flow.status}</PixelBadge>}
-        chips={
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
-            <type.Icon className="w-3.5 h-3.5 text-accent" /> {type.label}
-            {flow.description && (
-              <BotonAyuda titulo={`${type.label} — ${flow.name}`} lado="derecha">
-                {flow.description}
-              </BotonAyuda>
-            )}
-          </span>
-        }
         actions={
           <>
             <BotonAvisos avisos={avisos} />

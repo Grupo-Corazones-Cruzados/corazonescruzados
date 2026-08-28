@@ -17,8 +17,9 @@ import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { SectionBar, PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/FlowPanelUI';
+import { PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/FlowPanelUI';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles, FileText,
   Smartphone, History,
@@ -58,7 +59,6 @@ const FILTROS = [
 
 export default function AgenteBandeja({ flowId, acciones }: { flowId: number; acciones?: React.ReactNode }) {
   const [filas, setFilas] = useState<Fila[]>([]);
-  const [conteo, setConteo] = useState({ bot: 0, humanas: 0 });
   const [filtro, setFiltro] = useState<string>('todas');
   const [busca, setBusca] = useState('');
   const [sel, setSel] = useState<number | null>(null);
@@ -76,7 +76,6 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
       const q = new URLSearchParams({ filtro, q: busca });
       const d = await fetch(`/api/admin/flows/${flowId}/agente/conversaciones?${q}`).then((r) => r.json());
       setFilas(d.data ?? []);
-      if (d.conteo) setConteo(d.conteo);
     } catch { if (!silencioso) toast.error('No se pudo cargar la bandeja'); }
     finally { setCargando(false); }
   }, [flowId, filtro, busca]);
@@ -100,14 +99,16 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
 
   return (
     <div>
-      <SectionBar
-        title="Conversaciones"
-        hint={`${conteo.bot} con el agente · ${conteo.humanas} con una persona`}
-      >
-        {acciones}
-      </SectionBar>
+      {/* ── UNA SOLA FILA DE CONTROLES ────────────────────────────────────────────
+          Antes eran dos: un título «Conversaciones» con su recuento arriba, y los
+          filtros debajo. El título sobraba —quien está en la Bandeja ya sabe que mira
+          conversaciones— y el recuento repetía lo que dicen los propios filtros. Dos
+          filas de adorno le comían alto a lo único que importa, que es la lista.
 
-      <div className="flex flex-wrap gap-2 items-center mb-3">
+          Orden: filtros a la izquierda (lo que se toca a diario), buscador y pestañas a
+          la derecha. El buscador va pegado a las pestañas a propósito: son los dos
+          controles de NAVEGACIÓN, y separarlos obligaba a cruzar la pantalla. */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         {FILTROS.map((f) => (
           <button key={f.valor} onClick={() => setFiltro(f.valor)}
             className={filtro === f.valor ? BTN_PRIMARY : BTN_SECONDARY}>
@@ -119,6 +120,7 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
           <PixelInput placeholder="Buscar por número o nombre…" value={busca}
             onChange={(e: any) => setBusca(e.target.value)} style={{ paddingLeft: 28 }} />
         </div>
+        {acciones && <div className="flex items-center gap-2 shrink-0">{acciones}</div>}
       </div>
 
       {filas.length === 0 ? (
@@ -313,7 +315,19 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
         )}
       </div>
 
-      <div className="shrink-0 px-4 py-2 border-t border-digi-border text-[11px] text-digi-muted flex flex-wrap gap-x-4" style={mf}>
+      <div className="shrink-0 px-4 py-2 border-t border-digi-border text-[11px] text-digi-muted flex flex-wrap items-center gap-x-4 gap-y-1" style={mf}>
+        {/* ⇒ LO QUE HA COSTADO ESTA CONVERSACIÓN, EN DINERO.
+            Los tokens de al lado son la materia prima, pero nadie decide nada con
+            «23.651 tokens». Con «$0,0114» sí: se sabe si un agente sale a cuenta, y el
+            cliente puede ver qué está pagando por atender a un cliente suyo.
+            La tarifa vive en `lib/ia/precios.ts`, con la fecha en que se comprobó. */}
+        <span className="px-1.5 py-0.5 rounded bg-accent-light text-accent font-medium">
+          {costoLegible(costoEnDolares({
+            tokensEntrada: gasto.entrada,
+            tokensSalida: gasto.salida,
+            tokensCacheLectura: gasto.cache_lectura,
+          }))} en IA
+        </span>
         <span>{gasto.corridas} corrida(s) del modelo</span>
         <span>{gasto.entrada.toLocaleString('es-ES')} tokens de entrada</span>
         <span>{gasto.salida.toLocaleString('es-ES')} de salida</span>
