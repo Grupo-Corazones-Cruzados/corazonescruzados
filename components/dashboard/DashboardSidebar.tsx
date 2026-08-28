@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTemaPanel } from '@/components/providers/TemaPanel';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@/lib/dashboard/access';
 import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
@@ -12,7 +13,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu,
-  LogOut, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
+  LogOut, Sun, Moon, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -53,6 +54,7 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function DashboardSidebar() {
   const { user, signOut } = useAuth();
+  const { oscuro, alternar } = useTemaPanel();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -212,9 +214,25 @@ export default function DashboardSidebar() {
             </div>
           )}
 
-          {/* El pie se queda con UNA sola cosa. El interruptor de tema se fue a
-              Configuración —es una preferencia, no una herramienta de uso diario— y el
-              botón de contraer sobra desde que el menú se abre al pasar el puntero. */}
+          {/* Dos botones, con el MISMO comportamiento al pasar por encima: no cambian de
+              relleno ni de borde, solo suben el brillo. El botón de contraer sigue fuera,
+              que ya no hace falta desde que el menú se abre al acercar el puntero.
+
+              El tema está también en Configuración → Apariencia, y los dos mandan sobre el
+              mismo contexto: se toque donde se toque, quedan de acuerdo. */}
+          <div className="flex flex-col gap-1.5">
+          <button
+            onClick={alternar}
+            aria-label={oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            title={oscuro ? 'Modo claro' : 'Modo oscuro'}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium
+                       transition-[filter] duration-150 hover:brightness-125 focus-visible:brightness-125"
+            style={{ ...mf, color: '#C9B8FF', background: 'rgba(201, 184, 255, 0.12)' }}
+          >
+            {oscuro ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {!collapsed && (oscuro ? 'Modo claro' : 'Modo oscuro')}
+          </button>
+
           <button
             onClick={signOut}
             aria-label="Cerrar sesión"
@@ -231,6 +249,7 @@ export default function DashboardSidebar() {
             <LogOut className="w-4 h-4" />
             {!collapsed && 'Salir'}
           </button>
+          </div>
         </div>
       </aside>
 

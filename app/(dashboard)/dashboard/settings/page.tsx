@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import ProfilePanel from '@/components/settings/ProfilePanel';
-import PanelApariencia from '@/components/settings/PanelApariencia';
 import CvPanel from '@/components/settings/CvPanel';
 import AvailabilityPanel from '@/components/settings/AvailabilityPanel';
 import PortfolioPanel from '@/components/settings/PortfolioPanel';
@@ -53,12 +52,7 @@ export default function SettingsPage() {
         style={alto.style}
         className="flex flex-col xl:flex-row gap-4 items-stretch max-xl:!h-auto xl:min-h-0"
       >
-        {/* El perfil y la apariencia comparten columna: los dos son «cómo soy yo aquí»,
-            frente a las pestañas de la derecha, que son el trabajo del miembro. */}
-        <div className="flex flex-col gap-4 shrink-0">
-          <ProfilePanel />
-          <PanelApariencia />
-        </div>
+        <ProfilePanel />
 
         {isMember && (
           <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
