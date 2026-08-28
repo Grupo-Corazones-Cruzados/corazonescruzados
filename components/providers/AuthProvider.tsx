@@ -10,8 +10,21 @@ import {
 } from "react";
 import type { User } from "@/lib/types";
 
+/** Cuando un administrador está viendo la plataforma como este usuario. `null` = sesión normal. */
+export interface Suplantacion {
+  admin_id: string;
+  admin_email: string | null;
+}
+
 interface AuthContextValue {
   user: User | null;
+  /**
+   * ⚠️ Si NO es `null`, el `user` de arriba **no es quien está delante de la pantalla**:
+   * es la persona a la que un administrador está mirando. Toda la aplicación debe
+   * comportarse como si fuera ese usuario —esa es la función— pero la interfaz tiene que
+   * decirlo bien claro, o se acaba escribiendo algo en la cuenta de un cliente sin querer.
+   */
+  suplantacion: Suplantacion | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, meta?: { first_name?: string; last_name?: string }) => Promise<void>;
@@ -24,6 +37,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [suplantacion, setSuplantacion] = useState<Suplantacion | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
@@ -32,11 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
+        setSuplantacion(data.suplantacion ?? null);
       } else {
         setUser(null);
+        setSuplantacion(null);
       }
     } catch {
       setUser(null);
+      setSuplantacion(null);
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        suplantacion,
         isLoading,
         signIn,
         signUp,

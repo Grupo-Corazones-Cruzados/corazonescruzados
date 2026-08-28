@@ -43,5 +43,13 @@ export async function GET() {
     if (memberId) row.member_id = memberId;
   }
 
-  return NextResponse.json({ user: row });
+  // Si esta sesión es un administrador MIRANDO como otro, la pantalla tiene que decirlo:
+  // sin aviso, uno se olvida de que está dentro de la cuenta de un cliente y escribe algo
+  // que quedará firmado por él. Ver `app/api/admin/suplantar/route.ts`.
+  return NextResponse.json({
+    user: row,
+    suplantacion: payload.suplantadoPor
+      ? { admin_id: payload.suplantadoPor, admin_email: payload.suplantadoPorEmail ?? null }
+      : null,
+  });
 }

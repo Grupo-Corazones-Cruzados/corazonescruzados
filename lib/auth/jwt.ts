@@ -15,12 +15,29 @@ export interface TokenPayload extends JWTPayload {
   userId: string;
   email: string;
   role: UserRole;
+  /**
+   * Solo cuando un ADMINISTRADOR está viendo la plataforma con los ojos de este usuario.
+   * Guarda quién es el administrador de verdad, para poder volver a su cuenta sin pedirle
+   * la contraseña otra vez.
+   *
+   * ⚠️ El `role` de arriba es el DEL USUARIO SUPLANTADO, no el del administrador, y eso es
+   * a propósito: mientras dura la vista, quien mira pierde sus permisos de administrador
+   * en todas las rutas del servidor. Es lo que hace que «ver como otro» sea ver de verdad
+   * —los botones que no tiene, los 403 que recibe— y no un administrador disfrazado.
+   * También cierra el paso a encadenar suplantaciones: sin rol de admin no se puede
+   * empezar otra.
+   */
+  suplantadoPor?: string;
+  /** El correo del administrador, para poder enseñarlo en el aviso sin otra consulta. */
+  suplantadoPorEmail?: string;
 }
 
 export async function createToken(payload: {
   userId: string;
   email: string;
   role: UserRole;
+  suplantadoPor?: string;
+  suplantadoPorEmail?: string;
 }): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })

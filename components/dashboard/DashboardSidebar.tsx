@@ -4,16 +4,18 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTemaPanel } from '@/components/providers/TemaPanel';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
+import DialogoVerComoOtro from '@/components/dashboard/DialogoVerComoOtro';
 import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@/lib/dashboard/access';
 import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
   Settings, LifeBuoy, ShieldCheck, Workflow, Menu,
-  LogOut, Sun, Moon, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
+  LogOut, Sun, Moon, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -53,7 +55,7 @@ const NAV_GROUPS: NavGroup[] = MODULE_GROUPS.map((title) => ({
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function DashboardSidebar() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, suplantacion } = useAuth();
   const { oscuro, alternar } = useTemaPanel();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -77,6 +79,27 @@ export default function DashboardSidebar() {
   // Módulo cuyo modal de tutoriales está abierto (null = ninguno). Al cerrarlo el
   // modal se DESMONTA, así el iframe de YouTube deja de reproducir.
   const [tutorialFor, setTutorialFor] = useState<NavItem | null>(null);
+  /** Diálogo para tomar la vista de otro usuario. Solo lo abre un administrador. */
+  const [verComoOtro, setVerComoOtro] = useState(false);
+  const [volviendo, setVolviendo] = useState(false);
+
+  /**
+   * ⚠️ `suplantacion` manda sobre el rol. Mientras un administrador mira como otro, su
+   * sesión TIENE el rol del otro —así ve lo que el otro ve— así que `user.role` dice
+   * «client» aunque delante haya un administrador. Ofrecer el diálogo por el rol lo
+   * escondería justo cuando hace falta para volver.
+   */
+  const esAdmin = user?.role === 'admin';
+
+  const volverAMiCuenta = async () => {
+    setVolviendo(true);
+    try {
+      const r = await fetch('/api/admin/suplantar', { method: 'DELETE' });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); toast.error(d.error ?? 'No se pudo volver'); return; }
+      // Recarga completa: la sesión cambia de identidad y no queda nada fiable en memoria.
+      window.location.href = '/dashboard';
+    } finally { setVolviendo(false); }
+  };
   // Cuántos videos activos tiene cada módulo — solo para resaltar el botón ⓘ de los
   // módulos que ya tienen tutorial publicado.
   const [tutorialCounts, setTutorialCounts] = useState<Record<string, number>>({});
@@ -200,23 +223,71 @@ export default function DashboardSidebar() {
 
         {/* User section */}
         <div className="border-t border-digi-border p-2.5 shrink-0">
-          {user && (
-            <div className={`flex items-center gap-2.5 mb-2 ${collapsed ? 'justify-center' : ''}`}>
-              {user.avatar_url ? (
-                <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-digi-border object-cover shrink-0" />
-              ) : (
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent-light border border-accent/20 text-accent text-[12px] font-semibold shrink-0" style={mf}>
-                  {(user.first_name?.[0] || user.email[0]).toUpperCase()}
-                </div>
-              )}
+          {/* ── DENTRO DE LA CUENTA DE OTRO ────────────────────────────────────────
+              Un aviso que no se puede pasar por alto. Sin él, un administrador se olvida
+              de que está mirando como un cliente y escribe algo que quedará firmado por
+              esa persona — y el registro dirá que lo hizo ella. */}
+          {suplantacion && (
+            <div className="mb-2 rounded-md px-2 py-2" style={{ background: 'rgba(224, 176, 90, 0.16)' }}>
               {!collapsed && (
-                <div className="min-w-0">
-                  <p className="text-[12px] font-medium text-digi-text truncate" style={mf}>{user.first_name || user.email.split('@')[0]}</p>
-                  <p className="text-[10px] text-digi-muted" style={mf}>{ROLE_LABEL_ES[accessRole]}</p>
-                </div>
+                <p className="text-[11px] leading-snug mb-1.5" style={{ ...mf, color: '#E9C07A' }}>
+                  Estás viendo la plataforma <strong>como este usuario</strong>.
+                </p>
               )}
+              <button
+                onClick={volverAMiCuenta}
+                disabled={volviendo}
+                title="Volver a mi cuenta"
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11.5px] font-medium
+                           transition-[filter] duration-150 hover:brightness-125 disabled:opacity-60"
+                style={{ ...mf, color: '#1F1A2E', background: '#E9C07A' }}
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                {!collapsed && (volviendo ? 'Volviendo…' : 'Volver a mi cuenta')}
+              </button>
             </div>
           )}
+
+          {user && (() => {
+            /* La ficha del usuario. Para un ADMINISTRADOR es además el botón que abre
+               «ver como otro usuario»: la foto de perfil es donde uno busca «quién soy»,
+               así que es también donde tiene sentido preguntar «¿y si fuera otro?».
+               Para el resto es texto, no un botón muerto que no hace nada al pulsarlo. */
+            const contenido = (
+              <>
+                {user.avatar_url ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-digi-border object-cover shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent-light border border-accent/20 text-accent text-[12px] font-semibold shrink-0" style={mf}>
+                    {(user.first_name?.[0] || user.email[0]).toUpperCase()}
+                  </div>
+                )}
+                {!collapsed && (
+                  <div className="min-w-0 text-left">
+                    <p className="text-[12px] font-medium text-digi-text truncate" style={mf}>{user.first_name || user.email.split('@')[0]}</p>
+                    <p className="text-[10px] text-digi-muted" style={mf}>{ROLE_LABEL_ES[accessRole]}</p>
+                  </div>
+                )}
+                {esAdmin && !collapsed && <Eye className="w-3.5 h-3.5 text-digi-muted ml-auto shrink-0" />}
+              </>
+            );
+
+            const clases = `flex items-center gap-2.5 mb-2 w-full ${collapsed ? 'justify-center' : ''}`;
+
+            return esAdmin ? (
+              <button
+                type="button"
+                onClick={() => setVerComoOtro(true)}
+                title="Ver la plataforma como otro usuario"
+                className={`${clases} rounded-md p-1 -m-1 transition-[filter] duration-150 hover:brightness-125`}
+              >
+                {contenido}
+              </button>
+            ) : (
+              <div className={clases}>{contenido}</div>
+            );
+          })()}
 
           {/* Dos botones, con el MISMO comportamiento al pasar por encima: no cambian de
               relleno ni de borde, solo suben el brillo. El botón de contraer sigue fuera,
@@ -258,6 +329,8 @@ export default function DashboardSidebar() {
       </aside>
 
       {/* Modal de tutoriales del módulo (isla corp: el sidebar ya vive dentro de `.corp`) */}
+      <DialogoVerComoOtro abierto={verComoOtro} alCerrar={() => setVerComoOtro(false)} />
+
       {tutorialFor && (
         <ModuleTutorialsModal
           module={tutorialFor.href}
