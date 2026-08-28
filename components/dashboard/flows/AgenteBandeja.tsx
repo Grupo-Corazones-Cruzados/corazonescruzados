@@ -21,12 +21,25 @@ import { SectionBar, PanelEmpty, BTN_ROW } from '@/components/dashboard/flows/Fl
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles, FileText,
+  Smartphone, History,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
+/**
+ * Cómo se llama este contacto, por orden de quién lo eligió.
+ *
+ * Manda `nombre_agenda` —el nombre con el que la EMPRESA lo tiene guardado— sobre
+ * `nombre_perfil`, que es el alias que el cliente final se puso a sí mismo en WhatsApp y
+ * suele ser inútil para quien atiende: «~», «💕💕💕», «Tn». El equipo busca por el nombre
+ * de su agenda, no por ese.
+ */
+function comoSeLlama(c: { nombre_agenda?: string | null; nombre_perfil?: string | null; wa_id: string }) {
+  return c.nombre_agenda || c.nombre_perfil || c.wa_id;
+}
+
 interface Fila {
-  id: number; wa_id: string; nombre_perfil: string | null;
+  id: number; wa_id: string; nombre_perfil: string | null; nombre_agenda: string | null;
   bot_activo: boolean; motivo_escalado: string | null;
   ultimo_texto: string | null; ultima_direccion: string | null;
   ultimo_mensaje_en: string | null; mensajes: number;
@@ -125,7 +138,7 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
                   sel === f.id ? 'bg-accent-light border-l-2 border-l-accent' : 'hover:bg-digi-bg'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[13px] font-medium text-digi-text truncate" style={mf}>
-                    {f.nombre_perfil || f.wa_id}
+                    {comoSeLlama(f)}
                   </span>
                   {f.bot_activo
                     ? <Bot className="w-3.5 h-3.5 text-digi-muted shrink-0" />
@@ -235,7 +248,7 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-[14px] font-semibold text-digi-text truncate" style={mf}>
-              {c.nombre_perfil || c.wa_id}
+              {comoSeLlama(c)}
             </span>
             {c.bot_activo
               ? <PixelBadge variant="info">Lo lleva el agente</PixelBadge>
@@ -346,16 +359,23 @@ function Burbuja({ m }: { m: Mensaje }) {
         <p className="text-[13px] text-digi-text whitespace-pre-wrap break-words" style={mf}>{m.texto}</p>
         <div className="flex items-center gap-1.5 mt-1">
           <span className="text-[10.5px] text-digi-muted" style={mf}>{hora}</span>
-          {/* Quién escribió esto. Son tres orígenes distintos y conviene distinguirlos:
-              «a mano» lo tecleó una persona, «agente» lo compuso el modelo, y «plantilla»
-              salió de un envío masivo — que no es una respuesta a nadie, sino un mensaje
-              que iniciamos nosotros. Al leer un hilo, esa diferencia lo explica todo. */}
+          {/* Quién escribió esto. Son cinco orígenes distintos y conviene distinguirlos:
+              «a mano» lo tecleó una persona DESDE ESTA PANTALLA, «WhatsApp del cliente» lo
+              escribió su equipo desde su propio móvil o WhatsApp Web —coexistencia—,
+              «agente» lo compuso el modelo, «plantilla» salió de un envío masivo, y
+              «anterior» venía del volcado de conversaciones previas al alta. Al leer un
+              hilo, esa diferencia lo explica todo: sin ella, un mensaje del equipo del
+              cliente parecería nuestro. */}
           {!entrante && (
-            m.herramienta === 'plantilla'
-              ? <span className="text-[10.5px] text-accent flex items-center gap-0.5" style={mf}><FileText className="w-2.5 h-2.5" /> plantilla</span>
-              : m.herramienta === null
-                ? <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><User className="w-2.5 h-2.5" /> a mano</span>
-                : <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><Sparkles className="w-2.5 h-2.5" /> agente</span>
+            m.herramienta === 'equipo'
+              ? <span className="text-[10.5px] text-accent flex items-center gap-0.5" style={mf}><Smartphone className="w-2.5 h-2.5" /> WhatsApp del cliente</span>
+              : m.herramienta === 'historial'
+                ? <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><History className="w-2.5 h-2.5" /> anterior</span>
+                : m.herramienta === 'plantilla'
+                  ? <span className="text-[10.5px] text-accent flex items-center gap-0.5" style={mf}><FileText className="w-2.5 h-2.5" /> plantilla</span>
+                  : m.herramienta === null
+                    ? <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><User className="w-2.5 h-2.5" /> a mano</span>
+                    : <span className="text-[10.5px] text-digi-muted flex items-center gap-0.5" style={mf}><Sparkles className="w-2.5 h-2.5" /> agente</span>
           )}
           {m.enviado_ok === false && (
             <span className="text-[10.5px] text-red-600 flex items-center gap-0.5" style={mf}>

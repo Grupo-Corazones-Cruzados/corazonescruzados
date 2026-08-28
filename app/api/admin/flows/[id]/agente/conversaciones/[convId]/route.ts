@@ -31,7 +31,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   return NextResponse.json({
     data: {
       conversacion: {
-        id: conv.id, wa_id: conv.wa_id, nombre_perfil: conv.nombre_perfil,
+        id: conv.id, wa_id: conv.wa_id, nombre_perfil: conv.nombre_perfil, nombre_agenda: conv.nombre_agenda,
         bot_activo: conv.bot_activo, motivo_escalado: conv.motivo_escalado,
         resumen: conv.resumen, ultimo_mensaje_en: conv.ultimo_mensaje_en,
       },

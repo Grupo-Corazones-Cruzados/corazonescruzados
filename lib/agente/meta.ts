@@ -133,6 +133,31 @@ export async function registrarNumero(phoneNumberId: string, token: string, pin:
   });
 }
 
+/**
+ * Pide a Meta los datos que el cliente ya tenía en su WhatsApp Business: su agenda de
+ * contactos o sus conversaciones anteriores.
+ *
+ * ⛔ **UN SOLO INTENTO, Y DENTRO DE 24 HORAS DESDE EL ALTA.** No es una recomendación: es
+ * el límite de Meta. Pasado el plazo, o gastado el intento, la ÚNICA forma de volver a
+ * pedirlo es desconectar al cliente y repetir el Embedded Signup entero — con el cliente
+ * delante otra vez. Por eso queda anotado en `agente_canales` cuándo se pidió cada uno.
+ *
+ * ⚠️ Y el orden importa tanto como el plazo: esto NO devuelve los datos, dispara una
+ * tanda de **webhooks**. Si se llama antes de que la app esté suscrita a
+ * `smb_app_state_sync` / `history` y sepa digerirlos, los datos llegan, se tiran, y el
+ * intento queda gastado igual.
+ */
+export async function pedirSincronizacion(
+  phoneNumberId: string,
+  token: string,
+  tipo: 'smb_app_state_sync' | 'history',
+) {
+  return graph(`/${phoneNumberId}/smb_app_data`, {
+    method: 'POST', token,
+    body: JSON.stringify({ messaging_product: 'whatsapp', sync_type: tipo }),
+  });
+}
+
 /* ═══════════════════════ PLANTILLAS DE MENSAJE ═══════════════════════ */
 
 /**

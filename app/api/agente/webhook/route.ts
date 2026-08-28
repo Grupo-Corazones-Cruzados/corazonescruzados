@@ -16,7 +16,12 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { firmaValida } from '@/lib/agente/firma';
 import { canalPorNumero } from '@/lib/agente/canales';
-import { extraerMensajes, ingerir } from '@/lib/agente/ingesta';
+import {
+  extraerMensajes, ingerir, campoDelWebhook,
+  extraerEcos, ingerirEco,
+  extraerContactosDeAgenda, guardarContactosDeAgenda,
+  extraerHistorial, ingerirHistorial,
+} from '@/lib/agente/ingesta';
 import { encolar } from '@/lib/agente/cola';
 
 export const runtime = 'nodejs';
@@ -56,7 +61,17 @@ export async function POST(req: Request) {
 
   try {
     const payload = JSON.parse(crudo);
-    const { phoneNumberId, mensajes } = extraerMensajes(payload);
+
+    /**
+     * ⇒ QUÉ NOS ESTÁ CONTANDO META. Todo llega por esta misma URL y solo el `field` los
+     * distingue. Antes solo se leía `messages`, y por eso en un número de coexistencia el
+     * agente no veía a las personas del equipo del cliente ni sabía cómo las llamaba él.
+     */
+    const campo = campoDelWebhook(payload);
+
+    const { phoneNumberId, mensajes } = campo === 'messages'
+      ? extraerMensajes(payload)
+      : { phoneNumberId: payload?.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id ?? null, mensajes: [] };
 
     const canal = phoneNumberId ? await canalPorNumero(phoneNumberId) : null;
 
@@ -67,9 +82,45 @@ export async function POST(req: Request) {
       [canal?.id ?? null, crudo.slice(0, 100_000)],
     );
 
-    // Acuses de entrega, cambios de estado del número, un número que no conocemos… nada
-    // que hacer. Se responde 200 igual: para Meta está entregado.
-    if (!canal || mensajes.length === 0) {
+    // Sin canal no hay nada que hacer con ninguna carga: el número no es nuestro.
+    if (!canal) return NextResponse.json({ ok: true });
+
+    /**
+     * ── LO QUE ESCRIBE EL EQUIPO DEL CLIENTE (`smb_message_echoes`) ─────────────────
+     * Se guarda como saliente y **la conversación pasa a esa persona**: ver `ingerirEco`.
+     * No se encola nada — el agente no contesta a su propio compañero.
+     */
+    if (campo === 'smb_message_echoes') {
+      const { ecos } = extraerEcos(payload);
+      for (const e of ecos) await ingerirEco(canal.id, e);
+      return NextResponse.json({ ok: true });
+    }
+
+    /**
+     * ── LA AGENDA DEL CLIENTE (`smb_app_state_sync`) ────────────────────────────────
+     * Los nombres con los que la empresa tiene guardados a sus clientes. Llega de golpe
+     * al sincronizar, y luego cada vez que la empresa añade o quita un contacto.
+     */
+    if (campo === 'smb_app_state_sync') {
+      const { contactos } = extraerContactosDeAgenda(payload);
+      if (contactos.length) await guardarContactosDeAgenda(canal.id, contactos);
+      return NextResponse.json({ ok: true });
+    }
+
+    /**
+     * ── LAS CONVERSACIONES DE ANTES DEL ALTA (`history`) ────────────────────────────
+     * Llega troceado y desordenado, cada mensaje con su fecha original. No despierta al
+     * agente: son mensajes de hace semanas.
+     */
+    if (campo === 'history') {
+      const { mensajes: viejos } = extraerHistorial(payload);
+      for (const m of viejos) await ingerirHistorial(canal.id, m);
+      return NextResponse.json({ ok: true });
+    }
+
+    // Acuses de entrega, cambios de estado del número… nada que hacer. Se responde 200
+    // igual: para Meta está entregado.
+    if (mensajes.length === 0) {
       return NextResponse.json({ ok: true });
     }
 

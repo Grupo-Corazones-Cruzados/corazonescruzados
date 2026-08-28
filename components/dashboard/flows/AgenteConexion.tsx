@@ -243,6 +243,30 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
     } finally { setOcupado(false); }
   }, [flowId, recargar]);
 
+  /**
+   * Trae del WhatsApp del cliente lo que ya tenía: su agenda y sus conversaciones previas.
+   *
+   * ⛔ UN SOLO INTENTO Y DENTRO DE 24 H DESDE EL ALTA. Por eso pasa por confirmación y por
+   * eso el botón desaparece en cuanto se usa: no es un botón de «actualizar», es una
+   * puerta que se cierra. Ver la ruta `.../agente/sincronizar`.
+   */
+  const [confirmarSync, setConfirmarSync] = useState<'contactos' | 'historial' | null>(null);
+
+  const sincronizar = useCallback(async (tipo: 'contactos' | 'historial') => {
+    setConfirmarSync(null);
+    setOcupado(true);
+    try {
+      const res = await fetch(`/api/admin/flows/${flowId}/agente/sincronizar`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error ?? 'No se pudo pedir la sincronización', { duration: 12000 }); return; }
+      toast.success(d.aviso, { duration: 15000 });
+      recargar();
+    } finally { setOcupado(false); }
+  }, [flowId, recargar]);
+
   const conectado = canal.estado === 'conectado';
   const faltaConfig = !appId || !configId;
 
@@ -260,7 +284,10 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
         <PanelEmpty Icon={AlertTriangle} title="Falta configurar la app de Meta"
           desc="No hay WHATSAPP_APP_ID o WHATSAPP_ES_CONFIG_ID en el servidor. Sin ellos no se puede abrir el alta." />
       ) : conectado ? (
-        <Conectado canal={canal} estadoMeta={estadoMeta} />
+        <>
+          <Conectado canal={canal} estadoMeta={estadoMeta} />
+          <TraerDelCliente canal={canal} ocupado={ocupado} alPedir={setConfirmarSync} />
+        </>
       ) : (
         <SinConectar
           sdkListo={sdkListo} entendido={entendido} setEntendido={setEntendido}
@@ -268,6 +295,22 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
           alConectarPrueba={conectarPrueba}
         />
       )}
+
+      <PixelConfirm
+        open={confirmarSync !== null}
+        title={confirmarSync === 'historial' ? 'Traer las conversaciones anteriores' : 'Traer la agenda del cliente'}
+        message={
+          (confirmarSync === 'historial'
+            ? 'Se le pedirá a Meta hasta 180 días de conversaciones anteriores al alta. '
+            : 'Se le pedirá a Meta la agenda de contactos del cliente, para que en la bandeja se vean con el nombre que él les tiene puesto. ') +
+          'Meta solo lo permite UNA VEZ y dentro de las 24 horas siguientes al alta: si se gasta ahora, ' +
+          'no se puede repetir sin desconectar al cliente y volver a hacer todo el alta con él delante. ' +
+          'Los datos no llegan al momento, sino por webhook durante las próximas horas. ¿Lo pedimos?'
+        }
+        confirmLabel="Sí, pedirlo ahora"
+        onConfirm={() => confirmarSync && sincronizar(confirmarSync)}
+        onCancel={() => setConfirmarSync(null)}
+      />
 
       <PixelConfirm
         open={confirmar}
@@ -527,6 +570,73 @@ function Dato({ titulo, ayuda, children }: {
         {ayuda && <BotonAyuda titulo={titulo} lado="derecha">{ayuda}</BotonAyuda>}
       </dt>
       <dd className="text-[13px] text-digi-text" style={mf}>{children}</dd>
+    </div>
+  );
+}
+
+
+/* ── Traer lo que el cliente ya tenía en su WhatsApp ─────────────────────────────
+ *
+ * Existe por dos peticiones de Diego Castillo (2026-08-28): que el agente vea lo que
+ * escribe su equipo, y que los clientes salgan con el nombre que Peter Tours les tiene
+ * guardado y no con el alias que cada uno se puso en WhatsApp («~», «Tn», «💕💕💕»).
+ *
+ * Lo primero llega solo, por el webhook `smb_message_echoes`, en cuanto la app está
+ * suscrita. Lo segundo —y el historial— hay que PEDIRLO, y ahí está la trampa: Meta da
+ * **24 horas desde el alta y un solo intento** por cada uno.
+ */
+function TraerDelCliente({ canal, ocupado, alPedir }: {
+  canal: any; ocupado: boolean; alPedir: (t: 'contactos' | 'historial') => void;
+}) {
+  const filas = [
+    {
+      tipo: 'contactos' as const,
+      titulo: 'La agenda de contactos',
+      desc: 'Los nombres con los que el cliente tiene guardados a los suyos. Sin esto, en la bandeja salen con el alias que cada uno se puso en WhatsApp.',
+      hecho: canal.contactos_sincronizados_en,
+    },
+    {
+      tipo: 'historial' as const,
+      titulo: 'Las conversaciones anteriores',
+      desc: 'Hasta 180 días de mensajes previos al alta. Llegan por tandas y pueden tardar horas.',
+      hecho: canal.historial_sincronizado_en,
+    },
+  ];
+
+  return (
+    <div className="max-w-3xl mt-6">
+      <SectionBar title="Traer lo que el cliente ya tenía" />
+
+      <div className={`rounded-lg border ${TONO.aviso.caja} p-3 mb-3`}>
+        <div className="flex gap-2 items-start">
+          <AlertTriangle className={`w-4 h-4 ${TONO.aviso.icono} shrink-0 mt-0.5`} />
+          <p className="text-[12.5px] leading-relaxed" style={mf}>
+            Meta solo deja pedir esto <strong>una vez y dentro de las 24 horas siguientes al alta</strong>.
+            Pasado el plazo se pierde para siempre, salvo desconectando al cliente y repitiendo el alta entera.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {filas.map((f) => (
+          <div key={f.tipo} className="rounded-lg border border-digi-border bg-digi-card p-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-digi-text" style={mf}>{f.titulo}</p>
+              <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{f.desc}</p>
+            </div>
+            {f.hecho ? (
+              <span className="shrink-0 text-[12px] text-digi-muted flex items-center gap-1" style={mf}>
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                Pedido el {new Date(f.hecho).toLocaleString('es-EC')}
+              </span>
+            ) : (
+              <button className={`${BTN_SECONDARY} shrink-0`} disabled={ocupado} onClick={() => alPedir(f.tipo)}>
+                Pedirlo a Meta
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

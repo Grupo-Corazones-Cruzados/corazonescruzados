@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { rows } = await pool.query(
     `SELECT c.id, c.bot_activo, c.motivo_escalado, c.ultimo_mensaje_en, c.resumen IS NOT NULL AS tiene_resumen,
-            ct.wa_id, ct.nombre_perfil,
+            ct.wa_id, ct.nombre_perfil, ct.nombre_agenda,
             NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), '') AS tomada_por_nombre,
             (SELECT m.texto FROM gcc_world.agente_mensajes m
               WHERE m.conversacion_id = c.id AND m.texto <> '' ORDER BY m.created_at DESC LIMIT 1) AS ultimo_texto,
@@ -43,7 +43,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         AND ($2::text IS NULL OR $2 = 'todas'
              OR ($2 = 'humanas' AND c.bot_activo = false)
              OR ($2 = 'bot' AND c.bot_activo = true))
-        AND ($3 = '' OR ct.wa_id ILIKE '%'||$3||'%' OR COALESCE(ct.nombre_perfil,'') ILIKE '%'||$3||'%')
+        AND ($3 = '' OR ct.wa_id ILIKE '%'||$3||'%'
+             OR COALESCE(ct.nombre_perfil,'') ILIKE '%'||$3||'%'
+             -- Se busca también por el nombre de la agenda del cliente: es por el que
+             -- pregunta el equipo, que no conoce el alias que cada uno se puso en WhatsApp.
+             OR COALESCE(ct.nombre_agenda,'') ILIKE '%'||$3||'%')
       ORDER BY c.ultimo_mensaje_en DESC NULLS LAST
       LIMIT 200`,
     [canal.id, filtro ?? 'todas', busca],

@@ -27,6 +27,10 @@ export interface Canal {
   bot_activo: boolean;
   estado: string;
   coexistencia_verificada: boolean;
+  /** Cuándo se pidió a Meta la agenda del cliente. Un solo intento por alta, en 24 h. */
+  contactos_sincronizados_en: string | null;
+  /** Cuándo se pidió el historial de 180 días. Un solo intento por alta, en 24 h. */
+  historial_sincronizado_en: string | null;
   ultimo_error: string | null;
   /** Presentes en la fila pero NUNCA se devuelven al navegador. */
   wa_token_cifrado: string | null;

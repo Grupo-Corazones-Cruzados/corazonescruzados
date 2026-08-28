@@ -33,7 +33,7 @@ export async function conversacionDelFlujo(
   if (flujo?.type !== 'ai_agent') return null;
   const canal = await asegurarCanal(flujo.id);
   const { rows: [conv] } = await pool.query(
-    `SELECT c.*, ct.wa_id, ct.nombre_perfil
+    `SELECT c.*, ct.wa_id, ct.nombre_perfil, ct.nombre_agenda
        FROM gcc_world.agente_conversaciones c
        JOIN gcc_world.agente_contactos ct ON ct.id = c.contacto_id
       WHERE c.id = $1 AND c.canal_id = $2`,
