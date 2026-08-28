@@ -52,7 +52,6 @@ const PipelineFlow = dynamic(
 );
 
 const ICONO_ORIGEN = { bd: Database, codigo: Code2, runtime: Radio } as const;
-const ETIQUETA_ORIGEN = { bd: 'Base de datos', codigo: 'Código', runtime: 'En vivo' } as const;
 
 interface Props {
   flowId: number;
@@ -108,12 +107,12 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
 
   return (
     <div className="space-y-3">
-      <SectionBar
-        title="Estudio del agente"
-        hint={`${pipeline.nodos.length} pasos del pipeline real · ${Object.keys(pipeline.fuentes).length} recursos`}
-      >
+      {/* Sin título ni recuento: «Estudio del agente» ya lo dice la pestaña encendida, y
+          los pasos y recursos se cuentan solos mirando el lienzo, que es lo que hay
+          justo debajo. */}
+      <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
         {acciones}
-      </SectionBar>
+      </div>
 
       <BarraDeControl estado={pipeline.estado} />
 
@@ -149,7 +148,7 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
         <FlowPanelShell
           Icon={Pencil}
           title={contenido?.meta.label ?? 'Editar'}
-          subtitle={contenido?.meta.detalle ?? ''}
+          subtitle=""   // misma razón: el editor no necesita anunciar su tabla.
           onClose={cerrarEditor}
         >
           <div className="p-6">{editores.conocimiento(cerrarEditor)}</div>
@@ -345,11 +344,11 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar, editores, alGuar
             <Icono className="w-3.5 h-3.5 text-digi-muted shrink-0" />
             <span className="text-[12px] font-semibold text-digi-text truncate" style={mf}>{contenido?.meta.label ?? '…'}</span>
           </span>
-          {contenido && (
-            <span className="block text-[10.5px] text-digi-muted mt-0.5 leading-tight" style={mf}>
-              {ETIQUETA_ORIGEN[contenido.meta.origen]} · {contenido.meta.detalle}
-            </span>
-          )}
+          {/* Fuera la línea de procedencia («Base de datos · agente_conocimiento · entra
+              COMPLETO en cada consulta…»). Es la fontanería contada en voz alta: nombres
+              de tabla y rutas de archivo delante de quien solo quiere editar el
+              conocimiento de su negocio. Sigue toda escrita en `lib/agente/estudio/
+              pipeline.ts`, que es donde le sirve a quien programa. */}
         </span>
         <button type="button" onClick={alCerrar} aria-label="Cerrar" className="text-digi-muted hover:text-digi-text shrink-0">
           <X className="w-3.5 h-3.5" />

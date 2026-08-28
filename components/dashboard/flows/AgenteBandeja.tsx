@@ -12,7 +12,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useSondeo } from '@/lib/hooks/useSondeo';
-import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -248,18 +247,17 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
     <div className="h-full rounded-lg border border-digi-border bg-digi-card flex flex-col overflow-hidden">
       <div className="shrink-0 px-4 py-3 border-b border-digi-border flex items-start justify-between gap-3">
         <div className="min-w-0">
+          {/* Solo el nombre. Quién lleva la conversación ya se sabe por dos sitios mejores:
+              el icono de cada fila en la lista, y el botón de tomar/devolver que hay en
+              esta misma cabecera — que además es donde se cambia. Y el motivo del escalado
+              («La atiende el equipo desde WhatsApp») era una frase técnica nuestra puesta
+              sobre el nombre de un cliente de verdad. */}
           <div className="flex items-center gap-2">
             <span className="text-[14px] font-semibold text-digi-text truncate" style={mf}>
               {comoSeLlama(c)}
             </span>
-            {c.bot_activo
-              ? <PixelBadge variant="info">Lo lleva el agente</PixelBadge>
-              : <PixelBadge variant="warning">Lo lleva una persona</PixelBadge>}
           </div>
           <p className="text-[11.5px] text-digi-muted mt-0.5" style={mf}>{c.wa_id}</p>
-          {c.motivo_escalado && (
-            <p className={`text-[12px] ${TONO.aviso.texto} mt-1`} style={mf}>Motivo del escalado: {c.motivo_escalado}</p>
-          )}
         </div>
         {c.bot_activo ? (
           <button className={BTN_PRIMARY} disabled={ocupado} onClick={() => alternarToma(true)}>

@@ -118,7 +118,10 @@ async function resolverFuente(fuenteId: string, canal: any): Promise<ContenidoFu
       const bloques = rows as BloqueConocimiento[];
       // La MISMA función que arma el prompt del runner. Ese es el punto.
       const completo = textoConocimiento(bloques);
-      const pendientes = clavesPendientes(bloques);
+      // ⚠️ El comportamiento NO cambia: los bloques vacíos siguen entrando como
+      // [PENDIENTE] y el agente sigue escalando esas preguntas a una persona —lo hace
+      // `textoConocimiento`, no este aviso—. Lo que se quita es solo el cartel, que
+      // explicaba en un párrafo algo que cada bloque ya dice a su lado con «sin rellenar».
       return {
         meta: { ...meta, detalle: `${meta.detalle} · ${rows.length} bloque(s), ${completo.length.toLocaleString('es-ES')} caracteres` },
         lista: rows.map((b: any) => ({
@@ -126,9 +129,6 @@ async function resolverFuente(fuenteId: string, canal: any): Promise<ContenidoFu
           detalle: b.contenido?.trim() ? `${b.contenido.length.toLocaleString('es-ES')} caracteres` : 'sin rellenar → [PENDIENTE]',
           vacio: !b.contenido?.trim(),
         })),
-        aviso: pendientes.length
-          ? `${pendientes.length} bloque(s) sin rellenar. El agente escalará esas preguntas a una persona, y la instrucción se añade sola a las reglas — no hay que escribirla.`
-          : undefined,
         editable: { tipo: 'conocimiento' },
       };
     }

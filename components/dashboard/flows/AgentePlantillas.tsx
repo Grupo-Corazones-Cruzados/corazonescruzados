@@ -153,11 +153,14 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
 
   return (
     <div>
-      <SectionBar
-        title="Plantillas"
-        hint={`${plantillas.length} plantilla(s) · ${plantillas.filter((p) => p.estado === 'APPROVED').length} aprobada(s)`}
-      >
-        {acciones}
+      {/* Sin título ni recuento: «Plantillas» ya lo dice la pestaña encendida, y
+          «0 plantilla(s) · 0 aprobada(s)» lo dice la propia lista de al lado. Una fila
+          de adorno menos.
+
+          ⇒ Y las ACCIONES van ANTES que las pestañas. Cambiar de pestaña es navegación:
+          pasa una vez y va al extremo. Actualizar, crear y enviar es el trabajo, y lo que
+          se usa a diario se pone donde cae la mano, no al final de la fila. */}
+      <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
         <button className={BTN_SECONDARY} onClick={sincronizar} disabled={ocupado || !conectado}>
           <RefreshCw className={`w-4 h-4 ${ocupado ? 'animate-spin' : ''}`} /> Actualizar
         </button>
@@ -186,7 +189,8 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
           <p className="mb-2">Por eso son la única forma de <strong>iniciar</strong> una conversación: un aviso, un recordatorio, una confirmación.</p>
           <p>El estado lo decide Meta y puede cambiar solo. Pulsa «Actualizar» antes de un envío importante.</p>
         </BotonAyuda>
-      </SectionBar>
+        {acciones}
+      </div>
 
       {!conectado && (
         <div className={`rounded-lg border ${TONO.aviso.caja} p-4 mb-3 flex gap-2 items-start`}>
