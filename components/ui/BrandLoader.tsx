@@ -1,19 +1,31 @@
 'use client';
 
 /**
- * BrandLoader — Logo animado oficial de GCC World.
+ * BrandLoader — el logo de GCC World, girando. **La marca de toda la aplicación.**
  *
- * Usa el spritesheet del logo con animación ping-pong (frames 2→3→4→5→4→3)
- * y rotación 360° antihoraria. DEBE usarse en toda pantalla de carga.
+ * Se usa en la barra lateral y en TODA pantalla de carga (unos treinta sitios), así que
+ * cambiarlo aquí lo cambia en todas. Ese es justo el motivo de que exista un componente y
+ * no un `<img>` copiado: la marca se toca en un sitio.
  *
- * Tamaños: sm (36px), md (56px), lg (80px)
+ * ── QUÉ CAMBIÓ (2026-08-28) ───────────────────────────────────────────────────────────
+ * Antes esto pintaba un **spritesheet del muñeco del videojuego** (`logo-spritesheet.png`,
+ * 1,1 MB) con una animación ping-pong de seis fotogramas, recortado a un círculo negro.
+ * Venía de cuando el panel y la aventura eran la misma cosa.
+ *
+ * Ya no lo son: la plataforma la abren clientes como Peter Tours, que entran a atender su
+ * WhatsApp. Su logo tiene que ser **el logo de la empresa**, no un personaje. Así que pasa
+ * a ser `logo-gcc.png` —los corazones cruzados, el mismo del sitio público y del icono de
+ * la pestaña— y la única animación que queda es el giro.
+ *
+ * De paso pesa quince veces menos y se acabaron las tres tablas de píxeles por tamaño, que
+ * había que recalcular a mano cada vez que se quería un tamaño nuevo.
+ *
+ * Tamaños: sm (36 px), md (56 px), lg (80 px).
  */
 
-const SIZES = {
-  sm: { box: 36, bg: '256px 256px', y: '185px', sx: '-9.9px', fw: '-40px', border: 2 },
-  md: { box: 56, bg: '398px 398px', y: '288px', sx: '-15.4px', fw: '-62.2px', border: 3 },
-  lg: { box: 80, bg: '569px 569px', y: '411px', sx: '-22px', fw: '-88.9px', border: 4 },
-};
+import Image from 'next/image';
+
+const SIZES = { sm: 36, md: 56, lg: 80 } as const;
 
 export default function BrandLoader({
   size = 'md',
@@ -24,38 +36,31 @@ export default function BrandLoader({
   label?: string;
   className?: string;
 }) {
-  const s = SIZES[size];
+  const px = SIZES[size];
   const pf = { fontFamily: 'var(--font-display)' } as const;
 
   return (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
-      {/* Outer: rotación 360° antihoraria */}
+      {/* El giro es antihorario y lento (12 s): tiene que leerse como «sigue vivo», no
+          como un reloj de arena que mete prisa. `slowSpin` está en globals.css.
+
+          ⚠️ `motion-reduce:animate-none`: para quien pide en su sistema que no le muevan
+          la interfaz, un logo girando sin parar en cada carga puede ser mareante. Se queda
+          quieto y no se pierde nada — lo que informa es que el logo ESTÁ, no que gire. */}
       <div
-        style={{
-          width: s.box,
-          height: s.box,
-          animation: 'slowSpin 12s linear infinite reverse',
-        }}
+        className="motion-reduce:animate-none shrink-0"
+        style={{ width: px, height: px, animation: 'slowSpin 12s linear infinite reverse' }}
       >
-        {/* Clip circular con borde y fondo negro — el fondo negro forma un anillo
-            alrededor del muñeco para que no toque el borde de la circunferencia */}
-        <div className="rounded-full overflow-hidden" style={{ width: s.box, height: s.box, border: `${s.border}px solid #000`, background: '#000' }}>
-          {/* Sprite ping-pong, reducido para dejar margen (el muñeco no toca el borde) */}
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              transform: 'scale(1.07)',
-              backgroundImage: 'url(/logo-spritesheet.png)',
-              backgroundSize: s.bg,
-              backgroundPositionY: s.y,
-              imageRendering: 'auto',
-              '--sx': s.sx,
-              '--fw': s.fw,
-              animation: 'spritePingPong 3s linear infinite',
-            } as React.CSSProperties}
-          />
-        </div>
+        <Image
+          src="/logo-gcc.png"
+          alt=""
+          width={px}
+          height={px}
+          // Es la marca: aparece en la primera pantalla y en cada carga. Que no espere turno.
+          priority
+          className="rounded-full select-none"
+          style={{ width: px, height: px }}
+        />
       </div>
       {label && (
         <p className="text-[10px] text-accent-glow opacity-60" style={pf}>

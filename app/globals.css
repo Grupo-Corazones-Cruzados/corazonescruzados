@@ -134,18 +134,8 @@ html {
   to   { transform: rotate(360deg); }
 }
 
-/* Ping-pong sprite: frames go forward then backward
-   --sx: X position of frame 1
-   --fw: width of each frame (negative = left)
-   Sequence: frame2 → frame3 → frame4 → frame5 → frame4 → frame3 → (loop) */
-@keyframes spritePingPong {
-  0%,    16.66%  { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 1); }
-  16.67%, 33.32% { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 2); }
-  33.33%, 49.99% { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 3); }
-  50%,   66.66%  { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 4); }
-  66.67%, 83.32% { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 3); }
-  83.33%, 100%   { background-position-x: calc(var(--sx, 0px) + var(--fw, -40px) * 2); }
-}
+/* `spritePingPong` se fue con el logo del muñeco (2026-08-28): la marca de la plataforma
+   es el logo de la empresa girando, no un personaje animado. Ver `BrandLoader.tsx`. */
 
 @keyframes walkAcrossRight {
   from { transform: translateX(-80px); }
