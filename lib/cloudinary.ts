@@ -53,6 +53,22 @@ export function cloudinaryResized(url: string, width: number): string {
 }
 
 /**
+ * La misma transformación, **con desenfoque**. Para las capturas del marketplace, que
+ * son de sistemas reales con datos de clientes dentro (ver la ruta de imagen del
+ * marketplace).
+ *
+ * `e_blur` de Cloudinary va de 1 a 2000 y **no es el sigma de una gaussiana**: para que
+ * se parezca a lo que hace `sharp` en el otro camino hay que escalarlo bastante. Se
+ * multiplica por 100 y se acota, que es lo que deja las dos vías con una suavidad
+ * comparable.
+ */
+export function cloudinaryDesenfocada(url: string, width: number, sigma: number): string {
+  if (!isCloudinaryUrl(url)) return url;
+  const blur = Math.min(2000, Math.max(100, Math.round(sigma * 100)));
+  return url.replace(/\/image\/upload\/(?:[^/]*\/)?/, `/image/upload/w_${width},e_blur:${blur},f_auto,q_auto,c_limit/`);
+}
+
+/**
  * Sube una imagen (data URL base64 o URL remota) a Cloudinary y devuelve la
  * `secure_url`. Si ya es una URL de Cloudinary, la devuelve sin re-subir.
  */

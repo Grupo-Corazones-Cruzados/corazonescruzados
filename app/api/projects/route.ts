@@ -112,6 +112,36 @@ export async function GET(req: NextRequest) {
                               WHERE pr.project_id = p.id AND pr.talents && $${params.length}::text[])`;
     }
 
+    /**
+     * Filtro por CLIENTE. Mismo criterio que el de talento: acota la lista, respeta los
+     * conteos y **no amplía lo que se ve** — se aplica encima del `accessWhere`, así que
+     * solo puede reducir los proyectos que este usuario ya tenía permitidos.
+     *
+     * A un cliente no se le ofrece (todos sus proyectos son suyos), pero si mandara el
+     * parámetro a mano tampoco pasaría nada: su `accessWhere` ya lo deja en los propios.
+     */
+    const clientes = (req.nextUrl.searchParams.get('clients') || '')
+      .split(',').map(v => v.trim()).filter(Boolean);
+    if (clientes.length) {
+      params.push(clientes);
+      where += ` AND p.client_id::text = ANY($${params.length}::text[])`;
+    }
+
+    /**
+     * Los clientes que aparecen en el desplegable: los que de verdad tienen proyectos
+     * visibles para este usuario. Sale de `accessWhere`, no de la tabla de clientes —
+     * volcar el catálogo entero enseñaría a quién tenemos como cliente a quien no lo
+     * puede ver.
+     */
+    const { rows: clientOpt } = await pool.query(
+      `SELECT DISTINCT c.id::text AS id, c.name
+         FROM gcc_world.projects p
+         JOIN gcc_world.clients c ON c.id = p.client_id
+         ${accessWhere}
+         ORDER BY c.name`,
+      accessParams,
+    );
+
     // Opciones del desplegable: los talentos que de verdad piden los proyectos visibles
     // para este usuario (respetando su control de acceso), no los 525 de la lista.
     const { rows: talentOpt } = await pool.query(
@@ -166,7 +196,13 @@ export async function GET(req: NextRequest) {
       params
     );
 
-    return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts, talentOptions: talentOpt.map((r: any) => r.talent) });
+    return NextResponse.json({
+      data: dataQ.rows,
+      total: Number(countQ.rows[0].count),
+      counts,
+      talentOptions: talentOpt.map((r: any) => r.talent),
+      clientOptions: clientOpt.map((r: any) => ({ id: r.id, name: r.name })),
+    });
   } catch (err: any) {
     // Antes se devolvía `{data: []}` con HTTP 200: cualquier fallo se veía como "no hay
     // proyectos" en vez de como un error, y la lista parecía haberse borrado sola

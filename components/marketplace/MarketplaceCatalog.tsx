@@ -11,6 +11,7 @@ import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
+import { esUrlCloudinary, urlDesenfocada, sigmaPara } from '@/lib/cloudinary-url';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -199,9 +200,12 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       const count = imageCount(item);
       return Array.from({ length: count }, (_, i) => projImg(item.id, i, 1600));
     }
-    if (item.images?.length > 0) return item.images;
-    if (item.image_url) return [item.image_url];
-    return [];
+    // Portafolio: se pide a Cloudinary la copia desenfocada, igual que la portada. A
+    // 1.600 px el desenfoque sube en proporción — si no, ampliar la foto sería la forma
+    // de leer los datos que la miniatura escondía.
+    const propias: string[] = item.images?.length > 0 ? item.images
+      : item.image_url ? [item.image_url] : [];
+    return propias.map((u: string) => (esUrlCloudinary(u) ? urlDesenfocada(u, 1600, sigmaPara(1600)) : u));
   };
 
   const openGallery = (item: any, e: React.MouseEvent) => {
@@ -292,9 +296,15 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const price = Number(item.final_cost ?? item.price ?? 0);
     const count = imageCount(item);
     // Portada: proyectos → miniatura WebP (w=480); portafolio → su imagen inline.
+    /* Los proyectos ya salen desenfocados del servidor (ver la ruta de imagen del
+       marketplace). Los del portafolio traen su URL directa, así que aquí se le pide a
+       Cloudinary la copia desenfocada — misma protección, y sin pasar por nosotros. */
+    const portadaPortafolio = (Array.isArray(item.images) && item.images[0]) || item.image_url || null;
     const coverSrc = isProject
       ? (count > 0 ? projImg(item.id, 0, 480) : null)
-      : ((Array.isArray(item.images) && item.images[0]) || item.image_url || null);
+      : (portadaPortafolio && esUrlCloudinary(portadaPortafolio)
+          ? urlDesenfocada(portadaPortafolio, 480, sigmaPara(480))
+          : portadaPortafolio);
     const active = selected?.id === item.id && selected?.source_type === item.source_type;
     const CatIcon = isProject ? FolderKanban : tab === 'automations' ? Workflow : Package;
     const catLabel = isProject ? 'Proyecto' : tab === 'automations' ? 'Automatización' : 'Producto';
@@ -531,7 +541,9 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               <img
                 src={galleryImages[galleryIndex]}
                 alt={`Foto ${galleryIndex + 1}`}
-                className="max-w-full max-h-[50vh] object-contain"
+                /* Mismo criterio que en la tarjeta: el desenfoque de verdad viene ya en
+                   los píxeles; esto solo remata. */
+                className="max-w-full max-h-[50vh] object-contain blur-[1px]"
               />
               {galleryImages.length > 1 && (
                 <>
@@ -567,7 +579,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                       i === galleryIndex ? 'border-accent' : 'border-digi-border/50 hover:border-digi-border'
                     }`}
                   >
-                    <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover blur-[1px]" />
                   </button>
                 ))}
               </div>

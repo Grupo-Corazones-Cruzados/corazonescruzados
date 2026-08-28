@@ -187,12 +187,21 @@ export default function ProjectsPage() {
   // Filtro por TALENTO: encuentra proyectos cuyos REQUERIMIENTOS piden esos talentos.
   const [talentFilter, setTalentFilter] = useState<string[]>([]);
   const [talentOptions, setTalentOptions] = useState<string[]>([]);
+  /**
+   * Filtro por CLIENTE. Solo para quien ve proyectos de varios clientes —miembro,
+   * administrador y candidato—; a un cliente no se le ofrece porque todos los proyectos
+   * que ve ya son suyos, y el desplegable tendría una sola opción: él mismo.
+   */
+  const [clientFilter, setClientFilter] = useState<string[]>([]);
+  const [clientOptions, setClientOptions] = useState<{ id: string; name: string }[]>([]);
+  const veVariosClientes = accessRoleOf(user) !== 'client';
 
   const fetchData = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
     if (tab !== 'all') params.set('status', tab);
     if (search) params.set('search', search);
     if (talentFilter.length) params.set('talents', talentFilter.join(','));
+    if (clientFilter.length) params.set('clients', clientFilter.join(','));
     try {
       const res = await fetch(`/api/projects?${params}`);
       const data = await res.json();
@@ -204,11 +213,12 @@ export default function ProjectsPage() {
       // Las opciones vienen del servidor: son los talentos que de verdad piden los
       // proyectos visibles para este usuario.
       if (Array.isArray(data.talentOptions)) setTalentOptions(data.talentOptions);
+      if (Array.isArray(data.clientOptions)) setClientOptions(data.clientOptions);
     } catch { setProjects([]); }
-  }, [page, tab, search, talentFilter]);
+  }, [page, tab, search, talentFilter, clientFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search, talentFilter]);
+  useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search, talentFilter, clientFilter]);
 
   const createProject = async () => {
     if (!createTitle.trim()) return;
@@ -314,6 +324,19 @@ export default function ProjectsPage() {
                   selected={talentFilter}
                   onChange={setTalentFilter}
                   placeholder="Filtrar por talento…"
+                />
+              </div>
+            )}
+            {/* Filtro por cliente, a la derecha del de talento. Se ofrece solo a quien ve
+                proyectos de varios clientes, y solo si hay más de uno: con uno solo el
+                desplegable no filtra nada — enseñaría la lista entera con un paso más. */}
+            {veVariosClientes && clientOptions.length > 1 && (
+              <div className="w-full sm:w-[260px] shrink-0">
+                <MultiSelectSearch
+                  options={clientOptions.map((c) => ({ value: c.id, label: c.name }))}
+                  selected={clientFilter}
+                  onChange={setClientFilter}
+                  placeholder="Filtrar por cliente…"
                 />
               </div>
             )}

@@ -48,7 +48,14 @@ export default function CardMedia({
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => { setFailed(true); setLoaded(true); }}
-          className={`w-full h-full object-cover transition-[opacity,transform] duration-300 group-hover:scale-[1.03] ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          /* ⚠️ Este `blur-[1px]` NO es la protección: es el acabado.
+             Las capturas ya llegan desenfocadas desde el servidor o desde Cloudinary,
+             que es donde de verdad se quitan los datos (un filtro CSS se desactiva en
+             dos clics desde las herramientas del navegador). Esto solo suaviza el
+             último punto de nitidez y cubre el caso raro de una imagen que no pasara
+             por ninguno de los dos caminos — una portada antigua guardada en la base
+             como base64, por ejemplo. */
+          className={`w-full h-full object-cover blur-[1px] transition-[opacity,transform] duration-300 group-hover:scale-[1.03] ${loaded ? 'opacity-100' : 'opacity-0'}`}
         />
       )}
 
