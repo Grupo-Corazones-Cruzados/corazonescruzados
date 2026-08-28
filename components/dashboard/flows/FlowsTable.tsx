@@ -6,7 +6,7 @@
  * el mismo estándar Fluent `.corp` del módulo Centralizado. No recibe props.
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -176,6 +176,21 @@ export default function FlowsTable() {
 
   const detailType = selected ? (FLOW_TYPES[selected.type] || FLOW_TYPES.custom) : null;
 
+  /**
+   * Elegir una fila. En pantalla ancha el panel ya está al lado y no hay nada que hacer;
+   * en pantalla estrecha queda debajo de una tabla que ocupa toda la altura, así que se
+   * trae a la vista. Sin esto, pulsar una fila no produce ningún efecto visible y parece
+   * que la aplicación no responde.
+   */
+  const panelRef = useRef<HTMLElement | null>(null);
+  const elegir = (f: Flow) => {
+    setSelected(f);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      // En el siguiente fotograma: antes, el panel todavía no está pintado.
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -224,11 +239,24 @@ export default function FlowsTable() {
           </div>
 
           {/* list · detail */}
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+          {/* ⚠️ EL PANEL DE DETALLE SE ESCONDÍA, Y NO ERA UN FALLO DE PERMISOS (2026-08-28).
+              Peter Tours abría Automatizaciones, pulsaba su flujo y a la derecha no salía
+              nada — ni el panel ni el botón «Configurar»—, así que no podía entrar a su
+              propio agente.
+
+              La causa: el panel solo se colocaba al lado a partir de `xl` (1.280 px). Su
+              portátil es de 1.366 físicos, pero **Windows al 125 % deja ~1.093 px reales**
+              al navegador, así que la rejilla caía a una columna y el panel se iba DEBAJO
+              de la tabla — que ocupa toda la altura, o sea fuera de la pantalla.
+
+              Nosotros no lo veíamos nunca: en un portátil sin escalado hay sito de sobra.
+              Por eso el corte baja a `lg` (1.024) y, por debajo de eso, el panel se trae a
+              la vista solo al elegir una fila. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
             <div className="min-w-0">
               <PixelDataTable
                 data={visibleFlows}
-                onRowClick={(f: Flow) => setSelected(f)}
+                onRowClick={(f: Flow) => elegir(f)}
                 emptyTitle="Sin flujos"
                 emptyDesc={puedeAdministrarFlujos ? 'Crea tu primer flujo con "Nuevo flujo".' : 'Todavía no tienes ningún flujo asignado.'}
                 columns={[
@@ -260,7 +288,7 @@ export default function FlowsTable() {
             </div>
 
             {/* ── Detail panel ── */}
-            <aside className="w-full xl:w-[300px]">
+            <aside ref={panelRef} className="w-full lg:w-[300px]">
               {selected && detailType ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
