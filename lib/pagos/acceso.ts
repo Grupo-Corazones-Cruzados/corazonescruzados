@@ -168,9 +168,18 @@ export async function autorizarCobro(opts: {
     throw new SinAcceso('Falta qué se va a cobrar.', 400);
   }
   if (!sourceId) throw new SinAcceso('Falta qué se va a cobrar.', 400);
-  // Un proyecto se cobra POR ETAPA; un ticket, entero. Pedir lo contrario es una petición
-  // mal formada, no un permiso denegado.
-  if (sourceType === 'project' && !stageId) throw new SinAcceso('Falta la etapa del proyecto.', 400);
+  /**
+   * ⚠️ UN PROYECTO YA NO EXIGE ETAPA (2026-08-28).
+   *
+   * Se cobraba SIEMPRE por etapa, y esta línea cortaba antes de llegar al cálculo. Pero
+   * los proyectos pequeños no tienen plan —el de Peter Tours son 300 $ y tres
+   * requerimientos— y su cliente se topaba aquí con «Falta la etapa del proyecto»: un
+   * error de formato para algo que él no había escrito mal.
+   *
+   * Sin etapa se cobra entero, y quien decide cuánto es `cotizarProyectoSinEtapas`, no
+   * esta función: aquí solo se resuelve **quién puede** cobrarlo. Que el importe salga
+   * siempre del servidor no cambia.
+   */
 
   const user = await getCurrentUser();
   if (!user) throw new SinAcceso('Inicia sesión para continuar.', 401);
