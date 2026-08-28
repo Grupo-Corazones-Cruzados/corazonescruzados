@@ -11,8 +11,8 @@ import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
-  Settings, LifeBuoy, ShieldCheck, Workflow, Menu, ChevronsLeft, ChevronsRight,
-  LogOut, Sun, Moon, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
+  Settings, LifeBuoy, ShieldCheck, Workflow, Menu,
+  LogOut, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -51,20 +51,27 @@ const NAV_GROUPS: NavGroup[] = MODULE_GROUPS.map((title) => ({
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-export default function DashboardSidebar({
-  dark = false,
-  onToggleTheme,
-  collapsed = false,
-  onToggleCollapse,
-}: {
-  dark?: boolean;
-  onToggleTheme?: () => void;
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
-}) {
+export default function DashboardSidebar() {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  /**
+   * ⇒ EL MENÚ SE ABRE AL PASAR EL PUNTERO Y SE CIERRA AL SALIR.
+   *
+   * Antes se abría con un botón ««» que había que buscar, acertar y volver a pulsar: tres
+   * decisiones para algo que uno solo quiere mientras mira. Ahora el raíl es estrecho por
+   * defecto —iconos, que es como se navega el 90 % del tiempo— y se despliega al acercarse.
+   *
+   * ⚠️ Se monta ENCIMA del contenido, no lo empuja: el `main` conserva siempre el margen
+   * del raíl estrecho (ver el layout). Si empujara, la página se movería entera cada vez
+   * que el ratón cruza la izquierda camino de otra cosa.
+   *
+   * En táctil no hay puntero y `hover` no existe: allí manda el botón de hamburguesa
+   * (`mobileOpen`), que abre el menú entero y ya funcionaba así.
+   */
+  const [sobreElMenu, setSobreElMenu] = useState(false);
+  const collapsed = !(sobreElMenu || mobileOpen);
   // Módulo cuyo modal de tutoriales está abierto (null = ninguno). Al cerrarlo el
   // modal se DESMONTA, así el iframe de YouTube deja de reproducir.
   const [tutorialFor, setTutorialFor] = useState<NavItem | null>(null);
@@ -109,11 +116,13 @@ export default function DashboardSidebar({
 
       {/* Sidebar */}
       <aside
+        onMouseEnter={() => setSobreElMenu(true)}
+        onMouseLeave={() => setSobreElMenu(false)}
         /* `rail` redefine los tokens de color SOLO aquí dentro (ver globals.css). Por eso
            ni una de las clases de abajo cambia: `bg-digi-card`, `text-digi-muted` y demás
            leen la variable del ancestro más cercano, que pasa a ser el raíl. */
         className={`rail fixed top-0 left-0 h-full z-40 bg-digi-card border-r border-digi-border flex flex-col transition-all duration-200
-          ${collapsed ? 'w-16' : 'w-56'}
+          ${collapsed ? 'w-16' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -203,34 +212,25 @@ export default function DashboardSidebar({
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            {onToggleTheme && (
-              <button
-                onClick={onToggleTheme}
-                className={`flex items-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors ${collapsed ? 'justify-center' : 'justify-center'}`}
-                aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-                title={dark ? 'Modo claro' : 'Modo oscuro'}
-              >
-                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                {!collapsed && (dark ? 'Modo claro' : 'Modo oscuro')}
-              </button>
-            )}
-            <button
-              onClick={onToggleCollapse}
-              className="hidden lg:flex items-center justify-center py-1.5 rounded-md text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"
-              aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            >
-              {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={signOut}
-              className="flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
-              style={mf}
-            >
-              <LogOut className="w-4 h-4" />
-              {!collapsed && 'Salir'}
-            </button>
-          </div>
+          {/* El pie se queda con UNA sola cosa. El interruptor de tema se fue a
+              Configuración —es una preferencia, no una herramienta de uso diario— y el
+              botón de contraer sobra desde que el menú se abre al pasar el puntero. */}
+          <button
+            onClick={signOut}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+            /* ⚠️ El hover NO cambia el relleno ni el borde: solo sube el brillo. Antes se
+               teñía de rojo claro y movía el borde, y sobre el raíl oscuro ese recuadro
+               saltaba a la vista más que el propio menú. Con `brightness` el botón se
+               queda igual —los mismos colores en los dos temas— y solo se ilumina, que es
+               todo lo que un hover tiene que decir. */
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium
+                       transition-[filter] duration-150 hover:brightness-125 focus-visible:brightness-125"
+            style={{ ...mf, color: '#F0A6AE', background: 'rgba(224, 90, 106, 0.14)' }}
+          >
+            <LogOut className="w-4 h-4" />
+            {!collapsed && 'Salir'}
+          </button>
         </div>
       </aside>
 
