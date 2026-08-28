@@ -171,25 +171,34 @@ export default function FlowsTable() {
     } catch { /* ignore */ }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando flujos..." /></div>;
-
-
-  const detailType = selected ? (FLOW_TYPES[selected.type] || FLOW_TYPES.custom) : null;
-
   /**
    * Elegir una fila. En pantalla ancha el panel ya está al lado y no hay nada que hacer;
    * en pantalla estrecha queda debajo de una tabla que ocupa toda la altura, así que se
    * trae a la vista. Sin esto, pulsar una fila no produce ningún efecto visible y parece
    * que la aplicación no responde.
+   *
+   * ⛔ ESTE `useRef` VA AQUÍ ARRIBA, Y NO ES UN CAPRICHO DE ORDEN. Estaba más abajo, detrás
+   * del `if (loading) return …`. Mientras cargaba, React no lo veía; al llegar los datos,
+   * de repente sí — y un componente que ejecuta más hooks que en el render anterior es un
+   * error fatal de React, no un aviso. La pantalla entera se caía **justo al terminar de
+   * cargar**, que es lo que la hacía parecer un problema de red o de despliegue.
+   *
+   * La regla: **todos los hooks antes del primer `return`.** Siempre.
    */
   const panelRef = useRef<HTMLElement | null>(null);
-  const elegir = (f: Flow) => {
+  const elegir = useCallback((f: Flow) => {
     setSelected(f);
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       // En el siguiente fotograma: antes, el panel todavía no está pintado.
       requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
     }
-  };
+  }, []);
+
+  if (loading) return <div className="flex justify-center py-12"><BrandLoader size="md" label="Cargando flujos..." /></div>;
+
+
+  const detailType = selected ? (FLOW_TYPES[selected.type] || FLOW_TYPES.custom) : null;
+
 
   return (
     <div>
