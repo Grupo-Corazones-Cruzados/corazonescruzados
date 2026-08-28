@@ -108,14 +108,14 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
 
   return (
     <div className="space-y-3">
-      {/* Sin título ni recuento: «Estudio del agente» ya lo dice la pestaña encendida, y
-          los pasos y recursos se cuentan solos mirando el lienzo, que es lo que hay
-          justo debajo. */}
-      <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
-        {acciones}
-      </div>
+      {/* ⇒ UNA SOLA FILA: el estado del agente a la izquierda, las pestañas a la derecha.
+          Eran dos franjas apiladas que ocupaban casi el mismo ancho, y la de arriba
+          llevaba una sola cosa —las pestañas— pegada al borde. Juntarlas devuelve una fila
+          entera al lienzo, que es lo que se viene a mirar.
 
-      <BarraDeControl estado={pipeline.estado} />
+          En pantalla estrecha se parten solas (`flex-wrap`) y las pestañas caen debajo, sin
+          apretar los datos hasta hacerlos ilegibles. */}
+      <BarraDeControl estado={pipeline.estado} acciones={acciones} />
 
       {/* Tres columnas. El lienzo manda: los paneles no crecen.
           El alto se MIDE hasta el pie de la app; ver `useAltoHastaElPie`. */}
@@ -175,7 +175,7 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
 
 /* ═══════════════════════ BARRA DE CONTROL ═══════════════════════ */
 
-function BarraDeControl({ estado }: { estado: Pipeline['estado'] }) {
+function BarraDeControl({ estado, acciones }: { estado: Pipeline['estado']; acciones?: React.ReactNode }) {
   const chips: { label: string; valor: string; tono?: 'error' | 'aviso' | 'exito' }[] = [
     { label: 'Agente', valor: estado.botActivo ? 'encendido' : 'apagado', tono: estado.botActivo ? 'exito' : 'aviso' },
     { label: 'Modelo', valor: estado.modelo },
@@ -199,6 +199,7 @@ function BarraDeControl({ estado }: { estado: Pipeline['estado'] }) {
           <span className={`font-semibold ${c.tono ? TONO[c.tono].texto : 'text-digi-text'}`}>{c.valor}</span>
         </span>
       ))}
+      {acciones && <span className="flex items-center gap-2 shrink-0 ml-1">{acciones}</span>}
     </div>
   );
 }
