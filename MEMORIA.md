@@ -2172,6 +2172,34 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Y `max-h-[70vh]` NO es «llena la pantalla»**: es un techo. La Bandeja lo usaba y con
       una sola conversación medía lo que su contenido, dejando media pantalla vacía.
       Llenar = alto medido + `flex-1 min-h-0` en la zona que se desplaza y `shrink-0` en el resto.
+  - **🪤 EL ALTA SE COMPLETÓ EN META Y LA APP DIJO QUE NO (2026-08-28).** Fernando conectó el
+    número de un cliente al flujo **Diego Castillo** (flujo 10, canal 11). El Embedded Signup
+    terminó bien —consola: `status: "connected"` y un `code` válido— y el cliente ya veía a
+    **Grupo Corazones Cruzados entre sus proveedores de tecnología** en WhatsApp Business.
+    Aun así la app cortó con **«Meta no devolvió la cuenta de WhatsApp»** (400).
+    - **La causa:** el `waba_id` se sacaba del `postMessage` de Meta, y el navegador solo
+      atendía a los eventos `FINISH` y `FINISH_ONLY_WABA`, que son los del flujo **estándar**.
+      El nuestro es el de **coexistencia** (`featureType: 'whatsapp_business_app_onboarding'`),
+      donde Meta emite **`FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`** y su `data` trae **solo
+      `waba_id`**, nunca `phone_number_id`. Documentado por Meta, no es un fallo suyo.
+    - **⛔ LO CARO NO FUE EL NOMBRE DEL EVENTO, FUE EL ORDEN.** El servidor exigía ese dato
+      **antes** de canjear el código, y **el código de Meta caduca en segundos** (comprobado
+      después: `This authorization code has expired`, subcode 36007). Es decir: por un dato
+      de adorno se tiró a la basura el único paso irrepetible de todo el alta, y no hubo forma
+      de recuperarla — hay que repetir el Embedded Signup con el cliente delante.
+    - **La regla que queda: lo que caduca va primero, y lo que dice el navegador es una pista,
+      no un requisito.** Ahora se canjea el código y la cuenta se deduce del **propio token**
+      con **`wabasDelToken()`** (`lib/agente/meta.ts`): `debug_token` devuelve los `target_ids`
+      del permiso `whatsapp_business_management`. Eso no depende de cómo Meta llame hoy a su
+      evento. El navegador acepta cualquier `FINISH*` y registra el evento en consola.
+    - **En la base no quedó NADA a medias**, y eso está bien: el corte era anterior a todo
+      guardado, así que el canal siguió `sin_conectar`, sin token y sin número. Se comprobó
+      leyendo `gcc_world.agente_canales` en producción — la única forma de saberlo de verdad.
+    - **🪤 Y `agente_eventos_webhook` no ayuda a diagnosticar un alta.** Se miró esperando un
+      `account_update` con `PARTNER_ADDED`: no hay ninguno. La app está suscrita solo al campo
+      `messages`, así que **de un alta no llega ni un evento**. Si algún día hace falta saber
+      desde el servidor que un cliente se dio de alta, hay que suscribir `account_update`.
+
   - **🔄 LO QUE LLEGA SOLO HAY QUE PEDIRLO SOLO (2026-08-03).** La bandeja del agente no se
     actualizaba: los mensajes llegan por WhatsApp y el agente contesta segundos después, sin
     que en la pantalla pase nada, así que había que recargar la página. Sondeo cada 6 s (el
