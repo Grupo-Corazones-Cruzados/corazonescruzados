@@ -2219,6 +2219,36 @@ Stack estándar de la casa, con particularidades de este repo:
       CLOUD_API` no demuestra nada: describe el lado API. Se marca a mano cuando el cliente
       dice que ya entra por `web.whatsapp.com` — así se hizo aquí.
 
+  - **🚀 EL AGENTE ENTRÓ EN PRODUCCIÓN CON CLIENTES REALES (2026-08-28, 13:43).** Peter Tours
+    (+593 99 595 1038, canal 11). En los primeros seis minutos: **7 respuestas, 0 fallos**,
+    entre 2,2 y 4,8 s cada una, con `gpt-5.6-luna` y la clave del propio cliente. Contestó
+    horarios por ciudad, precios y enlaces de la app, y **entendió una corrección a media
+    conversación** («Ibarra Quito sería disculpe») sin perder el hilo.
+    - **🪤 EL INTERRUPTOR DEL ESTUDIO NO GUARDABA `bot_activo`.** Fernando lo activó y el
+      canal seguía en `false`; el `updated_at` SÍ cambiaba, o sea que la pantalla escribía en
+      la base pero ese campo no llegaba. El servidor lo acepta bien
+      (`app/api/admin/flows/[id]/agente/route.ts`), así que el fallo está en lo que envía
+      `AgenteFlowWorkspace`. **Se activó a mano por SQL. PENDIENTE de arreglar.**
+    - **⚠️ Y no había forma de notarlo:** con el canal apagado el webhook **guarda el mensaje
+      y no encola** (`if (!canal.bot_activo) continue`). No hay error, no hay traza, la cola
+      queda vacía. Desde fuera se ve idéntico a un agente roto. Si un agente no contesta, lo
+      PRIMERO que hay que mirar es `agente_canales.bot_activo`, no los logs.
+    - **🪤 Los mensajes que entran ANTES de encender el canal se quedan en tierra de nadie:**
+      están en la bandeja pero nunca se encolaron, y encender el interruptor no los recupera.
+      Hay que encolarlos a mano si se quieren contestar — y casi nunca se quiere, porque son
+      conversaciones que ya atendió una persona.
+    - **⛔ EL AGENTE NO VE LO QUE ESCRIBE EL EQUIPO DEL CLIENTE.** En coexistencia Meta manda
+      los mensajes que la empresa envía desde su móvil o WhatsApp Web por
+      **`smb_message_echoes`**, y `lib/agente/entrante.ts` **no lo procesa**: solo lee
+      `messages`. Así que en un número donde también trabajan personas, el agente responde
+      como si nadie hubiera contestado — repitiendo o contradiciendo al equipo delante del
+      cliente. **Es la deuda más seria que deja esta puesta en marcha.**
+    - **📉 Primera pega de calidad, no técnica:** a «Buenas tardes» + «q Presio tiene para
+      quito» (dos mensajes seguidos) contestó solo al saludo y se saltó el precio, que sí
+      sabía. Revisar el debounce de 8 s y las reglas del prompt.
+    - **💸 ~7.800 tokens de ENTRADA por respuesta**, porque los 14 bloques de conocimiento
+      viajan enteros en cada llamada. Con 9 $ de saldo, vigilar el gasto en un día real.
+
   - **🔄 LO QUE LLEGA SOLO HAY QUE PEDIRLO SOLO (2026-08-03).** La bandeja del agente no se
     actualizaba: los mensajes llegan por WhatsApp y el agente contesta segundos después, sin
     que en la pantalla pase nada, así que había que recargar la página. Sondeo cada 6 s (el
