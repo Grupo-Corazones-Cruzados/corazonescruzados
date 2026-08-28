@@ -120,6 +120,17 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
   // no es seguridad, es no ofrecer lo que no se puede hacer.
   const puedeRepartirAccesos =
     user?.role === 'admin' || (!!flow.responsable_user_id && flow.responsable_user_id === user?.id);
+
+  /**
+   * Borrar el flujo es administrarlo, no usarlo: se lleva por delante sus campañas, sus
+   * listas y sus contactos. El cliente que tiene acceso a SU agente puede usarlo entero
+   * —bandeja, plantillas, estudio, encenderlo y apagarlo— pero no puede borrarlo.
+   *
+   * Sin esto, los tres puntitos le ofrecían «Eliminar flujo» y el servidor le respondía
+   * 403 al confirmarlo: el peor orden posible, porque para entonces ya se ha convencido de
+   * que va a hacerlo. Se comprueba igual en `DELETE`; aquí solo se deja de ofrecer.
+   */
+  const puedeAdministrarElFlujo = user?.role === 'admin' || user?.role === 'member';
   const isEmailWorkspace = flow.type !== 'whatsapp' && flow.type !== 'ai_agent';
 
   return (
@@ -156,7 +167,9 @@ export default function FlowDetail({ flowId }: { flowId: string }) {
             )}
           </>
         }
-        overflow={[{ label: 'Eliminar flujo', onClick: () => setConfirmDelete(true), danger: true }]}
+        overflow={puedeAdministrarElFlujo
+          ? [{ label: 'Eliminar flujo', onClick: () => setConfirmDelete(true), danger: true }]
+          : []}
       />
 
       {/* El espacio de trabajo depende del tipo. El panel de WhatsApp se monta en modo

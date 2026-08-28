@@ -108,3 +108,34 @@ export async function flujoPermitido(
 export async function puedeVerFlujo(user: TokenPayload | null, flowId: string | number) {
   return (await flujoPermitido(user, flowId)) !== null;
 }
+
+/**
+ * ¿Puede este usuario **ADMINISTRAR** el flujo? Distinto de poder usarlo.
+ *
+ * ── LAS DOS PREGUNTAS QUE NO SON LA MISMA ──────────────────────────────────────
+ * `flujoPermitido` responde «¿puede USAR esto?» — la bandeja, las plantillas, el estudio,
+ * encender y apagar el agente. Un cliente con acceso puede todo eso: es su número y sus
+ * conversaciones.
+ *
+ * Esta responde «¿puede administrar el flujo EN SÍ?» — renombrarlo, cambiarle el tipo,
+ * borrarlo, y repartir quién entra. Eso es de GCC: del **responsable** del flujo y de los
+ * **administradores**. Un cliente no borra el flujo que le hemos montado, ni le da entrada
+ * a un tercero.
+ *
+ * ⚠️ Existía ya, pero **copiada dentro de la ruta de `/accesos`**, así que `PUT` y `DELETE`
+ * del flujo se quedaron sin ninguna comprobación: bastaba con tener sesión —un candidato
+ * valía— y escribir la URL para renombrar o borrar el flujo de otro. Vive aquí para que la
+ * respuesta sea una sola, como ya pasa con `flujoPermitido`.
+ */
+export async function flujoAdministrable(
+  user: TokenPayload | null,
+  flowId: string | number,
+): Promise<any | null> {
+  if (!user) return null;
+  const { rows: [flujo] } = await pool.query(
+    `SELECT * FROM gcc_world.flows WHERE id = $1`, [flowId],
+  );
+  if (!flujo) return null;
+  if (user.role === 'admin') return flujo;
+  return flujo.responsable_user_id === user.userId ? flujo : null;
+}

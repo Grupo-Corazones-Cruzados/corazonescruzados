@@ -14,31 +14,36 @@
 
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { flujoAdministrable } from '@/lib/flows/acceso';
 import { pool } from '@/lib/db';
 
-/** El flujo, si este usuario puede ADMINISTRAR sus accesos. Distinto de poder verlo. */
-async function flujoAdministrable(flowId: string) {
+/**
+ * El flujo, si este usuario puede ADMINISTRAR sus accesos. Distinto de poder verlo.
+ *
+ * La regla —responsable o administrador— vive en `flujoAdministrable()` de
+ * `lib/flows/acceso.ts`. Aquí estaba copiada, y esa copia era la única que existía: `PUT` y
+ * `DELETE` del flujo se habían quedado sin ninguna comprobación. Ahora la respuesta es una
+ * sola y esto solo la envuelve en la respuesta HTTP que toca.
+ */
+async function flujoAdministrablePorHttp(flowId: string) {
   const user = await getCurrentUser();
   if (!user) return { error: NextResponse.json({ error: 'No autorizado' }, { status: 401 }) };
 
-  const { rows: [flujo] } = await pool.query(
-    `SELECT id, name, responsable_user_id FROM gcc_world.flows WHERE id = $1`, [flowId],
-  );
-  if (!flujo) return { error: NextResponse.json({ error: 'No encontrado' }, { status: 404 }) };
+  const flujo = await flujoAdministrable(user, flowId);
+  if (flujo) return { flujo, user };
 
-  if (user.role !== 'admin' && flujo.responsable_user_id !== user.userId) {
-    return {
-      error: NextResponse.json(
-        { error: 'Solo el responsable del flujo puede cambiar quién accede.' }, { status: 403 },
-      ),
-    };
-  }
-  return { flujo, user };
+  // Se distingue «no existe» de «no es tuyo»: al responsable le sirve saber cuál es.
+  const { rows: [existe] } = await pool.query(`SELECT 1 FROM gcc_world.flows WHERE id = $1`, [flowId]);
+  return {
+    error: existe
+      ? NextResponse.json({ error: 'Solo el responsable del flujo puede cambiar quién accede.' }, { status: 403 })
+      : NextResponse.json({ error: 'No encontrado' }, { status: 404 }),
+  };
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { error, flujo } = await flujoAdministrable(id);
+  const { error, flujo } = await flujoAdministrablePorHttp(id);
   if (error) return error;
 
   const { rows: conAcceso } = await pool.query(
@@ -80,7 +85,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { error, flujo } = await flujoAdministrable(id);
+  const { error, flujo } = await flujoAdministrablePorHttp(id);
   if (error) return error;
 
   const { client_id } = await req.json();
@@ -109,7 +114,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { error, flujo } = await flujoAdministrable(id);
+  const { error, flujo } = await flujoAdministrablePorHttp(id);
   if (error) return error;
 
   const { searchParams } = new URL(req.url);

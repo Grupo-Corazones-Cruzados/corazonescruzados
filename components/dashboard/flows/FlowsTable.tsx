@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -52,6 +53,24 @@ interface Flow {
 
 export default function FlowsTable() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  /**
+   * ⇒ QUÉ PUEDE HACER UN CLIENTE CON UN FLUJO SUYO.
+   *
+   * Un cliente entra aquí porque le hemos dado acceso a SU agente, y solo ve ese (lo
+   * filtra el servidor en `filtroDeFlujos`). Dentro puede **usarlo** entero: configurarlo,
+   * su bandeja, sus plantillas, su estudio, y encenderlo o apagarlo — es su número y sus
+   * conversaciones.
+   *
+   * Lo que no es suyo es el flujo COMO OBJETO: crear, renombrar, cambiar de tipo o
+   * borrarlo es de GCC, que se lo montó. Así que esos botones ni se le enseñan.
+   *
+   * ⚠️ Esconderlos NO es la seguridad —esa está en `PUT`/`DELETE`, que comprueban
+   * `flujoAdministrable`—. Es no ofrecer lo que va a fallar al pulsarlo: un botón que
+   * responde 403 es peor que un botón que no está.
+   */
+  const puedeAdministrarFlujos = user?.role === 'admin' || user?.role === 'member';
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -194,11 +213,14 @@ export default function FlowsTable() {
               <option value="all">Todos los estados</option>
               {Object.entries(FLOW_STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-            <button onClick={openCreate}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-              style={mf}>
-              <Plus className="w-4 h-4" /> Nuevo flujo
-            </button>
+            {/* Crear flujos es de GCC. El cliente entra a los suyos, no monta nuevos. */}
+            {puedeAdministrarFlujos && (
+              <button onClick={openCreate}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                style={mf}>
+                <Plus className="w-4 h-4" /> Nuevo flujo
+              </button>
+            )}
           </div>
 
           {/* list · detail */}
@@ -208,7 +230,7 @@ export default function FlowsTable() {
                 data={visibleFlows}
                 onRowClick={(f: Flow) => setSelected(f)}
                 emptyTitle="Sin flujos"
-                emptyDesc='Crea tu primer flujo con "Nuevo flujo".'
+                emptyDesc={puedeAdministrarFlujos ? 'Crea tu primer flujo con "Nuevo flujo".' : 'Todavía no tienes ningún flujo asignado.'}
                 columns={[
                   { key: 'name', header: 'Nombre', render: (f: Flow) => {
                     const t = FLOW_TYPES[f.type] || FLOW_TYPES.custom;
@@ -280,18 +302,24 @@ export default function FlowsTable() {
                       <Settings2 className="w-4 h-4" /> Configurar <ArrowRight className="w-4 h-4" />
                     </button>
                     <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => openEdit(selected)}
-                        className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-                        <Pencil className="w-3.5 h-3.5" /> Editar
-                      </button>
+                      {puedeAdministrarFlujos && (
+                        <button onClick={() => openEdit(selected)}
+                          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
+                          <Pencil className="w-3.5 h-3.5" /> Editar
+                        </button>
+                      )}
+                      {/* Activar y pausar SÍ es del cliente: es su agente. Ocupa la fila
+                          entera cuando no hay «Editar» al lado, para no dejar un hueco. */}
                       <button onClick={() => handleToggleStatus(selected)}
-                        className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
+                        className={`${puedeAdministrarFlujos ? '' : 'col-span-2 '}inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors`} style={mf}>
                         {selected.status === 'active' ? <><Pause className="w-3.5 h-3.5" /> Pausar</> : <><Play className="w-3.5 h-3.5" /> Activar</>}
                       </button>
-                      <button onClick={() => setConfirmDelete(selected)}
-                        className="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-red-500/30 rounded text-[12px] text-red-500 hover:bg-red-50 transition-colors" style={mf}>
-                        <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                      </button>
+                      {puedeAdministrarFlujos && (
+                        <button onClick={() => setConfirmDelete(selected)}
+                          className="col-span-2 inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-red-500/30 rounded text-[12px] text-red-500 hover:bg-red-50 transition-colors" style={mf}>
+                          <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

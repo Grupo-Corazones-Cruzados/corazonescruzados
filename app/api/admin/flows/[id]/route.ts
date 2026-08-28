@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { flujoPermitido } from '@/lib/flows/acceso';
+import { flujoPermitido, flujoAdministrable } from '@/lib/flows/acceso';
 import { NextResponse } from 'next/server';
 
 /**
@@ -34,6 +34,37 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     const body = await req.json();
     const { name, type, description, status, config } = body;
+
+    /**
+     * ⛔ ESTA RUTA NO COMPROBABA NADA. Bastaba tener sesión —valía un candidato— y escribir
+     * la URL para renombrar, cambiar de tipo o despublicar el flujo de cualquier cliente.
+     * Se descubrió el 2026-08-28 al preparar el acceso de Peter Tours.
+     *
+     * Ahora hay dos niveles, y la diferencia es la que separa **usar** de **administrar**:
+     *
+     *  · **Quien puede USAR el flujo** (su cliente, con acceso concedido) solo puede mover
+     *    el `status`: encender y apagar su propio agente. Es suyo — es su número y sus
+     *    conversaciones — y por eso el botón «Activar» sí es cosa suya.
+     *
+     *  · **Renombrar, cambiar el tipo, la descripción o la configuración** es administrar
+     *    el flujo, y eso es de GCC: su responsable y los administradores.
+     *
+     * Se comprueba en este orden a propósito: primero si puede tocar algo, y solo después
+     * QUÉ puede tocar. Un cliente que intente colar un `name` no recibe un cambio a medias,
+     * recibe un 403 — callarse y guardar solo el `status` sería mentirle sobre lo que pasó.
+     */
+    const flujo = await flujoPermitido(user, id);
+    if (!flujo) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+
+    const soloEstado = name === undefined && type === undefined
+      && description === undefined && config === undefined;
+
+    if (!soloEstado && !(await flujoAdministrable(user, id))) {
+      return NextResponse.json(
+        { error: 'Solo el responsable del flujo puede editarlo. Tú puedes activarlo y pausarlo.' },
+        { status: 403 },
+      );
+    }
 
     const { rows } = await pool.query(
       `UPDATE gcc_world.flows
@@ -71,6 +102,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+
+    // Borrar un flujo se lleva por delante sus campañas, listas y contactos. Eso NUNCA es
+    // del cliente, por mucho acceso que tenga: es de GCC, que es quien se lo montó.
+    const { id: idBorrar } = await params;
+    if (!(await flujoAdministrable(user, idBorrar))) {
+      return NextResponse.json(
+        { error: 'Solo el responsable del flujo puede eliminarlo.' }, { status: 403 },
+      );
+    }
 
     const { id } = await params;
     const { rowCount } = await pool.query(`DELETE FROM gcc_world.flows WHERE id = $1`, [id]);
