@@ -49,6 +49,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
 
     if (rows.length === 0) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+
+    /**
+     * ⇒ EN UN AGENTE IA, «ACTIVO» ES UNA SOLA COSA. Ver `sincronizarAgente()`.
+     *
+     * Este endpoint mueve `flows.status`, que es lo que enseña el panel de
+     * Automatizaciones; quien decide si el agente CONTESTA es
+     * `agente_canales.bot_activo`. Eran dos interruptores distintos con la misma
+     * etiqueta, así que se movían por separado.
+     */
+    await sincronizarAgente(rows[0], status);
+
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
     console.error('Flows PUT error:', err.message);
@@ -70,4 +81,33 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     console.error('Flows DELETE error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+/**
+ * Mantiene a la vez los DOS interruptores de un agente IA.
+ *
+ * ── POR QUÉ EXISTE (2026-08-28, lo sufrió Fernando) ───────────────────────────────────
+ * Un agente tenía dos «activos» independientes y con el mismo nombre en pantalla:
+ *   · `flows.status` — lo que dice el panel de Automatizaciones y mueve su botón «Activar».
+ *   · `agente_canales.bot_activo` — lo ÚNICO que mira el webhook para decidir si contesta.
+ *
+ * Fernando pulsó «Activar», la pantalla dijo «Activo», y el agente siguió mudo porque el
+ * otro interruptor seguía apagado. Y no había forma de notarlo: con `bot_activo` en falso
+ * el webhook **guarda el mensaje y no encola**, sin error y sin traza. Desde fuera se ve
+ * exactamente igual que un agente roto.
+ *
+ * Que la pantalla mienta sobre si el agente atiende a los clientes de alguien no es un
+ * detalle de interfaz: es el peor fallo posible de este producto. Así que dejan de ser dos
+ * cosas. Se toque el que se toque, los dos van juntos.
+ *
+ * `draft` no apaga nada: un flujo en borrador todavía no ha llegado a decidir.
+ */
+async function sincronizarAgente(flujo: any, statusPedido: string | undefined) {
+  if (flujo?.type !== 'ai_agent' || !statusPedido) return;
+  if (statusPedido !== 'active' && statusPedido !== 'paused') return;
+  await pool.query(
+    `UPDATE gcc_world.agente_canales SET bot_activo = $2, updated_at = NOW()
+      WHERE flow_id = $1 AND bot_activo <> $2`,
+    [flujo.id, statusPedido === 'active'],
+  );
 }

@@ -111,6 +111,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     );
   }
 
+  /**
+   * ⇒ EL OTRO LADO DEL MISMO INTERRUPTOR. Ver `sincronizarAgente()` en
+   * `app/api/admin/flows/[id]/route.ts`, que hace esto mismo al revés.
+   *
+   * Encender el agente aquí y que el panel de Automatizaciones lo siguiera enseñando
+   * «Pausado» es la misma mentira que al revés, y la que confundió a Fernando el
+   * 2026-08-28. Un flujo en **borrador** no se toca: todavía no ha llegado a publicarse, y
+   * encender su agente no debe publicarlo por la puerta de atrás.
+   */
+  if (typeof body.bot_activo === 'boolean') {
+    await pool.query(
+      `UPDATE gcc_world.flows SET status = $2, updated_at = NOW()
+        WHERE id = $1 AND status <> 'draft' AND status <> $2`,
+      [flujo.id, body.bot_activo ? 'active' : 'paused'],
+    );
+  }
+
   // La clave de IA la pone el cliente. Se cifra atada a ESTE canal y a ESTE campo.
   if (typeof body.ia_api_key === 'string' && body.ia_api_key.trim()) {
     if (!claveMaestraConfigurada()) {

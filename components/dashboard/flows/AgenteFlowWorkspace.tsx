@@ -169,7 +169,10 @@ function calcularAvisos(estudio: Estudio | null): Aviso[] {
     });
   }
   if (!canal.bot_activo) {
-    avisos.push({ tono: 'aviso', texto: 'El agente está apagado: recibe y guarda los mensajes, pero no responde. Se enciende en Parámetros.' });
+    // Los dos sitios encienden lo MISMO desde el 2026-08-28: el flujo «Activo» del panel
+    // de Automatizaciones y esta casilla van atados. Se nombran los dos para que nadie
+    // vuelva a buscar el interruptor «de verdad».
+    avisos.push({ tono: 'aviso', texto: 'El agente está apagado: recibe y guarda los mensajes, pero no responde. Se enciende en Parámetros, o activando el flujo desde Automatizaciones — son el mismo interruptor.' });
   }
   return avisos;
 }
