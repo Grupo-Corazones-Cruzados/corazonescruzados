@@ -390,8 +390,26 @@ export default function SubscriptionsPage() {
                       {detail.periods.slice().reverse().map((p: any) => {
                         const busy = busyPeriod === p.period;
                         return (
+                          /* ⇒ EL COLOR, EN UNA FRANJA Y NO EN TODO EL RECUADRO.
+                             Cada mes venía con el fondo entero teñido —verde el pagado, rojo
+                             el vencido— y la lista parecía un semáforo: tres bloques de color
+                             saturado compitiendo entre ellos y con el botón de pagar, que es
+                             lo único que hay que pulsar ahí.
+                             Ahora la superficie es la misma que el resto del panel y el estado
+                             lo dice una barra de 3 px en el canto izquierdo. Se distingue igual
+                             de rápido —el ojo encuentra el color aunque sea poco— y deja de
+                             gritar. El texto de «Pagado» y «Vencido» conserva su color, que es
+                             donde el dato de verdad está escrito. */
                           <div key={p.period}
-                            className={`flex items-center justify-between gap-2 px-3 py-2 rounded border ${p.paid ? 'border-green-300 bg-green-50' : p.status === 'overdue' ? 'border-red-300 bg-red-50' : p.status === 'due_soon' ? 'border-amber-300 bg-amber-50' : 'border-digi-border bg-digi-darker'}`}>
+                            className="relative flex items-center justify-between gap-2 pl-4 pr-3 py-2 rounded border border-digi-border bg-digi-darker overflow-hidden">
+                            <span
+                              aria-hidden
+                              className={`absolute left-0 top-0 bottom-0 w-[3px] ${
+                                p.paid ? 'bg-green-500'
+                                : p.status === 'overdue' ? 'bg-red-500'
+                                : p.status === 'due_soon' ? 'bg-amber-500'
+                                : 'bg-digi-border'}`}
+                            />
                             <div className="min-w-0">
                               <div className="text-[12px] font-medium text-digi-text" style={mf}>{p.label}</div>
                               <div className="text-[11px] text-digi-muted" style={mf}>
@@ -406,7 +424,7 @@ export default function SubscriptionsPage() {
                                 <>
                                   {p.invoiceId && (
                                     <button onClick={() => window.open(`/api/invoices/${p.invoiceId}/pdf`, '_blank')}
-                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] border border-green-500/40 rounded text-green-700 hover:bg-green-100 transition-colors" style={mf}><FileText className="w-3 h-3" /> PDF</button>
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-accent hover:border-accent transition-colors" style={mf}><FileText className="w-3 h-3" /> PDF</button>
                                   )}
                                   {/* Desmarcar es cosa de quien administra el cobro, no del
                                       cliente: para él, un mes pagado está pagado. */}
@@ -440,7 +458,7 @@ export default function SubscriptionsPage() {
 
                     <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
                       {esCliente
-                        ? 'Al pagar un mes se emite tu factura electrónica y te llega al correo. Al importe se le suman los gastos de procesamiento del pago en línea, que verás antes de confirmar.'
+                        ? 'Al pagar un mes se emite tu factura electrónica y te llega al correo.'
                         : 'Al marcar un mes como pagado se genera la factura electrónica (SRI), se envía por correo al cliente y se registra el ingreso. Un mes con factura emitida no puede desmarcarse (requiere nota de crédito).'}
                     </p>
 

@@ -383,8 +383,18 @@ export default function TicketsPage() {
                       <button onClick={() => router.push(`/dashboard/tickets/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
                         Ver detalle <ArrowRight className="w-4 h-4" />
                       </button>
+                      {/* ⚠️ Abre el PDF en una PESTAÑA NUEVA, no navega al módulo de Facturas.
+                          Ese módulo es de GCC: un cliente no lo tiene permitido, así que el
+                          guardián lo echaba a otro sitio —a Tickets— y el botón parecía
+                          estropeado. Y aunque pudiera entrar, allí vería el comprobante entre
+                          herramientas de emisión que no son suyas.
+                          El PDF es la factura tal cual, y en otra pestaña no le hace perder
+                          el sitio donde estaba. */}
                       {selected.invoice_id && (
-                        <button onClick={() => router.push(`/dashboard/invoices/${selected.invoice_id}`)} className={`${BTN_SECONDARY} w-full`}>
+                        <button
+                          onClick={() => window.open(`/api/invoices/${selected.invoice_id}/pdf`, '_blank', 'noopener')}
+                          className={`${BTN_SECONDARY} w-full`}
+                        >
                           <FileText className="w-4 h-4" /> Ver factura
                         </button>
                       )}
