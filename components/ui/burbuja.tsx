@@ -106,7 +106,25 @@ export function usarBurbuja(
   return { burbujaRef, caja };
 }
 
-/** El contenedor flotante ya posicionado. Se pinta en un portal sobre `document.body`. */
+/**
+ * El contenedor flotante ya posicionado. Se pinta en un portal.
+ *
+ * ── ⚠️ POR QUÉ EL PORTAL NO PUEDE COLGAR DEL `body` (2026-08-28) ──────────────────────
+ * Los colores del panel NO son globales: viven redefinidos dentro de `.corp` —y de
+ * `.corp.dark` para el modo oscuro—, que es el envoltorio del dashboard. Un utilitario
+ * como `bg-digi-card` no lleva un color dentro: lee la variable del ancestro más cercano
+ * que la defina.
+ *
+ * Colgada del `body`, la burbuja queda FUERA de `.corp`, así que esas variables no le
+ * llegan y cae en las del `:root`, que son las del sitio público: oscuras. Resultado: en
+ * el panel en modo claro salía una burbuja negra, y en modo oscuro exactamente la misma —
+ * el tema no la tocaba, porque nunca estuvo dentro de él.
+ *
+ * Se cuelga del propio `.corp`. La burbuja es `position: fixed`, así que se sigue
+ * colocando respecto a la ventana igual que antes; lo único que cambia es de quién hereda
+ * los colores. Fuera del dashboard —la portada, el juego— no hay `.corp` y se cae al
+ * `body`, que es justo lo que allí corresponde.
+ */
 export function Burbuja({
   caja, burbujaRef, lado, etiqueta, ancho = 340, contenedor, children,
 }: {
@@ -116,10 +134,10 @@ export function Burbuja({
   etiqueta: string;
   ancho?: number;
   /**
-   * Dónde se cuelga la burbuja. Por defecto `document.body`, pero **dentro de un
-   * `PixelModal` hay que pasar su `<dialog>`**: un diálogo abierto con `showModal()`
-   * vive en la *top layer* del navegador, que está por encima de CUALQUIER z-index.
-   * Colgada del body, la burbuja se dibujaba detrás del panel y el (?) parecía roto.
+   * Dónde se cuelga la burbuja. Por defecto, el envoltorio del tema (ver arriba), pero
+   * **dentro de un `PixelModal` hay que pasar su `<dialog>`**: un diálogo abierto con
+   * `showModal()` vive en la *top layer* del navegador, que está por encima de CUALQUIER
+   * z-index. Colgada fuera, la burbuja se dibujaba detrás del panel y el (?) parecía roto.
    */
   contenedor?: Element | null;
   children: ReactNode;
@@ -149,6 +167,8 @@ export function Burbuja({
         style={{ top: caja.flechaY, marginTop: -6 }}
       />
     </div>,
-    contenedor ?? document.body,
+    // El orden importa: un diálogo manda sobre todo (top layer), después el envoltorio del
+    // tema, y el `body` solo cuando no hay dashboard alrededor.
+    contenedor ?? document.querySelector('.corp') ?? document.body,
   );
 }

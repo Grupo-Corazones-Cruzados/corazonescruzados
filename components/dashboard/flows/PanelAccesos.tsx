@@ -23,7 +23,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
-import { Users, Search, Plus, X, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Users, Search, Plus, X, ShieldCheck } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -177,12 +177,6 @@ export default function PanelAccesos({ flowId, abierto, alCerrar }: {
               </div>
             )}
           </div>
-
-          <p className="text-[11.5px] text-digi-muted leading-relaxed flex items-start gap-1.5" style={mf}>
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
-            Quien tenga acceso ve la bandeja completa de este flujo: las conversaciones de
-            WhatsApp y quién escribió qué. Dalo solo a quien deba leerlas.
-          </p>
 
           <div className="flex justify-end">
             <button type="button" className={BTN_SECONDARY} onClick={alCerrar}>Cerrar</button>

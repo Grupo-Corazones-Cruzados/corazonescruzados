@@ -109,13 +109,16 @@ export default function DashboardSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full z-40 bg-digi-card border-r border-digi-border flex flex-col transition-all duration-200
+        /* `rail` redefine los tokens de color SOLO aquí dentro (ver globals.css). Por eso
+           ni una de las clases de abajo cambia: `bg-digi-card`, `text-digi-muted` y demás
+           leen la variable del ancestro más cercano, que pasa a ser el raíl. */
+        className={`rail fixed top-0 left-0 h-full z-40 bg-digi-card border-r border-digi-border flex flex-col transition-all duration-200
           ${collapsed ? 'w-16' : 'w-56'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Brand */}
-        <Link href="/" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-black/[0.02] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
+        <Link href="/" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
           <BrandLoader size="sm" />
           {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
         </Link>
@@ -139,7 +142,7 @@ export default function DashboardSidebar({
                         href={item.href}
                         title={collapsed ? item.label : undefined}
                         className={`relative flex items-center gap-2.5 rounded-md py-2 text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0' : 'pl-2.5 pr-9'} ${
-                          active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.04]'
+                          active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'
                         }`}
                         style={mf}
                       >

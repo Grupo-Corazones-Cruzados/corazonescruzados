@@ -748,6 +748,50 @@ html {
   min-height: 100vh;
 }
 
+/* =====================================================
+   EL RAÍL — el menú de módulos de la izquierda.
+   =====================================================
+   Antes usaba los mismos tokens que las tarjetas, así que en tema claro era una
+   franja blanca contra un fondo casi blanco y en tema oscuro una franja gris
+   contra un fondo gris. Se distinguía por el borde de 1 px y poco más: la
+   pantalla entera era una sola masa del mismo color.
+
+   Ahora el raíl es **oscuro con tinte de marca en los DOS temas**. No es un
+   capricho: un raíl que cambia de color con el tema no da contraste en ninguno
+   de los dos, porque siempre se parece a lo que tiene al lado. Uno constante
+   ancla la vista, separa «dónde estoy» de «qué estoy haciendo», y hace que el
+   morado de la marca esté presente sin teñir el área de trabajo.
+
+   ⚠️ Funciona REDEFINIENDO los tokens dentro de `.rail`, igual que `.corp` hace
+   con toda la app. Ni una sola clase de la barra lateral cambia: `bg-digi-card`,
+   `text-digi-muted` y compañía leen la variable del ancestro más cercano, que
+   aquí es esta. Un módulo nuevo en el menú hereda el raíl sin hacer nada.
+   ===================================================== */
+.corp .rail {
+  --color-digi-card: #1F1A2E;    /* superficie del raíl */
+  --color-digi-darker: #1A1626;
+  --color-digi-border: #322A4A;  /* separadores, visibles sobre el raíl */
+  --color-digi-text: #F4F2FC;    /* texto principal */
+  --color-digi-muted: #A99CCB;   /* texto secundario, con contraste suficiente */
+  --color-accent: #C9B8FF;       /* el activo: claro para leerse sobre oscuro */
+  --color-accent-light: #362B63; /* fondo del módulo activo */
+  --color-accent-glow: #C9B8FF;
+}
+
+/* En modo oscuro el raíl se separa del fondo por TEMPERATURA, no por brillo: la
+   página es gris cálido (#1b1a19) y el raíl, violeta frío. Bajarle el brillo sin
+   más lo habría convertido en un agujero negro al lado de la página. */
+.corp.dark .rail {
+  --color-digi-card: #171320;
+  --color-digi-darker: #131019;
+  --color-digi-border: #2B2440;
+  --color-digi-text: #EFEDF8;
+  --color-digi-muted: #9E92BE;
+  --color-accent: #C9B8FF;
+  --color-accent-light: #2E2554;
+  --color-accent-glow: #C9B8FF;
+}
+
 /* Light, thin scrollbars inside the dashboard */
 .corp ::-webkit-scrollbar-track { background: transparent; }
 .corp ::-webkit-scrollbar-thumb { background: #c8c6c4; }
