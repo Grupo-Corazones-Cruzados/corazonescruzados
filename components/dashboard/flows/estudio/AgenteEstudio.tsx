@@ -30,8 +30,9 @@ import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FlowPanelShell, PanelEmpty, SectionBar } from '@/components/dashboard/flows/FlowPanelUI';
+import { FlowPanelShell, PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import { RanuraAccionesCtx } from '@/components/dashboard/flows/estudio/RanuraAcciones';
 import { LongTextDialog } from '@/components/ui/EditDialog';
 import { TONO } from '@/components/ui/tonos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
@@ -336,6 +337,14 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar, editores, alGuar
 
   const Icono = contenido ? ICONO_ORIGEN[contenido.meta.origen] : FileText;
 
+  /**
+   * ⚠️ Referencia como ESTADO, no como `useRef`. Un `ref` no vuelve a renderizar cuando se
+   * rellena, así que el portal se dibujaría contra `null` en la primera pasada y ya no lo
+   * volvería a intentar: el botón no aparecería nunca. Con estado, el nodo llega y el
+   * componente se repinta con la ranura ya montada.
+   */
+  const [ranura, setRanura] = useState<HTMLElement | null>(null);
+
   return (
     <div className={`${ancho} shrink-0 h-full flex flex-col rounded-lg border border-digi-border bg-digi-card overflow-hidden transition-[width] duration-200`}>
       <div className="px-3 py-2 border-b border-digi-border flex items-start gap-2 shrink-0">
@@ -350,6 +359,10 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar, editores, alGuar
               conocimiento de su negocio. Sigue toda escrita en `lib/agente/estudio/
               pipeline.ts`, que es donde le sirve a quien programa. */}
         </span>
+        {/* La acción principal del editor aterriza aquí, junto al nombre del panel. La
+            declara el editor —que es quien sabe cuándo se puede pulsar— y solo se pinta
+            aquí. Ver `RanuraAcciones.tsx`. */}
+        <span ref={setRanura} className="flex items-center gap-2 shrink-0" />
         <button type="button" onClick={alCerrar} aria-label="Cerrar" className="text-digi-muted hover:text-digi-text shrink-0">
           <X className="w-3.5 h-3.5" />
         </button>
@@ -359,6 +372,7 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar, editores, alGuar
           mi contenido», y entonces nunca aparece la barra. Y los hijos con `shrink-0`,
           porque en una columna flex que desplaza SE ENCOGEN por defecto y recortan el texto
           en silencio. */}
+      <RanuraAccionesCtx.Provider value={ranura}>
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 [&>*]:shrink-0">
         {cargando && <p className="text-[12px] text-digi-muted" style={mf}>Cargando…</p>}
 
@@ -405,6 +419,7 @@ function PanelFuente({ contenido, cargando, alCerrar, alEditar, editores, alGuar
           </ul>
         )}
       </div>
+      </RanuraAccionesCtx.Provider>
 
       {contenido?.editable && !enSitio && (
         <div className="px-3 py-2 border-t border-digi-border shrink-0">

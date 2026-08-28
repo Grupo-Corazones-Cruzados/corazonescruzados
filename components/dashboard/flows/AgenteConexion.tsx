@@ -19,12 +19,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { AccionesDelPanel } from '@/components/dashboard/flows/estudio/RanuraAcciones';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
-import { SectionBar, PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
+import { PanelEmpty } from '@/components/dashboard/flows/FlowPanelUI';
 import { Plug, ShieldAlert, CheckCircle2, RefreshCw, AlertTriangle, Smartphone, FlaskConical } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -294,13 +295,16 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
 
   return (
     <div>
-      <SectionBar title="Conexión con WhatsApp">
-        {conectado && (
+      {/* Sin título propio: el panel del Estudio ya se llama «Conexión con WhatsApp» en su
+          cabecera, y repetirlo dos centímetros más abajo era gastar una fila en decir lo
+          mismo. El botón sube a esa cabecera — donde está el nombre, están sus acciones. */}
+      {conectado && (
+        <AccionesDelPanel>
           <button className={BTN_SECONDARY} onClick={consultarMeta} disabled={ocupado}>
             <RefreshCw className="w-4 h-4" /> Comprobar contra Meta
           </button>
-        )}
-      </SectionBar>
+        </AccionesDelPanel>
+      )}
 
       {faltaConfig ? (
         <PanelEmpty Icon={AlertTriangle} title="Falta configurar la app de Meta"
@@ -530,17 +534,19 @@ function Conectado({ canal, estadoMeta }: { canal: any; estadoMeta: any }) {
   const n = estadoMeta?.numero;
   return (
     <div className="max-w-3xl space-y-4">
-      <div className={`rounded-lg border ${TONO.exito.caja} p-4 flex gap-2 items-start`}>
-        <CheckCircle2 className={`w-5 h-5 ${TONO.exito.icono} shrink-0 mt-0.5`} />
-        <div>
-          <p className={`text-[13px] font-semibold ${TONO.exito.texto}`} style={mf}>El número está conectado</p>
-          <p className={`text-[12.5px] ${TONO.exito.texto} mt-1`} style={mf}>
-            {canal.numero_visible ?? 'Número sin nombre'} · {canal.nombre_verificado ?? 'sin nombre verificado'}
-          </p>
-        </div>
-      </div>
-
+      {/* El número deja de anunciarse en una caja verde y pasa a ser el PRIMER CAMPO, que
+          es lo que en realidad es: el dato que se viene a consultar. Que esté conectado ya
+          lo dice el propio panel —solo se llega aquí estándolo— y la cabecera del Estudio,
+          que lleva el número escrito arriba del todo. */}
       <dl className="grid sm:grid-cols-2 gap-3">
+        <Dato titulo="Número conectado">
+          <span className="text-[13px] font-semibold text-digi-text" style={mf}>
+            {canal.numero_visible ?? '—'}
+          </span>
+          {canal.nombre_verificado && (
+            <span className="block text-[11.5px] text-digi-muted mt-0.5" style={mf}>{canal.nombre_verificado}</span>
+          )}
+        </Dato>
         <Dato titulo="Cuenta de WhatsApp (WABA)"><code className="text-[12px]">{canal.waba_id ?? '—'}</code></Dato>
         <Dato titulo="Identificador del número"><code className="text-[12px]">{canal.phone_number_id ?? '—'}</code></Dato>
         <Dato titulo="Token del cliente">
@@ -580,11 +586,6 @@ function Conectado({ canal, estadoMeta }: { canal: any; estadoMeta: any }) {
           </>
         )}
       </dl>
-      {!estadoMeta && (
-        <p className="text-[12px] text-digi-muted" style={mf}>
-          Pulsa «Comprobar contra Meta» para ver el estado real del número y si nuestra app quedó suscrita.
-        </p>
-      )}
     </div>
   );
 }
@@ -637,18 +638,11 @@ function TraerDelCliente({ canal, ocupado, alPedir }: {
 
   return (
     <div className="max-w-3xl mt-6">
-      <SectionBar title="Traer lo que el cliente ya tenía" />
-
-      <div className={`rounded-lg border ${TONO.aviso.caja} p-3 mb-3`}>
-        <div className="flex gap-2 items-start">
-          <AlertTriangle className={`w-4 h-4 ${TONO.aviso.icono} shrink-0 mt-0.5`} />
-          <p className="text-[12.5px] leading-relaxed" style={mf}>
-            Meta solo deja pedir esto <strong>una vez y dentro de las 24 horas siguientes al alta</strong>.
-            Pasado el plazo se pierde para siempre, salvo desconectando al cliente y repitiendo el alta entera.
-          </p>
-        </div>
-      </div>
-
+      {/* El cartel de las 24 horas se quitó de aquí: era una advertencia permanente sobre
+          una decisión que se toma una sola vez, y en un panel que se abre a diario acaba
+          siendo papel de pared. Sigue estando donde importa —en el diálogo de confirmación,
+          justo antes de pulsar—, que es el único momento en que se puede hacer algo con
+          ella. Y una vez pedido, la fila lo dice: «Pedido el …». */}
       <div className="space-y-2">
         {filas.map((f) => (
           <div key={f.tipo} className="rounded-lg border border-digi-border bg-digi-card p-3 flex items-start justify-between gap-3">

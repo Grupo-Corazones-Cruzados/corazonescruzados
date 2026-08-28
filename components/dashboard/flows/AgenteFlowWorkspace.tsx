@@ -24,6 +24,7 @@ import { BTN_PRIMARY } from '@/components/ui/Button';
 import { SectionBar, PanelEmpty, BTN_ROW, BTN_ROW_DANGER } from '@/components/dashboard/flows/FlowPanelUI';
 import AgenteBandeja from '@/components/dashboard/flows/AgenteBandeja';
 import AgenteConexion from '@/components/dashboard/flows/AgenteConexion';
+import { AccionesDelPanel } from '@/components/dashboard/flows/estudio/RanuraAcciones';
 import type { Aviso } from '@/components/ui/BotonAvisos';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import AgenteEstudio from '@/components/dashboard/flows/estudio/AgenteEstudio';
@@ -297,8 +298,14 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
   const c = estudio.canal;
   const [form, setForm] = useState({
     razonamiento: c.razonamiento, max_tokens: c.max_tokens, debounce_segundos: c.debounce_segundos,
-    ventana_mensajes: c.ventana_mensajes, bot_activo: c.bot_activo,
+    ventana_mensajes: c.ventana_mensajes,
   });
+  // ⚠️ `bot_activo` NO está aquí, y es a propósito. Encender el agente es el botón
+  // «Activar»/«Pausar» de la cabecera de la página, atado al estado del flujo (ver
+  // `sincronizarAgente` en `app/api/admin/flows/[id]/route.ts`). Tenerlo también como
+  // casilla dentro de un formulario que se guarda con otro botón era el tercer sitio
+  // desde el que se encendía lo mismo — y el que hacía que la pantalla y la realidad
+  // dijeran cosas distintas.
   const [clave, setClave] = useState('');
   const [guardando, setGuardando] = useState(false);
 
@@ -319,15 +326,15 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
 
   return (
     <div>
-      <SectionBar title="Parámetros de ejecución">
-        <BotonAyuda titulo="Parámetros de ejecución">
-          Los valores por defecto son los <strong>medidos en producción</strong>, no estimaciones.
-          Cada campo tiene su propia ayuda: pulsa el (?) que hay junto a su nombre.
-        </BotonAyuda>
+      {/* Sin título propio: el panel del Estudio ya se llama «Parámetros del canal». Y
+          «Guardar cambios» sube a esa cabecera —donde está el nombre, están sus acciones—,
+          que además lo deja SIEMPRE a la vista: antes se quedaba arriba del todo y al
+          bajar a editar la clave de IA había que subir a ciegas para guardar. */}
+      <AccionesDelPanel>
         <button className={BTN_PRIMARY} onClick={guardar} disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </button>
-      </SectionBar>
+      </AccionesDelPanel>
 
       <div className="grid md:grid-cols-2 gap-4 max-w-4xl">
         <Campo
@@ -398,19 +405,6 @@ function Parametros({ flowId, estudio, recargar }: { flowId: number; estudio: Es
             value={clave} onChange={(e: any) => setClave(e.target.value)} />
         </Campo>
 
-        <Campo
-          label="Agente encendido"
-          ayuda={<>
-            <p className="mb-2"><strong>No se enciende solo, a propósito:</strong> es una decisión consciente, después de probar.</p>
-            <p>Apagado, el agente sigue recibiendo y guardando los mensajes en la bandeja — simplemente no responde.</p>
-          </>}
-        >
-          <label className="flex items-center gap-2 text-[13px] text-digi-text cursor-pointer" style={mf}>
-            <input type="checkbox" checked={form.bot_activo}
-              onChange={(e) => setForm({ ...form, bot_activo: e.target.checked })} />
-            {form.bot_activo ? 'Responde automáticamente' : 'Apagado'}
-          </label>
-        </Campo>
       </div>
     </div>
   );
