@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { accessRoleOf } from '@/lib/dashboard/access';
 import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -35,6 +36,22 @@ export default function ProfilePanel() {
   // Ajustes del CV público. Solo se cargan/guardan si el usuario es miembro: quien no
   // lo es no tiene fila en `member_cv_profiles` y el endpoint le responde 403.
   const esMiembro = !!user?.member_id;
+
+  /**
+   * «Sincronizar con Google» es para quien tiene cuenta corporativa de GCC: trae su
+   * nombre, teléfono y foto desde Google Workspace.
+   *
+   * ⚠️ A un CLIENTE no se le ofrece, y no es cosmética. La ruta exige una
+   * `workspace_email` y a un cliente le responde «Tu cuenta no tiene una cuenta de Google
+   * asociada»: un botón que falla siempre al pulsarlo, y que además le sugiere que
+   * tenemos algo suyo en Google. Ver `app/api/users/google-sync/route.ts`, que sigue
+   * comprobándolo por su cuenta — esconderlo aquí es no ofrecer lo imposible, no la
+   * seguridad.
+   *
+   * Se decide con `accessRoleOf`, que es quien sabe distinguir un cliente de un candidato
+   * (los dos tienen `role = 'client'`).
+   */
+  const esCliente = accessRoleOf(user) === 'client';
   // Ubicación se queda en Perfil (el titular se fue a «Mi CV»); LinkedIn y el sitio
   // web se editan aquí, con el resto de redes, aunque vivan en la tabla del CV.
   const [ubicacion, setUbicacion] = useState('');
@@ -205,11 +222,13 @@ export default function ProfilePanel() {
                 className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}>
                 <Camera className="w-3.5 h-3.5" /> {uploading ? 'Subiendo...' : 'Cambiar foto'}
               </button>
-              <button type="button" onClick={handleGoogleSync} disabled={syncing}
-                className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}
-                title="Traer nombre, teléfono y foto desde tu perfil de Google">
-                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} /> {syncing ? 'Sincronizando...' : 'Sincronizar con Google'}
-              </button>
+              {!esCliente && (
+                <button type="button" onClick={handleGoogleSync} disabled={syncing}
+                  className="inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-50" style={mf}
+                  title="Traer nombre, teléfono y foto desde tu perfil de Google">
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} /> {syncing ? 'Sincronizando...' : 'Sincronizar con Google'}
+                </button>
+              )}
             </div>
           </div>
         </div>
