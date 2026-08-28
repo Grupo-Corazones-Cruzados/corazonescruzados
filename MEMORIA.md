@@ -2200,6 +2200,25 @@ Stack estándar de la casa, con particularidades de este repo:
       `messages`, así que **de un alta no llega ni un evento**. Si algún día hace falta saber
       desde el servidor que un cliente se dio de alta, hay que suscribir `account_update`.
 
+  - **📵 EL ALTA DESVINCULA TODOS LOS WHATSAPP WEB DEL CLIENTE, Y ESO ES NORMAL (2026-08-28).**
+    Al conectar **Peter Tours** (+593 99 595 1038, canal 11, WABA `1063082532714506`) al
+    equipo se le cerraron todas las sesiones de WhatsApp Web abiertas. **No es un fallo del
+    alta:** Meta desvincula todos los dispositivos acompañantes al pasar un número a
+    coexistencia, y después se pueden volver a vincular hasta 4. Hay que **avisarlo antes**,
+    porque al cliente le parece que le hemos roto algo.
+    - **⛔ Windows y WearOS NO valen en coexistencia.** Los acompañantes admitidos son
+      **WhatsApp Web (navegador)** y **WhatsApp para Mac**. Y no es solo que no se vinculen:
+      lo que se escriba desde un acompañante no admitido **no dispara el webhook**, así que
+      no aparece en la bandeja ni el agente se entera de esa conversación.
+    - **El error «No se pudo vincular tu dispositivo debido a un problema de sincronización»
+      es transitorio.** Le salió en el navegador y se resolvió reintentando. Lo que pide Meta
+      mientras sincroniza: WhatsApp Business ≥ 2.24.17, el teléfono **desbloqueado y con la
+      app en primer plano**, buena conexión, y hasta **6 horas** si el historial es grande.
+      Si se bloquea el teléfono a mitad, se corta y sale justo ese aviso.
+    - **`coexistencia_verificada` solo lo puede confirmar una persona.** `platform_type:
+      CLOUD_API` no demuestra nada: describe el lado API. Se marca a mano cuando el cliente
+      dice que ya entra por `web.whatsapp.com` — así se hizo aquí.
+
   - **🔄 LO QUE LLEGA SOLO HAY QUE PEDIRLO SOLO (2026-08-03).** La bandeja del agente no se
     actualizaba: los mensajes llegan por WhatsApp y el agente contesta segundos después, sin
     que en la pantalla pase nada, así que había que recargar la página. Sondeo cada 6 s (el
