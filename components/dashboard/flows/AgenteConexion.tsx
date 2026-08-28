@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from '@/components/providers/AuthProvider';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -39,6 +40,27 @@ interface Props {
 }
 
 export default function AgenteConexion({ flowId, canal, appId, configId, recargar }: Props) {
+  const { user } = useAuth();
+
+  /**
+   * ⇒ ESTA PANTALLA ES DE GCC, AUNQUE EL NÚMERO SEA DEL CLIENTE.
+   *
+   * El cliente entra aquí porque la conexión vive dentro de su Estudio, y le sirve para
+   * VER el estado de su número. Lo que no puede es tocarlo, y aquí todo lo que se toca es
+   * irreversible:
+   *
+   *  · **El alta.** Dentro del diálogo de Meta hay una opción que le saca el número del
+   *    teléfono y **deja a su propio equipo sin WhatsApp Web en el acto**. No es una
+   *    decisión que deba poder tomar solo, sin nosotros al lado.
+   *  · **Traer la agenda y el historial.** Un único intento por alta y 24 horas para
+   *    usarlo. Un clic por curiosidad lo quema para siempre.
+   *  · **El número de prueba de Meta**, que no tiene ningún sentido en su cuenta.
+   *
+   * Así que a un cliente se le enseña el estado y nada más. No es desconfianza: es que
+   * ninguno de estos botones se puede deshacer, y quien responde de ellos somos nosotros.
+   */
+  const puedeAdministrar = user?.role === 'admin' || user?.role === 'member';
+
   const [sdkListo, setSdkListo] = useState(false);
   const [entendido, setEntendido] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -286,13 +308,23 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
       ) : conectado ? (
         <>
           <Conectado canal={canal} estadoMeta={estadoMeta} />
-          <TraerDelCliente canal={canal} ocupado={ocupado} alPedir={setConfirmarSync} />
+          {puedeAdministrar && (
+            <TraerDelCliente canal={canal} ocupado={ocupado} alPedir={setConfirmarSync} />
+          )}
         </>
-      ) : (
+      ) : puedeAdministrar ? (
         <SinConectar
           sdkListo={sdkListo} entendido={entendido} setEntendido={setEntendido}
           ocupado={ocupado} alConectar={() => setConfirmar(true)} canal={canal}
           alConectarPrueba={conectarPrueba}
+        />
+      ) : (
+        // El alta la hacemos nosotros CON el cliente delante: dentro del diálogo de Meta
+        // hay un camino que le quita WhatsApp Web a su equipo y no se puede deshacer.
+        <PanelEmpty
+          Icon={Smartphone}
+          title="Tu número todavía no está conectado"
+          desc="La conexión con WhatsApp la hace el equipo de GCC contigo, porque durante el proceso hay que elegir bien una opción que no se puede deshacer. Escríbenos y lo hacemos juntos."
         />
       )}
 
