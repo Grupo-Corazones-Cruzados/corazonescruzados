@@ -108,14 +108,20 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
 
   return (
     <div className="space-y-3">
-      {/* ⇒ UNA SOLA FILA: el estado del agente a la izquierda, las pestañas a la derecha.
-          Eran dos franjas apiladas que ocupaban casi el mismo ancho, y la de arriba
-          llevaba una sola cosa —las pestañas— pegada al borde. Juntarlas devuelve una fila
-          entera al lienzo, que es lo que se viene a mirar.
+      {/* ⇒ MISMA FILA, PERO CADA COSA EN SU SITIO.
+          El estado del agente y las pestañas comparten fila —así el lienzo se queda con el
+          alto que sobraba—, pero las pestañas quedan FUERA del recuadro. El recuadro es la
+          barra de estado del pipeline; las pestañas son navegación de la pantalla entera y
+          no pertenecen a ella. Metidas dentro parecían un dato más del agente.
 
-          En pantalla estrecha se parten solas (`flex-wrap`) y las pestañas caen debajo, sin
-          apretar los datos hasta hacerlos ilegibles. */}
-      <BarraDeControl estado={pipeline.estado} acciones={acciones} />
+          En pantalla estrecha se parten solas y las pestañas caen debajo, sin apretar los
+          datos hasta hacerlos ilegibles. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <BarraDeControl estado={pipeline.estado} />
+        </div>
+        {acciones && <div className="flex items-center gap-2 shrink-0">{acciones}</div>}
+      </div>
 
       {/* Tres columnas. El lienzo manda: los paneles no crecen.
           El alto se MIDE hasta el pie de la app; ver `useAltoHastaElPie`. */}
@@ -175,7 +181,7 @@ export default function AgenteEstudio({ flowId, recargar, editores, acciones }: 
 
 /* ═══════════════════════ BARRA DE CONTROL ═══════════════════════ */
 
-function BarraDeControl({ estado, acciones }: { estado: Pipeline['estado']; acciones?: React.ReactNode }) {
+function BarraDeControl({ estado }: { estado: Pipeline['estado'] }) {
   const chips: { label: string; valor: string; tono?: 'error' | 'aviso' | 'exito' }[] = [
     { label: 'Agente', valor: estado.botActivo ? 'encendido' : 'apagado', tono: estado.botActivo ? 'exito' : 'aviso' },
     { label: 'Modelo', valor: estado.modelo },
@@ -199,7 +205,6 @@ function BarraDeControl({ estado, acciones }: { estado: Pipeline['estado']; acci
           <span className={`font-semibold ${c.tono ? TONO[c.tono].texto : 'text-digi-text'}`}>{c.valor}</span>
         </span>
       ))}
-      {acciones && <span className="flex items-center gap-2 shrink-0 ml-1">{acciones}</span>}
     </div>
   );
 }

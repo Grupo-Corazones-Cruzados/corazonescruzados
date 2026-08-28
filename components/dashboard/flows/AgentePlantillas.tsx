@@ -157,19 +157,31 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
           «0 plantilla(s) · 0 aprobada(s)» lo dice la propia lista de al lado. Una fila
           de adorno menos.
 
-          ⇒ Y las ACCIONES van ANTES que las pestañas. Cambiar de pestaña es navegación:
-          pasa una vez y va al extremo. Actualizar, crear y enviar es el trabajo, y lo que
-          se usa a diario se pone donde cae la mano, no al final de la fila. */}
-      <div className="flex flex-wrap items-center justify-end gap-2 mb-3">
-        <button className={BTN_SECONDARY} onClick={sincronizar} disabled={ocupado || !conectado}>
-          <RefreshCw className={`w-4 h-4 ${ocupado ? 'animate-spin' : ''}`} /> Actualizar
-        </button>
+          ⇒ EL TRABAJO A LA IZQUIERDA, LA NAVEGACIÓN A LA DERECHA. Crear una plantilla es
+          lo que se viene a hacer aquí, así que abre la fila, pegado al borde: es donde
+          empieza a leer la vista y donde cae la mano. Después «Actualizar» —que se pulsa
+          antes de un envío importante— y su ayuda. Las pestañas se van al extremo opuesto,
+          porque cambiar de pestaña se hace una vez y no compite con lo demás. */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <button className={BTN_SECONDARY} onClick={() => setEditando('nueva')} disabled={!conectado}>
           <Plus className="w-4 h-4" /> Nueva plantilla
         </button>
+        <button className={BTN_SECONDARY} onClick={sincronizar} disabled={ocupado || !conectado}>
+          <RefreshCw className={`w-4 h-4 ${ocupado ? 'animate-spin' : ''}`} /> Actualizar
+        </button>
+        <BotonAyuda titulo="Para qué sirven las plantillas" lado="derecha">
+          <p className="mb-2">Fuera de las <strong>24 horas</strong> siguientes al último mensaje de una persona, WhatsApp no deja escribirle libremente. Solo pasa una plantilla <strong>aprobada por Meta</strong>.</p>
+          <p className="mb-2">Por eso son la única forma de <strong>iniciar</strong> una conversación: un aviso, un recordatorio, una confirmación.</p>
+          <p>El estado lo decide Meta y puede cambiar solo. Pulsa «Actualizar» antes de un envío importante.</p>
+        </BotonAyuda>
+
+        <span className="flex-1" />
+
         {/* El envío va aquí arriba y no junto a la lista: es la acción principal de la
             pantalla y depende de la plantilla seleccionada, no de la lista abierta. El
-            propio botón dice a cuánta gente va, que es el dato que hace dudar o seguir. */}
+            propio botón dice a cuánta gente va, que es el dato que hace dudar o seguir.
+            Queda junto a las pestañas —y no con los otros tres— para que no se pulse por
+            estar al lado de «Actualizar»: manda un mensaje a mucha gente de golpe. */}
         {plantilla && (
           <button
             className={BTN_PRIMARY} onClick={() => setEnviando(plantilla)}
@@ -184,11 +196,6 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
             Enviar{plantilla.destinatarios ? ` a ${plantilla.destinatarios}` : ''}
           </button>
         )}
-        <BotonAyuda titulo="Para qué sirven las plantillas" lado="derecha">
-          <p className="mb-2">Fuera de las <strong>24 horas</strong> siguientes al último mensaje de una persona, WhatsApp no deja escribirle libremente. Solo pasa una plantilla <strong>aprobada por Meta</strong>.</p>
-          <p className="mb-2">Por eso son la única forma de <strong>iniciar</strong> una conversación: un aviso, un recordatorio, una confirmación.</p>
-          <p>El estado lo decide Meta y puede cambiar solo. Pulsa «Actualizar» antes de un envío importante.</p>
-        </BotonAyuda>
         {acciones}
       </div>
 
