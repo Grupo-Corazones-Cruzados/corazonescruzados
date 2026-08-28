@@ -792,6 +792,22 @@ html {
   --color-accent-glow: #C9B8FF;
 }
 
+/* ── El parpadeo de la barra de desplazamiento del raíl ───────────────────────
+   Al pasar el puntero, el menú se ensancha en 200 ms y aparecen las etiquetas de
+   los módulos. Durante esa animación el contenido del `nav` mide un poco más de
+   lo que cabe, el navegador saca la barra de desplazamiento… y la retira en
+   cuanto termina. Medio segundo de barra apareciendo y desapareciendo sobre la
+   foto de perfil, en cada pasada del ratón.
+
+   Se veía justo debajo del pie del menú, y por eso empezó a notarse al añadir el
+   botón de tema: el pie creció y le dejó menos alto al `nav`.
+
+   La barra se oculta, no el desplazamiento: con la rueda o el teclado se sigue
+   recorriendo igual si algún día no cupieran todos los módulos. En un menú de
+   iconos la barra no aporta nada, y lo que hacía era estorbar. */
+.corp .rail nav { scrollbar-width: none; }
+.corp .rail nav::-webkit-scrollbar { width: 0; height: 0; }
+
 /* Light, thin scrollbars inside the dashboard */
 .corp ::-webkit-scrollbar-track { background: transparent; }
 .corp ::-webkit-scrollbar-thumb { background: #c8c6c4; }
