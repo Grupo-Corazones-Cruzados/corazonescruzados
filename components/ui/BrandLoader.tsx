@@ -1,31 +1,35 @@
 'use client';
 
 /**
- * BrandLoader — el logo de GCC World, girando. **La marca de toda la aplicación.**
+ * BrandLoader — el indicador de carga de toda la aplicación (~30 pantallas).
  *
- * Se usa en la barra lateral y en TODA pantalla de carga (unos treinta sitios), así que
- * cambiarlo aquí lo cambia en todas. Ese es justo el motivo de que exista un componente y
- * no un `<img>` copiado: la marca se toca en un sitio.
+ * ── QUÉ CAMBIÓ (2026-08-28) y por qué ─────────────────────────────────────────────────
+ * Esto pintaba el LOGO girando. Dos problemas, y el segundo es el de fondo:
  *
- * ── QUÉ CAMBIÓ (2026-08-28) ───────────────────────────────────────────────────────────
- * Antes esto pintaba un **spritesheet del muñeco del videojuego** (`logo-spritesheet.png`,
- * 1,1 MB) con una animación ping-pong de seis fotogramas, recortado a un círculo negro.
- * Venía de cuando el panel y la aventura eran la misma cosa.
+ *  1. **Tardaba en aparecer.** Es una imagen: hay que pedirla y descargarla. Justo en el
+ *     momento en que la pantalla está vacía y el usuario se pregunta si pasa algo, el
+ *     indicador de que sí pasa algo… todavía no estaba. Un indicador de carga que carga es
+ *     una contradicción.
  *
- * Ya no lo son: la plataforma la abren clientes como Peter Tours, que entran a atender su
- * WhatsApp. Su logo tiene que ser **el logo de la empresa**, no un personaje. Así que pasa
- * a ser `logo-gcc.png` —los corazones cruzados, el mismo del sitio público y del icono de
- * la pestaña— y la única animación que queda es el giro.
+ *  2. **No dice lo que tiene que decir.** Un logo dando vueltas se lee como adorno de
+ *     marca. Un anillo girando se lee como «espera, esto tarda», que es exactamente el
+ *     mensaje. La marca ya está en el raíl, en la pestaña y en la pantalla de acceso; aquí
+ *     lo que hace falta es informar, no firmar.
  *
- * De paso pesa quince veces menos y se acabaron las tres tablas de píxeles por tamaño, que
- * había que recalcular a mano cada vez que se quería un tamaño nuevo.
+ * Ahora son dos `<div>` con borde: **cero peticiones, cero bytes**, pintado en el mismo
+ * fotograma en que aparece.
  *
- * Tamaños: sm (36 px), md (56 px), lg (80 px).
+ * El logo sigue siendo el logo — en la barra lateral y en los diálogos de acceso —, pero
+ * ya no hace de reloj de arena.
+ *
+ * Tamaños: sm (18 px), md (28 px), lg (40 px).
  */
 
-import Image from 'next/image';
-
-const SIZES = { sm: 36, md: 56, lg: 80 } as const;
+const SIZES = {
+  sm: { px: 18, grosor: 2 },
+  md: { px: 28, grosor: 3 },
+  lg: { px: 40, grosor: 3 },
+} as const;
 
 export default function BrandLoader({
   size = 'md',
@@ -36,32 +40,31 @@ export default function BrandLoader({
   label?: string;
   className?: string;
 }) {
-  const px = SIZES[size];
+  const { px, grosor } = SIZES[size];
   const pf = { fontFamily: 'var(--font-display)' } as const;
 
   return (
-    <div className={`flex flex-col items-center gap-3 ${className}`}>
-      {/* El giro es antihorario y lento (12 s): tiene que leerse como «sigue vivo», no
-          como un reloj de arena que mete prisa. `slowSpin` está en globals.css.
-
-          ⚠️ `motion-reduce:animate-none`: para quien pide en su sistema que no le muevan
-          la interfaz, un logo girando sin parar en cada carga puede ser mareante. Se queda
-          quieto y no se pierde nada — lo que informa es que el logo ESTÁ, no que gire. */}
-      <div
-        className="motion-reduce:animate-none shrink-0"
-        style={{ width: px, height: px, animation: 'slowSpin 12s linear infinite reverse' }}
-      >
-        <Image
-          src="/logo-gcc.png"
-          alt=""
-          width={px}
-          height={px}
-          // Es la marca: aparece en la primera pantalla y en cada carga. Que no espere turno.
-          priority
-          className="rounded-full select-none"
-          style={{ width: px, height: px }}
+    <div className={`flex flex-col items-center gap-3 ${className}`} role="status" aria-live="polite">
+      <span className="relative shrink-0" style={{ width: px, height: px }}>
+        {/* La pista completa, tenue: da el círculo entero para que el hueco que gira se
+            entienda como un recorrido y no como un arco suelto. */}
+        <span
+          className="absolute inset-0 rounded-full border-digi-border"
+          style={{ borderWidth: grosor, borderStyle: 'solid' }}
         />
-      </div>
+        {/* El arco que gira. Tres lados transparentes: lo que se ve es un cuarto de vuelta.
+            ⚠️ `motion-reduce:animate-none`: sin animación se queda un arco quieto y sigue
+            leyéndose como «cargando», sin marear a quien pide menos movimiento. */}
+        <span
+          className="absolute inset-0 rounded-full animate-spin motion-reduce:animate-none"
+          style={{
+            borderWidth: grosor,
+            borderStyle: 'solid',
+            borderColor: 'var(--color-accent) transparent transparent transparent',
+            animationDuration: '0.7s',
+          }}
+        />
+      </span>
       {label && (
         <p className="text-[10px] text-accent-glow opacity-60" style={pf}>
           {label}

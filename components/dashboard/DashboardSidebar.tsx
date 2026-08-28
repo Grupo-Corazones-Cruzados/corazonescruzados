@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-import BrandLoader from '@/components/ui/BrandLoader';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@/lib/dashboard/access';
 import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
@@ -119,7 +119,15 @@ export default function DashboardSidebar({
       >
         {/* Brand */}
         <Link href="/" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
-          <BrandLoader size="sm" />
+          {/* El LOGO, no el indicador de carga. Eran el mismo componente y dejaron de
+              serlo (2026-08-28): un anillo girando en la esquina de la marca no dice
+              «GCC World», dice «espera». Aquí el logo gira despacio porque es la firma
+              de la casa; en las pantallas de carga hay un spinner de verdad. */}
+          <Image
+            src="/logo-gcc.png" alt="" width={30} height={30} priority
+            className="rounded-full select-none shrink-0 motion-reduce:animate-none"
+            style={{ animation: 'slowSpin 12s linear infinite reverse' }}
+          />
           {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
         </Link>
 
