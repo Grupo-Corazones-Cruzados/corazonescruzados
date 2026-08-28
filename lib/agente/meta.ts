@@ -49,6 +49,42 @@ export async function canjearCodigo(codigo: string): Promise<string> {
 }
 
 /**
+ * Las cuentas de WhatsApp a las que da acceso un token de cliente.
+ *
+ * ⚠️ ESTA ES LA FUENTE FIABLE DEL `waba_id`, y existe por lo que pasó el 2026-08-28 con
+ * el alta de Diego Castillo. El navegador lo sacaba del `postMessage` de Meta, y ese
+ * mensaje **no siempre llega con el nombre que se espera**: en el flujo de coexistencia
+ * el evento no es `FINISH` sino `FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`. Resultado: el
+ * alta se completó de verdad —Meta devolvió `status: connected` y un código válido— y la
+ * app la rechazó con «Meta no devolvió la cuenta de WhatsApp» ANTES de canjear nada. El
+ * código caduca en segundos, así que el alta se perdió entera y hubo que repetirla.
+ *
+ * El token del cliente, en cambio, SIEMPRE sabe a qué cuenta pertenece: `debug_token`
+ * devuelve los `target_ids` del permiso `whatsapp_business_management`. Eso no depende de
+ * cómo Meta llame hoy a su evento del navegador.
+ */
+export async function wabasDelToken(tokenCliente: string): Promise<string[]> {
+  const appId = process.env.WHATSAPP_APP_ID;
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appId || !appSecret) throw new Error('Faltan WHATSAPP_APP_ID o WHATSAPP_APP_SECRET en el servidor');
+
+  const url = new URL(`${G}/debug_token`);
+  url.searchParams.set('input_token', tokenCliente);
+  url.searchParams.set('access_token', `${appId}|${appSecret}`);
+
+  const res = await fetch(url);
+  const cuerpo = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`No se pudo leer el token del cliente: ${cuerpo?.error?.message ?? res.status}`);
+
+  const ids: string[] = [];
+  for (const permiso of cuerpo?.data?.granular_scopes ?? []) {
+    if (permiso?.scope !== 'whatsapp_business_management') continue;
+    for (const id of permiso?.target_ids ?? []) if (!ids.includes(String(id))) ids.push(String(id));
+  }
+  return ids;
+}
+
+/**
  * Suscribe NUESTRA app a los webhooks de la cuenta del cliente.
  *
  * Sin esto no llega ni un mensaje de ese cliente, y todo *parece* correcto: el número

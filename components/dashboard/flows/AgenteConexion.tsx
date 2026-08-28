@@ -65,6 +65,19 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
   /**
    * Meta manda por `postMessage` los identificadores del alta. Llegan ANTES que el
    * código, así que se guardan aquí y se usan al cerrar.
+   *
+   * ⚠️ ESTO PERDIÓ UN ALTA ENTERA (Diego Castillo, 2026-08-28). Solo se hacía caso a los
+   * eventos `FINISH` y `FINISH_ONLY_WABA`, que son los del flujo ESTÁNDAR. El nuestro es
+   * el de **coexistencia** (`featureType: 'whatsapp_business_app_onboarding'`), y ahí Meta
+   * emite **`FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`** — cuyo `data` trae SOLO `waba_id`,
+   * nunca `phone_number_id`. Así que no se guardaba nada, el servidor rechazaba el alta
+   * por falta de cuenta, y el código de Meta —que caduca en segundos— se perdía con ella.
+   * El cliente ya tenía a GCC entre sus proveedores de tecnología y nuestra app decía que
+   * no se había conectado nada.
+   *
+   * Por eso ahora se aceptan los tres nombres, y —lo importante— el servidor **ya no
+   * depende de esto**: deduce la cuenta del propio token del cliente. Esto es una pista
+   * que ahorra una llamada, no un requisito. Ver `wabasDelToken()` en `lib/agente/meta.ts`.
    */
   useEffect(() => {
     const alMensaje = (ev: MessageEvent) => {
@@ -73,7 +86,8 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
         const d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
         if (d?.type !== 'WA_EMBEDDED_SIGNUP') return;
         abierto.current = true;   // la ventana existe y habla: no está bloqueada
-        if (d.event === 'FINISH' || d.event === 'FINISH_ONLY_WABA') {
+        console.info('[agente] Evento del alta de Meta', d.event, d.data);
+        if (d.event?.startsWith('FINISH')) {
           datosDelAlta.current = { waba_id: d.data?.waba_id, phone_number_id: d.data?.phone_number_id };
         }
         if (d.event === 'CANCEL') {
