@@ -168,7 +168,10 @@ async function resolverFuente(fuenteId: string, canal: any): Promise<ContenidoFu
           { id: 'wa', label: 'Token de WhatsApp', detalle: canal.wa_token_cifrado ? 'guardado y cifrado' : 'lo genera el alta', vacio: !canal.wa_token_cifrado },
           { id: 'pin', label: 'PIN de dos pasos', detalle: canal.pin_cifrado ? 'guardado y cifrado' : 'sin poner', vacio: !canal.pin_cifrado },
         ],
-        aviso: 'Se cifran con AES-256-GCM y cada uno queda atado a su canal y a su campo. No se pueden volver a leer: para cambiar uno se escribe otro encima.',
+        // El cartel de «se cifran con AES-256-GCM…» se quitó: decía lo mismo que la ayuda
+        // del propio campo «Clave de IA del cliente», que además está justo al lado y solo
+        // aparece cuando alguien pregunta. Una caja permanente para explicar algo que ya
+        // se explica al pulsar el (?) es ruido en una pantalla que se abre a diario.
         editable: { tipo: 'parametros' },
       };
 
