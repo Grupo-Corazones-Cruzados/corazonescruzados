@@ -20,6 +20,7 @@
  *    comprobante del mismo cobro — y ese sí hay que anularlo con nota de crédito.
  */
 import { pool } from '@/lib/db';
+import { aprovisionarAutomatizacion } from '@/lib/automatizaciones/aprovisionar';
 import { getProjectBilling, getTicketPayments } from '@/lib/payments';
 import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
@@ -773,7 +774,7 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   // A partir de esta línea el cobro **es** el de una suscripción, así que sigue el mismo
   // camino que ella: mismo emisor, mismo marcado del mes, misma reversión al anular.
   if (esProducto) {
-    const { itemId } = partesAltaProducto(sourceId);
+    const { itemId, userId: compradorId } = partesAltaProducto(sourceId);
     const { rows: [item] } = await pool.query(
       `SELECT id, title, cost FROM gcc_world.member_portfolio_items WHERE id = $1`, [itemId]);
     const hoy = new Date();
@@ -796,6 +797,21 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     subId = String(nueva.id);
     titulo = item?.title || 'Producto';
     nombreEtapa = `${titulo} — primer mes`;
+
+    /**
+     * ⇒ SI LO COMPRADO ES UNA AUTOMATIZACIÓN, AQUÍ SE LE MONTA SU FLUJO.
+     *
+     * Una automatización vive dentro de esta plataforma: lo que se compra es el derecho a
+     * usar un flujo. Si la compra solo dejara la suscripción, el cliente vería el cargo en
+     * su tarjeta, entraría a Automatizaciones y no habría nada — y para él la compra
+     * habría fallado, por bien que funcionara el cobro.
+     *
+     * Va en el mismo sitio y por el mismo motivo que la creación de la suscripción: hasta
+     * que el dinero no entra no se materializa nada. Y no lanza nunca — ver
+     * `aprovisionarAutomatizacion`.
+     */
+    await aprovisionarAutomatizacion({ itemId, subscriptionId: subId, compradorUserId: compradorId });
+
     // Desde aquí se comporta como una suscripción a todos los efectos.
     esSuscripcion = true;
   } else if (esSuscripcion) {

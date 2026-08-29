@@ -32,7 +32,7 @@ export async function GET() {
     const { sql: filtro, params } = await filtroDeFlujos(user);
 
     const { rows } = await pool.query(
-      `SELECT f.id, f.name, f.type, f.description, f.status, f.config,
+      `SELECT f.id, f.name, f.type, f.category, f.description, f.status, f.config,
               f.responsable_user_id, f.created_at, f.updated_at
        FROM gcc_world.flows f
        WHERE ${filtro}

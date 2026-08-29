@@ -40,10 +40,25 @@ const FLOW_STATUS_LABELS: Record<string, string> = {
   draft: 'Borrador', active: 'Activo', paused: 'Pausado', archived: 'Archivado',
 };
 
+/**
+ * Las clases de AGENTE IA. `type` distingue email de WhatsApp de agente; dentro de
+ * «agente» hace falta una segunda palabra, porque un chatbot que atiende clientes y un
+ * generador de presupuestos comparten motor y no se parecen en nada más.
+ *
+ * Añadir una clase nueva es añadir una línea aquí; lo que no encaje se enseña tal cual,
+ * que es mejor que esconderlo.
+ */
+const CATEGORIAS_AGENTE: Record<string, string> = {
+  whatsapp_business: 'WhatsApp Business',
+  presupuestos: 'Presupuestos',
+};
+
 interface Flow {
   id: number;
   name: string;
   type: string;
+  /** Clase de agente IA. NULL en los flujos que no lo son. */
+  category?: string | null;
   description: string;
   status: string;
   config: Record<string, any>;
@@ -283,8 +298,18 @@ export default function FlowsTable() {
                       </div>
                     );
                   } },
-                  { key: 'type', header: 'Tipo', width: '140px', hideOnMobile: true, render: (f: Flow) => (
-                    <span className="text-[12px] text-digi-text" style={mf}>{(FLOW_TYPES[f.type] || FLOW_TYPES.custom).label}</span>
+                  { key: 'type', header: 'Tipo', width: '160px', hideOnMobile: true, render: (f: Flow) => (
+                    <span className="text-[12px] text-digi-text" style={mf}>
+                      {(FLOW_TYPES[f.type] || FLOW_TYPES.custom).label}
+                      {/* La clase del agente, debajo y en gris: quien busca un flujo mira
+                          el nombre; la clase solo hace falta para distinguir dos agentes
+                          del mismo cliente. */}
+                      {f.category && (
+                        <span className="block text-[11px] text-digi-muted">
+                          {CATEGORIAS_AGENTE[f.category] || f.category}
+                        </span>
+                      )}
+                    </span>
                   ) },
                   { key: 'status', header: 'Estado', width: '110px', render: (f: Flow) => (
                     <PixelBadge variant={FLOW_STATUS_V[f.status] || 'default'}>{FLOW_STATUS_LABELS[f.status] || f.status}</PixelBadge>
@@ -318,7 +343,9 @@ export default function FlowsTable() {
                       <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{selected.description}</p>
                     )}
                     {[
-                      ['Tipo', detailType.label],
+                      ['Tipo', selected.category
+                        ? `${detailType.label} · ${CATEGORIAS_AGENTE[selected.category] || selected.category}`
+                        : detailType.label],
                       ['Estado', FLOW_STATUS_LABELS[selected.status] || selected.status],
                       ['Creado', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
                       ['Actualizado', selected.updated_at ? new Date(selected.updated_at).toLocaleDateString('es-EC') : '—'],
