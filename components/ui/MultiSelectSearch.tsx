@@ -10,7 +10,10 @@ export interface MultiOption { value: string; label: string }
 
 /**
  * Selector MÚLTIPLE con BUSCADOR. Reutilizable para cualquier lista (valores, talentos…).
- * Muestra las selecciones como chips y un desplegable filtrable donde se marcan/desmarcan.
+ * Lo elegido se ve **dentro** del desplegable, en la casilla de cada fila. Fuera no hay
+ * nada: las etiquetas que antes colgaban debajo le robaban una fila de alto a la tabla
+ * cada vez que se filtraba, y movían todo lo de abajo justo cuando uno está mirando los
+ * resultados. Para deshacer, un botón en el borde del propio control.
  * Limita los resultados visibles para listas grandes (p. ej. 500+ talentos).
  *
  * ⚠️ Es la variante **desplegable**, para elegir dos o tres cosas dentro de un formulario
@@ -37,7 +40,6 @@ export default function MultiSelectSearch({
   const [query, setQuery] = useState('');
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const labelOf = useMemo(() => new Map(options.map((o) => [o.value, o.label])), [options]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
   const filtered = useMemo(() => {
@@ -56,6 +58,7 @@ export default function MultiSelectSearch({
   const toggle = (value: string) => {
     onChange(selectedSet.has(value) ? selected.filter((v) => v !== value) : [...selected, value]);
   };
+  const hayFiltro = selected.length > 0;
   const totalMatches = query.trim() ? options.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase())).length : options.length;
 
   return (
@@ -67,10 +70,32 @@ export default function MultiSelectSearch({
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          placeholder={placeholder}
-          className="w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+          placeholder={hayFiltro ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}` : placeholder}
+          className={`w-full pl-8 py-2 bg-digi-darker border-2 rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none ${
+            hayFiltro
+              // Con filtro puesto, el control lo dice por sí mismo: borde de acento y el
+              // recuento en el hueco del texto. Así se sabe que está filtrando sin mirar
+              // debajo, que es de donde se quitaron las etiquetas.
+              ? 'border-accent placeholder:text-accent pr-9'
+              : 'border-digi-border placeholder:text-digi-muted/50 pr-3'
+          }`}
           style={mf}
         />
+
+        {/* Deshacer el filtro de ESTE control, en su propio borde derecho. Solo existe
+            cuando hay algo que deshacer: un botón permanente que la mitad del tiempo no
+            hace nada enseña a ignorarlo. */}
+        {hayFiltro && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onChange([]); setQuery(''); }}
+            title="Quitar este filtro"
+            aria-label="Quitar este filtro"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded text-accent hover:bg-accent-light transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {/* Desplegable */}
         {open && (
@@ -94,17 +119,6 @@ export default function MultiSelectSearch({
         )}
       </div>
 
-      {/* Chips seleccionados (DEBAJO del buscador para no descolocar el layout) */}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-1.5">
-          {selected.map((v) => (
-            <span key={v} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent-light border border-accent/25 text-[11.5px] text-accent" style={mf}>
-              {labelOf.get(v) || v}
-              <button type="button" onClick={() => toggle(v)} className="hover:text-accent-hover" aria-label={`Quitar ${labelOf.get(v) || v}`}><X className="w-3 h-3" /></button>
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
