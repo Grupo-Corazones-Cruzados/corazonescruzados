@@ -158,10 +158,12 @@ export function extraerEcos(payload: any): { phoneNumberId: string | null; ecos:
      * las notas de voz y las fotos del equipo se quedarían en blanco en la bandeja para
      * siempre — y son 130 mensajes solo en Peter Tours.
      */
-    const texto = textoDe(m, tipo)
-      ?? (tipo === 'audio' || tipo === 'voice' ? '[nota de voz]'
-        : tipo === 'image' ? '[imagen]'
-        : null);
+    /**
+     * ⚠️ El AUDIO del equipo se deja en blanco a propósito: se transcribe después, y la
+     * conversión busca justo los mensajes vacíos (ver `medios.ts`). La IMAGEN sí lleva
+     * etiqueta, porque las suyas no se describen — ya saben lo que acaban de mandar.
+     */
+    const texto = textoDe(m, tipo) ?? (tipo === 'image' ? '[imagen]' : null);
 
     ecos.push({ waMessageId: m.id, waId: String(m.to), tipo, texto, crudo: m });
   }

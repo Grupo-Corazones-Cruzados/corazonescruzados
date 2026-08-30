@@ -50,17 +50,39 @@ export async function procesarConversacion(conversacionId: number): Promise<Resu
   );
   if (!conv) return { conversacionId, accion: 'omitido', detalle: 'La conversación ya no existe' };
 
-  // Alguien la tomó entre el encolado y ahora. El mensaje quedó guardado; el bot calla.
+  const canal = await canalPorId(conv.canal_id);
+  if (!canal) return { conversacionId, accion: 'omitido', detalle: 'El canal ya no existe' };
+
+  const claveIA = secretoDelCanal(canal, 'ia_api_key');
+  const tokenWa = secretoDelCanal(canal, 'wa_token');
+
+  /**
+   * ⇒ LEER LAS NOTAS DE VOZ Y LAS FOTOS VA **ANTES QUE TODOS LOS CORTES**, y es a propósito.
+   *
+   * Estaba más abajo, después de comprobar si el agente estaba encendido y si la
+   * conversación la llevaba una persona. Consecuencia: en las conversaciones que había
+   * tomado alguien del equipo —que en Peter Tours son la mayoría— **no se transcribía
+   * nada**. Justo al revés de lo que conviene: la transcripción de una nota de voz le
+   * sirve sobre todo a la PERSONA que atiende, que así lee en dos segundos lo que tardaría
+   * veinte en escuchar.
+   *
+   * Así que se convierte siempre, conteste el agente o no. Lo que viene después decide si
+   * además se responde; esto solo hace legible lo que llegó.
+   *
+   * Sigue sin ir en el webhook: ese tiene que devolver 200 rápido o Meta lo deshabilita.
+   * Descargar y transcribir son segundos — trabajo de worker.
+   */
+  if (claveIA) await resolverMedios(conversacionId, claveIA, tokenWa);
+
+  // ── A partir de aquí se decide si además se RESPONDE ────────────────────────
+
+  // Alguien la tomó entre el encolado y ahora. El mensaje quedó guardado —y ya
+  // transcrito—; el bot calla.
   if (conv.bot_activo === false) {
     return { conversacionId, accion: 'omitido', detalle: 'La tiene una persona' };
   }
-
-  const canal = await canalPorId(conv.canal_id);
-  if (!canal) return { conversacionId, accion: 'omitido', detalle: 'El canal ya no existe' };
   if (!canal.bot_activo) return { conversacionId, accion: 'omitido', detalle: 'El agente está apagado' };
 
-  // ── Las dos claves del cliente ──────────────────────────────────────────────
-  const claveIA = secretoDelCanal(canal, 'ia_api_key');
   if (!claveIA) {
     // La clave la pone el cliente. Si falta o no descifra, se ESCALA y se avisa en el
     // panel: un agente mudo en silencio es el peor final posible.
@@ -68,20 +90,6 @@ export async function procesarConversacion(conversacionId: number): Promise<Resu
     await escalar(conversacionId, 'Sin clave de IA configurada', '');
     return { conversacionId, accion: 'escalado', detalle: 'Sin clave de IA' };
   }
-  const tokenWa = secretoDelCanal(canal, 'wa_token');
-
-  /**
-   * ⇒ PRIMERO SE LEEN LAS NOTAS DE VOZ Y LAS FOTOS, y solo después se arma el prompt.
-   *
-   * El orden no es negociable: la transcripción se guarda en `texto`, y `historialDe` lee
-   * `texto`. Al revés, el agente vería el mensaje vacío y contestaría «no he recibido
-   * nada» a un cliente que acaba de mandarle un audio de veinte segundos.
-   *
-   * Va aquí y no en el webhook a propósito: el webhook tiene que devolver 200 rápido o
-   * Meta reintenta y acaba deshabilitándolo. Descargar un archivo y transcribirlo son
-   * segundos — trabajo de worker, no de webhook.
-   */
-  await resolverMedios(conversacionId, claveIA, tokenWa);
 
   // ── El prompt ───────────────────────────────────────────────────────────────
   const [prompts, bloques, historial] = await Promise.all([

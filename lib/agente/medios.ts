@@ -135,13 +135,26 @@ export async function resolverMedios(
 ): Promise<number> {
   if (!tokenWa) return 0;
 
+  /**
+   * ⇒ QUÉ SE CONVIERTE Y QUÉ NO (decisión de Fernando, 2026-08-30):
+   *
+   *   · **Audios, vengan de quien vengan.** Los del cliente, para que el agente pueda
+   *     contestarlos; los del EQUIPO, para que en la bandeja se lea lo que dijeron sin
+   *     tener que reproducir el audio. Una nota de voz de veinte segundos se lee en dos.
+   *   · **Imágenes solo del cliente.** Las que manda el equipo ya saben ellos lo que son
+   *     —las acaban de enviar—, y describirlas sería pagar por contarles su propia foto.
+   *     Esas se quedan con su etiqueta «[imagen]».
+   */
   const { rows } = await pool.query(
-    `SELECT id, tipo, payload
+    `SELECT id, tipo, direccion, payload
        FROM gcc_world.agente_mensajes
       WHERE conversacion_id = $1
-        AND direccion = 'entrante'
         AND medio_resuelto_en IS NULL
         AND (texto IS NULL OR texto = '')
+        AND (
+          direccion = 'entrante'
+          OR (direccion = 'saliente' AND herramienta = 'equipo' AND tipo IN ('audio', 'voice'))
+        )
       ORDER BY id
       LIMIT 10`,
     [conversacionId],
@@ -186,9 +199,11 @@ export async function resolverMedios(
      * entiende por qué. Con esta línea el agente sabe que llegó algo y puede pedirle que
      * lo escriba — que es exactamente lo que haría una persona.
      */
+    const delEquipo = m.direccion === 'saliente';
     const constancia = texto ?? (
       tipo === 'audio' || tipo === 'voice'
-        ? '[El cliente envió una nota de voz que no se pudo escuchar]'
+        ? (delEquipo ? '[Nota de voz que no se pudo transcribir]'
+                     : '[El cliente envió una nota de voz que no se pudo escuchar]')
         : tipo === 'image'
           ? '[El cliente envió una imagen que no se pudo ver]'
           : `[El cliente envió un archivo (${tipo}) que no se puede leer por aquí]`

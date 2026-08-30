@@ -376,14 +376,27 @@ function Burbuja({ m }: { m: Mensaje }) {
             Pero al leerlo así, sin más, parece que el cliente lo escribió — y no es lo
             mismo: una transcripción puede equivocarse, y quien atiende necesita saber
             que ahí detrás hay un audio antes de fiarse de la palabra exacta. */}
-        {entrante && (m.tipo === 'audio' || m.tipo === 'voice') && (
+        {/* ── QUÉ ERA ESTE MENSAJE, ANTES DE SER TEXTO ──────────────────────────
+            Una nota de voz y una foto se guardan ya convertidas, que es lo que hace que el
+            agente pueda contestarlas y que el equipo las lea sin reproducirlas. Pero
+            leerlo así, a secas, parecería que alguien lo escribió — y no es lo mismo: una
+            transcripción puede equivocarse en un nombre o un número, y quien atiende
+            necesita saberlo antes de fiarse de la palabra exacta.
+
+            La etiqueta va ARRIBA y el texto debajo, como pidió Fernando: primero qué es,
+            luego qué decía.
+
+            En el audio da igual quién lo mandó —los dos se transcriben—; la imagen solo se
+            describe cuando la manda el cliente, así que la del equipo se queda en su
+            «[imagen]» sin etiqueta que prometa una descripción que no hay. */}
+        {(m.tipo === 'audio' || m.tipo === 'voice') && (
           <span className="flex items-center gap-1 text-[10.5px] text-digi-muted mb-1" style={mf}>
-            <Mic className="w-3 h-3" /> nota de voz, transcrita
+            <Mic className="w-3 h-3" /> Nota de voz
           </span>
         )}
         {entrante && m.tipo === 'image' && (
           <span className="flex items-center gap-1 text-[10.5px] text-digi-muted mb-1" style={mf}>
-            <ImageIcon className="w-3 h-3" /> imagen, descrita
+            <ImageIcon className="w-3 h-3" /> Imagen
           </span>
         )}
         <p className="text-[13px] text-digi-text whitespace-pre-wrap break-words" style={mf}>{m.texto}</p>

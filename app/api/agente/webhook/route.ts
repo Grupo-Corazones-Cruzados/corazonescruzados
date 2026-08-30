@@ -92,7 +92,15 @@ export async function POST(req: Request) {
      */
     if (campo === 'smb_message_echoes') {
       const { ecos } = extraerEcos(payload);
-      for (const e of ecos) await ingerirEco(canal.id, e);
+      for (const e of ecos) {
+        const r = await ingerirEco(canal.id, e);
+        // Una nota de voz del equipo también se transcribe, y eso lo hace el worker: hay
+        // que despertarlo. Solo cuando el mensaje es nuevo — Meta reintenta los ecos igual
+        // que los entrantes.
+        if (r.esNuevo && (e.tipo === 'audio' || e.tipo === 'voice')) {
+          await encolar(r.conversacionId, canal.debounce_segundos);
+        }
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -130,10 +138,18 @@ export async function POST(req: Request) {
       // Ya lo teníamos ⇒ Meta está reintentando. Ni se encola ni se responde dos veces.
       if (!r.esNuevo) continue;
 
-      // El canal apagado, o una persona con la conversación tomada: se guarda el mensaje
-      // —para que se vea en la bandeja— pero no se despierta al agente.
-      if (!canal.bot_activo || r.conversacionEnManosDeUnaPersona) continue;
-
+      /**
+       * ⇒ SE ENCOLA SIEMPRE, TAMBIÉN CON EL AGENTE APAGADO O LA CONVERSACIÓN TOMADA.
+       *
+       * Antes se cortaba aquí, y con razón mientras la cola solo servía para responder.
+       * Pero ahora el worker hace además una cosa que le sirve a las PERSONAS: transcribir
+       * las notas de voz y describir las fotos (ver `runner.ts`, que convierte antes de
+       * decidir si contesta). Cortando aquí, las conversaciones que lleva el equipo —la
+       * mayoría— se quedaban sin transcribir justo donde más falta hace.
+       *
+       * No hace que el agente responda de más: el runner vuelve a comprobar las dos cosas
+       * y se calla igual. Lo único que cambia es que el trabajo llega a hacerse.
+       */
       await encolar(r.conversacionId, canal.debounce_segundos);
     }
 
