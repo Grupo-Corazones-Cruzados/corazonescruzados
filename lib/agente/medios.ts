@@ -38,8 +38,15 @@ const MODELO_TRANSCRIPCION = 'gpt-transcribe';
  */
 import { MODELO_IA } from '@/lib/ia/openai';
 
-/** Los tipos de mensaje que traen un archivo del que se puede sacar texto. */
-const CON_MEDIO = new Set(['audio', 'voice', 'image', 'sticker', 'document', 'video']);
+/**
+ * Los tipos de los que SÍ merece la pena sacar texto: una nota de voz y una foto llevan
+ * dentro lo que el cliente quiere decir.
+ *
+ * El sticker, el video y el documento se quedan fuera a propósito. Ya llegan con su
+ * etiqueta desde `entrante.ts` —«[sticker]», «[video]»— y describirlos con el modelo
+ * sería pagar por «un dibujo de un gato con corazones»: no hay nada ahí que contestar.
+ */
+const CON_MEDIO = new Set(['audio', 'voice', 'image']);
 
 /**
  * De dónde sale el identificador del archivo dentro de la carga cruda de Meta.
@@ -162,7 +169,7 @@ export async function resolverMedios(
 
       if (medio) {
         const esAudio = medio.mime.startsWith('audio') || tipo === 'audio' || tipo === 'voice';
-        const esImagen = medio.mime.startsWith('image') || tipo === 'image' || tipo === 'sticker';
+        const esImagen = medio.mime.startsWith('image') || tipo === 'image';
         if (esAudio) texto = await transcribir(claveIA, medio.bytes, medio.mime);
         else if (esImagen) texto = await describir(claveIA, medio.bytes, medio.mime);
       }
@@ -182,7 +189,7 @@ export async function resolverMedios(
     const constancia = texto ?? (
       tipo === 'audio' || tipo === 'voice'
         ? '[El cliente envió una nota de voz que no se pudo escuchar]'
-        : tipo === 'image' || tipo === 'sticker'
+        : tipo === 'image'
           ? '[El cliente envió una imagen que no se pudo ver]'
           : `[El cliente envió un archivo (${tipo}) que no se puede leer por aquí]`
     );

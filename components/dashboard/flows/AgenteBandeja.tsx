@@ -381,7 +381,7 @@ function Burbuja({ m }: { m: Mensaje }) {
             <Mic className="w-3 h-3" /> nota de voz, transcrita
           </span>
         )}
-        {entrante && (m.tipo === 'image' || m.tipo === 'sticker') && (
+        {entrante && m.tipo === 'image' && (
           <span className="flex items-center gap-1 text-[10.5px] text-digi-muted mb-1" style={mf}>
             <ImageIcon className="w-3 h-3" /> imagen, descrita
           </span>

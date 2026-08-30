@@ -72,9 +72,35 @@ export function campoDelWebhook(payload: any): CampoWebhook {
     ? campo : 'otro';
 }
 
+/**
+ * Lo que se escribe cuando un mensaje NO trae texto y tampoco se va a convertir.
+ *
+ * ── POR QUÉ HACE FALTA ────────────────────────────────────────────────────────────────
+ * Un sticker, un contacto compartido o una reacción llegaban sin texto y se guardaban en
+ * blanco. En la bandeja eso es una burbuja vacía: quien atiende no sabe si el cliente
+ * mandó algo que no vemos o si la aplicación se comió el mensaje. Y para el agente es
+ * peor todavía, porque `historialDe` descarta lo vacío — el mensaje ni existe.
+ *
+ * No se intenta interpretarlos: un sticker no dice nada que se pueda contestar, y
+ * describirlo con el modelo sería pagar por «un dibujo de un gato con corazones». Basta
+ * con dejar constancia de que ahí pasó algo, y de qué.
+ */
+const SIN_TEXTO: Record<string, string> = {
+  sticker: '[sticker]',
+  contacts: '[contacto compartido]',
+  reaction: '[reacción]',
+  video: '[video]',
+  document: '[documento]',
+  location: '[ubicación]',
+  unsupported: '[mensaje no admitido]',
+  system: '[aviso de WhatsApp]',
+  media_placeholder: '[archivo no disponible]',
+};
+
 /** Saca el texto de un mensaje de Meta, sea del tipo que sea. Compartido por todos los lectores. */
 function textoDe(m: any, tipo: string): string | null {
-  return tipo === 'text' ? (m?.text?.body ?? null)
+  const propio =
+      tipo === 'text' ? (m?.text?.body ?? null)
     : tipo === 'button' ? (m?.button?.text ?? null)
     : tipo === 'interactive'
       ? (m?.interactive?.button_reply?.title ?? m?.interactive?.list_reply?.title ?? null)
@@ -82,6 +108,15 @@ function textoDe(m: any, tipo: string): string | null {
     : tipo === 'image' || tipo === 'video' || tipo === 'document'
       ? (m?.[tipo]?.caption ?? null)
     : null;
+
+  if (propio) return propio;
+
+  /**
+   * ⚠️ `image` y `audio` NO llevan etiqueta aquí, y es a propósito: se convierten a texto
+   * después (`lib/agente/medios.ts`), y esa conversión busca precisamente los mensajes que
+   * están **en blanco**. Ponerles «[imagen]» los dejaría fuera y no se describirían nunca.
+   */
+  return SIN_TEXTO[tipo] ?? null;
 }
 
 /** Un mensaje que escribió una PERSONA del equipo del cliente desde su WhatsApp. */
@@ -113,7 +148,22 @@ export function extraerEcos(payload: any): { phoneNumberId: string | null; ecos:
     if (!m?.id || !m?.to) continue;
     const tipo = m.type ?? 'unknown';
     if (tipo === 'edit' || tipo === 'revoke') continue;
-    ecos.push({ waMessageId: m.id, waId: String(m.to), tipo, texto: textoDe(m, tipo), crudo: m });
+
+    /**
+     * ⚠️ AQUÍ SÍ SE ETIQUETAN LA IMAGEN Y EL AUDIO, al revés que en los entrantes.
+     *
+     * Los ecos son lo que escribe el equipo del cliente, y **no pasan por la conversión a
+     * texto**: `resolverMedios` solo mira los entrantes, porque transcribir lo que la
+     * propia empresa envía no le sirve al agente para responder. Si aquí no se etiquetaran,
+     * las notas de voz y las fotos del equipo se quedarían en blanco en la bandeja para
+     * siempre — y son 130 mensajes solo en Peter Tours.
+     */
+    const texto = textoDe(m, tipo)
+      ?? (tipo === 'audio' || tipo === 'voice' ? '[nota de voz]'
+        : tipo === 'image' ? '[imagen]'
+        : null);
+
+    ecos.push({ waMessageId: m.id, waId: String(m.to), tipo, texto, crudo: m });
   }
   return { phoneNumberId, ecos };
 }
