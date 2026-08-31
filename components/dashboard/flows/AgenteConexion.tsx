@@ -53,8 +53,8 @@ export default function AgenteConexion({ flowId, canal, appId, configId, recarga
    *  · **El alta.** Dentro del diálogo de Meta hay una opción que le saca el número del
    *    teléfono y **deja a su propio equipo sin WhatsApp Web en el acto**. No es una
    *    decisión que deba poder tomar solo, sin nosotros al lado.
-   *  · **Traer la agenda y el historial.** Un único intento por alta y 24 horas para
-   *    usarlo. Un clic por curiosidad lo quema para siempre.
+   *  · **Traer la agenda del cliente.** Un único intento por alta y 24 horas para usarlo.
+   *    Un clic por curiosidad lo quema para siempre.
    *  · **El número de prueba de Meta**, que no tiene ningún sentido en su cuenta.
    *
    * Así que a un cliente se le enseña el estado y nada más. No es desconfianza: es que
@@ -621,18 +621,15 @@ function Dato({ titulo, ayuda, children }: {
 function TraerDelCliente({ canal, ocupado, alPedir }: {
   canal: any; ocupado: boolean; alPedir: (t: 'contactos' | 'historial') => void;
 }) {
+  /* Solo la agenda. El historial de 180 días se dejó de importar el 2026-08-30: en la
+     bandeja interesan los mensajes nuevos, y traer los viejos llenaba la lista de
+     conversaciones muertas. La ruta sigue admitiéndolo por si algún día hace falta. */
   const filas = [
     {
       tipo: 'contactos' as const,
       titulo: 'La agenda de contactos',
       desc: 'Los nombres con los que el cliente tiene guardados a los suyos. Sin esto, en la bandeja salen con el alias que cada uno se puso en WhatsApp.',
       hecho: canal.contactos_sincronizados_en,
-    },
-    {
-      tipo: 'historial' as const,
-      titulo: 'Las conversaciones anteriores',
-      desc: 'Hasta 180 días de mensajes previos al alta. Llegan por tandas y pueden tardar horas.',
-      hecho: canal.historial_sincronizado_en,
     },
   ];
 

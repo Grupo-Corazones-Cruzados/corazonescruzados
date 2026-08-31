@@ -173,9 +173,9 @@ export function extraerEcos(payload: any): { phoneNumberId: string | null; ecos:
 /** Un contacto tal como lo tiene guardado la empresa en su agenda. */
 export interface ContactoDeAgenda {
   waId: string;
-  nombre: string | null;
-  /** `true` si la empresa lo BORRÓ de su agenda: entonces se limpia el nombre, no se inventa. */
-  borrado: boolean;
+  nombre: string;
+  /** Para ordenar: `metadata.version` de Meta, que crece con cada cambio. */
+  version: number;
 }
 
 /**
@@ -184,8 +184,24 @@ export interface ContactoDeAgenda {
  * Es lo que hace que en la bandeja se vea «Sra. Ramírez – Otavalo» en vez de «💕💕💕»:
  * el nombre del perfil lo elige el cliente final, este lo eligió el equipo que atiende.
  *
- * `action` viene como `add` o `remove`. Cualquier otra cosa se trata como alta, que es lo
- * conservador: un nombre de más nunca borra información, uno de menos sí.
+ * ── ⚠️ UN `remove` NO BORRA EL NOMBRE, Y ESTO COSTÓ 16.940 (2026-08-30) ──────────────
+ * La primera versión trataba `action: 'remove'` como «la empresa lo quitó de su agenda,
+ * así que limpia el nombre». Parecía lo correcto. No lo es: de los 53.762 cambios que
+ * mandó Meta, **36.685 eran `remove`** — más del doble que las altas. No es que Peter
+ * Tours borrara 36.000 contactos: en esta sincronización **un cambio se expresa como una
+ * baja seguida de un alta**, y los `remove` vienen además sin nombre y con `timestamp: 0`,
+ * que es la firma de una lápida de un estado anterior.
+ *
+ * Procesándolos tal cual, cada baja pisaba el nombre bueno que ya estaba guardado. De
+ * 16.982 nombres quedaron 42.
+ *
+ * Ahora **solo se leen las altas**. Y aunque un `remove` fuera de verdad —el contacto
+ * salió de su agenda—, olvidar cómo se llama no mejora nada: la conversación sigue ahí y
+ * ese nombre es la mejor etiqueta que tenemos para ella. Un dato de más no rompe una
+ * bandeja; uno de menos la deja llena de números de teléfono.
+ *
+ * Se devuelve la `version` para que quien escriba pueda quedarse con el cambio MÁS NUEVO
+ * cuando llegan varios del mismo contacto en la misma tanda.
  */
 export function extraerContactosDeAgenda(payload: any): { phoneNumberId: string | null; contactos: ContactoDeAgenda[] } {
   const value = payload?.entry?.[0]?.changes?.[0]?.value ?? payload?.data;
@@ -194,66 +210,23 @@ export function extraerContactosDeAgenda(payload: any): { phoneNumberId: string 
   const contactos: ContactoDeAgenda[] = [];
   for (const e of value?.state_sync ?? []) {
     if (e?.type && e.type !== 'contact') continue;
+    if (e?.action === 'remove') continue;          // ver arriba: nunca borra un nombre
+
     const tel = e?.contact?.phone_number;
     if (!tel) continue;
     // Meta manda el número con o sin «+» según el sitio; `wa_id` nunca lo lleva.
     const waId = String(tel).replace(/[^0-9]/g, '');
     if (!waId) continue;
-    const nombre = e?.contact?.full_name || e?.contact?.first_name || null;
-    contactos.push({ waId, nombre: nombre ? String(nombre).trim() : null, borrado: e?.action === 'remove' });
+
+    const nombre = String(e?.contact?.full_name || e?.contact?.first_name || '').trim();
+    if (!nombre) continue;                         // sin nombre no hay nada que guardar
+
+    contactos.push({ waId, nombre, version: Number(e?.metadata?.version) || 0 });
   }
   return { phoneNumberId, contactos };
 }
 
-/** Un mensaje del volcado de historial: puede ser de cualquiera de los dos lados. */
-export interface MensajeDeHistorial {
-  waMessageId: string;
-  /** Siempre el número del CLIENTE FINAL, venga el mensaje de él o de la empresa. */
-  waId: string;
-  deLaEmpresa: boolean;
-  tipo: string;
-  texto: string | null;
-  /** La fecha ORIGINAL del mensaje, no la de ahora. */
-  fecha: Date | null;
-  crudo: unknown;
-}
-
-/**
- * Lee el webhook `history`: hasta 180 días de conversaciones previas al alta.
- *
- * Llega troceado —Meta lo manda en varias tandas— y **desordenado**, así que cada mensaje
- * trae su fecha original y se guarda con ella. Si se guardaran con `NOW()`, toda la
- * historia de Peter Tours aparecería como ocurrida el día del alta.
- *
- * El hilo se identifica por el número del cliente final; dentro, cada mensaje dice de qué
- * lado viene.
- */
-export function extraerHistorial(payload: any): { phoneNumberId: string | null; mensajes: MensajeDeHistorial[] } {
-  const value = payload?.entry?.[0]?.changes?.[0]?.value;
-  const phoneNumberId: string | null = value?.metadata?.phone_number_id ?? null;
-  const propio = String(value?.metadata?.display_phone_number ?? '').replace(/[^0-9]/g, '');
-
-  const mensajes: MensajeDeHistorial[] = [];
-  for (const tanda of value?.history ?? []) {
-    for (const hilo of tanda?.threads ?? []) {
-      const delHilo = String(hilo?.id ?? '').replace(/[^0-9]/g, '');
-      for (const m of hilo?.messages ?? []) {
-        if (!m?.id) continue;
-        const tipo = m.type ?? 'unknown';
-        const de = String(m.from ?? '').replace(/[^0-9]/g, '');
-        // `from` igual al número de la empresa ⇒ lo escribió el equipo. Si el volcado no
-        // trae `from`, se cae a `history_context`, y si tampoco, se asume del cliente.
-        const deLaEmpresa = de ? de === propio : m?.history_context?.from_me === true;
-        const waId = deLaEmpresa ? delHilo : (de || delHilo);
-        if (!waId) continue;
-        const seg = Number(m.timestamp);
-        mensajes.push({
-          waMessageId: m.id, waId, deLaEmpresa, tipo, texto: textoDe(m, tipo),
-          fecha: Number.isFinite(seg) && seg > 0 ? new Date(seg * 1000) : null,
-          crudo: m,
-        });
-      }
-    }
-  }
-  return { phoneNumberId, mensajes };
-}
+/* El lector del volcado de `history` se retiró el 2026-08-30: la bandeja solo quiere
+   mensajes nuevos, y de la sincronización lo que valía eran los nombres de los contactos.
+   Lo que enseñó sigue escrito arriba, en `extraerContactosDeAgenda`: de un webhook se lee
+   lo que manda, no lo que dice el manual. */

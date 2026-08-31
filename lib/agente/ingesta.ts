@@ -13,10 +13,10 @@ import { pool } from '@/lib/db';
 import type { MensajeEntrante } from './entrante';
 
 export {
-  extraerMensajes, extraerEcos, extraerContactosDeAgenda, extraerHistorial, campoDelWebhook,
-  type MensajeEntrante, type EcoDelEquipo, type ContactoDeAgenda, type MensajeDeHistorial,
+  extraerMensajes, extraerEcos, extraerContactosDeAgenda, campoDelWebhook,
+  type MensajeEntrante, type EcoDelEquipo, type ContactoDeAgenda,
 } from './entrante';
-import type { EcoDelEquipo, ContactoDeAgenda, MensajeDeHistorial } from './entrante';
+import type { EcoDelEquipo, ContactoDeAgenda } from './entrante';
 
 export interface ResultadoIngesta {
   conversacionId: number;
@@ -236,54 +236,33 @@ export async function ingerirEco(canalId: number, e: EcoDelEquipo): Promise<{ es
  * esa persona haya escrito nunca. Así la bandeja ya sabe cómo se llama el que escriba
  * mañana.
  *
- * Un `remove` **borra el nombre, no el contacto**: la empresa lo quitó de su agenda, pero
- * la conversación y sus mensajes siguen siendo suyos.
+ * ⚠️ **Esta función solo PONE nombres; nunca los quita.** Ver `extraerContactosDeAgenda`:
+ * las bajas ni siquiera llegan hasta aquí. Es la regla que faltaba el día que 36.685
+ * «bajas» de Meta se llevaron por delante 16.940 nombres buenos.
+ *
+ * Cuando en la misma tanda vienen varios cambios del mismo contacto, gana el de `version`
+ * más alta — que es el más reciente.
  */
 export async function guardarContactosDeAgenda(canalId: number, contactos: ContactoDeAgenda[]): Promise<number> {
-  let tocados = 0;
+  // El más nuevo de cada número, antes de tocar la base: así se escribe una vez por
+  // contacto y no se depende del orden en que Meta los metió en la tanda.
+  const masNuevo = new Map<string, ContactoDeAgenda>();
   for (const c of contactos) {
+    const previo = masNuevo.get(c.waId);
+    if (!previo || c.version >= previo.version) masNuevo.set(c.waId, c);
+  }
+
+  let tocados = 0;
+  for (const c of masNuevo.values()) {
     const { rowCount } = await pool.query(
       `INSERT INTO gcc_world.agente_contactos (canal_id, wa_id, nombre_agenda)
        VALUES ($1, $2, $3)
        ON CONFLICT (canal_id, wa_id) DO UPDATE
          SET nombre_agenda = EXCLUDED.nombre_agenda, updated_at = NOW()`,
-      [canalId, c.waId, c.borrado ? null : c.nombre],
+      [canalId, c.waId, c.nombre],
     );
     tocados += rowCount ?? 0;
   }
   return tocados;
 }
 
-/**
- * Guarda un mensaje del volcado de historial, **con su fecha original**.
- *
- * ⚠️ Aquí NO se encola nada y NO se toca el interruptor de la conversación. Son mensajes
- * de hace semanas: despertar al agente con ellos sería contestar a un «buenas tardes» de
- * marzo. Solo se rellena la conversación para que el equipo —y el agente, como contexto—
- * tengan la historia.
- *
- * `ultimo_mensaje_en` se mueve solo hacia ADELANTE (`GREATEST`): si no, un volcado
- * desordenado mandaría al fondo de la bandeja una conversación viva.
- */
-export async function ingerirHistorial(canalId: number, m: MensajeDeHistorial): Promise<boolean> {
-  const { conversacionId } = await contactoYConversacion(canalId, m.waId);
-  const fecha = m.fecha ?? new Date();
-  const { rows: insertado } = await pool.query(
-    `INSERT INTO gcc_world.agente_mensajes
-       (conversacion_id, direccion, wa_message_id, tipo, texto, payload, herramienta, enviado_ok, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, 'historial', $7, $8)
-     ON CONFLICT (wa_message_id) WHERE wa_message_id IS NOT NULL DO NOTHING
-     RETURNING id`,
-    [conversacionId, m.deLaEmpresa ? 'saliente' : 'entrante', m.waMessageId, m.tipo, m.texto,
-     JSON.stringify(m.crudo), m.deLaEmpresa ? true : null, fecha],
-  );
-  if (insertado.length > 0) {
-    await pool.query(
-      `UPDATE gcc_world.agente_conversaciones
-          SET ultimo_mensaje_en = GREATEST(COALESCE(ultimo_mensaje_en, $2), $2), updated_at = NOW()
-        WHERE id = $1`,
-      [conversacionId, fecha],
-    );
-  }
-  return insertado.length > 0;
-}

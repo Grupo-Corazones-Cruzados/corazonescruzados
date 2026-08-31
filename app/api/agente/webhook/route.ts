@@ -20,7 +20,6 @@ import {
   extraerMensajes, ingerir, campoDelWebhook,
   extraerEcos, ingerirEco,
   extraerContactosDeAgenda, guardarContactosDeAgenda,
-  extraerHistorial, ingerirHistorial,
 } from '@/lib/agente/ingesta';
 import { encolar } from '@/lib/agente/cola';
 
@@ -116,15 +115,20 @@ export async function POST(req: Request) {
     }
 
     /**
-     * ── LAS CONVERSACIONES DE ANTES DEL ALTA (`history`) ────────────────────────────
-     * Llega troceado y desordenado, cada mensaje con su fecha original. No despierta al
-     * agente: son mensajes de hace semanas.
+     * ── LAS CONVERSACIONES DE ANTES DEL ALTA (`history`) — NO SE IMPORTAN ──────────
+     *
+     * Decisión de Fernando (2026-08-30): en la bandeja solo interesan **los mensajes
+     * nuevos**. De la sincronización lo valioso eran los NOMBRES de los contactos, y esos
+     * llegan por otro sitio (`smb_app_state_sync`).
+     *
+     * Traerlos tenía además un coste real: 714 mensajes viejos y **196 conversaciones**
+     * que nacían vacías o muertas, y que a quien atiende solo le estorban entre las que sí
+     * están vivas.
+     *
+     * El aviso se sigue recibiendo y se guarda crudo en `agente_eventos_webhook` —esa
+     * traza ya salvó dos veces datos que un lector mío leyó mal—, pero no se ingiere.
      */
-    if (campo === 'history') {
-      const { mensajes: viejos } = extraerHistorial(payload);
-      for (const m of viejos) await ingerirHistorial(canal.id, m);
-      return NextResponse.json({ ok: true });
-    }
+    if (campo === 'history') return NextResponse.json({ ok: true });
 
     // Acuses de entrega, cambios de estado del número… nada que hacer. Se responde 200
     // igual: para Meta está entregado.
