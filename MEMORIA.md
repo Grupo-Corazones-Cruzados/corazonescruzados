@@ -2249,6 +2249,180 @@ Stack estándar de la casa, con particularidades de este repo:
     - **💸 ~7.800 tokens de ENTRADA por respuesta**, porque los 14 bloques de conocimiento
       viajan enteros en cada llamada. Con 9 $ de saldo, vigilar el gasto en un día real.
 
+  - **🛒 SE VENDEN AUTOMATIZACIONES, Y COMPRARLAS MONTA EL FLUJO (2026-08-29).** Migración
+    060. Tres para empezar: **Envío Programado de Correos Masivos (5 $/mes)**, **Chatbot
+    Conversacional en WhatsApp (20 $/mes)** y **Agente de Generación de Presupuestos
+    (30 $/mes)**.
+    - **Una automatización NO es un producto.** Un producto (Reservas, Pedidos) tiene su
+      propio servicio y su esquema; una automatización vive **dentro de esta plataforma**.
+      Lo que se compra es el derecho a usar un flujo, así que la compra crea la suscripción
+      **y deja el flujo creado con acceso**. Si solo dejara la suscripción, el cliente vería
+      el cargo, entraría a Automatizaciones y no habría nada — y para él la compra habría
+      fallado, por bien que funcionara el cobro.
+    - **⭐ Qué aprovisiona cada una lo declara la FICHA, no el código**
+      (`member_portfolio_items.flow_type` / `flow_category`). Un `switch` por título se
+      rompe al renombrar algo, y publicar una automatización nueva exigiría tocar código
+      para poder vender. Ahora es rellenar una fila.
+    - **`flows.category` hace escalable el «agente IA»**: un chatbot de atención y un
+      generador de presupuestos comparten motor y no se parecen en nada más. Hoy
+      `whatsapp_business` y `presupuestos`; mañana `soporte` o `cobranzas` será añadir su
+      pantalla, **no un tipo nuevo ramificado por todas las consultas**.
+    - El flujo nace en **borrador** —recién comprado no tiene nada configurado— y el
+      aprovisionamiento es **idempotente por suscripción**: el webhook de la pasarela
+      reintenta, y no puede dejarle tres chatbots iguales.
+    - **PENDIENTE:** la pantalla de detalle del agente de presupuestos.
+
+  - **💳 UN PROYECTO SIN PLAN DE ETAPAS SE PAGA ENTERO, Y LO PAGA EL CLIENTE (2026-08-28).**
+    El cobro en línea solo cubría proyectos CON plan, y los pequeños casi nunca lo tienen:
+    el de Peter Tours son 300 $ y tres requerimientos. Su cliente llegaba a la pantalla de
+    pago y leía «Este proyecto no tiene plan de etapas» — desde su lado, «no puedo pagarte».
+    - Sin plan: **un solo pago por lo que queda POR FACTURAR** —no por el presupuesto, que
+      volvería a cobrar lo ya facturado a mano— y la factura lleva **un renglón por
+      requerimiento con su precio** (decisión de Fernando). El cliente reconoce la factura
+      sin fiarse: si el proyecto dice 105 + 120 + 75, la factura dice lo mismo.
+    - **«Completar y facturar» aparece también para el CLIENTE** cuando el proyecto está en
+      revisión, pero no abre el modal del administrador —donde se escriben los datos de
+      otro— sino **su propia pantalla de pago**.
+    - **Al cobrarse, el proyecto pasa a completado**: un proyecto en revisión espera que el
+      cliente diga que sí, y **pagarlo es decir que sí**. Va ANTES de emitir la factura a
+      propósito: el dinero es lo que decide, y si el SRI falla el cliente ha pagado igual.
+      Solo sin plan de etapas — con plan, cobrar la primera no significa que esté entregado.
+    - Con transferencia, eso ocurre cuando el responsable confirma el ingreso (lo que ya
+      hacía `CobrosEnEspera`). Hubo que abrir además dos puertas que cortaban antes del
+      cálculo: `autorizarCobro` y el repartidor de `cotizarCobro` exigían etapa.
+
+  - **👁️ VER LA PLATAFORMA COMO OTRO USUARIO (2026-08-28).** Un administrador pulsa su foto
+    en el menú, busca una cuenta y entra en su vista. Nació de la tarde que costó el «no me
+    sale el botón de configurar» de Peter Tours: desde una cuenta de admin **no había forma
+    de reproducirlo**. Ruta `app/api/admin/suplantar`, tabla `gcc_world.suplantaciones`
+    (migración 058).
+    - **⭐ MIENTRAS DURA, EL ADMINISTRADOR NO ES ADMINISTRADOR.** El token lleva el rol del
+      suplantado, así que pierde de verdad sus permisos — que es lo ÚNICO que hace que «ver
+      como otro» sea ver sus botones que faltan y sus 403, y no un admin disfrazado. De
+      paso impide encadenar vistas: para empezar una hace falta rol de admin.
+    - Volver **no pide contraseña**: el permiso va firmado en el token (`suplantadoPor`), no
+      en el rol. Y queda registrado al entrar y al salir — durante ese rato lo que se
+      escriba queda firmado por otra persona, y siendo GCC **encargado del tratamiento** eso
+      tiene que poder distinguirse después.
+    - No hay listado de cuentas: hay que escribir dos letras. Un desplegable con toda la
+      gente invita a entrar en la cuenta de cualquiera por curiosidad.
+
+  - **⛔ TRES AGUJEROS DE LA MISMA FAMILIA, EN UNA SEMANA (2026-08-28 al 30).** Rutas que
+    comprobaban «¿hay sesión?» pero no «¿es tuyo?». Bastaba con una sesión cualquiera —valía
+    **un candidato del portal de empleo**— y cambiar un número en la URL:
+    1. **`PUT`/`DELETE` de `/api/admin/flows/[id]`** — renombrar o **borrar el flujo** de
+       cualquier cliente, con sus campañas, listas y contactos.
+    2. **`/api/invoices/[id]/pdf`** — descargarse el comprobante de cualquiera: su RUC, su
+       razón social, su dirección y lo que pagó.
+    3. Las de campañas y plantillas resultaron estar bien (solo-admin): **mi primer barrido
+       las marcó mal** porque buscaba `role === 'admin'` y usan `role !== 'admin'`. Aviso
+       para el próximo barrido.
+    - **🪤 Y la pertenencia de una factura NO se decide solo por `client_id`**: ese campo
+      está vacío en muchas. Una emitida desde un ticket se enlaza por
+      `source_type`/`source_id`; las antiguas por `ticket_id`/`project_id`; las de proyecto
+      además por `invoice_projects`. Mirando solo uno, a Peter Tours su propia factura le
+      salía «no encontrada». **Se comprueban los cuatro caminos en una consulta**: cada uno
+      comprobado aparte es uno que algún día se olvida.
+    - Se responde **404 y no 403**: quien no debe saber que algo existe, tampoco por el
+      código de error.
+    - **PENDIENTE:** una pasada por todas las rutas de `/api` con este criterio.
+
+  - **🪤 UN HOOK DETRÁS DE UN `return` TUMBA LA PANTALLA AL TERMINAR DE CARGAR (2026-08-28).**
+    Al arreglar el panel de detalle metí un `useRef` DEBAJO del `if (loading) return …`.
+    Mientras cargaba React no lo veía; al llegar los datos, sí. **Ejecutar más hooks que en
+    el render anterior es un error fatal de React**, no un aviso: la pantalla se caía justo
+    al terminar de cargar — y por eso parecía un problema de red o de despliegue, y di por
+    buena una explicación equivocada (chunks viejos). **Todos los hooks antes del primer
+    `return`. Siempre.**
+    - De ahí salió algo que sí sirve: **`app/(dashboard)/error.tsx`**. Sin él, el usuario ve
+      «Application error: a client-side exception» en inglés y se le manda a la consola del
+      navegador. Ahora hay aviso en español, y un fallo de carga de trozo **se recarga solo
+      una vez** (marca en `sessionStorage` para no entrar en bucle).
+
+  - **🪤 EL PANEL DE DETALLE SE ESCONDÍA EN PANTALLAS ESCALADAS (2026-08-28).** Peter Tours
+    pulsaba su flujo y a la derecha no salía nada, así que no podía entrar a su agente. No
+    era permisos: el panel solo se colocaba al lado desde `xl` (1.280 px), y su portátil de
+    1.366 con **Windows al 125 %** deja ~1.093 px reales — la rejilla caía a una columna y el
+    panel se iba debajo de una tabla que ocupa toda la altura. **Nosotros no lo vimos nunca
+    porque sin escalado sobra sitio.** Corte a `lg`, y por debajo el panel se trae a la
+    vista al elegir la fila.
+
+  - **📡 LOS TRES WEBHOOKS DE COEXISTENCIA, Y LO QUE ENSEÑARON (2026-08-28 al 31).** Con el
+    número de Peter Tours en marcha se suscribieron `smb_message_echoes`,
+    `smb_app_state_sync` y `history` (App Dashboard → WhatsApp → Configuración). Sin ellos
+    el agente estaba ciego a la mitad de lo que pasa en un número compartido.
+    - **⛔ DE UN WEBHOOK SE LEE LO QUE MANDA, NO LO QUE DICE EL MANUAL.** Es la lección de
+      la semana y costó dos veces:
+      1. **El historial.** El lector buscaba `value.history[].threads[].messages[]`, que es
+         lo que documenta Meta. De los **2.328 avisos** que llegaron: 1.768 traían
+         `message_echoes`, 553 `messages` y solo 7 un `history` **con nada dentro**. Es
+         decir: el volcado viene con la MISMA forma que un mensaje normal y lo único que lo
+         distingue es el `field` del sobre. Se guardaron 20 mensajes de miles.
+      2. **La agenda.** `smb_app_state_sync` manda **53.762** cambios, y **36.685 son
+         `action: remove`** — el doble que las altas. No es que borraran 36.000 contactos:
+         **un cambio se expresa como baja + alta**, y los `remove` llegan sin nombre y con
+         `timestamp: 0`. El código los trataba como «limpia el nombre» y **dejó 42 nombres
+         de 16.982**.
+    - **⭐ LA REGLA QUE QUEDA: un `remove` NUNCA borra un dato que ya se tenía.** Aunque
+      fuera de verdad, olvidar cómo se llama alguien no mejora nada — la conversación sigue
+      ahí y ese nombre es la mejor etiqueta que hay. **Un dato de más no rompe una bandeja;
+      uno de menos la deja llena de números de teléfono.**
+    - **🛟 LA TRAZA CRUDA SALVÓ LOS DATOS LAS DOS VECES.** `agente_eventos_webhook` guarda
+      el JSON entero de cada aviso, y gracias a eso se recuperaron los 17.018 nombres
+      releyendo lo ya recibido — **sin volver a pedirle nada a Meta**, que además era
+      imposible: la sincronización es de un solo intento. Esa tabla se puso «por si acaso»
+      y es lo que convirtió dos fallos irreversibles en dos consultas.
+    - **Decisión de Fernando (2026-08-30): el HISTORIAL de 180 días NO se importa.** En la
+      bandeja solo interesan los mensajes nuevos; lo valioso de la sincronización eran los
+      NOMBRES. Traer lo viejo metía 714 mensajes y **196 conversaciones muertas** entre las
+      vivas. El botón de historial se retiró de la pantalla de conexión.
+
+  - **🎙️ NOTAS DE VOZ E IMÁGENES: se convierten a texto y se guardan (2026-08-28 al 30).**
+    `lib/agente/medios.ts`. Audio con **`gpt-transcribe`**; imagen con el mismo
+    `gpt-5.6-luna` que piensa. Las dos con la **clave del cliente**: su cuenta, su gasto,
+    sus datos.
+    - **Se convierte UNA VEZ y se guarda en `texto`**, no se manda el archivo en cada turno:
+      así se paga una sola vez por medio —el historial entero viaja en cada llamada— y **la
+      bandeja lo enseña**, que es lo que de verdad ahorra tiempo al equipo.
+    - **Qué sí y qué no** (Fernando, 2026-08-30): **audios de todos**, del cliente y del
+      equipo; **imágenes solo del cliente** —describirle al equipo su propia foto es pagar
+      por contarle lo que acaba de mandar—. El resto (sticker, contacto, reacción, video)
+      lleva etiqueta y no se interpreta: describir un sticker es pagar por «un dibujo de un
+      gato con corazones».
+    - **⭐ LO QUE NO TIENE TEXTO SE ETIQUETA, NUNCA SE DEJA EN BLANCO.** `historialDe`
+      descarta lo vacío, así que un mensaje sin texto **no existe** para el agente, y en la
+      bandeja es una burbuja muda: quien atiende no sabe si el cliente mandó algo o si la
+      app se lo comió. Había **356** así.
+    - **🪤 LA CONVERSIÓN CORRÍA DEMASIADO TARDE.** Estaba detrás de «¿está encendido el
+      agente?» y «¿la lleva una persona?», así que **en las conversaciones tomadas por el
+      equipo —la mayoría— no se transcribía nada**. Justo al revés de lo que conviene: la
+      transcripción le sirve sobre todo a la PERSONA, que lee en dos segundos lo que
+      tardaría veinte en escuchar. Ahora convierte SIEMPRE y solo después decide si
+      responde; y el webhook encola aunque el agente esté apagado.
+    - Lo más valioso en producción: los comprobantes de transferencia se leen sin abrir la
+      foto — «Transferencia exitosa por $20,00 a Peters Tours S.A. el 31 de agosto…».
+
+  - **📵 «NO ME FUNCIONA WHATSAPP WEB»: casi nunca es nuestro (2026-08-29 al 31).** Pasó dos
+    veces con Peter Tours y las dos se resolvió sin tocar nada de la plataforma —**la
+    segunda, limpiando las cookies del navegador**—.
+    - **Cómo se descarta que seamos nosotros, con datos:** si siguen llegando
+      `smb_message_echoes`, **el equipo está escribiendo desde su WhatsApp** y el número
+      funciona. Se comprueba con una consulta a `agente_mensajes` por `herramienta='equipo'`.
+      Un día de estos el último mensaje suyo tenía **tres segundos** de antigüedad.
+    - **Lo que la plataforma le pide a Meta, entero:** enviar un mensaje, descargar un
+      medio, consultar el número (solo al pulsar «Comprobar contra Meta»), suscribir la app
+      (una vez) y pedir la agenda (una vez). **Nada periódico**, y `registrarNumero` no se
+      llama nunca en un cliente real. El worker habla con nuestro servidor, no con Meta.
+    - **Lo que sí desvincula dispositivos:** un alta o una baja de coexistencia. Por eso
+      importa que **haya OTRA app suscrita a su WABA** —`PETERS-TOUR`, apuntando a
+      `gcc-sistema-facturacion-production.up.railway.app`—: si esa reintenta el alta, echa
+      a todos. Y de paso recibe copia de todas sus conversaciones. **Pendiente de aclarar
+      con Diego.**
+    - **El tope son 4 dispositivos vinculados** y el Cloud API no ocupa ninguno. En una
+      oficina se llenan solos y la gente se echa entre sí.
+    - Que WhatsApp Web **se recargue solo** es normal: vuelve del segundo plano o reconecta.
+      Ninguna API de Meta permite provocarlo desde fuera.
+
   - **🔄 LO QUE LLEGA SOLO HAY QUE PEDIRLO SOLO (2026-08-03).** La bandeja del agente no se
     actualizaba: los mensajes llegan por WhatsApp y el agente contesta segundos después, sin
     que en la pantalla pase nada, así que había que recargar la página. Sondeo cada 6 s (el

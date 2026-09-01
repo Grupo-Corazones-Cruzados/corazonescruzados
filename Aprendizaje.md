@@ -33,6 +33,71 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo (declarado 2026-08-28, cerrado el 2026-08-31) — PONER EL AGENTE DE WHATSAPP EN MANOS DE UN CLIENTE REAL: Peter Tours atendiendo de verdad, y entrando a la plataforma con su cuenta · ✅ 100 % — EN PRODUCCIÓN
+
+**Rol asumido:** integrador de la Cloud API de Meta + responsable del acceso de clientes.
+
+### Fuentes consultadas
+- La API real de Meta (Graph v21), contra el número de Peter Tours. Casi todo lo importante
+  salió de aquí y **contradecía la documentación**.
+- Documentación de Meta sobre coexistencia y Embedded Signup.
+- La base de producción: `agente_*`, `flows`, `invoices`, `clients`.
+
+### Preguntas y respuestas
+
+**P1 — ¿Por qué el alta se completó en Meta y la app dijo que no? · ✅ Resuelta**
+Se exigía el `waba_id` del `postMessage` del navegador ANTES de canjear el código. En
+coexistencia el evento no es `FINISH` sino `FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`, y su
+`data` trae solo `waba_id`. **El código de Meta caduca en segundos**, así que por un dato de
+adorno se tiró el único paso irrepetible del alta.
+→ **Regla: lo que caduca va primero.** Se canjea el código y la cuenta se deduce del propio
+token (`debug_token` → `target_ids`). Lo del navegador es una pista, no un requisito.
+
+**P2 — ¿Cómo ve el agente lo que escribe el equipo del cliente? · ✅ Resuelta**
+Webhook `smb_message_echoes`. Y no basta con verlo: al llegar uno, **la conversación pasa a
+esa persona** (`bot_activo = false` solo en ese chat). Que el agente lo «vea» y siga
+contestando produce dos respuestas distintas delante del cliente final.
+
+**P3 — ¿Cómo se traen los nombres de los contactos? · ✅ Resuelta, con dos cicatrices**
+`smb_app_state_sync`, pedido con `POST /{phone_number_id}/smb_app_data`. **24 horas desde el
+alta y un solo intento**; pasado el plazo hay que desconectar al cliente y repetir el alta.
+→ Y el orden importa: **primero suscribir los webhooks, luego pedir**. Pedirlo antes gasta el
+intento mandando los datos a una app que no sabe leerlos.
+→ La trampa que costó 16.940 nombres está en MEMORIA.md: **un `remove` nunca borra un dato**.
+
+**P4 — ¿De un webhook se lee lo que dice el manual? · ✅ Resuelta: NO**
+Dos veces en la misma semana (historial y agenda). **Cuando algo llega en volumen y se
+guarda casi nada, el parser es sospechoso antes que el emisor.** La traza cruda
+(`agente_eventos_webhook`) permitió recuperar las dos cosas sin volver a pedir nada.
+
+**P5 — ¿Se puede reproducir lo que ve un cliente? · ✅ Resuelta**
+No se podía, y por eso una tarde entera con «no me sale el botón de configurar». Ahora sí:
+«ver la plataforma como otro usuario». La clave del diseño es que **el administrador pierde
+sus permisos mientras mira** — si no, no ve lo que el otro ve.
+
+**P6 — ¿«No me funciona WhatsApp Web» es culpa nuestra? · ✅ Resuelta: no**
+Dos episodios. El primero se fue reintentando; **el segundo se resolvió limpiando las cookies
+del navegador**. Ninguno tocó la plataforma.
+→ La comprobación que lo descarta en un minuto: si siguen llegando `smb_message_echoes`, el
+equipo está escribiendo desde su WhatsApp y el número funciona.
+→ Lo único nuestro que desvincularía dispositivos es un alta/baja de coexistencia, y se hizo
+una vez. **Queda abierto** que hay otra app suscrita a su WABA (`PETERS-TOUR`).
+
+**P7 — ¿Qué hacer con las notas de voz y las fotos? · ✅ Resuelta**
+Convertirlas a texto **una vez** y guardarlas, no mandar el archivo en cada turno. Audios de
+todos; imágenes solo del cliente. Y la conversión va **antes de decidir si se responde**,
+porque le sirve sobre todo a la persona que atiende.
+
+### Lo que queda abierto
+- **La otra app suscrita a la WABA de Peter Tours** — ¿se reconoce? ¿se desuscribe?
+- **La pantalla del agente de generación de presupuestos** (la categoría ya existe).
+- **Una pasada por todas las rutas de `/api`** buscando «hay sesión» sin «es tuyo».
+- **Los dos proyectos completados sin factura** (#4 sin cliente asignado, #18 pendiente de
+  confirmar que no se cobró por fuera). No se emiten sin decisión de Fernando: una factura
+  autorizada no se borra, se anula con nota de crédito.
+
+---
+
 ## Objetivo (declarado 2026-08-24/25) — QUE LOS PRODUCTOS SE PUEDAN ENSEÑAR Y VENDER · ✅ 100 %
 
 > Tres encargos encadenados de Fernando: que el hotel de demostración **no se pueda

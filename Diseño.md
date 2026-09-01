@@ -2791,6 +2791,114 @@ cuando alguien añade la aplicación a la pantalla de inicio del móvil — que 
 lo normal, porque el mesero trabaja con el teléfono en la mano.
 
 
+## El raíl, el tema y la carga — la semana del 2026-08-28 al 31
+
+### El RAÍL: el menú de módulos, oscuro en LOS DOS temas
+`.corp .rail` en `globals.css`. Usaba los mismos tokens que las tarjetas: en tema claro era
+una franja **blanca sobre casi blanco** y en oscuro una gris sobre gris; se distinguía por
+un borde de 1 px y poco más.
+
+**Un raíl que cambia con el tema no contrasta en ninguno**, porque siempre se parece a lo
+que tiene al lado. Uno constante ancla la vista, separa «dónde estoy» de «qué estoy
+haciendo» y mete el morado de la marca sin teñir el área de trabajo.
+
+- Claro: `--color-digi-card: #1F1A2E` · Oscuro: `#171320`
+- En oscuro se separa **por temperatura, no por brillo**: la página es gris cálido y el raíl
+  violeta frío. Bajarle el brillo lo habría convertido en un agujero negro al lado.
+- ⚠️ Funciona **redefiniendo los tokens dentro de `.rail`**, igual que `.corp` con toda la
+  app: ni una clase de la barra lateral cambió, y un módulo nuevo hereda el raíl solo.
+- Los `hover:bg-black/[…]` tuvieron que pasar a `white/[…]`: un hover negro sobre un raíl
+  oscuro no se ve.
+
+### El menú se abre al pasar el puntero
+Fuera el botón de contraer: era buscar, acertar y volver a pulsar para algo que uno solo
+quiere mientras mira. El raíl es estrecho por defecto —iconos, que es como se navega el 90 %
+del tiempo— y se despliega al acercarse. **Se monta ENCIMA del contenido, no lo empuja**: si
+empujara, la página se movería entera cada vez que el ratón cruza la izquierda camino de
+otra cosa. El `main` conserva siempre el margen del raíl estrecho.
+
+- La barra de desplazamiento del `nav` se oculta (`scrollbar-width: none`): durante los
+  200 ms de la animación el contenido desborda un instante y la barra aparecía y se retiraba
+  sobre la foto de perfil, en cada pasada del ratón. Se oculta la barra, no el desplazamiento.
+- `transition-[width]`, no `transition-all`: es lo único que cambia, y animar «todo» hace que
+  el navegador vigile cada propiedad justo mientras reordena el contenido.
+
+### ⚠️ LOS COLORES DEL PANEL NO SON GLOBALES — y un portal se sale de ellos
+Viven redefinidos dentro de `.corp` / `.corp.dark`. Un utilitario como `bg-digi-card` **no
+lleva un color dentro**: lee la variable del ancestro más cercano que la defina.
+
+Las burbujas de ayuda (`components/ui/burbuja.tsx`) se colgaban de `document.body`, o sea
+**fuera de `.corp`**, así que caían en los tokens del `:root` —los del sitio público, que son
+oscuros—. Resultado: burbuja negra en tema claro **y exactamente la misma en oscuro**; el
+tema no las tocaba porque nunca estuvieron dentro de él.
+
+**Regla:** todo portal del panel se cuelga de `.corp`, no del `body`. Sigue siendo `fixed`, así
+que se coloca igual; lo único que cambia es de quién hereda los colores.
+
+### El indicador de carga es un SPINNER, no el logo
+`BrandLoader` pintaba el logo girando. Dos problemas, y el segundo es el de fondo:
+1. **Tardaba en aparecer**: es una imagen, hay que pedirla y descargarla. Justo cuando la
+   pantalla está vacía, el indicador de que pasa algo todavía no estaba.
+2. **No decía lo que tiene que decir.** Un logo girando se lee como adorno de marca; un
+   anillo girando se lee «espera, esto tarda».
+
+Ahora son dos `div` con borde: cero peticiones, pintado en el mismo fotograma. El logo sigue
+en el raíl y en los diálogos de acceso — pero **ya no hace de reloj de arena**.
+
+### Hover que NO cambia el relleno
+Los botones del pie del raíl («Modo claro», «Salir») tenían cada uno su estilo, y al pasar por
+encima se teñían y movían el borde: sobre el raíl oscuro ese recuadro saltaba a la vista más
+que el propio menú. Ahora **solo suben el brillo** (`transition-[filter]` +
+`hover:brightness-125`), con los mismos colores en los dos temas. Es todo lo que un hover
+tiene que decir.
+
+### Filtros: lo elegido se ve DENTRO del control
+`MultiSelectSearch` colgaba las etiquetas de lo seleccionado **debajo** del buscador, y eso
+le robaba una fila de alto a la tabla cada vez que se filtraba — moviendo todo lo de abajo
+justo cuando uno mira los resultados. Ahora:
+- el control lo dice por sí mismo: **borde de acento** y el recuento en el hueco del texto;
+- lo elegido se ve donde se elige, en la casilla de cada fila del desplegable;
+- para deshacer, **una equis en su propio borde derecho**, que solo aparece cuando hay algo
+  que deshacer — un botón permanente que la mitad del tiempo no hace nada enseña a ignorarlo.
+
+### Una fila de controles, no tres
+El detalle del agente tenía título, recuento, filtros y pestañas en franjas apiladas. Se
+quitaron **todos los títulos y recuentos** de Bandeja, Plantillas y Estudio: los dice la
+pestaña encendida y la propia lista de al lado. Y las acciones se ordenan por uso:
+- **el trabajo a la izquierda, la navegación a la derecha.** «Nueva plantilla» pegada al
+  borde; las pestañas al extremo opuesto, porque cambiar de pestaña se hace una vez;
+- **«Enviar» no va junto a «Actualizar»**: manda un mensaje a mucha gente de golpe y no debe
+  pulsarse por estar al lado de un botón que se usa sin pensar.
+
+### La acción de un panel vive en SU CABECERA (`RanuraAcciones.tsx`)
+Cada panel del Estudio enseñaba dos cabeceras: la suya —nombre y X— y otra debajo repitiendo
+casi lo mismo con el botón al lado. Ahora la acción principal se pinta en la cabecera que ya
+existe, **por portal**: el botón se declara donde vive su estado —el editor sabe si hay algo
+que guardar— y solo se dibuja arriba. El panel no necesita conocer a cada editor.
+
+### Etiquetas que se fueron, y por qué
+Se retiraron una docena en el detalle del agente. El criterio, para no volver a ponerlas:
+- **lo dice otro control que está a un centímetro** («Pausado» al lado del botón «Activar»);
+- **lo dice la lista de al lado** («0 plantilla(s) · 0 aprobada(s)»);
+- **es fontanería contada en voz alta**: nombres de tabla y rutas de archivo delante de quien
+  solo quiere editar el conocimiento de su negocio;
+- **es una advertencia permanente sobre una decisión que se toma una vez** — esa se muda al
+  diálogo de confirmación, que es el único momento en que se puede hacer algo con ella.
+
+### El color, en una franja y no en todo el recuadro
+Los meses de una suscripción venían con el fondo entero teñido —verde el pagado, rojo el
+vencido— y la lista parecía un semáforo compitiendo consigo misma y con el botón de pagar.
+Ahora la superficie es la del panel y el estado lo dice **una barra de 3 px en el canto
+izquierdo**. Se distingue igual de rápido y deja de gritar.
+
+### Las capturas del marketplace salen DESENFOCADAS, y desde el servidor
+Son capturas de sistemas funcionando con datos de clientes reales. ⚠️ **No se hace con CSS**:
+un `filter: blur()` se quita en dos clics desde las herramientas del navegador y la imagen
+original sigue descargándose entera. Se desenfoca en los píxeles que salen —`sharp` al
+servir, o `e_blur` de Cloudinary—, así lo que llega al navegador ya no tiene esos datos.
+El radio es **proporcional al ancho**: uno fijo se ve fuerte a 240 px y no hace nada a 1.600,
+y ampliar la foto sería justo la forma de leer lo que la miniatura escondía.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-26 · El párrafo explicativo encima de los campos de las ventanitas de «Cobrar».**
   Las dos superficies de cobro con enlace (etapa de proyecto y ticket) arrancaban con una
