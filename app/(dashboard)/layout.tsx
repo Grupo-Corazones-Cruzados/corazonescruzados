@@ -42,7 +42,16 @@ function Panel({ children }: { children: React.ReactNode }) {
     <div className={`corp ${oscuro ? 'dark' : ''} flex min-h-screen`}>
       <PolicyBanner collapsed />
       <DashboardSidebar />
-      <main className="flex-1 ml-0 lg:ml-16 p-4 md:p-6 pt-14 lg:pt-6 pb-14 overflow-auto min-h-screen">
+      {/* ⚠️ `pt-[4.5rem]` en teléfono = los 56 px de la cabecera fija + los 16 de respiro
+          que tienen los otros tres lados. Antes era `pt-14`, exactamente el alto de la
+          barra, así que el contenido nacía pegado a ella sin un pixel de margen. En
+          escritorio no hay cabecera y manda `lg:pt-6`.
+
+          Este relleno es lo que sostiene a TODAS las páginas del panel: la barra es fija,
+          así que si alguna arrancara por encima de él se metería debajo. Cualquier
+          superficie que deba taparla —un diálogo, un panel deslizante— va con z-50 o más,
+          por encima de la cabecera (z-30). */}
+      <main className="flex-1 ml-0 lg:ml-16 p-4 md:p-6 pt-[4.5rem] lg:pt-6 pb-14 overflow-auto min-h-screen">
         <DashboardAccessGuard>{children}</DashboardAccessGuard>
       </main>
       <DashboardBreadcrumb collapsed />
