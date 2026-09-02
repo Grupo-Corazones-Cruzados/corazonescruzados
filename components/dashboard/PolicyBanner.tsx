@@ -51,7 +51,10 @@ export default function PolicyBanner({ collapsed = false }: { collapsed?: boolea
         @keyframes gccPolBob {0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
       `}</style>
 
-      <div className={`fixed top-0 left-0 right-0 ${collapsed ? 'lg:left-16' : 'lg:left-56'} z-[60] flex justify-center px-3 pt-2 pointer-events-none transition-[left] duration-200`}>
+      {/* ⚠️ En teléfono arranca bajo la CABECERA (`top-14`), no pegado al borde: desde el
+          2026-09-02 ahí vive la barra con el botón de menú, y este aviso la tapaba. En
+          escritorio no hay cabecera y sigue arriba del todo. */}
+      <div className={`fixed top-14 lg:top-0 left-0 right-0 ${collapsed ? 'lg:left-16' : 'lg:left-56'} z-[60] flex justify-center px-3 pt-2 pointer-events-none transition-[left] duration-200`}>
         {open ? (
           <div
             className="pointer-events-auto max-w-2xl w-full rounded-xl border border-digi-border"

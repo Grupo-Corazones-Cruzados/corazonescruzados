@@ -127,14 +127,35 @@ export default function DashboardSidebar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="fixed top-3 left-3 z-30 lg:hidden w-10 h-10 flex items-center justify-center rounded-lg border border-digi-border bg-digi-card text-accent shadow-sm hover:border-accent transition-colors"
-        aria-label="Abrir menú"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      {/* ── CABECERA DEL TELÉFONO ────────────────────────────────────────────────
+          El botón de menú era un cuadradito FLOTANDO sobre el contenido, en la esquina:
+          se apoyaba en cualquier cosa que hubiera debajo —un título, una tabla, una
+          foto— y según la pantalla quedaba encima de algo que había que leer.
+
+          Ahora es una barra de verdad. Ocupa su sitio en lugar de robárselo a otro, y de
+          paso le devuelve a la vista de teléfono lo que ya tiene la de escritorio: saber
+          en qué aplicación estás. El `main` ya reservaba este alto (`pt-14 lg:pt-6`), así
+          que la barra cabe donde antes había un hueco vacío.
+
+          Lleva la clase `rail` para heredar sus colores: la cabecera y el menú que abre
+          son la misma cosa, y verlos del mismo color lo dice sin explicarlo. */}
+      <header className="rail fixed top-0 left-0 right-0 z-30 h-14 lg:hidden flex items-center gap-3 px-3 bg-digi-card border-b border-digi-border">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="w-10 h-10 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125"
+          aria-label="Abrir menú"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <Link href="/" className="flex items-center gap-2 min-w-0">
+          <Image
+            src="/logo-gcc.png" alt="" width={26} height={26} priority
+            className="rounded-full select-none shrink-0"
+          />
+          <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>
+        </Link>
+      </header>
 
       {/* Backdrop */}
       {mobileOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />}
@@ -150,7 +171,9 @@ export default function DashboardSidebar() {
            el ancho. Animar «todo» hace que el navegador vigile cada propiedad del
            elemento durante la transición — más trabajo por fotograma justo en el momento
            en que se está reordenando el contenido. */
-        className={`rail fixed top-0 left-0 h-full z-40 bg-digi-card border-r border-digi-border flex flex-col transition-[width] duration-200
+        /* ⚠️ Abierto sube a z-50: por debajo quedan el velo (z-40) y la cabecera del
+           teléfono (z-30), y así el menú tapa la cabecera en vez de salir por debajo. */
+        className={`rail fixed top-0 left-0 h-full ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width] duration-200
           ${collapsed ? 'w-16' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
         `}
