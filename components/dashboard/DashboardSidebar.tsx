@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTemaPanel } from '@/components/providers/TemaPanel';
+import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import DialogoVerComoOtro from '@/components/dashboard/DialogoVerComoOtro';
 import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@/lib/dashboard/access';
@@ -14,7 +15,7 @@ import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
-  Settings, LifeBuoy, ShieldCheck, Workflow, Menu,
+  Settings, LifeBuoy, ShieldCheck, Workflow,
   LogOut, Sun, Moon, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
   type LucideIcon,
 } from 'lucide-react';
@@ -58,7 +59,8 @@ export default function DashboardSidebar() {
   const { user, signOut, suplantacion } = useAuth();
   const { oscuro, alternar } = useTemaPanel();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  // El estado lo comparte con la cabecera del teléfono, que es quien tiene el botón.
+  const { abierto: mobileOpen, cerrar: cerrarMenuMovil } = useMenuMovil();
 
   /**
    * ⇒ EL MENÚ SE ABRE AL PASAR EL PUNTERO Y SE CIERRA AL SALIR.
@@ -104,7 +106,9 @@ export default function DashboardSidebar() {
   // módulos que ya tienen tutorial publicado.
   const [tutorialCounts, setTutorialCounts] = useState<Record<string, number>>({});
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  // Al cambiar de página el menú se cierra solo: en un teléfono, tocar un módulo y que
+  // el menú siga abierto encima obliga a un gesto de más para ver a dónde has llegado.
+  useEffect(() => { cerrarMenuMovil(); }, [pathname, cerrarMenuMovil]);
 
   useEffect(() => {
     if (!user) return;
@@ -127,38 +131,9 @@ export default function DashboardSidebar() {
 
   return (
     <>
-      {/* ── CABECERA DEL TELÉFONO ────────────────────────────────────────────────
-          El botón de menú era un cuadradito FLOTANDO sobre el contenido, en la esquina:
-          se apoyaba en cualquier cosa que hubiera debajo —un título, una tabla, una
-          foto— y según la pantalla quedaba encima de algo que había que leer.
-
-          Ahora es una barra de verdad. Ocupa su sitio en lugar de robárselo a otro, y de
-          paso le devuelve a la vista de teléfono lo que ya tiene la de escritorio: saber
-          en qué aplicación estás. El `main` ya reservaba este alto (`pt-14 lg:pt-6`), así
-          que la barra cabe donde antes había un hueco vacío.
-
-          Lleva la clase `rail` para heredar sus colores: la cabecera y el menú que abre
-          son la misma cosa, y verlos del mismo color lo dice sin explicarlo. */}
-      <header className="rail fixed top-0 left-0 right-0 z-30 h-14 lg:hidden flex items-center gap-3 px-3 bg-digi-card border-b border-digi-border">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="w-10 h-10 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125"
-          aria-label="Abrir menú"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
-        <Link href="/" className="flex items-center gap-2 min-w-0">
-          <Image
-            src="/logo-gcc.png" alt="" width={26} height={26} priority
-            className="rounded-full select-none shrink-0"
-          />
-          <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>
-        </Link>
-      </header>
 
       {/* Backdrop */}
-      {mobileOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />}
+      {mobileOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={cerrarMenuMovil} />}
 
       {/* Sidebar */}
       <aside
