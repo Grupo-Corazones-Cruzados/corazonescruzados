@@ -792,6 +792,22 @@ html {
   --color-accent-glow: #C9B8FF;
 }
 
+/* ── EL ALTO DE LA CABECERA DEL TELÉFONO, PARA QUIEN CALCULE CONTRA LA VENTANA ──
+   Desde el 2026-09-02 el panel tiene en móvil una cabecera EN EL FLUJO (56 px), y eso
+   corre 56 px hacia abajo todo lo que hay debajo. Cualquier alto escrito como
+   `calc(100dvh - algo)` —los hay en «Mi día»— se quedó corto de golpe: el bloque
+   terminaba justo detrás del pie de navegación y se comía lo que venía después.
+
+   En vez de repetir el número en cada página, se declara aquí y se resta donde haga
+   falta: `calc(100dvh - 4.5rem - var(--cabecera-movil))`. Si mañana la cabecera cambia
+   de alto, cambia en un sitio.
+
+   ⚠️ Lo ideal sigue siendo MEDIR (`useAltoHastaElPie`, que descuenta el pie por
+   `[data-app-footer]` en vez de codificarlo). Esta variable es para los altos que ya
+   estaban escritos a mano; lo nuevo debería usar el hook. */
+.corp { --cabecera-movil: 0px; }
+@media (max-width: 1023.98px) { .corp { --cabecera-movil: 3.5rem; } }
+
 /* ── El parpadeo de la barra de desplazamiento del raíl ───────────────────────
    Al pasar el puntero, el menú se ensancha en 200 ms y aparecen las etiquetas de
    los módulos. Durante esa animación el contenido del `nav` mide un poco más de

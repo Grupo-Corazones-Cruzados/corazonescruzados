@@ -288,7 +288,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
               </button>
               <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{visibleTasks.length}</span>
             </div>
-            <div className="p-2.5 space-y-2 max-h-[calc(100dvh-220px)] overflow-y-auto">
+            <div className="p-2.5 space-y-2 max-h-[calc(100dvh-220px-var(--cabecera-movil))] overflow-y-auto">
               {loading ? (
                 <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>
               ) : visibleTasks.length === 0 ? (
@@ -483,7 +483,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                   <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
                   <button onClick={() => setPanel(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                 </div>
-                <div className="p-3 space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
+                <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] overflow-y-auto">
                   <div>
                     <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{t?.title || 'Tarea'}</h4>
                     {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
@@ -560,7 +560,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                 <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
                 <button onClick={() => setGenPanel(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
               </div>
-              <div className="p-3 space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
+              <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] overflow-y-auto">
                 <div>
                   <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{genPanel.title}</h4>
                   {genPanel.detail && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{genPanel.detail}</p>}

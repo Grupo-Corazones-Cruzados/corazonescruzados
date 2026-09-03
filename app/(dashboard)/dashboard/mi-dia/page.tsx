@@ -334,7 +334,7 @@ export default function MiDiaPage() {
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : dayHeader(ymd(currentDate))}</span>
           <button onClick={() => openNew('progreso')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
         </div>
-        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-220px)] xl:max-h-none">
+        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-220px-var(--cabecera-movil))] xl:max-h-none">
           {(() => {
             // En vista de MES el panel muestra solo el día seleccionado (currentDate);
             // en semana/día conserva el agrupado por día del rango de la vista.
@@ -389,7 +389,11 @@ export default function MiDiaPage() {
       <div className="flex-1 min-w-0 w-full">
         {/* El contenedor del calendario ocupa la altura disponible de la ventana; su cuerpo
             (grilla de horas / celdas de mes) llena el espacio y se desplaza internamente. */}
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-4.5rem)]">
+        {/* ⚠️ `var(--cabecera-movil)`: en teléfono hay una cabecera de 56 px por encima, y
+            sin restarla este bloque terminaba justo detrás del pie de navegación — se
+            comía las propuestas y las tareas que van debajo. La variable vale 0 en
+            escritorio, donde no hay cabecera. Ver `globals.css`. */}
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-4.5rem-var(--cabecera-movil))]">
           {/* Command bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-2">
@@ -447,7 +451,7 @@ export default function MiDiaPage() {
           <span className="ml-auto text-[11px] text-digi-muted tabular-nums" style={mf}>{totalTasks}</span>
         </div>
         <p className="text-[11px] text-digi-muted px-3 pt-2 leading-snug shrink-0" style={mf}>Planificadas según tu Horario de Vida en <span className="text-digi-text font-medium capitalize">{label}</span>. Crea un evento para justificar el tiempo.</p>
-        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-260px)] xl:max-h-none">
+        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-260px-var(--cabecera-movil))] xl:max-h-none">
           {!horario.subject ? (
             <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>No tienes un horario asignado.</p>
           ) : totalTasks === 0 ? (
