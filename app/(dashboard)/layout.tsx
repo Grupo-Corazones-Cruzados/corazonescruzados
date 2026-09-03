@@ -52,21 +52,21 @@ function Panel({ children }: { children: React.ReactNode }) {
           arriba: antes llevaba un `pt-[4.5rem]` que era exactamente el alto de la barra
           fija, y aun así el contenido se le metía debajo al desplazarse.
           Ver `CabeceraMovil`. */}
-      {/* ⚠️ `h-screen` en la columna y `min-h-0` en el `main`. Los dos hacen falta y por el
-          mismo motivo: **el que se desplaza es el `main`, no la página** —de eso depende
-          `useAltoHastaElPie`, que mide el hueco hasta el pie—.
+      {/* ⇒ EL `main` VUELVE A SER EL DE SIEMPRE: `overflow-auto min-h-screen`.
+          Al meter la cabecera en el flujo lo convertí en un hijo flexible con altura
+          acotada, y ahí se torció: **le quité el `min-h-screen` que llevaba desde el
+          principio**, y con él la garantía de que la caja del contenido nunca mide menos
+          que la ventana. El resultado fue lo contrario de lo que buscaba — el corte se
+          mudó de arriba abajo.
 
-          Sin `h-screen` la columna crece con el contenido y el `main` nunca tiene un tope
-          contra el que recortar. Y sin `min-h-0` un hijo flexible **no baja de la altura de
-          su contenido**: `min-height` vale `auto` por defecto, así que el `main` se estira
-          por debajo de la ventana y su último trozo queda fuera — cortado por el pie fijo,
-          que es lo que se veía en Pensamientos.
+          La lección: al reestructurar un contenedor, lo primero es mirar QUÉ CLASES tenía
+          y por qué, no solo dónde estaba. Media app depende de que el que se desplaza sea
+          este `main` (ver `useAltoHastaElPie`).
 
-          `pb-14` deja sitio para ese pie (mide 36 px), que va por encima con `position:
-          fixed`. */}
-      <div className="flex-1 min-w-0 flex flex-col ml-0 lg:ml-16 h-screen">
+          La columna solo apila la cabecera y el contenido; no impone altura ninguna. */}
+      <div className="flex-1 min-w-0 flex flex-col ml-0 lg:ml-16">
         <CabeceraMovil />
-        <main className="flex-1 min-h-0 p-4 md:p-6 pb-14 overflow-auto">
+        <main className="flex-1 p-4 md:p-6 pb-14 overflow-auto min-h-screen">
           <DashboardAccessGuard>{children}</DashboardAccessGuard>
         </main>
       </div>
