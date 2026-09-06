@@ -2249,6 +2249,38 @@ Stack estándar de la casa, con particularidades de este repo:
     - **💸 ~7.800 tokens de ENTRADA por respuesta**, porque los 14 bloques de conocimiento
       viajan enteros en cada llamada. Con 9 $ de saldo, vigilar el gasto en un día real.
 
+  - **🔎 GOOGLE NO SE PUEDE FORZAR POR API (2026-09-06).** Fernando preguntó si podíamos
+    hacer que Google reindexe nuestras páginas. **No.** La *Indexing API* admite
+    oficialmente **solo `JobPosting` y `BroadcastEvent`**; Google ha dicho que puede dejar
+    de atender los demás formatos **sin avisar**, así que montar algo encima es construir
+    sobre arena. Y no hay API para el botón «Solicitar indexación».
+    - **Lo que sí mueve la aguja:** la fecha del mapa del sitio. `app/sitemap.ts` lleva un
+      `ULTIMO_CAMBIO` por página **a propósito** —fechas literales, no `new Date()`, para
+      que cada despliegue no jure que todo cambió—, y la regla es: **al reescribir una
+      página, se actualiza su fecha ahí**. Es lo que hace que Google vuelva pronto.
+    - Lo rápido de verdad sigue siendo manual: Search Console → pegar la URL →
+      «Solicitar indexación». Horas o días, frente a semanas.
+    - **Pendiente ofrecido:** automatizar `sitemaps.submit` de la Search Console API con la
+      cuenta de servicio que ya existe, si se le da acceso en Search Console. No fuerza
+      nada, pero avisa del mapa en cada despliegue.
+
+  - **⛔ `grupocc.org` SIN «www» DEVUELVE 404, Y NO ES NUESTRO (2026-09-06).** Comprobado:
+    el dominio desnudo lo responde **Vercel** con un 404, mientras el sitio corre en
+    Railway bajo `https://www.grupocc.org` (200). Quien teclee el dominio a secas —que es
+    como lo teclea la gente— o venga de un enlace antiguo, **se topa con una página de
+    error**. Debe quedar un proyecto viejo de Vercel apuntado ahí. Se arregla en el DNS o
+    en el registrador, no en el código. **PENDIENTE: confirmar dónde está registrado y
+    quién controla ese proyecto.**
+    - ⚠️ La URL canónica del sitio es **con `www`** (`SITIO.url`), y es la que hay que dar
+      a Search Console.
+
+  - **🏷️ EL TÍTULO DEL SITIO DICE SOLO EL NOMBRE (2026-09-06).** Decía «Grupo Corazones
+    Cruzados — Proyecto de desarrollo humano». Decisión de Fernando.
+    - ⚠️ **Tiene el mismo coste que quitar la ciudad**, y se le dijo: «desarrollo humano»
+      era lo único del título que le decía a Google **de qué va** el sitio, y el título pesa
+      más que la descripción. A partir de ahora se encuentra buscando el NOMBRE, no el tema.
+      La descripción conserva esas palabras, lo que amortigua parte.
+
   - **🛒 SE VENDEN AUTOMATIZACIONES, Y COMPRARLAS MONTA EL FLUJO (2026-08-29).** Migración
     060. Tres para empezar: **Envío Programado de Correos Masivos (5 $/mes)**, **Chatbot
     Conversacional en WhatsApp (20 $/mes)** y **Agente de Generación de Presupuestos

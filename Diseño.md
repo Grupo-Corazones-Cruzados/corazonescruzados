@@ -2899,6 +2899,104 @@ servir, o `e_blur` de Cloudinary—, así lo que llega al navegador ya no tiene 
 El radio es **proporcional al ancho**: uno fijo se ve fuerte a 240 px y no hace nada a 1.600,
 y ampliar la foto sería justo la forma de leer lo que la miniatura escondía.
 
+## El teléfono, y el precio de lo que flota — 2026-09-02 al 06
+
+### La cabecera del móvil: tres intentos y la regla que salió de ellos
+El botón de menú era un cuadradito **flotando** en la esquina; pasó a ser una barra
+**fija**; y acabó siendo una barra **en el flujo**. Las dos primeras compartían el mismo
+defecto, que Fernando señaló dos veces:
+
+> **Lo que está pegado a la ventana siempre tiene contenido pasando por debajo.**
+
+Añadir relleno arriba solo arregla el arranque de la página; al desplazarse, el contenido
+vuelve a meterse debajo. La barra en el flujo **empuja** en vez de tapar, así que ninguna
+página puede quedar debajo — no hay «debajo». Se va al bajar y vuelve al subir.
+
+⚠️ Es la decisión CONTRARIA a la del menú lateral, y las dos son correctas: un menú que se
+abre al pasar el ratón molesta solo mientras está abierto, así que se superpone; una barra
+que tapa lo que lees molesta en cada desplazamiento, así que ocupa su sitio.
+
+### ⛔ Lo que costó tres intentos: mirar las clases que había
+Al mover el `main` a una columna nueva le quité sin darme cuenta el **`min-h-screen`** que
+llevaba desde el principio, y después intenté arreglarlo con `h-screen` + `min-h-0`, que es
+otra cosa. El corte se mudó de arriba abajo en vez de desaparecer.
+
+> **Al reestructurar un contenedor, lo primero es mirar QUÉ CLASES tenía y por qué, no solo
+> dónde estaba.** En esta app media pantalla depende de que el que se desplaza sea ese
+> `main` (`useAltoHastaElPie` mide contra él).
+
+### `--cabecera-movil`: el impuesto de toda barra en el flujo
+Meter 56 px arriba **descoloca cualquier alto escrito como `calc(100dvh - algo)`**, y había
+varios: el calendario de «Mi día», sus dos paneles y tres listas de Horario de Vida.
+Terminaban justo detrás del pie y se comían lo que venía después.
+
+Se declara **una vez** en `globals.css` (`.corp { --cabecera-movil: 0px }`, 3.5rem por
+debajo de `lg`) y se resta donde haga falta:
+`h-[calc(100dvh-4.5rem-var(--cabecera-movil))]`.
+
+⚠️ **Lo ideal sigue siendo MEDIR** (`useAltoHastaElPie`, que descuenta el pie por
+`[data-app-footer]`). La variable es para los altos que ya estaban escritos a mano; lo
+nuevo debería usar el hook.
+
+### La tabla no se estira en pantalla estrecha
+`PixelDataTable` llenaba siempre hasta el pie. Tiene sentido cuando la tabla es lo único de
+la pantalla. Pero **por debajo de `lg` los diseños se apilan** —tabla arriba, panel de
+detalle debajo— y una tabla que llega al borde deja al panel **fuera de la pantalla**. Se
+vio en Herramientas: dos filas, un hueco enorme, y la tarjeta siguiente cortada.
+
+Por debajo de 1024 mide su contenido y la página se desplaza, que es lo normal en un móvil.
+Y de paso desaparece el hueco muerto de una tabla con dos filas ocupando un teléfono.
+
+### Al abrirse el menú, NADA de lo que ya mirabas se mueve
+Al expandirse por hover, los módulos se desplazaban hacia abajo y **el que ibas a pulsar se
+escapaba del cursor**. Dos causas, las dos por medir distinto en cada estado:
+- los **separadores de grupo**: título ~27 px, rayita 17, primer grupo 0;
+- las **filas**: cerradas las medía el icono (18 px), abiertas el texto, un par de píxeles más.
+
+Dos píxeles por módulo son treinta en la lista. Ahora los dos tienen **alto fijo** (`h-7` y
+`h-9`), así que el menú **solo cambia de ancho**.
+
+> **Regla:** un control que cambia de estado no puede cambiar de alto si hay algo debajo que
+> el usuario estaba señalando.
+
+### El velo del menú desplegado
+El menú se abre encima del contenido y los dos se veían igual de nítidos: no quedaba claro
+sobre cuál estabas. Ahora el resto se atenúa (`bg-black/45`, transición de opacidad).
+
+⚠️ **`pointer-events-none` y se pinta siempre**, solo cambia la opacidad. Con eventos, el
+ratón «tocaría» el velo al salir del menú y este seguiría creyéndose señalado — y taparía
+los clics del contenido. Montándolo y desmontándolo entraría de golpe.
+
+Los niveles, de abajo arriba: pie (z-20) · velo de escritorio (z-30) · menú (z-40) · velo
+del teléfono (z-40) · menú abierto en teléfono (z-50).
+
+### La miniatura al compartir enseña la PORTADA
+`app/opengraph-image.tsx` dibujaba una tarjeta con el nombre y un eslogan. Correcta, y no
+decía nada: quien recibe el enlace veía un rótulo corporativo, no el sitio. Ahora reproduce
+el héroe —«Un Corazón puede **cruzar** al mundo»— con la tipografía pixel de la casa.
+
+⚠️ **Satori no lee woff2.** La fuente se trae de Google Fonts con un `User-Agent` ANTIGUO,
+que es lo que hace que devuelvan TTF; con uno moderno la imagen saldría con otra letra y
+sin avisar. Si la descarga falla se dibuja igual con la fuente por defecto: **una miniatura
+con otra letra es mejor que ninguna miniatura**.
+
+Y no hay `background-clip: text`: el degradado del titular se aproxima con colores planos.
+
+### Las capturas públicas también van desenfocadas
+`/soluciones` es pública —la ve cualquiera y la indexa Google— y enseña pantallas de
+sistemas reales. Mismo criterio que el marketplace: **se desenfoca en la URL que se sirve**
+(`capturaDifuminada` en `lib/soluciones.ts` → Cloudinary), no con CSS.
+
+Cubre las tres superficies: portada del trabajo, **galería a pantalla completa** —el atajo
+obvio para leer lo que la miniatura escondía— e imagen de producto.
+
+**Las fotos de los miembros NO se tocan**: son personas del equipo, no pantallas con datos.
+El marketplace tampoco desenfoca sus avatares.
+
+### Filtros: lo elegido se ve dentro del control
+Ya documentado arriba; se aplicó en `MultiSelectSearch` y de ahí lo heredan todos los
+filtros del panel.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-26 · El párrafo explicativo encima de los campos de las ventanitas de «Cobrar».**
   Las dos superficies de cobro con enlace (etapa de proyecto y ticket) arrancaban con una

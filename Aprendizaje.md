@@ -33,6 +33,45 @@ distinguir detalles muy específicos… solo yo decido eso"*.
 
 ---
 
+## Objetivo (declarado 2026-09-02, cerrado el 2026-09-06) — QUE LA PLATAFORMA SE PUEDA USAR EN UN TELÉFONO, Y QUE EL SITIO SE PRESENTE BIEN AL COMPARTIRLO · ✅ 100 %
+
+**Rol asumido:** responsable de interfaz y de la presencia pública del sitio.
+
+### Preguntas y respuestas
+
+**P1 — ¿Dónde va el botón de menú en el teléfono? · ✅ Resuelta, en tres intentos**
+Flotando → barra fija → **barra en el flujo**. Las dos primeras tapaban contenido al
+desplazarse. La regla: *lo que está pegado a la ventana siempre tiene algo pasando por
+debajo*. Detalle en `Diseño.md`.
+
+**P2 — ¿Por qué el corte se movía en vez de desaparecer? · ✅ Resuelta**
+Porque al reestructurar el `main` le quité su `min-h-screen` sin darme cuenta y luego
+intenté arreglarlo con `h-screen` + `min-h-0`, que es otra cosa. **Mirar las clases que
+había antes de moverlas.**
+
+**P3 — ¿Bastaba con arreglar el contenedor? · ✅ Resuelta: NO**
+Había páginas que **se saltan el contenedor y miden contra la ventana**
+(`calc(100dvh - 4.5rem)`). Una barra nueva arriba las descoloca todas. De ahí
+`--cabecera-movil`, y la nota de que lo nuevo debería MEDIR con `useAltoHastaElPie`.
+
+**P4 — ¿Puede Google reindexar por API? · ✅ Resuelta: NO**
+La Indexing API solo admite `JobPosting` y `BroadcastEvent`. Lo legítimo es la fecha del
+mapa del sitio y «Solicitar indexación» a mano.
+
+**P5 — ¿Qué se ve al compartir el enlace? · ✅ Resuelta**
+La portada, no una ficha corporativa. Y Satori **no lee woff2**: la tipografía se pide con
+un `User-Agent` antiguo para que Google devuelva TTF.
+
+### Lo que queda abierto
+- **`grupocc.org` sin «www» da 404** (lo sirve un Vercel viejo). Es lo más urgente de esta
+  tanda: se pierden visitas sin que nadie se entere.
+- Automatizar el envío del mapa a Search Console, si se decide.
+- Lo heredado del objetivo anterior: la otra app suscrita a la WABA de Peter Tours, la
+  pantalla del agente de presupuestos, el barrido de rutas `/api`, y los dos proyectos
+  completados sin factura.
+
+---
+
 ## Objetivo (declarado 2026-08-28, cerrado el 2026-08-31) — PONER EL AGENTE DE WHATSAPP EN MANOS DE UN CLIENTE REAL: Peter Tours atendiendo de verdad, y entrando a la plataforma con su cuenta · ✅ 100 % — EN PRODUCCIÓN
 
 **Rol asumido:** integrador de la Cloud API de Meta + responsable del acceso de clientes.
