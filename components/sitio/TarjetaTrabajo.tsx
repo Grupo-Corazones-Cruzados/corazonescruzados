@@ -147,7 +147,11 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
             src={trabajo.imagenes[0]}
             alt=""
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            /* `blur-[1px]` NO es la protección: las capturas ya llegan desenfocadas desde
+               Cloudinary (ver `capturaDifuminada` en `lib/soluciones.ts`), que es donde de
+               verdad se quitan los datos. Esto solo suaviza el último punto de nitidez y
+               cubre alguna imagen antigua que no pase por ahí. */
+            className="w-full h-full object-cover blur-[1px] transition-transform duration-500 group-hover:scale-[1.04]"
           />
           {trabajo.imagenes.length > 1 && (
             <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[11px] text-white backdrop-blur-sm">
@@ -227,7 +231,10 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
               <img
                 src={trabajo.imagenes[abierta]}
                 alt={`${trabajo.titulo} — imagen ${abierta + 1}`}
-                className="w-full max-h-[80vh] object-contain bg-[#f2f0f7]"
+                /* La galería a pantalla completa usa la MISMA URL que la miniatura, que ya
+                   viene desenfocada del servidor. Es lo que evita el atajo obvio: abrir la
+                   foto grande para leer lo que la miniatura escondía. */
+                className="w-full max-h-[80vh] object-contain bg-[#f2f0f7] blur-[1px]"
               />
               <button
                 type="button"
