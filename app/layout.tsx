@@ -39,8 +39,19 @@ export const metadata: Metadata = {
    * ⚠️ Y esta descripción **solo gobierna la portada**. Las demás páginas tienen la suya; si
    * alguna se quedara sin ella, heredaría esta y diría algo que no le toca.
    */
+  /**
+   * ⚠️ **SOLO EL NOMBRE, por decisión de Fernando (2026-09-06).** Decía
+   * «Grupo Corazones Cruzados — Proyecto de desarrollo humano»; ahora la pestaña del
+   * navegador y el resultado de Google dicen solo el nombre.
+   *
+   * ⚠️ **Tiene el mismo coste que quitar la ciudad**: «desarrollo humano» era lo único del
+   * título que le decía a Google de qué va el sitio, y el título pesa más que la
+   * descripción. Sin esas tres palabras, el sitio se encuentra buscando el NOMBRE, no el
+   * tema. La descripción de abajo las conserva, que amortigua parte. Es su decisión,
+   * tomada sabiéndolo.
+   */
   title: {
-    default: `${SITIO.nombre} — Proyecto de desarrollo humano`,
+    default: SITIO.nombre,
     template: `%s · ${SITIO.nombre}`,
   },
   /**
