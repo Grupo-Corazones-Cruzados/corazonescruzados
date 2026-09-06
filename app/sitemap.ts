@@ -19,8 +19,14 @@ import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
  * que el buscador vuelva a mirarla pronto en vez de dejarla para dentro de unas semanas.
  */
 const ULTIMO_CAMBIO = {
-  /** Portada. Última reescritura de su contenido. */
-  portada: '2026-08-02',
+  /**
+   * Portada. Última reescritura de su contenido.
+   * 2026-09-06: cambió su TÍTULO —pasó a decir solo «Grupo Corazones Cruzados»— y la
+   * imagen que sale al compartir el enlace. Las dos son justo lo que Google enseña en un
+   * resultado, así que se anuncia la fecha para que vuelva a mirarla pronto en vez de
+   * seguir sirviendo la vieja durante semanas.
+   */
+  portada: '2026-09-06',
   /**
    * Rehecha como cinco puertas el 2026-08-04; sus cinco páginas comparten esta fecha.
    * Cambió de nombre y dirección dos veces: `/negocio` → `/soluciones` (08-17) → `/clientes`
