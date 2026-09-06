@@ -79,6 +79,25 @@ export default function PixelDataTable<T>({
     const compute = () => {
       const el = wrapRef.current;
       if (!el) return;
+
+      /**
+       * ⚠️ EN PANTALLA ESTRECHA LA TABLA NO SE ESTIRA. Mide lo que ocupa y ya.
+       *
+       * Estirarse hasta el pie tiene sentido cuando la tabla es lo único de la pantalla y
+       * hay sitio de sobra: se desplaza por dentro y la página no se mueve. Pero por
+       * debajo de `lg` los diseños se APILAN —la tabla arriba, su panel de detalle
+       * debajo—, y una tabla que llega hasta el borde inferior deja al panel siguiente
+       * **fuera de la pantalla**, detrás del pie. Se veía en Herramientas: dos filas, un
+       * hueco enorme, y «Selecciona una herramienta» cortado abajo.
+       *
+       * Y con dos filas, ocupar un teléfono entero para enseñar dos líneas tampoco es lo
+       * que uno quiere. Sin altura impuesta, la tabla mide su contenido y la página se
+       * desplaza como cualquier otra — que es lo normal en un móvil.
+       *
+       * 1024 es el mismo corte que usan los diseños para pasar de apilado a columnas.
+       */
+      if (window.innerWidth < 1024) { setFillH(undefined); return; }
+
       const top = el.getBoundingClientRect().top;
       const h = Math.max(window.innerHeight - top - BOTTOM_GAP - appFooterHeight() - bottomReserve, MIN_HEIGHT);
       setFillH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
