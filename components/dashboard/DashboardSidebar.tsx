@@ -132,8 +132,30 @@ export default function DashboardSidebar() {
   return (
     <>
 
-      {/* Backdrop */}
+      {/* Backdrop del teléfono: se pulsa para cerrar. */}
       {mobileOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={cerrarMenuMovil} />}
+
+      {/* ── EL VELO DE ESCRITORIO ────────────────────────────────────────────────
+          Al desplegarse el menú, el resto de la pantalla se atenúa. Sin él, el menú
+          abierto se monta ENCIMA del contenido y no queda claro si estás sobre el menú o
+          sobre lo que hay debajo: los dos se ven igual de nítidos y uno acaba pulsando
+          donde no era.
+
+          ⚠️ `pointer-events-none`, y no es un detalle. Con eventos, el ratón «tocaría» el
+          velo al salir del menú y este seguiría creyéndose señalado; y peor, taparía los
+          clics del contenido. Así solo tiñe: lo que se pulsa se pulsa igual, y salir del
+          menú lo cierra como siempre.
+
+          Se pinta SIEMPRE y solo cambia la opacidad, para que aparezca y se vaya con una
+          transición. Montándolo y desmontándolo entraría de golpe.
+
+          `z-30`: por encima del contenido y del pie (z-20), por debajo del menú (z-40). */}
+      <div
+        aria-hidden
+        className={`hidden lg:block fixed inset-0 z-30 bg-black/45 pointer-events-none transition-opacity duration-200 ${
+          sobreElMenu ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
 
       {/* Sidebar */}
       <aside
@@ -146,8 +168,9 @@ export default function DashboardSidebar() {
            el ancho. Animar «todo» hace que el navegador vigile cada propiedad del
            elemento durante la transición — más trabajo por fotograma justo en el momento
            en que se está reordenando el contenido. */
-        /* ⚠️ Abierto sube a z-50: por debajo quedan el velo (z-40) y la cabecera del
-           teléfono (z-30), y así el menú tapa la cabecera en vez de salir por debajo. */
+        /* ⚠️ Los niveles, de abajo arriba: pie (z-20) · velo de escritorio (z-30) ·
+           menú cerrado (z-40) · velo del teléfono (z-40) · menú abierto en teléfono
+           (z-50). El menú siempre por encima de su propio velo. */
         className={`rail fixed top-0 left-0 h-full ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width] duration-200
           ${collapsed ? 'w-16' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
