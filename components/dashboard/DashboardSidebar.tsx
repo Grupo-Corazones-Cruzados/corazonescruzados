@@ -171,11 +171,26 @@ export default function DashboardSidebar() {
         <nav className="flex-1 overflow-y-auto py-2 px-2">
           {groups.map((group, gi) => (
             <div key={group.title} className={gi > 0 ? 'mt-2' : ''}>
-              {!collapsed ? (
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted/70 px-2.5 pt-2 pb-1" style={mf}>{group.title}</p>
-              ) : gi > 0 ? (
-                <div className="h-px bg-digi-border/60 mx-2 my-2" />
-              ) : null}
+              {/* ⚠️ ALTO CONSTANTE (`h-7`), esté el menú abierto o cerrado. Es lo que hace
+                  que los módulos NO SE MUEVAN al expandirse.
+
+                  Antes cada estado medía lo suyo: el título del grupo unos 27 px, la
+                  rayita del menú estrecho 17, y el primer grupo no pintaba nada. Al pasar
+                  el puntero, cada grupo empujaba a los de abajo entre 9 y 27 px, y el
+                  módulo que estabas señalando se escapaba de debajo del cursor — justo
+                  cuando ibas a pulsarlo.
+
+                  Reservando el mismo hueco en los dos estados, el menú solo cambia de
+                  ANCHO: lo que ya estaba bajo el puntero sigue ahí. */}
+              <div className="h-7 flex items-center">
+                {collapsed
+                  ? (gi > 0 ? <span className="h-px w-full bg-digi-border/60 mx-2" /> : null)
+                  : (
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted/70 px-2.5 truncate" style={mf}>
+                      {group.title}
+                    </p>
+                  )}
+              </div>
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const active = isActive(item.href);
@@ -185,7 +200,12 @@ export default function DashboardSidebar() {
                       <Link
                         href={item.href}
                         title={collapsed ? item.label : undefined}
-                        className={`relative flex items-center gap-2.5 rounded-md py-2 text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0' : 'pl-2.5 pr-9'} ${
+                        /* `h-9` en vez de `py-2`: con el menú cerrado la fila la medía el
+                           icono (18 px) y al abrirse la medía el TEXTO, que es un par de
+                           píxeles más alto. Dos píxeles por módulo son treinta en la lista
+                           entera — bastante para que lo que señalabas se te escape. Alto
+                           fijo, y el menú solo cambia de ancho. */
+                        className={`relative flex items-center gap-2.5 rounded-md h-9 text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0' : 'pl-2.5 pr-9'} ${
                           active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'
                         }`}
                         style={mf}
