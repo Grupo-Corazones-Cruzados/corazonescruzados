@@ -7969,3 +7969,265 @@ evitó un segundo botón que hiciera lo mismo. Lo que sí faltaba:
    borran: el rastro de a quién se le mandaron importa.
 - **La ventanita avisa de lo que no se deshace:** si el proyecto ya tiene etapas facturadas,
   lo dice en ámbar — esas facturas siguen valiendo y solo se anulan con nota de crédito.
+
+---
+
+# Objetivo (declarado 2026-09-06) — SISTEMA «GENERACIÓN DE CONTENIDO» · 🔎 78 %
+
+> Encargo de Fernando: *«en el módulo de centralizado quiero desarrollar un sistema en el paso
+> de gestión, piso colaborador… se llamará "Generación de Contenido"… un agente de generación
+> de contenido que permita avanzar en el desarrollo de nuevos videos»*.
+
+Un agente que recibe una **idea de video** (tema, propósito social, propósito monetario,
+desarrollo del contenido, referencia histórica, fuente de conocimiento, talento y **tonos de
+expresión**) y devuelve **cinco entregables**: guion largo (YouTube, técnico y profundo),
+guion corto (TikTok, lenguaje general), **short** (recorte de ≤30 s del guion largo que
+engancha), **infografía generada por IA**, y una **lista de acciones y requerimientos** de
+rodaje. Más **metadatos** (duración estimada por concepto, fuentes, referencias, tema…).
+
+### Rol asumido
+**Arquitecto de sistemas del Centralizado + diseñador de agentes de IA.** El trabajo no es
+«llamar al modelo»: es **componer el contexto** (dos buscadores que no existen todavía) y
+**guardar la salida en tablas** que después se editan a mano. La calidad del entregable la
+decide el contexto que se le arma, no el prompt.
+
+---
+
+## Lo que se resolvió INVESTIGANDO el repo (sin molestar a Fernando)
+
+### ✅ P166 — ¿Dónde encaja el sistema y cómo se da de alta?
+Piso **colaborador** × paso **gestión** = celda **«Líder»** (`lib/centralized/systems.ts`,
+`CELL_MAP`). Ya vive ahí **Percepción Social**; este sería el segundo.
+Alta = tres puntos, ninguno es una tabla nueva de sistemas:
+1. Semilla idempotente por slug en `ensureTable()` de `app/api/centralized/systems/route.ts`
+   (`generacion-de-contenido`).
+2. Una rama más en el `switch` por slug de
+   `app/(dashboard)/dashboard/centralized/[piso]/[paso]/[slug]/page.tsx`.
+3. El componente `components/centralized/systems/GeneracionDeContenidoSystem.tsx`.
+El **acceso ya está resuelto por la plataforma**: el GET de `systems` deja entrar al admin a
+todo, y a un miembro a su paso exacto en su piso y los de abajo, más lo compartido
+(`centralized_member_access`). No hay que inventar permisos de sistema.
+
+### ✅ P167 — ¿Qué es «fuente de conocimiento» exactamente, y de dónde sale?
+De **Gestión de Datos** (`lib/centralized/gestion-datos-db.ts`), esquema `gcc_world`, todo
+colgando de una **problemática** (`gd_problematicas`, REF ≤4 letras):
+- `gd_codigos` (texto, `verificado`) + `gd_codigo_unidades` → nomenclatura `COD-<REF>-…`
+- `gd_categorias` (`seq`, `nombre`) + `gd_categoria_codigos` → `CAT-<seq>-<código>`
+- `gd_piezas` (`tipo` revisión/corrección, `estado`) + `gd_pieza_variables` → `PIE.REV-…`
+- `gd_rompecabezas` (`nombre`, `situacion_id`) + `gd_rompecabezas_piezas`
+- `gd_subtemas` (`titulo`) + `gd_subtema_hipotesis` + `gd_subtema_rompecabezas`
+- `gd_temas` (`titulo`, `prosa`) + `gd_tema_subtemas` / `gd_tema_materias` / `gd_tema_problemas`
+Los seis niveles que pide Fernando existen y **ya tienen funciones de listado por
+problemática** (`listCodigos`, `listCategorias`, `listPiezas`, `listRompecabezas`,
+`listSubtemas`, `listTemas`). El panel de elección **solo lee**: se reusan esas funciones tal
+cual, sin tocar Gestión de Datos.
+
+### ✅ P168 — ¿De dónde salen los talentos?
+De la **lista global** `gd_talentos`, que vive en **Encuadre Condiciológico**
+(`lib/centralized/encuadre-db.ts`, `GLOBAL_LISTS`) y se sirve por
+`GET /api/centralized/encuadre/listas?list=talentos`. Sembrada desde
+`lib/centralized/talentos.ts` (~500 talentos). **No** se lee la constante: se lee la lista,
+que es la que Fernando puede editar. El control ya existe: `MultiSelectSearch` (desplegable
+con buscador) o `ListaMarcable` (columna con casillas) — comparten fila, no se inventa otro.
+
+### ✅ P169 — ¿Qué es «referencia histórica» en la base?
+Tres cosas distintas, cada una con su dueño:
+- **Proyectos** — `gcc_world.projects`; el miembro llega por `assigned_member_id`,
+  `project_members` o `project_bids` (así lo hace `GET /api/projects`).
+- **Tickets** — `gcc_world.tickets`, columna `member_id`.
+- **Productos** — `gcc_world.products`, que **no declara miembro**: cuelga de
+  `member_portfolio_items` por `portfolio_item_id`, y es **el ítem del portafolio el que
+  declara dueño y talento** (`lib/soluciones.ts`, migración 037). Se sigue esa cadena; no se
+  añade una columna que habría que mantener a la par.
+El admin ve todo: es el mismo patrón de acceso que ya usan esos módulos.
+
+### ✅ P170 — ¿Qué modelo, y cómo se le habla?
+`lib/ia/openai.ts` es **el único sitio** donde vive el id: `gpt-5.6-luna`. Se usa `chatJSON`.
+Y las tres trampas ya pagadas siguen valiendo: **`temperature`, `top_p` y `max_tokens` son
+400 secos**; el techo va como `max_completion_tokens`; y la palabra «json» tiene que aparecer
+en el prompt. Para JSON basta Chat Completions (las herramientas exigirían `/v1/responses`).
+
+### ✅ P171 — ¿Con qué se genera la infografía? — ya está resuelto en el repo
+`scripts/ilustrar-pasos.mjs` genera las 48 ilustraciones del sitio con **`gpt-image-2`** por
+`POST https://api.openai.com/v1/images/generations` con la **misma `OPENAI_API_KEY`**
+(`size`, `background`, `output_format`, `n`; vuelve `data[0].b64_json`). Nada de fal ni de
+Gemini —la `GEMINI_API_KEY` del repo está anotada como no válida—. Y el script deja escrita
+la lección que aquí también aplica: **generar una imagen se pasa del plazo de cabeceras de
+Node y hay que reintentar**, porque un fallo tumbaba la tanda entera.
+La imagen **no se guarda en la fila**: va a **Cloudinary** (`lib/cloudinary.ts`) y se guarda
+la URL — es lo que ya se hizo con `projects.images` y el portafolio.
+
+### ✅ P172 — ¿Hay precedente de prompt editable desde la interfaz?
+Sí: el **Estudio del agente** (`lib/agente/estudio/pipeline.ts`) trata `prompt_perfil`,
+`prompt_reglas` y `prompt_resumen` como **fuentes de origen `bd`**. O sea: el prompt es un
+dato, no código. El botón de configuración que pide Fernando sigue ese mismo camino —una
+tabla de prompts por entregable, con su texto por defecto sembrado.
+
+### ✅ P173 — ¿Qué armazón visual le toca?
+`Diseño.md` lo tiene decidido: **rail + lista + panel** para módulos con jerarquía, y para lo
+que Fernando describe (izquierda lista · centro entregable · derecha requerimientos y
+metadatos) el molde es el **grid de tres columnas** del Explorador. Piezas obligatorias, sin
+reinventar: `PixelDataTable`, `PixelModal` (md/lg = panel lateral derecho), `PixelTabs`,
+`PixelBadge`, `Button`/`BTN_*`, `PixelConfirm` (nunca `confirm()`), `FilterRail`,
+`FloatingWindow` (la ventana arrastrable que usa Gestión de Datos), `ActionsMenu`, iconos
+**lucide**, y `lib/format.ts` para los números. Nada de hex crudos: tokens `accent`/`digi-*`.
+
+---
+
+## ⚠️ Lo que NO se puede deducir — preguntas a Fernando (2026-09-06)
+
+### ❓ P174 — «Tonos de expresión»: ¿lista global editable o fija en código?
+**Por qué importa:** si es global, entra en `GLOBAL_LISTS` de Encuadre Condiciológico como
+`tonos` y Fernando la edita sin tocar código (igual que talentos, situaciones o materias).
+Si es fija, se queda en una constante y cambiarla es un despliegue. La infraestructura para
+lo primero **ya existe** y no cuesta más.
+
+### ❓ P175 — ¿Quién ve qué generación?
+El sistema es de piso colaborador: entran varios miembros. ¿Cada uno ve **solo sus** ideas y
+el admin todas (como Percepción Social), o el panel izquierdo es **común** y todos ven el
+trabajo de todos?
+
+### ❓ P176 — La infografía: ¿qué forma tiene?
+`gpt-image-2` acepta cuadrado, vertical y horizontal. Una infografía de video no es lo mismo
+si va a portada de YouTube (horizontal), a carrusel (cuadrado) o a story/TikTok (vertical).
+
+### ❓ P177 — Referencia histórica: ¿una o varias?
+El enunciado dice «buscador en panel que permita buscar los productos, proyectos o tickets».
+¿Se puede citar **más de uno** en la misma idea (mezclando tipos), como con las fuentes de
+conocimiento? Y de lo elegido, ¿qué debe leer el agente: solo título y descripción, o también
+requerimientos y acciones registradas?
+
+### ❓ P178 — ¿Los cinco entregables se generan de una tanda o uno a uno?
+Recomendación técnica: **uno a uno**, con su propio botón y su propio estado. Razón medida en
+este repo: la generación de imagen se pasa del plazo de espera y **una sola llamada que lo
+haga todo se cae entera** — y con ella los cuatro entregables que ya estaban bien. Uno a uno
+también permite **regenerar solo el que no gustó** sin perder los otros.
+
+---
+
+## Plan de solución (borrador, se refina al responder P174–P178)
+
+**Tablas nuevas** (esquema `gcc_world`, prefijo `gc_`, `CREATE TABLE IF NOT EXISTS` en un
+`ensureGeneracionContenidoTables()` — y esta vez **con su SQL versionado**, que es la lección
+que dejó escrita `MEMORIA.md` sobre `sql/migrations/`):
+- `gc_contenidos` — la idea: `member_id`, `user_id`, `tema`, `proposito_social`,
+  `proposito_monetario`, `desarrollo`, `talento`, `titulo` (lo pone el agente), `estado`
+  (`en_desarrollo` · `desarrollado` · `publicado` · `cancelado`), fechas.
+- `gc_contenido_referencias` — `contenido_id`, `tipo` (producto|proyecto|ticket), `ref_id`,
+  `titulo` en caché (para que borrar el origen no deje la ficha muda).
+- `gc_contenido_fuentes` — `contenido_id`, `tipo` (codigo|categoria|pieza|rompecabezas|
+  subtema|tema), `ref_id`, `nomenclatura` en caché.
+- `gc_contenido_tonos` — `contenido_id`, `tono`.
+- `gc_entregables` — `contenido_id`, `tipo` (guion_largo|guion_corto|short|infografia|
+  requerimientos|metadatos), `texto`, `datos` JSONB, `imagen_url`, `editado`, fechas.
+- `gc_prompts` — `clave` (uno por entregable + uno base), `texto`, `updated_at`. Sembrada con
+  el texto por defecto; es lo que abre el botón de configuración.
+
+**Rutas** bajo `app/api/centralized/generacion-contenido/`: lista y alta · detalle/estado/
+borrado · `[id]/generar` (un entregable por llamada, `maxDuration = 300`, con reintento en la
+imagen) · `entregables/[id]` (guardar la edición a mano del guion) · `prompts` · `referencias`
+(buscador de productos/proyectos/tickets) · `fuentes` (lectura de Gestión de Datos).
+
+**Pantalla**: tres columnas. Izquierda, la lista (fecha + título) con «Nueva idea» y el
+engranaje de configuración. Centro, el entregable elegido con su botón de editar —los
+requerimientos **no** aparecen aquí—. Derecha, requerimientos arriba, metadatos debajo y el
+estado al pie. Los dos buscadores (referencia histórica y fuente de conocimiento) se abren
+como panel, y el de fuentes es **de solo lectura con casilla por fila**.
+
+## Riesgos y cómo se mitigan
+- **La llamada larga se cae.** → un entregable por petición + reintentos en la imagen.
+- **Guardar la imagen en la fila.** → Cloudinary y URL, como ya se hace en todo el repo.
+- **Escribir «parecido» los buscadores.** → la regla de la casa: un control que ya existe se
+  usa o se extrae, nunca se reescribe parecido. Se reusan `MultiSelectSearch`/`ListaMarcable`,
+  `PixelDataTable` y `FloatingWindow`.
+- **Tocar Gestión de Datos por leerlo.** → el panel de fuentes solo llama a los `list*` que ya
+  existen; no hay endpoints de escritura en su superficie.
+
+## Segunda pasada (2026-09-06) — Fernando decide, y el sistema se construye entero · ✅ 100 %
+
+### ✅ P174 — Los tonos son una LISTA GLOBAL
+Fernando eligió lista editable. Entró en `GLOBAL_LISTS` de `lib/centralized/encuadre-db.ts`
+como `tonos` → tabla `gd_tonos`, sembrada con 18 tonos desde `TONOS_SEMILLA`. Se edita en
+**Encuadre Condiciológico**, junto a talentos, valores, situaciones y materias, y el
+formulario del video la lee por `GET /api/centralized/encuadre/listas?list=tonos`. La
+semilla es semilla: a partir de la primera vez manda la tabla.
+
+### ✅ P175 — Cada quien ve lo suyo; el admin, todo
+Mismo alcance que Percepción Social, el otro sistema de la celda. Se fuerza en la **capa de
+datos** (`ownerClause`), no en la pantalla: una pantalla se salta escribiendo la URL.
+Comprobado contra la base real: el dueño lo ve, otro usuario no lo ve ni lo puede borrar, y
+el admin sí lo ve.
+
+### ⭐ P176 — LA INFOGRAFÍA SE CAYÓ; ES UN CARRUSEL DE INSTAGRAM
+Fernando, al responder: *«creo que me equivoqué, prefiero que sea algo para instagram, que no
+sea infografía sino carrusel… cada imagen es como una parte del tema, la primera se
+introduce, las siguientes son de desarrollo y la última es de cierre, que sean las imágenes
+necesarias para completar el contenido»*.
+
+No es un cambio de formato, es otro entregable: **una imagen pasa a ser N imágenes con un
+hilo narrativo**, y **cuántas lo decide el agente**. Consecuencias que cambiaron el diseño:
+- Tabla propia `gcont_laminas` (orden, rol intro/desarrollo/cierre, título, texto,
+  instrucción visual, imagen).
+- **Dos pasos, no uno:** primero el agente escribe el plan de láminas; después se genera la
+  imagen de cada una, **de una en una**.
+- **Tope de 10 láminas.** No es estética: cada lámina es una llamada de imagen, y **medido
+  hoy, una imagen tarda 31,5 s**. Ocho láminas en una sola petición son cuatro minutos
+  largos jugando contra el plazo de espera.
+- El **estilo visual común** se pega a la instrucción de CADA lámina. Sin eso, ocho imágenes
+  del mismo carrusel salen de ocho carruseles distintos.
+- Cuadrado (1024×1024): Instagram admite 1:1 y 4:5, y el cuadrado es el que nunca recorta mal.
+
+### ✅ P177 — La referencia histórica se lee entera
+Título, descripción **y lo que de verdad se hizo**: requerimientos del proyecto, acciones
+registradas del ticket. Lo que NO entra: nombres de cliente e importes — esto acaba dentro de
+un guion público.
+
+### ✅ P178 — Un entregable por petición, confirmado por la medida
+`guion_largo` 38,3 s · `short` 8,3 s · `carrusel` 15,2 s · **cada imagen 31,5 s**. Una sola
+llamada que lo hiciera todo pasaría de los cuatro minutos y se caería entera. «Generar todo»
+existe, pero es la pantalla la que encadena seis peticiones en orden: si una falla, se para
+ahí y **lo generado hasta ese punto se conserva**.
+
+---
+
+## 🪤 EL PREFIJO `gc_` YA ESTABA OCUPADO
+La primera versión del esquema iba a llamarse `gc_contenidos`, `gc_entregables`… Mirando la
+base antes de escribir apareció esto:
+
+    gc_condiciones · gc_condicion_variables · gc_condicion_eventos ·
+    gc_condicion_restricciones · gc_requerimientos · gc_requerimiento_projects ·
+    gc_requerimiento_tickets
+
+Son de **Gestión de Condiciones**. Dos sistemas compartiendo prefijo es como se acaba
+mirando —o borrando— la tabla equivocada; y `gc_requerimientos` ya existía, que es
+justamente el nombre que este sistema quería para su entregable de rodaje. Prefijo
+definitivo: **`gcont_`**. La comprobación que lo cazó fue `information_schema` contra la base
+real, no leer el código.
+
+## Lo que se construyó (2026-09-06)
+- **Migración** `sql/migrations/061_generacion_de_contenido.sql` — aplicada y versionada
+  (siete tablas + `gd_tonos`). No se borra tras aplicarse.
+- **Dominio** `lib/centralized/generacion-contenido.ts` — entregables (con su panel, su
+  dependencia y si se editan), estados, tope del carrusel, y los **prompts por defecto**.
+- **Datos** `lib/centralized/generacion-contenido-db.ts` — alcance por dueño, el buscador de
+  referencia histórica (tres caminos distintos hacia el mismo dueño) y la lectura de los seis
+  niveles de Gestión de Datos, incluida la reconstrucción de la nomenclatura `COD-<REF>-…`.
+- **Agente** `lib/centralized/generacion-contenido-ia.ts` — armado del contexto, `chatJSON`
+  con `gpt-5.6-luna`, JSON → texto legible, y `gpt-image-2` → Cloudinary con tres intentos.
+- **8 rutas** bajo `app/api/centralized/generacion-contenido/`.
+- **Pantalla** `components/centralized/systems/GeneracionDeContenidoSystem.tsx` + los dos
+  selectores y el panel de configuración, en `components/centralized/generacion-contenido/`.
+- **Alta del sistema**: semilla por slug en `systems/route.ts` + rama en el `switch` del slug.
+
+## Las cuatro verificaciones, hechas
+1. `npx tsc --noEmit` limpio.
+2. `npm run build` limpio; las 8 rutas aparecen en el listado.
+3. **Contra la base real** (21 comprobaciones): DDL idempotente, los 7 prompts sembrados, el
+   buscador (46 resultados como admin, 44 como miembro), los seis niveles de Gestión de Datos
+   —con `COD-DESE-1/2` reconstruido igual que en Gestión de Datos—, el ciclo completo de una
+   idea y **el alcance por dueño en las cuatro direcciones**. La fila de prueba se retiró por
+   su id; no se tocó nada más.
+4. **Contra la API real**: guion largo (14.581 caracteres, con la referencia histórica
+   «Gestión de Pedidos» citada dentro), short recortado del guion, carrusel de 8 láminas con
+   su hilo intro→desarrollo→cierre, y **una imagen de verdad** subida a Cloudinary
+   (1.595.315 bytes — que es exactamente el peso que NO puede acabar en una fila).

@@ -126,6 +126,18 @@ async function ensureTable() {
             'controlador', 'gestion', 'Soluciones', 'gestion-social'
      WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'gestion-social')`,
   );
+  // Sistema built-in "Generación de Contenido" (colaborador · gestión, celda "Líder"). Segundo
+  // sistema de esta celda, junto a Percepción Social. Convierte una IDEA DE VIDEO (tema,
+  // propósitos, referencia histórica, fuentes de conocimiento, talento y tonos) en los
+  // entregables con los que se graba: guion largo, guion corto, short, carrusel de Instagram,
+  // acciones y requerimientos, y metadatos. Sembrado idempotente por slug.
+  await pool.query(
+    `INSERT INTO gcc_world.centralized_systems (name, description, piso, paso, cell_name, slug)
+     SELECT 'Generación de Contenido',
+            'Un agente que recibe una idea de video (tema, propósito social y monetario, desarrollo, referencia histórica, fuentes de conocimiento, talento y tonos de expresión) y devuelve los entregables con los que se graba: guion largo de YouTube, guion corto de TikTok, short, carrusel de Instagram con sus imágenes, la lista de acciones y requerimientos de rodaje y los metadatos del video.',
+            'colaborador', 'gestion', 'Líder', 'generacion-de-contenido'
+     WHERE NOT EXISTS (SELECT 1 FROM gcc_world.centralized_systems WHERE slug = 'generacion-de-contenido')`,
+  );
   // Access table may be read (JOIN) before the access route creates it.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_member_access (

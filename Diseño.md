@@ -2997,6 +2997,53 @@ El marketplace tampoco desenfoca sus avatares.
 Ya documentado arriba; se aplicó en `MultiSelectSearch` y de ahí lo heredan todos los
 filtros del panel.
 
+## Generación de Contenido — tres paneles, y cada uno con su oficio (2026-09-06)
+
+Sistema del Centralizado (colaborador · gestión). Reparto pedido por Fernando, y **no es
+decorativo**: los requerimientos de rodaje **no comparten sitio** con los guiones, porque no
+se leen en el mismo momento ni por la misma razón.
+
+    flex-col xl:flex-row · xl:h-[calc(100dvh-150px)]
+    ├── 250px  IZQUIERDA — lo generado: punto de estado + fecha + título + «n/6»
+    ├── 1fr    CENTRO    — pestañas de entregable (guion largo · corto · short · carrusel)
+    └── 330px  DERECHA   — requerimientos · metadatos · estado
+
+- Es la variante **rail + contenido + panel** del Explorador Azure, con la lista a la
+  izquierda en vez de un rail de filtros: aquí lo que se navega **son los registros**.
+- El **estado** (En desarrollo · Desarrollado · Publicado · Cancelado) se elige en el panel
+  derecho, como lista de opciones tipo rail, no como `select`: son cuatro y se ven todas.
+  En la lista izquierda ese mismo estado es un **punto de color**, el estándar de tablas.
+- **El texto generado se pinta con `MarkdownRenderer`** (`components/shared/`), el mismo del
+  chat. Al editar, el mismo texto se abre en un `textarea` a ancho completo: se corrige lo
+  que se lee, no un formulario de treinta campos.
+
+### Lámina de carrusel — tarjeta cuadrada con acción DENTRO del hueco
+`grid sm:grid-cols-2 2xl:grid-cols-3`. Cada lámina es una tarjeta `aspect-square`; mientras
+no tiene imagen, **el botón de generarla vive dentro del hueco de la imagen**, no debajo:
+el sitio donde va a aparecer la cosa es el sitio donde se pide. Encima, un `PixelBadge` con
+el orden y el rol (`1. Introducción`), en `info`/`default`/`success` según intro, desarrollo
+o cierre. Con imagen ya puesta, «Rehacer imagen» baja a un enlace tenue del pie de la
+tarjeta — es la acción rara, no la principal.
+
+### Los dos selectores de contexto (patrón reusable)
+- **Fuentes de conocimiento** (`SelectorFuentes`): `PixelModal size="xl"` — el panel de
+  1040px **existe para esto**, un panel que lleva una tabla dentro. Una fila de controles
+  (problemática + buscador + contador de elegidas), `PixelTabs` con los seis niveles y su
+  conteo, y `PixelDataTable` cuya **primera columna es la casilla**; la fila entera alterna
+  (`onRowClick`). El filtro corre sobre **todo lo que se ve de la fila**, que es lo que uno
+  espera de un buscador puesto encima de una tabla.
+- **Referencia histórica** (`SelectorReferencias`): `PixelModal size="lg"` con buscador y
+  filas de **`FilaMarcable`** — la misma casilla de `ListaMarcable` y `MultiSelectSearch`.
+  No hay una segunda forma de marcar cosas en el panel.
+- **Lo ya elegido se pinta arriba aunque el buscador deje de devolverlo.** Sin eso, cambiar
+  el filtro parece haber perdido la selección.
+
+### La configuración del agente — rail de prompts + texto largo
+`PanelPrompts` usa **`WideEditPanel`** (1040px): rail de los siete prompts a la izquierda
+—con un punto accent en los que están editados— y el texto a la derecha en monoespaciada,
+más «Volver al original». Un prompt de miles de caracteres en 644px no se puede leer
+mientras se escribe.
+
 ## Desviaciones detectadas y resolución
 - **2026-08-26 · El párrafo explicativo encima de los campos de las ventanitas de «Cobrar».**
   Las dos superficies de cobro con enlace (etapa de proyecto y ticket) arrancaban con una

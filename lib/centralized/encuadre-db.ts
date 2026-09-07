@@ -8,6 +8,7 @@ import { pool } from '@/lib/db';
 import { ensureGestionDatosTables } from '@/lib/centralized/gestion-datos-db';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import { VALORES } from '@/lib/centralized/valores';
+import { TONOS_SEMILLA } from '@/lib/centralized/generacion-contenido';
 
 type SimpleList = { label: string; table: string; shape: 'simple'; col: string };
 type KeyedList = { label: string; table: string; shape: 'keyed'; keyCol: string; labelCol: string };
@@ -16,6 +17,7 @@ type ListMeta = SimpleList | KeyedList;
 // table/columnas son CONSTANTES (no entran del usuario) → SQL seguro al interpolarlas.
 export const GLOBAL_LISTS: Record<string, ListMeta> = {
   talentos:            { label: 'Talentos',          table: 'gd_talentos',           shape: 'simple', col: 'nombre' },
+  tonos:               { label: 'Tonos',             table: 'gd_tonos',              shape: 'simple', col: 'nombre' },
   valores:             { label: 'Valores',           table: 'gd_valores',            shape: 'keyed', keyCol: 'key', labelCol: 'label' },
   situaciones:         { label: 'Situaciones',       table: 'gd_situaciones',        shape: 'simple', col: 'nombre' },
   materias:            { label: 'Materias',          table: 'gd_materias',           shape: 'simple', col: 'nombre' },
@@ -71,6 +73,14 @@ export async function ensureEncuadreTables(): Promise<void> {
       const key = String(val?.key ?? slugKey(label));
       if (label) await pool.query(`INSERT INTO gcc_world.gd_valores (key, label) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [key, label]);
     }
+  }
+
+  // Tonos de expresión (simple). Los usa el sistema «Generación de Contenido» para decidir
+  // cómo suena y cómo se ve un video entero; se siembra para que la lista no nazca vacía.
+  await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.gd_tonos (id SERIAL PRIMARY KEY, nombre TEXT NOT NULL UNIQUE, created_at TIMESTAMPTZ DEFAULT NOW())`);
+  const { rows: [to] } = await pool.query(`SELECT COUNT(*)::int AS n FROM gcc_world.gd_tonos`);
+  if (to.n === 0 && TONOS_SEMILLA.length) {
+    await pool.query(`INSERT INTO gcc_world.gd_tonos (nombre) SELECT DISTINCT unnest($1::text[]) ON CONFLICT (nombre) DO NOTHING`, [TONOS_SEMILLA]);
   }
 
   // Listas simple SIN semilla (nacen vacías): acciones, intenciones, estados, lugares,

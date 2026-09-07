@@ -5088,6 +5088,34 @@ Módulos principales:
 - **Agentes/Dev tooling**: agent-links, dev-server, open-vscode, tools — gestión de
   servidores de desarrollo (`data/agent-*.json`, `lib/dev-servers.ts`).
 
+### Centralizado → colaborador · gestión (celda «Líder») — **Generación de Contenido** (2026-09-06)
+Un agente que convierte una **idea de video** en los entregables con los que de verdad se
+graba. Vive en `components/centralized/systems/GeneracionDeContenidoSystem.tsx`, con su
+capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
+(`…-ia.ts`) y su dominio (`…generacion-contenido.ts`); 8 rutas bajo
+`app/api/centralized/generacion-contenido/`. Migración `061`.
+
+- **La idea** trae tema, propósito social, propósito monetario, desarrollo, **referencia
+  histórica** (productos/proyectos/tickets del propio usuario), **fuentes de conocimiento**
+  (lo clasificado en Gestión de Datos), **talento** y **tonos de expresión**.
+- **Seis entregables**: guion largo (YouTube), guion corto (TikTok), short (≤30 s recortado
+  del largo), **carrusel de Instagram** (N láminas con su imagen IA), acciones y
+  requerimientos de rodaje, y metadatos. Los dos guiones y el short **se corrigen a mano**.
+- **⚠️ EL PREFIJO ES `gcont_`, NO `gc_`.** `gc_` es de **Gestión de Condiciones**
+  (`gc_condiciones`, `gc_requerimientos`…). Antes de bautizar tablas nuevas, mirar
+  `information_schema`: `gc_requerimientos` ya existía, y es justo el nombre que este
+  sistema quería.
+- **Las ideas son privadas por colaborador**; el admin las ve todas. Se fuerza en la capa de
+  datos (`ownerClause`), igual que Percepción Social.
+- **Un entregable por petición, y una imagen por petición.** Medido el 2026-09-06: guion
+  largo 38 s · short 8 s · carrusel 15 s · **cada imagen 31,5 s**. «Generar todo» lo
+  encadena desde la pantalla; si uno falla, se para y lo anterior se conserva.
+- **Imágenes: `gpt-image-2` → Cloudinary**, nunca a la fila (la de prueba pesó 1,6 MB).
+- **El prompt de cada entregable es un DATO** (`gcont_prompts`), editable desde el engranaje
+  del sistema. Fernando irá metiendo ahí sus ejemplos de redacción.
+- **Los tonos son una lista global** (`gd_tonos`), editable en **Encuadre Condiciológico**
+  junto a talentos, valores, situaciones y materias.
+
 ## Decisiones y reglas de negocio
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**
   Algunos clientes piden un papel con TODOS los conceptos de la operación, incluidos los que
