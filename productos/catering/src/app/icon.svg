@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    Icono de pestaña de «Gestión de Catering».
+
+    Cuadrado violeta del grupo (#4B2D8E) con una vianda (el envase con tapa que se
+    reparte) en blanco. Mismo criterio que los otros dos productos: trazo GRUESO
+    (2,6) y glifo grande, porque a 16 px solo se reconocen la silueta y el color.
+
+    ⚠️ El violeta es FIJO aunque el negocio tenga su propio color: el navegador
+    cachea el icono por origen y es el mismo para todos los negocios. Y es la marca
+    del grupo, que debe reconocerse siempre.
+  -->
+  <rect width="32" height="32" rx="7" fill="#4B2D8E"/>
+  <g fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- asa de la vianda -->
+    <path d="M12 10V8a4 4 0 0 1 8 0v2"/>
+    <!-- cuerpo -->
+    <path d="M6 13h20l-1.5 12h-17z"/>
+    <!-- línea de la tapa -->
+    <path d="M6 17h20"/>
+  </g>
+</svg>

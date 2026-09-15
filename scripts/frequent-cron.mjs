@@ -66,6 +66,7 @@ const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http
 const PRODUCTOS = [
   { name: 'Reservas · purga de fin de mes', url: process.env.RESERVAS_URL, token: process.env.RESERVAS_CRON_TOKEN },
   { name: 'Pedidos · purga de fin de mes',  url: process.env.PEDIDOS_URL,  token: process.env.PEDIDOS_CRON_TOKEN },
+  { name: 'Catering · purga de fin de mes', url: process.env.CATERING_URL, token: process.env.CATERING_CRON_TOKEN },
 ].filter((p) => p.url && p.token);
 const TOKEN = process.env.CRON_TOKEN || '';
 

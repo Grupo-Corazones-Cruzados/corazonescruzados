@@ -1,0 +1,608 @@
+// Gestión de Catering — producto del Grupo Corazones Cruzados.
+//
+// Para negocios de comida por suscripción a domicilio (viandas): los clientes
+// finales se registran solos, el negocio los aprueba y les vende un SERVICIO de N
+// días; cada día hábil se cocina el menú, se imprimen las etiquetas por cliente
+// con sus restricciones y los motorizados reparten con su hoja de ruta.
+//
+// Vive en su PROPIO esquema (`catering`) del mismo servicio Postgres de Railway que
+// GCC WORLD y que los productos de reservas y pedidos. No comparte ni una tabla.
+//
+// REGLA QUE GOBIERNA TODO EL MODELO: cada tabla de negocio lleva `inquilinoId`.
+// Un inquilino es un negocio. El filtro lo construye `lib/inquilino.ts`, nunca una
+// página.
+//
+// ⚠️ FECHAS DE CALENDARIO COMO `@db.Date`. El proyecto de referencia guardaba
+// «el 8 de febrero» como un instante y necesitó cinco commits para esquivar la
+// zona horaria. Un menú, un feriado o una cancelación son un DÍA, no un momento.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plataforma: quién vende, a quién y por cuánto
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Plan {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  nombre          String
+  descripcion     String?
+  precioMensual   Decimal  @default(0) @db.Decimal(10, 2) @map("precio_mensual")
+  moneda          String   @default("USD") @db.VarChar(3)
+  /// Tope de cuentas del PERSONAL activas. Los clientes finales no cuentan
+  /// (Fernando, 2026-09-15): un negocio con 101 comensales sigue aprobando.
+  maxUsuarios     Int?     @map("max_usuarios")
+  /// Cuántos meses de histórico conserva el plan. NULO = sin límite.
+  /// Con 1, la purga de fin de mes deja solo el mes en curso.
+  mesesRetencion  Int?     @default(1) @map("meses_retencion")
+  permiteMarca    Boolean  @default(true) @map("permite_marca")
+  permiteExcel    Boolean  @default(true) @map("permite_excel")
+  caracteristicas String[] @default([])
+  activo          Boolean  @default(true)
+  orden           Int      @default(0)
+  creado          DateTime @default(now()) @map("creado_en")
+  actualizado     DateTime @updatedAt @map("actualizado_en")
+
+  suscripciones Suscripcion[]
+
+  @@map("planes")
+}
+
+/// Un negocio de catering. Unidad de aislamiento, de marca y de configuración.
+model Inquilino {
+  id     Int    @id @default(autoincrement())
+  slug   String @unique @db.VarChar(60)
+  nombre String
+
+  // ── Marca (la configura el propio cliente)
+  logoUrl     String? @map("logo_url")
+  colorAcento String  @default("#4B2D8E") @map("color_acento") @db.VarChar(7)
+  tema        Tema    @default(CLARO)
+
+  // ── Cómo trabaja este negocio. Todo lo que el proyecto de referencia llevaba
+  //    escrito a mano (tres comidas, lunes a viernes, las 7:00, el 20 %) es aquí
+  //    un dato del inquilino: un producto se vende a negocios distintos.
+  /// Qué comidas ofrece, de las cinco posibles.
+  tiposComida           TipoComida[] @default([ALMUERZO, MEDIA_TARDE, CENA]) @map("tipos_comida")
+  /// Qué días de la semana reparte.
+  diasServicio          DiaSemana[]  @default([LUNES, MARTES, MIERCOLES, JUEVES, VIERNES]) @map("dias_servicio")
+  /// Hasta qué hora (0–23) puede un cliente cancelar el día de hoy.
+  horaLimiteCancelacion Int          @default(7) @map("hora_limite_cancelacion")
+  /// Porcentaje de días del servicio que se pueden cancelar, por defecto al crear uno.
+  porcentajeCancelacion Int          @default(20) @map("porcentaje_cancelacion")
+  /// Si la pantalla pública de registro está abierta.
+  registroAbierto       Boolean      @default(true) @map("registro_abierto")
+
+  moneda      String @default("USD") @db.VarChar(3)
+  zonaHoraria String @default("America/Guayaquil") @map("zona_horaria")
+
+  estado      EstadoInquilino @default(PRUEBA)
+  /// Escaparate: se recorre entero, no se guarda nada. Lo aplican la aplicación y
+  /// los disparadores. Un inquilino en escaparate tampoco se purga.
+  soloLectura Boolean         @default(false) @map("solo_lectura")
+
+  gccClienteId     Int?    @map("gcc_cliente_id")
+  contactoNombre   String? @map("contacto_nombre")
+  contactoEmail    String? @map("contacto_email")
+  contactoTelefono String? @map("contacto_telefono")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  suscripcion   Suscripcion?
+  usuarios      Usuario[]
+  clientes      Cliente[]
+  alimentos     Alimento[]
+  servicios     Servicio[]
+  cancelaciones Cancelacion[]
+  menus         Menu[]
+  motorizados   Motorizado[]
+  feriados      Feriado[]
+  mensajes      Mensaje[]
+  pagos         PagoMensual[]
+  purgas        Purga[]
+
+  @@map("inquilinos")
+}
+
+model Suscripcion {
+  id          Int               @id @default(autoincrement())
+  inquilinoId Int               @unique @map("inquilino_id")
+  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planId      Int               @map("plan_id")
+  plan        Plan              @relation(fields: [planId], references: [id])
+  estado      EstadoSuscripcion @default(PRUEBA)
+  inicio      DateTime          @default(now()) @db.Date
+  /// LA PUERTA: hasta cuándo está pagado el acceso. NULO = nunca se ha pagado.
+  pagadoHasta DateTime?         @map("pagado_hasta") @db.Date
+  metodoPago  MetodoPago        @default(AUTOSERVICIO) @map("metodo_pago")
+  referenciaExterna String?     @map("referencia_externa")
+  notas       String?
+  creado      DateTime          @default(now()) @map("creado_en")
+  actualizado DateTime          @updatedAt @map("actualizado_en")
+
+  pagos PagoMensual[]
+
+  @@map("suscripciones")
+}
+
+model PagoMensual {
+  id            Int               @id @default(autoincrement())
+  inquilinoId   Int               @map("inquilino_id")
+  inquilino     Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  suscripcionId Int               @map("suscripcion_id")
+  suscripcion   Suscripcion       @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  periodo       String            @db.VarChar(7)
+  monto         Decimal           @db.Decimal(10, 2)
+  moneda        String            @default("USD") @db.VarChar(3)
+  metodo        MetodoPago        @default(AUTOSERVICIO)
+  estado        EstadoPagoMensual @default(PENDIENTE)
+  referencia    String?
+  comprobanteUrl String?          @map("comprobante_url")
+  pagadoEn      DateTime?         @map("pagado_en")
+  registradoPor String?           @map("registrado_por")
+  creado        DateTime          @default(now()) @map("creado_en")
+
+  @@unique([suscripcionId, periodo])
+  @@index([inquilinoId, periodo])
+  @@map("pagos_mensuales")
+}
+
+model OperadorGcc {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  nombre       String
+  passwordHash String    @map("password_hash")
+  activo       Boolean   @default(true)
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime  @default(now()) @map("creado_en")
+
+  @@map("operadores_gcc")
+}
+
+/// Constancia de cada purga de fin de mes. Un borrado automático sin rastro es
+/// indistinguible de una pérdida de datos: si mañana falta algo, aquí está por qué.
+model Purga {
+  id            Int       @id @default(autoincrement())
+  inquilinoId   Int       @map("inquilino_id")
+  inquilino     Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  ejecutadaEn   DateTime  @default(now()) @map("ejecutada_en")
+  /// Todo lo que TERMINÓ antes de esta fecha se borró.
+  corte         DateTime  @db.Date
+  servicios     Int       @default(0)
+  cancelaciones Int       @default(0)
+  menus         Int       @default(0)
+  mensajes      Int       @default(0)
+
+  @@index([inquilinoId, ejecutadaEn])
+  @@map("purgas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dentro del negocio — el personal
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Una persona del negocio. NO es un cliente: los clientes finales viven en
+/// `clientes`, con su propia contraseña, porque se registran solos, pasan por
+/// aprobación y tienen un perfil que el personal no tiene.
+model Usuario {
+  id           Int        @id @default(autoincrement())
+  inquilinoId  Int        @map("inquilino_id")
+  inquilino    Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  usuario      String     @db.VarChar(60)
+  nombre       String
+  email        String?
+  passwordHash String     @map("password_hash")
+  rol          RolUsuario @default(COCINA)
+  activo       Boolean    @default(true)
+  ultimoAcceso DateTime?  @map("ultimo_acceso")
+  creado       DateTime   @default(now()) @map("creado_en")
+  actualizado  DateTime   @updatedAt @map("actualizado_en")
+
+  @@unique([inquilinoId, usuario])
+  @@index([inquilinoId])
+  @@map("usuarios")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dentro del negocio — los clientes finales
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Quien recibe la comida. Se registra solo desde /<negocio>/registro, nace
+/// PENDIENTE y entra al portal cuando el negocio lo aprueba.
+model Cliente {
+  id           Int       @id @default(autoincrement())
+  inquilinoId  Int       @map("inquilino_id")
+  inquilino    Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  email        String
+  passwordHash String    @map("password_hash")
+
+  // ── Datos personales
+  nombre  String
+  celular String
+  edad    Int?
+
+  // ── Redes sociales
+  facebook  String?
+  instagram String?
+  tiktok    String?
+
+  // ── Información nutricional (opcional; la usa un negocio «fit», otro la ignora)
+  altura              Float?
+  peso                Float?
+  genero              Genero?
+  frecuenciaActividad Actividad? @map("frecuencia_actividad")
+
+  // ── Despacho: dirección principal
+  direccion          String
+  edificio           String?
+  piso               String?
+  referencias        String?
+  colorIdentificador String? @map("color_identificador") @db.VarChar(7)
+
+  // ── Despacho: segunda dirección (opcional) y los días que se usa
+  direccion2          String?     @map("direccion_2")
+  edificio2           String?     @map("edificio_2")
+  piso2               String?     @map("piso_2")
+  referencias2        String?     @map("referencias_2")
+  colorIdentificador2 String?     @map("color_identificador_2") @db.VarChar(7)
+  diasDireccion2      DiaSemana[] @default([]) @map("dias_direccion_2")
+
+  /// Lo que pidió al registrarse; el servicio que se le vende puede decir otra cosa.
+  tiposComida TipoComida[] @default([]) @map("tipos_comida")
+
+  // ── Restricciones fijas de despacho
+  sinAgua        Boolean @default(false) @map("sin_agua")
+  sinFruta       Boolean @default(false) @map("sin_fruta")
+  sinCubiertos   Boolean @default(false) @map("sin_cubiertos")
+  envasesPropios Boolean @default(false) @map("envases_propios")
+
+  estado EstadoCliente @default(PENDIENTE)
+
+  /// Quién le lleva la comida a la dirección 1 y a la 2.
+  motorizadoId  Int?        @map("motorizado_id")
+  motorizado    Motorizado? @relation("Reparte", fields: [motorizadoId], references: [id], onDelete: SetNull)
+  motorizado2Id Int?        @map("motorizado_2_id")
+  motorizado2   Motorizado? @relation("Reparte2", fields: [motorizado2Id], references: [id], onDelete: SetNull)
+
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime  @default(now()) @map("creado_en")
+  actualizado  DateTime  @updatedAt @map("actualizado_en")
+
+  restricciones ClienteRestriccion[]
+  servicios     Servicio[]
+  cancelaciones Cancelacion[]
+  mensajes      Mensaje[]
+
+  @@unique([inquilinoId, email])
+  @@index([inquilinoId, estado])
+  @@map("clientes")
+}
+
+/// Un alimento que el cliente no come. Si `tiposComida` está vacío aplica a todas
+/// las comidas; si no, solo a las que diga.
+model ClienteRestriccion {
+  id          Int          @id @default(autoincrement())
+  clienteId   Int          @map("cliente_id")
+  cliente     Cliente      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  alimentoId  Int          @map("alimento_id")
+  alimento    Alimento     @relation(fields: [alimentoId], references: [id], onDelete: Cascade)
+  tiposComida TipoComida[] @default([]) @map("tipos_comida")
+
+  @@unique([clienteId, alimentoId])
+  @@index([alimentoId])
+  @@map("cliente_restricciones")
+}
+
+/// El catálogo de ingredientes del negocio: con él se arma el menú y contra él se
+/// declaran las restricciones.
+model Alimento {
+  id          Int               @id @default(autoincrement())
+  inquilinoId Int               @map("inquilino_id")
+  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nombre      String
+  categoria   CategoriaAlimento @default(OTRO)
+  activo      Boolean           @default(true)
+  creado      DateTime          @default(now()) @map("creado_en")
+  actualizado DateTime          @updatedAt @map("actualizado_en")
+
+  restricciones ClienteRestriccion[]
+  enMenus       MenuAlimento[]
+
+  @@unique([inquilinoId, nombre])
+  @@index([inquilinoId, activo])
+  @@map("alimentos")
+}
+
+/// Lo que se le vende al cliente: N días de comida, en ciertas comidas y ciertos
+/// días de la semana, desde una fecha. Los días consumidos y la fecha de fin NO se
+/// guardan: se calculan desde el inicio saltando feriados y cancelaciones
+/// (`lib/servicios.ts`), así nunca dependen de que un cron haya corrido.
+///
+/// Un cliente tiene como mucho UN servicio vigente (ACTIVO o SUSPENDIDO); renovar
+/// crea uno nuevo y el anterior queda VENCIDO con su histórico intacto.
+model Servicio {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  clienteId   Int       @map("cliente_id")
+  cliente     Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  diasTotales Int          @map("dias_totales")
+  fechaInicio DateTime     @map("fecha_inicio") @db.Date
+  tiposComida TipoComida[] @default([]) @map("tipos_comida")
+  diasSemana  DiaSemana[]  @default([]) @map("dias_semana")
+  /// Porcentaje máximo de días que el cliente puede cancelar (20 = 20 %).
+  porcentajeCancelacion Int @default(20) @map("porcentaje_cancelacion")
+  /// Cuántas veces se ha renovado este cliente hasta llegar a este servicio.
+  renovaciones Int @default(0)
+
+  estado EstadoServicio @default(ACTIVO)
+  /// Cuándo dejó de estar vigente (venció o el negocio lo cerró). ⚠️ ES EL CAMPO
+  /// POR EL QUE PURGA la limpieza de fin de mes: un servicio vigente no se toca.
+  terminoEn DateTime? @map("termino_en") @db.Date
+  notas     String?
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  cancelaciones Cancelacion[]
+
+  @@index([inquilinoId, estado])
+  @@index([clienteId, estado])
+  @@index([inquilinoId, terminoEn])
+  @@map("servicios")
+}
+
+/// Un día que el cliente no recibe comida. No se borra al reactivar: se marca
+/// `activa = false`, para que quede constancia de quién y cuándo.
+model Cancelacion {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  servicioId  Int       @map("servicio_id")
+  servicio    Servicio  @relation(fields: [servicioId], references: [id], onDelete: Cascade)
+  clienteId   Int       @map("cliente_id")
+  cliente     Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  fecha  DateTime @db.Date
+  motivo String?
+  autor  Autor    @default(CLIENTE)
+
+  activa        Boolean   @default(true)
+  reactivadaEn  DateTime? @map("reactivada_en")
+  reactivadaPor Autor?    @map("reactivada_por")
+
+  creado DateTime @default(now()) @map("creado_en")
+
+  @@unique([servicioId, fecha])
+  @@index([inquilinoId, fecha])
+  @@index([clienteId, fecha])
+  @@map("cancelaciones")
+}
+
+/// El menú de UN día y UNA comida: la lista de alimentos que lleva.
+model Menu {
+  id          Int        @id @default(autoincrement())
+  inquilinoId Int        @map("inquilino_id")
+  inquilino   Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  fecha       DateTime   @db.Date
+  tipoComida  TipoComida @map("tipo_comida")
+  descripcion String?
+  creado      DateTime   @default(now()) @map("creado_en")
+  actualizado DateTime   @updatedAt @map("actualizado_en")
+
+  alimentos MenuAlimento[]
+
+  @@unique([inquilinoId, fecha, tipoComida])
+  @@index([inquilinoId, fecha])
+  @@map("menus")
+}
+
+model MenuAlimento {
+  id         Int      @id @default(autoincrement())
+  menuId     Int      @map("menu_id")
+  menu       Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  alimentoId Int      @map("alimento_id")
+  alimento   Alimento @relation(fields: [alimentoId], references: [id], onDelete: Cascade)
+
+  @@unique([menuId, alimentoId])
+  @@index([alimentoId])
+  @@map("menu_alimentos")
+}
+
+/// Quien reparte. El color sale en la etiqueta para separar los paquetes de un
+/// vistazo en la cocina.
+model Motorizado {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nombre      String
+  celular     String?
+  color       String?   @db.VarChar(7)
+  activo      Boolean   @default(true)
+  creado      DateTime  @default(now()) @map("creado_en")
+  actualizado DateTime  @updatedAt @map("actualizado_en")
+
+  clientes  Cliente[] @relation("Reparte")
+  clientes2 Cliente[] @relation("Reparte2")
+
+  @@unique([inquilinoId, nombre])
+  @@index([inquilinoId, activo])
+  @@map("motorizados")
+}
+
+/// Un feriado. Si `esLaborable`, el negocio decidió trabajar ese día y sí consume.
+model Feriado {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  fecha       DateTime  @db.Date
+  nombre      String
+  esLaborable Boolean   @default(false) @map("es_laborable")
+  creado      DateTime  @default(now()) @map("creado_en")
+
+  @@unique([inquilinoId, fecha])
+  @@map("feriados")
+}
+
+/// Lo que el negocio le dice al cliente: aprobado, rechazado, «necesitamos un
+/// dato más». Se ve en el portal y, si hay correo configurado, también llega ahí.
+model Mensaje {
+  id          Int         @id @default(autoincrement())
+  inquilinoId Int         @map("inquilino_id")
+  inquilino   Inquilino   @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  clienteId   Int         @map("cliente_id")
+  cliente     Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  texto       String
+  tipo        TipoMensaje @default(NOTIFICACION)
+  leido       Boolean     @default(false)
+  creado      DateTime    @default(now()) @map("creado_en")
+
+  @@index([clienteId, creado])
+  @@index([inquilinoId, creado])
+  @@map("mensajes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enumeraciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ADMIN: todo. COCINA: alimentos, menús, etiquetas y restricciones. DESPACHO:
+/// rutas y motorizados. Son OFICIOS, no una escalera (ver lib/permisos.ts).
+enum RolUsuario {
+  ADMIN
+  COCINA
+  DESPACHO
+
+  @@map("rol_usuario")
+}
+
+enum DiaSemana {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+
+  @@map("dia_semana")
+}
+
+enum TipoComida {
+  DESAYUNO
+  MEDIA_MANANA
+  ALMUERZO
+  MEDIA_TARDE
+  CENA
+
+  @@map("tipo_comida")
+}
+
+enum CategoriaAlimento {
+  PROTEINA
+  CARBOHIDRATO
+  VEGETAL
+  FRUTA
+  LACTEO
+  OTRO
+
+  @@map("categoria_alimento")
+}
+
+enum EstadoCliente {
+  PENDIENTE
+  ACTIVO
+  INACTIVO
+  RECHAZADO
+
+  @@map("estado_cliente")
+}
+
+enum EstadoServicio {
+  ACTIVO
+  SUSPENDIDO
+  VENCIDO
+
+  @@map("estado_servicio")
+}
+
+enum Autor {
+  CLIENTE
+  PERSONAL
+
+  @@map("autor")
+}
+
+enum TipoMensaje {
+  SOLICITUD_INFO
+  NOTIFICACION
+  APROBACION
+  RECHAZO
+
+  @@map("tipo_mensaje")
+}
+
+enum Genero {
+  MASCULINO
+  FEMENINO
+  OTRO
+
+  @@map("genero")
+}
+
+enum Actividad {
+  SEDENTARIO
+  LEVE
+  MODERADO
+  INTENSO
+
+  @@map("actividad")
+}
+
+enum EstadoInquilino {
+  PRUEBA
+  ACTIVO
+  SUSPENDIDO
+
+  @@map("estado_inquilino")
+}
+
+enum EstadoSuscripcion {
+  PRUEBA
+  ACTIVA
+  VENCIDA
+  CANCELADA
+
+  @@map("estado_suscripcion")
+}
+
+enum MetodoPago {
+  AUTOSERVICIO
+  TARJETA
+
+  @@map("metodo_pago")
+}
+
+enum EstadoPagoMensual {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+
+  @@map("estado_pago_mensual")
+}
+
+enum Tema {
+  CLARO
+  OSCURO
+
+  @@map("tema")
+}
