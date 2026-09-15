@@ -8231,3 +8231,204 @@ real, no leer el código.
    «Gestión de Pedidos» citada dentro), short recortado del guion, carrusel de 8 láminas con
    su hilo intro→desarrollo→cierre, y **una imagen de verdad** subida a Cloudinary
    (1.595.315 bytes — que es exactamente el peso que NO puede acabar en una fila).
+
+---
+
+# Objetivo (declarado 2026-09-15) — TERCER PRODUCTO: «Gestión de Catering», a partir del proyecto de Cristian (Fit Grill & Cook) · ✅ 100 % — CONSTRUIDO, VERIFICADO Y DESPLEGADO
+
+> Fernando: *«vamos a agregar un nuevo /producto en la aplicación usando el caso de este
+> proyecto de catering: /Users/lfgonzalezm0/Documents/02_Clientes/Cristian/Catering»*.
+> Camino **A** de la skill `/producto`: nace de un proyecto que ya existe → se porta la
+> INTERFAZ y se traduce el modelo; el armazón (inquilinos, planes, suscripciones, pagos,
+> usuarios, marca, operador GCC, escaparate, purga, topes) se copia de `productos/pedidos`.
+
+## Rol asumido
+Arquitecto de producto multi-inquilino (mismo rol que en reservas y pedidos): modelo de datos
+primero, aislamiento por `inquilino_id`, permisos por CAPACIDAD, y verificación medida.
+
+## Fuentes consultadas (2026-09-15)
+- `MEMORIA.md` cabecera + decisiones de productos (2026-08-23 → 2026-08-26).
+- Skill `/producto` (arquitectura canónica, orden de construcción, trampas 1–18).
+- `productos/pedidos/` entero: `schema.prisma` (463 líneas), `lib/{db,sesion,inquilino,marca,permisos,limites}.ts`, `package.json`, configs.
+- `Diseño.md` §Producto Reservas y §Producto Pedidos; `Aprendizaje.md` §pedidos (A1–A5).
+- **Proyecto de referencia** `…/Cristian/Catering` (Next 14 + Prisma 6 + NextAuth + shadcn, 49
+  commits, 23.002 líneas en `src/`): `schema.prisma` (320 líneas, 13 modelos), `types/index.ts`,
+  `lib/utils.ts` (aritmética de días), las 40 rutas de API (servicios, cancelar, renovar,
+  reactivar, vencimientos, etiquetas, rutas, menús, despacho, restricciones, clientes, aprobar,
+  dashboard, indicadores), `components/etiquetas/*`, `sidebar.tsx`, `lib/email.ts`,
+  `lib/generate-cliente-pdf.ts`.
+- **Base real de Railway (medido):** esquemas `gcc_world`, `reservas`, `pedidos`, `public` — el
+  nombre `catering` está libre. La base de Cristian vive en OTRO Postgres (`gondola.proxy`), no
+  hay choque. `gcc_world` tiene **199 tablas** (cifra de control). La ficha del marketplace del
+  producto **no existe** (solo `products` 2 y 3: Reservas y Pedidos, ambos 5 $/mes, talento
+  «Automatización de procesos», autor Fernando).
+
+## Lo que es el proyecto de referencia (para saber qué se porta)
+Negocio de **comida por suscripción a domicilio** (viandas): el cliente final se registra solo,
+el negocio lo aprueba, le vende un **servicio de N días** (p. ej. 20 almuerzos, L–V), cada día
+hábil se cocina el **menú** del día, se imprimen **etiquetas** por cliente (con sus restricciones
+de cocina y de despacho) y los **motorizados** reparten siguiendo una **hoja de ruta**. El cliente
+puede **cancelar un día** (antes de las 7:00, con tope del 20 % del plan) y la fecha de fin se
+**recalcula** saltando feriados y cancelaciones.
+
+**Pantallas del administrador (13):** Dashboard · Clientes (lista, pendientes, vencimientos,
+ficha con PDF) · Servicios (lista y detalle) · Alimentos · Menús · Etiquetas · Restricciones ·
+Rutas · Motorizados · Feriados · Reportes (indicadores, restricciones simples y compuestas).
+**Portal del cliente (4):** Mi servicio · Mi perfil · Mi dirección · Cancelaciones. Más
+registro público y acceso.
+
+**Reglas de negocio que se portan tal cual (medidas en el código):**
+- `diasConsumidos` y `fechaEstimadaFin` **NO se guardan: se calculan** en cada lectura desde
+  `fechaInicio + diasTotales + diasSemana − feriados no laborables − cancelaciones activas`
+  (commit `da0662e` «Eliminar dependencia del cron»). El estado VENCIDO/VENCERÁ también se deduce.
+- **Cancelación por día completo** (no por tipo de comida), solo antes de las **7:00** hora
+  Ecuador si es para hoy; nunca para días pasados; el administrador se salta la hora. Tope:
+  `floor(diasTotales × porcentajeCancelacion / 100)`. **Reactivar** = marcar la cancelación
+  `activa=false` (no se borra), con la misma regla horaria.
+- **Un solo servicio por cliente**; «renovar» reinicia el mismo servicio (nuevo total, consumidos
+  a 0, nueva fecha de inicio, estado RENOVADO) y solo se permite si está VENCIDO.
+- **Dos direcciones** por cliente con días de la semana para la segunda, y **dos motorizados**
+  (uno por dirección); el «motorizado efectivo» del día depende del día de la semana.
+- **Etiqueta (10×7 cm)**: banda del tipo de comida, nombre, restricciones de COCINA (solo las
+  que coinciden con los alimentos del menú de ESE día y ese tipo), restricciones de DESPACHO
+  (sin agua, sin fruta, sin cubiertos, envases propios), dirección efectiva y motorizado con su
+  color. Se agrupan por motorizado; un cliente cancelado ese día no sale.
+- **Restricciones de cocina** = alimentos del catálogo que el cliente no come, opcionalmente
+  acotadas a tipos de comida. Reporte «simples» (1 choque con el menú) vs «compuestas» (2+).
+- **Feriados**: tabla con `esLaborable`; carga automática de los de Ecuador (fijos + Carnaval /
+  Viernes Santo por Pascua). Un feriado no laborable no consume día.
+- **Correos** (Resend): bienvenida al aprobar y solicitud de información. Los de recordatorio y
+  cancelación existen pero no se llaman desde ninguna ruta (medido con grep).
+
+## Preguntas y respuestas
+### P1 — ¿Nace de un proyecto o de una idea? · ✅ Resuelta
+- **Respuesta:** de un proyecto; la ruta la dio Fernando. Camino A (fuente: usuario).
+
+### P2 — ¿De qué talento cuelga y existe la ficha? · ✅ Resuelta (supuesto razonable)
+- **Respuesta:** «Automatización de procesos», como los otros dos (único talento de la única
+  solución). La ficha NO existe: hay que crear `member_portfolio_items` (`item_type='product'`)
+  y `products` al final (fuente: base real, 2026-09-15).
+
+### P3 — ¿Qué esquema y qué cookie? · ✅ Resuelta
+- **Respuesta:** esquema `catering` (libre, medido); cookies `catering_sesion` / `catering_gcc`.
+
+### P4 — Nombre de cara al cliente y código (slug) · ✅ Resuelta (Fernando, 2026-09-15)
+- **Por qué importa:** es el primer tramo de las URLs y el título de la ficha; no se cambia
+  después sin romper enlaces.
+- **Respuesta:** «Gestión de Catering», código `catering` (eligió la propuesta).
+
+### P5 — ¿Los roles del personal son escalera u oficios? · ✅ Resuelta (Fernando, 2026-09-15)
+- **Por qué importa:** la skill lo exige ANTES de copiar el armazón (cambia `sesion.ts`,
+  `inquilino.ts` y todas las acciones). El original solo tiene ADMIN + CLIENTE.
+- **Respuesta:** oficios: **Administrador** (todo) · **Cocina** (alimentos, menús, etiquetas,
+  restricciones) · **Despacho** (rutas, motorizados) · y el **Cliente** del negocio, que es OTRA
+  clase de cuenta (portal), no un rol del personal (eligió la propuesta).
+
+### P6 — ¿A quién cuenta el tope de 100 cuentas del plan? · ✅ Resuelta (Fernando, 2026-09-15)
+- **Por qué importa:** aquí hay DOS poblaciones: el personal del negocio (pocos) y los
+  clientes finales que se registran solos (muchos). Con el tope sobre los clientes, un negocio
+  con 101 comensales no podría aprobar al siguiente.
+- **Respuesta:** el tope de cuentas se aplica al **personal**; los clientes sin límite (eligió la propuesta).
+
+### P7 — ¿Los tipos de comida son fijos o del negocio? · ✅ Resuelta (Fernando, 2026-09-15)
+- **Por qué importa:** el esquema original trae 5 (desayuno, media mañana, almuerzo, media
+  tarde, cena) pero la interfaz usa solo 3 (almuerzo, media tarde, cena) — está escrito a mano
+  en 20 sitios. Un producto se vende a negocios distintos.
+- **Respuesta:** el negocio elige en Configuración cuáles de los 5 ofrece; por defecto los 3
+  del original (eligió la propuesta).
+
+### P8 — ¿La hora límite de cancelación (7:00) y el % (20) son del negocio? · ✅ Resuelta (criterio de producto)
+- **Respuesta:** sí: `inquilinos.hora_limite_cancelacion` (defecto 7) y el % es por servicio
+  como en el original con defecto configurable. Un literal del proyecto de referencia es un
+  dato del inquilino (regla de la skill §4-A-2).
+
+### P9 — ¿Qué purga la retención de un mes? · ✅ Resuelta (regla de la skill §9-bis)
+- **Respuesta:** por cuándo TERMINÓ: menús con fecha anterior al corte, cancelaciones con
+  fecha anterior, mensajes anteriores, y servicios VENCIDOS cuya fecha estimada de fin es
+  anterior al corte. **Clientes, alimentos, motorizados y feriados NUNCA se purgan**: son
+  datos maestros, no histórico. Un servicio activo viejo sigue vivo.
+
+### P10 — ¿Correos? · ✅ Resuelta (criterio de producto)
+- **Respuesta:** Resend con el remitente del grupo y el nombre del negocio en el asunto/nombre;
+  si no hay `RESEND_API_KEY` se registra y no falla (el original tampoco falla). Se portan los
+  dos que el original usa de verdad (bienvenida y solicitud de información).
+
+### P11 — ¿Los datos «fitness» del cliente (altura, peso, actividad, redes)? · ✅ Resuelta (paridad)
+- **Respuesta:** se portan como campos opcionales del perfil: paridad de interfaz con el
+  original es el suelo de la v1.
+
+## Decisiones de diseño / arquitectura (firmes)
+- Armazón = copia de `productos/pedidos` (Next 15 · Prisma 7 + `pg` · `jose` · Tailwind v4 ·
+  Server Actions · runner de migraciones propio). Esquema `catering`.
+- **Tres clases de sesión, dos cookies:** `catering_gcc` (operador) y `catering_sesion`, cuya
+  carga lleva `tipo: 'personal' | 'cliente'`. El cliente final vive en `clientes` (con su propio
+  `email` + `password_hash`, único por inquilino), NO en `usuarios`: se registra solo, tiene
+  estado de aprobación y un perfil que el personal no tiene.
+- Todas las tablas de negocio con `inquilino_id`. Unicidades por inquilino (`[inquilinoId,
+  email]` en clientes, `[inquilinoId, nombre]` en alimentos, `[inquilinoId, fecha, tipoComida]`
+  en menús, `[inquilinoId, fecha]` en feriados).
+- **Fechas de calendario como `@db.Date`** (menús, feriados, cancelaciones, inicio de servicio):
+  el original guarda `DateTime` y tiene 4 utilidades distintas para esquivar la zona horaria.
+- La aritmética de días (`calcularDiasConsumidos`, `calcularFechaEstimadaFin`) se porta a
+  `lib/servicio.ts` trabajando con cadenas `AAAA-MM-DD` y la zona horaria del inquilino.
+
+## Plan de solución
+1. Cerrar P4–P7 con Fernando. 2. Esqueleto + `tsconfig` del padre. 3. `schema.prisma` →
+`001_inicial.sql` → aplicar → verificar (y `gcc_world` sigue en 199). 4. Tokens + `ui.tsx` +
+sesión/puerta/marca/permisos. 5. Semilla con negocio de demostración lleno (clientes, servicios,
+menús de la semana, motorizados, feriados del año). 6. Pantallas del personal (13) y del cliente
+(4) + registro. 7. Área `/gcc`. 8. Purga + topes + escaparate (migración 002). 9. Verificar
+(protocolo §8) contra el build de producción. 10. Railway + relanzar + ficha del marketplace +
+iconos. 11. Registrar y publicar.
+
+## Riesgos y cómo se mitigan
+- **Zona horaria** (el original tuvo 5 commits de arreglos de fechas): `@db.Date` + cadenas
+  `AAAA-MM-DD` + zona del inquilino en un solo módulo `lib/fechas.ts`.
+- **Tamaño** (23k líneas de referencia): se porta la interfaz, no el código; las pantallas
+  grandes del original (menús 1.368 líneas, ficha 1.251) se rehacen con el catálogo `ui.tsx`.
+- **Dos clases de cuenta en una cookie**: `exigirContexto()` distingue `tipo` y un cliente que
+  abre una ruta del personal se devuelve a **su** portal, no a un error.
+
+## Lo que este producto ENSEÑÓ (y no estaba en los otros dos)
+
+#### ⭐ A1 — UNA PURGA «POR FECHA» PUEDE ROMPER UNA ARITMÉTICA VIVA
+La primera versión borraba las cancelaciones anteriores al corte, como los menús. Pero una
+cancelación de un servicio **vigente** forma parte de su cálculo: corre la fecha de fin un día. Al
+borrarla, ese día pasaba a contar como servido y el cliente **perdía un día pagado** sin que nadie
+lo viera. Lo cazó la prueba de la purga, no el razonamiento. Ahora las cancelaciones **se van con
+su servicio** (en cascada) y nunca solas. **Regla:** antes de purgar una tabla por fecha, preguntar
+si alguna fila viva la sigue necesitando para calcular algo.
+
+#### 🪤 A2 — «PKILL NEXT START» NO MATA A NEXT
+Next renombra su proceso a `next-server`, así que `pkill -f "next start"` no encuentra nada, el
+servidor viejo sigue en el puerto, el `npm start` nuevo muere con EADDRINUSE en un log que nadie
+mira, y **las pruebas corren contra el build anterior**. Se notó porque el informe de la purga
+decía «cancelaciones: 1, servicios: 0», una combinación que el código nuevo no puede producir.
+**Se mata por puerto:** `kill $(lsof -ti :3012)`. Y tras un arreglo, la primera prueba que sigue
+fallando igual se sospecha del banco, no del código.
+
+#### 🪤 A3 — Y OTRA VEZ CASI SE LLEVA UN DATO DE LA DEMOSTRACIÓN
+La prueba ponía «demo» en escaparate para que la purga forzada no lo tocara… y lo devolvía
+**antes** de la segunda purga forzada (la de «repetir da cero»). Esa segunda pasada borró una
+cancelación de la semilla. Se restauró a mano exactamente igual (Gabriela, 2026-08-28, PERSONAL)
+y se retiró la fila de `purgas` que dejó. **La regla ya estaba escrita dos veces**; lo nuevo es la
+forma: *proteger un dato real para una operación y desprotegerlo antes de la última repetición*.
+Ahora la prueba lo devuelve después de la última.
+
+#### A4 — Tailwind v4: el CSS propio fuera de `@layer` pisa las utilidades
+`.campo { width:100% }` sin capa hacía que `w-44` no valiera. Está en `Diseño.md`; aplica a los
+otros dos productos.
+
+#### A5 — `innerText` devuelve el texto YA transformado por CSS
+Tres aserciones fallaron buscando «Entregas hoy» donde la página decía «ENTREGAS HOY» por un
+`uppercase`. Las aserciones sobre texto que lleva `uppercase`/`capitalize` van con `/i`.
+
+## Lo medido al cerrar
+- **Local, contra el build de producción y con navegador real:** 34 comprobaciones de flujo (los
+  tres oficios en su puesto y devueltos a él, el portal, cliente pendiente que no entra, registro
+  público que llega a la base, Excel `PK` de 12.345 bytes) + 25 de protocolo (aislamiento 200 ·
+  404 · vuelta al acceso en las dos clases de cuenta; puerta del pago 307 · 401 y también sobre el
+  portal; escaparate rebotando 4/4 escrituras por SQL y avisando en la franja; purga sin token 401,
+  fuera de hora no corre, forzada borra lo que terminó y **conserva la cancelación vieja del
+  servicio vigente**, repetida da cero, deja constancia; índice parcial de un servicio vigente por
+  cliente). **Demo idéntico antes y después, `gcc_world` con 199 tablas.**

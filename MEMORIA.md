@@ -275,6 +275,61 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🥗 TERCER PRODUCTO: «GESTIÓN DE CATERING», A PARTIR DEL PROYECTO DE CRISTIAN (2026-09-15).**
+  Fernando: *«vamos a agregar un nuevo /producto en la aplicación usando el caso de este proyecto
+  de catering»* (`…/02_Clientes/Cristian/Catering`, Fit Grill & Cook: comida por suscripción a
+  domicilio). Camino A de la skill `/producto`: se portó la interfaz, se tradujo el modelo y el
+  armazón se copió de `pedidos`. **Construido, verificado y desplegado el mismo día:**
+  **https://catering-production-8f59.up.railway.app** · `productos/catering/` · esquema `catering`
+  · servicio Railway `catering` (Root Directory y `watchPatterns` puestos por la API, relanzado
+  tras el primer build) · plan **Estándar, 5 $/mes** · ficha del marketplace creada (ítem 29,
+  producto 4, tres capturas reales, demo `admin / GccDemo2026`) · demo «Verde & Sano» en
+  **escaparate** · purga enchufada al `nightly-cron` (`CATERING_URL`, `CATERING_CRON_TOKEN`).
+  - **Lo que decidió Fernando (2026-09-15):** nombre y código `catering`; el personal son
+    **oficios** (Administrador · Cocina · Despacho); el tope de 100 cuentas cuenta **solo al
+    personal**, los clientes finales no tienen límite; **cada negocio elige qué comidas ofrece**
+    de las cinco (por defecto almuerzo, media tarde y cena).
+  - **⭐ LO NUEVO DE ESTE PRODUCTO: DOS CLASES DE CUENTA EN UNA PUERTA.** El cliente final se
+    registra solo (`/<negocio>/registro`), nace PENDIENTE, el negocio lo aprueba y entra a **su
+    portal** con su correo; el personal entra con su usuario. La misma pantalla de acceso los
+    distingue por el «@». Viven en tablas distintas (`clientes` con su contraseña, `usuarios`) y
+    `lib/inquilino.ts` tiene **dos puertas**: cada una devuelve al otro a su sitio, no a un error.
+  - **⭐ LOS DÍAS CONSUMIDOS Y LA FECHA DE FIN NO SE GUARDAN: SE CALCULAN** desde el inicio
+    saltando feriados no laborables y cancelaciones activas (`lib/servicios.ts`) — la lección del
+    proyecto de referencia, que necesitó un commit «Eliminar dependencia del cron». Lo único que se
+    escribe al leer es marcar VENCIDO lo que venció (`terminoEn`), por donde corta la purga.
+    **Renovar crea un servicio nuevo** y el anterior queda VENCIDO con su histórico (el original
+    renovaba «encima» y borraba lo consumido). La base garantiza **un solo servicio vigente por
+    cliente** con un índice parcial que Prisma no sabe escribir (va a mano en `001_inicial.sql`).
+  - **⭐ UN SOLO DÍA DE DESPACHO** (`lib/despacho.ts → calcularDia()`): quién recibe comida ese
+    día, con qué dirección (la 2 si ese día de la semana la usa), qué motorizado, qué comidas y qué
+    restricciones chocan con el menú. Panel, etiquetas, rutas, restricciones y reportes salen de
+    ahí: si el panel dice 34, hay 34 etiquetas. El original lo calculaba en cuatro rutas distintas.
+  - **Las fechas de calendario son `date`** y viajan como `AAAA-MM-DD` (`lib/fechas.ts`): el
+    original guardaba «el 8 de febrero» como instante y pagó cinco commits de zona horaria.
+  - **🪤 LA PURGA CASI ROMPE UNA ARITMÉTICA VIVA.** La primera versión borraba las cancelaciones
+    anteriores al corte «como los menús». Pero una cancelación vieja de un servicio **vigente**
+    corre su fecha de fin un día: borrarla le quitaba al cliente **un día pagado**. Lo cazó la
+    prueba de la purga. Ahora las cancelaciones se van **con su servicio**, nunca solas.
+  - **🪤 `pkill -f "next start"` NO MATA A NEXT** (el proceso se llama `next-server`): el servidor
+    viejo siguió en el puerto y **las pruebas corrieron contra el build anterior**; se notó porque
+    el informe de la purga daba una combinación imposible para el código nuevo. Se mata por puerto.
+  - **🪤 Y OTRA VEZ CASI SE LLEVA UN DATO DE LA DEMOSTRACIÓN:** la prueba desprotegía «demo» del
+    escaparate **antes** de la última purga forzada; se fue una cancelación de la semilla. Se
+    restauró exactamente igual y la prueba se corrigió. La regla ya estaba escrita; lo nuevo es la
+    forma del fallo.
+  - **🪤 `.campo` fuera de `@layer` pisaba las utilidades de Tailwind v4** (`w-44` no hacía nada).
+    Va en `@layer components`; reservas y pedidos siguen con la versión vieja (ver `Diseño.md`).
+  - **Medido:** local contra el build de producción con navegador real, **34 + 25**
+    comprobaciones (oficios en su puesto, portal, registro, aislamiento 200/404/acceso, puerta del
+    pago 307/401 también sobre el portal, escaparate 4/4 por SQL, purga con sus casos límite, Excel
+    `PK`); en **producción, con usuario y contraseña de verdad, las 34 otra vez**, la purga
+    respondiendo al token del cron y negándose por no ser fin de mes. Demo idéntico antes y
+    después; `gcc_world` con **199 tablas**. Detalle en `Aprendizaje.md` §2026-09-15.
+  - **⏳ Pendiente de Fernando:** la pasarela (como en los otros dos) y si quiere correo al cliente
+    (el código usa Resend si hay `RESEND_API_KEY` en el servicio; sin ella, el mensaje queda solo
+    en el portal). Y la **contraseña del operador GCC** de `/gcc/acceso` de este producto se
+    generó al sembrar y se le entregó en el chat una sola vez.
 - **🛒 PRODUCTOS: COMPRAR ES CONTRATAR (2026-08-26).** Cuarto y último origen de la pasarela.
   Los productos del grupo se venden por mensualidad, así que «comprar» **crea la suscripción
   y cobra su primer mes** — decisión de Fernando entre las dos opciones. Un pedido único

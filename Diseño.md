@@ -2791,6 +2791,53 @@ cuando alguien añade la aplicación a la pantalla de inicio del móvil — que 
 lo normal, porque el mesero trabaja con el teléfono en la mano.
 
 
+## Producto «Gestión de Catering» — el mismo lenguaje, con un PORTAL para el cliente final (2026-09-15)
+
+Hereda entero el sistema de reservas/pedidos (tokens, `ui.tsx`, marca por inquilino, iconos de
+pestaña con **una vianda** como glifo). Lo que aporta:
+
+### ⭐ DOS ARMAZONES CON LA MISMA MARCA
+`app/[negocio]/(app)/` es el del personal y `app/[negocio]/(portal)/` el del cliente final. Los dos
+usan `BarraLateral`/`BarraInferior` de `Navegacion.tsx`, que recibe `quien` (`personal` con su rol,
+o `cliente`) y arma el menú con la lista que toca: por capacidad para el personal, fija de cuatro
+para el cliente. La barra inferior del móvil importa aquí de verdad: el cliente cancela su
+almuerzo desde el teléfono a las 6 de la mañana.
+
+### 🪤 `.campo` FUERA DE CAPA GANABA A CUALQUIER UTILIDAD
+En Tailwind v4 una clase escrita fuera de `@layer` tiene más peso que las utilidades. `.campo`
+lleva `width:100%`, así que `w-44` sobre un `<Entrada>` **no hacía nada**: el selector de fecha de
+la barra de filtros salía a ancho completo (se vio en una captura, no en el build). Ahora `.campo`,
+`.tarjeta` y compañía viven en **`@layer components`** y `* { border-color }` en `@layer base`
+(si no, ese `*` sin capa pisaba el borde de `.campo:focus`). **Regla: el CSS propio que una
+utilidad deba poder ajustar va dentro de `@layer components`.** ⚠️ Reservas y pedidos siguen
+con la versión sin capa: allí `pl-8` del buscador y los `w-32` de configuración tampoco se
+aplican; es el mismo arreglo de dos líneas cuando se toquen.
+
+### Controles nuevos, todos reusables (`src/componentes/`)
+- **`Chips`** (`campos.tsx`) — fila de casillas-chip para elegir comidas o días de la semana; envía
+  `name` repetido y se lee con `FormData.getAll`. **`Casilla`**, **`Aviso`** (error/aviso/info),
+  **`Cifra`** (número grande con título) y **`Punto`** (el color identificador) van en el mismo archivo.
+- **`CalendarioServicio`** — un mes por bloque, cada día pintado según lo que es (servido ·
+  pendiente · cancelado · feriado · sin servicio) y **pulsable** donde procede. Lo usan la ficha del
+  personal y el portal con la misma leyenda (`LeyendaCalendario`).
+- **`Etiqueta`** — 10 × 7 cm, banda con el color de la comida (`COLOR_COMIDA`), nombre grande,
+  «SIN X» en rojo pleno para la cocina, despacho en naranja, dirección, motorizado con su punto.
+  Componente de servidor: no tiene estado y se imprime.
+- **`FiltroDia`** — la barra «qué día · qué comida · qué motorizado» de etiquetas, rutas y
+  restricciones. Una sola, con flechas de día anterior/siguiente.
+- **`CamposCliente`** (`FormularioCliente.tsx`) — los campos de la ficha del cliente UNA vez, con
+  `secciones` para que alta, edición y «Mi perfil»/«Mi dirección» enseñen las suyas;
+  `CamposOcultosDireccion` manda escondido lo que un formulario parcial no enseña, para que no
+  lo borre. **`CamposServicio`** y **`EditorRestricciones`** siguen el mismo principio.
+- **`BotonImprimir`** — `window.print()`; las páginas de etiquetas, rutas, restricciones y la
+  ficha imprimible usan utilidades `print:` (barra y cabecera con `print:hidden`, un motorizado
+  por hoja con `print:break-before-page`). El PDF lo hace el navegador: se ahorró la librería de
+  470 líneas del proyecto de referencia.
+
+### Fechas largas: `first-letter:uppercase`, no `capitalize`
+`fechaLarga()` da «martes, 15 de septiembre de 2026»; con `capitalize` salía «Martes, 15 De
+Septiembre De 2026». Se usa `first-letter:uppercase`.
+
 ## El raíl, el tema y la carga — la semana del 2026-08-28 al 31
 
 ### El RAÍL: el menú de módulos, oscuro en LOS DOS temas
