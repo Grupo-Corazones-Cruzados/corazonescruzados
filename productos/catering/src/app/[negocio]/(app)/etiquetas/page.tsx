@@ -8,7 +8,7 @@ import { ETIQUETA_COMIDA } from '@/lib/catalogo';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Etiqueta } from '@/componentes/Etiqueta';
 import { Tarjeta, EstadoVacio, Insignia } from '@/componentes/ui';
-import BotonImprimir from '@/componentes/BotonImprimir';
+import BotonPdf from '@/componentes/BotonPdf';
 import FiltroDia from '@/componentes/FiltroDia';
 import type { TipoComida } from '@/generated/prisma/enums';
 
@@ -42,6 +42,7 @@ export default async function PaginaEtiquetas({
   const entregas = d.entregas.filter((e) => (!comida || e.comidas.includes(comida)) && (!motorizadoId || e.motorizado?.id === motorizadoId));
   const grupos = porMotorizado(entregas);
   const total = entregas.reduce((a, e) => a + (comida ? 1 : e.comidas.length), 0);
+  const consulta = new URLSearchParams({ dia, ...(comida ? { comida } : {}), ...(motorizadoId ? { motorizado: String(motorizadoId) } : {}) }).toString();
   const sinMenu = inquilino.tiposComida.filter((t) => !d.menus.some((m) => m.tipoComida === t) && entregas.some((e) => e.comidas.includes(t)));
 
   return (
@@ -49,7 +50,7 @@ export default async function PaginaEtiquetas({
       <CabeceraPagina
         titulo="Etiquetas"
         descripcion={`${fechaLarga(dia)} · ${total} etiqueta${total === 1 ? '' : 's'}`}
-        acciones={<BotonImprimir texto="Imprimir etiquetas" />}
+        acciones={<BotonPdf href={`/${negocio}/api/pdf/etiquetas?${consulta}`} texto="Descargar etiquetas (PDF)" deshabilitado={!entregas.length} />}
       />
       <div className="space-y-4 p-4 sm:p-6 print:p-0">
         <div className="print:hidden">

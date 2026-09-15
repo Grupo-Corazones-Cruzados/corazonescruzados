@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  UserRound, Package, ShieldAlert, MessageSquare, Check, X, HelpCircle, KeyRound, Printer, Copy,
+  UserRound, Package, ShieldAlert, MessageSquare, Check, X, HelpCircle, KeyRound, FileDown, Copy,
   Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send, ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -105,9 +105,9 @@ export default function FichaCliente({
         onClick={() => arranca(async () => { const r = await restablecerClaveCliente(slug, cliente.id); if (!r.ok) { toast.error(r.error); return; } setClave(r.clave!); })}>
         Nueva contraseña
       </Boton>
-      <Link href={`/${slug}/clientes/${cliente.id}/ficha`} target="_blank">
-        <Boton variante="secundario" icono={Printer}>Imprimir ficha</Boton>
-      </Link>
+      <a href={`/${slug}/api/pdf/cliente/${cliente.id}`} download>
+        <Boton variante="secundario" icono={FileDown}>Ficha en PDF</Boton>
+      </a>
     </>
   );
 

@@ -5,7 +5,7 @@ import { esDia, fechaLarga, hoyEn } from '@/lib/fechas';
 import { ETIQUETA_COMIDA } from '@/lib/catalogo';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Tarjeta, EstadoVacio } from '@/componentes/ui';
-import BotonImprimir from '@/componentes/BotonImprimir';
+import BotonPdf from '@/componentes/BotonPdf';
 import FiltroDia from '@/componentes/FiltroDia';
 import type { TipoComida } from '@/generated/prisma/enums';
 
@@ -37,7 +37,7 @@ export default async function PaginaRutas({
 
   return (
     <>
-      <CabeceraPagina titulo="Hojas de ruta" descripcion={`${fechaLarga(dia)} · ${entregas.length} entrega${entregas.length === 1 ? '' : 's'} · ${grupos.filter((g) => g.motorizado).length} motorizado${grupos.filter((g) => g.motorizado).length === 1 ? '' : 's'}`} acciones={<BotonImprimir texto="Imprimir rutas" />} />
+      <CabeceraPagina titulo="Hojas de ruta" descripcion={`${fechaLarga(dia)} · ${entregas.length} entrega${entregas.length === 1 ? '' : 's'} · ${grupos.filter((g) => g.motorizado).length} motorizado${grupos.filter((g) => g.motorizado).length === 1 ? '' : 's'}`} acciones={<BotonPdf href={`/${negocio}/api/pdf/rutas?${new URLSearchParams({ dia, ...(comida ? { comida } : {}), ...(motorizadoId ? { motorizado: String(motorizadoId) } : {}) })}`} texto="Descargar rutas (PDF)" deshabilitado={!entregas.length} />} />
       <div className="space-y-4 p-4 sm:p-6 print:p-0">
         <div className="print:hidden">
           <FiltroDia base={`/${negocio}/rutas`} dia={dia} comidas={inquilino.tiposComida} comida={comida} motorizados={motorizados} motorizadoId={motorizadoId} />

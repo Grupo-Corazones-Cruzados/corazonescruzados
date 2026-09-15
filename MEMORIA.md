@@ -326,6 +326,13 @@ Stack estándar de la casa, con particularidades de este repo:
     `PK`); en **producción, con usuario y contraseña de verdad, las 34 otra vez**, la purga
     respondiendo al token del cron y negándose por no ser fin de mes. Demo idéntico antes y
     después; `gcc_world` con **199 tablas**. Detalle en `Aprendizaje.md` §2026-09-15.
+  - **📄 LOS PDF, NO LA IMPRESIÓN DE LA PÁGINA (2026-09-15, corrección de Fernando).** *«al usar
+    la función de imprimir no debe imprimir la página, sino crear un diseño descargable en pdf del
+    contenido»*, como en el proyecto de referencia (jsPDF en el navegador). Aquí se generan en el
+    servidor con PDFKit `standalone` (`src/lib/pdf.ts`): etiquetas, rutas, restricciones y ficha
+    del cliente, por `/<negocio>/api/pdf/…`, con los mismos filtros y la misma función de cálculo
+    que la pantalla. Verificado con sesión real: los cuatro responden `%PDF`, sin sesión 401, y
+    las 34 comprobaciones siguen en pie.
   - **⏳ Pendiente de Fernando:** la pasarela (como en los otros dos) y si quiere correo al cliente
     (el código usa Resend si hay `RESEND_API_KEY` en el servicio; sin ella, el mensaje queda solo
     en el portal). Y la **contraseña del operador GCC** de `/gcc/acceso` de este producto se

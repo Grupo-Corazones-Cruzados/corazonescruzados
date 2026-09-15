@@ -18,17 +18,25 @@ Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 | | |
 |---|---|
 | **Panel** | Entregas de hoy y de mañana por comida, cancelaciones, restricciones que chocan con el menú, lo que necesita atención |
-| **Clientes** | Se registran solos desde `/<negocio>/registro`, el negocio los aprueba (o pide más datos, o rechaza). Ficha con dos direcciones, motorizado por dirección, restricciones de cocina y de despacho, mensajes, ficha imprimible |
+| **Clientes** | Se registran solos desde `/<negocio>/registro`, el negocio los aprueba (o pide más datos, o rechaza). Ficha con dos direcciones, motorizado por dirección, restricciones de cocina y de despacho, mensajes, ficha en PDF |
 | **Servicios** | N días de comida en ciertas comidas y ciertos días de la semana. Consumidos y fecha de fin **calculados**, no guardados. Renovar crea uno nuevo; el anterior queda con su histórico |
 | **Cancelaciones** | Un día completo. El cliente, hasta la hora límite del negocio; el personal, sin hora. Tope por porcentaje. Reactivar no borra: marca |
 | **Menús** | Por día y comida, con los alimentos del catálogo. Mientras se arma, dice **quién no come eso** |
-| **Etiquetas** | 10 × 7 cm, una por cliente y comida, agrupadas por motorizado. Solo avisan las restricciones que chocan con el menú de ese día |
-| **Rutas** | Hoja por motorizado: dirección efectiva del día, comidas, particularidades, casilla de entregado |
-| **Restricciones** | Simples (una sustitución) y compuestas (dos o más), contra el menú del día; y todas por alimento |
+| **Etiquetas** | PDF descargable: 10 × 7 cm, una por cliente y comida, agrupadas por motorizado. Solo avisan las restricciones que chocan con el menú de ese día |
+| **Rutas** | PDF descargable, una hoja por motorizado: dirección efectiva del día, comidas, particularidades, casilla de entregado |
+| **Restricciones** | Simples (una sustitución) y compuestas (dos o más), contra el menú del día; y todas por alimento. También en PDF |
 | **Motorizados · Alimentos · Feriados** | Catálogos del negocio. Los feriados de Ecuador se cargan con un botón |
 | **Reportes** | Indicadores del periodo y **exportación a Excel** con cuatro hojas |
 | **Portal del cliente** | Mi servicio (calendario y mensajes) · Cancelaciones · Mi dirección · Mi perfil (lo que no como, contraseña) |
 | **Configuración** | Marca (nombre, logo, color, tema), operativa (comidas, días, hora límite, %, registro abierto), suscripción y contraseña |
+
+## Los PDF
+
+Nada se imprime «como página»: etiquetas, rutas, restricciones y la ficha del
+cliente se **descargan como PDF** con su diseño (`src/lib/pdf.ts`, PDFKit
+`standalone` —lleva las fuentes dentro, no lee archivos—), por
+`/<negocio>/api/pdf/{etiquetas,rutas,restricciones}` y `/api/pdf/cliente/<id>`,
+con los mismos filtros que la pantalla y la misma función de cálculo.
 
 ## Dos clases de cuenta, una puerta
 

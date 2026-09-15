@@ -8,7 +8,7 @@ import { puede } from '@/lib/permisos';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Tarjeta, EstadoVacio, Insignia } from '@/componentes/ui';
 import FiltroDia from '@/componentes/FiltroDia';
-import BotonImprimir from '@/componentes/BotonImprimir';
+import BotonPdf from '@/componentes/BotonPdf';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Restricciones' };
@@ -60,7 +60,7 @@ export default async function PaginaRestricciones({
 
   return (
     <>
-      <CabeceraPagina titulo="Restricciones" descripcion={`Quién no come qué, con el menú del ${fechaLarga(dia)}`} acciones={<BotonImprimir />} />
+      <CabeceraPagina titulo="Restricciones" descripcion={`Quién no come qué, con el menú del ${fechaLarga(dia)}`} acciones={<BotonPdf href={`/${negocio}/api/pdf/restricciones?dia=${dia}`} />} />
       <div className="space-y-4 p-4 sm:p-6 print:p-0">
         <div className="print:hidden"><FiltroDia base={`/${negocio}/restricciones`} dia={dia} /></div>
         {!d.menus.length && (

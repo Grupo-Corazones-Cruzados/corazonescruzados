@@ -2829,10 +2829,13 @@ aplican; es el mismo arreglo de dos líneas cuando se toquen.
   `secciones` para que alta, edición y «Mi perfil»/«Mi dirección» enseñen las suyas;
   `CamposOcultosDireccion` manda escondido lo que un formulario parcial no enseña, para que no
   lo borre. **`CamposServicio`** y **`EditorRestricciones`** siguen el mismo principio.
-- **`BotonImprimir`** — `window.print()`; las páginas de etiquetas, rutas, restricciones y la
-  ficha imprimible usan utilidades `print:` (barra y cabecera con `print:hidden`, un motorizado
-  por hoja con `print:break-before-page`). El PDF lo hace el navegador: se ahorró la librería de
-  470 líneas del proyecto de referencia.
+- **`BotonPdf`** — un enlace con `download` a `/api/pdf/…` (como el Excel de reportes). **No se
+  imprime «la página»: se descarga un PDF con su diseño** (Fernando, 2026-09-15: la primera
+  versión usaba `window.print()` y lo corrigió el mismo día). El diseño de cada documento vive en
+  `src/lib/pdf.ts` (PDFKit `standalone`): etiquetas 10 × 7 en 2 × 4 por A4 agrupadas por
+  motorizado, hoja de ruta por motorizado con casilla de «entregado», restricciones y ficha del
+  cliente en dos columnas. Misma cabecera (barra del color del negocio, nombre, título) y pie con
+  numeración. ⚠️ Helvetica estándar no tiene «☐» ni «→»: la casilla se dibuja y la flecha es «-».
 
 ### Fechas largas: `first-letter:uppercase`, no `capitalize`
 `fechaLarga()` da «martes, 15 de septiembre de 2026»; con `capitalize` salía «Martes, 15 De
