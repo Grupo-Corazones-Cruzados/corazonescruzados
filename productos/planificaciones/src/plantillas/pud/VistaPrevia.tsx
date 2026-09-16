@@ -189,7 +189,7 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
                         </p>
                         {d.imagenUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={d.imagenUrl} alt="" className="mt-1 h-9 w-9 rounded-full object-cover" />
+                          <img src={d.imagenUrl} alt="" className="mt-1 h-9 w-auto max-w-full object-contain" />
                         )}
                       </div>
                     ))}

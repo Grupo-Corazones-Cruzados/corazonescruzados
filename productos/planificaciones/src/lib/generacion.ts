@@ -4,6 +4,7 @@ import { buscarFragmentos } from '@/lib/adjuntos';
 import { plantillaDe } from '@/plantillas';
 import type { SalidaSemana } from '@/plantillas/pud/esquema';
 import { ETIQUETA_NIVEL } from '@/lib/catalogo';
+import { destrezasDe } from '@/lib/destrezas';
 import { aDia, aFechaSql, esDia, sumarDias } from '@/lib/fechas';
 
 /**
@@ -38,19 +39,9 @@ export async function generarSemana(semanaId: number): Promise<void> {
   const pl = semana.planificacion;
   const plantilla = plantillaDe(pl.plantilla);
 
-  // Las destrezas de esa materia y nivel: las comunes y las propias de la institución.
-  let destrezas = await prisma.destreza.findMany({
-    where: { nivel: pl.nivel, activa: true, OR: [{ inquilinoId: null }, { inquilinoId: pl.inquilinoId }], materia: { equals: pl.materia, mode: 'insensitive' } },
-    orderBy: { codigo: 'asc' },
-  });
-  // Si la materia no tiene destrezas cargadas, se ofrecen las del nivel: mejor
-  // una destreza cercana que ninguna.
-  if (!destrezas.length)
-    destrezas = await prisma.destreza.findMany({
-      where: { nivel: pl.nivel, activa: true, OR: [{ inquilinoId: null }, { inquilinoId: pl.inquilinoId }] },
-      orderBy: { codigo: 'asc' },
-      take: 120,
-    });
+  // Las destrezas de ESTA planificación (Fernando, 2026-09-16): el agente elige una
+  // de ellas según lo que dictó el docente. Si no hay ninguna, no elige ninguna.
+  const destrezas = await destrezasDe(pl.id);
 
   const anteriores = await prisma.planificacionSemanal.findMany({
     where: { planificacionId: pl.id, estado: 'LISTA', id: { not: semanaId } },
@@ -141,7 +132,8 @@ export async function generarSemana(semanaId: number): Promise<void> {
   const elegidas = [...new Set(s.destrezas.map((c) => c.trim().toUpperCase()))]
     .map((c) => porCodigo.get(c) ?? porCodigo.get(c.replace(/\.$/, '')) ?? porCodigo.get(`${c}.`))
     .filter((d): d is NonNullable<typeof d> => Boolean(d))
-    .slice(0, 3);
+    // UNA destreza por semana (Fernando, 2026-09-16).
+    .slice(0, 1);
 
   const fechaInicio = esDia(s.fechaInicio) ? s.fechaInicio : inicioPropuesto;
   let fechaFin = esDia(s.fechaFin) ? s.fechaFin : finPropuesto;

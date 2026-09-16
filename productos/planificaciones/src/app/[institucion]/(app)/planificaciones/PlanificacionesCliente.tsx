@@ -17,6 +17,9 @@ import {
   BookOpenText,
   CalendarDays,
   ChevronRight,
+  ListChecks,
+  Plus as PlusIcon,
+  ImageOff,
 } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Buscador, Tarjeta, Insignia, PanelLateral, Confirmar, EstadoVacio, type Tono } from '@/componentes/ui';
@@ -24,6 +27,7 @@ import { Aviso, Chips } from '@/componentes/campos';
 import { Dictado } from '@/componentes/Dictado';
 import { Adjuntos, type AdjuntoSubido } from '@/componentes/Adjuntos';
 import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana } from '@/acciones/planificaciones';
+import { crearDestreza, editarDestreza, eliminarDestreza } from '@/acciones/destrezas';
 import { parsearEstrategias, lineas } from '@/plantillas/pud/estrategias';
 import { NIVELES, ETIQUETA_NIVEL, ETIQUETA_ESTADO_SEMANA } from '@/lib/catalogo';
 import { diaDeMes, fechaCorta, sumarDias } from '@/lib/fechas';
@@ -110,7 +114,7 @@ export default function PlanificacionesCliente(p: Props) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [panel, setPanel] = useState<'nueva' | 'configurar' | 'semana' | 'editar' | null>(p.abrirNueva ? 'nueva' : null);
+  const [panel, setPanel] = useState<'nueva' | 'configurar' | 'semana' | 'editar' | 'destrezas' | null>(p.abrirNueva ? 'nueva' : null);
   const [borrarPl, setBorrarPl] = useState<PlanificacionVista | null>(null);
   const [borrarSem, setBorrarSem] = useState<SemanaVista | null>(null);
   const [busqueda, setBusqueda] = useState(p.q);
@@ -196,6 +200,10 @@ export default function PlanificacionesCliente(p: Props) {
                 </a>
               </>
             )}
+            {/* «Destrezas» (Fernando, 2026-09-16): el conjunto propio de la planificación del que el agente elige una por semana. */}
+            <Boton variante="secundario" icono={ListChecks} disabled={!actual} onClick={() => setPanel('destrezas')} title={!actual ? 'Elige una planificación' : 'Las destrezas con criterio de desempeño de esta planificación'}>
+              Destrezas{actual ? ` · ${p.destrezasCatalogo.length}` : ''}
+            </Boton>
             {/* «Configurar» solo con una planificación elegida (Fernando, 2026-09-15). */}
             <Boton variante="secundario" icono={Settings} disabled={!actual || !puedo} onClick={() => setPanel('configurar')} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas'}>
               Configurar
@@ -417,6 +425,11 @@ export default function PlanificacionesCliente(p: Props) {
         {semana && actual && <FormularioCampos slug={p.slug} semana={semana} catalogo={p.destrezasCatalogo} materia={actual.materia} error={error} enCurso={enCurso} alCancelar={cerrar} alEnviar={(d) => conResultado(() => editarSemana(p.slug, semana.id, d), 'Semana corregida')} />}
       </PanelLateral>
 
+      {/* ── Destrezas de la planificación ─────────────────────────────────── */}
+      <PanelLateral abierto={panel === 'destrezas' && !!actual} alCerrar={cerrar} titulo={`Destrezas · ${actual?.materia ?? ''}`} descripcion="Las destrezas con criterio de desempeño de esta planificación. El agente elige una por semana según lo que dictes." ancho="lg">
+        {actual && <PanelDestrezas slug={p.slug} planificacionId={actual.id} destrezas={p.destrezasCatalogo} puedo={puedo} />}
+      </PanelLateral>
+
       <Confirmar abierto={!!borrarPl} titulo="Eliminar la planificación" mensaje={`Se eliminará «${borrarPl?.materia} · Unidad ${borrarPl?.numeroUnidad}» con sus ${borrarPl?.semanas ?? 0} semana(s). No se puede deshacer.`} ocupado={enCurso} alCerrar={() => setBorrarPl(null)} alAceptar={() => borrarPl && conResultado(() => eliminarPlanificacion(p.slug, borrarPl.id), 'Planificación eliminada', () => { setBorrarPl(null); ir({ p: null, s: null }); })} />
       <Confirmar abierto={!!borrarSem} titulo="Eliminar la semana" mensaje={`Se eliminará la semana ${borrarSem?.orden ?? ''} y las siguientes se renumerarán. No se puede deshacer.`} ocupado={enCurso} alCerrar={() => setBorrarSem(null)} alAceptar={() => borrarSem && conResultado(() => eliminarSemana(p.slug, borrarSem.id), 'Semana eliminada', () => { setBorrarSem(null); ir({ s: null }); })} />
     </>
@@ -608,7 +621,7 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
             <li key={d.id} className="flex items-start gap-2.5">
               {d.imagenUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={d.imagenUrl} alt="" className="mt-0.5 h-8 w-8 shrink-0 rounded-full object-cover" />
+                <img src={d.imagenUrl} alt="" className="mt-0.5 h-8 w-auto max-w-[120px] shrink-0 object-contain" />
               ) : (
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acento-suave text-[10px] font-bold text-acento">{d.codigo.split('.')[0]}</span>
               )}
@@ -775,3 +788,144 @@ function FormularioCampos({ semana: s, catalogo, materia, error, enCurso, alCanc
   );
 }
 
+// ── Las destrezas de la planificación: lista + alta/edición ─────────────────
+
+function PanelDestrezas({ slug, planificacionId, destrezas, puedo }: { slug: string; planificacionId: number; destrezas: DestrezaVista[]; puedo: boolean }) {
+  const router = useRouter();
+  const [modo, setModo] = useState<'lista' | 'nueva' | DestrezaVista>('lista');
+  const [borrar, setBorrar] = useState<DestrezaVista | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
+  const [quitarImagen, setQuitarImagen] = useState(false);
+  const [enCurso, arranca] = useTransition();
+  const editando = modo !== 'lista' && modo !== 'nueva' ? modo : null;
+
+  const volver = () => {
+    setModo('lista');
+    setError(null);
+    setVista(null);
+    setQuitarImagen(false);
+  };
+  const enviar = (d: FormData) =>
+    arranca(async () => {
+      setError(null);
+      if (quitarImagen) d.set('quitarImagen', 'true');
+      const r = editando ? await editarDestreza(slug, editando.id, d) : await crearDestreza(slug, planificacionId, d);
+      if (!r.ok) return setError(r.error);
+      toast.success(editando ? 'Destreza guardada' : 'Destreza añadida');
+      volver();
+      router.refresh();
+    });
+
+  if (modo === 'lista')
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[12px] text-tenue">
+            {destrezas.length} destreza{destrezas.length === 1 ? '' : 's'}. La imagen de cada una sale en el formato junto a su código.
+          </p>
+          {puedo && (
+            <Boton tamano="sm" icono={PlusIcon} onClick={() => setModo('nueva')}>
+              Nueva destreza
+            </Boton>
+          )}
+        </div>
+        {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas todavía" detalle="Añade las destrezas con criterio de desempeño de esta materia: el agente elegirá una por semana." />}
+        <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
+          {destrezas.map((d) => (
+            <li key={d.id} className="flex items-start gap-3 px-3 py-2.5">
+              <div className="flex h-10 w-[84px] shrink-0 items-center justify-center rounded bg-realce">
+                {d.imagenUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={d.imagenUrl} alt="" className="h-9 w-auto max-w-[80px] object-contain" />
+                ) : (
+                  <ImageOff className="h-4 w-4 text-tenue" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1 text-[12px]">
+                <p className="font-semibold text-texto">{d.codigo}</p>
+                <p className="leading-relaxed text-tenue">{d.descripcion}</p>
+              </div>
+              {puedo && (
+                <div className="flex shrink-0 items-center gap-1">
+                  <BotonIcono icono={Pencil} titulo="Editar" onClick={() => setModo(d)} />
+                  <BotonIcono icono={Trash2} titulo="Quitar" className="text-error" onClick={() => setBorrar(d)} />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+        <Confirmar
+          abierto={!!borrar}
+          titulo="Quitar la destreza"
+          mensaje={`Se quitará «${borrar?.codigo}» de esta planificación. Si alguna semana ya la usaba, quedará sin destreza hasta que la corrijas.`}
+          textoAceptar="Quitar"
+          ocupado={enCurso}
+          alCerrar={() => setBorrar(null)}
+          alAceptar={() =>
+            arranca(async () => {
+              if (!borrar) return;
+              const r = await eliminarDestreza(slug, borrar.id);
+              if (!r.ok) return void toast.error(r.error);
+              toast.success('Destreza quitada');
+              setBorrar(null);
+              router.refresh();
+            })
+          }
+        />
+      </div>
+    );
+
+  const imagenActual = vista ?? (quitarImagen ? null : (editando?.imagenUrl ?? null));
+  return (
+    <form action={enviar} className="space-y-4">
+      <Campo etiqueta="Código" requerido>
+        <Entrada name="codigo" required defaultValue={editando?.codigo ?? ''} placeholder="CS.1.1.7." className="font-mono" autoFocus />
+      </Campo>
+      <Campo etiqueta="Descripción (la destreza con criterio de desempeño, tal como está en el currículo)" requerido>
+        <AreaTexto name="descripcion" rows={4} required defaultValue={editando?.descripcion ?? ''} />
+      </Campo>
+      <Campo etiqueta="Imagen o icono (PNG o JPG, hasta 300 KB; sale en el formato junto al código)">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex h-12 w-[110px] items-center justify-center rounded border border-borde bg-realce">
+            {imagenActual ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imagenActual} alt="" className="h-10 w-auto max-w-[104px] object-contain" />
+            ) : (
+              <ImageOff className="h-4 w-4 text-tenue" />
+            )}
+          </div>
+          <input
+            type="file"
+            name="imagen"
+            accept="image/png,image/jpeg"
+            className="text-[12px] text-tenue file:mr-2 file:rounded file:border file:border-borde file:bg-tarjeta file:px-2.5 file:py-1 file:text-[12px] file:font-semibold file:text-texto hover:file:bg-realce"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) return setVista(null);
+              setQuitarImagen(false);
+              const lector = new FileReader();
+              lector.onload = () => setVista(String(lector.result));
+              lector.readAsDataURL(f);
+            }}
+          />
+          {imagenActual && (
+            <Boton type="button" variante="fantasma" tamano="sm" onClick={() => { setVista(null); setQuitarImagen(true); }}>
+              Quitar imagen
+            </Boton>
+          )}
+        </div>
+        <Entrada name="imagenUrl" className="mt-2" placeholder="…o pega la dirección de una imagen" />
+      </Campo>
+      {error && <Aviso texto={error} />}
+      <div className="flex justify-end gap-2 border-t border-borde pt-4">
+        <Boton type="button" variante="secundario" onClick={volver} disabled={enCurso}>
+          Volver a la lista
+        </Boton>
+        <Boton type="submit" disabled={enCurso}>
+          {enCurso ? 'Guardando…' : editando ? 'Guardar' : 'Añadir destreza'}
+        </Boton>
+      </div>
+    </form>
+  );
+}

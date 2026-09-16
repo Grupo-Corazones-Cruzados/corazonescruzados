@@ -275,6 +275,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎯 LAS DESTREZAS SON DE CADA PLANIFICACIÓN Y EL AGENTE ELIGE UNA (2026-09-16).** Fernando:
+  *«cada planificación debe tener un conjunto de destrezas que el agente debe seleccionar […] y
+  elegir una de esas destrezas basándose en lo que indica el profesor por dictado […] como botón
+  a la izquierda del botón de configurar […] un panel lateral derecho con overlay con el listado
+  de destrezas, poder editarlas o un botón nueva destreza»*. `destrezas.planificacion_id`
+  (migración 004, con índices parciales de unicidad que Prisma no modela): al crear una
+  planificación se COPIAN las del catálogo de su materia y nivel (`lib/destrezas.ts`); el botón
+  «Destrezas · N» abre el panel con lista, alta y edición (código, descripción, imagen PNG/JPG
+  ≤ 300 KB como `data:` URL, o una dirección); el agente recibe solo las de la planificación y
+  elige **una** (prompt + `slice(0, 1)`); la imagen sale bajo el código en pantalla, PDF y Word,
+  con su proporción (las tiras de 2–3 iconos no se deforman).
+  - **Identidad y Autonomía cargada desde `Destrezas1.pdf`** (columna Preparatoria del PCA de la
+    docente): 10 destrezas, 8 con su tira de iconos, extraídas con `pdftohtml -xml` casando cada
+    imagen con el código por posición; van en `prisma/destrezas/preparatoria-identidad-y-autonomia.json`
+    (iconos incrustados, 102 KB) y ya están en el catálogo y en la planificación 7 de `/grupo`. La
+    demo también recibió sus 3 copias y sus semanas se remapearon a ellas.
+  - **🪤 Helvetica no tiene emojis:** las caritas 😀 😐 🙁 salían como «Ø=Þ» en el PDF. Ahora se
+    imprimen como «(feliz) (seria) (triste)»; en Word y en pantalla siguen siendo emojis.
+  - **Medido:** panel con los 10 iconos, alta con imagen subida (data URL), edición y borrado;
+    una generación real eligió exactamente CS.1.1.7. para «hábitos de higiene» y el PDF lleva la
+    imagen embebida. La planificación de prueba se borró por id.
 - **🛒 «ENTRAR A MI TENANT» DESDE EL MARKETPLACE (2026-09-16).** Fernando: *«en el marketplace en
   la sección de productos debería existir un botón para los usuarios que tienen acceso al producto,
   es decir que han pagado su suscripción hasta máximo 30 días de retraso de pago, para acceder a

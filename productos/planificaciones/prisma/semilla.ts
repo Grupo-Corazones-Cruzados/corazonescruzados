@@ -105,11 +105,17 @@ async function main() {
     for (const [i, nombre] of MATERIAS[nivel].entries())
       await prisma.materia.upsert({ where: { nivel_nombre: { nivel, nombre } }, update: { orden: i }, create: { nivel, nombre, ambito: nivel === 'PREPARATORIA' ? nombre : null, orden: i } });
 
-  // ── Destrezas de los ejemplos (catálogo común, Preparatoria).
-  const destrezas: { codigo: string; materia: string; descripcion: string }[] = JSON.parse(readFileSync(path.join(import.meta.dirname, 'destrezas-preparatoria.json'), 'utf8'));
-  for (const d of destrezas) {
-    const existe = await prisma.destreza.findFirst({ where: { nivel: 'PREPARATORIA', codigo: d.codigo, inquilinoId: null } });
-    if (!existe) await prisma.destreza.create({ data: { nivel: 'PREPARATORIA', codigo: d.codigo, materia: d.materia, descripcion: d.descripcion } });
+  // ── El catálogo común de destrezas (Preparatoria): `prisma/destrezas/*.json`.
+  //    Los archivos por materia (los que llegan del profesor, con sus iconos como
+  //    data URL) mandan sobre los de los ejemplos: se cargan después y pisan.
+  for (const archivo of ['preparatoria-ejemplos.json', 'preparatoria-identidad-y-autonomia.json']) {
+    const destrezas: { codigo: string; materia: string; descripcion: string; imagen?: string | null }[] = JSON.parse(readFileSync(path.join(import.meta.dirname, 'destrezas', archivo), 'utf8'));
+    for (const [i, d] of destrezas.entries()) {
+      const existe = await prisma.destreza.findFirst({ where: { nivel: 'PREPARATORIA', codigo: d.codigo, inquilinoId: null, planificacionId: null } });
+      const datos = { materia: d.materia, descripcion: d.descripcion, ...(d.imagen !== undefined ? { imagenUrl: d.imagen } : {}), orden: i };
+      if (existe) await prisma.destreza.update({ where: { id: existe.id }, data: datos });
+      else await prisma.destreza.create({ data: { nivel: 'PREPARATORIA', codigo: d.codigo, ...datos } });
+    }
   }
 
   // ── La institución de demostración.

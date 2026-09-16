@@ -52,7 +52,21 @@ type Item = Linea | Espacio | Imagen | Fase;
 const altoDe = (tamano: number) => tamano * 1.22;
 
 /** Parte un texto en líneas que caben en `ancho` con la fuente dada. Cada línea es atómica al paginar. */
+/**
+ * Helvetica estándar no tiene emojis ni nada fuera de Latin-1: las caritas de la
+ * docente (😀 😐 🙁) salían como «Ø=Þ». Se cambian por su palabra; lo demás que
+ * no exista en la fuente se quita en vez de salir como basura.
+ */
+function apto(texto: string) {
+  return texto
+    .replace(/😀|😃|😄|🙂|😊/g, '(feliz)')
+    .replace(/😐|😑/g, '(seria)')
+    .replace(/🙁|☹️|😞|😢/g, '(triste)')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '');
+}
+
 function partir(doc: Doc, texto: string, ancho: number, fuente: string, tamano: number, color = TEXTO, sangria = 0, enlace?: string): Linea[] {
+  texto = apto(texto);
   doc.font(fuente).fontSize(tamano);
   const util = ancho - sangria;
   const salida: Linea[] = [];
@@ -103,6 +117,8 @@ const cacheImagenes = new Map<string, string | null>();
 
 async function cargarImagen(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
+  // Los iconos de las destrezas van como `data:` URL (PNG/JPG): PDFKit los dibuja tal cual.
+  if (/^data:image\/(png|jpe?g);base64,/.test(url)) return url;
   if (cacheImagenes.has(url)) return cacheImagenes.get(url)!;
   let datos: string | null = null;
   try {
@@ -345,7 +361,8 @@ async function contenidoSemana(d: Dibujante, s: SemanaDoc, anchos: number[]): Pr
     const datos = await cargarImagen(dz.imagenUrl);
     if (datos) {
       col2.push(espacio(mm(1)));
-      col2.push({ tipo: 'imagen', datos, ancho: mm(9), alto: mm(9) });
+      // Tira de iconos: se ajusta a 9 mm de alto y al ancho de la casilla, sin deformar.
+      col2.push({ tipo: 'imagen', datos, ancho: w[2], alto: mm(9) });
     }
   }
 

@@ -72,9 +72,17 @@ la fecha de las firmas (la del día de la descarga) y el nombre del docente
 
 ## Las destrezas
 
-Tabla `destrezas` (código, descripción, imagen, nivel, materia). `inquilino_id`
-NULO = catálogo común. La semilla carga las 21 que aparecen en los diez ejemplos;
-el currículo completo, materia por materia, se carga en un paso posterior.
+**Son de cada planificación** (Fernando, 2026-09-16): al crearla se copian del catálogo
+las de su materia y nivel, y desde el botón **«Destrezas»** (a la izquierda de
+«Configurar») el docente las ve en un panel lateral, las edita, las quita o añade
+nuevas (código, descripción e **imagen o icono**, PNG/JPG hasta 300 KB, guardada como
+`data:` URL). El agente elige **una** por semana según lo que el docente dicta, y el
+formato enseña su imagen bajo el código, en la vista previa, el PDF y el Word.
+
+El catálogo (`destrezas` sin `planificacion_id`) vive en `prisma/destrezas/*.json`:
+las 21 de los diez ejemplos y las 10 de **Identidad y Autonomía** con sus iconos,
+extraídas del PCA de la docente (`Destrezas1.pdf`, columna Preparatoria). Las demás
+materias se cargan igual, archivo por archivo.
 
 ## Poner en marcha
 
@@ -126,7 +134,7 @@ suscripción (Fernando, 2026-09-16).
 
 ## Lo que falta
 
-- **Cargar las destrezas del currículo por materia** (Fernando lo dejó para el paso siguiente).
+- **Cargar las destrezas de las demás materias** (un `prisma/destrezas/*.json` por materia, con sus iconos).
 - **La configuración del formato de cada cliente real** en `src/plantillas/instituciones.ts`
   (logos, red educativa, ejes, registro) cuando llegue el primero.
 - **Pasarela de pago**: hoy el cobro es por autoservicio desde `/gcc`.

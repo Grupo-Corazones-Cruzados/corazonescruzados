@@ -35,7 +35,7 @@ export const ESQUEMA_SEMANA = {
       tema: { type: 'string', description: 'Tema o contenidos de la semana. Si son dos contenidos, sepáralos con un salto de línea.' },
       numeroPeriodos: { type: 'string', description: 'Número de periodos, como lo escribe la docente: «5 horas», «1 hora».' },
       objetivosTema: { type: 'string', description: 'Objetivo(s) del tema con la estructura fija. Si hay dos, sepáralos con una línea en blanco.' },
-      destrezas: lista('Códigos EXACTOS de las destrezas elegidas de la lista dada, en orden de importancia. Una o dos.'),
+      destrezas: lista('El código EXACTO de UNA destreza elegida de la lista dada (un solo elemento). Vacío solo si la lista estaba vacía.'),
       estrategias: {
         type: 'object',
         additionalProperties: false,

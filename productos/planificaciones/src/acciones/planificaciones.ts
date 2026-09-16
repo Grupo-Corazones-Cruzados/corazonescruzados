@@ -11,6 +11,7 @@ import { NIVELES } from '@/lib/catalogo';
 import { MAX_ADJUNTOS } from '@/lib/adjuntos';
 import { generarEnSegundoPlano } from '@/lib/generacion';
 import { PLANTILLAS } from '@/plantillas';
+import { copiarDestrezasDelCatalogo } from '@/lib/destrezas';
 
 export type Resultado = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -61,6 +62,9 @@ export async function crearPlanificacion(slug: string, datos: FormData): Promise
       elaboradoPor: docente ? [docente.profesion, docente.nombre].filter(Boolean).join(' ') : null,
     },
   });
+  // Sus destrezas nacen copiadas del catálogo de la materia y el nivel: desde ahí
+  // el docente las edita sin tocar las de nadie más.
+  await copiarDestrezasDelCatalogo({ planificacionId: fila.id, inquilinoId: ctx.inquilino.id, nivel: fila.nivel, materia: fila.materia });
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id: fila.id };
 }
@@ -258,9 +262,7 @@ export async function editarSemana(slug: string, id: number, datos: FormData): P
   if (d.fechaFin < d.fechaInicio) return { ok: false, error: 'El fin de la semana no puede ser antes del inicio.' };
 
   // Solo destrezas del nivel y que la institución pueda usar.
-  const validas = d.destrezas.length
-    ? await prisma.destreza.findMany({ where: { id: { in: d.destrezas }, nivel: s.planificacion.nivel, OR: [{ inquilinoId: null }, { inquilinoId: ctx.inquilino.id }] }, select: { id: true } })
-    : [];
+  const validas = d.destrezas.length ? await prisma.destreza.findMany({ where: { id: { in: d.destrezas }, planificacionId: s.planificacionId }, select: { id: true } }) : [];
   const orden = new Map(d.destrezas.map((x, i) => [x, i]));
 
   await prisma.$transaction([

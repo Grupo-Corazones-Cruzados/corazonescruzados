@@ -132,6 +132,9 @@ const hueco = (mmv = 2.5) => new Paragraph({ spacing: { before: 0, after: TW(mmv
 const cacheImagenes = new Map<string, { datos: Buffer; tipo: 'png' | 'jpg' } | null>();
 async function cargarImagen(url: string | null | undefined) {
   if (!url) return null;
+  // Los iconos de las destrezas van como `data:` URL: se decodifican aquí mismo.
+  const dataUrl = url.match(/^data:image\/(png|jpe?g);base64,(.+)$/);
+  if (dataUrl) return { datos: Buffer.from(dataUrl[2], 'base64'), tipo: (dataUrl[1] === 'png' ? 'png' : 'jpg') as 'png' | 'jpg' };
   if (cacheImagenes.has(url)) return cacheImagenes.get(url)!;
   let r: { datos: Buffer; tipo: 'png' | 'jpg' } | null = null;
   try {
@@ -148,8 +151,30 @@ async function cargarImagen(url: string | null | undefined) {
   return r;
 }
 
-const imagen = (d: { datos: Buffer; tipo: 'png' | 'jpg' }, px: number) =>
-  new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ type: d.tipo, data: d.datos, transformation: { width: px, height: px } })] });
+/** Ancho y alto de un PNG (IHDR) o JPG (SOF), para no deformar las tiras de iconos. */
+function medidas(d: { datos: Buffer; tipo: 'png' | 'jpg' }): { w: number; h: number } | null {
+  const b = d.datos;
+  if (d.tipo === 'png' && b.length > 24 && b.toString('ascii', 12, 16) === 'IHDR') return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+  if (d.tipo === 'jpg') {
+    let i = 2;
+    while (i + 9 < b.length) {
+      if (b[i] !== 0xff) return null;
+      const marcador = b[i + 1];
+      const largo = b.readUInt16BE(i + 2);
+      if (marcador >= 0xc0 && marcador <= 0xcf && marcador !== 0xc4 && marcador !== 0xc8 && marcador !== 0xcc) return { h: b.readUInt16BE(i + 5), w: b.readUInt16BE(i + 7) };
+      i += 2 + largo;
+    }
+  }
+  return null;
+}
+
+/** La imagen a `altoPx` de alto, con su proporción (una tira de tres iconos es tres veces más ancha). */
+const imagen = (d: { datos: Buffer; tipo: 'png' | 'jpg' }, altoPx: number, anchoMaxPx = 120) => {
+  const m = medidas(d);
+  const w = m ? Math.min(anchoMaxPx, Math.round((altoPx * m.w) / m.h)) : altoPx;
+  const h = m ? Math.round((w * m.h) / m.w) : altoPx;
+  return new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ type: d.tipo, data: d.datos, transformation: { width: w, height: h } })] });
+};
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
 

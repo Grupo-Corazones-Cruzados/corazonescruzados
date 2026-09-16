@@ -25,7 +25,7 @@ Una PLANIFICACIÓN SEMANAL: una fila del Plan de Unidad Didáctica (PUD). Devuel
 
 4. objetivosTema. Estructura FIJA: «[Verbo en infinitivo] [contenido] mediante/a través de [los medios que de verdad usa la semana] para [finalidad formativa]». Ejemplo real: «Reconocer las características propias mediante la elaboración de un autorretrato, el estampado de huellas y el diálogo guiado, para identificarse como un ser único, valioso y diferente de los demás.» Si hay dos contenidos, dos objetivos separados por una línea en blanco.
 
-5. destrezas. Los CÓDIGOS EXACTOS de una o dos destrezas con criterio de desempeño ELEGIDAS DE LA LISTA QUE SE TE DA en el encargo. No inventes ni un código ni una destreza: si ninguna encaja del todo, elige la más cercana. Toda la semana debe responder a la destreza elegida.
+5. destrezas. EL CÓDIGO EXACTO DE UNA SOLA destreza con criterio de desempeño, ELEGIDA DE LA LISTA QUE SE TE DA en el encargo (son las destrezas de esta planificación). La eliges según lo que el docente dictó: la que mejor responde al tema y a las actividades que pidió. No inventes ni un código ni una destreza: si ninguna encaja del todo, elige la más cercana; si la lista está vacía, devuelve la lista vacía. Toda la semana debe responder a la destreza elegida.
 
 6. estrategias. Tres listas, una por fase del ciclo ACC. Cada elemento de la lista es UNA actividad: un párrafo que empieza con un verbo en infinitivo y describe una acción observable del estudiante con su medio concreto. Reglas:
    - Activación: 2 a 4 actividades. Suele abrir con canción, cuento, emoción del día u objetos/imágenes del entorno, y una actividad de preguntas generadoras.
@@ -130,9 +130,9 @@ Es la SEMANA ${d.numeroSemana} de la unidad.${d.semanaPropuesta ? ` Semana propu
 
   partes.push(
     d.destrezas.length
-      ? `DESTREZAS CON CRITERIO DE DESEMPEÑO DISPONIBLES (elige una o dos por su código exacto)\n` +
+      ? `DESTREZAS CON CRITERIO DE DESEMPEÑO DE ESTA PLANIFICACIÓN (elige UNA por su código exacto, la que mejor responda a lo que dictó el docente)\n` +
           d.destrezas.map((x) => `- ${x.codigo} ${x.descripcion}`).join('\n')
-      : `DESTREZAS DISPONIBLES: ninguna cargada para esta materia y nivel. Devuelve la lista de destrezas VACÍA; no inventes códigos.`,
+      : `DESTREZAS DE ESTA PLANIFICACIÓN: ninguna todavía. Devuelve la lista de destrezas VACÍA; no inventes códigos.`,
   );
 
   if (d.adjuntos.length) {

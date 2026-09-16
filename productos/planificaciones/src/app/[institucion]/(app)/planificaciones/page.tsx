@@ -5,6 +5,7 @@ import { cargarDocumento } from '@/lib/documento';
 import { listaDePlantillas } from '@/plantillas';
 import { VistaPrevia } from '@/plantillas/pud/VistaPrevia';
 import { aDia } from '@/lib/fechas';
+import { destrezasDe } from '@/lib/destrezas';
 import PlanificacionesCliente, { type PlanificacionVista, type SemanaVista, type DestrezaVista } from './PlanificacionesCliente';
 
 export const dynamic = 'force-dynamic';
@@ -118,10 +119,9 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
       generadaEn: s.generadaEn?.toISOString() ?? null,
     }));
 
-    const cat = await prisma.destreza.findMany({
-      where: { nivel: actual.nivel, activa: true, OR: [{ inquilinoId: null }, { inquilinoId: inquilino.id }] },
-      orderBy: [{ materia: 'asc' }, { codigo: 'asc' }],
-    });
+    // Las destrezas de ESTA planificación (Fernando, 2026-09-16): las que el agente
+    // puede elegir y las que se editan desde el botón «Destrezas».
+    const cat = await destrezasDe(actual.id);
     destrezasCatalogo = cat.map((d) => ({ id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, materia: d.materia }));
 
     if (b.vista === 'previa') {

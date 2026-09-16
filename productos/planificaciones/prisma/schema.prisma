@@ -216,31 +216,41 @@ model Materia {
 }
 
 /// Una destreza con criterio de desempeño del currículo, con su código, su
-/// descripción y su imagen. El agente ELIGE de aquí (no inventa): cada semana
-/// referencia las suyas por `PlanificacionDestreza`, y el formato enseña la
-/// imagen de cada una.
+/// descripción y su imagen (o tira de iconos). El agente ELIGE de aquí (no
+/// inventa) y el formato enseña la imagen de la elegida.
 ///
-/// `inquilinoId` NULO = catálogo común (el currículo nacional, que se cargará
-/// materia por materia en un paso posterior). Con inquilino, es una destreza
-/// propia de esa institución.
+/// LAS DESTREZAS SON DE CADA PLANIFICACIÓN (Fernando, 2026-09-16): `planificacionId`
+/// dice de cuál. Al crear una planificación se COPIAN las del catálogo de su materia
+/// y nivel, y desde el botón «Destrezas» el docente las edita, quita o añade sin
+/// tocar las de nadie más. Las filas sin `planificacionId` son el catálogo: común
+/// (`inquilinoId` NULO, el currículo nacional) o propio de una institución.
+///
+/// `imagenUrl` admite una dirección o un `data:` URL (los iconos pesan 2–5 KB y
+/// así no dependen de un almacén de imágenes).
 model Destreza {
-  id          Int        @id @default(autoincrement())
-  inquilinoId Int?       @map("inquilino_id")
-  inquilino   Inquilino? @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
-  nivel       Nivel
+  id              Int            @id @default(autoincrement())
+  inquilinoId     Int?           @map("inquilino_id")
+  inquilino       Inquilino?     @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planificacionId Int?           @map("planificacion_id")
+  planificacion   Planificacion? @relation(fields: [planificacionId], references: [id], onDelete: Cascade)
+  nivel           Nivel
   /// Nombre de la materia tal como está en `materias` (texto, no clave: el catálogo
   /// de destrezas se carga por archivos y así no depende de un id).
-  materia     String     @db.VarChar(120)
-  codigo      String     @db.VarChar(40)
-  descripcion String
-  imagenUrl   String?    @map("imagen_url")
-  activa      Boolean    @default(true)
-  creado      DateTime   @default(now()) @map("creado_en")
+  materia         String         @db.VarChar(120)
+  codigo          String         @db.VarChar(40)
+  descripcion     String
+  imagenUrl       String?        @map("imagen_url")
+  activa          Boolean        @default(true)
+  orden           Int            @default(0)
+  creado          DateTime       @default(now()) @map("creado_en")
 
   semanas PlanificacionDestreza[]
 
-  @@unique([nivel, codigo, inquilinoId])
+  // La unicidad va en índices PARCIALES escritos a mano en la migración (Prisma no
+  // los modela): (planificacion_id, codigo) en las de una planificación y
+  // (nivel, codigo) en el catálogo común.
   @@index([nivel, materia])
+  @@index([planificacionId, orden])
   @@map("destrezas")
 }
 
@@ -294,7 +304,8 @@ model Planificacion {
   creado      DateTime @default(now()) @map("creado_en")
   actualizado DateTime @updatedAt @map("actualizado_en")
 
-  semanas PlanificacionSemanal[]
+  semanas   PlanificacionSemanal[]
+  destrezas Destreza[]
 
   @@index([inquilinoId, usuarioId])
   @@index([inquilinoId, creado])
