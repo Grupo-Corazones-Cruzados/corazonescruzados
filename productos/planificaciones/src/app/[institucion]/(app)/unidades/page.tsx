@@ -22,6 +22,7 @@ export default async function PaginaUnidades({ params, searchParams }: { params:
   const vista: GradoVista[] = grados.map((g) => ({
     id: g.id,
     nombre: g.nombre,
+    color: g.color,
     materias: g.materias.map((m) => ({
       id: m.id,
       nombre: m.nombre,

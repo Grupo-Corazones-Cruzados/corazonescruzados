@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { X, Search, Loader2, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PALETA_GRADOS, TEXTO_SOBRE_GRADO } from '@/lib/grados-color';
 
 /**
  * CATÁLOGO DE CONTROLES — una sola definición por control.
@@ -507,3 +508,36 @@ export function Tabla<T>({
     </div>
   );
 }
+
+/**
+ * LA ETIQUETA DE UN GRADO: una píldora con el relleno del grado (`grados.color`,
+ * al azar al crearlo) y texto oscuro. Va DEBAJO de la materia en los controles
+ * de selección para que el grado se distinga de la materia de un vistazo
+ * (Fernando, 2026-09-16). `pequena` para las celdas del horario.
+ */
+export function EtiquetaGrado({ nombre, color, pequena, className }: { nombre: string; color: string; pequena?: boolean; className?: string }) {
+  return (
+    <span
+      className={cn('inline-block max-w-full truncate rounded-full font-semibold leading-tight', pequena ? 'px-1.5 py-px text-[10px]' : 'px-2 py-0.5 text-[11px]', className)}
+      style={{ backgroundColor: color, color: TEXTO_SOBRE_GRADO }}
+      title={nombre}
+    >
+      {nombre}
+    </span>
+  );
+}
+
+/** Los doce rellenos de la paleta para elegir el color de un grado (casillas de radio). */
+export function PaletaGrado({ name, valor }: { name: string; valor: string }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {PALETA_GRADOS.map((c) => (
+        <label key={c} className="cursor-pointer" title={c}>
+          <input type="radio" name={name} value={c} defaultChecked={c === valor} className="peer sr-only" />
+          <span className="block h-6 w-6 rounded-full border-2 border-transparent ring-borde peer-checked:border-texto peer-focus-visible:ring-2" style={{ backgroundColor: c }} />
+        </label>
+      ))}
+    </div>
+  );
+}
+

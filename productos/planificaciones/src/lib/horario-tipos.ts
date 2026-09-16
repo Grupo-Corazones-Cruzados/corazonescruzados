@@ -10,7 +10,7 @@ export const etiquetaHora = (h: number) => `${String(h).padStart(2, '0')}:00 –
 /** «Sin clase» en el Excel y en las celdas. */
 export const SIN_CLASE = 'Sin clase';
 
-export type OpcionMateria = { id: number; etiqueta: string; materia: string; grado: string };
+export type OpcionMateria = { id: number; etiqueta: string; materia: string; grado: string; color: string };
 
 /** «Materia — Grado», que es como se ve en el horario y en el Excel. */
 export const etiquetaMateria = (m: { nombre: string; grado: { nombre: string } }) => `${m.nombre} — ${m.grado.nombre}`;

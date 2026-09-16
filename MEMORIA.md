@@ -275,6 +275,13 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 CADA GRADO TIENE UN COLOR DE RELLENO AL AZAR (2026-09-16).** Fernando: en las opciones
+  del horario, el grado debajo de la materia como píldora con relleno, con un color aleatorio
+  asignado al crear el grado, «para distinguir mejor el grado de la materia». `grados.color`
+  (migración 008; los grados que ya existían recibieron uno según su id), paleta de 12 rellenos
+  claros con texto oscuro (`lib/grados-color.ts`), al crear se evita repetir color mientras queden
+  libres y al renombrar se puede cambiar. `EtiquetaGrado` en popover, celdas, chips y Unidades.
+  Probado con un grado de prueba (mismo color en Unidades, popover y celda) y borrado por id.
 - **🗓️ EL NÚMERO DE PERIODOS SALE DEL HORARIO DEL DOCENTE, NO DEL AGENTE (2026-09-16).**
   Fernando: *«el número de periodos no lo debe deducir el agente […] ese campo es realmente la
   cantidad de horas que tiene ese profesor para la materia asignada del grado en su horario de

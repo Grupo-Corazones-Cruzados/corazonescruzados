@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia } from '@/componentes/ui';
+import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria } from '@/acciones/unidades';
 import { cn } from '@/lib/utils';
 
 export type DocenteVista = { id: number; nombre: string; rol: string };
 export type MateriaVista = { id: number; nombre: string; descripcion: string | null; unidades: number | null; docentes: { id: number; nombre: string }[]; planificaciones: number };
-export type GradoVista = { id: number; nombre: string; materias: MateriaVista[] };
+export type GradoVista = { id: number; nombre: string; color: string; materias: MateriaVista[] };
 
 /**
  * EL MÓDULO «UNIDADES» (Fernando, 2026-09-16): a la izquierda los grados; en el
@@ -73,7 +73,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
               const sel = grado?.id === g.id;
               return (
                 <button key={g.id} onClick={() => ir(g.id, null)} className={cn('mb-1 flex w-full items-center gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave border-l-2 border-acento' : 'border-l-2 border-transparent hover:bg-realce')}>
-                  <GraduationCap className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />
+                  <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: g.color }} aria-hidden />
                   <span className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>{g.nombre}</span>
                   <span className="text-[11px] text-tenue">{g.materias.length}</span>
                   <ChevronRight className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />
@@ -128,7 +128,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-4 py-3">
                 <div className="min-w-0">
                   <h2 className="truncate text-[15px] font-semibold text-texto">{materia.nombre}</h2>
-                  <p className="text-[11px] text-tenue">{grado?.nombre}</p>
+                  {grado && <EtiquetaGrado nombre={grado.nombre} color={grado.color} />}
                 </div>
                 {!soloLectura && (
                   <div className="flex items-center gap-1">
@@ -182,6 +182,12 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
           <Campo etiqueta="Nombre del grado" requerido>
             <Entrada name="nombre" required autoFocus defaultValue={panel === 'renombrar' ? grado?.nombre : ''} placeholder="Primer grado" />
           </Campo>
+          {/* Al crearlo el color sale al azar; al renombrar se puede cambiar. */}
+          {panel === 'renombrar' && grado && (
+            <Campo etiqueta="Color del grado">
+              <PaletaGrado name="color" valor={grado.color} />
+            </Campo>
+          )}
           {error && <Aviso texto={error} />}
           <div className="flex justify-end gap-2">
             <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>

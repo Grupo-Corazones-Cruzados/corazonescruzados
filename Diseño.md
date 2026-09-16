@@ -2877,6 +2877,19 @@ edición inline»: una rejilla de 40 celdas con una sola elección cada una no c
 lateral. **Exportar / Importar Excel** son dos botones secundarios en la cabecera de la tarjeta;
 el `input[type=file]` va escondido.
 
+### `EtiquetaGrado` y `PaletaGrado`: el grado con su relleno, debajo de la materia (2026-09-16)
+Fernando: en las opciones del horario el grado tenía que verse «con un relleno de color y con
+salto de línea o debajo de cada materia», con un color al azar por grado. `grados.color` (hex de
+una paleta de 12 rellenos claros, `lib/grados-color.ts`) se asigna al crearlo evitando los que ya
+usan otros grados y se puede cambiar al renombrar (`PaletaGrado`, radios `sr-only` con casilla
+redonda `peer-checked:border-texto`). `EtiquetaGrado` (`ui.tsx`) es una píldora `rounded-full
+font-semibold` con `backgroundColor` del grado y texto **siempre oscuro** (`#1F2937`, la paleta es
+clara y así vale en los dos temas); `pequena` (10 px) para las celdas del horario. Va en: la opción
+del popover (materia en su línea, píldora debajo), la celda del horario, los chips «Horas por
+materia» y la cabecera de la materia en Unidades; en la lista de grados, un punto de 14 px con el
+mismo color. El `<select>` nativo de «Nueva planificación» no admite relleno: ahí sigue «Materia —
+Grado».
+
 ### El módulo «Unidades»: tres columnas maestro → detalle → detalle
 `unidades/UnidadesCliente.tsx`: grados (lista, 260 px) · materias del grado elegido · ficha de la
 materia (descripción, docentes asignados con casillas, unidades). Grado en `Ventanita` (un campo);

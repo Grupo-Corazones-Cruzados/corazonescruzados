@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { FileDown, FileUp, X } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Campo, Entrada, Tarjeta } from '@/componentes/ui';
+import { Boton, Campo, Entrada, Tarjeta, EtiquetaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { guardarPerfil } from '@/acciones/perfil';
 import { guardarCeldaHorario, importarHorario } from '@/acciones/horario';
@@ -173,7 +173,7 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                             {m ? (
                               <>
                                 <span className="block truncate font-semibold">{m.materia}</span>
-                                <span className="block truncate text-[11px] opacity-80">{m.grado}</span>
+                                <EtiquetaGrado nombre={m.grado} color={m.color} pequena />
                               </>
                             ) : c ? (
                               <span className="italic">{SIN_CLASE}</span>
@@ -194,7 +194,8 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                               <div className="desplaza max-h-56 overflow-y-auto">
                                 {materias.map((op) => (
                                   <button key={op.id} type="button" onClick={() => poner(d, h, op.id)} className={cn('block w-full rounded px-2 py-1.5 text-left text-[12px] hover:bg-realce', c?.materiaGradoId === op.id && 'bg-acento-suave text-acento font-semibold')}>
-                                    {op.etiqueta}
+                                    <span className="block">{op.materia}</span>
+                                    <EtiquetaGrado nombre={op.grado} color={op.color} className="mt-0.5" />
                                   </button>
                                 ))}
                                 <button type="button" onClick={() => poner(d, h, 'sin-clase')} className={cn('block w-full rounded px-2 py-1.5 text-left text-[12px] italic hover:bg-realce', c && c.materiaGradoId === null && 'bg-realce font-semibold')}>
@@ -220,8 +221,9 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Horas por materia (los periodos de su planificación semanal)</p>
                 <ul className="flex flex-wrap gap-1.5">
                   {materias.map((m) => (
-                    <li key={m.id} className={cn('rounded-full border px-2.5 py-0.5 text-[12px]', horasPor.get(m.id) ? 'border-acento bg-acento-suave text-acento' : 'border-borde text-tenue')}>
-                      {m.etiqueta} · {horasPor.get(m.id) ?? 0} h
+                    <li key={m.id} className={cn('flex items-center gap-1.5 rounded-full border py-0.5 pl-2.5 pr-1 text-[12px]', horasPor.get(m.id) ? 'border-acento bg-acento-suave text-acento' : 'border-borde text-tenue')}>
+                      {m.materia} · {horasPor.get(m.id) ?? 0} h
+                      <EtiquetaGrado nombre={m.grado} color={m.color} pequena />
                     </li>
                   ))}
                 </ul>

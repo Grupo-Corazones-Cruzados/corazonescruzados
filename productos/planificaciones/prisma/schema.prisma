@@ -284,6 +284,8 @@ model Grado {
   inquilinoId Int       @map("inquilino_id")
   inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
   nombre      String    @db.VarChar(120)
+  /// Relleno con el que se distingue el grado en los controles de selección; al azar al crearlo.
+  color       String    @default("#C4B5FD") @db.VarChar(7)
   orden       Int       @default(0)
   creado      DateTime  @default(now()) @map("creado_en")
 
