@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
 import type { Bloque, Celda, DocumentoPud, SemanaDoc } from '../tipos';
 import { parsearEstrategias, lineas } from './estrategias';
-import { celdaSemana } from './documento';
+import { celdaSemana, COLORES_FORMATO } from './documento';
 
 /**
  * EL PDF DEL PLAN DE UNIDAD DIDÁCTICA, dibujado con PDFKit (`standalone`, que
@@ -26,17 +26,15 @@ const MM = 72 / 25.4;
 const mm = (n: number) => n * MM;
 const MARGEN = mm(10);
 
-const TEXTO = '#1a1a1a';
-const GRIS_ETIQUETA = '#c8c8c8';
-const GRIS_CABECERA = '#bfbfbf';
-const BORDE = '#7a7a7a';
-const AZUL_FASE = '#1f4e9c';
+// Los colores son los del formato original, medidos sobre los PDF de ejemplo
+// (ver COLORES_FORMATO en documento.ts). Nunca los del tema del inquilino.
+const TEXTO = COLORES_FORMATO.texto;
+const GRIS_ETIQUETA = COLORES_FORMATO.etiqueta;
+const GRIS_CABECERA = COLORES_FORMATO.cabeceraTabla;
+const BORDE = COLORES_FORMATO.borde;
+const AZUL_FASE = COLORES_FORMATO.fase;
 const BLANCO = '#ffffff';
-const DUA = [
-  { letra: 'I', color: '#7ac043' },
-  { letra: 'R', color: '#6f3fa8' },
-  { letra: 'A', color: '#1ba1e2' },
-];
+const DUA = COLORES_FORMATO.dua;
 
 const NEGRITA = 'Helvetica-Bold';
 const NORMAL = 'Helvetica';
@@ -245,7 +243,7 @@ async function cabecera(d: Dibujante, doc: DocumentoPud) {
   lineasCab.forEach((l, i) => {
     const grande = l.estilo === 'grande';
     pdf
-      .fillColor(l.estilo === 'acento' ? doc.colorCabecera : '#5a5a5a')
+      .fillColor(l.estilo === 'acento' ? COLORES_FORMATO.acentoCabecera : COLORES_FORMATO.gris)
       .font(grande ? NEGRITA : NORMAL)
       .fontSize(altos[i])
       .text(l.texto, d.x0 + wLogos, cy, { width: wCentro, align: 'center', lineBreak: false });
@@ -254,7 +252,7 @@ async function cabecera(d: Dibujante, doc: DocumentoPud) {
 
   // Año lectivo
   const ax = d.x0 + wLogos + wCentro;
-  pdf.rect(ax, y, wAnio, mm(6)).fill(GRIS_CABECERA);
+  pdf.rect(ax, y, wAnio, mm(6)).fill(GRIS_ETIQUETA);
   pdf.fillColor(TEXTO).font(NEGRITA).fontSize(9).text('Año Lectivo', ax, y + mm(1.6), { width: wAnio, align: 'center', lineBreak: false });
   pdf.font(NORMAL).fontSize(9).text(inst.anioLectivo, ax, y + mm(9.5), { width: wAnio, align: 'center', lineBreak: false });
 

@@ -8577,3 +8577,14 @@ Una aserción buscaba el uso de tokens dentro de un `<details>` cerrado. Se comp
 - **Limpieza:** las dos planificaciones de prueba y el adjunto suelto borrados por identificador;
   el inquilino y el plan de prueba borrados; quedan 1 institución, 1 plan, 3 cuentas, 1
   planificación, 2 semanas, 21 destrezas, 31 materias. **`gcc_world` con 199 tablas.**
+
+## Correcciones de Fernando del 2026-09-16
+- **Los colores del formato son los del original, no los del tema.** Se midieron con `pdftoppm`
+  + conteo de píxeles sobre los PDF (rojo `#EF1230`, `#BFBFBF`, `#D9D9D9`, `#808080`, `#002060`,
+  DUA `#92D050/#7030A0/#00B0F0`) y quedaron en `COLORES_FORMATO`; `armarDocumento` ya no recibe
+  el acento del inquilino. Verificado en la vista previa (`rgb(239, 18, 48)`), el PDF y el Word.
+- **Descarga en Word** (`pud/word.ts`, `docx` 9.7): mismo modelo, ruta `/api/word/<id>` (200,
+  `PK`, 401 sin sesión). Se comprobó **abriéndolo con Microsoft Word por AppleScript y
+  exportándolo a PDF**: 4 páginas, cabecera de tabla repetida, filas partidas entre páginas.
+  Lección: `TextRun` con `children: [PageNumber.CURRENT, …]` para el pie; las casillas I·R·A son
+  una tabla pequeña dentro de la celda.

@@ -13,11 +13,31 @@ import { lineas } from './estrategias';
  * los periodos de cada semana; la fecha de las firmas es la del día de la
  * descarga; el docente sale del perfil del usuario.
  */
+/**
+ * LOS COLORES DEL FORMATO SON LOS DEL ORIGINAL, NO LOS DEL TEMA (Fernando, 2026-09-16:
+ * «los colores del formato deben ser iguales a los que te pasé en los casos de
+ * ejemplo y no pueden ser los del tema del tenant»). Medidos sobre los PDF:
+ */
+export const COLORES_FORMATO: { barra: string; etiqueta: string; cabeceraTabla: string; borde: string; texto: string; gris: string; acentoCabecera: string; fase: string; dua: { letra: string; color: string }[] } = {
+  barra: '#EF1230',
+  etiqueta: '#BFBFBF',
+  cabeceraTabla: '#D9D9D9',
+  borde: '#808080',
+  texto: '#000000',
+  gris: '#404040',
+  acentoCabecera: '#C00000',
+  fase: '#002060',
+  dua: [
+    { letra: 'I', color: '#92D050' },
+    { letra: 'R', color: '#7030A0' },
+    { letra: 'A', color: '#00B0F0' },
+  ],
+};
+
 export function armarDocumento(p: {
   planificacion: PlanificacionDoc;
   semanas: SemanaDoc[];
   institucion: InstitucionConfig;
-  colorAcento: string;
   zonaHoraria: string;
 }): DocumentoPud {
   const { planificacion: pl, institucion: inst } = p;
@@ -125,7 +145,7 @@ export function armarDocumento(p: {
   };
 
   return {
-    colorCabecera: inst.colorCabecera ?? p.colorAcento,
+    colorCabecera: inst.colorCabecera ?? COLORES_FORMATO.barra,
     institucion: inst,
     tituloDocumento: inst.tituloDocumento,
     datosInformativos,

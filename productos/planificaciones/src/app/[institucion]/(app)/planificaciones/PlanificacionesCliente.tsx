@@ -7,6 +7,7 @@ import {
   Plus,
   Settings,
   FileDown,
+  FileType,
   Sparkles,
   RefreshCw,
   Pencil,
@@ -182,11 +183,18 @@ export default function PlanificacionesCliente(p: Props) {
         acciones={
           <>
             {actual && (
-              <a href={`/${p.slug}/api/pdf/${actual.id}`} download>
-                <Boton variante="secundario" icono={FileDown}>
-                  Descargar PDF
-                </Boton>
-              </a>
+              <>
+                <a href={`/${p.slug}/api/word/${actual.id}`} download>
+                  <Boton variante="secundario" icono={FileType}>
+                    Word
+                  </Boton>
+                </a>
+                <a href={`/${p.slug}/api/pdf/${actual.id}`} download>
+                  <Boton variante="secundario" icono={FileDown}>
+                    PDF
+                  </Boton>
+                </a>
+              </>
             )}
             {/* «Configurar» solo con una planificación elegida (Fernando, 2026-09-15). */}
             <Boton variante="secundario" icono={Settings} disabled={!actual || !puedo} onClick={() => setPanel('configurar')} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas'}>

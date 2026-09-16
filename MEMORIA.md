@@ -335,6 +335,17 @@ Stack estándar de la casa, con particularidades de este repo:
     de Next corre en Railway) y el PDF de 4 páginas. La planificación de prueba se borró por id;
     «demo» quedó en **escaparate**; **ficha del marketplace** creada (ítem 30, producto 5, cuatro
     capturas reales, demo `helen / GccDemo2026`, 10,00 /mes) y visible en el catálogo público.
+  - **🎨 LOS COLORES DEL FORMATO SON LOS DEL ORIGINAL, NO LOS DEL TEMA (2026-09-16, corrección
+    de Fernando):** *«los colores del formato deben ser iguales a los que te pasé en los casos de
+    ejemplo y no pueden ser los del tema del tenant»*. Se midieron sobre los PDF (rojo `#EF1230`,
+    etiquetas `#BFBFBF`, cabecera de tabla `#D9D9D9`, bordes `#808080`, texto de fase `#002060`,
+    DUA `#92D050 / #7030A0 / #00B0F0`) y viven en `COLORES_FORMATO` (`pud/documento.ts`); la
+    vista previa, el PDF y el Word los toman de ahí. La marca del inquilino se queda en la
+    aplicación; el documento es de la institución.
+  - **📝 DESCARGA EN WORD además de PDF (2026-09-16, Fernando):** `pud/word.ts` con la librería
+    `docx`, sobre el MISMO modelo; ruta `/api/word/<id>`. La fila de una semana es una fila de
+    tabla de verdad: Word la parte entre páginas solo y repite la cabecera. Verificado abriéndolo
+    con Microsoft Word y convirtiéndolo a PDF (4 páginas, iguales al PDF propio).
   - **⏳ Pendiente de Fernando:** el **paso siguiente que él anunció** (cargar las destrezas del
     currículo por materia desde archivos); si quiere **retención** (hoy sin límite) y **pasarela**;
     el **talento** del que cuelga (se publicó bajo «Automatización de procesos», como los otros

@@ -3,6 +3,7 @@ import { armarDocumento } from './pud/documento';
 import { armarSistema, armarEncargo, type DatosEncargo } from './pud/sistema';
 import { ESQUEMA_SEMANA, type SalidaSemana } from './pud/esquema';
 import { pdfPud } from './pud/pdf';
+import { wordPud } from './pud/word';
 import { serializarEstrategias } from './pud/estrategias';
 
 /**
@@ -27,8 +28,9 @@ export type Plantilla = {
     tecnica: string;
     instrumento: string;
   };
-  documento: (p: { planificacion: PlanificacionDoc; semanas: SemanaDoc[]; institucion: InstitucionConfig; colorAcento: string; zonaHoraria: string }) => DocumentoPud;
+  documento: (p: { planificacion: PlanificacionDoc; semanas: SemanaDoc[]; institucion: InstitucionConfig; zonaHoraria: string }) => DocumentoPud;
   pdf: (doc: DocumentoPud) => Promise<Buffer>;
+  word: (doc: DocumentoPud) => Promise<Buffer>;
 };
 
 const PUD: Plantilla = {
@@ -49,6 +51,7 @@ const PUD: Plantilla = {
   }),
   documento: armarDocumento,
   pdf: pdfPud,
+  word: wordPud,
 };
 
 export const PLANTILLAS: Record<string, Plantilla> = { pud: PUD };

@@ -2860,12 +2860,14 @@ refresco. Las filas de lista son botones con el mismo estado activo que el rail
 
 ### ⭐ UN DOCUMENTO DE PAPEL DENTRO DE LA APLICACIÓN
 `plantillas/pud/VistaPrevia.tsx` dibuja el formato del PUD **como papel**: hoja blanca de 1120 px
-con sombra sobre `bg-realce`, tipografía Helvetica/Arial de 10 px, barras de sección con el
-**color de la institución** (`colorCabecera`, por defecto el acento del inquilino: así el violeta
-del grupo llega al documento de la demo), etiquetas en gris `#c8c8c8`, bordes `#7a7a7a`. **Sus
-colores son literales y no tokens a propósito**: es lo que se imprime, no la interfaz, y no debe
-cambiar con el tema oscuro. El PDF (`pud/pdf.ts`, PDFKit) dibuja el mismo modelo
-(`pud/documento.ts`) con la misma paleta.
+con sombra sobre `bg-realce`, tipografía Helvetica/Arial de 10 px. **Sus colores son los del
+formato ORIGINAL de la docente, medidos sobre los PDF, y nunca los del tema del inquilino**
+(Fernando, 2026-09-16): barras rojas `#EF1230`, etiquetas `#BFBFBF`, cabecera de la tabla
+`#D9D9D9`, bordes `#808080`, título de fase `#002060`, casillas DUA `#92D050 / #7030A0 /
+#00B0F0`. Viven en `COLORES_FORMATO` (`pud/documento.ts`) y son literales a propósito: es lo que
+se imprime, no la interfaz, y no cambia con el tema oscuro. El PDF (`pud/pdf.ts`) y el Word
+(`pud/word.ts`) dibujan el mismo modelo con la misma paleta. Los dos botones de descarga van
+juntos, secundarios: «Word» (`FileType`) y «PDF» (`FileDown`).
 
 ### Controles nuevos, todos reusables (`src/componentes/`)
 - **`Dictado`** — el botón del micrófono: `Mic` en reposo (secundario), **rojo pleno** (`bg-error`)

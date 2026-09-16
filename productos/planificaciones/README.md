@@ -21,7 +21,7 @@ Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 | | |
 |---|---|
 | **Inicio** | Cuántas planificaciones hay, quién las ha hecho y de qué materia; el tope de la semana siempre a la vista |
-| **Planificaciones** | Todo el módulo en una página: a la izquierda las planificaciones (las mías o las de todos), en el medio las semanas de la elegida, a la derecha los campos generados o la **vista previa** del formato entero. «Configurar» solo con una elegida. **Descargar PDF** |
+| **Planificaciones** | Todo el módulo en una página: a la izquierda las planificaciones (las mías o las de todos), en el medio las semanas de la elegida, a la derecha los campos generados o la **vista previa** del formato entero. «Configurar» solo con una elegida. **Descargar en Word o en PDF** |
 | **Nueva planificación** | Materia, ámbito, nivel (Preparatoria · Primaria · Secundaria), n.º y título de unidad, inicio y fin del PUD. Nace con la plantilla por defecto de la institución |
 | **Nueva planificación semanal** | Botón **Dictar** (micrófono → texto en el cuadro), cuadro de indicaciones y hasta **5 adjuntos** (PDF, Word, texto) que se convierten en embeddings al subirlos. El agente redacta en segundo plano; la pantalla se actualiza sola |
 | **Los diez campos** | Fecha inicio, fecha fin, tema, n.º de periodos, objetivos del tema, destrezas con criterio de desempeño (elegidas de la tabla, con su imagen), estrategias metodológicas (tres fases del ciclo ACC), recursos, técnica, instrumento. Se pueden **corregir** a mano y **regenerar** |
@@ -57,8 +57,11 @@ redactar. La primera es **`pud`**:
 - `pud/sistema.ts` — el system prompt: perfil + reglas campo por campo + un ejemplo
   real; y el encargo por corrida (unidad, semanas anteriores, destrezas, adjuntos,
   indicaciones). **Ni el docente ni el cliente lo ven.**
-- `pud/documento.ts` — el modelo del documento (qué va en cada casilla). Lo dibujan
-  `pud/pdf.ts` (PDFKit) y `pud/VistaPrevia.tsx` (pantalla), así los dos dicen lo mismo.
+- `pud/documento.ts` — el modelo del documento (qué va en cada casilla) y **los colores del
+  formato**, medidos sobre los PDF originales (rojo `#EF1230`, etiquetas `#BFBFBF`, cabecera
+  de tabla `#D9D9D9`, bordes `#808080`, fase `#002060`, DUA verde/morado/celeste). **Nunca los
+  del tema del inquilino** (Fernando, 2026-09-16). Lo dibujan `pud/pdf.ts` (PDFKit),
+  `pud/word.ts` (docx) y `pud/VistaPrevia.tsx` (pantalla), así los tres dicen lo mismo.
 - `instituciones.ts` — **la configuración por institución, a nivel de código**:
   cabecera, año lectivo, logos, ejes transversales, competencias, inserciones,
   bibliografía, registro del formato. Se añade una entrada por `slug`.

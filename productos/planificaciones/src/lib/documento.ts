@@ -9,7 +9,7 @@ import { aDia } from '@/lib/fechas';
  * De la base al modelo del documento. Lo usan la vista previa y el PDF con la
  * misma llamada, así que dicen lo mismo.
  */
-export async function cargarDocumento(inquilino: { id: number; slug: string; nombre: string; colorAcento: string; zonaHoraria: string }, planificacionId: number): Promise<{ doc: DocumentoPud; nombreArchivo: string; plantilla: ReturnType<typeof plantillaDe> } | null> {
+export async function cargarDocumento(inquilino: { id: number; slug: string; nombre: string; zonaHoraria: string }, planificacionId: number): Promise<{ doc: DocumentoPud; nombreArchivo: string; plantilla: ReturnType<typeof plantillaDe> } | null> {
   const pl = await prisma.planificacion.findFirst({
     where: { id: planificacionId, inquilinoId: inquilino.id },
     include: {
@@ -58,10 +58,9 @@ export async function cargarDocumento(inquilino: { id: number; slug: string; nom
     },
     semanas,
     institucion: institucionDe(inquilino.slug, inquilino.nombre),
-    colorAcento: inquilino.colorAcento,
     zonaHoraria: inquilino.zonaHoraria,
   });
 
   const limpio = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
-  return { doc, plantilla, nombreArchivo: `pud-${limpio(pl.materia)}-unidad-${pl.numeroUnidad}.pdf` };
+  return { doc, plantilla, nombreArchivo: `pud-${limpio(pl.materia)}-unidad-${pl.numeroUnidad}` };
 }

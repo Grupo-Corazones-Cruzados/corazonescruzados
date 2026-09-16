@@ -81,7 +81,7 @@ export type InstitucionConfig = {
   /** Logos (direcciones de imagen PNG/JPG). El primero es el de la institución. */
   logos: string[];
   tituloDocumento: string;
-  /** Color de las barras de sección. Sin él, se usa el color de marca del inquilino. */
+  /** Color de las barras de sección. Por defecto el rojo del formato original (#EF1230): NUNCA el del tema del inquilino (Fernando, 2026-09-16). */
   colorCabecera?: string;
   /** Sección de ejes transversales (pastoral, valores…), si la institución la lleva. */
   ejesTransversales?: { titulo: string; filas: { eje: string; actividades: string[] }[] };

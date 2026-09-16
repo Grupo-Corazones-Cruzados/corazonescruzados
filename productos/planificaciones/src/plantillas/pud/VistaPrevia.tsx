@@ -1,6 +1,6 @@
 import type { Bloque, Celda, DocumentoPud } from '../tipos';
 import { parsearEstrategias, lineas } from './estrategias';
-import { celdaSemana } from './documento';
+import { celdaSemana, COLORES_FORMATO } from './documento';
 
 /**
  * LA VISTA PREVIA DEL PUD EN PANTALLA. Dibuja el mismo modelo que el PDF
@@ -9,11 +9,9 @@ import { celdaSemana } from './documento';
  * clara con sus colores propios, no con los tokens del tema de la aplicación).
  */
 
-const DUA = [
-  { letra: 'I', color: '#7ac043' },
-  { letra: 'R', color: '#6f3fa8' },
-  { letra: 'A', color: '#1ba1e2' },
-];
+// Los colores son los del formato original (COLORES_FORMATO), nunca los del tema.
+const DUA = COLORES_FORMATO.dua;
+const C = COLORES_FORMATO;
 
 const esEnlace = (t: string) => /^https?:\/\/\S+$/.test(t.trim());
 
@@ -37,11 +35,11 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
                 key={j}
                 style={{
                   width: anchos && anchos.length === fila.length ? `${anchos[j]}%` : undefined,
-                  background: c.etiqueta ? '#c8c8c8' : undefined,
+                  background: c.etiqueta ? C.etiqueta : undefined,
                   minHeight: minAlto,
                   height: minAlto,
                 }}
-                className={`border border-[#7a7a7a] px-1.5 py-1 align-top whitespace-pre-line ${c.etiqueta ? 'font-bold' : ''} ${c.centrado ? 'text-center' : ''}`}
+                className={`border border-[#808080] px-1.5 py-1 align-top whitespace-pre-line ${c.etiqueta ? 'font-bold' : ''} ${c.centrado ? 'text-center' : ''}`}
               >
                 {c.vinetas ? (
                   <ul className="list-disc pl-4">
@@ -73,7 +71,7 @@ function BloqueVista({ b, color }: { b: Bloque; color: string }) {
 function Fase({ titulo }: { titulo: string }) {
   return (
     <div className="mt-2 mb-1.5 flex items-stretch">
-      <span className="border border-[#7a7a7a] px-1.5 py-0.5 text-[8.5px] font-bold uppercase text-[#1f4e9c]">{titulo}</span>
+      <span className="border border-[#808080] px-1.5 py-0.5 text-[8.5px] font-bold uppercase" style={{ color: C.fase }}>{titulo}</span>
       {DUA.map((d) => (
         <span key={d.letra} className="ml-px flex w-4 items-center justify-center text-[8px] font-bold text-white" style={{ background: d.color }}>
           {d.letra}
@@ -84,7 +82,7 @@ function Fase({ titulo }: { titulo: string }) {
 }
 
 const Enlace = ({ url }: { url: string }) => (
-  <a href={url} target="_blank" rel="noreferrer" className="break-all text-[#1f4e9c] underline">
+  <a href={url} target="_blank" rel="noreferrer" className="break-all underline" style={{ color: C.fase }}>
     {url}
   </a>
 );
@@ -92,12 +90,12 @@ const Enlace = ({ url }: { url: string }) => (
 export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
   const color = doc.colorCabecera;
   const inst = doc.institucion;
-  const celda = 'border border-[#7a7a7a] px-1.5 py-1 align-top';
+  const celda = 'border border-[#808080] px-1.5 py-1 align-top';
   return (
-    <div className="mx-auto w-full max-w-[1120px] bg-white p-6 text-[10px] leading-snug text-[#1a1a1a] shadow" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+    <div className="mx-auto w-full max-w-[1120px] bg-white p-6 text-[10px] leading-snug text-black shadow" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {/* Cabecera */}
-      <div className="flex border border-[#7a7a7a]">
-        <div className="flex w-[22%] items-center gap-2 border-r border-[#7a7a7a] px-2 py-1.5">
+      <div className="flex border border-[#808080]">
+        <div className="flex w-[22%] items-center gap-2 border-r border-[#808080] px-2 py-1.5">
           {inst.logos.map((l) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={l} src={l} alt="" className="h-12 w-auto object-contain" />
@@ -107,15 +105,15 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
           {inst.cabecera.map((l, i) => (
             <p
               key={i}
-              className={l.estilo === 'grande' ? 'text-[17px] font-bold text-[#5a5a5a]' : l.estilo === 'acento' ? 'text-[13px] font-semibold' : 'text-[12px] text-[#5a5a5a]'}
-              style={l.estilo === 'acento' ? { color } : undefined}
+              className={l.estilo === 'grande' ? 'text-[17px] font-bold' : l.estilo === 'acento' ? 'text-[13px] font-semibold' : 'text-[12px]'}
+              style={{ color: l.estilo === 'acento' ? C.acentoCabecera : C.gris }}
             >
               {l.texto}
             </p>
           ))}
         </div>
-        <div className="w-[13%] border-l border-[#7a7a7a] text-center">
-          <p className="bg-[#bfbfbf] py-1 text-[11px] font-bold">Año Lectivo</p>
+        <div className="w-[13%] border-l border-[#808080] text-center">
+          <p className="py-1 text-[11px] font-bold" style={{ background: C.etiqueta }}>Año Lectivo</p>
           <p className="py-2 text-[11px]">{inst.anioLectivo}</p>
         </div>
       </div>
@@ -144,7 +142,7 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
         <Barra titulo="PLANIFICACIÓN" numero={`${doc.numeroPlanificacion}.`} color={color} />
         <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
           <thead>
-            <tr className="bg-[#bfbfbf] text-center font-bold">
+            <tr className="text-center font-bold" style={{ background: C.cabeceraTabla }}>
               <th rowSpan={2} className={celda} style={{ width: '8.5%' }}>N.º de semana y Fecha</th>
               <th rowSpan={2} className={celda} style={{ width: '12.5%' }}>Temas / Contenidos</th>
               <th rowSpan={2} className={celda} style={{ width: '12%' }}>Destrezas con criterio de desempeño</th>
@@ -152,7 +150,7 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
               <th rowSpan={2} className={celda} style={{ width: '14%' }}>Recursos</th>
               <th colSpan={2} className={celda}>Evaluación</th>
             </tr>
-            <tr className="bg-[#bfbfbf] text-center font-bold">
+            <tr className="text-center font-bold" style={{ background: C.cabeceraTabla }}>
               <th className={celda} style={{ width: '8.5%' }}>Técnica</th>
               <th className={celda} style={{ width: '8.5%' }}>Instrumento</th>
             </tr>
@@ -254,7 +252,7 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
           <tbody>
             <tr>
               {doc.firmas.columnas.map((c) => (
-                <td key={c.titulo} className={`${celda} bg-[#c8c8c8] text-center font-bold`}>
+                <td key={c.titulo} className={`${celda} text-center font-bold`} style={{ background: C.etiqueta }}>
                   {c.titulo}
                 </td>
               ))}
