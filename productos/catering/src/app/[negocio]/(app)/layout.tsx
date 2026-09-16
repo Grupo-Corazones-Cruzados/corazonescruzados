@@ -25,7 +25,7 @@ export default async function LayoutApp({
   return (
     <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema}>
       <BarraLateral slug={negocio} negocio={inquilino.nombre} logoUrl={inquilino.logoUrl} usuario={sesion.nombre} quien={quien} />
-      <div className="pb-16 lg:ml-60 lg:pb-0 print:ml-0 print:pb-0">
+      <div className="pb-16 lg:ml-16 lg:pb-0 print:ml-0 print:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
       </div>

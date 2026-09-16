@@ -30,7 +30,7 @@ export default async function LayoutApp({
         usuario={sesion.nombre}
         rol={sesion.rol}
       />
-      <div className="pb-16 lg:ml-60 lg:pb-0">
+      <div className="pb-16 lg:ml-16 lg:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
       </div>

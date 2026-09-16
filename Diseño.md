@@ -2841,6 +2841,22 @@ aplican; es el mismo arreglo de dos líneas cuando se toquen.
 `fechaLarga()` da «martes, 15 de septiembre de 2026»; con `capitalize` salía «Martes, 15 De
 Septiembre De 2026». Se usa `first-letter:uppercase`.
 
+## Los cuatro productos: el menú lateral se contrae a iconos y se despliega al pasar el puntero (2026-09-16)
+
+Fernando: *«que el panel de módulos del lateral izquierdo se contraiga y expanda si pones el
+puntero encima, como ya lo hacemos en la app principal»*. `BarraLateral` en `Navegacion.tsx` de
+reservas, pedidos, catering y planificaciones, con el mismo mecanismo que `DashboardSidebar` de
+GCC World:
+- **Cerrado `w-16` (solo iconos, con `title`) · abierto `w-60 shadow-2xl`**, `transition-[width]
+  duration-200`, `onMouseEnter/Leave` sobre el `<aside>`. **Se monta ENCIMA del contenido**: los
+  layouts pasan de `lg:ml-60` a **`lg:ml-16`** y un velo `bg-black/45` (z-30, `pointer-events-none`)
+  oscurece la página mientras está abierto.
+- **Alturas constantes en los dos estados** para que lo que está bajo el puntero no se mueva al
+  desplegarse: marca `h-[68px]`, título de grupo `h-7` (cerrado: una rayita `h-px bg-borde` en los
+  grupos que no son el primero), enlaces `h-9`, bloque de usuario `h-8`, salir `h-9`. Medido:
+  el segundo módulo queda en el mismo `top` (140 px) cerrado y abierto.
+- En táctil no hay puntero: sigue mandando la `BarraInferior`.
+
 ## Producto «Planificación de Clases» — el mismo lenguaje, con un DOCUMENTO como pantalla (2026-09-15)
 
 Hereda entero el sistema de catering (tokens, `ui.tsx`, `campos.tsx`, marca por inquilino, `.campo`
