@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🛒 «ENTRAR A MI TENANT» DESDE EL MARKETPLACE (2026-09-16).** Fernando: *«en el marketplace en
+  la sección de productos debería existir un botón para los usuarios que tienen acceso al producto,
+  es decir que han pagado su suscripción hasta máximo 30 días de retraso de pago, para acceder a
+  su tenant desde allí»*. `lib/productos/accesos.ts` lee (solo lectura) los esquemas de los
+  cuatro productos —`inquilinos` + `suscripciones`— y devuelve por anfitrión los inquilinos a los
+  que la cuenta con sesión puede entrar: no suspendido y (del grupo, o `pagado_hasta >= hoy − 30`).
+  `/api/productos/accesos` (401 sin sesión) y el catálogo (`MarketplaceCatalog`) enseña «Tienes
+  acceso» en la tarjeta y **«Entrar a <inquilino>»** arriba de la demostración, con el aviso de
+  retraso si lo hay. **LA LLAVE ES EL CORREO:** el `contacto_email` del inquilino (el que se
+  escribe al darlo de alta en `/gcc`) tiene que ser el correo de la cuenta en GCC World —los
+  `users.id` son UUID y el `gcc_cliente_id` de los productos es entero, no sirve—. Medido contra
+  la base real con el correo del administrador: los cuatro `/grupo` y los cuatro `demo`. ⚠️
+  `lib/db.ts` de la plataforma sigue recortando `?schema=` con la regex que rompe con dos
+  parámetros (la trampa ya conocida): en producción su URL lleva uno solo.
 - **🏛️ EL INQUILINO DEL GRUPO EN LOS CUATRO PRODUCTOS (2026-09-16).** Fernando: *«quisiera que
   el administrador del grupo corazones cruzados pueda tener acceso para que no tenga que
   suscribirse sino que tenga un tenant ya comprado para esa cuenta […] no paga la suscripción

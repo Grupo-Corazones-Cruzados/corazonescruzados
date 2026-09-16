@@ -9,7 +9,8 @@ import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check } from 'lucide-react';
+import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, AlertTriangle } from 'lucide-react';
+import { anfitrionDe, type AccesoProducto } from '@/lib/productos/tipos';
 import { fmt2 } from '@/lib/format';
 import { esUrlCloudinary, urlDesenfocada, sigmaPara } from '@/lib/cloudinary-url';
 
@@ -59,6 +60,35 @@ function Precio({ valor, mensual, clase }: { valor: number; mensual?: boolean; c
       ${fmt2(valor)}
       {mensual && <span className="text-[11px] font-normal text-digi-muted"> /mes</span>}
     </span>
+  );
+}
+
+/**
+ * «Entrar a mi tenant» (Fernando, 2026-09-16): si la cuenta con sesión tiene un
+ * inquilino en ese producto con la mensualidad pagada (hasta 30 días de retraso) o
+ * con acceso del grupo, el botón de acceso va ARRIBA del de la demostración. Se
+ * lee de /api/productos/accesos, que cruza el correo de la cuenta con el
+ * `contacto_email` de los inquilinos de cada producto.
+ */
+function AccesoAlProducto({ accesos }: { accesos: AccesoProducto[] | undefined }) {
+  if (!accesos?.length) return null;
+  return (
+    <div className="space-y-1.5">
+      {accesos.map((a) => (
+        <div key={a.url} className="space-y-1">
+          <a href={a.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className={`${BTN_PRIMARY} w-full`}>
+            <LogIn className="w-4 h-4" /> Entrar a {a.nombre} <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          {a.diasDeRetraso ? (
+            <p className="flex items-center gap-1 text-[11px] text-amber-700" style={mf}>
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> La mensualidad venció hace {a.diasDeRetraso} día{a.diasDeRetraso === 1 ? '' : 's'}: el acceso se cierra a los 30.
+            </p>
+          ) : a.cortesia ? (
+            <p className="text-[11px] text-digi-muted" style={mf}>Acceso del grupo: sin mensualidad.</p>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -122,6 +152,17 @@ function Demostracion({ item }: { item: any }) {
 export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange }: MarketplaceCatalogProps) {
   const tabs = [...CATALOG_TABS, ...tabsExtra];
   const [tab, setTabState] = useState('projects');
+  // Los productos a los que la cuenta con sesión puede entrar, por anfitrión. Sin
+  // sesión (marketplace público) el endpoint da 401 y aquí no hay nada.
+  const [accesos, setAccesos] = useState<Record<string, AccesoProducto[]>>({});
+  useEffect(() => {
+    fetch('/api/productos/accesos')
+      .then((r) => (r.ok ? r.json() : { data: {} }))
+      .then((j) => setAccesos(j.data || {}))
+      .catch(() => setAccesos({}));
+  }, []);
+  const accesosDe = (item: any): AccesoProducto[] | undefined =>
+    item?.item_type === 'product' || item?.es_suscripcion ? accesos[anfitrionDe(item?.project_url)] : undefined;
   const isCatalog = CATALOG_VALUES.has(tab);
 
   const [items, setItems] = useState<any[]>([]);
@@ -339,11 +380,15 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               {tags.slice(0, 3).map((t) => <PixelBadge key={t}>{t}</PixelBadge>)}
             </div>
           )}
-          {item.demo_url && (
+          {accesosDe(item)?.length ? (
+            <span className="inline-flex items-center gap-1 self-start mt-2 px-1.5 py-0.5 rounded-md bg-accent text-white text-[10px] font-semibold">
+              <LogIn className="w-3 h-3" /> Tienes acceso
+            </span>
+          ) : item.demo_url ? (
             <span className="inline-flex items-center gap-1 self-start mt-2 px-1.5 py-0.5 rounded-md bg-accent-light text-accent text-[10px] font-semibold">
               <PlayCircle className="w-3 h-3" /> Con demostración
             </span>
-          )}
+          ) : null}
           <div className="flex items-center justify-between gap-2 mt-auto pt-2.5 border-t border-digi-border/60">
             <CardMembers item={item} />
             {isProject && item.requirements_count != null && (
@@ -446,10 +491,11 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           )}
 
           <div className="space-y-2 pt-1">
+            <AccesoAlProducto accesos={accesosDe(t)} />
             <Demostracion item={t} />
             <button
               onClick={() => onPrimaryAction(t)}
-              className={`${t.demo_url ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
+              className={`${t.demo_url || accesosDe(t)?.length ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
             >
               {isProject ? 'Solicitar proyecto' : t.es_suscripcion ? 'Quiero suscribirme' : 'Comprar'}
             </button>
