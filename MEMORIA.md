@@ -275,6 +275,38 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🗓️ EL NÚMERO DE PERIODOS SALE DEL HORARIO DEL DOCENTE, NO DEL AGENTE (2026-09-16).**
+  Fernando: *«el número de periodos no lo debe deducir el agente […] ese campo es realmente la
+  cantidad de horas que tiene ese profesor para la materia asignada del grado en su horario de
+  clases»*. Tres piezas nuevas en `productos/planificaciones/`:
+  - **Módulo «Unidades»** (administrador): panel de **grados** a la izquierda; por grado, sus
+    **materias**; por materia, descripción, **docentes asignados** y cantidad de unidades
+    (opcional). Tablas `grados`, `materias_grado`, `materias_docentes` (migración 006; disparadores
+    del escaparate en 007). El catálogo `materias` de antes se queda solo para las destrezas.
+  - **Perfil rediseñado**: «Mis datos» estrecho a la izquierda (profesión, nombre, correo y el
+    cambio de contraseña **dentro del mismo formulario**; desapareció la tarjeta aparte) y, a la
+    derecha, el **horario de clases** (lunes a viernes, 07:00 → 15:00 por horas). Cada celda se
+    pulsa y se elige entre las materias asignadas (etiqueta «Materia — Grado») o **«Sin clase»**;
+    **Exportar Excel** baja la plantilla con la lista desplegable de esas opciones y el horario
+    actual; **Importar Excel** la lee (hoja «Horario», B2:F9) y dice cuántas horas cargó y cuántas
+    celdas no reconoció. Tabla `horario_clases` (`materia_grado_id` nulo = «Sin clase»).
+  - **Nueva planificación elige la materia entre las asignadas al docente** (`materiasDelDocente`;
+    el administrador ve todas las del inquilino), no entre opciones fijas; queda
+    `planificaciones.materia_grado_id`. **Los periodos de una semana = horas de esa materia en el
+    horario** (`lib/horario.ts → periodosDe`), con sus sesiones (día y hora) en el encargo; el
+    formulario de la semana **ya no pide periodos** y el esquema del agente ya no tiene
+    `numeroPeriodos`. Con la materia sin horario, «1 hora».
+  - **⭐ LAS TRES FASES ACC SE APLICAN CADA DÍA DE CLASE** y las actividades van numeradas por
+    sesión («1. », «2. », «3. » y «2.1. » para los pasos), como el ejemplo 9 de la docente
+    (3 horas → 1., 2., 3. en activación, construcción y consolidación). El modelo tendía a saltarse
+    la activación de la última sesión: `generacion.ts → sesionesQueFaltan` comprueba que cada
+    fase cubra las N sesiones y, si falta alguna, le devuelve su propio JSON **una vez** para que
+    lo complete (`vueltas: 2` en el uso). Medido: cuatro generaciones reales (2, 2, 3 y 3 horas),
+    la última completada por esa segunda vuelta; total de periodos del PUD = 10, calculado.
+  - Limpieza por identificador: planificación, grado (arrastra materia y asignaciones) y las
+    cuatro celdas del horario del administrador; quedó solo la planificación 7 de Fernando en
+    `/grupo` (sin materia asignada: sus periodos saldrán «1 hora» hasta que la cree de nuevo desde
+    una materia con horario).
 - **🏫 «NEGOCIO», LO FIJO Y LO VARIABLE DEL FORMATO (2026-09-16).** Fernando: el administrador
   establece el nombre del formato (*«Unidad Educativa Particular / "San Esteban Diácono" / Red
   Educativa Arquidiocesana»*, tres campos), el **año lectivo** a mano y **tres logos** (institución,

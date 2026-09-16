@@ -21,16 +21,16 @@ Una PLANIFICACIÓN SEMANAL: una fila del Plan de Unidad Didáctica (PUD). Devuel
 
 2. tema. El nombre del tema o los contenidos de la semana, breve y con el estilo lúdico de la docente cuando el nivel es Preparatoria o Primaria («Nuestro amigo el triángulo», «Así soy yo»). Si son dos contenidos, dos líneas separadas por un salto de línea.
 
-3. numeroPeriodos. Como lo escribe la docente: «5 horas», «1 hora», «3 horas». Coherente con la carga del ámbito y con lo que diga el docente.
+3. El NÚMERO DE PERIODOS no lo decides tú: es un dato del encargo (las horas que el docente da de esa materia en la semana según su horario) y ya va en el formato.
 
 4. objetivosTema. Estructura FIJA: «[Verbo en infinitivo] [contenido] mediante/a través de [los medios que de verdad usa la semana] para [finalidad formativa]». Ejemplo real: «Reconocer las características propias mediante la elaboración de un autorretrato, el estampado de huellas y el diálogo guiado, para identificarse como un ser único, valioso y diferente de los demás.» Si hay dos contenidos, dos objetivos separados por una línea en blanco.
 
 5. destrezas. EL CÓDIGO EXACTO DE UNA SOLA destreza con criterio de desempeño, ELEGIDA DE LA LISTA QUE SE TE DA en el encargo (son las destrezas de esta planificación). La eliges según lo que el docente dictó: la que mejor responde al tema y a las actividades que pidió. No inventes ni un código ni una destreza: si ninguna encaja del todo, elige la más cercana; si la lista está vacía, devuelve la lista vacía. Toda la semana debe responder a la destreza elegida.
 
-6. estrategias. Tres listas, una por fase del ciclo ACC. Cada elemento de la lista es UNA actividad: un párrafo que empieza con un verbo en infinitivo y describe una acción observable del estudiante con su medio concreto. Reglas:
-   - Activación: 2 a 4 actividades. Suele abrir con canción, cuento, emoción del día u objetos/imágenes del entorno, y una actividad de preguntas generadoras.
-   - Construcción: 3 a 6 actividades. Aquí se introduce y trabaja el contenido con material concreto, diálogo y cuerpo.
-   - Consolidación: 2 a 4 actividades. Producción tangible del niño (ficha con nombre, página del libro, modelado, collage, exponer ante la clase) y, si cabe, cierre afectivo o reto en casa.
+6. estrategias. Tres listas, una por fase del ciclo ACC. Cada elemento de la lista es UNA actividad: un párrafo que empieza con un verbo en infinitivo y describe una acción observable del estudiante con su medio concreto. LAS TRES FASES SE APLICAN CADA DÍA DE CLASE: si la semana tiene N sesiones (N = número de periodos, con su día y hora en el encargo), en cada fase hay actividades para la sesión 1, la 2… hasta la N, y cada actividad va NUMERADA con su sesión al inicio del párrafo: «1. Presentar la canción…» para la sesión 1, «2. Mostrar la imagen…» para la 2, y los pasos que cuelgan de una actividad con «1.1. », «2.1. », «2.2. ». Así se lee qué se hace cada día en cada fase. Con una sola sesión no se numera. Reglas:
+   - Activación: 1 a 2 actividades POR SESIÓN. Suele abrir con canción, cuento, emoción del día u objetos/imágenes del entorno, y una actividad de preguntas generadoras.
+   - Construcción: 2 a 3 actividades POR SESIÓN. Aquí se introduce y trabaja el contenido con material concreto, diálogo y cuerpo.
+   - Consolidación: 1 a 2 actividades POR SESIÓN. Producción tangible del niño (ficha con nombre, página del libro, modelado, collage, exponer ante la clase) y, si cabe, cierre afectivo o reto en casa.
    - Las preguntas generadoras van DENTRO del elemento de la actividad que las plantea, cada una en su línea empezando por «• ». Tres a seis preguntas. No pongas viñetas en actividades que no son de diálogo.
    - Un enlace (YouTube u otro) va en su propia línea dentro del elemento de la actividad que lo usa, sin texto alrededor: solo la URL.
    - Nombra fichas, canciones, cuentos y páginas con su título exacto entre comillas.
@@ -56,7 +56,6 @@ Español del Ecuador, registro pedagógico profesional, sin exclamaciones ni emo
 const EJEMPLO = `
 EJEMPLO REAL DE UNA SEMANA (Preparatoria, ámbito Cívica y acompañamiento integral del aula; observa el registro, no lo copies)
 tema: «Así soy yo»
-numeroPeriodos: «1»
 objetivosTema: «Reconocer las características propias mediante la elaboración de un autorretrato, el estampado de huellas y el diálogo guiado, para identificarse como un ser único, valioso y diferente de los demás.»
 destrezas: ["CAI.1.2.2."]
 estrategias.activacion:
@@ -98,6 +97,8 @@ export type DatosEncargo = {
   criteriosEvaluacion: string | null;
   numeroSemana: number;
   semanaPropuesta: { inicio: string; fin: string } | null;
+  /** Las sesiones de la semana según el horario del docente: son los periodos y lo que se numera. */
+  periodos: { horas: number; sesiones: { numero: number; dia: string; hora: string }[] } | null;
   semanasAnteriores: { orden: number; tema: string | null; fechaInicio: string | null; fechaFin: string | null; destrezas: string[]; objetivos: string | null }[];
   destrezas: { codigo: string; descripcion: string }[];
   adjuntos: { nombre: string; fragmentos: number }[];
@@ -117,7 +118,12 @@ Unidad de planificación N.º ${d.numeroUnidad}: «${d.tituloUnidad}»
 Periodo de la unidad: del ${d.inicioPud} al ${d.finPud}${d.objetivosUnidad ? `\nObjetivos específicos de la unidad: ${d.objetivosUnidad}` : ''}${d.criteriosEvaluacion ? `\nCriterios de evaluación de la unidad: ${d.criteriosEvaluacion}` : ''}`);
 
   partes.push(`LA SEMANA QUE SE PLANIFICA
-Es la SEMANA ${d.numeroSemana} de la unidad.${d.semanaPropuesta ? ` Semana propuesta: del ${d.semanaPropuesta.inicio} al ${d.semanaPropuesta.fin} (si el docente indica otras fechas, usa las suyas).` : ' El docente no fijó fechas: deduce la semana a partir de las anteriores y del periodo de la unidad.'}`);
+Es la SEMANA ${d.numeroSemana} de la unidad.${d.semanaPropuesta ? ` Semana propuesta: del ${d.semanaPropuesta.inicio} al ${d.semanaPropuesta.fin} (si el docente indica otras fechas, usa las suyas).` : ' El docente no fijó fechas: deduce la semana a partir de las anteriores y del periodo de la unidad.'}
+${
+  d.periodos && d.periodos.horas > 0
+    ? `NÚMERO DE PERIODOS: ${d.periodos.horas} (las horas que el docente da de esta materia en la semana, según su horario). Las sesiones son:\n${d.periodos.sesiones.map((s) => `- Sesión ${s.numero}: ${s.dia} ${s.hora}`).join('\n')}\nEn cada fase del ciclo ACC numera las actividades con su sesión (1., 2., …, con 1.1., 2.1. para los pasos). ANTES DE RESPONDER COMPRUEBA que en ACTIVACIÓN, en CONSTRUCCIÓN y en CONSOLIDACIÓN aparece cada sesión de la 1 a la ${d.periodos.horas} al menos una vez: ningún día de clase se queda sin activación, sin construcción ni sin consolidación.`
+    : 'NÚMERO DE PERIODOS: el docente no tiene horas de esta materia en su horario; planifica UNA sesión y no numeres las actividades.'
+}`);
 
   if (d.semanasAnteriores.length) {
     partes.push(

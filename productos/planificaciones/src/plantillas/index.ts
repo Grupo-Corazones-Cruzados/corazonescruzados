@@ -21,7 +21,6 @@ export type Plantilla = {
   /** Del JSON del agente a las columnas de la fila. */
   aColumnas: (s: SalidaSemana) => {
     tema: string;
-    numeroPeriodos: string;
     objetivosTema: string;
     estrategias: string;
     recursos: string;
@@ -42,7 +41,6 @@ const PUD: Plantilla = {
   esquema: ESQUEMA_SEMANA,
   aColumnas: (s) => ({
     tema: s.tema.trim(),
-    numeroPeriodos: s.numeroPeriodos.trim().slice(0, 40),
     objetivosTema: s.objetivosTema.trim(),
     estrategias: serializarEstrategias(s.estrategias),
     recursos: s.recursos.map((r) => r.trim()).filter(Boolean).join('\n'),

@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/db';
-import { correrAgente, iaConfigurada, type HerramientaFuncion } from '@/lib/ia';
+import { correrAgente, iaConfigurada, type HerramientaFuncion, type UsoIA } from '@/lib/ia';
 import { buscarFragmentos } from '@/lib/adjuntos';
 import { plantillaDe } from '@/plantillas';
 import type { SalidaSemana } from '@/plantillas/pud/esquema';
 import { ETIQUETA_NIVEL } from '@/lib/catalogo';
 import { destrezasDe } from '@/lib/destrezas';
+import { periodosDe, ETIQUETA_DIA } from '@/lib/horario';
 import { aDia, aFechaSql, esDia, sumarDias } from '@/lib/fechas';
 
 /**
@@ -58,6 +59,11 @@ export async function generarSemana(semanaId: number): Promise<void> {
       : aDia(pl.inicioPud);
   const finPropuesto = semana.fechaFin ? aDia(semana.fechaFin) : sumarDias(inicioPropuesto, 4);
 
+  // El número de periodos SALE DEL HORARIO del docente (Fernando, 2026-09-16): las
+  // horas que da de esa materia en la semana. No lo deduce el agente.
+  const periodos = pl.materiaGradoId ? await periodosDe(pl.usuarioId, pl.materiaGradoId) : { horas: 0, sesiones: [] };
+  const numeroPeriodos = periodos.horas > 0 ? `${periodos.horas} ${periodos.horas === 1 ? 'hora' : 'horas'}` : '1 hora';
+
   const adjuntoIds = semana.adjuntos.map((a) => a.id);
   let fragmentosCercanos: { adjunto: string; texto: string }[] = [];
   if (adjuntoIds.length) {
@@ -96,6 +102,7 @@ export async function generarSemana(semanaId: number): Promise<void> {
     criteriosEvaluacion: pl.criteriosEvaluacion,
     numeroSemana: semana.orden,
     semanaPropuesta: { inicio: inicioPropuesto, fin: finPropuesto },
+    periodos: periodos.horas > 0 ? { horas: periodos.horas, sesiones: periodos.sesiones.map((s) => ({ numero: s.numero, dia: ETIQUETA_DIA[s.dia].toLowerCase(), hora: `${String(s.hora).padStart(2, '0')}:00` })) } : null,
     semanasAnteriores: anteriores.map((s) => ({
       orden: s.orden,
       tema: s.tema,
@@ -125,7 +132,30 @@ export async function generarSemana(semanaId: number): Promise<void> {
     await marcarError(r.error, r.uso);
     return;
   }
-  const s = r.salida;
+  let s = r.salida;
+  let uso = r.uso;
+
+  // El agente tiende a saltarse la activación de la última sesión. Se comprueba
+  // que cada fase cubra todas las sesiones y, si falta alguna, se le pide UNA vez
+  // que complete su propia respuesta (el ejemplo 9 de la docente numera 1., 2., 3.
+  // en las tres fases; Fernando, 2026-09-16).
+  const faltan = sesionesQueFaltan(s, periodos.horas);
+  if (faltan.length) {
+    const r2 = await correrAgente<SalidaSemana>({
+      sistema: plantilla.sistema(),
+      encargo: `${encargo}\n\nTU RESPUESTA ANTERIOR (JSON):\n${JSON.stringify(s)}\n\nESTÁ INCOMPLETA: ${faltan.join('; ')}. Devuelve el MISMO JSON completo, añadiendo las actividades que faltan con su número de sesión al inicio («3. …») y sin cambiar lo demás.`,
+      esquema: plantilla.esquema,
+      herramientas,
+      busquedaWeb: false,
+      esfuerzo: 'low',
+      maxSalida: 20_000,
+      claveCache: `planificaciones-${plantilla.clave}`,
+    });
+    if (r2.ok) {
+      s = r2.salida;
+      uso = sumarUso(r.uso, r2.uso);
+    }
+  }
 
   // Validar las destrezas contra la tabla: el agente elige, no inventa.
   const porCodigo = new Map(destrezas.map((d) => [d.codigo.trim().toUpperCase(), d]));
@@ -150,13 +180,45 @@ export async function generarSemana(semanaId: number): Promise<void> {
         fechaInicio: aFechaSql(fechaInicio),
         fechaFin: aFechaSql(fechaFin),
         ...columnas,
+        numeroPeriodos,
         referencias: (s.referencias ?? []).slice(0, 12) as never,
-        uso: r.uso as never,
+        uso: uso as never,
         generadaEn: new Date(),
         destrezas: { create: elegidas.map((d, i) => ({ destrezaId: d.id, orden: i })) },
       },
     }),
   ]);
+}
+
+/** Las fases que no cubren todas las sesiones («ACTIVACIÓN no tiene la sesión 3»). Con una sola sesión no se numera y no hay nada que comprobar. */
+function sesionesQueFaltan(s: SalidaSemana, horas: number): string[] {
+  if (horas <= 1) return [];
+  const fases: [string, string[]][] = [
+    ['ACTIVACIÓN', s.estrategias.activacion],
+    ['CONSTRUCCIÓN', s.estrategias.construccion],
+    ['CONSOLIDACIÓN', s.estrategias.consolidacion],
+  ];
+  const faltan: string[] = [];
+  for (const [nombre, actividades] of fases) {
+    const texto = actividades.join('\n');
+    const sinSesion = [];
+    for (let k = 1; k <= horas; k++) if (!new RegExp(`(^|\\n)${k}\\. `).test(texto)) sinSesion.push(k);
+    if (sinSesion.length) faltan.push(`en ${nombre} falta${sinSesion.length > 1 ? 'n' : ''} la${sinSesion.length > 1 ? 's' : ''} sesi${sinSesion.length > 1 ? 'ones' : 'ón'} ${sinSesion.join(', ')}`);
+  }
+  return faltan;
+}
+
+function sumarUso(a: UsoIA, b: UsoIA): UsoIA {
+  return {
+    ...a,
+    tokensEntrada: a.tokensEntrada + b.tokensEntrada,
+    tokensSalida: a.tokensSalida + b.tokensSalida,
+    tokensCache: a.tokensCache + b.tokensCache,
+    busquedasWeb: a.busquedasWeb + b.busquedasWeb,
+    llamadasHerramientas: a.llamadasHerramientas + b.llamadasHerramientas,
+    vueltas: a.vueltas + b.vueltas,
+    duracionMs: a.duracionMs + b.duracionMs,
+  };
 }
 
 /** El lunes siguiente a un día (si el día es viernes 29, el lunes 1). */

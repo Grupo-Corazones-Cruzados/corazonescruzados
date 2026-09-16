@@ -109,6 +109,8 @@ type Props = {
   abrirNueva: boolean;
   destrezasCatalogo: DestrezaVista[];
   materias: { nivel: Nivel; nombre: string; ambito: string | null }[];
+  /** Las materias (con su grado) que el administrador asignó al docente: las únicas que puede planificar. */
+  materiasDocente: { id: number; etiqueta: string; materia: string; grado: string }[];
   plantillas: { clave: string; nombre: string; descripcion: string }[];
   plantillaPorDefecto: string;
   cupo: { tope: number | null; usadas: number; quedan: number | null };
@@ -368,7 +370,7 @@ export default function PlanificacionesCliente(p: Props) {
 
       {/* ── Nueva planificación ───────────────────────────────────────────── */}
       <PanelLateral abierto={panel === 'nueva'} alCerrar={cerrar} titulo="Nueva planificación" descripcion="La cabecera del plan de unidad. Después, semana a semana, el agente redacta cada línea.">
-        <FormularioPlanificacion materias={p.materias} error={error} enCurso={enCurso} alCancelar={cerrar} textoEnviar="Continuar" alEnviar={(d) => conResultado(() => crearPlanificacion(p.slug, d), 'Planificación creada', (id) => ir({ p: id ?? null, s: null, nueva: null, quien: null }))} />
+        <FormularioPlanificacion materiasDocente={p.materiasDocente} materias={p.materias} error={error} enCurso={enCurso} alCancelar={cerrar} textoEnviar="Continuar" alEnviar={(d) => conResultado(() => crearPlanificacion(p.slug, d), 'Planificación creada', (id) => ir({ p: id ?? null, s: null, nueva: null, quien: null }))} />
       </PanelLateral>
 
       {/* ── Configurar ────────────────────────────────────────────────────── */}
@@ -534,16 +536,60 @@ function CamposCabecera({ materias, valores, conAmbito }: { materias: Props['mat
   );
 }
 
-function FormularioPlanificacion({ materias, error, enCurso, alCancelar, alEnviar, textoEnviar }: { materias: Props['materias']; error: string | null; enCurso: boolean; alCancelar: () => void; alEnviar: (d: FormData) => void; textoEnviar: string }) {
+function FormularioPlanificacion({ materiasDocente, error, enCurso, alCancelar, alEnviar, textoEnviar }: { materiasDocente: Props['materiasDocente']; materias: Props['materias']; error: string | null; enCurso: boolean; alCancelar: () => void; alEnviar: (d: FormData) => void; textoEnviar: string }) {
+  const [nivel, setNivel] = useState<Nivel>('PREPARATORIA');
   return (
     <form action={alEnviar} className="space-y-4">
-      <CamposCabecera materias={materias} />
+      {/* La materia sale de las que el administrador asignó al docente en «Unidades» (Fernando, 2026-09-16). */}
+      {materiasDocente.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. Pide al administrador que te asigne tus materias en Unidades." />}
+      <Campo etiqueta="Materia (grado)" requerido>
+        <Selector name="materiaGradoId" required defaultValue="" autoFocus>
+          <option value="" disabled>
+            Elige una materia…
+          </option>
+          {materiasDocente.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.etiqueta}
+            </option>
+          ))}
+        </Selector>
+      </Campo>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Campo etiqueta="Nivel" requerido>
+          <Selector name="nivel" value={nivel} onChange={(e) => setNivel(e.target.value as Nivel)}>
+            {NIVELES.map((n) => (
+              <option key={n} value={n}>
+                {ETIQUETA_NIVEL[n]}
+              </option>
+            ))}
+          </Selector>
+        </Campo>
+        <Campo etiqueta="Ámbito de desarrollo/aprendizaje (si no lo escribes, se usa la materia)">
+          <Entrada name="ambito" />
+        </Campo>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+        <Campo etiqueta="N.º de unidad" requerido>
+          <Entrada name="numeroUnidad" type="number" min={1} max={99} required defaultValue={1} />
+        </Campo>
+        <Campo etiqueta="Título de la unidad de planificación" requerido>
+          <Entrada name="tituloUnidad" required />
+        </Campo>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Campo etiqueta="Inicio de PUD" requerido>
+          <Entrada name="inicioPud" type="date" required />
+        </Campo>
+        <Campo etiqueta="Fin de PUD" requerido>
+          <Entrada name="finPud" type="date" required />
+        </Campo>
+      </div>
       {error && <Aviso texto={error} />}
       <div className="flex justify-end gap-2 border-t border-borde pt-4">
         <Boton type="button" variante="secundario" onClick={alCancelar} disabled={enCurso}>
           Cancelar
         </Boton>
-        <Boton type="submit" disabled={enCurso}>
+        <Boton type="submit" disabled={enCurso || materiasDocente.length === 0}>
           {enCurso ? 'Creando…' : textoEnviar}
         </Boton>
       </div>

@@ -12,6 +12,7 @@ import { MAX_ADJUNTOS } from '@/lib/adjuntos';
 import { generarEnSegundoPlano } from '@/lib/generacion';
 import { PLANTILLAS } from '@/plantillas';
 import { copiarDestrezasDelCatalogo } from '@/lib/destrezas';
+import { materiasDelDocente } from '@/lib/horario';
 
 export type Resultado = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -21,7 +22,8 @@ const fecha = (mensaje: string) => z.string().trim().refine(esDia, mensaje);
 
 const Alta = z
   .object({
-    materia: z.string().trim().min(2, 'Escribe el nombre de la materia.').max(120),
+    /// La materia de un grado asignada al docente (módulo «Unidades»).
+    materiaGradoId: z.coerce.number().int().positive('Elige la materia.'),
     ambito: z.string().trim().max(120).optional().or(z.literal('')),
     nivel: z.enum(NIVELES as [string, ...string[]]),
     numeroUnidad: z.coerce.number().int('El número de unidad es un entero.').min(1, 'El número de unidad empieza en 1.').max(99),
@@ -45,6 +47,12 @@ export async function crearPlanificacion(slug: string, datos: FormData): Promise
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
 
+  // Solo las materias (de un grado) que el administrador le asignó en «Unidades»
+  // (Fernando, 2026-09-16); de ahí salen el área y el grado del formato.
+  const permitidas = await materiasDelDocente(ctx.inquilino.id, ctx.sesion.uid, ctx.sesion.rol);
+  const materia = permitidas.find((m) => m.id === d.materiaGradoId);
+  if (!materia) return { ok: false, error: 'Esa materia no está entre las que tienes asignadas. Pide al administrador que te la asigne en Unidades.' };
+
   const docente = await prisma.usuario.findUnique({ where: { id: ctx.sesion.uid }, select: { nombre: true, profesion: true } });
   const fila = await prisma.planificacion.create({
     data: {
@@ -52,9 +60,11 @@ export async function crearPlanificacion(slug: string, datos: FormData): Promise
       usuarioId: ctx.sesion.uid,
       plantilla: ctx.inquilino.plantillaPorDefecto,
       nivel: d.nivel as never,
-      materia: d.materia,
+      materiaGradoId: materia.id,
+      materia: materia.materia,
+      gradoCurso: materia.grado,
       // En Preparatoria el ámbito coincide con el área; si no lo escriben, se copia.
-      ambito: d.ambito || d.materia,
+      ambito: d.ambito || materia.materia,
       numeroUnidad: d.numeroUnidad,
       tituloUnidad: d.tituloUnidad,
       inicioPud: aFechaSql(d.inicioPud),

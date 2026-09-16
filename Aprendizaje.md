@@ -8588,3 +8588,33 @@ Una aserción buscaba el uso de tokens dentro de un `<details>` cerrado. Se comp
   exportándolo a PDF**: 4 páginas, cabecera de tabla repetida, filas partidas entre páginas.
   Lección: `TextRun` con `children: [PageNumber.CURRENT, …]` para el pie; las casillas I·R·A son
   una tabla pequeña dentro de la celda.
+
+## Los periodos salen del horario, no del agente (2026-09-16)
+Fernando: *«el número de periodos no lo debe deducir el agente […] ese campo es realmente la
+cantidad de horas que tiene ese profesor para la materia asignada del grado en su horario de
+clases»*. Lo que se aprendió construyéndolo:
+- **Un dato que el docente conoce no se le pide al modelo.** El agente lo inventaba (entre 1 y 5);
+  ahora `periodosDe(usuario, materiaGrado)` cuenta las celdas del horario y el encargo le da las
+  sesiones con día y hora. Salió del esquema JSON y del formulario de la semana.
+- **Numerar por sesión hace visible lo que el modelo se salta.** El ejemplo 9 de la docente numera
+  1., 2., 3. en las tres fases. Con la regla en el system prompt y en el encargo, `gpt-5.6-luna`
+  cubría construcción y consolidación pero **se saltaba la activación de la última sesión** dos
+  veces de tres. La solución no fue insistir más en el prompt: `sesionesQueFaltan` comprueba el
+  JSON y, si falta una sesión en una fase, le devuelve su propia respuesta con lo que falta
+  («en ACTIVACIÓN falta la sesión 3») y `esfuerzo: 'low'`, una sola vez. La cuarta generación
+  entró por ahí (`vueltas: 2`) y salió completa. **Regla: lo que se puede comprobar en código se
+  comprueba en código, y al modelo se le pide que complete, no que vuelva a empezar.**
+- **Importar un Excel se valida contra las etiquetas, no contra ids.** La plantilla exportada
+  lleva una hoja «Opciones» con la lista desplegable («Materia — Grado» y «Sin clase»); al
+  importar se casa el texto de cada celda con esas etiquetas y lo que no casa se cuenta como
+  «no reconocida», sin tumbar la importación. Probado con una fila inventada.
+- **Los disparadores del escaparate usan nombres sin esquema**: una conexión `pg` sin
+  `search_path` falla al borrar con «relation "inquilinos" does not exist». La aplicación lo fija en
+  `db.ts`; un script de limpieza tiene que hacer `set search_path to planificaciones` antes.
+- Medido en local contra el build de producción: grado y materia con docente asignado; cuatro
+  celdas por clic (2 h → 3 h); Excel exportado (200, `PK`) y reimportado con una hora nueva, una
+  «Sin clase» y una materia inventada ignorada; nueva planificación desde el `select` de materias
+  asignadas con sus 10 destrezas; cuatro generaciones reales (30–40 s) con «2 horas» / «3 horas»
+  y las sesiones 1., 2., 3. en las tres fases; PDF de 7 páginas con total de periodos 10 y Word
+  200. Limpieza por identificador (planificación 9, grado 1, celdas 3–6).
+

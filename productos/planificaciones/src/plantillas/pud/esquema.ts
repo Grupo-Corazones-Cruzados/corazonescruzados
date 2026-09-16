@@ -11,7 +11,6 @@ export type SalidaSemana = {
   fechaInicio: string;
   fechaFin: string;
   tema: string;
-  numeroPeriodos: string;
   objetivosTema: string;
   destrezas: string[];
   estrategias: { activacion: string[]; construccion: string[]; consolidacion: string[] };
@@ -28,12 +27,11 @@ export const ESQUEMA_SEMANA = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['fechaInicio', 'fechaFin', 'tema', 'numeroPeriodos', 'objetivosTema', 'destrezas', 'estrategias', 'recursos', 'tecnica', 'instrumento', 'referencias'],
+    required: ['fechaInicio', 'fechaFin', 'tema', 'objetivosTema', 'destrezas', 'estrategias', 'recursos', 'tecnica', 'instrumento', 'referencias'],
     properties: {
       fechaInicio: { type: 'string', description: 'Primer día de la semana planificada, AAAA-MM-DD.' },
       fechaFin: { type: 'string', description: 'Último día de la semana planificada, AAAA-MM-DD.' },
       tema: { type: 'string', description: 'Tema o contenidos de la semana. Si son dos contenidos, sepáralos con un salto de línea.' },
-      numeroPeriodos: { type: 'string', description: 'Número de periodos, como lo escribe la docente: «5 horas», «1 hora».' },
       objetivosTema: { type: 'string', description: 'Objetivo(s) del tema con la estructura fija. Si hay dos, sepáralos con una línea en blanco.' },
       destrezas: lista('El código EXACTO de UNA destreza elegida de la lista dada (un solo elemento). Vacío solo si la lista estaba vacía.'),
       estrategias: {
@@ -41,7 +39,7 @@ export const ESQUEMA_SEMANA = {
         additionalProperties: false,
         required: ['activacion', 'construccion', 'consolidacion'],
         properties: {
-          activacion: lista('Actividades de ACTIVACIÓN DE CONOCIMIENTOS PREVIOS. Cada elemento es un párrafo con una actividad. Las preguntas generadoras van como líneas dentro del mismo elemento empezando por «• ». Un enlace va en su propia línea.'),
+          activacion: lista('Actividades de ACTIVACIÓN DE CONOCIMIENTOS PREVIOS. Cada elemento es un párrafo con una actividad, numerada por sesión («1. », «1.1. », «2. »…) cuando la semana tiene más de una sesión: CADA sesión (1, 2, …, N) abre con su propia activación, así que aquí aparecen todas. Las preguntas generadoras van como líneas dentro del mismo elemento empezando por «• ». Un enlace va en su propia línea.'),
           construccion: lista('Actividades de CONSTRUCCIÓN DEL CONOCIMIENTO, con las mismas reglas.'),
           consolidacion: lista('Actividades de CONSOLIDACIÓN DEL APRENDIZAJE, con las mismas reglas.'),
         },

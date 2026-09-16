@@ -116,6 +116,9 @@ model Inquilino {
   semanas         PlanificacionSemanal[]
   adjuntos        Adjunto[]
   destrezas       Destreza[]
+  grados          Grado[]
+  materiasGrado   MateriaGrado[]
+  horario         HorarioClase[]
   pagos           PagoMensual[]
 
   @@map("inquilinos")
@@ -203,6 +206,8 @@ model Usuario {
   planificaciones Planificacion[]
   semanas         PlanificacionSemanal[]
   adjuntos        Adjunto[]
+  materias        MateriaDocente[]
+  horario         HorarioClase[]
 
   @@unique([inquilinoId, usuario])
   @@index([inquilinoId])
@@ -269,6 +274,82 @@ model Destreza {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Unidades: grados, materias por grado, docentes y el horario (Fernando, 2026-09-16)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un grado de la institución («Primer grado», «Preparatoria A»). Los administra
+/// el módulo «Unidades».
+model Grado {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nombre      String    @db.VarChar(120)
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+
+  materias MateriaGrado[]
+
+  @@unique([inquilinoId, nombre])
+  @@map("grados")
+}
+
+/// Una materia de un grado, con su descripción, sus docentes y (opcional) cuántas
+/// unidades tiene. Es lo que un docente puede elegir al crear una planificación y
+/// lo que pone en su horario.
+model MateriaGrado {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  gradoId     Int       @map("grado_id")
+  grado       Grado     @relation(fields: [gradoId], references: [id], onDelete: Cascade)
+  nombre      String    @db.VarChar(120)
+  descripcion String?
+  unidades    Int?
+  orden       Int       @default(0)
+  creado      DateTime  @default(now()) @map("creado_en")
+
+  docentes        MateriaDocente[]
+  horario         HorarioClase[]
+  planificaciones Planificacion[]
+
+  @@unique([gradoId, nombre])
+  @@index([inquilinoId])
+  @@map("materias_grado")
+}
+
+/// Qué docentes dan una materia de un grado.
+model MateriaDocente {
+  id             Int          @id @default(autoincrement())
+  materiaGradoId Int          @map("materia_grado_id")
+  materiaGrado   MateriaGrado @relation(fields: [materiaGradoId], references: [id], onDelete: Cascade)
+  usuarioId      Int          @map("usuario_id")
+  usuario        Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([materiaGradoId, usuarioId])
+  @@index([usuarioId])
+  @@map("materias_docentes")
+}
+
+/// Una hora del horario semanal de un docente: día (1 lunes … 5 viernes) y hora de
+/// inicio (7 … 14, las ocho horas de 07:00 a 15:00). `materiaGradoId` NULO = «Sin
+/// clase». De aquí salen los periodos de una planificación semanal.
+model HorarioClase {
+  id             Int           @id @default(autoincrement())
+  inquilinoId    Int           @map("inquilino_id")
+  inquilino      Inquilino     @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  usuarioId      Int           @map("usuario_id")
+  usuario        Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  dia            Int
+  hora           Int
+  materiaGradoId Int?          @map("materia_grado_id")
+  materiaGrado   MateriaGrado? @relation(fields: [materiaGradoId], references: [id], onDelete: SetNull)
+
+  @@unique([usuarioId, dia, hora])
+  @@index([materiaGradoId])
+  @@map("horario_clases")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Las planificaciones
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -292,6 +373,11 @@ model Planificacion {
   materia String @db.VarChar(120)
   /// Ámbito de desarrollo/aprendizaje.
   ambito  String @db.VarChar(120)
+
+  /// La materia del grado de la que sale (módulo «Unidades»); con ella se cuentan
+  /// las horas del horario del docente. Nula en planificaciones anteriores al módulo.
+  materiaGradoId Int?          @map("materia_grado_id")
+  materiaGrado   MateriaGrado? @relation(fields: [materiaGradoId], references: [id], onDelete: SetNull)
 
   numeroUnidad Int    @map("numero_unidad")
   tituloUnidad String @map("titulo_unidad")

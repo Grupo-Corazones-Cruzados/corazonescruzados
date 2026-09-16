@@ -2863,6 +2863,25 @@ Hereda entero el sistema de catering (tokens, `ui.tsx`, `campos.tsx`, marca por 
 en `@layer components`, iconos de pestaña con **un cuaderno abierto** como glifo, dibujado a 16 px).
 Lo que aporta:
 
+### ⭐ UNA REJILLA QUE SE EDITA PULSANDO LA CELDA: EL HORARIO DE CLASES (2026-09-16)
+`perfil/PerfilCliente.tsx`. Dos columnas: **«Mis datos»** estrecha (`lg:w-80`, alto completo, con
+el cambio de contraseña como dos campos más del mismo formulario, ya sin tarjeta aparte) y, a la
+derecha, la **rejilla del horario** (lunes–viernes × 07:00–15:00). Cada celda es un `<button>` de
+`h-12`: vacía (`hover:bg-realce`), con materia (`bg-acento-suave text-acento`, materia en negrita y
+grado debajo en 11 px) o «Sin clase» (`bg-realce text-tenue italic`). Al pulsarla se abre un
+**popover anclado a la celda** (`absolute left-0 top-12 z-30 w-64`, `bg-tarjeta`, sombra) con la
+lista de materias asignadas («Materia — Grado»), «Sin clase» y «Vaciar la hora» en `text-error`.
+Se pinta en el acto y se confirma con el servidor (`guardarCeldaHorario`); si falla, vuelve atrás
+con un toast. Debajo, «Horas por materia» en `Chips`. Es la excepción registrada a «nada de
+edición inline»: una rejilla de 40 celdas con una sola elección cada una no cabe en un panel
+lateral. **Exportar / Importar Excel** son dos botones secundarios en la cabecera de la tarjeta;
+el `input[type=file]` va escondido.
+
+### El módulo «Unidades»: tres columnas maestro → detalle → detalle
+`unidades/UnidadesCliente.tsx`: grados (lista, 260 px) · materias del grado elegido · ficha de la
+materia (descripción, docentes asignados con casillas, unidades). Grado en `Ventanita` (un campo);
+materia en `PanelLateral` (varios campos), como manda el catálogo.
+
 ### ⭐ EL MÓDULO ENTERO EN UNA PÁGINA: LISTA A LA IZQUIERDA, GALERÍA DE SEMANAS ARRIBA Y EL DETALLE DEBAJO (2026-09-16)
 Fernando pidió que el panel de semanas ocupe **todo el ancho** con **altura limitada** y las semanas
 en **galería horizontal** (tarjetas de 220 px con `overflow-x-auto`), con los detalles de la

@@ -22,11 +22,12 @@ Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 |---|---|
 | **Inicio** | Cuántas planificaciones hay, quién las ha hecho y de qué materia; el tope de la semana siempre a la vista |
 | **Planificaciones** | Todo el módulo en una página: a la izquierda las planificaciones (las mías o las de todos), en el medio las semanas de la elegida, a la derecha los campos generados o la **vista previa** del formato entero. «Configurar» solo con una elegida. **Descargar en Word o en PDF** |
-| **Nueva planificación** | Materia, ámbito, nivel (Preparatoria · Primaria · Secundaria), n.º y título de unidad, inicio y fin del PUD. Nace con la plantilla por defecto de la institución |
+| **Nueva planificación** | **Materia (de las asignadas al docente en Unidades)**, ámbito, nivel (Preparatoria · Primaria · Secundaria), n.º y título de unidad, inicio y fin del PUD. Nace con la plantilla por defecto de la institución y con las destrezas de la materia |
 | **Nueva planificación semanal** | Botón **Dictar** (micrófono → texto en el cuadro), cuadro de indicaciones y hasta **5 adjuntos** (PDF, Word, texto) que se convierten en embeddings al subirlos. El agente redacta en segundo plano; la pantalla se actualiza sola |
-| **Los diez campos** | Fecha inicio, fecha fin, tema, n.º de periodos, objetivos del tema, destrezas con criterio de desempeño (elegidas de la tabla, con su imagen), estrategias metodológicas (tres fases del ciclo ACC), recursos, técnica, instrumento. Se pueden **corregir** a mano y **regenerar** |
+| **Los diez campos** | Fecha inicio, fecha fin, tema, **n.º de periodos (las horas de esa materia en el horario del docente; no lo decide el agente)**, objetivos del tema, destrezas con criterio de desempeño (elegidas de la tabla, con su imagen), estrategias metodológicas (tres fases del ciclo ACC), recursos, técnica, instrumento. Se pueden **corregir** a mano y **regenerar** |
 | **Configurar** | Plantilla, datos del formato (grado, paralelo, jornada, objetivos y criterios de la unidad), las firmas —elaborado por, revisado por, aprobado por, con la fecha del día de la descarga— y el **registro de formato** del pie (título, quién elaboró y aprobó el formato y cuándo) |
-| **Mi perfil** | Nombre, **profesión** (la que sale en la casilla «Docente»), correo y contraseña |
+| **Mi perfil** | Nombre, **profesión** (la que sale en la casilla «Docente»), correo y contraseña; a la derecha el **horario de clases** (lunes a viernes, 07:00 → 15:00): cada celda se pulsa y se elige una materia asignada o «Sin clase»; **Exportar / Importar Excel** con la plantilla y su lista desplegable |
+| **Unidades** (solo el administrador) | **Grados**, sus **materias** y, por materia, descripción, **docentes asignados** y cantidad de unidades. De aquí salen las materias que cada docente puede planificar |
 | **Usuarios** (solo el administrador) | Hasta 100 cuentas, todas de **profesor**; cuánto ha planificado cada una |
 | **Negocio** (solo el administrador) | Lo que la institución lleva impreso en el formato: las **tres líneas de la cabecera**, el **año lectivo**, los **tres logos** (institución · organización principal · opcional) y el responsable del DECE; nombre y contacto |
 | **Configuración** (solo el administrador) | Marca (logo de la aplicación, color, tema), plantilla por defecto y suscripción |
@@ -42,6 +43,12 @@ Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
   los archivos del docente; además recibe de entrada los seis más cercanos a las
   indicaciones;
 - salida en **JSON con esquema estricto** (`src/plantillas/pud/esquema.ts`).
+
+El **número de periodos** no lo decide el agente: son las horas de esa materia en el
+horario del docente (`src/lib/horario.ts → periodosDe`), y el encargo le da las
+sesiones (día y hora). **Las tres fases del ciclo ACC se aplican cada día de clase**
+y las actividades van numeradas por sesión («1. », «2. », «2.1. »). Si en alguna fase
+falta una sesión, `generacion.ts` le devuelve su JSON una vez para que lo complete.
 
 Lo medido: una semana tarda 15–30 s, ~13–25 k tokens de entrada, ~1,3 k de salida.
 `temperature`, `top_p` y `max_tokens` son 400 con este modelo: no se mandan.
