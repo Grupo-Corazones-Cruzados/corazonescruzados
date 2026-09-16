@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { LayoutDashboard, BookOpenText, UserRound, UserCog, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpenText, UserRound, UserCog, Settings, LogOut, Building2 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
 import { LogoNegocio } from '@/componentes/Marca';
 import { puede, ETIQUETA_ROL, type Capacidad } from '@/lib/permisos';
@@ -27,6 +27,7 @@ const DESTINOS: Destino[] = [
   { ruta: 'panel', etiqueta: 'Inicio', icono: LayoutDashboard, necesita: 'ver', grupo: 'Principal' },
   { ruta: 'planificaciones', etiqueta: 'Planificaciones', icono: BookOpenText, necesita: 'planificar', grupo: 'Principal' },
   { ruta: 'perfil', etiqueta: 'Mi perfil', icono: UserRound, necesita: 'ver', grupo: 'Principal' },
+  { ruta: 'negocio', etiqueta: 'Negocio', icono: Building2, necesita: 'administrar', grupo: 'Administración' },
   { ruta: 'usuarios', etiqueta: 'Usuarios', icono: UserCog, necesita: 'administrar', grupo: 'Administración' },
   { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, necesita: 'administrar', grupo: 'Administración' },
 ];

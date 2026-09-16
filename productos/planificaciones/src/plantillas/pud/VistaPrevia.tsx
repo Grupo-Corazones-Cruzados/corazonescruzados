@@ -3,10 +3,10 @@ import { parsearEstrategias, lineas } from './estrategias';
 import { celdaSemana, COLORES_FORMATO } from './documento';
 
 /**
- * LA VISTA PREVIA DEL PUD EN PANTALLA. Dibuja el mismo modelo que el PDF
- * (`documento.ts`), así que lo que se ve es lo que se descarga. Es un componente
- * de servidor sin estado: el formato es papel, y aquí se enseña como papel (hoja
- * clara con sus colores propios, no con los tokens del tema de la aplicación).
+ * LA VISTA PREVIA DEL PUD EN PANTALLA. Dibuja el mismo modelo que el PDF y el
+ * Word (`documento.ts`), así que lo que se ve es lo que se descarga. Es un
+ * componente de servidor sin estado: el formato es papel, y aquí se enseña como
+ * papel (hoja clara con sus colores propios, no con los tokens del tema).
  */
 
 // Los colores son los del formato original (COLORES_FORMATO), nunca los del tema.
@@ -14,6 +14,7 @@ const DUA = COLORES_FORMATO.dua;
 const C = COLORES_FORMATO;
 
 const esEnlace = (t: string) => /^https?:\/\/\S+$/.test(t.trim());
+const celda = 'border border-[#808080] px-1.5 py-1 align-top';
 
 function Barra({ titulo, numero, color }: { titulo: string; numero?: string; color: string }) {
   return (
@@ -24,6 +25,10 @@ function Barra({ titulo, numero, color }: { titulo: string; numero?: string; col
   );
 }
 
+/**
+ * Tabla de celdas: `etiqueta` (gris, negrita), `titulo` (rojo, blanco, centrado en
+ * vertical), `cursiva`, con `vinetas` o con una `imagen` centrada bajo el texto.
+ */
 function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]; minAlto?: number }) {
   return (
     <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
@@ -35,11 +40,11 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
                 key={j}
                 style={{
                   width: anchos && anchos.length === fila.length ? `${anchos[j]}%` : undefined,
-                  background: c.etiqueta ? C.etiqueta : undefined,
-                  minHeight: minAlto,
+                  background: c.titulo ? C.barra : c.etiqueta ? C.etiqueta : undefined,
+                  color: c.titulo ? '#fff' : undefined,
                   height: minAlto,
                 }}
-                className={`border border-[#808080] px-1.5 py-1 align-top whitespace-pre-line ${c.etiqueta ? 'font-bold' : ''} ${c.centrado ? 'text-center' : ''}`}
+                className={`border border-[#808080] px-1.5 py-1 whitespace-pre-line ${c.titulo ? 'align-middle text-center font-bold' : 'align-top'} ${c.etiqueta ? 'font-bold' : ''} ${c.centrado ? 'text-center' : ''} ${c.cursiva ? 'italic' : ''}`}
               >
                 {c.vinetas ? (
                   <ul className="list-disc pl-4">
@@ -49,6 +54,10 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
                   </ul>
                 ) : (
                   c.texto
+                )}
+                {c.imagen && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.imagen} alt="" className="mx-auto mt-1 h-10 w-auto max-w-full object-contain" />
                 )}
               </td>
             ))}
@@ -60,10 +69,25 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
 }
 
 function BloqueVista({ b, color }: { b: Bloque; color: string }) {
+  const titulo = `${b.numero ? b.numero + '  ' : ''}${b.titulo}`;
+  if (b.tipo === 'lateral') {
+    const n = b.columnas.length;
+    return (
+      <section className="mt-2.5">
+        <Tabla filas={[[{ texto: titulo, titulo: true }, ...b.columnas.map((c) => ({ texto: c.texto, etiqueta: true, centrado: true, imagen: c.icono }))]]} anchos={[16, ...b.columnas.map(() => 84 / n)]} minAlto={84} />
+      </section>
+    );
+  }
+  if (b.tipo === 'lateral-texto')
+    return (
+      <section className="mt-2.5">
+        <Tabla filas={[[{ texto: titulo, titulo: true }, { texto: b.texto }]]} anchos={[16, 84]} minAlto={(b.altoMinMm ?? 7) * 3.8} />
+      </section>
+    );
   return (
     <section className="mt-2.5">
       <Barra titulo={b.titulo} numero={b.numero} color={color} />
-      {b.tipo === 'tabla' ? <Tabla filas={b.filas} anchos={b.anchos} /> : <Tabla filas={[[{ texto: b.texto }]]} minAlto={34} />}
+      {b.tipo === 'tabla' ? <Tabla filas={b.filas} anchos={b.anchos} minAlto={b.altoMinMm ? b.altoMinMm * 3.8 : undefined} /> : <Tabla filas={[[{ texto: b.texto }]]} minAlto={34} />}
     </section>
   );
 }
@@ -71,7 +95,9 @@ function BloqueVista({ b, color }: { b: Bloque; color: string }) {
 function Fase({ titulo }: { titulo: string }) {
   return (
     <div className="mt-2 mb-1.5 flex items-stretch">
-      <span className="border border-[#808080] px-1.5 py-0.5 text-[8.5px] font-bold uppercase" style={{ color: C.fase }}>{titulo}</span>
+      <span className="border border-[#808080] px-1.5 py-0.5 text-[8.5px] font-bold uppercase" style={{ color: C.fase }}>
+        {titulo}
+      </span>
       {DUA.map((d) => (
         <span key={d.letra} className="ml-px flex w-4 items-center justify-center text-[8px] font-bold text-white" style={{ background: d.color }}>
           {d.letra}
@@ -90,30 +116,29 @@ const Enlace = ({ url }: { url: string }) => (
 export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
   const color = doc.colorCabecera;
   const inst = doc.institucion;
-  const celda = 'border border-[#808080] px-1.5 py-1 align-top';
+  const cols = doc.firmas.columnas;
+  const anchosFirmas = cols.flatMap(() => [8, 100 / cols.length - 8]);
   return (
     <div className="mx-auto w-full max-w-[1120px] bg-white p-6 text-[10px] leading-snug text-black shadow" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-      {/* Cabecera */}
+      {/* Cabecera: logos · líneas del negocio · año lectivo */}
       <div className="flex border border-[#808080]">
-        <div className="flex w-[22%] items-center gap-2 border-r border-[#808080] px-2 py-1.5">
-          {inst.logos.map((l) => (
+        <div className="flex w-[22%] items-center justify-center gap-2 border-r border-[#808080] px-2 py-1.5">
+          {inst.logos.map((l, i) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={l} src={l} alt="" className="h-12 w-auto object-contain" />
+            <img key={i} src={l} alt="" className="h-12 w-auto max-w-[80px] object-contain" />
           ))}
         </div>
         <div className="flex flex-1 flex-col items-center justify-center py-1.5 text-center">
           {inst.cabecera.map((l, i) => (
-            <p
-              key={i}
-              className={l.estilo === 'grande' ? 'text-[17px] font-bold' : l.estilo === 'acento' ? 'text-[13px] font-semibold' : 'text-[12px]'}
-              style={{ color: l.estilo === 'acento' ? C.acentoCabecera : C.gris }}
-            >
+            <p key={i} className={l.estilo === 'grande' ? 'text-[17px] font-bold' : l.estilo === 'acento' ? 'text-[13px] font-semibold' : 'text-[12px]'} style={{ color: l.estilo === 'acento' ? C.acentoCabecera : C.gris }}>
               {l.texto}
             </p>
           ))}
         </div>
         <div className="w-[13%] border-l border-[#808080] text-center">
-          <p className="py-1 text-[11px] font-bold" style={{ background: C.etiqueta }}>Año Lectivo</p>
+          <p className="py-1 text-[11px] font-bold" style={{ background: C.etiqueta }}>
+            Año Lectivo
+          </p>
           <p className="py-2 text-[11px]">{inst.anioLectivo}</p>
         </div>
       </div>
@@ -245,57 +270,22 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
         <BloqueVista key={i} b={b} color={color} />
       ))}
 
-      {/* Firmas */}
+      {/* Firmas: tres columnas con su casilla gris de etiqueta y su valor, como el original */}
       <section className="mt-2.5">
         <Barra titulo="FIRMAS DE RESPONSABILIDAD" numero={`${doc.numeroFirmas}.`} color={color} />
-        <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
-          <tbody>
-            <tr>
-              {doc.firmas.columnas.map((c) => (
-                <td key={c.titulo} className={`${celda} text-center font-bold`} style={{ background: C.etiqueta }}>
-                  {c.titulo}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              {doc.firmas.columnas.map((c) => (
-                <td key={c.titulo} className={celda}>
-                  <span className="font-bold">{c.cargo}</span> {c.nombre}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              {doc.firmas.columnas.map((c) => (
-                <td key={c.titulo} className={`${celda} h-12`}>
-                  <span className="font-bold">Firma:</span>
-                </td>
-              ))}
-            </tr>
-            <tr>
-              {doc.firmas.columnas.map((c) => (
-                <td key={c.titulo} className={celda}>
-                  <span className="font-bold">Fecha:</span> {c.fecha}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-        {doc.registro && (
-          <div className="mt-3">
-            <p className="text-center text-[10px] font-bold">{doc.registro.titulo}</p>
-            <Tabla
-              filas={[
-                [{ texto: 'Elaborado por', etiqueta: true, centrado: true }, { texto: 'Aprobado por', etiqueta: true, centrado: true }],
-                [{ texto: doc.registro.elaboradoPor.cargo, centrado: true }, { texto: doc.registro.aprobadoPor.cargo, centrado: true }],
-                [
-                  { texto: `\n\n${doc.registro.elaboradoPor.nombre}\nFecha: ${doc.registro.elaboradoPor.fecha}`, centrado: true },
-                  { texto: `\n\n${doc.registro.aprobadoPor.nombre}\nFecha: ${doc.registro.aprobadoPor.fecha}`, centrado: true },
-                ],
-              ]}
-              anchos={[50, 50]}
-            />
-          </div>
-        )}
+        <Tabla filas={[cols.map((c) => ({ texto: c.titulo, etiqueta: true, centrado: true }))]} anchos={cols.map(() => 100 / cols.length)} />
+        <Tabla filas={[cols.flatMap((c) => [{ texto: c.cargo, etiqueta: true }, { texto: c.nombre, cursiva: true }])]} anchos={anchosFirmas} minAlto={26} />
+        <Tabla filas={[cols.flatMap(() => [{ texto: 'Firma:', etiqueta: true }, { texto: '' }])]} anchos={anchosFirmas} minAlto={52} />
+        <Tabla filas={[cols.flatMap((c) => [{ texto: 'Fecha:', etiqueta: true }, { texto: c.fecha }])]} anchos={anchosFirmas} minAlto={22} />
+        {/* Registro de formato: media página, a la izquierda */}
+        <div className="mt-3 w-1/2">
+          <Tabla filas={[[{ texto: `REGISTRO DE FORMATO: ${doc.registro.titulo}`, titulo: true }]]} anchos={[100]} minAlto={22} />
+          <Tabla filas={[[{ texto: 'Elaborado por', etiqueta: true, centrado: true }, { texto: 'Aprobado por', etiqueta: true, centrado: true }]]} anchos={[50, 50]} />
+          <Tabla filas={[[{ texto: doc.registro.elaboradoPor.cargo, centrado: true }, { texto: doc.registro.aprobadoPor.cargo, centrado: true }]]} anchos={[50, 50]} />
+          <Tabla filas={[[{ texto: '' }, { texto: '' }]]} anchos={[50, 50]} minAlto={34} />
+          <Tabla filas={[[{ texto: doc.registro.elaboradoPor.nombre, centrado: true, cursiva: true }, { texto: doc.registro.aprobadoPor.nombre, centrado: true, cursiva: true }]]} anchos={[50, 50]} />
+          <Tabla filas={[[{ texto: 'Fecha:', etiqueta: true }, { texto: doc.registro.elaboradoPor.fecha, centrado: true }, { texto: 'Fecha:', etiqueta: true }, { texto: doc.registro.aprobadoPor.fecha, centrado: true }]]} anchos={[14, 36, 14, 36]} />
+        </div>
       </section>
     </div>
   );

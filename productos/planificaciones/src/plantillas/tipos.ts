@@ -42,17 +42,47 @@ export type PlanificacionDoc = {
   aprobadoPor: string | null;
   aprobadoCargo: string | null;
   docente: string;
+  /** El «Registro de formato» del pie: variable por planificación (Fernando, 2026-09-16). */
+  registro: {
+    titulo: string | null;
+    elaboradoCargo: string | null;
+    elaboradoNombre: string | null;
+    elaboradoFecha: string | null;
+    aprobadoCargo: string | null;
+    aprobadoNombre: string | null;
+    aprobadoFecha: string | null;
+  };
 };
 
-/** Una celda de las tablas del formato. `etiqueta` = fondo gris y negrita. */
-export type Celda = { texto: string; etiqueta?: boolean; ancho?: number; centrado?: boolean; vinetas?: string[] };
+/** Una celda de las tablas del formato. `etiqueta` = fondo gris y negrita; `titulo` = fondo rojo y texto blanco. */
+export type Celda = { texto: string; etiqueta?: boolean; titulo?: boolean; ancho?: number; centrado?: boolean; vinetas?: string[]; imagen?: string; cursiva?: boolean };
 
 /** Un bloque del documento antes o después de la tabla de planificación. */
 export type Bloque =
-  | { tipo: 'tabla'; numero?: string; titulo: string; filas: Celda[][]; anchos?: number[] }
-  | { tipo: 'texto'; numero?: string; titulo: string; texto: string };
+  /** Barra roja de título + tabla. */
+  | { tipo: 'tabla'; numero?: string; titulo: string; filas: Celda[][]; anchos?: number[]; altoMinMm?: number }
+  /** Barra roja de título + una sola celda de texto. */
+  | { tipo: 'texto'; numero?: string; titulo: string; texto: string }
+  /** Celda roja de título A LA IZQUIERDA + columnas con su etiqueta gris y su icono debajo (competencias, inserciones). */
+  | { tipo: 'lateral'; numero?: string; titulo: string; columnas: { texto: string; icono: string }[] }
+  /** Celda roja de título a la izquierda + una celda de texto (observaciones). */
+  | { tipo: 'lateral-texto'; numero?: string; titulo: string; texto: string; altoMinMm?: number };
 
-/** El documento entero, listo para dibujar. Lo construye `documento.ts`; lo dibujan el PDF y la vista previa. */
+/**
+ * LO QUE EL NEGOCIO LLEVA IMPRESO EN EL FORMATO: lo edita el administrador en el
+ * módulo «Negocio» (Fernando, 2026-09-16). Las tres líneas de la cabecera, el año
+ * lectivo, los tres logos (institución · organización principal · opcional) y el
+ * responsable del DECE.
+ */
+export type InstitucionConfig = {
+  cabecera: { texto: string; estilo?: 'normal' | 'grande' | 'acento' }[];
+  anioLectivo: string;
+  /** Hasta tres: institución, organización principal, opcional. Direcciones o `data:` URL. */
+  logos: string[];
+  deceResponsable: string;
+};
+
+/** El documento entero, listo para dibujar. Lo construye `documento.ts`; lo dibujan el PDF, el Word y la vista previa. */
 export type DocumentoPud = {
   colorCabecera: string;
   institucion: InstitucionConfig;
@@ -60,39 +90,15 @@ export type DocumentoPud = {
   datosInformativos: Celda[][];
   tiempo: Celda[][];
   previos: Bloque[];
-  /** Número de la sección «PLANIFICACIÓN» (depende de cuántas secciones lleve la institución antes). */
+  /** Número de la sección «PLANIFICACIÓN» (depende de cuántas secciones lleve antes). */
   numeroPlanificacion: number;
   semanas: SemanaDoc[];
   posteriores: Bloque[];
   numeroFirmas: number;
+  /** Firmas de responsabilidad: tres columnas, cada una con su cargo, su nombre y la fecha del día. */
   firmas: { columnas: { titulo: string; cargo: string; nombre: string; fecha: string }[] };
-  registro: InstitucionConfig['registroFormato'];
-};
-
-/**
- * LA CONFIGURACIÓN DE LA INSTITUCIÓN PARA EL FORMATO. Se edita a nivel de
- * código, por inquilino (Fernando, 2026-09-15). Lo que no tenga la institución
- * se omite del documento.
- */
-export type InstitucionConfig = {
-  /** Líneas de la cabecera: la del medio va grande y la marcada `acento` en color. */
-  cabecera: { texto: string; estilo?: 'normal' | 'grande' | 'acento' }[];
-  anioLectivo: string;
-  /** Logos (direcciones de imagen PNG/JPG). El primero es el de la institución. */
-  logos: string[];
-  tituloDocumento: string;
-  /** Color de las barras de sección. Por defecto el rojo del formato original (#EF1230): NUNCA el del tema del inquilino (Fernando, 2026-09-16). */
-  colorCabecera?: string;
-  /** Sección de ejes transversales (pastoral, valores…), si la institución la lleva. */
-  ejesTransversales?: { titulo: string; filas: { eje: string; actividades: string[] }[] };
-  competencias?: { titulo: string; columnas: string[] };
-  inserciones?: { titulo: string; columnas: string[] };
-  /** Si lleva la sección de adaptaciones curriculares (vacía, para llenar a mano). */
-  adaptaciones: boolean;
-  /** Si lleva el espacio del DECE (departamento de consejería estudiantil). */
-  dece?: { responsable: string };
-  bibliografia: string[];
-  registroFormato?: {
+  /** El «Registro de formato» del pie (siempre se dibuja; con lo que haya). */
+  registro: {
     titulo: string;
     elaboradoPor: { cargo: string; nombre: string; fecha: string };
     aprobadoPor: { cargo: string; nombre: string; fecha: string };

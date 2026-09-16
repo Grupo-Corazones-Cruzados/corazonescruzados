@@ -89,6 +89,13 @@ const Configuracion = z
     revisadoCargo: z.string().trim().max(80).optional().or(z.literal('')),
     aprobadoPor: z.string().trim().max(200).optional().or(z.literal('')),
     aprobadoCargo: z.string().trim().max(80).optional().or(z.literal('')),
+    registroTitulo: z.string().trim().max(200).optional().or(z.literal('')),
+    registroElaboradoCargo: z.string().trim().max(120).optional().or(z.literal('')),
+    registroElaboradoNombre: z.string().trim().max(200).optional().or(z.literal('')),
+    registroElaboradoFecha: z.string().trim().max(40).optional().or(z.literal('')),
+    registroAprobadoCargo: z.string().trim().max(120).optional().or(z.literal('')),
+    registroAprobadoNombre: z.string().trim().max(200).optional().or(z.literal('')),
+    registroAprobadoFecha: z.string().trim().max(40).optional().or(z.literal('')),
   })
   .refine((d) => d.finPud >= d.inicioPud, { message: 'El fin del PUD no puede ser antes del inicio.', path: ['finPud'] });
 
@@ -128,6 +135,13 @@ export async function configurarPlanificacion(slug: string, id: number, datos: F
       revisadoCargo: d.revisadoCargo || null,
       aprobadoPor: d.aprobadoPor || null,
       aprobadoCargo: d.aprobadoCargo || null,
+      registroTitulo: d.registroTitulo || null,
+      registroElaboradoCargo: d.registroElaboradoCargo || null,
+      registroElaboradoNombre: d.registroElaboradoNombre || null,
+      registroElaboradoFecha: d.registroElaboradoFecha || null,
+      registroAprobadoCargo: d.registroAprobadoCargo || null,
+      registroAprobadoNombre: d.registroAprobadoNombre || null,
+      registroAprobadoFecha: d.registroAprobadoFecha || null,
     },
   });
   revalidatePath(`/${slug}/planificaciones`);

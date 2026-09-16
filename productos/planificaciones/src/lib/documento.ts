@@ -1,15 +1,46 @@
 import { prisma } from '@/lib/db';
 import { plantillaDe } from '@/plantillas';
-import { institucionDe } from '@/plantillas/instituciones';
-import type { DocumentoPud, SemanaDoc } from '@/plantillas/tipos';
+import type { DocumentoPud, InstitucionConfig, SemanaDoc } from '@/plantillas/tipos';
 import { nombreDocente } from '@/lib/catalogo';
 import { aDia } from '@/lib/fechas';
 
+type InquilinoDoc = {
+  id: number;
+  nombre: string;
+  zonaHoraria: string;
+  cabeceraLinea1: string | null;
+  cabeceraLinea2: string | null;
+  cabeceraLinea3: string | null;
+  anioLectivo: string | null;
+  logoInstitucionUrl: string | null;
+  logoOrganizacionUrl: string | null;
+  logoOpcionalUrl: string | null;
+  deceResponsable: string | null;
+};
+
 /**
- * De la base al modelo del documento. Lo usan la vista previa y el PDF con la
- * misma llamada, así que dicen lo mismo.
+ * Lo que el negocio lleva impreso en el formato, desde la fila del inquilino
+ * (módulo «Negocio»). Si no ha rellenado la cabecera, va su nombre en grande.
  */
-export async function cargarDocumento(inquilino: { id: number; slug: string; nombre: string; zonaHoraria: string }, planificacionId: number): Promise<{ doc: DocumentoPud; nombreArchivo: string; plantilla: ReturnType<typeof plantillaDe> } | null> {
+export function institucionDe(inq: InquilinoDoc): InstitucionConfig {
+  const cabecera = [
+    inq.cabeceraLinea1 ? { texto: inq.cabeceraLinea1, estilo: 'normal' as const } : null,
+    inq.cabeceraLinea2 ? { texto: inq.cabeceraLinea2, estilo: 'grande' as const } : null,
+    inq.cabeceraLinea3 ? { texto: inq.cabeceraLinea3, estilo: 'acento' as const } : null,
+  ].filter((l): l is NonNullable<typeof l> => l !== null);
+  return {
+    cabecera: cabecera.length ? cabecera : [{ texto: inq.nombre, estilo: 'grande' }],
+    anioLectivo: inq.anioLectivo ?? '',
+    logos: [inq.logoInstitucionUrl, inq.logoOrganizacionUrl, inq.logoOpcionalUrl].filter((l): l is string => Boolean(l)),
+    deceResponsable: inq.deceResponsable ?? '',
+  };
+}
+
+/**
+ * De la base al modelo del documento. Lo usan la vista previa, el PDF y el Word
+ * con la misma llamada, así que dicen lo mismo.
+ */
+export async function cargarDocumento(inquilino: InquilinoDoc, planificacionId: number): Promise<{ doc: DocumentoPud; nombreArchivo: string; plantilla: ReturnType<typeof plantillaDe> } | null> {
   const pl = await prisma.planificacion.findFirst({
     where: { id: planificacionId, inquilinoId: inquilino.id },
     include: {
@@ -55,9 +86,18 @@ export async function cargarDocumento(inquilino: { id: number; slug: string; nom
       aprobadoPor: pl.aprobadoPor,
       aprobadoCargo: pl.aprobadoCargo,
       docente: nombreDocente(pl.usuario),
+      registro: {
+        titulo: pl.registroTitulo,
+        elaboradoCargo: pl.registroElaboradoCargo,
+        elaboradoNombre: pl.registroElaboradoNombre,
+        elaboradoFecha: pl.registroElaboradoFecha,
+        aprobadoCargo: pl.registroAprobadoCargo,
+        aprobadoNombre: pl.registroAprobadoNombre,
+        aprobadoFecha: pl.registroAprobadoFecha,
+      },
     },
     semanas,
-    institucion: institucionDe(inquilino.slug, inquilino.nombre),
+    institucion: institucionDe(inquilino),
     zonaHoraria: inquilino.zonaHoraria,
   });
 

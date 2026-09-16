@@ -25,10 +25,11 @@ Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 | **Nueva planificación** | Materia, ámbito, nivel (Preparatoria · Primaria · Secundaria), n.º y título de unidad, inicio y fin del PUD. Nace con la plantilla por defecto de la institución |
 | **Nueva planificación semanal** | Botón **Dictar** (micrófono → texto en el cuadro), cuadro de indicaciones y hasta **5 adjuntos** (PDF, Word, texto) que se convierten en embeddings al subirlos. El agente redacta en segundo plano; la pantalla se actualiza sola |
 | **Los diez campos** | Fecha inicio, fecha fin, tema, n.º de periodos, objetivos del tema, destrezas con criterio de desempeño (elegidas de la tabla, con su imagen), estrategias metodológicas (tres fases del ciclo ACC), recursos, técnica, instrumento. Se pueden **corregir** a mano y **regenerar** |
-| **Configurar** | Plantilla, datos del formato (grado, paralelo, jornada, objetivos y criterios de la unidad) y las firmas: elaborado por, revisado por, aprobado por, con la fecha del día de la descarga |
+| **Configurar** | Plantilla, datos del formato (grado, paralelo, jornada, objetivos y criterios de la unidad), las firmas —elaborado por, revisado por, aprobado por, con la fecha del día de la descarga— y el **registro de formato** del pie (título, quién elaboró y aprobó el formato y cuándo) |
 | **Mi perfil** | Nombre, **profesión** (la que sale en la casilla «Docente»), correo y contraseña |
 | **Usuarios** (solo el administrador) | Hasta 100 cuentas, todas de **profesor**; cuánto ha planificado cada una |
-| **Configuración** (solo el administrador) | Marca (nombre, logo, color, tema), plantilla por defecto y suscripción |
+| **Negocio** (solo el administrador) | Lo que la institución lleva impreso en el formato: las **tres líneas de la cabecera**, el **año lectivo**, los **tres logos** (institución · organización principal · opcional) y el responsable del DECE; nombre y contacto |
+| **Configuración** (solo el administrador) | Marca (logo de la aplicación, color, tema), plantilla por defecto y suscripción |
 
 ## El agente
 
@@ -62,9 +63,11 @@ redactar. La primera es **`pud`**:
   de tabla `#D9D9D9`, bordes `#808080`, fase `#002060`, DUA verde/morado/celeste). **Nunca los
   del tema del inquilino** (Fernando, 2026-09-16). Lo dibujan `pud/pdf.ts` (PDFKit),
   `pud/word.ts` (docx) y `pud/VistaPrevia.tsx` (pantalla), así los tres dicen lo mismo.
-- `instituciones.ts` — **la configuración por institución, a nivel de código**:
-  cabecera, año lectivo, logos, ejes transversales, competencias, inserciones,
-  bibliografía, registro del formato. Se añade una entrada por `slug`.
+- `pud/contenido-fijo.ts` — **lo que es el formato mismo y no se edita** (Fernando,
+  2026-09-16): los ejes transversales de la pastoral educativa, las competencias y las
+  inserciones curriculares con sus iconos incrustados (extraídos de los PDF de ejemplo)
+  y la bibliografía. Lo variable de la cabecera (líneas, año lectivo, logos) es del
+  inquilino y se edita en «Negocio»; el registro de formato es de cada planificación.
 
 Lo que **se calcula y no se guarda**: el número de semanas, el total de periodos,
 la fecha de las firmas (la del día de la descarga) y el nombre del docente
@@ -135,7 +138,5 @@ suscripción (Fernando, 2026-09-16).
 ## Lo que falta
 
 - **Cargar las destrezas de las demás materias** (un `prisma/destrezas/*.json` por materia, con sus iconos).
-- **La configuración del formato de cada cliente real** en `src/plantillas/instituciones.ts`
-  (logos, red educativa, ejes, registro) cuando llegue el primero.
 - **Pasarela de pago**: hoy el cobro es por autoservicio desde `/gcc`.
 - Cloudinary para subir el logo (mientras, se pega la dirección de una imagen), como en los otros productos.

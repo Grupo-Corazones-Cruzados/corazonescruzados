@@ -77,15 +77,27 @@ const parrafoEnlace = (url: string, sangria = 0) =>
   });
 
 function celda(c: Celda, anchoMm: number, extra: { tamano?: number } = {}): TableCell {
-  const hijos = c.vinetas
+  const negrita = c.etiqueta || c.titulo;
+  const hijos: Paragraph[] = c.vinetas
     ? c.vinetas.map((v) => new Paragraph({ spacing: { after: 0 }, children: [run(`•  ${v}`, { tamano: extra.tamano })] }))
-    : parrafos(c.texto, { negrita: c.etiqueta, tamano: c.etiqueta ? TAM_ETIQUETA : extra.tamano, centrado: c.centrado });
+    : (c.texto || '').split('\n').map(
+        (l) =>
+          new Paragraph({
+            alignment: c.centrado || c.titulo ? AlignmentType.CENTER : AlignmentType.LEFT,
+            spacing: { after: 0, line: 240 },
+            children: [new TextRun({ text: l, bold: negrita, italics: c.cursiva, color: c.titulo ? 'FFFFFF' : undefined, size: negrita ? TAM_ETIQUETA : (extra.tamano ?? TAM), font: FUENTE })],
+          }),
+      );
+  if (c.imagen) {
+    const d = imagenDeDataUrl(c.imagen);
+    if (d) hijos.push(imagen(d, 40, 120, AlignmentType.CENTER));
+  }
   return new TableCell({
     width: { size: TW(anchoMm), type: WidthType.DXA },
     borders: bordes,
     margins: margenCelda,
-    verticalAlign: VerticalAlign.TOP,
-    shading: c.etiqueta ? { type: ShadingType.CLEAR, fill: hex(C.etiqueta), color: 'auto' } : undefined,
+    verticalAlign: c.titulo ? VerticalAlign.CENTER : VerticalAlign.TOP,
+    shading: c.titulo ? { type: ShadingType.CLEAR, fill: hex(C.barra), color: 'auto' } : c.etiqueta ? { type: ShadingType.CLEAR, fill: hex(C.etiqueta), color: 'auto' } : undefined,
     children: hijos.length ? hijos : [new Paragraph({ children: [run('')] })],
   });
 }
@@ -169,22 +181,35 @@ function medidas(d: { datos: Buffer; tipo: 'png' | 'jpg' }): { w: number; h: num
 }
 
 /** La imagen a `altoPx` de alto, con su proporción (una tira de tres iconos es tres veces más ancha). */
-const imagen = (d: { datos: Buffer; tipo: 'png' | 'jpg' }, altoPx: number, anchoMaxPx = 120) => {
+const imagen = (d: { datos: Buffer; tipo: 'png' | 'jpg' }, altoPx: number, anchoMaxPx = 120, alineacion: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT) => {
   const m = medidas(d);
   const w = m ? Math.min(anchoMaxPx, Math.round((altoPx * m.w) / m.h)) : altoPx;
   const h = m ? Math.round((w * m.h) / m.w) : altoPx;
-  return new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ type: d.tipo, data: d.datos, transformation: { width: w, height: h } })] });
+  return new Paragraph({ alignment: alineacion, spacing: { before: 40, after: 0 }, children: [new ImageRun({ type: d.tipo, data: d.datos, transformation: { width: w, height: h } })] });
 };
+
+/** Un `data:` URL PNG/JPG → bytes y tipo; null si no lo es. */
+function imagenDeDataUrl(url: string) {
+  const m = url.match(/^data:image\/(png|jpe?g);base64,(.+)$/);
+  return m ? { datos: Buffer.from(m[2], 'base64'), tipo: (m[1] === 'png' ? 'png' : 'jpg') as 'png' | 'jpg' } : null;
+}
 
 // ── Cabecera ────────────────────────────────────────────────────────────────
 
 async function cabecera(doc: DocumentoPud): Promise<(Table | Paragraph)[]> {
   const inst = doc.institucion;
-  const logos: Paragraph[] = [];
+  // Los tres logos en UNA fila (un solo párrafo): en párrafos separados se apilaban
+  // y la cabecera crecía tres veces.
+  const runsLogos: ImageRun[] = [];
   for (const url of inst.logos.slice(0, 3)) {
     const d = await cargarImagen(url);
-    if (d) logos.push(new Paragraph({ spacing: { after: 0 }, children: [new ImageRun({ type: d.tipo, data: d.datos, transformation: { width: 60, height: 60 } })] }));
+    if (!d) continue;
+    const m = medidas(d);
+    const alto = 46;
+    const ancho = m ? Math.min(70, Math.round((alto * m.w) / m.h)) : alto;
+    runsLogos.push(new ImageRun({ type: d.tipo, data: d.datos, transformation: { width: ancho, height: m ? Math.round((ancho * m.h) / m.w) : alto } }));
   }
+  const logos = runsLogos.length ? [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 0 }, children: runsLogos.flatMap((r, i) => (i ? [new TextRun({ text: '  ' }), r] : [r])) })] : [];
   const centro = inst.cabecera.map(
     (l) =>
       new Paragraph({
@@ -220,8 +245,14 @@ async function cabecera(doc: DocumentoPud): Promise<(Table | Paragraph)[]> {
 // ── Bloques genéricos ───────────────────────────────────────────────────────
 
 function bloque(b: Bloque, color: string): (Table | Paragraph)[] {
-  const t = b.tipo === 'tabla' ? tabla(b.filas, b.anchos) : tabla([[{ texto: b.texto }]], [100], { altoMinMm: 9 });
-  return [barra(b.titulo, color, b.numero), t, hueco()];
+  const titulo = `${b.numero ? b.numero + '  ' : ''}${b.titulo}`;
+  if (b.tipo === 'tabla') return [barra(b.titulo, color, b.numero), tabla(b.filas, b.anchos, { altoMinMm: b.altoMinMm }), hueco()];
+  if (b.tipo === 'texto') return [barra(b.titulo, color, b.numero), tabla([[{ texto: b.texto }]], [100], { altoMinMm: 9 }), hueco()];
+  if (b.tipo === 'lateral') {
+    const n = b.columnas.length;
+    return [tabla([[{ texto: titulo, titulo: true }, ...b.columnas.map((c) => ({ texto: c.texto, etiqueta: true, centrado: true, imagen: c.icono }))]], [16, ...b.columnas.map(() => 84 / n)], { altoMinMm: 22 }), hueco()];
+  }
+  return [tabla([[{ texto: titulo, titulo: true }, { texto: b.texto }]], [16, 84], { altoMinMm: b.altoMinMm ?? 7 }), hueco()];
 }
 
 // ── La tabla de planificación ───────────────────────────────────────────────
@@ -339,36 +370,28 @@ async function tablaSemanas(doc: DocumentoPud): Promise<Table> {
 
 function firmas(doc: DocumentoPud): (Table | Paragraph)[] {
   const cols = doc.firmas.columnas;
-  const pct = cols.map(() => 100 / cols.length);
-  const salida: (Table | Paragraph)[] = [
+  const anchos = cols.flatMap(() => [8, 100 / cols.length - 8]);
+  const r = doc.registro;
+  // El registro va a media página, a la izquierda: sus tablas usan la mitad del ancho.
+  return [
     barra('FIRMAS DE RESPONSABILIDAD', doc.colorCabecera, `${doc.numeroFirmas}.`),
-    tabla(
-      [
-        cols.map((c) => ({ texto: c.titulo, etiqueta: true, centrado: true })),
-        cols.map((c) => ({ texto: `${c.cargo}    ${c.nombre}` })),
-        cols.map(() => ({ texto: 'Firma:' })),
-        cols.map((c) => ({ texto: `Fecha:    ${c.fecha}` })),
-      ],
-      pct,
-      { altoMinMm: 7 },
-    ),
+    tabla([cols.map((c) => ({ texto: c.titulo, etiqueta: true, centrado: true }))], cols.map(() => 100 / cols.length)),
+    tabla([cols.flatMap((c) => [{ texto: c.cargo, etiqueta: true }, { texto: c.nombre, cursiva: true }])], anchos, { altoMinMm: 7 }),
+    tabla([cols.flatMap(() => [{ texto: 'Firma:', etiqueta: true }, { texto: '' }])], anchos, { altoMinMm: 14 }),
+    tabla([cols.flatMap((c) => [{ texto: 'Fecha:', etiqueta: true }, { texto: c.fecha }])], anchos, { altoMinMm: 6 }),
     hueco(3),
+    tablaMedia([[{ texto: `REGISTRO DE FORMATO: ${r.titulo}`, titulo: true }]], [100], 6),
+    tablaMedia([[{ texto: 'Elaborado por', etiqueta: true, centrado: true }, { texto: 'Aprobado por', etiqueta: true, centrado: true }]], [50, 50]),
+    tablaMedia([[{ texto: r.elaboradoPor.cargo, centrado: true }, { texto: r.aprobadoPor.cargo, centrado: true }]], [50, 50]),
+    tablaMedia([[{ texto: '' }, { texto: '' }]], [50, 50], 9),
+    tablaMedia([[{ texto: r.elaboradoPor.nombre, centrado: true, cursiva: true }, { texto: r.aprobadoPor.nombre, centrado: true, cursiva: true }]], [50, 50]),
+    tablaMedia([[{ texto: 'Fecha:', etiqueta: true }, { texto: r.elaboradoPor.fecha, centrado: true }, { texto: 'Fecha:', etiqueta: true }, { texto: r.aprobadoPor.fecha, centrado: true }]], [14, 36, 14, 36]),
   ];
-  if (doc.registro) {
-    const r = doc.registro;
-    salida.push(...parrafos(r.titulo, { negrita: true, centrado: true, despues: 60 }));
-    salida.push(
-      tabla(
-        [
-          [{ texto: 'Elaborado por', etiqueta: true, centrado: true }, { texto: 'Aprobado por', etiqueta: true, centrado: true }],
-          [{ texto: r.elaboradoPor.cargo, centrado: true }, { texto: r.aprobadoPor.cargo, centrado: true }],
-          [{ texto: `\n\n${r.elaboradoPor.nombre}\nFecha: ${r.elaboradoPor.fecha}`, centrado: true }, { texto: `\n\n${r.aprobadoPor.nombre}\nFecha: ${r.aprobadoPor.fecha}`, centrado: true }],
-        ],
-        [50, 50],
-      ),
-    );
+  function tablaMedia(filas: Celda[][], pct: number[], altoMinMm?: number) {
+    const anchosMm = pct.map((p) => (ANCHO_PAGINA / 2) * (p / 100));
+    const rows = filas.map((fila) => new TableRow({ height: altoMinMm ? { value: TW(altoMinMm), rule: 'atLeast' } : undefined, children: fila.map((c, i) => celda(c, anchosMm[i])) }));
+    return new Table({ width: { size: TW(ANCHO_PAGINA / 2), type: WidthType.DXA }, columnWidths: anchosMm.map(TW), rows });
   }
-  return salida;
 }
 
 // ── Punto de entrada ────────────────────────────────────────────────────────

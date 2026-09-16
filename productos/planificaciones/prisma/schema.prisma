@@ -76,6 +76,20 @@ model Inquilino {
   /// planificaciones. Las plantillas viven en `src/plantillas/`.
   plantillaPorDefecto String @default("pud") @map("plantilla_por_defecto") @db.VarChar(40)
 
+  // ── Los datos del NEGOCIO que lleva impresos el formato (Fernando, 2026-09-16):
+  //    los edita el administrador en el módulo «Negocio». Los logos van como
+  //    `data:` URL (o una dirección): el 1 es el de la institución, el 2 el de la
+  //    organización principal y el 3 es opcional.
+  cabeceraLinea1      String? @map("cabecera_linea_1") @db.VarChar(160)
+  cabeceraLinea2      String? @map("cabecera_linea_2") @db.VarChar(160)
+  cabeceraLinea3      String? @map("cabecera_linea_3") @db.VarChar(160)
+  anioLectivo         String? @map("anio_lectivo") @db.VarChar(40)
+  logoInstitucionUrl  String? @map("logo_institucion_url")
+  logoOrganizacionUrl String? @map("logo_organizacion_url")
+  logoOpcionalUrl     String? @map("logo_opcional_url")
+  /// Responsable del DECE, para el «Espacio solo para el DECE» del formato.
+  deceResponsable     String? @map("dece_responsable") @db.VarChar(160)
+
   zonaHoraria String @default("America/Guayaquil") @map("zona_horaria")
 
   estado      EstadoInquilino @default(PRUEBA)
@@ -300,6 +314,16 @@ model Planificacion {
   revisadoCargo String? @default("Coordinador de área") @map("revisado_cargo")
   aprobadoPor   String? @map("aprobado_por")
   aprobadoCargo String? @default("Rector/Vicerrector") @map("aprobado_cargo")
+
+  // ── «Registro de formato», el pie del documento (Fernando, 2026-09-16): es
+  //    variable y se establece en la configuración de la planificación.
+  registroTitulo         String? @map("registro_titulo") @db.VarChar(200)
+  registroElaboradoCargo String? @default("Coordinación Pedagógica") @map("registro_elaborado_cargo") @db.VarChar(120)
+  registroElaboradoNombre String? @map("registro_elaborado_nombre") @db.VarChar(200)
+  registroElaboradoFecha String? @map("registro_elaborado_fecha") @db.VarChar(40)
+  registroAprobadoCargo  String? @default("Dirección General") @map("registro_aprobado_cargo") @db.VarChar(120)
+  registroAprobadoNombre String? @map("registro_aprobado_nombre") @db.VarChar(200)
+  registroAprobadoFecha  String? @map("registro_aprobado_fecha") @db.VarChar(40)
 
   creado      DateTime @default(now()) @map("creado_en")
   actualizado DateTime @updatedAt @map("actualizado_en")

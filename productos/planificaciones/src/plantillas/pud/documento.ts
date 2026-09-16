@@ -2,17 +2,24 @@ import type { Bloque, Celda, DocumentoPud, InstitucionConfig, PlanificacionDoc, 
 import { ETIQUETA_NIVEL } from '@/lib/catalogo';
 import { diaDeMes, fechaCorta, hoyEn } from '@/lib/fechas';
 import { lineas } from './estrategias';
+import { BIBLIOGRAFIA, COMPETENCIAS, EJES_TRANSVERSALES, INSERCIONES } from './contenido-fijo';
 
 /**
  * EL MODELO DEL DOCUMENTO. Una sola función decide qué va en cada casilla del
- * formato; el PDF y la vista previa solo lo dibujan. Así los dos dicen lo mismo
- * y un cambio del formato se hace una vez.
+ * formato; el PDF, el Word y la vista previa solo lo dibujan. Así los tres dicen
+ * lo mismo y un cambio del formato se hace una vez.
  *
  * Lo que se CALCULA y no se guarda (Fernando, 2026-09-15): el número de semanas
  * es la cantidad de planificaciones semanales; el total de periodos es la suma de
  * los periodos de cada semana; la fecha de las firmas es la del día de la
  * descarga; el docente sale del perfil del usuario.
+ *
+ * LO FIJO Y LO VARIABLE (Fernando, 2026-09-16): los ejes transversales, las
+ * competencias y las inserciones curriculares son el formato mismo
+ * (`contenido-fijo.ts`); la cabecera, el año lectivo, los logos y el DECE son del
+ * negocio; el registro de formato es de cada planificación.
  */
+
 /**
  * LOS COLORES DEL FORMATO SON LOS DEL ORIGINAL, NO LOS DEL TEMA (Fernando, 2026-09-16:
  * «los colores del formato deben ser iguales a los que te pasé en los casos de
@@ -34,12 +41,7 @@ export const COLORES_FORMATO: { barra: string; etiqueta: string; cabeceraTabla: 
   ],
 };
 
-export function armarDocumento(p: {
-  planificacion: PlanificacionDoc;
-  semanas: SemanaDoc[];
-  institucion: InstitucionConfig;
-  zonaHoraria: string;
-}): DocumentoPud {
+export function armarDocumento(p: { planificacion: PlanificacionDoc; semanas: SemanaDoc[]; institucion: InstitucionConfig; zonaHoraria: string }): DocumentoPud {
   const { planificacion: pl, institucion: inst } = p;
   const semanas = p.semanas.filter((s) => s.estado === 'LISTA');
   const et = (texto: string): Celda => ({ texto, etiqueta: true });
@@ -71,69 +73,59 @@ export function armarDocumento(p: {
     ],
   ];
 
+  // ── Las secciones fijas del formato, numeradas como en el original ─────────
   const previos: Bloque[] = [];
   let n = 3;
-  if (inst.ejesTransversales) {
-    previos.push({
-      tipo: 'tabla',
-      numero: `${n++}.`,
-      titulo: inst.ejesTransversales.titulo,
-      anchos: [4, 30, 66],
-      filas: [
-        [et(''), et('Ejes - Dimensiones'), et('Actividades de formación')],
-        ...inst.ejesTransversales.filas.map((f, i) => [{ texto: String(i + 1), centrado: true }, { texto: f.eje }, { texto: '', vinetas: f.actividades }]),
-      ],
-    });
-  }
-  if (inst.competencias)
-    previos.push({ tipo: 'tabla', numero: `${n++}.`, titulo: inst.competencias.titulo, filas: [inst.competencias.columnas.map((c) => ({ texto: c, etiqueta: true, centrado: true }))] });
-  if (inst.inserciones)
-    previos.push({ tipo: 'tabla', numero: `${n++}.`, titulo: inst.inserciones.titulo, filas: [inst.inserciones.columnas.map((c) => ({ texto: c, etiqueta: true, centrado: true }))] });
   previos.push({
     tipo: 'tabla',
     numero: `${n++}.`,
-    titulo: 'OBJETIVOS',
-    anchos: [20, 80],
-    filas: [[et('Objetivos específicos de la unidad:'), v(pl.objetivosUnidad)]],
+    titulo: EJES_TRANSVERSALES.titulo,
+    anchos: [4, 30, 66],
+    filas: [
+      [et(''), { texto: 'Ejes - Dimensiones', etiqueta: true, centrado: true }, { texto: 'Actividades de formación', etiqueta: true, centrado: true }],
+      ...EJES_TRANSVERSALES.filas.map((f, i) => [{ texto: String(i + 1), centrado: true }, { texto: f.eje }, { texto: '', vinetas: f.actividades }]),
+    ],
   });
-  previos.push({
-    tipo: 'tabla',
-    numero: `${n++}.`,
-    titulo: 'CRITERIOS DE EVALUACIÓN',
-    anchos: [20, 80],
-    filas: [[et('Criterios específicos a evaluarse en la Unidad:'), v(pl.criteriosEvaluacion)]],
-  });
+  previos.push({ tipo: 'lateral', numero: `${n++}.`, titulo: COMPETENCIAS.titulo, columnas: COMPETENCIAS.columnas });
+  previos.push({ tipo: 'lateral', numero: `${n++}.`, titulo: INSERCIONES.titulo, columnas: INSERCIONES.columnas });
+  previos.push({ tipo: 'tabla', numero: `${n++}.`, titulo: 'OBJETIVOS', anchos: [20, 80], filas: [[et('Objetivos específicos de la unidad:'), v(pl.objetivosUnidad)]] });
+  previos.push({ tipo: 'tabla', numero: `${n++}.`, titulo: 'CRITERIOS DE EVALUACIÓN', anchos: [20, 80], filas: [[et('Criterios específicos a evaluarse en la Unidad:'), v(pl.criteriosEvaluacion)]] });
   const numeroPlanificacion = n++;
 
   const posteriores: Bloque[] = [];
-  if (inst.adaptaciones) {
-    posteriores.push({
-      tipo: 'tabla',
-      numero: `${n++}.`,
-      titulo: 'ADAPTACIONES CURRICULARES (Ajustes razonables)',
-      anchos: [16, 14, 34, 16, 10, 10],
-      filas: [
-        [et('Especificación de la necesidad educativa'), et('Temas / Contenidos'), et('Estrategias Metodológica'), et('Recursos'), et('Técnica'), et('Instrumento')],
-        [v(''), v(''), v(''), v(''), v(''), v('')],
+  posteriores.push({
+    tipo: 'tabla',
+    numero: `${n++}.`,
+    titulo: 'ADAPTACIONES CURRICULARES (Ajustes razonables grado 3)',
+    anchos: [16, 14, 34, 16, 10, 10],
+    filas: [
+      [
+        { texto: 'Especificación de la necesidad educativa', etiqueta: true, centrado: true },
+        { texto: 'Temas / Contenidos', etiqueta: true, centrado: true },
+        { texto: 'Estrategias Metodológica', etiqueta: true, centrado: true },
+        { texto: 'Recursos', etiqueta: true, centrado: true },
+        { texto: 'Técnica', etiqueta: true, centrado: true },
+        { texto: 'Instrumento', etiqueta: true, centrado: true },
       ],
-    });
-  }
-  if (inst.dece) {
-    posteriores.push({
-      tipo: 'tabla',
-      titulo: 'Espacio solo para el DECE',
-      anchos: [15, 35, 50],
-      filas: [
-        [et('Responsable DECE'), et(''), et('Observaciones por parte del DECE')],
-        [et('Nombre:'), v(inst.dece.responsable), v('')],
-        [et('Firma:'), v(''), v('')],
-        [et('Fecha:'), v(''), v('')],
-      ],
-    });
-  }
-  posteriores.push({ tipo: 'texto', numero: `${n++}.`, titulo: 'BIBLIOGRAFÍA', texto: inst.bibliografia.join('\n') });
-  posteriores.push({ tipo: 'texto', numero: `${n++}.`, titulo: 'OBSERVACIONES', texto: '' });
-  const numeroFirmas = n++;
+      [v(''), v(''), v(''), v(''), v(''), v('')],
+    ],
+    altoMinMm: 8,
+  });
+  posteriores.push({
+    tipo: 'tabla',
+    titulo: 'Espacio solo para el DECE',
+    anchos: [8, 22, 70],
+    filas: [
+      [{ texto: 'Responsable DECE', etiqueta: true, centrado: true }, { texto: '', etiqueta: true }, { texto: 'Observaciones por parte del DECE', etiqueta: true, centrado: true }],
+      [et('Nombre:'), { texto: inst.deceResponsable, centrado: true }, v('')],
+      [et('Firma:'), v(''), v('')],
+      [et('Fecha:'), v(''), v('')],
+    ],
+  });
+  // En el original la bibliografía y las observaciones reinician la numeración (2., 3.); las firmas son la 4.
+  posteriores.push({ tipo: 'texto', numero: '2.', titulo: 'BIBLIOGRAFÍA', texto: BIBLIOGRAFIA.join('\n') });
+  posteriores.push({ tipo: 'lateral-texto', numero: '3.', titulo: 'OBSERVACIONES', texto: '', altoMinMm: 7 });
+  const numeroFirmas = 4;
 
   const hoy = fechaCorta(hoyEn(p.zonaHoraria));
   const firmas = {
@@ -144,10 +136,17 @@ export function armarDocumento(p: {
     ],
   };
 
+  const r = pl.registro;
+  const registro = {
+    titulo: r.titulo || `Planificación Curricular Anual ${inst.anioLectivo}`.trim(),
+    elaboradoPor: { cargo: r.elaboradoCargo || 'Coordinación Pedagógica', nombre: r.elaboradoNombre ?? '', fecha: r.elaboradoFecha ?? '' },
+    aprobadoPor: { cargo: r.aprobadoCargo || 'Dirección General', nombre: r.aprobadoNombre ?? '', fecha: r.aprobadoFecha ?? '' },
+  };
+
   return {
-    colorCabecera: inst.colorCabecera ?? COLORES_FORMATO.barra,
+    colorCabecera: COLORES_FORMATO.barra,
     institucion: inst,
-    tituloDocumento: inst.tituloDocumento,
+    tituloDocumento: 'PLAN UNIDAD DIDÁCTICA',
     datosInformativos,
     tiempo,
     previos,
@@ -156,7 +155,7 @@ export function armarDocumento(p: {
     posteriores,
     numeroFirmas,
     firmas,
-    registro: inst.registroFormato,
+    registro,
   };
 }
 

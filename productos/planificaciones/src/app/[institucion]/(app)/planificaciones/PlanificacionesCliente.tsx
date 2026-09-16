@@ -54,6 +54,13 @@ export type PlanificacionVista = {
   revisadoCargo: string | null;
   aprobadoPor: string | null;
   aprobadoCargo: string | null;
+  registroTitulo: string | null;
+  registroElaboradoCargo: string | null;
+  registroElaboradoNombre: string | null;
+  registroElaboradoFecha: string | null;
+  registroAprobadoCargo: string | null;
+  registroAprobadoNombre: string | null;
+  registroAprobadoFecha: string | null;
   docente: string;
   usuarioId: number;
   semanas: number;
@@ -400,6 +407,33 @@ export default function PlanificacionesCliente(p: Props) {
               </Campo>
               <Campo etiqueta="Cargo">
                 <Entrada name="aprobadoCargo" defaultValue={actual.aprobadoCargo ?? 'Rector/Vicerrector'} />
+              </Campo>
+            </div>
+            <h3 className="border-t border-borde pt-3 text-[12px] font-semibold uppercase tracking-wide text-tenue">Registro de formato</h3>
+            <p className="text-[12px] text-tenue">El pie del documento: quién elaboró y aprobó el formato y cuándo.</p>
+            <Campo etiqueta="Título (va tras «REGISTRO DE FORMATO:»)">
+              <Entrada name="registroTitulo" defaultValue={actual.registroTitulo ?? ''} placeholder="Planificación Curricular Anual 2026 - 2027" />
+            </Campo>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Campo etiqueta="Elaborado por · cargo">
+                <Entrada name="registroElaboradoCargo" defaultValue={actual.registroElaboradoCargo ?? 'Coordinación Pedagógica'} />
+              </Campo>
+              <Campo etiqueta="Elaborado por · nombre">
+                <Entrada name="registroElaboradoNombre" defaultValue={actual.registroElaboradoNombre ?? ''} />
+              </Campo>
+              <Campo etiqueta="Elaborado por · fecha">
+                <Entrada name="registroElaboradoFecha" defaultValue={actual.registroElaboradoFecha ?? ''} placeholder="21.01.2026" />
+              </Campo>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Campo etiqueta="Aprobado por · cargo">
+                <Entrada name="registroAprobadoCargo" defaultValue={actual.registroAprobadoCargo ?? 'Dirección General'} />
+              </Campo>
+              <Campo etiqueta="Aprobado por · nombre">
+                <Entrada name="registroAprobadoNombre" defaultValue={actual.registroAprobadoNombre ?? ''} />
+              </Campo>
+              <Campo etiqueta="Aprobado por · fecha">
+                <Entrada name="registroAprobadoFecha" defaultValue={actual.registroAprobadoFecha ?? ''} />
               </Campo>
             </div>
             {error && <Aviso texto={error} />}

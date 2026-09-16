@@ -173,19 +173,26 @@ class Dibujante {
     this.y += h;
   }
 
-  /** Tabla de celdas de alto uniforme por fila (las de datos, tiempo, firmas…). */
+  /**
+   * Tabla de celdas de alto uniforme por fila (las de datos, tiempo, firmas…).
+   * Una celda puede ser `etiqueta` (gris, negrita), `titulo` (rojo, blanco, negrita),
+   * `cursiva`, llevar `vinetas` o una `imagen` (data URL) centrada bajo el texto.
+   */
   tabla(filas: Celda[][], anchosPct?: number[], o: { tamano?: number; minAlto?: number } = {}) {
     const tam = o.tamano ?? TAM;
     const relleno = mm(1.4);
+    const altoImagen = mm(11);
     for (const fila of filas) {
       const n = fila.length;
       const pct = anchosPct && anchosPct.length === n ? anchosPct : fila.map(() => 100 / n);
       const anchos = pct.map((p) => (this.ancho * p) / 100);
       const contenidos = fila.map((c, i) => {
         const w = anchos[i] - relleno * 2;
+        const fuente = c.etiqueta || c.titulo ? NEGRITA : c.cursiva ? 'Helvetica-Oblique' : NORMAL;
         const items: Item[] = c.vinetas
           ? c.vinetas.flatMap((v) => partir(this.doc, `•  ${v}`, w, NORMAL, tam))
-          : partir(this.doc, c.texto, w, c.etiqueta ? NEGRITA : NORMAL, c.etiqueta ? TAM_ETIQUETA : tam);
+          : partir(this.doc, c.texto, w, fuente, c.etiqueta || c.titulo ? TAM_ETIQUETA : tam, c.titulo ? BLANCO : TEXTO);
+        if (c.imagen) items.push(espacio(mm(1)), { tipo: 'imagen', datos: c.imagen, ancho: w, alto: altoImagen });
         return items;
       });
       const alto = Math.max(o.minAlto ?? mm(5.5), ...contenidos.map((it) => it.reduce((a, i) => a + i.alto, 0) + relleno * 2));
@@ -194,11 +201,26 @@ class Dibujante {
       fila.forEach((c, i) => {
         const w = anchos[i];
         if (c.etiqueta) this.doc.rect(x, this.y, w, alto).fill(GRIS_ETIQUETA);
+        if (c.titulo) this.doc.rect(x, this.y, w, alto).fill(COLORES_FORMATO.barra);
         this.doc.rect(x, this.y, w, alto).lineWidth(0.5).strokeColor(BORDE).stroke();
-        let yy = this.y + relleno;
+        // Las celdas de título van centradas en vertical, como en el original.
+        const altoContenido = contenidos[i].reduce((a, it) => a + it.alto, 0);
+        let yy = this.y + (c.titulo ? (alto - altoContenido) / 2 : relleno);
         for (const it of contenidos[i]) {
           if (it.tipo === 'linea') {
-            this.doc.fillColor(it.color).font(it.fuente).fontSize(it.tamano).text(it.texto, x + relleno + it.sangria, yy, { width: w - relleno * 2 - it.sangria, align: c.centrado ? 'center' : 'left', lineBreak: false });
+            this.doc.fillColor(it.color).font(it.fuente).fontSize(it.tamano).text(it.texto, x + relleno + it.sangria, yy, { width: w - relleno * 2 - it.sangria, align: c.centrado || c.titulo ? 'center' : 'left', lineBreak: false });
+          } else if (it.tipo === 'imagen') {
+            // Centrada: se calcula el ancho que tendrá al ajustarse al alto.
+            try {
+              // `openImage` existe en PDFKit pero no en sus tipos: da el tamaño real para centrar.
+              const img = (this.doc as unknown as { openImage: (src: string) => { width: number; height: number } }).openImage(it.datos);
+              const escala = Math.min(it.alto / img.height, it.ancho / img.width);
+              const wImg = img.width * escala;
+              const hImg = img.height * escala;
+              this.doc.image(it.datos, x + (w - wImg) / 2, yy + (it.alto - hImg) / 2, { width: wImg, height: hImg });
+            } catch {
+              /* imagen ilegible: se omite */
+            }
           }
           yy += it.alto;
         }
@@ -286,11 +308,21 @@ async function cabecera(d: Dibujante, doc: DocumentoPud) {
 function bloque(d: Dibujante, b: Bloque, color: string) {
   // La barra va con su primera fila: una barra sola al pie de página es un título huérfano.
   d.asegurar(mm(5.2) + mm(16));
-  d.barra(b.titulo, color, b.numero);
-  if (b.tipo === 'tabla') d.tabla(b.filas, b.anchos);
-  else {
-    const filas: Celda[][] = [[{ texto: b.texto }]];
-    d.tabla(filas, [100], { minAlto: mm(9) });
+  const titulo = `${b.numero ? b.numero + '  ' : ''}${b.titulo}`;
+  if (b.tipo === 'tabla') {
+    d.barra(b.titulo, color, b.numero);
+    d.tabla(b.filas, b.anchos, { minAlto: b.altoMinMm ? mm(b.altoMinMm) : undefined });
+  } else if (b.tipo === 'texto') {
+    d.barra(b.titulo, color, b.numero);
+    d.tabla([[{ texto: b.texto }]], [100], { minAlto: mm(9) });
+  } else if (b.tipo === 'lateral') {
+    // Celda roja de título a la izquierda + una columna por competencia/inserción:
+    // etiqueta gris arriba y el icono debajo, como en el original.
+    const n = b.columnas.length;
+    const anchos = [16, ...b.columnas.map(() => 84 / n)];
+    d.tabla([[{ texto: titulo, titulo: true }, ...b.columnas.map((c) => ({ texto: c.texto, etiqueta: true, centrado: true, imagen: c.icono }))]], anchos, { minAlto: mm(22) });
+  } else {
+    d.tabla([[{ texto: titulo, titulo: true }, { texto: b.texto }]], [16, 84], { minAlto: mm(b.altoMinMm ?? 7) });
   }
   d.hueco(mm(2.5));
 }
@@ -487,30 +519,30 @@ async function tablaSemanas(d: Dibujante, doc: DocumentoPud) {
 // ── Firmas ──────────────────────────────────────────────────────────────────
 
 function firmas(d: Dibujante, doc: DocumentoPud, numero: string) {
-  d.asegurar(mm(40));
+  d.asegurar(mm(60));
   d.barra('FIRMAS DE RESPONSABILIDAD', doc.colorCabecera, numero);
   const cols = doc.firmas.columnas;
-  const pct = cols.map(() => 100 / cols.length);
-  d.tabla([cols.map((c) => ({ texto: c.titulo, etiqueta: true, centrado: true }))], pct);
-  // Cargo + nombre, en la misma fila y en dos columnas internas.
-  d.tabla([cols.map((c) => ({ texto: `${c.cargo}    ${c.nombre}` }))], pct, { minAlto: mm(7) });
-  d.tabla([cols.map(() => ({ texto: 'Firma:' }))], pct, { minAlto: mm(12) });
-  d.tabla([cols.map((c) => ({ texto: `Fecha:    ${c.fecha}` }))], pct, { minAlto: mm(6.5) });
+  // Tres columnas; dentro de cada una, una casilla gris de etiqueta (Docente/s ·
+  // Coordinador de área · Rector/Vicerrector, Firma, Fecha) y su valor, como el original.
+  const anchos = cols.flatMap(() => [8, 100 / cols.length - 8]);
+  d.tabla([cols.map((c) => ({ texto: c.titulo, etiqueta: true, centrado: true }))], cols.map(() => 100 / cols.length));
+  d.tabla([cols.flatMap((c) => [{ texto: c.cargo, etiqueta: true }, { texto: c.nombre, cursiva: true }])], anchos, { minAlto: mm(7) });
+  d.tabla([cols.flatMap(() => [{ texto: 'Firma:', etiqueta: true }, { texto: '' }])], anchos, { minAlto: mm(14) });
+  d.tabla([cols.flatMap((c) => [{ texto: 'Fecha:', etiqueta: true }, { texto: c.fecha }])], anchos, { minAlto: mm(6) });
   d.hueco(mm(3));
 
-  if (doc.registro) {
-    const r = doc.registro;
-    d.texto(r.titulo, { negrita: true, tamano: 7.4, align: 'center' });
-    d.hueco(mm(1));
-    d.tabla(
-      [
-        [{ texto: 'Elaborado por', etiqueta: true, centrado: true }, { texto: 'Aprobado por', etiqueta: true, centrado: true }],
-        [{ texto: r.elaboradoPor.cargo, centrado: true }, { texto: r.aprobadoPor.cargo, centrado: true }],
-        [{ texto: `\n\n${r.elaboradoPor.nombre}\nFecha: ${r.elaboradoPor.fecha}`, centrado: true }, { texto: `\n\n${r.aprobadoPor.nombre}\nFecha: ${r.aprobadoPor.fecha}`, centrado: true }],
-      ],
-      [50, 50],
-    );
-  }
+  // «REGISTRO DE FORMATO»: media página a la izquierda, con su barra roja.
+  const r = doc.registro;
+  const anchoTotal = d.ancho;
+  d.ancho = anchoTotal / 2;
+  d.asegurar(mm(40));
+  d.tabla([[{ texto: `REGISTRO DE FORMATO: ${r.titulo}`, titulo: true }]], [100], { minAlto: mm(6) });
+  d.tabla([[{ texto: 'Elaborado por', etiqueta: true, centrado: true }, { texto: 'Aprobado por', etiqueta: true, centrado: true }]], [50, 50]);
+  d.tabla([[{ texto: r.elaboradoPor.cargo, centrado: true }, { texto: r.aprobadoPor.cargo, centrado: true }]], [50, 50]);
+  d.tabla([[{ texto: '' }, { texto: '' }]], [50, 50], { minAlto: mm(9) });
+  d.tabla([[{ texto: r.elaboradoPor.nombre, centrado: true, cursiva: true }, { texto: r.aprobadoPor.nombre, centrado: true, cursiva: true }]], [50, 50]);
+  d.tabla([[{ texto: 'Fecha:', etiqueta: true }, { texto: r.elaboradoPor.fecha, centrado: true }, { texto: 'Fecha:', etiqueta: true }, { texto: r.aprobadoPor.fecha, centrado: true }]], [14, 36, 14, 36]);
+  d.ancho = anchoTotal;
 }
 
 // ── Punto de entrada ────────────────────────────────────────────────────────

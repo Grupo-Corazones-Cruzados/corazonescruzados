@@ -275,6 +275,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏫 «NEGOCIO», LO FIJO Y LO VARIABLE DEL FORMATO (2026-09-16).** Fernando: el administrador
+  establece el nombre del formato (*«Unidad Educativa Particular / "San Esteban Diácono" / Red
+  Educativa Arquidiocesana»*, tres campos), el **año lectivo** a mano y **tres logos** (institución,
+  organización principal, opcional) en un módulo **«Negocio»**; las **competencias, inserciones
+  curriculares y ejes transversales de la pastoral** son contenido FIJO con las imágenes y textos
+  del original; las **firmas** replican bordes y negritas del original; el **registro de formato**
+  (pie) es variable y va en la configuración de la planificación; «Observaciones» con la celda roja
+  a la izquierda como el original.
+  - Columnas nuevas en `inquilinos` (cabecera 1-3, año lectivo, 3 logos como `data:` URL ≤ 600 KB,
+    responsable DECE) y en `planificaciones` (registro: título, elaborado/aprobado cargo·nombre·fecha),
+    migración 005. `src/plantillas/instituciones.ts` desaparece: el formato es `contenido-fijo.ts`
+    (iconos de competencias/inserciones extraídos con `pdftohtml -xml` del PDF de ejemplo, 51 KB) y
+    lo del negocio sale de la fila del inquilino (`lib/documento.ts → institucionDe`).
+  - Bloques nuevos del modelo: `lateral` (celda roja de título a la izquierda + columnas con
+    etiqueta gris e icono) y `lateral-texto` (observaciones); celdas `titulo`/`cursiva`/`imagen`.
+    Firmas: cabecera gris + tres filas con casilla gris de etiqueta y valor (Docente/s · Firma ·
+    Fecha); registro a media página. Igual en PDF, Word (los logos en un solo párrafo, si no se
+    apilaban) y vista previa; verificado en PDF y abriendo el Word con Microsoft Word.
+  - Medido en local: módulo Negocio guarda y recarga (líneas, año, dos logos subidos), la vista previa
+    lleva cabecera, ejes, competencias e inserciones con sus 10 iconos, y el registro configurado;
+    los datos de prueba de `/grupo` se devolvieron a nulo por identificador.
 - **🎯 LAS DESTREZAS SON DE CADA PLANIFICACIÓN Y EL AGENTE ELIGE UNA (2026-09-16).** Fernando:
   *«cada planificación debe tener un conjunto de destrezas que el agente debe seleccionar […] y
   elegir una de esas destrezas basándose en lo que indica el profesor por dictado […] como botón
