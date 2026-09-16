@@ -275,6 +275,70 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📚 CUARTO PRODUCTO: «PLANIFICACIÓN DE CLASES», UNA HERRAMIENTA PARA PROFESORES CON UN AGENTE
+  QUE REDACTA COMO LA DOCENTE (2026-09-15).** Fernando, con las cuatro skills a la vez y un solo
+  encargo largo (*«vamos a desarrollar un nuevo producto que es para la generación automática de
+  planificaciones de clases […] ahora has todo»*). Camino B de `/producto` (nace de una idea) más
+  **diez planificaciones reales** de una docente de Preparatoria (`Contenido de Profesor/`, PDF).
+  **Construido, verificado y desplegado el mismo día:** **https://planificaciones-production.up.railway.app**
+  · `productos/planificaciones/` · esquema `planificaciones` · servicio Railway `planificaciones`
+  (Root Directory y `watchPatterns` por la API) · plan **Estándar, 10 $/mes, 100 cuentas, 40
+  planificaciones semanales por semana para toda la institución, sin límite de histórico**.
+  Detalle de preguntas, decisiones y trampas en `Aprendizaje.md` §2026-09-15 (cuarto producto).
+  - **Lo que pidió Fernando, tal cual quedó:** dashboard (cuántas planificaciones, qué usuarios,
+    qué materias); módulo de planificaciones en UNA sola página —lista (mías / de todos), a la
+    derecha las **semanas** de la elegida y, por semana, sus campos generados o la **vista previa**
+    del formato con todas las semanas; «Configurar» solo con una elegida—; al crear una
+    planificación se pide **materia, ámbito, nivel (Preparatoria/Primaria/Secundaria), n.º y título
+    de unidad, inicio y fin de PUD**; cada **planificación semanal** es una solicitud con
+    **micrófono → texto**, indicaciones escritas y **hasta 5 adjuntos convertidos en embeddings**;
+    el agente genera los **diez campos** (fecha inicio, fecha fin, tema, n.º de periodos, objetivos
+    del tema, destrezas con criterio de desempeño, estrategias metodológicas, recursos, técnica,
+    instrumento) y **elige las destrezas de una tabla** (código, descripción, imagen que sale en el
+    formato); el **system prompt no lo ven ni el docente ni el cliente** y va de la mano de la
+    **configuración del formato por cliente, a nivel de código**; «elaborado / revisado / aprobado
+    por» se configuran y salen con **la fecha del día de la descarga**; «docente» sale del perfil
+    (**profesión** + nombre); n.º de semanas y total de periodos **se calculan**, no se piden;
+    módulos de **perfil** y de **usuarios** (solo el cliente; hasta 100, todas de profesor).
+  - **⭐ EL AGENTE ES UNA SOLA LLAMADA A `/v1/responses`** con `gpt-5.6-luna`: **búsqueda web
+    integrada de OpenAI** (`web_search`, para canciones y videos de YouTube con su enlace bajo la
+    actividad), **herramienta `buscar_en_adjuntos`** (pgvector) y **salida JSON con esquema
+    estricto**, todo junto — medido contra la API, no razonado. 15–30 s y 13–25 k tokens por
+    semana; el uso queda en la fila. Transcripción con `gpt-4o-mini-transcribe`, embeddings con
+    `text-embedding-3-small` (pgvector 0.8.2 ya estaba en el Postgres).
+  - **⭐ EL PERFIL DE LA DOCENTE SON DIECIOCHO RASGOS** (`src/plantillas/pud/perfil-docente.ts`)
+    sacados de los diez ejemplos: fases ACC con propósito, verbo en infinitivo + medio concreto,
+    abrir con canción/cuento/emoción del día, preguntas generadoras en viñetas, materiales con
+    nombre, objetivo con estructura fija «verbo + contenido + mediante + para», técnicas e
+    instrumentos pareados, destrezas con código exacto, recursos que existen, progresión entre
+    semanas. La primera semana generada (vocal A, con una niña de baja visión en las indicaciones)
+    salió con video real de YouTube, «página 53», alternativas de respuesta y la destreza correcta.
+  - **Las plantillas (formato + system prompt) y la configuración de cada institución viven en
+    código** (`src/plantillas/`, `instituciones.ts` por `slug`): decisión explícita de Fernando. La
+    demo lleva una institución ficticia; la del cliente real se añade cuando llegue.
+  - **El PDF se dibuja con PDFKit** (`pud/pdf.ts`): cada casilla de una semana es una lista de
+    líneas ya partidas y cada página consume lo que cabe, con «(continúa)» y cabecera repetida,
+    porque en el Word original la fila de una semana se parte entre páginas. Un solo modelo
+    (`pud/documento.ts`) alimenta al PDF y a la vista previa.
+  - **🪤 PDFKit AÑADÍA UNA PÁGINA EN BLANCO POR CADA PIE** escrito con `width`/`align` por
+    debajo del margen (4 páginas de más en un documento de 4): entra por el ajustador de líneas
+    aunque se pida `lineBreak: false`. Sin `width`, no. La alineación se calcula a mano.
+  - **🪤 Un componente de servidor no puede pasar funciones `render` a `Tabla`** (cliente): el
+    tablero se partió en datos planos + `PanelCliente`. En producción el error solo dice «digest».
+  - **Los PDF de la docente quedan FUERA del repo** (`.gitignore`): llevan su nombre, el de la
+    institución y ajustes razonables de estudiantes con iniciales.
+  - **Medido:** 15 + 10 + 20 comprobaciones en local contra el build de producción con navegador
+    real (pantallas, PDF, transcripción con audio real, adjunto de 23 fragmentos, dos generaciones
+    reales, aislamiento, puerta del pago, topes, escaparate por disparador); base limpia al cerrar;
+    `gcc_world` con 199 tablas. **En producción, contra el dominio real y con usuario y contraseña
+    de verdad: las 23 del recorrido otra vez, incluida UNA generación real en 20 s** (el `after()`
+    de Next corre en Railway) y el PDF de 4 páginas. La planificación de prueba se borró por id;
+    «demo» quedó en **escaparate**; **ficha del marketplace** creada (ítem 30, producto 5, cuatro
+    capturas reales, demo `helen / GccDemo2026`, 10,00 /mes) y visible en el catálogo público.
+  - **⏳ Pendiente de Fernando:** el **paso siguiente que él anunció** (cargar las destrezas del
+    currículo por materia desde archivos); si quiere **retención** (hoy sin límite) y **pasarela**;
+    el **talento** del que cuelga (se publicó bajo «Automatización de procesos», como los otros
+    tres); la **contraseña del operador GCC** de `/gcc/acceso`, entregada en el chat una vez.
 - **🥗 TERCER PRODUCTO: «GESTIÓN DE CATERING», A PARTIR DEL PROYECTO DE CRISTIAN (2026-09-15).**
   Fernando: *«vamos a agregar un nuevo /producto en la aplicación usando el caso de este proyecto
   de catering»* (`…/02_Clientes/Cristian/Catering`, Fit Grill & Cook: comida por suscripción a

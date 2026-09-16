@@ -2841,6 +2841,55 @@ aplican; es el mismo arreglo de dos líneas cuando se toquen.
 `fechaLarga()` da «martes, 15 de septiembre de 2026»; con `capitalize` salía «Martes, 15 De
 Septiembre De 2026». Se usa `first-letter:uppercase`.
 
+## Producto «Planificación de Clases» — el mismo lenguaje, con un DOCUMENTO como pantalla (2026-09-15)
+
+Hereda entero el sistema de catering (tokens, `ui.tsx`, `campos.tsx`, marca por inquilino, `.campo`
+en `@layer components`, iconos de pestaña con **un cuaderno abierto** como glifo, dibujado a 16 px).
+Lo que aporta:
+
+### ⭐ EL MÓDULO ENTERO EN UNA PÁGINA DE TRES COLUMNAS
+`app/[institucion]/(app)/planificaciones/`: **lista** (300 px, con `Chips` «Mías / De todos» y
+`Buscador`) · **semanas** de la elegida (260 px, con el botón primario «Nueva planificación semanal»
+arriba y «Eliminar planificación» en el pie) · **detalle** (flexible) con un **conmutador de dos
+pestañas** «Campos generados / Vista previa» (`rounded border p-0.5`, la activa `bg-acento
+text-acento-contraste`) y las acciones de la semana (Corregir · Regenerar · papelera) a la derecha.
+En ≥ xl la página mide `calc(100vh - 61px)` y cada columna desplaza por dentro (`desplaza`). La
+selección vive en la dirección (`?p=&s=&vista=`), no en estado local: se enlaza y sobrevive al
+refresco. Las filas de lista son botones con el mismo estado activo que el rail
+(`bg-acento-suave border-l-2 border-acento`).
+
+### ⭐ UN DOCUMENTO DE PAPEL DENTRO DE LA APLICACIÓN
+`plantillas/pud/VistaPrevia.tsx` dibuja el formato del PUD **como papel**: hoja blanca de 1120 px
+con sombra sobre `bg-realce`, tipografía Helvetica/Arial de 10 px, barras de sección con el
+**color de la institución** (`colorCabecera`, por defecto el acento del inquilino: así el violeta
+del grupo llega al documento de la demo), etiquetas en gris `#c8c8c8`, bordes `#7a7a7a`. **Sus
+colores son literales y no tokens a propósito**: es lo que se imprime, no la interfaz, y no debe
+cambiar con el tema oscuro. El PDF (`pud/pdf.ts`, PDFKit) dibuja el mismo modelo
+(`pud/documento.ts`) con la misma paleta.
+
+### Controles nuevos, todos reusables (`src/componentes/`)
+- **`Dictado`** — el botón del micrófono: `Mic` en reposo (secundario), **rojo pleno** (`bg-error`)
+  con `Square` y el cronómetro mientras graba, `Loader2` mientras transcribe. Un solo botón que
+  alterna; el texto llega al cuadro de al lado.
+- **`Adjuntos`** — la lista de archivos subidos (fila `bg-realce` con `FileText`, nombre, «N
+  fragmentos» y una X) + botón secundario «Adjuntar archivo» + contador «2 de 5». Los que están
+  subiéndose salen con `Loader2` y «Leyendo y convirtiendo…».
+- **Estado de la semana** — `Insignia` con `TONO_ESTADO` (PENDIENTE/GENERANDO aviso · LISTA éxito
+  · ERROR error) y, mientras redacta, un `Loader2` animado en vez de la insignia.
+- **Campos en lectura** (`CamposSemana`) — título en `text-[11px] uppercase tracking-wide
+  text-tenue` y valor debajo en 13 px; las fases de las estrategias como píldora
+  `border bg-realce text-acento font-bold`; los enlaces `text-acento underline break-all`.
+- **Fase en el documento** — cuadro con el título en azul `#1f4e9c` y tres casillas I·R·A
+  (verde `#7ac043`, morado `#6f3fa8`, celeste `#1ba1e2`), igual en pantalla y en PDF.
+
+### Regla: lo que es un documento se enseña como documento
+La vista previa no usa los tokens del tema ni `Tarjeta`: es una hoja. Y el PDF **no es la
+impresión de la página**: se descarga desde `/api/pdf/<id>` con `<a download>` (`BotonPdf`).
+
+### 🪤 Un componente de servidor no puede darle `render` a `Tabla`
+El tablero era un componente de servidor que usaba `Tabla` (cliente) con funciones: en producción
+solo dice «digest». Regla: **las páginas cargan datos planos y un `*Cliente.tsx` dibuja**.
+
 ## El raíl, el tema y la carga — la semana del 2026-08-28 al 31
 
 ### El RAÍL: el menú de módulos, oscuro en LOS DOS temas

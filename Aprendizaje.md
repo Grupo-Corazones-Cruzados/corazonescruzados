@@ -8432,3 +8432,148 @@ Tres aserciones fallaron buscando «Entregas hoy» donde la página decía «ENT
   fuera de hora no corre, forzada borra lo que terminó y **conserva la cancelación vieja del
   servicio vigente**, repetida da cero, deja constancia; índice parcial de un servicio vigente por
   cliente). **Demo idéntico antes y después, `gcc_world` con 199 tablas.**
+
+---
+
+# Objetivo (declarado 2026-09-15) — CUARTO PRODUCTO: «Planificación de Clases», una herramienta para profesores con un agente que redacta como la docente · ✅ 100 % — CONSTRUIDO, VERIFICADO Y DESPLEGADO
+
+> Fernando (2026-09-15, con `/memoria` + `/aprendizaje` + `/diseno` + `/producto` a la vez): *«vamos a
+> desarrollar un nuevo producto que es para la generación automática de planificaciones de clases
+> […] ahora has todo»*. El encargo entero, con sus correcciones sobre la marcha, está en la
+> sección de MEMORIA.md del mismo día.
+
+## Rol asumido
+Arquitecto de producto + ingeniero de agentes de IA + tipógrafo de documentos: el producto es un
+armazón ya probado (catering) al que se le suma un agente con herramientas, un pipeline de
+adjuntos con embeddings y un formato en PDF que hay que dibujar a mano.
+
+## Fuentes consultadas (2026-09-15)
+- **Los diez ejemplos de la docente** (`Contenido de Profesor/`, PDF, 10–13 páginas cada uno; se
+  extrajeron con `pdftotext -layout` y se renderizaron dos páginas para ver el formato). Ocho
+  ámbitos de Preparatoria, cinco semanas cada uno, mismo formato (Plan de Unidad Didáctica).
+  **Fuera del repo** (`.gitignore`): llevan nombres reales y ajustes razonables de estudiantes.
+- `productos/catering/` entero (el armazón más reciente), `lib/ia/openai.ts` y `lib/agente/ia.ts`
+  de la plataforma (el contrato de `gpt-5.6-luna`), `lib/talentos/embeddings.ts` (pgvector ya en
+  la base, 0.8.2). Memorias `gcc-openai-luna-contrato`, `gcc-plan-productos`, `gcc-producto-catering`.
+- **Sondas contra la API real** (no de memoria), guardadas en el scratchpad de la sesión.
+
+## Preguntas y respuestas
+
+### P1 — ¿`web_search` integrada + herramienta de función + salida JSON estricta conviven en una sola llamada con `gpt-5.6-luna`? · ✅ Resuelta
+- **Por qué importa:** decidía si el agente era una llamada o una cadena (buscar → redactar → formatear).
+- **Respuesta:** **Sí, las tres a la vez** por `/v1/responses` (medido 2026-09-15: buscó
+  `site:youtube.com …`, devolvió un enlace real y el JSON con el esquema). Con `store: false` el
+  bucle de función funciona devolviendo TODOS los ítems de salida (incluido `reasoning`) en el
+  `input` siguiente, pidiendo `include: ['reasoning.encrypted_content']`. Una semana: 1–2 vueltas,
+  15–30 s, 13–25 k tokens de entrada. (fuente: sondas `sonda.mjs`, `sonda2.mjs`, `sonda3.mjs`)
+
+### P2 — ¿Cómo se transcribe el micrófono? · ✅ Resuelta
+- **Respuesta:** `MediaRecorder` en el navegador → `POST /api/transcribir` → OpenAI
+  `gpt-4o-mini-transcribe` (`language: es`). Probado con un audio sintetizado con `say` y
+  convertido a m4a: transcribió la frase entera (entendió «sesenta y uno» como «60», cosa de la voz
+  sintética). Se eligió servidor y no `SpeechRecognition` del navegador porque este solo existe en
+  Chrome. (fuente: prueba `_tmp_prueba_ia.mjs`)
+
+### P3 — ¿Dónde viven los adjuntos y cómo los usa el agente? · ✅ Resuelta
+- **Respuesta:** el archivo NO se guarda. Se extrae el texto (`pdf-parse` por su módulo interno,
+  `mammoth` para .docx, texto plano), se parte en fragmentos de ~1.200 caracteres con solape, se
+  embebe (`text-embedding-3-small`) y va a `adjunto_fragmentos.embedding vector(1536)` con índice
+  hnsw. Al subirlos —en el acto, como pidió Fernando— nacen sin semana y se atan al enviar la
+  solicitud; los huérfanos de más de un día se limpian al subir el siguiente. El agente recibe de
+  entrada los 6 fragmentos más cercanos a las indicaciones **y** tiene la herramienta
+  `buscar_en_adjuntos`. Medido: un PDF de 984 kB → 23 fragmentos en 12 s; el agente llamó a la
+  herramienta una vez y tomó de ahí las canciones con sus enlaces y la página 53.
+
+### P4 — ¿Cómo se dibuja el formato en PDF (filas de una semana más altas que una página)? · ✅ Resuelta
+- **Por qué importa:** en el Word original la fila de una semana se parte entre páginas; PDFKit
+  no sabe hacerlo.
+- **Respuesta:** cada casilla se convierte en una lista de LÍNEAS ya partidas al ancho (con
+  `widthOfString`), más espacios, imágenes y el cuadro de fase con las casillas I·R·A; cada
+  página consume de cada columna lo que quepa, marca «(continúa)» y repite la cabecera. Un solo
+  modelo (`documento.ts`) alimenta al PDF y a la vista previa. (fuente: `plantillas/pud/pdf.ts`)
+
+### P5 — ¿Cuál es el perfil de la docente que tiene que encarnar el agente? · ✅ Resuelta
+- **Respuesta:** dieciocho rasgos sacados de los diez ejemplos (`pud/perfil-docente.ts`): las tres
+  fases ACC con propósito, verbo en infinitivo + medio concreto por actividad, abrir con canción /
+  cuento / emoción del día, preguntas generadoras en viñetas en lenguaje de niño, materiales con
+  nombre, temas lúdicos, alternar modalidades, cerrar con producción tangible, objetivo con
+  estructura fija «verbo + contenido + mediante + para», regulación emocional en cualquier ámbito,
+  técnicas/instrumentos pareados, destrezas del currículo con código exacto, recursos que existen
+  (YouTube con enlace), progresión entre semanas, tono sobrio, detalle operativo. La primera semana
+  generada (vocal A, con una niña de baja visión en las indicaciones) salió con las tres fases, una
+  destreza LL.1.5.5., un video real de YouTube, «página 53» y alternativas de respuesta.
+
+### P6 — ¿Qué es una «plantilla» y dónde vive la configuración del formato por cliente? · ✅ Resuelta
+- **Respuesta:** en código, por decisión de Fernando. `src/plantillas/<clave>/` = formato +
+  system prompt + esquema de salida; `src/plantillas/instituciones.ts` = por `slug`, lo que el
+  formato lleva impreso (cabecera, año lectivo, logos, ejes, competencias, inserciones,
+  bibliografía, registro). La fila solo guarda la clave (`planificaciones.plantilla`), la
+  institución su plantilla por defecto.
+
+### P7 — ¿Qué cuenta contra el tope de 40? · ✅ Resuelta
+- **Respuesta:** las planificaciones SEMANALES creadas desde el lunes 0:00 en la zona de la
+  institución, sin las que están en ERROR (nadie paga por lo que no recibió); un reintento tras un
+  fallo no cuenta, una regeneración de una LISTA sí. Se comprueba al crear y al regenerar, se enseña
+  siempre (tablero, cabecera del módulo, formulario) y el mensaje lleva el número.
+
+### P8 — ¿Retención? · ⏸ Pendiente de Fernando
+- **Respuesta:** el encargo no la menciona y una planificación de unidad vive cinco semanas y se
+  consulta todo el año: el plan nace **sin límite** (`meses_retencion` NULO) y sin purga. Si
+  Fernando quiere el mes de histórico de los otros productos, es una migración del plan y copiar
+  el endpoint de purga de catering (por `generada_en`).
+
+## Decisiones de diseño / arquitectura (firmes)
+- Código `planificaciones`, esquema `planificaciones`, puerto 3013, ruta `/[institucion]/…`.
+- Dos oficios por capacidad (`ver` · `planificar` · `administrar`): ADMIN es el cliente, PROFESOR
+  planifica; las cuentas que crea el cliente son todas PROFESOR. Los demás ven las planificaciones
+  de todos; solo el dueño o el administrador las cambian (`esDuenoOAdmin`, en `lib/inquilino.ts`).
+- La selección del módulo vive en la dirección (`?p=&s=&vista=&quien=`): el tablero enlaza a una
+  semana concreta y un `router.refresh()` no la pierde. Mientras hay semanas PENDIENTE/GENERANDO,
+  la pantalla consulta `/api/semanas` cada 3 s y se refresca al cambiar.
+- La generación corre con `after()` de Next: la fila nace PENDIENTE y el docente no espera con el
+  formulario abierto.
+- Las estrategias se guardan como TEXTO con dos convenciones (`## FASE`, `• viñeta`, enlace en su
+  línea) para que se corrijan en un cuadro normal; `parsearEstrategias` las lee para la pantalla y
+  el PDF.
+- Las destrezas que devuelve el agente se validan contra la tabla (con y sin punto final); las
+  desconocidas se descartan. Si la materia no tiene destrezas cargadas se le ofrecen las del nivel.
+
+## Riesgos y cómo se mitigan
+- **La docente real y sus estudiantes** aparecen en los PDF de ejemplo: fuera del repo, y la demo
+  usa contenido propio en su estilo, no el suyo.
+- **El coste de una corrida** queda en `planificaciones_semanales.uso` (tokens, búsquedas,
+  vueltas, ms) para saber lo que cuesta cada semana.
+- **El agente puede devolver un enlace inventado**: el prompt lo prohíbe y pide dejarlo fuera si la
+  búsqueda no da nada; las referencias se enseñan aparte para que el docente las compruebe.
+
+## Lo que este producto ENSEÑÓ (nuevo respecto a los tres anteriores)
+#### 🪤 P1 — PDFKit AÑADE UNA PÁGINA EN BLANCO POR CADA PIE ESCRITO CON `width`/`align` BAJO EL MARGEN
+Un documento de 4 páginas salía con 8. `text(…, { width, align: 'right', lineBreak: false })`
+entra por el ajustador de líneas aunque se pida `lineBreak: false`, y como el pie está por debajo
+del margen inferior, añade página. Sin `width` no pasa (medido con una sonda de cinco casos). La
+alineación a la derecha se calcula con `widthOfString`. Catering lo esquiva porque su pie cae
+dentro del margen.
+#### 🪤 P2 — Una tabla de servidor con `render` no puede pasarse a un componente de cliente
+El tablero (componente de servidor) usaba `Tabla` (cliente) con funciones `render`: «Functions
+cannot be passed directly to Client Components». Se partió en `page.tsx` (datos planos) +
+`PanelCliente.tsx`. Y el error en producción solo dice «digest»: hay que leer el log del servidor.
+#### P3 — Los detalles plegados no salen en `innerText`
+Una aserción buscaba el uso de tokens dentro de un `<details>` cerrado. Se comprobó por la base.
+#### P4 — La transcripción de una voz sintética no es la de una persona
+«sesenta y uno» → «60». Sirve para probar el conducto, no la precisión.
+
+## Lo medido al cerrar (local, contra el build de producción, navegador real)
+- **15** comprobaciones de pantallas y documento (acceso, tablero con tope «de 40», módulo con
+  la semana elegida y su destreza, vista previa con 2 semanas y 10 periodos y las tres fases, firmas
+  con la fecha del día, PDF `%PDF` 200 / sin sesión 401 / id no numérico 404).
+- **10** de IA (transcripción 200 con audio real y 401 sin sesión; adjunto PDF → 23 fragmentos;
+  tipo no admitido 422; dos generaciones reales de 30 s: una sin adjunto con video de YouTube y
+  destreza LL.1.5.5., otra con adjunto que tomó de él canciones, enlaces y página 53, 1 llamada a
+  la herramienta).
+- **20** de protocolo (aislamiento entre instituciones 404 / vacío / 401 / vuelta al acceso / no
+  ve por id; puerta del pago 307 y 401 y reapertura; topes de generaciones —ERROR no cuenta, NULO
+  sin límite, mensaje con el número— y de cuentas; ventana desde el lunes 0:00 de Guayaquil;
+  escaparate por disparador rechazando INSERT y UPDATE con la semana intacta).
+- **Limpieza:** las dos planificaciones de prueba y el adjunto suelto borrados por identificador;
+  el inquilino y el plan de prueba borrados; quedan 1 institución, 1 plan, 3 cuentas, 1
+  planificación, 2 semanas, 21 destrezas, 31 materias. **`gcc_world` con 199 tablas.**
