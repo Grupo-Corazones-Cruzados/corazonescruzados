@@ -289,6 +289,10 @@ Stack estándar de la casa, con particularidades de este repo:
   la base real con el correo del administrador: los cuatro `/grupo` y los cuatro `demo`. ⚠️
   `lib/db.ts` de la plataforma sigue recortando `?schema=` con la regex que rompe con dos
   parámetros (la trampa ya conocida): en producción su URL lleva uno solo.
+  - **Corrección de Fernando el mismo día:** el botón dice **«Entrar a Organización»** para todos
+    (sin el nombre del inquilino, salvo que la cuenta tenga más de uno en el producto), sin la
+    etiqueta «Acceso del grupo: sin mensualidad», y los inquilinos en **escaparate** (los `demo`)
+    no salen: la demostración ya tiene su botón.
 - **🏛️ EL INQUILINO DEL GRUPO EN LOS CUATRO PRODUCTOS (2026-09-16).** Fernando: *«quisiera que
   el administrador del grupo corazones cruzados pueda tener acceso para que no tenga que
   suscribirse sino que tenga un tenant ya comprado para esa cuenta […] no paga la suscripción

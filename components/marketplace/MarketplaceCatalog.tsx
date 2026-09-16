@@ -76,15 +76,15 @@ function AccesoAlProducto({ accesos }: { accesos: AccesoProducto[] | undefined }
     <div className="space-y-1.5">
       {accesos.map((a) => (
         <div key={a.url} className="space-y-1">
-          <a href={a.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className={`${BTN_PRIMARY} w-full`}>
-            <LogIn className="w-4 h-4" /> Entrar a {a.nombre} <ExternalLink className="w-3.5 h-3.5" />
+          {/* El texto es el mismo para todos («Entrar a Organización», Fernando 2026-09-16);
+              el nombre del inquilino solo se añade si la cuenta tiene más de uno en el producto. */}
+          <a href={a.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className={`${BTN_PRIMARY} w-full`} title={a.nombre}>
+            <LogIn className="w-4 h-4" /> Entrar a Organización{accesos.length > 1 ? ` · ${a.nombre}` : ''} <ExternalLink className="w-3.5 h-3.5" />
           </a>
           {a.diasDeRetraso ? (
             <p className="flex items-center gap-1 text-[11px] text-amber-700" style={mf}>
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> La mensualidad venció hace {a.diasDeRetraso} día{a.diasDeRetraso === 1 ? '' : 's'}: el acceso se cierra a los 30.
             </p>
-          ) : a.cortesia ? (
-            <p className="text-[11px] text-digi-muted" style={mf}>Acceso del grupo: sin mensualidad.</p>
           ) : null}
         </div>
       ))}

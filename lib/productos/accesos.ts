@@ -20,8 +20,8 @@ export { anfitrionDe, type AccesoProducto };
  * World. Los `users.id` son UUID y `gcc_cliente_id` de los productos es entero: no
  * sirve de enlace.
  *
- * Se considera con acceso: no suspendido y (del grupo, o pagado hasta hace como
- * mucho 30 días).
+ * Se considera con acceso: no suspendido, no escaparate (la demostración ya tiene
+ * su propio botón) y (del grupo, o pagado hasta hace como mucho 30 días).
  */
 export const PRODUCTOS = [
   { clave: 'reservas', esquema: 'reservas', nombre: 'Gestión de Reservas', url: 'https://reservas-production-e98f.up.railway.app' },
@@ -43,6 +43,7 @@ export async function accesosDelUsuario(email: string | null | undefined): Promi
            LEFT JOIN ${p.esquema}.suscripciones s ON s.inquilino_id = i.id
           WHERE lower(i.contacto_email) = lower($1)
             AND i.estado <> 'SUSPENDIDO'
+            AND NOT i.solo_lectura
             AND (i.cortesia OR (s.pagado_hasta IS NOT NULL AND s.pagado_hasta >= current_date - $2::int))
           ORDER BY i.nombre`,
         [email, DIAS_DE_GRACIA],
