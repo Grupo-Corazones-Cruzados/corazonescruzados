@@ -39,6 +39,7 @@ const Alta = z.object({
   contactoEmail: z.string().trim().email('El correo no es válido.').optional().or(z.literal('')),
   contactoTelefono: z.string().trim().optional().or(z.literal('')),
   diasPrueba: z.coerce.number().int().min(0).max(365).default(30),
+  cortesia: z.preprocess((v) => v === 'on' || v === 'true', z.boolean()).default(false),
   usuarioAdmin: z
     .string()
     .trim()
@@ -77,7 +78,8 @@ export async function crearInquilino(datos: FormData): Promise<ResultadoGcc> {
     data: {
       slug: d.slug,
       nombre: d.nombre,
-      estado: d.diasPrueba > 0 ? 'PRUEBA' : 'ACTIVO',
+      estado: d.cortesia ? 'ACTIVO' : d.diasPrueba > 0 ? 'PRUEBA' : 'ACTIVO',
+      cortesia: d.cortesia,
       contactoNombre: d.contactoNombre || null,
       contactoEmail: d.contactoEmail || null,
       contactoTelefono: d.contactoTelefono || null,
@@ -207,6 +209,18 @@ export async function cambiarSoloLectura(
       ? 'Institución en modo escaparate: se puede ver, no se puede guardar.'
       : 'Modo escaparate retirado: vuelve a guardar cambios.',
   };
+}
+
+/**
+ * Acceso del grupo (Fernando, 2026-09-16): el inquilino de la administración del
+ * Grupo Corazones Cruzados no paga mensualidad ni tiene topes. Lo decide el equipo
+ * GCC, nunca el propio inquilino.
+ */
+export async function cambiarCortesia(inquilinoId: number, cortesia: boolean): Promise<ResultadoGcc> {
+  if (!(await exigirOperador())) return { ok: false, error: 'Sin sesión de operador.' };
+  await prisma.inquilino.update({ where: { id: inquilinoId }, data: { cortesia, ...(cortesia ? { estado: 'ACTIVO' } : {}) } });
+  revalidatePath('/gcc');
+  return { ok: true, mensaje: cortesia ? 'Acceso del grupo: sin mensualidad ni topes.' : 'Acceso del grupo retirado: vuelve a regir la suscripción.' };
 }
 
 export async function cambiarPlan(inquilinoId: number, planId: number): Promise<ResultadoGcc> {

@@ -74,6 +74,10 @@ model Inquilino {
   /// Escaparate: se recorre entero, no se guarda nada. Lo aplican la aplicación y
   /// los disparadores. Un inquilino en escaparate tampoco se purga.
   soloLectura Boolean         @default(false) @map("solo_lectura")
+  /// ACCESO DEL GRUPO (Fernando, 2026-09-16): un inquilino «ya comprado» para la
+  /// administración del Grupo Corazones Cruzados. No paga mensualidad, no tiene
+  /// topes ni retención. Todos los demás pasan por la suscripción.
+  cortesia    Boolean         @default(false)
 
   gccClienteId     Int?    @map("gcc_cliente_id")
   contactoNombre   String? @map("contacto_nombre")

@@ -111,6 +111,13 @@ El tope de cuentas **se cumple**: se comprueba al crear y al reactivar, cuenta s
 **activas** —una desactivada no ocupa— y un tope NULO significa **sin límite**, no cero. El cupo
 se ve siempre en Usuarios («12 de 100 cuentas»).
 
+## El inquilino del grupo
+
+La administración del Grupo Corazones Cruzados tiene un inquilino **ya comprado**
+(`/grupo`, marcado `cortesia`): entra sin mensualidad, sin topes y sin purga. Lo pone y lo
+quita el equipo GCC desde `/gcc` («Acceso del grupo»); todos los demás pasan por la
+suscripción (Fernando, 2026-09-16).
+
 ## Lo que falta
 
 - **Niveles por encima del Estándar**, si algún día hacen falta (el modelo ya soporta topes de

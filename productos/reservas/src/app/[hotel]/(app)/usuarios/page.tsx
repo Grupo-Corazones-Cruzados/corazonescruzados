@@ -27,7 +27,8 @@ export default async function PaginaUsuarios({ params }: { params: Promise<{ hot
 
   const cupo = await cupoDeCuentas(
     inquilino.id,
-    inquilino.suscripcion?.plan.maxUsuarios ?? null,
+    // El inquilino del grupo no tiene topes (Fernando, 2026-09-16).
+    inquilino.cortesia ? null : (inquilino.suscripcion?.plan.maxUsuarios ?? null),
   );
 
   return <UsuariosCliente cupo={cupo} slug={hotel} usuarios={filas} yoSoy={sesion.uid} />;

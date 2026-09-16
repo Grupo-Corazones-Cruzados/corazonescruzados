@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura, esDuenoOAdmin } from '@/lib/inquilino';
-import { faltaCupoDeGeneracion } from '@/lib/limites';
+import { faltaCupoDeGeneracion, topesDe } from '@/lib/limites';
 import { aFechaSql, esDia } from '@/lib/fechas';
 import { NIVELES } from '@/lib/catalogo';
 import { MAX_ADJUNTOS } from '@/lib/adjuntos';
@@ -180,7 +180,7 @@ export async function crearSemana(slug: string, planificacionId: number, datos: 
   if (d.fechaInicio && d.fechaFin && d.fechaFin < d.fechaInicio) return { ok: false, error: 'El fin de la semana no puede ser antes del inicio.' };
   if (!d.indicaciones && !d.adjuntos.length) return { ok: false, error: 'Cuéntale al agente qué quieres para esta semana (por micrófono o escrito), o adjunta un archivo.' };
 
-  const sinCupo = await faltaCupoDeGeneracion(ctx.inquilino, ctx.inquilino.suscripcion?.plan.maxGeneracionesSemana ?? null);
+  const sinCupo = await faltaCupoDeGeneracion(ctx.inquilino, topesDe(ctx.inquilino).generaciones);
   if (sinCupo) return { ok: false, error: sinCupo };
 
   // Los adjuntos tienen que ser de quien pide, y estar sueltos todavía.
@@ -220,7 +220,7 @@ export async function regenerarSemana(slug: string, id: number, datos?: FormData
 
   // Un reintento tras un ERROR no cuenta (la primera no consumió); una regeneración de una LISTA sí.
   if (s.estado === 'LISTA') {
-    const sinCupo = await faltaCupoDeGeneracion(ctx.inquilino, ctx.inquilino.suscripcion?.plan.maxGeneracionesSemana ?? null);
+    const sinCupo = await faltaCupoDeGeneracion(ctx.inquilino, topesDe(ctx.inquilino).generaciones);
     if (sinCupo) return { ok: false, error: sinCupo };
   }
   const indicaciones = String(datos?.get('indicaciones') ?? s.indicaciones).trim().slice(0, 20_000);

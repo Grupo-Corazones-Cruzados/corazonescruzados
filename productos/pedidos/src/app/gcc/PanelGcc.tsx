@@ -41,6 +41,7 @@ import {
   cambiarEstadoInquilino,
   cambiarPlan,
   cambiarSoloLectura,
+  cambiarCortesia,
   guardarPlan,
   restablecerClaveAdmin,
 } from '@/acciones/gcc';
@@ -61,6 +62,7 @@ export type InquilinoGcc = {
   nombre: string;
   estado: string;
   soloLectura: boolean;
+  cortesia: boolean;
   creado: string;
   contactoEmail: string | null;
   contactoTelefono: string | null;
@@ -142,8 +144,9 @@ export default function PanelGcc({
     });
 
   const vencidos = inquilinos.filter((i) => i.acceso !== 'ok').length;
+  // El inquilino del grupo no paga: no suma a la mensualidad activa.
   const ingresoMensual = inquilinos
-    .filter((i) => i.acceso === 'ok')
+    .filter((i) => i.acceso === 'ok' && !i.cortesia)
     .reduce((a, i) => a + i.precioMensual, 0);
 
   return (
@@ -246,6 +249,7 @@ export default function PanelGcc({
                         <span className="flex items-center gap-2">
                           {i.plan?.nombre ?? '—'}
                           {i.soloLectura && <Insignia tono="info">Escaparate</Insignia>}
+                          {i.cortesia && <Insignia tono="exito">Del grupo</Insignia>}
                         </span>
                       ),
                     },
@@ -391,6 +395,13 @@ export default function PanelGcc({
           <Campo etiqueta="Persona de contacto">
             <Entrada name="contactoNombre" />
           </Campo>
+          <label className="flex items-start gap-2 text-[13px]">
+            <input type="checkbox" name="cortesia" className="mt-0.5 h-4 w-4 accent-[var(--color-acento)]" />
+            <span>
+              Acceso del grupo
+              <span className="block text-[11px] text-tenue">Para la administración del Grupo Corazones Cruzados: no paga mensualidad ni tiene topes. Todos los demás pasan por la suscripción.</span>
+            </span>
+          </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo etiqueta="Correo">
               <Entrada name="contactoEmail" type="email" />
@@ -425,6 +436,7 @@ export default function PanelGcc({
               <Dato et="Acceso" v={ACCESO[detalle.acceso].texto} />
               <Dato et="Estado" v={detalle.estado} />
               <Dato et="Escritura" v={detalle.soloLectura ? 'Escaparate (solo lectura)' : 'Normal'} />
+              <Dato et="Mensualidad" v={detalle.cortesia ? 'Acceso del grupo: no paga, sin topes' : 'Por suscripción'} />
               <Dato et="Plan" v={detalle.plan?.nombre ?? '—'} />
               <Dato
                 et="Pagado hasta"
@@ -527,6 +539,15 @@ export default function PanelGcc({
                   }
                 >
                   {detalle.soloLectura ? 'Quitar escaparate' : 'Poner en escaparate'}
+                </Boton>
+                <Boton
+                  variante="secundario"
+                  icono={detalle.cortesia ? ShieldOff : ShieldCheck}
+                  disabled={enCurso}
+                  title="El inquilino de la administración del grupo: sin mensualidad ni topes"
+                  onClick={() => conResultado(() => cambiarCortesia(detalle.id, !detalle.cortesia))}
+                >
+                  {detalle.cortesia ? 'Quitar acceso del grupo' : 'Acceso del grupo'}
                 </Boton>
                 {detalle.estado === 'SUSPENDIDO' ? (
                   <Boton

@@ -11,6 +11,18 @@ import { inicioDeSemanaEn } from '@/lib/fechas';
  */
 export type Cupo = { tope: number | null; usadas: number; quedan: number | null };
 
+type ConPlan = { cortesia: boolean; suscripcion: { plan: { maxUsuarios: number | null; maxGeneracionesSemana: number | null } } | null };
+
+/**
+ * Los topes que aplican a un inquilino: los de su plan, o NINGUNO si es el
+ * inquilino del grupo (`cortesia`, Fernando 2026-09-16: «su acceso es completo
+ * sin limitaciones»). Toda comprobación de tope pasa por aquí.
+ */
+export const topesDe = (inq: ConPlan) => ({
+  cuentas: inq.cortesia ? null : (inq.suscripcion?.plan.maxUsuarios ?? null),
+  generaciones: inq.cortesia ? null : (inq.suscripcion?.plan.maxGeneracionesSemana ?? null),
+});
+
 const armar = (tope: number | null, usadas: number): Cupo => ({
   tope,
   usadas,

@@ -35,12 +35,14 @@ export default function ConfiguracionCliente({
   marca,
   plantillas,
   plan,
+  cortesia,
   hayCloudinary,
 }: {
   slug: string;
   marca: Marca;
   plantillas: PlantillaVista[];
   plan: Plan | null;
+  cortesia: boolean;
   hayCloudinary: boolean;
 }) {
   const [seccion, setSeccion] = useState<Seccion>('marca');
@@ -58,7 +60,7 @@ export default function ConfiguracionCliente({
         />
         <div className="min-w-0 flex-1">
           {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} plantillas={plantillas} hayCloudinary={hayCloudinary} />}
-          {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} />}
+          {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} cortesia={cortesia} />}
         </div>
       </div>
     </>
@@ -226,7 +228,14 @@ function SeccionMarca({ slug, marca, plantillas, hayCloudinary }: { slug: string
 }
 
 // ── Suscripción ─────────────────────────────────────────────────────────────
-function SeccionSuscripcion({ plan }: { plan: Plan | null }) {
+function SeccionSuscripcion({ plan, cortesia }: { plan: Plan | null; cortesia: boolean }) {
+  if (cortesia)
+    return (
+      <Tarjeta className="p-5">
+        <h2 className="text-[14px] font-semibold">Acceso del grupo</h2>
+        <p className="mt-1 text-[13px] text-tenue">Esta institución es la del Grupo Corazones Cruzados: el acceso es completo, sin mensualidad ni topes de cuentas o de planificaciones.</p>
+      </Tarjeta>
+    );
   if (!plan) return <Tarjeta><EstadoVacio icono={CreditCard} titulo="Sin suscripción registrada" /></Tarjeta>;
   return (
     <Tarjeta className="p-5">

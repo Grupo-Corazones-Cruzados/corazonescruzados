@@ -233,6 +233,26 @@ async function main() {
     }
   }
 
+  // ── El inquilino del GRUPO (Fernando, 2026-09-16): «ya comprado» para la
+  //    administración del Grupo Corazones Cruzados, sin mensualidad ni topes.
+  //    El código es «grupo»: «gcc» está reservado para el área del equipo.
+  if (!(await prisma.inquilino.findUnique({ where: { slug: 'grupo' } }))) {
+    const clave = process.env.GCC_CLAVE || claveAlAzar();
+    await prisma.inquilino.create({
+      data: {
+        slug: 'grupo',
+        nombre: 'Grupo Corazones Cruzados',
+        estado: 'ACTIVO',
+        cortesia: true,
+        contactoNombre: 'Luis Fernando González Muyulema',
+        contactoEmail: correoOperador,
+        suscripcion: { create: { planId: plan.id, estado: 'ACTIVA', notas: 'Acceso del grupo: sin mensualidad.' } },
+        usuarios: { create: { usuario: 'admin', nombre: 'Luis Fernando González Muyulema', rol: 'ADMIN', email: correoOperador, passwordHash: await bcrypt.hash(clave, 10) } },
+      },
+    });
+    nuevas.push(`  Grupo (acceso del grupo) /grupo/acceso  admin    ${clave}`);
+  }
+
   const resumen = {
     planes: await prisma.plan.count(),
     negocios: await prisma.inquilino.count(),

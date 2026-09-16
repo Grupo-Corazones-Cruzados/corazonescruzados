@@ -1,6 +1,6 @@
 import { exigirContexto, esDuenoOAdmin } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
-import { cupoDeGeneraciones } from '@/lib/limites';
+import { cupoDeGeneraciones, topesDe } from '@/lib/limites';
 import { cargarDocumento } from '@/lib/documento';
 import { listaDePlantillas } from '@/plantillas';
 import { VistaPrevia } from '@/plantillas/pud/VistaPrevia';
@@ -131,7 +131,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
   }
 
   const materias = await prisma.materia.findMany({ orderBy: [{ nivel: 'asc' }, { orden: 'asc' }] });
-  const cupo = await cupoDeGeneraciones(inquilino, inquilino.suscripcion?.plan.maxGeneracionesSemana ?? null);
+  const cupo = await cupoDeGeneraciones(inquilino, topesDe(inquilino).generaciones);
 
   return (
     <PlanificacionesCliente

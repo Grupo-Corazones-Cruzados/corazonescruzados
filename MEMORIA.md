@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏛️ EL INQUILINO DEL GRUPO EN LOS CUATRO PRODUCTOS (2026-09-16).** Fernando: *«quisiera que
+  el administrador del grupo corazones cruzados pueda tener acceso para que no tenga que
+  suscribirse sino que tenga un tenant ya comprado para esa cuenta […] no paga la suscripción
+  porque su acceso es completo sin limitaciones, todos los demás usuarios sí tienen que pasar
+  por la suscripción»*. Se hizo en **reservas, pedidos, catering y planificaciones** igual:
+  columna `inquilinos.cortesia` (migración `…_acceso_del_grupo.sql`), `evaluarAcceso` devuelve
+  `ok` sin mirar la suscripción (suspender sí lo cierra), los topes del plan pasan a NULO
+  (cuentas, y en planificaciones las generaciones), la **purga lo salta**, el panel `/gcc` lo
+  marca «Del grupo», no lo suma a la mensualidad activa y tiene el botón «Acceso del grupo» /
+  «Quitar acceso del grupo» (y la casilla en el alta). Cada semilla crea el inquilino
+  **`/grupo`** («gcc» está reservado para el área del equipo) con su `admin`; las contraseñas
+  se entregaron en el chat una vez. Verificado en local (planificaciones: entra sin pago, sin
+  «de 40» ni «de 100», `/suscripcion` devuelve al panel) y en producción en los cuatro.
 - **📚 CUARTO PRODUCTO: «PLANIFICACIÓN DE CLASES», UNA HERRAMIENTA PARA PROFESORES CON UN AGENTE
   QUE REDACTA COMO LA DOCENTE (2026-09-15).** Fernando, con las cuatro skills a la vez y un solo
   encargo largo (*«vamos a desarrollar un nuevo producto que es para la generación automática de

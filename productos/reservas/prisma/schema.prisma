@@ -77,6 +77,10 @@ model Inquilino {
   /// ubicaciones, suites y reservas — una promesa que solo vive en el código se
   /// rompe con la siguiente pantalla que alguien añada.
   soloLectura Boolean @default(false) @map("solo_lectura")
+  /// ACCESO DEL GRUPO (Fernando, 2026-09-16): un inquilino «ya comprado» para la
+  /// administración del Grupo Corazones Cruzados. No paga mensualidad, no tiene
+  /// topes ni retención. Todos los demás pasan por la suscripción.
+  cortesia    Boolean         @default(false)
 
   // ── Enlace con la plataforma del grupo (informativo; no hay clave foránea
   //    entre esquemas a propósito: los dos servicios se despliegan por separado)

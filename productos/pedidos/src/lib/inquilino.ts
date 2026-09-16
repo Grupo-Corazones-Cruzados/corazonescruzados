@@ -20,9 +20,12 @@ export type EstadoAcceso = 'ok' | 'suspendido' | 'sin-pago' | 'vencido';
 /** LA PUERTA: sin la mensualidad al día, la aplicación no se abre. */
 export function evaluarAcceso(inq: {
   estado: string;
+  /** Acceso del grupo (Fernando, 2026-09-16): completo, sin pasar por la suscripción. */
+  cortesia?: boolean;
   suscripcion: { estado: string; pagadoHasta: Date | null } | null;
 }): EstadoAcceso {
   if (inq.estado === 'SUSPENDIDO') return 'suspendido';
+  if (inq.cortesia) return 'ok';
   const s = inq.suscripcion;
   if (!s || s.estado === 'CANCELADA') return 'suspendido';
   if (!s.pagadoHasta) return 'sin-pago';

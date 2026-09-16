@@ -29,6 +29,7 @@ export default async function PaginaGcc() {
     nombre: i.nombre,
     estado: i.estado,
     soloLectura: i.soloLectura,
+    cortesia: i.cortesia,
     creado: i.creado.toISOString(),
     contactoEmail: i.contactoEmail,
     contactoTelefono: i.contactoTelefono,

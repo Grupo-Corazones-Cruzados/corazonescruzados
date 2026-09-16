@@ -10,6 +10,7 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
   const { institucion } = await params;
   const { inquilino } = await exigirContexto(institucion, 'administrar');
   const plan = inquilino.suscripcion?.plan;
+  const cortesia = inquilino.cortesia;
 
   return (
     <ConfiguracionCliente
@@ -17,6 +18,7 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
       hayCloudinary={hayCloudinary}
       marca={{ nombre: inquilino.nombre, colorAcento: inquilino.colorAcento, tema: inquilino.tema, logoUrl: inquilino.logoUrl, plantillaPorDefecto: inquilino.plantillaPorDefecto }}
       plantillas={listaDePlantillas()}
+      cortesia={cortesia}
       plan={
         plan
           ? {

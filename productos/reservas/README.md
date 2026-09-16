@@ -92,6 +92,13 @@ del proxy); no hace falta correr nada dentro del contenedor.
 El tope de cuentas **se cumple**: se comprueba al crear y al reactivar, cuenta solo las
 **activas** —una desactivada no ocupa— y un tope NULO significa **sin límite**, no cero.
 
+## El inquilino del grupo
+
+La administración del Grupo Corazones Cruzados tiene un inquilino **ya comprado**
+(`/grupo`, marcado `cortesia`): entra sin mensualidad, sin topes y sin purga. Lo pone y lo
+quita el equipo GCC desde `/gcc` («Acceso del grupo»); todos los demás pasan por la
+suscripción (Fernando, 2026-09-16).
+
 ## Lo que falta (decisión de Fernando)
 
 - **Niveles por encima del Estándar**, si algún día hacen falta.

@@ -43,7 +43,7 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
   // dejaría la cuenta hecha y el mensaje sin sentido.
   const sinCupo = await faltaCupoDeCuenta(
     ctx.inquilino.id,
-    ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null,
+    ctx.inquilino.cortesia ? null : (ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null),
   );
   if (sinCupo) return { ok: false, error: sinCupo };
 
@@ -110,7 +110,7 @@ export async function editarUsuario(
   if (activo && !cuenta.activo) {
     const sinCupo = await faltaCupoDeCuenta(
       ctx.inquilino.id,
-      ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null,
+      ctx.inquilino.cortesia ? null : (ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null),
     );
     if (sinCupo) return { ok: false, error: sinCupo };
   }

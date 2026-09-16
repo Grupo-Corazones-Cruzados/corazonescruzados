@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
-import { faltaCupoDeCuenta } from '@/lib/limites';
+import { faltaCupoDeCuenta, topesDe } from '@/lib/limites';
 
 export type ResultadoUsuario = { ok: true; clave?: string } | { ok: false; error: string };
 
@@ -42,7 +42,7 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
   const d = leido.data;
 
   // El tope del plan se comprueba ANTES de crear nada.
-  const sinCupo = await faltaCupoDeCuenta(ctx.inquilino.id, ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null);
+  const sinCupo = await faltaCupoDeCuenta(ctx.inquilino.id, topesDe(ctx.inquilino).cuentas);
   if (sinCupo) return { ok: false, error: sinCupo };
 
   const repetido = await prisma.usuario.findUnique({
@@ -91,7 +91,7 @@ export async function editarUsuario(slug: string, id: number, datos: FormData): 
 
   // Reactivar ocupa cupo igual que crear: si no, el tope se saltaría desactivando y activando.
   if (activo && !cuenta.activo) {
-    const sinCupo = await faltaCupoDeCuenta(ctx.inquilino.id, ctx.inquilino.suscripcion?.plan.maxUsuarios ?? null);
+    const sinCupo = await faltaCupoDeCuenta(ctx.inquilino.id, topesDe(ctx.inquilino).cuentas);
     if (sinCupo) return { ok: false, error: sinCupo };
   }
 

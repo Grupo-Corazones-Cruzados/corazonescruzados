@@ -42,6 +42,11 @@ export async function POST(peticion: Request) {
       informe.push({ negocio: inq.slug, omitido: 'escaparate' });
       continue;
     }
+    // El inquilino del grupo no tiene retención: su acceso es completo, sin limitaciones.
+    if (inq.cortesia) {
+      informe.push({ negocio: inq.slug, omitido: 'acceso del grupo' });
+      continue;
+    }
 
     const meses = inq.suscripcion?.plan.mesesRetencion ?? null;
     if (!meses || meses < 1) {
