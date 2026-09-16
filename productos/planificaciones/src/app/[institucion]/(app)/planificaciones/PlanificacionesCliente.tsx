@@ -62,6 +62,7 @@ export type PlanificacionVista = {
   registroAprobadoCargo: string | null;
   registroAprobadoNombre: string | null;
   registroAprobadoFecha: string | null;
+  deceNombre: string | null;
   docente: string;
   usuarioId: number;
   semanas: number;
@@ -89,6 +90,8 @@ export type SemanaVista = {
   referencias: { titulo: string; url: string; uso: string }[];
   uso: Record<string, number> | null;
   destrezas: DestrezaVista[];
+  /** Las líneas de «Ajustes razonables» de la semana: una por estudiante con condición especial. */
+  ajustes: { id: number; estudiante: string; iniciales: string; condicion: string; estrategia: string }[];
   adjuntos: { id: number; nombre: string; fragmentos: number }[];
   docente: string;
   creado: string;
@@ -404,6 +407,9 @@ export default function PlanificacionesCliente(p: Props) {
             </Campo>
             <Campo etiqueta="Criterios de evaluación de la unidad">
               <AreaTexto name="criteriosEvaluacion" rows={3} defaultValue={actual.criteriosEvaluacion ?? ''} />
+            </Campo>
+            <Campo etiqueta="Responsable del DECE (nombre)">
+              <Entrada name="deceNombre" defaultValue={actual.deceNombre ?? ''} placeholder="Psic. …" />
             </Campo>
             <h3 className="border-t border-borde pt-3 text-[12px] font-semibold uppercase tracking-wide text-tenue">Firmas de responsabilidad</h3>
             <p className="text-[12px] text-tenue">Van al final del formato con la fecha del día de la descarga; la firma se pone a mano sobre el papel.</p>
@@ -772,6 +778,20 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
           ))}
         </CampoLectura>
       </div>
+      {s.ajustes.length > 0 && (
+        <CampoLectura titulo={`Ajustes razonables · ${s.ajustes.length} estudiante${s.ajustes.length === 1 ? '' : 's'}`}>
+          <ul className="space-y-2">
+            {s.ajustes.map((a) => (
+              <li key={a.id} className="rounded border border-borde p-2.5">
+                <p className="text-[12px] font-semibold text-texto">
+                  {a.iniciales} <span className="font-normal text-tenue">· {a.condicion}</span>
+                </p>
+                <p className="mt-1 whitespace-pre-line text-[12px]">{a.estrategia}</p>
+              </li>
+            ))}
+          </ul>
+        </CampoLectura>
+      )}
       {s.referencias.length > 0 && (
         <CampoLectura titulo="Referencias que usó el agente">
           <ul className="space-y-1">
@@ -869,6 +889,11 @@ function FormularioCampos({ semana: s, catalogo, materia, error, enCurso, alCanc
           <AreaTexto name="instrumento" rows={6} defaultValue={s.instrumento ?? ''} />
         </Campo>
       </div>
+      {s.ajustes.map((a) => (
+        <Campo key={a.id} etiqueta={`Ajuste razonable · ${a.iniciales} (${a.condicion}) · estrategia empleada`}>
+          <AreaTexto name={`ajuste-${a.id}`} rows={5} defaultValue={a.estrategia} />
+        </Campo>
+      ))}
       {error && <Aviso texto={error} />}
       <div className="flex justify-end gap-2 border-t border-borde pt-4">
         <Boton type="button" variante="secundario" onClick={alCancelar} disabled={enCurso}>

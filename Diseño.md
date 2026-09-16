@@ -2890,6 +2890,19 @@ materia» y la cabecera de la materia en Unidades; en la lista de grados, un pun
 mismo color. El `<select>` nativo de «Nueva planificación» no admite relleno: ahí sigue «Materia —
 Grado».
 
+### El módulo «Estudiantes»: lista de grados + fichas con `Insignia` (2026-09-16)
+`estudiantes/EstudiantesCliente.tsx`: a la izquierda los grados del docente (punto de color +
+materias en 11 px), a la derecha una ficha por estudiante (`rounded border border-borde px-3 py-2.5`)
+con el nombre en negrita, una `Insignia` («Condición especial · A.G.B.G» en tono `aviso`, «Sin
+condición especial» en neutro) y, si hay condición, un `<dl>` de dos columnas (`sm:grid-cols-[auto_1fr]`)
+con condición, nivel y enfoque. El formulario va en `PanelLateral`; el bloque de la condición aparece
+al elegir «Sí» en un `Selector` y va dentro de un recuadro `rounded-md border border-borde bg-realce p-3`.
+
+### Tablas del formato: `span` y `medio` en las celdas
+Una `Celda` puede ocupar varias columnas (`span`) y centrarse en vertical (`medio`). `pud/anchos.ts →
+anchosDeFila` reparte los anchos por columna entre las celdas de cada fila y lo usan el PDF, el
+Word (`columnSpan`) y la vista previa (`colSpan`), así las tres tablas miden lo mismo.
+
 ### El módulo «Unidades»: tres columnas maestro → detalle → detalle
 `unidades/UnidadesCliente.tsx`: grados (lista, 260 px) · materias del grado elegido · ficha de la
 materia (descripción, docentes asignados con casillas, unidades). Grado en `Ventanita` (un campo);

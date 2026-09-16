@@ -106,6 +106,7 @@ const Configuracion = z
     registroAprobadoCargo: z.string().trim().max(120).optional().or(z.literal('')),
     registroAprobadoNombre: z.string().trim().max(200).optional().or(z.literal('')),
     registroAprobadoFecha: z.string().trim().max(40).optional().or(z.literal('')),
+    deceNombre: z.string().trim().max(160).optional().or(z.literal('')),
   })
   .refine((d) => d.finPud >= d.inicioPud, { message: 'El fin del PUD no puede ser antes del inicio.', path: ['finPud'] });
 
@@ -152,6 +153,7 @@ export async function configurarPlanificacion(slug: string, id: number, datos: F
       registroAprobadoCargo: d.registroAprobadoCargo || null,
       registroAprobadoNombre: d.registroAprobadoNombre || null,
       registroAprobadoFecha: d.registroAprobadoFecha || null,
+      deceNombre: d.deceNombre || null,
     },
   });
   revalidatePath(`/${slug}/planificaciones`);
@@ -289,8 +291,15 @@ export async function editarSemana(slug: string, id: number, datos: FormData): P
   const validas = d.destrezas.length ? await prisma.destreza.findMany({ where: { id: { in: d.destrezas }, planificacionId: s.planificacionId }, select: { id: true } }) : [];
   const orden = new Map(d.destrezas.map((x, i) => [x, i]));
 
+  // Las estrategias de los ajustes razonables se corrigen en el mismo formulario (`ajuste-<id>`).
+  const ajustes = [...datos.entries()]
+    .filter(([k]) => /^ajuste-\d+$/.test(k))
+    .map(([k, v]) => ({ id: Number(k.slice(7)), estrategia: String(v).trim() }))
+    .filter((a) => a.estrategia);
+
   await prisma.$transaction([
     prisma.planificacionDestreza.deleteMany({ where: { semanaId: id } }),
+    ...ajustes.map((a) => prisma.ajusteRazonable.updateMany({ where: { id: a.id, semanaId: id }, data: { estrategia: a.estrategia } })),
     prisma.planificacionSemanal.update({
       where: { id },
       data: {

@@ -6,6 +6,7 @@ import type { SalidaSemana } from '@/plantillas/pud/esquema';
 import { ETIQUETA_NIVEL } from '@/lib/catalogo';
 import { destrezasDe } from '@/lib/destrezas';
 import { periodosDe, ETIQUETA_DIA } from '@/lib/horario';
+import { estudiantesConCondicion } from '@/lib/estudiantes';
 import { aDia, aFechaSql, esDia, sumarDias } from '@/lib/fechas';
 
 /**
@@ -64,6 +65,10 @@ export async function generarSemana(semanaId: number): Promise<void> {
   const periodos = pl.materiaGradoId ? await periodosDe(pl.usuarioId, pl.materiaGradoId) : { horas: 0, sesiones: [] };
   const numeroPeriodos = periodos.horas > 0 ? `${periodos.horas} ${periodos.horas === 1 ? 'hora' : 'horas'}` : '1 hora';
 
+  // Los estudiantes con condición especial del grado (módulo «Estudiantes»): por
+  // cada uno, una línea de «Ajustes razonables» de esta semana (Fernando, 2026-09-16).
+  const estudiantes = await estudiantesConCondicion(pl.materiaGradoId);
+
   const adjuntoIds = semana.adjuntos.map((a) => a.id);
   let fragmentosCercanos: { adjunto: string; texto: string }[] = [];
   if (adjuntoIds.length) {
@@ -114,6 +119,7 @@ export async function generarSemana(semanaId: number): Promise<void> {
     destrezas: destrezas.map((d) => ({ codigo: d.codigo, descripcion: d.descripcion })),
     adjuntos: semana.adjuntos.map((a) => ({ nombre: a.nombre, fragmentos: a.fragmentos })),
     fragmentosCercanos,
+    estudiantes: estudiantes.map((e) => ({ iniciales: e.iniciales ?? '', condicion: e.condicion ?? '', nivelAjuste: e.nivelAjuste ?? '', enfoque: e.enfoque ?? '' })),
     indicaciones: semana.indicaciones,
   });
 
@@ -169,9 +175,20 @@ export async function generarSemana(semanaId: number): Promise<void> {
   let fechaFin = esDia(s.fechaFin) ? s.fechaFin : finPropuesto;
   if (fechaFin < fechaInicio) fechaFin = sumarDias(fechaInicio, 4);
 
+  // Los ajustes razonables se casan por iniciales (y, si el agente las cambió, por posición).
+  const devueltos = s.ajustesRazonables ?? [];
+  const ajustes = estudiantes
+    .map((e, i) => {
+      const norm = (x: string) => x.replace(/[\s.]/g, '').toUpperCase();
+      const a = devueltos.find((x) => norm(x.iniciales) === norm(e.iniciales ?? '')) ?? devueltos[i];
+      return a?.estrategia?.trim() ? { estudianteId: e.id, estrategia: a.estrategia.trim(), orden: i } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
   const columnas = plantilla.aColumnas(s);
   await prisma.$transaction([
     prisma.planificacionDestreza.deleteMany({ where: { semanaId } }),
+    prisma.ajusteRazonable.deleteMany({ where: { semanaId } }),
     prisma.planificacionSemanal.update({
       where: { id: semanaId },
       data: {
@@ -185,6 +202,7 @@ export async function generarSemana(semanaId: number): Promise<void> {
         uso: uso as never,
         generadaEn: new Date(),
         destrezas: { create: elegidas.map((d, i) => ({ destrezaId: d.id, orden: i })) },
+        ajustes: { create: ajustes },
       },
     }),
   ]);

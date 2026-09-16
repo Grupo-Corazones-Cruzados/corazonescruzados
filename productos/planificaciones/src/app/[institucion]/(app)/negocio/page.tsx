@@ -19,7 +19,6 @@ export default async function PaginaNegocio({ params }: { params: Promise<{ inst
         cabeceraLinea2: i.cabeceraLinea2,
         cabeceraLinea3: i.cabeceraLinea3,
         anioLectivo: i.anioLectivo,
-        deceResponsable: i.deceResponsable,
         logoInstitucionUrl: i.logoInstitucionUrl,
         logoOrganizacionUrl: i.logoOrganizacionUrl,
         logoOpcionalUrl: i.logoOpcionalUrl,

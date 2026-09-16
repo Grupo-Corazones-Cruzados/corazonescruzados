@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
 import type { Bloque, Celda, DocumentoPud, SemanaDoc } from '../tipos';
 import { parsearEstrategias, lineas } from './estrategias';
+import { anchosDeFila } from './anchos';
 import { celdaSemana, COLORES_FORMATO } from './documento';
 
 /**
@@ -165,9 +166,10 @@ class Dibujante {
   }
 
   /** Barra de sección: color de la institución, texto blanco centrado. */
-  barra(titulo: string, color: string, numero?: string) {
+  barra(titulo: string, color: string, numero?: string, altoSiguiente = mm(8)) {
     const h = mm(5.2);
-    this.asegurar(h + mm(8));
+    // La barra nunca se queda sola al pie: se asegura sitio para lo que viene debajo.
+    this.asegurar(h + altoSiguiente);
     this.doc.rect(this.x0, this.y, this.ancho, h).fill(color);
     this.doc.fillColor(BLANCO).font(NEGRITA).fontSize(8.5).text(`${numero ? numero + '  ' : ''}${titulo}`, this.x0, this.y + mm(1.4), { width: this.ancho, align: 'center', lineBreak: false });
     this.y += h;
@@ -178,14 +180,14 @@ class Dibujante {
    * Una celda puede ser `etiqueta` (gris, negrita), `titulo` (rojo, blanco, negrita),
    * `cursiva`, llevar `vinetas` o una `imagen` (data URL) centrada bajo el texto.
    */
-  tabla(filas: Celda[][], anchosPct?: number[], o: { tamano?: number; minAlto?: number } = {}) {
+  tabla(filas: Celda[][], anchosPct?: number[], o: { tamano?: number; minAlto?: number; barra?: { titulo: string; color: string; numero?: string } } = {}) {
     const tam = o.tamano ?? TAM;
     const relleno = mm(1.4);
     const altoImagen = mm(11);
-    for (const fila of filas) {
-      const n = fila.length;
-      const pct = anchosPct && anchosPct.length === n ? anchosPct : fila.map(() => 100 / n);
-      const anchos = pct.map((p) => (this.ancho * p) / 100);
+    // Primero se mide cada fila; así una cabecera (fila de etiquetas) nunca se
+    // queda sola al pie de la página: se pasa con su primera fila de datos.
+    const medidas = filas.map((fila) => {
+      const anchos = anchosDeFila(fila, anchosPct).map((p) => (this.ancho * p) / 100);
       const contenidos = fila.map((c, i) => {
         const w = anchos[i] - relleno * 2;
         const fuente = c.etiqueta || c.titulo ? NEGRITA : c.cursiva ? 'Helvetica-Oblique' : NORMAL;
@@ -196,16 +198,25 @@ class Dibujante {
         return items;
       });
       const alto = Math.max(o.minAlto ?? mm(5.5), ...contenidos.map((it) => it.reduce((a, i) => a + i.alto, 0) + relleno * 2));
-      this.asegurar(alto);
+      return { anchos, contenidos, alto };
+    });
+    // Con barra de sección: se dibuja aquí, ya medidas las filas, para que baje con
+    // sus dos primeras filas si no caben (la barra y la cabecera no se quedan solas).
+    if (o.barra) this.barra(o.barra.titulo, o.barra.color, o.barra.numero, medidas.slice(0, 2).reduce((a, m) => a + m.alto, 0));
+    filas.forEach((fila, f) => {
+      const { anchos, contenidos, alto } = medidas[f];
+      const esCabecera = fila.every((c) => c.etiqueta || c.titulo);
+      const siguiente = medidas[f + 1];
+      this.asegurar(esCabecera && siguiente ? alto + siguiente.alto : alto);
       let x = this.x0;
       fila.forEach((c, i) => {
         const w = anchos[i];
         if (c.etiqueta) this.doc.rect(x, this.y, w, alto).fill(GRIS_ETIQUETA);
         if (c.titulo) this.doc.rect(x, this.y, w, alto).fill(COLORES_FORMATO.barra);
         this.doc.rect(x, this.y, w, alto).lineWidth(0.5).strokeColor(BORDE).stroke();
-        // Las celdas de título van centradas en vertical, como en el original.
+        // Las celdas de título (y las marcadas `medio`) van centradas en vertical, como en el original.
         const altoContenido = contenidos[i].reduce((a, it) => a + it.alto, 0);
-        let yy = this.y + (c.titulo ? (alto - altoContenido) / 2 : relleno);
+        let yy = this.y + (c.titulo || c.medio ? (alto - altoContenido) / 2 : relleno);
         for (const it of contenidos[i]) {
           if (it.tipo === 'linea') {
             this.doc.fillColor(it.color).font(it.fuente).fontSize(it.tamano).text(it.texto, x + relleno + it.sangria, yy, { width: w - relleno * 2 - it.sangria, align: c.centrado || c.titulo ? 'center' : 'left', lineBreak: false });
@@ -227,7 +238,7 @@ class Dibujante {
         x += w;
       });
       this.y += alto;
-    }
+    });
   }
 
   /**
@@ -360,11 +371,9 @@ function bloque(d: Dibujante, b: Bloque, color: string) {
   d.asegurar(mm(5.2) + mm(16));
   const titulo = `${b.numero ? b.numero + '  ' : ''}${b.titulo}`;
   if (b.tipo === 'tabla') {
-    d.barra(b.titulo, color, b.numero);
-    d.tabla(b.filas, b.anchos, { minAlto: b.altoMinMm ? mm(b.altoMinMm) : undefined });
+    d.tabla(b.filas, b.anchos, { minAlto: b.altoMinMm ? mm(b.altoMinMm) : undefined, barra: { titulo: b.titulo, color, numero: b.numero } });
   } else if (b.tipo === 'texto') {
-    d.barra(b.titulo, color, b.numero);
-    d.tabla([[{ texto: b.texto }]], [100], { minAlto: mm(9) });
+    d.tabla([[{ texto: b.texto }]], [100], { minAlto: mm(9), barra: { titulo: b.titulo, color, numero: b.numero } });
   } else if (b.tipo === 'lateral') {
     d.lateral(titulo, b.columnas);
   } else {

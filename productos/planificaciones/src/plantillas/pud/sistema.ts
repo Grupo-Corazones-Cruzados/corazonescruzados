@@ -42,6 +42,8 @@ Una PLANIFICACIÓN SEMANAL: una fila del Plan de Unidad Didáctica (PUD). Devuel
 
 9. referencias. Cada enlace real que usaste, con título y para qué. Vacío si no usaste ninguno.
 
+10. ajustesRazonables. Si el encargo lista ESTUDIANTES CON CONDICIÓN ESPECIAL del grado, devuelve una entrada por cada uno (con sus iniciales exactas) con la ESTRATEGIA EMPLEADA de esta semana: cómo adaptas LAS ACTIVIDADES CONCRETAS DE ESTA SEMANA a su condición reportada, dentro de su nivel de ajuste y su enfoque, sin bajar el nivel del contenido. Es un solo párrafo de 4 a 7 oraciones en infinitivo, como el resto de tu redacción, y nombra las actividades y materiales de la semana (la canción, el espejo, el cuento, la ficha) en vez de hablar en general. Lo que sueles hacer, según la condición: anticipar cada cambio de actividad y las transiciones; presentar por pasos cortos y dar una sola consigna a la vez; ampliar el tiempo de ejecución; aprovechar la actividad corporal o musical de la semana como recurso de autorregulación; leer los cuentos por partes cortas con apoyo de imágenes; aceptar respuestas mediante señalamiento, gesto o respuesta oral breve; modelar antes el trabajo en pareja; entregar material precortado si la motricidad lo requiere; y cerrar con doble refuerzo positivo (2 estrellas en su tabla de logros) al completar cada paso. Para una condición sensorial (baja visión, hipoacusia) o motriz, adapta el canal (contraste, tamaño, apoyo táctil, ubicación en el aula) y el material. Si el encargo no lista estudiantes, devuelve la lista vacía.
+
 CÓMO USAS LAS HERRAMIENTAS
 - Búsqueda web: úsala para encontrar canciones y videos infantiles en YouTube, en español, que traten EXACTAMENTE el contenido de la semana (una canción de las figuras geométricas, de la vocal O, de los saludos). Busca cuando la actividad lo pide —una canción para abrir, un video para observar— y pon el enlace en su propia línea debajo de la actividad. Prefiere enlaces de youtube.com o youtu.be. No inventes enlaces: si la búsqueda no da un video adecuado, no pongas ninguno y usa una canción sin enlace.
 - buscar_en_adjuntos: si el docente adjuntó archivos (una guía, un libro, una planificación anterior, un cuento), consúltalos ANTES de redactar para tomar de ahí páginas concretas, nombres de fichas, contenidos y el vocabulario que la institución usa. Haz una o dos consultas concretas, no más de cuatro.
@@ -103,6 +105,8 @@ export type DatosEncargo = {
   destrezas: { codigo: string; descripcion: string }[];
   adjuntos: { nombre: string; fragmentos: number }[];
   fragmentosCercanos: { adjunto: string; texto: string }[];
+  /** Los estudiantes con condición especial del grado: una línea de ajustes razonables cada uno. */
+  estudiantes: { iniciales: string; condicion: string; nivelAjuste: string; enfoque: string }[];
   indicaciones: string;
 };
 
@@ -149,6 +153,13 @@ ${
           ? `\n\nFragmentos de los adjuntos más cercanos a las indicaciones:\n` +
             d.fragmentosCercanos.map((f, i) => `[${i + 1}] (${f.adjunto}) ${f.texto}`).join('\n\n')
           : ''),
+    );
+  }
+
+  if (d.estudiantes.length) {
+    partes.push(
+      `ESTUDIANTES CON CONDICIÓN ESPECIAL DEL GRADO (una entrada de ajustesRazonables por cada uno, con sus iniciales exactas)\n` +
+        d.estudiantes.map((e) => `- ${e.iniciales} · Condición reportada: ${e.condicion} · Nivel de ajuste razonable: ${e.nivelAjuste} · Enfoque: ${e.enfoque}`).join('\n'),
     );
   }
 

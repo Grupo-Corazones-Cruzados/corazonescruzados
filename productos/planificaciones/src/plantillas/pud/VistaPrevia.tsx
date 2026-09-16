@@ -1,5 +1,6 @@
 import type { Bloque, Celda, DocumentoPud } from '../tipos';
 import { parsearEstrategias, lineas } from './estrategias';
+import { anchosDeFila } from './anchos';
 import { celdaSemana, COLORES_FORMATO } from './documento';
 
 /**
@@ -33,18 +34,21 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
   return (
     <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
       <tbody>
-        {filas.map((fila, i) => (
+        {filas.map((fila, i) => {
+          const pct = anchosDeFila(fila, anchos);
+          return (
           <tr key={i}>
             {fila.map((c, j) => (
               <td
                 key={j}
+                colSpan={c.span && c.span > 1 ? c.span : undefined}
                 style={{
-                  width: anchos && anchos.length === fila.length ? `${anchos[j]}%` : undefined,
+                  width: `${pct[j]}%`,
                   background: c.titulo ? C.barra : c.etiqueta ? C.etiqueta : undefined,
                   color: c.titulo ? '#fff' : undefined,
                   height: minAlto,
                 }}
-                className={`border border-[#808080] px-1.5 py-1 whitespace-pre-line ${c.titulo ? 'align-middle text-center font-bold' : 'align-top'} ${c.etiqueta ? 'font-bold' : ''} ${c.centrado ? 'text-center' : ''} ${c.cursiva ? 'italic' : ''}`}
+                className={`border border-[#808080] px-1.5 py-1 whitespace-pre-line ${c.titulo || c.medio ? 'align-middle' : 'align-top'} ${c.titulo ? 'text-center font-bold' : ''} ${c.etiqueta ? 'font-bold' : ''} ${c.centrado ? 'text-center' : ''} ${c.cursiva ? 'italic' : ''}`}
               >
                 {c.vinetas ? (
                   <ul className="list-disc pl-4">
@@ -62,7 +66,8 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
               </td>
             ))}
           </tr>
-        ))}
+          );
+        })}
       </tbody>
     </table>
   );

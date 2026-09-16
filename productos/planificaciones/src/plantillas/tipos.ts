@@ -21,6 +21,8 @@ export type SemanaDoc = {
   tecnica: string | null;
   instrumento: string | null;
   destrezas: { codigo: string; descripcion: string; imagenUrl: string | null }[];
+  /** Una línea de «Ajustes razonables» por estudiante con condición especial (Fernando, 2026-09-16). */
+  ajustes: { iniciales: string; condicion: string; nivelAjuste: string; enfoque: string; estrategia: string; indicadores: string }[];
 };
 
 export type PlanificacionDoc = {
@@ -42,6 +44,8 @@ export type PlanificacionDoc = {
   aprobadoPor: string | null;
   aprobadoCargo: string | null;
   docente: string;
+  /** El nombre del responsable del DECE, lo único que se rellena en «Espacio solo para el DECE» (Fernando, 2026-09-16). */
+  deceNombre: string | null;
   /** El «Registro de formato» del pie: variable por planificación (Fernando, 2026-09-16). */
   registro: {
     titulo: string | null;
@@ -54,8 +58,11 @@ export type PlanificacionDoc = {
   };
 };
 
-/** Una celda de las tablas del formato. `etiqueta` = fondo gris y negrita; `titulo` = fondo rojo y texto blanco. */
-export type Celda = { texto: string; etiqueta?: boolean; titulo?: boolean; ancho?: number; centrado?: boolean; vinetas?: string[]; imagen?: string; cursiva?: boolean };
+/**
+ * Una celda de las tablas del formato. `etiqueta` = fondo gris y negrita; `titulo` = fondo rojo y texto blanco;
+ * `span` = cuántas columnas de `anchos` ocupa (cabeceras combinadas); `medio` = centrada en vertical.
+ */
+export type Celda = { texto: string; etiqueta?: boolean; titulo?: boolean; ancho?: number; centrado?: boolean; medio?: boolean; span?: number; vinetas?: string[]; imagen?: string; cursiva?: boolean };
 
 /** Un bloque del documento antes o después de la tabla de planificación. */
 export type Bloque =
@@ -79,7 +86,6 @@ export type InstitucionConfig = {
   anioLectivo: string;
   /** Hasta tres: institución, organización principal, opcional. Direcciones o `data:` URL. */
   logos: string[];
-  deceResponsable: string;
 };
 
 /** El documento entero, listo para dibujar. Lo construye `documento.ts`; lo dibujan el PDF, el Word y la vista previa. */

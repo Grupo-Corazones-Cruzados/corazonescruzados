@@ -16,7 +16,6 @@ const Negocio = z.object({
   cabeceraLinea2: z.string().trim().max(160).optional().or(z.literal('')),
   cabeceraLinea3: z.string().trim().max(160).optional().or(z.literal('')),
   anioLectivo: z.string().trim().max(40).optional().or(z.literal('')),
-  deceResponsable: z.string().trim().max(160).optional().or(z.literal('')),
 });
 
 const MAX_LOGO = 600 * 1024;
@@ -72,7 +71,6 @@ export async function guardarNegocio(slug: string, datos: FormData): Promise<Res
       cabeceraLinea2: d.cabeceraLinea2 || null,
       cabeceraLinea3: d.cabeceraLinea3 || null,
       anioLectivo: d.anioLectivo || null,
-      deceResponsable: d.deceResponsable || null,
       ...logos,
     },
   });

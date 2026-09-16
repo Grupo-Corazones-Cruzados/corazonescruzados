@@ -15,7 +15,6 @@ type InquilinoDoc = {
   logoInstitucionUrl: string | null;
   logoOrganizacionUrl: string | null;
   logoOpcionalUrl: string | null;
-  deceResponsable: string | null;
 };
 
 /**
@@ -32,7 +31,6 @@ export function institucionDe(inq: InquilinoDoc): InstitucionConfig {
     cabecera: cabecera.length ? cabecera : [{ texto: inq.nombre, estilo: 'grande' }],
     anioLectivo: inq.anioLectivo ?? '',
     logos: [inq.logoInstitucionUrl, inq.logoOrganizacionUrl, inq.logoOpcionalUrl].filter((l): l is string => Boolean(l)),
-    deceResponsable: inq.deceResponsable ?? '',
   };
 }
 
@@ -45,7 +43,7 @@ export async function cargarDocumento(inquilino: InquilinoDoc, planificacionId: 
     where: { id: planificacionId, inquilinoId: inquilino.id },
     include: {
       usuario: { select: { nombre: true, profesion: true } },
-      semanas: { orderBy: { orden: 'asc' }, include: { destrezas: { orderBy: { orden: 'asc' }, include: { destreza: true } } } },
+      semanas: { orderBy: { orden: 'asc' }, include: { destrezas: { orderBy: { orden: 'asc' }, include: { destreza: true } }, ajustes: { orderBy: { orden: 'asc' }, include: { estudiante: true } } } },
     },
   });
   if (!pl) return null;
@@ -64,6 +62,7 @@ export async function cargarDocumento(inquilino: InquilinoDoc, planificacionId: 
     tecnica: s.tecnica,
     instrumento: s.instrumento,
     destrezas: s.destrezas.map((d) => ({ codigo: d.destreza.codigo, descripcion: d.destreza.descripcion, imagenUrl: d.destreza.imagenUrl })),
+    ajustes: s.ajustes.map((a) => ({ iniciales: a.estudiante.iniciales ?? '', condicion: a.estudiante.condicion ?? '', nivelAjuste: a.estudiante.nivelAjuste ?? '', enfoque: a.estudiante.enfoque ?? '', estrategia: a.estrategia, indicadores: a.indicadores ?? '' })),
   }));
 
   const doc = plantilla.documento({
@@ -86,6 +85,7 @@ export async function cargarDocumento(inquilino: InquilinoDoc, planificacionId: 
       aprobadoPor: pl.aprobadoPor,
       aprobadoCargo: pl.aprobadoCargo,
       docente: nombreDocente(pl.usuario),
+      deceNombre: pl.deceNombre,
       registro: {
         titulo: pl.registroTitulo,
         elaboradoCargo: pl.registroElaboradoCargo,

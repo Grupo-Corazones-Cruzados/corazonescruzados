@@ -117,6 +117,7 @@ model Inquilino {
   adjuntos        Adjunto[]
   destrezas       Destreza[]
   grados          Grado[]
+  estudiantes Estudiante[]
   materiasGrado   MateriaGrado[]
   horario         HorarioClase[]
   pagos           PagoMensual[]
@@ -289,7 +290,8 @@ model Grado {
   orden       Int       @default(0)
   creado      DateTime  @default(now()) @map("creado_en")
 
-  materias MateriaGrado[]
+  materias    MateriaGrado[]
+  estudiantes Estudiante[]
 
   @@unique([inquilinoId, nombre])
   @@map("grados")
@@ -413,6 +415,10 @@ model Planificacion {
   registroAprobadoNombre String? @map("registro_aprobado_nombre") @db.VarChar(200)
   registroAprobadoFecha  String? @map("registro_aprobado_fecha") @db.VarChar(40)
 
+  /// El nombre del responsable del DECE («Espacio solo para el DECE»): lo único
+  /// que se rellena de esa casilla, y se pide en la configuración (Fernando, 2026-09-16).
+  deceNombre String? @map("dece_nombre") @db.VarChar(160)
+
   creado      DateTime @default(now()) @map("creado_en")
   actualizado DateTime @updatedAt @map("actualizado_en")
 
@@ -472,6 +478,7 @@ model PlanificacionSemanal {
   destrezas PlanificacionDestreza[]
   adjuntos  Adjunto[]
 
+  ajustes AjusteRazonable[]
   @@unique([planificacionId, orden])
   @@index([inquilinoId, creado])
   @@index([inquilinoId, estado])
@@ -605,3 +612,46 @@ enum Tema {
 
   @@map("tema")
 }
+
+/// UN ESTUDIANTE DE UN GRADO (Fernando, 2026-09-16): lo da de alta el docente
+/// desde el módulo «Estudiantes» para las materias que tiene asignadas. Si tiene
+/// condición especial lleva los datos que pide la sección «Ajustes razonables»
+/// del formato: iniciales, condición reportada, nivel de ajuste y enfoque.
+model Estudiante {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  gradoId     Int       @map("grado_id")
+  grado       Grado     @relation(fields: [gradoId], references: [id], onDelete: Cascade)
+  nombre      String    @db.VarChar(160)
+  condicionEspecial Boolean @default(false) @map("condicion_especial")
+  iniciales   String?   @db.VarChar(20)
+  condicion   String?   @db.VarChar(200)
+  nivelAjuste String?   @map("nivel_ajuste") @db.VarChar(80)
+  enfoque     String?
+  creado      DateTime  @default(now()) @map("creado_en")
+
+  ajustes AjusteRazonable[]
+
+  @@index([inquilinoId, gradoId])
+  @@map("estudiantes")
+}
+
+/// UNA LÍNEA DE «AJUSTES RAZONABLES»: por cada planificación semanal y cada
+/// estudiante con condición especial del grado, la estrategia empleada la redacta
+/// el agente a partir de la semana; los indicadores de evaluación quedan vacíos
+/// hasta que Fernando diga de dónde salen (2026-09-16).
+model AjusteRazonable {
+  id           Int                  @id @default(autoincrement())
+  semanaId     Int                  @map("semana_id")
+  semana       PlanificacionSemanal @relation(fields: [semanaId], references: [id], onDelete: Cascade)
+  estudianteId Int                  @map("estudiante_id")
+  estudiante   Estudiante           @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  estrategia   String
+  indicadores  String?
+  orden        Int                  @default(0)
+
+  @@unique([semanaId, estudianteId])
+  @@map("ajustes_razonables")
+}
+

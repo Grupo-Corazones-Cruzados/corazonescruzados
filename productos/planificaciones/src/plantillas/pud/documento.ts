@@ -93,21 +93,46 @@ export function armarDocumento(p: { planificacion: PlanificacionDoc; semanas: Se
   const numeroPlanificacion = n++;
 
   const posteriores: Bloque[] = [];
+  // La cabecera del original combina celdas: «Especificación de la adaptación a ser aplicada»
+  // sobre cuatro columnas y «Evaluación» sobre técnica e instrumento. Las filas van vacías.
+  const cab = (texto: string, span = 1): Celda => ({ texto, etiqueta: true, centrado: true, medio: true, span });
   posteriores.push({
     tipo: 'tabla',
     numero: `${n++}.`,
     titulo: 'ADAPTACIONES CURRICULARES (Ajustes razonables grado 3)',
-    anchos: [16, 14, 34, 16, 10, 10],
+    anchos: [13, 9, 52, 12, 7, 7],
     filas: [
-      [
-        { texto: 'Especificación de la necesidad educativa', etiqueta: true, centrado: true },
-        { texto: 'Temas / Contenidos', etiqueta: true, centrado: true },
-        { texto: 'Estrategias Metodológica', etiqueta: true, centrado: true },
-        { texto: 'Recursos', etiqueta: true, centrado: true },
-        { texto: 'Técnica', etiqueta: true, centrado: true },
-        { texto: 'Instrumento', etiqueta: true, centrado: true },
-      ],
+      [cab('Especificación de la necesidad educativa'), cab('Especificación de la adaptación a ser aplicada', 5)],
+      [cab(''), cab('Temas / Contenidos'), cab('Estrategias Metodológica'), cab('Recursos'), cab('Evaluación', 2)],
+      [cab(''), cab(''), cab(''), cab(''), cab('Técnica'), cab('Instrumento')],
       [v(''), v(''), v(''), v(''), v(''), v('')],
+      [v(''), v(''), v(''), v(''), v(''), v('')],
+      [v(''), v(''), v(''), v(''), v(''), v('')],
+    ],
+    altoMinMm: 5,
+  });
+  // AJUSTES RAZONABLES (Fernando, 2026-09-16): una línea por estudiante con condición
+  // especial y por semana; la estrategia la redacta el agente, los indicadores quedan
+  // vacíos hasta que se sepa de dónde salen. En el original reinicia la numeración («1.»).
+  const filasAjustes: Celda[][] = semanas.flatMap((s) =>
+    s.ajustes.map((a) => [
+      { texto: `Semana ${s.orden}`, centrado: true, medio: true },
+      { texto: a.iniciales, centrado: true, medio: true },
+      { texto: a.condicion, centrado: true, medio: true },
+      { texto: a.nivelAjuste, centrado: true, medio: true },
+      { texto: a.enfoque, medio: true },
+      { texto: a.estrategia },
+      { texto: a.indicadores },
+    ]),
+  );
+  posteriores.push({
+    tipo: 'tabla',
+    numero: '1.',
+    titulo: 'AJUSTES RAZONABLES',
+    anchos: [9, 9, 17, 14, 17, 17, 17],
+    filas: [
+      [cab('Semana No.'), cab('Estudiante'), cab('Condición Reportada'), cab('Nivel de Ajuste Razonable'), cab('Enfoque'), cab('Estrategia empleada'), cab('Indicadores de Evaluación')],
+      ...(filasAjustes.length ? filasAjustes : [[v(''), v(''), v(''), v(''), v(''), v(''), v('')]]),
     ],
     altoMinMm: 8,
   });
@@ -117,7 +142,7 @@ export function armarDocumento(p: { planificacion: PlanificacionDoc; semanas: Se
     anchos: [8, 22, 70],
     filas: [
       [{ texto: 'Responsable DECE', etiqueta: true, centrado: true }, { texto: '', etiqueta: true }, { texto: 'Observaciones por parte del DECE', etiqueta: true, centrado: true }],
-      [et('Nombre:'), { texto: inst.deceResponsable, centrado: true }, v('')],
+      [et('Nombre:'), { texto: pl.deceNombre ?? '', centrado: true }, v('')],
       [et('Firma:'), v(''), v('')],
       [et('Fecha:'), v(''), v('')],
     ],

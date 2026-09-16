@@ -21,6 +21,7 @@ import {
 } from 'docx';
 import type { Bloque, Celda, DocumentoPud, SemanaDoc } from '../tipos';
 import { parsearEstrategias, lineas } from './estrategias';
+import { anchosDeFila } from './anchos';
 import { celdaSemana, COLORES_FORMATO as C } from './documento';
 
 /**
@@ -94,9 +95,10 @@ function celda(c: Celda, anchoMm: number, extra: { tamano?: number } = {}): Tabl
   }
   return new TableCell({
     width: { size: TW(anchoMm), type: WidthType.DXA },
+    columnSpan: c.span && c.span > 1 ? c.span : undefined,
     borders: bordes,
     margins: margenCelda,
-    verticalAlign: c.titulo ? VerticalAlign.CENTER : VerticalAlign.TOP,
+    verticalAlign: c.titulo || c.medio ? VerticalAlign.CENTER : VerticalAlign.TOP,
     shading: c.titulo ? { type: ShadingType.CLEAR, fill: hex(C.barra), color: 'auto' } : c.etiqueta ? { type: ShadingType.CLEAR, fill: hex(C.etiqueta), color: 'auto' } : undefined,
     children: hijos.length ? hijos : [new Paragraph({ children: [run('')] })],
   });
@@ -105,14 +107,15 @@ function celda(c: Celda, anchoMm: number, extra: { tamano?: number } = {}): Tabl
 /** Tabla de celdas con anchos en porcentaje del ancho útil. */
 function tabla(filas: Celda[][], anchosPct?: number[], o: { tamano?: number; altoMinMm?: number } = {}): Table {
   const rows = filas.map((fila) => {
-    const n = fila.length;
-    const pct = anchosPct && anchosPct.length === n ? anchosPct : fila.map(() => 100 / n);
+    const pct = anchosDeFila(fila, anchosPct);
     return new TableRow({
       height: o.altoMinMm ? { value: TW(o.altoMinMm), rule: 'atLeast' } : undefined,
       children: fila.map((c, i) => celda(c, (ANCHO_PAGINA * pct[i]) / 100, { tamano: o.tamano })),
     });
   });
-  const anchos = (anchosPct ?? filas[0].map(() => 100 / filas[0].length)).map((p) => TW((ANCHO_PAGINA * p) / 100));
+  // Las columnas reales: las de `anchosPct` si cuadran con la fila más partida; si no, las de la primera fila.
+  const masPartida = filas.reduce((a, f) => (f.length > a.length ? f : a), filas[0]);
+  const anchos = anchosDeFila(masPartida, anchosPct).map((p) => TW((ANCHO_PAGINA * p) / 100));
   return new Table({ width: { size: TW(ANCHO_PAGINA), type: WidthType.DXA }, columnWidths: anchos, rows });
 }
 

@@ -275,6 +275,34 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧑‍🎓 MÓDULO «ESTUDIANTES» Y LOS AJUSTES RAZONABLES DEL FORMATO (2026-09-16).** Fernando:
+  el «Espacio solo para el DECE» solo lleva el **nombre**, y se pide en la configuración de la
+  planificación (ya no en Negocio; migración 009 copió el que hubiera). Para la sección «Ajustes
+  razonables», un módulo **Estudiantes** al que también entra el profesor: por cada grado en el que
+  tiene materias asignadas, da de alta estudiantes con **nombre completo** y si tienen **condición
+  especial**; si la tienen, **iniciales, condición reportada, nivel de ajuste razonable y enfoque**
+  (los mismos campos de la sección). **Por cada estudiante con condición y por cada planificación
+  semanal se crea UNA línea** («Semana N» por el orden de la semana): la **estrategia empleada** la
+  redacta el agente (regla 10 del system prompt: adapta las actividades concretas de esa semana a la
+  condición, en el registro de la docente —anticipar transiciones, pasos cortos, una consigna, más
+  tiempo, respuesta por señalamiento/gesto, doble refuerzo positivo—) en la MISMA llamada
+  (`ajustesRazonables` en el esquema, casadas por iniciales); los **indicadores de evaluación quedan
+  vacíos** hasta que Fernando diga de dónde salen («datos que copiamos de la constitución del
+  gobierno»). Tablas `estudiantes` y `ajustes_razonables` (cascada con el estudiante y con la
+  semana); `lib/estudiantes.ts`; se ven en «Campos generados» y se corrigen en el formulario de la
+  semana (`ajuste-<id>`).
+  - **El formato**: «ADAPTACIONES CURRICULARES» con la cabecera combinada del original
+    («Especificación de la adaptación a ser aplicada» sobre 5 columnas, «Evaluación» sobre 2; tres
+    filas vacías) y debajo **«1. AJUSTES RAZONABLES»** con sus siete columnas. Para eso las celdas
+    tienen `span` (columnas que ocupan) y `medio` (centrado vertical), resueltos por `pud/anchos.ts`
+    en el PDF, el Word (`columnSpan`) y la vista previa (`colSpan`). En el PDF, la barra de sección
+    y una fila de cabecera **bajan de página con la primera fila de datos** (antes la barra se
+    quedaba sola al pie).
+  - Medido en local: grado + materia + 2 h; dos estudiantes (uno con condición: validación de los
+    cuatro campos); planificación desde la materia con DECE configurado; generación real de 30 s con
+    la línea de ajustes nombrando la canción, el espejo, el cuento y la ficha de la semana;
+    corrección a mano guardada; vista previa, PDF (5 páginas) y Word (abierto con Microsoft Word,
+    4 páginas) con la fila «Semana 1 · A.G.B.G». Limpieza por id.
 - **🎨 CADA GRADO TIENE UN COLOR DE RELLENO AL AZAR (2026-09-16).** Fernando: en las opciones
   del horario, el grado debajo de la materia como píldora con relleno, con un color aleatorio
   asignado al crear el grado, «para distinguir mejor el grado de la materia». `grados.color`

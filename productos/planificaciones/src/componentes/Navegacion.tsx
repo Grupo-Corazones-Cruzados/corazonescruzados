@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { LayoutDashboard, BookOpenText, UserRound, UserCog, Settings, LogOut, Building2, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, BookOpenText, UserRound, UserCog, Settings, LogOut, Building2, GraduationCap, Users } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
 import { LogoNegocio } from '@/componentes/Marca';
 import { puede, ETIQUETA_ROL, type Capacidad } from '@/lib/permisos';
@@ -26,6 +26,7 @@ type Destino = {
 const DESTINOS: Destino[] = [
   { ruta: 'panel', etiqueta: 'Inicio', icono: LayoutDashboard, necesita: 'ver', grupo: 'Principal' },
   { ruta: 'planificaciones', etiqueta: 'Planificaciones', icono: BookOpenText, necesita: 'planificar', grupo: 'Principal' },
+  { ruta: 'estudiantes', etiqueta: 'Estudiantes', icono: Users, necesita: 'planificar', grupo: 'Principal' },
   { ruta: 'perfil', etiqueta: 'Mi perfil', icono: UserRound, necesita: 'ver', grupo: 'Principal' },
   { ruta: 'unidades', etiqueta: 'Unidades', icono: GraduationCap, necesita: 'administrar', grupo: 'Administración' },
   { ruta: 'negocio', etiqueta: 'Negocio', icono: Building2, necesita: 'administrar', grupo: 'Administración' },

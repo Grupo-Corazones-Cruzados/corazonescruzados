@@ -68,6 +68,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
     registroAprobadoCargo: p.registroAprobadoCargo,
     registroAprobadoNombre: p.registroAprobadoNombre,
     registroAprobadoFecha: p.registroAprobadoFecha,
+    deceNombre: p.deceNombre,
     docente: [p.usuario.profesion, p.usuario.nombre].filter(Boolean).join(' '),
     usuarioId: p.usuario.id,
     semanas: p._count.semanas,
@@ -88,7 +89,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
         inicioPud: aDia(p.inicioPud), finPud: aDia(p.finPud), gradoCurso: p.gradoCurso, paralelo: p.paralelo, jornada: p.jornada,
         objetivosUnidad: p.objetivosUnidad, criteriosEvaluacion: p.criteriosEvaluacion, elaboradoPor: p.elaboradoPor, revisadoPor: p.revisadoPor,
         revisadoCargo: p.revisadoCargo, aprobadoPor: p.aprobadoPor, aprobadoCargo: p.aprobadoCargo,
-        registroTitulo: p.registroTitulo, registroElaboradoCargo: p.registroElaboradoCargo, registroElaboradoNombre: p.registroElaboradoNombre, registroElaboradoFecha: p.registroElaboradoFecha, registroAprobadoCargo: p.registroAprobadoCargo, registroAprobadoNombre: p.registroAprobadoNombre, registroAprobadoFecha: p.registroAprobadoFecha,
+        registroTitulo: p.registroTitulo, registroElaboradoCargo: p.registroElaboradoCargo, registroElaboradoNombre: p.registroElaboradoNombre, registroElaboradoFecha: p.registroElaboradoFecha, registroAprobadoCargo: p.registroAprobadoCargo, registroAprobadoNombre: p.registroAprobadoNombre, registroAprobadoFecha: p.registroAprobadoFecha, deceNombre: p.deceNombre,
         docente: [p.usuario.profesion, p.usuario.nombre].filter(Boolean).join(' '), usuarioId: p.usuario.id, semanas: p._count.semanas,
         actualizado: p.actualizado.toISOString(), puedoCambiar: esDuenoOAdmin(sesion, p),
       };
@@ -102,7 +103,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
     const filas = await prisma.planificacionSemanal.findMany({
       where: { planificacionId: actual.id, inquilinoId: inquilino.id },
       orderBy: { orden: 'asc' },
-      include: { destrezas: { orderBy: { orden: 'asc' }, include: { destreza: true } }, adjuntos: { select: { id: true, nombre: true, fragmentos: true } }, usuario: { select: { nombre: true } } },
+      include: { destrezas: { orderBy: { orden: 'asc' }, include: { destreza: true } }, ajustes: { orderBy: { orden: 'asc' }, include: { estudiante: { select: { nombre: true, iniciales: true, condicion: true } } } }, adjuntos: { select: { id: true, nombre: true, fragmentos: true } }, usuario: { select: { nombre: true } } },
     });
     semanas = filas.map((s) => ({
       id: s.id,
@@ -122,6 +123,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
       referencias: (s.referencias as { titulo: string; url: string; uso: string }[] | null) ?? [],
       uso: (s.uso as Record<string, number> | null) ?? null,
       destrezas: s.destrezas.map((d) => ({ id: d.destreza.id, codigo: d.destreza.codigo, descripcion: d.destreza.descripcion, imagenUrl: d.destreza.imagenUrl })),
+      ajustes: s.ajustes.map((a) => ({ id: a.id, estudiante: a.estudiante.nombre, iniciales: a.estudiante.iniciales ?? '', condicion: a.estudiante.condicion ?? '', estrategia: a.estrategia })),
       adjuntos: s.adjuntos,
       docente: s.usuario.nombre,
       creado: s.creado.toISOString(),

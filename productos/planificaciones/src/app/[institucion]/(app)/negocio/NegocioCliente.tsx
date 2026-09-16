@@ -19,7 +19,6 @@ type Datos = {
   cabeceraLinea2: string | null;
   cabeceraLinea3: string | null;
   anioLectivo: string | null;
-  deceResponsable: string | null;
   logoInstitucionUrl: string | null;
   logoOrganizacionUrl: string | null;
   logoOpcionalUrl: string | null;
@@ -95,14 +94,9 @@ export default function NegocioCliente({ slug, datos }: { slug: string; datos: D
               <Campo etiqueta="Línea 3 (red u organización, va en color)">
                 <Entrada name="cabeceraLinea3" value={d.cabeceraLinea3 ?? ''} onChange={cambia('cabeceraLinea3')} placeholder="Red Educativa …" />
               </Campo>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Campo etiqueta="Año lectivo">
-                  <Entrada name="anioLectivo" value={d.anioLectivo ?? ''} onChange={cambia('anioLectivo')} placeholder="2026 - 2027" />
-                </Campo>
-                <Campo etiqueta="Responsable del DECE (espacio del DECE del formato)">
-                  <Entrada name="deceResponsable" defaultValue={d.deceResponsable ?? ''} placeholder="Psic. …" />
-                </Campo>
-              </div>
+              <Campo etiqueta="Año lectivo">
+                <Entrada name="anioLectivo" value={d.anioLectivo ?? ''} onChange={cambia('anioLectivo')} placeholder="2026 - 2027" className="sm:w-64" />
+              </Campo>
             </section>
 
             <section className="space-y-4 border-t border-borde pt-4">

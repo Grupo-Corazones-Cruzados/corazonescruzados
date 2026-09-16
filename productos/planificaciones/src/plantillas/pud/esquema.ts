@@ -18,6 +18,8 @@ export type SalidaSemana = {
   tecnica: string[];
   instrumento: string[];
   referencias: { titulo: string; url: string; uso: string }[];
+  /** Una por estudiante con condición especial del grado: la estrategia empleada esa semana (Fernando, 2026-09-16). */
+  ajustesRazonables: { iniciales: string; estrategia: string }[];
 };
 
 const lista = (descripcion: string) => ({ type: 'array', description: descripcion, items: { type: 'string' } });
@@ -27,7 +29,7 @@ export const ESQUEMA_SEMANA = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['fechaInicio', 'fechaFin', 'tema', 'objetivosTema', 'destrezas', 'estrategias', 'recursos', 'tecnica', 'instrumento', 'referencias'],
+    required: ['fechaInicio', 'fechaFin', 'tema', 'objetivosTema', 'destrezas', 'estrategias', 'recursos', 'tecnica', 'instrumento', 'referencias', 'ajustesRazonables'],
     properties: {
       fechaInicio: { type: 'string', description: 'Primer día de la semana planificada, AAAA-MM-DD.' },
       fechaFin: { type: 'string', description: 'Último día de la semana planificada, AAAA-MM-DD.' },
@@ -55,6 +57,16 @@ export const ESQUEMA_SEMANA = {
           additionalProperties: false,
           required: ['titulo', 'url', 'uso'],
           properties: { titulo: { type: 'string' }, url: { type: 'string' }, uso: { type: 'string', description: 'En qué actividad se usa.' } },
+        },
+      },
+      ajustesRazonables: {
+        type: 'array',
+        description: 'Una entrada por cada estudiante con condición especial listado en el encargo, con sus iniciales exactas y la ESTRATEGIA EMPLEADA esa semana: un párrafo de 4 a 7 oraciones que adapta las actividades concretas de esta semana a su condición. Vacío si el encargo no lista estudiantes.',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['iniciales', 'estrategia'],
+          properties: { iniciales: { type: 'string', description: 'Las iniciales tal como vienen en el encargo.' }, estrategia: { type: 'string' } },
         },
       },
     },
