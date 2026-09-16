@@ -71,10 +71,32 @@ function Tabla({ filas, anchos, minAlto }: { filas: Celda[][]; anchos?: number[]
 function BloqueVista({ b, color }: { b: Bloque; color: string }) {
   const titulo = `${b.numero ? b.numero + '  ' : ''}${b.titulo}`;
   if (b.tipo === 'lateral') {
+    // Título rojo a toda la altura; etiquetas grises solo en su franja y los iconos sobre blanco debajo.
     const n = b.columnas.length;
     return (
       <section className="mt-2.5">
-        <Tabla filas={[[{ texto: titulo, titulo: true }, ...b.columnas.map((c) => ({ texto: c.texto, etiqueta: true, centrado: true, imagen: c.icono }))]]} anchos={[16, ...b.columnas.map(() => 84 / n)]} minAlto={84} />
+        <table className="w-full border-collapse text-[10px]" style={{ tableLayout: 'fixed' }}>
+          <tbody>
+            <tr>
+              <td rowSpan={2} className="border border-[#808080] px-1.5 py-1 text-center align-middle font-bold text-white" style={{ width: '16%', background: C.barra }}>
+                {titulo}
+              </td>
+              {b.columnas.map((c) => (
+                <td key={c.texto} className="border border-[#808080] px-1.5 py-1 text-center align-middle font-bold" style={{ width: `${84 / n}%`, background: C.etiqueta }}>
+                  {c.texto}
+                </td>
+              ))}
+            </tr>
+            <tr>
+              {b.columnas.map((c) => (
+                <td key={c.texto} className="border border-[#808080] px-1.5 py-1.5 text-center align-middle" style={{ height: 52 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.icono} alt="" className="mx-auto h-10 w-auto max-w-full object-contain" />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
       </section>
     );
   }
@@ -119,7 +141,7 @@ export function VistaPrevia({ doc }: { doc: DocumentoPud }) {
   const cols = doc.firmas.columnas;
   const anchosFirmas = cols.flatMap(() => [8, 100 / cols.length - 8]);
   return (
-    <div className="mx-auto w-full max-w-[1120px] bg-white p-6 text-[10px] leading-snug text-black shadow" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+    <div className="mx-auto w-full max-w-[1400px] bg-white p-6 text-[10px] leading-snug text-black shadow" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {/* Cabecera: logos · líneas del negocio · año lectivo */}
       <div className="flex border border-[#808080]">
         <div className="flex w-[22%] items-center justify-center gap-2 border-r border-[#808080] px-2 py-1.5">

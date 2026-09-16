@@ -2863,7 +2863,17 @@ Hereda entero el sistema de catering (tokens, `ui.tsx`, `campos.tsx`, marca por 
 en `@layer components`, iconos de pestaña con **un cuaderno abierto** como glifo, dibujado a 16 px).
 Lo que aporta:
 
-### ⭐ EL MÓDULO ENTERO EN UNA PÁGINA DE TRES COLUMNAS
+### ⭐ EL MÓDULO ENTERO EN UNA PÁGINA: LISTA A LA IZQUIERDA, GALERÍA DE SEMANAS ARRIBA Y EL DETALLE DEBAJO (2026-09-16)
+Fernando pidió que el panel de semanas ocupe **todo el ancho** con **altura limitada** y las semanas
+en **galería horizontal** (tarjetas de 220 px con `overflow-x-auto`), con los detalles de la
+planificación (unidad, fechas, docente) escondidos tras un **botón de ayuda** (`Info` → desplegable
+de 288 px), los botones **«Nueva»** y **«Eliminar»** (la semana elegida) en el borde superior
+derecho de ese panel, y **«Eliminar planificación»** en la cabecera, a la derecha de «Nueva
+planificación», activo solo con una planificación elegida. Debajo, a todo el ancho, la tarjeta de
+**Campos generados / Vista previa** (la hoja de la vista previa crece a 1400 px). La descripción de
+tres columnas que sigue es la versión anterior.
+
+### (Anterior) EL MÓDULO ENTERO EN UNA PÁGINA DE TRES COLUMNAS
 `app/[institucion]/(app)/planificaciones/`: **lista** (300 px, con `Chips` «Mías / De todos» y
 `Buscador`) · **semanas** de la elegida (260 px, con el botón primario «Nueva planificación semanal»
 arriba y «Eliminar planificación» en el pie) · **detalle** (flexible) con un **conmutador de dos

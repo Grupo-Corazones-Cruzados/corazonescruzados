@@ -249,8 +249,34 @@ function bloque(b: Bloque, color: string): (Table | Paragraph)[] {
   if (b.tipo === 'tabla') return [barra(b.titulo, color, b.numero), tabla(b.filas, b.anchos, { altoMinMm: b.altoMinMm }), hueco()];
   if (b.tipo === 'texto') return [barra(b.titulo, color, b.numero), tabla([[{ texto: b.texto }]], [100], { altoMinMm: 9 }), hueco()];
   if (b.tipo === 'lateral') {
+    // Título rojo a toda la altura (rowSpan); etiquetas grises arriba y los iconos sobre blanco debajo.
     const n = b.columnas.length;
-    return [tabla([[{ texto: titulo, titulo: true }, ...b.columnas.map((c) => ({ texto: c.texto, etiqueta: true, centrado: true, imagen: c.icono }))]], [16, ...b.columnas.map(() => 84 / n)], { altoMinMm: 22 }), hueco()];
+    const wTitulo = (ANCHO_PAGINA * 16) / 100;
+    const wCol = (ANCHO_PAGINA - wTitulo) / n;
+    const tituloCelda = new TableCell({
+      width: { size: TW(wTitulo), type: WidthType.DXA },
+      rowSpan: 2,
+      borders: bordes,
+      margins: margenCelda,
+      verticalAlign: VerticalAlign.CENTER,
+      shading: { type: ShadingType.CLEAR, fill: hex(C.barra), color: 'auto' },
+      children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 0 }, children: [new TextRun({ text: titulo, bold: true, color: 'FFFFFF', size: TAM_ETIQUETA, font: FUENTE })] })],
+    });
+    const iconos = b.columnas.map((c) => {
+      const d = imagenDeDataUrl(c.icono);
+      return new TableCell({ width: { size: TW(wCol), type: WidthType.DXA }, borders: bordes, margins: margenCelda, verticalAlign: VerticalAlign.CENTER, children: [d ? imagen(d, 40, 120, AlignmentType.CENTER) : new Paragraph({ children: [run('')] })] });
+    });
+    return [
+      new Table({
+        width: { size: TW(ANCHO_PAGINA), type: WidthType.DXA },
+        columnWidths: [TW(wTitulo), ...b.columnas.map(() => TW(wCol))],
+        rows: [
+          new TableRow({ children: [tituloCelda, ...b.columnas.map((c) => celda({ texto: c.texto, etiqueta: true, centrado: true }, wCol))] }),
+          new TableRow({ height: { value: TW(14), rule: 'atLeast' }, children: iconos }),
+        ],
+      }),
+      hueco(),
+    ];
   }
   return [tabla([[{ texto: titulo, titulo: true }, { texto: b.texto }]], [16, 84], { altoMinMm: b.altoMinMm ?? 7 }), hueco()];
 }

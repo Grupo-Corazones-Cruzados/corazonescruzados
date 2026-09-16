@@ -20,6 +20,7 @@ import {
   ListChecks,
   Plus as PlusIcon,
   ImageOff,
+  Info,
 } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Buscador, Tarjeta, Insignia, PanelLateral, Confirmar, EstadoVacio, type Tono } from '@/componentes/ui';
@@ -125,6 +126,7 @@ export default function PlanificacionesCliente(p: Props) {
   const [borrarPl, setBorrarPl] = useState<PlanificacionVista | null>(null);
   const [borrarSem, setBorrarSem] = useState<SemanaVista | null>(null);
   const [busqueda, setBusqueda] = useState(p.q);
+  const [ayuda, setAyuda] = useState(false);
 
   const semana = useMemo(() => p.semanas.find((s) => s.id === p.semanaId) ?? p.semanas[p.semanas.length - 1] ?? null, [p.semanas, p.semanaId]);
   const sinCupo = p.cupo.quedan !== null && p.cupo.quedan <= 0;
@@ -218,6 +220,9 @@ export default function PlanificacionesCliente(p: Props) {
             <Boton icono={Plus} onClick={() => setPanel('nueva')} disabled={p.soloLectura}>
               Nueva planificación
             </Boton>
+            <Boton variante="secundario" icono={Trash2} disabled={!actual || !puedo} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede eliminarla' : 'Eliminar la planificación elegida'} onClick={() => actual && setBorrarPl(actual)}>
+              Eliminar planificación
+            </Boton>
           </>
         }
       />
@@ -264,58 +269,69 @@ export default function PlanificacionesCliente(p: Props) {
           </div>
         </Tarjeta>
 
-        {/* ── Columnas 2 y 3: la planificación elegida ───────────────────── */}
+        {/* ── La planificación elegida: semanas en galería arriba, campos/vista previa abajo ── */}
         {!actual ? (
           <Tarjeta className="flex flex-1 items-center justify-center">
             <EstadoVacio icono={BookOpenText} titulo="Elige una planificación" detalle="A la izquierda están las tuyas; cambia a «De todos» para ver las de tus compañeros." />
           </Tarjeta>
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-            {/* Semanas */}
-            <Tarjeta className="flex min-h-0 flex-col lg:w-[260px] lg:shrink-0">
-              <div className="border-b border-borde p-3">
-                <p className="truncate text-[13px] font-semibold text-texto">{actual.materia}</p>
-                <p className="truncate text-[11px] text-tenue">
-                  Unidad {actual.numeroUnidad} · {actual.tituloUnidad}
-                </p>
-                <p className="text-[11px] text-tenue">
-                  {diaDeMes(actual.inicioPud)} – {diaDeMes(actual.finPud)} · {actual.docente}
-                </p>
-                <Boton className="mt-2 w-full" tamano="sm" icono={Sparkles} onClick={() => setPanel('semana')} disabled={!puedo || sinCupo} title={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : !puedo ? 'Solo quien la creó (o el administrador) puede añadir semanas' : undefined}>
-                  Nueva planificación semanal
-                </Boton>
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            {/* Semanas: a todo el ancho, con altura limitada y en galería horizontal (Fernando, 2026-09-16) */}
+            <Tarjeta className="shrink-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <p className="truncate text-[13px] font-semibold text-texto">{actual.materia}</p>
+                  <div className="relative">
+                    <BotonIcono icono={Info} titulo="Detalles de la planificación" onClick={() => setAyuda((v) => !v)} className={cn(ayuda && 'bg-realce text-texto')} />
+                    {ayuda && (
+                      <div className="absolute left-0 top-9 z-30 w-72 rounded-md border border-borde bg-tarjeta p-3 text-[12px] shadow-xl">
+                        <p className="font-semibold text-texto">
+                          Unidad {actual.numeroUnidad} · {actual.tituloUnidad}
+                        </p>
+                        <p className="mt-1 text-tenue">
+                          {diaDeMes(actual.inicioPud)} – {diaDeMes(actual.finPud)}
+                        </p>
+                        <p className="text-tenue">{actual.docente}</p>
+                        <p className="mt-1 text-tenue">
+                          {ETIQUETA_NIVEL[actual.nivel]} · {actual.ambito}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Boton tamano="sm" icono={Sparkles} onClick={() => setPanel('semana')} disabled={!puedo || sinCupo} title={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : !puedo ? 'Solo quien la creó (o el administrador) puede añadir semanas' : 'Nueva planificación semanal'}>
+                    Nueva
+                  </Boton>
+                  <Boton variante="secundario" tamano="sm" icono={Trash2} disabled={!semana || !puedo} title={!semana ? 'Elige una semana' : 'Eliminar la semana elegida'} onClick={() => semana && setBorrarSem(semana)}>
+                    Eliminar
+                  </Boton>
+                </div>
               </div>
-              <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
-                {p.semanas.length === 0 && <EstadoVacio icono={CalendarDays} titulo="Sin semanas todavía" detalle="Cada semana es una línea del formato. Dicta o escribe lo que quieres y el agente la redacta." />}
+              <div className="desplaza flex gap-2 overflow-x-auto p-2">
+                {p.semanas.length === 0 && (
+                  <div className="w-full">
+                    <EstadoVacio icono={CalendarDays} titulo="Sin semanas todavía" detalle="Cada semana es una línea del formato. Dicta o escribe lo que quieres y el agente la redacta." />
+                  </div>
+                )}
                 {p.semanas.map((s) => {
                   const sel = semana?.id === s.id;
                   const enMarcha = s.estado === 'PENDIENTE' || s.estado === 'GENERANDO';
                   return (
-                    <button key={s.id} onClick={() => ir({ s: s.id, vista: null })} className={cn('mb-1 flex w-full items-start gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave border-l-2 border-acento' : 'border-l-2 border-transparent hover:bg-realce')}>
-                      <div className="min-w-0 flex-1">
+                    <button key={s.id} onClick={() => ir({ s: s.id, vista: null })} className={cn('flex w-[220px] shrink-0 flex-col gap-1 rounded border px-3 py-2 text-left transition-colors foco-visible', sel ? 'border-acento bg-acento-suave' : 'border-borde hover:bg-realce')}>
+                      <div className="flex items-center justify-between gap-2">
                         <p className={cn('text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>Semana {s.orden}</p>
-                        <p className="truncate text-[11px] text-tenue">{s.tema?.split('\n')[0] || (enMarcha ? 'El agente está redactando…' : s.estado === 'ERROR' ? 'La redacción falló' : '—')}</p>
-                        {s.fechaInicio && (
-                          <p className="text-[11px] text-tenue">
-                            {diaDeMes(s.fechaInicio)} – {diaDeMes(s.fechaFin)}
-                          </p>
-                        )}
+                        {enMarcha ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-aviso" /> : <Insignia tono={TONO_ESTADO[s.estado]}>{ETIQUETA_ESTADO_SEMANA[s.estado]}</Insignia>}
                       </div>
-                      {enMarcha ? <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-aviso" /> : <Insignia tono={TONO_ESTADO[s.estado]}>{ETIQUETA_ESTADO_SEMANA[s.estado]}</Insignia>}
+                      <p className="line-clamp-2 text-[11px] text-tenue">{s.tema?.split('\n')[0] || (enMarcha ? 'El agente está redactando…' : s.estado === 'ERROR' ? 'La redacción falló' : '—')}</p>
+                      <p className="text-[11px] text-tenue">{s.fechaInicio ? `${diaDeMes(s.fechaInicio)} – ${diaDeMes(s.fechaFin)}` : '\u00a0'}</p>
                     </button>
                   );
                 })}
               </div>
-              {puedo && (
-                <div className="border-t border-borde p-2">
-                  <Boton variante="fantasma" tamano="sm" icono={Trash2} className="w-full text-error" onClick={() => setBorrarPl(actual)}>
-                    Eliminar planificación
-                  </Boton>
-                </div>
-              )}
             </Tarjeta>
 
-            {/* Campos / Vista previa */}
+            {/* Campos / Vista previa, debajo y a todo el ancho */}
             <Tarjeta className="flex min-h-0 flex-1 flex-col">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-3 py-2">
                 <div className="flex rounded border border-borde p-0.5">
@@ -333,7 +349,6 @@ export default function PlanificacionesCliente(p: Props) {
                     <Boton variante="secundario" tamano="sm" icono={RefreshCw} disabled={enCurso || sinCupo} title={sinCupo ? 'Sin cupo esta semana' : 'Volver a pedirla al agente (cuenta contra el tope)'} onClick={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a redactar la semana')}>
                       Regenerar
                     </Boton>
-                    <BotonIcono icono={Trash2} titulo="Eliminar semana" className="text-error" onClick={() => setBorrarSem(semana)} />
                   </div>
                 )}
               </div>
@@ -341,7 +356,7 @@ export default function PlanificacionesCliente(p: Props) {
                 {p.vista === 'previa' ? (
                   p.vistaPrevia
                 ) : !semana ? (
-                  <EstadoVacio icono={CalendarDays} titulo="Elige una semana" detalle="O crea la primera con «Nueva planificación semanal»." />
+                  <EstadoVacio icono={CalendarDays} titulo="Elige una semana" detalle="O crea la primera con «Nueva»." />
                 ) : (
                   <CamposSemana semana={semana} slug={p.slug} puedo={puedo} sinCupo={sinCupo} enCurso={enCurso} alReintentar={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a intentarlo')} alBorrar={() => setBorrarSem(semana)} />
                 )}

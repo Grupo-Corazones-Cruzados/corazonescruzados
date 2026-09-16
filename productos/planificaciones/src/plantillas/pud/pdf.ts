@@ -230,6 +230,56 @@ class Dibujante {
     }
   }
 
+  /**
+   * Competencias e inserciones: celda roja de título a TODA la altura a la
+   * izquierda; a la derecha, una fila de etiquetas grises (solo su espacio) y,
+   * debajo, los iconos sobre fondo blanco (Fernando, 2026-09-16).
+   */
+  lateral(titulo: string, columnas: { texto: string; icono: string }[]) {
+    const relleno = mm(1.4);
+    const wTitulo = (this.ancho * 16) / 100;
+    const wCol = (this.ancho - wTitulo) / columnas.length;
+    const etiquetas = columnas.map((c) => partir(this.doc, c.texto, wCol - relleno * 2, NEGRITA, TAM_ETIQUETA));
+    const hEtiqueta = Math.max(...etiquetas.map((l) => l.reduce((a, i) => a + i.alto, 0))) + relleno * 2;
+    const hIcono = mm(14);
+    const alto = hEtiqueta + hIcono;
+    this.asegurar(alto + mm(8));
+    const x0 = this.x0;
+    const y0 = this.y;
+    // Título, rojo, centrado en vertical.
+    this.doc.rect(x0, y0, wTitulo, alto).fill(COLORES_FORMATO.barra);
+    this.doc.rect(x0, y0, wTitulo, alto).lineWidth(0.5).strokeColor(BORDE).stroke();
+    const lineasTitulo = partir(this.doc, titulo, wTitulo - relleno * 2, NEGRITA, TAM_ETIQUETA, BLANCO);
+    let yt = y0 + (alto - lineasTitulo.reduce((a, i) => a + i.alto, 0)) / 2;
+    for (const l of lineasTitulo) {
+      this.doc.fillColor(BLANCO).font(NEGRITA).fontSize(l.tamano).text(l.texto, x0 + relleno, yt, { width: wTitulo - relleno * 2, align: 'center', lineBreak: false });
+      yt += l.alto;
+    }
+    columnas.forEach((c, i) => {
+      const x = x0 + wTitulo + wCol * i;
+      // Etiqueta gris: solo su espacio.
+      this.doc.rect(x, y0, wCol, hEtiqueta).fill(GRIS_ETIQUETA);
+      this.doc.rect(x, y0, wCol, hEtiqueta).lineWidth(0.5).strokeColor(BORDE).stroke();
+      let yy = y0 + relleno;
+      for (const l of etiquetas[i]) {
+        this.doc.fillColor(TEXTO).font(NEGRITA).fontSize(l.tamano).text(l.texto, x + relleno, yy, { width: wCol - relleno * 2, align: 'center', lineBreak: false });
+        yy += l.alto;
+      }
+      // Icono sobre blanco, centrado.
+      this.doc.rect(x, y0 + hEtiqueta, wCol, hIcono).lineWidth(0.5).strokeColor(BORDE).stroke();
+      try {
+        const img = (this.doc as unknown as { openImage: (src: string) => { width: number; height: number } }).openImage(c.icono);
+        const escala = Math.min((hIcono - relleno * 2) / img.height, (wCol - relleno * 2) / img.width);
+        const wImg = img.width * escala;
+        const hImg = img.height * escala;
+        this.doc.image(c.icono, x + (wCol - wImg) / 2, y0 + hEtiqueta + (hIcono - hImg) / 2, { width: wImg, height: hImg });
+      } catch {
+        /* icono ilegible: se omite */
+      }
+    });
+    this.y = y0 + alto;
+  }
+
   texto(t: string, o: { negrita?: boolean; tamano?: number; align?: 'left' | 'center' | 'right'; color?: string } = {}) {
     const lineasT = partir(this.doc, t, this.ancho, o.negrita ? NEGRITA : NORMAL, o.tamano ?? TAM, o.color ?? TEXTO);
     for (const l of lineasT) {
@@ -316,11 +366,7 @@ function bloque(d: Dibujante, b: Bloque, color: string) {
     d.barra(b.titulo, color, b.numero);
     d.tabla([[{ texto: b.texto }]], [100], { minAlto: mm(9) });
   } else if (b.tipo === 'lateral') {
-    // Celda roja de título a la izquierda + una columna por competencia/inserción:
-    // etiqueta gris arriba y el icono debajo, como en el original.
-    const n = b.columnas.length;
-    const anchos = [16, ...b.columnas.map(() => 84 / n)];
-    d.tabla([[{ texto: titulo, titulo: true }, ...b.columnas.map((c) => ({ texto: c.texto, etiqueta: true, centrado: true, imagen: c.icono }))]], anchos, { minAlto: mm(22) });
+    d.lateral(titulo, b.columnas);
   } else {
     d.tabla([[{ texto: titulo, titulo: true }, { texto: b.texto }]], [16, 84], { minAlto: mm(b.altoMinMm ?? 7) });
   }
