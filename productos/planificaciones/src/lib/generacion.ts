@@ -1,0 +1,188 @@
+import { prisma } from '@/lib/db';
+import { correrAgente, iaConfigurada, type HerramientaFuncion } from '@/lib/ia';
+import { buscarFragmentos } from '@/lib/adjuntos';
+import { plantillaDe } from '@/plantillas';
+import type { SalidaSemana } from '@/plantillas/pud/esquema';
+import { ETIQUETA_NIVEL } from '@/lib/catalogo';
+import { aDia, aFechaSql, esDia, sumarDias } from '@/lib/fechas';
+
+/**
+ * LA GENERACIÓN DE UNA SEMANA. Se llama fuera de la petición (`after()`), así que
+ * el docente no espera con el formulario abierto: la fila nace PENDIENTE, pasa a
+ * GENERANDO y termina LISTA o ERROR, y la pantalla la va consultando.
+ *
+ * Todo lo que el agente necesita se arma aquí: la unidad, las semanas ya hechas
+ * (para que continúe y no repita), las destrezas disponibles de esa materia y
+ * nivel, los adjuntos (con sus fragmentos más cercanos a las indicaciones) y las
+ * indicaciones del docente. Las destrezas que devuelve se validan contra la
+ * tabla: un código que no existe se descarta, nunca se inventa una fila.
+ */
+export async function generarSemana(semanaId: number): Promise<void> {
+  const semana = await prisma.planificacionSemanal.findUnique({
+    where: { id: semanaId },
+    include: {
+      planificacion: { include: { usuario: true, inquilino: true } },
+      adjuntos: { select: { id: true, nombre: true, fragmentos: true } },
+    },
+  });
+  if (!semana || semana.estado === 'LISTA') return;
+  const marcarError = (error: string, uso?: unknown) =>
+    prisma.planificacionSemanal.update({ where: { id: semanaId }, data: { estado: 'ERROR', error, uso: uso as never } });
+
+  if (!iaConfigurada()) {
+    await marcarError('El servicio de redacción no está configurado (falta la clave de OpenAI). Avisa al Grupo Corazones Cruzados.');
+    return;
+  }
+  await prisma.planificacionSemanal.update({ where: { id: semanaId }, data: { estado: 'GENERANDO', error: null } });
+
+  const pl = semana.planificacion;
+  const plantilla = plantillaDe(pl.plantilla);
+
+  // Las destrezas de esa materia y nivel: las comunes y las propias de la institución.
+  let destrezas = await prisma.destreza.findMany({
+    where: { nivel: pl.nivel, activa: true, OR: [{ inquilinoId: null }, { inquilinoId: pl.inquilinoId }], materia: { equals: pl.materia, mode: 'insensitive' } },
+    orderBy: { codigo: 'asc' },
+  });
+  // Si la materia no tiene destrezas cargadas, se ofrecen las del nivel: mejor
+  // una destreza cercana que ninguna.
+  if (!destrezas.length)
+    destrezas = await prisma.destreza.findMany({
+      where: { nivel: pl.nivel, activa: true, OR: [{ inquilinoId: null }, { inquilinoId: pl.inquilinoId }] },
+      orderBy: { codigo: 'asc' },
+      take: 120,
+    });
+
+  const anteriores = await prisma.planificacionSemanal.findMany({
+    where: { planificacionId: pl.id, estado: 'LISTA', id: { not: semanaId } },
+    orderBy: { orden: 'asc' },
+    include: { destrezas: { include: { destreza: { select: { codigo: true } } } } },
+  });
+
+  // Semana propuesta: la que sigue a la última, o la primera del PUD.
+  const ultima = anteriores.filter((s) => s.fechaFin).sort((a, b) => b.fechaFin!.getTime() - a.fechaFin!.getTime())[0];
+  const inicioPropuesto = semana.fechaInicio
+    ? aDia(semana.fechaInicio)
+    : ultima?.fechaFin
+      ? siguienteLunes(aDia(ultima.fechaFin))
+      : aDia(pl.inicioPud);
+  const finPropuesto = semana.fechaFin ? aDia(semana.fechaFin) : sumarDias(inicioPropuesto, 4);
+
+  const adjuntoIds = semana.adjuntos.map((a) => a.id);
+  let fragmentosCercanos: { adjunto: string; texto: string }[] = [];
+  if (adjuntoIds.length) {
+    try {
+      fragmentosCercanos = (await buscarFragmentos(adjuntoIds, `${pl.materia}. ${semana.indicaciones}`, 6)).map((f) => ({ adjunto: f.adjunto, texto: f.texto }));
+    } catch (e: any) {
+      console.error('[generacion] fragmentos', e?.message);
+    }
+  }
+
+  const herramientas: HerramientaFuncion[] = adjuntoIds.length
+    ? [
+        {
+          name: 'buscar_en_adjuntos',
+          description: 'Busca en los archivos que adjuntó el docente los fragmentos más relacionados con una consulta (páginas, fichas, contenidos, vocabulario). Devuelve hasta 6 fragmentos con el nombre del archivo.',
+          parameters: { type: 'object', additionalProperties: false, required: ['consulta'], properties: { consulta: { type: 'string', description: 'Qué se busca, en una frase concreta.' } } },
+          ejecutar: async (args) => {
+            const r = await buscarFragmentos(adjuntoIds, String(args.consulta ?? ''), 6);
+            return r.length ? r.map((f, i) => `[${i + 1}] (${f.adjunto}, fragmento ${f.orden + 1})\n${f.texto}`).join('\n\n') : 'No hay fragmentos relacionados en los adjuntos.';
+          },
+        },
+      ]
+    : [];
+
+  const encargo = plantilla.encargo({
+    institucion: pl.inquilino.nombre,
+    nivel: ETIQUETA_NIVEL[pl.nivel],
+    materia: pl.materia,
+    ambito: pl.ambito,
+    gradoCurso: pl.gradoCurso,
+    tituloUnidad: pl.tituloUnidad,
+    numeroUnidad: pl.numeroUnidad,
+    inicioPud: aDia(pl.inicioPud),
+    finPud: aDia(pl.finPud),
+    objetivosUnidad: pl.objetivosUnidad,
+    criteriosEvaluacion: pl.criteriosEvaluacion,
+    numeroSemana: semana.orden,
+    semanaPropuesta: { inicio: inicioPropuesto, fin: finPropuesto },
+    semanasAnteriores: anteriores.map((s) => ({
+      orden: s.orden,
+      tema: s.tema,
+      fechaInicio: s.fechaInicio ? aDia(s.fechaInicio) : null,
+      fechaFin: s.fechaFin ? aDia(s.fechaFin) : null,
+      destrezas: s.destrezas.map((d) => d.destreza.codigo),
+      objetivos: s.objetivosTema,
+    })),
+    destrezas: destrezas.map((d) => ({ codigo: d.codigo, descripcion: d.descripcion })),
+    adjuntos: semana.adjuntos.map((a) => ({ nombre: a.nombre, fragmentos: a.fragmentos })),
+    fragmentosCercanos,
+    indicaciones: semana.indicaciones,
+  });
+
+  const r = await correrAgente<SalidaSemana>({
+    sistema: plantilla.sistema(),
+    encargo,
+    esquema: plantilla.esquema,
+    herramientas,
+    busquedaWeb: true,
+    esfuerzo: 'medium',
+    maxSalida: 20_000,
+    claveCache: `planificaciones-${plantilla.clave}`,
+  });
+
+  if (!r.ok) {
+    await marcarError(r.error, r.uso);
+    return;
+  }
+  const s = r.salida;
+
+  // Validar las destrezas contra la tabla: el agente elige, no inventa.
+  const porCodigo = new Map(destrezas.map((d) => [d.codigo.trim().toUpperCase(), d]));
+  const elegidas = [...new Set(s.destrezas.map((c) => c.trim().toUpperCase()))]
+    .map((c) => porCodigo.get(c) ?? porCodigo.get(c.replace(/\.$/, '')) ?? porCodigo.get(`${c}.`))
+    .filter((d): d is NonNullable<typeof d> => Boolean(d))
+    .slice(0, 3);
+
+  const fechaInicio = esDia(s.fechaInicio) ? s.fechaInicio : inicioPropuesto;
+  let fechaFin = esDia(s.fechaFin) ? s.fechaFin : finPropuesto;
+  if (fechaFin < fechaInicio) fechaFin = sumarDias(fechaInicio, 4);
+
+  const columnas = plantilla.aColumnas(s);
+  await prisma.$transaction([
+    prisma.planificacionDestreza.deleteMany({ where: { semanaId } }),
+    prisma.planificacionSemanal.update({
+      where: { id: semanaId },
+      data: {
+        estado: 'LISTA',
+        error: null,
+        fechaInicio: aFechaSql(fechaInicio),
+        fechaFin: aFechaSql(fechaFin),
+        ...columnas,
+        referencias: (s.referencias ?? []).slice(0, 12) as never,
+        uso: r.uso as never,
+        generadaEn: new Date(),
+        destrezas: { create: elegidas.map((d, i) => ({ destrezaId: d.id, orden: i })) },
+      },
+    }),
+  ]);
+}
+
+/** El lunes siguiente a un día (si el día es viernes 29, el lunes 1). */
+function siguienteLunes(dia: string) {
+  const ds = aFechaSql(dia).getUTCDay(); // 0 domingo … 6 sábado
+  const hastaLunes = ds === 0 ? 1 : 8 - ds;
+  return sumarDias(dia, hastaLunes);
+}
+
+/**
+ * Se dispara sin esperar. Un fallo inesperado (no de la API: de código) queda en
+ * la fila como ERROR con su mensaje, para que no parezca que sigue redactando.
+ */
+export function generarEnSegundoPlano(semanaId: number) {
+  return generarSemana(semanaId).catch(async (e) => {
+    console.error('[generacion]', semanaId, e);
+    await prisma.planificacionSemanal
+      .update({ where: { id: semanaId }, data: { estado: 'ERROR', error: `Fallo inesperado: ${e?.message ?? e}` } })
+      .catch(() => {});
+  });
+}

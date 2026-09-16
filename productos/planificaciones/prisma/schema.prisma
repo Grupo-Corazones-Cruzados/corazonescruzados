@@ -1,0 +1,479 @@
+// Planificación de Clases — producto del Grupo Corazones Cruzados.
+//
+// Para instituciones educativas: cada docente arma su PLAN DE UNIDAD DIDÁCTICA
+// (PUD) por semanas. Cada semana la redacta un agente de IA que trabaja como la
+// docente de referencia —a partir de lo que el docente le cuenta por micrófono y de
+// los archivos que adjunta—, eligiendo las destrezas del currículo de una tabla, y
+// todo se descarga en PDF con el formato de la institución.
+//
+// Vive en su PROPIO esquema (`planificaciones`) del mismo servicio Postgres de
+// Railway que GCC WORLD y que los otros tres productos. No comparte ni una tabla.
+//
+// REGLA QUE GOBIERNA TODO EL MODELO: cada tabla de negocio lleva `inquilinoId`.
+// Un inquilino es una institución. El filtro lo construye `lib/inquilino.ts`,
+// nunca una página.
+//
+// Lo que aquí NO se modela a propósito: la PLANTILLA (formato del PDF + system
+// prompt) y la configuración de la institución para ese formato viven EN CÓDIGO
+// (`src/plantillas/`), por decisión de Fernando (2026-09-15): «la configuración de
+// diseño del PDF que aplica al entorno del cliente es personalizada y se edita a
+// nivel de código por tenant». La fila solo guarda la CLAVE de la plantilla.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plataforma: quién vende, a quién y por cuánto
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Plan {
+  id            Int      @id @default(autoincrement())
+  slug          String   @unique
+  nombre        String
+  descripcion   String?
+  precioMensual Decimal  @default(0) @db.Decimal(10, 2) @map("precio_mensual")
+  moneda        String   @default("USD") @db.VarChar(3)
+  /// Tope de cuentas activas (docentes + administrador). NULO = sin límite.
+  maxUsuarios   Int?     @map("max_usuarios")
+  /// Tope de planificaciones semanales GENERADAS por semana natural, para toda la
+  /// institución (no por docente). Es lo que cuesta dinero: cada una es una
+  /// corrida del agente. NULO = sin límite.
+  maxGeneracionesSemana Int? @map("max_generaciones_semana")
+  /// Cuántos meses de histórico conserva. NULO = sin límite. Este producto nace
+  /// SIN límite: una planificación de unidad vive cinco semanas y se consulta
+  /// todo el año lectivo (pendiente de que Fernando diga otra cosa).
+  mesesRetencion  Int?     @map("meses_retencion")
+  permiteMarca    Boolean  @default(true) @map("permite_marca")
+  caracteristicas String[] @default([])
+  activo          Boolean  @default(true)
+  orden           Int      @default(0)
+  creado          DateTime @default(now()) @map("creado_en")
+  actualizado     DateTime @updatedAt @map("actualizado_en")
+
+  suscripciones Suscripcion[]
+
+  @@map("planes")
+}
+
+/// Una institución educativa. Unidad de aislamiento, de marca y de configuración.
+model Inquilino {
+  id     Int    @id @default(autoincrement())
+  slug   String @unique @db.VarChar(60)
+  nombre String
+
+  // ── Marca (la configura la propia institución)
+  logoUrl     String? @map("logo_url")
+  colorAcento String  @default("#4B2D8E") @map("color_acento") @db.VarChar(7)
+  tema        Tema    @default(CLARO)
+
+  /// Clave de la plantilla (formato + system prompt) con la que nacen sus
+  /// planificaciones. Las plantillas viven en `src/plantillas/`.
+  plantillaPorDefecto String @default("pud") @map("plantilla_por_defecto") @db.VarChar(40)
+
+  zonaHoraria String @default("America/Guayaquil") @map("zona_horaria")
+
+  estado      EstadoInquilino @default(PRUEBA)
+  /// Escaparate: se recorre entero, no se guarda nada. Lo aplican la aplicación y
+  /// los disparadores.
+  soloLectura Boolean         @default(false) @map("solo_lectura")
+
+  gccClienteId     Int?    @map("gcc_cliente_id")
+  contactoNombre   String? @map("contacto_nombre")
+  contactoEmail    String? @map("contacto_email")
+  contactoTelefono String? @map("contacto_telefono")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  suscripcion     Suscripcion?
+  usuarios        Usuario[]
+  planificaciones Planificacion[]
+  semanas         PlanificacionSemanal[]
+  adjuntos        Adjunto[]
+  destrezas       Destreza[]
+  pagos           PagoMensual[]
+
+  @@map("inquilinos")
+}
+
+model Suscripcion {
+  id                Int               @id @default(autoincrement())
+  inquilinoId       Int               @unique @map("inquilino_id")
+  inquilino         Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planId            Int               @map("plan_id")
+  plan              Plan              @relation(fields: [planId], references: [id])
+  estado            EstadoSuscripcion @default(PRUEBA)
+  inicio            DateTime          @default(now()) @db.Date
+  /// LA PUERTA: hasta cuándo está pagado el acceso. NULO = nunca se ha pagado.
+  pagadoHasta       DateTime?         @map("pagado_hasta") @db.Date
+  metodoPago        MetodoPago        @default(AUTOSERVICIO) @map("metodo_pago")
+  referenciaExterna String?           @map("referencia_externa")
+  notas             String?
+  creado            DateTime          @default(now()) @map("creado_en")
+  actualizado       DateTime          @updatedAt @map("actualizado_en")
+
+  pagos PagoMensual[]
+
+  @@map("suscripciones")
+}
+
+model PagoMensual {
+  id             Int               @id @default(autoincrement())
+  inquilinoId    Int               @map("inquilino_id")
+  inquilino      Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  suscripcionId  Int               @map("suscripcion_id")
+  suscripcion    Suscripcion       @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  periodo        String            @db.VarChar(7)
+  monto          Decimal           @db.Decimal(10, 2)
+  moneda         String            @default("USD") @db.VarChar(3)
+  metodo         MetodoPago        @default(AUTOSERVICIO)
+  estado         EstadoPagoMensual @default(PENDIENTE)
+  referencia     String?
+  comprobanteUrl String?           @map("comprobante_url")
+  pagadoEn       DateTime?         @map("pagado_en")
+  registradoPor  String?           @map("registrado_por")
+  creado         DateTime          @default(now()) @map("creado_en")
+
+  @@unique([suscripcionId, periodo])
+  @@index([inquilinoId, periodo])
+  @@map("pagos_mensuales")
+}
+
+model OperadorGcc {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  nombre       String
+  passwordHash String    @map("password_hash")
+  activo       Boolean   @default(true)
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime  @default(now()) @map("creado_en")
+
+  @@map("operadores_gcc")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dentro de la institución — las cuentas
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Una persona de la institución. El ADMIN es el cliente (crea las cuentas y ve
+/// todo); los PROFESORES planifican. Fernando (2026-09-15): «el cliente puede
+/// crear usuarios hasta máximo 100, y todos con rol de profesor».
+model Usuario {
+  id           Int        @id @default(autoincrement())
+  inquilinoId  Int        @map("inquilino_id")
+  inquilino    Inquilino  @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  usuario      String     @db.VarChar(60)
+  nombre       String
+  /// Título o profesión tal como quiere verse en el formato, delante del nombre:
+  /// «Lcda.», «Msc.», «Lic.». Es lo que llena la casilla «Docente» del PUD.
+  profesion    String?    @db.VarChar(80)
+  email        String?
+  passwordHash String     @map("password_hash")
+  rol          RolUsuario @default(PROFESOR)
+  activo       Boolean    @default(true)
+  ultimoAcceso DateTime?  @map("ultimo_acceso")
+  creado       DateTime   @default(now()) @map("creado_en")
+  actualizado  DateTime   @updatedAt @map("actualizado_en")
+
+  planificaciones Planificacion[]
+  semanas         PlanificacionSemanal[]
+  adjuntos        Adjunto[]
+
+  @@unique([inquilinoId, usuario])
+  @@index([inquilinoId])
+  @@map("usuarios")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// El currículo — catálogos que el agente consulta
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Materias (áreas de conocimiento / ámbitos) por nivel. Catálogo COMÚN a todas
+/// las instituciones: es el currículo nacional. Sirve de sugerencia al crear una
+/// planificación (el nombre se guarda como texto en la planificación).
+model Materia {
+  id     Int    @id @default(autoincrement())
+  nivel  Nivel
+  nombre String @db.VarChar(120)
+  /// Ámbito de desarrollo/aprendizaje que va con la materia. En Preparatoria
+  /// coincide con el nombre del ámbito.
+  ambito String? @db.VarChar(120)
+  orden  Int    @default(0)
+
+  @@unique([nivel, nombre])
+  @@map("materias")
+}
+
+/// Una destreza con criterio de desempeño del currículo, con su código, su
+/// descripción y su imagen. El agente ELIGE de aquí (no inventa): cada semana
+/// referencia las suyas por `PlanificacionDestreza`, y el formato enseña la
+/// imagen de cada una.
+///
+/// `inquilinoId` NULO = catálogo común (el currículo nacional, que se cargará
+/// materia por materia en un paso posterior). Con inquilino, es una destreza
+/// propia de esa institución.
+model Destreza {
+  id          Int        @id @default(autoincrement())
+  inquilinoId Int?       @map("inquilino_id")
+  inquilino   Inquilino? @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  nivel       Nivel
+  /// Nombre de la materia tal como está en `materias` (texto, no clave: el catálogo
+  /// de destrezas se carga por archivos y así no depende de un id).
+  materia     String     @db.VarChar(120)
+  codigo      String     @db.VarChar(40)
+  descripcion String
+  imagenUrl   String?    @map("imagen_url")
+  activa      Boolean    @default(true)
+  creado      DateTime   @default(now()) @map("creado_en")
+
+  semanas PlanificacionDestreza[]
+
+  @@unique([nivel, codigo, inquilinoId])
+  @@index([nivel, materia])
+  @@map("destrezas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Las planificaciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// El PLAN DE UNIDAD DIDÁCTICA de una materia: la cabecera del formato. Lo que
+/// pide el formulario de alta (materia, ámbito, nivel, unidad, título, inicio y
+/// fin del PUD) y lo que se ajusta desde «Configurar» (plantilla, firmas, y los
+/// datos del formato que no se piden al crear).
+model Planificacion {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  /// El docente dueño. Los demás la ven; solo él (y el administrador) la cambian.
+  usuarioId   Int       @map("usuario_id")
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// Clave de la plantilla (`src/plantillas/`). Por defecto la de la institución.
+  plantilla String @default("pud") @db.VarChar(40)
+
+  nivel   Nivel
+  /// Área de conocimiento (= materia).
+  materia String @db.VarChar(120)
+  /// Ámbito de desarrollo/aprendizaje.
+  ambito  String @db.VarChar(120)
+
+  numeroUnidad Int    @map("numero_unidad")
+  tituloUnidad String @map("titulo_unidad")
+  inicioPud    DateTime @map("inicio_pud") @db.Date
+  finPud       DateTime @map("fin_pud") @db.Date
+
+  // ── Datos del formato que no se piden al crear (van en «Configurar»)
+  gradoCurso String? @map("grado_curso") @db.VarChar(80)
+  paralelo   String? @db.VarChar(20)
+  jornada    String? @db.VarChar(40)
+  /// Objetivos específicos de la unidad y criterios de evaluación de la unidad
+  /// (secciones 6 y 7 del formato). Manuales; el agente redacta por semana.
+  objetivosUnidad      String? @map("objetivos_unidad")
+  criteriosEvaluacion  String? @map("criterios_evaluacion")
+
+  // ── Firmas de responsabilidad: quedan con nombre y con la fecha del día de la
+  //    descarga; la firma se pone a mano sobre el papel.
+  elaboradoPor  String? @map("elaborado_por")
+  revisadoPor   String? @map("revisado_por")
+  revisadoCargo String? @default("Coordinador de área") @map("revisado_cargo")
+  aprobadoPor   String? @map("aprobado_por")
+  aprobadoCargo String? @default("Rector/Vicerrector") @map("aprobado_cargo")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  semanas PlanificacionSemanal[]
+
+  @@index([inquilinoId, usuarioId])
+  @@index([inquilinoId, creado])
+  @@map("planificaciones")
+}
+
+/// UNA LÍNEA del formato: la planificación de una semana. Es lo que el agente
+/// genera —a partir de las indicaciones del docente (por micrófono o escritas) y
+/// de los adjuntos— y es la unidad que cuenta contra el tope del plan.
+model PlanificacionSemanal {
+  id              Int           @id @default(autoincrement())
+  inquilinoId     Int           @map("inquilino_id")
+  inquilino       Inquilino     @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planificacionId Int           @map("planificacion_id")
+  planificacion   Planificacion @relation(fields: [planificacionId], references: [id], onDelete: Cascade)
+  /// Quién pidió la generación (normalmente el dueño de la planificación).
+  usuarioId       Int           @map("usuario_id")
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// Posición dentro de la planificación: SEMANA 1, 2, 3…
+  orden  Int
+  estado EstadoSemana @default(PENDIENTE)
+  /// Por qué falló la generación, si falló. Se enseña al docente.
+  error  String?
+
+  /// Lo que el docente contó (transcripción del micrófono + lo que escribió).
+  indicaciones String
+
+  // ── Lo que genera el agente (los diez campos del encargo)
+  fechaInicio    DateTime? @map("fecha_inicio") @db.Date
+  fechaFin       DateTime? @map("fecha_fin") @db.Date
+  tema           String?
+  /// Texto, como lo escribe la docente («5 horas», «1»).
+  numeroPeriodos String?   @map("numero_periodos") @db.VarChar(40)
+  objetivosTema  String?   @map("objetivos_tema")
+  /// Estrategias metodológicas: texto con las tres fases marcadas con «## » y las
+  /// preguntas como viñetas «• » (ver `src/plantillas/pud/estrategias.ts`).
+  estrategias    String?
+  /// Una por línea.
+  recursos       String?
+  tecnica        String?
+  instrumento    String?
+  /// Enlaces que el agente encontró en la web y usó (título, url, para qué).
+  referencias    Json?
+  /// Tokens y duración de la corrida, para saber lo que cuesta.
+  uso            Json?
+  generadaEn     DateTime? @map("generada_en")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  destrezas PlanificacionDestreza[]
+  adjuntos  Adjunto[]
+
+  @@unique([planificacionId, orden])
+  @@index([inquilinoId, creado])
+  @@index([inquilinoId, estado])
+  @@map("planificaciones_semanales")
+}
+
+/// Qué destrezas eligió el agente (o el docente) para una semana, en orden.
+model PlanificacionDestreza {
+  id         Int                  @id @default(autoincrement())
+  semanaId   Int                  @map("semana_id")
+  semana     PlanificacionSemanal @relation(fields: [semanaId], references: [id], onDelete: Cascade)
+  destrezaId Int                  @map("destreza_id")
+  destreza   Destreza             @relation(fields: [destrezaId], references: [id], onDelete: Cascade)
+  orden      Int                  @default(0)
+
+  @@unique([semanaId, destrezaId])
+  @@index([destrezaId])
+  @@map("planificaciones_destrezas")
+}
+
+/// Un archivo que el docente adjuntó a una solicitud (máximo 5). El archivo NO se
+/// guarda: se extrae su texto, se parte en fragmentos y cada fragmento se convierte
+/// en un vector (`adjunto_fragmentos`), que es lo que el agente consulta.
+///
+/// Nace sin `semanaId` (se sube antes de enviar el formulario) y se ata a la
+/// semana al crearla. Los huérfanos de más de un día se limpian al subir el
+/// siguiente.
+model Adjunto {
+  id          Int                   @id @default(autoincrement())
+  inquilinoId Int                   @map("inquilino_id")
+  inquilino   Inquilino             @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  usuarioId   Int                   @map("usuario_id")
+  usuario     Usuario               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  semanaId    Int?                  @map("semana_id")
+  semana      PlanificacionSemanal? @relation(fields: [semanaId], references: [id], onDelete: Cascade)
+  nombre      String
+  tipo        String                @db.VarChar(120)
+  tamano      Int
+  caracteres  Int                   @default(0)
+  fragmentos  Int                   @default(0)
+  creado      DateTime              @default(now()) @map("creado_en")
+
+  trozos AdjuntoFragmento[]
+
+  @@index([inquilinoId, semanaId])
+  @@index([usuarioId, creado])
+  @@map("adjuntos")
+}
+
+/// Un trozo del texto de un adjunto con su embedding (pgvector, 1536 dims de
+/// `text-embedding-3-small`). La columna `embedding` la escribe la migración a
+/// mano: Prisma no la modela.
+model AdjuntoFragmento {
+  id        Int     @id @default(autoincrement())
+  adjuntoId Int     @map("adjunto_id")
+  adjunto   Adjunto @relation(fields: [adjuntoId], references: [id], onDelete: Cascade)
+  orden     Int
+  texto     String
+  embedding Unsupported("vector(1536)")?
+
+  @@index([adjuntoId])
+  @@map("adjunto_fragmentos")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enumeraciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ADMIN: el cliente (cuentas, configuración y todo lo demás). PROFESOR: planifica.
+enum RolUsuario {
+  ADMIN
+  PROFESOR
+
+  @@map("rol_usuario")
+}
+
+enum Nivel {
+  PREPARATORIA
+  PRIMARIA
+  SECUNDARIA
+
+  @@map("nivel")
+}
+
+/// PENDIENTE: creada, esperando al agente · GENERANDO: el agente trabaja ·
+/// LISTA: con sus campos · ERROR: falló (no consume tope).
+enum EstadoSemana {
+  PENDIENTE
+  GENERANDO
+  LISTA
+  ERROR
+
+  @@map("estado_semana")
+}
+
+enum EstadoInquilino {
+  PRUEBA
+  ACTIVO
+  SUSPENDIDO
+
+  @@map("estado_inquilino")
+}
+
+enum EstadoSuscripcion {
+  PRUEBA
+  ACTIVA
+  VENCIDA
+  CANCELADA
+
+  @@map("estado_suscripcion")
+}
+
+enum MetodoPago {
+  AUTOSERVICIO
+  TARJETA
+
+  @@map("metodo_pago")
+}
+
+enum EstadoPagoMensual {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+
+  @@map("estado_pago_mensual")
+}
+
+enum Tema {
+  CLARO
+  OSCURO
+
+  @@map("tema")
+}

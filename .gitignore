@@ -63,3 +63,6 @@ tsconfig.tsbuildinfo
 # Copias de seguridad de entornos (nunca al repo)
 .env*.bak*
 .next-build/
+
+# Ejemplos reales de una docente (datos personales de estudiantes): se quedan fuera del repo
+Contenido de Profesor/

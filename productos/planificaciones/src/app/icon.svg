@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    Icono de pestaña de «Planificación de Clases».
+
+    Cuadrado violeta del grupo (#4B2D8E) con un cuaderno de planificación abierto:
+    dos hojas y tres líneas de texto. Mismo criterio que los otros productos: trazo
+    GRUESO (2,6) y glifo casi a sangre, porque a 16 px solo se reconocen la silueta
+    y el color.
+
+    ⚠️ El violeta es FIJO aunque la institución tenga su propio color: el navegador
+    cachea el icono por origen y es el mismo para todas. Y es la marca del grupo.
+  -->
+  <rect width="32" height="32" rx="7" fill="#4B2D8E"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 8.5 Q11 6.5 16 9 Q21 6.5 26 8.5 V24 Q21 22 16 24.5 Q11 22 6 24 Z"/>
+    <path d="M16 9 V24.5"/>
+    <path d="M9.5 13 h3.5 M9.5 17 h3.5 M19 13 h3.5 M19 17 h3.5"/>
+  </g>
+</svg>

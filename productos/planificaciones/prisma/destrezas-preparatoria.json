@@ -1,0 +1,107 @@
+[
+  {
+    "codigo": "M.1.4.6.",
+    "materia": "Relaciones lógico matemático",
+    "descripcion": "Agrupar colecciones de objetos del entorno según sus características físicas: color, tamaño (grande/pequeño), longitud (alto/bajo y largo/corto)."
+  },
+  {
+    "codigo": "M.1.4.21.",
+    "materia": "Relaciones lógico matemático",
+    "descripcion": "Reconocer figuras geométricas (triángulo, cuadrado, rectángulo y círculo) en objetos del entorno."
+  },
+  {
+    "codigo": "M.1.4.14.",
+    "materia": "Relaciones lógico matemático",
+    "descripcion": "Identificar cantidades y asociarlas con los numerales 1 al 10 y el 0."
+  },
+  {
+    "codigo": "ECA.1.6.2.",
+    "materia": "Comprensión y expresión artística",
+    "descripcion": "Utilizar la expresión gráfica o plástica como recursos para la expresión libre del yo y de la historia personal de cada uno. (En Educación Cultural y Artística ECA.1.1.4.)"
+  },
+  {
+    "codigo": "LL.1.5.5.",
+    "materia": "Comprensión y expresión oral y escrita",
+    "descripcion": "Desarrollar la expresión oral en contextos cotidianos, usando la conciencia lingüística (semántica, léxica y sintáctica)."
+  },
+  {
+    "codigo": "LL.1.5.13.",
+    "materia": "Comprensión y expresión oral y escrita",
+    "descripcion": "Acceder a la lectura por placer y para aprender, utilizando la biblioteca de aula y otros recursos."
+  },
+  {
+    "codigo": "LL.1.5.8.",
+    "materia": "Comprensión y expresión oral y escrita",
+    "descripcion": "Diferenciar entre imagen y texto escrito en diversos materiales impresos del entorno."
+  },
+  {
+    "codigo": "CS.1.2.8.",
+    "materia": "Convivencia",
+    "descripcion": "Identificar la organización del establecimiento educativo, las personas que lo componen, las diferentes dependencias y su funcionamiento."
+  },
+  {
+    "codigo": "CS.1.2.4.",
+    "materia": "Convivencia",
+    "descripcion": "Discriminar modelos positivos y negativos de comportamiento de su medio natural y social inmediato."
+  },
+  {
+    "codigo": "CS.1.2.5.",
+    "materia": "Convivencia",
+    "descripcion": "Practicar normas de respeto consigo mismo y con los demás seres que lo rodean."
+  },
+  {
+    "codigo": "CN.1.3.1.",
+    "materia": "Descubrimiento del medio natural y cultural",
+    "descripcion": "Observar y diferenciar entre los seres vivos y la materia inerte natural y la creada por las personas del entorno."
+  },
+  {
+    "codigo": "CN.1.3.15.",
+    "materia": "Descubrimiento del medio natural y cultural",
+    "descripcion": "Observar, en forma guiada, las funciones de los sentidos, hacer preguntas y dar respuestas sobre la importancia que tienen los sentidos para la obtención de información del entorno."
+  },
+  {
+    "codigo": "ECA.1.1.4.",
+    "materia": "Educación Cultural Artística",
+    "descripcion": "Utilizar la expresión gráfica o plástica como recurso para la expresión libre del yo, de la historia personal de cada uno."
+  },
+  {
+    "codigo": "EF.1.7.2.",
+    "materia": "Expresión corporal",
+    "descripcion": "Usar gestos convencionales y/o espontáneos, habilidades motrices básicas, posturas, ritmos y tipos de movimiento (lento, rápido, continuo, discontinuo, fuerte, EF.1.3.2.)."
+  },
+  {
+    "codigo": "EF.1.7.1.",
+    "materia": "Expresión corporal",
+    "descripcion": "Reconocer estados de ánimo, sensaciones y emociones (alegría, tristeza, aburrimiento, enojo, frío, calor, entre otras.) para crear, expresar y comunicar mensajes corporales (gestuales convencionales y/o espontáneos). (En Educación Física EF.1.3.1.)."
+  },
+  {
+    "codigo": "EF.1.7.5.",
+    "materia": "Expresión corporal",
+    "descripcion": "Crear, expresar, comunicar e interpretar mensajes corporales individuales y con otros de manera espontánea. (En Educación Física EF.1.3.5.)."
+  },
+  {
+    "codigo": "CN.1.1.1.",
+    "materia": "Identidad y Autonomía",
+    "descripcion": "Explorar y describir las partes principales de su cuerpo y su funcionamiento, en forma global y parcial, y diferenciarlas con respecto a aquellas de las personas que le rodean."
+  },
+  {
+    "codigo": "CS.1.1.2.",
+    "materia": "Identidad y Autonomía",
+    "descripcion": "Comunicar sus datos personales, para reconocer sus nombres y apellidos, edad, teléfono y el lugar donde vive."
+  },
+  {
+    "codigo": "CAI.1.2.2.",
+    "materia": "Cívica y acompañamiento integral del aula",
+    "descripcion": "Reconocer sus fortalezas para desarrollar habilidades de adaptación ante desafíos, en el contexto de actividades lúdicas y tareas escolares."
+  },
+  {
+    "codigo": "CAI.1.2.3.",
+    "materia": "Cívica y acompañamiento integral del aula",
+    "descripcion": "Expresar y regular sus emociones básicas, para gestionar el estrés y mantener un comportamiento positivo durante las actividades diarias."
+  },
+  {
+    "codigo": "CAI.1.3.4.",
+    "materia": "Cívica y acompañamiento integral del aula",
+    "descripcion": "Participar a través de actividades lúdicas en la construcción de su código de convivencia, con el acompañamiento de una persona adulta."
+  }
+]
