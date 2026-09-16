@@ -369,7 +369,7 @@ export default function PlanificacionesCliente(p: Props) {
       </div>
 
       {/* ── Nueva planificación ───────────────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'nueva'} alCerrar={cerrar} titulo="Nueva planificación" descripcion="La cabecera del plan de unidad. Después, semana a semana, el agente redacta cada línea.">
+      <PanelLateral abierto={panel === 'nueva'} alCerrar={cerrar} titulo="Nueva planificación" descripcion="La cabecera del plan de unidad. Después, semana a semana, el agente redacta cada línea." ancho="lg">
         <FormularioPlanificacion materiasDocente={p.materiasDocente} materias={p.materias} error={error} enCurso={enCurso} alCancelar={cerrar} textoEnviar="Continuar" alEnviar={(d) => conResultado(() => crearPlanificacion(p.slug, d), 'Planificación creada', (id) => ir({ p: id ?? null, s: null, nueva: null, quien: null }))} />
       </PanelLateral>
 
@@ -542,19 +542,22 @@ function FormularioPlanificacion({ materiasDocente, error, enCurso, alCancelar, 
     <form action={alEnviar} className="space-y-4">
       {/* La materia sale de las que el administrador asignó al docente en «Unidades» (Fernando, 2026-09-16). */}
       {materiasDocente.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. Pide al administrador que te asigne tus materias en Unidades." />}
-      <Campo etiqueta="Materia (grado)" requerido>
-        <Selector name="materiaGradoId" required defaultValue="" autoFocus>
-          <option value="" disabled>
-            Elige una materia…
-          </option>
-          {materiasDocente.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.etiqueta}
-            </option>
-          ))}
-        </Selector>
-      </Campo>
+      {/* Filas de dos columnas con etiquetas de una línea: la materia sola, luego nivel · ámbito, n.º · título, inicio · fin (Fernando, 2026-09-16: «que se vea ordenado»). */}
       <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Campo etiqueta="Materia (grado)" requerido>
+            <Selector name="materiaGradoId" required defaultValue="" autoFocus>
+              <option value="" disabled>
+                Elige una materia…
+              </option>
+              {materiasDocente.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
+        </div>
         <Campo etiqueta="Nivel" requerido>
           <Selector name="nivel" value={nivel} onChange={(e) => setNivel(e.target.value as Nivel)}>
             {NIVELES.map((n) => (
@@ -564,19 +567,15 @@ function FormularioPlanificacion({ materiasDocente, error, enCurso, alCancelar, 
             ))}
           </Selector>
         </Campo>
-        <Campo etiqueta="Ámbito de desarrollo/aprendizaje (si no lo escribes, se usa la materia)">
-          <Entrada name="ambito" />
+        <Campo etiqueta="Ámbito de desarrollo / aprendizaje">
+          <Entrada name="ambito" placeholder="Opcional" />
         </Campo>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
         <Campo etiqueta="N.º de unidad" requerido>
           <Entrada name="numeroUnidad" type="number" min={1} max={99} required defaultValue={1} />
         </Campo>
         <Campo etiqueta="Título de la unidad de planificación" requerido>
           <Entrada name="tituloUnidad" required />
         </Campo>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <Campo etiqueta="Inicio de PUD" requerido>
           <Entrada name="inicioPud" type="date" required />
         </Campo>
