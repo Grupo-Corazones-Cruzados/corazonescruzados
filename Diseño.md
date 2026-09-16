@@ -3095,6 +3095,23 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-15 · ⏳ PENDIENTE DE MIGRAR: `.campo` fuera de `@layer` en reservas y pedidos.**
+  En catering se corrigió (ver su sección): con el CSS propio fuera de capa, en Tailwind v4
+  gana a cualquier utilidad, así que `w-44`, `w-32` o `pl-8` sobre un `<Entrada>` **no hacen
+  nada**. Los otros dos productos siguen con la versión vieja: el `pl-8` del `Buscador` y los
+  anchos de sus pantallas de configuración se están perdiendo sin que nadie lo haya notado.
+  **Arreglo:** envolver el bloque de `.campo`/`select.campo`/`.tarjeta` en `@layer components`
+  y el `* { border-color }` en `@layer base`, en `productos/{reservas,pedidos}/src/app/globals.css`.
+  Son dos líneas por archivo y hay que **volver a mirar las capturas** después, porque cambia
+  qué gana en todos los campos de esos productos. Sin hacer: se toca cuando se toquen.
+- **2026-09-15 · Se imprimía la página; ahora se descarga un PDF.** `BotonImprimir`
+  (`window.print()` + utilidades `print:`) era el patrón inicial de catering para etiquetas,
+  rutas, restricciones y la ficha del cliente. Fernando lo corrigió el mismo día: *«no debe
+  imprimir la página, sino crear un diseño descargable en pdf del contenido»*. **Corregida y
+  adoptada como estándar** del producto: `BotonPdf` (enlace con `download`, como el Excel) y
+  el diseño de cada documento en `src/lib/pdf.ts`. Se borró `BotonImprimir` y la ficha
+  imprimible en HTML. **Los otros dos productos no tienen nada que imprimir**, así que no hay
+  nada que propagar; si algún día lo tienen, este es el patrón.
 - **2026-08-26 · El párrafo explicativo encima de los campos de las ventanitas de «Cobrar».**
   Las dos superficies de cobro con enlace (etapa de proyecto y ticket) arrancaban con una
   etiqueta de tres líneas que explicaba el importe, las comisiones y la factura **antes** del
