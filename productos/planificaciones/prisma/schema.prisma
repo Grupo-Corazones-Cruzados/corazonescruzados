@@ -334,9 +334,10 @@ model MateriaDocente {
   @@map("materias_docentes")
 }
 
-/// Una hora del horario semanal de un docente: día (1 lunes … 5 viernes) y hora de
-/// inicio (7 … 14, las ocho horas de 07:00 a 15:00). `materiaGradoId` NULO = «Sin
-/// clase». De aquí salen los periodos de una planificación semanal.
+/// Un periodo del horario semanal de un docente: día (1 lunes … 5 viernes) y `hora`
+/// = número del periodo (1 … 11, los periodos de 40 minutos de 07:10 a 15:00 con el
+/// receso tras el 3.º; `lib/horario-tipos.ts`). `materiaGradoId` NULO = «Sin clase».
+/// De aquí salen los periodos de una planificación semanal.
 model HorarioClase {
   id             Int           @id @default(autoincrement())
   inquilinoId    Int           @map("inquilino_id")

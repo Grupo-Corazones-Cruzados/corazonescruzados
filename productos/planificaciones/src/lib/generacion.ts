@@ -5,7 +5,7 @@ import { plantillaDe } from '@/plantillas';
 import type { SalidaSemana } from '@/plantillas/pud/esquema';
 import { ETIQUETA_NIVEL } from '@/lib/catalogo';
 import { destrezasDe } from '@/lib/destrezas';
-import { periodosDe, ETIQUETA_DIA } from '@/lib/horario';
+import { periodosDe, ETIQUETA_DIA, etiquetaHora } from '@/lib/horario';
 import { estudiantesConCondicion } from '@/lib/estudiantes';
 import { aDia, aFechaSql, esDia, sumarDias } from '@/lib/fechas';
 
@@ -107,7 +107,7 @@ export async function generarSemana(semanaId: number): Promise<void> {
     criteriosEvaluacion: pl.criteriosEvaluacion,
     numeroSemana: semana.orden,
     semanaPropuesta: { inicio: inicioPropuesto, fin: finPropuesto },
-    periodos: periodos.horas > 0 ? { horas: periodos.horas, sesiones: periodos.sesiones.map((s) => ({ numero: s.numero, dia: ETIQUETA_DIA[s.dia].toLowerCase(), hora: `${String(s.hora).padStart(2, '0')}:00` })) } : null,
+    periodos: periodos.horas > 0 ? { horas: periodos.horas, sesiones: periodos.sesiones.map((s) => ({ numero: s.numero, dia: ETIQUETA_DIA[s.dia].toLowerCase(), hora: `${s.hora}.º periodo (${etiquetaHora(s.hora)})` })) } : null,
     semanasAnteriores: anteriores.map((s) => ({
       orden: s.orden,
       tema: s.tema,

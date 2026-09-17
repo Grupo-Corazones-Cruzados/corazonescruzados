@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
-import { DIAS, HORAS, SIN_CLASE, materiasDelDocente } from '@/lib/horario';
+import { DIAS, HORAS, PERIODOS, SIN_CLASE, etiquetaHora, materiasDelDocente } from '@/lib/horario';
 
 export type Resultado = { ok: true; celdas?: number; ignoradas?: string[] } | { ok: false; error: string };
 
@@ -12,7 +12,7 @@ export async function guardarCeldaHorario(slug: string, dia: number, hora: numbe
   const permiso = await contextoEscritura(slug, 'ver');
   if (!permiso.ok) return { ok: false, error: permiso.error };
   const { ctx } = permiso;
-  if (!(DIAS as readonly number[]).includes(dia) || !(HORAS as readonly number[]).includes(hora)) return { ok: false, error: 'Esa hora no está en el horario.' };
+  if (!(DIAS as readonly number[]).includes(dia) || !(HORAS as readonly number[]).includes(hora)) return { ok: false, error: 'Ese periodo no está en el horario.' };
   const donde = { usuarioId_dia_hora: { usuarioId: ctx.sesion.uid, dia, hora } };
   if (valor === 'vacio') {
     await prisma.horarioClase.deleteMany({ where: { usuarioId: ctx.sesion.uid, dia, hora } });
@@ -59,16 +59,21 @@ export async function importarHorario(slug: string, datos: FormData): Promise<Re
   const porEtiqueta = new Map(permitidas.map((m) => [m.etiqueta.trim().toLowerCase(), m.id]));
   const celdas: { dia: number; hora: number; materiaGradoId: number | null }[] = [];
   const ignoradas: string[] = [];
-  // Fila 1: cabecera (Hora, Lunes … Viernes). Filas 2-9: las ocho horas. Columnas B-F: los días.
-  HORAS.forEach((hora, i) => {
+  // Cada fila se reconoce por su primera columna («4 · 09:40 – 10:20»): así da igual
+  // dónde quede la fila del receso o si el docente insertó alguna. Columnas B-F: los días.
+  hoja.eachRow((fila) => {
+    const primera = String(fila.getCell(1).text ?? fila.getCell(1).value ?? '').trim();
+    const numero = Number(primera.split('·')[0]);
+    const hora = PERIODOS.find((p) => p.numero === numero && primera.includes(p.desde))?.numero;
+    if (!hora || !HORAS.includes(hora)) return;
     DIAS.forEach((dia, j) => {
-      const c = hoja.getCell(i + 2, j + 2);
+      const c = fila.getCell(j + 2);
       const texto = String(c.text ?? c.value ?? '').trim();
       if (!texto) return;
       if (texto.toLowerCase() === SIN_CLASE.toLowerCase()) return void celdas.push({ dia, hora, materiaGradoId: null });
       const id = porEtiqueta.get(texto.toLowerCase());
       if (id) celdas.push({ dia, hora, materiaGradoId: id });
-      else ignoradas.push(`${texto} (${['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes'][dia]} ${String(hora).padStart(2, '0')}:00)`);
+      else ignoradas.push(`${texto} (${['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes'][dia]} ${etiquetaHora(hora)})`);
     });
   });
 

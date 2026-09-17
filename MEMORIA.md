@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⏰ EL HORARIO VA POR PERIODOS DE 40 MINUTOS, DE 07:10 A 15:00 (2026-09-16).** Fernando pasó el
+  horario real de la docente: periodos 1-3 (07:10 · 07:50 · 08:30), **receso 09:10–09:40**, 4-7
+  (09:40 · 10:20 · 11:00 · 11:40) y, hasta las 15:00, 8-11 (12:20 · 13:00 · 13:40 · 14:20). En
+  Preparatoria a las 12:20 empieza la salida; en otros grados hay clase: cada docente marca lo suyo.
+  `horario_clases.hora` es ahora el **número del periodo** (1…11, `PERIODOS` en
+  `lib/horario-tipos.ts`; migración 010 vació la escala vieja, que estaba a cero). La rejilla lleva
+  columnas **Tiempo · Hora (número)** y la **fila fija del receso** en teal; el Excel también, y la
+  importación reconoce las filas **por su etiqueta** («4 · 09:40 – 10:20»), no por el número de
+  fila. Al agente las sesiones le llegan como «lunes 4.º periodo (09:40 – 10:20)».
+  - 🪤 **Tras importar, la rejilla no se ponía al día**: el estado local (`useState(horario)`) no
+    seguía a las props tras `router.refresh()`. Ahora se resincroniza cuando cambia la firma del
+    horario del servidor. Probado: importación con un periodo nuevo y una fila inventada (3 h,
+    «1 no reconocida»), rejilla actualizada sola.
 - **🧑‍🎓 MÓDULO «ESTUDIANTES» Y LOS AJUSTES RAZONABLES DEL FORMATO (2026-09-16).** Fernando:
   el «Espacio solo para el DECE» solo lleva el **nombre**, y se pide en la configuración de la
   planificación (ya no en Negocio; migración 009 copió el que hubiera). Para la sección «Ajustes

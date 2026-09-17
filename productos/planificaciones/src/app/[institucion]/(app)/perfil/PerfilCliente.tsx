@@ -10,14 +10,14 @@ import { Aviso } from '@/componentes/campos';
 import { guardarPerfil } from '@/acciones/perfil';
 import { guardarCeldaHorario, importarHorario } from '@/acciones/horario';
 import { ETIQUETA_ROL } from '@/lib/permisos';
-import { DIAS, ETIQUETA_DIA, HORAS, SIN_CLASE, etiquetaHora, type CeldaHorario, type OpcionMateria } from '@/lib/horario-tipos';
+import { DIAS, ETIQUETA_DIA, PERIODOS, RECESO, SIN_CLASE, etiquetaHora, type CeldaHorario, type OpcionMateria } from '@/lib/horario-tipos';
 import { cn } from '@/lib/utils';
 import type { RolUsuario } from '@/generated/prisma/enums';
 
 /**
  * MI PERFIL (Fernando, 2026-09-16): a la izquierda «Mis datos» (nombre, profesión,
  * correo y, debajo, la contraseña) ocupando la altura de la pantalla; a la derecha
- * el HORARIO DE CLASES: la rejilla de lunes a viernes de 07:00 a 15:00, donde cada
+ * el HORARIO DE CLASES: la rejilla de lunes a viernes, once periodos de 40 min de 07:10 a 15:00 con el receso, donde cada
  * celda se elige pulsándola (materias asignadas o «Sin clase»), y los botones para
  * exportar la plantilla en Excel e importarla rellenada. De este horario salen los
  * periodos de cada planificación semanal.
@@ -27,6 +27,14 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
   const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
   const [celdas, setCeldas] = useState<CeldaHorario[]>(horario);
+  // Tras importar un Excel el servidor manda el horario nuevo: la rejilla se pone al día
+  // (el estado local existe solo para pintar en el acto lo que se pulsa).
+  const firmaHorario = JSON.stringify(horario);
+  const [firmaVista, setFirmaVista] = useState(firmaHorario);
+  if (firmaHorario !== firmaVista) {
+    setFirmaVista(firmaHorario);
+    setCeldas(horario);
+  }
   const [abierta, setAbierta] = useState<{ dia: number; hora: number } | null>(null);
   const entradaExcel = useRef<HTMLInputElement>(null);
   const porMateria = new Map(materias.map((m) => [m.id, m]));
@@ -109,7 +117,7 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-4 py-3">
             <div>
               <h2 className="text-[13px] font-semibold">Horario de clases</h2>
-              <p className="text-[11px] text-tenue">Pulsa una hora y elige la materia. De aquí salen los periodos de cada planificación semanal.</p>
+              <p className="text-[11px] text-tenue">Pulsa un periodo y elige la materia. De aquí salen los periodos de cada planificación semanal.</p>
             </div>
             <div className="flex items-center gap-2">
               <a href={`/${slug}/api/horario`} download>
@@ -143,10 +151,11 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-auto p-4">
             {materias.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. El administrador te las asigna en Unidades; hasta entonces solo puedes marcar «Sin clase»." />}
-            <table className="mt-3 w-full border-collapse text-[12px]">
+            <table className="mt-3 w-full border-collapse text-[12px]" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr>
-                  <th className="w-28 border border-borde bg-realce px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide text-tenue">Hora</th>
+                  <th className="w-28 border border-borde bg-realce px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide text-tenue">Tiempo</th>
+                  <th className="w-12 border border-borde bg-realce px-2 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-tenue">Hora</th>
                   {DIAS.map((d) => (
                     <th key={d} className="border border-borde bg-realce px-2 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-tenue">
                       {ETIQUETA_DIA[d]}
@@ -155,9 +164,10 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                 </tr>
               </thead>
               <tbody>
-                {HORAS.map((h) => (
+                {PERIODOS.flatMap(({ numero: h }) => [
                   <tr key={h}>
                     <td className="border border-borde bg-realce px-2 py-1.5 font-mono text-[11px] text-tenue">{etiquetaHora(h)}</td>
+                    <td className="border border-borde bg-realce px-2 py-1.5 text-center text-[12px] font-semibold text-texto">{h}</td>
                     {DIAS.map((d) => {
                       const c = celda(d, h);
                       const m = c?.materiaGradoId != null ? porMateria.get(c.materiaGradoId) : null;
@@ -212,8 +222,24 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                         </td>
                       );
                     })}
-                  </tr>
-                ))}
+                  </tr>,
+                  // La fila del receso, fija, tras el 3.º periodo (como en el horario de la institución).
+                  ...(h === RECESO.trasPeriodo
+                    ? [
+                        <tr key="receso">
+                          <td className="border border-borde px-2 py-1.5 font-mono text-[11px] font-semibold text-texto" style={{ backgroundColor: '#5FC1BE' }}>
+                            {RECESO.desde} – {RECESO.hasta}
+                          </td>
+                          <td className="border border-borde px-2 py-1.5 text-center text-[12px] font-semibold text-texto" style={{ backgroundColor: '#5FC1BE' }}>
+                            R
+                          </td>
+                          <td colSpan={DIAS.length} className="border border-borde px-2 py-1.5 text-center text-[12px] font-bold tracking-[0.6em] text-texto" style={{ backgroundColor: '#5FC1BE' }}>
+                            RECESO
+                          </td>
+                        </tr>,
+                      ]
+                    : []),
+                ])}
               </tbody>
             </table>
             {materias.length > 0 && (

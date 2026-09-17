@@ -2866,7 +2866,7 @@ Lo que aporta:
 ### ⭐ UNA REJILLA QUE SE EDITA PULSANDO LA CELDA: EL HORARIO DE CLASES (2026-09-16)
 `perfil/PerfilCliente.tsx`. Dos columnas: **«Mis datos»** estrecha (`lg:w-80`, alto completo, con
 el cambio de contraseña como dos campos más del mismo formulario, ya sin tarjeta aparte) y, a la
-derecha, la **rejilla del horario** (lunes–viernes × 07:00–15:00). Cada celda es un `<button>` de
+derecha, la **rejilla del horario** (lunes–viernes × once periodos de 40 min, 07:10–15:00, con la fila fija del **receso** en teal `#5FC1BE` y las columnas Tiempo · Hora; `tableLayout: fixed`). Cada celda es un `<button>` de
 `h-12`: vacía (`hover:bg-realce`), con materia (`bg-acento-suave text-acento`, materia en negrita y
 grado debajo en 11 px) o «Sin clase» (`bg-realce text-tenue italic`). Al pulsarla se abre un
 **popover anclado a la celda** (`absolute left-0 top-12 z-30 w-64`, `bg-tarjeta`, sombra) con la
