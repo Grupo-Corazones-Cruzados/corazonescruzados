@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users, FileUp, Loader2, ListChecks } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
-import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria } from '@/acciones/unidades';
+import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria, importarCurriculo } from '@/acciones/unidades';
 import { cn } from '@/lib/utils';
 import { NIVELES, ETIQUETA_NIVEL } from '@/lib/catalogo';
 import { PanelDestrezas, type DestrezaVista } from '@/componentes/PanelDestrezas';
 import type { Nivel } from '@/generated/prisma/enums';
 
 export type DocenteVista = { id: number; nombre: string; rol: string };
-export type MateriaVista = { id: number; nombre: string; descripcion: string | null; unidades: number | null; docentes: { id: number; nombre: string }[]; planificaciones: number };
-export type GradoVista = { id: number; nombre: string; nivel: Nivel; color: string; materias: MateriaVista[] };
+export type MateriaVista = { id: number; nombre: string; descripcion: string | null; unidades: number | null; docentes: { id: number; nombre: string }[]; planificaciones: number; objetivos: { codigo: string; descripcion: string }[]; destrezas: number };
+export type GradoVista = { id: number; nombre: string; nivel: Nivel; color: string; importacionEstado: string | null; importacionError: string | null; importacionArchivo: string | null; materias: MateriaVista[] };
 
 /**
  * EL MÓDULO «UNIDADES» (Fernando, 2026-09-16): a la izquierda los grados; en el
@@ -34,6 +34,16 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
   const [borrarG, setBorrarG] = useState<GradoVista | null>(null);
   const [borrarM, setBorrarM] = useState<MateriaVista | null>(null);
   const [elegidos, setElegidos] = useState<number[]>([]);
+  const [panelDestrezas, setPanelDestrezas] = useState(false);
+  const entradaCurriculo = useRef<HTMLInputElement>(null);
+
+  // Mientras el agente lee el currículo de un grado, la pantalla se refresca sola.
+  const leyendo = grados.some((g) => g.importacionEstado === 'LEYENDO');
+  useEffect(() => {
+    if (!leyendo) return;
+    const t = setInterval(() => router.refresh(), 5000);
+    return () => clearInterval(t);
+  }, [leyendo, router]);
 
   const ir = (g: number | null, m: number | null) => router.push(`/${slug}/unidades${g ? `?g=${g}${m ? `&m=${m}` : ''}` : ''}`);
   const cerrar = () => {
@@ -98,6 +108,23 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
             </div>
             {grado && !soloLectura && (
               <div className="flex items-center gap-1">
+                <input
+                  ref={entradaCurriculo}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f || !grado) return;
+                    const d = new FormData();
+                    d.set('archivo', f);
+                    conResultado(() => importarCurriculo(slug, grado.id, d), 'Currículo recibido: el agente está leyéndolo');
+                    e.target.value = '';
+                  }}
+                />
+                <Boton variante="secundario" tamano="sm" icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || grado.importacionEstado === 'LEYENDO'} title="Sube el PDF del currículo priorizado del Ministerio: el agente crea las materias, sus objetivos y la tabla destreza · criterio · indicador">
+                  {grado.importacionEstado === 'LEYENDO' ? 'Leyendo…' : 'Importar currículo'}
+                </Boton>
                 <BotonIcono icono={Pencil} titulo="Renombrar el grado" onClick={() => setPanel('renombrar')} />
                 <BotonIcono icono={Trash2} titulo="Eliminar el grado" className="text-error" onClick={() => setBorrarG(grado)} />
                 <Boton tamano="sm" icono={Plus} onClick={() => abrirMateria(null)}>
@@ -107,7 +134,20 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
             )}
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
-            {grado && grado.materias.length === 0 && <EstadoVacio icono={BookOpen} titulo="Sin materias" detalle="Añade la primera materia de este grado." />}
+            {grado?.importacionEstado === 'LEYENDO' && (
+              <div className="mb-2 flex items-start gap-2 rounded bg-aviso-suave px-2.5 py-2 text-[12px] text-texto">
+                <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-aviso" />
+                El agente está leyendo «{grado.importacionArchivo}», ámbito por ámbito. Tarda unos minutos; esta pantalla se actualiza sola.
+              </div>
+            )}
+            {grado?.importacionEstado === 'ERROR' && <div className="mb-2"><Aviso texto={`No se pudo importar «${grado.importacionArchivo}»: ${grado.importacionError ?? ''}`} /></div>}
+            {grado && !grado.importacionEstado && grado.importacionError && (
+              <details className="mb-2 rounded bg-realce px-2.5 py-1.5 text-[11px] text-tenue">
+                <summary className="cursor-pointer font-semibold">Última importación: «{grado.importacionArchivo}»</summary>
+                <p className="mt-1 whitespace-pre-line">{grado.importacionError}</p>
+              </details>
+            )}
+            {grado && grado.materias.length === 0 && <EstadoVacio icono={BookOpen} titulo="Sin materias" detalle="Añade la primera materia de este grado o importa el currículo priorizado del Ministerio." />}
             {grado?.materias.map((m) => {
               const sel = materia?.id === m.id;
               return (
@@ -167,9 +207,30 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                   )}
                 </section>
                 <section>
-                  <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-tenue">Destrezas con criterio de desempeño</h3>
-                  {/* Las gestiona el administrador aquí; en Planificaciones solo se ven (Fernando, 2026-09-17). */}
-                  <PanelDestrezas slug={slug} materiaGradoId={materia.id} destrezas={destrezas} puedo={!soloLectura} />
+                  <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Objetivos</h3>
+                  {materia.objetivos.length ? (
+                    <ul className="space-y-1 text-[12px] text-texto">
+                      {materia.objetivos.map((o) => (
+                        <li key={o.codigo}>
+                          <span className="font-semibold">{o.codigo}</span> <span className="text-tenue">{o.descripcion}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[13px] text-tenue">Sin objetivos. Llegan al importar el currículo priorizado del grado.</p>
+                  )}
+                </section>
+                <section>
+                  <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Destrezas con criterio de desempeño</h3>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-[13px] text-texto">
+                      {destrezas.filter((d) => d.activa !== false).length} seleccionada{destrezas.filter((d) => d.activa !== false).length === 1 ? '' : 's'} de {destrezas.length}
+                    </p>
+                    {/* La selección y la edición van en un panel lateral; en Planificaciones solo se ven (Fernando, 2026-09-17). */}
+                    <Boton variante="secundario" tamano="sm" icono={ListChecks} onClick={() => setPanelDestrezas(true)}>
+                      Destrezas
+                    </Boton>
+                  </div>
                 </section>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <section>
@@ -262,6 +323,10 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
             </div>
           </form>
         )}
+      </PanelLateral>
+
+      <PanelLateral abierto={panelDestrezas && !!materia} alCerrar={() => setPanelDestrezas(false)} titulo={`Destrezas · ${materia?.nombre ?? ''}`} descripcion="Marca las destrezas que se usan en esta materia: cada una lleva su criterio y su indicador de evaluación. Es lo que el docente ve en Identificadores y entre lo que el agente elige." ancho="lg">
+        {materia && <PanelDestrezas slug={slug} materiaGradoId={materia.id} destrezas={destrezas} puedo={!soloLectura} />}
       </PanelLateral>
 
       <Confirmar abierto={!!borrarG} titulo="Eliminar el grado" mensaje={`Se eliminará «${borrarG?.nombre}» con sus ${borrarG?.materias.length ?? 0} materia(s), sus asignaciones y sus horas en los horarios. Las planificaciones ya creadas se conservan.`} ocupado={enCurso} alCerrar={() => setBorrarG(null)} alAceptar={() => borrarG && conResultado(() => eliminarGrado(slug, borrarG.id), 'Grado eliminado', () => { setBorrarG(null); ir(null, null); })} />

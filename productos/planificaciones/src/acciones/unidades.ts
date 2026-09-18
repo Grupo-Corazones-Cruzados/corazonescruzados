@@ -5,6 +5,9 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { colorAleatorio, esColorDeGrado } from '@/lib/grados-color';
 import { sembrarDestrezasDeMateria } from '@/lib/destrezas';
+import { importarCurriculoEnSegundoPlano } from '@/lib/curriculo';
+import { MAX_TAMANO, tipoDe } from '@/lib/adjuntos';
+import { after } from 'next/server';
 import { NIVELES } from '@/lib/catalogo';
 import type { Nivel } from '@/generated/prisma/enums';
 import { contextoEscritura } from '@/lib/inquilino';
@@ -142,4 +145,27 @@ async function docentesValidos(inquilinoId: number, ids: number[]) {
   if (!ids.length) return [];
   const filas = await prisma.usuario.findMany({ where: { id: { in: ids }, inquilinoId, activo: true }, select: { id: true } });
   return filas.map((f) => f.id);
+}
+
+/**
+ * IMPORTAR EL CURRÍCULO PRIORIZADO DEL MINISTERIO EN UN GRADO (Fernando, 2026-09-17): el
+ * administrador sube el PDF y, fuera de la petición, el agente crea las materias que
+ * falten, guarda sus objetivos y la tabla destreza · criterio · indicador. Las destrezas
+ * nuevas nacen sin seleccionar.
+ */
+export async function importarCurriculo(slug: string, gradoId: number, datos: FormData): Promise<Resultado> {
+  const permiso = await contextoEscritura(slug, 'administrar');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const g = await prisma.grado.findFirst({ where: { id: gradoId, inquilinoId: permiso.ctx.inquilino.id } });
+  if (!g) return { ok: false, error: 'El grado no existe.' };
+  if (g.importacionEstado === 'LEYENDO') return { ok: false, error: 'El agente todavía está leyendo el documento anterior de este grado.' };
+  const archivo = datos.get('archivo');
+  if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: 'Adjunta el PDF del currículo priorizado.' };
+  if (archivo.size > MAX_TAMANO) return { ok: false, error: 'El archivo pasa de 10 MB.' };
+  if (tipoDe(archivo) !== 'application/pdf') return { ok: false, error: 'Tiene que ser el PDF del Ministerio (las columnas de la tabla se leen del PDF).' };
+  const buffer = Buffer.from(await archivo.arrayBuffer());
+  await prisma.grado.update({ where: { id: gradoId }, data: { importacionEstado: 'LEYENDO', importacionError: null, importacionArchivo: archivo.name.slice(0, 200) } });
+  after(() => importarCurriculoEnSegundoPlano(gradoId, buffer));
+  revalidatePath(`/${slug}/unidades`);
+  return { ok: true, id: gradoId };
 }

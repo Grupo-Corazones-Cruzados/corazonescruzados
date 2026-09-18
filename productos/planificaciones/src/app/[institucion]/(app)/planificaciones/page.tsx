@@ -138,7 +138,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
     // Las destrezas de ESTA planificación (Fernando, 2026-09-16): las que el agente
     // puede elegir y las que se editan desde el botón «Destrezas».
     const cat = await destrezasDe(actual.id);
-    destrezasCatalogo = cat.map((d) => ({ id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, materia: d.materia }));
+    destrezasCatalogo = cat.map((d) => ({ id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, criterio: d.criterio, indicador: d.indicador, activa: d.activa, materia: d.materia }));
 
     if (b.vista === 'previa') {
       const cargado = await cargarDocumento(inquilino, actual.id);

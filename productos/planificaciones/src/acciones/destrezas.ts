@@ -5,10 +5,6 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
 import { imagenADataUrl, normalizarCodigo } from '@/lib/destrezas';
-import { MAX_TAMANO, extraerTexto, tipoDe } from '@/lib/adjuntos';
-import { correrAgente } from '@/lib/ia';
-import { ETIQUETA_NIVEL } from '@/lib/catalogo';
-import { ESQUEMA_DESTREZAS, SISTEMA_DESTREZAS, type SalidaDestrezas } from '@/plantillas/pud/importar-destrezas';
 
 export type Resultado = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -16,6 +12,8 @@ const Campos = z.object({
   codigo: z.string().trim().min(2, 'Escribe el código de la destreza (p. ej. CS.1.1.7.).').max(40),
   descripcion: z.string().trim().min(5, 'Escribe la descripción de la destreza.').max(2000),
   imagenUrl: z.string().trim().max(500_000).optional().or(z.literal('')),
+  criterio: z.string().trim().max(4000).optional().or(z.literal('')),
+  indicador: z.string().trim().max(4000).optional().or(z.literal('')),
 });
 
 /** Solo el administrador cambia las destrezas de una materia de grado (Fernando, 2026-09-17). */
@@ -52,7 +50,7 @@ export async function crearDestreza(slug: string, materiaGradoId: number, datos:
   if (!img.ok) return img;
   const ultimo = await prisma.destreza.aggregate({ where: { materiaGradoId }, _max: { orden: true } });
   const d = await prisma.destreza.create({
-    data: { inquilinoId: p.ctx.inquilino.id, materiaGradoId, nivel: p.mg.grado.nivel, materia: p.mg.nombre, codigo, descripcion: leido.data.descripcion, imagenUrl: img.url, orden: (ultimo._max.orden ?? -1) + 1 },
+    data: { inquilinoId: p.ctx.inquilino.id, materiaGradoId, nivel: p.mg.grado.nivel, materia: p.mg.nombre, codigo, descripcion: leido.data.descripcion, criterio: leido.data.criterio || null, indicador: leido.data.indicador || null, imagenUrl: img.url, orden: (ultimo._max.orden ?? -1) + 1 },
   });
   revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
@@ -71,7 +69,7 @@ export async function editarDestreza(slug: string, id: number, datos: FormData):
   if (repetida) return { ok: false, error: `Esta materia ya tiene la destreza ${codigo}.` };
   const img = await leerImagen(datos, d.imagenUrl);
   if (!img.ok) return img;
-  await prisma.destreza.update({ where: { id }, data: { codigo, descripcion: leido.data.descripcion, imagenUrl: img.url } });
+  await prisma.destreza.update({ where: { id }, data: { codigo, descripcion: leido.data.descripcion, criterio: leido.data.criterio || null, indicador: leido.data.indicador || null, imagenUrl: img.url } });
   revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id };
@@ -89,62 +87,14 @@ export async function eliminarDestreza(slug: string, id: number): Promise<Result
   return { ok: true };
 }
 
-/**
- * IMPORTAR DESTREZAS DESDE UN PCA (Fernando, 2026-09-17): el administrador sube el
- * PDF o Word y el agente transcribe las destrezas de la materia y el nivel del grado
- * (en Preparatoria, la columna «Preparatoria»). Se añaden las que la materia no
- * tenga; el icono se hereda del catálogo si ese código lo tiene.
- */
-export type ResultadoImportacion = { ok: true; anadidas: number; repetidas: number } | { ok: false; error: string };
-
-export async function importarDestrezas(slug: string, materiaGradoId: number, datos: FormData): Promise<ResultadoImportacion> {
-  const p = await materiaEditable(slug, materiaGradoId);
+/** Marcar o desmarcar una destreza para la materia: solo las seleccionadas las ve el docente y las elige el agente (Fernando, 2026-09-17). */
+export async function seleccionarDestreza(slug: string, id: number, activa: boolean): Promise<Resultado> {
+  const d = await prisma.destreza.findUnique({ where: { id } });
+  if (!d?.materiaGradoId) return { ok: false, error: 'La destreza no existe.' };
+  const p = await materiaEditable(slug, d.materiaGradoId);
   if (!p.ok) return p;
-  const archivo = datos.get('archivo');
-  if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: 'Adjunta el PDF o el Word con las destrezas.' };
-  if (archivo.size > MAX_TAMANO) return { ok: false, error: 'El archivo pasa de 10 MB.' };
-  const tipo = tipoDe(archivo);
-  if (tipo !== 'application/pdf' && tipo !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return { ok: false, error: 'Tiene que ser un PDF o un Word (.docx).' };
-  let texto: string;
-  try {
-    texto = (await extraerTexto(Buffer.from(await archivo.arrayBuffer()), tipo)).replace(/\u0000/g, '').trim();
-  } catch (e) {
-    return { ok: false, error: `No se pudo leer el archivo: ${e instanceof Error ? e.message : String(e)}` };
-  }
-  if (texto.length < 100) return { ok: false, error: 'El archivo no tiene texto legible (¿es un PDF escaneado?).' };
-
-  const r = await correrAgente<SalidaDestrezas>({
-    sistema: SISTEMA_DESTREZAS,
-    encargo: `MATERIA: ${p.mg.nombre}\nNIVEL: ${ETIQUETA_NIVEL[p.mg.grado.nivel]}\n\nTEXTO DEL DOCUMENTO (${archivo.name}):\n\n${texto}\n\nDevuelve las destrezas con criterio de desempeño de ese nivel en el JSON pedido.`,
-    esquema: ESQUEMA_DESTREZAS,
-    esfuerzo: 'low',
-    maxSalida: 20_000,
-    claveCache: 'planificaciones-importar-destrezas',
-  });
-  if (!r.ok) return { ok: false, error: r.error };
-  const encontradas = r.salida.destrezas.map((d) => ({ codigo: normalizarCodigo(d.codigo), descripcion: d.descripcion.trim() })).filter((d) => /^[A-ZÑ]{1,4}\.\d+\.\d+\.\d+\.?$/i.test(d.codigo) && d.descripcion.length >= 5);
-  if (!encontradas.length) return { ok: false, error: 'El agente no encontró destrezas con código en el documento para ese nivel.' };
-
-  const actuales = await prisma.destreza.findMany({ where: { materiaGradoId }, select: { codigo: true, orden: true } });
-  const tiene = new Set(actuales.map((d) => d.codigo.trim().toUpperCase().replace(/\.$/, '')));
-  let orden = actuales.reduce((a, d) => Math.max(a, d.orden), -1) + 1;
-  const vistas = new Set<string>();
-  const nuevas: { codigo: string; descripcion: string }[] = [];
-  for (const d of encontradas) {
-    const clave = d.codigo.toUpperCase().replace(/\.$/, '');
-    if (vistas.has(clave)) continue;
-    vistas.add(clave);
-    if (!tiene.has(clave)) nuevas.push(d);
-  }
-  if (nuevas.length) {
-    // Si el catálogo común tiene el icono de ese código, se hereda.
-    const catalogo = await prisma.destreza.findMany({ where: { planificacionId: null, materiaGradoId: null, nivel: p.mg.grado.nivel, codigo: { in: nuevas.map((d) => d.codigo) }, OR: [{ inquilinoId: null }, { inquilinoId: p.ctx.inquilino.id }] }, select: { codigo: true, imagenUrl: true } });
-    const icono = new Map(catalogo.filter((c) => c.imagenUrl).map((c) => [c.codigo, c.imagenUrl]));
-    await prisma.destreza.createMany({
-      data: nuevas.map((d) => ({ inquilinoId: p.ctx.inquilino.id, materiaGradoId, nivel: p.mg.grado.nivel, materia: p.mg.nombre, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: icono.get(d.codigo) ?? null, orden: orden++ })),
-    });
-  }
+  await prisma.destreza.update({ where: { id }, data: { activa } });
   revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
-  return { ok: true, anadidas: nuevas.length, repetidas: vistas.size - nuevas.length };
+  return { ok: true, id };
 }

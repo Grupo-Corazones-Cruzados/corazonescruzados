@@ -16,7 +16,7 @@ export default async function PaginaUnidades({ params, searchParams }: { params:
     prisma.grado.findMany({
       where: { inquilinoId: inquilino.id },
       orderBy: [{ orden: 'asc' }, { nombre: 'asc' }],
-      include: { materias: { orderBy: [{ orden: 'asc' }, { nombre: 'asc' }], include: { docentes: { include: { usuario: { select: { id: true, nombre: true, profesion: true } } } }, _count: { select: { planificaciones: true } } } } },
+      include: { materias: { orderBy: [{ orden: 'asc' }, { nombre: 'asc' }], include: { docentes: { include: { usuario: { select: { id: true, nombre: true, profesion: true } } } }, objetivos: { orderBy: { orden: 'asc' } }, _count: { select: { planificaciones: true, destrezas: true } } } } },
     }),
     prisma.usuario.findMany({ where: { inquilinoId: inquilino.id, activo: true }, orderBy: { nombre: 'asc' }, select: { id: true, nombre: true, profesion: true, rol: true } }),
   ]);
@@ -26,6 +26,9 @@ export default async function PaginaUnidades({ params, searchParams }: { params:
     nombre: g.nombre,
     nivel: g.nivel,
     color: g.color,
+    importacionEstado: g.importacionEstado,
+    importacionError: g.importacionError,
+    importacionArchivo: g.importacionArchivo,
     materias: g.materias.map((m) => ({
       id: m.id,
       nombre: m.nombre,
@@ -33,12 +36,14 @@ export default async function PaginaUnidades({ params, searchParams }: { params:
       unidades: m.unidades,
       docentes: m.docentes.map((d) => ({ id: d.usuario.id, nombre: [d.usuario.profesion, d.usuario.nombre].filter(Boolean).join(' ') })),
       planificaciones: m._count.planificaciones,
+      objetivos: m.objetivos.map((o) => ({ codigo: o.codigo, descripcion: o.descripcion })),
+      destrezas: m._count.destrezas,
     })),
   }));
   const listaDocentes: DocenteVista[] = docentes.map((d) => ({ id: d.id, nombre: [d.profesion, d.nombre].filter(Boolean).join(' '), rol: d.rol }));
 
   // Las destrezas solo de la materia elegida (pueden llevar iconos incrustados).
   const materiaId = Number(b.m) || null;
-  const destrezas: DestrezaVista[] = materiaId && vista.some((g) => g.materias.some((m) => m.id === materiaId)) ? (await destrezasDeMateria(materiaId)).map((d) => ({ id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl })) : [];
+  const destrezas: DestrezaVista[] = materiaId && vista.some((g) => g.materias.some((m) => m.id === materiaId)) ? (await destrezasDeMateria(materiaId)).map((d) => ({ id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, criterio: d.criterio, indicador: d.indicador, activa: d.activa })) : [];
   return <UnidadesCliente slug={institucion} grados={vista} docentes={listaDocentes} gradoId={Number(b.g) || null} materiaId={materiaId} destrezas={destrezas} soloLectura={inquilino.soloLectura} />;
 }

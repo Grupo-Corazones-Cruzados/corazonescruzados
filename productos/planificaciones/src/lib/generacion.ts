@@ -176,12 +176,15 @@ export async function generarSemana(semanaId: number): Promise<void> {
   if (fechaFin < fechaInicio) fechaFin = sumarDias(fechaInicio, 4);
 
   // Los ajustes razonables se casan por iniciales (y, si el agente las cambió, por posición).
+  // Los INDICADORES DE EVALUACIÓN de cada línea son los de la destreza elegida esa semana
+  // (vienen del currículo priorizado importado en el grado; Fernando, 2026-09-17).
+  const indicadores = elegidas.map((d) => d.indicador?.trim()).filter((x): x is string => Boolean(x)).join('\n') || null;
   const devueltos = s.ajustesRazonables ?? [];
   const ajustes = estudiantes
     .map((e, i) => {
       const norm = (x: string) => x.replace(/[\s.]/g, '').toUpperCase();
       const a = devueltos.find((x) => norm(x.iniciales) === norm(e.iniciales ?? '')) ?? devueltos[i];
-      return a?.estrategia?.trim() ? { estudianteId: e.id, estrategia: a.estrategia.trim(), orden: i } : null;
+      return a?.estrategia?.trim() ? { estudianteId: e.id, estrategia: a.estrategia.trim(), indicadores, orden: i } : null;
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
 

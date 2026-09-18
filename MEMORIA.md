@@ -275,6 +275,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📘 EL CURRÍCULO PRIORIZADO DEL MINISTERIO ES LA FUENTE DE LAS DESTREZAS (2026-09-17).**
+  Fernando: *«el documento con el que siempre nos basemos para extraer las destrezas sea este tipo
+  de documento: Destrezas Priorizado Preparatoria.pdf»* (Mapas curriculares del Ministerio; puede ser
+  igual para otros grados). Por cada «Ámbito de desarrollo y aprendizaje» (= materia) trae objetivos
+  y una tabla de tres columnas con celdas combinadas: **criterio de evaluación · destrezas ·
+  indicadores** (varias destrezas comparten criterio o indicador). Lo que pidió y quedó:
+  - En **Unidades**, por grado, el botón **«Importar currículo»** (sustituye al importar destrezas
+    por materia, que se quitó). El grado queda LEYENDO y en segundo plano (`lib/curriculo.ts`):
+    el PDF se lee con pdf.js **conservando las columnas** —cada fragmento se etiqueta [C]/[D]/[I]
+    según los límites que dan las cabeceras de la tabla de esa página—, se parte por ámbitos
+    (también «Mapas del currículo de Educación Cultural y Artística / Educación Física») y el
+    agente transcribe cada ámbito a **una fila por destreza con su criterio y su indicador**
+    (`esfuerzo: low`, 13–24 s por ámbito). Se crean las **materias** que falten, se reemplazan sus
+    **objetivos** (`objetivos_materia`) y las destrezas se crean **sin seleccionar** o se
+    actualizan por código (texto, criterio, indicador; el icono y la selección se conservan). El
+    resumen por ámbito queda en `grados.importacion_error` (desplegable «Última importación»).
+  - En la materia: lista de **objetivos** y el botón **«Destrezas»** → panel con **casillas de
+    selección** (`destrezas.activa`), criterio e indicador bajo cada una, alta/edición (con
+    criterio e indicador) y quitar. Solo las seleccionadas las ve el docente y las elige el agente.
+  - En **Planificaciones** el botón pasa a **«Identificadores · N»** y enseña una **tabla**
+    destreza · criterio · indicador, solo lectura.
+  - Los **indicadores de evaluación de los ajustes razonables** (que estaban pendientes) salen de
+    la destreza elegida esa semana: `generacion.ts` los escribe en cada línea.
+  - Medido con el PDF real (26 páginas): 9 ámbitos; Identidad 16 filas, Descubrimiento 21 (con el
+    nombre partido en dos líneas bien unido), ECA 10, EF 13; cada fila con su CE./I. correcto.
 - **🎓 LAS DESTREZAS LAS GESTIONA EL ADMINISTRADOR POR MATERIA DE CADA GRADO (2026-09-17).**
   Fernando: *«necesitamos que el administrador sea el que gestione las destrezas de cada materia de
   cada grado […] en el módulo de planificaciones solo se puedan ver»*. Cambio de dueño: las

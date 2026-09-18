@@ -43,7 +43,8 @@ export async function destrezasDe(planificacionId: number) {
   return prisma.destreza.findMany({ where, orderBy: [{ orden: 'asc' }, { codigo: 'asc' }] });
 }
 
-export const destrezasDeMateria = (materiaGradoId: number) => prisma.destreza.findMany({ where: { materiaGradoId, activa: true }, orderBy: [{ orden: 'asc' }, { codigo: 'asc' }] });
+/** Todas las de la materia (seleccionadas o no): para que el administrador elija. */
+export const destrezasDeMateria = (materiaGradoId: number) => prisma.destreza.findMany({ where: { materiaGradoId }, orderBy: [{ orden: 'asc' }, { codigo: 'asc' }] });
 
 /** Al crear una materia de grado, nace con las destrezas del catálogo de ese nombre y nivel (con sus iconos). */
 export async function sembrarDestrezasDeMateria(p: { materiaGradoId: number; inquilinoId: number; nivel: Nivel; materia: string }) {

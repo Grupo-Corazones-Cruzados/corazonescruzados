@@ -1,20 +1,21 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Pencil, Trash2, Loader2, FileUp, ImageOff, ListChecks, Plus as PlusIcon } from 'lucide-react';
+import { Pencil, Trash2, ImageOff, ListChecks, Plus as PlusIcon } from 'lucide-react';
 import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Confirmar, EstadoVacio } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
-import { crearDestreza, editarDestreza, eliminarDestreza, importarDestrezas } from '@/acciones/destrezas';
+import { crearDestreza, editarDestreza, eliminarDestreza, seleccionarDestreza } from '@/acciones/destrezas';
 
-export type DestrezaVista = { id: number; codigo: string; descripcion: string; imagenUrl: string | null; materia?: string };
+export type DestrezaVista = { id: number; codigo: string; descripcion: string; imagenUrl: string | null; materia?: string; criterio?: string | null; indicador?: string | null; activa?: boolean };
 
 /**
- * LAS DESTREZAS DE UNA MATERIA DE GRADO (Fernando, 2026-09-17): las gestiona el
- * administrador en «Unidades» (lista, alta, edición, borrado e importación desde el
- * PCA); en Planificaciones el docente solo las ve (`puedo = false`). Un solo
- * componente para las dos pantallas.
+ * LAS DESTREZAS DE UNA MATERIA DE GRADO (Fernando, 2026-09-17): en «Unidades» el
+ * administrador las SELECCIONA (casilla), las añade a mano, las edita y las quita;
+ * cada una lleva su criterio y su indicador de evaluación (del currículo priorizado
+ * importado en el grado). En Planificaciones, «Identificadores» enseña las
+ * seleccionadas en una tabla destreza · criterio · indicador (`puedo = false`).
  */
 
 export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slug: string; materiaGradoId: number | null; destrezas: DestrezaVista[]; puedo: boolean }) {
@@ -25,26 +26,9 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
   const [vista, setVista] = useState<string | null>(null);
   const [quitarImagen, setQuitarImagen] = useState(false);
   const [enCurso, arranca] = useTransition();
-  const [importando, setImportando] = useState(false);
-  const entradaArchivo = useRef<HTMLInputElement>(null);
   const editando = modo !== 'lista' && modo !== 'nueva' ? modo : null;
 
-  // «Importar destrezas» (Fernando, 2026-09-17): se sube el PCA y el agente saca las
-  // de esta materia y nivel; las que la planificación no tenga se añaden.
-  const importar = (archivo: File) => {
-    const d = new FormData();
-    d.set('archivo', archivo);
-    setImportando(true);
-    setError(null);
-    arranca(async () => {
-      const r = await importarDestrezas(slug, materiaGradoId!, d);
-      setImportando(false);
-      if (entradaArchivo.current) entradaArchivo.current.value = '';
-      if (!r.ok) return setError(r.error);
-      toast.success(r.anadidas ? `${r.anadidas} destreza${r.anadidas === 1 ? '' : 's'} añadida${r.anadidas === 1 ? '' : 's'}${r.repetidas ? ` · ${r.repetidas} ya estaba${r.repetidas === 1 ? '' : 'n'}` : ''}` : 'Todas las destrezas del documento ya estaban en la planificación');
-      router.refresh();
-    });
-  };
+
 
   const volver = () => {
     setModo('lista');
@@ -68,46 +52,95 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[12px] text-tenue">
-            {destrezas.length} destreza{destrezas.length === 1 ? '' : 's'}. La imagen de cada una sale en el formato junto a su código.{!puedo && ' Las gestiona el administrador en Unidades.'}
+            {puedo ? `${destrezas.filter((d) => d.activa !== false).length} de ${destrezas.length} seleccionadas. Marca las que se usan en esta materia: el docente ve esas y el agente elige entre ellas; cada una arrastra su criterio y su indicador.` : `${destrezas.length} destreza${destrezas.length === 1 ? '' : 's'} seleccionada${destrezas.length === 1 ? '' : 's'} por el administrador en Unidades. El agente elige una por semana.`}
           </p>
           {puedo && materiaGradoId && (
-            <div className="flex shrink-0 items-center gap-2">
-              <input ref={entradaArchivo} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => e.target.files?.[0] && importar(e.target.files[0])} />
-              <Boton tamano="sm" variante="secundario" icono={importando ? Loader2 : FileUp} onClick={() => entradaArchivo.current?.click()} disabled={enCurso} title="Sube el PCA (PDF o Word): el agente añade las destrezas de esta materia y nivel que falten">
-                {importando ? 'Leyendo el documento…' : 'Importar destrezas'}
-              </Boton>
-              <Boton tamano="sm" icono={PlusIcon} onClick={() => setModo('nueva')} disabled={enCurso}>
-                Nueva destreza
-              </Boton>
-            </div>
+            <Boton tamano="sm" icono={PlusIcon} onClick={() => setModo('nueva')} disabled={enCurso}>
+              Nueva destreza
+            </Boton>
           )}
         </div>
         {error && <Aviso texto={error} />}
-        {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas todavía" detalle="Las destrezas con criterio de desempeño de esta materia: el agente elige una por semana. El administrador las añade en Unidades (a mano o importando el PCA)." />}
-        <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
-          {destrezas.map((d) => (
-            <li key={d.id} className="flex items-start gap-3 px-3 py-2.5">
-              <div className="flex h-10 w-[84px] shrink-0 items-center justify-center rounded bg-realce">
-                {d.imagenUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={d.imagenUrl} alt="" className="h-9 w-auto max-w-[80px] object-contain" />
-                ) : (
-                  <ImageOff className="h-4 w-4 text-tenue" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1 text-[12px]">
-                <p className="font-semibold text-texto">{d.codigo}</p>
-                <p className="leading-relaxed text-tenue">{d.descripcion}</p>
-              </div>
-              {puedo && (
+        {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas todavía" detalle="Las destrezas con criterio de desempeño de esta materia: el agente elige una por semana. El administrador las importa con el currículo priorizado del grado (o las añade a mano) y marca las que se usan." />}
+        {!puedo && destrezas.length > 0 && (
+          <div className="overflow-x-auto rounded border border-borde">
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr className="bg-realce text-left text-[11px] uppercase tracking-wide text-tenue">
+                  <th className="border-b border-borde px-3 py-2">Destreza con criterio de desempeño</th>
+                  <th className="border-b border-borde px-3 py-2">Criterio de evaluación</th>
+                  <th className="border-b border-borde px-3 py-2">Indicador de evaluación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {destrezas.map((d) => (
+                  <tr key={d.id} className="align-top">
+                    <td className="border-b border-borde px-3 py-2">
+                      <div className="flex items-start gap-2">
+                        {d.imagenUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={d.imagenUrl} alt="" className="mt-0.5 h-7 w-auto max-w-[70px] shrink-0 object-contain" />
+                        )}
+                        <span>
+                          <span className="font-semibold text-texto">{d.codigo}</span> <span className="text-tenue">{d.descripcion}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td className="border-b border-borde px-3 py-2 text-tenue">{d.criterio || '—'}</td>
+                    <td className="border-b border-borde px-3 py-2 text-tenue">{d.indicador || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {puedo && (
+          <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
+            {destrezas.map((d) => (
+              <li key={d.id} className={`flex items-start gap-3 px-3 py-2.5 ${d.activa === false ? 'opacity-70' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={d.activa !== false}
+                  disabled={enCurso}
+                  title={d.activa === false ? 'Seleccionar para esta materia' : 'Quitar de la selección'}
+                  onChange={(e) => {
+                    const activa = e.target.checked;
+                    arranca(async () => {
+                      const r = await seleccionarDestreza(slug, d.id, activa);
+                      if (!r.ok) return void toast.error(r.error);
+                      router.refresh();
+                    });
+                  }}
+                  className="mt-2.5 h-4 w-4 shrink-0 accent-[var(--color-acento)]"
+                />
+                <div className="flex h-10 w-[84px] shrink-0 items-center justify-center rounded bg-realce">
+                  {d.imagenUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={d.imagenUrl} alt="" className="h-9 w-auto max-w-[80px] object-contain" />
+                  ) : (
+                    <ImageOff className="h-4 w-4 text-tenue" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 text-[12px]">
+                  <p className="font-semibold text-texto">{d.codigo}</p>
+                  <p className="leading-relaxed text-tenue">{d.descripcion}</p>
+                  {(d.criterio || d.indicador) && (
+                    <dl className="mt-1.5 grid gap-x-3 gap-y-0.5 text-[11px] sm:grid-cols-[auto_1fr]">
+                      <dt className="font-semibold text-tenue">Criterio</dt>
+                      <dd className="text-tenue">{d.criterio || '—'}</dd>
+                      <dt className="font-semibold text-tenue">Indicador</dt>
+                      <dd className="text-tenue">{d.indicador || '—'}</dd>
+                    </dl>
+                  )}
+                </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <BotonIcono icono={Pencil} titulo="Editar" onClick={() => setModo(d)} />
                   <BotonIcono icono={Trash2} titulo="Quitar" className="text-error" onClick={() => setBorrar(d)} />
                 </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        )}
         <Confirmar
           abierto={!!borrar}
           titulo="Quitar la destreza"
@@ -137,6 +170,12 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
       </Campo>
       <Campo etiqueta="Descripción (la destreza con criterio de desempeño, tal como está en el currículo)" requerido>
         <AreaTexto name="descripcion" rows={4} required defaultValue={editando?.descripcion ?? ''} />
+      </Campo>
+      <Campo etiqueta="Criterio de evaluación (código y texto)">
+        <AreaTexto name="criterio" rows={3} defaultValue={editando?.criterio ?? ''} placeholder="CE.CS.1.1. Reconoce que es un ser integral…" />
+      </Campo>
+      <Campo etiqueta="Indicador de evaluación (código y texto)">
+        <AreaTexto name="indicador" rows={3} defaultValue={editando?.indicador ?? ''} placeholder="I.CS.1.1.1. Expresa sus datos personales… (J.4.)" />
       </Campo>
       <Campo etiqueta="Imagen o icono (PNG o JPG, hasta 300 KB; sale en el formato junto al código)">
         <div className="flex flex-wrap items-center gap-3">

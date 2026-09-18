@@ -227,8 +227,9 @@ export default function PlanificacionesCliente(p: Props) {
               </>
             )}
             {/* «Destrezas» (Fernando, 2026-09-16): el conjunto propio de la planificación del que el agente elige una por semana. */}
-            <Boton variante="secundario" icono={ListChecks} disabled={!actual} onClick={() => setPanel('destrezas')} title={!actual ? 'Elige una planificación' : 'Las destrezas con criterio de desempeño de esta planificación'}>
-              Destrezas{actual ? ` · ${p.destrezasCatalogo.length}` : ''}
+            {/* «Identificadores» (Fernando, 2026-09-17): destreza · criterio · indicador de la materia, seleccionados por el administrador; aquí solo se ven. */}
+            <Boton variante="secundario" icono={ListChecks} disabled={!actual} onClick={() => setPanel('destrezas')} title={!actual ? 'Elige una planificación' : 'Destrezas, criterios e indicadores de evaluación de la materia'}>
+              Identificadores{actual ? ` · ${p.destrezasCatalogo.length}` : ''}
             </Boton>
             {/* «Configurar» solo con una planificación elegida (Fernando, 2026-09-15). */}
             <Boton variante="secundario" icono={Settings} disabled={!actual || !puedo} onClick={() => setPanel('configurar')} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas'}>
@@ -546,7 +547,7 @@ export default function PlanificacionesCliente(p: Props) {
       </PanelLateral>
 
       {/* ── Destrezas de la planificación ─────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'destrezas' && !!actual} alCerrar={cerrar} titulo={`Destrezas · ${actual?.materia ?? ''}`} descripcion="Las destrezas con criterio de desempeño de la materia de esta planificación. El agente elige una por semana según lo que dictes; el administrador las gestiona en Unidades." ancho="lg">
+      <PanelLateral abierto={panel === 'destrezas' && !!actual} alCerrar={cerrar} titulo={`Identificadores · ${actual?.materia ?? ''}`} descripcion="Las destrezas con criterio de desempeño seleccionadas para la materia, con su criterio y su indicador de evaluación. El agente elige una por semana según lo que dictes; el administrador las gestiona en Unidades." ancho="lg">
         {actual && <PanelDestrezas slug={p.slug} materiaGradoId={null} destrezas={p.destrezasCatalogo} puedo={false} />}
       </PanelLateral>
 

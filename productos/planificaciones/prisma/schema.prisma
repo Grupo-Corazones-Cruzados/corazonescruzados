@@ -265,6 +265,12 @@ model Destreza {
   codigo          String         @db.VarChar(40)
   descripcion     String
   imagenUrl       String?        @map("imagen_url")
+  /// El criterio y el indicador de evaluación de su fila en el currículo priorizado del
+  /// Ministerio (Fernando, 2026-09-17): varias destrezas comparten uno.
+  criterio        String?
+  indicador       String?
+  /// SELECCIONADA por el administrador para la materia: solo las activas las ve el docente y
+  /// las elige el agente. Las importadas del currículo nacen sin seleccionar.
   activa          Boolean        @default(true)
   orden           Int            @default(0)
   creado          DateTime       @default(now()) @map("creado_en")
@@ -295,6 +301,11 @@ model Grado {
   nivel       Nivel     @default(PREPARATORIA)
   /// Relleno con el que se distingue el grado en los controles de selección; al azar al crearlo.
   color       String    @default("#C4B5FD") @db.VarChar(7)
+  /// IMPORTAR EL CURRÍCULO PRIORIZADO del Ministerio (Fernando, 2026-09-17): mientras el agente
+  /// lee el PDF, LEYENDO; si falla, ERROR con el motivo; al terminar, NULO.
+  importacionEstado  String? @map("importacion_estado") @db.VarChar(20)
+  importacionError   String? @map("importacion_error")
+  importacionArchivo String? @map("importacion_archivo") @db.VarChar(200)
   orden       Int       @default(0)
   creado      DateTime  @default(now()) @map("creado_en")
 
@@ -324,6 +335,7 @@ model MateriaGrado {
   horario         HorarioClase[]
   planificaciones Planificacion[]
   destrezas       Destreza[]
+  objetivos       ObjetivoMateria[]
 
   @@unique([gradoId, nombre])
   @@index([inquilinoId])
@@ -670,5 +682,19 @@ model AjusteRazonable {
 
   @@unique([semanaId, estudianteId])
   @@map("ajustes_razonables")
+}
+
+/// LOS OBJETIVOS DE UNA MATERIA DE GRADO («O.CS.1.1. …»), importados del currículo
+/// priorizado del Ministerio con sus destrezas (Fernando, 2026-09-17).
+model ObjetivoMateria {
+  id             Int          @id @default(autoincrement())
+  materiaGradoId Int          @map("materia_grado_id")
+  materiaGrado   MateriaGrado @relation(fields: [materiaGradoId], references: [id], onDelete: Cascade)
+  codigo         String       @db.VarChar(40)
+  descripcion    String
+  orden          Int          @default(0)
+
+  @@unique([materiaGradoId, codigo])
+  @@map("objetivos_materia")
 }
 
