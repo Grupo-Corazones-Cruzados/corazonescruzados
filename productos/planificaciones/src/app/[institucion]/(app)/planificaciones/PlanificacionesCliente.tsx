@@ -13,6 +13,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  FileUp,
   Link2,
   BookOpenText,
   CalendarDays,
@@ -27,7 +28,7 @@ import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Buscador, Tarje
 import { Aviso, Chips } from '@/componentes/campos';
 import { Dictado } from '@/componentes/Dictado';
 import { Adjuntos, type AdjuntoSubido } from '@/componentes/Adjuntos';
-import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana } from '@/acciones/planificaciones';
+import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana, importarFormato } from '@/acciones/planificaciones';
 import { crearDestreza, editarDestreza, eliminarDestreza } from '@/acciones/destrezas';
 import { parsearEstrategias, lineas } from '@/plantillas/pud/estrategias';
 import { NIVELES, ETIQUETA_NIVEL, ETIQUETA_ESTADO_SEMANA } from '@/lib/catalogo';
@@ -63,6 +64,10 @@ export type PlanificacionVista = {
   registroAprobadoNombre: string | null;
   registroAprobadoFecha: string | null;
   deceNombre: string | null;
+  /** Importada de un formato: LEYENDO mientras el agente transcribe, ERROR si falló, nulo al terminar. */
+  importacionEstado: string | null;
+  importacionError: string | null;
+  importacionArchivo: string | null;
   docente: string;
   usuarioId: number;
   semanas: number;
@@ -127,7 +132,7 @@ export default function PlanificacionesCliente(p: Props) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [panel, setPanel] = useState<'nueva' | 'configurar' | 'semana' | 'editar' | 'destrezas' | null>(p.abrirNueva ? 'nueva' : null);
+  const [panel, setPanel] = useState<'nueva' | 'importar' | 'configurar' | 'semana' | 'editar' | 'destrezas' | null>(p.abrirNueva ? 'nueva' : null);
   const [borrarPl, setBorrarPl] = useState<PlanificacionVista | null>(null);
   const [borrarSem, setBorrarSem] = useState<SemanaVista | null>(null);
   const [busqueda, setBusqueda] = useState(p.q);
@@ -169,6 +174,14 @@ export default function PlanificacionesCliente(p: Props) {
     }, 3000);
     return () => clearInterval(t);
   }, [redactando, p.semanas, p.actual, p.slug, router]);
+
+  // Mientras el agente lee un formato importado, se refresca cada 4 s hasta que termine.
+  const leyendo = p.planificaciones.some((x) => x.importacionEstado === 'LEYENDO');
+  useEffect(() => {
+    if (!leyendo) return;
+    const t = setInterval(() => router.refresh(), 4000);
+    return () => clearInterval(t);
+  }, [leyendo, router]);
 
   const cerrar = () => {
     setPanel(null);
@@ -222,6 +235,9 @@ export default function PlanificacionesCliente(p: Props) {
             <Boton variante="secundario" icono={Settings} disabled={!actual || !puedo} onClick={() => setPanel('configurar')} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas'}>
               Configurar
             </Boton>
+            <Boton variante="secundario" icono={FileUp} onClick={() => setPanel('importar')} disabled={p.soloLectura || sinCupo} title={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : 'Sube el PDF o Word de un formato ya hecho y el agente crea sus semanas'}>
+              Importar formato
+            </Boton>
             <Boton icono={Plus} onClick={() => setPanel('nueva')} disabled={p.soloLectura}>
               Nueva planificación
             </Boton>
@@ -267,7 +283,7 @@ export default function PlanificacionesCliente(p: Props) {
                       {p.todas && ` · ${pl.docente}`}
                     </p>
                   </div>
-                  <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />
+                  {pl.importacionEstado === 'LEYENDO' ? <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-aviso" /> : pl.importacionEstado === 'ERROR' ? <Insignia tono="error">Error</Insignia> : <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />}
                 </button>
               );
             })}
@@ -313,6 +329,22 @@ export default function PlanificacionesCliente(p: Props) {
                   </Boton>
                 </div>
               </div>
+              {actual.importacionEstado === 'LEYENDO' && (
+                <div className="flex items-center gap-2 border-b border-borde bg-aviso-suave px-3 py-2 text-[12px] text-texto">
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-aviso" />
+                  El agente está leyendo «{actual.importacionArchivo}» y creando sus semanas. Suele tardar entre uno y dos minutos; esta pantalla se actualiza sola.
+                </div>
+              )}
+              {actual.importacionEstado === 'ERROR' && (
+                <div className="border-b border-borde px-3 py-2">
+                  <Aviso texto={`No se pudo importar «${actual.importacionArchivo}»: ${actual.importacionError ?? 'fallo desconocido'}. Elimina esta planificación y vuelve a intentarlo.`} />
+                </div>
+              )}
+              {!actual.importacionEstado && actual.importacionError && (
+                <div className="border-b border-borde px-3 py-2">
+                  <Aviso tono="aviso" texto={actual.importacionError} />
+                </div>
+              )}
               <div className="desplaza flex gap-2 overflow-x-auto p-2">
                 {p.semanas.length === 0 && (
                   <div className="w-full">
@@ -470,6 +502,38 @@ export default function PlanificacionesCliente(p: Props) {
             </div>
           </form>
         )}
+      </PanelLateral>
+
+      {/* ── Importar un formato ya hecho (Fernando, 2026-09-17) ───────────── */}
+      <PanelLateral abierto={panel === 'importar'} alCerrar={cerrar} titulo="Importar un formato ya hecho" descripcion="Sube el PDF o el Word de un PUD que ya redactaste: el agente lee la cabecera y crea una planificación semanal por cada semana que encuentre.">
+        <form action={(d) => conResultado(() => importarFormato(p.slug, d), 'Formato recibido: el agente está leyéndolo', (id) => ir({ p: id ?? null, s: null, quien: null }))} className="space-y-4">
+          {p.materiasDocente.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. Pide al administrador que te asigne tus materias en Unidades." />}
+          <Campo etiqueta="Materia (grado) a la que pertenece" requerido>
+            <Selector name="materiaGradoId" required defaultValue="">
+              <option value="" disabled>
+                Elige una materia…
+              </option>
+              {p.materiasDocente.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.etiqueta}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
+          <Campo etiqueta="El formato (PDF o Word, hasta 10 MB)" requerido>
+            <input name="archivo" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required className="block w-full text-[13px] text-texto file:mr-3 file:rounded-md file:border file:border-borde file:bg-tarjeta file:px-3 file:py-1.5 file:text-[13px] file:font-semibold file:text-texto hover:file:bg-realce" />
+          </Campo>
+          <p className="text-[12px] text-tenue">Se transcribe tal cual está: unidad, fechas, temas, objetivos, destrezas, estrategias, recursos, técnicas e instrumentos. Las semanas importadas cuentan en el tope semanal como las demás{p.cupo.quedan !== null ? ` (te quedan ${p.cupo.quedan})` : ''}.</p>
+          {error && <Aviso texto={error} />}
+          <div className="flex justify-end gap-2 border-t border-borde pt-4">
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
+              Cancelar
+            </Boton>
+            <Boton type="submit" icono={FileUp} disabled={enCurso || p.materiasDocente.length === 0}>
+              {enCurso ? 'Leyendo el archivo…' : 'Importar'}
+            </Boton>
+          </div>
+        </form>
       </PanelLateral>
 
       {/* ── Nueva planificación semanal ───────────────────────────────────── */}

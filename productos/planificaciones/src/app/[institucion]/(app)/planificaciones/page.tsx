@@ -69,6 +69,9 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
     registroAprobadoNombre: p.registroAprobadoNombre,
     registroAprobadoFecha: p.registroAprobadoFecha,
     deceNombre: p.deceNombre,
+    importacionEstado: p.importacionEstado,
+    importacionError: p.importacionError,
+    importacionArchivo: p.importacionArchivo,
     docente: [p.usuario.profesion, p.usuario.nombre].filter(Boolean).join(' '),
     usuarioId: p.usuario.id,
     semanas: p._count.semanas,
@@ -90,6 +93,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
         objetivosUnidad: p.objetivosUnidad, criteriosEvaluacion: p.criteriosEvaluacion, elaboradoPor: p.elaboradoPor, revisadoPor: p.revisadoPor,
         revisadoCargo: p.revisadoCargo, aprobadoPor: p.aprobadoPor, aprobadoCargo: p.aprobadoCargo,
         registroTitulo: p.registroTitulo, registroElaboradoCargo: p.registroElaboradoCargo, registroElaboradoNombre: p.registroElaboradoNombre, registroElaboradoFecha: p.registroElaboradoFecha, registroAprobadoCargo: p.registroAprobadoCargo, registroAprobadoNombre: p.registroAprobadoNombre, registroAprobadoFecha: p.registroAprobadoFecha, deceNombre: p.deceNombre,
+        importacionEstado: p.importacionEstado, importacionError: p.importacionError, importacionArchivo: p.importacionArchivo,
         docente: [p.usuario.profesion, p.usuario.nombre].filter(Boolean).join(' '), usuarioId: p.usuario.id, semanas: p._count.semanas,
         actualizado: p.actualizado.toISOString(), puedoCambiar: esDuenoOAdmin(sesion, p),
       };

@@ -275,6 +275,26 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📥 IMPORTAR UN FORMATO YA HECHO (2026-09-17).** Fernando: *«subir un archivo que es el mismo
+  formato ya realizado, y que el agente de ia se encargue de crear las planificaciones semanales en
+  base a la información del documento»*. Botón **«Importar formato»** en Planificaciones: se elige
+  la materia (grado) asignada y se sube el PDF o Word (≤ 10 MB). La acción extrae el texto
+  (`extraerTexto`, el mismo de los adjuntos), exige que aparezca «SEMANA N» y crea la planificación
+  en **`importacionEstado = LEYENDO`** (migración 011); con `after()` el agente **TRANSCRIBE** —no
+  redacta— la cabecera y cada fila «SEMANA N» a un JSON estricto (`pud/importar.ts`: system
+  prompt de transcriptor + esquema; `esfuerzo: low`, sin herramientas, `maxSalida` 60 k) y
+  `lib/importacion.ts` vuelca todo: unidad, fechas (el año sale del año lectivo), grado/paralelo/
+  jornada, objetivos y criterios, firmas, DECE, y una semana LISTA por fila con tema, periodos
+  (tal cual, «4 horas»), objetivos, estrategias por fase con su numeración, recursos, técnicas e
+  instrumentos. Las **destrezas del formato que la planificación no tenga se añaden** a su conjunto
+  con la descripción del documento. Las semanas importadas **cuentan en el tope semanal** (si no
+  caben todas, se importan las que quepan y queda el aviso). La pantalla se refresca cada 4 s
+  mientras lee; si falla, la planificación queda en ERROR con el motivo y se elimina.
+  - Medido con el ejemplo 6 real (5 semanas, 10 páginas): 10 s en subir + **34 s** de agente;
+    cabecera completa («Empiezo una nueva aventura», 26 de mayo – 26 de junio de 2026, paralelo A,
+    matutina, revisado por, DECE), 5 semanas con sus destrezas (CN.1.3.1. / CN.1.3.15., dos
+    creadas), estrategias idénticas al original línea a línea; PDF de 6 páginas. Borrada por id.
+  - Los ajustes razonables del formato no se importan (los estudiantes se dan de alta en su módulo).
 - **⏰ EL HORARIO VA POR PERIODOS DE 40 MINUTOS, DE 07:10 A 15:00 (2026-09-16).** Fernando pasó el
   horario real de la docente: periodos 1-3 (07:10 · 07:50 · 08:30), **receso 09:10–09:40**, 4-7
   (09:40 · 10:20 · 11:00 · 11:40) y, hasta las 15:00, 8-11 (12:20 · 13:00 · 13:40 · 14:20). En

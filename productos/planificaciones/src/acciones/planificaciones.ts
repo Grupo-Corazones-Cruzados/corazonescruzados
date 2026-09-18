@@ -5,11 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura, esDuenoOAdmin } from '@/lib/inquilino';
-import { faltaCupoDeGeneracion, topesDe } from '@/lib/limites';
+import { cupoDeGeneraciones, faltaCupoDeGeneracion, topesDe } from '@/lib/limites';
 import { aFechaSql, esDia } from '@/lib/fechas';
 import { NIVELES } from '@/lib/catalogo';
-import { MAX_ADJUNTOS } from '@/lib/adjuntos';
+import { MAX_ADJUNTOS, MAX_TAMANO, extraerTexto, tipoDe } from '@/lib/adjuntos';
 import { generarEnSegundoPlano } from '@/lib/generacion';
+import { importarEnSegundoPlano } from '@/lib/importacion';
 import { PLANTILLAS } from '@/plantillas';
 import { copiarDestrezasDelCatalogo } from '@/lib/destrezas';
 import { materiasDelDocente } from '@/lib/horario';
@@ -75,6 +76,68 @@ export async function crearPlanificacion(slug: string, datos: FormData): Promise
   // Sus destrezas nacen copiadas del catálogo de la materia y el nivel: desde ahí
   // el docente las edita sin tocar las de nadie más.
   await copiarDestrezasDelCatalogo({ planificacionId: fila.id, inquilinoId: ctx.inquilino.id, nivel: fila.nivel, materia: fila.materia });
+  revalidatePath(`/${slug}/planificaciones`);
+  return { ok: true, id: fila.id };
+}
+
+/**
+ * IMPORTAR UN FORMATO YA HECHO (Fernando, 2026-09-17): el docente elige la materia
+ * (de las asignadas) y sube el PDF o Word de un PUD suyo; la planificación nace
+ * LEYENDO con lo mínimo y el agente, fuera de la petición, transcribe la cabecera
+ * y cada semana. Lo que el formato no traiga se completa con lo de la materia.
+ */
+export async function importarFormato(slug: string, datos: FormData): Promise<Resultado> {
+  const permiso = await contextoEscritura(slug, 'planificar');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
+
+  const materiaGradoId = Number(datos.get('materiaGradoId'));
+  const permitidas = await materiasDelDocente(ctx.inquilino.id, ctx.sesion.uid, ctx.sesion.rol);
+  const materia = permitidas.find((m) => m.id === materiaGradoId);
+  if (!materia) return { ok: false, error: 'Elige una de las materias que tienes asignadas.' };
+
+  const archivo = datos.get('archivo');
+  if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: 'Adjunta el PDF o el Word del formato.' };
+  if (archivo.size > MAX_TAMANO) return { ok: false, error: 'El archivo pasa de 10 MB.' };
+  const tipo = tipoDe(archivo);
+  if (tipo !== 'application/pdf' && tipo !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return { ok: false, error: 'Tiene que ser un PDF o un Word (.docx).' };
+  let texto: string;
+  try {
+    texto = (await extraerTexto(Buffer.from(await archivo.arrayBuffer()), tipo)).replace(/\u0000/g, '').trim();
+  } catch (e) {
+    return { ok: false, error: `No se pudo leer el archivo: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  if (texto.length < 200) return { ok: false, error: 'El archivo no tiene texto legible (¿es un PDF escaneado?). Hace falta el PDF o el Word original.' };
+  if (!/SEMANA\s*\d/i.test(texto)) return { ok: false, error: 'En el archivo no aparece ninguna «SEMANA N»: tiene que ser un formato PUD como el de la aplicación.' };
+
+  // Las semanas importadas cuentan contra el tope como cualquier otra; si no queda cupo, ni se empieza.
+  const sinCupo = await faltaCupoDeGeneracion(ctx.inquilino, topesDe(ctx.inquilino).generaciones);
+  if (sinCupo) return { ok: false, error: sinCupo };
+  const cupo = await cupoDeGeneraciones(ctx.inquilino, topesDe(ctx.inquilino).generaciones);
+
+  const docente = await prisma.usuario.findUnique({ where: { id: ctx.sesion.uid }, select: { nombre: true, profesion: true } });
+  const hoy = new Date().toISOString().slice(0, 10);
+  const fila = await prisma.planificacion.create({
+    data: {
+      inquilinoId: ctx.inquilino.id,
+      usuarioId: ctx.sesion.uid,
+      plantilla: ctx.inquilino.plantillaPorDefecto,
+      nivel: 'PREPARATORIA',
+      materiaGradoId: materia.id,
+      materia: materia.materia,
+      gradoCurso: materia.grado,
+      ambito: materia.materia,
+      numeroUnidad: 1,
+      tituloUnidad: `Leyendo «${archivo.name}»…`,
+      inicioPud: aFechaSql(hoy),
+      finPud: aFechaSql(hoy),
+      elaboradoPor: docente ? [docente.profesion, docente.nombre].filter(Boolean).join(' ') : null,
+      importacionEstado: 'LEYENDO',
+      importacionArchivo: archivo.name.slice(0, 200),
+    },
+  });
+  await copiarDestrezasDelCatalogo({ planificacionId: fila.id, inquilinoId: ctx.inquilino.id, nivel: fila.nivel, materia: fila.materia });
+  after(() => importarEnSegundoPlano(fila.id, texto, cupo.quedan));
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id: fila.id };
 }

@@ -420,6 +420,13 @@ model Planificacion {
   /// que se rellena de esa casilla, y se pide en la configuración (Fernando, 2026-09-16).
   deceNombre String? @map("dece_nombre") @db.VarChar(160)
 
+  /// IMPORTADA DE UN FORMATO YA HECHO (Fernando, 2026-09-17): mientras el agente lee el
+  /// PDF/Word, `importacionEstado` = LEYENDO; si falla, ERROR con el motivo; al
+  /// terminar, NULO. `importacionArchivo` es el nombre del archivo subido.
+  importacionEstado  String? @map("importacion_estado") @db.VarChar(20)
+  importacionError   String? @map("importacion_error")
+  importacionArchivo String? @map("importacion_archivo") @db.VarChar(200)
+
   creado      DateTime @default(now()) @map("creado_en")
   actualizado DateTime @updatedAt @map("actualizado_en")
 
