@@ -275,9 +275,9 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **«Número de semanas» a mano y materias que se reconocen por parecido (2026-09-17).** Fernando:
-  en Configurar, un campo **Número de semanas** que va a «Números de Semanas» del formato
-  (`planificaciones.numero_semanas`, migración 014; nulo = se cuentan las listas). Y para importar
+- **Materias que se reconocen por parecido (2026-09-17).** (El campo «Número de semanas» en
+  Configurar lo pidió y lo retiró Fernando el mismo día: el formato vuelve a contar las semanas
+  hechas; la columna `numero_semanas` queda sin uso.) Para importar
   el currículo en su grado real sin perder nada: `curriculo.ts → parecidos()` casa cada ámbito con
   la materia existente de nombre parecido (sin acentos, guiones, plurales ni palabras vacías;
   «Compresión» = «Comprensión»: «Relaciones lógico matemático» ≈ «Relaciones lógico-matemáticas»),

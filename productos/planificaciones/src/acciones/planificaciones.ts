@@ -166,7 +166,6 @@ const Configuracion = z
     registroAprobadoNombre: z.string().trim().max(200).optional().or(z.literal('')),
     registroAprobadoFecha: z.string().trim().max(40).optional().or(z.literal('')),
     deceNombre: z.string().trim().max(160).optional().or(z.literal('')),
-    numeroSemanas: z.string().trim().max(3).optional().or(z.literal('')),
   })
   .refine((d) => d.finPud >= d.inicioPud, { message: 'El fin del PUD no puede ser antes del inicio.', path: ['finPud'] });
 
@@ -214,7 +213,8 @@ export async function configurarPlanificacion(slug: string, id: number, datos: F
       registroAprobadoNombre: d.registroAprobadoNombre || null,
       registroAprobadoFecha: d.registroAprobadoFecha || null,
       deceNombre: d.deceNombre || null,
-      numeroSemanas: /^\d{1,2}$/.test(d.numeroSemanas ?? '') && Number(d.numeroSemanas) > 0 ? Number(d.numeroSemanas) : null,
+      // «Números de Semanas» vuelve a contarse por las semanas hechas (Fernando, 2026-09-17).
+      numeroSemanas: null,
     },
   });
   revalidatePath(`/${slug}/planificaciones`);

@@ -64,7 +64,6 @@ export type PlanificacionVista = {
   registroAprobadoNombre: string | null;
   registroAprobadoFecha: string | null;
   deceNombre: string | null;
-  numeroSemanas: number | null;
   /** Importada de un formato: LEYENDO mientras el agente transcribe, ERROR si falló, nulo al terminar. */
   importacionEstado: string | null;
   importacionError: string | null;
@@ -440,14 +439,9 @@ export default function PlanificacionesCliente(p: Props) {
             <Campo etiqueta="Criterios de evaluación de la unidad">
               <AreaTexto name="criteriosEvaluacion" rows={3} defaultValue={actual.criteriosEvaluacion ?? ''} />
             </Campo>
-            <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
-              <Campo etiqueta="Responsable del DECE (nombre)">
-                <Entrada name="deceNombre" defaultValue={actual.deceNombre ?? ''} placeholder="Psic. …" />
-              </Campo>
-              <Campo etiqueta="Número de semanas">
-                <Entrada name="numeroSemanas" type="number" min={1} max={99} defaultValue={actual.numeroSemanas ?? ''} placeholder={`${actual.semanas} (las creadas)`} />
-              </Campo>
-            </div>
+            <Campo etiqueta="Responsable del DECE (nombre)">
+              <Entrada name="deceNombre" defaultValue={actual.deceNombre ?? ''} placeholder="Psic. …" />
+            </Campo>
             <h3 className="border-t border-borde pt-3 text-[12px] font-semibold uppercase tracking-wide text-tenue">Firmas de responsabilidad</h3>
             <p className="text-[12px] text-tenue">Van al final del formato con la fecha del día de la descarga; la firma se pone a mano sobre el papel.</p>
             <Campo etiqueta="Elaborado por (docente)">

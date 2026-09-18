@@ -10,7 +10,7 @@ import { BIBLIOGRAFIA, COMPETENCIAS, EJES_TRANSVERSALES, INSERCIONES } from './c
  * lo mismo y un cambio del formato se hace una vez.
  *
  * Lo que se CALCULA y no se guarda (Fernando, 2026-09-15): el número de semanas
- * es la cantidad de planificaciones semanales (salvo que se fije en Configurar, 2026-09-17); el total de periodos es la suma de
+ * es la cantidad de planificaciones semanales; el total de periodos es la suma de
  * los periodos de cada semana; la fecha de las firmas es la del día de la
  * descarga; el docente sale del perfil del usuario.
  *
@@ -63,7 +63,7 @@ export function armarDocumento(p: { planificacion: PlanificacionDoc; semanas: Se
   const tiempo: Celda[][] = [
     [
       et('Números de Semanas:'),
-      { texto: String(pl.numeroSemanas ?? semanas.length), centrado: true },
+      { texto: String(semanas.length), centrado: true },
       et('Número de Periodos para Evaluación e Imprevistos:'),
       { texto: '', centrado: true },
       et('Total de Periodos:'),

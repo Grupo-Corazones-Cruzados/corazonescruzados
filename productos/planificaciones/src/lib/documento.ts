@@ -86,7 +86,6 @@ export async function cargarDocumento(inquilino: InquilinoDoc, planificacionId: 
       aprobadoCargo: pl.aprobadoCargo,
       docente: nombreDocente(pl.usuario),
       deceNombre: pl.deceNombre,
-      numeroSemanas: pl.numeroSemanas,
       registro: {
         titulo: pl.registroTitulo,
         elaboradoCargo: pl.registroElaboradoCargo,

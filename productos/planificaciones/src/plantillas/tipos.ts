@@ -46,8 +46,6 @@ export type PlanificacionDoc = {
   docente: string;
   /** El nombre del responsable del DECE, lo único que se rellena en «Espacio solo para el DECE» (Fernando, 2026-09-16). */
   deceNombre: string | null;
-  /** «Números de Semanas» fijado a mano; nulo = se cuentan las semanas listas (Fernando, 2026-09-17). */
-  numeroSemanas: number | null;
   /** El «Registro de formato» del pie: variable por planificación (Fernando, 2026-09-16). */
   registro: {
     titulo: string | null;

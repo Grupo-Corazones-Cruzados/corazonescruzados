@@ -440,8 +440,7 @@ model Planificacion {
   /// El nombre del responsable del DECE («Espacio solo para el DECE»): lo único
   /// que se rellena de esa casilla, y se pide en la configuración (Fernando, 2026-09-16).
   deceNombre String? @map("dece_nombre") @db.VarChar(160)
-  /// «Números de Semanas» del formato, si se quiere fijar a mano (Fernando, 2026-09-17);
-  /// si es nulo, se cuentan las semanas LISTAS.
+  /// (Sin uso: Fernando lo pidió y lo retiró el mismo 2026-09-17; el número de semanas se cuenta.)
   numeroSemanas Int? @map("numero_semanas")
 
   /// IMPORTADA DE UN FORMATO YA HECHO (Fernando, 2026-09-17): mientras el agente lee el
