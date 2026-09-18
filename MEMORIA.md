@@ -275,6 +275,21 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎓 LAS DESTREZAS LAS GESTIONA EL ADMINISTRADOR POR MATERIA DE CADA GRADO (2026-09-17).**
+  Fernando: *«necesitamos que el administrador sea el que gestione las destrezas de cada materia de
+  cada grado […] en el módulo de planificaciones solo se puedan ver»*. Cambio de dueño: las
+  destrezas cuelgan de `materias_grado` (`destrezas.materia_grado_id`, migración 012; las copias por
+  planificación de antes se conservan para planificaciones sin materia) y **el grado gana su nivel**
+  (`grados.nivel`, Preparatoria por defecto; se elige al crear/renombrar y da el nivel a las
+  destrezas y a las planificaciones nuevas). Al crear una materia nace con las del catálogo de su
+  nombre y nivel; las que ya existían se sembraron en la migración (Identidad 10, Relaciones 19…;
+  las «Compresión…» del grupo no casan con el catálogo por la errata y quedan a cero hasta importar).
+  - `componentes/PanelDestrezas.tsx` es UN componente para las dos pantallas: en **Unidades**
+    (detalle de la materia) con lista, Nueva, Editar, Quitar e **Importar destrezas**; en
+    **Planificaciones** el botón «Destrezas» solo enseña la lista (`puedo=false`).
+  - `destrezasDe(planificacionId)` devuelve las de la materia del grado (o las propias si no tiene
+    materia); el agente y el formato no cambian. Importar un formato añade a la materia las que
+    falten. Acciones de destrezas con permiso `administrar` y `materiaGradoId`.
 - **🟩 LAS CASILLAS I · R · A DEL DUA LLEVAN UN CUADRO VACÍO DEBAJO (2026-09-17).** Fernando: cada
   indicador «tiene un cuadro debajo […] que queda en blanco porque el usuario manualmente lo llena o
   pinta en la versión Word». Ahora la letra ocupa el 45 % de alto y debajo va una casilla con borde

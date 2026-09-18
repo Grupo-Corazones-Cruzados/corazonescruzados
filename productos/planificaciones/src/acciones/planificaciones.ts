@@ -12,7 +12,6 @@ import { MAX_ADJUNTOS, MAX_TAMANO, extraerTexto, tipoDe } from '@/lib/adjuntos';
 import { generarEnSegundoPlano } from '@/lib/generacion';
 import { importarEnSegundoPlano } from '@/lib/importacion';
 import { PLANTILLAS } from '@/plantillas';
-import { copiarDestrezasDelCatalogo } from '@/lib/destrezas';
 import { materiasDelDocente } from '@/lib/horario';
 
 export type Resultado = { ok: true; id?: number } | { ok: false; error: string };
@@ -73,9 +72,7 @@ export async function crearPlanificacion(slug: string, datos: FormData): Promise
       elaboradoPor: docente ? [docente.profesion, docente.nombre].filter(Boolean).join(' ') : null,
     },
   });
-  // Sus destrezas nacen copiadas del catálogo de la materia y el nivel: desde ahí
-  // el docente las edita sin tocar las de nadie más.
-  await copiarDestrezasDelCatalogo({ planificacionId: fila.id, inquilinoId: ctx.inquilino.id, nivel: fila.nivel, materia: fila.materia });
+  // Sus destrezas son las de la materia del grado (las gestiona el administrador en «Unidades»).
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id: fila.id };
 }
@@ -136,7 +133,6 @@ export async function importarFormato(slug: string, datos: FormData): Promise<Re
       importacionArchivo: archivo.name.slice(0, 200),
     },
   });
-  await copiarDestrezasDelCatalogo({ planificacionId: fila.id, inquilinoId: ctx.inquilino.id, nivel: fila.nivel, materia: fila.materia });
   after(() => importarEnSegundoPlano(fila.id, texto, cupo.quedan));
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id: fila.id };

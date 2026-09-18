@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado } from '@/componentes/ui';
+import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria } from '@/acciones/unidades';
 import { cn } from '@/lib/utils';
+import { NIVELES, ETIQUETA_NIVEL } from '@/lib/catalogo';
+import { PanelDestrezas, type DestrezaVista } from '@/componentes/PanelDestrezas';
+import type { Nivel } from '@/generated/prisma/enums';
 
 export type DocenteVista = { id: number; nombre: string; rol: string };
 export type MateriaVista = { id: number; nombre: string; descripcion: string | null; unidades: number | null; docentes: { id: number; nombre: string }[]; planificaciones: number };
-export type GradoVista = { id: number; nombre: string; color: string; materias: MateriaVista[] };
+export type GradoVista = { id: number; nombre: string; nivel: Nivel; color: string; materias: MateriaVista[] };
 
 /**
  * EL MÓDULO «UNIDADES» (Fernando, 2026-09-16): a la izquierda los grados; en el
@@ -21,7 +24,7 @@ export type GradoVista = { id: number; nombre: string; color: string; materias: 
  * administrador. Lo que se arma aquí es lo que cada docente puede elegir al
  * planificar y poner en su horario.
  */
-export default function UnidadesCliente({ slug, grados, docentes, gradoId, materiaId, soloLectura }: { slug: string; grados: GradoVista[]; docentes: DocenteVista[]; gradoId: number | null; materiaId: number | null; soloLectura: boolean }) {
+export default function UnidadesCliente({ slug, grados, docentes, gradoId, materiaId, destrezas, soloLectura }: { slug: string; grados: GradoVista[]; docentes: DocenteVista[]; gradoId: number | null; materiaId: number | null; destrezas: DestrezaVista[]; soloLectura: boolean }) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +77,10 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
               return (
                 <button key={g.id} onClick={() => ir(g.id, null)} className={cn('mb-1 flex w-full items-center gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave border-l-2 border-acento' : 'border-l-2 border-transparent hover:bg-realce')}>
                   <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: g.color }} aria-hidden />
-                  <span className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>{g.nombre}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block truncate text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>{g.nombre}</span>
+                    <span className="block truncate text-[11px] text-tenue">{ETIQUETA_NIVEL[g.nivel]}</span>
+                  </span>
                   <span className="text-[11px] text-tenue">{g.materias.length}</span>
                   <ChevronRight className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />
                 </button>
@@ -160,6 +166,11 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                     <p className="text-[13px] text-tenue">Nadie todavía. Sin docentes asignados, ningún profesor puede elegir esta materia al planificar ni ponerla en su horario.</p>
                   )}
                 </section>
+                <section>
+                  <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-tenue">Destrezas con criterio de desempeño</h3>
+                  {/* Las gestiona el administrador aquí; en Planificaciones solo se ven (Fernando, 2026-09-17). */}
+                  <PanelDestrezas slug={slug} materiaGradoId={materia.id} destrezas={destrezas} puedo={!soloLectura} />
+                </section>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <section>
                     <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Cantidad de unidades</h3>
@@ -181,6 +192,15 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
         <form action={(d) => conResultado(() => (panel === 'grado' ? crearGrado(slug, d) : renombrarGrado(slug, grado!.id, d)), panel === 'grado' ? 'Grado creado' : 'Grado renombrado', (id) => panel === 'grado' && ir(id ?? null, null))} className="space-y-4">
           <Campo etiqueta="Nombre del grado" requerido>
             <Entrada name="nombre" required autoFocus defaultValue={panel === 'renombrar' ? grado?.nombre : ''} placeholder="Primer grado" />
+          </Campo>
+          <Campo etiqueta="Nivel" requerido>
+            <Selector name="nivel" defaultValue={panel === 'renombrar' ? grado?.nivel : 'PREPARATORIA'}>
+              {NIVELES.map((n) => (
+                <option key={n} value={n}>
+                  {ETIQUETA_NIVEL[n]}
+                </option>
+              ))}
+            </Selector>
           </Campo>
           {/* Al crearlo el color sale al azar; al renombrar se puede cambiar. */}
           {panel === 'renombrar' && grado && (

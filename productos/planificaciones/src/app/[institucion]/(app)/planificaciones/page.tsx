@@ -7,7 +7,8 @@ import { VistaPrevia } from '@/plantillas/pud/VistaPrevia';
 import { aDia } from '@/lib/fechas';
 import { destrezasDe } from '@/lib/destrezas';
 import { materiasDelDocente } from '@/lib/horario';
-import PlanificacionesCliente, { type PlanificacionVista, type SemanaVista, type DestrezaVista } from './PlanificacionesCliente';
+import PlanificacionesCliente, { type PlanificacionVista, type SemanaVista } from './PlanificacionesCliente';
+import type { DestrezaVista } from '@/componentes/PanelDestrezas';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Planificaciones' };

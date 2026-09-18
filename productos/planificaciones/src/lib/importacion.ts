@@ -17,8 +17,10 @@ import type { Nivel } from '@/generated/prisma/enums';
  * que quepan y se dice cuántas quedaron fuera.
  */
 export async function importarFormato(planificacionId: number, texto: string, cupoRestante: number | null): Promise<void> {
-  const pl = await prisma.planificacion.findUnique({ where: { id: planificacionId }, include: { destrezas: true } });
+  const pl = await prisma.planificacion.findUnique({ where: { id: planificacionId } });
   if (!pl) return;
+  // Las destrezas son las de la materia del grado; las que el formato traiga y falten se añaden ahí.
+  const destrezasActuales = pl.materiaGradoId ? await prisma.destreza.findMany({ where: { materiaGradoId: pl.materiaGradoId } }) : await prisma.destreza.findMany({ where: { planificacionId } });
   const fallar = (error: string) => prisma.planificacion.update({ where: { id: planificacionId }, data: { importacionEstado: 'ERROR', importacionError: error } });
 
   const r = await correrAgente<SalidaImportacion>({
@@ -43,13 +45,15 @@ export async function importarFormato(planificacionId: number, texto: string, cu
 
   // Las destrezas del formato que la planificación no tenga se añaden a su conjunto.
   const norm = (x: string) => x.trim().toUpperCase().replace(/\.$/, '');
-  const conocidas = new Map(pl.destrezas.map((d) => [norm(d.codigo), d.id]));
-  let orden = pl.destrezas.length;
+  const conocidas = new Map(destrezasActuales.map((d) => [norm(d.codigo), d.id]));
+  let orden = destrezasActuales.reduce((a, d) => Math.max(a, d.orden), -1) + 1;
   for (const sem of s.semanas) {
     for (const d of sem.destrezas) {
       const codigo = d.codigo.trim();
       if (!codigo || conocidas.has(norm(codigo))) continue;
-      const nueva = await prisma.destreza.create({ data: { inquilinoId: pl.inquilinoId, planificacionId: pl.id, nivel, materia: pl.materia, codigo, descripcion: d.descripcion.trim() || codigo, orden: orden++ } });
+      const nueva = await prisma.destreza.create({
+        data: { inquilinoId: pl.inquilinoId, ...(pl.materiaGradoId ? { materiaGradoId: pl.materiaGradoId } : { planificacionId: pl.id }), nivel, materia: pl.materia, codigo, descripcion: d.descripcion.trim() || codigo, orden: orden++ },
+      });
       conocidas.set(norm(codigo), nueva.id);
     }
   }

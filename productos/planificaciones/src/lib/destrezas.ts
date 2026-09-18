@@ -32,8 +32,34 @@ export async function copiarDestrezasDelCatalogo(p: { planificacionId: number; i
   return porCodigo.size;
 }
 
-export const destrezasDe = (planificacionId: number) =>
-  prisma.destreza.findMany({ where: { planificacionId, activa: true }, orderBy: [{ orden: 'asc' }, { codigo: 'asc' }] });
+/**
+ * LAS DESTREZAS DE UNA PLANIFICACIÓN son las de su materia de grado (las gestiona el
+ * administrador en «Unidades»; Fernando, 2026-09-17). Las planificaciones viejas sin
+ * materia asignada conservan sus copias propias.
+ */
+export async function destrezasDe(planificacionId: number) {
+  const pl = await prisma.planificacion.findUnique({ where: { id: planificacionId }, select: { materiaGradoId: true } });
+  const where = pl?.materiaGradoId ? { materiaGradoId: pl.materiaGradoId, activa: true } : { planificacionId, activa: true };
+  return prisma.destreza.findMany({ where, orderBy: [{ orden: 'asc' }, { codigo: 'asc' }] });
+}
+
+export const destrezasDeMateria = (materiaGradoId: number) => prisma.destreza.findMany({ where: { materiaGradoId, activa: true }, orderBy: [{ orden: 'asc' }, { codigo: 'asc' }] });
+
+/** Al crear una materia de grado, nace con las destrezas del catálogo de ese nombre y nivel (con sus iconos). */
+export async function sembrarDestrezasDeMateria(p: { materiaGradoId: number; inquilinoId: number; nivel: Nivel; materia: string }) {
+  const catalogo = await prisma.destreza.findMany({
+    where: { planificacionId: null, materiaGradoId: null, nivel: p.nivel, activa: true, OR: [{ inquilinoId: null }, { inquilinoId: p.inquilinoId }], materia: { equals: p.materia, mode: 'insensitive' } },
+    orderBy: [{ orden: 'asc' }, { codigo: 'asc' }],
+  });
+  if (!catalogo.length) return 0;
+  const porCodigo = new Map<string, (typeof catalogo)[number]>();
+  for (const d of catalogo) if (!porCodigo.has(d.codigo) || d.inquilinoId) porCodigo.set(d.codigo, d);
+  let orden = 0;
+  await prisma.destreza.createMany({
+    data: [...porCodigo.values()].map((d) => ({ inquilinoId: p.inquilinoId, materiaGradoId: p.materiaGradoId, nivel: d.nivel, materia: d.materia, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, orden: orden++ })),
+  });
+  return porCodigo.size;
+}
 
 /** Normaliza un código: sin espacios, mayúsculas, con punto final («cs.1.1.7» → «CS.1.1.7.»). */
 export const normalizarCodigo = (c: string) => {

@@ -251,8 +251,13 @@ model Destreza {
   id              Int            @id @default(autoincrement())
   inquilinoId     Int?           @map("inquilino_id")
   inquilino       Inquilino?     @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  /// (Anterior) copias por planificación; se conservan para las planificaciones viejas.
   planificacionId Int?           @map("planificacion_id")
   planificacion   Planificacion? @relation(fields: [planificacionId], references: [id], onDelete: Cascade)
+  /// LAS DESTREZAS SON DE CADA MATERIA DE UN GRADO y las gestiona el administrador en
+  /// «Unidades» (Fernando, 2026-09-17); las planificaciones de esa materia las usan tal cual.
+  materiaGradoId  Int?           @map("materia_grado_id")
+  materiaGrado    MateriaGrado?  @relation(fields: [materiaGradoId], references: [id], onDelete: Cascade)
   nivel           Nivel
   /// Nombre de la materia tal como está en `materias` (texto, no clave: el catálogo
   /// de destrezas se carga por archivos y así no depende de un id).
@@ -271,6 +276,7 @@ model Destreza {
   // (nivel, codigo) en el catálogo común.
   @@index([nivel, materia])
   @@index([planificacionId, orden])
+  @@index([materiaGradoId, orden])
   @@map("destrezas")
 }
 
@@ -285,6 +291,8 @@ model Grado {
   inquilinoId Int       @map("inquilino_id")
   inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
   nombre      String    @db.VarChar(120)
+  /// El nivel del grado (Preparatoria · Primaria · Secundaria): el de sus destrezas y de sus planificaciones.
+  nivel       Nivel     @default(PREPARATORIA)
   /// Relleno con el que se distingue el grado en los controles de selección; al azar al crearlo.
   color       String    @default("#C4B5FD") @db.VarChar(7)
   orden       Int       @default(0)
@@ -315,6 +323,7 @@ model MateriaGrado {
   docentes        MateriaDocente[]
   horario         HorarioClase[]
   planificaciones Planificacion[]
+  destrezas       Destreza[]
 
   @@unique([gradoId, nombre])
   @@index([inquilinoId])

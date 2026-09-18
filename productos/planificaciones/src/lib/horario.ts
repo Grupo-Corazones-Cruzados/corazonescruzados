@@ -17,7 +17,7 @@ export async function materiasDelDocente(inquilinoId: number, usuarioId: number,
     include: { grado: true },
     orderBy: [{ grado: { orden: 'asc' } }, { orden: 'asc' }, { nombre: 'asc' }],
   });
-  return filas.map((m) => ({ id: m.id, etiqueta: etiquetaMateria(m), materia: m.nombre, grado: m.grado.nombre, color: m.grado.color }));
+  return filas.map((m) => ({ id: m.id, etiqueta: etiquetaMateria(m), materia: m.nombre, grado: m.grado.nombre, color: m.grado.color, nivel: m.grado.nivel }));
 }
 
 export async function horarioDe(usuarioId: number): Promise<CeldaHorario[]> {

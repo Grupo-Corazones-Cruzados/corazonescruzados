@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { contextoEscritura, esDuenoOAdmin } from '@/lib/inquilino';
+import { contextoEscritura } from '@/lib/inquilino';
 import { imagenADataUrl, normalizarCodigo } from '@/lib/destrezas';
 import { MAX_TAMANO, extraerTexto, tipoDe } from '@/lib/adjuntos';
 import { correrAgente } from '@/lib/ia';
@@ -18,14 +18,14 @@ const Campos = z.object({
   imagenUrl: z.string().trim().max(500_000).optional().or(z.literal('')),
 });
 
-async function planificacionEditable(slug: string, planificacionId: number) {
-  const permiso = await contextoEscritura(slug, 'planificar');
+/** Solo el administrador cambia las destrezas de una materia de grado (Fernando, 2026-09-17). */
+async function materiaEditable(slug: string, materiaGradoId: number) {
+  const permiso = await contextoEscritura(slug, 'administrar');
   if (!permiso.ok) return { ok: false as const, error: permiso.error };
   const { ctx } = permiso;
-  const pl = await prisma.planificacion.findFirst({ where: { id: planificacionId, inquilinoId: ctx.inquilino.id } });
-  if (!pl) return { ok: false as const, error: 'La planificación no existe.' };
-  if (!esDuenoOAdmin(ctx.sesion, pl)) return { ok: false as const, error: 'Solo quien creó la planificación (o el administrador) puede cambiar sus destrezas.' };
-  return { ok: true as const, ctx, pl };
+  const mg = await prisma.materiaGrado.findFirst({ where: { id: materiaGradoId, inquilinoId: ctx.inquilino.id }, include: { grado: { select: { nivel: true, nombre: true } } } });
+  if (!mg) return { ok: false as const, error: 'La materia no existe.' };
+  return { ok: true as const, ctx, mg };
 }
 
 /** La imagen viene como archivo (se convierte a data URL) o como dirección; si no viene nada, se conserva la que había. */
@@ -40,62 +40,65 @@ async function leerImagen(datos: FormData, actual: string | null): Promise<{ ok:
   return { ok: true, url: url || actual };
 }
 
-export async function crearDestreza(slug: string, planificacionId: number, datos: FormData): Promise<Resultado> {
-  const p = await planificacionEditable(slug, planificacionId);
+export async function crearDestreza(slug: string, materiaGradoId: number, datos: FormData): Promise<Resultado> {
+  const p = await materiaEditable(slug, materiaGradoId);
   if (!p.ok) return p;
   const leido = Campos.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const codigo = normalizarCodigo(leido.data.codigo);
-  const repetida = await prisma.destreza.findFirst({ where: { planificacionId, codigo }, select: { id: true } });
-  if (repetida) return { ok: false, error: `Esta planificación ya tiene la destreza ${codigo}.` };
+  const repetida = await prisma.destreza.findFirst({ where: { materiaGradoId, codigo }, select: { id: true } });
+  if (repetida) return { ok: false, error: `Esta materia ya tiene la destreza ${codigo}.` };
   const img = await leerImagen(datos, null);
   if (!img.ok) return img;
-  const ultimo = await prisma.destreza.aggregate({ where: { planificacionId }, _max: { orden: true } });
+  const ultimo = await prisma.destreza.aggregate({ where: { materiaGradoId }, _max: { orden: true } });
   const d = await prisma.destreza.create({
-    data: { inquilinoId: p.ctx.inquilino.id, planificacionId, nivel: p.pl.nivel, materia: p.pl.materia, codigo, descripcion: leido.data.descripcion, imagenUrl: img.url, orden: (ultimo._max.orden ?? -1) + 1 },
+    data: { inquilinoId: p.ctx.inquilino.id, materiaGradoId, nivel: p.mg.grado.nivel, materia: p.mg.nombre, codigo, descripcion: leido.data.descripcion, imagenUrl: img.url, orden: (ultimo._max.orden ?? -1) + 1 },
   });
+  revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id: d.id };
 }
 
 export async function editarDestreza(slug: string, id: number, datos: FormData): Promise<Resultado> {
   const d = await prisma.destreza.findUnique({ where: { id } });
-  if (!d?.planificacionId) return { ok: false, error: 'La destreza no existe.' };
-  const p = await planificacionEditable(slug, d.planificacionId);
+  if (!d?.materiaGradoId) return { ok: false, error: 'La destreza no existe.' };
+  const p = await materiaEditable(slug, d.materiaGradoId);
   if (!p.ok) return p;
   const leido = Campos.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const codigo = normalizarCodigo(leido.data.codigo);
-  const repetida = await prisma.destreza.findFirst({ where: { planificacionId: d.planificacionId, codigo, id: { not: id } }, select: { id: true } });
-  if (repetida) return { ok: false, error: `Esta planificación ya tiene la destreza ${codigo}.` };
+  const repetida = await prisma.destreza.findFirst({ where: { materiaGradoId: d.materiaGradoId, codigo, id: { not: id } }, select: { id: true } });
+  if (repetida) return { ok: false, error: `Esta materia ya tiene la destreza ${codigo}.` };
   const img = await leerImagen(datos, d.imagenUrl);
   if (!img.ok) return img;
   await prisma.destreza.update({ where: { id }, data: { codigo, descripcion: leido.data.descripcion, imagenUrl: img.url } });
+  revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id };
 }
 
-/** Quitar una destreza de la planificación. Si alguna semana ya la usa, se desmarca de esa semana (la fila en cascada). */
+/** Quitar una destreza de la materia. Si alguna semana ya la usa, se desmarca de esa semana (la fila en cascada). */
 export async function eliminarDestreza(slug: string, id: number): Promise<Resultado> {
   const d = await prisma.destreza.findUnique({ where: { id } });
-  if (!d?.planificacionId) return { ok: false, error: 'La destreza no existe.' };
-  const p = await planificacionEditable(slug, d.planificacionId);
+  if (!d?.materiaGradoId) return { ok: false, error: 'La destreza no existe.' };
+  const p = await materiaEditable(slug, d.materiaGradoId);
   if (!p.ok) return p;
   await prisma.destreza.delete({ where: { id } });
+  revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true };
 }
 
 /**
- * IMPORTAR DESTREZAS DESDE UN PCA (Fernando, 2026-09-17): el docente sube el PDF o
- * Word y el agente transcribe las destrezas de la materia y el nivel de la
- * planificación (en Preparatoria, la columna «Preparatoria»). Se añaden las que
- * la planificación no tenga, sin imagen (los iconos se ponen a mano al editar).
+ * IMPORTAR DESTREZAS DESDE UN PCA (Fernando, 2026-09-17): el administrador sube el
+ * PDF o Word y el agente transcribe las destrezas de la materia y el nivel del grado
+ * (en Preparatoria, la columna «Preparatoria»). Se añaden las que la materia no
+ * tenga; el icono se hereda del catálogo si ese código lo tiene.
  */
 export type ResultadoImportacion = { ok: true; anadidas: number; repetidas: number } | { ok: false; error: string };
 
-export async function importarDestrezas(slug: string, planificacionId: number, datos: FormData): Promise<ResultadoImportacion> {
-  const p = await planificacionEditable(slug, planificacionId);
+export async function importarDestrezas(slug: string, materiaGradoId: number, datos: FormData): Promise<ResultadoImportacion> {
+  const p = await materiaEditable(slug, materiaGradoId);
   if (!p.ok) return p;
   const archivo = datos.get('archivo');
   if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: 'Adjunta el PDF o el Word con las destrezas.' };
@@ -112,7 +115,7 @@ export async function importarDestrezas(slug: string, planificacionId: number, d
 
   const r = await correrAgente<SalidaDestrezas>({
     sistema: SISTEMA_DESTREZAS,
-    encargo: `MATERIA: ${p.pl.materia}\nNIVEL: ${ETIQUETA_NIVEL[p.pl.nivel]}\n\nTEXTO DEL DOCUMENTO (${archivo.name}):\n\n${texto}\n\nDevuelve las destrezas con criterio de desempeño de ese nivel en el JSON pedido.`,
+    encargo: `MATERIA: ${p.mg.nombre}\nNIVEL: ${ETIQUETA_NIVEL[p.mg.grado.nivel]}\n\nTEXTO DEL DOCUMENTO (${archivo.name}):\n\n${texto}\n\nDevuelve las destrezas con criterio de desempeño de ese nivel en el JSON pedido.`,
     esquema: ESQUEMA_DESTREZAS,
     esfuerzo: 'low',
     maxSalida: 20_000,
@@ -122,7 +125,7 @@ export async function importarDestrezas(slug: string, planificacionId: number, d
   const encontradas = r.salida.destrezas.map((d) => ({ codigo: normalizarCodigo(d.codigo), descripcion: d.descripcion.trim() })).filter((d) => /^[A-ZÑ]{1,4}\.\d+\.\d+\.\d+\.?$/i.test(d.codigo) && d.descripcion.length >= 5);
   if (!encontradas.length) return { ok: false, error: 'El agente no encontró destrezas con código en el documento para ese nivel.' };
 
-  const actuales = await prisma.destreza.findMany({ where: { planificacionId }, select: { codigo: true, orden: true } });
+  const actuales = await prisma.destreza.findMany({ where: { materiaGradoId }, select: { codigo: true, orden: true } });
   const tiene = new Set(actuales.map((d) => d.codigo.trim().toUpperCase().replace(/\.$/, '')));
   let orden = actuales.reduce((a, d) => Math.max(a, d.orden), -1) + 1;
   const vistas = new Set<string>();
@@ -135,12 +138,13 @@ export async function importarDestrezas(slug: string, planificacionId: number, d
   }
   if (nuevas.length) {
     // Si el catálogo común tiene el icono de ese código, se hereda.
-    const catalogo = await prisma.destreza.findMany({ where: { planificacionId: null, nivel: p.pl.nivel, codigo: { in: nuevas.map((d) => d.codigo) }, OR: [{ inquilinoId: null }, { inquilinoId: p.ctx.inquilino.id }] }, select: { codigo: true, imagenUrl: true } });
+    const catalogo = await prisma.destreza.findMany({ where: { planificacionId: null, materiaGradoId: null, nivel: p.mg.grado.nivel, codigo: { in: nuevas.map((d) => d.codigo) }, OR: [{ inquilinoId: null }, { inquilinoId: p.ctx.inquilino.id }] }, select: { codigo: true, imagenUrl: true } });
     const icono = new Map(catalogo.filter((c) => c.imagenUrl).map((c) => [c.codigo, c.imagenUrl]));
     await prisma.destreza.createMany({
-      data: nuevas.map((d) => ({ inquilinoId: p.ctx.inquilino.id, planificacionId, nivel: p.pl.nivel, materia: p.pl.materia, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: icono.get(d.codigo) ?? null, orden: orden++ })),
+      data: nuevas.map((d) => ({ inquilinoId: p.ctx.inquilino.id, materiaGradoId, nivel: p.mg.grado.nivel, materia: p.mg.nombre, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: icono.get(d.codigo) ?? null, orden: orden++ })),
     });
   }
+  revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, anadidas: nuevas.length, repetidas: vistas.size - nuevas.length };
 }
