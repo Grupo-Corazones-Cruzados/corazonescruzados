@@ -14,6 +14,11 @@ import { normalizarCodigo } from '@/lib/destrezas';
  * por destreza con su criterio y su indicador. Se crean las materias que falten,
  * se guardan los objetivos y las destrezas (las nuevas sin seleccionar: el
  * administrador elige cuáles usa).
+ *
+ * VOLVER A IMPORTAR ES SEGURO (Fernando, 2026-09-18): una materia parecida a una
+ * existente se reconoce (no se duplica ni se reemplaza; conserva sus planificaciones),
+ * solo se AÑADEN destrezas y objetivos nuevos o se ACTUALIZAN los que tengan el
+ * mismo código, y nunca se borra nada, ni lo creado a mano.
  */
 
 type Item = { x: number; y: number; w: number; s: string };
@@ -213,14 +218,23 @@ export async function importarCurriculo(gradoId: number, datos: Buffer): Promise
       materia = creada;
       grado.materias.push(creada);
     }
-    // Objetivos: se reemplazan por los del documento.
-    await prisma.$transaction([
-      prisma.objetivoMateria.deleteMany({ where: { materiaGradoId: materia.id } }),
-      ...s.objetivos
+    // Objetivos: se AÑADEN o se actualizan por código; nunca se borra ninguno (Fernando,
+    // 2026-09-18: volver a importar no puede quitar nada de lo que ya existe).
+    await prisma.$transaction(
+      s.objetivos
         .filter((o) => o.descripcion.trim())
-        .map((o, i) => prisma.objetivoMateria.create({ data: { materiaGradoId: materia!.id, codigo: (o.codigo.trim() ? normalizarCodigo(o.codigo) : `O.${i + 1}.`).slice(0, 40), descripcion: o.descripcion.trim(), orden: i } })),
-    ]);
-    // Destrezas: se actualizan por código (texto, criterio, indicador; el icono y la selección se conservan) o se crean sin seleccionar.
+        .map((o, i) => {
+          const codigo = (o.codigo.trim() ? normalizarCodigo(o.codigo) : `O.${i + 1}.`).slice(0, 40);
+          return prisma.objetivoMateria.upsert({
+            where: { materiaGradoId_codigo: { materiaGradoId: materia!.id, codigo } },
+            update: { descripcion: o.descripcion.trim(), orden: i },
+            create: { materiaGradoId: materia!.id, codigo, descripcion: o.descripcion.trim(), orden: i },
+          });
+        }),
+    );
+    // Destrezas: se actualizan por código (texto, criterio, indicador; el icono y la selección se
+    // conservan) o se crean sin seleccionar. NUNCA se borra una destreza —ni las creadas a mano—
+    // ni una materia: las materias ya tienen planificaciones colgando.
     const porCodigo = new Map(materia.destrezas.map((d) => [normalizarCodigo(d.codigo), d]));
     let orden = materia.destrezas.reduce((x, d) => Math.max(x, d.orden), -1) + 1;
     let nuevas = 0;

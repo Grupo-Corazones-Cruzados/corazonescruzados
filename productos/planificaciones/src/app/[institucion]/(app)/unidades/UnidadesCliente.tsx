@@ -123,7 +123,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                   }}
                 />
                 {/* Solo icono: el texto no cabe en la cabecera (Fernando, 2026-09-17). */}
-                <BotonIcono icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} titulo={grado.importacionEstado === 'LEYENDO' ? 'El agente está leyendo el currículo…' : 'Importar currículo (PDF del Ministerio): crea las materias, sus objetivos y la tabla destreza · criterio · indicador'} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || (grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada)} className={grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada ? '[&>svg]:animate-spin' : ''} />
+                <BotonIcono icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} titulo={grado.importacionEstado === 'LEYENDO' ? 'El agente está leyendo el currículo…' : 'Importar currículo (PDF del Ministerio): crea las materias que falten y añade o actualiza objetivos y destrezas con su criterio e indicador. Nunca borra nada'} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || (grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada)} className={grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada ? '[&>svg]:animate-spin' : ''} />
                 <BotonIcono icono={Pencil} titulo="Renombrar el grado" onClick={() => setPanel('renombrar')} />
                 <BotonIcono icono={Trash2} titulo="Eliminar el grado" className="text-error" onClick={() => setBorrarG(grado)} />
                 <Boton tamano="sm" icono={Plus} onClick={() => abrirMateria(null)}>
