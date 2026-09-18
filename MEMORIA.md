@@ -275,6 +275,15 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **«Número de semanas» a mano y materias que se reconocen por parecido (2026-09-17).** Fernando:
+  en Configurar, un campo **Número de semanas** que va a «Números de Semanas» del formato
+  (`planificaciones.numero_semanas`, migración 014; nulo = se cuentan las listas). Y para importar
+  el currículo en su grado real sin perder nada: `curriculo.ts → parecidos()` casa cada ámbito con
+  la materia existente de nombre parecido (sin acentos, guiones, plurales ni palabras vacías;
+  «Compresión» = «Comprensión»: «Relaciones lógico matemático» ≈ «Relaciones lógico-matemáticas»),
+  la **renombra al nombre oficial** y cambia el área/ámbito de sus planificaciones; las
+  planificaciones semanales, destrezas seleccionadas e iconos se conservan. «Cívica y acompañamiento
+  integral del aula» no está en el documento y se queda como está; «Educación Física» se crea.
 - **📘 EL CURRÍCULO PRIORIZADO DEL MINISTERIO ES LA FUENTE DE LAS DESTREZAS (2026-09-17).**
   Fernando: *«el documento con el que siempre nos basemos para extraer las destrezas sea este tipo
   de documento: Destrezas Priorizado Preparatoria.pdf»* (Mapas curriculares del Ministerio; puede ser

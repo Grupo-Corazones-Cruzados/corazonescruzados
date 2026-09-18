@@ -124,6 +124,28 @@ REGLAS
 5. Solo el JSON.
 `.trim();
 
+/** Dos nombres de materia son el mismo si, sin acentos, guiones ni palabras vacías, comparten casi todas las palabras (o una empieza por la otra). */
+export function parecidos(a: string, b: string): boolean {
+  const limpiar = (t: string) =>
+    t
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/compresion/g, 'comprension')
+      .replace(/[^a-z0-9 ]+/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w && !['y', 'e', 'de', 'del', 'la', 'el', 'las', 'los', 'en'].includes(w))
+      .map((w) => w.replace(/(es|as|os|s|a|o)$/, ''));
+  const A = limpiar(a);
+  const B = limpiar(b);
+  if (!A.length || !B.length) return false;
+  if (A.join(' ') === B.join(' ')) return true;
+  const comunes = A.filter((w) => B.includes(w)).length;
+  const minimo = Math.min(A.length, B.length);
+  // Todas las palabras de la corta están en la larga (y son al menos dos), o coinciden ≥ 75 %.
+  return (comunes === minimo && minimo >= 2) || comunes / Math.max(A.length, B.length) >= 0.75;
+}
+
 /** Corre la importación de un grado: crea materias, objetivos y destrezas. Fuera de la petición. */
 export async function importarCurriculo(gradoId: number, datos: Buffer): Promise<void> {
   const grado = await prisma.grado.findUnique({ where: { id: gradoId }, include: { materias: { include: { destrezas: true } } } });
@@ -159,8 +181,23 @@ export async function importarCurriculo(gradoId: number, datos: Buffer): Promise
       errores.push(`${a.titulo}: sin destrezas`);
       continue;
     }
-    // La materia: la que ya exista con ese nombre (sin distinguir mayúsculas) o una nueva.
-    let materia = grado.materias.find((m) => m.nombre.trim().toLowerCase() === nombre.toLowerCase());
+    // La materia: la que ya exista con ese nombre —o uno PARECIDO: «Compresión y expresión
+    // artística» ≈ «Comprensión y expresión artística», «Relaciones lógico matemático» ≈
+    // «Relaciones lógico-matemáticas» (Fernando, 2026-09-17: actualizar las materias sin
+    // perder las planificaciones ya creadas)— o una nueva. Si se parecía, toma el nombre
+    // oficial y sus planificaciones cambian el área de conocimiento a ese nombre.
+    let materia = grado.materias.find((m) => m.nombre.trim().toLowerCase() === nombre.toLowerCase()) ?? grado.materias.find((m) => parecidos(m.nombre, nombre));
+    if (materia && materia.nombre !== nombre) {
+      const viejoNombre = materia.nombre;
+      await prisma.$transaction([
+        prisma.materiaGrado.update({ where: { id: materia.id }, data: { nombre } }),
+        prisma.planificacion.updateMany({ where: { materiaGradoId: materia.id, materia: viejoNombre }, data: { materia: nombre } }),
+        prisma.planificacion.updateMany({ where: { materiaGradoId: materia.id, ambito: viejoNombre }, data: { ambito: nombre } }),
+        prisma.destreza.updateMany({ where: { materiaGradoId: materia.id }, data: { materia: nombre } }),
+      ]);
+      materia.nombre = nombre;
+      resumen.push(`«${viejoNombre}» pasa a llamarse «${nombre}»`);
+    }
     if (!materia) {
       const ultimo = await prisma.materiaGrado.aggregate({ where: { gradoId }, _max: { orden: true } });
       const creada = await prisma.materiaGrado.create({ data: { inquilinoId: grado.inquilinoId, gradoId, nombre, orden: (ultimo._max.orden ?? -1) + 1 }, include: { destrezas: true } });
