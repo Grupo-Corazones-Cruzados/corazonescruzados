@@ -108,11 +108,7 @@ export async function importarFormato(planificacionId: number, texto: string, cu
       uso: r.uso as never,
       generadaEn: new Date(),
       destrezas: { create: ids.map((destrezaId, k) => ({ destrezaId, orden: k })) },
-      ajustes: {
-        create: (sem.ajustes ?? [])
-          .map((a, k) => ({ estudianteId: estudiantePorIniciales.get(norm(a.iniciales.trim())), estrategia: a.estrategia.trim(), indicadores: o(a.indicadores), orden: k }))
-          .filter((a): a is { estudianteId: number; estrategia: string; indicadores: string | null; orden: number } => typeof a.estudianteId === 'number' && a.estrategia.length > 0),
-      },
+      ajustes: { create: ajustesDe(sem.ajustes ?? [], estudiantePorIniciales) },
     };
   });
 
@@ -143,6 +139,30 @@ export async function importarFormato(planificacionId: number, texto: string, cu
     }),
     ...semanas.map((data) => prisma.planificacionSemanal.create({ data })),
   ]);
+}
+
+/**
+ * Las líneas de ajustes de una semana, UNA POR ESTUDIANTE: si el formato trae al mismo
+ * estudiante dos veces en la misma semana (o el agente lo repite), se juntan sus
+ * textos en una sola línea (la clave semana + estudiante es única; Fernando, 2026-09-17:
+ * «Unique constraint failed on ajustes_razonables_semana_id_estudiante_id_key»).
+ */
+function ajustesDe(filas: { iniciales: string; estrategia: string; indicadores: string }[], estudiantePorIniciales: Map<string, number>) {
+  const norm = (x: string) => x.trim().toUpperCase().replace(/\.$/, '');
+  const porEstudiante = new Map<number, { estudianteId: number; estrategia: string; indicadores: string | null; orden: number }>();
+  for (const a of filas) {
+    const estudianteId = estudiantePorIniciales.get(norm(a.iniciales));
+    const estrategia = a.estrategia.trim();
+    if (typeof estudianteId !== 'number' || !estrategia) continue;
+    const indicadores = a.indicadores?.trim() || null;
+    const ya = porEstudiante.get(estudianteId);
+    if (!ya) porEstudiante.set(estudianteId, { estudianteId, estrategia, indicadores, orden: porEstudiante.size });
+    else {
+      if (!ya.estrategia.includes(estrategia)) ya.estrategia = `${ya.estrategia}\n\n${estrategia}`;
+      if (indicadores && !(ya.indicadores ?? '').includes(indicadores)) ya.indicadores = ya.indicadores ? `${ya.indicadores}\n${indicadores}` : indicadores;
+    }
+  }
+  return [...porEstudiante.values()];
 }
 
 export function importarEnSegundoPlano(planificacionId: number, texto: string, cupoRestante: number | null) {
