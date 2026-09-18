@@ -10,7 +10,7 @@ import { Aviso } from '@/componentes/campos';
 import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria, importarCurriculo } from '@/acciones/unidades';
 import { cn } from '@/lib/utils';
 import { NIVELES, ETIQUETA_NIVEL } from '@/lib/catalogo';
-import { PanelDestrezas, type DestrezaVista } from '@/componentes/PanelDestrezas';
+import { PanelDestrezas, TablaIdentificadores, type DestrezaVista } from '@/componentes/PanelDestrezas';
 import type { Nivel } from '@/generated/prisma/enums';
 
 export type DocenteVista = { id: number; nombre: string; rol: string };
@@ -178,6 +178,10 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                 </div>
                 {!soloLectura && (
                   <div className="flex items-center gap-1">
+                    {/* Selección de destrezas (con su criterio e indicador), a la izquierda de Editar (Fernando, 2026-09-18). */}
+                    <Boton variante="secundario" tamano="sm" icono={ListChecks} onClick={() => setPanelDestrezas(true)}>
+                      Destrezas
+                    </Boton>
                     <Boton variante="secundario" tamano="sm" icono={Pencil} onClick={() => abrirMateria(materia)}>
                       Editar
                     </Boton>
@@ -221,16 +225,12 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                   )}
                 </section>
                 <section>
-                  <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Destrezas con criterio de desempeño</h3>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-[13px] text-texto">
-                      {destrezas.filter((d) => d.activa !== false).length} seleccionada{destrezas.filter((d) => d.activa !== false).length === 1 ? '' : 's'} de {destrezas.length}
-                    </p>
-                    {/* La selección y la edición van en un panel lateral; en Planificaciones solo se ven (Fernando, 2026-09-17). */}
-                    <Boton variante="secundario" tamano="sm" icono={ListChecks} onClick={() => setPanelDestrezas(true)}>
-                      Destrezas
-                    </Boton>
-                  </div>
+                  <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Identificadores</h3>
+                  {/* Los seleccionados, en tabla destreza · criterio · indicador (Fernando, 2026-09-18); se eligen con «Destrezas», arriba. */}
+                  <p className="mb-2 text-[12px] text-tenue">
+                    {destrezas.filter((d) => d.activa !== false).length} seleccionada{destrezas.filter((d) => d.activa !== false).length === 1 ? '' : 's'} de {destrezas.length} destreza{destrezas.length === 1 ? '' : 's'}. Se marcan con el botón «Destrezas».
+                  </p>
+                  {destrezas.some((d) => d.activa !== false) ? <TablaIdentificadores destrezas={destrezas.filter((d) => d.activa !== false)} /> : <p className="text-[13px] text-tenue">Ninguna seleccionada todavía.</p>}
                 </section>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <section>

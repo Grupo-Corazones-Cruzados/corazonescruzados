@@ -62,38 +62,7 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
         </div>
         {error && <Aviso texto={error} />}
         {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas todavía" detalle="Las destrezas con criterio de desempeño de esta materia: el agente elige una por semana. El administrador las importa con el currículo priorizado del grado (o las añade a mano) y marca las que se usan." />}
-        {!puedo && destrezas.length > 0 && (
-          <div className="overflow-x-auto rounded border border-borde">
-            <table className="w-full border-collapse text-[12px]">
-              <thead>
-                <tr className="bg-realce text-left text-[11px] uppercase tracking-wide text-tenue">
-                  <th className="border-b border-borde px-3 py-2">Destreza con criterio de desempeño</th>
-                  <th className="border-b border-borde px-3 py-2">Criterio de evaluación</th>
-                  <th className="border-b border-borde px-3 py-2">Indicador de evaluación</th>
-                </tr>
-              </thead>
-              <tbody>
-                {destrezas.map((d) => (
-                  <tr key={d.id} className="align-top">
-                    <td className="border-b border-borde px-3 py-2">
-                      <div className="flex items-start gap-2">
-                        {d.imagenUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={d.imagenUrl} alt="" className="mt-0.5 h-7 w-auto max-w-[70px] shrink-0 object-contain" />
-                        )}
-                        <span>
-                          <span className="font-semibold text-texto">{d.codigo}</span> <span className="text-tenue">{d.descripcion}</span>
-                        </span>
-                      </div>
-                    </td>
-                    <td className="border-b border-borde px-3 py-2 text-tenue">{d.criterio || '—'}</td>
-                    <td className="border-b border-borde px-3 py-2 text-tenue">{d.indicador || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {!puedo && destrezas.length > 0 && <TablaIdentificadores destrezas={destrezas} />}
         {puedo && (
           <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
             {destrezas.map((d) => (
@@ -219,5 +188,41 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
         </Boton>
       </div>
     </form>
+  );
+}
+
+/** LA TABLA DE IDENTIFICADORES: destreza · criterio · indicador (Fernando, 2026-09-18). Se usa en Unidades (seleccionadas) y en Planificaciones. */
+export function TablaIdentificadores({ destrezas }: { destrezas: DestrezaVista[] }) {
+  return (
+    <div className="overflow-x-auto rounded border border-borde">
+      <table className="w-full border-collapse text-[12px]">
+        <thead>
+          <tr className="bg-realce text-left text-[11px] uppercase tracking-wide text-tenue">
+            <th className="border-b border-borde px-3 py-2">Destreza con criterio de desempeño</th>
+            <th className="border-b border-borde px-3 py-2">Criterio de evaluación</th>
+            <th className="border-b border-borde px-3 py-2">Indicador de evaluación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {destrezas.map((d) => (
+            <tr key={d.id} className="align-top">
+              <td className="border-b border-borde px-3 py-2">
+                <div className="flex items-start gap-2">
+                  {d.imagenUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={d.imagenUrl} alt="" className="mt-0.5 h-7 w-auto max-w-[70px] shrink-0 object-contain" />
+                  )}
+                  <span>
+                    <span className="font-semibold text-texto">{d.codigo}</span> <span className="text-tenue">{d.descripcion}</span>
+                  </span>
+                </div>
+              </td>
+              <td className="border-b border-borde px-3 py-2 text-tenue">{d.criterio || '—'}</td>
+              <td className="border-b border-borde px-3 py-2 text-tenue">{d.indicador || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
