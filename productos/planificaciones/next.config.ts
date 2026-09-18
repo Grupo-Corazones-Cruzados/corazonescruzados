@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // Los logos de los inquilinos viven en Cloudinary y se sirven con <img>, no con
   // next/image, para no tener que declarar aquí el dominio de cada cuenta.
   eslint: { ignoreDuringBuilds: true },
+  // Las acciones reciben archivos (adjuntos, formatos, el currículo del Ministerio: 3 MB);
+  // el tope por defecto de Next es 1 MB y el del producto, 10 MB (`MAX_TAMANO`).
+  experimental: { serverActions: { bodySizeLimit: '12mb' } },
 };
 
 export default nextConfig;
