@@ -275,6 +275,15 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Corregir identificadores y completar ajustes sin regenerar (2026-09-18).** Los estudiantes con
+  condición y las destrezas seleccionadas llegaron después de redactar las semanas de la docente, así
+  que había semanas sin destreza y sin ajustes razonables. Dos piezas: (1) un guion de una vez que
+  pidió al agente **elegir la destreza de cada semana ya redactada** entre las seleccionadas (18
+  semanas, 11 cambiadas: p. ej. «Arriba y abajo» M.1.4.6. → M.1.4.4.) y escribió los indicadores en
+  sus ajustes; (2) `generacion.ts → completarAjustesDeSemana`: con la semana tal como está, el
+  agente redacta solo la estrategia empleada de los estudiantes que aún no tienen línea (5–8 s). En
+  «Campos generados», si la semana tiene menos ajustes que estudiantes con condición, sale el aviso
+  con el botón **«Completar ajustes»**. Las semanas nuevas ya los traen porque los estudiantes existen.
 - **La sección de Cívica del currículo priorizado tiene otro formato (2026-09-18).** Fernando
   añadió al PDF las hojas del «período pedagógico de Cívica y Acompañamiento Integral en el Aula»:
   va por bloques curriculares, cada bloque con un «Criterio de evaluación N» sin código y una tabla

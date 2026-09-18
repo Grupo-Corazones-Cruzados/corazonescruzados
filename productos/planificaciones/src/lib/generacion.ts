@@ -261,3 +261,68 @@ export function generarEnSegundoPlano(semanaId: number) {
       .catch(() => {});
   });
 }
+
+/**
+ * COMPLETAR LOS AJUSTES RAZONABLES DE UNA SEMANA YA REDACTADA (Fernando, 2026-09-18:
+ * los estudiantes con condición se dieron de alta después de generar las semanas,
+ * y no había ajustes). No se regenera nada: con la semana tal como está, el agente
+ * redacta solo la estrategia empleada de cada estudiante que aún no tiene línea.
+ * Los indicadores salen de la destreza de la semana.
+ */
+export async function completarAjustesDeSemana(semanaId: number): Promise<{ ok: true; creados: number } | { ok: false; error: string }> {
+  const semana = await prisma.planificacionSemanal.findUnique({
+    where: { id: semanaId },
+    include: { planificacion: true, ajustes: true, destrezas: { include: { destreza: true } } },
+  });
+  if (!semana || semana.estado !== 'LISTA') return { ok: false, error: 'La semana no está lista.' };
+  const pl = semana.planificacion;
+  const estudiantes = (await estudiantesConCondicion(pl.materiaGradoId)).filter((e) => !semana.ajustes.some((a) => a.estudianteId === e.id));
+  if (!estudiantes.length) return { ok: true, creados: 0 };
+  if (!iaConfigurada()) return { ok: false, error: 'El servicio de redacción no está configurado.' };
+
+  const plantilla = plantillaDe(pl.plantilla);
+  const encargo = `LA SEMANA YA REDACTADA (no la cambies; solo redacta los ajustes razonables)
+Materia: ${pl.materia} · Unidad ${pl.numeroUnidad}: «${pl.tituloUnidad}» · Semana ${semana.orden}
+Tema: ${semana.tema}
+Objetivos del tema: ${semana.objetivosTema}
+Estrategias metodológicas:
+${semana.estrategias}
+Recursos: ${(semana.recursos ?? '').replace(/\n/g, ', ')}
+
+ESTUDIANTES CON CONDICIÓN ESPECIAL DEL GRADO (una entrada de ajustes por cada uno, con sus iniciales exactas)
+${estudiantes.map((e) => `- ${e.iniciales} · Condición reportada: ${e.condicion} · Nivel de ajuste razonable: ${e.nivelAjuste} · Enfoque: ${e.enfoque}`).join('\n')}
+
+Devuelve SOLO los ajustesRazonables de esta semana en el JSON pedido.`;
+  const r = await correrAgente<{ ajustesRazonables: { iniciales: string; estrategia: string }[] }>({
+    sistema: plantilla.sistema(),
+    encargo,
+    esquema: {
+      nombre: 'ajustes_razonables',
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['ajustesRazonables'],
+        properties: {
+          ajustesRazonables: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: false, required: ['iniciales', 'estrategia'], properties: { iniciales: { type: 'string' }, estrategia: { type: 'string', description: 'La ESTRATEGIA EMPLEADA de esta semana para ese estudiante: un párrafo de 4 a 7 oraciones que adapta las actividades concretas de la semana a su condición (regla 10).' } } },
+          },
+        },
+      },
+    },
+    esfuerzo: 'low',
+    maxSalida: 6000,
+    claveCache: `planificaciones-${plantilla.clave}`,
+  });
+  if (!r.ok) return { ok: false, error: r.error };
+  const norm = (x: string) => x.replace(/[\s.]/g, '').toUpperCase();
+  const indicadores = semana.destrezas.map((d) => d.destreza.indicador?.trim()).filter((x): x is string => Boolean(x)).join('\n') || null;
+  const filas = estudiantes
+    .map((e, i) => {
+      const a = r.salida.ajustesRazonables.find((x) => norm(x.iniciales) === norm(e.iniciales ?? '')) ?? r.salida.ajustesRazonables[i];
+      return a?.estrategia?.trim() ? { semanaId, estudianteId: e.id, estrategia: a.estrategia.trim(), indicadores, orden: semana.ajustes.length + i } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+  if (filas.length) await prisma.ajusteRazonable.createMany({ data: filas, skipDuplicates: true });
+  return { ok: true, creados: filas.length };
+}

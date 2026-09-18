@@ -29,7 +29,7 @@ import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Buscador, Tarje
 import { Aviso, Chips } from '@/componentes/campos';
 import { Dictado } from '@/componentes/Dictado';
 import { Adjuntos, type AdjuntoSubido } from '@/componentes/Adjuntos';
-import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana, importarFormato } from '@/acciones/planificaciones';
+import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana, importarFormato, completarAjustes } from '@/acciones/planificaciones';
 import { PanelDestrezas, type DestrezaVista } from '@/componentes/PanelDestrezas';
 import { parsearEstrategias, lineas } from '@/plantillas/pud/estrategias';
 import { NIVELES, ETIQUETA_NIVEL, ETIQUETA_ESTADO_SEMANA } from '@/lib/catalogo';
@@ -119,6 +119,8 @@ type Props = {
   materias: { nivel: Nivel; nombre: string; ambito: string | null }[];
   /** Las materias (con su grado) que el administrador asignó al docente: las únicas que puede planificar. */
   materiasDocente: { id: number; etiqueta: string; materia: string; grado: string; nivel: string }[];
+  /** Estudiantes con condición especial del grado de la planificación elegida: si una semana tiene menos ajustes, se ofrece completarlos. */
+  estudiantesConCondicion: number;
   plantillas: { clave: string; nombre: string; descripcion: string }[];
   plantillaPorDefecto: string;
   cupo: { tope: number | null; usadas: number; quedan: number | null };
@@ -405,7 +407,7 @@ export default function PlanificacionesCliente(p: Props) {
                 ) : !semana ? (
                   <EstadoVacio icono={CalendarDays} titulo="Elige una semana" detalle="O crea la primera con «Nueva»." />
                 ) : (
-                  <CamposSemana semana={semana} slug={p.slug} puedo={puedo} sinCupo={sinCupo} enCurso={enCurso} alReintentar={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a intentarlo')} alBorrar={() => setBorrarSem(semana)} />
+                  <CamposSemana semana={semana} slug={p.slug} puedo={puedo} sinCupo={sinCupo} enCurso={enCurso} faltanAjustes={semana.estado === 'LISTA' ? Math.max(0, p.estudiantesConCondicion - semana.ajustes.length) : 0} alCompletarAjustes={() => conResultado(async () => { const r = await completarAjustes(p.slug, semana.id); return r.ok ? { ok: true } : r; }, 'Ajustes razonables completados')} alReintentar={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a intentarlo')} alBorrar={() => setBorrarSem(semana)} />
                 )}
               </div>
             </Tarjeta>
@@ -729,7 +731,7 @@ function siguienteLunes(dia: string) {
 
 // ── Los campos generados, en lectura ────────────────────────────────────────
 
-function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorrar }: { semana: SemanaVista; slug: string; puedo: boolean; sinCupo: boolean; enCurso: boolean; alReintentar: () => void; alBorrar: () => void }) {
+function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorrar, faltanAjustes, alCompletarAjustes }: { semana: SemanaVista; slug: string; puedo: boolean; sinCupo: boolean; enCurso: boolean; alReintentar: () => void; alBorrar: () => void; faltanAjustes: number; alCompletarAjustes: () => void }) {
   if (s.estado === 'PENDIENTE' || s.estado === 'GENERANDO') {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
@@ -853,6 +855,19 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
           ))}
         </CampoLectura>
       </div>
+      {faltanAjustes > 0 && (
+        // Estudiantes con condición dados de alta después de redactar la semana (Fernando, 2026-09-18): se completan sin regenerar.
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-texto">
+          <span>
+            Falta{faltanAjustes === 1 ? '' : 'n'} {faltanAjustes} línea{faltanAjustes === 1 ? '' : 's'} de ajustes razonables (estudiante{faltanAjustes === 1 ? '' : 's'} con condición dado{faltanAjustes === 1 ? '' : 's'} de alta después de redactar esta semana).
+          </span>
+          {puedo && (
+            <Boton tamano="sm" variante="secundario" icono={Sparkles} onClick={alCompletarAjustes} disabled={enCurso}>
+              {enCurso ? 'Redactando…' : 'Completar ajustes'}
+            </Boton>
+          )}
+        </div>
+      )}
       {s.ajustes.length > 0 && (
         <CampoLectura titulo={`Ajustes razonables · ${s.ajustes.length} estudiante${s.ajustes.length === 1 ? '' : 's'}`}>
           <ul className="space-y-2">

@@ -6,6 +6,7 @@ import { listaDePlantillas } from '@/plantillas';
 import { VistaPrevia } from '@/plantillas/pud/VistaPrevia';
 import { aDia } from '@/lib/fechas';
 import { destrezasDe } from '@/lib/destrezas';
+import { estudiantesConCondicion } from '@/lib/estudiantes';
 import { materiasDelDocente } from '@/lib/horario';
 import PlanificacionesCliente, { type PlanificacionVista, type SemanaVista } from './PlanificacionesCliente';
 import type { DestrezaVista } from '@/componentes/PanelDestrezas';
@@ -148,6 +149,8 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
 
   const materias = await prisma.materia.findMany({ orderBy: [{ nivel: 'asc' }, { orden: 'asc' }] });
   const materiasDocente = await materiasDelDocente(inquilino.id, sesion.uid, sesion.rol);
+  // Cuántos estudiantes con condición tiene el grado de la planificación elegida: si una semana lista tiene menos ajustes, se ofrece completarlos.
+  const estudiantesConCondicionN = actual ? (await estudiantesConCondicion((await prisma.planificacion.findUnique({ where: { id: actual.id }, select: { materiaGradoId: true } }))?.materiaGradoId ?? null)).length : 0;
   const cupo = await cupoDeGeneraciones(inquilino, topesDe(inquilino).generaciones);
 
   return (
@@ -166,6 +169,7 @@ export default async function PaginaPlanificaciones({ params, searchParams }: { 
       destrezasCatalogo={destrezasCatalogo}
       materias={materias.map((m) => ({ nivel: m.nivel, nombre: m.nombre, ambito: m.ambito }))}
       materiasDocente={materiasDocente}
+      estudiantesConCondicion={estudiantesConCondicionN}
       plantillas={listaDePlantillas()}
       plantillaPorDefecto={inquilino.plantillaPorDefecto}
       cupo={{ tope: cupo.tope, usadas: cupo.usadas, quedan: cupo.quedan }}

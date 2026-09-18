@@ -9,7 +9,7 @@ import { cupoDeGeneraciones, faltaCupoDeGeneracion, topesDe } from '@/lib/limite
 import { aFechaSql, esDia } from '@/lib/fechas';
 import { NIVELES } from '@/lib/catalogo';
 import { MAX_ADJUNTOS, MAX_TAMANO, extraerTexto, tipoDe } from '@/lib/adjuntos';
-import { generarEnSegundoPlano } from '@/lib/generacion';
+import { generarEnSegundoPlano, completarAjustesDeSemana } from '@/lib/generacion';
 import { importarEnSegundoPlano } from '@/lib/importacion';
 import { PLANTILLAS } from '@/plantillas';
 import { materiasDelDocente } from '@/lib/horario';
@@ -399,4 +399,16 @@ export async function eliminarSemana(slug: string, id: number): Promise<Resultad
   });
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true };
+}
+
+/** Completar los ajustes razonables que falten en una semana lista (estudiantes dados de alta después). Sin regenerar la semana. */
+export async function completarAjustes(slug: string, semanaId: number): Promise<{ ok: true; creados: number } | { ok: false; error: string }> {
+  const permiso = await contextoEscritura(slug, 'planificar');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const s = await prisma.planificacionSemanal.findFirst({ where: { id: semanaId, inquilinoId: permiso.ctx.inquilino.id }, include: { planificacion: true } });
+  if (!s) return { ok: false, error: 'La semana no existe.' };
+  if (!esDuenoOAdmin(permiso.ctx.sesion, s.planificacion)) return { ok: false, error: 'Solo quien creó la planificación (o el administrador) puede completarla.' };
+  const r = await completarAjustesDeSemana(semanaId);
+  revalidatePath(`/${slug}/planificaciones`);
+  return r;
 }
