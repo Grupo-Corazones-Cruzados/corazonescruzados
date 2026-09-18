@@ -275,6 +275,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **La sección de Cívica del currículo priorizado tiene otro formato (2026-09-18).** Fernando
+  añadió al PDF las hojas del «período pedagógico de Cívica y Acompañamiento Integral en el Aula»:
+  va por bloques curriculares, cada bloque con un «Criterio de evaluación N» sin código y una tabla
+  CÓDIGO · DESTREZAS · HABILIDADES SOCIOEMOCIONALES · INDICADORES (sin código y por bloque, no por
+  fila). `curriculo.ts` detecta esa cabecera y etiqueta [K] [D] [H] [I]; el prompt explica el formato:
+  cada destreza toma el criterio del bloque y TODOS los indicadores del bloque (uno por línea); el
+  objetivo sin código se guarda como «O.1.». Probado: 16 destrezas en 3 bloques, casadas por
+  parecido con «Cívica y acompañamiento integral del aula».
 - **Materias que se reconocen por parecido (2026-09-17).** (El campo «Número de semanas» en
   Configurar lo pidió y lo retiró Fernando el mismo día: el formato vuelve a contar las semanas
   hechas; la columna `numero_semanas` queda sin uso.) Para importar

@@ -21,7 +21,7 @@ type Item = { x: number; y: number; w: number; s: string };
 /** El texto del PDF con cada fragmento etiquetado por columna: [C] criterio · [D] destreza · [I] indicador. */
 export async function textoConColumnas(datos: Buffer): Promise<string> {
   const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default as (b: Buffer, o: Record<string, unknown>) => Promise<{ text: string }>;
-  let cols: { d: number; i: number } | null = null;
+  let cols: { d: number; i: number; k?: boolean; h?: number } | null = null;
   const render = (pagina: { getTextContent: (o: Record<string, unknown>) => Promise<{ items: { str: string; transform: number[]; width: number }[] }> }) =>
     pagina.getTextContent({ normalizeWhitespace: true, disableCombineTextItems: false }).then((tc) => {
       const items: Item[] = tc.items.filter((i) => i.str.trim()).map((i) => ({ x: i.transform[4], y: i.transform[5], w: i.width, s: i.str.trim() }));
@@ -29,6 +29,13 @@ export async function textoConColumnas(datos: Buffer): Promise<string> {
       const hD = items.find((i) => /^Destrezas con criterios/.test(i.s));
       const hI = items.find((i) => /^Indicadores de evaluaci/.test(i.s));
       if (hC && hD && hI) cols = { d: (hC.x + hC.w + hD.x) / 2 - 20, i: (hD.x + hD.w + hI.x) / 2 - 20 };
+      // La sección de Cívica (Fernando, 2026-09-18) tiene otra tabla: CÓDIGO · DESTREZAS · HABILIDADES
+      // SOCIOEMOCIONALES · INDICADORES (sin código, por bloque). Se etiqueta [K] [D] [H] [I].
+      const hK = items.find((i) => /^CÓDIGO$/i.test(i.s));
+      const hD2 = items.find((i) => /^DESTREZAS CON CRITERIOS/i.test(i.s));
+      const hH = items.find((i) => /^HABILIDADES$/i.test(i.s) || /^SOCIOEMOCIONALES/i.test(i.s));
+      const hI2 = items.find((i) => /^INDICADORES DE EVALUACI/i.test(i.s));
+      if (hK && hD2 && hH && hI2) cols = { k: true, d: (hK.x + hK.w + hD2.x) / 2 - 10, h: hH.x - 12, i: hI2.x - 12 };
       items.sort((a, b) => b.y - a.y || a.x - b.x);
       const lineas: { y: number; items: Item[] }[] = [];
       for (const it of items) {
@@ -42,8 +49,8 @@ export async function textoConColumnas(datos: Buffer): Promise<string> {
             L.items.sort((a, b) => a.x - b.x);
             const partes: { tag: string; s: string }[] = [];
             for (const it of L.items) {
-              const cabecera = /^(Criterios de evaluaci|Destrezas con criterios|de desempeño$|Indicadores de evaluaci)/.test(it.s);
-              const tag = !cols || cabecera ? '' : it.x >= cols.i ? 'I' : it.x >= cols.d ? 'D' : 'C';
+              const cabecera = /^(Criterios de evaluaci|Destrezas con criterios|de desempeño$|Indicadores de evaluaci|CÓDIGO$|DESTREZAS CON CRITERIOS|DE DESEMPEÑO$|HABILIDADES$|SOCIOEMOCIONALES$|ASOCIADAS$|INDICADORES DE EVALUACI)/i.test(it.s);
+              const tag = !cols || cabecera ? '' : cols.k ? (it.x >= cols.i ? 'I' : it.x >= (cols.h ?? cols.i) ? 'H' : it.x >= cols.d ? 'D' : 'K') : it.x >= cols.i ? 'I' : it.x >= cols.d ? 'D' : 'C';
               const ult = partes[partes.length - 1];
               if (ult && ult.tag === tag) ult.s += ' ' + it.s;
               else partes.push({ tag, s: it.s });
@@ -63,7 +70,7 @@ export async function textoConColumnas(datos: Buffer): Promise<string> {
  * currículo de Educación Cultural y Artística del subnivel…», Educación Física).
  */
 export function partirEnAmbitos(texto: string): { titulo: string; texto: string }[] {
-  const re = /^.*(Ámbito de desarrollo y aprendizaje\s*\d+\s*:?|Mapas del currículo de .+? del subnivel).*$/gim;
+  const re = /^.*(Ámbito de desarrollo y aprendizaje\s*\d+\s*:?|Mapas del currículo de .+? del subnivel|Mapa curricular para el per[ií]odo pedag[oó]gico de .+).*$/gim;
   const marcas: { indice: number; titulo: string }[] = [];
   for (const m of texto.matchAll(re)) marcas.push({ indice: m.index ?? 0, titulo: m[0].replace(/\[[CDI]\]/g, '').replace(/\s+/g, ' ').trim() });
   return marcas.map((m, k) => ({ titulo: m.titulo, texto: texto.slice(m.indice, marcas[k + 1]?.indice ?? texto.length) }));
@@ -83,7 +90,7 @@ export const ESQUEMA_AMBITO = {
     additionalProperties: false,
     required: ['materia', 'objetivos', 'filas'],
     properties: {
-      materia: texto('El nombre del ámbito tal como está tras «Ámbito de desarrollo y aprendizaje N:» (p. ej. «Identidad y Autonomía»; puede seguir en la línea siguiente: «Descubrimiento y comprensión del medio natural y cultural»). Si el título es «Mapas del currículo de X del subnivel…», el nombre es X (p. ej. «Educación Cultural y Artística», «Educación Física»).'),
+      materia: texto('El nombre del ámbito tal como está tras «Ámbito de desarrollo y aprendizaje N:» (p. ej. «Identidad y Autonomía»; puede seguir en la línea siguiente: «Descubrimiento y comprensión del medio natural y cultural»). Si el título es «Mapas del currículo de X del subnivel…», el nombre es X (p. ej. «Educación Cultural y Artística», «Educación Física»). Si es «Mapa curricular para el período pedagógico de X…», el nombre es X («Cívica y Acompañamiento Integral en el Aula»).'),
       objetivos: {
         type: 'array',
         description: 'Los objetivos del ámbito, en orden.',
@@ -115,6 +122,8 @@ Eres un transcriptor meticuloso del currículo priorizado del Ministerio de Educ
 
 CÓMO VIENE EL TEXTO
 La tabla del documento tiene tres columnas y celdas combinadas. Cada fragmento viene etiquetado con su columna: [C] = criterio de evaluación, [D] = destreza con criterio de desempeño, [I] = indicador de evaluación. Las líneas siguen el orden vertical del documento: los fragmentos [C], [D] e [I] de una misma línea están a la misma altura. Un criterio [C] (empieza por «CE.») abarca todas las destrezas [D] que aparecen desde que empieza hasta que empieza el siguiente «CE.». Un indicador [I] (empieza por «I.» o viene sin código con «(Ref. I.…)» al final) corresponde a las destrezas que están a su altura y a las siguientes hasta que empieza otro indicador dentro del mismo criterio; si el indicador empieza a la altura de la segunda destreza de un criterio, la primera destreza también lo comparte cuando no hay otro indicador antes. Las palabras cortadas con «-» al final de un fragmento se unen con el siguiente fragmento de la misma columna («funciona - miento» → «funcionamiento»). Los números de página sueltos, las cabeceras repetidas de la tabla y los títulos del documento se ignoran. Los iconos no salen en el texto.
+
+EL FORMATO DE CÍVICA (período pedagógico de Cívica y Acompañamiento Integral en el Aula) ES DISTINTO: va por «Bloque curricular N: …», cada bloque abre con «Criterio de evaluación N: texto» (sin código) y su tabla tiene cuatro columnas etiquetadas [K] código (CAI.1.1.1), [D] destreza, [H] habilidades socioemocionales, [I] indicadores de evaluación. Ahí los indicadores NO llevan código ni van alineados con cada destreza: son la lista del bloque («Pensamiento crítico: Hace preguntas…», «Manejo de problemas: …»). Para cada destreza del bloque: código = su [K] (añade el punto final), criterio = el «Criterio de evaluación N» del bloque (criterioCodigo vacío), indicador = TODOS los indicadores del bloque, cada uno en su línea «Nombre: texto» (indicadorCodigo vacío). Las habilidades [H] no se transcriben. El «Objetivo:» de Cívica no lleva código: devuélvelo con codigo vacío.
 
 REGLAS
 1. TRANSCRIBES, NO REDACTAS: códigos exactos (con punto final) y textos tal cual, solo uniendo líneas y palabras cortadas.
@@ -208,8 +217,8 @@ export async function importarCurriculo(gradoId: number, datos: Buffer): Promise
     await prisma.$transaction([
       prisma.objetivoMateria.deleteMany({ where: { materiaGradoId: materia.id } }),
       ...s.objetivos
-        .filter((o) => o.codigo.trim() && o.descripcion.trim())
-        .map((o, i) => prisma.objetivoMateria.create({ data: { materiaGradoId: materia!.id, codigo: normalizarCodigo(o.codigo).slice(0, 40), descripcion: o.descripcion.trim(), orden: i } })),
+        .filter((o) => o.descripcion.trim())
+        .map((o, i) => prisma.objetivoMateria.create({ data: { materiaGradoId: materia!.id, codigo: (o.codigo.trim() ? normalizarCodigo(o.codigo) : `O.${i + 1}.`).slice(0, 40), descripcion: o.descripcion.trim(), orden: i } })),
     ]);
     // Destrezas: se actualizan por código (texto, criterio, indicador; el icono y la selección se conservan) o se crean sin seleccionar.
     const porCodigo = new Map(materia.destrezas.map((d) => [normalizarCodigo(d.codigo), d]));
