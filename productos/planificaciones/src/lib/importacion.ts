@@ -54,6 +54,27 @@ export async function importarFormato(planificacionId: number, texto: string, cu
     }
   }
 
+  // LOS AJUSTES RAZONABLES DEL FORMATO (Fernando, 2026-09-17: «la sección de ajustes
+  // razonables no se exportó»): cada fila es un estudiante del grado con condición
+  // especial; si no existe uno con esas iniciales, se crea con los datos del formato
+  // (el nombre completo lo pone luego el docente en «Estudiantes»).
+  const gradoId = pl.materiaGradoId ? (await prisma.materiaGrado.findUnique({ where: { id: pl.materiaGradoId }, select: { gradoId: true } }))?.gradoId ?? null : null;
+  const estudiantePorIniciales = new Map<string, number>();
+  if (gradoId) {
+    const existentes = await prisma.estudiante.findMany({ where: { gradoId, condicionEspecial: true }, select: { id: true, iniciales: true } });
+    for (const e of existentes) if (e.iniciales) estudiantePorIniciales.set(norm(e.iniciales), e.id);
+    for (const sem of s.semanas) {
+      for (const a of sem.ajustes ?? []) {
+        const ini = a.iniciales.trim();
+        if (!ini || estudiantePorIniciales.has(norm(ini))) continue;
+        const nuevo = await prisma.estudiante.create({
+          data: { inquilinoId: pl.inquilinoId, gradoId, nombre: ini, condicionEspecial: true, iniciales: ini.slice(0, 20), condicion: o(a.condicion)?.slice(0, 200) ?? null, nivelAjuste: o(a.nivelAjuste)?.slice(0, 80) ?? null, enfoque: o(a.enfoque) },
+        });
+        estudiantePorIniciales.set(norm(ini), nuevo.id);
+      }
+    }
+  }
+
   // Cuántas caben en el cupo de la semana (las importadas cuentan como cualquier otra).
   const caben = cupoRestante === null ? s.semanas.length : Math.max(0, Math.min(s.semanas.length, cupoRestante));
   const fueraDeCupo = s.semanas.length - caben;
@@ -83,6 +104,11 @@ export async function importarFormato(planificacionId: number, texto: string, cu
       uso: r.uso as never,
       generadaEn: new Date(),
       destrezas: { create: ids.map((destrezaId, k) => ({ destrezaId, orden: k })) },
+      ajustes: {
+        create: (sem.ajustes ?? [])
+          .map((a, k) => ({ estudianteId: estudiantePorIniciales.get(norm(a.iniciales.trim())), estrategia: a.estrategia.trim(), indicadores: o(a.indicadores), orden: k }))
+          .filter((a): a is { estudianteId: number; estrategia: string; indicadores: string | null; orden: number } => typeof a.estudianteId === 'number' && a.estrategia.length > 0),
+      },
     };
   });
 

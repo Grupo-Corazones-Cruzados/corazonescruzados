@@ -18,6 +18,8 @@ export type SemanaImportada = {
   recursos: string[];
   tecnica: string[];
   instrumento: string[];
+  /** Las filas de «AJUSTES RAZONABLES» de esa semana (una por estudiante con condición). */
+  ajustes: { iniciales: string; condicion: string; nivelAjuste: string; enfoque: string; estrategia: string; indicadores: string }[];
 };
 
 export type SalidaImportacion = {
@@ -85,7 +87,7 @@ export const ESQUEMA_IMPORTACION = {
         items: {
           type: 'object',
           additionalProperties: false,
-          required: ['fechaInicio', 'fechaFin', 'tema', 'numeroPeriodos', 'objetivosTema', 'destrezas', 'estrategias', 'recursos', 'tecnica', 'instrumento'],
+          required: ['fechaInicio', 'fechaFin', 'tema', 'numeroPeriodos', 'objetivosTema', 'destrezas', 'estrategias', 'recursos', 'tecnica', 'instrumento', 'ajustes'],
           properties: {
             fechaInicio: texto('Primera fecha de la casilla de la semana, en AAAA-MM-DD (año según el año lectivo).'),
             fechaFin: texto('Segunda fecha de la casilla, en AAAA-MM-DD.'),
@@ -110,6 +112,23 @@ export const ESQUEMA_IMPORTACION = {
             recursos: lista('Los recursos de la semana, uno por elemento.'),
             tecnica: lista('Las técnicas de evaluación, una por elemento.'),
             instrumento: lista('Los instrumentos de evaluación, uno por elemento, en el orden de las técnicas.'),
+            ajustes: {
+              type: 'array',
+              description: 'Las filas de la tabla «AJUSTES RAZONABLES» cuya columna «Semana No.» es esta semana («Semana 1» → semana 1). Una por estudiante. Vacío si no hay.',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['iniciales', 'condicion', 'nivelAjuste', 'enfoque', 'estrategia', 'indicadores'],
+                properties: {
+                  iniciales: texto('Columna «Estudiante» (p. ej. «A.G.B.G»).'),
+                  condicion: texto('Columna «Condición Reportada», tal cual.'),
+                  nivelAjuste: texto('Columna «Nivel de Ajuste Razonable», tal cual.'),
+                  enfoque: texto('Columna «Enfoque», tal cual.'),
+                  estrategia: texto('Columna «Estrategia empleada», tal cual.'),
+                  indicadores: texto('Columna «Indicadores de Evaluación», tal cual (varias líneas si hay varios). Vacío si no hay.'),
+                },
+              },
+            },
           },
         },
       },
@@ -126,6 +145,8 @@ REGLAS
 3. LAS ESTRATEGIAS VAN POR FASE. Dentro de cada semana aparecen tres títulos: «ACTIVACIÓN DE CONOCIMIENTOS PREVIOS», «CONSTRUCCIÓN DEL CONOCIMIENTO» y «CONSOLIDACIÓN DEL APRENDIZAJE» (a veces con «(A)» o «(C)» y las letras I R A del DUA al lado: ignora esas letras). Cada actividad es un elemento de la lista de su fase, con su numeración original al inicio si la tiene («1. », «2.1. »). Las preguntas generadoras («¿…?») que cuelgan de una actividad van DENTRO de ese elemento, cada una en su propia línea empezando por «• ». Un enlace (https://…) va en su propia línea dentro del elemento de la actividad que lo usa.
 4. DESTREZAS: el código exacto (con sus puntos, p. ej. «CS.1.1.1.») y la descripción completa. Si una semana no muestra código, deja la lista vacía.
 5. FECHAS: el formato escribe «26 de mayo» sin año; el año sale del año lectivo de la cabecera («2026-2027»: de mayo a diciembre es el primer año, de enero a abril el segundo). Devuélvelas como AAAA-MM-DD.
-6. Recursos, técnicas e instrumentos: un elemento por línea del original. Las secciones fijas (ejes transversales, competencias, inserciones curriculares, adaptaciones curriculares, ajustes razonables, bibliografía, firmas) NO se transcriben, salvo los nombres que se piden en la cabecera (elaborado/revisado/aprobado por y el responsable del DECE).
-7. Nada de markdown salvo las viñetas «• » descritas. Sin comentarios: solo el JSON.
+6. Recursos, técnicas e instrumentos: un elemento por línea del original.
+7. AJUSTES RAZONABLES: después de la tabla de planificación hay una tabla «AJUSTES RAZONABLES» con las columnas Semana No. · Estudiante · Condición Reportada · Nivel de Ajuste Razonable · Enfoque · Estrategia empleada · Indicadores de Evaluación. Cada fila va en «ajustes» de la semana que dice su primera columna («Semana 2» → la semana 2), con sus seis textos tal cual (las iniciales del estudiante tal como están, p. ej. «A.G.B.G»). Si la tabla está vacía, todas las semanas llevan «ajustes» vacío.
+8. Las demás secciones fijas (ejes transversales, competencias, inserciones curriculares, adaptaciones curriculares, bibliografía, firmas) NO se transcriben, salvo los nombres que se piden en la cabecera (elaborado/revisado/aprobado por y el responsable del DECE).
+9. Nada de markdown salvo las viñetas «• » descritas. Sin comentarios: solo el JSON.
 `.trim();

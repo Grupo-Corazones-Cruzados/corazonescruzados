@@ -108,7 +108,7 @@ async function main() {
   // ── El catálogo común de destrezas (Preparatoria): `prisma/destrezas/*.json`.
   //    Los archivos por materia (los que llegan del profesor, con sus iconos como
   //    data URL) mandan sobre los de los ejemplos: se cargan después y pisan.
-  for (const archivo of ['preparatoria-ejemplos.json', 'preparatoria-identidad-y-autonomia.json']) {
+  for (const archivo of ['preparatoria-ejemplos.json', 'preparatoria-identidad-y-autonomia.json', 'preparatoria-relaciones-logico-matematico.json']) {
     const destrezas: { codigo: string; materia: string; descripcion: string; imagen?: string | null }[] = JSON.parse(readFileSync(path.join(import.meta.dirname, 'destrezas', archivo), 'utf8'));
     for (const [i, d] of destrezas.entries()) {
       const existe = await prisma.destreza.findFirst({ where: { nivel: 'PREPARATORIA', codigo: d.codigo, inquilinoId: null, planificacionId: null } });

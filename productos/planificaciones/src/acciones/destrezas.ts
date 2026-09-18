@@ -5,6 +5,10 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura, esDuenoOAdmin } from '@/lib/inquilino';
 import { imagenADataUrl, normalizarCodigo } from '@/lib/destrezas';
+import { MAX_TAMANO, extraerTexto, tipoDe } from '@/lib/adjuntos';
+import { correrAgente } from '@/lib/ia';
+import { ETIQUETA_NIVEL } from '@/lib/catalogo';
+import { ESQUEMA_DESTREZAS, SISTEMA_DESTREZAS, type SalidaDestrezas } from '@/plantillas/pud/importar-destrezas';
 
 export type Resultado = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -80,4 +84,63 @@ export async function eliminarDestreza(slug: string, id: number): Promise<Result
   await prisma.destreza.delete({ where: { id } });
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true };
+}
+
+/**
+ * IMPORTAR DESTREZAS DESDE UN PCA (Fernando, 2026-09-17): el docente sube el PDF o
+ * Word y el agente transcribe las destrezas de la materia y el nivel de la
+ * planificación (en Preparatoria, la columna «Preparatoria»). Se añaden las que
+ * la planificación no tenga, sin imagen (los iconos se ponen a mano al editar).
+ */
+export type ResultadoImportacion = { ok: true; anadidas: number; repetidas: number } | { ok: false; error: string };
+
+export async function importarDestrezas(slug: string, planificacionId: number, datos: FormData): Promise<ResultadoImportacion> {
+  const p = await planificacionEditable(slug, planificacionId);
+  if (!p.ok) return p;
+  const archivo = datos.get('archivo');
+  if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: 'Adjunta el PDF o el Word con las destrezas.' };
+  if (archivo.size > MAX_TAMANO) return { ok: false, error: 'El archivo pasa de 10 MB.' };
+  const tipo = tipoDe(archivo);
+  if (tipo !== 'application/pdf' && tipo !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return { ok: false, error: 'Tiene que ser un PDF o un Word (.docx).' };
+  let texto: string;
+  try {
+    texto = (await extraerTexto(Buffer.from(await archivo.arrayBuffer()), tipo)).replace(/\u0000/g, '').trim();
+  } catch (e) {
+    return { ok: false, error: `No se pudo leer el archivo: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  if (texto.length < 100) return { ok: false, error: 'El archivo no tiene texto legible (¿es un PDF escaneado?).' };
+
+  const r = await correrAgente<SalidaDestrezas>({
+    sistema: SISTEMA_DESTREZAS,
+    encargo: `MATERIA: ${p.pl.materia}\nNIVEL: ${ETIQUETA_NIVEL[p.pl.nivel]}\n\nTEXTO DEL DOCUMENTO (${archivo.name}):\n\n${texto}\n\nDevuelve las destrezas con criterio de desempeño de ese nivel en el JSON pedido.`,
+    esquema: ESQUEMA_DESTREZAS,
+    esfuerzo: 'low',
+    maxSalida: 20_000,
+    claveCache: 'planificaciones-importar-destrezas',
+  });
+  if (!r.ok) return { ok: false, error: r.error };
+  const encontradas = r.salida.destrezas.map((d) => ({ codigo: normalizarCodigo(d.codigo), descripcion: d.descripcion.trim() })).filter((d) => /^[A-ZÑ]{1,4}\.\d+\.\d+\.\d+\.?$/i.test(d.codigo) && d.descripcion.length >= 5);
+  if (!encontradas.length) return { ok: false, error: 'El agente no encontró destrezas con código en el documento para ese nivel.' };
+
+  const actuales = await prisma.destreza.findMany({ where: { planificacionId }, select: { codigo: true, orden: true } });
+  const tiene = new Set(actuales.map((d) => d.codigo.trim().toUpperCase().replace(/\.$/, '')));
+  let orden = actuales.reduce((a, d) => Math.max(a, d.orden), -1) + 1;
+  const vistas = new Set<string>();
+  const nuevas: { codigo: string; descripcion: string }[] = [];
+  for (const d of encontradas) {
+    const clave = d.codigo.toUpperCase().replace(/\.$/, '');
+    if (vistas.has(clave)) continue;
+    vistas.add(clave);
+    if (!tiene.has(clave)) nuevas.push(d);
+  }
+  if (nuevas.length) {
+    // Si el catálogo común tiene el icono de ese código, se hereda.
+    const catalogo = await prisma.destreza.findMany({ where: { planificacionId: null, nivel: p.pl.nivel, codigo: { in: nuevas.map((d) => d.codigo) }, OR: [{ inquilinoId: null }, { inquilinoId: p.ctx.inquilino.id }] }, select: { codigo: true, imagenUrl: true } });
+    const icono = new Map(catalogo.filter((c) => c.imagenUrl).map((c) => [c.codigo, c.imagenUrl]));
+    await prisma.destreza.createMany({
+      data: nuevas.map((d) => ({ inquilinoId: p.ctx.inquilino.id, planificacionId, nivel: p.pl.nivel, materia: p.pl.materia, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: icono.get(d.codigo) ?? null, orden: orden++ })),
+    });
+  }
+  revalidatePath(`/${slug}/planificaciones`);
+  return { ok: true, anadidas: nuevas.length, repetidas: vistas.size - nuevas.length };
 }

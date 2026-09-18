@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -29,7 +29,7 @@ import { Aviso, Chips } from '@/componentes/campos';
 import { Dictado } from '@/componentes/Dictado';
 import { Adjuntos, type AdjuntoSubido } from '@/componentes/Adjuntos';
 import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana, importarFormato } from '@/acciones/planificaciones';
-import { crearDestreza, editarDestreza, eliminarDestreza } from '@/acciones/destrezas';
+import { crearDestreza, editarDestreza, eliminarDestreza, importarDestrezas } from '@/acciones/destrezas';
 import { parsearEstrategias, lineas } from '@/plantillas/pud/estrategias';
 import { NIVELES, ETIQUETA_NIVEL, ETIQUETA_ESTADO_SEMANA } from '@/lib/catalogo';
 import { diaDeMes, fechaCorta, sumarDias } from '@/lib/fechas';
@@ -981,7 +981,26 @@ function PanelDestrezas({ slug, planificacionId, destrezas, puedo }: { slug: str
   const [vista, setVista] = useState<string | null>(null);
   const [quitarImagen, setQuitarImagen] = useState(false);
   const [enCurso, arranca] = useTransition();
+  const [importando, setImportando] = useState(false);
+  const entradaArchivo = useRef<HTMLInputElement>(null);
   const editando = modo !== 'lista' && modo !== 'nueva' ? modo : null;
+
+  // «Importar destrezas» (Fernando, 2026-09-17): se sube el PCA y el agente saca las
+  // de esta materia y nivel; las que la planificación no tenga se añaden.
+  const importar = (archivo: File) => {
+    const d = new FormData();
+    d.set('archivo', archivo);
+    setImportando(true);
+    setError(null);
+    arranca(async () => {
+      const r = await importarDestrezas(slug, planificacionId, d);
+      setImportando(false);
+      if (entradaArchivo.current) entradaArchivo.current.value = '';
+      if (!r.ok) return setError(r.error);
+      toast.success(r.anadidas ? `${r.anadidas} destreza${r.anadidas === 1 ? '' : 's'} añadida${r.anadidas === 1 ? '' : 's'}${r.repetidas ? ` · ${r.repetidas} ya estaba${r.repetidas === 1 ? '' : 'n'}` : ''}` : 'Todas las destrezas del documento ya estaban en la planificación');
+      router.refresh();
+    });
+  };
 
   const volver = () => {
     setModo('lista');
@@ -1008,11 +1027,18 @@ function PanelDestrezas({ slug, planificacionId, destrezas, puedo }: { slug: str
             {destrezas.length} destreza{destrezas.length === 1 ? '' : 's'}. La imagen de cada una sale en el formato junto a su código.
           </p>
           {puedo && (
-            <Boton tamano="sm" icono={PlusIcon} onClick={() => setModo('nueva')}>
-              Nueva destreza
-            </Boton>
+            <div className="flex shrink-0 items-center gap-2">
+              <input ref={entradaArchivo} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => e.target.files?.[0] && importar(e.target.files[0])} />
+              <Boton tamano="sm" variante="secundario" icono={importando ? Loader2 : FileUp} onClick={() => entradaArchivo.current?.click()} disabled={enCurso} title="Sube el PCA (PDF o Word): el agente añade las destrezas de esta materia y nivel que falten">
+                {importando ? 'Leyendo el documento…' : 'Importar destrezas'}
+              </Boton>
+              <Boton tamano="sm" icono={PlusIcon} onClick={() => setModo('nueva')} disabled={enCurso}>
+                Nueva destreza
+              </Boton>
+            </div>
           )}
         </div>
+        {error && <Aviso texto={error} />}
         {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas todavía" detalle="Añade las destrezas con criterio de desempeño de esta materia: el agente elegirá una por semana." />}
         <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
           {destrezas.map((d) => (
