@@ -29,6 +29,7 @@ export default async function PaginaUnidades({ params, searchParams }: { params:
     importacionEstado: g.importacionEstado,
     importacionError: g.importacionError,
     importacionArchivo: g.importacionArchivo,
+    importacionAtascada: g.importacionEstado === 'LEYENDO' && (!g.importacionInicio || Date.now() - g.importacionInicio.getTime() > 15 * 60_000),
     materias: g.materias.map((m) => ({
       id: m.id,
       nombre: m.nombre,

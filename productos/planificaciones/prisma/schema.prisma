@@ -306,6 +306,9 @@ model Grado {
   importacionEstado  String? @map("importacion_estado") @db.VarChar(20)
   importacionError   String? @map("importacion_error")
   importacionArchivo String? @map("importacion_archivo") @db.VarChar(200)
+  /// Cuándo empezó la última lectura: si un despliegue mata el trabajo en segundo plano,
+  /// el grado se quedaría LEYENDO para siempre; pasados 15 min se puede volver a importar.
+  importacionInicio  DateTime? @map("importacion_inicio")
   orden       Int       @default(0)
   creado      DateTime  @default(now()) @map("creado_en")
 

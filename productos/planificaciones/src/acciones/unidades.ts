@@ -158,13 +158,15 @@ export async function importarCurriculo(slug: string, gradoId: number, datos: Fo
   if (!permiso.ok) return { ok: false, error: permiso.error };
   const g = await prisma.grado.findFirst({ where: { id: gradoId, inquilinoId: permiso.ctx.inquilino.id } });
   if (!g) return { ok: false, error: 'El grado no existe.' };
-  if (g.importacionEstado === 'LEYENDO') return { ok: false, error: 'El agente todavía está leyendo el documento anterior de este grado.' };
+  // Si lleva más de 15 minutos «leyendo», el trabajo murió (p. ej. con un despliegue): se puede repetir.
+  const atascado = g.importacionEstado === 'LEYENDO' && (!g.importacionInicio || Date.now() - g.importacionInicio.getTime() > 15 * 60_000);
+  if (g.importacionEstado === 'LEYENDO' && !atascado) return { ok: false, error: 'El agente todavía está leyendo el documento anterior de este grado.' };
   const archivo = datos.get('archivo');
   if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, error: 'Adjunta el PDF del currículo priorizado.' };
   if (archivo.size > MAX_TAMANO) return { ok: false, error: 'El archivo pasa de 10 MB.' };
   if (tipoDe(archivo) !== 'application/pdf') return { ok: false, error: 'Tiene que ser el PDF del Ministerio (las columnas de la tabla se leen del PDF).' };
   const buffer = Buffer.from(await archivo.arrayBuffer());
-  await prisma.grado.update({ where: { id: gradoId }, data: { importacionEstado: 'LEYENDO', importacionError: null, importacionArchivo: archivo.name.slice(0, 200) } });
+  await prisma.grado.update({ where: { id: gradoId }, data: { importacionEstado: 'LEYENDO', importacionError: null, importacionArchivo: archivo.name.slice(0, 200), importacionInicio: new Date() } });
   after(() => importarCurriculoEnSegundoPlano(gradoId, buffer));
   revalidatePath(`/${slug}/unidades`);
   return { ok: true, id: gradoId };

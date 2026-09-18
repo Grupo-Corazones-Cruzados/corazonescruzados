@@ -15,7 +15,7 @@ import type { Nivel } from '@/generated/prisma/enums';
 
 export type DocenteVista = { id: number; nombre: string; rol: string };
 export type MateriaVista = { id: number; nombre: string; descripcion: string | null; unidades: number | null; docentes: { id: number; nombre: string }[]; planificaciones: number; objetivos: { codigo: string; descripcion: string }[]; destrezas: number };
-export type GradoVista = { id: number; nombre: string; nivel: Nivel; color: string; importacionEstado: string | null; importacionError: string | null; importacionArchivo: string | null; materias: MateriaVista[] };
+export type GradoVista = { id: number; nombre: string; nivel: Nivel; color: string; importacionEstado: string | null; importacionError: string | null; importacionArchivo: string | null; importacionAtascada: boolean; materias: MateriaVista[] };
 
 /**
  * EL MÓDULO «UNIDADES» (Fernando, 2026-09-16): a la izquierda los grados; en el
@@ -123,7 +123,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                   }}
                 />
                 {/* Solo icono: el texto no cabe en la cabecera (Fernando, 2026-09-17). */}
-                <BotonIcono icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} titulo={grado.importacionEstado === 'LEYENDO' ? 'El agente está leyendo el currículo…' : 'Importar currículo (PDF del Ministerio): crea las materias, sus objetivos y la tabla destreza · criterio · indicador'} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || grado.importacionEstado === 'LEYENDO'} className={grado.importacionEstado === 'LEYENDO' ? '[&>svg]:animate-spin' : ''} />
+                <BotonIcono icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} titulo={grado.importacionEstado === 'LEYENDO' ? 'El agente está leyendo el currículo…' : 'Importar currículo (PDF del Ministerio): crea las materias, sus objetivos y la tabla destreza · criterio · indicador'} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || (grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada)} className={grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada ? '[&>svg]:animate-spin' : ''} />
                 <BotonIcono icono={Pencil} titulo="Renombrar el grado" onClick={() => setPanel('renombrar')} />
                 <BotonIcono icono={Trash2} titulo="Eliminar el grado" className="text-error" onClick={() => setBorrarG(grado)} />
                 <Boton tamano="sm" icono={Plus} onClick={() => abrirMateria(null)}>
@@ -133,12 +133,13 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
             )}
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
-            {grado?.importacionEstado === 'LEYENDO' && (
+            {grado?.importacionEstado === 'LEYENDO' && !grado.importacionAtascada && (
               <div className="mb-2 flex items-start gap-2 rounded bg-aviso-suave px-2.5 py-2 text-[12px] text-texto">
                 <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-aviso" />
                 El agente está leyendo «{grado.importacionArchivo}», ámbito por ámbito. Tarda unos minutos; esta pantalla se actualiza sola.
               </div>
             )}
+            {grado?.importacionEstado === 'LEYENDO' && grado.importacionAtascada && <div className="mb-2"><Aviso tono="aviso" texto={`La lectura de «${grado.importacionArchivo}» se interrumpió (lleva más de 15 minutos). Lo importado hasta ese punto se conserva; vuelve a subir el PDF para completar el resto.`} /></div>}
             {grado?.importacionEstado === 'ERROR' && <div className="mb-2"><Aviso texto={`No se pudo importar «${grado.importacionArchivo}»: ${grado.importacionError ?? ''}`} /></div>}
             {grado && !grado.importacionEstado && grado.importacionError && (
               <details className="mb-2 rounded bg-realce px-2.5 py-1.5 text-[11px] text-tenue">
