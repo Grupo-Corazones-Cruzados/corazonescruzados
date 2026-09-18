@@ -148,6 +148,24 @@ body {
 .desplaza::-webkit-scrollbar-track {
   background: transparent;
 }
+/* Deslizador SIEMPRE visible (galería de semanas): que se vea que hay más a la derecha. */
+.desplaza-siempre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-borde) var(--color-realce);
+  scrollbar-gutter: stable;
+}
+.desplaza-siempre::-webkit-scrollbar {
+  height: 12px;
+}
+.desplaza-siempre::-webkit-scrollbar-track {
+  background: var(--color-realce);
+  border-radius: 999px;
+}
+.desplaza-siempre::-webkit-scrollbar-thumb {
+  background: var(--color-tenue);
+  border: 3px solid var(--color-realce);
+  background-clip: content-box;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

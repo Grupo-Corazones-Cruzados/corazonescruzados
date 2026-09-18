@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -18,6 +18,7 @@ import {
   BookOpenText,
   CalendarDays,
   ChevronRight,
+  ChevronLeft,
   ListChecks,
   Plus as PlusIcon,
   ImageOff,
@@ -135,6 +136,8 @@ export default function PlanificacionesCliente(p: Props) {
   const [borrarPl, setBorrarPl] = useState<PlanificacionVista | null>(null);
   const [borrarSem, setBorrarSem] = useState<SemanaVista | null>(null);
   const [busqueda, setBusqueda] = useState(p.q);
+  const galeria = useRef<HTMLDivElement>(null);
+  const deslizar = (dir: -1 | 1) => galeria.current?.scrollBy({ left: dir * 460, behavior: 'smooth' });
   const [ayuda, setAyuda] = useState(false);
 
   const semana = useMemo(() => p.semanas.find((s) => s.id === p.semanaId) ?? p.semanas[p.semanas.length - 1] ?? null, [p.semanas, p.semanaId]);
@@ -295,9 +298,9 @@ export default function PlanificacionesCliente(p: Props) {
             <EstadoVacio icono={BookOpenText} titulo="Elige una planificación" detalle="A la izquierda están las tuyas; cambia a «De todos» para ver las de tus compañeros." />
           </Tarjeta>
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
             {/* Semanas: a todo el ancho, con altura limitada y en galería horizontal (Fernando, 2026-09-16) */}
-            <Tarjeta className="shrink-0">
+            <Tarjeta className="min-w-0 shrink-0">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <p className="truncate text-[13px] font-semibold text-texto">{actual.materia}</p>
@@ -320,6 +323,13 @@ export default function PlanificacionesCliente(p: Props) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Flechas para deslizar la galería, además de la barra (Fernando, 2026-09-18). */}
+                  {p.semanas.length > 0 && (
+                    <div className="mr-1 flex items-center gap-0.5">
+                      <BotonIcono icono={ChevronLeft} titulo="Semanas anteriores" onClick={() => deslizar(-1)} />
+                      <BotonIcono icono={ChevronRight} titulo="Semanas siguientes" onClick={() => deslizar(1)} />
+                    </div>
+                  )}
                   <Boton tamano="sm" icono={Sparkles} onClick={() => setPanel('semana')} disabled={!puedo || sinCupo} title={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : !puedo ? 'Solo quien la creó (o el administrador) puede añadir semanas' : 'Nueva planificación semanal'}>
                     Nueva
                   </Boton>
@@ -344,7 +354,8 @@ export default function PlanificacionesCliente(p: Props) {
                   <Aviso tono="aviso" texto={actual.importacionError} />
                 </div>
               )}
-              <div className="desplaza flex gap-2 overflow-x-auto p-2">
+              {/* Galería con deslizador siempre visible (Fernando, 2026-09-18). */}
+              <div ref={galeria} className="desplaza desplaza-siempre flex gap-2 overflow-x-auto p-2 pb-3">
                 {p.semanas.length === 0 && (
                   <div className="w-full">
                     <EstadoVacio icono={CalendarDays} titulo="Sin semanas todavía" detalle="Cada semana es una línea del formato. Dicta o escribe lo que quieres y el agente la redacta." />
