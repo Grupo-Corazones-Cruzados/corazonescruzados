@@ -122,9 +122,8 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                     e.target.value = '';
                   }}
                 />
-                <Boton variante="secundario" tamano="sm" icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || grado.importacionEstado === 'LEYENDO'} title="Sube el PDF del currículo priorizado del Ministerio: el agente crea las materias, sus objetivos y la tabla destreza · criterio · indicador">
-                  {grado.importacionEstado === 'LEYENDO' ? 'Leyendo…' : 'Importar currículo'}
-                </Boton>
+                {/* Solo icono: el texto no cabe en la cabecera (Fernando, 2026-09-17). */}
+                <BotonIcono icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} titulo={grado.importacionEstado === 'LEYENDO' ? 'El agente está leyendo el currículo…' : 'Importar currículo (PDF del Ministerio): crea las materias, sus objetivos y la tabla destreza · criterio · indicador'} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || grado.importacionEstado === 'LEYENDO'} className={grado.importacionEstado === 'LEYENDO' ? '[&>svg]:animate-spin' : ''} />
                 <BotonIcono icono={Pencil} titulo="Renombrar el grado" onClick={() => setPanel('renombrar')} />
                 <BotonIcono icono={Trash2} titulo="Eliminar el grado" className="text-error" onClick={() => setBorrarG(grado)} />
                 <Boton tamano="sm" icono={Plus} onClick={() => abrirMateria(null)}>

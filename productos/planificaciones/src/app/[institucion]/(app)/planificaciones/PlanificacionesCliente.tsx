@@ -236,9 +236,8 @@ export default function PlanificacionesCliente(p: Props) {
             <Boton variante="secundario" icono={Settings} disabled={!actual || !puedo} onClick={() => setPanel('configurar')} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas'}>
               Configurar
             </Boton>
-            <Boton variante="secundario" icono={FileUp} onClick={() => setPanel('importar')} disabled={p.soloLectura || sinCupo} title={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : 'Sube el PDF o Word de un formato ya hecho y el agente crea sus semanas'}>
-              Importar formato
-            </Boton>
+            {/* Solo icono, para que la cabecera no se desborde (Fernando, 2026-09-17). */}
+            <BotonIcono icono={FileUp} titulo={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : 'Importar un formato ya hecho (PDF o Word): el agente crea sus semanas'} onClick={() => setPanel('importar')} disabled={p.soloLectura || sinCupo} className="h-9 w-9 rounded-md border border-borde bg-tarjeta hover:bg-realce" />
             <Boton icono={Plus} onClick={() => setPanel('nueva')} disabled={p.soloLectura}>
               Nueva planificación
             </Boton>
