@@ -275,6 +275,25 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📚 IMPORTAR DESTREZAS DESDE UN PCA Y CATÁLOGO DE RELACIONES LÓGICO MATEMÁTICO (2026-09-17).**
+  Fernando pasó el PCA de la materia (`Realciones lógico matemático PCA_Inicial_Preparatoria.docx.pdf`)
+  y pidió, primero, cargar sus destrezas (sección «Destrezas con criterios de desempeño», columna
+  Preparatoria) y, después, un botón **«Importar destrezas»** en el panel de destrezas de una
+  planificación para hacerlo desde la app.
+  - **Catálogo:** 19 destrezas M.1.4.x, 18 con su tira de iconos, extraídas igual que Identidad y
+    Autonomía (`pdftohtml -xml`, columna `left ≥ 820`, imagen casada con el código por posición;
+    «no ción» → «noción» y el pie de firmas recortado). Van en
+    `prisma/destrezas/preparatoria-relaciones-logico-matematico.json` (209 KB), registradas en la
+    semilla y cargadas en el catálogo común (16 nuevas + 3 que ya venían de los ejemplos).
+  - **Botón «Importar destrezas»** (`acciones/destrezas.ts → importarDestrezas`, síncrono): PDF o
+    Word → texto → el agente **transcribe** las destrezas de la materia y el nivel de la
+    planificación (`pud/importar-destrezas.ts`: solo la columna Preparatoria, sin los objetivos
+    O.M. ni los indicadores I.M.) y se añaden las que falten; **el icono se hereda del catálogo**
+    si ese código lo tiene (desde la app no se pueden extraer las imágenes del PDF).
+  - **Los ajustes razonables también se importan** (Fernando: *«la sección de ajustes razonables
+    no se exportó, lo demás sí»*): cada fila de esa tabla crea el **estudiante con condición** del
+    grado (por iniciales; el nombre completo queda como las iniciales hasta que el docente lo
+    complete en «Estudiantes») y su línea con estrategia e **indicadores** (los del documento).
 - **📥 IMPORTAR UN FORMATO YA HECHO (2026-09-17).** Fernando: *«subir un archivo que es el mismo
   formato ya realizado, y que el agente de ia se encargue de crear las planificaciones semanales en
   base a la información del documento»*. Botón **«Importar formato»** en Planificaciones: se elige

@@ -23,7 +23,8 @@ Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 | **Inicio** | Cuántas planificaciones hay, quién las ha hecho y de qué materia; el tope de la semana siempre a la vista |
 | **Planificaciones** | Todo el módulo en una página: a la izquierda las planificaciones (las mías o las de todos), en el medio las semanas de la elegida, a la derecha los campos generados o la **vista previa** del formato entero. «Configurar» solo con una elegida. **Descargar en Word o en PDF** |
 | **Nueva planificación** | **Materia (de las asignadas al docente en Unidades)**, ámbito, nivel (Preparatoria · Primaria · Secundaria), n.º y título de unidad, inicio y fin del PUD. Nace con la plantilla por defecto de la institución y con las destrezas de la materia |
-| **Importar formato** | Sube el PDF o Word de un PUD ya hecho: el agente lo **transcribe** (cabecera, firmas, DECE y una semana por cada «SEMANA N», con sus destrezas) y crea la planificación con sus semanas. Cuentan en el tope semanal |
+| **Importar formato** | Sube el PDF o Word de un PUD ya hecho: el agente lo **transcribe** (cabecera, firmas, DECE, una semana por cada «SEMANA N» con sus destrezas, y las filas de **ajustes razonables**, que crean a los estudiantes con condición) y crea la planificación con sus semanas. Cuentan en el tope semanal |
+| **Importar destrezas** (en el panel Destrezas) | Sube el PCA (PDF o Word): el agente transcribe las destrezas de esa materia y nivel y añade las que falten, con el icono del catálogo si lo hay |
 | **Nueva planificación semanal** | Botón **Dictar** (micrófono → texto en el cuadro), cuadro de indicaciones y hasta **5 adjuntos** (PDF, Word, texto) que se convierten en embeddings al subirlos. El agente redacta en segundo plano; la pantalla se actualiza sola |
 | **Los diez campos** | Fecha inicio, fecha fin, tema, **n.º de periodos (las horas de esa materia en el horario del docente; no lo decide el agente)**, objetivos del tema, destrezas con criterio de desempeño (elegidas de la tabla, con su imagen), estrategias metodológicas (tres fases del ciclo ACC), recursos, técnica, instrumento. Se pueden **corregir** a mano y **regenerar** |
 | **Configurar** | Plantilla, datos del formato (grado, paralelo, jornada, objetivos y criterios de la unidad), el **nombre del responsable del DECE**, las firmas —elaborado por, revisado por, aprobado por, con la fecha del día de la descarga— y el **registro de formato** del pie (título, quién elaboró y aprobó el formato y cuándo) |
@@ -92,9 +93,10 @@ nuevas (código, descripción e **imagen o icono**, PNG/JPG hasta 300 KB, guarda
 formato enseña su imagen bajo el código, en la vista previa, el PDF y el Word.
 
 El catálogo (`destrezas` sin `planificacion_id`) vive en `prisma/destrezas/*.json`:
-las 21 de los diez ejemplos y las 10 de **Identidad y Autonomía** con sus iconos,
-extraídas del PCA de la docente (`Destrezas1.pdf`, columna Preparatoria). Las demás
-materias se cargan igual, archivo por archivo.
+las 21 de los diez ejemplos, las 10 de **Identidad y Autonomía** y las 19 de **Relaciones
+lógico matemático**, con sus iconos, extraídas de los PCA de la docente (columna
+Preparatoria). Las demás materias se cargan igual, archivo por archivo; o desde la app
+con «Importar destrezas», sin iconos salvo los que el catálogo ya tenga.
 
 ## Poner en marcha
 
