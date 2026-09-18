@@ -501,10 +501,14 @@ function dibujarItem(d: Dibujante, it: Item, x: number, y: number, w: number) {
     const wTit = Math.min(w - wBadges - mm(1), mm(58));
     pdf.rect(x, y, wTit, it.alto).lineWidth(0.5).strokeColor(BORDE).stroke();
     pdf.fillColor(AZUL_FASE).font(NEGRITA).fontSize(6.4).text(it.titulo, x + mm(1.2), y + mm(1.9), { width: wTit - mm(2), lineBreak: false, ellipsis: true });
+    // Cada letra lleva DEBAJO una casilla vacía con borde: la docente la pinta a mano
+    // en el Word (Fernando, 2026-09-17), así que aquí queda en blanco.
     let bx = x + wTit + mm(0.8);
+    const hLetra = it.alto * 0.45;
     for (const b of DUA) {
-      pdf.rect(bx, y, mm(3.6), it.alto).fill(b.color);
-      pdf.fillColor(BLANCO).font(NEGRITA).fontSize(6).text(b.letra, bx, y + mm(1.9), { width: mm(3.6), align: 'center', lineBreak: false });
+      pdf.rect(bx, y, mm(3.6), hLetra).fill(b.color);
+      pdf.fillColor(BLANCO).font(NEGRITA).fontSize(5.6).text(b.letra, bx, y + mm(0.5), { width: mm(3.6), align: 'center', lineBreak: false });
+      pdf.rect(bx, y + hLetra, mm(3.6), it.alto - hLetra).lineWidth(0.4).strokeColor(BORDE).stroke();
       bx += mm(3.7);
     }
   }

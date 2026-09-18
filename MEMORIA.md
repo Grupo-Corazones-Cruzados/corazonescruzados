@@ -275,6 +275,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🟩 LAS CASILLAS I · R · A DEL DUA LLEVAN UN CUADRO VACÍO DEBAJO (2026-09-17).** Fernando: cada
+  indicador «tiene un cuadro debajo […] que queda en blanco porque el usuario manualmente lo llena o
+  pinta en la versión Word». Ahora la letra ocupa el 45 % de alto y debajo va una casilla con borde
+  en blanco, en PDF, Word (tabla de dos filas, título con `rowSpan: 2`) y vista previa.
+- **🪤 «AL GUARDAR SALIÓ UN ERROR PERO RECARGANDO SÍ SE GUARDÓ»**: es el desfase de versión al
+  desplegar con la pestaña abierta (la acción corrió en el contenedor viejo y el `router.refresh()`
+  cayó en el nuevo). No había `error.tsx`, así que Next enseñaba su página en blanco. Ahora
+  `(app)/error.tsx` dice que lo guardado quedó guardado y ofrece recargar.
 - **📚 IMPORTAR DESTREZAS DESDE UN PCA Y CATÁLOGO DE RELACIONES LÓGICO MATEMÁTICO (2026-09-17).**
   Fernando pasó el PCA de la materia (`Realciones lógico matemático PCA_Inicial_Preparatoria.docx.pdf`)
   y pidió, primero, cargar sus destrezas (sección «Destrezas con criterios de desempeño», columna

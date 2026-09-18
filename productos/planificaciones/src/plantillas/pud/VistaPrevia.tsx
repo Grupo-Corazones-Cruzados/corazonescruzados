@@ -126,8 +126,12 @@ function Fase({ titulo }: { titulo: string }) {
         {titulo}
       </span>
       {DUA.map((d) => (
-        <span key={d.letra} className="ml-px flex w-4 items-center justify-center text-[8px] font-bold text-white" style={{ background: d.color }}>
-          {d.letra}
+        // La letra y, debajo, la casilla vacía que la docente pinta a mano en Word.
+        <span key={d.letra} className="ml-px flex w-4 flex-col">
+          <span className="flex flex-1 items-center justify-center text-[8px] font-bold leading-none text-white" style={{ background: d.color }}>
+            {d.letra}
+          </span>
+          <span className="flex-1 border border-[#808080] bg-white" />
         </span>
       ))}
     </div>

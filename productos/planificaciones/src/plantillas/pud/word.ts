@@ -319,10 +319,18 @@ function fase(titulo: string): Table {
     new TableCell({
       width: { size: TW(3.8), type: WidthType.DXA },
       borders: sinBordes,
-      margins: { top: 20, bottom: 20, left: 0, right: 0 },
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
       shading: { type: ShadingType.CLEAR, fill: hex(color), color: 'auto' },
       verticalAlign: VerticalAlign.CENTER,
-      children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 0 }, children: [run(letra, { negrita: true, color: '#FFFFFF', tamano: 12 })] })],
+      children: [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 0, line: 200 }, children: [run(letra, { negrita: true, color: '#FFFFFF', tamano: 11 })] })],
+    });
+  // Debajo de cada letra, una casilla vacía con borde que la docente pinta a mano en Word (Fernando, 2026-09-17).
+  const hueco = () =>
+    new TableCell({
+      width: { size: TW(3.8), type: WidthType.DXA },
+      borders: bordes,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      children: [new Paragraph({ spacing: { after: 0, line: 200 }, children: [run('', { tamano: 11 })] })],
     });
   return new Table({
     width: { size: TW(w.reduce((a, b) => a + b, 0)), type: WidthType.DXA },
@@ -332,6 +340,7 @@ function fase(titulo: string): Table {
         children: [
           new TableCell({
             width: { size: TW(w[0]), type: WidthType.DXA },
+            rowSpan: 2,
             borders: bordes,
             margins: { top: 20, bottom: 20, left: 60, right: 60 },
             verticalAlign: VerticalAlign.CENTER,
@@ -340,6 +349,7 @@ function fase(titulo: string): Table {
           ...C.dua.map((d) => casilla(d.letra, d.color)),
         ],
       }),
+      new TableRow({ children: C.dua.map(() => hueco()) }),
     ],
   });
 }
