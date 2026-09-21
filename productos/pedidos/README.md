@@ -5,7 +5,7 @@ de comida pequeños —mesas, carta, cocina y cobro—, vendido por mensualidad.
 talento que el primero (**Automatización de procesos**) y mismo armazón que
 `productos/reservas`; lo propio son las tablas del dominio y sus pantallas.
 
-**Desplegado:** https://pedidos-production-0124.up.railway.app
+**Desplegado:** https://pedidos.grupocc.org
 Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 
 ## Qué hace

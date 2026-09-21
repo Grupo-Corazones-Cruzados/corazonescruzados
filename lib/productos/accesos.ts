@@ -23,11 +23,16 @@ export { anfitrionDe, type AccesoProducto };
  * Se considera con acceso: no suspendido, no escaparate (la demostración ya tiene
  * su propio botón) y (del grupo, o pagado hasta hace como mucho 30 días).
  */
+/**
+ * Cada producto vive en su subdominio (Fernando, 2026-09-21): el nombre del oficio, a
+ * secas, igual que el servicio de Railway y el esquema de la base. Las direcciones
+ * `*.up.railway.app` siguen respondiendo, pero ya no se enlazan desde ningún sitio.
+ */
 export const PRODUCTOS = [
-  { clave: 'reservas', esquema: 'reservas', nombre: 'Gestión de Reservas', url: 'https://reservas-production-e98f.up.railway.app' },
-  { clave: 'pedidos', esquema: 'pedidos', nombre: 'Gestión de Pedidos', url: 'https://pedidos-production-0124.up.railway.app' },
-  { clave: 'catering', esquema: 'catering', nombre: 'Gestión de Catering', url: 'https://catering-production-8f59.up.railway.app' },
-  { clave: 'planificaciones', esquema: 'planificaciones', nombre: 'Planificación de Clases', url: 'https://planificaciones-production.up.railway.app' },
+  { clave: 'reservas', esquema: 'reservas', nombre: 'Gestión de Reservas', url: 'https://reservas.grupocc.org' },
+  { clave: 'pedidos', esquema: 'pedidos', nombre: 'Gestión de Pedidos', url: 'https://pedidos.grupocc.org' },
+  { clave: 'catering', esquema: 'catering', nombre: 'Gestión de Catering', url: 'https://catering.grupocc.org' },
+  { clave: 'planificaciones', esquema: 'planificaciones', nombre: 'Planificación de Clases', url: 'https://planificaciones.grupocc.org' },
 ] as const;
 
 export const DIAS_DE_GRACIA = 30;

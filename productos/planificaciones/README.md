@@ -13,7 +13,7 @@ Nace de una idea (camino B de `/producto`) y de **diez planificaciones reales** 
 una docente de Preparatoria (`Contenido de Profesor/`, en la raíz del repo), de las
 que salió el perfil que encarna el agente.
 
-**Desplegado:** https://planificaciones-production.up.railway.app
+**Desplegado:** https://planificaciones.grupocc.org
 Contexto y decisiones: `MEMORIA.md` en la raíz del repositorio.
 
 ## Qué hace

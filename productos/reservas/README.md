@@ -63,7 +63,7 @@ Una migración aplicada **no se edita ni se borra**: el runner lo detecta y para
 
 ## Desplegado
 
-**https://reservas-production-e98f.up.railway.app** — proyecto **Servidor-GCC**, servicio
+**https://reservas.grupocc.org** — proyecto **Servidor-GCC**, servicio
 **`reservas`**, sobre este mismo repositorio.
 
 | Ajuste | Valor |

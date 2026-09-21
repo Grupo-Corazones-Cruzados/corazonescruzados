@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Cada producto vive en su subdominio (2026-09-21).** `reservas.grupocc.org`,
+  `pedidos.grupocc.org`, `catering.grupocc.org`, `planificaciones.grupocc.org`. **Regla:** el
+  nombre del oficio a secas (sin «gestion-»), una palabra, sin acentos, **igual que el servicio de
+  Railway y el esquema de la base**; para los próximos, lo mismo (`contenido.`, `condiciones.`…).
+  `app` y `www` quedan para la plataforma y el sitio. Fernando creó los CNAME y los dominios en
+  Railway; **🪤 Railway les puso `targetPort: 8080`** mientras cada producto escucha en su
+  `PORT` (3010–3013) → 502 durante 30 s. Se corrigió por la API (`customDomainUpdate(environmentId,
+  id, targetPort)`), que la CLI no expone. Actualizado: `lib/productos/accesos.ts` (la clave del
+  mapa de accesos es el host de `project_url`, así que ficha y tabla tienen que decir el mismo
+  host), `member_portfolio_items.project_url/demo_url`, `APP_URL` de los cuatro servicios y los
+  README. Las direcciones `*.up.railway.app` siguen vivas pero ya no se enlazan. Guiones bajos NO
+  valen en un host (Fernando propuso `gestion_pedidos`): navegadores y certificados los rechazan.
 - **Marketplace público: cada registro tiene su dirección, y solo los proyectos van borrosos
   (2026-09-21).** `/marketplace-publico/<slug>` (p. ej. `/marketplace-publico/gestion-de-reservas`)
   abre el catálogo con la pestaña y el registro ya elegidos, panel derecho incluido («Quiero
