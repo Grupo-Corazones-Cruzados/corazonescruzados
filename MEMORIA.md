@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Acceso desde la portada: cuatro retoques de Fernando (2026-09-21).** (1) Encima del
+  «GCC WORLD» de los diálogos de acceso (cliente, miembro, recuperación, postulación) iba un
+  `BrandLoader` decorativo, que dice «espera»; ahora es el **logo girando** como en el menú del
+  panel: `components/ui/LogoGirando.tsx`, definición única (también la usa `SavePointIndicator`).
+  (2) **El viento de la portada calla mientras hay un diálogo de acceso abierto**
+  (`dialogoDeAccesoAbierto` en `app/page.tsx`, fundido de 500 ms a volumen 0 y vuelta al
+  cerrar); antes el primer clic en «Crear cuenta» era el gesto que lo arrancaba. (3) La página de
+  verificación del correo deja el «OK» **tres segundos** con «Redirigiendo a la plataforma del
+  cliente…» y manda al **cliente directo a `/dashboard/marketplace`** (`/api/auth/verify` devuelve
+  `role`); antes saltaba a los 2 s a `/dashboard`, que para un cliente era una pantalla negra
+  intermedia. (4) **El tema del panel se guarda por cuenta** (`gcc_dash_theme:<user.id>`): una
+  cuenta nueva empieza en claro aunque otra en el mismo navegador tenga el oscuro. Quien tenía
+  el oscuro con la llave vieja lo vuelve a elegir en Configuración una vez.
 - **Cada producto vive en su subdominio (2026-09-21).** `reservas.grupocc.org`,
   `pedidos.grupocc.org`, `catering.grupocc.org`, `planificaciones.grupocc.org`. **Regla:** el
   nombre del oficio a secas (sin «gestion-»), una palabra, sin acentos, **igual que el servicio de

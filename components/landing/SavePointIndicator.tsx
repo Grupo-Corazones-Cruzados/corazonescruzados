@@ -1,5 +1,6 @@
 'use client';
 
+import LogoGirando from '@/components/ui/LogoGirando';
 import { useEffect, useRef, useState } from 'react';
 
 export default function SavePointIndicator({
@@ -66,22 +67,10 @@ export default function SavePointIndicator({
           position: 'relative',
         }}
       >
-        {/* El mismo logo que el resto de la app, girando. Antes era `logo-loader.gif`, el
-            muñeco del videojuego pixelado — otra marca distinta en otra esquina. Ver
-            `components/ui/BrandLoader.tsx`: la marca es una sola. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo-gcc.png"
-          alt=""
-          className="motion-reduce:animate-none rounded-full"
-          style={{
-            width: 36,
-            height: 36,
-            display: 'block',
-            opacity: confirmed ? 0.5 : 1,
-            transition: 'opacity 200ms ease',
-            animation: 'slowSpin 12s linear infinite reverse',
-          }}
+        {/* El mismo logo que el resto de la app, girando: `LogoGirando`, la definición única. */}
+        <LogoGirando
+          tamano={36}
+          className={confirmed ? 'opacity-50' : ''}
         />
         {confirmed && (
           <div

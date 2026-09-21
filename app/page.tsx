@@ -946,6 +946,32 @@ export default function LandingPage() {
     return teardown;
   }, [windAway]);
 
+  /**
+   * ── EL VIENTO CALLA MIENTRAS HAY UN DIÁLOGO DE ACCESO ABIERTO (Fernando, 2026-09-21) ──
+   * Al pulsar «Crear cuenta» el primer gesto arrancaba el viento justo cuando el visitante
+   * se pone a rellenar un formulario: el ambiente es para la portada, no para el alta.
+   * Se atenúa con un fundido corto y vuelve al cerrar el último diálogo. Solo aplica
+   * mientras suena el viento (antes de «Entrar»): el espacio y el planeta van por otro camino.
+   */
+  const dialogoDeAccesoAbierto =
+    recoveryOpen || entryChoiceOpen || onboardingOpen || !!proposalPending || !!candidateAccount ||
+    !!clientPending || clientSignupOpen || clientLoginOpen || memberLoginOpen;
+  useEffect(() => {
+    const wind = windAudioRef.current;
+    if (!wind || windAway) return;
+    const objetivo = dialogoDeAccesoAbierto ? 0 : 0.45;
+    const desde = wind.volume;
+    const inicio = performance.now();
+    let raf = 0;
+    const paso = (t: number) => {
+      const k = Math.min(1, (t - inicio) / 500);
+      wind.volume = Math.max(0, Math.min(1, desde + (objetivo - desde) * k));
+      if (k < 1) raf = requestAnimationFrame(paso);
+    };
+    raf = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(raf);
+  }, [dialogoDeAccesoAbierto, windAway]);
+
   // ── Planet entry — crossfade space ambient → planet music ────────
   useEffect(() => {
     if (!planetEntering) return;

@@ -25,7 +25,12 @@ function VerifyContent() {
         if (res.ok) {
           setStatus("success");
           setMessage(data.message);
-          setTimeout(() => router.push("/dashboard"), 2000);
+          // Tres segundos con el «OK» a la vista y el aviso de a dónde va (Fernando,
+          // 2026-09-21): antes saltaba a los dos segundos y, para un cliente, /dashboard
+          // era una pantalla intermedia en negro que a su vez lo mandaba al marketplace.
+          // El cliente va DIRECTO al marketplace, que es su primera pantalla.
+          const destino = data.role === "client" ? "/dashboard/marketplace" : "/dashboard";
+          setTimeout(() => { window.location.href = destino; }, 3000);
         } else {
           setStatus("error");
           setMessage(data.error);
@@ -54,8 +59,8 @@ function VerifyContent() {
           <p className="text-xs opacity-50" style={{ ...pixelFont, color: "#94A3B8" }}>
             {message}
           </p>
-          <p className="text-[10px] mt-4 opacity-30" style={{ ...pixelFont, color: "#7B5FBF" }}>
-            Redirigiendo al dashboard...
+          <p className="text-[10px] mt-4 opacity-60 inline-flex items-center gap-2" style={{ ...pixelFont, color: "#7B5FBF" }}>
+            <BrandLoader size="sm" /> Redirigiendo a la plataforma del cliente…
           </p>
         </>
       )}

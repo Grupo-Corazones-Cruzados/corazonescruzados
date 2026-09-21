@@ -56,5 +56,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     message: "Cuenta verificada exitosamente",
     verified: true,
+    // Para que la pantalla de verificación mande a cada cuenta a su primera pantalla
+    // (un cliente empieza en el marketplace) sin pasar por /dashboard.
+    role: row.role,
   });
 }

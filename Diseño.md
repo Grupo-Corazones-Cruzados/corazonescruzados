@@ -3250,6 +3250,11 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-21 · Logo girando · ADOPTADO como definición única:** `components/ui/LogoGirando.tsx`
+  (`/logo-gcc.png`, `slowSpin 12s linear infinite reverse`, `motion-reduce:animate-none`). Lo
+  usan los diálogos de acceso de la portada y `SavePointIndicator`. ⏳ `DashboardSidebar` sigue
+  con su `<Image>` inline con la misma animación: migrar cuando se toque. `BrandLoader` queda
+  solo para cargas de verdad.
 - **2026-09-21 · Marketplace · ADOPTADO:** `CardMedia` lleva `desenfocar` (solo proyectos);
   productos y automatizaciones nítidos, con `urlRedimensionada` (solo ancho) en vez de
   `urlDesenfocada`. La regla del acabado `blur-[1px]` queda restringida a proyectos.

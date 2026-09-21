@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
-import BrandLoader from '@/components/ui/BrandLoader';
+import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 
 const PIXEL = "'Silkscreen', cursive";
@@ -197,7 +197,7 @@ export default function AccountRecoveryModal({
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <BrandLoader size="md" />
+          <LogoGirando tamano={40} />
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >

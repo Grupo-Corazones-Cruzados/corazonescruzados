@@ -18,7 +18,14 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
 
+/**
+ * La preferencia se guarda POR CUENTA (`gcc_dash_theme:<id>`), no por navegador
+ * (Fernando, 2026-09-21): una cuenta recién creada tiene que empezar en claro aunque
+ * en ese mismo equipo otra cuenta haya elegido el oscuro. Sin cuenta se usa la llave
+ * genérica, que es la de antes.
+ */
 const LLAVE = 'gcc_dash_theme';
 
 interface TemaPanel {
@@ -31,17 +38,21 @@ const Ctx = createContext<TemaPanel | null>(null);
 
 export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) {
   const [oscuro, setOscuro] = useState(false);
+  const { user } = useAuth();
+  const llave = user?.id ? `${LLAVE}:${user.id}` : LLAVE;
 
   // ⚠️ Se lee DESPUÉS de montar, no en el estado inicial: `localStorage` no existe en el
   // servidor y leerlo al construir el estado rompería el render con un error de hidratación.
+  // Se relee al cambiar de cuenta: cada una tiene su llave, y la que no tiene nada guardado
+  // empieza en claro.
   useEffect(() => {
-    try { if (localStorage.getItem(LLAVE) === 'dark') setOscuro(true); } catch { /* sin almacenamiento: claro */ }
-  }, []);
+    try { setOscuro(localStorage.getItem(llave) === 'dark'); } catch { /* sin almacenamiento: claro */ }
+  }, [llave]);
 
   const poner = useCallback((v: boolean) => {
     setOscuro(v);
-    try { localStorage.setItem(LLAVE, v ? 'dark' : 'light'); } catch { /* no impide cambiarlo ahora */ }
-  }, []);
+    try { localStorage.setItem(llave, v ? 'dark' : 'light'); } catch { /* no impide cambiarlo ahora */ }
+  }, [llave]);
 
   const alternar = useCallback(() => poner(!oscuro), [oscuro, poner]);
 
