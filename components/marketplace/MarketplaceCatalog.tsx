@@ -185,6 +185,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [galleryTitle, setGalleryTitle] = useState('');
+  // Solo los proyectos se enseñan desenfocados, también ampliados (Fernando, 2026-09-21).
+  const [galleryDesenfocada, setGalleryDesenfocada] = useState(false);
   const [galleryLoading, setGalleryLoading] = useState(false);
 
   // Right detail panel
@@ -268,6 +270,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     setGalleryImages(imgs);
     setGalleryIndex(0);
     setGalleryTitle(item.title || '');
+    setGalleryDesenfocada(item.source_type === 'project');
     setGalleryOpen(true);
   };
 
@@ -362,7 +365,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     if (!selected) return;
     const imgs = galleryImagesFor(selected);
     if (!imgs.length) return;
-    setGalleryImages(imgs); setGalleryIndex(k); setGalleryTitle(selected?.title || ''); setGalleryOpen(true);
+    setGalleryImages(imgs); setGalleryIndex(k); setGalleryTitle(selected?.title || '');
+    setGalleryDesenfocada(selected?.source_type === 'project'); setGalleryOpen(true);
   };
 
   const CardMembers = ({ item }: { item: any }) => {
@@ -648,8 +652,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                 src={galleryImages[galleryIndex]}
                 alt={`Foto ${galleryIndex + 1}`}
                 /* Mismo criterio que en la tarjeta: el desenfoque de verdad viene ya en
-                   los píxeles; esto solo remata. */
-                className="max-w-full max-h-[50vh] object-contain blur-[1px]"
+                   los píxeles; esto solo remata, y solo en proyectos. */
+                className={`max-w-full max-h-[50vh] object-contain ${galleryDesenfocada ? 'blur-[1px]' : ''}`}
               />
               {galleryImages.length > 1 && (
                 <>
@@ -685,7 +689,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                       i === galleryIndex ? 'border-accent' : 'border-digi-border/50 hover:border-digi-border'
                     }`}
                   >
-                    <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover blur-[1px]" />
+                    <img src={img} alt={`Thumb ${i + 1}`} className={`w-full h-full object-cover ${galleryDesenfocada ? 'blur-[1px]' : ''}`} />
                   </button>
                 ))}
               </div>
