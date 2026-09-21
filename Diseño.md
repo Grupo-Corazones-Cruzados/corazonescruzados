@@ -2863,6 +2863,39 @@ Hereda entero el sistema de catering (tokens, `ui.tsx`, `campos.tsx`, marca por 
 en `@layer components`, iconos de pestaña con **un cuaderno abierto** como glifo, dibujado a 16 px).
 Lo que aporta:
 
+### Identificadores: selección con casillas y tabla de solo lectura (2026-09-17/18)
+`componentes/PanelDestrezas.tsx` es UN componente con dos caras según `puedo`: en **Unidades**
+(administrador) cada destreza es una fila con **casilla** (`accent-[var(--color-acento)]`; sin
+seleccionar va con `opacity-70`), icono, código, descripción y un `<dl>` de dos columnas con
+criterio e indicador, más editar/quitar y «Nueva destreza»; en **Planificaciones** (docente)
+`TablaIdentificadores`: tabla `text-[12px]` con cabecera `bg-realce uppercase` y tres columnas
+destreza (icono + código en negrita) · criterio · indicador. La misma tabla aparece en la sección
+«Identificadores» del detalle de la materia con solo las seleccionadas y el texto «N seleccionadas
+de M». Los paneles de selección/edición van en `PanelLateral ancho="lg"`.
+
+### Botones de solo icono en cabeceras apretadas
+«Importar currículo» (Unidades) e «Importar formato» (Planificaciones) son `BotonIcono` con el
+texto en `title`: Fernando lo pidió porque el texto desbordaba la cabecera. Regla: en una
+cabecera con más de tres acciones, la secundaria menos frecuente va solo con icono.
+
+### Trabajos en segundo plano: cómo se ven
+Una entidad que el agente está leyendo (`importacionEstado = LEYENDO`) enseña un `Loader2
+animate-spin text-aviso` en su fila de la lista y una franja `bg-aviso-suave` con el mensaje y
+«esta pantalla se actualiza sola» (el cliente hace `router.refresh()` cada 4–5 s). Si falla,
+`Aviso` en rojo con el motivo; si se interrumpió (más de 15 min), `Aviso tono="aviso"` que
+invita a repetir; al terminar, un `<details>` gris con el resumen de la última importación.
+
+### La galería horizontal lleva barra visible y flechas
+La galería de semanas (`overflow-x-auto`) necesita `min-w-0` en su columna flex (si no, empuja la
+página fuera de la pantalla). Clase `.desplaza-siempre` (barra de 12 px con pista `--color-realce`
+y pulgar `--color-tenue`, `scrollbar-gutter: stable`) y dos `BotonIcono` ‹ › junto a «Nueva» que
+hacen `scrollBy({ left: ±460, behavior: 'smooth' })`.
+
+### `error.tsx` del área de la institución
+Tarjeta centrada con «La pantalla no se pudo actualizar», el `digest` en monoespaciada y dos
+botones: «Intentar de nuevo» (`reset()`) y «Recargar la página». Sustituye a la página en blanco
+de Next cuando el despliegue pilla una pestaña abierta.
+
 ### ⭐ UNA REJILLA QUE SE EDITA PULSANDO LA CELDA: EL HORARIO DE CLASES (2026-09-16)
 `perfil/PerfilCliente.tsx`. Dos columnas: **«Mis datos»** estrecha (`lg:w-80`, alto completo, con
 el cambio de contraseña como dos campos más del mismo formulario, ya sin tarjeta aparte) y, a la

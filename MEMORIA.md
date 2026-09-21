@@ -5985,6 +5985,15 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
 
 ## Lecciones técnicas
 
+### 🪤 `after()` de Next muere con el despliegue; una acción de servidor topa en 1 MB (2026-09-17)
+Un trabajo en segundo plano de tres minutos (importar el currículo, nueve llamadas al agente) se
+quedó a medias porque se hizo push mientras corría: Railway cambió de contenedor y el `after()`
+desapareció con él, dejando el grado «LEYENDO» para siempre. Ahora se guarda cuándo empezó, a los
+15 minutos se da por atascado y se puede repetir, y la importación es idempotente. Regla: **no
+desplegar mientras corre un trabajo de un cliente**. Además, `serverActions.bodySizeLimit` es 1 MB
+por defecto: un PDF de 3 MB rebotaba sin más pista que una pantalla en blanco (no había
+`error.tsx`). Ahora 12 MB y una pantalla de error propia.
+
 ### 🪤 Un `000` de `curl` no es un servidor caído: es una petición que nunca salió (2026-08-25)
 Dos veces di por caído un servicio que respondía perfectamente. La causa era mía: un bucle de
 shell (`for par in "Nombre https://…"; set -- $par`) partía la variable y le pasaba a `curl` una

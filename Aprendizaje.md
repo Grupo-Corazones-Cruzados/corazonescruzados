@@ -8618,3 +8618,45 @@ clases»*. Lo que se aprendió construyéndolo:
   y las sesiones 1., 2., 3. en las tres fases; PDF de 7 páginas con total de periodos 10 y Word
   200. Limpieza por identificador (planificación 9, grado 1, celdas 3–6).
 
+## Lo aprendido los días 17 y 18 de septiembre de 2026 (importar documentos y gestionar identificadores)
+- **Una tabla con celdas combinadas no se lee en texto plano.** pdf-parse aplana las columnas y
+  el agente pierde la relación criterio · destreza · indicador. La salida fue quedarse con las
+  POSICIONES de pdf.js (`pagerender`): los títulos de la cabecera de la tabla de cada página dan
+  los límites de las columnas y cada fragmento sale etiquetado ([C] [D] [I]; en Cívica, [K] [D] [H]
+  [I]). Con eso el agente reconstruye las celdas combinadas por orden vertical. Regla: **antes de
+  pedirle al modelo que adivine una estructura, dale la estructura**.
+- **Un documento largo se parte por su propia estructura** («Ámbito de desarrollo y aprendizaje
+  N», «Mapas del currículo de X», «Mapa curricular para el período pedagógico de X») y se manda
+  ámbito por ámbito con `esfuerzo: low`: 13–28 s cada uno, JSON estricto de una fila por destreza.
+  Un formato nuevo (Cívica: bloques, criterio sin código, indicadores por bloque) se atiende con
+  un párrafo más en el prompt, no con otro extractor.
+- 🪤 **`after()` de Next muere con el despliegue.** Un trabajo en segundo plano de tres minutos
+  (nueve llamadas al agente) se quedó a medias porque hice push mientras corría, y el grado quedó
+  «LEYENDO» para siempre. Dos remedios: guardar cuándo empezó y dar por atascado lo que lleve más
+  de 15 minutos (se puede repetir), y hacer la importación **idempotente** (materias por parecido,
+  destrezas y objetivos por código, nunca borrar). Y la regla de oro: **no desplegar mientras corre
+  un trabajo en segundo plano de un cliente**.
+- 🪤 **Las acciones de servidor topan en 1 MB** por defecto: el PDF del Ministerio (3 MB) rebotaba
+  y, como no había `error.tsx`, la pantalla se quedaba en blanco. `experimental.serverActions.bodySizeLimit`
+  y una pantalla de error propia que explica y ofrece recargar.
+- 🪤 **«Guardé y salió error, pero al recargar estaba guardado»** es desfase de versión: la acción
+  corrió en el contenedor viejo y el `router.refresh()` cayó en el nuevo. No es un fallo del
+  código; es no tener `error.tsx` y desplegar con la pestaña del cliente abierta.
+- **Los nombres de las materias no son claves.** «Compresión y expresión artística» (errata),
+  «Relaciones lógico matemático» y «Relaciones lógico-matemáticas» son la misma materia. Casar por
+  parecido (sin acentos, guiones, plurales ni palabras vacías; ≥ 75 % de palabras comunes o todas
+  las de la corta) evitó duplicar materias que ya tenían planificaciones colgando; y al casar, se
+  adopta el nombre oficial y se propaga al área de las planificaciones.
+- **Lo que llega tarde se completa, no se regenera.** Los estudiantes con condición y las destrezas
+  seleccionadas llegaron después de redactar 18 semanas. En vez de rehacerlas: un encargo pequeño
+  que ELIGE la destreza de cada semana entre las seleccionadas (explicando por qué) y otro que
+  redacta solo la línea de ajustes que falta (5–8 s). Las dos cosas quedaron como capacidad del
+  producto (`completarAjustesDeSemana` con su botón), no solo como guion de una vez.
+- **La selección es del administrador; el docente solo ve.** Fernando cambió tres veces el dueño
+  de las destrezas en un día (planificación → docente por materia → administrador por materia de
+  grado, con selección). Lo que lo hizo barato: un solo componente (`PanelDestrezas`) con un
+  interruptor `puedo`, y una sola función (`destrezasDe`) que decide de dónde salen.
+- **En headless Chrome no se ven las barras de desplazamiento**: una captura no sirve para
+  comprobar un deslizador. Se comprueba midiendo (`scrollWidth > clientWidth` y que la página no
+  se salga de `innerWidth`) y, para el usuario, se añaden flechas además de la barra.
+
