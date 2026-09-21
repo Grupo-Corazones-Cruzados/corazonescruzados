@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Building2, CalendarClock, LogIn, LogOut, Plus, BedDouble } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, EstadoVacio, Insignia, Tarjeta } from '@/componentes/ui';
 import {
@@ -54,6 +55,7 @@ export default function PanelCliente({
   ubicaciones: UbicacionVista[];
   puedeOperar: boolean;
 }) {
+  const router = useRouter();
   const [ubicacionSel, setUbicacionSel] = useState<number | null>(ubicaciones[0]?.id ?? null);
   const [filtro, setFiltro] = useState<Filtro>('todas');
 
@@ -126,11 +128,6 @@ export default function PanelCliente({
               <Insignia tono="aviso">{cuenta('por-salir')} por salir</Insignia>
               <Insignia tono="info">{cuenta('ocupada')} ocupadas</Insignia>
             </div>
-            {puedeOperar && (
-              <Link href={`/${slug}/reserva/nueva`}>
-                <Boton icono={Plus}>Nueva reserva</Boton>
-              </Link>
-            )}
           </>
         }
       />
@@ -160,16 +157,30 @@ export default function PanelCliente({
           <h2 className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-tenue">
             Ubicaciones
           </h2>
-          <div className="desplaza flex gap-3 overflow-x-auto pb-2 xl:flex-col xl:overflow-visible xl:pb-0">
+          {/* El relleno de 2 px es para que el anillo de la seleccionada no se recorte
+              contra el borde del contenedor que se desplaza. */}
+          <div className="desplaza -m-0.5 flex gap-3 overflow-x-auto p-0.5 pb-2 xl:flex-col xl:overflow-visible xl:pb-0.5">
             {ubicaciones.map((u) => {
               const sel = u.id === ubicacionSel;
+              // Es un <div> con rol de botón y no un <button>: dentro va el «+»,
+              // que es otro botón, y un botón dentro de otro no es HTML válido.
               return (
-                <button
+                <div
                   key={u.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setUbicacionSel(u.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setUbicacionSel(u.id);
+                    }
+                  }}
                   className={cn(
-                    'tarjeta w-52 shrink-0 overflow-hidden p-3 text-left transition-colors foco-visible xl:w-full',
-                    sel ? 'border-acento bg-acento-suave' : 'hover:bg-realce',
+                    'tarjeta relative w-52 shrink-0 cursor-pointer overflow-hidden p-3 text-left transition-[box-shadow,background-color] foco-visible xl:w-full',
+                    // La seleccionada se RODEA con un borde del acento (Fernando,
+                    // 2026-09-20): el cambio de fondo solo no se distinguía.
+                    sel ? 'border-acento bg-acento-suave ring-2 ring-acento' : 'hover:bg-realce',
                   )}
                 >
                   <div className="flex items-center gap-2.5">
@@ -187,13 +198,28 @@ export default function PanelCliente({
                       </p>
                       <p className="text-[11px] text-tenue">{u.suites.length} suites</p>
                     </div>
+                    {/* «+»: abre la agenda de HOY de esta ubicación. Es la única
+                        puerta a la agenda desde que salió del menú. */}
+                    <button
+                      type="button"
+                      title={`Agenda de ${u.nombre}`}
+                      aria-label={`Abrir la agenda de ${u.nombre}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setUbicacionSel(u.id);
+                        router.push(`/${slug}/agenda?ubicacion=${u.id}`);
+                      }}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-acento text-acento-contraste transition-colors hover:bg-acento-fuerte foco-visible"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
                   </div>
                   <div className="mt-2 flex gap-3 text-[11px]">
                     <span className="text-exito">{cuenta('libre', u.suites)} libres</span>
                     <span className="text-aviso">{cuenta('por-salir', u.suites)} por salir</span>
                     <span className="text-acento">{cuenta('ocupada', u.suites)} ocup.</span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

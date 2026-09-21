@@ -3250,6 +3250,26 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-20 · Reservas · ADOPTADOS como estándar del producto** (correcciones de Fernando
+  tras probar en el teléfono):
+  - **Tarjeta seleccionable con anillo:** la ubicación elegida en el panel lleva
+    `border-acento bg-acento-suave ring-2 ring-acento` (antes solo cambiaba el fondo y no se
+    distinguía). El contenedor que se desplaza lleva `p-0.5 -m-0.5` para no recortar el anillo.
+    Es un `<div role="button">` porque dentro va otro botón (el «+»).
+  - **`BotonIcono` acepta hijos** (un contador en la esquina: `absolute -right-0.5 -top-0.5
+    … rounded-full bg-aviso text-[9px] text-white`) y lleva `type="button"` por defecto.
+  - **Regla de horas por posición:** marcas `absolute` en `left: h/24·100%`; en `<sm` solo
+    00/06/12/18 y un `23:00` anclado a la derecha; en `sm+` cada 3 h. Columnas `flex-1` con 8
+    etiquetas se montaban en 390 px.
+  - **Navegación optimista en la agenda:** el día pulsado se pinta al instante
+    (`useTransition` + estado local), `Loader2` en la cabecera y la tarjeta de barras a
+    `opacity-60` mientras llega. Y `(app)/loading.tsx` con `Cargando` para el cambio de módulo.
+  - **Lista de trabajo en `PanelLateral`** (saldos pendientes) abierta desde un `BotonIcono`
+    con `DollarSign` a la derecha del título de la tarjeta; cada tarjeta es un `Link`.
+  - **Formulario sin selectores de estado:** el estado se deriva y se anticipa con una línea
+    de color bajo los importes (`text-exito` saldada · `text-aviso` pendiente · `text-error`
+    excede). Aviso de una línea en `bg-acento-suave text-acento` cuando la hora viene de la
+    agenda («revísalas antes de guardar»); no es un texto de ayuda permanente bajo un campo.
 - **2026-09-15 · ⏳ PENDIENTE DE MIGRAR: `.campo` fuera de `@layer` en reservas y pedidos.**
   En catering se corrigió (ver su sección): con el CSS propio fuera de capa, en Tailwind v4
   gana a cualquier utilidad, así que `w-44`, `w-32` o `pl-8` sobre un `<Entrada>` **no hacen

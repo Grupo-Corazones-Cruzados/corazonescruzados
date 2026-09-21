@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 import { contextoApi } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
-import { noches } from '@/lib/reservas';
+import { nochesEn } from '@/lib/reservas';
+import { esDia, inicioDelDiaEn, finDelDiaEn, relojDeParedUtc } from '@/lib/fechas';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,11 +29,13 @@ export async function GET(
   const suite = url.searchParams.get('suite');
   const estado = url.searchParams.get('estado');
 
+  // Los límites son días del HOTEL, no del servidor (UTC).
+  const zona = ctx.inquilino.zonaHoraria;
   const reservas = await prisma.reserva.findMany({
     where: {
       inquilinoId: ctx.inquilino.id,
-      ...(hasta ? { entrada: { lte: new Date(`${hasta}T23:59:59`) } } : {}),
-      ...(desde ? { salida: { gte: new Date(`${desde}T00:00:00`) } } : {}),
+      ...(esDia(hasta) ? { entrada: { lte: finDelDiaEn(hasta, zona) } } : {}),
+      ...(esDia(desde) ? { salida: { gte: inicioDelDiaEn(desde, zona) } } : {}),
       ...(suite ? { suiteId: Number(suite) } : {}),
       ...(estado ? { estado: estado as never } : { estado: { not: 'ELIMINADA' as never } }),
     },
@@ -79,9 +82,11 @@ export async function GET(
       telefono: r.telefono ?? '',
       ubicacion: r.suite.ubicacion.nombre,
       suite: r.suite.nombre,
-      entrada: r.entrada,
-      salida: r.salida,
-      noches: noches(r.entrada, r.salida),
+      // ExcelJS convierte un Date a fecha de hoja con sus piezas UTC: se le da
+      // uno cuyas piezas UTC son el reloj del hotel, y la celda dice la hora real.
+      entrada: relojDeParedUtc(r.entrada, zona),
+      salida: relojDeParedUtc(r.salida, zona),
+      noches: nochesEn(r.entrada, r.salida, zona),
       total,
       abono,
       saldo: total - abono,

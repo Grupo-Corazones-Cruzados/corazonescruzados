@@ -1,7 +1,7 @@
-import { addDays } from 'date-fns';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
-import { inicioDelDia, VIVAS } from '@/lib/reservas';
+import { VIVAS } from '@/lib/reservas';
+import { hoyEn, sumarDias, inicioDelDiaEn, finDelDiaEn } from '@/lib/fechas';
 import PanelCliente, { type UbicacionVista } from './PanelCliente';
 
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,10 @@ export default async function PaginaPanel({ params }: { params: Promise<{ hotel:
   const { hotel } = await params;
   const { inquilino, sesion } = await exigirContexto(hotel);
 
-  const desde = inicioDelDia();
-  const hasta = addDays(desde, 8);
+  // Hoy según el HOTEL, no según el servidor (que corre en UTC).
+  const hoy = hoyEn(inquilino.zonaHoraria);
+  const desde = inicioDelDiaEn(hoy, inquilino.zonaHoraria);
+  const hasta = finDelDiaEn(sumarDias(hoy, 7), inquilino.zonaHoraria);
 
   // Una sola consulta por el árbol del hotel. Las reservas se acotan a la ventana
   // que el panel necesita (hoy + 7 días): traerlas todas crecería sin límite con el

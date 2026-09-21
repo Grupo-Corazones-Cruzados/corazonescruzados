@@ -7,20 +7,24 @@ import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Insignia } from '@/componentes/ui';
-import { ETIQUETA_ESTADO_RESERVA, TONO_ESTADO_RESERVA, noches } from '@/lib/reservas';
+import { ETIQUETA_ESTADO_RESERVA, TONO_ESTADO_RESERVA, nochesEn } from '@/lib/reservas';
 import { dinero } from '@/lib/formato';
-import { aCampoFechaHora } from '@/lib/fechas';
+import { aCampoFechaHoraEn, relojDePared } from '@/lib/fechas';
 import DetalleReserva from './DetalleReserva';
 
 export const dynamic = 'force-dynamic';
 
 export default async function PaginaReserva({
   params,
+  searchParams,
 }: {
   params: Promise<{ hotel: string; id: string }>;
+  searchParams: Promise<{ editar?: string; volver?: string }>;
 }) {
   const { hotel, id } = await params;
+  const { editar, volver } = await searchParams;
   const { inquilino, sesion } = await exigirContexto(hotel);
+  const zona = inquilino.zonaHoraria;
 
   const reserva = await prisma.reserva.findFirst({
     // El filtro por inquilino va SIEMPRE, aunque el identificador sea único: es lo
@@ -37,7 +41,12 @@ export default async function PaginaReserva({
   });
 
   const saldo = Number(reserva.precioTotal) - Number(reserva.anticipo);
-  const n = noches(reserva.entrada, reserva.salida);
+  const n = nochesEn(reserva.entrada, reserva.salida, zona);
+  // Las horas se escriben con el reloj del hotel, no con el del servidor (UTC).
+  const entrada = relojDePared(reserva.entrada, zona);
+  const salida = relojDePared(reserva.salida, zona);
+  // A dónde vuelve: a la agenda si vino de ella (lleva el día y la ubicación), y al panel si no.
+  const volverA = volver && volver.startsWith(`/${hotel}/`) ? volver : `/${hotel}/panel`;
 
   const datos = [
     { icono: User, etiqueta: 'Huésped', valor: reserva.clienteNombre },
@@ -61,7 +70,7 @@ export default async function PaginaReserva({
               {reserva.estadoPago === 'PAGADO' ? 'Pagada' : 'Pago pendiente'}
             </Insignia>
             <Link
-              href={`/${hotel}/panel`}
+              href={volverA}
               className="flex items-center gap-1 text-[13px] text-tenue hover:text-texto"
             >
               <ChevronLeft className="h-4 w-4" /> Volver
@@ -80,16 +89,16 @@ export default async function PaginaReserva({
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-tenue">Entrada</p>
                 <p className="text-[14px] font-semibold">
-                  {format(reserva.entrada, "d 'de' MMMM", { locale: es })}
+                  {format(entrada, "d 'de' MMMM", { locale: es })}
                 </p>
-                <p className="text-[12px] text-tenue">{format(reserva.entrada, 'HH:mm')}</p>
+                <p className="text-[12px] text-tenue">{format(entrada, 'HH:mm')}</p>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-tenue">Salida</p>
                 <p className="text-[14px] font-semibold">
-                  {format(reserva.salida, "d 'de' MMMM", { locale: es })}
+                  {format(salida, "d 'de' MMMM", { locale: es })}
                 </p>
-                <p className="text-[12px] text-tenue">{format(reserva.salida, 'HH:mm')}</p>
+                <p className="text-[12px] text-tenue">{format(salida, 'HH:mm')}</p>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-tenue">Noches</p>
@@ -135,7 +144,7 @@ export default async function PaginaReserva({
                 <dd className="font-semibold">{dinero(reserva.precioTotal, inquilino.moneda)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-tenue">Anticipo</dt>
+                <dt className="text-tenue">Valor pagado</dt>
                 <dd className="font-semibold">{dinero(reserva.anticipo, inquilino.moneda)}</dd>
               </div>
               <div className="flex justify-between border-t border-borde pt-2.5">
@@ -157,15 +166,10 @@ export default async function PaginaReserva({
               clienteNombre: reserva.clienteNombre,
               telefono: reserva.telefono,
               documento: reserva.documento,
-              entrada: aCampoFechaHora(reserva.entrada),
-              salida: aCampoFechaHora(reserva.salida),
+              entrada: aCampoFechaHoraEn(reserva.entrada, zona),
+              salida: aCampoFechaHoraEn(reserva.salida, zona),
               precioTotal: Number(reserva.precioTotal),
               anticipo: Number(reserva.anticipo),
-              estadoPago: reserva.estadoPago as 'PENDIENTE' | 'PAGADO',
-              estado: (reserva.estado === 'ELIMINADA' ? 'FINALIZADA' : reserva.estado) as
-                | 'OCUPADA'
-                | 'POR_SALIR'
-                | 'FINALIZADA',
               comentarios: reserva.comentarios,
             }}
             suites={suites.map((s) => ({
@@ -174,8 +178,9 @@ export default async function PaginaReserva({
               ubicacion: s.ubicacion.nombre,
               precioNoche: s.precioNoche ? Number(s.precioNoche) : null,
             }))}
-            yaPagada={reserva.estadoPago === 'PAGADO'}
+            pagada={reserva.estadoPago === 'PAGADO'}
             yaFinalizada={reserva.estado === 'FINALIZADA' || reserva.estado === 'ELIMINADA'}
+            abrirEdicion={editar === '1'}
           />
         </div>
       </div>

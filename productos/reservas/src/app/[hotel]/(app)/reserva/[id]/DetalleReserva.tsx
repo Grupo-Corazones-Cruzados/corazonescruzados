@@ -3,17 +3,21 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Pencil, Trash2, BadgeCheck, DoorOpen } from 'lucide-react';
+import { Pencil, Trash2, DoorOpen } from 'lucide-react';
 import { Boton, Confirmar, PanelLateral } from '@/componentes/ui';
 import FormularioReserva, {
   type ReservaEditable,
   type SuiteOpcion,
 } from '@/componentes/FormularioReserva';
-import { eliminarReserva, marcarPagada, darSalida } from '@/acciones/reservas';
+import { eliminarReserva, darSalida } from '@/acciones/reservas';
 
 /**
  * Acciones del detalle. Una acción que no procede se DESHABILITA, no desaparece:
  * un botón que se esfuma deja al usuario buscando dónde estaba.
+ *
+ * «Marcar como pagada» ya no existe (Fernando, 2026-09-20): el pago se deriva de
+ * lo pagado frente al precio, así que se anota el cobro EDITANDO la reserva. Y la
+ * salida se registra solo cuando la cuenta está saldada.
  */
 export default function DetalleReserva({
   slug,
@@ -21,19 +25,22 @@ export default function DetalleReserva({
   suites,
   moneda,
   puedeOperar,
-  yaPagada,
+  pagada,
   yaFinalizada,
+  abrirEdicion = false,
 }: {
   slug: string;
   reserva: ReservaEditable;
   suites: SuiteOpcion[];
   moneda: string;
   puedeOperar: boolean;
-  yaPagada: boolean;
+  pagada: boolean;
   yaFinalizada: boolean;
+  /** Llega con `?editar=1` (desde la lista de saldos pendientes): se abre ya en edición. */
+  abrirEdicion?: boolean;
 }) {
   const router = useRouter();
-  const [editando, setEditando] = useState(false);
+  const [editando, setEditando] = useState(abrirEdicion);
   const [borrando, setBorrando] = useState(false);
   const [enCurso, arranca] = useTransition();
 
@@ -69,23 +76,19 @@ export default function DetalleReserva({
         </Boton>
         <Boton
           variante="secundario"
-          icono={BadgeCheck}
-          className="w-full"
-          disabled={enCurso || yaPagada}
-          title={yaPagada ? 'La reserva ya está pagada' : undefined}
-          onClick={() => ejecutar(() => marcarPagada(slug, reserva.id), 'Reserva marcada como pagada')}
-        >
-          {yaPagada ? 'Ya está pagada' : 'Marcar como pagada'}
-        </Boton>
-        <Boton
-          variante="secundario"
           icono={DoorOpen}
           className="w-full"
-          disabled={enCurso || yaFinalizada}
-          title={yaFinalizada ? 'La estancia ya terminó' : undefined}
+          disabled={enCurso || yaFinalizada || !pagada}
+          title={
+            yaFinalizada
+              ? 'La estancia ya terminó'
+              : !pagada
+                ? 'Con saldo pendiente no se puede dar la salida: edita la reserva y anota el pago'
+                : undefined
+          }
           onClick={() => ejecutar(() => darSalida(slug, reserva.id), 'Salida registrada')}
         >
-          {yaFinalizada ? 'Estancia terminada' : 'Registrar salida'}
+          {yaFinalizada ? 'Estancia terminada' : pagada ? 'Registrar salida' : 'Registrar salida (falta el pago)'}
         </Boton>
         <Boton
           variante="fantasma"
@@ -105,7 +108,17 @@ export default function DetalleReserva({
         descripcion={reserva.clienteNombre}
         ancho="lg"
       >
-        <FormularioReserva slug={slug} suites={suites} reserva={reserva} moneda={moneda} />
+        <FormularioReserva
+          slug={slug}
+          suites={suites}
+          reserva={reserva}
+          moneda={moneda}
+          alGuardar={() => {
+            setEditando(false);
+            // Misma pantalla sin `?editar=1`: al ser dinámica llega recién hecha.
+            router.replace(`/${slug}/reserva/${reserva.id}`);
+          }}
+        />
       </PanelLateral>
 
       <Confirmar

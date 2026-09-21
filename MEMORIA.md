@@ -275,6 +275,47 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏨 Reservas: nueve correcciones de Fernando tras probarla en el teléfono (2026-09-20).**
+  Commit en `productos/reservas/`. Lo que cambió y por qué:
+  - **⭐ EL FALLO DE FONDO ERA LA ZONA HORARIA, NO LA VELOCIDAD.** «Hoy» abría el 19 siendo 20,
+    las flechas ← → «no hacían nada» y en la galería solo respondían los días de las esquinas.
+    Railway corre en **UTC** (`show timezone` → `Etc/UTC`, sin `TZ`): la agenda calculaba
+    `inicioDelDia` con la hora del servidor y mandaba el instante al navegador (Ecuador, UTC−5),
+    que lo leía como **el día anterior a las 19:00**. Con el día corrido, `addDays(±1)` caía en la
+    **misma URL** y `router.push` no hacía nada. El mismo defecto estaba en las acciones
+    (`new Date('AAAA-MM-DDTHH:mm')` parseaba en hora del servidor: **Fernando escribía 14:00 y
+    se guardaba 14:00 UTC = 09:00 de Ecuador**), en el detalle, en «nueva», en reportes y en el
+    Excel. **Arreglo:** `src/lib/fechas.ts` con `hoyEn`, `inicioDelDiaEn`, `finDelDiaEn`,
+    `desdeCampoFechaHora`, `aCampoFechaHoraEn`, `relojDePared(Utc)` sobre
+    `inquilino.zonaHoraria`; todo lo que es «un día» viaja como `AAAA-MM-DD`. **Migración
+    `006_horas_en_utc.sql`** (aplicada el 2026-09-20): corrige solo las filas que entraron por la
+    aplicación (`creado_por IS NOT NULL`); las de la semilla ya eran instantes correctos porque se
+    sembraron desde un proceso en la zona del hotel. Comprobado contra la base real: 14:00 escrito
+    en el formulario → `2026-10-05 14:00` en la columna = 09:00 Guayaquil ✔.
+  - **Anclada al inicio se comporta como app:** manifiesto por hotel
+    (`/<hotel>/manifest.webmanifest`, ruta pública con nombre y color del inquilino,
+    `display: standalone`, `scope: /<hotel>/`) + `appleWebApp` y `apple-mobile-web-app-capable`
+    en el armazón `(app)`. Sin manifiesto, iOS/Android abrían el acceso directo como marcador.
+  - **Sensación de inmediatez:** `(app)/loading.tsx` (antes tocar un módulo no cambiaba nada
+    hasta que el servidor contestaba) y en la agenda el día elegido se pinta **optimista**
+    (`useTransition` + estado local) con un `Loader2` mientras llega.
+  - **Navegación:** «Agenda» sale del menú; cada ubicación del panel lleva un **«+»** que abre
+    la agenda de HOY de esa ubicación (`?ubicacion=`); la agenda ya no tiene rail de
+    ubicaciones. «Panel» queda activo en el menú mientras se está en agenda o en una reserva.
+    «Nueva reserva» sale del panel. La ubicación seleccionada se rodea con `ring-2 ring-acento`.
+  - **Regla de horas en teléfono:** 00 · 06 · 12 · 18 · 23, marcas por posición (no columnas);
+    las de 3 h solo en `sm+`. Medido en 390 px: sin solapes.
+  - **⭐ EL ESTADO DEL PAGO SE DERIVA Y EL DE LA RESERVA SOLO LO MUEVEN LOS BOTONES.** El
+    formulario pierde «Estado del pago» y «Estado de la reserva»; el servidor pone
+    `estadoPago = anticipo >= precioTotal ? PAGADO : PENDIENTE` (`estadoPagoDe`) y rechaza
+    `anticipo > precioTotal`. Nace OCUPADA; «Registrar salida» (→ FINALIZADA) exige PAGADO en el
+    servidor y va deshabilitado con su motivo; «Marcar como pagada» desapareció (el cobro se anota
+    editando). POR_SALIR ya no se escribe: «sale hoy» se deduce de la salida (`saleEnElDia`).
+    El campo se llama «Valor pagado (abono)».
+  - **Botón «$» en «Resumen del día»** → `PanelLateral` con las reservas con saldo pendiente de
+    TODO el hotel (cliente, ubicación, suite, total/abono/saldo); la tarjeta lleva a
+    `/reserva/<id>?editar=1`, que abre el detalle ya en edición. `BotonIcono` acepta hijos
+    (el contador). `?volver=` en detalle y en «nueva» para regresar a la agenda de donde se vino.
 - **Corregir identificadores y completar ajustes sin regenerar (2026-09-18).** Los estudiantes con
   condición y las destrezas seleccionadas llegaron después de redactar las semanas de la docente, así
   que había semanas sin destreza y sin ajustes razonables. Dos piezas: (1) un guion de una vez que

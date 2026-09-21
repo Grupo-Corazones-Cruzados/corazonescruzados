@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import {
   LayoutDashboard,
-  CalendarDays,
   BarChart3,
   Users,
   Settings,
@@ -17,16 +16,23 @@ import { LogoHotel } from '@/componentes/Marca';
 import { cn } from '@/lib/utils';
 import type { RolUsuario } from '@/generated/prisma/enums';
 
+/**
+ * «Agenda» salió del menú (Fernando, 2026-09-20): a la agenda se entra por el «+»
+ * de cada ubicación en el panel. Sus rutas (y las de una reserva) marcan «Panel»
+ * como activo, que es de donde se llega.
+ */
 const PRINCIPAL = [
-  { ruta: 'panel', etiqueta: 'Panel', icono: LayoutDashboard },
-  { ruta: 'agenda', etiqueta: 'Agenda', icono: CalendarDays },
-  { ruta: 'reportes', etiqueta: 'Reportes', icono: BarChart3 },
+  { ruta: 'panel', etiqueta: 'Panel', icono: LayoutDashboard, tambien: ['agenda', 'reserva'] },
+  { ruta: 'reportes', etiqueta: 'Reportes', icono: BarChart3, tambien: [] as string[] },
 ];
 
 const ADMINISTRACION = [
-  { ruta: 'usuarios', etiqueta: 'Usuarios', icono: Users },
-  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings },
+  { ruta: 'usuarios', etiqueta: 'Usuarios', icono: Users, tambien: [] as string[] },
+  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, tambien: [] as string[] },
 ];
+
+const estaActivo = (ruta: string, slug: string, item: { ruta: string; tambien: string[] }) =>
+  [item.ruta, ...item.tambien].some((r) => ruta.startsWith(`/${slug}/${r}`));
 
 const ROL_ETIQUETA: Record<RolUsuario, string> = {
   ADMIN: 'Administrador',
@@ -60,7 +66,7 @@ export function BarraLateral({ slug, hotel, logoUrl, usuario, rol }: Props) {
 
   const Enlace = ({ item }: { item: (typeof PRINCIPAL)[number] }) => {
     const href = `/${slug}/${item.ruta}`;
-    const activo = ruta.startsWith(href);
+    const activo = estaActivo(ruta, slug, item);
     return (
       <Link
         href={href}
@@ -156,7 +162,7 @@ export function BarraInferior({ slug, rol }: Pick<Props, 'slug' | 'rol'>) {
       <div className="flex h-16 items-center justify-around">
         {destinos.map((i) => {
           const href = `/${slug}/${i.ruta}`;
-          const activo = ruta.startsWith(href);
+          const activo = estaActivo(ruta, slug, i);
           return (
             <Link
               key={i.ruta}

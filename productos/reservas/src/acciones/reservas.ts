@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
-import { VIVAS } from '@/lib/reservas';
+import { VIVAS, estadoPagoDe } from '@/lib/reservas';
+import { desdeCampoFechaHora } from '@/lib/fechas';
 
 export type Resultado = { ok: true; id: number } | { ok: false; error: string };
 
@@ -17,8 +18,9 @@ const Entrada = z.object({
   salida: z.string().min(1, 'Falta la fecha de salida.'),
   precioTotal: z.coerce.number().min(0).default(0),
   anticipo: z.coerce.number().min(0).default(0),
-  estadoPago: z.enum(['PENDIENTE', 'PAGADO']).default('PENDIENTE'),
-  estado: z.enum(['OCUPADA', 'POR_SALIR', 'FINALIZADA']).default('OCUPADA'),
+  // Ni `estadoPago` ni `estado` llegan del formulario (Fernando, 2026-09-20): el
+  // pago se deriva de lo pagado frente al precio, y el estado solo lo mueven los
+  // botones del detalle.
   comentarios: z.string().trim().max(2000).optional().or(z.literal('')),
 });
 
@@ -57,13 +59,22 @@ async function haySolape(
 
 type Fechas = { ok: true; entrada: Date; salida: Date } | { ok: false; error: string };
 
-function validarFechas(entradaTxt: string, salidaTxt: string): Fechas {
-  const entrada = new Date(entradaTxt);
-  const salida = new Date(salidaTxt);
-  if (Number.isNaN(entrada.getTime()) || Number.isNaN(salida.getTime()))
-    return { ok: false, error: 'Las fechas no son válidas.' };
+/**
+ * Las horas del formulario son las del reloj del HOTEL, no las del servidor: un
+ * `new Date('2026-09-20T14:00')` aquí sería las 14:00 UTC, cinco horas antes de
+ * lo que el recepcionista escribió.
+ */
+function validarFechas(entradaTxt: string, salidaTxt: string, zonaHoraria: string): Fechas {
+  const entrada = desdeCampoFechaHora(entradaTxt, zonaHoraria);
+  const salida = desdeCampoFechaHora(salidaTxt, zonaHoraria);
+  if (!entrada || !salida) return { ok: false, error: 'Las fechas no son válidas.' };
   if (salida <= entrada) return { ok: false, error: 'La salida tiene que ser posterior a la entrada.' };
   return { ok: true, entrada, salida };
+}
+
+function validarCuenta(precioTotal: number, anticipo: number) {
+  if (anticipo > precioTotal) return 'El valor pagado no puede superar el precio total.';
+  return null;
 }
 
 export async function crearReserva(slug: string, datos: FormData): Promise<Resultado> {
@@ -75,8 +86,10 @@ export async function crearReserva(slug: string, datos: FormData): Promise<Resul
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
 
-  const f = validarFechas(d.entrada, d.salida);
+  const f = validarFechas(d.entrada, d.salida, ctx.inquilino.zonaHoraria);
   if (!f.ok) return { ok: false, error: f.error };
+  const malaCuenta = validarCuenta(d.precioTotal, d.anticipo);
+  if (malaCuenta) return { ok: false, error: malaCuenta };
 
   // La suite tiene que ser de ESTE hotel. Sin esta comprobación, un identificador
   // cambiado a mano metería una reserva en el hotel de al lado.
@@ -104,8 +117,8 @@ export async function crearReserva(slug: string, datos: FormData): Promise<Resul
       salida: f.salida,
       precioTotal: d.precioTotal,
       anticipo: d.anticipo,
-      estadoPago: d.estadoPago,
-      estado: d.estado,
+      estadoPago: estadoPagoDe(d.precioTotal, d.anticipo),
+      estado: 'OCUPADA',
       comentarios: d.comentarios || null,
       creadoPor: ctx.sesion.nombre,
     },
@@ -135,8 +148,10 @@ export async function actualizarReserva(
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
 
-  const f = validarFechas(d.entrada, d.salida);
+  const f = validarFechas(d.entrada, d.salida, ctx.inquilino.zonaHoraria);
   if (!f.ok) return { ok: false, error: f.error };
+  const malaCuenta = validarCuenta(d.precioTotal, d.anticipo);
+  if (malaCuenta) return { ok: false, error: malaCuenta };
 
   const suite = await prisma.suite.findFirst({
     where: { id: d.suiteId, inquilinoId: ctx.inquilino.id },
@@ -162,8 +177,7 @@ export async function actualizarReserva(
       salida: f.salida,
       precioTotal: d.precioTotal,
       anticipo: d.anticipo,
-      estadoPago: d.estadoPago,
-      estado: d.estado,
+      estadoPago: estadoPagoDe(d.precioTotal, d.anticipo),
       comentarios: d.comentarios || null,
     },
   });
@@ -191,33 +205,24 @@ export async function eliminarReserva(slug: string, id: number): Promise<Resulta
   return { ok: true, id };
 }
 
-/** Atajos del detalle: registrar el cobro y dar la salida. */
-export async function marcarPagada(slug: string, id: number): Promise<Resultado> {
+/**
+ * Dar la salida. Solo con la cuenta saldada (Fernando, 2026-09-20): «Marcar como
+ * pagada» desapareció porque el pago se deriva de lo pagado, así que para cerrar
+ * una estancia con saldo hay que editar la reserva y anotar el cobro.
+ */
+export async function darSalida(slug: string, id: number): Promise<Resultado> {
   const permiso = await contextoEscritura(slug, 'GERENTE');
   if (!permiso.ok) return { ok: false, error: permiso.error };
   const { ctx } = permiso;
   const r = await prisma.reserva.findFirst({
     where: { id, inquilinoId: ctx.inquilino.id },
-    select: { precioTotal: true },
+    select: { estadoPago: true, estado: true },
   });
   if (!r) return { ok: false, error: 'La reserva no existe.' };
-  await prisma.reserva.update({
-    where: { id },
-    data: { estadoPago: 'PAGADO', anticipo: r.precioTotal },
-  });
-  revalidatePath(`/${slug}`, 'layout');
-  return { ok: true, id };
-}
-
-export async function darSalida(slug: string, id: number): Promise<Resultado> {
-  const permiso = await contextoEscritura(slug, 'GERENTE');
-  if (!permiso.ok) return { ok: false, error: permiso.error };
-  const { ctx } = permiso;
-  const r = await prisma.reserva.updateMany({
-    where: { id, inquilinoId: ctx.inquilino.id },
-    data: { estado: 'FINALIZADA' },
-  });
-  if (!r.count) return { ok: false, error: 'La reserva no existe.' };
+  if (r.estadoPago !== 'PAGADO')
+    return { ok: false, error: 'La reserva tiene saldo pendiente: anota el pago completo antes de dar la salida.' };
+  if (r.estado === 'ELIMINADA') return { ok: false, error: 'La reserva está eliminada.' };
+  await prisma.reserva.update({ where: { id }, data: { estado: 'FINALIZADA' } });
   revalidatePath(`/${slug}`, 'layout');
   return { ok: true, id };
 }

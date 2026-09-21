@@ -58,11 +58,13 @@ export function Boton({
   );
 }
 
-/** Botón de solo icono, 32×32 — el mismo cuadrado que la X de cerrar. */
+/** Botón de solo icono, 32×32 — el mismo cuadrado que la X de cerrar. Los hijos
+ *  (p. ej. un contador en la esquina) se pintan además del icono. */
 export function BotonIcono({
   icono: Icono,
   titulo,
   className,
+  children,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   icono: React.ComponentType<{ className?: string }>;
@@ -70,6 +72,7 @@ export function BotonIcono({
 }) {
   return (
     <button
+      type="button"
       title={titulo}
       aria-label={titulo}
       className={cn(
@@ -80,6 +83,7 @@ export function BotonIcono({
       {...props}
     >
       <Icono className="h-4 w-4" />
+      {children}
     </button>
   );
 }

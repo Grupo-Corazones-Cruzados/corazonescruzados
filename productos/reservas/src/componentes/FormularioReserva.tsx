@@ -3,11 +3,12 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { AlertCircle, Save } from 'lucide-react';
+import { AlertCircle, CalendarCheck, Save } from 'lucide-react';
 import { Boton, Campo, Entrada, AreaTexto, Selector } from '@/componentes/ui';
 import { crearReserva, actualizarReserva } from '@/acciones/reservas';
 import { noches } from '@/lib/reservas';
 import { dinero } from '@/lib/formato';
+import { cn } from '@/lib/utils';
 
 export type SuiteOpcion = {
   id: number;
@@ -26,15 +27,19 @@ export type ReservaEditable = {
   salida: string;
   precioTotal: number;
   anticipo: number;
-  estadoPago: 'PENDIENTE' | 'PAGADO';
-  estado: 'OCUPADA' | 'POR_SALIR' | 'FINALIZADA';
   comentarios: string | null;
 };
 
 /** Valores de partida al CREAR. Va aparte de `reserva` a propósito: mientras no
  *  exista la reserva no hay identificador, y un objeto con id 0 haría que el
  *  formulario intentara actualizar una reserva inexistente en vez de crearla. */
-export type InicialReserva = { suiteId: number; entrada: string; salida: string };
+export type InicialReserva = {
+  suiteId: number;
+  entrada: string;
+  salida: string;
+  /** Vino de pulsar un hueco de la agenda: la hora es una propuesta, no un dato. */
+  propuesta?: boolean;
+};
 
 export default function FormularioReserva({
   slug,
@@ -42,12 +47,15 @@ export default function FormularioReserva({
   reserva,
   inicial,
   moneda,
+  alGuardar,
 }: {
   slug: string;
   suites: SuiteOpcion[];
   reserva?: ReservaEditable;
   inicial?: InicialReserva;
   moneda: string;
+  /** Si se da, al guardar se llama a esto en vez de saltar al detalle (el panel de edición cierra y recarga). */
+  alGuardar?: () => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +67,15 @@ export default function FormularioReserva({
   const [entrada, setEntrada] = useState(reserva?.entrada ?? inicial?.entrada ?? '');
   const [salida, setSalida] = useState(reserva?.salida ?? inicial?.salida ?? '');
   const [precio, setPrecio] = useState(String(reserva?.precioTotal ?? ''));
+  const [pagado, setPagado] = useState(String(reserva?.anticipo ?? ''));
+
+  // El estado del pago no se elige: se lee de la cuenta. Aquí solo se anticipa lo
+  // que el servidor va a decidir, para que quien guarda sepa cómo queda.
+  const cuenta = useMemo(() => {
+    const t = Number(precio) || 0;
+    const a = Number(pagado) || 0;
+    return { total: t, pagado: a, saldo: t - a, pagada: a >= t, excede: a > t };
+  }, [precio, pagado]);
 
   const porUbicacion = useMemo(() => {
     const m = new Map<string, SuiteOpcion[]>();
@@ -88,6 +105,10 @@ export default function FormularioReserva({
         return;
       }
       toast.success(reserva ? 'Reserva actualizada' : 'Reserva creada');
+      if (alGuardar) {
+        alGuardar();
+        return;
+      }
       // Cuando se navega NO se refresca: refrescar invalida el árbol ACTUAL, que es
       // justo el que se está abandonando, y el destino es dinámico —llega recién
       // hecho igual—. (Sospeché que además cancelaba el salto; lo medí y NO era
@@ -106,6 +127,12 @@ export default function FormularioReserva({
 
   return (
     <form action={enviar} className="space-y-4">
+      {inicial?.propuesta && (
+        <p className="flex items-start gap-2 rounded border border-borde bg-acento-suave px-3 py-2 text-[12px] text-acento">
+          <CalendarCheck className="mt-px h-4 w-4 shrink-0" />
+          La entrada y la salida vienen del hueco que pulsaste en la agenda: revísalas antes de guardar.
+        </p>
+      )}
       <Campo etiqueta="Suite" requerido>
         <Selector name="suiteId" value={suiteId} onChange={(e) => setSuiteId(e.target.value)} required>
           {porUbicacion.map(([ubicacion, lista]) => (
@@ -167,13 +194,14 @@ export default function FormularioReserva({
             placeholder="0.00"
           />
         </Campo>
-        <Campo etiqueta="Anticipo">
+        <Campo etiqueta="Valor pagado (abono)">
           <Entrada
             name="anticipo"
             type="number"
             step="0.01"
             min="0"
-            defaultValue={reserva?.anticipo ?? ''}
+            value={pagado}
+            onChange={(e) => setPagado(e.target.value)}
             placeholder="0.00"
           />
         </Campo>
@@ -192,21 +220,13 @@ export default function FormularioReserva({
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Campo etiqueta="Estado del pago">
-          <Selector name="estadoPago" defaultValue={reserva?.estadoPago ?? 'PENDIENTE'}>
-            <option value="PENDIENTE">Pendiente</option>
-            <option value="PAGADO">Pagado</option>
-          </Selector>
-        </Campo>
-        <Campo etiqueta="Estado de la reserva">
-          <Selector name="estado" defaultValue={reserva?.estado ?? 'OCUPADA'}>
-            <option value="OCUPADA">Ocupada</option>
-            <option value="POR_SALIR">Por salir</option>
-            <option value="FINALIZADA">Finalizada</option>
-          </Selector>
-        </Campo>
-      </div>
+      <p className={cn('-mt-2 text-[12px]', cuenta.excede ? 'text-error' : cuenta.pagada ? 'text-exito' : 'text-aviso')}>
+        {cuenta.excede
+          ? 'El valor pagado supera el precio total.'
+          : cuenta.pagada
+            ? 'Cuenta saldada: la reserva quedará como pagada.'
+            : `Saldo pendiente: ${dinero(cuenta.saldo, moneda)}. Quedará como pago pendiente.`}
+      </p>
 
       <Campo etiqueta="Comentarios">
         <AreaTexto name="comentarios" rows={3} defaultValue={reserva?.comentarios ?? ''} />
@@ -226,7 +246,7 @@ export default function FormularioReserva({
         <Boton type="button" variante="secundario" onClick={() => router.back()} disabled={enCurso}>
           Cancelar
         </Boton>
-        <Boton type="submit" icono={Save} disabled={enCurso}>
+        <Boton type="submit" icono={Save} disabled={enCurso || cuenta.excede}>
           {enCurso ? 'Guardando…' : reserva ? 'Guardar cambios' : 'Crear reserva'}
         </Boton>
       </div>

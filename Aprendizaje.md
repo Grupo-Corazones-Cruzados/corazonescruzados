@@ -1,5 +1,47 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado y cerrado el 2026-09-20) — RESERVAS: nueve correcciones de Fernando tras probarla en el teléfono · ✅ 100 % — HECHO Y VERIFICADO
+
+**Rol asumido:** ingeniero de producto full-stack (Next.js App Router + zonas horarias + PWA).
+
+### Lo que pidió (verbatim resumido)
+1. Anclada al inicio del teléfono, al cambiar de módulo «la ventana cambia al navegador» → que se mantenga como app.
+2. Quitar «Nueva reserva» del panel.
+3. La ubicación seleccionada con un borde que la rodee.
+4. Quitar «Agenda» del menú; cada ubicación lleva un «+» que abre la agenda de hoy de ESA ubicación; la agenda ya no tiene la sección de ubicaciones.
+5. En teléfono la regla de horas muestra solo 00:00 · 06:00 · 12:00 · 18:00 · 23:00; pulsar sigue preseleccionando la hora; el usuario siempre revisa entrada y salida.
+6. En «Resumen del día», a la derecha del título, un botón «$» → panel con velo con las reservas con saldo pendiente (cliente, ubicación, suite, abono); pulsar una tarjeta lleva a la EDICIÓN de la reserva.
+7. El formulario pierde «Estado del pago» y «Estado de la reserva»: el pago se deriva (pagado ⇔ valor pagado = precio total) y el estado solo cambia con los botones del detalle. Se elimina «Marcar como pagada»; «Registrar salida» bloqueado hasta que esté pagada.
+8. Cambiar de fecha/página a veces se queda cargando o no hace nada; «Hoy» lleva al 19 cuando es 20; las flechas no responden.
+9. En la galería de días solo responden los de las esquinas.
+
+### P1 — ¿Por qué «Hoy» va al 19 y las flechas no hacen nada? · ✅ Resuelta
+- **Respuesta (código + BD):** Railway corre en **UTC** (`show timezone` → `Etc/UTC`, sin `TZ` en el servicio). `agenda/page.tsx` hacía `inicioDelDia(new Date('AAAA-MM-DDT12:00:00'))` en hora del servidor y mandaba `desde.toISOString()`; el navegador (UTC−5) lo convertía al **día anterior a las 19:00**. Con `elDia` corrido, `addDays(elDia, ±1)` → `aCampoFecha` cae en la MISMA URL que ya estaba y `router.push` no cambia nada; en la galería solo los días de las esquinas producen una URL distinta. No era lentitud: era una navegación a la misma dirección.
+- **Alcance real:** el mismo defecto está en el panel (`inicioDelDia()` en UTC), en las acciones (`new Date('AAAA-MM-DDTHH:mm')` parsea en hora del servidor), en el detalle (`format()` en UTC), en «nueva» (valores por defecto en UTC), en reportes y en el Excel. El inquilino YA tiene `zonaHoraria` (por defecto `America/Guayaquil`) y la purga ya la usa; el resto no.
+
+### P2 — ¿Por qué la app «se sale» al navegador estando anclada? · ✅ Resuelta
+- **Respuesta:** no hay `manifest` ni `apple-mobile-web-app-*`: sin `display: standalone` y sin `scope`, iOS/Android abren la pantalla anclada como un marcador y la navegación se ve como navegador. Se añade un manifiesto por hotel (`/<hotel>/manifest.webmanifest`, con su nombre y su color) y los meta de Apple en el armazón.
+
+### P3 — ¿Cómo se deriva el estado del pago y qué pasa con POR_SALIR? · ✅ Resuelta (decisión)
+- `estadoPago = anticipo >= precioTotal ? PAGADO : PENDIENTE`, calculado en el servidor al crear y al editar; `anticipo > precioTotal` es error. `estado` nace OCUPADA y solo lo mueve «Registrar salida» (→ FINALIZADA, exige PAGADO) y «Eliminar». POR_SALIR deja de escribirse: «sale hoy» se deduce de la salida para el color del bloque y la insignia.
+
+### Decisiones de diseño
+- Todo lo que es «un día» viaja como `AAAA-MM-DD`; los límites del día y el parseo de `datetime-local` se hacen en la **zona del inquilino** (`src/lib/fechas.ts`), nunca en la del servidor.
+- La agenda recibe la ubicación por la dirección (`?ubicacion=`), no por un rail.
+- El botón «$» abre un `PanelLateral` (la regla: formularios y listas de trabajo en panel derecho con velo).
+
+### Progreso
+- **% de información para el objetivo:** 100 % — las nueve peticiones hechas y verificadas.
+- **Verificación (2026-09-20):** `tsc` limpio · `next build` limpio · ayudantes de fecha probados
+  con el proceso en UTC, Guayaquil y Tokio · 35 comprobaciones HTTP contra el build con el
+  servidor en **UTC** y sesión real del inquilino `grupo` · Chrome a 390 px: anillo medido
+  (`box-shadow … 2px`), «+» → agenda de la ubicación, marcas de la regla sin solape, flechas y
+  tira cambian título y URL, «Hoy» → 20 de septiembre, panel «$» → tarjeta → detalle en edición
+  sin selectores de estado, reserva creada por el formulario y leída en la base
+  (`2026-10-05 14:00` UTC para 09:00 escrito), salida registrada solo con la cuenta saldada;
+  la fila de prueba se borró por su id.
+- **Migración `006_horas_en_utc.sql` aplicada** a la base real antes del despliegue.
+
 > Documento vivo de la skill `/aprendizaje`. Acumula todas las preguntas técnicas y sus
 > respuestas hasta dominar el problema y resolverlo sin fallos.
 >

@@ -1,4 +1,5 @@
-import type { EstadoReserva } from '@/generated/prisma/enums';
+import type { EstadoReserva, EstadoPagoReserva } from '@/generated/prisma/enums';
+import { diaDe, inicioDelDiaEn, finDelDiaEn, type Dia } from '@/lib/fechas';
 
 /**
  * Estado de una suite HOY. No es una columna: se deduce de sus reservas, porque
@@ -66,8 +67,33 @@ export const TONO_ESTADO_RESERVA = {
   ELIMINADA: 'neutro',
 } as const;
 
-/** Noches entre dos fechas, mínimo 1: una estancia de un día es una noche. */
+/** Noches entre dos fechas, mínimo 1: una estancia de un día es una noche. (Zona local del proceso.) */
 export function noches(entrada: Date, salida: Date) {
   const ms = inicioDelDia(salida).getTime() - inicioDelDia(entrada).getTime();
   return Math.max(1, Math.round(ms / 86_400_000));
+}
+
+/** Noches contadas con los días del hotel, para el servidor (que corre en UTC). */
+export function nochesEn(entrada: Date, salida: Date, zonaHoraria: string) {
+  const [a1, m1, d1] = diaDe(entrada, zonaHoraria).split('-').map(Number);
+  const [a2, m2, d2] = diaDe(salida, zonaHoraria).split('-').map(Number);
+  const ms = Date.UTC(a2, m2 - 1, d2) - Date.UTC(a1, m1 - 1, d1);
+  return Math.max(1, Math.round(ms / 86_400_000));
+}
+
+/**
+ * EL ESTADO DEL PAGO NO SE ELIGE: SE DERIVA (Fernando, 2026-09-20). Está pagada
+ * cuando lo pagado cubre el precio total. Se calcula en el servidor al guardar,
+ * así la columna sigue valiendo para filtrar y para los reportes.
+ */
+export function estadoPagoDe(precioTotal: number, anticipo: number): EstadoPagoReserva {
+  return anticipo >= precioTotal ? 'PAGADO' : 'PENDIENTE';
+}
+
+/**
+ * ¿La reserva sale dentro de ese día del hotel? Es lo que pinta un bloque como
+ * «por salir» en la agenda: el estado POR_SALIR ya no se escribe a mano.
+ */
+export function saleEnElDia(salida: Date, dia: Dia, zonaHoraria: string) {
+  return salida >= inicioDelDiaEn(dia, zonaHoraria) && salida <= finDelDiaEn(dia, zonaHoraria);
 }

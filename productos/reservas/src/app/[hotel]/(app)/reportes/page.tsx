@@ -1,7 +1,7 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import ReportesCliente, { type FilaReporte } from './ReportesCliente';
-import { aCampoFecha } from '@/lib/fechas';
+import { esDia, hoyEn, primeroDelMes, inicioDelDiaEn, finDelDiaEn } from '@/lib/fechas';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Reportes' };
@@ -18,11 +18,12 @@ export default async function PaginaReportes({
   const { inquilino } = await exigirContexto(hotel);
 
   // Por defecto, el mes en curso: es lo que se consulta el 95 % de las veces y
-  // evita traer el histórico entero solo por abrir la pantalla.
-  const hoy = new Date();
-  const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  const desde = f.desde || aCampoFecha(primero);
-  const hasta = f.hasta || aCampoFecha(hoy);
+  // evita traer el histórico entero solo por abrir la pantalla. Los días son los
+  // del hotel: el servidor corre en UTC.
+  const zona = inquilino.zonaHoraria;
+  const hoy = hoyEn(zona);
+  const desde = esDia(f.desde) ? f.desde : primeroDelMes(hoy);
+  const hasta = esDia(f.hasta) ? f.hasta : hoy;
 
   const suites = await prisma.suite.findMany({
     where: { inquilinoId: inquilino.id },
@@ -33,8 +34,8 @@ export default async function PaginaReportes({
   const reservas = await prisma.reserva.findMany({
     where: {
       inquilinoId: inquilino.id,
-      entrada: { lte: new Date(`${hasta}T23:59:59`) },
-      salida: { gte: new Date(`${desde}T00:00:00`) },
+      entrada: { lte: finDelDiaEn(hasta, zona) },
+      salida: { gte: inicioDelDiaEn(desde, zona) },
       ...(f.suite ? { suiteId: Number(f.suite) } : {}),
       ...(f.estado
         ? { estado: f.estado as never }
