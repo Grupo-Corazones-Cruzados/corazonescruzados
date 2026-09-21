@@ -23,10 +23,13 @@ function Spinner() {
 export default function CardMedia({
   src,
   placeholder,
+  desenfocar = false,
   children,
 }: {
   /** URL de la portada (ya dimensionada) o null si el registro no tiene imagen. */
   src: string | null;
+  /** Acabado desenfocado: solo los PROYECTOS (protegen datos de un cliente). */
+  desenfocar?: boolean;
   /** Icono de categoría a mostrar cuando el registro no tiene imagen. */
   placeholder: React.ReactNode;
   /** Overlays (badge de categoría, contador de fotos…). */
@@ -48,14 +51,13 @@ export default function CardMedia({
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => { setFailed(true); setLoaded(true); }}
-          /* ⚠️ Este `blur-[1px]` NO es la protección: es el acabado.
-             Las capturas ya llegan desenfocadas desde el servidor o desde Cloudinary,
-             que es donde de verdad se quitan los datos (un filtro CSS se desactiva en
-             dos clics desde las herramientas del navegador). Esto solo suaviza el
-             último punto de nitidez y cubre el caso raro de una imagen que no pasara
-             por ninguno de los dos caminos — una portada antigua guardada en la base
-             como base64, por ejemplo. */
-          className={`w-full h-full object-cover blur-[1px] transition-[opacity,transform] duration-300 group-hover:scale-[1.03] ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          /* ⚠️ Este `blur-[1px]` NO es la protección: es el acabado, y solo en proyectos.
+             Sus capturas ya llegan desenfocadas desde el servidor, que es donde de verdad
+             se quitan los datos (un filtro CSS se desactiva en dos clics desde las
+             herramientas del navegador). Esto solo suaviza el último punto de nitidez y
+             cubre el caso raro de una portada antigua guardada en la base como base64.
+             Los productos y automatizaciones se enseñan nítidos (Fernando, 2026-09-21). */
+          className={`w-full h-full object-cover ${desenfocar ? 'blur-[1px]' : ''} transition-[opacity,transform] duration-300 group-hover:scale-[1.03] ${loaded ? 'opacity-100' : 'opacity-0'}`}
         />
       )}
 

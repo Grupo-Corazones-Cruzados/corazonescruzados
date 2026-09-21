@@ -12,7 +12,8 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, AlertTriangle } from 'lucide-react';
 import { anfitrionDe, type AccesoProducto } from '@/lib/productos/tipos';
 import { fmt2 } from '@/lib/format';
-import { esUrlCloudinary, urlDesenfocada, sigmaPara } from '@/lib/cloudinary-url';
+import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
+import { slugDeTitulo } from '@/lib/marketplace/slug';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -48,6 +49,14 @@ export interface MarketplaceCatalogProps {
   renderExtra?: (value: string) => React.ReactNode;
   /** Notifica el cambio de pestaña (p. ej. para cargar pedidos on-demand). */
   onTabChange?: (value: string) => void;
+  /**
+   * Slug (del título) del registro que debe aparecer ya seleccionado al abrir, con su
+   * pestaña: es lo que hace que `/marketplace-publico/gestion-de-reservas` enseñe el
+   * panel derecho con «Quiero suscribirme» sin que nadie pulse nada.
+   */
+  slugInicial?: string;
+  /** Avisa de cada selección (o de cerrarla) para que la página refleje el registro en la dirección. */
+  onSeleccion?: (item: any | null, tab: string) => void;
 }
 
 /**
@@ -149,7 +158,7 @@ function Demostracion({ item }: { item: any }) {
  * variantes leen exactamente lo mismo; solo cambia el botón principal (prop
  * `onPrimaryAction`) y las pestañas extra con sesión (prop `tabsExtra`).
  */
-export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange }: MarketplaceCatalogProps) {
+export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange, slugInicial, onSeleccion }: MarketplaceCatalogProps) {
   const tabs = [...CATALOG_TABS, ...tabsExtra];
   const [tab, setTabState] = useState('projects');
   // Los productos a los que la cuenta con sesión puede entrar, por anfitrión. Sin
@@ -241,12 +250,12 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       const count = imageCount(item);
       return Array.from({ length: count }, (_, i) => projImg(item.id, i, 1600));
     }
-    // Portafolio: se pide a Cloudinary la copia desenfocada, igual que la portada. A
-    // 1.600 px el desenfoque sube en proporción — si no, ampliar la foto sería la forma
-    // de leer los datos que la miniatura escondía.
+    // Portafolio (productos y automatizaciones): SIN desenfoque (Fernando, 2026-09-21):
+    // son capturas de lo que vende el grupo, no datos de un cliente. Solo se le pide a
+    // Cloudinary el ancho.
     const propias: string[] = item.images?.length > 0 ? item.images
       : item.image_url ? [item.image_url] : [];
-    return propias.map((u: string) => (esUrlCloudinary(u) ? urlDesenfocada(u, 1600, sigmaPara(1600)) : u));
+    return propias.map((u: string) => (esUrlCloudinary(u) ? urlRedimensionada(u, 1600) : u));
   };
 
   const openGallery = (item: any, e: React.MouseEvent) => {
@@ -271,12 +280,62 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
 
   const tabLabel = tab === 'projects' ? 'proyectos' : tab === 'products' ? 'productos' : 'automatizaciones';
 
-  // Clear the detail panel when switching catalog tab.
-  useEffect(() => { setSelected(null); setPanelImages([]); }, [tab]);
+  // Clear the detail panel when switching catalog tab — salvo que el cambio de
+  // pestaña sea para enseñar un registro que llegó por la dirección (`slugInicial`):
+  // ese se selecciona en cuanto su pestaña está puesta.
+  const pendienteRef = useRef<{ tab: string; item: any } | null>(null);
+  const primeraPestanaRef = useRef(true);
+  useEffect(() => {
+    const pendiente = pendienteRef.current;
+    if (pendiente && pendiente.tab === tab) {
+      pendienteRef.current = null;
+      selectItem(pendiente.item);
+      return;
+    }
+    setSelected(null);
+    setPanelImages([]);
+    // Al montar no hay nada que cerrar: avisar aquí borraría de la dirección el slug
+    // que acaba de llegar antes de que el registro se encuentre.
+    if (primeraPestanaRef.current) primeraPestanaRef.current = false;
+    else onSeleccion?.(null, tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  // Registro pedido por la dirección: se busca en los tres catálogos a la vez y se
+  // abre en su pestaña. Si no existe (título cambiado, registro retirado), se queda
+  // el catálogo normal: un enlace viejo no puede dejar la pantalla vacía.
+  useEffect(() => {
+    if (!slugInicial) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const [prod, auto, proy] = await Promise.all([
+          fetch('/api/portfolio/public?type=product').then((r) => r.json()).catch(() => ({ data: [] })),
+          fetch('/api/portfolio/public?type=automation').then((r) => r.json()).catch(() => ({ data: [] })),
+          fetch('/api/marketplace/projects').then((r) => r.json()).catch(() => ({ data: [] })),
+        ]);
+        if (!vivo) return;
+        const busca = (lista: any[]) => (lista || []).find((i) => slugDeTitulo(i.title) === slugInicial);
+        const candidatos: { tab: string; item: any }[] = [
+          { tab: 'products', item: busca(prod.data) },
+          { tab: 'automations', item: busca(auto.data) },
+          { tab: 'projects', item: busca(proy.data) && { ...busca(proy.data), source_type: 'project' } },
+        ];
+        const hallado = candidatos.find((c) => c.item);
+        if (!hallado) return;
+        if (hallado.tab !== 'projects') hallado.item = { ...hallado.item, source_type: 'portfolio', final_cost: hallado.item.price };
+        pendienteRef.current = hallado;
+        setTab(hallado.tab);
+      } catch { /* sin registro inicial: catálogo normal */ }
+    })();
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slugInicial]);
 
   const selectItem = (item: any) => {
     const token = ++selTokenRef.current;
     setSelected(item);
+    onSeleccion?.(item, tab);
     setPanelImages([]);
     setPanelReqs([]);
     setPanelReqsLoading(false);
@@ -337,14 +396,15 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const price = Number(item.final_cost ?? item.price ?? 0);
     const count = imageCount(item);
     // Portada: proyectos → miniatura WebP (w=480); portafolio → su imagen inline.
-    /* Los proyectos ya salen desenfocados del servidor (ver la ruta de imagen del
-       marketplace). Los del portafolio traen su URL directa, así que aquí se le pide a
-       Cloudinary la copia desenfocada — misma protección, y sin pasar por nosotros. */
+    /* SOLO LOS PROYECTOS VAN DESENFOCADOS (Fernando, 2026-09-21): protegen datos de un
+       cliente y ya salen así del servidor (ver la ruta de imagen del marketplace). Los
+       productos y automatizaciones son del grupo y se enseñan nítidos; a Cloudinary
+       solo se le pide el ancho. */
     const portadaPortafolio = (Array.isArray(item.images) && item.images[0]) || item.image_url || null;
     const coverSrc = isProject
       ? (count > 0 ? projImg(item.id, 0, 480) : null)
       : (portadaPortafolio && esUrlCloudinary(portadaPortafolio)
-          ? urlDesenfocada(portadaPortafolio, 480, sigmaPara(480))
+          ? urlRedimensionada(portadaPortafolio, 480)
           : portadaPortafolio);
     const active = selected?.id === item.id && selected?.source_type === item.source_type;
     const CatIcon = isProject ? FolderKanban : tab === 'automations' ? Workflow : Package;
@@ -359,7 +419,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         }`}
       >
         {/* media */}
-        <CardMedia src={coverSrc} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
+        <CardMedia src={coverSrc} desenfocar={isProject} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
           <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{catLabel}</span>
           {count > 0 && (
             <button onClick={(e) => openGallery(item, e)} title={`Ver ${count} foto(s)`}
@@ -430,7 +490,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
             <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
             <p className="text-[11px] text-digi-muted mt-0.5 capitalize" style={mf}>{isProject ? 'Proyecto' : tabLabel.replace(/s$/, '')}</p>
           </div>
-          <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+          <button onClick={() => { setSelected(null); onSeleccion?.(null, tab); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-4 space-y-3">
           <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} alt={t.title} onOpen={openGalleryFromPanel} />

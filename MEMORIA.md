@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Marketplace público: cada registro tiene su dirección, y solo los proyectos van borrosos
+  (2026-09-21).** `/marketplace-publico/<slug>` (p. ej. `/marketplace-publico/gestion-de-reservas`)
+  abre el catálogo con la pestaña y el registro ya elegidos, panel derecho incluido («Quiero
+  suscribirme»). **El slug es el del título** (`lib/marketplace/slug.ts` → `slugify` de
+  `lib/centralized/systems.ts`): ni `member_portfolio_items` ni `projects` tienen columna de slug,
+  y así se enlaza sin guardar nada. `MarketplaceCatalog` recibe `slugInicial` (busca en los tres
+  catálogos a la vez y abre la pestaña; un `pendienteRef` evita que el efecto «limpiar al cambiar
+  de pestaña» borre la selección) y `onSeleccion` (la página pública refleja el registro en la
+  dirección con `history.replaceState`, así copiar la URL es compartirlo; cerrar o cambiar de
+  pestaña vuelve a `/marketplace-publico`). La ruta `[slug]/page.tsx` pone `<title>` y `og:image`
+  del registro. Un slug que no existe deja el catálogo normal. **Desenfoque:** solo los PROYECTOS
+  (protegen datos de un cliente); productos y automatizaciones se enseñan nítidos
+  (`urlRedimensionada` en `lib/cloudinary-url.ts`, `CardMedia desenfocar`). El sitio público
+  (`lib/soluciones.ts`) no se tocó.
 - **🏨 Reservas: nueve correcciones de Fernando tras probarla en el teléfono (2026-09-20).**
   Commit en `productos/reservas/`. Lo que cambió y por qué:
   - **⭐ EL FALLO DE FONDO ERA LA ZONA HORARIA, NO LA VELOCIDAD.** «Hoy» abría el 19 siendo 20,
