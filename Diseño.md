@@ -3104,6 +3104,77 @@ servir, o `e_blur` de Cloudinary—, así lo que llega al navegador ya no tiene 
 El radio es **proporcional al ancho**: uno fijo se ve fuerte a 240 px y no hace nada a 1.600,
 y ampliar la foto sería justo la forma de leer lo que la miniatura escondía.
 
+## ⭐ REGLA: CADA PÁGINA SE DISEÑA PARA EL TELÉFONO, NO SE ESTRECHA (2026-09-21)
+
+Fernando: *«me interesa que cada página tenga un diseño especialmente hecho para teléfono»*.
+Es una **regla rectora**, al nivel de «los colores salen de una sola fuente»: de aquí en
+adelante, una pantalla no está terminada hasta que tiene su diseño de teléfono.
+
+**Qué NO es.** No es que quepa. Una página «responsive» normal deja que las columnas se
+apilen y da el trabajo por hecho; el resultado es el diseño de escritorio, estrecho y muy
+largo. El panel de inicio era exactamente eso: **850 px de desplazamiento para leer seis
+números**, y la quinta columna de su tabla —el botón de PDF— sencillamente **no se veía**,
+se caía fuera de la pantalla.
+
+**Qué SÍ es.** El mismo contenido, **contado otra vez** para una pantalla de 390 px que se
+sujeta con una mano. Las seis reglas concretas:
+
+### 1. En el teléfono manda el DATO, no el contenedor
+Un número no necesita un chip de icono de 44 px ni el aire de una tarjeta de escritorio.
+En teléfono el icono acompaña a la etiqueta, en línea y a 14 px, y las cifras van en
+**dos columnas**. Definición única: **`components/ui/Cifra.tsx`** (`RejillaCifras` + `Cifra`).
+*Medido: las mismas seis cifras pasaron de ~850 px a ~330 px, y se ven sin desplazar.*
+
+### 2. Una tabla deja de ser una tabla
+Una tabla es una rejilla de columnas y **un teléfono no tiene columnas**. Por debajo de
+`lg`, cada fila es una **tarjeta pulsable** con lo que la identifica arriba y sus cifras
+debajo, **cada una con su nombre** — porque el encabezado de una tabla se pierde en cuanto
+se desplaza. Definición única: **`PixelDataTable` con la prop `tarjetaMovil`**.
+- Es **opcional**: una tabla sin `tarjetaMovil` se comporta como siempre, así que añadir el
+  modo teléfono a una pantalla no obliga a tocar las otras treinta.
+- ⚠️ **Se pintan las dos y el ancho decide** (`lg:hidden` / `hidden lg:flex`), NO un
+  `window.innerWidth` en el render: el servidor no tiene ventana, y medirla al pintar da un
+  desajuste de hidratación y un primer fotograma con el diseño equivocado.
+
+### 3. Lo que se toca mide 44 px
+32 px es la medida de un puntero; 44 es la de un pulgar. En teléfono los botones van a
+`h-11`, y en escritorio vuelven a su altura de siempre (`h-11 sm:h-auto`). La **X de cerrar
+de `PixelModal`** se arregló en la definición única (`.corp .modal-close` bajo
+`max-width: 639.98px`), así que las ~30 pantallas que usan el diálogo la heredan.
+
+### 4. Una tarjeta hace UNA cosa
+Un botón **dentro** de una tarjeta pulsable son dos destinos táctiles superpuestos, y con
+el pulgar eso es una moneda al aire. En el panel de inicio, el botón de PDF de cada mes
+**no se copió** a la tarjeta: el PDF del mes sigue dentro del mes —que es donde se va a
+buscarlo— y el global, arriba. *En escritorio sí está en la fila: ahí hay puntero.*
+
+### 5. Una fila de formulario se parte, no se aprieta
+«Descripción · importe · quitar» en una línea deja a la descripción ~180 px en un teléfono,
+que no alcanzan para leer lo que uno acaba de escribir. La fila se parte: la descripción
+ocupa el ancho y el importe baja a una segunda línea con el botón de quitar al lado.
+Y en el pie del diálogo los botones se **apilan a ancho completo**
+(`flex-col-reverse sm:flex-row`), con la acción de verdad abajo, al alcance del pulgar.
+
+### 6. Nada flota, y ninguna página desplaza en horizontal
+Ya estaba escrito arriba («El teléfono, y el precio de lo que flota») y sigue vigente: lo
+que está pegado a la ventana siempre tiene contenido pasando por debajo. **Comprobación
+obligatoria** de toda pantalla nueva: `document.documentElement.scrollWidth` no supera el
+ancho de la ventana a 390 px.
+
+### La demostración: `/dashboard` (2026-09-21)
+`app/(dashboard)/dashboard/page.tsx`. Aplica las seis reglas y es el ejemplo a copiar.
+Medido a 390 px antes/después: overflow horizontal `false` en los dos; las seis cifras de
+850 → 330 px; la tabla de 5 columnas → 7 tarjetas legibles; el diálogo ocupa la pantalla
+(390×844) con las filas partidas; y **el escritorio queda idéntico** (tabla `flex`, cifras
+en 3 columnas, X de cerrar 32×32).
+
+> **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
+> `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
+> `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
+> reusable** (§ «Diseño vinculado»), nunca como un arreglo suelto de esa página.
+
+---
+
 ## El teléfono, y el precio de lo que flota — 2026-09-02 al 06
 
 ### La cabecera del móvil: tres intentos y la regla que salió de ellos
@@ -3250,6 +3321,17 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-21 · Teléfono · ADOPTADO como regla rectora** (ver «CADA PÁGINA SE DISEÑA PARA
+  EL TELÉFONO»). Controles nuevos, los dos con definición única:
+  - **`components/ui/Cifra.tsx`** — `RejillaCifras` (2 col en teléfono, 3 desde `lg`) +
+    `Cifra` (icono en el chip de 44 px solo desde `sm`; en teléfono va en línea con la
+    etiqueta). Sustituye al `StatCard` local que tenía el panel de inicio, ya **borrado**.
+    ⏳ Otras pantallas con su propia «stat card» copiada deberían migrar a `Cifra`.
+  - **`PixelDataTable` → prop `tarjetaMovil`** — el diseño de esa tabla en un teléfono.
+    Opcional; las tablas que no la definen siguen igual. ⏳ Ir añadiéndola pantalla a
+    pantalla; las que más lo piden son las de 5+ columnas.
+  - **`.corp .modal-close` a 44×44 bajo `640px`** (y el diálogo con padding de 16 px):
+    corregido en `globals.css`, lo heredan todas las pantallas con `PixelModal`.
 - **2026-09-21 · Logo girando · ADOPTADO como definición única:** `components/ui/LogoGirando.tsx`
   (`/logo-gcc.png`, `slowSpin 12s linear infinite reverse`, `motion-reduce:animate-none`). Lo
   usan los diálogos de acceso de la portada y `SavePointIndicator`. ⏳ `DashboardSidebar` sigue

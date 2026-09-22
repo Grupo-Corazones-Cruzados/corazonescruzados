@@ -1018,6 +1018,15 @@ html {
   color: var(--color-digi-muted);
 }
 .corp .modal-close:hover { background: #f3f2f1; color: var(--color-digi-text); }
+/* ⭐ DESTINO TÁCTIL EN TELÉFONO: 44 px (Fernando, 2026-09-21 — «un diseño hecho para
+   teléfono»). 32 px es la medida de un puntero, no la de un pulgar; la X de cerrar es
+   además el control que más se busca con prisa. Va aquí, en la definición única del
+   diálogo, así que lo heredan las ~30 pantallas que usan `PixelModal`. */
+@media (max-width: 639.98px) {
+  .corp .modal-close { width: 44px; height: 44px; margin: -6px -6px -6px 0; }
+  .corp .modal-header { padding: 14px 16px; }
+  .corp .modal-body { padding: 16px; }
+}
 .corp .modal-body { padding: 20px 24px 24px; }
 
 /* Forms (size md/lg) open as an Azure/SharePoint-style side panel that slides in

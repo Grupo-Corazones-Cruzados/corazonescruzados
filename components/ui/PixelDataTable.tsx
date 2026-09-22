@@ -33,6 +33,24 @@ interface PixelDataTableProps<T> {
   onSort?: (key: string) => void;
   /** Clase(s) extra por fila según el dato (p. ej. relleno por estado). */
   rowClassName?: (item: T) => string;
+  /**
+   * ⭐ EL DISEÑO DE ESTA TABLA EN UN TELÉFONO (Fernando, 2026-09-21).
+   *
+   * Una tabla es una rejilla de columnas, y un teléfono no tiene columnas: cuatro cifras
+   * en 390 px salen apretadas, la quinta columna se cae fuera y lo que se pulsa es una
+   * fila de 2 px de margen. Cuando se define esto, **por debajo de `lg` cada fila se
+   * dibuja como una TARJETA** con lo que la identifica arriba y sus cifras debajo, y la
+   * tabla queda para el escritorio.
+   *
+   * Es opcional a propósito: una tabla sin `tarjetaMovil` sigue comportándose como
+   * siempre, así que añadir el modo teléfono a una pantalla no obliga a tocar las otras.
+   *
+   * ⚠️ Se pintan LAS DOS y el ancho decide cuál se ve (`lg:hidden` / `hidden lg:flex`),
+   * no un `window.innerWidth` en el render: medir la ventana al pintar da un desajuste de
+   * hidratación —el servidor no tiene ventana— y el primer fotograma sale con el diseño
+   * equivocado.
+   */
+  tarjetaMovil?: (item: T) => React.ReactNode;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -68,6 +86,7 @@ export default function PixelDataTable<T>({
   sortDir,
   onSort,
   rowClassName,
+  tarjetaMovil,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -127,7 +146,32 @@ export default function PixelDataTable<T>({
   }
 
   return (
-    <div ref={wrapRef} className="data-table border-2 border-digi-border overflow-hidden flex flex-col" style={{ height: fillH }}>
+    <>
+      {/* ── El mismo contenido, contado para un teléfono ── */}
+      {tarjetaMovil && (
+        <div className="lg:hidden space-y-2">
+          {data.map((item, i) => (
+            <div
+              key={i}
+              onClick={onRowClick ? () => onRowClick(item) : undefined}
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(item); } } : undefined}
+              className={`bg-digi-card border border-digi-border rounded-lg p-3 transition-colors ${
+                onRowClick ? 'cursor-pointer active:bg-black/[0.04]' : ''
+              } ${rowClassName?.(item) ?? ''}`}
+            >
+              {tarjetaMovil(item)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div
+        ref={wrapRef}
+        className={`data-table border-2 border-digi-border overflow-hidden flex-col ${tarjetaMovil ? 'hidden lg:flex' : 'flex'}`}
+        style={{ height: fillH }}
+      >
       <div className="flex-1 min-h-0 overflow-auto">
         <table className="w-full text-sm" style={singleLine ? { tableLayout: 'fixed' } : undefined}>
           <thead>
@@ -209,6 +253,7 @@ export default function PixelDataTable<T>({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

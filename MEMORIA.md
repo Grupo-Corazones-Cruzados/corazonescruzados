@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⭐ REGLA NUEVA: cada página se diseña para el teléfono, no se estrecha (2026-09-21).**
+  Fernando: *«me interesa que cada página tenga un diseño especialmente hecho para teléfono»*.
+  Queda escrita entera en `Diseño.md` (sección propia, con las seis reglas concretas y cómo
+  aplicarlas). Resumen: el dato manda sobre el contenedor (cifras en 2 columnas, sin el chip
+  de icono); **una tabla deja de ser tabla** y cada fila es una tarjeta; 44 px de destino
+  táctil; **una tarjeta hace UNA cosa** (nada de un botón dentro de otra zona pulsable); las
+  filas de formulario se parten en vez de apretarse; y nada flota ni desplaza en horizontal.
+  Controles nuevos, con definición única: `components/ui/Cifra.tsx` (`RejillaCifras`+`Cifra`)
+  y la prop **`tarjetaMovil`** de `PixelDataTable` (opcional: las tablas que no la definen
+  siguen igual). La X de `PixelModal` pasa a 44×44 bajo 640 px en `globals.css`, y eso lo
+  heredan las ~30 pantallas del panel. **Demostración: `/dashboard`** — medido a 390 px, las
+  seis cifras pasan de ~850 px de desplazamiento a ~330, la tabla de 5 columnas (cuya quinta
+  no llegaba a verse) se convierte en tarjetas, y **el escritorio queda idéntico**.
 - **Acceso desde la portada: cuatro retoques de Fernando (2026-09-21).** (1) Encima del
   «GCC WORLD» de los diálogos de acceso (cliente, miembro, recuperación, postulación) iba un
   `BrandLoader` decorativo, que dice «espera»; ahora es el **logo girando** como en el menú del
