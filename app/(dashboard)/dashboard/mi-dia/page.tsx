@@ -438,9 +438,11 @@ export default function MiDiaPage() {
                   ))}
                 </div>
               )}
-              <div className="inline-flex flex-1 md:flex-none items-center gap-1.5 rounded-md border border-digi-border pl-2.5 pr-1.5 h-11 md:h-auto md:py-1" title="Tu disponibilidad">
+              {/* El marco y el anillo de foco los pone la píldora (`focus-within`), no el
+                  `<select>` de dentro: ver `.field-plain` en globals.css. */}
+              <div className="inline-flex flex-1 md:flex-none items-center gap-1.5 rounded-md border border-digi-border focus-within:border-accent transition-colors pl-2.5 pr-1.5 h-11 md:h-auto md:py-1" title="Tu disponibilidad">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[availability].color }} />
-                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="flex-1 md:flex-none h-full bg-transparent text-[12.5px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
+                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="field-plain flex-1 md:flex-none h-full text-[12.5px] text-digi-text cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
                   {AVAILABILITY_ORDER.map((s) => <option key={s} value={s}>{AVAILABILITY[s].label}</option>)}
                 </select>
               </div>

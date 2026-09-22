@@ -984,6 +984,26 @@ html {
   box-shadow: 0 0 0 1px var(--color-accent);
   outline: none;
 }
+/* ── VARIANTE: campo SIN MARCO, dentro de un contenedor que ya la dibuja ──────────
+   `.corp select` fuerza `border-width: 1px`, y ese borde sale NEGRO cuando el control
+   vive dentro de una píldora que ya tiene el suyo: dos marcos, uno dentro de otro
+   (Fernando, 2026-09-22 — la disponibilidad de «Mi día»). Esto lo desnuda; el marco, el
+   fondo y el anillo de foco los pone el contenedor, que es quien los tiene que poner.
+   Reusable: cualquier control embebido en un grupo con marco usa esta clase. */
+.corp .field-plain,
+.corp select.field-plain {
+  border: 0;
+  background-color: transparent;
+  min-height: 0;
+  border-radius: 0;
+}
+.corp .field-plain:focus,
+.corp select.field-plain:focus {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
 .corp .field-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23605e5c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
