@@ -314,23 +314,132 @@ function WeekView({ currentDate, instances, onDayClick, onDaySelect, onEventClic
   );
 }
 
-function DayView({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight }: Props) {
+/**
+ * ⭐ EL DÍA EN UN TELÉFONO ES UNA AGENDA, NO UNA REJILLA DE HORAS (Fernando, 2026-09-22).
+ *
+ * La rejilla de 24 horas a 44 px por hora mide **1.056 px**: en un teléfono son cuatro
+ * pantallas de rayas para enseñar tres bloques, y lo que cae de madrugada no se ve nunca
+ * porque el desplazamiento arranca a las 07:00. Y para crear algo a las 13:15 hay que
+ * acertar dentro de una banda de 44 px con el pulgar.
+ *
+ * Por debajo de `md` el mismo día se cuenta como una **lista cronológica**: la hora a la
+ * izquierda, el bloque a la derecha, y la línea de «ahora» entre medias. Ocupa lo que
+ * ocupa —tres eventos son tres filas— y se crea con un botón, eligiendo la hora en el
+ * formulario, que es donde se elige bien.
+ *
+ * Va aquí dentro y no en la página: lo heredan **las dos** pantallas que usan el
+ * calendario (`/dashboard/mi-dia` y el calendario público de un miembro).
+ */
+function AgendaDia({ currentDate, instances, onDayClick, onEventClick, onGeneratedClick }: Props) {
+  const now = useEcuadorNow();
+  const dayStart = startOfDay(currentDate);
+  const dayEnd = endOfDay(currentDate);
+  const delDia = instances
+    .filter((ev) => ev.instanceEnd >= dayStart && ev.instanceStart <= dayEnd)
+    .sort((a, b) => a.instanceStart.getTime() - b.instanceStart.getTime());
+
+  const esHoy =
+    !!now && currentDate.getFullYear() === now.y && currentDate.getMonth() === now.mo0 && currentDate.getDate() === now.d;
+  const minutosDe = (ev: EventInstance) =>
+    ev.instanceStart < dayStart ? 0 : ev.instanceStart.getHours() * 60 + ev.instanceStart.getMinutes();
+
+  /** «Nuevo» propone la próxima hora en punto; la hora exacta se elige en el formulario. */
+  const nuevoEnEsteDia = () => {
+    const d = new Date(currentDate);
+    const h = esHoy ? Math.min(23, Math.floor(now!.minutes / 60) + 1) : 9;
+    d.setHours(h, 0, 0, 0);
+    onDayClick(d);
+  };
+
+  const lineaAhora = (
+    <div className="flex items-center gap-2 py-0.5" aria-label="Ahora">
+      <span className="w-[52px] shrink-0 text-right text-[10px] font-semibold tabular-nums" style={{ ...mf, color: NOW_COLOR }}>
+        {String(Math.floor(now?.minutes ? now.minutes / 60 : 0)).padStart(2, '0')}:
+        {String((now?.minutes ?? 0) % 60).padStart(2, '0')}
+      </span>
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: NOW_COLOR }} />
+      <span className="flex-1" style={{ borderTop: `2px dashed ${NOW_COLOR}` }} />
+    </div>
+  );
+
+  let puestaLaLinea = false;
+
+  return (
+    <div className="md:hidden p-2.5 space-y-1">
+      {delDia.length === 0 && (
+        <p className="text-[12.5px] text-digi-muted text-center py-8" style={mf}>Sin eventos este día.</p>
+      )}
+      {delDia.map((ev, i) => {
+        const proposed = ev.status === 'proposed';
+        const color = proposed ? '#f59e0b' : colorForEvent(ev);
+        const ponerLinea = esHoy && !puestaLaLinea && minutosDe(ev) > (now?.minutes ?? 0);
+        if (ponerLinea) puestaLaLinea = true;
+        return (
+          <div key={`${ev.id}-${i}`}>
+            {ponerLinea && lineaAhora}
+            <button
+              onClick={(e) => { if (ev.generated && onGeneratedClick) onGeneratedClick(ev, e); else onEventClick(ev); }}
+              className="w-full flex items-stretch gap-2 text-left rounded-lg min-h-11 active:bg-black/[0.04] transition-colors"
+            >
+              {/* La hora vive fuera del bloque: así todas quedan alineadas y el día se lee
+                  en vertical de un vistazo, como una agenda de papel. */}
+              <span className="w-[52px] shrink-0 pt-2 text-right text-[11px] text-digi-muted tabular-nums" style={mf}>
+                {ev.all_day ? '—' : formatTime(ev.instanceStart)}
+              </span>
+              <span
+                className={`flex-1 min-w-0 rounded-md px-2.5 py-2 border-l-[3px] ${proposed || ev.generated ? 'border-dashed' : ''}`}
+                style={{ borderLeftColor: color, backgroundColor: `${color}24` }}
+              >
+                <span className="block text-[13px] font-medium text-digi-text leading-snug" style={mf}>{ev.title}</span>
+                <span className="block text-[11px] text-digi-muted tabular-nums" style={mf}>
+                  {proposed && '(propuesta) · '}
+                  {ev.all_day ? 'Todo el día' : `${formatTime(ev.instanceStart)} – ${formatTime(ev.instanceEnd)}`}
+                </span>
+              </span>
+            </button>
+          </div>
+        );
+      })}
+      {esHoy && !puestaLaLinea && delDia.length > 0 && lineaAhora}
+      <button
+        onClick={nuevoEnEsteDia}
+        className="w-full h-11 mt-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-digi-border text-[12.5px] font-medium text-digi-muted active:border-accent active:text-accent transition-colors"
+        style={mf}
+      >
+        + Añadir a este día
+      </button>
+    </div>
+  );
+}
+
+function DayView(props: Props) {
+  const { currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight } = props;
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const now = useEcuadorNow();
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (fillHeight && scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_PX; }, [fillHeight]);
   return (
-    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'h-full flex flex-col' : ''}`}>
-      <div className="grid shrink-0" style={{ gridTemplateColumns: '56px 1fr' }}>
-        <div className="border-r border-b border-digi-border bg-digi-dark" />
-        <div className="px-3 py-2 border-b border-digi-border bg-digi-dark flex items-center justify-between gap-2">
+    // ⚠️ El alto impuesto (`fillHeight`) es solo desde `md`: en teléfono manda la agenda,
+    // que mide lo que ocupa. Un contenedor de una pantalla entera con tres filas dentro
+    // obliga a recorrer el hueco para llegar a lo que viene después.
+    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'md:h-full md:flex md:flex-col' : ''}`}>
+      {/* En teléfono no hay columna de horas, así que su hueco de 56 px tampoco: la
+          cabecera ocupa el ancho. `md:grid` la devuelve a su sitio en escritorio. */}
+      <div className="flex md:grid shrink-0" style={{ gridTemplateColumns: '56px 1fr' }}>
+        <div className="hidden md:block border-r border-b border-digi-border bg-digi-dark" />
+        <div className="flex-1 px-3 py-2 border-b border-digi-border bg-digi-dark flex items-center justify-between gap-2">
           <div className="text-[13px] font-semibold text-digi-text capitalize" style={mf}>
             {DAY_LABELS_ES_LONG[currentDate.getDay()]} {currentDate.getDate()}
           </div>
           <DayTotals totals={dayTotals(instances, currentDate)} />
         </div>
       </div>
-      <div ref={scrollRef} className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto' : ''}>
+
+      {/* Teléfono */}
+      <AgendaDia {...props} />
+
+      {/* Escritorio: la rejilla de horas de siempre */}
+      <div ref={scrollRef} className={`hidden md:block ${fillHeight ? 'md:flex-1 md:min-h-0 md:overflow-y-auto' : ''}`}>
       <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
         <div className="border-r border-digi-border">
           {hours.map((h) => (

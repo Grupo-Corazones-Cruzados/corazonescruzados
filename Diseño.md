@@ -3168,6 +3168,41 @@ Medido a 390 px antes/después: overflow horizontal `false` en los dos; las seis
 (390×844) con las filas partidas; y **el escritorio queda idéntico** (tabla `flex`, cifras
 en 3 columnas, X de cerrar 32×32).
 
+### Segunda aplicación: «Mi día» (2026-09-22)
+`app/(dashboard)/dashboard/mi-dia/page.tsx` + `components/calendar/CalendarView.tsx`.
+Tres columnas (Eventos · Calendario · Tareas) que, apiladas, daban **1.503 px con tres
+zonas de desplazamiento propio**. Lo que salió de aquí, y que vale para cualquier pantalla:
+
+- **⭐ UNA REJILLA DE HORAS NO ES UN CALENDARIO: ES UNA FORMA DE DIBUJARLO.** 24 h × 44 px
+  son **1.056 px** de rayas para enseñar tres bloques, el desplazamiento arranca a las
+  07:00 —así que lo de madrugada no se veía nunca— y crear algo a las 13:15 exige acertar
+  dentro de una banda de 44 px con el pulgar. Por debajo de `md` el día es una **agenda**:
+  hora a la izquierda, bloque a la derecha, la línea de «ahora» entre medias, y un botón
+  **«+ Añadir a este día»** que propone la próxima hora en punto y deja elegir la hora
+  exacta en el formulario, que es donde se elige bien. Vive en **`CalendarView` →
+  `AgendaDia`**, así que lo heredan las dos pantallas que usan el calendario.
+- **⭐ SI DOS BLOQUES DICEN LO MISMO, EN EL TELÉFONO SOBRA UNO.** El panel «Eventos · Día»
+  y la grilla mostraban **el mismo día, dos veces, uno encima del otro**. Por debajo de
+  `xl` el panel no se pinta (`hidden xl:flex`) y su único botón propio, «Nuevo», se mudó a
+  la barra del día. *En escritorio los dos siguen: ahí no compiten, están en paralelo.*
+- **⭐ NADA DE DESPLAZAMIENTO DENTRO DE OTRO DESPLAZAMIENTO.** Los tres bloques tenían su
+  `max-h-[calc(...)] overflow-y-auto`. Un bloque que se desplaza dentro de una página que
+  también se desplaza es donde el dedo se atasca: se arrastra y no se sabe cuál de los dos
+  se movió. En teléfono se quitan (`xl:overflow-y-auto`) y **la página se desplaza una
+  sola vez**; el alto de `100dvh` del calendario pasa a ser `md:h-[calc(...)]`.
+- **La barra del día es UNA fila de 44 px**: `‹ · fecha · › · Hoy · +`, con la fecha
+  **corta** (`22 sep 2026`; la larga se partía en dos líneas y descuadraba las flechas).
+  Lo secundario —disponibilidad y compartir— baja a una segunda fila. El orden de
+  escritorio se conserva con `order-*` (`Hoy ‹ › fecha`): **cambiar el orden en teléfono no
+  puede cambiarlo en escritorio**.
+- **Fecha y hora no caben en dos columnas** (`EventModal`): un `datetime-local` de 160 px
+  recorta su propio valor («22/09/2026, 0…»). `grid-cols-1 sm:grid-cols-2`.
+
+*Medido: 1.503 → 921 px, de 3 zonas de desplazamiento a **0**, sin desbordamiento
+horizontal, y el escritorio idéntico (tabla de mes, panel de eventos, rejilla de horas).*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3330,6 +3365,9 @@ mientras se escribe.
   - **`PixelDataTable` → prop `tarjetaMovil`** — el diseño de esa tabla en un teléfono.
     Opcional; las tablas que no la definen siguen igual. ⏳ Ir añadiéndola pantalla a
     pantalla; las que más lo piden son las de 5+ columnas.
+  - **`CalendarView` → `AgendaDia`** (2026-09-22) — el día como lista cronológica por
+    debajo de `md`, en lugar de la rejilla de 24 h. Lo heredan `/dashboard/mi-dia` y el
+    calendario público de un miembro. La rejilla queda para escritorio.
   - **`.corp .modal-close` a 44×44 bajo `640px`** (y el diálogo con padding de 16 px):
     corregido en `globals.css`, lo heredan todas las pantallas con `PixelModal`.
 - **2026-09-21 · Logo girando · ADOPTADO como definición única:** `components/ui/LogoGirando.tsx`

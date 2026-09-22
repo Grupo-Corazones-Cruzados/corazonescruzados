@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **«Mi día» con diseño de teléfono (2026-09-22).** Segunda aplicación de la regla; el detalle
+  en `Diseño.md`. Tres columnas apiladas daban **1.503 px con tres zonas de desplazamiento
+  propio**; ahora **921 px y una sola**. Lo que se aprendió y queda como estándar: (1) **una
+  rejilla de horas no es un calendario, es una forma de dibujarlo** — 24 h × 44 px son 1.056 px
+  de rayas para tres bloques, y lo de madrugada no se veía nunca porque el scroll arranca a las
+  07:00; por debajo de `md` el día es una **agenda** (`CalendarView → AgendaDia`, lo heredan las
+  dos pantallas del calendario) con un botón «+ Añadir a este día» que propone la hora y deja
+  elegirla en el formulario; (2) **si dos bloques dicen lo mismo, en el teléfono sobra uno** — el
+  panel «Eventos · Día» duplicaba la grilla, así que no se pinta bajo `xl` y su botón «Nuevo» se
+  mudó a la barra del día; (3) **nada de desplazamiento dentro de otro desplazamiento**; (4) la
+  fecha corta en la barra (`22 sep 2026`), porque la larga se partía en dos líneas. El escritorio
+  queda idéntico — el orden de la barra se conserva con `order-*`.
 - **⭐ REGLA NUEVA: cada página se diseña para el teléfono, no se estrecha (2026-09-21).**
   Fernando: *«me interesa que cada página tenga un diseño especialmente hecho para teléfono»*.
   Queda escrita entera en `Diseño.md` (sección propia, con las seis reglas concretas y cómo

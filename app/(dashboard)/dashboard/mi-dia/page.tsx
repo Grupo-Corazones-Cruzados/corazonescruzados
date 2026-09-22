@@ -222,6 +222,17 @@ export default function MiDiaPage() {
     return `${currentDate.getDate()} ${m} ${y}`;
   }, [view, currentDate]);
 
+  /**
+   * La misma fecha, corta, para el teléfono: «22 sep 2026». La larga se partía en dos
+   * líneas entre las flechas y les descuadraba la altura — y el mes entero no aporta
+   * nada que no diga su abreviatura.
+   */
+  const labelCorto = useMemo(() => {
+    const m = MONTH_LABELS_ES[currentDate.getMonth()].slice(0, 3).toLowerCase();
+    if (view === 'month') return `${m} ${currentDate.getFullYear()}`;
+    return `${currentDate.getDate()} ${m} ${currentDate.getFullYear()}`;
+  }, [view, currentDate]);
+
   const handleDayClick = (date: Date) => { setEditingEvent(null); setInitialDate(date); setInitialType('progreso'); setInitialTaskId(null); setCurrentDate(new Date(date)); setModalOpen(true); };
   // Seleccionar un día (clic en el encabezado/número) — cambia el día enfocado sin abrir el formulario.
   const handleDaySelect = (date: Date) => setCurrentDate(new Date(date));
@@ -328,7 +339,11 @@ export default function MiDiaPage() {
       {/* Mismo alto FIJO que el calendario del centro (`h-[calc(100dvh-4.5rem)]`), aunque
           haya pocos eventos: las tres columnas quedan alineadas. Solo desde `xl`, que es
           cuando van en fila; apiladas en móvil conservan su alto propio. */}
-      <aside className="w-full xl:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col xl:h-[calc(100dvh-4.5rem)]">
+      {/* ⚠️ EN TELÉFONO ESTE PANEL NO EXISTE (Fernando, 2026-09-22). Por debajo de `xl` la
+          vista es siempre DÍA, y entonces esta lista dice **exactamente lo mismo** que la
+          agenda del calendario: el mismo día, contado dos veces, una encima de la otra.
+          Su único botón propio, «Nuevo», se mudó a la barra del día. */}
+      <aside className="hidden xl:flex w-full xl:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden flex-col xl:h-[calc(100dvh-4.5rem)]">
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border shrink-0">
           <CalendarDays className="w-4 h-4 text-digi-muted" />
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : dayHeader(ymd(currentDate))}</span>
@@ -393,16 +408,27 @@ export default function MiDiaPage() {
             sin restarla este bloque terminaba justo detrás del pie de navegación — se
             comía las propuestas y las tareas que van debajo. La variable vale 0 en
             escritorio, donde no hay cabecera. Ver `globals.css`. */}
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-4.5rem-var(--cabecera-movil))]">
+        {/* ⚠️ El alto de una pantalla entera es SOLO desde `md`. En teléfono el cuerpo es
+            la agenda, que mide lo que ocupa: imponerle 100dvh dejaba un hueco enorme y
+            obligaba a recorrerlo para llegar a las tareas de abajo. */}
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col md:h-[calc(100dvh-4.5rem-var(--cabecera-movil))]">
           {/* Command bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
-            <div className="flex items-center gap-2">
-              <button onClick={goToday} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
-              <div className="flex items-center gap-1">
-                <button onClick={goPrev} aria-label="Anterior" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                <button onClick={goNext} aria-label="Siguiente" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
-              </div>
-              <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
+          {/* ── La barra del día ───────────────────────────────────────────────────
+              En teléfono es UNA fila de 44 px: ‹ · fecha · › · Nuevo. Lo secundario
+              —disponibilidad y compartir— baja a una segunda fila, que es donde va lo
+              que se usa una vez al día y no en cada salto. */}
+          <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-digi-border shrink-0">
+            <div className="flex items-center gap-1.5 md:gap-2">
+              <button onClick={goPrev} aria-label="Anterior" className="order-1 md:order-2 w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="order-2 md:order-4 flex-1 md:flex-none min-w-0 text-center md:text-left text-[14px] md:text-[15px] font-semibold text-digi-text capitalize whitespace-nowrap md:ml-1" style={mf}>
+                <span className="md:hidden">{labelCorto}</span>
+                <span className="hidden md:inline">{label}</span>
+              </span>
+              <button onClick={goNext} aria-label="Siguiente" className="order-3 w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              <button onClick={goToday} className={`${BTN_SECONDARY} !py-1.5 order-4 md:order-1 h-11 md:h-auto shrink-0`}>Hoy</button>
+              {/* «Nuevo» vive aquí en teléfono: es el botón del panel de eventos, que en
+                  teléfono no se pinta. Desde `xl` vuelve a estar allí y aquí sobra. */}
+              <button onClick={() => openNew('progreso')} className="order-5 xl:hidden w-11 h-11 shrink-0 inline-flex items-center justify-center rounded-md bg-accent text-white hover:bg-accent-hover transition-colors" aria-label="Nuevo evento"><Plus className="w-4 h-4" /></button>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {allowMultiView && (
@@ -412,13 +438,13 @@ export default function MiDiaPage() {
                   ))}
                 </div>
               )}
-              <div className="inline-flex items-center gap-1.5 rounded-md border border-digi-border pl-2.5 pr-1.5 py-1" title="Tu disponibilidad">
+              <div className="inline-flex flex-1 md:flex-none items-center gap-1.5 rounded-md border border-digi-border pl-2.5 pr-1.5 h-11 md:h-auto md:py-1" title="Tu disponibilidad">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[availability].color }} />
-                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="bg-transparent text-[12.5px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
+                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="flex-1 md:flex-none h-full bg-transparent text-[12.5px] text-digi-text focus:outline-none cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
                   {AVAILABILITY_ORDER.map((s) => <option key={s} value={s}>{AVAILABILITY[s].label}</option>)}
                 </select>
               </div>
-              <button onClick={() => setShareOpen(true)} className={BTN_SECONDARY}><Share2 className="w-4 h-4" /> Compartir</button>
+              <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><Share2 className="w-4 h-4" /> Compartir</button>
             </div>
           </div>
 
@@ -435,7 +461,7 @@ export default function MiDiaPage() {
           <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted shrink-0" style={mf}>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.progreso}30`, borderLeft: `3px solid ${EVENT_COLORS.progreso}` }} /> Progreso</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal</span>
-            <span className="ml-auto tabular-nums">Zona horaria: América/Guayaquil (GMT-5)</span>
+            <span className="ml-auto tabular-nums"><span className="hidden sm:inline">Zona horaria: </span>América/Guayaquil (GMT-5)</span>
           </div>
         </div>
 
@@ -451,7 +477,11 @@ export default function MiDiaPage() {
           <span className="ml-auto text-[11px] text-digi-muted tabular-nums" style={mf}>{totalTasks}</span>
         </div>
         <p className="text-[11px] text-digi-muted px-3 pt-2 leading-snug shrink-0" style={mf}>Planificadas según tu Horario de Vida en <span className="text-digi-text font-medium capitalize">{label}</span>. Crea un evento para justificar el tiempo.</p>
-        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-260px-var(--cabecera-movil))] xl:max-h-none">
+        {/* ⚠️ SIN SCROLL PROPIO EN TELÉFONO. Un bloque con su propio desplazamiento
+            dentro de una página que también se desplaza es donde el dedo se atasca: se
+            arrastra y no se sabe cuál de los dos se movió. Desde `xl`, donde este rail es
+            una columna con alto fijo, sí lo tiene. */}
+        <div className="p-2.5 space-y-3 flex-1 min-h-0 xl:overflow-y-auto">
           {!horario.subject ? (
             <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>No tienes un horario asignado.</p>
           ) : totalTasks === 0 ? (

@@ -366,7 +366,10 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
               Todo el día
             </label>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* ⚠️ Fecha y hora NO caben en dos columnas en un teléfono: el campo
+                `datetime-local` recorta su propio valor («22/09/2026, 0…») y deja de
+                poder leerse lo que uno está eligiendo. Se apilan por debajo de `sm`. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {form.all_day ? (
                 <>
                   <PixelInput
