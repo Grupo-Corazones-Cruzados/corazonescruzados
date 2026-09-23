@@ -84,11 +84,24 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   `/grupo` es el suyo, de cortesía, con los tres productos y sin fecha de pago. Los flujos
   de correo de Helen y Elkin son trabajo de GCC y viven dentro de `/grupo`.
 
-#### PA5 — ¿Qué precio tienen los productos? · ⏸ Bloqueada — decisión de Fernando
-- **Por qué importa:** sin precio no hay ficha en el marketplace, y **una ficha a «0,00
-  /mes» dejaría que alguien se suscribiera gratis**. Ahora son **tres precios**, uno por
-  producto. Los tres planes están a 0 con su descripción diciéndolo y **no hay fichas**.
-  Es un comando cuando los diga.
+#### PA5 — ¿Qué precio tiene? · ✅ Resuelta — **5 $/mes, con las tres cosas dentro**
+- **Fernando, 2026-09-23:** *«déjalo a $5 dólares mensuales este producto nuevo para que
+  pueda acceder a las 3 cosas […] aunque a futuro lo voy a ver si le subo el precio»*.
+- **Con el precio puesto se desbloqueó la ficha**, que era lo único que faltaba: creada
+  bajo su cuenta (miembro 1), 5 $/mes, marcada como suscripción. **Le faltan capturas y una
+  demostración** — ver PA9.
+- **Deroga PA7.** La separación por producto (migración 003) duró unas horas: la 004 la
+  deshace. Lo que sobrevive es que dentro siguen siendo tres cosas y las secciones dependen
+  de lo MONTADO, no de lo pagado.
+
+#### PA9 — ¿Qué le falta a la ficha para estar completa? · ❓ Abierta
+- **Por qué importa:** una ficha sin imagen y sin demostración se ve a medias en un
+  catálogo donde las otras cuatro sí las tienen, y la skill `/producto` dice que *«una
+  demostración cuyas credenciales hay que ir a buscar no se prueba»*.
+- **Lo que falta, concreto:** (a) **capturas reales** del producto —no arte: capturas—, que
+  hay que subir a Cloudinary y no hay credenciales en local; (b) un **inquilino de
+  escaparate** en modo solo lectura con datos de muestra, y sus credenciales públicas en la
+  ficha. Ninguna de las dos se puede improvisar sin decidir qué se enseña.
 
 #### PA6 — ¿Los roles son una escalera o son oficios? · ✅ Resuelta — **escalera**
 - **Respuesta:** aquí sí se ordenan. CONSULTA mira; OPERADOR además atiende (toma una

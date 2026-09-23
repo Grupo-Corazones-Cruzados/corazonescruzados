@@ -9,15 +9,16 @@ import type { Rol, TipoAutomatizacion } from '@/generated/prisma/enums';
  * filtro por su cuenta: el día que una lo olvide, un cliente vería las conversaciones de
  * otro —y aquí eso son conversaciones de WhatsApp con personas reales.
  *
- * ── ⭐ LO QUE SE VENDE ES EL TIPO DE FLUJO, NO LA APLICACIÓN ──────────────────────
- * Fernando lo corrigió el 2026-09-23: *«automatizaciones no es un producto como tal, sino
- * los tipos de flujos son los productos»*. Así que hay **tres productos** —Agente de IA,
- * Campañas de Correo y Campañas de WhatsApp— y esta aplicación es donde se usan los tres.
+ * ── ⭐ SE VENDE UNO, SE USAN TRES ────────────────────────────────────────────────
+ * Fernando lo fijó el 2026-09-23: *«déjalo a $5 dólares mensuales este producto nuevo para
+ * que pueda acceder a las 3 cosas […] el producto total vale $5 mensuales»*. Así que la
+ * puerta es **una sola**: o el cliente está al día, o no.
  *
- * Eso cambia la puerta de sitio: ya no se pregunta «¿este cliente está al día?» sino
- * **«¿este cliente tiene ESTE producto al día?»**. Un cliente puede tener el agente pagado
- * y las campañas no, y entonces ve conversaciones y no ve campañas — sin errores, sin
- * botones apagados: la sección sencillamente no está.
+ * Pero dentro siguen siendo **tres cosas distintas** —agente de IA, campañas de correo y
+ * campañas de WhatsApp—, y qué secciones ve un cliente depende de **qué tiene montado**,
+ * no de qué pagó. Quien solo tiene un agente no necesita ver «Campañas»: no es que no
+ * pueda, es que no tiene ninguna. Enseñar una sección vacía de algo que nunca se ha usado
+ * no informa, ocupa.
  *
  * ── LOS ROLES SÍ SON UNA ESCALERA ────────────────────────────────────────────────
  *   CONSULTA  — mira las conversaciones y los informes. No escribe.
@@ -47,72 +48,57 @@ export function hoySinHora() {
   return d;
 }
 
-/** `sin-contratar` es distinto de `sin-pago`: uno nunca lo compró, el otro no lo ha pagado. */
-export type EstadoAcceso = 'ok' | 'suspendido' | 'sin-contratar' | 'sin-pago' | 'vencido';
-
-type SuscripcionMinima = {
-  producto: TipoAutomatizacion;
-  estado: string;
-  pagadoHasta: Date | null;
-};
+export type EstadoAcceso = 'ok' | 'suspendido' | 'sin-pago' | 'vencido';
 
 /**
- * LA PUERTA, para UN producto.
+ * LA PUERTA. Sin la mensualidad al día, la aplicación no se abre.
  *
  * ⚠️ `cortesia` pasa por encima de todo lo que no sea una suspensión. Es el acceso del
  * grupo: Fernando entra a su inquilino **sin suscripción y sin topes** (lo pidió así el
- * 2026-09-23), y por eso ni siquiera se mira si hay fila de suscripción.
+ * 2026-09-23), y por eso ni siquiera se mira la fecha de pago.
  */
-export function evaluarProducto(
-  inq: { estado: string; cortesia?: boolean; suscripciones: SuscripcionMinima[] },
-  producto: TipoAutomatizacion,
-): EstadoAcceso {
+export function evaluarAcceso(inq: {
+  estado: string;
+  cortesia?: boolean;
+  suscripcion: { estado: string; pagadoHasta: Date | null } | null;
+}): EstadoAcceso {
   if (inq.estado === 'SUSPENDIDO') return 'suspendido';
   if (inq.cortesia) return 'ok';
-
-  const s = inq.suscripciones.find((x) => x.producto === producto);
-  if (!s) return 'sin-contratar';
-  if (s.estado === 'CANCELADA') return 'suspendido';
+  const s = inq.suscripcion;
+  if (!s || s.estado === 'CANCELADA') return 'suspendido';
   if (!s.pagadoHasta) return 'sin-pago';
   return s.pagadoHasta >= hoySinHora() ? 'ok' : 'vencido';
 }
 
-/** Los productos que este cliente puede usar ahora mismo. */
-export function productosAbiertos(inq: {
-  estado: string;
-  cortesia?: boolean;
-  suscripciones: SuscripcionMinima[];
-}): TipoAutomatizacion[] {
-  return PRODUCTOS.filter((p) => evaluarProducto(inq, p) === 'ok');
-}
-
 /**
- * EL TOPE DE CUENTAS con tres productos contratados.
- *
- * Las cuentas son del CLIENTE, no de un producto: la misma persona atiende el WhatsApp y
- * manda las campañas. Así que con varios planes contratados **manda el más generoso**, no
- * la suma (sumar regalaría cuentas por contratar productos) ni el menor (castigaría por
- * contratar de más). NULO en cualquiera de ellos = sin límite, y la cortesía tampoco topa.
+ * EL TOPE DE CUENTAS. Lo dice el plan; la cortesía no topa.
+ * NULO es «sin límite», NO «cero» — es la confusión que deja a un cliente sin poder crear
+ * nada, así que tiene su propia comprobación.
  */
 export function topeUsuarios(inq: {
   cortesia?: boolean;
-  suscripciones: { estado: string; pagadoHasta: Date | null; producto: TipoAutomatizacion; plan: { maxUsuarios: number | null } }[];
-  estado: string;
+  suscripcion: { plan: { maxUsuarios: number | null } } | null;
 }): number | null {
   if (inq.cortesia) return null;
-  const vigentes = inq.suscripciones.filter((s) => evaluarProducto(inq, s.producto) === 'ok');
-  if (vigentes.length === 0) return 0;
-  if (vigentes.some((s) => s.plan.maxUsuarios === null)) return null;
-  return Math.max(...vigentes.map((s) => s.plan.maxUsuarios as number));
+  return inq.suscripcion?.plan.maxUsuarios ?? null;
 }
 
 async function cargarContexto(slug: string, sesion: SesionUsuario) {
   const inquilino = await prisma.inquilino.findUnique({
     where: { id: sesion.inquilinoId },
-    include: { suscripciones: { include: { plan: true } } },
+    include: { suscripcion: { include: { plan: true } } },
   });
   if (!inquilino || inquilino.slug !== slug) return null;
-  return { inquilino, sesion, abiertos: productosAbiertos(inquilino) };
+
+  // QUÉ TIENE MONTADO, que es lo que decide las secciones. No es lo que pagó —el producto
+  // se vende entero— sino lo que ha llegado a usar: un cliente con solo un agente no
+  // necesita ver «Campañas», porque no tiene ninguna.
+  const tipos = await prisma.automatizacion.findMany({
+    where: { inquilinoId: inquilino.id },
+    select: { tipo: true },
+    distinct: ['tipo'],
+  });
+  return { inquilino, sesion, montados: tipos.map((t) => t.tipo) };
 }
 
 export type Contexto = NonNullable<Awaited<ReturnType<typeof cargarContexto>>>;
@@ -120,28 +106,17 @@ export type Contexto = NonNullable<Awaited<ReturnType<typeof cargarContexto>>>;
 /**
  * Contexto de una página del cliente. Corta antes de devolver datos.
  *
- * `producto` dice a cuál pertenece la pantalla. Sin él, la pantalla es transversal
- * (panel, usuarios, configuración) y basta con tener **algo** contratado: un cliente sin
- * ningún producto al día no tiene nada que hacer dentro.
  */
-export async function exigirContexto(
-  slug: string,
-  minimo: Rol = 'CONSULTA',
-  producto?: TipoAutomatizacion,
-) {
+export async function exigirContexto(slug: string, minimo: Rol = 'CONSULTA') {
   const sesion = await leerSesionUsuario();
   if (!sesion || sesion.slug !== slug) redirect(`/${slug}/acceso`);
 
   const ctx = await cargarContexto(slug, sesion);
   if (!ctx) redirect(`/${slug}/acceso`);
 
-  // ⚠️ La suscripción se mira ANTES que el rol: si no, a un operador con todo vencido se
-  // le mandaría al panel, que también está cerrado.
-  const puedeEntrar = producto
-    ? evaluarProducto(ctx.inquilino, producto) === 'ok'
-    : ctx.abiertos.length > 0;
-  if (!puedeEntrar) redirect(`/${slug}/suscripcion`);
-
+  // ⚠️ La suscripción se mira ANTES que el rol: si no, a un operador con la mensualidad
+  // vencida se le mandaría al panel, que también está cerrado.
+  if (evaluarAcceso(ctx.inquilino) !== 'ok') redirect(`/${slug}/suscripcion`);
   if (!alMenos(sesion.rol, minimo)) redirect(`/${slug}/panel`);
 
   return ctx;
@@ -162,46 +137,27 @@ export async function exigirSesionDelCliente(slug: string) {
 }
 
 /** Contexto para leer desde una ruta de API: null en vez de redirigir. */
-export async function contextoApi(
-  slug: string,
-  minimo: Rol = 'CONSULTA',
-  producto?: TipoAutomatizacion,
-) {
+export async function contextoApi(slug: string, minimo: Rol = 'CONSULTA') {
   const sesion = await leerSesionUsuario();
   if (!sesion || sesion.slug !== slug) return null;
   const ctx = await cargarContexto(slug, sesion);
-  if (!ctx) return null;
-  const puedeEntrar = producto
-    ? evaluarProducto(ctx.inquilino, producto) === 'ok'
-    : ctx.abiertos.length > 0;
-  if (!puedeEntrar || !alMenos(sesion.rol, minimo)) return null;
+  if (!ctx || evaluarAcceso(ctx.inquilino) !== 'ok' || !alMenos(sesion.rol, minimo)) return null;
   return ctx;
 }
 
 /**
- * Contexto para ESCRIBIR. Distingue tres negativas que no son la misma cosa —sin sesión o
- * sin permiso, producto no contratado, y cliente de escaparate— porque a quien está
- * delante le sirve saber cuál de las tres es. Toda acción que guarde algo pasa por aquí.
+ * Contexto para ESCRIBIR. Distingue dos negativas que no son la misma cosa —sin sesión o
+ * sin permiso, y cliente de escaparate— porque a quien está delante le sirve saber cuál de
+ * las dos es. Toda acción que guarde algo pasa por aquí.
  */
 export type PermisoEscritura = { ok: true; ctx: Contexto } | { ok: false; error: string };
 
 export async function contextoEscritura(
   slug: string,
   minimo: Rol = 'OPERADOR',
-  producto?: TipoAutomatizacion,
 ): Promise<PermisoEscritura> {
-  const ctx = await contextoApi(slug, minimo, producto);
-  if (!ctx) {
-    // Si la sesión vale pero el producto no está al día, se dice ESO, no «no tienes
-    // permiso»: son problemas distintos y se arreglan en sitios distintos.
-    const suelto = await contextoApi(slug, minimo);
-    if (suelto && producto)
-      return {
-        ok: false,
-        error: `Tu cuenta no tiene «${NOMBRE_PRODUCTO[producto]}» al día. Míralo en Suscripción.`,
-      };
-    return { ok: false, error: 'No tienes permiso para hacer este cambio.' };
-  }
+  const ctx = await contextoApi(slug, minimo);
+  if (!ctx) return { ok: false, error: 'No tienes permiso para hacer este cambio.' };
   if (ctx.inquilino.soloLectura)
     return {
       ok: false,

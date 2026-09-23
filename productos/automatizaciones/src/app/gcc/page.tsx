@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { leerSesionOperador } from '@/lib/sesion';
-import { evaluarProducto, PRODUCTOS, NOMBRE_PRODUCTO } from '@/lib/inquilino';
+import { evaluarAcceso } from '@/lib/inquilino';
 import { Tarjeta, Insignia } from '@/componentes/ui';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function PaginaGcc() {
   const inquilinos = await prisma.inquilino.findMany({
     orderBy: [{ cortesia: 'desc' }, { nombre: 'asc' }],
     include: {
-      suscripciones: { include: { plan: true } },
+      suscripcion: { include: { plan: true } },
       _count: { select: { usuarios: true, automatizaciones: true, conversaciones: true } },
     },
   });
@@ -34,7 +34,7 @@ export default async function PaginaGcc() {
 
       <div className="space-y-2.5">
         {inquilinos.map((i) => {
-          const porProducto = PRODUCTOS.map((pr) => ({ pr, estado: evaluarProducto(i, pr) }));
+          const acceso = evaluarAcceso(i);
           return (
             <Tarjeta key={i.id} className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -49,6 +49,9 @@ export default async function PaginaGcc() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Insignia tono={acceso === 'ok' ? 'exito' : acceso === 'suspendido' ? 'error' : 'aviso'}>
+                    {acceso === 'ok' ? 'Al día' : acceso === 'suspendido' ? 'Suspendido' : acceso === 'vencido' ? 'Vencido' : 'Sin pagar'}
+                  </Insignia>
                   <Link
                     href={`/${i.slug}/acceso`}
                     className="flex h-11 items-center gap-1.5 rounded px-2.5 text-[12.5px] text-tenue hover:bg-realce hover:text-texto"
@@ -58,22 +61,11 @@ export default async function PaginaGcc() {
                 </div>
               </div>
 
-              {/* Los TRES productos, siempre: saber qué NO tiene contratado un cliente es
-                  la mitad de la conversación de venta. */}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {porProducto.map(({ pr, estado }) => (
-                  <Insignia
-                    key={pr}
-                    tono={estado === 'ok' ? 'exito' : estado === 'suspendido' ? 'error' : estado === 'sin-contratar' ? 'neutro' : 'aviso'}
-                  >
-                    {NOMBRE_PRODUCTO[pr]}
-                    {': '}
-                    {estado === 'ok' ? 'al día' : estado === 'sin-contratar' ? 'no contratado' : estado === 'suspendido' ? 'suspendido' : estado === 'vencido' ? 'vencido' : 'sin pagar'}
-                  </Insignia>
-                ))}
-              </div>
-
               <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[12px]">
+                <Dato etiqueta="Plan">{i.cortesia ? 'Cortesía' : (i.suscripcion?.plan.nombre ?? '—')}</Dato>
+                <Dato etiqueta="Pagado hasta">
+                  {i.cortesia ? '—' : (i.suscripcion?.pagadoHasta?.toLocaleDateString('es-EC') ?? 'nunca')}
+                </Dato>
                 <Dato etiqueta="Cuentas">{i._count.usuarios}</Dato>
                 <Dato etiqueta="Automatizaciones">{i._count.automatizaciones}</Dato>
                 <Dato etiqueta="Conversaciones">{i._count.conversaciones}</Dato>

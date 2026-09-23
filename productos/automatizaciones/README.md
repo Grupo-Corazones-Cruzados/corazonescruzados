@@ -76,6 +76,7 @@ node scripts/traer-de-la-plataforma.mjs            # traer (repetible)
    Mientras tanto, lo que entra por WhatsApp sigue yendo a la plataforma, y este producto
    enseña lo migrado hasta el momento de correr el script.
 2. **El worker del agente** (`agente-worker`) sigue consumiendo la cola de `gcc_world`.
-3. **El precio no está puesto.** El plan está a 0 con su descripción diciéndolo, y por eso
-   **todavía no hay ficha en el marketplace**: publicarla a «0,00 /mes» dejaría que
-   alguien se suscribiera gratis.
+3. **La ficha del marketplace está creada pero le faltan capturas y una demostración.**
+   El precio es **5 $/mes con las tres cosas dentro** (Fernando, 2026-09-23). Falta subir
+   capturas reales y montar un inquilino de escaparate en modo solo lectura con sus
+   credenciales públicas.

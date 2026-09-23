@@ -20,7 +20,7 @@ function inicioDeMes() {
  */
 export default async function PaginaPanel({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
-  const { inquilino, abiertos } = await exigirContexto(cliente);
+  const { inquilino, montados } = await exigirContexto(cliente);
   const donde = { inquilinoId: inquilino.id };
 
   const [conversaciones, sinLeer, contactos, automatizaciones, delMes] = await Promise.all([
@@ -31,11 +31,9 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
     prisma.conversacion.count({ where: { ...donde, ultimoMensajeEn: { gte: inicioDeMes() } } }),
   ]);
 
-  // El tope de conversaciones es del plan del AGENTE: es lo que cuesta dinero. Quien no lo
-  // tenga contratado no ve esta barra, porque no le aplica nada.
-  const plan = inquilino.suscripciones.find((s) => s.producto === 'AGENTE_IA')?.plan ?? null;
+  const plan = inquilino.suscripcion?.plan ?? null;
 
-  const recientes = !abiertos.includes('AGENTE_IA') ? [] : await prisma.conversacion.findMany({
+  const recientes = !montados.includes('AGENTE_IA') ? [] : await prisma.conversacion.findMany({
     where: donde,
     orderBy: { ultimoMensajeEn: 'desc' },
     take: 8,
@@ -43,9 +41,9 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
   });
 
   const tope = inquilino.cortesia ? null : (plan?.maxConversacionesMes ?? null);
-  // Las cifras del agente solo salen si el agente está contratado: un «0 conversaciones»
-  // a quien nunca compró el agente no informa, desorienta.
-  const conAgente = abiertos.includes('AGENTE_IA');
+  // Las cifras del agente solo salen si hay un agente montado: un «0 conversaciones» a
+  // quien no tiene ninguno no informa, desorienta.
+  const conAgente = montados.includes('AGENTE_IA');
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-7">

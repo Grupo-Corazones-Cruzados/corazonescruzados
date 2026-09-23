@@ -33,6 +33,10 @@ export const PRODUCTOS = [
   { clave: 'pedidos', esquema: 'pedidos', nombre: 'Gestión de Pedidos', url: 'https://pedidos.grupocc.org' },
   { clave: 'catering', esquema: 'catering', nombre: 'Gestión de Catering', url: 'https://catering.grupocc.org' },
   { clave: 'planificaciones', esquema: 'planificaciones', nombre: 'Planificación de Clases', url: 'https://planificaciones.grupocc.org' },
+  // Quinto producto (2026-09-23): la sección «Automatizaciones» dejó de vivir dentro de la
+  // plataforma y pasó a venderse como los demás, 5 $/mes con el agente de IA y las
+  // campañas de correo y de WhatsApp dentro.
+  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones', url: 'https://automatizaciones.grupocc.org' },
 ] as const;
 
 export const DIAS_DE_GRACIA = 30;

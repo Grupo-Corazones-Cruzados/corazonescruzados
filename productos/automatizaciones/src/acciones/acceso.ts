@@ -3,7 +3,7 @@
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { productosAbiertos } from '@/lib/inquilino';
+import { evaluarAcceso } from '@/lib/inquilino';
 import { verificarCuentaGcc } from '@/lib/cuentaGcc';
 import {
   abrirSesionUsuario,
@@ -45,7 +45,7 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
 
   const inquilino = await prisma.inquilino.findUnique({
     where: { slug },
-    include: { suscripciones: true },
+    include: { suscripcion: true },
   });
   if (!inquilino) return { error: 'Ese cliente no existe.' };
 
@@ -91,10 +91,7 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
   // pero entonces el navegador encadena un salto de más (/acceso → /panel →
   // /suscripcion). Con esto va directo, y no se pide una pantalla que ya se sabe que
   // no se va a poder dar.
-  //
-  // Con tres productos, «puede entrar» es tener AL MENOS UNO al día: quien tiene el
-  // agente pagado y las campañas no, entra igual — solo que sin la sección de campañas.
-  redirect(productosAbiertos(inquilino).length > 0 ? `/${slug}/panel` : `/${slug}/suscripcion`);
+  redirect(evaluarAcceso(inquilino) === 'ok' ? `/${slug}/panel` : `/${slug}/suscripcion`);
 }
 
 export async function salir(slug: string) {

@@ -22,11 +22,22 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 
 export type CatalogTab = { value: string; label: string; Icon: any };
 
-// Catálogo base compartido entre la vista con sesión y la pública.
+/**
+ * Catálogo base compartido entre la vista con sesión y la pública.
+ *
+ * ⚠️ «Automatizaciones» YA NO ES UNA PESTAÑA (Fernando, 2026-09-23: «tampoco debería
+ * seguir teniendo pestaña de automatizaciones»). Dejó de ser una categoría aparte el día
+ * que pasó a venderse como un PRODUCTO más —5 $/mes con el agente de IA, las campañas de
+ * correo y las de WhatsApp dentro—, así que su sitio es la pestaña «Productos».
+ *
+ * Las tres fichas antiguas de tipo `automation` (Correos Masivos, Chatbot de WhatsApp,
+ * Agente de Presupuestos) NO se han borrado: siguen en el portafolio y en el CV de su
+ * autor. Simplemente ya no se listan aquí. El día que se decida qué hacer con ellas, se
+ * retiran desde Portafolio, no con una consulta.
+ */
 const CATALOG_TABS: CatalogTab[] = [
   { value: 'projects', label: 'Proyectos', Icon: FolderKanban },
   { value: 'products', label: 'Productos', Icon: Package },
-  { value: 'automations', label: 'Automatizaciones', Icon: Workflow },
 ];
 const CATALOG_VALUES = new Set(CATALOG_TABS.map((t) => t.value));
 
@@ -281,7 +292,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     return item.image_url ? 1 : 0;
   };
 
-  const tabLabel = tab === 'projects' ? 'proyectos' : tab === 'products' ? 'productos' : 'automatizaciones';
+  const tabLabel = tab === 'projects' ? 'proyectos' : 'productos';
 
   // Clear the detail panel when switching catalog tab — salvo que el cambio de
   // pestaña sea para enseñar un registro que llegó por la dirección (`slugInicial`):
@@ -304,24 +315,27 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
-  // Registro pedido por la dirección: se busca en los tres catálogos a la vez y se
-  // abre en su pestaña. Si no existe (título cambiado, registro retirado), se queda
-  // el catálogo normal: un enlace viejo no puede dejar la pantalla vacía.
+  // Registro pedido por la dirección: se busca en los catálogos a la vez y se abre en su
+  // pestaña. Si no existe (título cambiado, registro retirado), se queda el catálogo
+  // normal: un enlace viejo no puede dejar la pantalla vacía.
+  //
+  // ⚠️ Ya NO se buscan las automatizaciones. Al quitarse su pestaña (2026-09-23), un
+  // enlace viejo a una de ellas dejaría `tab='automations'`, que no existe: la barra no
+  // lo enseñaría y el contenido saldría en blanco — exactamente lo que esta línea
+  // promete evitar. Ahora esos enlaces caen en el catálogo normal.
   useEffect(() => {
     if (!slugInicial) return;
     let vivo = true;
     (async () => {
       try {
-        const [prod, auto, proy] = await Promise.all([
+        const [prod, proy] = await Promise.all([
           fetch('/api/portfolio/public?type=product').then((r) => r.json()).catch(() => ({ data: [] })),
-          fetch('/api/portfolio/public?type=automation').then((r) => r.json()).catch(() => ({ data: [] })),
           fetch('/api/marketplace/projects').then((r) => r.json()).catch(() => ({ data: [] })),
         ]);
         if (!vivo) return;
         const busca = (lista: any[]) => (lista || []).find((i) => slugDeTitulo(i.title) === slugInicial);
         const candidatos: { tab: string; item: any }[] = [
           { tab: 'products', item: busca(prod.data) },
-          { tab: 'automations', item: busca(auto.data) },
           { tab: 'projects', item: busca(proy.data) && { ...busca(proy.data), source_type: 'project' } },
         ];
         const hallado = candidatos.find((c) => c.item);

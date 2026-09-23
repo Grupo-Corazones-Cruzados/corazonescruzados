@@ -3547,19 +3547,29 @@ Cada destino necesita 44 px de ancho útil para un dedo; en una pantalla de 360 
 los rompe. Lo que no entra, entra por «Configuración». El menú lateral de escritorio sí los
 lleva todos.
 
-### Lo que no está contratado NO se enseña apagado: no está
-Los productos son los tipos de flujo, así que un cliente puede tener el Agente de IA y no
-las campañas. En ese caso **la sección no aparece en el menú** y, si escribe la dirección a
-mano, va a Suscripción — donde sí ve los tres, con el suyo «Al día» y los otros «No
-contratado».
+### Las secciones dependen de lo que el cliente TIENE MONTADO, no de lo que pagó
+El producto se vende entero (5 $/mes con las tres cosas), así que no hay nada que esconder
+por dinero. Pero un cliente que solo tiene un agente **no ve «Conversaciones» porque no
+tenga permiso: no la ve porque no tendría ninguna**. Una bandeja vacía para siempre no
+informa, ocupa.
 
-> **Regla:** un botón que falla al pulsarlo es peor que no tenerlo (ya estaba en
-> `gcc-cliente-no-ve-lo-que-no-puede`); pero **la pantalla de suscripción es la excepción**,
-> porque allí la pregunta del usuario es justamente «¿por qué no me aparece esto?».
+> **Regla:** una sección vacía por definición es peor que ninguna sección. Se enseña lo que
+> el cliente ha llegado a usar, y lo demás aparece cuando aparece el primer registro.
+
+Y la pantalla de suscripción **sí lista las tres cosas**, aunque se paguen juntas: es lo
+que convierte «5 $» en «5 $ por esto».
 
 ⚠️ Y una lección de método: comprobar esto mirando `innerText` **no vale**. Los rótulos del
 menú lateral están ocultos hasta pasar el puntero, así que «no aparece Conversaciones» sale
 cierto por CSS aunque la puerta estuviera abierta. Se mide sobre los **enlaces del HTML**.
+
+### El marketplace ya no tiene pestaña de «Automatizaciones»
+Dejó de ser una categoría el día que pasó a ser un producto: quedan **Proyectos** y
+**Productos**. ⚠️ Al quitar una pestaña hay que mirar **quién la nombraba**: la apertura
+por dirección (`/marketplace-publico/<registro>`) buscaba también entre las
+automatizaciones, y un enlace viejo habría dejado `tab='automations'`, que ya no existe —la
+barra no lo enseña y el contenido sale en blanco—. *Quitar una opción no es borrar su
+entrada de una lista; es buscar todo lo que la daba por existente.*
 
 ### La contratación, por ahora, sin botón
 La pantalla de suscripción **informa y no cobra**, y es una decisión: la compra irá por la

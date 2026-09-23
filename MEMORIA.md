@@ -275,20 +275,36 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **⭐⭐ TRES PRODUCTOS NUEVOS: los TIPOS DE FLUJO (Fernando, 2026-09-23).**
-  Corrección suya, textual: *«automatizaciones no es un producto como tal, sino los tipos
-  de flujos son los productos»*. Así que lo que se vende son **Agente de IA**, **Campañas
-  de Correo** y **Campañas de WhatsApp** —tres fichas y tres precios—, y `automatizaciones`
-  es **la aplicación donde se usan los tres**, no un producto.
-  - **Una sola aplicación, tres cosas vendibles.** Un servicio, un esquema, y la
-    suscripción pasa de ser una por inquilino a ser **una por (inquilino, producto)**. Un
-    cliente puede tener el agente pagado y las campañas no: entonces **la sección no está**
-    —no un botón apagado—, y si escribe la dirección a mano va a Suscripción.
-    La puerta vive en `evaluarProducto()` de `src/lib/inquilino.ts`.
-  - **El tope de cuentas con varios planes: manda el MÁS GENEROSO.** Las cuentas son del
-    cliente, no de un producto (la misma persona atiende WhatsApp y manda campañas).
-    Sumar regalaría cuentas por contratar productos; el menor castigaría por contratar de
-    más. `topeUsuarios()`.
+- **⭐⭐ EL PRODUCTO «AUTOMATIZACIONES»: 5 $/mes CON LAS TRES COSAS DENTRO
+  (Fernando, 2026-09-23, y es la palabra final sobre esto).** Textual: *«déjalo a $5
+  dólares mensuales este producto nuevo para que pueda acceder a las 3 cosas, por lo tanto
+  no lo trataremos cada cosa con un costo diferente, sino que el producto total vale $5
+  mensuales, aunque a futuro lo voy a ver si le subo el precio»*.
+  - **Se vende UNO, se usan TRES.** Una suscripción por inquilino, un plan, 5 $/mes, y
+    dentro van el agente de IA, las campañas de correo y las de WhatsApp. La puerta vuelve
+    a ser una: `evaluarAcceso()` en `src/lib/inquilino.ts`.
+  - **⚠️ Historia de la decisión, para no repetir el viaje:** primero dijo *«automatizaciones
+    no es un producto como tal, sino los tipos de flujos son los productos»*, y se montó
+    una suscripción por (inquilino, producto) — migración 003. El mismo día fijó el precio
+    único y eso quedó **derogado** (migración 004). **Lo que sobrevive de aquello** es que
+    dentro siguen siendo tres cosas distintas: **qué secciones ve un cliente depende de qué
+    tiene MONTADO**, no de qué pagó. Quien no tiene ningún agente no ve «Conversaciones»,
+    porque no tendría ninguna — no porque no la haya comprado.
+  - **La ficha del marketplace ya existe** (`member_portfolio_items` 31 + `products` 6,
+    miembro 1, talento «Automatización de procesos», 5 $/mes, suscripción).
+    **Le faltan capturas y una demostración**: se creó sin imágenes y sin inquilino de
+    escaparate.
+  - **⚠️ FUERA LA PESTAÑA «AUTOMATIZACIONES» DEL MARKETPLACE** (*«tampoco debería seguir
+    teniendo pestaña de automatizaciones»*): dejó de ser una categoría el día que pasó a ser
+    un producto. Quedan **Proyectos** y **Productos**. Las tres fichas viejas de tipo
+    `automation` (Correos Masivos 5 $, Chatbot de WhatsApp 20 $, Agente de Presupuestos
+    30 $) **NO se han borrado** —son del portafolio y del CV de Fernando—, solo dejan de
+    listarse. Y la búsqueda por dirección ya no las mira: un enlace viejo habría dejado la
+    pantalla en blanco con una pestaña que ya no existe.
+  - **⚠️ EL MÓDULO `/dashboard/automatizaciones` SE QUEDA** en el menú del panel
+    (*«también en el menú de módulo debería seguir existiendo el módulo de
+    automatizaciones»*). Lo que desaparece es la **categoría del marketplace**, no la
+    herramienta con la que GCC trabaja sus propios flujos.
   - **Solo hay UN inquilino de cliente: `/peter-tours`** (Fernando, 2026-09-23: *«solo crea
     el tenant de diego castillo, no hagas el tenant de elkin cardenas»*). Los flujos de
     correo de Helen y Elkin son trabajo de GCC y viven dentro del inquilino del grupo.
