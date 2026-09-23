@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Módulo de PROYECTOS con diseño de teléfono, y el destino táctil movido a la fuente
+  (2026-09-22).** Cuatro rutas: lista, detalle (2.999 líneas, la página más grande del panel),
+  el portal de incidencias del cliente y `/panel/projects`. **Dos hallazgos que valen para todo
+  el panel:** (1) `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER` —los botones del panel, **usados en
+  57 archivos**— medían 38 px, y yo llevaba cinco módulos añadiéndoles `h-11 sm:h-auto` a mano
+  pantalla por pantalla; con `min-h-11 sm:min-h-0` en las tres constantes **todo el panel lo gana
+  de golpe** (comprobado en 10 pantallas que en escritorio siguen con sus 34–38 px). La regla que
+  sale de ahí: *antes de añadir `h-11` a un botón, mirar si viene de una constante compartida*.
+  (2) Un `flex justify-between` **sin `flex-wrap`** se sale de la pantalla: la cabecera de
+  Requerimientos (título + barra `w-28` fija + % + «Agregar») cortaba el botón contra el borde —
+  8 elementos desbordando, y en escritorio no se ve. Medido en las cuatro rutas: 0 destinos
+  < 44 px, 0 invisibles, 0 desbordamiento; escritorio sin cambios.
 - **Migrado TODO el panel a `.acciones-al-pasar` (2026-09-22).** 12 archivos, 18 controles —
   portal del cliente, proyectos (lista y detalle), tickets, portafolio, guiones, dos sistemas
   del Centralizado, Razones, listas de contactos, correo y las tarjetas del sitio. Cada uno era

@@ -1378,12 +1378,12 @@ export default function ProjectDetailPage() {
               )}
               {/* Accesos rápidos reformulados como botones del header */}
               {['in_progress', 'review', 'completed'].includes(project.status) && reqs.length > 0 && (
-                <button onClick={() => setShowProgresoModal(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+                <button onClick={() => setShowProgresoModal(true)} className="inline-flex items-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
                   <BarChart3 className="w-4 h-4" /> Progreso {reqs.length ? `${Math.round((completedReqs / reqs.length) * 100)}%` : ''}
                 </button>
               )}
               {showImages && (
-                <button onClick={() => setShowImagesModal(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+                <button onClick={() => setShowImagesModal(true)} className="inline-flex items-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
                   <ImageIcon className="w-4 h-4" /> Imágenes{projectImages.length > 0 ? ` (${projectImages.length})` : ''}
                 </button>
               )}
@@ -1463,7 +1463,7 @@ export default function ProjectDetailPage() {
             <div className="flex items-center justify-between gap-2 mb-3">
               <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}><Users className="w-4 h-4 text-accent" /> Equipo</h3>
               {isOwner && (
-                <button onClick={() => { setNewParticipantId(''); setShowAddParticipant(true); }} title="Agregar participante" className="shrink-0 p-1.5 rounded text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"><UserPlus className="w-3.5 h-3.5" /></button>
+                <button onClick={() => { setNewParticipantId(''); setShowAddParticipant(true); }} title="Agregar participante" className="destino-tactil shrink-0 p-1.5 rounded text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"><UserPlus className="w-3.5 h-3.5" /></button>
               )}
             </div>
             <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Responsable</p>
@@ -1485,7 +1485,7 @@ export default function ProjectDetailPage() {
               <h3 className="text-[13px] font-semibold text-digi-text" style={mf}>Propuestas ({pendingBids.length})</h3>
               <div className="flex gap-1.5">
                 {canInvite && (
-                  <button onClick={openInviteModal} title="Invitar" className="shrink-0 p-1.5 rounded text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"><UserPlus className="w-3.5 h-3.5" /></button>
+                  <button onClick={openInviteModal} title="Invitar" className="destino-tactil shrink-0 p-1.5 rounded text-digi-muted border border-digi-border hover:border-accent hover:text-accent transition-colors"><UserPlus className="w-3.5 h-3.5" /></button>
                 )}
                 {canBid && (
                   <button onClick={() => setShowBidModal(true)} title="Postularme" className="shrink-0 p-1.5 rounded text-white bg-accent hover:bg-accent-hover transition-colors"><Send className="w-3.5 h-3.5" /></button>
@@ -1509,19 +1509,25 @@ export default function ProjectDetailPage() {
           {(<>
           {/* Requirements */}
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
-            <div className="flex items-center justify-between gap-3 mb-4">
+            {/* ⚠️ SE SALÍA 30 px DEL ANCHO EN UN TELÉFONO. La fila era
+                `flex justify-between` sin `flex-wrap` y con la barra de progreso a `w-28`
+                fija: el título, la barra, el porcentaje y «Agregar» suman más de los
+                350 px útiles, y el botón quedaba cortado contra el borde. Ahora la fila
+                envuelve y **la barra se va a una segunda línea a ancho completo**, donde
+                además se lee mejor. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>
                 Requerimientos <span className="text-digi-muted font-normal">({completedReqs}/{reqs.length})</span>
               </h3>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 order-last sm:order-none w-full sm:w-auto">
                 {reqs.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-28 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
+                  <div className="flex flex-1 sm:flex-none items-center gap-2">
+                    <div className="flex-1 sm:flex-none sm:w-28 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? (completedReqs / reqs.length) * 100 : 0}%` }} /></div>
                     <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0}%</span>
                   </div>
                 )}
                 {canAddReqs && (
-                  <button onClick={() => setShowReqModal(true)} className="inline-flex items-center gap-1 text-[12px] font-medium text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={mf}><Plus className="w-3.5 h-3.5" /> Agregar</button>
+                  <button onClick={() => setShowReqModal(true)} className="inline-flex items-center gap-1 h-11 sm:h-auto shrink-0 text-[12px] font-medium text-accent border border-accent/40 rounded px-3 sm:px-2.5 sm:py-1 hover:bg-accent-light transition-colors" style={mf}><Plus className="w-3.5 h-3.5" /> Agregar</button>
                 )}
               </div>
             </div>
@@ -1547,7 +1553,7 @@ export default function ProjectDetailPage() {
                             onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
                             disabled={!canEditThis}
                             aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
-                            className={`mt-0.5 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : 'cursor-default'}`}
+                            className={`destino-tactil mt-0.5 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : 'cursor-default'}`}
                           >
                             {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                           </button>
@@ -1575,16 +1581,16 @@ export default function ProjectDetailPage() {
                               </p>
                             )}
                           </button>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                             {r.cost && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${r.cost}</span>}
                             {canEditReqText && (
-                              <button onClick={() => startEditReq(r)} aria-label="Editar requerimiento" title="Editar" className="text-digi-muted/60 hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => startEditReq(r)} aria-label="Editar requerimiento" title="Editar" className="destino-tactil text-digi-muted/60 hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                             )}
                             {isOwner && (
-                              <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="text-digi-muted/60 hover:text-red-600 transition-colors"><X className="w-4 h-4" /></button>
+                              <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="destino-tactil text-digi-muted/60 hover:text-red-600 transition-colors"><X className="w-4 h-4" /></button>
                             )}
                             <button onClick={() => toggleReqExpand(r.id)} aria-label={expanded ? 'Contraer' : 'Ver detalle'} title={expanded ? 'Contraer' : 'Ver detalle'}
-                              className="text-digi-muted hover:text-accent transition-colors">
+                              className="destino-tactil text-digi-muted hover:text-accent transition-colors">
                               <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                             </button>
                           </div>
@@ -2245,8 +2251,8 @@ export default function ProjectDetailPage() {
         {/* ====== DERECHA: pestañas Propiedades / Incidentes ====== */}
         <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3">
           <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
-            <button onClick={() => setRightTab('propiedades')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
-            <button onClick={() => setRightTab('incidentes')} className={`flex-1 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'incidentes' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Incidentes</button>
+            <button onClick={() => setRightTab('propiedades')} className={`flex-1 min-h-11 sm:min-h-0 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
+            <button onClick={() => setRightTab('incidentes')} className={`flex-1 min-h-11 sm:min-h-0 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'incidentes' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Incidentes</button>
           </div>
 
           {rightTab === 'incidentes' && (
@@ -2287,7 +2293,7 @@ export default function ProjectDetailPage() {
                 <dd className="text-right flex items-center gap-2 justify-end flex-wrap">
                   <span className="text-digi-text">{project.is_private ? 'Privado' : 'Público'}</span>
                   {isOwner && !isTerminal && hasReqs && (
-                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
+                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
                   )}
                 </dd>
               </div>
@@ -2304,7 +2310,7 @@ export default function ProjectDetailPage() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Descripción</h3>
                 {isOwner && !isTerminal && (
-                  <button onClick={() => { setEditDesc(project.description || ''); setEditingDesc(true); }} className="text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
+                  <button onClick={() => { setEditDesc(project.description || ''); setEditingDesc(true); }} className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
                 )}
               </div>
               <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description || <span className="text-digi-muted">Sin descripción. Pulsa “Editar” para agregar una.</span>}</p>
@@ -2383,7 +2389,7 @@ export default function ProjectDetailPage() {
                   <div className="mt-2 pt-2 border-t border-digi-border">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[11px] text-digi-muted" style={pf}>Etapas de facturación</span>
-                      <button onClick={openStagesPanel} className="text-[11px] text-accent hover:underline" style={pf}>
+                      <button onClick={openStagesPanel} className="destino-tactil text-[11px] text-accent hover:underline" style={pf}>
                         {(billing?.etapas || []).length > 0 ? 'Editar' : 'Definir'}
                       </button>
                     </div>
@@ -2405,7 +2411,7 @@ export default function ProjectDetailPage() {
                                 se cobra otra vez. */}
                             {!e.invoiceId && (
                               <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
-                                className="text-accent hover:opacity-70 transition-opacity">
+                                className="destino-tactil text-accent hover:opacity-70 transition-opacity">
                                 <Share2 className="w-3.5 h-3.5" />
                               </button>
                             )}

@@ -285,6 +285,83 @@ export default function ProjectsPage() {
   const totalPages = Math.ceil(total / PER_PAGE);
 
 
+  /** El cuerpo del resumen, una sola vez: columna en escritorio, panel en teléfono. */
+  const cuerpoResumen = !selected ? null : (
+  <div className="p-4 space-y-2.5">
+    {[
+      ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+      ['Cliente', selected.client_name || '—'],
+      ['Presupuesto', selected.budget_min ? `$${selected.budget_min}${selected.budget_max ? `–${selected.budget_max}` : ''}` : '—'],
+      ['Costo final', selected.final_cost ? `$${fmt2(Number(selected.final_cost))}` : '—'],
+      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
+    ].map(([k, v]) => (
+      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+        <span className="text-digi-muted" style={mf}>{k}</span>
+        <span className="text-digi-text text-right" style={mf}>{v}</span>
+      </div>
+    ))}
+
+    {/* Requerimientos (compacto) */}
+    {(() => {
+      const reqs = selDetail?.requirements || [];
+      if (selLoading) return <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando requerimientos…</p>;
+      if (reqs.length === 0) return null;
+      const done = reqs.filter((r: any) => r.is_completed).length;
+      return (
+        <div className="pt-2 border-t border-digi-border">
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Requerimientos ({done}/{reqs.length})</p>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? Math.round((done / reqs.length) * 100) : 0}%` }} /></div>
+            <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqs.length ? Math.round((done / reqs.length) * 100) : 0}%</span>
+          </div>
+          <div className="space-y-1">
+            {reqs.map((r: any) => {
+              const acc = (r.assignments || []).find((a: any) => a.status === 'accepted');
+              return (
+                <div key={r.id} className="flex items-center gap-2 text-[12px]">
+                  <span className={`w-3.5 h-3.5 rounded-[4px] shrink-0 flex items-center justify-center ${r.is_completed ? 'bg-accent text-white' : 'border border-digi-border'}`}>
+                    {r.is_completed && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+                  </span>
+                  <span className={`flex-1 truncate ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</span>
+                  {acc && (
+                    acc.photo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={acc.photo_url} alt="" title={acc.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover shrink-0" />
+                    ) : (
+                      <span title={acc.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[10px] font-semibold text-accent shrink-0" style={mf}>{(acc.member_name || '?')[0].toUpperCase()}</span>
+                    )
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    })()}
+
+    <div className="space-y-2 pt-1">
+      <button onClick={() => router.push(`/dashboard/projects/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
+        Ver detalle <ArrowRight className="w-4 h-4" />
+      </button>
+      {/* ⚠️ Abre el PDF en una PESTAÑA NUEVA, no navega al módulo de Facturas.
+          Ese módulo es de GCC: un cliente no lo tiene permitido, así que el
+          guardián lo echaba a otro sitio —a Tickets— y el botón parecía
+          estropeado. Y aunque pudiera entrar, allí vería el comprobante entre
+          herramientas de emisión que no son suyas.
+          El PDF es la factura tal cual, y en otra pestaña no le hace perder
+          el sitio donde estaba. */}
+      {selected.invoice_id && (
+        <button
+          onClick={() => window.open(`/api/invoices/${selected.invoice_id}/pdf`, '_blank', 'noopener')}
+          className={`${BTN_SECONDARY} w-full`}
+        >
+          <FileText className="w-4 h-4" /> Ver factura
+        </button>
+      )}
+    </div>
+  </div>
+  );
+
   return (
     <div>
       <PageHeader title="Proyectos" description="Proyectos, propuestas y su facturación" />
@@ -340,22 +417,27 @@ export default function ProjectsPage() {
                 />
               </div>
             )}
+            {/* Los TRES botones comparten fila en teléfono: apilados eran tres franjas de
+                44 px —seis controles en total con los filtros— antes de ver el primer
+                proyecto, que es lo que se viene a ver. Con el texto corto caben los tres. */}
+            <div className="flex gap-2">
             {/* Solicitar proyecto: para TODOS (yo soy el cliente). */}
-            <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
-              <Plus className="w-4 h-4" /> Solicitar proyecto
+            <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} flex-1 sm:flex-none h-11 sm:h-auto shrink-0`}>
+              <Plus className="w-4 h-4" /> <span className="sm:hidden">Solicitar</span><span className="hidden sm:inline">Solicitar proyecto</span>
             </button>
             {/* Nueva cotización (agente IA): solo candidato/miembro. */}
             {canCreateOwn && (
-              <button onClick={openQuotePanel} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0" style={mf}>
-                <Calculator className="w-4 h-4" /> Nueva cotización
+              <button onClick={openQuotePanel} className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0" style={mf}>
+                <Calculator className="w-4 h-4" /> <span className="sm:hidden">Cotizar</span><span className="hidden sm:inline">Nueva cotización</span>
               </button>
             )}
             {/* Nuevo proyecto: solo candidato/miembro/admin (yo soy el responsable). */}
             {canCreateOwn && (
-              <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> Nuevo proyecto
+              <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} flex-1 sm:flex-none h-11 sm:h-auto shrink-0`}>
+                <Plus className="w-4 h-4" /> <span className="sm:hidden">Nuevo</span><span className="hidden sm:inline">Nuevo proyecto</span>
               </button>
             )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
@@ -385,6 +467,28 @@ export default function ProjectsPage() {
             onRowClick={(p: any) => selectProject(p)}
             emptyTitle="Sin proyectos"
             emptyDesc="No hay proyectos en este ámbito."
+            /* ── El proyecto, contado para un teléfono ────────────────────────────────
+               La tabla recorta el título («Sistema de afiliados y…») y esconde cliente,
+               presupuesto y costo final con `hideOnMobile` — o sea, la fila decía media
+               frase y una fecha. Aquí el título ocupa el ancho y debajo va lo que
+               identifica al proyecto. */
+            tarjetaMovil={(p: any) => (
+              <>
+                <div className="flex items-start gap-2">
+                  <span title={STATUS_LABEL[p.status] || p.status} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_V[p.status] || 'default']}`} />
+                  <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{p.title}</span>
+                  <span className="shrink-0"><PixelBadge variant={STATUS_V[p.status] || 'default'}>{STATUS_LABEL[p.status] || p.status}</PixelBadge></span>
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 text-[12px] text-digi-muted" style={mf}>
+                  <span className="tabular-nums">#{p.id}</span>
+                  {p.client_name && <span className="min-w-0 truncate max-w-[50%]">{p.client_name}</span>}
+                  {p.final_cost
+                    ? <span className="tabular-nums text-digi-text">${fmt2(Number(p.final_cost))}</span>
+                    : p.budget_min ? <span className="tabular-nums">${p.budget_min}{p.budget_max ? `–${p.budget_max}` : ''}</span> : null}
+                  {p.deadline && <span className="ml-auto">Límite {new Date(p.deadline).toLocaleDateString('es-EC')}</span>}
+                </div>
+              </>
+            )}
           />
 
           {totalPages > 1 && (
@@ -392,11 +496,11 @@ export default function ProjectsPage() {
               <span className="text-[12px] text-digi-muted" style={mf}>Página {page} de {totalPages} · {total} proyectos</span>
               <div className="flex gap-1.5">
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
+                  className="inline-flex items-center gap-1 h-11 sm:h-auto px-3 sm:px-2.5 sm:py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
                   <ChevronLeft className="w-3.5 h-3.5" /> Anterior
                 </button>
                 <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
+                  className="inline-flex items-center gap-1 h-11 sm:h-auto px-3 sm:px-2.5 sm:py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
                   Siguiente <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -404,8 +508,11 @@ export default function ProjectsPage() {
           )}
             </div>
 
-            {/* ── Detail preview panel ── */}
-            <aside className="w-full xl:w-[340px]">
+            {/* ── Resumen ─────────────────────────────────────────────────────────
+                En teléfono caía bajo la lista de 15 proyectos y la paginación, así que
+                tocar una fila no producía ningún cambio visible. Ahí se abre a pantalla
+                completa. */}
+            <aside className="hidden xl:block w-full xl:w-[340px]">
               {!selected ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
@@ -422,84 +529,25 @@ export default function ProjectsPage() {
                     </div>
                     <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                   </div>
-                  <div className="p-4 space-y-2.5">
-                    {[
-                      ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
-                      ['Cliente', selected.client_name || '—'],
-                      ['Presupuesto', selected.budget_min ? `$${selected.budget_min}${selected.budget_max ? `–${selected.budget_max}` : ''}` : '—'],
-                      ['Costo final', selected.final_cost ? `$${fmt2(Number(selected.final_cost))}` : '—'],
-                      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
-                    ].map(([k, v]) => (
-                      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
-                        <span className="text-digi-muted" style={mf}>{k}</span>
-                        <span className="text-digi-text text-right" style={mf}>{v}</span>
-                      </div>
-                    ))}
-
-                    {/* Requerimientos (compacto) */}
-                    {(() => {
-                      const reqs = selDetail?.requirements || [];
-                      if (selLoading) return <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando requerimientos…</p>;
-                      if (reqs.length === 0) return null;
-                      const done = reqs.filter((r: any) => r.is_completed).length;
-                      return (
-                        <div className="pt-2 border-t border-digi-border">
-                          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Requerimientos ({done}/{reqs.length})</p>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="flex-1 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? Math.round((done / reqs.length) * 100) : 0}%` }} /></div>
-                            <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqs.length ? Math.round((done / reqs.length) * 100) : 0}%</span>
-                          </div>
-                          <div className="space-y-1">
-                            {reqs.map((r: any) => {
-                              const acc = (r.assignments || []).find((a: any) => a.status === 'accepted');
-                              return (
-                                <div key={r.id} className="flex items-center gap-2 text-[12px]">
-                                  <span className={`w-3.5 h-3.5 rounded-[4px] shrink-0 flex items-center justify-center ${r.is_completed ? 'bg-accent text-white' : 'border border-digi-border'}`}>
-                                    {r.is_completed && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
-                                  </span>
-                                  <span className={`flex-1 truncate ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</span>
-                                  {acc && (
-                                    acc.photo_url ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={acc.photo_url} alt="" title={acc.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover shrink-0" />
-                                    ) : (
-                                      <span title={acc.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[10px] font-semibold text-accent shrink-0" style={mf}>{(acc.member_name || '?')[0].toUpperCase()}</span>
-                                    )
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    <div className="space-y-2 pt-1">
-                      <button onClick={() => router.push(`/dashboard/projects/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
-                        Ver detalle <ArrowRight className="w-4 h-4" />
-                      </button>
-                      {/* ⚠️ Abre el PDF en una PESTAÑA NUEVA, no navega al módulo de Facturas.
-                          Ese módulo es de GCC: un cliente no lo tiene permitido, así que el
-                          guardián lo echaba a otro sitio —a Tickets— y el botón parecía
-                          estropeado. Y aunque pudiera entrar, allí vería el comprobante entre
-                          herramientas de emisión que no son suyas.
-                          El PDF es la factura tal cual, y en otra pestaña no le hace perder
-                          el sitio donde estaba. */}
-                      {selected.invoice_id && (
-                        <button
-                          onClick={() => window.open(`/api/invoices/${selected.invoice_id}/pdf`, '_blank', 'noopener')}
-                          className={`${BTN_SECONDARY} w-full`}
-                        >
-                          <FileText className="w-4 h-4" /> Ver factura
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  {cuerpoResumen}
                 </div>
               )}
             </aside>
           </div>
         </div>
+      </div>
+
+
+      {/* El resumen en teléfono: panel a pantalla completa. Mismo contenido, otro envoltorio. */}
+      <div className="xl:hidden">
+        <PixelModal
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          title={selected ? `#${selected.id} · ${selected.title}` : 'Proyecto'}
+          size="md"
+        >
+          {cuerpoResumen}
+        </PixelModal>
       </div>
 
       {/* Panel lateral DERECHO — Nueva cotización (agente IA) */}

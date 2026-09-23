@@ -3341,6 +3341,37 @@ al tocar. Escritorio comprobado en las cinco: sin cambios.*
 
 ---
 
+### Sexta aplicación: PROYECTOS (2026-09-22)
+`/dashboard/projects`, `/dashboard/projects/[id]` (2.999 líneas, la página más grande del
+panel), el portal de incidencias del cliente (`/portal/[projectId]`) y `/panel/projects`.
+Dos hallazgos que valen para todo el panel:
+
+- **⭐⭐ EL DESTINO TÁCTIL, EN LA FUENTE: `BTN_PRIMARY` / `BTN_SECONDARY` / `BTN_DANGER`.**
+  Son los botones del panel —**los usan 57 archivos**— y con `py-2` medían **38 px**. Yo
+  llevaba cinco módulos añadiéndoles `h-11 sm:h-auto` **a mano, pantalla por pantalla**:
+  eso no es aplicar un sistema de diseño, es parchearlo. Con `min-h-11 sm:min-h-0` en las
+  tres constantes, **todo el panel gana el destino táctil de golpe**. Es `min-h` y no `h`
+  para no pisar a quien traiga su propia altura.
+  *Comprobado en 10 pantallas que en escritorio siguen con sus 34–38 px de siempre.*
+  > **Regla:** antes de añadir `h-11` a un botón, mirar si viene de una constante
+  > compartida. Si viene, se arregla ahí.
+- **⭐ UN `flex justify-between` SIN `flex-wrap` SE SALE DE LA PANTALLA.** La cabecera de
+  Requerimientos —título + barra de progreso `w-28` fija + porcentaje + «Agregar»— sumaba
+  más de los 350 px útiles y **el botón quedaba cortado contra el borde**: 8 elementos
+  desbordando. Ahora la fila envuelve y la barra baja a una segunda línea a ancho completo,
+  donde además se lee mejor. *Es el fallo más fácil de colar: en escritorio no se ve.*
+- Lo demás, el patrón ya asentado: `tarjetaMovil` (la tabla escondía cliente, presupuesto y
+  costo final con `hideOnMobile`), resumen lateral → panel a pantalla completa, los **tres**
+  botones de la barra compartiendo fila con texto corto, y `.destino-tactil` en los 11
+  botones de 14–30 px que viven encajados dentro de una fila de propiedades o de un
+  requerimiento, donde agrandarlos descuadraría la composición.
+
+*Medido con `hover: none` / `pointer: coarse` en las cuatro rutas: **0** destinos por debajo
+de 44 px, **0** invisibles, **0** desbordamiento. Escritorio sin cambios, y comprobado
+además en 10 pantallas más por el cambio de las constantes.*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3511,6 +3542,9 @@ mientras se escribe.
     en 9 archivos más** (lista en la regla 6-bis).
   - **`FilterRail` con tira de fichas bajo `lg`** (2026-09-22) — **19 pantallas** la
     heredan de golpe. Sus `actions` pasan a `.acciones-al-pasar`.
+  - **`BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER` con `min-h-11 sm:min-h-0`** (2026-09-22) —
+    el destino táctil en la fuente; **57 archivos** lo heredan. Deja de hacer falta añadir
+    `h-11` a mano en cada pantalla.
   - **`DetailHeader` con teléfono** (2026-09-22) — `sm:truncate` en el título (envuelve en
     teléfono), miga de pan y menú `⋯` a 44 px. **6 páginas de detalle** lo heredan.
   - **`PixelModal`: título con `min-w-0 truncate`** y cierre `shrink-0` (2026-09-22).
