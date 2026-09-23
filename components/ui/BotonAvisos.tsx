@@ -64,10 +64,10 @@ export default function BotonAvisos({
         aria-label={`${avisos.length} ${avisos.length === 1 ? 'advertencia' : 'advertencias'}`}
         aria-expanded={abierto}
         title={`${avisos.length} ${avisos.length === 1 ? 'advertencia' : 'advertencias'}`}
-        className={`relative inline-flex items-center justify-center w-9 h-9 rounded border transition-colors
+        className={`relative inline-flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded border transition-colors
           ${tono.control} ${abierto ? `ring-2 ring-offset-1 ${tono.anillo}` : ''}`}
       >
-        <AlertTriangle className="w-4 h-4" />
+        <AlertTriangle className="w-5 h-5 sm:w-4 sm:h-4" />
         {/* El contador NO va relleno de color: un relleno sólido obliga a texto blanco, y
             el ámbar del tema es oscuro en claro pero dorado claro en oscuro — el blanco
             deja de leerse. Con el tono sobre la superficie de la tarjeta funciona en los

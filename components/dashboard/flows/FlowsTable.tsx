@@ -255,7 +255,7 @@ export default function FlowsTable() {
             {/* Crear flujos es de GCC. El cliente entra a los suyos, no monta nuevos. */}
             {puedeAdministrarFlujos && (
               <button onClick={openCreate}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
                 style={mf}>
                 <Plus className="w-4 h-4" /> Nuevo flujo
               </button>

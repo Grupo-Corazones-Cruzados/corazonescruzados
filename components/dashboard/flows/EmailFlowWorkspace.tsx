@@ -373,11 +373,11 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
     actions: (
       <>
         <button onClick={() => setEditCampaign(c)} title="Editar el correo"
-          className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+          className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
           <Pencil className="w-3.5 h-3.5" />
         </button>
         <button onClick={() => setDelCampaign(c)} title="Eliminar la campaña"
-          className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+          className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </>
@@ -410,7 +410,7 @@ export default function EmailFlowWorkspace({ flow, controlRef }: {
             <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={mf}>
               Listas de contactos
             </p>
-            <button onClick={() => setNewList(true)} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors" title="Nueva lista">
+            <button onClick={() => setNewList(true)} className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors" title="Nueva lista">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -755,15 +755,15 @@ function ListGroup({
 
                 <span className={`acciones-al-pasar flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
                   <button onClick={() => onRename(l)} title="Renombrar la lista"
-                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                    className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => onShare(l)} title="Compartir enlace"
-                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                    className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                     <Share2 className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => onDelete(l)} title="Eliminar la lista"
-                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                    className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </span>

@@ -3492,6 +3492,32 @@ icono 14 — intacto.*
 
 ---
 
+### Décima aplicación: AUTOMATIZACIONES (2026-09-23)
+La lista y los **tres** tipos de flujo: agente de IA, correo y WhatsApp (6.400 líneas en
+`components/dashboard/flows/`).
+
+- **⭐⭐ UNA BANDEJA EN UN TELÉFONO ES UNA PANTALLA, NO DOS.** La bandeja del agente era
+  `lista de 320 px + hilo`: en 390 px al hilo le quedaban **50**, y la conversación
+  **se salía de la pantalla** — se veía «Elige una conversa…» cortado contra el borde. Es
+  el patrón de cualquier app de mensajería y aquí faltaba: la lista ocupa el ancho, y al
+  tocar una conversación **el hilo la sustituye**, con un «‹» de 44 px para volver. Desde
+  `lg` siguen las dos columnas.
+  > **Regla:** un diseño maestro-detalle *en paralelo* (dos columnas) no se apila en
+  > teléfono: **se alterna**. Apilarlo deja el detalle a una pantalla de distancia; no
+  > pintarlo obliga a un «volver» que hay que añadir a propósito.
+- **Un ancho fijo se sale**: el buscador de la bandeja era `w-56` y quedaba cortado contra
+  el borde. `w-full sm:w-56`.
+- **`BotonAvisos`** (el triángulo con el contador de advertencias, 4 pantallas) medía 36 px
+  → 44, con el icono de 20.
+- Las **pestañas del agente** (Bandeja · Plantillas · Estudio) medían 30 px → 44, y los
+  botones de icono de 24 px de las plantillas, las listas de contactos y el flujo de correo
+  llevan `destino-tactil`.
+
+*Medido con `hover: none` / `pointer: coarse` en las cuatro: **0** destinos por debajo de
+44 px y **0** desbordamiento. Escritorio: las dos columnas de la bandeja intactas.*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición

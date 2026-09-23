@@ -109,11 +109,11 @@ export default function AgenteFlowWorkspace({ flow, onAvisos }: {
           type="button"
           onClick={() => setVista(v)}
           aria-pressed={vista === v}
-          className={`inline-flex items-center gap-1.5 px-3 h-[30px] text-[12.5px] font-medium transition-colors
+          className={`inline-flex items-center gap-1.5 px-3 h-11 sm:h-[30px] text-[12.5px] font-medium transition-colors
             ${vista === v ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-accent hover:bg-black/[0.03]'}`}
           style={mf}
         >
-          <Icon className="w-3.5 h-3.5" />{label}
+          <Icon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />{label}
         </button>
       ))}
     </div>

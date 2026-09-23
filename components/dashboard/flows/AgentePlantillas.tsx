@@ -234,11 +234,11 @@ export default function AgentePlantillas({ flowId, acciones }: { flowId: number;
             actions: (
               <>
                 <button onClick={() => setEditando(p)} title="Editar la plantilla"
-                  className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                  className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={() => setBorrando(p)} title="Eliminar la plantilla"
-                  className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                  className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </>

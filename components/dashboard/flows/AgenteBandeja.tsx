@@ -21,7 +21,7 @@ import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import {
   Inbox, Search, Bot, User, Send, HandHelping, RotateCcw, AlertTriangle, Sparkles, FileText,
-  Smartphone, History, Mic, Image as ImageIcon,
+  Smartphone, History, Mic, ChevronLeft, Image as ImageIcon,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -116,7 +116,10 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
             {f.texto}
           </button>
         ))}
-        <div className="ml-auto w-56 relative">
+        {/* ⚠️ `w-56` fijo se salía del ancho en un teléfono: el buscador quedaba cortado
+            contra el borde. A ancho completo en teléfono, donde además es una fila propia
+            porque los filtros ya se llevan la de arriba. */}
+        <div className="w-full sm:w-56 sm:ml-auto relative">
           <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-digi-muted pointer-events-none" />
           <PixelInput placeholder="Buscar por número o nombre…" value={busca}
             onChange={(e: any) => setBusca(e.target.value)} style={{ paddingLeft: 28 }} />
@@ -132,9 +135,15 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
            que es un TECHO, no un relleno. Con pocas conversaciones las dos columnas medían
            lo que su contenido y dejaban media pantalla muerta debajo — se veía con una sola
            conversación de cuatro mensajes. */
+        /* ⚠️ EN UN TELÉFONO ESTO ES UNA PANTALLA, NO DOS (Fernando, 2026-09-23).
+           La bandeja era `lista de 320 px + hilo`: en 390 px al hilo le quedaban 50 y
+           **la conversación se salía de la pantalla** — se veía «Elige una conversa…»
+           cortado contra el borde. Es el patrón de cualquier app de mensajería: la lista
+           ocupa el ancho, y al tocar una conversación **el hilo la sustituye**, con un
+           «volver». Desde `lg` siguen las dos columnas, que es donde caben. */
         <div ref={altoBandeja.ref} className="flex gap-4 items-stretch" style={altoBandeja.style}>
           {/* La lista: cabecera fija ninguna, así que el desplazamiento es de todo el bloque. */}
-          <div className="w-[320px] shrink-0 h-full overflow-y-auto rounded-lg border border-digi-border bg-digi-card">
+          <div className={`w-full lg:w-[320px] shrink-0 h-full overflow-y-auto rounded-lg border border-digi-border bg-digi-card ${sel ? 'hidden lg:block' : ''}`}>
             {filas.map((f) => (
               <button key={f.id} onClick={() => setSel(f.id)}
                 className={`w-full text-left px-3 py-2.5 border-b border-digi-border last:border-b-0 transition-colors ${
@@ -160,8 +169,8 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
             ))}
           </div>
 
-          <div className="flex-1 min-w-0 h-full">
-            {sel ? <Hilo flowId={flowId} convId={sel} alCambiar={cargarLista} />
+          <div className={`flex-1 min-w-0 h-full ${sel ? '' : 'hidden lg:block'}`}>
+            {sel ? <Hilo flowId={flowId} convId={sel} alCambiar={cargarLista} alVolver={() => setSel(null)} />
                  : (
                    <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-digi-border">
                      <PanelEmpty Icon={Inbox} title="Elige una conversación" desc="Aquí se ve el hilo completo y se puede tomar el chat." />
@@ -176,7 +185,7 @@ export default function AgenteBandeja({ flowId, acciones }: { flowId: number; ac
 
 /* ── El hilo ────────────────────────────────────────────────────────────────── */
 
-function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; alCambiar: () => void }) {
+function Hilo({ flowId, convId, alCambiar, alVolver }: { flowId: number; convId: number; alCambiar: () => void; alVolver?: () => void }) {
   const [datos, setDatos] = useState<any>(null);
   const [texto, setTexto] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -247,8 +256,16 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
     // `h-full` en vez de `max-h-[70vh]`: llena la columna. Cabecera, resumen, redacción y
     // pie son `shrink-0`; los mensajes son lo único que crece y se desplaza.
     <div className="h-full rounded-lg border border-digi-border bg-digi-card flex flex-col overflow-hidden">
-      <div className="shrink-0 px-4 py-3 border-b border-digi-border flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="shrink-0 px-3 sm:px-4 py-3 border-b border-digi-border flex items-start justify-between gap-2 sm:gap-3">
+        {/* El «volver» solo en teléfono: ahí el hilo SUSTITUYE a la lista, así que sin
+            esto no habría forma de regresar a las conversaciones. */}
+        {alVolver && (
+          <button onClick={alVolver} aria-label="Volver a las conversaciones"
+            className="lg:hidden w-11 h-11 -ml-1.5 -my-1 shrink-0 inline-flex items-center justify-center rounded-lg text-digi-muted hover:text-accent transition-colors">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        <div className="min-w-0 flex-1">
           {/* Solo el nombre. Quién lleva la conversación ya se sabe por dos sitios mejores:
               el icono de cada fila en la lista, y el botón de tomar/devolver que hay en
               esta misma cabecera — que además es donde se cambia. Y el motivo del escalado
@@ -262,12 +279,12 @@ function Hilo({ flowId, convId, alCambiar }: { flowId: number; convId: number; a
           <p className="text-[11.5px] text-digi-muted mt-0.5" style={mf}>{c.wa_id}</p>
         </div>
         {c.bot_activo ? (
-          <button className={BTN_PRIMARY} disabled={ocupado} onClick={() => alternarToma(true)}>
-            <HandHelping className="w-4 h-4" /> Tomar la conversación
+          <button className={`${BTN_PRIMARY} shrink-0`} disabled={ocupado} onClick={() => alternarToma(true)} title="Tomar la conversación">
+            <HandHelping className="w-4 h-4" /> <span className="hidden sm:inline">Tomar la conversación</span><span className="sm:hidden">Tomar</span>
           </button>
         ) : (
-          <button className={BTN_SECONDARY} disabled={ocupado} onClick={() => alternarToma(false)}>
-            <RotateCcw className="w-4 h-4" /> Devolver al agente
+          <button className={`${BTN_SECONDARY} shrink-0`} disabled={ocupado} onClick={() => alternarToma(false)} title="Devolver al agente">
+            <RotateCcw className="w-4 h-4" /> <span className="hidden sm:inline">Devolver al agente</span><span className="sm:hidden">Devolver</span>
           </button>
         )}
       </div>

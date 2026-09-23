@@ -275,6 +275,16 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Automatizaciones en teléfono — los tres tipos de flujo (2026-09-23).** Lista + agente de IA,
+  correo y WhatsApp. **⭐ El hallazgo: una bandeja en un teléfono es UNA pantalla, no dos.** La
+  bandeja del agente era `lista de 320 px + hilo`; en 390 px al hilo le quedaban 50 y **la
+  conversación se salía de la pantalla**. Ahora la lista ocupa el ancho y al tocar una
+  conversación **el hilo la sustituye**, con un «‹» de 44 px para volver — el patrón de cualquier
+  app de mensajería. *Regla: un maestro-detalle en paralelo no se apila en teléfono, **se
+  alterna**.* Además: el buscador de la bandeja era `w-56` fijo y se cortaba contra el borde;
+  `BotonAvisos` (4 pantallas) de 36 → 44 px; las pestañas del agente de 30 → 44; y los botones de
+  icono de 24 px de plantillas, listas de contactos y correo con `destino-tactil`. Medido: 0
+  destinos < 44 px y 0 desbordamiento en las cuatro rutas; escritorio con sus dos columnas.
 - **El ARMAZÓN del panel en teléfono — cabecera y pie (2026-09-23).** Fernando: *«el header y
   footer se ven muy chiquitos… esos botones son muy chiquitos para los dedos»*. Era la deuda más
   transversal: está en **todas** las pantallas. El pie medía **36 px** con Chat, Mis chats y

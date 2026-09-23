@@ -86,7 +86,7 @@ export function ColumnaListas({
         </p>
         <button
           onClick={alCrear} title="Nueva lista"
-          className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
+          className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-accent-light transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -137,15 +137,15 @@ export function ColumnaListas({
                 <span className={`flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${
                   abierta ? 'opacity-100' : 'acciones-al-pasar opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
                   <button onClick={() => alRenombrar(l)} title="Renombrar la lista"
-                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                    className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => alCompartir(l)} title="Compartir enlace"
-                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
+                    className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                     <Share2 className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => alBorrar(l)} title="Eliminar la lista"
-                    className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
+                    className="destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-500 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </span>
