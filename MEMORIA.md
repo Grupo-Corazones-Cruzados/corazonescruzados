@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Clientes en teléfono — y queda cerrado el destino táctil del panel (2026-09-22).**
+  `.pixel-btn` era la **tercera** familia de botones (25 archivos, 38 px); con ella arreglada en
+  el bloque táctil de `globals.css`, **el tamaño de todo lo pulsable del panel se decide ya en
+  TRES sitios y ninguno más**: `BTN_*` (57 archivos), los campos `.field-control`/`select`/`input`
+  y `.pixel-btn`. Medido: «Guardar cambios» 44 px en táctil, 38 en escritorio. En el módulo: la
+  tabla recortaba 8 de 23 nombres («Compañía Internacional de …») y escondía identificación,
+  correo y facturas — en una cartera de nombres largos y parecidos, **el recorte deja a dos
+  clientes con el mismo rótulo**; y la ficha (donde se editan los datos) caía bajo la lista en
+  teléfono, ahora abre a pantalla completa.
+  **⚠️ Las páginas `/clientes` del SITIO PÚBLICO se auditaron pero NO se tocaron**, por
+  [[gcc-diseno-sitio-con-fernando]]: su maquetación se acuerda con él antes. Medido por si lo
+  encarga: `/clientes` 7 controles de 20–34 px; `/clientes/[necesidad]` 7 de 30–36 px.
 - **Suscripciones en teléfono — y el destino táctil de los CAMPOS, también en la fuente
   (2026-09-22).** La pantalla llegó ya medio resuelta (heredaba el rail de fichas y los botones
   de 44 px), que era el objetivo de haber ido arreglando por componentes. Lo que faltaba:

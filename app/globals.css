@@ -986,6 +986,10 @@ html {
   .corp .field-control:not(textarea),
   .corp select,
   .corp input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) { min-height: 44px; }
+  /* `.pixel-btn` es la TERCERA familia de botones del panel (25 archivos), además de
+     `BTN_*` y de los campos. Con `padding: 8px` mide 38 px. Mismo criterio: el destino
+     táctil se decide aquí, no en cada página. */
+  .corp .pixel-btn { min-height: 44px; }
 }
 .corp .field-control:focus,
 .corp input:focus,

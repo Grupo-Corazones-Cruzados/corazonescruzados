@@ -3413,6 +3413,33 @@ Lo que faltaba:
 
 ---
 
+### Octava aplicación: CLIENTES (2026-09-22)
+`/dashboard/clients` — el módulo de clientes de **facturación** del panel.
+
+- **⭐ LA TERCERA (Y ÚLTIMA) FAMILIA DE BOTONES: `.pixel-btn`.** Aparece en 25 archivos y
+  `.corp .pixel-btn { padding: 8px 20px }` la deja en 38 px. Ya arreglados `BTN_*` y los
+  campos, esta era la que faltaba. Con `min-height: 44px` en el bloque táctil de
+  `globals.css` **queda cerrado el destino táctil de todo el panel**: botones (`BTN_*`),
+  campos (`.field-control` / `select` / `input`) y `.pixel-btn`, **los tres en un solo
+  sitio**. *Medido: «Guardar cambios» → 44 px en táctil, 38 en escritorio.*
+- **La tabla escondía lo que distingue a un cliente de otro.** Con `hideOnMobile`
+  desaparecían identificación, correo, número de facturas y la última; y el nombre se
+  recortaba (8 de 23: «Compañía Internacional de …», «EXPORTADORA DE FLORES …»). En una
+  cartera de nombres largos y parecidos, **el recorte deja dos clientes con el mismo
+  rótulo**. *Medido: 8 → 0 recortados.*
+- **La ficha es donde se editan los datos y se ven las facturas**, y en teléfono caía bajo
+  la lista de 23. Se abre a pantalla completa, con el cuerpo extraído a `cuerpoFicha`.
+
+#### ⚠️ Las páginas `/clientes` del SITIO PÚBLICO no se tocaron
+`app/(sitio)/clientes` y `/clientes/[necesidad]` son del sitio, y ahí rige
+`[[gcc-diseno-sitio-con-fernando]]`: **la maquetación se acuerda con él antes**. Se
+auditaron y **no se modificaron**. Lo que se midió, por si decide encargarlo:
+`/clientes` → 7 controles de 20–34 px («Plataforma», «Ir», «Videojuego», «Marketplace»,
+«Democracia» y dos enlaces de ayuda); `/clientes/[necesidad]` → 7 de 30–36 px (las pestañas
+Talentos/Productos/Tickets/Proyectos y «Datos de contacto»). Ninguna desborda.
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3583,6 +3610,9 @@ mientras se escribe.
     en 9 archivos más** (lista en la regla 6-bis).
   - **`FilterRail` con tira de fichas bajo `lg`** (2026-09-22) — **19 pantallas** la
     heredan de golpe. Sus `actions` pasan a `.acciones-al-pasar`.
+  - **`.corp .pixel-btn` a 44 px en táctil** (2026-09-22) — la tercera familia de botones
+    (25 archivos). Con esta quedan los **tres** sitios donde se decide el tamaño en el
+    panel: `BTN_*`, los campos y `.pixel-btn`.
   - **Campos y desplegables a 44 px en táctil** (2026-09-22) — bloque
     `@media (hover: none), (pointer: coarse)` sobre `.corp .field-control` / `.corp select`
     / `.corp input` en `globals.css`. Va ahí porque **la regla de 34 px gana por

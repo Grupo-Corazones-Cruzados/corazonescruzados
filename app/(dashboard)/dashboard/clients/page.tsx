@@ -217,6 +217,103 @@ export default function ClientsPage() {
   };
 
 
+  /** El cuerpo de la ficha, una sola vez: columna en escritorio, panel en teléfono. */
+  const cuerpoFicha = !selected || loadingDetail || !detail ? null : (
+    <>
+  {/* Segmented toggle */}
+  <div className="px-4 pt-3">
+    <div className="inline-flex gap-1 p-0.5 bg-black/[0.04] rounded-md">
+      {(['datos', 'consumos'] as const).map(t => (
+        <button key={t} onClick={() => setDetailTab(t)}
+          className={`min-h-11 sm:min-h-0 px-3 py-1 text-[12px] font-medium rounded transition-colors ${detailTab === t ? 'bg-white text-accent shadow-sm' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>
+          {t === 'datos' ? 'Datos' : `Consumos (${detail.invoices.length})`}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
+    {detailTab === 'datos' ? (
+      <>
+        {detail.is_consumidor_final && <p className="text-[11px] text-digi-muted" style={mf}>Registro especial: agrupa todas las facturas a consumidor final.</p>}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className={labelCls} style={mf}>Tipo ID</label>
+            <select value={e.id_type} onChange={ev => setE({ ...e, id_type: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} field-select appearance-none disabled:opacity-50`} style={mf}>
+              <option value="04">RUC</option><option value="05">Cédula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls} style={mf}>Identificación</label>
+            <input value={e.ruc} onChange={ev => setE({ ...e, ruc: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} disabled:opacity-50`} style={mf} />
+          </div>
+        </div>
+        <div>
+          <label className={labelCls} style={mf}>Nombre / Razón Social</label>
+          <input value={e.name} onChange={ev => setE({ ...e, name: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} disabled:opacity-50`} style={mf} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className={labelCls} style={mf}>Email</label><input value={e.email} onChange={ev => setE({ ...e, email: ev.target.value })} type="email" className={smallInputCls} style={mf} /></div>
+          <div><label className={labelCls} style={mf}>Teléfono</label><input value={e.phone} onChange={ev => setE({ ...e, phone: ev.target.value })} className={smallInputCls} style={mf} /></div>
+        </div>
+        <div><label className={labelCls} style={mf}>Dirección</label><input value={e.address} onChange={ev => setE({ ...e, address: ev.target.value })} className={smallInputCls} style={mf} /></div>
+        <div><label className={labelCls} style={mf}>País</label><CountrySelect value={e.country || ''} onChange={(v) => setE({ ...e, country: v })} /></div>
+        <div><label className={labelCls} style={mf}>Notas</label><textarea value={e.notes} onChange={ev => setE({ ...e, notes: ev.target.value })} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
+        {detail.aliases?.length > 0 && (
+          <div className="text-[11px] text-digi-muted" style={mf}><span className="text-accent font-medium">Identificaciones fusionadas: </span>{detail.aliases.join(', ')}</div>
+        )}
+        <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
+          {saving ? '...' : savedOk ? '✓ Guardado' : 'Guardar cambios'}
+        </button>
+        {savedOk && <p className="text-[12px] text-green-600 text-center flex items-center justify-center gap-1" style={mf}><CheckCircle2 className="w-3.5 h-3.5" /> Cambios guardados</p>}
+      </>
+    ) : (
+      <>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Facturas</div><div className="text-[16px] font-semibold text-digi-text" style={mf}>{detail.summary.count}</div></div>
+          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Total</div><div className="text-[16px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(detail.summary.total_facturado)}</div></div>
+          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Autorizado</div><div className="text-[16px] font-semibold text-green-600 tabular-nums" style={mf}>${fmt2(detail.summary.total_autorizado)}</div></div>
+        </div>
+        <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={mf}>Facturas ({detail.invoices.length})</h4>
+        {detail.invoices.length === 0 ? (
+          <p className="text-[12px] text-digi-muted py-3 text-center" style={mf}>Sin facturas registradas para este cliente.</p>
+        ) : (
+          <div className="space-y-2">
+            {detail.invoices.map((inv: any) => (
+              <div key={inv.id} className="flex items-center justify-between gap-2 px-3 py-2 border border-digi-border rounded-lg bg-digi-darker">
+                <div className="min-w-0">
+                  <div className="text-[12px] font-medium text-digi-text" style={mf}>{inv.invoice_number || `Factura #${inv.id}`}</div>
+                  <div className="text-[11px] text-digi-muted flex items-center gap-2 flex-wrap" style={mf}>
+                    <span>{inv.created_at}</span>
+                    <span>· ${fmt2(inv.total)}</span>
+                    <PixelBadge variant={STATUS_V[inv.status] || 'default'}>{STATUS_LABEL[inv.status] || inv.status}</PixelBadge>
+                    {inv.origin_label && <span className="text-digi-muted">· {inv.origin_label}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {inv.origin_type && (
+                    <button onClick={() => goOrigin(inv)} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-digi-text transition-colors" style={mf}><ExternalLink className="w-3 h-3" /> Origen</button>
+                  )}
+                  <button onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] border border-accent/40 rounded text-accent hover:bg-accent-light transition-colors" style={mf}><FileText className="w-3 h-3" /> Factura</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    )}
+
+    {user?.role === 'admin' && !detail.is_consumidor_final && (
+      <div className="pt-2 border-t border-digi-border">
+        <button onClick={deleteClient} className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 w-full sm:w-auto text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
+          <Trash2 className="w-3.5 h-3.5" /> Eliminar cliente
+        </button>
+      </div>
+    )}
+  </div>
+    </>
+  );
+
   return (
     <div>
       <PageHeader title="Clientes" description="Clientes de facturación y sus consumos" />
@@ -270,6 +367,27 @@ export default function ClientsPage() {
                   { key: 'total', header: 'Total facturado', width: '130px', sortKey: 'total', render: (c: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(c.total))}</span> },
                   { key: 'ultima', header: 'Última factura', width: '140px', sortKey: 'ultima', hideOnMobile: true, render: (c: any) => <span className="text-[12px] text-digi-muted" style={mf}>{fechaEs(c.ultima)}</span> },
                 ]}
+                /* ── El cliente, contado para un teléfono ─────────────────────────────
+                   La tabla recorta el nombre a media columna («Compañía Internacional
+                   de …», «EXPORTADORA DE FLORES …») y esconde con `hideOnMobile` la
+                   identificación, el correo, el número de facturas y la última — o sea,
+                   **todo lo que distingue a un cliente de otro**, que en una cartera de
+                   23 con nombres largos y parecidos es justo lo que se viene a mirar. */
+                tarjetaMovil={(c: any) => (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{c.name}</span>
+                      {c.is_consumidor_final && <PixelBadge variant="info">CF</PixelBadge>}
+                      <span className="shrink-0 text-[13px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(Number(c.total || 0))}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-digi-muted" style={mf}>
+                      {c.ruc && <span className="tabular-nums">{c.ruc}</span>}
+                      <span className="tabular-nums">{c.facturas || 0} factura{Number(c.facturas) === 1 ? '' : 's'}</span>
+                      {c.ultima && <span className="ml-auto">Última {new Date(c.ultima).toLocaleDateString('es-EC')}</span>}
+                    </div>
+                    {c.email && <p className="mt-0.5 text-[12px] text-digi-muted truncate" style={mf}>{c.email}</p>}
+                  </>
+                )}
               />
               <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-digi-border text-[12px]" style={mf}>
                 <span className="text-digi-muted">{sortedClients.length} cliente{sortedClients.length === 1 ? '' : 's'} · {sortedClients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas</span>
@@ -277,8 +395,11 @@ export default function ClientsPage() {
               </div>
             </div>
 
-            {/* ── Detail panel ── */}
-            <aside className="w-full xl:w-[400px]">
+            {/* ── Ficha del cliente ───────────────────────────────────────────────
+                Es donde se editan sus datos y se ven sus facturas. En teléfono caía bajo
+                la lista de 23 clientes, así que tocar una fila no producía ningún cambio
+                visible. Ahí se abre a pantalla completa. */}
+            <aside className="hidden xl:block w-full xl:w-[400px]">
               {!selected ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
@@ -301,102 +422,27 @@ export default function ClientsPage() {
                     <button onClick={() => { setSelected(null); setDetail(null); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                   </div>
 
-                  {/* Segmented toggle */}
-                  <div className="px-4 pt-3">
-                    <div className="inline-flex gap-1 p-0.5 bg-black/[0.04] rounded-md">
-                      {(['datos', 'consumos'] as const).map(t => (
-                        <button key={t} onClick={() => setDetailTab(t)}
-                          className={`px-3 py-1 text-[12px] font-medium rounded transition-colors ${detailTab === t ? 'bg-white text-accent shadow-sm' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>
-                          {t === 'datos' ? 'Datos' : `Consumos (${detail.invoices.length})`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
-                    {detailTab === 'datos' ? (
-                      <>
-                        {detail.is_consumidor_final && <p className="text-[11px] text-digi-muted" style={mf}>Registro especial: agrupa todas las facturas a consumidor final.</p>}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className={labelCls} style={mf}>Tipo ID</label>
-                            <select value={e.id_type} onChange={ev => setE({ ...e, id_type: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} field-select appearance-none disabled:opacity-50`} style={mf}>
-                              <option value="04">RUC</option><option value="05">Cédula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className={labelCls} style={mf}>Identificación</label>
-                            <input value={e.ruc} onChange={ev => setE({ ...e, ruc: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} disabled:opacity-50`} style={mf} />
-                          </div>
-                        </div>
-                        <div>
-                          <label className={labelCls} style={mf}>Nombre / Razón Social</label>
-                          <input value={e.name} onChange={ev => setE({ ...e, name: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} disabled:opacity-50`} style={mf} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div><label className={labelCls} style={mf}>Email</label><input value={e.email} onChange={ev => setE({ ...e, email: ev.target.value })} type="email" className={smallInputCls} style={mf} /></div>
-                          <div><label className={labelCls} style={mf}>Teléfono</label><input value={e.phone} onChange={ev => setE({ ...e, phone: ev.target.value })} className={smallInputCls} style={mf} /></div>
-                        </div>
-                        <div><label className={labelCls} style={mf}>Dirección</label><input value={e.address} onChange={ev => setE({ ...e, address: ev.target.value })} className={smallInputCls} style={mf} /></div>
-                        <div><label className={labelCls} style={mf}>País</label><CountrySelect value={e.country || ''} onChange={(v) => setE({ ...e, country: v })} /></div>
-                        <div><label className={labelCls} style={mf}>Notas</label><textarea value={e.notes} onChange={ev => setE({ ...e, notes: ev.target.value })} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
-                        {detail.aliases?.length > 0 && (
-                          <div className="text-[11px] text-digi-muted" style={mf}><span className="text-accent font-medium">Identificaciones fusionadas: </span>{detail.aliases.join(', ')}</div>
-                        )}
-                        <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-                          {saving ? '...' : savedOk ? '✓ Guardado' : 'Guardar cambios'}
-                        </button>
-                        {savedOk && <p className="text-[12px] text-green-600 text-center flex items-center justify-center gap-1" style={mf}><CheckCircle2 className="w-3.5 h-3.5" /> Cambios guardados</p>}
-                      </>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Facturas</div><div className="text-[16px] font-semibold text-digi-text" style={mf}>{detail.summary.count}</div></div>
-                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Total</div><div className="text-[16px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(detail.summary.total_facturado)}</div></div>
-                          <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Autorizado</div><div className="text-[16px] font-semibold text-green-600 tabular-nums" style={mf}>${fmt2(detail.summary.total_autorizado)}</div></div>
-                        </div>
-                        <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={mf}>Facturas ({detail.invoices.length})</h4>
-                        {detail.invoices.length === 0 ? (
-                          <p className="text-[12px] text-digi-muted py-3 text-center" style={mf}>Sin facturas registradas para este cliente.</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {detail.invoices.map((inv: any) => (
-                              <div key={inv.id} className="flex items-center justify-between gap-2 px-3 py-2 border border-digi-border rounded-lg bg-digi-darker">
-                                <div className="min-w-0">
-                                  <div className="text-[12px] font-medium text-digi-text" style={mf}>{inv.invoice_number || `Factura #${inv.id}`}</div>
-                                  <div className="text-[11px] text-digi-muted flex items-center gap-2 flex-wrap" style={mf}>
-                                    <span>{inv.created_at}</span>
-                                    <span>· ${fmt2(inv.total)}</span>
-                                    <PixelBadge variant={STATUS_V[inv.status] || 'default'}>{STATUS_LABEL[inv.status] || inv.status}</PixelBadge>
-                                    {inv.origin_label && <span className="text-digi-muted">· {inv.origin_label}</span>}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  {inv.origin_type && (
-                                    <button onClick={() => goOrigin(inv)} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-digi-text transition-colors" style={mf}><ExternalLink className="w-3 h-3" /> Origen</button>
-                                  )}
-                                  <button onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] border border-accent/40 rounded text-accent hover:bg-accent-light transition-colors" style={mf}><FileText className="w-3 h-3" /> Factura</button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {user?.role === 'admin' && !detail.is_consumidor_final && (
-                      <div className="pt-2 border-t border-digi-border">
-                        <button onClick={deleteClient} className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
-                          <Trash2 className="w-3.5 h-3.5" /> Eliminar cliente
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {cuerpoFicha}
                 </div>
               )}
             </aside>
           </div>
         </div>
+      </div>
+
+
+      {/* La ficha en teléfono: panel a pantalla completa. Mismo contenido, otro envoltorio. */}
+      <div className="xl:hidden">
+        <PixelModal
+          open={!!selected}
+          onClose={() => { setSelected(null); setDetail(null); }}
+          title={detail?.name || 'Cliente'}
+          size="md"
+        >
+          {loadingDetail || !detail
+            ? <p className="py-10 text-center text-[12px] text-digi-muted" style={mf}>Cargando…</p>
+            : cuerpoFicha}
+        </PixelModal>
       </div>
 
       {/* Create Modal */}
