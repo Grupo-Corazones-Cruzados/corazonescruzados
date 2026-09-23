@@ -3370,6 +3370,22 @@ Dos hallazgos que valen para todo el panel:
 de 44 px, **0** invisibles, **0** desbordamiento. Escritorio sin cambios, y comprobado
 además en 10 pantallas más por el cambio de las constantes.*
 
+#### El portal de incidencias, con datos de verdad
+La primera pasada lo dio por bueno porque el proyecto que probé tenía **0 incidencias**:
+solo se veía el formulario vacío. Con un proyecto de **29 incidencias** aparecieron dos
+cosas, y **este portal es probablemente la pantalla más táctil del sistema** — la abre un
+cliente, desde su teléfono, para reportar un fallo:
+- **12 controles entre 23 y 40 px**: las dos pestañas, los cuatro botones de criticidad, el
+  par Texto/Voz, los desplegables de módulo/sección, «Agregar imágenes» y «Enviar
+  incidencia». Todos a `min-h-11 sm:min-h-0`.
+- **El título de la incidencia se recortaba** («Barra busqueda …»): en una sola fila, las
+  píldoras de estado y criticidad se llevaban media pantalla. En teléfono las píldoras van
+  arriba y **el título debajo, a ancho completo**; en escritorio siguen en línea.
+  *Medido: 29 títulos, 0 recortados.*
+
+> **Lección de método:** una pantalla probada con la tabla vacía no está probada. Antes de
+> darla por buena, buscar un registro que la llene —o crearlo y borrarlo después—.
+
 ---
 
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →

@@ -403,7 +403,7 @@ export default function PortalPage() {
           <button
             onClick={() => setTab('list')}
             className={cn(
-              'flex-1 py-2 px-3 rounded text-xs font-medium transition-colors',
+              'flex-1 min-h-11 sm:min-h-0 py-2 px-3 rounded text-xs font-medium transition-colors',
               tab === 'list'
                 ? 'bg-white/10 text-white'
                 : 'text-[#737373] hover:text-white',
@@ -414,7 +414,7 @@ export default function PortalPage() {
           <button
             onClick={() => setTab('new')}
             className={cn(
-              'flex-1 py-2 px-3 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1.5',
+              'flex-1 min-h-11 sm:min-h-0 py-2 px-3 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1.5',
               tab === 'new'
                 ? 'bg-white/10 text-white'
                 : 'text-[#737373] hover:text-white',
@@ -440,7 +440,7 @@ export default function PortalPage() {
               <input
                 value={clientName}
                 onChange={e => setClientName(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                className="w-full min-h-11 sm:min-h-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
                 placeholder="Nombre (opcional)"
               />
             </div>
@@ -450,7 +450,7 @@ export default function PortalPage() {
               <input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                className="w-full min-h-11 sm:min-h-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
                 placeholder="Breve resumen de la incidencia"
                 required
               />
@@ -465,7 +465,7 @@ export default function PortalPage() {
                     type="button"
                     onClick={() => setSeverity(key)}
                     className={cn(
-                      'py-2 rounded border text-xs font-medium transition-all',
+                      'min-h-11 sm:min-h-0 py-2 rounded border text-xs font-medium transition-all',
                       severity === key
                         ? cfg.color
                         : 'text-[#737373] bg-[#1a1a1a] border-[#2a2a2a] hover:border-[#4a4a4a]'
@@ -485,7 +485,7 @@ export default function PortalPage() {
                   <select
                     value={selectedModule}
                     onChange={e => { setSelectedModule(e.target.value); setSelectedSection(''); setSelectedSubsection(''); }}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                    className="w-full min-h-11 sm:min-h-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
                     required
                   >
                     <option value="">Selecciona un modulo</option>
@@ -502,7 +502,7 @@ export default function PortalPage() {
                     <select
                       value={selectedSection}
                       onChange={e => { setSelectedSection(e.target.value); setSelectedSubsection(''); }}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                      className="w-full min-h-11 sm:min-h-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
                     >
                       <option value="">Todas</option>
                       {sections.map(s => (
@@ -518,7 +518,7 @@ export default function PortalPage() {
                     <select
                       value={selectedSubsection}
                       onChange={e => setSelectedSubsection(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
+                      className="w-full min-h-11 sm:min-h-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-2 text-sm text-white outline-none focus:border-[#4a4a4a] transition-colors"
                     >
                       <option value="">Todas</option>
                       {subsections.map(ss => (
@@ -539,7 +539,7 @@ export default function PortalPage() {
                     type="button"
                     onClick={() => setDescMode('text')}
                     className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
+                      "flex items-center gap-1 min-h-11 sm:min-h-0 px-2.5 py-1 rounded text-[10px] transition-colors",
                       descMode === 'text' ? "bg-[#2a2a2a] text-white" : "text-[#737373] hover:text-white"
                     )}
                   >
@@ -549,7 +549,7 @@ export default function PortalPage() {
                     type="button"
                     onClick={() => setDescMode('voice')}
                     className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors",
+                      "flex items-center gap-1 min-h-11 sm:min-h-0 px-2.5 py-1 rounded text-[10px] transition-colors",
                       descMode === 'voice' ? "bg-[#2a2a2a] text-white" : "text-[#737373] hover:text-white"
                     )}
                   >
@@ -630,7 +630,7 @@ export default function PortalPage() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] border border-dashed border-[#2a2a2a] rounded text-xs text-[#737373] hover:text-white hover:border-[#4a4a4a] transition-colors w-full justify-center"
+                className="flex items-center justify-center gap-2 min-h-11 sm:min-h-0 px-3 py-2 bg-[#1a1a1a] border border-dashed border-[#2a2a2a] rounded text-xs text-[#737373] hover:text-white hover:border-[#4a4a4a] transition-colors w-full justify-center"
               >
                 <ImagePlus size={14} /> Agregar imagenes o pegar (Ctrl+V)
               </button>
@@ -659,7 +659,7 @@ export default function PortalPage() {
             <button
               type="submit"
               disabled={submitting || !title.trim() || !description.trim() || (modules.length > 0 && !selectedModule)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-black rounded text-sm font-medium hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 min-h-11 sm:min-h-0 px-4 py-2.5 bg-white text-black rounded text-sm font-medium hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Enviar incidencia
@@ -692,16 +692,22 @@ export default function PortalPage() {
                 <div key={inc.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg overflow-hidden">
                   <button
                     onClick={() => expandIncident(inc.id)}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                    className="w-full flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 px-4 py-3 text-left hover:bg-white/5 transition-colors"
                   >
-                    <div className={cn('flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] shrink-0', cfg.color)}>
-                      <Icon size={10} /> {cfg.label}
-                    </div>
-                    <div className={cn('px-1.5 py-0.5 rounded border text-[9px] shrink-0', sevCfg.color)}>
-                      {sevCfg.label}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{inc.title}</p>
+                    {/* ⚠️ EN TELÉFONO LAS PÍLDORAS VAN ARRIBA Y EL TÍTULO DEBAJO, a ancho
+                        completo. En una sola fila, «Completada» + «Critica» se llevaban
+                        media pantalla y el título —que es lo que identifica la incidencia—
+                        se recortaba a «Barra busqueda …». En escritorio siguen en línea. */}
+                    <span className="flex items-center gap-2 shrink-0">
+                      <span className={cn('flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] shrink-0', cfg.color)}>
+                        <Icon size={10} /> {cfg.label}
+                      </span>
+                      <span className={cn('px-1.5 py-0.5 rounded border text-[9px] shrink-0', sevCfg.color)}>
+                        {sevCfg.label}
+                      </span>
+                    </span>
+                    <div className="flex-1 min-w-0 w-full">
+                      <p className="text-sm font-medium sm:truncate">{inc.title}</p>
                       <p className="text-[10px] text-[#737373] font-mono mt-0.5">
                         {inc.clientName} — {new Date(inc.createdAt).toLocaleDateString()}
                       </p>

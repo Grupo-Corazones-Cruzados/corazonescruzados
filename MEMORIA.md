@@ -287,6 +287,11 @@ Stack estándar de la casa, con particularidades de este repo:
   Requerimientos (título + barra `w-28` fija + % + «Agregar») cortaba el botón contra el borde —
   8 elementos desbordando, y en escritorio no se ve. Medido en las cuatro rutas: 0 destinos
   < 44 px, 0 invisibles, 0 desbordamiento; escritorio sin cambios.
+  **⚠️ Y una lección de método:** el portal de incidencias lo di por bueno con el proyecto
+  vacío (0 incidencias) — solo se veía el formulario. Con uno de **29** salieron 12 controles
+  de 23–40 px y el título recortado por las píldoras de estado y criticidad. **Una pantalla
+  probada con la tabla vacía no está probada.** Y ojo: ese portal lo abre un CLIENTE desde su
+  teléfono para reportar un fallo, así que es de las pantallas más táctiles que hay.
 - **Migrado TODO el panel a `.acciones-al-pasar` (2026-09-22).** 12 archivos, 18 controles —
   portal del cliente, proyectos (lista y detalle), tickets, portafolio, guiones, dos sistemas
   del Centralizado, Razones, listas de contactos, correo y las tarjetas del sitio. Cada uno era
