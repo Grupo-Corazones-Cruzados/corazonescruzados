@@ -275,6 +275,36 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
+  (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el
+  móvil» y pasa a ser **el camino a las tiendas**. Lo que él decidió, textual en lo esencial:
+  - **UN SOLO PROYECTO, no dos.** *«si dejo dos proyectos separados es posible que en
+    actualizaciones a futuro tenga que revisar ambos y puede que algo se escape»*. Nada de un
+    React Native aparte: se empaqueta **esta misma aplicación** con **Capacitor**.
+  - **Primero PWA, después tiendas.** *«por ahora probaría todo mediante pwa, pero a futuro me
+    interesa publicar esa misma app probada en pwa en las tiendas»*. La PWA no es un desvío: es
+    el banco de pruebas de lo que se publicará.
+  - **DOS APLICACIONES MÓVILES a futuro, del mismo proyecto:**
+    1. **GCC World** — el videojuego + la plataforma con todos sus módulos.
+    2. **GCC Productos** — el cliente entra con su cuenta, ve los productos a los que tiene
+       acceso y desde ahí entra a la versión móvil nativa de cada uno.
+    En el **marketplace de GCC World**, cuando un cliente quiera entrar a su inquilino, **se le
+    redirige a la app de GCC Productos**.
+  - **⚠️ AUTOMATIZACIONES DESAPARECE COMO SECCIÓN AISLADA**: pasa a **Productos**, con el mismo
+    **modelo de inquilinos** y la misma **pasarela de pago** que ya tienen los productos. (Afecta
+    a `components/dashboard/flows/` y a `/dashboard/automatizaciones`.)
+  - **La adaptación móvil tiene que ser específica, no responsive a secas.** Sus palabras: mover
+    botones de la cabecera a un menú de tres puntos, quitar títulos, y que **los formularios y
+    los paneles de detalle aparezcan como ventana flotante a pantalla completa** — que es justo
+    el patrón que ya se viene aplicando (lista → panel).
+  - **Las notificaciones push nativas pueden REEMPLAZAR lo que ya hay** si sirven también en
+    escritorio: *«dejar un solo stack pero que combine lo mejor de ambos lados»*.
+  - **Hecho el 2026-09-23 (primer escalón):** el panel ya es **instalable** — `app/manifest.ts`
+    (id `/gcc-world`, `start_url: /dashboard`, standalone, iconos 192/512/maskable y tres
+    atajos), un **service worker deliberadamente MÍNIMO** (`public/sw.js`: no cachea nada de la
+    aplicación —enseña datos en vivo y una cifra vieja como si fuera de hoy es peor que no
+    funcionar—, solo da instalabilidad y una página `/offline`) y su registro **solo en
+    producción**.
 - **Automatizaciones en teléfono — los tres tipos de flujo (2026-09-23).** Lista + agente de IA,
   correo y WhatsApp. **⭐ El hallazgo: una bandeja en un teléfono es UNA pantalla, no dos.** La
   bandeja del agente era `lista de 320 px + hilo`; en 390 px al hilo le quedaban 50 y **la

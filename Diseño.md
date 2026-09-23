@@ -3518,6 +3518,34 @@ La lista y los **tres** tipos de flujo: agente de IA, correo y WhatsApp (6.400 l
 
 ---
 
+### ⭐ A DÓNDE VA ESTO: UN SOLO PROYECTO, PWA HOY, TIENDAS MAÑANA (2026-09-23)
+Fernando fijó el rumbo: **esta misma aplicación** se prueba como **PWA** y después se
+empaqueta con **Capacitor** para App Store y Play Store — *«si dejo dos proyectos separados
+es posible que en actualizaciones a futuro tenga que revisar ambos y puede que algo se
+escape»*. El detalle del plan (las dos apps, y Automatizaciones mudándose a Productos) está
+en `MEMORIA.md`.
+
+**Lo que eso cambia para el diseño:** la vista de teléfono **deja de ser una cortesía y pasa
+a ser el producto**. Lo que aquí se decida es lo que se publicará en una tienda, así que:
+- **No basta con que quepa.** Fernando lo pidió con nombre propio: mover botones de la
+  cabecera a un **menú de tres puntos**, **quitar títulos** que en un móvil solo ocupan, y
+  que **los formularios y los paneles de detalle sean una ventana a pantalla completa** — el
+  patrón que ya se viene aplicando desde Recordatorios.
+- **Las notificaciones push nativas pueden sustituir lo que ya existe**, no sumarse: la idea
+  es *«un solo stack que combine lo mejor de ambos lados»*.
+
+**Primer escalón, hecho:** el panel ya es instalable — `app/manifest.ts` (id `/gcc-world`,
+`start_url: /dashboard`, `standalone`, iconos 192/512/**maskable** y tres atajos) y
+`public/sw.js`.
+
+> ⚠️ **El service worker NO cachea la aplicación, y es a propósito.** Esta plataforma enseña
+> datos en vivo —facturas, saldos, conversaciones—, y una copia guardada puede mostrar **una
+> cifra vieja como si fuera la de hoy**: eso es peor que no funcionar, porque no avisa. Solo
+> da instalabilidad y una página `/offline`. La caché se añade cuando una pantalla concreta
+> la necesite, nunca «por si acaso».
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición

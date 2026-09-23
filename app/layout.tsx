@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import RegistroServiceWorker from '@/components/providers/RegistroServiceWorker';
 import { SITIO } from '@/lib/sitio/contenido';
 import './globals.css';
 
@@ -79,6 +80,8 @@ export const metadata: Metadata = {
    * ⚠️ No basta con desplegarlo: Google solo lo cambia cuando vuelve a rastrear la portada.
    */
   icons: { icon: '/icon.png' },
+  // Instalable en el teléfono: ver `app/manifest.ts`.
+  manifest: '/manifest.webmanifest',
   openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
   robots: { index: true, follow: true },
 
@@ -144,6 +147,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-digi-darker text-digi-text antialiased">
+        <RegistroServiceWorker />
         <AuthProvider>
           {children}
         </AuthProvider>
