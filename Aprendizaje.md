@@ -1,5 +1,149 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo ACTUAL (declarado 2026-09-23) — UN SOLO PROYECTO QUE ACABE EN LAS TIENDAS: PWA hoy, Capacitor mañana, dos apps · 🔎 45 %
+
+**Declarado por Fernando el 2026-09-23**, textual en lo esencial: *«lo que busco es un solo
+proyecto realmente, porque si dejo dos proyectos separados es posible que en actualizaciones a
+futuro tenga que revisar ambos proyectos y puede que algo se escape, prefiero uno solo pero que
+la adaptación sea muy específica… por ahora probaría todo mediante pwa, pero a futuro me
+interesa publicar esa misma app probada en pwa en las tiendas, así que ese es el nuevo enfoque a
+trabajar»*.
+
+El plan completo (las dos apps, Automatizaciones mudándose a Productos, los patrones de teléfono
+que pidió con nombre propio) está en `MEMORIA.md` § «Decisiones recientes». Aquí va solo lo que
+hay que **aprender** para que eso no falle.
+
+**Rol asumido:** arquitecto de aplicaciones híbridas (Next.js con servidor + Capacitor + tiendas).
+Es el rol correcto porque casi todo el riesgo de este objetivo **no está en el diseño** —eso ya se
+viene resolviendo pantalla a pantalla— sino en tres fronteras: **qué carga el WebView**, **cómo
+viaja la sesión** y **qué deja publicar Apple**.
+
+### Progreso
+- **% de información para el objetivo:** 45 %
+- **Estado:** el primer escalón está hecho (la PWA es instalable). Lo investigado en el repo
+  descarta ya una de las dos arquitecturas posibles y deja **un riesgo mayor sin resolver** (la
+  sesión en el WebView) y **una decisión de negocio que solo Fernando puede tomar** (la comisión
+  de Apple). Ninguna de las dos se puede descubrir «mientras se construye»: las dos cambian lo
+  que hay que construir.
+
+### Fuentes consultadas (2026-09-23, todas dentro del repo)
+- `next.config.ts`, `middleware.ts:48-51`, recuento de `app/api/**/route.ts` y `app/**/page.tsx` → P1.
+- Las 11 rutas que fijan la cookie de sesión (`app/api/auth/register/route.ts:99`,
+  `app/api/character/auth/**`, …) → P3.
+- Búsqueda de `pushManager` / `web-push` / `requestPermission` en `app`, `lib`, `components` → P4.
+- `lib/pagos/payphone.ts`, `lib/pagos/comision.ts`, `app/pagos/respuesta/route.ts` → P5.
+
+### Preguntas y respuestas
+
+#### P1 — ¿Se puede exportar esta aplicación como sitio estático y meterla dentro del paquete nativo? · ✅ Resuelta — **NO**
+- **Por qué importa:** es la forma «de libro» de usar Capacitor (`output: 'export'` y los archivos
+  viajan dentro de la app). Si fuera posible, todo lo demás sería fácil. No lo es, y conviene
+  saberlo **antes** de prometer plazos.
+- **Respuesta (código del repo, 2026-09-23):** **362 rutas de API**, **62 páginas**, un
+  `middleware.ts` que intercepta **todo lo que no es API ni archivo**, `force-dynamic` repartido y
+  `serverActions.bodySizeLimit: '50mb'` en `next.config.ts`. Esta aplicación **es** su servidor:
+  la sesión, los permisos por flujo y cada cifra se resuelven en el servidor antes de pintar. Un
+  `output: 'export'` no es una opción que se active, sería **reescribir la plataforma entera** como
+  cliente contra una API — exactamente el «proyecto aparte» que Fernando quiere evitar.
+- **Consecuencia:** el WebView **carga la aplicación desde `app.grupocc.org`** (`server.url` de
+  Capacitor). El paquete nativo aporta el arranque, los permisos y los plugins; el contenido viene
+  de la red. Eso es lo que hace viable «un solo proyecto», y es también lo que abre P2 y P3.
+
+#### P2 — Si el contenido viene de la red, ¿no es «una web envuelta»? ¿La rechaza Apple? · 🔎 Investigando
+- **Por qué importa:** la guía **4.2 (Minimum Functionality)** de Apple rechaza apps que son un
+  sitio web dentro de una ventana. Es el riesgo que ya se le advirtió a Fernando y sigue vivo.
+- **Lo que se sabe:** lo que separa «web envuelta» de «app» ante el revisor es que la app **haga
+  cosas que un navegador no hace**. Las que esta plataforma puede dar de verdad, no de adorno:
+  **notificaciones push nativas** (P4), **cámara** para adjuntar a un ticket o a una reserva,
+  **biométrico** para entrar, **compartir** del sistema, y una **pantalla útil sin cobertura**.
+- **Sigue abierto:** cuántas de ésas hacen falta para pasar. No se responde leyendo la guía: se
+  responde **enviando**. Plan: que la primera app que se suba sea **GCC Productos** (la más
+  pequeña y la que un cliente usa a diario), no GCC World.
+
+#### P3 — ⚠️ ¿Viaja la sesión desde el WebView? · 🔎 Investigando — **es el riesgo mayor**
+- **Por qué importa:** si la sesión no viaja, **no hay app**. Y es un fallo que no aparece en
+  ninguna maqueta: se descubre el día que se compila el paquete nativo.
+- **Lo que se sabe (código):** la sesión es una **cookie `httpOnly`, `sameSite: 'lax'`**, fijada por
+  las rutas de API (11 sitios). `sameSite: 'lax'` significa que el navegador **solo la manda en
+  peticiones del mismo sitio**. Dentro de Capacitor, el WebView no está en `app.grupocc.org`: en
+  iOS sirve desde un esquema propio (`capacitor://localhost`) y en Android desde `https://localhost`.
+  Toda llamada al servidor sería, para el navegador, **de otro sitio** → la cookie **no se manda**, y
+  en iOS el WKWebView además restringe las cookies de terceros por su cuenta.
+- **Salidas posibles, por orden de preferencia:**
+  1. Que el WebView **sirva desde el propio dominio** (`server.hostname`), y así todo sea del mismo
+     sitio. Es lo más barato **si funciona en iOS**, donde el esquema sigue siendo distinto.
+  2. Que la app use un **token en la cabecera `Authorization`**, guardado en el almacén seguro del
+     sistema (Keychain / Keystore), y que el servidor acepte **las dos formas** —cookie para la web,
+     token para la app—. Es más trabajo, pero es la que **seguro** funciona en los dos sistemas.
+- **Cómo se resuelve (no se discute, se mide):** un paquete Capacitor mínimo que solo haga
+  *entrar y pedir `/api/...`*, probado en un iPhone y en un Android **reales**. Hasta que eso no
+  esté hecho, cualquier plazo de tiendas es una suposición.
+
+#### P4 — «Que las push nativas reemplacen lo que ya hay»: ¿qué hay hoy? · ✅ Resuelta — **no hay nada**
+- **Por qué importa:** Fernando lo planteó como sustitución (*«usar su tecnología para reemplazar
+  cosas que ya tenemos»*). Si no hay qué sustituir, el trabajo es otro y cuesta otra cosa.
+- **Respuesta:** ni `pushManager`, ni `web-push`, ni `Notification.requestPermission` en todo el
+  repo. Los avisos de hoy viven **dentro** de la plataforma (`NotificationsDock`): se ven si tienes
+  la pestaña abierta. **No hay nada que reemplazar: hay que construirlo.** Y conviene construirlo
+  una sola vez para los tres sitios (web, iOS, Android), porque si no se harán dos.
+
+#### P5 — La suscripción de 5 $/mes se cobra con PayPhone. ¿Deja Apple cobrar así dentro de la app? · ⏸ Bloqueada — decisión de Fernando
+- **Por qué importa:** es **dinero**, y condiciona el diseño de GCC Productos. La guía **3.1.1**
+  obliga a usar **la compra dentro de la app** (comisión del 15–30 %) para desbloquear funciones
+  digitales, y **prohíbe** llevar al usuario fuera a pagar. La pasarela propia (`lib/pagos/payphone.ts`,
+  con su comisión ya calculada en `lib/pagos/comision.ts`) es justo eso.
+- **La salida habitual** es el modelo «multiplataforma»: **el cliente contrata en la web** y la app
+  **solo le deja usar lo que ya contrató**, sin botón de comprar ni enlace a la pasarela. Apple lo
+  acepta; a cambio, desde el iPhone **no se vende**.
+- **Lo que hay que decidir (y es suyo, no técnico):** si GCC Productos en iOS **renuncia a vender**
+  y se queda como llave de lo ya contratado. → **Pregunta 1 para Fernando.**
+
+#### P6 — El videojuego dentro de la app de GCC World · ❓ Abierta
+- **Por qué importa:** el juego (Godot, exportado a web, en `public/game`) dentro de un WebView de
+  iOS es el punto más frágil de las dos apps: WASM sí funciona, pero el export con hilos exige un
+  aislamiento de origen que el esquema de Capacitor complica, y Apple mira con lupa (**4.7**) lo que
+  parezca «apps dentro de una app».
+- **Lo que hay que decidir:** si la primera versión de GCC World **entra a las tiendas con el juego
+  o sin él**. Salir sin el juego es un camino más corto y no cierra ninguna puerta.
+  → **Pregunta 2 para Fernando.**
+
+#### P7 — ¿Cuándo se muda Automatizaciones a Productos? · ❓ Abierta
+- **Por qué importa:** ayer mismo se rehizo la bandeja del agente para teléfono. Si esa sección
+  **va a desaparecer** como tal y a renacer dentro de Productos con inquilinos y pasarela, hay que
+  saber si lo siguiente que se toca es su diseño o su arquitectura — **no tiene sentido pulir dos
+  veces la misma pantalla.** → **Pregunta 3 para Fernando.**
+
+#### P8 — Dos apps de un solo proyecto: ¿cómo se separan sin duplicar? · 🔎 Investigando
+- **Por qué importa:** es la condición que puso Fernando (*«prefiero uno solo»*). Dos apps en las
+  tiendas son dos identificadores, dos fichas y dos paquetes; lo que **no** pueden ser es dos
+  códigos.
+- **Camino previsto:** un repositorio, **dos configuraciones de Capacitor** (identificador, nombre,
+  icono y `start_url` distintos) y el **mismo** servidor detrás; cada app entra por su puerta
+  (`/dashboard` para GCC World, el portal del cliente para GCC Productos) y la redirección del
+  marketplace a GCC Productos se hace con un enlace profundo. Falta comprobarlo de verdad, pero
+  **depende de P3**: sin sesión, da igual cuántas puertas haya.
+
+### Decisiones firmes que ya guían la solución
+1. **La aplicación se sirve desde el servidor; el paquete nativo es el envoltorio.** Un
+   `output: 'export'` está descartado por P1, y con él, la tentación de un proyecto aparte.
+2. **El service worker no cachea la aplicación.** Se enseña dato vivo; una cifra vieja presentada
+   como la de hoy es peor que no funcionar, porque no avisa. La caché se añadirá pantalla a
+   pantalla cuando una lo pida.
+3. **La vista de teléfono ya no es una cortesía: es el producto que se publica.** Por eso los
+   patrones que pidió Fernando (menú de tres puntos, quitar títulos, formularios a pantalla
+   completa) dejan de ser «mejoras» y pasan a ser requisitos.
+4. **El orden es: sesión → capacidades nativas → tienda.** Empezar por la ficha de la tienda o por
+   los iconos sería construir el tejado.
+
+### Riesgos y cómo se mitigan
+| Riesgo | Cómo se mitiga |
+|---|---|
+| La sesión no viaja en el WebView (P3) | Se prueba con un paquete mínimo en móvil real **antes** de tocar ninguna pantalla |
+| Apple rechaza por 4.2 «web envuelta» (P2) | Push, cámara, biométrico y pantalla sin cobertura **antes** de enviar; se envía primero la app pequeña |
+| La comisión del 30 % se come el plan de 5 $ (P5) | Se decide con Fernando **antes** de diseñar la pantalla de contratación de la app |
+| Pulir dos veces Automatizaciones (P7) | Se pregunta antes de seguir con esa sección |
+| El juego bloquea el lanzamiento (P6) | Se puede salir sin él; la decisión se toma pronto, no al final |
+
 ## Objetivo (declarado y cerrado el 2026-09-20) — RESERVAS: nueve correcciones de Fernando tras probarla en el teléfono · ✅ 100 % — HECHO Y VERIFICADO
 
 **Rol asumido:** ingeniero de producto full-stack (Next.js App Router + zonas horarias + PWA).
