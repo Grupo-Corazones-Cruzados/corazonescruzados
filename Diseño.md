@@ -3440,6 +3440,29 @@ Talentos/Productos/Tickets/Proyectos y «Datos de contacto»). Ninguna desborda.
 
 ---
 
+### Novena aplicación: FACTURACIÓN / SRI (2026-09-22)
+`/dashboard/invoices` y `/dashboard/invoices/[id]`.
+
+- **⭐⭐ EL PEOR CASO DE TODO EL PANEL, Y EL MÁS CLARO.** La lista recortaba el **número de
+  factura** —que es *lo único* que identifica a una factura— y las **52 filas decían
+  «001-001-0000000…»: idénticas todas**. El cliente tampoco se leía («Co…», «PET…»,
+  «EXP…»), y el estado del SRI y la fecha estaban ocultos con `hideOnMobile`. En un
+  teléfono la pantalla **no servía para nada**: su único trabajo es distinguir una factura
+  de otra, y no lo hacía. *Medido: 51 elementos recortados → **0**; los 52 números
+  completos.*
+  > **Regla:** antes de dar por buena una lista en teléfono, preguntarse **qué campo
+  > identifica al registro** y comprobar que ese, precisamente, no se recorta. Si el
+  > identificador es un número de serie, va en `tabular-nums`: los dígitos se alinean y la
+  > diferencia entre dos consecutivos salta a la vista.
+- **Los botones de copiar la clave de acceso y la autorización del SRI** medían 23 px, en
+  el detalle y en el resumen. Son cadenas largas que se copian **desde el teléfono** para
+  pegarlas en el portal del SRI, así que es donde más importa acertar a la primera.
+
+*Medido con `hover: none` / `pointer: coarse`: **0** recortados, **0** destinos por debajo
+de 44 px en lista, resumen y detalle, sin desbordamiento. Escritorio sin cambios.*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición

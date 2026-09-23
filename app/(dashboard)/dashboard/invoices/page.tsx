@@ -428,6 +428,49 @@ function InvoicesPageInner() {
     !(mIdType === '04' && mClientRuc.length !== 13) && !(mIdType === '05' && mClientRuc.length !== 10) &&
     !consumidorFinalOver50;
 
+  /** El cuerpo del resumen, una sola vez: columna en escritorio, panel en teléfono. */
+  const cuerpoResumen = !selected ? null : (
+<div className="p-4 space-y-2.5">
+  {[
+    ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(selected.total || 0))}</span>],
+    ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
+    ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+    ['Fecha', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
+  ].map(([k, v]) => (
+    <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+      <span className="text-digi-muted" style={mf}>{k}</span>
+      <span className="text-digi-text text-right" style={mf}>{v}</span>
+    </div>
+  ))}
+  <div className="space-y-2 pt-1">
+    {selected.sri_status === 'authorized' && (
+      <button onClick={() => window.open(`/api/invoices/${selected.id}/pdf`, '_blank')} className={`${BTN_SECONDARY} w-full`}>
+        <Download className="w-4 h-4" /> Descargar PDF
+      </button>
+    )}
+    {(selected.access_key || selected.authorization_number) && (
+      <div className="grid grid-cols-2 gap-2">
+        {selected.access_key && (
+          <button onClick={() => { navigator.clipboard.writeText(selected.access_key); toast.success('Clave copiada'); }}
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-2 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf} title={selected.access_key}>
+            <KeyRound className="w-3.5 h-3.5" /> Clave
+          </button>
+        )}
+        {selected.authorization_number && (
+          <button onClick={() => { navigator.clipboard.writeText(selected.authorization_number); toast.success('Autorización copiada'); }}
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-2 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf} title={selected.authorization_number}>
+            <FileCheck2 className="w-3.5 h-3.5" /> Autorización
+          </button>
+        )}
+      </div>
+    )}
+    <button onClick={() => router.push(`/dashboard/invoices/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
+      Ver factura <ArrowRight className="w-4 h-4" />
+    </button>
+  </div>
+</div>
+  );
+
   return (
     <div>
       <PageHeader title="Facturas" description="Facturación electrónica (SRI)" />
@@ -478,6 +521,35 @@ function InvoicesPageInner() {
           ) : <span className="text-digi-muted">-</span> },
           { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
         ]}
+        /* ── La factura, contada para un teléfono ──────────────────────────────────────
+           ⚠️ ESTE ERA EL CASO MÁS GRAVE DE TODO EL PANEL. El número de factura es **lo
+           único** que identifica a una factura, y la tabla lo recortaba: las 52 filas
+           decían «001-001-0000000…» — **idénticas todas**. El cliente tampoco se leía
+           («Co…», «PET…», «EXP…»), y el estado del SRI y la fecha estaban ocultos con
+           `hideOnMobile`. En un teléfono la pantalla no servía para nada: no se podía
+           distinguir una factura de otra, que es su único trabajo.
+           Aquí el número va entero y en cifras tabulares —así los dígitos se alinean y la
+           diferencia salta a la vista—, con el cliente, el SRI, la fecha y el total. */
+        tarjetaMovil={(i: any) => (
+          <>
+            <div className="flex items-start gap-2">
+              <span title={STATUS_LABEL[i.status] || i.status} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_V[i.status] || 'default']}`} />
+              <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text tabular-nums leading-snug">{i.invoice_number || `#${i.id}`}</span>
+              <span className="shrink-0 text-[13px] font-semibold text-accent tabular-nums">${fmt2(Number(i.total || 0))}</span>
+            </div>
+            <p className="mt-0.5 pl-4 text-[12px] text-digi-muted leading-snug">{i.client_name_sri || i.client_name || '—'}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 pl-4 text-[12px] text-digi-muted">
+              {i.sri_status
+                ? <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
+                : <span>Sin enviar al SRI</span>}
+              <span className="inline-flex items-center gap-1" title={i.is_manual ? 'Factura manual' : 'Factura automática'}>
+                {i.is_manual ? <PenLine className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                {i.is_manual ? 'Manual' : 'Automática'}
+              </span>
+              {i.created_at && <span className="ml-auto">{new Date(i.created_at).toLocaleDateString('es-EC')}</span>}
+            </div>
+          </>
+        )}
         data={invoices}
         onRowClick={(i: any) => setSelected(i)}
         emptyTitle="Sin facturas"
@@ -486,7 +558,10 @@ function InvoicesPageInner() {
         </div>
 
         {/* ── Detail preview panel ── */}
-        <aside className="w-full xl:w-[340px]">
+        {/* ── Resumen ─────────────────────────────────────────────────────────────
+            En teléfono caía bajo las 52 filas, así que tocar una factura no producía
+            ningún cambio visible. Ahí se abre a pantalla completa. */}
+        <aside className="hidden xl:block w-full xl:w-[340px]">
           {!selected ? (
             <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
               <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
@@ -503,50 +578,25 @@ function InvoicesPageInner() {
                 </div>
                 <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
               </div>
-              <div className="p-4 space-y-2.5">
-                {[
-                  ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(selected.total || 0))}</span>],
-                  ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
-                  ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
-                  ['Fecha', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
-                ].map(([k, v]) => (
-                  <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
-                    <span className="text-digi-muted" style={mf}>{k}</span>
-                    <span className="text-digi-text text-right" style={mf}>{v}</span>
-                  </div>
-                ))}
-                <div className="space-y-2 pt-1">
-                  {selected.sri_status === 'authorized' && (
-                    <button onClick={() => window.open(`/api/invoices/${selected.id}/pdf`, '_blank')} className={`${BTN_SECONDARY} w-full`}>
-                      <Download className="w-4 h-4" /> Descargar PDF
-                    </button>
-                  )}
-                  {(selected.access_key || selected.authorization_number) && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {selected.access_key && (
-                        <button onClick={() => { navigator.clipboard.writeText(selected.access_key); toast.success('Clave copiada'); }}
-                          className="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf} title={selected.access_key}>
-                          <KeyRound className="w-3.5 h-3.5" /> Clave
-                        </button>
-                      )}
-                      {selected.authorization_number && (
-                        <button onClick={() => { navigator.clipboard.writeText(selected.authorization_number); toast.success('Autorización copiada'); }}
-                          className="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf} title={selected.authorization_number}>
-                          <FileCheck2 className="w-3.5 h-3.5" /> Autorización
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <button onClick={() => router.push(`/dashboard/invoices/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
-                    Ver factura <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              {cuerpoResumen}
             </div>
           )}
         </aside>
       </div>
         </div>
+      </div>
+
+
+      {/* El resumen en teléfono: panel a pantalla completa. Mismo contenido, otro envoltorio. */}
+      <div className="xl:hidden">
+        <PixelModal
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          title={selected?.invoice_number || (selected ? `Factura #${selected.id}` : 'Factura')}
+          size="md"
+        >
+          {cuerpoResumen}
+        </PixelModal>
       </div>
 
       {/* Manual Invoice Modal */}

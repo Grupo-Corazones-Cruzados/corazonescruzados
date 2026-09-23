@@ -275,6 +275,16 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Facturación/SRI en teléfono — el peor caso de todo el panel (2026-09-22).** La lista
+  recortaba el **número de factura**, que es *lo único* que identifica a una factura: las **52
+  filas decían «001-001-0000000…», idénticas todas**, con el cliente en «Co…»/«PET…» y el estado
+  del SRI y la fecha ocultos por `hideOnMobile`. En un teléfono la pantalla **no servía para
+  nada**: su único trabajo es distinguir una factura de otra. Medido: 51 elementos recortados →
+  0, los 52 números completos. **Regla que sale de aquí:** antes de dar por buena una lista en
+  teléfono, preguntarse **qué campo identifica al registro** y comprobar que ese no se recorta; si
+  es un número de serie, va en `tabular-nums` para que la diferencia salte a la vista. Además,
+  los botones de copiar la **clave de acceso y la autorización del SRI** medían 23 px — son
+  cadenas que se copian desde el teléfono para pegarlas en el portal del SRI.
 - **Clientes en teléfono — y queda cerrado el destino táctil del panel (2026-09-22).**
   `.pixel-btn` era la **tercera** familia de botones (25 archivos, 38 px); con ella arreglada en
   el bloque táctil de `globals.css`, **el tamaño de todo lo pulsable del panel se decide ya en

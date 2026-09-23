@@ -390,14 +390,14 @@ export default function InvoiceDetailPage() {
                   <label className="text-[11px] text-digi-muted block mb-0.5" style={pf}>Clave de Acceso</label>
                   <p className="text-[11px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.access_key}</p>
                   <button onClick={() => { navigator.clipboard.writeText(invoice.access_key); toast.success('Clave copiada'); }}
-                    className="inline-flex items-center gap-1 text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}><Copy className="w-3 h-3" /> Copiar clave</button>
+                    className="inline-flex items-center gap-1 min-h-11 sm:min-h-0 px-3 sm:px-2 py-0.5 text-[11px] text-accent border border-accent/40 rounded hover:bg-accent-light transition-colors" style={pf}><Copy className="w-3 h-3" /> Copiar clave</button>
                 </div>
                 {invoice.authorization_number && (
                   <div>
                     <label className="text-[11px] text-digi-muted block mb-0.5" style={pf}>No. Autorizacion</label>
                     <p className="text-[11px] text-digi-text break-all leading-relaxed mb-1" style={mf}>{invoice.authorization_number}</p>
                     <button onClick={() => { navigator.clipboard.writeText(invoice.authorization_number); toast.success('Autorizacion copiada'); }}
-                      className="inline-flex items-center gap-1 text-[11px] text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent-light transition-colors" style={pf}><Copy className="w-3 h-3" /> Copiar autorización</button>
+                      className="inline-flex items-center gap-1 min-h-11 sm:min-h-0 px-3 sm:px-2 py-0.5 text-[11px] text-accent border border-accent/40 rounded hover:bg-accent-light transition-colors" style={pf}><Copy className="w-3 h-3" /> Copiar autorización</button>
                   </div>
                 )}
               </div>
