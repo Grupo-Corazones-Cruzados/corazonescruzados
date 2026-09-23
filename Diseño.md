@@ -3155,6 +3155,40 @@ ocupa el ancho y el importe baja a una segunda línea con el botón de quitar al
 Y en el pie del diálogo los botones se **apilan a ancho completo**
 (`flex-col-reverse sm:flex-row`), con la acción de verdad abajo, al alcance del pulgar.
 
+### ⛔ 6-bis. NADA IMPORTANTE SE REVELA CON EL PUNTERO (2026-09-22)
+Fernando: *«hay botones que actualmente solo se ven si pones puntero encima; en teléfono
+no puedes poner puntero encima»*. `opacity-0 group-hover:opacity-100` no deja los botones
+feos en táctil: **los deja inalcanzables**, y la pantalla se vuelve de SOLO LECTURA sin
+avisar a nadie. En Pensamientos eran **63 botones** —publicar, editar y eliminar de cada
+tarjeta—: desde un teléfono no se podía editar ni borrar un pensamiento.
+
+**La condición correcta no es el ancho** —una tableta de 900 px tampoco tiene puntero—
+**sino el dispositivo**: `@media (hover: hover) and (pointer: fine)`. Definición única en
+`globals.css`:
+
+```css
+.acciones-al-pasar { opacity: 1; transition: opacity .15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .group:not(:hover) .acciones-al-pasar { opacity: 0; }
+  .group:not(:hover) .acciones-al-pasar:focus-within { opacity: 1; }
+}
+```
+
+```tsx
+<div className="group …">
+  …
+  <div className="acciones-al-pasar ml-auto flex items-center gap-1">…</div>
+</div>
+```
+
+- **NO combinar con `opacity-0`**: la clase ya resuelve los dos casos.
+- Para que una fila concreta se vea SIEMPRE (p. ej. la destacada), `!opacity-100`: la
+  regla `.group:not(:hover) .acciones-al-pasar` gana por especificidad a una utilidad suelta.
+- ⏳ **Pendiente de migrar** — el patrón viejo sigue en 9 archivos: `portal/[projectId]`,
+  `tickets/[id]`, `projects/[id]`, `PortfolioPanel`, `sitio/documento`,
+  `ScriptStoryboardEditor`, `MetodologiaCondiciologicaSystem`, `GestionDeDatosSystem`,
+  `RazonesPanel`. Cada uno de ellos es hoy una pantalla mutilada en un teléfono.
+
 ### 6. Nada flota, y ninguna página desplaza en horizontal
 Ya estaba escrito arriba («El teléfono, y el precio de lo que flota») y sigue vigente: lo
 que está pegado a la ventana siempre tiene contenido pasando por debajo. **Comprobación
@@ -3200,6 +3234,31 @@ zonas de desplazamiento propio**. Lo que salió de aquí, y que vale para cualqu
 
 *Medido: 1.503 → 921 px, de 3 zonas de desplazamiento a **0**, sin desbordamiento
 horizontal, y el escritorio idéntico (tabla de mes, panel de eventos, rejilla de horas).*
+
+---
+
+### Tercera aplicación: «Pensamientos» (2026-09-22)
+`app/(dashboard)/dashboard/pensamientos/page.tsx`. Lo que salió de aquí:
+
+- **Las acciones, de 14 px y ocultas, a 44 px y visibles** (regla 6-bis). Y bajan de la
+  cabecera —donde se peleaban con las píldoras de hora, intensidad y dimensión— **al pie,
+  junto al contador de caracteres**: así esa fila lleva información y no es una barra de
+  botones que engorda la tarjeta, y de paso la cabecera deja de partirse en dos líneas.
+- **⭐ UNA COLUMNA DE FILTRO SE VUELVE UNA TIRA DE FICHAS.** El rail de fechas apilado eran
+  **17 filas × 35 px = 600 px que había que recorrer enteros antes de poder escribir** — y
+  lo primero de este módulo es escribir. En teléfono son fichas de 44 px que se deslizan en
+  horizontal (`.desplaza-x`, sin barra a la vista) y ocupan una línea. *Vale para cualquier
+  rail de filtro; es el mismo criterio que la tira de días de la agenda.*
+- La fecha de la ficha va **sin el año** (`mié, 02 sept`): en una ficha el año es ruido.
+
+*Medido en un teléfono táctil de verdad (`hover: none, pointer: coarse`): **63 → 0**
+botones inalcanzables, **~85 → 0** destinos por debajo de 44 px, sin desbordamiento
+horizontal. El escritorio, idéntico: rail vertical, acciones de 28 px que aparecen al
+pasar el puntero, y la destacada siempre visible.*
+
+⚠️ La página pasó de 3.822 a 4.292 px: las barras de acciones cuestan ~44 px por tarjeta y
+la tira de fechas solo devuelve ~480. **Es el intercambio correcto**: antes era corta
+porque la mitad de lo que hace no se podía hacer.
 
 ---
 
@@ -3368,6 +3427,11 @@ mientras se escribe.
   - **`CalendarView` → `AgendaDia`** (2026-09-22) — el día como lista cronológica por
     debajo de `md`, en lugar de la rejilla de 24 h. Lo heredan `/dashboard/mi-dia` y el
     calendario público de un miembro. La rejilla queda para escritorio.
+  - **`.acciones-al-pasar`** (2026-09-22) — acciones que se revelan con el puntero **solo
+    donde hay puntero**; en táctil siempre visibles. Aplicado en Pensamientos; **pendiente
+    en 9 archivos más** (lista en la regla 6-bis).
+  - **`.desplaza-x`** (2026-09-22) — tira que se desliza en horizontal sin barra a la
+    vista, para las fichas de filtro en teléfono.
   - **`.corp .modal-close` a 44×44 bajo `640px`** (y el diálogo con padding de 16 px):
     corregido en `globals.css`, lo heredan todas las pantallas con `PixelModal`.
 - **2026-09-21 · Logo girando · ADOPTADO como definición única:** `components/ui/LogoGirando.tsx`

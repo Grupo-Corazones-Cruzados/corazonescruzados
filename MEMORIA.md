@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **«Pensamientos» con diseño de teléfono, y la regla de los botones que solo se ven con el
+  puntero (2026-09-22).** Fernando: *«hay botones que actualmente solo se ven si pones puntero
+  encima; en teléfono no puede poner puntero encima»*. **Era grave**: `opacity-0 group-hover`
+  dejaba **63 botones inalcanzables** (publicar, editar y eliminar de cada pensamiento), así que
+  desde un teléfono el módulo era **de solo lectura** sin avisar. La regla nueva —en `Diseño.md`,
+  al nivel de las otras seis— es que la condición **no es el ancho sino el dispositivo**:
+  `@media (hover: hover) and (pointer: fine)`. Definición única `.acciones-al-pasar` en
+  `globals.css`. ⏳ **El patrón viejo sigue en 9 archivos más** (portal, tickets, projects,
+  PortfolioPanel, documento, ScriptStoryboardEditor, y tres sistemas del Centralizado): cada uno
+  es hoy una pantalla mutilada en un teléfono. Además, en Pensamientos: las acciones pasan a
+  44 px y bajan al pie junto al contador de caracteres, y el rail de 17 fechas (600 px que había
+  que recorrer antes de poder escribir) se convierte en una tira de fichas horizontal
+  (`.desplaza-x`). Medido con `hover:none/pointer:coarse`: 63 → 0 inalcanzables, ~85 → 0 por
+  debajo de 44 px; el escritorio, idéntico.
 - **«Mi día» con diseño de teléfono (2026-09-22).** Segunda aplicación de la regla; el detalle
   en `Diseño.md`. Tres columnas apiladas daban **1.503 px con tres zonas de desplazamiento
   propio**; ahora **921 px y una sola**. Lo que se aprendió y queda como estándar: (1) **una

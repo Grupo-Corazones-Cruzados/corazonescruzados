@@ -29,6 +29,11 @@ const fmtDayLong = (ymd: string) => {
   const [y, m, d] = ymd.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 };
+/** La misma fecha sin el año, para las fichas del teléfono: «mié, 02 sept». */
+const fmtDayCorto = (ymd: string) => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
+};
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' });
 const todayLocal = () =>
@@ -170,10 +175,47 @@ export default function PensamientosPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
-      {/* Panel izquierdo: fechas con pensamientos */}
+      {/* ── Panel de fechas ─────────────────────────────────────────────────────────
+          En escritorio es una columna. En TELÉFONO era la misma columna apilada arriba:
+          17 fechas × 35 px = **600 px que hay que recorrer enteros antes de poder
+          escribir**, y lo primero de este módulo es escribir («la captura tiene que ser
+          inmediata», dice el compositor). Aquí las mismas fechas son una tira de fichas
+          que se desliza en horizontal y ocupa una línea. */}
       <aside className="w-full lg:w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Fechas</p>
-        <div className="space-y-0.5 lg:max-h-[70vh] overflow-y-auto">
+
+        {/* Teléfono: fichas en una tira horizontal */}
+        <div className="lg:hidden desplaza-x flex gap-1.5 overflow-x-auto pb-1 -mx-2 px-2">
+          <button
+            onClick={() => setSelectedDay(null)}
+            className={`shrink-0 h-11 inline-flex items-center gap-1.5 px-3 rounded-full border text-[12.5px] font-medium transition-colors ${
+              selectedDay === null ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-text'
+            }`}
+            style={mf}
+          >
+            <CalendarDays className="w-4 h-4 shrink-0" /> Recientes
+            {totals.count > 0 && <span className="tabular-nums opacity-75">{totals.count}</span>}
+          </button>
+          {days.map((d) => {
+            const active = selectedDay === d.day;
+            return (
+              <button key={d.day} onClick={() => setSelectedDay(d.day)}
+                className={`shrink-0 h-11 inline-flex items-center gap-1.5 px-3 rounded-full border text-[12.5px] font-medium whitespace-nowrap transition-colors ${
+                  active ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-text'
+                }`}
+                style={mf}>
+                {fmtDayCorto(d.day)}
+                <span className="tabular-nums opacity-75">{d.count}</span>
+              </button>
+            );
+          })}
+          {days.length === 0 && !loading && (
+            <p className="px-1 py-3 text-[11.5px] text-digi-muted/60" style={mf}>Todavía no has escrito nada.</p>
+          )}
+        </div>
+
+        {/* Escritorio: la columna de siempre */}
+        <div className="hidden lg:block space-y-0.5 lg:max-h-[70vh] overflow-y-auto">
           <button
             onClick={() => setSelectedDay(null)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
@@ -212,7 +254,7 @@ export default function PensamientosPage() {
           <p className="text-[13px] font-semibold text-digi-text" style={df}>
             {selectedDay ? fmtDayLong(selectedDay) : 'Pensamientos recientes'}
           </p>
-          <button className={`${BTN_SECONDARY} ml-auto`} onClick={openCharts} style={mf}>
+          <button className={`${BTN_SECONDARY} ml-auto h-11 md:h-auto shrink-0`} onClick={openCharts} style={mf}>
             <LineChart className="w-4 h-4" /> Gráficos
           </button>
         </div>
@@ -237,7 +279,7 @@ export default function PensamientosPage() {
               </span>
             )}
             <span className="text-[11px] text-digi-muted/60 hidden sm:inline" style={mf}>⌘/Ctrl + Enter para guardar</span>
-            <button className={`${BTN_PRIMARY} ml-auto`} onClick={save} disabled={saving || !draft.trim()} style={mf}>
+            <button className={`${BTN_PRIMARY} ml-auto h-11 md:h-auto`} onClick={save} disabled={saving || !draft.trim()} style={mf}>
               <Plus className="w-4 h-4" /> Guardar
             </button>
           </div>
@@ -316,8 +358,8 @@ function ThoughtCard({
           style={mf}
         />
         <div className="flex justify-end gap-2 mt-2">
-          <button className={BTN_SECONDARY} onClick={onCancelEdit} style={mf}><X className="w-4 h-4" /> Cancelar</button>
-          <button className={BTN_PRIMARY} onClick={onSaveEdit} style={mf}><Check className="w-4 h-4" /> Guardar</button>
+          <button className={`${BTN_SECONDARY} h-11 md:h-auto`} onClick={onCancelEdit} style={mf}><X className="w-4 h-4" /> Cancelar</button>
+          <button className={`${BTN_PRIMARY} h-11 md:h-auto`} onClick={onSaveEdit} style={mf}><Check className="w-4 h-4" /> Guardar</button>
         </div>
       </div>
     );
@@ -346,31 +388,43 @@ function ThoughtCard({
             <Globe className="w-3 h-3" /> En la página de inicio
           </span>
         )}
-        <span className="text-[11px] text-digi-muted/60 tabular-nums ml-auto" style={mf}>{nf.format(t.charCount)} car.</span>
-        <div className={`flex items-center gap-1 transition-opacity ${featured ? '' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}>
-          {canFeature && (
-            <button
-              onClick={onToggleFeatured}
-              className={featured ? 'text-accent' : 'text-digi-muted hover:text-accent'}
-              title={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
-              aria-label={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
-            >
-              <Megaphone className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <button onClick={onStartEdit} className="text-digi-muted hover:text-accent" aria-label="Editar pensamiento"><Pencil className="w-3.5 h-3.5" /></button>
-          <button onClick={onDelete} className="text-digi-muted hover:text-red-500" aria-label="Eliminar pensamiento"><Trash2 className="w-3.5 h-3.5" /></button>
-        </div>
       </div>
 
       <p className={`text-[13px] text-digi-text whitespace-pre-wrap leading-relaxed ${!expanded && long ? 'line-clamp-4' : ''}`} style={mf}>
         {t.content}
       </p>
       {long && (
-        <button onClick={() => setExpanded((v) => !v)} className="mt-1 text-[11.5px] text-accent hover:underline" style={mf}>
+        <button onClick={() => setExpanded((v) => !v)} className="mt-1 h-11 md:h-auto inline-flex items-center text-[11.5px] text-accent hover:underline" style={mf}>
           {expanded ? 'Ver menos' : 'Ver todo'}
         </button>
       )}
+
+      {/* ── Acciones ────────────────────────────────────────────────────────────────
+          Estaban en la cabecera, a 14 px y con `opacity-0 group-hover`: en un teléfono
+          eran INALCANZABLES —la pantalla quedaba de solo lectura— y aun revelándolas,
+          14 px no se aciertan con el pulgar. Ahora van al pie, a 44 px, y `acciones-al-pasar`
+          las mantiene visibles salvo donde de verdad hay puntero. */}
+      <div className="mt-0.5 md:mt-1.5 flex items-center gap-1 h-11 md:h-7">
+        <span className="text-[11px] text-digi-muted/60 tabular-nums" style={mf}>{nf.format(t.charCount)} car.</span>
+        {/* La DESTACADA enseña siempre sus acciones, también con puntero: es la que está
+            publicada en la portada y quitarla de ahí no debería exigir buscarla.
+            `!opacity-100` porque `.group:not(:hover) .acciones-al-pasar` gana por
+            especificidad a una utilidad suelta. */}
+        <div className={`acciones-al-pasar ml-auto flex items-center gap-1 ${featured ? '!opacity-100' : ''}`}>
+        {canFeature && (
+          <button
+            onClick={onToggleFeatured}
+            className={`w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md transition-colors ${featured ? 'text-accent bg-accent-light' : 'text-digi-muted hover:text-accent hover:bg-black/[0.04]'}`}
+            title={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
+            aria-label={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
+          >
+            <Megaphone className="w-4 h-4 md:w-3.5 md:h-3.5" />
+          </button>
+        )}
+        <button onClick={onStartEdit} className="w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.04] transition-colors" aria-label="Editar pensamiento"><Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" /></button>
+        <button onClick={onDelete} className="w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-red-500 hover:bg-red-50 transition-colors" aria-label="Eliminar pensamiento"><Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" /></button>
+        </div>
+      </div>
     </div>
   );
 }

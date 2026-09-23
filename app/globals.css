@@ -984,6 +984,30 @@ html {
   box-shadow: 0 0 0 1px var(--color-accent);
   outline: none;
 }
+/* Tira que se desliza en horizontal (fichas de filtro en teléfono), sin barra a la
+   vista: en táctil se arrastra con el dedo y la barra solo robaría alto. */
+.desplaza-x { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.desplaza-x::-webkit-scrollbar { height: 0; width: 0; }
+
+/* ⭐ ACCIONES QUE SE REVELAN AL PASAR EL PUNTERO — pero solo donde HAY puntero.
+   ────────────────────────────────────────────────────────────────────────────────
+   Fernando, 2026-09-22: *«hay botones que actualmente solo se ven si pones puntero
+   encima; en teléfono no puede poner puntero encima»*. Escribir
+   `opacity-0 group-hover:opacity-100` deja los botones **inalcanzables** en táctil: no es
+   que se vean mal, es que la pantalla se vuelve de SOLO LECTURA sin avisar.
+
+   La condición correcta NO es el ancho —una tableta de 900 px tampoco tiene puntero—
+   sino el propio dispositivo: `(hover: hover) and (pointer: fine)`. Donde eso no se
+   cumple, las acciones **están siempre visibles**.
+
+   Uso: en el contenedor `group`, y en la fila de acciones `acciones-al-pasar`.
+   ⚠️ NO combinar con `opacity-0`: esta clase ya se encarga de los dos casos. */
+.acciones-al-pasar { opacity: 1; transition: opacity 0.15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .group:not(:hover) .acciones-al-pasar { opacity: 0; }
+  .group:not(:hover) .acciones-al-pasar:focus-within { opacity: 1; }
+}
+
 /* ── VARIANTE: campo SIN MARCO, dentro de un contenedor que ya la dibuja ──────────
    `.corp select` fuerza `border-width: 1px`, y ese borde sale NEGRO cuando el control
    vive dentro de una píldora que ya tiene el suyo: dos marcos, uno dentro de otro
