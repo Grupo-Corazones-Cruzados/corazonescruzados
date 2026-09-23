@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/*
+  CONFIGURACIÓN GLOBAL DE COLOR — fuente única.
+
+  El armazón es el del panel de GCC (Fluent: Segoe UI, radios de 4-6 px, superficie
+  blanca sobre fondo hueso) y el acento por defecto es el VIOLETA del grupo. Pero el
+  color y el tema NO son constantes: cada inquilino los configura y el servidor los
+  inyecta como variables sobre el contenedor de la aplicación (ver src/lib/marca.ts).
+
+  Regla: en los componentes se usan SIEMPRE utilidades de estos tokens
+  (bg-acento, text-tenue, border-borde…). Nunca un hex crudo — un hex escrito a mano
+  es exactamente lo que hacía imposible vender dos veces el proyecto de referencia.
+*/
+@theme {
+  --color-acento: #4b2d8e;
+  --color-acento-fuerte: #3a1f7a;
+  --color-acento-suave: #edebfa;
+  --color-acento-contraste: #ffffff;
+
+  --color-fondo: #faf9f8;
+  --color-tarjeta: #ffffff;
+  --color-texto: #242424;
+  --color-tenue: #616161;
+  --color-borde: #e6e4e2;
+  --color-realce: #f3f2f1;
+
+  --color-exito: #0f7b0f;
+  --color-exito-suave: #e8f5e9;
+  --color-aviso: #9a6700;
+  --color-aviso-suave: #fdf4e3;
+  --color-error: #c42b1c;
+  --color-error-suave: #fdeceb;
+  --color-info: #0f6cbd;
+
+  --font-cuerpo: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/*
+  Tema oscuro. Redefine SOLO los neutros: el acento es del inquilino y se respeta en
+  los dos temas. Se activa con la clase .oscuro sobre el contenedor de la aplicación.
+*/
+.oscuro {
+  --color-fondo: #1b1a19;
+  --color-tarjeta: #252423;
+  --color-texto: #f3f2f1;
+  --color-tenue: #a19f9d;
+  --color-borde: #3b3a39;
+  --color-realce: #323130;
+
+  --color-exito-suave: #16281a;
+  --color-aviso-suave: #2b2213;
+  --color-error-suave: #2d1a18;
+}
+
+html,
+body {
+  font-family: var(--font-cuerpo);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+* {
+  border-color: var(--color-borde);
+}
+
+/* Campo de formulario — alto 34 px, el del panel de GCC. */
+.campo {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--color-texto);
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+textarea.campo {
+  height: auto;
+  padding: 8px 10px;
+  line-height: 1.45;
+}
+.campo:focus {
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 1px var(--color-acento);
+}
+.campo:disabled {
+  background: var(--color-realce);
+  color: var(--color-tenue);
+  cursor: not-allowed;
+}
+.campo::placeholder {
+  color: var(--color-tenue);
+}
+
+/*
+  Desplegable. La flecha va aquí y NO como utilidades sueltas en el componente:
+  compuesta con clases, `background-repeat` se perdía al fusionarlas y el icono
+  salía repetido en mosaico por todo el campo.
+*/
+select.campo {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23616161' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+}
+
+/* El anillo de foco es obligatorio: se navega con teclado. */
+.foco-visible:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+.tarjeta {
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+}
+
+/* Barra de desplazamiento discreta, para que las columnas no griten. */
+.desplaza::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.desplaza::-webkit-scrollbar-thumb {
+  background: var(--color-borde);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.desplaza::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
