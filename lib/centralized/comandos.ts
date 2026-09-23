@@ -68,7 +68,6 @@ export const BLOCKABLE_MODULES: { path: string; label: string }[] = [
   { path: '/dashboard/support', label: 'Soporte' },
   { path: '/dashboard/subscriptions', label: 'Suscripciones' },
   { path: '/dashboard/centralized', label: 'Centralizado' },
-  { path: '/dashboard/automatizaciones', label: 'Automatizaciones' },
   { path: '/dashboard/tools', label: 'Herramientas' },
 ];
 export const MODULE_LABEL: Record<string, string> =

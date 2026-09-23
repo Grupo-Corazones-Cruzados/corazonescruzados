@@ -132,6 +132,22 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   aislamiento.** El panel vacío de la bandeja es `hidden lg:flex`, así que «no veo la
   conversación ajena» salía falso por culpa del ancho de la ventana, no por un fallo. Lo
   que hay que medir es que **el dato no esté en el HTML**, que es la propiedad de verdad.
+- 🪤 **⭐⭐ PRISMA GUARDA LAS FECHAS SIN ZONA HORARIA, Y ESO CONVIERTE «QUIÉN ESCRIBE» EN
+  PARTE DEL DATO.** `DateTime` se mapea a `timestamp` *sin* zona. Los scripts de la mudanza
+  corrían desde un portátil en Ecuador (UTC-5) y Railway corre en UTC, así que **30.000
+  filas quedaron cinco horas corridas** respecto a las que nacían en el producto. En la
+  misma columna. **No dio ningún error**: la aplicación simplemente enseñaba todo el
+  histórico cinco horas antes de lo que pasó, y eso es lo que lo hace peligroso. Se vio
+  comparando el reloj de la base con lo que mostraba la bandeja.
+  *Regla: en un producto que se escribe desde más de un sitio, las fechas van con zona
+  (`@db.Timestamptz`). Y al arreglarlo, lo que se pueda recuperar DEL ORIGEN se copia, no
+  se calcula: cambiar un dato exacto por un «+5 horas» plausible es perder precisión a
+  cambio de nada.* (Migraciones 008 y 009.)
+- 🪤 **Un `prisma migrate diff` con ruido es una migración destructiva esperando.** Tras
+  añadir índices parciales y defectos a mano, el diff proponía BORRARLOS en cada ejecución.
+  Alguien lo aplica entero sin mirar y se lleva la idempotencia del webhook y el debounce.
+  *Regla: todo lo que se pueda declarar en el modelo, se declara —con `map:` para conservar
+  el nombre real—, y lo que no (los parciales), se documenta en su migración.*
 - 🪤 **⭐ UN BUILD QUE PASA EN LOCAL DENTRO DE `productos/<slug>/` PUEDE ESTAR RESOLVIENDO
   DEPENDENCIAS DE LA RAÍZ.** Node sube por los `node_modules` de las carpetas padre, así
   que `openai` —que solo estaba en el `package.json` de la plataforma— compilaba aquí sin

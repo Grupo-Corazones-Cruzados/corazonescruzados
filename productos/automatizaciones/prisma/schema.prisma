@@ -1,5 +1,11 @@
 // Automatizaciones — producto del Grupo Corazones Cruzados.
 //
+// ⚠️ TODAS LAS FECHAS LLEVAN `@db.Timestamptz(3)`, Y NO ES DECORACIÓN. Prisma mapea
+// `DateTime` a `timestamp` SIN zona por defecto, y entonces el valor que se guarda depende
+// de en qué zona esté quien escribe: los scripts de la mudanza, corriendo desde Ecuador,
+// dejaron 30.000 filas cinco horas corridas respecto a las que escribía Railway en UTC.
+// No dio ningún error — solo enseñaba el histórico cinco horas antes. Migración 008.
+//
 // El agente de IA de WhatsApp, las campañas de correo y las plantillas de WhatsApp,
 // que hasta el 2026-09-23 vivían DENTRO de la plataforma como la sección
 // «Automatizaciones» (`/dashboard/automatizaciones`, esquema `gcc_world`). Fernando
@@ -62,8 +68,8 @@ model Plan {
   caracteristicas String[] @default([])
   activo         Boolean  @default(true)
   orden          Int      @default(0)
-  creado         DateTime @default(now()) @map("creado_en")
-  actualizado    DateTime @updatedAt @map("actualizado_en")
+  creado         DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   suscripciones Suscripcion[]
 
@@ -98,8 +104,8 @@ model Inquilino {
   contactoEmail    String? @map("contacto_email")
   contactoTelefono String? @map("contacto_telefono")
 
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   suscripcion     Suscripcion?
   usuarios        Usuario[]
@@ -134,8 +140,8 @@ model Suscripcion {
   /// el identificador de la suscripción en App Store / Google Play.
   referenciaExterna String?     @map("referencia_externa")
   notas       String?
-  creado      DateTime          @default(now()) @map("creado_en")
-  actualizado DateTime          @updatedAt @map("actualizado_en")
+  creado      DateTime          @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   pagos PagoMensual[]
 
@@ -155,9 +161,9 @@ model PagoMensual {
   metodo        MetodoPago        @default(AUTOSERVICIO)
   estado        EstadoPagoMensual @default(PENDIENTE)
   referencia    String?
-  pagadoEn      DateTime?         @map("pagado_en")
+  pagadoEn      DateTime?         @map("pagado_en") @db.Timestamptz(3)
   registradoPor String?           @map("registrado_por")
-  creado        DateTime          @default(now()) @map("creado_en")
+  creado        DateTime          @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@unique([suscripcionId, periodo])
   @@map("pagos_mensuales")
@@ -171,8 +177,8 @@ model OperadorGcc {
   nombre       String
   claveHash    String    @map("clave_hash")
   activo       Boolean   @default(true)
-  ultimoAcceso DateTime? @map("ultimo_acceso")
-  creado       DateTime  @default(now()) @map("creado_en")
+  ultimoAcceso DateTime? @map("ultimo_acceso") @db.Timestamptz(3)
+  creado       DateTime  @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@map("operadores_gcc")
 }
@@ -187,7 +193,7 @@ model Purga {
   conversaciones Int     @default(0)
   mensajes      Int      @default(0)
   eventos       Int      @default(0)
-  creado        DateTime @default(now()) @map("creado_en")
+  creado        DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@map("purgas")
 }
@@ -224,9 +230,9 @@ model Usuario {
   rol    Rol     @default(OPERADOR)
   activo Boolean @default(true)
 
-  ultimoAcceso DateTime? @map("ultimo_acceso")
-  creado       DateTime  @default(now()) @map("creado_en")
-  actualizado  DateTime  @updatedAt @map("actualizado_en")
+  ultimoAcceso DateTime? @map("ultimo_acceso") @db.Timestamptz(3)
+  creado       DateTime  @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado  DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   conversacionesTomadas Conversacion[] @relation("TomadaPor")
   enviosLanzados        Envio[]        @relation("LanzadoPor")
@@ -252,8 +258,8 @@ model Automatizacion {
   estado      EstadoAutomatizacion @default(BORRADOR)
   config      Json                 @default("{}")
 
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   canales      Canal[]
   listas       ListaContactos[]
@@ -273,7 +279,8 @@ model Canal {
   id               Int            @id @default(autoincrement())
   inquilinoId      Int            @map("inquilino_id")
   inquilino        Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
-  automatizacionId Int            @map("automatizacion_id")
+  /// Un canal por automatización: lo exige el `ON CONFLICT` del alta.
+  automatizacionId Int            @unique @map("automatizacion_id")
   automatizacion   Automatizacion @relation(fields: [automatizacionId], references: [id], onDelete: Cascade)
 
   wabaId           String? @map("waba_id") @db.VarChar(64)
@@ -299,13 +306,13 @@ model Canal {
   estado                 String    @default("sin_conectar") @db.VarChar(30)
   coexistenciaVerificada Boolean   @default(false) @map("coexistencia_verificada")
   ultimoError            String?   @map("ultimo_error")
-  ultimoErrorEn          DateTime? @map("ultimo_error_en")
+  ultimoErrorEn          DateTime? @map("ultimo_error_en") @db.Timestamptz(3)
 
-  contactosSincronizadosEn DateTime? @map("contactos_sincronizados_en")
-  historialSincronizadoEn  DateTime? @map("historial_sincronizado_en")
+  contactosSincronizadosEn DateTime? @map("contactos_sincronizados_en") @db.Timestamptz(3)
+  historialSincronizadoEn  DateTime? @map("historial_sincronizado_en") @db.Timestamptz(3)
 
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   contactos      Contacto[]
   conversaciones Conversacion[]
@@ -316,6 +323,7 @@ model Canal {
   eventos        EventoWebhook[]
 
   @@index([inquilinoId])
+  @@index([wabaId], map: "canales_waba_idx")
   @@map("canales")
 }
 
@@ -331,8 +339,8 @@ model Contacto {
   /// El nombre que el cliente tiene guardado en su agenda, si se sincronizó.
   nombreAgenda  String? @map("nombre_agenda")
 
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   conversaciones Conversacion[]
 
@@ -354,16 +362,16 @@ model Conversacion {
   botActivo      Boolean   @default(true) @map("bot_activo")
   tomadaPorId    Int?      @map("tomada_por_id")
   tomadaPor      Usuario?  @relation("TomadaPor", fields: [tomadaPorId], references: [id], onDelete: SetNull)
-  tomadaEn       DateTime? @map("tomada_en")
+  tomadaEn       DateTime? @map("tomada_en") @db.Timestamptz(3)
   motivoEscalado String?   @map("motivo_escalado")
 
   /// Resumen de lo ya hablado, para no mandarle al modelo la conversación entera.
   resumen        String?
   resumenHastaId Int?      @map("resumen_hasta_id")
 
-  ultimoMensajeEn DateTime? @map("ultimo_mensaje_en")
-  creado          DateTime  @default(now()) @map("creado_en")
-  actualizado     DateTime  @updatedAt @map("actualizado_en")
+  ultimoMensajeEn DateTime? @map("ultimo_mensaje_en") @db.Timestamptz(3)
+  creado          DateTime  @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado     DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   mensajes  Mensaje[]
   trabajos  TrabajoCola[]
@@ -371,6 +379,7 @@ model Conversacion {
 
   @@unique([canalId, contactoId])
   @@index([inquilinoId, ultimoMensajeEn])
+  @@index([canalId, ultimoMensajeEn(sort: Desc)], map: "conversaciones_canal_ultimo_idx")
   @@map("conversaciones")
 }
 
@@ -390,8 +399,8 @@ model Mensaje {
   ubicacionLat         Float?    @map("ubicacion_lat")
   ubicacionLng         Float?    @map("ubicacion_lng")
   ubicacionTexto       String?   @map("ubicacion_texto")
-  ubicacionResueltaEn  DateTime? @map("ubicacion_resuelta_en")
-  medioResueltoEn      DateTime? @map("medio_resuelto_en")
+  ubicacionResueltaEn  DateTime? @map("ubicacion_resuelta_en") @db.Timestamptz(3)
+  medioResueltoEn      DateTime? @map("medio_resuelto_en") @db.Timestamptz(3)
 
   /// Cuando el mensaje lo produjo una herramienta del agente, cuál fue y por qué.
   herramienta String? @db.VarChar(60)
@@ -403,10 +412,12 @@ model Mensaje {
   envioId Int?   @map("envio_id")
   envio   Envio? @relation(fields: [envioId], references: [id], onDelete: SetNull)
 
-  creado DateTime @default(now()) @map("creado_en")
+  creado DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@index([conversacionId, creado])
+  @@index([conversacionId, creado(sort: Desc)], map: "mensajes_conversacion_creado_desc_idx")
   @@index([inquilinoId, creado])
+  @@index([envioId], map: "mensajes_envio_idx")
   @@map("mensajes")
 }
 
@@ -419,13 +430,13 @@ model TrabajoCola {
   conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
 
   estado      String    @default("pendiente") @db.VarChar(20)
-  ejecutarEn  DateTime  @default(now()) @map("ejecutar_en")
+  ejecutarEn  DateTime  @default(now()) @map("ejecutar_en") @db.Timestamptz(3)
   intentos    Int       @default(0)
-  reclamadoEn DateTime? @map("reclamado_en")
+  reclamadoEn DateTime? @map("reclamado_en") @db.Timestamptz(3)
   error       String?
 
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   @@index([estado, ejecutarEn])
   @@map("cola")
@@ -440,9 +451,10 @@ model EventoWebhook {
   canal       Canal?   @relation(fields: [canalId], references: [id], onDelete: SetNull)
   firmaValida Boolean  @default(false) @map("firma_valida")
   payload     Json?
-  recibidoEn  DateTime @default(now()) @map("recibido_en")
+  recibidoEn  DateTime @default(now()) @map("recibido_en") @db.Timestamptz(3)
 
   @@index([recibidoEn])
+  @@index([recibidoEn(sort: Desc)], map: "eventos_webhook_recibido_desc_idx")
   @@map("eventos_webhook")
 }
 
@@ -457,8 +469,8 @@ model Conocimiento {
   contenido   String   @default("")
   orden       Int      @default(0)
   activo      Boolean  @default(true)
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   @@unique([canalId, clave])
   @@map("conocimiento")
@@ -474,7 +486,7 @@ model Prompt {
   version   Int      @default(1)
   contenido String   @default("")
   activo    Boolean  @default(true)
-  creado    DateTime @default(now()) @map("creado_en")
+  creado    DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@index([canalId, tipo, activo])
   @@map("prompts")
@@ -497,13 +509,15 @@ model PlantillaAgente {
   cuerpo         String
   pie            String?
   variables      Json     @default("[]")
-  sincronizadoEn DateTime? @map("sincronizado_en")
-  creado         DateTime @default(now()) @map("creado_en")
-  actualizado    DateTime @updatedAt @map("actualizado_en")
+  sincronizadoEn DateTime? @map("sincronizado_en") @db.Timestamptz(3)
+  creado         DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   listas PlantillaLista[]
   envios Envio[]
 
+  /// La sincronización con Meta casa por esta terna.
+  @@unique([canalId, nombre, idioma])
   @@map("plantillas_agente")
 }
 
@@ -512,9 +526,10 @@ model PlantillaLista {
   plantilla   PlantillaAgente @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
   listaId     Int             @map("lista_id")
   lista       ListaContactos  @relation(fields: [listaId], references: [id], onDelete: Cascade)
-  creado      DateTime        @default(now()) @map("creado_en")
+  creado      DateTime        @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@id([plantillaId, listaId])
+  @@index([listaId], map: "plantilla_listas_lista_idx")
   @@map("plantilla_listas")
 }
 
@@ -538,11 +553,12 @@ model Envio {
   lanzadoPorId Int?     @map("lanzado_por_id")
   lanzadoPor   Usuario? @relation("LanzadoPor", fields: [lanzadoPorId], references: [id], onDelete: SetNull)
 
-  creado      DateTime  @default(now()) @map("creado_en")
-  terminadoEn DateTime? @map("terminado_en")
+  creado      DateTime  @default(now()) @map("creado_en") @db.Timestamptz(3)
+  terminadoEn DateTime? @map("terminado_en") @db.Timestamptz(3)
 
   mensajes Mensaje[]
 
+  @@index([canalId, creado(sort: Desc)], map: "envios_canal_creado_desc_idx")
   @@map("envios")
 }
 
@@ -561,9 +577,10 @@ model UsoModelo {
   herramienta          String? @db.VarChar(60)
   duracionMs           Int?    @map("duracion_ms")
 
-  creado DateTime @default(now()) @map("creado_en")
+  creado DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@index([inquilinoId, creado])
+  @@index([conversacionId, creado(sort: Desc)], map: "uso_modelo_conversacion_creado_desc_idx")
   @@map("uso_modelo")
 }
 
@@ -582,9 +599,9 @@ model ListaContactos {
 
   /// Token de la página pública donde alguien se apunta solo. NULO = no compartida.
   tokenCompartir     String?   @unique @map("token_compartir")
-  compartidaEn       DateTime? @map("compartida_en")
+  compartidaEn       DateTime? @map("compartida_en") @db.Timestamptz(3)
 
-  creado DateTime @default(now()) @map("creado_en")
+  creado DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   contactos  ContactoLista[]
   campanas   CampanaLista[]
@@ -609,7 +626,7 @@ model ContactoLista {
   /// Si se apuntó desde el enlace público en vez de escribirlo el cliente.
   desdeCompartir Boolean @default(false) @map("desde_compartir")
 
-  creado DateTime @default(now()) @map("creado_en")
+  creado DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@index([listaId])
   @@index([inquilinoId])
@@ -635,19 +652,19 @@ model Campana {
   estado String @default("borrador") @db.VarChar(20)
 
   // ── Programación (una vez, o repetida)
-  programadaPara DateTime? @map("programada_para")
+  programadaPara DateTime? @map("programada_para") @db.Timestamptz(3)
   tipoPrograma   String?   @map("tipo_programa") @db.VarChar(20)
   frecuenciaUnidad   String? @map("frecuencia_unidad") @db.VarChar(20)
   frecuenciaIntervalo Int?   @map("frecuencia_intervalo")
-  repetirHasta   DateTime? @map("repetir_hasta")
-  proximaEn      DateTime? @map("proxima_en")
+  repetirHasta   DateTime? @map("repetir_hasta") @db.Timestamptz(3)
+  proximaEn      DateTime? @map("proxima_en") @db.Timestamptz(3)
   vueltas        Int       @default(0)
 
-  enviadaEn     DateTime? @map("enviada_en")
-  envioIniciado DateTime? @map("envio_iniciado_en")
+  enviadaEn     DateTime? @map("enviada_en") @db.Timestamptz(3)
+  envioIniciado DateTime? @map("envio_iniciado_en") @db.Timestamptz(3)
 
-  creado      DateTime @default(now()) @map("creado_en")
-  actualizado DateTime @updatedAt @map("actualizado_en")
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   listas CampanaLista[]
   envios CampanaEnvio[]
@@ -662,7 +679,7 @@ model CampanaLista {
   campana   Campana        @relation(fields: [campanaId], references: [id], onDelete: Cascade)
   listaId   Int            @map("lista_id")
   lista     ListaContactos @relation(fields: [listaId], references: [id], onDelete: Cascade)
-  creado    DateTime       @default(now()) @map("creado_en")
+  creado    DateTime       @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   @@id([campanaId, listaId])
   @@map("campana_listas")
@@ -680,7 +697,7 @@ model CampanaEnvio {
   resendId       String? @map("resend_id") @db.VarChar(120)
   estado         String  @default("pendiente") @db.VarChar(20)
   error          String?
-  enviadoEn      DateTime? @map("enviado_en")
+  enviadoEn      DateTime? @map("enviado_en") @db.Timestamptz(3)
 
   @@index([campanaId])
   @@map("campana_envios")
@@ -704,7 +721,7 @@ model PlantillaWa {
   pie              String?
   botones          Json    @default("[]")
 
-  creado DateTime @default(now()) @map("creado_en")
+  creado DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
 
   campanas Campana[]
 

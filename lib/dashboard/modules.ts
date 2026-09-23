@@ -34,7 +34,14 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
   { href: '/dashboard/clients',          label: 'Clientes',         group: 'Operación',  icon: 'Users' },
   { href: '/dashboard/invoices',         label: 'Facturas',         group: 'Operación',  icon: 'ReceiptText' },
   { href: '/dashboard/marketplace',      label: 'Marketplace',      group: 'Plataforma', icon: 'Store' },
-  { href: '/dashboard/automatizaciones', label: 'Automatizaciones', group: 'Plataforma', icon: 'Workflow' },
+  // ⚠️ «Automatizaciones» YA NO ES UN MÓDULO DE LA PLATAFORMA (Fernando, 2026-09-23:
+  // «ya no debería existir el módulo de automatizaciones, solo el producto»). Desde el
+  // corte del 2026-09-23 vive en `automatizaciones.grupocc.org`, se vende en el
+  // marketplace a 5 $/mes y se entra por «Entrar a Organización».
+  //
+  // El código viejo (`/dashboard/automatizaciones` y `app/api/admin/flows/**`) NO se ha
+  // borrado todavía a propósito: el corte es de hoy y esos datos en `gcc_world` son la
+  // red de seguridad. Se retira cuando el producto lleve unos días respondiendo.
   { href: '/dashboard/tools',            label: 'Herramientas',     group: 'Plataforma', icon: 'Wrench' },
   { href: '/dashboard/centralized',      label: 'Centralizado',     group: 'Plataforma', icon: 'Network' },
   { href: '/dashboard/settings',         label: 'Configuración',    group: 'Sistema',    icon: 'Settings' },

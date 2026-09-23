@@ -55,7 +55,8 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   // y solo aparecen los flujos a los que se le dio acceso desde «Accesos». Un cliente sin
   // ninguno ve el módulo vacío. Esta tabla decide a qué RUTA se puede navegar; qué FILAS
   // devuelve cada ruta es otra pregunta, y se responde en el servidor, por petición.
-  { path: '/dashboard/automatizaciones', roles: ['client', 'member', 'admin'] },
+  // Automatizaciones se fue a su propio producto el 2026-09-23: la ruta deja de ser
+  // navegable aunque sus archivos sigan ahí de momento.
   { path: '/dashboard/tools', roles: ['member', 'admin'] },
   { path: '/dashboard/admin', roles: ['admin'] },
 ];
