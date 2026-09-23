@@ -75,6 +75,46 @@ export default function FilterRail<T extends string = string>({
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>{title}</p>
       )}
 
+      {/* ── TELÉFONO: la misma lista, como una tira de fichas ────────────────────────
+          Apilado, este rail son N filas de 35 px encima del contenido: en Recordatorios
+          eran 4 (140 px), en Centralizado o Proyectos bastantes más, y **hay que
+          recorrerlas enteras para llegar a lo que se venía a ver**. Aquí ocupan una
+          línea que se desliza con el dedo.
+          ⚠️ Se pintan las DOS y el ancho decide (`lg:hidden` / `hidden lg:block`): medir
+          la ventana al pintar da un desajuste de hidratación. */}
+      <div className="lg:hidden desplaza-x flex gap-1.5 overflow-x-auto pb-0.5">
+        {groups.flatMap((group, gi) =>
+          group.items.map((it, ii) => {
+            const active = value === it.value;
+            const showCount = it.count != null && (!hideZeroCounts || it.count > 0);
+            return (
+              <div key={`${gi}-${it.value}`} className="flex items-center gap-1 shrink-0">
+                {/* Separador entre grupos: la línea que en vertical los separa. */}
+                {gi > 0 && ii === 0 && <span className="w-px h-6 bg-digi-border/60 mx-0.5" />}
+                <button
+                  onClick={() => onChange(it.value)}
+                  title={it.hint || it.label}
+                  className={`h-11 inline-flex items-center gap-1.5 px-3 rounded-full border text-[12.5px] font-medium whitespace-nowrap transition-colors ${
+                    active ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-text'
+                  }`}
+                  style={mf}
+                >
+                  <it.Icon className="w-4 h-4 shrink-0" />
+                  {it.label}
+                  {showCount && <span className="tabular-nums opacity-75">{it.count}</span>}
+                </button>
+                {/* Las acciones del ítem solo en el ACTIVO: en una tira, repetirlas en
+                    cada ficha sería una fila de botones sin sitio. */}
+                {it.actions && active && (
+                  <span className="flex items-center gap-0.5 shrink-0">{it.actions}</span>
+                )}
+              </div>
+            );
+          }),
+        )}
+      </div>
+
+      <div className="hidden lg:block">
       {groups.map((group, gi) => (
         <div key={group.title ?? gi}>
           {gi > 0 && <div className="h-px bg-digi-border/60 my-1.5 mx-2" />}
@@ -88,7 +128,7 @@ export default function FilterRail<T extends string = string>({
               return (
                 <div
                   key={it.value}
-                  className={`group/rail relative flex items-center rounded-md transition-colors border-l-2 ${
+                  className={`group group/rail relative flex items-center rounded-md transition-colors border-l-2 ${
                     active ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.03]'
                   }`}
                 >
@@ -108,7 +148,7 @@ export default function FilterRail<T extends string = string>({
                     )}
                   </button>
                   {it.actions && (
-                    <span className={`flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${active ? 'opacity-100' : 'opacity-0 group-hover/rail:opacity-100 focus-within:opacity-100'}`}>
+                    <span className={`acciones-al-pasar flex items-center gap-0.5 pr-1.5 shrink-0 ${active ? '!opacity-100' : ''}`}>
                       {it.actions}
                     </span>
                   )}
@@ -118,6 +158,7 @@ export default function FilterRail<T extends string = string>({
           </div>
         </div>
       ))}
+      </div>
     </aside>
   );
 }

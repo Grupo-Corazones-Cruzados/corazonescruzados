@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **«Recordatorios» con diseño de teléfono — y el arreglo entra por los componentes
+  compartidos (2026-09-22).** Detalle en `Diseño.md`. Lo importante es que casi todo se hizo
+  **una sola vez**: (1) **`FilterRail` estrena modo teléfono** (tira de fichas de 44 px bajo
+  `lg`, con `sections`, `count`, `hint` y `actions` solo en la activa) y **lo usan 19
+  pantallas**, así que todas ganan a la vez; sus `actions` tenían el mismo defecto del hover y
+  pasan a `.acciones-al-pasar`. (2) **`PixelModal`: el título ya no se mete debajo de la X**
+  (`min-w-0 truncate`), que afecta a todos los diálogos. (3) En la página: la tabla cortaba el
+  título a media columna —y el título es TODO lo que un recordatorio tiene—, así que va en
+  tarjeta; y **el detalle vivía a 1.500 px por debajo de la lista**, de modo que tocar una fila
+  no producía ningún cambio visible: ahora abre como panel a pantalla completa, con el cuerpo
+  extraído a `cuerpoDetalle` para no tener dos copias que se separen. (4) Una casilla de 18 px
+  se amplía con `before:-inset-3` sin engordar su dibujo. Medido con `hover:none/pointer:coarse`:
+  0 destinos < 44 px; escritorio sin cambios en Recordatorios, Proyectos y Centralizado.
 - **«Pensamientos» con diseño de teléfono, y la regla de los botones que solo se ven con el
   puntero (2026-09-22).** Fernando: *«hay botones que actualmente solo se ven si pones puntero
   encima; en teléfono no puede poner puntero encima»*. **Era grave**: `opacity-0 group-hover`

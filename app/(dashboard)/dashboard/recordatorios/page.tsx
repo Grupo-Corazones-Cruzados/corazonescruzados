@@ -14,7 +14,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import {
   Inbox, Clock, CheckCircle2, AlertTriangle, Search, Plus, X, Paperclip, Trash2,
   Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
-  RefreshCw, Sparkles, CalendarDays, Radio, ArrowRight,
+  RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -332,6 +332,94 @@ export default function RecordatoriosPage() {
   const detail = selDetail || selected;
   const detailStatus = detail ? effStatus(detail) : 'active';
 
+  /**
+   * EL CUERPO DEL DETALLE, UNA SOLA VEZ. Se pinta en dos envoltorios —la columna de
+   * escritorio y el panel a pantalla completa del teléfono— y por eso vive aquí: dos
+   * copias del mismo bloque acabarían siendo dos detalles distintos.
+   */
+  const cuerpoDetalle = !detail ? null : (
+  <div className="p-4 space-y-3">
+    <div className="flex items-center justify-between gap-3 text-[12px]">
+      <span className="text-digi-muted" style={mf}>Estado</span>
+      <PixelBadge variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
+    </div>
+    <div className="flex items-center justify-between gap-3 text-[12px]">
+      <span className="text-digi-muted" style={mf}>Fecha y hora</span>
+      <span className="text-digi-text text-right" style={mf}>
+        {fmtDate(detail.remind_at)}
+        {detail.remind_at && detailStatus === 'active' && <span className="text-digi-muted"> · {relative(detail.remind_at)}</span>}
+      </span>
+    </div>
+
+    {detail.notes && (
+      <div className="pt-2 border-t border-digi-border">
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1" style={mf}>Notas</p>
+        <p className="text-[12px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>{detail.notes}</p>
+      </div>
+    )}
+
+    {/* Tareas (marcables) */}
+    {selLoading ? (
+      <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando…</p>
+    ) : (detail.tasks?.length ?? 0) > 0 && (
+      <div className="pt-2 border-t border-digi-border">
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>
+          Tareas ({(detail.tasks || []).filter(t => t.done).length}/{detail.tasks!.length})
+        </p>
+        <div className="space-y-1.5">
+          {detail.tasks!.map((t) => (
+            <div key={t.id} className="flex items-start gap-2 text-[12.5px]">
+              <button type="button" onClick={() => toggleDetailTask(t.id)}
+                className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 mt-px transition-colors ${t.done ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker hover:border-accent'}`}>
+                {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
+              </button>
+              <span className={`flex-1 ${t.done ? 'line-through text-digi-muted' : 'text-digi-text'}`} style={mf}>{t.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Adjuntos */}
+    {(detail.attachments?.length ?? 0) > 0 && (
+      <div className="pt-2 border-t border-digi-border">
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Adjuntos ({detail.attachments!.length})</p>
+        <div className="space-y-1">
+          {detail.attachments!.map((a) => (
+            <a key={a.id} href={`/api/reminders/${detail.id}/attachments/${a.id}`}
+              className="flex items-center gap-2 px-2 py-1 border border-digi-border rounded bg-digi-darker hover:border-accent transition-colors group">
+              <Paperclip className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+              <span className="flex-1 text-[12px] text-digi-text truncate" style={mf}>{a.filename}{a.kind === 'transcript' ? ' · transcripción' : ''}</span>
+              <Download className="w-3.5 h-3.5 text-digi-muted group-hover:text-accent shrink-0" />
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Acciones */}
+    <div className="space-y-2 pt-2 border-t border-digi-border">
+      {detailStatus === 'done' ? (
+        <button onClick={() => setStatus(detail.id, 'active')} className={`${BTN_SECONDARY} w-full`}>
+          <RotateCcw className="w-4 h-4" /> Reactivar recordatorio
+        </button>
+      ) : (
+        <button onClick={() => setStatus(detail.id, 'done')} className={`${BTN_PRIMARY} w-full`}>
+          <CheckCircle2 className="w-4 h-4" /> Marcar como completado
+        </button>
+      )}
+      <div className="flex gap-2">
+        <button onClick={() => openEdit(detail.id)} className={`${BTN_SECONDARY} flex-1`}>
+          <Pencil className="w-4 h-4" /> Editar
+        </button>
+        <button onClick={() => del(detail.id)} className="inline-flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium text-red-500 border border-red-500/40 rounded hover:bg-red-500/10 transition-colors" style={mf}>
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  </div>
+  );
+
   return (
     <div>
       <PageHeader title="Recordatorios" description="Recordatorios con tareas y adjuntos" />
@@ -358,12 +446,16 @@ export default function RecordatoriosPage() {
                 style={mf}
               />
             </div>
-            <button onClick={openMeetings} className={`${BTN_SECONDARY} shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
-              <Video className="w-4 h-4" /> Buscar reuniones
-            </button>
-            <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}>
-              <Plus className="w-4 h-4" /> Nuevo recordatorio
-            </button>
+            {/* Los dos botones comparten fila en teléfono: uno debajo del otro eran dos
+                pantallazos de 44 px antes de llegar a la lista, que es lo que se viene a ver. */}
+            <div className="flex gap-2">
+              <button onClick={openMeetings} className={`${BTN_SECONDARY} flex-1 sm:flex-none h-11 sm:h-auto shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
+                <Video className="w-4 h-4" /> <span className="sm:hidden">Reuniones</span><span className="hidden sm:inline">Buscar reuniones</span>
+              </button>
+              <button onClick={openCreate} className={`${BTN_PRIMARY} flex-1 sm:flex-none h-11 sm:h-auto shrink-0`}>
+                <Plus className="w-4 h-4" /> <span className="sm:hidden">Nuevo</span><span className="hidden sm:inline">Nuevo recordatorio</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
@@ -395,12 +487,45 @@ export default function RecordatoriosPage() {
                 onRowClick={(r: Reminder) => selectReminder(r)}
                 emptyTitle="Sin recordatorios"
                 emptyDesc="No hay recordatorios en este estado."
+                /* ── El recordatorio, contado para un teléfono ───────────────────────
+                   La tabla recorta el título a media columna («Desarrollar Fase 1 el
+                   Videoju…»), y un recordatorio del que no se lee el título no sirve
+                   de nada: es TODO lo que tiene. Aquí ocupa el ancho y hasta dos
+                   líneas, y debajo van la fecha y las tareas con su nombre. */
+                tarjetaMovil={(r: Reminder) => {
+                  const est = effStatus(r);
+                  const tareas = r.tasks || [];
+                  const hechas = tareas.filter((t) => t.done).length;
+                  return (
+                    <>
+                      <div className="flex items-start gap-2">
+                        <span title={STATUS_LABEL[est]} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_VARIANT[est] || 'default']}`} />
+                        {r.source === 'meeting' && <Video className="w-4 h-4 text-accent shrink-0 mt-0.5" />}
+                        <span className={`flex-1 min-w-0 text-[13.5px] font-medium leading-snug ${est === 'done' ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>
+                          {r.title}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-3 pl-4 text-[12px] text-digi-muted" style={mf}>
+                        <span className="inline-flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" /> {fmtShort(r.remind_at)}</span>
+                        {tareas.length > 0 && (
+                          <span className="inline-flex items-center gap-1 tabular-nums"><ListChecks className="w-3.5 h-3.5" /> {hechas}/{tareas.length}</span>
+                        )}
+                        <span className="ml-auto"><PixelBadge variant={STATUS_VARIANT[est] || 'default'}>{STATUS_LABEL[est]}</PixelBadge></span>
+                      </div>
+                    </>
+                  );
+                }}
               />
               )}
             </div>
 
-            {/* ── Detail panel ── */}
-            <aside className="w-full xl:w-[360px]">
+            {/* ── Detalle ─────────────────────────────────────────────────────────
+                En escritorio es la tercera columna. En TELÉFONO el <aside> caía por
+                debajo de la lista entera —a más de 1.500 px—, así que tocar una fila
+                **no producía ningún cambio visible**: el detalle existía fuera de la
+                pantalla. Aquí el mismo contenido se abre como panel a pantalla
+                completa, que es el estándar del proyecto para lo que no cabe al lado. */}
+            <aside className="hidden xl:block w-full xl:w-[360px]">
               {!detail ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
@@ -420,92 +545,25 @@ export default function RecordatoriosPage() {
                     </div>
                     <button onClick={() => { setSelected(null); setSelDetail(null); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                   </div>
-
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-3 text-[12px]">
-                      <span className="text-digi-muted" style={mf}>Estado</span>
-                      <PixelBadge variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-[12px]">
-                      <span className="text-digi-muted" style={mf}>Fecha y hora</span>
-                      <span className="text-digi-text text-right" style={mf}>
-                        {fmtDate(detail.remind_at)}
-                        {detail.remind_at && detailStatus === 'active' && <span className="text-digi-muted"> · {relative(detail.remind_at)}</span>}
-                      </span>
-                    </div>
-
-                    {detail.notes && (
-                      <div className="pt-2 border-t border-digi-border">
-                        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1" style={mf}>Notas</p>
-                        <p className="text-[12px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>{detail.notes}</p>
-                      </div>
-                    )}
-
-                    {/* Tareas (marcables) */}
-                    {selLoading ? (
-                      <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando…</p>
-                    ) : (detail.tasks?.length ?? 0) > 0 && (
-                      <div className="pt-2 border-t border-digi-border">
-                        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>
-                          Tareas ({(detail.tasks || []).filter(t => t.done).length}/{detail.tasks!.length})
-                        </p>
-                        <div className="space-y-1.5">
-                          {detail.tasks!.map((t) => (
-                            <div key={t.id} className="flex items-start gap-2 text-[12.5px]">
-                              <button type="button" onClick={() => toggleDetailTask(t.id)}
-                                className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 mt-px transition-colors ${t.done ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker hover:border-accent'}`}>
-                                {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
-                              </button>
-                              <span className={`flex-1 ${t.done ? 'line-through text-digi-muted' : 'text-digi-text'}`} style={mf}>{t.text}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Adjuntos */}
-                    {(detail.attachments?.length ?? 0) > 0 && (
-                      <div className="pt-2 border-t border-digi-border">
-                        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Adjuntos ({detail.attachments!.length})</p>
-                        <div className="space-y-1">
-                          {detail.attachments!.map((a) => (
-                            <a key={a.id} href={`/api/reminders/${detail.id}/attachments/${a.id}`}
-                              className="flex items-center gap-2 px-2 py-1 border border-digi-border rounded bg-digi-darker hover:border-accent transition-colors group">
-                              <Paperclip className="w-3.5 h-3.5 text-digi-muted shrink-0" />
-                              <span className="flex-1 text-[12px] text-digi-text truncate" style={mf}>{a.filename}{a.kind === 'transcript' ? ' · transcripción' : ''}</span>
-                              <Download className="w-3.5 h-3.5 text-digi-muted group-hover:text-accent shrink-0" />
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Acciones */}
-                    <div className="space-y-2 pt-2 border-t border-digi-border">
-                      {detailStatus === 'done' ? (
-                        <button onClick={() => setStatus(detail.id, 'active')} className={`${BTN_SECONDARY} w-full`}>
-                          <RotateCcw className="w-4 h-4" /> Reactivar recordatorio
-                        </button>
-                      ) : (
-                        <button onClick={() => setStatus(detail.id, 'done')} className={`${BTN_PRIMARY} w-full`}>
-                          <CheckCircle2 className="w-4 h-4" /> Marcar como completado
-                        </button>
-                      )}
-                      <div className="flex gap-2">
-                        <button onClick={() => openEdit(detail.id)} className={`${BTN_SECONDARY} flex-1`}>
-                          <Pencil className="w-4 h-4" /> Editar
-                        </button>
-                        <button onClick={() => del(detail.id)} className="inline-flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium text-red-500 border border-red-500/40 rounded hover:bg-red-500/10 transition-colors" style={mf}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  {cuerpoDetalle}
                 </div>
               )}
             </aside>
           </div>
         </div>
+      </div>
+
+      {/* El detalle en teléfono: panel a pantalla completa (PixelModal `md` ocupa el
+          ancho entero por debajo de 644 px). Mismo contenido, otro envoltorio. */}
+      <div className="xl:hidden">
+        <PixelModal
+          open={!!detail}
+          onClose={() => { setSelected(null); setSelDetail(null); }}
+          title={detail?.title || 'Recordatorio'}
+          size="md"
+        >
+          {cuerpoDetalle}
+        </PixelModal>
       </div>
 
       {/* Modal: reuniones de Meet → generar recordatorio a mano */}
@@ -612,13 +670,13 @@ export default function RecordatoriosPage() {
             <label className="field-label text-[10px] text-accent-glow opacity-70 block mb-1" style={df}>Tareas</label>
             <div className="space-y-1 mb-2">
               {tasks.map(t => (
-                <div key={t.id} className="flex items-center gap-2 group/task">
+                <div key={t.id} className="flex items-center gap-2 group group/task">
                   <button type="button" onClick={() => toggleTask(t.id)}
                     className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${t.done ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker'}`}>
                     {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
                   </button>
                   <span className={`flex-1 text-[13px] ${t.done ? 'line-through text-digi-muted' : 'text-digi-text'}`} style={mf}>{t.text}</span>
-                  <button type="button" onClick={() => removeTask(t.id)} className="text-digi-muted/50 hover:text-red-500 opacity-0 group-hover/task:opacity-100 transition-opacity"><X className="w-3.5 h-3.5" /></button>
+                  <button type="button" onClick={() => removeTask(t.id)} aria-label="Quitar tarea" className="acciones-al-pasar shrink-0 w-11 h-11 sm:w-auto sm:h-auto inline-flex items-center justify-center text-digi-muted/50 hover:text-red-500"><X className="w-4 h-4 sm:w-3.5 sm:h-3.5" /></button>
                 </div>
               ))}
             </div>

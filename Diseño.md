@@ -3262,6 +3262,40 @@ porque la mitad de lo que hace no se podía hacer.
 
 ---
 
+### Cuarta aplicación: «Recordatorios» (2026-09-22)
+`app/(dashboard)/dashboard/recordatorios/page.tsx`. Aquí el trabajo fue sobre todo **en los
+componentes compartidos**, así que lo hereda medio panel:
+
+- **⭐ `FilterRail` ESTRENA MODO TELÉFONO — y lo usan 19 PANTALLAS.** Apilado, un rail son
+  N filas de 35 px encima del contenido, y hay que recorrerlas enteras para llegar a lo que
+  se venía a ver. Por debajo de `lg` es una **tira de fichas de 44 px** que se desliza con
+  el dedo (`.desplaza-x`). Soporta lo que ya soportaba: `sections` (separador vertical
+  entre grupos), `count`, `hint` (pasa al `title`) y `actions` — estas **solo en la ficha
+  activa**, porque repetirlas en cada una sería una fila de botones sin sitio.
+  Sus `actions` llevaban también `opacity-0 group-hover/rail`: ahora usan
+  **`.acciones-al-pasar`** (regla 6-bis), y el ítem lleva `group` además de `group/rail`.
+- **⭐ UN TÍTULO RECORTADO NO ES UN REGISTRO.** La tabla cortaba el recordatorio a media
+  columna («Desarrollar Fase 1 el Videoju…»), y el título es **todo** lo que un
+  recordatorio tiene. Con `tarjetaMovil` ocupa el ancho y hasta dos líneas, y debajo van
+  fecha, tareas y estado con su nombre.
+- **⭐ UN DETALLE QUE VIVE FUERA DE LA PANTALLA NO EXISTE.** El `<aside>` del detalle caía
+  bajo la lista entera —a más de 1.500 px—, así que **tocar una fila no producía ningún
+  cambio visible**. En teléfono el mismo contenido se abre como **panel a pantalla
+  completa** (`PixelModal size="md"`, que bajo 644 px ocupa el ancho entero). El cuerpo del
+  detalle se extrae a `cuerpoDetalle` y se pinta en los dos envoltorios: **dos copias del
+  mismo bloque acabarían siendo dos detalles distintos**.
+- **`PixelModal`: el título ya no se mete debajo de la X** (`min-w-0 truncate` + `shrink-0`
+  en el botón). Se vio con un recordatorio largo; lo hereda todo el panel.
+- **Una casilla de 18 px no se acierta con el pulgar**: se amplía el destino con
+  `before:-inset-3` (área envolvente de 44 px) **sin engordar el dibujo de la casilla**.
+  Es el recurso para cualquier control cuyo tamaño visual es parte del diseño.
+
+*Medido con `hover: none` / `pointer: coarse`: **0** destinos por debajo de 44 px, el
+título completo, el detalle a 390×844 al tocar, sin desbordamiento horizontal. Escritorio
+comprobado en Recordatorios, Proyectos y Centralizado (rail con secciones): sin cambios.*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3430,6 +3464,11 @@ mientras se escribe.
   - **`.acciones-al-pasar`** (2026-09-22) — acciones que se revelan con el puntero **solo
     donde hay puntero**; en táctil siempre visibles. Aplicado en Pensamientos; **pendiente
     en 9 archivos más** (lista en la regla 6-bis).
+  - **`FilterRail` con tira de fichas bajo `lg`** (2026-09-22) — **19 pantallas** la
+    heredan de golpe. Sus `actions` pasan a `.acciones-al-pasar`.
+  - **`PixelModal`: título con `min-w-0 truncate`** y cierre `shrink-0` (2026-09-22).
+  - **Destino táctil ampliado sin cambiar el dibujo**: `before:-inset-3 sm:before:inset-0`
+    sobre un control pequeño (la casilla de 18 px de una tarea).
   - **`.desplaza-x`** (2026-09-22) — tira que se desliza en horizontal sin barra a la
     vista, para las fichas de filtro en teléfono.
   - **`.corp .modal-close` a 44×44 bajo `640px`** (y el diálogo con padding de 16 px):

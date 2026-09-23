@@ -41,8 +41,11 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
         >
           {/* Header */}
           <div className="modal-header flex items-center justify-between mb-4 pb-3 border-b-2 border-digi-border">
+            {/* `min-w-0 truncate`: sin esto un título largo se mete DEBAJO del botón de
+                cerrar —se vio con un recordatorio en teléfono— en vez de recortarse. */}
             <h2
-              className="modal-title pixel-heading text-sm text-digi-text"
+              className="modal-title pixel-heading text-sm text-digi-text min-w-0 truncate"
+              title={title}
             >
               {title}
             </h2>
@@ -50,7 +53,7 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
               onClick={onClose}
               disabled={busy}
               aria-label="Cerrar"
-              className="modal-close w-8 h-8 flex items-center justify-center text-digi-muted hover:text-digi-text border-2 border-digi-border hover:border-accent transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="modal-close shrink-0 w-8 h-8 flex items-center justify-center text-digi-muted hover:text-digi-text border-2 border-digi-border hover:border-accent transition-colors disabled:opacity-40 disabled:pointer-events-none"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               X
