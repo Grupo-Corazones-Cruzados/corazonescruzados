@@ -275,6 +275,44 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⭐⭐ QUINTO PRODUCTO: «Automatizaciones» — la sección se convierte en producto
+  (Fernando, 2026-09-23).** *«lo siguiente que quiero que hagas es trabajar completamente
+  en automatizaciones su migración a productos… el producto queda creado como parte de mi
+  cuenta lfgonzalezm0@grupocc.org»*. Vive en `productos/automatizaciones/`, esquema
+  `automatizaciones`, servicio Railway propio, puerto **3014**,
+  `https://automatizaciones.grupocc.org`. Detalle operativo en su `README.md`.
+  - **EL CLIENTE DEJA DE SER UNA TABLA DE CRUCE.** Antes `flow_clients` decía de quién era
+    cada flujo; ahora **el cliente ES el inquilino** y un flujo es una **automatización**
+    dentro de él. La pertenencia pasa de ser una fila a ser una columna.
+  - **Dos inquilinos, con datos reales desde el minuto uno:** `/peter-tours`
+    (PETER TOURS S.A., el cliente de Diego Castillo, con su número +593 99 595 1038
+    conectado) y `/grupo` (cortesía, de Fernando, con los cuatro flujos propios de GCC
+    incluido el de la revisión de Meta). Migrados: **29.138 mensajes, 17.608 contactos,
+    863 conversaciones**.
+  - **⭐ ENTRAR CON LA CUENTA DE CLIENTE DE GCC WORLD Y LA MISMA CONTRASEÑA.** Lo pidió
+    Fernando para Diego. **La contraseña NO se copia**: el usuario tiene `origen = GCC` y
+    `clave_hash` NULO, y al entrar se comprueba contra `gcc_world.users` (dos columnas,
+    solo lectura, `src/lib/cuentaGcc.ts`). *Copiar el hash sería una segunda verdad que se
+    queda vieja el día que el cliente cambie la contraseña — y la que se queda vieja es la
+    de seguridad.* La otra clase de cuenta (`origen = PRODUCTO`) la crea el administrador
+    del inquilino y su contraseña sí vive en el esquema. **Una sola casilla** en la
+    pantalla de acceso para las dos: la fila encontrada decide contra qué se comprueba.
+  - **El dueño del inquilino gobierna lo suyo**: `/‹cliente›/usuarios` (crear cuentas de
+    las dos clases, activar, regenerar contraseña, con el tope del plan enseñado antes de
+    estorbar) y `/‹cliente›/suscripcion`.
+  - **⚠️ EL WEBHOOK DE META NO SE MUEVE.** `app.grupocc.org/api/agente/webhook` es la URL
+    declarada ante Meta como proveedor de tecnología y ya pasó revisión; cambiarla arriesga
+    el número de un cliente real. El cambio de guardia se hará haciendo que **esa misma
+    ruta escriba en el esquema nuevo**, que es lo que la plataforma ya hace con los otros
+    cuatro productos (los lee por SQL en el mismo Postgres). Hasta entonces, lo que entra
+    por WhatsApp sigue yendo a `gcc_world`.
+  - **La mudanza no borra nada de `gcc_world`** y conserva los identificadores originales,
+    así que es repetible y toda fila se rastrea. Se repitió de hecho: durante la primera
+    pasada **entró un mensaje nuevo de un cliente real**, que es la prueba de que esto está
+    vivo y de que el corte no puede ser un volcado.
+  - **Precio: sin poner.** El plan está a 0 con su descripción diciéndolo, y por eso
+    **todavía no hay ficha en el marketplace**: publicarla a «0,00 /mes» dejaría que
+    alguien se suscribiera gratis. **Pendiente de Fernando.**
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
   (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el
   móvil» y pasa a ser **el camino a las tiendas**. Lo que él decidió, textual en lo esencial:

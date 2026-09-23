@@ -3518,6 +3518,42 @@ La lista y los **tres** tipos de flujo: agente de IA, correo y WhatsApp (6.400 l
 
 ---
 
+## Producto «Automatizaciones» (2026-09-23)
+
+El quinto producto. Hereda el lenguaje visual de los otros cuatro (mismos tokens en
+`globals.css`, mismo catálogo en `componentes/ui.tsx`), así que aquí solo se anota **lo que
+añade**.
+
+### Una sola casilla para dos clases de cuenta
+La pantalla de acceso no pregunta «¿qué tipo de cuenta tienes?». Se escribe **«usuario o
+correo»** y la fila encontrada decide contra qué se comprueba la contraseña.
+
+> **Regla:** un selector que le pide al usuario que sepa cómo está montado el sistema por
+> dentro es un fallo de diseño disfrazado de opción. Si el dato ya está guardado, se mira.
+
+Donde la diferencia **sí** se enseña es en la lista de usuarios, porque ahí decide algo que
+la persona tiene que saber: a quién pedirle la contraseña cuando se le olvide. Cada fila
+lleva su marca —«Cuenta de GCC World» o «Cuenta de este producto»— y el formulario lo
+explica **al elegir**, no después de crearla.
+
+### La bandeja, ya nacida alterna
+Es la primera pantalla del repositorio que nace con la regla aprendida en la sección vieja:
+**un maestro-detalle no se apila en teléfono, se alterna.** La lista ocupa el ancho; al
+tocar una conversación el hilo la sustituye, con un «‹» de 44 px para volver. Desde `lg`
+vuelven a convivir. No hay una versión «encogida» de la de escritorio.
+
+### La barra inferior se topa en cuatro destinos
+Cada destino necesita 44 px de ancho útil para un dedo; en una pantalla de 360 px el quinto
+los rompe. Lo que no entra, entra por «Configuración». El menú lateral de escritorio sí los
+lleva todos.
+
+### La contratación, por ahora, sin botón
+La pantalla de suscripción **informa y no cobra**, y es una decisión: la compra irá por la
+tienda cuando haya app y PayPhone se queda en la web (ver arriba). El botón que aparezca
+dependerá de dónde se esté, y **nunca** habrá una mención de la otra vía.
+
+---
+
 ### ⭐ A DÓNDE VA ESTO: UN SOLO PROYECTO, PWA HOY, TIENDAS MAÑANA (2026-09-23)
 Fernando fijó el rumbo: **esta misma aplicación** se prueba como **PWA** y después se
 empaqueta con **Capacitor** para App Store y Play Store — *«si dejo dos proyectos separados

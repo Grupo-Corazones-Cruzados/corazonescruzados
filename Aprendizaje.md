@@ -1,5 +1,96 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-09-23) — AUTOMATIZACIONES SE CONVIERTE EN PRODUCTO, con su cliente real dentro · 🔎 70 %
+
+**Declarado por Fernando el 2026-09-23:** *«lo siguiente que quiero que hagas es trabajar
+completamente en automatizaciones su migración a productos… el producto queda creado como
+parte de mi cuenta lfgonzalezm0@grupocc.org»* y, en el mismo hilo, *«hay un cliente que
+ingresa a su producto de Diego Castillo, me interesa que ese cliente con su cuenta de
+cliente pueda en el login de su tenant de este producto entrar con su cuenta de cliente,
+misma contraseña, y luego pues dejaremos en este producto nuevo una sección para que el
+administrador o dueño del tenant pueda crear usuarios y pueda gestionar su suscripción»*.
+
+**Rol asumido:** ingeniero de migraciones con un sistema en producción delante. El rol lo
+decide un número: **29.138 mensajes de WhatsApp de un cliente real**. Esto no es crear un
+producto, es **mudar uno que está funcionando** sin que se caiga mientras se muda.
+
+### Progreso
+- **% de información para el objetivo:** 70 %
+- **Estado:** esquema, armazón, mudanza de datos y pantallas, hechos y verificados. Lo que
+  falta no es información: es **el cambio de guardia del webhook**, que solo se puede hacer
+  con Fernando avisado porque toca el número de un cliente.
+
+### Preguntas y respuestas
+
+#### PA1 — ¿Quién es «el cliente de Diego Castillo»? · ✅ Resuelta
+- **Respuesta (base de datos, 2026-09-23):** el flujo 10 se llama «Diego Castillo» y su
+  `flow_clients` apunta al cliente 8, **PETER TOURS S.A.** (`dcastillowork@outlook.com`).
+  Diego es la persona; Peter Tours es la empresa. El inquilino se llama como la empresa y
+  Diego es su administrador. El flujo 23 («lfgonzalezm0») apunta al cliente 39, la cuenta
+  del revisor de Meta: ese va al inquilino del grupo, no a uno propio.
+
+#### PA2 — ¿Tiene Diego cuenta en la plataforma, para poder entrar con ella? · ✅ Resuelta
+- **Por qué importa:** si no la tuviera, lo que pidió Fernando **no sería posible** y habría
+  que decirlo antes de construirlo, no después.
+- **Respuesta:** sí. `gcc_world.users` tiene su fila con `role = 'client'`,
+  `is_verified = true` y `password_hash` puesto (bcrypt, 60 caracteres). Comprobado además
+  que la consulta lo encuentra, que el formato del hash es el que `bcrypt.compare` espera y
+  que una contraseña incorrecta se rechaza. **La prueba de extremo a extremo con SU
+  contraseña la tiene que hacer él o Fernando: yo no la conozco ni debo.**
+
+#### PA3 — ¿Se copia el hash de la contraseña al esquema nuevo? · ✅ Resuelta — **NO**
+- **Por qué importa:** es la decisión de seguridad del producto, y es de las que no avisan
+  cuando están mal.
+- **Respuesta:** la contraseña se comprueba **en el momento de entrar** contra
+  `gcc_world.users`, en una lectura de dos columnas (`src/lib/cuentaGcc.ts`). Copiarla
+  crearía dos verdades sobre lo mismo, y el día que el cliente la cambiara en la
+  plataforma, aquí seguiría valiendo la vieja. **Verificado:** las cuatro cuentas de origen
+  GCC tienen `clave_hash` NULO.
+- **Lo que lo hace barato:** la plataforma y los productos comparten **el mismo Postgres**,
+  y la plataforma ya lee los esquemas de los productos por SQL (`lib/productos/accesos.ts`).
+  Esto es la misma tubería al revés, no una integración nueva.
+
+#### PA4 — ¿Se puede mover el webhook de Meta al producto? · ⏸ Bloqueada — **no sin avisar**
+- **Por qué importa:** es lo único que puede tumbar el WhatsApp de un cliente real.
+- **Lo que se sabe:** `app.grupocc.org/api/agente/webhook` es la URL declarada ante Meta
+  como proveedor de tecnología y **pasó su revisión**. Además, el propio archivo explica
+  que si devuelve un 500 Meta reintenta y **deshabilita el webhook**, y a partir de ahí se
+  pierden mensajes sin que nadie se entere.
+- **La salida propuesta:** **no mover la URL**. Que esa misma ruta escriba en el esquema
+  nuevo — la plataforma ya lee los esquemas de los productos, así que escribir en uno es la
+  misma tubería. Una sola puerta, documentada, en vez de una mudanza ante Meta.
+- **Falta:** el visto bueno de Fernando, porque el minuto del cambio es el minuto en que
+  Peter Tours depende de que esto esté bien.
+
+#### PA5 — ¿Qué precio tiene el producto? · ⏸ Bloqueada — decisión de Fernando
+- **Por qué importa:** sin precio no hay ficha en el marketplace, y **una ficha a «0,00
+  /mes» dejaría que alguien se suscribiera gratis**. Por eso el plan está a 0 con su
+  descripción diciéndolo y la ficha **no se ha creado**. Es un comando cuando lo diga.
+
+#### PA6 — ¿Los roles son una escalera o son oficios? · ✅ Resuelta — **escalera**
+- **Respuesta:** aquí sí se ordenan. CONSULTA mira; OPERADOR además atiende (toma una
+  conversación, apaga el bot, lanza campañas); ADMIN además gobierna (conecta el número,
+  crea cuentas, gestiona la suscripción). No hace falta `lib/permisos.ts` con capacidades
+  como en Pedidos: basta con pedir «al menos X» (`alMenos` en `lib/inquilino.ts`).
+
+### Trampas nuevas (las de mañana en la skill `/producto`)
+- 🪤 **`prisma migrate diff` contra la base propone BORRAR `_migraciones`.** Esa tabla es la
+  libreta del runner propio; Prisma no la conoce y por eso la sobra. Aplicar su salida tal
+  cual habría borrado el registro de qué migraciones van aplicadas — y la siguiente pasada
+  habría intentado reaplicarlo todo. **Regla: la salida del diff se lee antes de guardarla.**
+- 🪤 **`pg` convierte un array de JavaScript en un ARRAY DE POSTGRES, no en JSON.** Un `[]`
+  hacia una columna `jsonb` da «invalid input syntax for type json». Con un objeto acierta
+  por casualidad, así que el fallo aparece solo en las columnas que a veces llevan lista
+  (`variables`, `adjuntos`, `botones`). Todo lo que va a `jsonb` se manda ya serializado.
+- 🪤 **Una aserción sobre `innerText` en un navegador de 800 px mide el CSS, no el
+  aislamiento.** El panel vacío de la bandeja es `hidden lg:flex`, así que «no veo la
+  conversación ajena» salía falso por culpa del ancho de la ventana, no por un fallo. Lo
+  que hay que medir es que **el dato no esté en el HTML**, que es la propiedad de verdad.
+- 🪤 **Una migración de datos de un sistema vivo se queda corta mientras corre.** Al
+  comparar totales faltaba exactamente un mensaje: había entrado uno de un cliente real
+  durante la copia. **Un volcado no es un cambio de guardia**; el corte lo tiene que hacer
+  quien recibe los mensajes, no un script.
+
 ## Objetivo ACTUAL (declarado 2026-09-23) — UN SOLO PROYECTO QUE ACABE EN LAS TIENDAS: PWA hoy, Capacitor mañana, dos apps · 🔎 60 %
 
 **Declarado por Fernando el 2026-09-23**, textual en lo esencial: *«lo que busco es un solo
