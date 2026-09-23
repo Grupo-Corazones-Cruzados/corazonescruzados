@@ -1,6 +1,7 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
-import Bandeja, { type ConversacionLista, type MensajeVista } from './Bandeja';
+import { pool } from '@/lib/db';
+import Bandeja, { type ConversacionLista, type MensajeVista, type Gasto } from './Bandeja';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Conversaciones' };
@@ -68,6 +69,26 @@ export default async function PaginaConversaciones({
     tomadaPor: x.tomadaPor?.nombre ?? null,
   }));
 
+  /**
+   * LO QUE HA COSTADO ESTA CONVERSACIÓN (Fernando, 2026-09-23: «un contador de tokens o
+   * costo del agente […] a la derecha de su número de teléfono»).
+   *
+   * Se suma aquí y no en el cliente porque son miles de filas de `uso_modelo`: mandarlas
+   * al navegador para sumarlas allí sería mover un kilo de datos para enseñar un número.
+   */
+  const gasto: Gasto | null = abierta
+    ? await pool
+        .query(
+          `SELECT COUNT(*)::int corridas,
+                  COALESCE(SUM(tokens_entrada), 0)::int entrada,
+                  COALESCE(SUM(tokens_salida), 0)::int salida,
+                  COALESCE(SUM(tokens_cache_lectura), 0)::int cache_lectura
+             FROM uso_modelo WHERE conversacion_id = $1`,
+          [abierta.id],
+        )
+        .then((r) => r.rows[0] as Gasto)
+    : null;
+
   const mensajes: MensajeVista[] =
     abierta?.mensajes.map((m) => ({
       id: m.id,
@@ -97,6 +118,7 @@ export default async function PaginaConversaciones({
           : null
       }
       mensajes={mensajes}
+      gasto={gasto}
       puedeOperar={sesion.rol !== 'CONSULTA'}
     />
   );

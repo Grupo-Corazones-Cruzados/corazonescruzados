@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react';
 import { ChevronLeft, Hand, Search, Wrench, AlertCircle } from 'lucide-react';
 import { Boton, Insignia, Tarjeta } from '@/componentes/ui';
 import { cambiarBot } from '@/acciones/conversaciones';
+import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import { cn } from '@/lib/utils';
 
 export type ConversacionLista = {
@@ -26,6 +27,8 @@ export type MensajeVista = {
   enviadoOk: boolean | null;
   creado: string;
 };
+
+export type Gasto = { corridas: number; entrada: number; salida: number; cache_lectura: number };
 
 type Abierta = {
   id: number;
@@ -51,6 +54,7 @@ export default function Bandeja({
   busca,
   abierta,
   mensajes,
+  gasto,
   puedeOperar,
 }: {
   slug: string;
@@ -58,6 +62,7 @@ export default function Bandeja({
   busca: string;
   abierta: Abierta | null;
   mensajes: MensajeVista[];
+  gasto: Gasto | null;
   puedeOperar: boolean;
 }) {
   const router = useRouter();
@@ -141,7 +146,33 @@ export default function Bandeja({
               </Link>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-semibold text-texto">{abierta.nombre}</p>
-                <p className="truncate text-[11.5px] text-tenue">{abierta.numero}</p>
+                <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-tenue">
+                  <span className="truncate">{abierta.numero}</span>
+                  {/*
+                    LO QUE LLEVA COSTADO EL AGENTE EN ESTA CONVERSACIÓN.
+                    Va aquí, junto al número, porque es un dato DE ESTA conversación y
+                    porque es el hueco que ya había: no hace falta una barra para él.
+
+                    Se enseña el DINERO y no los tokens. Nadie decide nada con «23.651
+                    tokens»; con «$0,0114» sí —se ve si el agente sale a cuenta—. El
+                    detalle en tokens va en el título, para quien lo busque.
+                  */}
+                  {gasto && gasto.corridas > 0 && (
+                    <span
+                      className="rounded bg-acento-suave px-1.5 py-0.5 font-medium text-acento"
+                      title={`${gasto.corridas} corrida(s) del modelo · ${gasto.entrada.toLocaleString('es-ES')} tokens de entrada (${gasto.cache_lectura.toLocaleString('es-ES')} leídos de caché) · ${gasto.salida.toLocaleString('es-ES')} de salida`}
+                    >
+                      {costoLegible(
+                        costoEnDolares({
+                          tokensEntrada: gasto.entrada,
+                          tokensSalida: gasto.salida,
+                          tokensCacheLectura: gasto.cache_lectura,
+                        }),
+                      )}{' '}
+                      en IA
+                    </span>
+                  )}
+                </p>
               </div>
               {/*
                 LA ACCIÓN VA JUNTO AL INDICADOR QUE EXPLICA POR QUÉ HACE FALTA, y ocupa lo
