@@ -87,18 +87,32 @@ worker, protegido con `CRON_TOKEN`). El worker es el servicio Railway
 el propio SQL (`SELECT c.inquilino_id FROM canales c WHERE c.id = $1`). Así no se puede
 escribir en el inquilino equivocado ni olvidando un parámetro.
 
-## ⚠️ EL CAMBIO DE GUARDIA (pendiente)
+## ✅ EL CAMBIO DE GUARDIA — HECHO el 2026-09-23 a las 23:39 UTC
 
-Meta sigue apuntando a `app.grupocc.org/api/agente/webhook`, que escribe en `gcc_world`.
-Mientras tanto este producto enseña lo migrado hasta la última vez que se corrió el script.
+Meta apunta a `https://automatizaciones.grupocc.org/api/agente/webhook`. El worker viejo
+(`agente-worker`) está apagado; el que atiende es `automatizaciones-worker`.
 
-El corte, en este orden y **no en otro**:
+**Qué pasó al conciliar, y la lección que dejó:** `traer-de-la-plataforma.mjs` falló con
+`duplicate key ... contactos_canal_id_wa_id_key`. El motivo es importante: **conservar los
+identificadores dejó de ser seguro en cuanto los dos sistemas empezaron a escribir**. El
+mensaje 30847 de la plataforma y el 30847 del producto ya podían ser mensajes distintos
+—había exactamente una colisión así—, de modo que un `ON CONFLICT (id) DO NOTHING` se
+habría **saltado un mensaje real en silencio**. Por eso existe
+`conciliar-con-la-plataforma.mjs`, que casa por CLAVE NATURAL y deja los ids a la
+secuencia. Trajo 5 contactos, 11 conversaciones y 473 mensajes, y repetirlo no añade nada.
+
+> **Regla:** conservar identificadores hace una copia repetible **mientras escriba un solo
+> sistema**. En cuanto escriben dos, el id deja de identificar y hay que casar por lo que
+> de verdad identifica la fila.
+
+El corte, para cuando haya que repetirlo con otro producto, en este orden y **no en otro**:
 
 1. Comprobar que el webhook nuevo responde al apretón de manos:
    `GET https://automatizaciones.grupocc.org/api/agente/webhook?hub.mode=subscribe&hub.verify_token=<el de Meta>&hub.challenge=123`
    → tiene que devolver `123` en texto plano. **Si no, parar aquí.**
 2. Cambiar la URL del webhook en la app de Meta.
-3. `node scripts/traer-de-la-plataforma.mjs` — **DESPUÉS del cambio, no antes.**
+3. `node scripts/conciliar-con-la-plataforma.mjs` — **DESPUÉS del cambio, no antes**, y
+   este y no el de la mudanza (ver arriba por qué).
 4. Mandar un mensaje real al número y ver que llega y que el agente contesta.
 5. Apagar el worker viejo (`agente-worker`) — no antes, o nadie contesta.
 
