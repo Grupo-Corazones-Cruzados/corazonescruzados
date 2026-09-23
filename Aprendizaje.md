@@ -147,6 +147,15 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   aislamiento.** El panel vacío de la bandeja es `hidden lg:flex`, así que «no veo la
   conversación ajena» salía falso por culpa del ancho de la ventana, no por un fallo. Lo
   que hay que medir es que **el dato no esté en el HTML**, que es la propiedad de verdad.
+- 🪤 **⭐⭐ «QUE OCUPE TODO EL ALTO» NO SE RESUELVE RESTANDO PÍXELES.** Escribí
+  `h-[calc(100dvh-4rem)]` en cada pantalla que debía llenar la página, restando solo la
+  barra táctil. Ignoraba la cabecera de la página, el relleno y el aviso de escaparate, así
+  que el contenedor medía más que el hueco y **la página entera salía con barra de
+  desplazamiento** — justo lo contrario de lo pedido. Fernando: *«un error fatal que odio
+  que cometas»*. *Regla: el alto se declara UNA vez en el armazón y las pantallas lo
+  heredan con `h-full`; quien reste píxeles a mano acabará desbordando el día que cambie
+  cualquier cosa de arriba. Y se comprueba midiendo `scrollHeight <= innerHeight` a varios
+  anchos y con el aviso puesto, no mirando la pantalla.*
 - 🪤 **⭐⭐ PRISMA GUARDA LAS FECHAS SIN ZONA HORARIA, Y ESO CONVIERTE «QUIÉN ESCRIBE» EN
   PARTE DEL DATO.** `DateTime` se mapea a `timestamp` *sin* zona. Los scripts de la mudanza
   corrían desde un portátil en Ecuador (UTC-5) y Railway corre en UTC, así que **30.000

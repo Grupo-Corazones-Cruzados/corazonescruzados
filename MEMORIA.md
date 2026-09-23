@@ -278,8 +278,11 @@ Stack estándar de la casa, con particularidades de este repo:
 - **⭐⭐ CÓMO SE DISEÑA, DICHO POR FERNANDO EL 2026-09-23.** Una tarde entera de
   correcciones suyas, todas sobre lo mismo: **el reparto del espacio**. Es la norma para
   los cinco productos y para la plataforma; el detalle y los fragmentos, en `Diseño.md`.
-  1. **El contenedor ocupa el alto disponible** — el raíl y el contenido llegan al borde
-     inferior, no acaban donde acabe el texto.
+  1. **El contenedor ocupa el alto disponible, y ese alto SE HEREDA.** ⚠️ Nunca
+     `h-[calc(100dvh - …)]` en una pantalla: la resta tiene que acertar con la cabecera, el
+     relleno, la barra táctil y el aviso de escaparate —que a veces está—, y basta que
+     cambie uno para desbordar la página entera. El alto se declara una vez en el armazón
+     (`h-dvh` + `main` con `min-h-0 flex-1`) y las pantallas piden `h-full`.
   2. **Las acciones van abajo a la derecha** de su contenedor, y lo que las acompaña, a su
      izquierda. Es el orden de lectura: primero lo que se rellena, al final lo que se pulsa.
   3. **Se aprovecha el ancho** — ni columnas estrechas en escritorio ni botones a todo lo

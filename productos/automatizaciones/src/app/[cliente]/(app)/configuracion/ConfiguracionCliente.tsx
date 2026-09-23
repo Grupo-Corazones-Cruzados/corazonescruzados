@@ -61,10 +61,10 @@ export default function ConfiguracionCliente({
 }) {
   const [seccion, setSeccion] = useState<Seccion>('marca');
   return (
-    <>
+    <div className="flex h-full flex-col">
       <CabeceraPagina titulo="Configuración" descripcion="La marca, tu suscripción y tu cuenta" />
       {/* La misma norma que el Estudio: el contenedor ocupa el alto disponible. */}
-      <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4 p-4 sm:p-6 lg:h-dvh lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
         <RailFiltro
           opciones={[
             { valor: 'marca', etiqueta: 'Marca', icono: Palette },
@@ -80,7 +80,7 @@ export default function ConfiguracionCliente({
           {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -3568,19 +3568,42 @@ cierto por CSS aunque la puerta estuviera abierta. Se mide sobre los **enlaces d
 Salieron de cuatro correcciones suyas en una tarde, todas sobre lo mismo: **cómo se
 reparte el espacio**. Valen para los cinco productos y para la plataforma.
 
-**1. El contenedor ocupa el alto disponible.** El raíl de un submenú y el panel de
-contenido llegan al borde inferior de la página, no terminan donde acabe el texto. Una
-tarjeta flotando a media altura con el resto en blanco hace que la pantalla parezca a
-medio cargar.
+**1. El contenedor ocupa el alto disponible — y ese alto SE HEREDA, NO SE CALCULA.**
+El raíl de un submenú y el panel de contenido llegan al borde inferior, no terminan donde
+acabe el texto: una tarjeta flotando a media altura con el resto en blanco hace que la
+pantalla parezca a medio cargar.
+
+> ⚠️⚠️ **NUNCA `h-[calc(100dvh - …)]` EN UNA PÁGINA.** Es el error que Fernando señaló el
+> 2026-09-23 —*«terminas generando un desbordamiento»*— y tenía razón: la resta tiene que
+> acertar con la cabecera de la página, el relleno, la barra táctil y el aviso de
+> escaparate, **que a veces está y a veces no**. Basta que cambie uno para que sobre o
+> falte espacio, y lo que se ve es la página entera con barra de desplazamiento.
+
+El alto se declara **una sola vez, en el armazón**, y las pantallas lo heredan:
 
 ```tsx
-<div className="flex h-[calc(100dvh-4rem)] flex-col gap-4 p-4 sm:p-6 lg:h-dvh lg:flex-row">
-  <RailFiltro … />
-  <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">…</div>
+// (app)/layout.tsx — la ÚNICA que menciona la ventana
+<div className="flex h-dvh flex-col lg:ml-16">
+  {soloLectura && <AvisoEscaparate />}
+  <main className="desplaza min-h-0 flex-1 overflow-y-auto pb-16 lg:pb-0">{children}</main>
+</div>
+
+// Una pantalla que quiera llenarla: pide el alto, no lo calcula.
+<div className="flex h-full flex-col">
+  <CabeceraPagina … />
+  <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+    <RailFiltro … />
+    <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">…</div>
+  </div>
 </div>
 ```
-> `min-h-0` es lo que hace que el interior se desplace en vez de empujar la página. Sin
-> él, un bloque largo revienta el alto del padre y la regla no se cumple.
+
+> `min-h-0` no es decorativo: sin él, un hijo alto estira el `flex-1` y el desbordamiento
+> vuelve por la puerta de atrás.
+
+> **Y se MIDE, no se mira:** `document.documentElement.scrollHeight <= window.innerHeight`
+> en cada pantalla y a tres anchos, **con el aviso de escaparate puesto**, que es el caso
+> que más desajusta. Comprobado así en las cinco pantallas del producto.
 
 **2. Las acciones van ABAJO A LA DERECHA de su contenedor.** Es el orden de lectura:
 primero lo que se rellena, al final lo que se pulsa. `mt-auto` la empuja al fondo;

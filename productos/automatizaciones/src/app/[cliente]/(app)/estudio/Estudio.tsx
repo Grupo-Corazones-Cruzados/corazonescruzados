@@ -101,7 +101,7 @@ export default function Estudio({
   }
 
   return (
-    <>
+    <div className="flex h-full flex-col">
       <CabeceraPagina
         titulo="Estudio del agente"
         descripcion={canal.numero ? `${canal.numero}${canal.nombreVerificado ? ` · ${canal.nombreVerificado}` : ''}` : undefined}
@@ -128,7 +128,7 @@ export default function Estudio({
         `min-h-0` en el hijo es lo que permite que el interior se desplace en vez de
         empujar la página: sin él, un bloque largo revienta el alto fijo del padre.
       */}
-      <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4 p-4 sm:p-6 lg:h-dvh lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
         <RailFiltro
           opciones={[
             { valor: 'numero', etiqueta: 'El número', icono: Phone },
@@ -358,7 +358,7 @@ export default function Estudio({
           })
         }
       />
-    </>
+    </div>
   );
 }
 

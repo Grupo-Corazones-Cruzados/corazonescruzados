@@ -76,7 +76,7 @@ export default function Bandeja({
   }
 
   return (
-    <div className="flex h-[calc(100dvh-5rem)] lg:h-dvh">
+    <div className="flex h-full">
       {/* ── La lista. En teléfono desaparece cuando hay una conversación abierta. */}
       <section
         className={cn(
