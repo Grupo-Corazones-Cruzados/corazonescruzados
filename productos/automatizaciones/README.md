@@ -66,16 +66,44 @@ node scripts/traer-de-la-plataforma.mjs            # traer (repetible)
 - Si aparece un flujo nuevo en la plataforma, el script **para** y pide asignarle inquilino
   en la constante `INQUILINOS`: traerlo a ciegas lo dejaría sin dueño.
 
-## ⚠️ Lo que falta y por qué
+## El agente de WhatsApp
 
-1. **El webhook de Meta sigue apuntando a la plataforma**
-   (`app.grupocc.org/api/agente/webhook`) y escribiendo en `gcc_world`. Es la URL
-   declarada ante Meta como proveedor de tecnología y ya pasó su revisión: moverla
-   arriesga el número de Peter Tours. El cambio de guardia se hace haciendo que **esa
-   misma ruta escriba en este esquema**, no mudando la URL.
-   Mientras tanto, lo que entra por WhatsApp sigue yendo a la plataforma, y este producto
-   enseña lo migrado hasta el momento de correr el script.
-2. **El worker del agente** (`agente-worker`) sigue consumiendo la cola de `gcc_world`.
+Portado desde la plataforma (2026-09-23). Vive en `src/lib/agente/` y se asoma por dos
+rutas: `/api/agente/webhook` (lo que manda Meta) y `/api/agente/procesar` (un pase del
+worker, protegido con `CRON_TOKEN`). El worker es el servicio Railway
+`automatizaciones-worker`: un proceso que llama a `/api/agente/procesar` cada 5 segundos y
+**no tiene lógica propia a propósito** —si la tuviera, habría que mantenerla en dos sitios.
+
+**Dos cosas que NO se pueden tocar:**
+
+1. `contextoCanal()` en `cifrado.ts` devuelve `agente_canales:<id>:<campo>`. Dice
+   «agente_canales» aunque aquí la tabla se llame `canales`, **y así tiene que seguir**: es
+   el dato asociado autenticado con el que se cifraron los tokens que se migraron.
+   Renombrarlo los deja indescifrables y el agente deja de poder enviar.
+2. Por lo mismo, **los identificadores de canal no se recrean** (11 = Peter Tours,
+   33 = pruebas): el id también entra en ese contexto.
+
+**El inquilino nunca se pasa desde JavaScript.** Cada INSERT lo deriva de la fila padre en
+el propio SQL (`SELECT c.inquilino_id FROM canales c WHERE c.id = $1`). Así no se puede
+escribir en el inquilino equivocado ni olvidando un parámetro.
+
+## ⚠️ EL CAMBIO DE GUARDIA (pendiente)
+
+Meta sigue apuntando a `app.grupocc.org/api/agente/webhook`, que escribe en `gcc_world`.
+Mientras tanto este producto enseña lo migrado hasta la última vez que se corrió el script.
+
+El corte, en este orden y no en otro:
+
+1. Comprobar que el webhook nuevo responde al apretón de manos:
+   `GET https://automatizaciones.grupocc.org/api/agente/webhook?hub.mode=subscribe&hub.verify_token=<el de Meta>&hub.challenge=123`
+   → tiene que devolver `123` en texto plano.
+2. `node scripts/traer-de-la-plataforma.mjs` una última vez (trae lo entrado entre medias).
+3. **Ahora sí**: cambiar la URL del webhook en la app de Meta.
+4. Mandar un mensaje real al número y ver que llega y que el agente contesta.
+5. Apagar el worker viejo (`agente-worker`) — no antes, o nadie contesta.
+
+⚠️ **No se cambia la URL antes del paso 1.** Y no se apaga el worker viejo antes del 4:
+mientras Meta apunte a la plataforma, es el único que contesta.
 3. **La ficha del marketplace está creada pero le faltan capturas y una demostración.**
    El precio es **5 $/mes con las tres cosas dentro** (Fernando, 2026-09-23). Falta subir
    capturas reales y montar un inquilino de escaparate en modo solo lectura con sus

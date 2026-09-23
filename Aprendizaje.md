@@ -109,6 +109,16 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   crea cuentas, gestiona la suscripción). No hace falta `lib/permisos.ts` con capacidades
   como en Pedidos: basta con pedir «al menos X» (`alMenos` en `lib/inquilino.ts`).
 
+#### PA4 — ¿Se puede mover el webhook de Meta? · ✅ Resuelta — **sí, y ya está construido**
+- Fernando decidió el 2026-09-23 moverlo él en Meta. La URL nueva es
+  `https://automatizaciones.grupocc.org/api/agente/webhook`.
+- **Se portaron las DOS mitades**, porque mover solo el webhook habría sido peor que no
+  mover nada: los mensajes entrarían en el producto y **nadie los contestaría**. El worker
+  (`automatizaciones-worker`) es la otra mitad.
+- El procedimiento del corte está en el README del producto, y el orden importa: primero
+  comprobar el apretón de manos, luego la última pasada de la mudanza, **después** cambiar
+  la URL, y solo al final apagar el worker viejo.
+
 ### Trampas nuevas (las de mañana en la skill `/producto`)
 - 🪤 **`prisma migrate diff` contra la base propone BORRAR `_migraciones`.** Esa tabla es la
   libreta del runner propio; Prisma no la conoce y por eso la sobra. Aplicar su salida tal
@@ -122,6 +132,22 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   aislamiento.** El panel vacío de la bandeja es `hidden lg:flex`, así que «no veo la
   conversación ajena» salía falso por culpa del ancho de la ventana, no por un fallo. Lo
   que hay que medir es que **el dato no esté en el HTML**, que es la propiedad de verdad.
+- 🪤 **⭐ `@updatedAt` de Prisma vive en el CLIENTE, no en la base.** La columna queda NOT
+  NULL y **sin defecto**, así que cualquier `INSERT` en SQL crudo la viola. Se descubrió de
+  la peor manera posible: el mensaje del webhook se guardaba bien pero **no se encolaba**,
+  y el agente nunca habría contestado — el error estaba tapado por el `catch` que devuelve
+  200 a Meta a propósito. *Regla: si un producto escribe con SQL crudo, `actualizado_en`
+  necesita `DEFAULT now()` en la base; arreglarlo consulta a consulta es olvidarse de una.*
+- 🪤 **Prisma no declara índices PARCIALES, y son los que hacen funcionar el código.**
+  Comparando uno a uno los índices del módulo viejo con los del esquema nuevo aparecieron
+  trece sin equivalente, cuatro de ellos funcionales: sin el parcial único de
+  `wa_message_id` Meta duplica mensajes al reintentar, y sin el de la cola **desaparece el
+  debounce** y el agente contesta frase por frase, costando seis veces más. *Regla: al
+  portar un módulo, DIFF de índices, no solo de tablas.*
+- 🪤 **Un dato asociado autenticado no se renombra aunque parezca un descuido.** El
+  contexto de cifrado dice `agente_canales:<id>:<campo>` en un esquema donde la tabla se
+  llama `canales`. «Corregirlo» habría dejado indescifrables los tokens de WhatsApp ya
+  migrados, y el síntoma habría sido un agente mudo sin explicación.
 - 🪤 **Una migración de datos de un sistema vivo se queda corta mientras corre.** Al
   comparar totales faltaba exactamente un mensaje: había entrado uno de un cliente real
   durante la copia. **Un volcado no es un cambio de guardia**; el corte lo tiene que hacer
