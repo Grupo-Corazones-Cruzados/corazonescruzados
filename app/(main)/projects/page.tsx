@@ -335,7 +335,7 @@ function ModuleCard({ module: mod, onUpdate, onRemove }: {
         <Box size={14} className="text-accent shrink-0" />
         <InlineText value={mod.name} onChange={v => onUpdate({ name: v })} placeholder="Nombre del módulo" className="flex-1 text-[13px] font-medium text-digi-text" />
         <CountChip n={mod.sections.length} suffix="sec" />
-        <button onClick={onRemove} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/mod:opacity-100">
+        <button onClick={onRemove} className="acciones-al-pasar destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/mod:opacity-100">
           <Trash2 size={13} />
         </button>
       </div>
@@ -377,7 +377,7 @@ function SectionCard({ section: sec, onUpdate, onRemove }: {
         <Layers size={12} className="text-digi-muted shrink-0" />
         <InlineText value={sec.name} onChange={v => onUpdate({ name: v })} placeholder="Nombre de la sección" className="flex-1 text-[12px] text-digi-text" />
         <CountChip n={sec.subsections.length} />
-        <button onClick={onRemove} className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/sec:opacity-100">
+        <button onClick={onRemove} className="acciones-al-pasar destino-tactil w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/sec:opacity-100">
           <Trash2 size={12} />
         </button>
       </div>
@@ -389,7 +389,7 @@ function SectionCard({ section: sec, onUpdate, onRemove }: {
             <div key={sub.id} className="group/sub flex items-center gap-1.5 pl-1.5 rounded border border-transparent hover:border-digi-border/50 hover:bg-black/[0.02] transition-colors">
               <FileText size={11} className="text-digi-muted/70 shrink-0" />
               <InlineText value={sub.name} onChange={v => updateSubsection(sub.id, { name: v })} placeholder="Subsección" className="flex-1 text-[11px] text-digi-text" />
-              <button onClick={() => removeSubsection(sub.id)} className="w-5 h-5 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/sub:opacity-100">
+              <button onClick={() => removeSubsection(sub.id)} className="acciones-al-pasar destino-tactil w-5 h-5 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors shrink-0 opacity-0 group-hover/sub:opacity-100">
                 <Trash2 size={11} />
               </button>
             </div>

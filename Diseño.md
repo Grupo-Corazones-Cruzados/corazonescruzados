@@ -3184,10 +3184,27 @@ tarjeta—: desde un teléfono no se podía editar ni borrar un pensamiento.
 - **NO combinar con `opacity-0`**: la clase ya resuelve los dos casos.
 - Para que una fila concreta se vea SIEMPRE (p. ej. la destacada), `!opacity-100`: la
   regla `.group:not(:hover) .acciones-al-pasar` gana por especificidad a una utilidad suelta.
-- ⏳ **Pendiente de migrar** — el patrón viejo sigue en 9 archivos: `portal/[projectId]`,
-  `tickets/[id]`, `projects/[id]`, `PortfolioPanel`, `sitio/documento`,
+- **✅ MIGRADO TODO EL PANEL (2026-09-22).** 12 archivos, 18 controles: `portal/[projectId]`,
+  `(main)/projects`, `projects/[id]`, `tickets/[id]`, `PortfolioPanel`,
   `ScriptStoryboardEditor`, `MetodologiaCondiciologicaSystem`, `GestionDeDatosSystem`,
-  `RazonesPanel`. Cada uno de ellos es hoy una pantalla mutilada en un teléfono.
+  `RazonesPanel`, `PanelListasContactos`, `EmailFlowWorkspace`, `TarjetaTrabajo`.
+- **⭐ LA CLASE ES TOLERANTE A PROPÓSITO** — se le añadió una segunda mitad:
+  `@media (hover: none), (pointer: coarse) { .acciones-al-pasar { opacity: 1 !important } }`.
+  Con eso basta **añadirla** sin quitar el `opacity-0 group-hover/loquesea:opacity-100` que
+  el control ya tuviera, **incluidos los grupos CON NOMBRE**, a los que un selector `.group`
+  no llega. Es decir: no se puede usar mal, y migrar deja de ser una reescritura.
+- **`.destino-tactil`** — un botón de 16–20 px (la X de quitar una imagen, el lápiz de una
+  fila) no se acierta con el pulgar, pero agrandarlo rompe la composición donde vive
+  (suelen ir en `absolute`, encajados en una esquina). Amplía el **área** con un
+  pseudoelemento invisible de 44 px y deja el icono como está. Solo en táctil.
+- **Dos NO migrados, a propósito:** el ancla «#» de los títulos de `sitio/documento` es
+  decorativa (`aria-hidden`) y en táctil llenaría el documento de almohadillas; y el
+  tooltip de requerimientos de `projects/[id]` ya abre con `group-focus-within` sobre un
+  `tabIndex=0`, así que un toque lo abre — forzarlo visible sería un tooltip siempre abierto.
+
+*Medido con la emulación de un dispositivo táctil (`hover: none`, `pointer: coarse`): las
+tres formas de uso quedan a `opacity: 1` y un botón de 20 px pasa a tener 44×44 de área;
+con puntero fino se siguen ocultando y el área extra no existe.*
 
 ### 6. Nada flota, y ninguna página desplaza en horizontal
 Ya estaba escrito arriba («El teléfono, y el precio de lo que flota») y sigue vigente: lo

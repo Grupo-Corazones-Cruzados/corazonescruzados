@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Migrado TODO el panel a `.acciones-al-pasar` (2026-09-22).** 12 archivos, 18 controles —
+  portal del cliente, proyectos (lista y detalle), tickets, portafolio, guiones, dos sistemas
+  del Centralizado, Razones, listas de contactos, correo y las tarjetas del sitio. Cada uno era
+  una pantalla mutilada en teléfono. **La clase se hizo TOLERANTE** para que migrar no fuera una
+  reescritura: además de ocultar con puntero, lleva
+  `@media (hover:none),(pointer:coarse){ opacity:1 !important }`, así que basta **añadirla** sin
+  quitar el `opacity-0 group-hover/x:opacity-100` que hubiera — **incluidos los grupos con
+  nombre**, a los que un selector `.group` no llega. Nueva utilidad **`.destino-tactil`**: amplía
+  el área de un botón de 16–20 px a 44 px con un pseudoelemento, **sin cambiar su dibujo** (van en
+  `absolute`, encajados en una esquina, y agrandarlos rompería la composición). Dos NO migrados a
+  propósito: el ancla «#» de los títulos del sitio (decorativa, `aria-hidden`) y el tooltip de
+  requerimientos (ya abre con `focus-within` sobre un `tabIndex=0`, así que un toque lo abre).
 - **Módulo de TICKETS entero con diseño de teléfono (2026-09-22).** Las cinco pantallas: lista,
   detalle, portal del cliente (`/dashboard/support` + detalle) y **la pública**
   (`/ticket/[id]?token=`, pixel-art, la que se manda por enlace y por eso se abre más en un

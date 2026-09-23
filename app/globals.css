@@ -1001,11 +1001,37 @@ html {
    cumple, las acciones **están siempre visibles**.
 
    Uso: en el contenedor `group`, y en la fila de acciones `acciones-al-pasar`.
-   ⚠️ NO combinar con `opacity-0`: esta clase ya se encarga de los dos casos. */
+
+   ⚠️ LA CLASE ES TOLERANTE A PROPÓSITO, y por eso tiene dos mitades:
+     · la primera oculta con puntero cuando se usa SOLA (lo preferible, y funciona con
+       el `group` sin nombre de Tailwind);
+     · la segunda fuerza la visibilidad en táctil con `!important`, y así rescata también
+       a quien la añada SIN quitar su `opacity-0 group-hover/loquesea:opacity-100` —
+       incluidos los grupos CON NOMBRE, que un selector `.group` no alcanza.
+   Es decir: **no se puede usar mal**. Añadirla siempre arregla el táctil. */
 .acciones-al-pasar { opacity: 1; transition: opacity 0.15s ease; }
 @media (hover: hover) and (pointer: fine) {
   .group:not(:hover) .acciones-al-pasar { opacity: 0; }
   .group:not(:hover) .acciones-al-pasar:focus-within { opacity: 1; }
+}
+@media (hover: none), (pointer: coarse) {
+  .acciones-al-pasar { opacity: 1 !important; }
+}
+
+/* ⭐ DESTINO TÁCTIL SIN CAMBIAR EL DIBUJO.
+   Un botón de 16–20 px —la X de quitar una imagen, el lápiz de una fila— no se acierta
+   con el pulgar, pero agrandarlo rompería la composición donde vive (suelen ir en
+   `absolute`, encajados en una esquina). Esto amplía el ÁREA con un pseudoelemento
+   invisible hasta los 44 px y deja el icono como está. Solo en táctil. */
+@media (hover: none), (pointer: coarse) {
+  .destino-tactil { position: relative; }
+  .destino-tactil::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 44px; height: 44px;
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* ── VARIANTE: campo SIN MARCO, dentro de un contenedor que ya la dibuja ──────────

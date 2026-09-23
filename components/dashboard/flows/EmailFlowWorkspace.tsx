@@ -753,7 +753,7 @@ function ListGroup({
                   </span>
                 </button>
 
-                <span className={`flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
+                <span className={`acciones-al-pasar flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${selected ? 'opacity-100' : 'opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
                   <button onClick={() => onRename(l)} title="Renombrar la lista"
                     className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                     <Pencil className="w-3.5 h-3.5" />

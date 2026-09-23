@@ -309,7 +309,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0" style={df}>{p.ref}</span>
                 <span className="text-[12.5px] font-medium text-digi-text truncate flex-1" style={mf}>{p.name}</span>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="acciones-al-pasar flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => { e.stopPropagation(); openProbModal(p); }} className="p-1 text-digi-muted hover:text-accent" title="Editar"><Pencil className="w-3 h-3" /></button>
                   <button onClick={(e) => { e.stopPropagation(); setConfirmProb(p); }} className="p-1 text-digi-muted hover:text-red-500" title="Eliminar"><Trash2 className="w-3 h-3" /></button>
                 </div>

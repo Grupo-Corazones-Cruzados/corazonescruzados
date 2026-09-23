@@ -135,7 +135,7 @@ export function ColumnaListas({
                 </button>
 
                 <span className={`flex items-center gap-0.5 pr-1.5 shrink-0 transition-opacity ${
-                  abierta ? 'opacity-100' : 'opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
+                  abierta ? 'opacity-100' : 'acciones-al-pasar opacity-0 group-hover/list:opacity-100 focus-within:opacity-100'}`}>
                   <button onClick={() => alRenombrar(l)} title="Renombrar la lista"
                     className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                     <Pencil className="w-3.5 h-3.5" />

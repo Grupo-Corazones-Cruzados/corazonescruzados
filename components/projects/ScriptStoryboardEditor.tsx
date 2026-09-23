@@ -253,7 +253,7 @@ export default function ScriptStoryboardEditor({
                         <div className="text-[6px] text-digi-muted truncate w-full" style={mf}>{seg.clipName}</div>
                         <button
                           onClick={(e) => { e.stopPropagation(); clearSegment(seg.id); }}
-                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-900/80 text-red-300 text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-4 h-4 bg-red-900/80 text-red-300 text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           style={pf}
                         >x</button>
                       </div>
@@ -263,7 +263,7 @@ export default function ScriptStoryboardEditor({
                         <div className="text-[7px] text-purple-400" style={pf}>IA Video</div>
                         <button
                           onClick={(e) => { e.stopPropagation(); clearSegment(seg.id); }}
-                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-900/80 text-red-300 text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-4 h-4 bg-red-900/80 text-red-300 text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           style={pf}
                         >x</button>
                       </div>
@@ -277,7 +277,7 @@ export default function ScriptStoryboardEditor({
                         </span>
                         {isImage && (
                           <button onClick={(e) => { e.stopPropagation(); clearSegment(seg.id); }}
-                            className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-900/80 text-red-300 text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-4 h-4 bg-red-900/80 text-red-300 text-[7px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             style={pf}>x</button>
                         )}
                       </div>
@@ -356,7 +356,7 @@ export default function ScriptStoryboardEditor({
                       <p className="text-[9px] text-digi-text whitespace-pre-wrap leading-relaxed flex-1" style={mf}>
                         {seg.text}
                       </p>
-                      <div className="flex flex-col gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="acciones-al-pasar flex flex-col gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="text-[7px] text-digi-muted/50" style={mf}>#{idx + 1}</span>
                         {idx < segments.length - 1 && (
                           <button onClick={() => mergeWithNext(idx)} title="Unir con siguiente"

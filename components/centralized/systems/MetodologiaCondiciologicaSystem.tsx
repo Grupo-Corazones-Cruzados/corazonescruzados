@@ -127,7 +127,7 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
             <div key={p.id} onClick={() => setProyId(p.id)} className={`group px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${proyId === p.id ? 'bg-accent-light border border-accent/30' : 'hover:bg-black/[0.03] border border-transparent'}`}>
               <div className="flex items-center gap-2">
                 <span className="text-[12.5px] font-medium text-digi-text truncate flex-1" style={mf}>{p.name}</span>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="acciones-al-pasar flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => { e.stopPropagation(); openProy(p); }} className="p-1 text-digi-muted hover:text-accent"><Pencil className="w-3 h-3" /></button>
                   <button onClick={(e) => { e.stopPropagation(); setConfirmProy(p); }} className="p-1 text-digi-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                 </div>

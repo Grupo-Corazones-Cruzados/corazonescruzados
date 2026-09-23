@@ -75,7 +75,7 @@ function Circulo({ persona }: { persona: Persona }) {
         className="pointer-events-none absolute left-0 bottom-full z-30 mb-2 w-max max-w-[260px]
                    rounded-lg border border-[var(--linea)] bg-[var(--tarjeta)]
                    px-3 py-2.5 opacity-0 shadow-[0_8px_24px_rgba(28,27,34,0.14)] transition-opacity
-                   group-hover/p:opacity-100 group-focus-within/p:opacity-100"
+                   group-hover/p:opacity-100 group-focus-within/p:opacity-100 acciones-al-pasar"
       >
         <p className="text-[13px] font-semibold leading-snug text-[var(--texto)]">{persona.nombre}</p>
         {persona.correo && (

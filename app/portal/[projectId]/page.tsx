@@ -646,7 +646,7 @@ export default function PortalPage() {
                       <button
                         type="button"
                         onClick={() => removeFile(i)}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="acciones-al-pasar destino-tactil absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X size={10} className="text-white" />
                       </button>
@@ -877,7 +877,7 @@ export default function PortalPage() {
                             type="button"
                             onClick={() => removeEditImage(i)}
                             disabled={savingImage}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                            className="acciones-al-pasar destino-tactil absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                           >
                             {savingImage ? <Loader2 size={8} className="animate-spin text-white" /> : <X size={10} className="text-white" />}
                           </button>
@@ -893,7 +893,7 @@ export default function PortalPage() {
                           <button
                             type="button"
                             onClick={() => setEditNewFiles(prev => prev.filter((_, idx) => idx !== i))}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="acciones-al-pasar destino-tactil absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <X size={10} className="text-white" />
                           </button>

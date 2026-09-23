@@ -210,7 +210,7 @@ function RazonCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSave
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: intensity.color }} /> {intensity.label}
         </span>
         <span className="text-[11px] text-digi-muted/60 tabular-nums ml-auto" style={mf}>{nf.format(t.charCount)} car.</span>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+        <div className="acciones-al-pasar flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button onClick={onStartEdit} className="text-digi-muted hover:text-accent" aria-label="Editar razón"><Pencil className="w-3.5 h-3.5" /></button>
           <button onClick={onDelete} className="text-digi-muted hover:text-red-500" aria-label="Eliminar razón"><Trash2 className="w-3.5 h-3.5" /></button>
         </div>

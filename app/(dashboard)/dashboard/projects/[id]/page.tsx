@@ -2645,7 +2645,7 @@ export default function ProjectDetailPage() {
                   <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreviewImage(img)} />
                   {canEditImages && (
                     <button onClick={() => handleImageDelete(idx)} disabled={deletingImageIdx === idx} title="Eliminar imagen"
-                      className="absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700">
+                      className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700">
                       {deletingImageIdx === idx ? '…' : '✕'}
                     </button>
                   )}
@@ -2680,7 +2680,7 @@ export default function ProjectDetailPage() {
                     <span className={`text-[13px] flex-1 break-words ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
                     {canEditThis && (
                       <>
-                        <button onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar" className="text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar" className="acciones-al-pasar destino-tactil text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
                         <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
                       </>
                     )}
