@@ -92,18 +92,24 @@ escribir en el inquilino equivocado ni olvidando un parámetro.
 Meta sigue apuntando a `app.grupocc.org/api/agente/webhook`, que escribe en `gcc_world`.
 Mientras tanto este producto enseña lo migrado hasta la última vez que se corrió el script.
 
-El corte, en este orden y no en otro:
+El corte, en este orden y **no en otro**:
 
 1. Comprobar que el webhook nuevo responde al apretón de manos:
    `GET https://automatizaciones.grupocc.org/api/agente/webhook?hub.mode=subscribe&hub.verify_token=<el de Meta>&hub.challenge=123`
-   → tiene que devolver `123` en texto plano.
-2. `node scripts/traer-de-la-plataforma.mjs` una última vez (trae lo entrado entre medias).
-3. **Ahora sí**: cambiar la URL del webhook en la app de Meta.
+   → tiene que devolver `123` en texto plano. **Si no, parar aquí.**
+2. Cambiar la URL del webhook en la app de Meta.
+3. `node scripts/traer-de-la-plataforma.mjs` — **DESPUÉS del cambio, no antes.**
 4. Mandar un mensaje real al número y ver que llega y que el agente contesta.
 5. Apagar el worker viejo (`agente-worker`) — no antes, o nadie contesta.
 
-⚠️ **No se cambia la URL antes del paso 1.** Y no se apaga el worker viejo antes del 4:
-mientras Meta apunte a la plataforma, es el único que contesta.
+⚠️ **POR QUÉ LA MUDANZA VA DESPUÉS Y NO ANTES.** Parece más prudente traerlo todo y luego
+cambiar, y es justo al revés: entre la mudanza y el cambio siguen entrando mensajes por la
+plataforma, y esos **se quedarían fuera**. Cambiando primero, la frontera es exacta: lo
+anterior al cambio está en `gcc_world` y lo trae el script; lo posterior ya nace en el
+producto. Sin hueco.
+
+Y el script se puede correr las veces que haga falta: conserva los identificadores, así que
+repetirlo no duplica nada.
 3. **La ficha del marketplace está creada pero le faltan capturas y una demostración.**
    El precio es **5 $/mes con las tres cosas dentro** (Fernando, 2026-09-23). Falta subir
    capturas reales y montar un inquilino de escaparate en modo solo lectura con sus
