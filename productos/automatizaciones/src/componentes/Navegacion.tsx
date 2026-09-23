@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import {
   LayoutDashboard,
   MessagesSquare,
@@ -17,36 +17,67 @@ import { LogoHotel } from '@/componentes/Marca';
 import { cn } from '@/lib/utils';
 import type { Rol, TipoAutomatizacion } from '@/generated/prisma/enums';
 
-export const ETIQUETA_ROL: Record<Rol, string> = {
+/**
+ * LA NAVEGACIÓN, CALCADA DE «GESTIÓN DE RESERVAS» (Fernando, 2026-09-23: «aprende por
+ * ejemplo del producto de gestión de reservas, ese producto está muy bien desarrollada su
+ * navegación y módulos básicos»).
+ *
+ * No es «parecida»: es EL MISMO patrón, para que quien use dos productos del grupo no
+ * tenga que aprender dos aplicaciones. Lo único que cambia son los destinos.
+ *
+ * ── LO QUE HACE ESTE MENÚ ────────────────────────────────────────────────────────
+ * · Se CONTRAE a los iconos (64 px) y SE DESPLIEGA AL PASAR EL PUNTERO (240 px).
+ * · Se monta ENCIMA del contenido —el `main` conserva siempre el margen del raíl
+ *   estrecho—, con un velo oscuro detrás. Así el contenido no salta al desplegarse.
+ * · CADA FILA MIDE LO MISMO abierta que cerrada, de modo que lo que está bajo el puntero
+ *   no se escapa cuando el menú crece. Es el detalle que hace que no sea molesto.
+ * · En táctil no hay puntero: ahí manda la BARRA INFERIOR, con los mismos destinos.
+ *
+ * ── QUIÉN VE QUÉ ─────────────────────────────────────────────────────────────────
+ * El grupo ADMINISTRACIÓN —cuentas, configuración y suscripción— es SOLO DEL ADMIN.
+ * Fernando lo pidió con nombre propio: «el administrador debe poder administrar las
+ * cuentas que pueden acceder, pero solo el administrador debe tener acceso a ese módulo».
+ * No basta con que las páginas lo comprueben (que lo hacen, en `exigirContexto(…, 'ADMIN')`):
+ * es que NO SE ENSEÑAN, porque un enlace que lleva a una negativa es peor que no tenerlo.
+ */
+
+type Item = {
+  ruta: string;
+  etiqueta: string;
+  icono: React.ComponentType<{ className?: string }>;
+  /** Otras rutas que marcan este destino como activo (se llega desde él). */
+  tambien: string[];
+  /**
+   * Qué tipo de automatización lo hace útil. Sin él, el destino se ve siempre.
+   * No es una puerta de pago —el producto se vende entero— sino de sentido: quien no
+   * tiene ningún agente montado no tiene ninguna conversación que mirar.
+   */
+  tipo?: TipoAutomatizacion;
+};
+
+const PRINCIPAL: Item[] = [
+  { ruta: 'panel', etiqueta: 'Panel', icono: LayoutDashboard, tambien: [] },
+  { ruta: 'conversaciones', etiqueta: 'Conversaciones', icono: MessagesSquare, tambien: [], tipo: 'AGENTE_IA' },
+  { ruta: 'automatizaciones', etiqueta: 'Automatizaciones', icono: Workflow, tambien: [] },
+];
+
+const ADMINISTRACION: Item[] = [
+  { ruta: 'usuarios', etiqueta: 'Cuentas', icono: Users, tambien: [] },
+  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, tambien: [] },
+  { ruta: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard, tambien: [] },
+];
+
+const estaActivo = (ruta: string, slug: string, item: Item) =>
+  [item.ruta, ...item.tambien].some((r) => ruta.startsWith(`/${slug}/${r}`));
+
+const ROL_ETIQUETA: Record<Rol, string> = {
   ADMIN: 'Administrador',
   OPERADOR: 'Operador',
   CONSULTA: 'Consulta',
 };
 
-const ESCALA: Record<Rol, number> = { CONSULTA: 0, OPERADOR: 1, ADMIN: 2 };
-
-type Destino = {
-  ruta: string;
-  etiqueta: string;
-  icono: React.ComponentType<{ className?: string }>;
-  minimo: Rol;
-  /** De qué tipo de automatización es. Sin él, la sección se ve siempre. */
-  tipo?: TipoAutomatizacion;
-};
-
-const DESTINOS: Destino[] = [
-  { ruta: 'panel', etiqueta: 'Panel', icono: LayoutDashboard, minimo: 'CONSULTA' },
-  // Las conversaciones son del agente de IA. No se esconden por no haberlas pagado —el
-  // producto se vende entero— sino porque quien no tiene ningún agente montado no tiene
-  // ninguna conversación: enseñarle una bandeja vacía para siempre no informa, ocupa.
-  { ruta: 'conversaciones', etiqueta: 'Conversaciones', icono: MessagesSquare, minimo: 'CONSULTA', tipo: 'AGENTE_IA' },
-  { ruta: 'automatizaciones', etiqueta: 'Automatizaciones', icono: Workflow, minimo: 'CONSULTA' },
-  { ruta: 'usuarios', etiqueta: 'Usuarios', icono: Users, minimo: 'ADMIN' },
-  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, minimo: 'ADMIN' },
-];
-
-const visibles = (rol: Rol, montados: TipoAutomatizacion[]) =>
-  DESTINOS.filter((d) => ESCALA[rol] >= ESCALA[d.minimo] && (!d.tipo || montados.includes(d.tipo)));
+const utiles = (items: Item[], montados: TipoAutomatizacion[]) =>
+  items.filter((i) => !i.tipo || montados.includes(i.tipo));
 
 type Props = {
   slug: string;
@@ -54,108 +85,191 @@ type Props = {
   logoUrl: string | null;
   usuario: string;
   rol: Rol;
-  /** Los tipos de automatización que el cliente tiene montados. Deciden qué secciones existen. */
+  /** Los tipos de automatización que el cliente tiene montados. */
   montados: TipoAutomatizacion[];
 };
 
-/**
- * ── LA BARRA DE ABAJO ES LA DE TELÉFONO, Y NO ES UN RESPONSIVE ──────────────────
- * Fernando fijó el 2026-09-21 que cada pantalla tenga un diseño hecho para teléfono,
- * y desde el 2026-09-23 eso ya no es una cortesía: esta aplicación se va a empaquetar
- * y publicar en las tiendas. Por eso hay DOS navegaciones de verdad —una lateral de
- * escritorio y una barra inferior de teléfono— y no una sola que se encoge.
- *
- * Los destinos de la barra inferior se topan en cuatro: el quinto no cabe sin dejar
- * los toques por debajo de los 44 px que pide una pantalla táctil. Lo que no entra,
- * entra por «Configuración».
- */
+/** Barra lateral (escritorio). En móvil manda la barra inferior. */
 export function BarraLateral({ slug, cliente, logoUrl, usuario, rol, montados }: Props) {
   const ruta = usePathname();
   const [saliendo, arranca] = useTransition();
-  const destinos = visibles(rol, montados);
+  const [sobreElMenu, setSobreElMenu] = useState(false);
+  const colapsado = !sobreElMenu;
+  const esAdmin = rol === 'ADMIN';
+  const principales = utiles(PRINCIPAL, montados);
+
+  const Enlace = ({ item }: { item: Item }) => {
+    const activo = estaActivo(ruta, slug, item);
+    return (
+      <Link
+        href={`/${slug}/${item.ruta}`}
+        title={colapsado ? item.etiqueta : undefined}
+        className={cn(
+          'relative flex items-center gap-3 rounded-md h-9 text-[13px] transition-colors foco-visible',
+          colapsado ? 'justify-center px-0' : 'px-3',
+          activo
+            ? 'bg-acento-suave font-semibold text-acento border-l-2 border-acento'
+            : 'border-l-2 border-transparent text-texto hover:bg-realce',
+        )}
+      >
+        <item.icono className={cn('h-[18px] w-[18px] shrink-0', activo ? 'text-acento' : 'text-tenue')} />
+        {!colapsado && <span className="truncate">{item.etiqueta}</span>}
+      </Link>
+    );
+  };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col border-r border-borde bg-tarjeta transition-[width] hover:w-56 lg:flex group">
-      <div className="flex h-14 items-center gap-2.5 px-3">
-        <LogoHotel nombre={cliente} logoUrl={logoUrl} tamano={34} />
-        <span className="hidden whitespace-nowrap text-[13px] font-semibold text-texto group-hover:block">
-          {cliente}
-        </span>
-      </div>
-
-      <nav className="flex-1 space-y-0.5 px-2 py-2">
-        {destinos.map((d) => {
-          const activo = ruta?.startsWith(`/${slug}/${d.ruta}`);
-          const Icono = d.icono;
-          return (
-            <Link
-              key={d.ruta}
-              href={`/${slug}/${d.ruta}`}
-              className={cn(
-                'flex h-10 items-center gap-3 rounded px-2.5 text-[13px] transition-colors',
-                activo ? 'bg-acento-suave text-acento' : 'text-tenue hover:bg-realce hover:text-texto',
-              )}
-            >
-              <Icono className="h-[18px] w-[18px] shrink-0" />
-              <span className="hidden whitespace-nowrap group-hover:block">{d.etiqueta}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-borde px-2 py-2">
-        <Link
-          href={`/${slug}/suscripcion`}
-          className="flex h-10 items-center gap-3 rounded px-2.5 text-[13px] text-tenue transition-colors hover:bg-realce hover:text-texto"
+    <>
+      {/* Velo sobre el contenido mientras el menú está desplegado: el menú se monta ENCIMA
+          (el main conserva el margen del raíl estrecho), no lo empuja. */}
+      <div
+        aria-hidden
+        className={cn(
+          'hidden lg:block fixed inset-0 z-30 bg-black/45 pointer-events-none transition-opacity duration-200 print:hidden',
+          sobreElMenu ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+      <aside
+        onMouseEnter={() => setSobreElMenu(true)}
+        onMouseLeave={() => setSobreElMenu(false)}
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200',
+          colapsado ? 'w-16' : 'w-60 shadow-2xl',
+        )}
+      >
+        <div
+          className={cn(
+            'flex h-[68px] items-center gap-3 border-b border-borde',
+            colapsado ? 'justify-center px-0' : 'px-4',
+          )}
         >
-          <CreditCard className="h-[18px] w-[18px] shrink-0" />
-          <span className="hidden whitespace-nowrap group-hover:block">Suscripción</span>
-        </Link>
-        <div className="hidden px-2.5 pb-1 pt-2 group-hover:block">
-          <p className="truncate text-[12px] font-medium text-texto">{usuario}</p>
-          <p className="text-[11px] text-tenue">{ETIQUETA_ROL[rol]}</p>
+          <LogoHotel nombre={cliente} logoUrl={logoUrl} tamano={36} />
+          {!colapsado && (
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold text-texto">{cliente}</p>
+              <p className="text-[10px] text-tenue">Automatizaciones</p>
+            </div>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => arranca(() => salir(slug))}
-          disabled={saliendo}
-          className="flex h-10 w-full items-center gap-3 rounded px-2.5 text-[13px] text-tenue transition-colors hover:bg-realce hover:text-texto"
-        >
-          <LogOut className="h-[18px] w-[18px] shrink-0" />
-          <span className="hidden whitespace-nowrap group-hover:block">
-            {saliendo ? 'Saliendo…' : 'Salir'}
-          </span>
-        </button>
-      </div>
-    </aside>
+
+        <nav className="desplaza flex-1 space-y-1 overflow-y-auto p-2">
+          <div className="h-7 flex items-center">
+            {!colapsado && (
+              <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-tenue">Principal</p>
+            )}
+          </div>
+          {principales.map((i) => (
+            <Enlace key={i.ruta} item={i} />
+          ))}
+
+          {esAdmin && (
+            <>
+              <div className="mt-2 h-7 flex items-center">
+                {colapsado ? (
+                  <span className="mx-2 h-px w-full bg-borde" />
+                ) : (
+                  <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-tenue">
+                    Administración
+                  </p>
+                )}
+              </div>
+              {ADMINISTRACION.map((i) => (
+                <Enlace key={i.ruta} item={i} />
+              ))}
+            </>
+          )}
+        </nav>
+
+        <div className="border-t border-borde p-3">
+          <div className={cn('mb-2 flex h-8 items-center gap-2.5', colapsado ? 'justify-center' : 'px-1')}>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acento-suave text-[12px] font-bold text-acento">
+              {usuario.charAt(0).toUpperCase()}
+            </div>
+            {!colapsado && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[12px] font-semibold text-texto">{usuario}</p>
+                <p className="text-[10px] text-tenue">{ROL_ETIQUETA[rol]}</p>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => arranca(() => salir(slug) as unknown as void)}
+            disabled={saliendo}
+            title={colapsado ? 'Cerrar sesión' : undefined}
+            className={cn(
+              'flex h-9 w-full items-center gap-2 rounded-md text-[13px] text-error transition-colors hover:bg-error-suave foco-visible',
+              colapsado ? 'justify-center px-0' : 'px-3',
+            )}
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!colapsado && (saliendo ? 'Saliendo…' : 'Cerrar sesión')}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
 
-export function BarraInferior({ slug, rol, montados }: { slug: string; rol: Rol; montados: TipoAutomatizacion[] }) {
+/**
+ * Barra inferior (móvil). Mismos destinos: la navegación no cambia con el ancho.
+ *
+ * ⚠️ Se topa en CINCO huecos contando «Salir»: cada uno necesita unos 44 px de ancho útil
+ * para un dedo, y en una pantalla de 360 px el sexto los rompe.
+ */
+export function BarraInferior({ slug, rol, montados }: Pick<Props, 'slug' | 'rol' | 'montados'>) {
   const ruta = usePathname();
-  // Cuatro como mucho: cada destino necesita 44 px de ancho útil para un dedo, y en
-  // una pantalla de 360 px el quinto los rompe.
-  const destinos = visibles(rol, montados).slice(0, 4);
+  const [, arranca] = useTransition();
+  const principales = utiles(PRINCIPAL, montados);
+  const destinos = (rol === 'ADMIN' ? [...principales, ...ADMINISTRACION] : principales).slice(0, 4);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-borde bg-tarjeta lg:hidden">
-      {destinos.map((d) => {
-        const activo = ruta?.startsWith(`/${slug}/${d.ruta}`);
-        const Icono = d.icono;
-        return (
-          <Link
-            key={d.ruta}
-            href={`/${slug}/${d.ruta}`}
-            className={cn(
-              'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 px-1 text-[10.5px]',
-              activo ? 'text-acento' : 'text-tenue',
-            )}
-          >
-            <Icono className="h-[22px] w-[22px]" />
-            <span className="truncate">{d.etiqueta}</span>
-          </Link>
-        );
-      })}
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta lg:hidden">
+      <div className="flex h-16 items-center justify-around">
+        {destinos.map((i) => {
+          const activo = estaActivo(ruta, slug, i);
+          return (
+            <Link
+              key={i.ruta}
+              href={`/${slug}/${i.ruta}`}
+              className={cn(
+                'flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
+                activo ? 'text-acento' : 'text-tenue',
+              )}
+            >
+              <i.icono className="h-5 w-5" />
+              <span className="truncate">{i.etiqueta}</span>
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => arranca(() => salir(slug) as unknown as void)}
+          className="flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] text-tenue"
+        >
+          <LogOut className="h-5 w-5" />
+          <span>Salir</span>
+        </button>
+      </div>
     </nav>
+  );
+}
+
+/** Cabecera de página: título a la izquierda, acciones a la derecha. */
+export function CabeceraPagina({
+  titulo,
+  descripcion,
+  acciones,
+}: {
+  titulo: string;
+  descripcion?: string;
+  acciones?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6">
+      <div className="min-w-0">
+        <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+        {descripcion && <p className="text-[12px] text-tenue">{descripcion}</p>}
+      </div>
+      {acciones && <div className="flex flex-wrap items-center gap-2">{acciones}</div>}
+    </div>
   );
 }

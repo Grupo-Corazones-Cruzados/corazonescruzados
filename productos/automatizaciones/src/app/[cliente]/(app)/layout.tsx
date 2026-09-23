@@ -30,8 +30,9 @@ export default async function LayoutApp({
         rol={sesion.rol}
         montados={montados}
       />
-      {/* El hueco de abajo es el de la barra de teléfono (56 px) más aire. */}
-      <div className="pb-20 lg:ml-16 lg:pb-0">
+      {/* El menú se monta ENCIMA: el contenido conserva siempre el margen del raíl
+          estrecho (64 px) y no salta al desplegarse. Abajo, el hueco de la barra táctil. */}
+      <div className="pb-16 lg:ml-16 lg:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
       </div>

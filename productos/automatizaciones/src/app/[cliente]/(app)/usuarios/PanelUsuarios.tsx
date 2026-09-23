@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { UserPlus, KeyRound, Copy, ShieldCheck, Link2 } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral } from '@/componentes/ui';
+import { CabeceraPagina } from '@/componentes/Navegacion';
 import { crearUsuario, cambiarActivo, regenerarClave } from '@/acciones/usuarios';
 
 export type UsuarioVista = {
@@ -69,25 +70,23 @@ export default function PanelUsuarios({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 sm:py-7">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-[19px] font-semibold text-texto sm:text-[22px]">Usuarios</h1>
-          {/* El tope se enseña SIEMPRE, no solo cuando estorba. */}
-          <p className="text-[12.5px] text-tenue">
-            {tope === null ? `${activas} cuentas activas` : `${activas} de ${tope} cuentas activas`}
-          </p>
-        </div>
-        <Boton
-          tamano="lg"
-          onClick={() => setAbierto(true)}
-          disabled={lleno}
-          title={lleno ? `Tu plan permite ${tope} cuentas activas y ya tienes ${activas}.` : undefined}
-        >
-          <UserPlus className="h-4 w-4" />
-          Crear cuenta
-        </Boton>
-      </div>
+    <>
+      <CabeceraPagina
+        titulo="Cuentas"
+        /* El tope se enseña SIEMPRE, no solo cuando estorba. */
+        descripcion={tope === null ? `${activas} cuentas activas` : `${activas} de ${tope} cuentas activas`}
+        acciones={
+          <Boton
+            onClick={() => setAbierto(true)}
+            disabled={lleno}
+            title={lleno ? `Tu plan permite ${tope} cuentas activas y ya tienes ${activas}.` : undefined}
+          >
+            <UserPlus className="h-4 w-4" />
+            Crear cuenta
+          </Boton>
+        }
+      />
+      <div className="max-w-4xl px-4 py-5 sm:px-6">
 
       {claveNueva && (
         <Tarjeta className="mb-3 border-acento p-4">
@@ -230,6 +229,7 @@ export default function PanelUsuarios({
           </Boton>
         </form>
       </PanelLateral>
-    </div>
+      </div>
+    </>
   );
 }

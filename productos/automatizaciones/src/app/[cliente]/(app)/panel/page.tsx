@@ -3,6 +3,7 @@ import { MessagesSquare, Users2, Workflow, Bot, Send } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { Tarjeta, Insignia } from '@/componentes/ui';
+import { CabeceraPagina } from '@/componentes/Navegacion';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Panel' };
@@ -46,9 +47,9 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
   const conAgente = montados.includes('AGENTE_IA');
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-7">
-      <h1 className="mb-4 text-[19px] font-semibold text-texto sm:text-[22px]">Panel</h1>
-
+    <>
+      <CabeceraPagina titulo={inquilino.nombre} descripcion="Panel de control" />
+      <div className="px-4 py-5 sm:px-6">
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         {conAgente && (
           <>
@@ -114,7 +115,8 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
       </Tarjeta>
       </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

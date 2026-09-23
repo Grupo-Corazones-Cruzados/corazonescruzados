@@ -2,6 +2,7 @@ import { Bot, Mail, MessageCircle } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { Tarjeta, Insignia, EstadoVacio } from '@/componentes/ui';
+import { CabeceraPagina } from '@/componentes/Navegacion';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Automatizaciones' };
@@ -33,9 +34,12 @@ export default async function PaginaAutomatizaciones({
   });
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 sm:py-7">
-      <h1 className="mb-4 text-[19px] font-semibold text-texto sm:text-[22px]">Automatizaciones</h1>
-
+    <>
+      <CabeceraPagina
+        titulo="Automatizaciones"
+        descripcion={`${automatizaciones.length} en total`}
+      />
+      <div className="px-4 py-5 sm:px-6">
       {automatizaciones.length === 0 ? (
         <EstadoVacio
           titulo="Todavía no hay automatizaciones"
@@ -91,6 +95,7 @@ export default async function PaginaAutomatizaciones({
           })}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

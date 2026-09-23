@@ -1,5 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { Tarjeta } from '@/componentes/ui';
+import { CabeceraPagina } from '@/componentes/Navegacion';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Configuración' };
@@ -13,9 +14,9 @@ export default async function PaginaConfiguracion({
   const { inquilino } = await exigirContexto(cliente, 'ADMIN');
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6 sm:py-7">
-      <h1 className="mb-4 text-[19px] font-semibold text-texto sm:text-[22px]">Configuración</h1>
-
+    <>
+      <CabeceraPagina titulo="Configuración" descripcion="La marca de tu espacio" />
+      <div className="max-w-2xl px-4 py-5 sm:px-6">
       <Tarjeta className="p-4 sm:p-5">
         <h2 className="mb-3 text-[14px] font-semibold text-texto">Tu marca</h2>
         <dl className="space-y-2 text-[13px]">
@@ -47,6 +48,7 @@ export default async function PaginaConfiguracion({
           edición desde aquí llega en la siguiente entrega.
         </p>
       </Tarjeta>
-    </div>
+      </div>
+    </>
   );
 }
