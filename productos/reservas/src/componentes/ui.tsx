@@ -161,7 +161,16 @@ const TONOS = {
 export type Tono = keyof typeof TONOS;
 
 /** Píldora neutra + punto semántico: la identidad nunca depende solo del color. */
-export function Insignia({ tono = 'neutro', children }: { tono?: Tono; children: ReactNode }) {
+export function Insignia({
+  tono = 'neutro',
+  icono: Icono,
+  children,
+}: {
+  tono?: Tono;
+  /** Un icono EN LUGAR del punto. Ver la nota de abajo. */
+  icono?: React.ComponentType<{ className?: string }>;
+  children: ReactNode;
+}) {
   return (
     <span
       className={cn(
@@ -169,7 +178,19 @@ export function Insignia({ tono = 'neutro', children }: { tono?: Tono; children:
         TONOS[tono],
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {/*
+        ⚠️ EL PUNTO Y EL ICONO SON EXCLUYENTES (Fernando, 2026-09-23: «se ve súper mal que
+        pongas un icono o texto y a la izquierda del todo un punto negro»).
+
+        El punto existe para que el estado no dependa SOLO del color —quien no distingue
+        verde de rojo lo lee igual—. Pero en cuanto hay un icono, ese trabajo ya está
+        hecho: el punto pasa a ser un adorno que estorba, y dos marcas para una sola cosa
+        se leen peor que una.
+
+        Por eso la regla vive AQUÍ y no en cada llamada: así no se puede incumplir por
+        olvido.
+      */}
+      {Icono ? <Icono className="h-3 w-3 shrink-0" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
       {children}
     </span>
   );

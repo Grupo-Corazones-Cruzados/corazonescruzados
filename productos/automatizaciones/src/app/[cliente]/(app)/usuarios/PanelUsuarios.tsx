@@ -122,15 +122,9 @@ export default function PanelUsuarios({
               <p className="mt-1 flex flex-wrap items-center gap-1.5">
                 <Insignia tono={u.rol === 'ADMIN' ? 'info' : 'neutro'}>{ETIQUETA_ROL[u.rol]}</Insignia>
                 {u.origen === 'GCC' ? (
-                  <Insignia tono="info">
-                    <Link2 className="mr-1 inline h-3 w-3" />
-                    Cuenta de GCC World
-                  </Insignia>
+                  <Insignia tono="info" icono={Link2}>Cuenta de GCC World</Insignia>
                 ) : (
-                  <Insignia tono="neutro">
-                    <ShieldCheck className="mr-1 inline h-3 w-3" />
-                    Cuenta de este producto
-                  </Insignia>
+                  <Insignia tono="neutro" icono={ShieldCheck}>Cuenta de este producto</Insignia>
                 )}
                 {!u.activo && <Insignia tono="error">Desactivada</Insignia>}
               </p>

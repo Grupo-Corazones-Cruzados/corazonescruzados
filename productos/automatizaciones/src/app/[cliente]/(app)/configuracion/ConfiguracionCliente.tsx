@@ -272,8 +272,10 @@ function SeccionSuscripcion({ plan, pagos }: { plan: PlanVista; pagos: PagoVista
               </p>
             )}
           </div>
-          <Insignia tono={alDia ? 'exito' : plan.acceso === 'suspendido' ? 'error' : 'aviso'}>
-            {alDia ? <CheckCircle2 className="mr-1 inline h-3 w-3" /> : <AlertTriangle className="mr-1 inline h-3 w-3" />}
+          <Insignia
+            tono={alDia ? 'exito' : plan.acceso === 'suspendido' ? 'error' : 'aviso'}
+            icono={alDia ? CheckCircle2 : AlertTriangle}
+          >
             {alDia ? 'Al día' : plan.acceso === 'suspendido' ? 'Suspendida' : plan.acceso === 'vencido' ? 'Vencida' : 'Sin pagar'}
           </Insignia>
         </div>

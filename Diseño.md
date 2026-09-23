@@ -3577,12 +3577,34 @@ lo que ocupa.
 > necesita. El ancho completo se reserva para lo que de verdad lo pide: el botón de un
 > formulario dentro de una tarjeta estrecha o de un panel lateral.
 
-**2. La `Insignia` no lleva iconos dentro.** Le había metido un icono además de su punto de
-color, y quedaban dos marcas para una sola cosa. El punto es el estándar compartido con
-Reservas, Pedidos y Catering; el icono era una invención de este producto.
+**2. ⭐ EL PUNTO Y EL ICONO DE UNA `Insignia` SON EXCLUYENTES.** Textual de Fernando:
+*«se ve súper mal que pongas un icono o texto y a la izquierda del todo un punto negro
+para enumerar»*. Había metido iconos dentro de la insignia en cuatro sitios, y quedaban
+**dos marcas para una sola cosa**.
 
-> **Regla antes de añadir nada a un componente compartido: mirar cómo se ve en los otros
-> cuatro productos.** Si allí no lo lleva, no es una mejora, es una divergencia.
+El punto existe por una razón —que el estado no dependa solo del color, para quien no
+distingue verde de rojo—, pero en cuanto hay un icono ese trabajo ya está hecho y el punto
+pasa a estorbar.
+
+> **La regla vive en el COMPONENTE, no en cada llamada.** `Insignia` acepta ahora
+> `icono={…}`, y cuando lo recibe **sustituye** el punto en vez de sumarse a él. Así no se
+> puede incumplir por olvido. Se aplicó a los cinco productos para que el componente siga
+> siendo el mismo en todos.
+
+> **Y antes de añadir nada a un componente compartido: mirar cómo se ve en los otros
+> cuatro productos.** Los iconos dentro de la insignia no los usaba ninguno — no era una
+> mejora, era una divergencia.
+
+### Un submenú para lo que se toca en momentos distintos
+Tanto **Configuración** (Marca · Suscripción · Mi cuenta) como el **Estudio del agente**
+(El número · Lo que sabe · Cómo habla) usan el mismo raíl. El motivo no es simetría: son
+cosas que se tocan en momentos distintos —el número cuando algo falla, el conocimiento casi
+a diario, las instrucciones de tarde en tarde—, y apiladas obligan a desplazarse por dos
+para llegar a la tercera.
+
+> **Y el raíl ya pone el icono y el rótulo:** la tarjeta de la derecha no los repite. Su
+> título aporta el matiz («Tu número de WhatsApp», «Las instrucciones del agente»), no el
+> eco.
 
 ### La configuración tiene submenú, no módulos sueltos
 «Suscripción» dejó de ser un destino del menú y vive dentro de **Configuración**, junto a

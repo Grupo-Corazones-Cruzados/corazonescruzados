@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Bot, Power, PowerOff, Phone, BookOpen, MessageSquareText, Plus, Trash2, AlertTriangle, Save,
 } from 'lucide-react';
-import { Boton, Campo, Entrada, AreaTexto, Selector, Insignia, Tarjeta, PanelLateral, Confirmar } from '@/componentes/ui';
+import { Boton, Campo, Entrada, AreaTexto, Selector, Insignia, Tarjeta, PanelLateral, Confirmar, RailFiltro } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { guardarInstruccion, guardarConocimiento, borrarConocimiento, guardarAjustes } from '@/acciones/estudio';
 import { cn } from '@/lib/utils';
@@ -55,6 +55,8 @@ const NOMBRE_INSTRUCCION: Record<string, { titulo: string; ayuda: string }> = {
 
 const ORDEN = ['perfil_agente', 'reglas_negocio', 'resumen_conversacion'];
 
+type Seccion = 'numero' | 'sabe' | 'habla';
+
 export default function Estudio({
   slug,
   canal,
@@ -73,6 +75,7 @@ export default function Estudio({
   const [editando, setEditando] = useState<Bloque | null>(null);
   const [nuevo, setNuevo] = useState(false);
   const [borrar, setBorrar] = useState<Bloque | null>(null);
+  const [seccion, setSeccion] = useState<Seccion>('numero');
   const [textos, setTextos] = useState<Record<string, string>>(
     Object.fromEntries(ORDEN.map((t) => [t, instrucciones.find((i) => i.tipo === t)?.contenido ?? ''])),
   );
@@ -103,165 +106,178 @@ export default function Estudio({
         titulo="Estudio del agente"
         descripcion={canal.numero ? `${canal.numero}${canal.nombreVerificado ? ` · ${canal.nombreVerificado}` : ''}` : undefined}
         acciones={
-          <Insignia tono={canal.botActivo ? 'exito' : 'aviso'}>
-            {canal.botActivo ? <Power className="mr-1 inline h-3 w-3" /> : <PowerOff className="mr-1 inline h-3 w-3" />}
+          <Insignia tono={canal.botActivo ? 'exito' : 'aviso'} icono={canal.botActivo ? Power : PowerOff}>
             {canal.botActivo ? 'Agente encendido' : 'Agente apagado'}
           </Insignia>
         }
       />
 
-      <div className="max-w-3xl space-y-4 px-4 py-5 sm:px-6">
-        {/* ── 1. EL NÚMERO Y EL INTERRUPTOR ─────────────────────────────────── */}
-        <Tarjeta className="p-4 sm:p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-[14px] font-semibold text-texto">
-            <Phone className="h-4 w-4 text-acento" /> El número
-          </h2>
+      {/*
+        SUBMENÚ, COMO EN CONFIGURACIÓN (Fernando, 2026-09-23). El estudio son tres cosas
+        que se tocan en momentos distintos —el número cuando algo falla, el conocimiento
+        casi a diario, las instrucciones de tarde en tarde—, y apilarlas obligaba a
+        desplazarse por las otras dos para llegar a la que interesaba. Es el mismo raíl
+        de Configuración: el mismo producto no se navega de dos maneras.
+      */}
+      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+        <RailFiltro
+          opciones={[
+            { valor: 'numero', etiqueta: 'El número', icono: Phone },
+            { valor: 'sabe', etiqueta: 'Lo que sabe', icono: BookOpen },
+            { valor: 'habla', etiqueta: 'Cómo habla', icono: MessageSquareText },
+          ]}
+          activo={seccion}
+          alElegir={(v) => setSeccion(v as Seccion)}
+        />
+        <div className="min-w-0 flex-1 space-y-4">
+          {seccion === 'numero' && (
+          <Tarjeta className="p-4 sm:p-5">
+            <h2 className="mb-3 text-[14px] font-semibold text-texto">Tu número de WhatsApp</h2>
 
-          <dl className="mb-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px]">
-            <Dato etiqueta="Estado">
-              <Insignia tono={conectado ? 'exito' : 'aviso'}>{canal.estado}</Insignia>
-            </Dato>
-            <Dato etiqueta="Coexistencia">{canal.coexistencia ? 'verificada' : 'no'}</Dato>
-            <Dato etiqueta="Modelo">{canal.modelo}</Dato>
-          </dl>
+            <dl className="mb-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px]">
+              <Dato etiqueta="Estado">
+                <Insignia tono={conectado ? 'exito' : 'aviso'}>{canal.estado}</Insignia>
+              </Dato>
+              <Dato etiqueta="Coexistencia">{canal.coexistencia ? 'verificada' : 'no'}</Dato>
+              <Dato etiqueta="Modelo">{canal.modelo}</Dato>
+            </dl>
 
-          {canal.ultimoError && (
-            <p className="mb-3 flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] leading-relaxed text-error">
-              <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
-              <span>
-                <strong>Último fallo del número</strong>
-                {canal.ultimoErrorEn ? ` (${new Date(canal.ultimoErrorEn).toLocaleString('es-EC')})` : ''}: {canal.ultimoError}
-              </span>
-            </p>
-          )}
-
-          <form action={guardarAjustesForm} className="space-y-3">
-            {/* El interruptor general va arriba y con su explicación: es lo que se busca
-                cuando el agente está diciendo algo que no debe. */}
-            <label className="flex cursor-pointer items-start gap-2.5 rounded border border-borde bg-realce px-3 py-2.5">
-              <input type="checkbox" name="botActivo" defaultChecked={canal.botActivo} className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="text-[12.5px] leading-relaxed text-texto">
-                <strong>El agente contesta solo.</strong>
-                <span className="block text-tenue">
-                  Apagarlo lo calla en <em>todo</em> el número, sin tocar conversación por conversación.
-                  Lo que ya lleve una persona sigue igual.
+            {canal.ultimoError && (
+              <p className="mb-3 flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] leading-relaxed text-error">
+                <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
+                <span>
+                  <strong>Último fallo del número</strong>
+                  {canal.ultimoErrorEn ? ` (${new Date(canal.ultimoErrorEn).toLocaleString('es-EC')})` : ''}: {canal.ultimoError}
                 </span>
-              </span>
-            </label>
+              </p>
+            )}
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Campo etiqueta="Cuánto se lo piensa">
-                <Selector name="razonamiento" defaultValue={canal.razonamiento}>
-                  <option value="minimal">Mínimo — rápido y barato</option>
-                  <option value="low">Bajo — el habitual</option>
-                  <option value="medium">Medio — más cuidadoso</option>
-                  <option value="high">Alto — lento y caro</option>
-                </Selector>
-              </Campo>
-              <Campo etiqueta="Espera antes de responder">
-                <Entrada type="number" name="debounce" min={0} max={120} defaultValue={canal.debounce} />
-              </Campo>
-              <Campo etiqueta="Mensajes que recuerda">
-                <Entrada type="number" name="ventana" min={5} max={200} defaultValue={canal.ventana} />
-              </Campo>
-            </div>
-            <p className="text-[11.5px] leading-relaxed text-tenue">
-              La espera es lo que hace que conteste a un bloque de mensajes y no frase por frase:
-              si el contacto sigue escribiendo, el reloj vuelve a empezar.
-            </p>
+            <form action={guardarAjustesForm} className="space-y-3">
+              {/* El interruptor general va arriba y con su explicación: es lo que se busca
+                  cuando el agente está diciendo algo que no debe. */}
+              <label className="flex cursor-pointer items-start gap-2.5 rounded border border-borde bg-realce px-3 py-2.5">
+                <input type="checkbox" name="botActivo" defaultChecked={canal.botActivo} className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="text-[12.5px] leading-relaxed text-texto">
+                  <strong>El agente contesta solo.</strong>
+                  <span className="block text-tenue">
+                    Apagarlo lo calla en <em>todo</em> el número, sin tocar conversación por conversación.
+                    Lo que ya lleve una persona sigue igual.
+                  </span>
+                </span>
+              </label>
 
-            <Boton type="submit" disabled={enCurso}>
-              <Save className="h-4 w-4" /> {enCurso ? 'Guardando…' : 'Guardar ajustes'}
-            </Boton>
-          </form>
-        </Tarjeta>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Campo etiqueta="Cuánto se lo piensa">
+                  <Selector name="razonamiento" defaultValue={canal.razonamiento}>
+                    <option value="minimal">Mínimo — rápido y barato</option>
+                    <option value="low">Bajo — el habitual</option>
+                    <option value="medium">Medio — más cuidadoso</option>
+                    <option value="high">Alto — lento y caro</option>
+                  </Selector>
+                </Campo>
+                <Campo etiqueta="Espera antes de responder">
+                  <Entrada type="number" name="debounce" min={0} max={120} defaultValue={canal.debounce} />
+                </Campo>
+                <Campo etiqueta="Mensajes que recuerda">
+                  <Entrada type="number" name="ventana" min={5} max={200} defaultValue={canal.ventana} />
+                </Campo>
+              </div>
+              <p className="text-[11.5px] leading-relaxed text-tenue">
+                La espera es lo que hace que conteste a un bloque de mensajes y no frase por frase:
+                si el contacto sigue escribiendo, el reloj vuelve a empezar.
+              </p>
 
-        {/* ── 2. LO QUE SABE ────────────────────────────────────────────────── */}
-        <Tarjeta className="p-4 sm:p-5">
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-[14px] font-semibold text-texto">
-              <BookOpen className="h-4 w-4 text-acento" /> Lo que sabe del negocio
-            </h2>
-            <Boton variante="secundario" onClick={() => { setNuevo(true); setEditando(null); }}>
-              <Plus className="h-4 w-4" /> Añadir
-            </Boton>
-          </div>
-          <p className="mb-3 text-[12px] leading-relaxed text-tenue">
-            Cada bloque es un tema. Es lo que más se toca: un precio que cambia, una ruta nueva.
-            Los apagados no se le cuentan al agente, pero se conservan.
-          </p>
-
-          {bloques.length === 0 ? (
-            <p className="rounded border border-borde bg-realce px-3 py-6 text-center text-[13px] text-tenue">
-              Todavía no hay nada. Añade el primer bloque.
-            </p>
-          ) : (
-            <ul className="divide-y divide-borde">
-              {bloques.map((b) => (
-                <li key={b.clave} className="flex flex-wrap items-center gap-2 py-2.5">
-                  <button
-                    type="button"
-                    onClick={() => { setEditando(b); setNuevo(false); }}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <p className={cn('truncate text-[13.5px] font-medium', b.activo ? 'text-texto' : 'text-tenue line-through')}>
-                      {b.titulo}
-                    </p>
-                    <p className="truncate text-[11.5px] text-tenue">
-                      {b.contenido ? `${b.contenido.slice(0, 80)}${b.contenido.length > 80 ? '…' : ''}` : 'vacío'}
-                    </p>
-                  </button>
-                  {!b.activo && <Insignia tono="neutro">apagado</Insignia>}
-                  <Boton variante="fantasma" onClick={() => setBorrar(b)} title={`Borrar ${b.titulo}`}>
-                    <Trash2 className="h-4 w-4 text-error" />
-                  </Boton>
-                </li>
-              ))}
-            </ul>
+              <Boton type="submit" disabled={enCurso}>
+                <Save className="h-4 w-4" /> {enCurso ? 'Guardando…' : 'Guardar ajustes'}
+              </Boton>
+            </form>
+          </Tarjeta>
           )}
-        </Tarjeta>
 
-        {/* ── 3. CÓMO HABLA ─────────────────────────────────────────────────── */}
-        <Tarjeta className="p-4 sm:p-5">
-          <h2 className="mb-1 flex items-center gap-2 text-[14px] font-semibold text-texto">
-            <MessageSquareText className="h-4 w-4 text-acento" /> Cómo habla
-          </h2>
-          <p className="mb-3 text-[12px] leading-relaxed text-tenue">
-            Cada vez que guardas, se archiva la versión anterior en vez de pisarla —hay{' '}
-            {versionesGuardadas} guardadas—. Si un cambio empeora al agente, siempre hay a qué volver.
-          </p>
+          {seccion === 'sabe' && (
+          <Tarjeta className="p-4 sm:p-5">
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-[14px] font-semibold text-texto">Lo que sabe del negocio</h2>
+              <Boton variante="secundario" onClick={() => { setNuevo(true); setEditando(null); }}>
+                <Plus className="h-4 w-4" /> Añadir
+              </Boton>
+            </div>
+            <p className="mb-3 text-[12px] leading-relaxed text-tenue">
+              Cada bloque es un tema. Es lo que más se toca: un precio que cambia, una ruta nueva.
+              Los apagados no se le cuentan al agente, pero se conservan.
+            </p>
 
-          <div className="space-y-4">
-            {ORDEN.map((tipo) => {
-              const meta = NOMBRE_INSTRUCCION[tipo];
-              const actual = instrucciones.find((i) => i.tipo === tipo);
-              const cambiado = (textos[tipo] ?? '') !== (actual?.contenido ?? '');
-              return (
-                <div key={tipo}>
-                  <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                    <label className="text-[13px] font-medium text-texto">{meta.titulo}</label>
-                    {actual && <span className="text-[11px] text-tenue">versión {actual.version}</span>}
-                  </div>
-                  <p className="mb-1.5 text-[11.5px] leading-relaxed text-tenue">{meta.ayuda}</p>
-                  <AreaTexto
-                    rows={7}
-                    value={textos[tipo] ?? ''}
-                    onChange={(e) => setTextos((t) => ({ ...t, [tipo]: e.target.value }))}
-                    className="font-mono text-[12px]"
-                  />
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <Boton disabled={enCurso || !cambiado} onClick={() => guardarTexto(tipo)}>
-                      {enCurso ? 'Guardando…' : 'Guardar como versión nueva'}
+            {bloques.length === 0 ? (
+              <p className="rounded border border-borde bg-realce px-3 py-6 text-center text-[13px] text-tenue">
+                Todavía no hay nada. Añade el primer bloque.
+              </p>
+            ) : (
+              <ul className="divide-y divide-borde">
+                {bloques.map((b) => (
+                  <li key={b.clave} className="flex flex-wrap items-center gap-2 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => { setEditando(b); setNuevo(false); }}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <p className={cn('truncate text-[13.5px] font-medium', b.activo ? 'text-texto' : 'text-tenue line-through')}>
+                        {b.titulo}
+                      </p>
+                      <p className="truncate text-[11.5px] text-tenue">
+                        {b.contenido ? `${b.contenido.slice(0, 80)}${b.contenido.length > 80 ? '…' : ''}` : 'vacío'}
+                      </p>
+                    </button>
+                    {!b.activo && <Insignia tono="neutro">apagado</Insignia>}
+                    <Boton variante="fantasma" onClick={() => setBorrar(b)} title={`Borrar ${b.titulo}`}>
+                      <Trash2 className="h-4 w-4 text-error" />
                     </Boton>
-                    {cambiado && <span className="text-[11.5px] text-aviso">sin guardar</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Tarjeta>
-      </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Tarjeta>
+          )}
 
+          {seccion === 'habla' && (
+          <Tarjeta className="p-4 sm:p-5">
+            <h2 className="mb-1 text-[14px] font-semibold text-texto">Las instrucciones del agente</h2>
+            <p className="mb-3 text-[12px] leading-relaxed text-tenue">
+              Cada vez que guardas, se archiva la versión anterior en vez de pisarla —hay{' '}
+              {versionesGuardadas} guardadas—. Si un cambio empeora al agente, siempre hay a qué volver.
+            </p>
+
+            <div className="space-y-4">
+              {ORDEN.map((tipo) => {
+                const meta = NOMBRE_INSTRUCCION[tipo];
+                const actual = instrucciones.find((i) => i.tipo === tipo);
+                const cambiado = (textos[tipo] ?? '') !== (actual?.contenido ?? '');
+                return (
+                  <div key={tipo}>
+                    <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                      <label className="text-[13px] font-medium text-texto">{meta.titulo}</label>
+                      {actual && <span className="text-[11px] text-tenue">versión {actual.version}</span>}
+                    </div>
+                    <p className="mb-1.5 text-[11.5px] leading-relaxed text-tenue">{meta.ayuda}</p>
+                    <AreaTexto
+                      rows={7}
+                      value={textos[tipo] ?? ''}
+                      onChange={(e) => setTextos((t) => ({ ...t, [tipo]: e.target.value }))}
+                      className="font-mono text-[12px]"
+                    />
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <Boton disabled={enCurso || !cambiado} onClick={() => guardarTexto(tipo)}>
+                        {enCurso ? 'Guardando…' : 'Guardar como versión nueva'}
+                      </Boton>
+                      {cambiado && <span className="text-[11.5px] text-aviso">sin guardar</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Tarjeta>
+          )}
+        </div>
+      </div>
       {/* ── El panel de un bloque ────────────────────────────────────────────── */}
       <PanelLateral
         abierto={nuevo || editando !== null}
