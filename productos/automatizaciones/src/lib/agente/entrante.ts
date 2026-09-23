@@ -40,18 +40,33 @@ export function extraerMensajes(payload: any): { phoneNumberId: string | null; m
   for (const m of value?.messages ?? []) {
     if (!m?.id || !m?.from) continue;
     const tipo = m.type ?? 'unknown';
+
+    /**
+     * ⚠️ Se descartan `edit` y `revoke` —igual que en los ecos—: son cambios sobre un
+     * mensaje anterior, no mensajes nuevos. Tratarlos como nuevos despierta al agente
+     * para contestar a algo que el cliente acaba de BORRAR.
+     *
+     * Y `system` tampoco es del cliente: es WhatsApp avisando de algo (que el contacto
+     * cambió de número, por ejemplo). Se atiende aparte, en `extraerCambiosDeNumero`.
+     */
+    if (tipo === 'edit' || tipo === 'revoke' || tipo === 'system') continue;
+
     mensajes.push({
       waMessageId: m.id,
       waId: m.from,
       nombrePerfil: perfiles[m.from] || null,
       tipo,
-      texto:
-        tipo === 'text' ? (m.text?.body ?? null)
-        : tipo === 'button' ? (m.button?.text ?? null)
-        : tipo === 'interactive'
-          ? (m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? null)
-        : tipo === 'location' ? (m.location?.name || m.location?.address || null)
-        : null,
+      /**
+       * ⚠️ AQUÍ SE USA `textoDe`, LA MISMA QUE LOS ECOS, Y NO UNA COPIA.
+       *
+       * Tener dos lógicas de texto costó 996 mensajes mal clasificados en Peter Tours:
+       * esta copia no conocía la tabla de etiquetas, así que una reacción, un sticker o
+       * **una ubicación compartida** llegaban en blanco, `medios.ts` intentaba resolverlos
+       * como si fueran un archivo y acababan escritos como «[El cliente envió algo que no
+       * es texto]». El agente entonces se disculpaba por no poder leer imágenes —a alguien
+       * que acababa de mandarle su ubicación—.
+       */
+      texto: textoDe(m, tipo),
       lat: tipo === 'location' ? (m.location?.latitude ?? null) : null,
       lng: tipo === 'location' ? (m.location?.longitude ?? null) : null,
       crudo: m,
@@ -230,3 +245,38 @@ export function extraerContactosDeAgenda(payload: any): { phoneNumberId: string 
    mensajes nuevos, y de la sincronización lo que valía eran los nombres de los contactos.
    Lo que enseñó sigue escrito arriba, en `extraerContactosDeAgenda`: de un webhook se lee
    lo que manda, no lo que dice el manual. */
+
+
+/** Un contacto que se cambió de número. Lo avisa WhatsApp con un mensaje `system`. */
+export interface CambioDeNumero {
+  anterior: string;
+  nuevo: string;
+}
+
+/**
+ * CUANDO UN CONTACTO SE CAMBIA DE NÚMERO.
+ *
+ * Meta lo manda como un mensaje `system` con `type: 'user_changed_number'`:
+ *
+ *   { body: "User A changed from 593984535362 to 593958691334",
+ *     type: "user_changed_number", wa_id: "593958691334" }
+ *
+ * No es un mensaje del cliente —él no ha escrito nada—, así que ni se ingiere ni se
+ * contesta. Pero **sí hay que hacerle caso**: si se ignora, el mismo cliente vuelve
+ * mañana desde el número nuevo como si fuera un desconocido, el agente le pregunta otra
+ * vez todo lo que ya sabía, y su historial se queda partido en dos conversaciones que
+ * nadie relaciona. Ha pasado 13 veces desde agosto.
+ */
+export function extraerCambiosDeNumero(payload: any): CambioDeNumero[] {
+  const value = payload?.entry?.[0]?.changes?.[0]?.value;
+  const cambios: CambioDeNumero[] = [];
+  for (const m of value?.messages ?? []) {
+    if (m?.type !== 'system') continue;
+    const s = m.system ?? {};
+    if (s.type !== 'user_changed_number') continue;
+    const nuevo = String(s.wa_id ?? '').trim();
+    const anterior = String(m.from ?? '').trim();
+    if (nuevo && anterior && nuevo !== anterior) cambios.push({ anterior, nuevo });
+  }
+  return cambios;
+}

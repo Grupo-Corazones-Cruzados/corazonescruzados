@@ -278,11 +278,13 @@ export default function Estudio({
                       onChange={(e) => setTextos((t) => ({ ...t, [tipo]: e.target.value }))}
                       className="font-mono text-[12px]"
                     />
-                    <div className="mt-1.5 flex items-center gap-2">
+                    {/* A la derecha, como el resto: la acción va al final de lo que se
+                        rellena, y lo que la acompaña queda a su izquierda. */}
+                    <div className="mt-1.5 flex items-center justify-end gap-2">
+                      {cambiado && <span className="text-[11.5px] text-aviso">sin guardar</span>}
                       <Boton disabled={enCurso || !cambiado} onClick={() => guardarTexto(tipo)}>
                         {enCurso ? 'Guardando…' : 'Guardar como versión nueva'}
                       </Boton>
-                      {cambiado && <span className="text-[11.5px] text-aviso">sin guardar</span>}
                     </div>
                   </div>
                 );

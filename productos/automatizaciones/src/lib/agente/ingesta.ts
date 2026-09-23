@@ -13,8 +13,8 @@ import { pool } from '@/lib/db';
 import type { MensajeEntrante } from './entrante';
 
 export {
-  extraerMensajes, extraerEcos, extraerContactosDeAgenda, campoDelWebhook,
-  type MensajeEntrante, type EcoDelEquipo, type ContactoDeAgenda,
+  extraerMensajes, extraerEcos, extraerContactosDeAgenda, extraerCambiosDeNumero, campoDelWebhook,
+  type MensajeEntrante, type EcoDelEquipo, type ContactoDeAgenda, type CambioDeNumero,
 } from './entrante';
 import type { EcoDelEquipo, ContactoDeAgenda } from './entrante';
 
@@ -274,3 +274,72 @@ export async function guardarContactosDeAgenda(canalId: number, contactos: Conta
   return tocados;
 }
 
+
+
+/**
+ * EL CLIENTE SE CAMBIÓ DE NÚMERO: su historial se va con él.
+ *
+ * Lo normal es que el número nuevo todavía no exista por aquí, y entonces basta con
+ * renombrar el contacto: la conversación, los mensajes y el nombre de la agenda siguen
+ * colgando de la misma fila y no se mueve nada.
+ *
+ * ⚠️ PERO PUEDE QUE YA EXISTA —si el cliente escribió desde el número nuevo antes de que
+ * llegara el aviso—, y ahí no se puede renombrar: el índice único `(canal_id, wa_id)` lo
+ * impediría. En ese caso se MUDAN las conversaciones del contacto viejo al nuevo.
+ *
+ * Y si las dos filas tuvieran conversación, no se fusionan los mensajes: se deja la del
+ * número nuevo y la vieja se queda donde está, marcada. Fusionar dos hilos mezclaría el
+ * orden de los mensajes y es peor el remedio; lo que importa —que el agente no vuelva a
+ * preguntar lo que ya sabe— se consigue igual, porque el resumen del hilo nuevo se
+ * construye con lo que haya.
+ */
+export async function migrarNumeroDeContacto(
+  canalId: number,
+  anterior: string,
+  nuevo: string,
+): Promise<'renombrado' | 'mudado' | 'sin-contacto' | 'ya-estaba'> {
+  const cli = await pool.connect();
+  try {
+    await cli.query('BEGIN');
+
+    const { rows: [viejo] } = await cli.query(
+      `SELECT id FROM contactos WHERE canal_id = $1 AND wa_id = $2`, [canalId, anterior]);
+    if (!viejo) { await cli.query('COMMIT'); return 'sin-contacto'; }
+
+    const { rows: [existe] } = await cli.query(
+      `SELECT id FROM contactos WHERE canal_id = $1 AND wa_id = $2`, [canalId, nuevo]);
+
+    if (!existe) {
+      // El caso fácil: nadie ocupa el número nuevo. Se renombra y todo lo que cuelga
+      // —conversación, mensajes, nombre de la agenda— viaja con él sin tocarse.
+      await cli.query(
+        `UPDATE contactos SET wa_id = $2, actualizado_en = NOW() WHERE id = $1`, [viejo.id, nuevo]);
+      await cli.query('COMMIT');
+      return 'renombrado';
+    }
+
+    if (existe.id === viejo.id) { await cli.query('COMMIT'); return 'ya-estaba'; }
+
+    // El número nuevo ya tenía ficha: se le mudan las conversaciones que no choquen.
+    await cli.query(
+      `UPDATE conversaciones c
+          SET contacto_id = $2, actualizado_en = NOW()
+        WHERE c.contacto_id = $1
+          AND NOT EXISTS (SELECT 1 FROM conversaciones d
+                           WHERE d.canal_id = c.canal_id AND d.contacto_id = $2)`,
+      [viejo.id, existe.id]);
+    // El nombre de la agenda, si el nuevo no tenía.
+    await cli.query(
+      `UPDATE contactos n SET nombre_agenda = COALESCE(n.nombre_agenda, v.nombre_agenda),
+                              nombre_perfil = COALESCE(n.nombre_perfil, v.nombre_perfil),
+                              actualizado_en = NOW()
+         FROM contactos v WHERE n.id = $2 AND v.id = $1`, [viejo.id, existe.id]);
+    await cli.query('COMMIT');
+    return 'mudado';
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    throw e;
+  } finally {
+    cli.release();
+  }
+}

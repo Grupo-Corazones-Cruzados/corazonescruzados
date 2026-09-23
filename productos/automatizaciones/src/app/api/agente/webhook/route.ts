@@ -25,6 +25,7 @@ import {
   extraerMensajes, ingerir, campoDelWebhook,
   extraerEcos, ingerirEco,
   extraerContactosDeAgenda, guardarContactosDeAgenda,
+  extraerCambiosDeNumero, migrarNumeroDeContacto,
 } from '@/lib/agente/ingesta';
 import { encolar } from '@/lib/agente/cola';
 
@@ -92,6 +93,22 @@ export async function POST(req: Request) {
 
     // Sin canal no hay nada que hacer con ninguna carga: el número no es nuestro.
     if (!canal) return NextResponse.json({ ok: true });
+
+    /**
+     * ── EL CLIENTE SE CAMBIÓ DE NÚMERO ──────────────────────────────────────────────
+     * Llega como un mensaje `system`, que NO se ingiere ni se contesta —el cliente no ha
+     * escrito nada—, pero sí se atiende: se lleva su historial al número nuevo. Si se
+     * ignorara, mañana vuelve como un desconocido y el agente le pregunta otra vez lo que
+     * ya sabía.
+     */
+    for (const c of extraerCambiosDeNumero(payload)) {
+      try {
+        const r = await migrarNumeroDeContacto(canal.id, c.anterior, c.nuevo);
+        console.log(`[agente/webhook] número ${c.anterior} → ${c.nuevo}: ${r}`);
+      } catch (e: any) {
+        console.error('[agente/webhook] cambio de número:', e?.message);
+      }
+    }
 
     /**
      * ── LO QUE ESCRIBE EL EQUIPO DEL CLIENTE (`smb_message_echoes`) ─────────────────

@@ -165,12 +165,21 @@ export async function resolverMedios(
   for (const m of rows) {
     const tipo = String(m.tipo);
     if (!CON_MEDIO.has(tipo)) {
-      // Ni audio ni imagen —un contacto compartido, una reacción—: no hay archivo del que
-      // sacar texto. Se deja constancia para que el agente sepa que el cliente mandó algo,
-      // y se marca para no volver a mirarlo.
+      /**
+       * Ni audio ni imagen: no hay archivo del que sacar texto.
+       *
+       * ⚠️ ESTO ES EL ÚLTIMO RECURSO Y CASI NUNCA DEBERÍA ENTRAR: desde el arreglo de
+       * `extraerMensajes`, un sticker, una reacción o una ubicación ya llegan con su
+       * etiqueta puesta y no pasan por aquí.
+       *
+       * Antes decía «El cliente envió algo que no es texto», y eso hizo daño: el agente lo
+       * leía y se disculpaba por no poder recibir imágenes —incluso cuando lo que había
+       * llegado era la UBICACIÓN del cliente, o un aviso de WhatsApp en el que el cliente
+       * no había escrito nada—. Ahora dice lo que es y no interpreta de más.
+       */
       await pool.query(
         `UPDATE mensajes SET texto = $2, medio_resuelto_en = NOW() WHERE id = $1`,
-        [m.id, `[El cliente envió algo que no es texto (${tipo})]`],
+        [m.id, `[${tipo}]`],
       );
       continue;
     }
