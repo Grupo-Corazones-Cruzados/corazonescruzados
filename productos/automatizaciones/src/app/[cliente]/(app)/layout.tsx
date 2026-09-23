@@ -18,7 +18,7 @@ export default async function LayoutApp({
   params: Promise<{ cliente: string }>;
 }) {
   const { cliente } = await params;
-  const { inquilino, sesion } = await exigirContexto(cliente);
+  const { inquilino, sesion, abiertos } = await exigirContexto(cliente);
 
   return (
     <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema}>
@@ -28,13 +28,14 @@ export default async function LayoutApp({
         logoUrl={inquilino.logoUrl}
         usuario={sesion.nombre}
         rol={sesion.rol}
+        abiertos={abiertos}
       />
       {/* El hueco de abajo es el de la barra de teléfono (56 px) más aire. */}
       <div className="pb-20 lg:ml-16 lg:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
       </div>
-      <BarraInferior slug={cliente} rol={sesion.rol} />
+      <BarraInferior slug={cliente} rol={sesion.rol} abiertos={abiertos} />
     </AplicaMarca>
   );
 }

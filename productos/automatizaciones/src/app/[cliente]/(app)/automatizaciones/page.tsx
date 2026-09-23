@@ -21,10 +21,12 @@ export default async function PaginaAutomatizaciones({
   params: Promise<{ cliente: string }>;
 }) {
   const { cliente } = await params;
-  const { inquilino } = await exigirContexto(cliente);
+  const { inquilino, abiertos } = await exigirContexto(cliente);
 
   const automatizaciones = await prisma.automatizacion.findMany({
-    where: { inquilinoId: inquilino.id },
+    // Solo las de los productos que tiene al día: enseñar una automatización de un
+    // producto no contratado invita a tocarla y encontrarse una negativa.
+    where: { inquilinoId: inquilino.id, tipo: { in: abiertos } },
     orderBy: [{ estado: 'asc' }, { nombre: 'asc' }],
     include: {
       canales: { select: { numeroVisible: true, estado: true, botActivo: true } },

@@ -1,4 +1,4 @@
-import { exigirContexto } from '@/lib/inquilino';
+import { exigirContexto, topeUsuarios } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import PanelUsuarios, { type UsuarioVista } from './PanelUsuarios';
 
@@ -26,7 +26,7 @@ export default async function PaginaUsuarios({ params }: { params: Promise<{ cli
     esYo: u.id === sesion.uid,
   }));
 
-  const tope = inquilino.cortesia ? null : (inquilino.suscripcion?.plan?.maxUsuarios ?? null);
+  const tope = topeUsuarios(inquilino);
 
   return (
     <PanelUsuarios

@@ -20,40 +20,51 @@ function inicioDeMes() {
  */
 export default async function PaginaPanel({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
-  const { inquilino } = await exigirContexto(cliente);
+  const { inquilino, abiertos } = await exigirContexto(cliente);
   const donde = { inquilinoId: inquilino.id };
 
-  const [conversaciones, sinLeer, contactos, automatizaciones, delMes, plan] = await Promise.all([
+  const [conversaciones, sinLeer, contactos, automatizaciones, delMes] = await Promise.all([
     prisma.conversacion.count({ where: donde }),
     prisma.conversacion.count({ where: { ...donde, botActivo: false, tomadaPorId: null } }),
     prisma.contacto.count({ where: donde }),
     prisma.automatizacion.count({ where: { ...donde, estado: 'ACTIVA' } }),
     prisma.conversacion.count({ where: { ...donde, ultimoMensajeEn: { gte: inicioDeMes() } } }),
-    Promise.resolve(inquilino.suscripcion?.plan ?? null),
   ]);
 
-  const recientes = await prisma.conversacion.findMany({
+  // El tope de conversaciones es del plan del AGENTE: es lo que cuesta dinero. Quien no lo
+  // tenga contratado no ve esta barra, porque no le aplica nada.
+  const plan = inquilino.suscripciones.find((s) => s.producto === 'AGENTE_IA')?.plan ?? null;
+
+  const recientes = !abiertos.includes('AGENTE_IA') ? [] : await prisma.conversacion.findMany({
     where: donde,
     orderBy: { ultimoMensajeEn: 'desc' },
     take: 8,
     include: { contacto: { select: { nombreAgenda: true, nombrePerfil: true, waId: true } } },
   });
 
-  const tope = plan?.maxConversacionesMes ?? null;
+  const tope = inquilino.cortesia ? null : (plan?.maxConversacionesMes ?? null);
+  // Las cifras del agente solo salen si el agente está contratado: un «0 conversaciones»
+  // a quien nunca compró el agente no informa, desorienta.
+  const conAgente = abiertos.includes('AGENTE_IA');
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-7">
       <h1 className="mb-4 text-[19px] font-semibold text-texto sm:text-[22px]">Panel</h1>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
-        <Cifra icono={MessagesSquare} etiqueta="Conversaciones" valor={conversaciones} />
-        <Cifra icono={Bot} etiqueta="Esperando a una persona" valor={sinLeer} tono={sinLeer > 0 ? 'aviso' : 'neutro'} />
-        <Cifra icono={Users2} etiqueta="Contactos" valor={contactos} />
+        {conAgente && (
+          <>
+            <Cifra icono={MessagesSquare} etiqueta="Conversaciones" valor={conversaciones} />
+            <Cifra icono={Bot} etiqueta="Esperando a una persona" valor={sinLeer} tono={sinLeer > 0 ? 'aviso' : 'neutro'} />
+            <Cifra icono={Users2} etiqueta="Contactos" valor={contactos} />
+          </>
+        )}
         <Cifra icono={Workflow} etiqueta="Automatizaciones activas" valor={automatizaciones} />
       </div>
 
       {/* El tope del plan se ENSEÑA antes de estorbar: quien lo ve venir no se
           encuentra un botón apagado sin explicación. */}
+      {conAgente && (
       <Tarjeta className="mt-3 p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="text-[12px] uppercase tracking-wide text-tenue">Conversaciones este mes</p>
@@ -76,7 +87,10 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
           </div>
         )}
       </Tarjeta>
+      )}
 
+      {conAgente && (
+      <>
       <h2 className="mb-2 mt-6 text-[15px] font-semibold text-texto">Últimas conversaciones</h2>
       <Tarjeta className="divide-y divide-borde">
         {recientes.length === 0 && (
@@ -100,6 +114,8 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
           </Link>
         ))}
       </Tarjeta>
+      </>
+      )}
     </div>
   );
 }

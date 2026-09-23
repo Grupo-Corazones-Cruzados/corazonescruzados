@@ -17,7 +17,7 @@ export type Resultado = { ok: true } | { ok: false; error: string };
  * identificador de otro cliente no puede tocar nada de este.
  */
 export async function cambiarBot(slug: string, conversacionId: number, activo: boolean): Promise<Resultado> {
-  const permiso = await contextoEscritura(slug, 'OPERADOR');
+  const permiso = await contextoEscritura(slug, 'OPERADOR', 'AGENTE_IA');
   if (!permiso.ok) return { ok: false, error: permiso.error };
   const { ctx } = permiso;
 

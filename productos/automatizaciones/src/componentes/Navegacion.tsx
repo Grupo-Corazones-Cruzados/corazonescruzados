@@ -15,7 +15,7 @@ import {
 import { salir } from '@/acciones/acceso';
 import { LogoHotel } from '@/componentes/Marca';
 import { cn } from '@/lib/utils';
-import type { Rol } from '@/generated/prisma/enums';
+import type { Rol, TipoAutomatizacion } from '@/generated/prisma/enums';
 
 export const ETIQUETA_ROL: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -30,17 +30,22 @@ type Destino = {
   etiqueta: string;
   icono: React.ComponentType<{ className?: string }>;
   minimo: Rol;
+  /** De qué producto es. Sin él, la pantalla es transversal y se ve siempre. */
+  producto?: TipoAutomatizacion;
 };
 
 const DESTINOS: Destino[] = [
   { ruta: 'panel', etiqueta: 'Panel', icono: LayoutDashboard, minimo: 'CONSULTA' },
-  { ruta: 'conversaciones', etiqueta: 'Conversaciones', icono: MessagesSquare, minimo: 'CONSULTA' },
+  // Las conversaciones son del Agente de IA: quien no lo tiene contratado no ve la
+  // sección. No un botón apagado — la sección no está.
+  { ruta: 'conversaciones', etiqueta: 'Conversaciones', icono: MessagesSquare, minimo: 'CONSULTA', producto: 'AGENTE_IA' },
   { ruta: 'automatizaciones', etiqueta: 'Automatizaciones', icono: Workflow, minimo: 'CONSULTA' },
   { ruta: 'usuarios', etiqueta: 'Usuarios', icono: Users, minimo: 'ADMIN' },
   { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, minimo: 'ADMIN' },
 ];
 
-const paraRol = (rol: Rol) => DESTINOS.filter((d) => ESCALA[rol] >= ESCALA[d.minimo]);
+const visibles = (rol: Rol, abiertos: TipoAutomatizacion[]) =>
+  DESTINOS.filter((d) => ESCALA[rol] >= ESCALA[d.minimo] && (!d.producto || abiertos.includes(d.producto)));
 
 type Props = {
   slug: string;
@@ -48,6 +53,8 @@ type Props = {
   logoUrl: string | null;
   usuario: string;
   rol: Rol;
+  /** Los productos que el cliente tiene al día. Deciden qué secciones existen. */
+  abiertos: TipoAutomatizacion[];
 };
 
 /**
@@ -61,10 +68,10 @@ type Props = {
  * los toques por debajo de los 44 px que pide una pantalla táctil. Lo que no entra,
  * entra por «Configuración».
  */
-export function BarraLateral({ slug, cliente, logoUrl, usuario, rol }: Props) {
+export function BarraLateral({ slug, cliente, logoUrl, usuario, rol, abiertos }: Props) {
   const ruta = usePathname();
   const [saliendo, arranca] = useTransition();
-  const destinos = paraRol(rol);
+  const destinos = visibles(rol, abiertos);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col border-r border-borde bg-tarjeta transition-[width] hover:w-56 lg:flex group">
@@ -123,11 +130,11 @@ export function BarraLateral({ slug, cliente, logoUrl, usuario, rol }: Props) {
   );
 }
 
-export function BarraInferior({ slug, rol }: { slug: string; rol: Rol }) {
+export function BarraInferior({ slug, rol, abiertos }: { slug: string; rol: Rol; abiertos: TipoAutomatizacion[] }) {
   const ruta = usePathname();
   // Cuatro como mucho: cada destino necesita 44 px de ancho útil para un dedo, y en
   // una pantalla de 360 px el quinto los rompe.
-  const destinos = paraRol(rol).slice(0, 4);
+  const destinos = visibles(rol, abiertos).slice(0, 4);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-borde bg-tarjeta lg:hidden">

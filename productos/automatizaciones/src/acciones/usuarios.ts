@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { contextoEscritura } from '@/lib/inquilino';
+import { contextoEscritura, topeUsuarios } from '@/lib/inquilino';
 import { existeCuentaGcc } from '@/lib/cuentaGcc';
 
 export type ResultadoUsuario =
@@ -58,8 +58,10 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
 
   // EL TOPE SE COMPRUEBA AL CREAR, y se cuentan solo las ACTIVAS: contar también las
   // desactivadas obligaría a borrar personas del histórico para dar de alta a otra.
-  const tope = ctx.inquilino.suscripcion?.plan?.maxUsuarios ?? null;
-  if (tope !== null && !ctx.inquilino.cortesia) {
+  // `topeUsuarios` ya sabe que la cortesía no topa y que con varios productos manda el
+  // plan más generoso.
+  const tope = topeUsuarios(ctx.inquilino);
+  if (tope !== null) {
     const activas = await prisma.usuario.count({
       where: { inquilinoId: ctx.inquilino.id, activo: true },
     });

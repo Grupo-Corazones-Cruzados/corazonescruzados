@@ -275,8 +275,28 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **⭐⭐ QUINTO PRODUCTO: «Automatizaciones» — la sección se convierte en producto
-  (Fernando, 2026-09-23).** *«lo siguiente que quiero que hagas es trabajar completamente
+- **⭐⭐ TRES PRODUCTOS NUEVOS: los TIPOS DE FLUJO (Fernando, 2026-09-23).**
+  Corrección suya, textual: *«automatizaciones no es un producto como tal, sino los tipos
+  de flujos son los productos»*. Así que lo que se vende son **Agente de IA**, **Campañas
+  de Correo** y **Campañas de WhatsApp** —tres fichas y tres precios—, y `automatizaciones`
+  es **la aplicación donde se usan los tres**, no un producto.
+  - **Una sola aplicación, tres cosas vendibles.** Un servicio, un esquema, y la
+    suscripción pasa de ser una por inquilino a ser **una por (inquilino, producto)**. Un
+    cliente puede tener el agente pagado y las campañas no: entonces **la sección no está**
+    —no un botón apagado—, y si escribe la dirección a mano va a Suscripción.
+    La puerta vive en `evaluarProducto()` de `src/lib/inquilino.ts`.
+  - **El tope de cuentas con varios planes: manda el MÁS GENEROSO.** Las cuentas son del
+    cliente, no de un producto (la misma persona atiende WhatsApp y manda campañas).
+    Sumar regalaría cuentas por contratar productos; el menor castigaría por contratar de
+    más. `topeUsuarios()`.
+  - **Solo hay UN inquilino de cliente: `/peter-tours`** (Fernando, 2026-09-23: *«solo crea
+    el tenant de diego castillo, no hagas el tenant de elkin cardenas»*). Los flujos de
+    correo de Helen y Elkin son trabajo de GCC y viven dentro del inquilino del grupo.
+  - **El inquilino de Fernando (`/grupo`) entra sin suscripción ni topes** —lo pidió
+    explícitamente—: `cortesia` pasa por encima de la fecha de pago y de los límites.
+    Tiene los tres productos abiertos y ninguna fila con fecha de pago.
+
+- **El armazón del producto «Automatizaciones» (2026-09-23).** *«lo siguiente que quiero que hagas es trabajar completamente
   en automatizaciones su migración a productos… el producto queda creado como parte de mi
   cuenta lfgonzalezm0@grupocc.org»*. Vive en `productos/automatizaciones/`, esquema
   `automatizaciones`, servicio Railway propio, puerto **3014**,

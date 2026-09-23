@@ -3547,6 +3547,20 @@ Cada destino necesita 44 px de ancho útil para un dedo; en una pantalla de 360 
 los rompe. Lo que no entra, entra por «Configuración». El menú lateral de escritorio sí los
 lleva todos.
 
+### Lo que no está contratado NO se enseña apagado: no está
+Los productos son los tipos de flujo, así que un cliente puede tener el Agente de IA y no
+las campañas. En ese caso **la sección no aparece en el menú** y, si escribe la dirección a
+mano, va a Suscripción — donde sí ve los tres, con el suyo «Al día» y los otros «No
+contratado».
+
+> **Regla:** un botón que falla al pulsarlo es peor que no tenerlo (ya estaba en
+> `gcc-cliente-no-ve-lo-que-no-puede`); pero **la pantalla de suscripción es la excepción**,
+> porque allí la pregunta del usuario es justamente «¿por qué no me aparece esto?».
+
+⚠️ Y una lección de método: comprobar esto mirando `innerText` **no vale**. Los rótulos del
+menú lateral están ocultos hasta pasar el puntero, así que «no aparece Conversaciones» sale
+cierto por CSS aunque la puerta estuviera abierta. Se mide sobre los **enlaces del HTML**.
+
 ### La contratación, por ahora, sin botón
 La pantalla de suscripción **informa y no cobra**, y es una decisión: la compra irá por la
 tienda cuando haya app y PayPhone se queda en la web (ver arriba). El botón que aparezca

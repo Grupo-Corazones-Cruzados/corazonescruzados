@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (declarado 2026-09-23) — AUTOMATIZACIONES SE CONVIERTE EN PRODUCTO, con su cliente real dentro · 🔎 70 %
+## Objetivo (declarado 2026-09-23) — AUTOMATIZACIONES SE CONVIERTE EN PRODUCTO(S), con su cliente real dentro · 🔎 80 %
 
 **Declarado por Fernando el 2026-09-23:** *«lo siguiente que quiero que hagas es trabajar
 completamente en automatizaciones su migración a productos… el producto queda creado como
@@ -15,7 +15,7 @@ decide un número: **29.138 mensajes de WhatsApp de un cliente real**. Esto no e
 producto, es **mudar uno que está funcionando** sin que se caiga mientras se muda.
 
 ### Progreso
-- **% de información para el objetivo:** 70 %
+- **% de información para el objetivo:** 80 %
 - **Estado:** esquema, armazón, mudanza de datos y pantallas, hechos y verificados. Lo que
   falta no es información: es **el cambio de guardia del webhook**, que solo se puede hacer
   con Fernando avisado porque toca el número de un cliente.
@@ -62,10 +62,33 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
 - **Falta:** el visto bueno de Fernando, porque el minuto del cambio es el minuto en que
   Peter Tours depende de que esto esté bien.
 
-#### PA5 — ¿Qué precio tiene el producto? · ⏸ Bloqueada — decisión de Fernando
+#### PA7 — ¿Es «Automatizaciones» un producto? · ✅ Resuelta — **NO: los productos son los tipos de flujo**
+- **Lo corrigió Fernando el 2026-09-23**, textual: *«automatizaciones no es un producto
+  como tal, sino los tipos de flujos son los productos»*. Se venden **Agente de IA**,
+  **Campañas de Correo** y **Campañas de WhatsApp**.
+- **Lo que decidió la arquitectura (dato, no opinión):** los tres tipos **no comparten
+  datos entre sí** —cada flujo tiene sus listas y sus campañas, y el único enlace
+  plantilla↔lista está dentro del mismo flujo—, así que partirlo en tres servicios era
+  viable. Se eligió **una sola aplicación con tres cosas vendibles** porque el código de
+  listas, contactos y campañas es común y triplicarlo es justo lo que Fernando dijo que
+  quería evitar; además encaja con el «un solo proyecto» del enfoque de tiendas.
+- **Lo que cambió en el modelo:** `planes.producto`, y la suscripción deja de ser una por
+  inquilino (`inquilino_id UNIQUE`) para ser una por **(inquilino, producto)**. Migración
+  `003_producto_por_flujo.sql`, escrita a mano porque el diff de Prisma añadía las columnas
+  NOT NULL sin valor y habría reventado con las filas ya dentro.
+
+#### PA8 — ¿Cuántos inquilinos de cliente hay? · ✅ Resuelta — **uno**
+- **Fernando, 2026-09-23:** *«solo crea el tenant de diego castillo, no hagas el tenant de
+  elkin cardenas»*, y *«yo como administrador lfgonzalezm0@grupocc.org debo poder ingresar
+  a mi tenant sin suscripción o límites»*. Así quedó: `/peter-tours` es el único cliente, y
+  `/grupo` es el suyo, de cortesía, con los tres productos y sin fecha de pago. Los flujos
+  de correo de Helen y Elkin son trabajo de GCC y viven dentro de `/grupo`.
+
+#### PA5 — ¿Qué precio tienen los productos? · ⏸ Bloqueada — decisión de Fernando
 - **Por qué importa:** sin precio no hay ficha en el marketplace, y **una ficha a «0,00
-  /mes» dejaría que alguien se suscribiera gratis**. Por eso el plan está a 0 con su
-  descripción diciéndolo y la ficha **no se ha creado**. Es un comando cuando lo diga.
+  /mes» dejaría que alguien se suscribiera gratis**. Ahora son **tres precios**, uno por
+  producto. Los tres planes están a 0 con su descripción diciéndolo y **no hay fichas**.
+  Es un comando cuando los diga.
 
 #### PA6 — ¿Los roles son una escalera o son oficios? · ✅ Resuelta — **escalera**
 - **Respuesta:** aquí sí se ordenan. CONSULTA mira; OPERADOR además atiende (toma una

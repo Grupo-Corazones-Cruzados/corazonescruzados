@@ -137,18 +137,33 @@ async function main() {
 
     await cli.query('BEGIN');
 
-    // ── 1. El plan
+    // ── 1. Los planes: UNO POR PRODUCTO
     //
-    // ⚠️ A CERO Y A PROPÓSITO. Fernando todavía no ha puesto precio a este producto, y
-    // un precio inventado se acaba cobrando. Se cambia desde /gcc cuando lo decida.
-    const { rows: [plan] } = await cli.query(
-      `INSERT INTO planes (slug, nombre, descripcion, precio_mensual, max_usuarios,
-                           max_automatizaciones, max_conversaciones_mes, meses_retencion, orden, actualizado_en)
-            VALUES ('estandar', 'Estándar', 'Precio por definir: Fernando no lo ha fijado todavía.',
-                    0, 10, 5, NULL, 1, 1, now())
-       ON CONFLICT (slug) DO UPDATE SET nombre = EXCLUDED.nombre
-         RETURNING id`,
-    );
+    // ⭐ Fernando corrigió el 2026-09-23: «automatizaciones no es un producto como tal,
+    // sino los tipos de flujos son los productos». Se venden tres cosas —Agente de IA,
+    // Campañas de Correo y Campañas de WhatsApp— y esta aplicación es donde se usan.
+    //
+    // ⚠️ TODOS A CERO Y A PROPÓSITO: no hay precio puesto, y un precio inventado se acaba
+    // cobrando. Se cambian desde /gcc.
+    const NOMBRE_PRODUCTO = {
+      AGENTE_IA: 'Agente de IA',
+      CORREO: 'Campañas de Correo',
+      WHATSAPP: 'Campañas de WhatsApp',
+    };
+    const planDe = new Map();
+    let orden = 0;
+    for (const [producto, nombre] of Object.entries(NOMBRE_PRODUCTO)) {
+      const { rows: [fila] } = await cli.query(
+        `INSERT INTO planes (producto, slug, nombre, descripcion, precio_mensual, max_usuarios,
+                             max_automatizaciones, max_conversaciones_mes, meses_retencion, orden, actualizado_en)
+              VALUES ($1, 'estandar', $2, 'Precio por definir: Fernando no lo ha fijado todavía.',
+                      0, 10, 5, NULL, 1, $3, now())
+         ON CONFLICT (producto, slug) DO UPDATE SET nombre = EXCLUDED.nombre
+           RETURNING id`,
+        [producto, nombre, ++orden],
+      );
+      planDe.set(producto, fila.id);
+    }
 
     // ── 2. Inquilinos, su suscripción y su administrador
     const idDe = new Map(); // slug → inquilino_id
@@ -164,17 +179,27 @@ async function main() {
       );
       idDe.set(inq.slug, fila.id);
 
-      // La suscripción existe aunque sea de cortesía: la puerta la mira siempre, y un
-      // inquilino sin fila sería «suspendido».
-      await cli.query(
-        `INSERT INTO suscripciones (inquilino_id, plan_id, estado, pagado_hasta, actualizado_en)
-              VALUES ($1, $2, $3, $4, now())
-         ON CONFLICT (inquilino_id) DO NOTHING`,
-        [fila.id, plan.id, inq.cortesia ? 'ACTIVA' : 'PRUEBA',
-         // Al cliente de verdad se le deja el mes en curso mientras Fernando decide el
-         // precio; al del grupo no le hace falta (la cortesía no mira esta fecha).
-         inq.cortesia ? null : new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0))],
-      );
+      // ── UNA SUSCRIPCIÓN POR PRODUCTO CONTRATADO
+      //
+      // Qué productos tiene un cliente lo dicen sus propios flujos: quien solo tiene un
+      // `ai_agent` contrató el Agente de IA y nada más. Al inquilino de cortesía se le
+      // dan los tres, porque Fernando tiene que poder entrar a todo sin suscripción ni
+      // topes (lo pidió el 2026-09-23).
+      const susProductos = inq.cortesia
+        ? Object.keys(NOMBRE_PRODUCTO)
+        : [...new Set(flujos.filter((f) => deQuien.get(f.id) === inq.slug).map((f) => TIPO[f.type]))];
+
+      for (const producto of susProductos) {
+        await cli.query(
+          `INSERT INTO suscripciones (inquilino_id, producto, plan_id, estado, pagado_hasta, actualizado_en)
+                VALUES ($1, $2, $3, $4, $5, now())
+           ON CONFLICT (inquilino_id, producto) DO NOTHING`,
+          [fila.id, producto, planDe.get(producto), inq.cortesia ? 'ACTIVA' : 'PRUEBA',
+           // Al cliente de verdad se le deja el mes en curso mientras Fernando decide el
+           // precio; el de cortesía no mira esta fecha.
+           inq.cortesia ? null : new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0))],
+        );
+      }
 
       // Su administrador, con la cuenta de GCC World: sin contraseña aquí.
       await cli.query(

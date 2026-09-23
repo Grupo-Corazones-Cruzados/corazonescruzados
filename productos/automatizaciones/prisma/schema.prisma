@@ -36,9 +36,15 @@ datasource db {
 // Plataforma: quién vende, a quién y por cuánto
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Un plan es de UN producto. Fernando corrigió el 2026-09-23: «automatizaciones no es
+/// un producto como tal, sino los tipos de flujos son los productos». Así que lo que se
+/// vende son el Agente de IA, las Campañas de Correo y las Campañas de WhatsApp — tres
+/// fichas, tres precios— y esta aplicación es el sitio donde se usan los tres.
 model Plan {
-  id            Int     @id @default(autoincrement())
-  slug          String  @unique
+  id            Int                @id @default(autoincrement())
+  /// Qué producto vende este plan.
+  producto      TipoAutomatizacion
+  slug          String
   nombre        String
   descripcion   String?
   precioMensual Decimal @default(0) @map("precio_mensual") @db.Decimal(10, 2)
@@ -64,6 +70,9 @@ model Plan {
 
   suscripciones Suscripcion[]
 
+  // El código del plan es único DENTRO de su producto: los tres pueden tener su
+  // «estandar» sin pisarse.
+  @@unique([producto, slug])
   @@map("planes")
 }
 
@@ -98,7 +107,7 @@ model Inquilino {
   creado      DateTime @default(now()) @map("creado_en")
   actualizado DateTime @updatedAt @map("actualizado_en")
 
-  suscripcion     Suscripcion?
+  suscripciones   Suscripcion[]
   usuarios        Usuario[]
   automatizaciones Automatizacion[]
   canales         Canal[]
@@ -115,11 +124,16 @@ model Inquilino {
   @@map("inquilinos")
 }
 
+/// Lo que un cliente tiene contratado DE UN PRODUCTO. Un inquilino puede tener el Agente
+/// de IA pagado y las campañas no: son compras distintas, así que son filas distintas.
 model Suscripcion {
-  id          Int               @id @default(autoincrement())
-  inquilinoId Int               @unique @map("inquilino_id")
-  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
-  planId      Int               @map("plan_id")
+  id          Int                @id @default(autoincrement())
+  inquilinoId Int                @map("inquilino_id")
+  inquilino   Inquilino          @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  /// Qué producto es este. Se repite del plan a propósito: el plan puede cambiarse y la
+  /// pregunta «¿tiene contratado el agente?» no puede depender de una unión más.
+  producto    TipoAutomatizacion
+  planId      Int                @map("plan_id")
   plan        Plan              @relation(fields: [planId], references: [id])
   estado      EstadoSuscripcion @default(PRUEBA)
   inicio      DateTime          @default(now()) @db.Date
@@ -135,6 +149,7 @@ model Suscripcion {
 
   pagos PagoMensual[]
 
+  @@unique([inquilinoId, producto])
   @@map("suscripciones")
 }
 

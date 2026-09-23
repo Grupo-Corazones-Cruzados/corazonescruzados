@@ -19,7 +19,9 @@ export default async function PaginaConversaciones({
 }) {
   const { cliente } = await params;
   const { c, q } = await searchParams;
-  const { inquilino, sesion } = await exigirContexto(cliente);
+  // Esta pantalla es del Agente de IA: quien no lo tenga al día ni siquiera llega aquí,
+  // y la sección tampoco le aparece en el menú.
+  const { inquilino, sesion } = await exigirContexto(cliente, 'CONSULTA', 'AGENTE_IA');
 
   const busca = (q || '').trim();
   const conversaciones = await prisma.conversacion.findMany({
