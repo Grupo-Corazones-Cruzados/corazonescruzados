@@ -119,6 +119,21 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   comprobar el apretón de manos, luego la última pasada de la mudanza, **después** cambiar
   la URL, y solo al final apagar el worker viejo.
 
+#### PA10 — ¿Cómo se diseña una pantalla nueva del grupo? · ✅ Resuelta — **cuatro reglas de espacio y una de estandarización**
+- **Por qué importa:** en una tarde Fernando corrigió cinco cosas de disposición, y las
+  cinco eran invenciones mías. No era cuestión de gusto: cada una tenía un motivo que él
+  supo decir y yo no había visto. Sin escribirlas, mañana las repito.
+- **Lo aprendido, y lo que lo hace regla y no opinión:**
+  · *El contenedor ocupa el alto* — una tarjeta a media altura parece pantalla a medio cargar.
+  · *Las acciones abajo a la derecha* — es el orden de lectura; lo que acompaña, a su izquierda.
+  · *Se aprovecha el ancho* — una columna estrecha obliga a desplazarse por lo que cabía.
+  · *Ni un botón a todo lo ancho* — 1.400 px para cinco palabras es el mismo error al revés.
+  · *No se inventan estilos entre productos* — y un indicador tiene UNA marca, no dos.
+- **El método que sale de ahí:** antes de escribir una pantalla, **abrir la equivalente en
+  Reservas o Pedidos**. No para copiarla: para no inventar lo que ya está decidido.
+- **Y el error de fondo que las explica todas:** yo estaba diseñando *pantallas*, no *el
+  mismo producto*. Cada una salía razonable por su cuenta y el conjunto se desalineaba.
+
 ### Trampas nuevas (las de mañana en la skill `/producto`)
 - 🪤 **`prisma migrate diff` contra la base propone BORRAR `_migraciones`.** Esa tabla es la
   libreta del runner propio; Prisma no la conoce y por eso la sobra. Aplicar su salida tal

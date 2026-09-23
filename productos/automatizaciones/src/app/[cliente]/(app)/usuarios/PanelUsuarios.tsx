@@ -86,7 +86,7 @@ export default function PanelUsuarios({
           </Boton>
         }
       />
-      <div className="max-w-4xl px-4 py-5 sm:px-6">
+      <div className="px-4 py-5 sm:px-6">
 
       {claveNueva && (
         <Tarjeta className="mb-3 border-acento p-4">

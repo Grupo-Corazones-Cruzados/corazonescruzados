@@ -119,7 +119,16 @@ export default function Estudio({
         desplazarse por las otras dos para llegar a la que interesaba. Es el mismo raíl
         de Configuración: el mismo producto no se navega de dos maneras.
       */}
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+      {/*
+        ⭐ EL CONTENEDOR OCUPA TODO EL ALTO DISPONIBLE (Fernando, 2026-09-23). El raíl y el
+        contenido se estiran hasta el borde inferior de la página en vez de terminar donde
+        acabe el texto. Una tarjeta que flota a media altura con el resto en blanco hace
+        que la pantalla parezca a medio cargar.
+
+        `min-h-0` en el hijo es lo que permite que el interior se desplace en vez de
+        empujar la página: sin él, un bloque largo revienta el alto fijo del padre.
+      */}
+      <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4 p-4 sm:p-6 lg:h-dvh lg:flex-row">
         <RailFiltro
           opciones={[
             { valor: 'numero', etiqueta: 'El número', icono: Phone },
@@ -129,9 +138,9 @@ export default function Estudio({
           activo={seccion}
           alElegir={(v) => setSeccion(v as Seccion)}
         />
-        <div className="min-w-0 flex-1 space-y-4">
+        <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">
           {seccion === 'numero' && (
-          <Tarjeta className="p-4 sm:p-5">
+          <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
             <h2 className="mb-3 text-[14px] font-semibold text-texto">Tu número de WhatsApp</h2>
 
             <dl className="mb-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[12.5px]">
@@ -152,7 +161,7 @@ export default function Estudio({
               </p>
             )}
 
-            <form action={guardarAjustesForm} className="space-y-3">
+            <form action={guardarAjustesForm} className="flex min-h-0 flex-1 flex-col space-y-3">
               {/* El interruptor general va arriba y con su explicación: es lo que se busca
                   cuando el agente está diciendo algo que no debe. */}
               <label className="flex cursor-pointer items-start gap-2.5 rounded border border-borde bg-realce px-3 py-2.5">
@@ -187,9 +196,14 @@ export default function Estudio({
                 si el contacto sigue escribiendo, el reloj vuelve a empezar.
               </p>
 
-              <Boton type="submit" disabled={enCurso}>
-                <Save className="h-4 w-4" /> {enCurso ? 'Guardando…' : 'Guardar ajustes'}
-              </Boton>
+              {/* `mt-auto` empuja la acción al fondo del contenedor; `justify-end`, a la
+                  derecha. Es el orden de lectura: primero lo que se rellena, al final lo
+                  que se pulsa. */}
+              <div className="mt-auto flex justify-end pt-3">
+                <Boton type="submit" disabled={enCurso}>
+                  <Save className="h-4 w-4" /> {enCurso ? 'Guardando…' : 'Guardar ajustes'}
+                </Boton>
+              </div>
             </form>
           </Tarjeta>
           )}
@@ -239,7 +253,7 @@ export default function Estudio({
           )}
 
           {seccion === 'habla' && (
-          <Tarjeta className="p-4 sm:p-5">
+          <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
             <h2 className="mb-1 text-[14px] font-semibold text-texto">Las instrucciones del agente</h2>
             <p className="mb-3 text-[12px] leading-relaxed text-tenue">
               Cada vez que guardas, se archiva la versión anterior en vez de pisarla —hay{' '}

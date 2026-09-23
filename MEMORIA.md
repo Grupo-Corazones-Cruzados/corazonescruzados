@@ -275,6 +275,21 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⭐⭐ CÓMO SE DISEÑA, DICHO POR FERNANDO EL 2026-09-23.** Una tarde entera de
+  correcciones suyas, todas sobre lo mismo: **el reparto del espacio**. Es la norma para
+  los cinco productos y para la plataforma; el detalle y los fragmentos, en `Diseño.md`.
+  1. **El contenedor ocupa el alto disponible** — el raíl y el contenido llegan al borde
+     inferior, no acaban donde acabe el texto.
+  2. **Las acciones van abajo a la derecha** de su contenedor, y lo que las acompaña, a su
+     izquierda. Es el orden de lectura: primero lo que se rellena, al final lo que se pulsa.
+  3. **Se aprovecha el ancho** — ni columnas estrechas en escritorio ni botones a todo lo
+     ancho; con sitio de sobra, dos columnas antes que una lista larguísima.
+  4. **No se inventan estilos entre productos.** Textual: *«aunque los productos son
+     diferentes […] deben ser muy iguales o parecidos entre todos, no podemos inventarnos
+     estilos»*. Antes de añadir algo a un componente compartido, mirar cómo se ve en los
+     otros cuatro; si allí no lo lleva, es una divergencia, no una mejora.
+  5. **Un indicador tiene UNA marca.** El punto de color de una `Insignia` y un icono son
+     excluyentes — la regla vive en el componente, no en cada llamada.
 - **⭐⭐ EL PRODUCTO «AUTOMATIZACIONES»: 5 $/mes CON LAS TRES COSAS DENTRO
   (Fernando, 2026-09-23, y es la palabra final sobre esto).** Textual: *«déjalo a $5
   dólares mensuales este producto nuevo para que pueda acceder a las 3 cosas, por lo tanto

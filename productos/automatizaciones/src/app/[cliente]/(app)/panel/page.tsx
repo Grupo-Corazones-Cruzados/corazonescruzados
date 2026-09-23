@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessagesSquare, Users2, Workflow, Bot, Send } from 'lucide-react';
+import { MessagesSquare, Users2, Bot } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { Tarjeta, Insignia } from '@/componentes/ui';
@@ -24,11 +24,10 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
   const { inquilino, montados } = await exigirContexto(cliente);
   const donde = { inquilinoId: inquilino.id };
 
-  const [conversaciones, sinLeer, contactos, automatizaciones, delMes] = await Promise.all([
+  const [conversaciones, sinLeer, contactos, delMes] = await Promise.all([
     prisma.conversacion.count({ where: donde }),
     prisma.conversacion.count({ where: { ...donde, botActivo: false, tomadaPorId: null } }),
     prisma.contacto.count({ where: donde }),
-    prisma.automatizacion.count({ where: { ...donde, estado: 'ACTIVA' } }),
     prisma.conversacion.count({ where: { ...donde, ultimoMensajeEn: { gte: inicioDeMes() } } }),
   ]);
 
@@ -58,7 +57,6 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
             <Cifra icono={Users2} etiqueta="Contactos" valor={contactos} />
           </>
         )}
-        <Cifra icono={Workflow} etiqueta="Automatizaciones activas" valor={automatizaciones} />
       </div>
 
       {/* El tope del plan se ENSEÑA antes de estorbar: quien lo ve venir no se

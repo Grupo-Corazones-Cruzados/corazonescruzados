@@ -83,7 +83,15 @@ export default function Envios({
         }
       />
 
-      <div className="max-w-4xl space-y-4 px-4 py-5 sm:px-6">
+      {/*
+        ⭐ SE APROVECHA EL ANCHO (Fernando, 2026-09-23). Sin `max-w`: en una pantalla de
+        escritorio una columna estrecha deja media página en blanco y obliga a desplazarse
+        por cosas que cabían de una vez.
+
+        Y desde `xl` las plantillas y el historial van EN PARALELO, que es como se usan:
+        se mira qué plantilla está aprobada y, al lado, cómo fue el último envío.
+      */}
+      <div className="space-y-4 px-4 py-5 sm:px-6">
         {/* ── Lanzar un envío ───────────────────────────────────────────────── */}
         {puedeOperar && (
           <Tarjeta className="p-4 sm:p-5">
@@ -139,18 +147,19 @@ export default function Envios({
               </p>
             )}
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+              {listoParaEnviar && (
+                <span className="text-[11.5px] text-tenue">Sale uno detrás de otro, no se puede deshacer.</span>
+              )}
               <Boton disabled={!listoParaEnviar || enCurso} onClick={() => setConfirmar(true)}>
                 <Send className="h-4 w-4" />
                 {lista ? `Enviar a ${lista.conTelefono}` : 'Enviar'}
               </Boton>
-              {listoParaEnviar && (
-                <span className="text-[11.5px] text-tenue">Sale uno detrás de otro, no se puede deshacer.</span>
-              )}
             </div>
           </Tarjeta>
         )}
 
+        <div className="grid gap-4 xl:grid-cols-2">
         {/* ── Las plantillas y su estado ────────────────────────────────────── */}
         <Tarjeta className="p-4 sm:p-5">
           <h2 className="mb-2 text-[14px] font-semibold text-texto">Tus plantillas</h2>
@@ -207,6 +216,7 @@ export default function Envios({
             </ul>
           </Tarjeta>
         )}
+        </div>
 
         {listas.length === 0 && (
           <p className="flex items-center gap-2 rounded border border-borde bg-realce px-3 py-2.5 text-[12.5px] text-tenue">

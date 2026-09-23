@@ -3563,6 +3563,45 @@ que convierte «5 $» en «5 $ por esto».
 menú lateral están ocultos hasta pasar el puntero, así que «no aparece Conversaciones» sale
 cierto por CSS aunque la puerta estuviera abierta. Se mide sobre los **enlaces del HTML**.
 
+### ⭐⭐ LAS CUATRO REGLAS DE DISPOSICIÓN (Fernando, 2026-09-23)
+
+Salieron de cuatro correcciones suyas en una tarde, todas sobre lo mismo: **cómo se
+reparte el espacio**. Valen para los cinco productos y para la plataforma.
+
+**1. El contenedor ocupa el alto disponible.** El raíl de un submenú y el panel de
+contenido llegan al borde inferior de la página, no terminan donde acabe el texto. Una
+tarjeta flotando a media altura con el resto en blanco hace que la pantalla parezca a
+medio cargar.
+
+```tsx
+<div className="flex h-[calc(100dvh-4rem)] flex-col gap-4 p-4 sm:p-6 lg:h-dvh lg:flex-row">
+  <RailFiltro … />
+  <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">…</div>
+</div>
+```
+> `min-h-0` es lo que hace que el interior se desplace en vez de empujar la página. Sin
+> él, un bloque largo revienta el alto del padre y la regla no se cumple.
+
+**2. Las acciones van ABAJO A LA DERECHA de su contenedor.** Es el orden de lectura:
+primero lo que se rellena, al final lo que se pulsa. `mt-auto` la empuja al fondo;
+`justify-end`, a la derecha. Y lo que acompaña a la acción —«sin guardar», una
+advertencia— va **a su izquierda**, no debajo.
+
+**3. Se aprovecha el ancho.** Ni `max-w` estrecho en pantallas de escritorio, ni botones
+a todo lo ancho. Una columna angosta deja media página en blanco y obliga a desplazarse
+por cosas que cabían de una vez; un botón de 1.400 px para cinco palabras es lo contrario
+del mismo error. Cuando hay sitio de sobra, **dos columnas** (`xl:grid-cols-2`) antes que
+una lista larguísima.
+
+> El ancho completo se reserva para lo que de verdad lo pide: el botón de un formulario
+> dentro de una tarjeta estrecha o de un panel lateral.
+
+**4. Nada se repite entre el raíl y el contenido.** Si el raíl ya pone el icono y el
+rótulo, la tarjeta de la derecha no los repite: su título aporta el matiz («Tu número de
+WhatsApp»), no el eco.
+
+---
+
 ### ⭐ NO SE INVENTAN ESTILOS ENTRE PRODUCTOS (Fernando, 2026-09-23)
 Textual: *«aunque los productos son diferentes, los diseños, estilos, consideraciones y
 buenas prácticas […] deben ser muy iguales o parecidos entre todos, no podemos

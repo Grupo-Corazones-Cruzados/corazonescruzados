@@ -63,7 +63,8 @@ export default function ConfiguracionCliente({
   return (
     <>
       <CabeceraPagina titulo="Configuración" descripcion="La marca, tu suscripción y tu cuenta" />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+      {/* La misma norma que el Estudio: el contenedor ocupa el alto disponible. */}
+      <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4 p-4 sm:p-6 lg:h-dvh lg:flex-row">
         <RailFiltro
           opciones={[
             { valor: 'marca', etiqueta: 'Marca', icono: Palette },
@@ -73,7 +74,7 @@ export default function ConfiguracionCliente({
           activo={seccion}
           alElegir={(v) => setSeccion(v as Seccion)}
         />
-        <div className="min-w-0 flex-1">
+        <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">
           {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} hayCloudinary={hayCloudinary} />}
           {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} pagos={pagos} />}
           {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
