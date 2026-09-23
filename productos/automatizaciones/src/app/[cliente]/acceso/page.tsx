@@ -35,7 +35,7 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ clien
           <LogoHotel nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={52} />
           <div>
             <h1 className="text-[17px] font-semibold text-texto">{inquilino.nombre}</h1>
-            <p className="text-[12px] text-tenue">Automatizaciones</p>
+            <p className="text-[12px] text-tenue">Automatizaciones de WhatsApp</p>
           </div>
         </div>
         {inquilino.soloLectura && (

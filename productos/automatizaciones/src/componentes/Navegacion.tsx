@@ -154,7 +154,7 @@ export function BarraLateral({ slug, cliente, logoUrl, usuario, rol, montados }:
           {!colapsado && (
             <div className="min-w-0">
               <p className="truncate text-[13px] font-semibold text-texto">{cliente}</p>
-              <p className="text-[10px] text-tenue">Automatizaciones</p>
+              <p className="text-[10px] text-tenue">Automatizaciones de WhatsApp</p>
             </div>
           )}
         </div>

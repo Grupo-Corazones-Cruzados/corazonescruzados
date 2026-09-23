@@ -225,7 +225,7 @@ function SeccionMarca({ slug, marca, hayCloudinary }: { slug: string; marca: Mar
               </span>
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-texto">{nombre || 'Tu negocio'}</p>
-                <p className="text-[11px] text-tenue">Automatizaciones</p>
+                <p className="text-[11px] text-tenue">Automatizaciones de WhatsApp</p>
               </div>
             </div>
             <span

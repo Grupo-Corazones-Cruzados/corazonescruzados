@@ -36,7 +36,7 @@ export const PRODUCTOS = [
   // Quinto producto (2026-09-23): la sección «Automatizaciones» dejó de vivir dentro de la
   // plataforma y pasó a venderse como los demás, 5 $/mes con el agente de IA y las
   // campañas de correo y de WhatsApp dentro.
-  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones', url: 'https://automatizaciones.grupocc.org' },
+  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones de WhatsApp', url: 'https://automatizaciones.grupocc.org' },
 ] as const;
 
 export const DIAS_DE_GRACIA = 30;
