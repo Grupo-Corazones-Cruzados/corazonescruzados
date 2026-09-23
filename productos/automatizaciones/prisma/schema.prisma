@@ -1,0 +1,794 @@
+// Automatizaciones — producto del Grupo Corazones Cruzados.
+//
+// El agente de IA de WhatsApp, las campañas de correo y las plantillas de WhatsApp,
+// que hasta el 2026-09-23 vivían DENTRO de la plataforma como la sección
+// «Automatizaciones» (`/dashboard/automatizaciones`, esquema `gcc_world`). Fernando
+// decidió que dejara de ser una sección aislada y pasara a ser un producto más, con
+// el mismo modelo de inquilinos y la misma pasarela que los otros cuatro.
+//
+// Vive en su PROPIO esquema (`automatizaciones`) del mismo servicio Postgres de
+// Railway. No comparte ni una tabla con `gcc_world`… con UNA excepción deliberada y
+// de solo lectura, explicada en `src/lib/cuentaGcc.ts`: para verificar la contraseña
+// de un cliente que entra con su cuenta de GCC World.
+//
+// ── LA TRADUCCIÓN DEL MODELO VIEJO ──────────────────────────────────────────────
+// Antes, un `flow` era «una automatización de un cliente», y `flow_clients` decía de
+// quién era. Aquí **el cliente es el inquilino**, así que un flujo pasa a ser una
+// AUTOMATIZACIÓN dentro de él, y la pertenencia deja de ser una tabla de cruce para
+// ser lo que siempre debió ser: una columna.
+//
+// REGLA QUE GOBIERNA TODO EL MODELO: cada tabla de negocio lleva `inquilinoId`.
+// Incluso las que cuelgan de otra que ya lo tiene (mensajes de una conversación de un
+// canal de una automatización). Repetirlo es barato; reconstruir la cadena en cada
+// consulta para saber de quién es una fila es lo que produce las fugas entre
+// inquilinos. El filtro lo construye `lib/inquilino.ts`, nunca una página.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plataforma: quién vende, a quién y por cuánto
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Plan {
+  id            Int     @id @default(autoincrement())
+  slug          String  @unique
+  nombre        String
+  descripcion   String?
+  precioMensual Decimal @default(0) @map("precio_mensual") @db.Decimal(10, 2)
+  moneda        String  @default("USD") @db.VarChar(3)
+
+  /// Cuántas cuentas de PERSONAS puede tener el inquilino. NULO = sin límite.
+  maxUsuarios Int? @map("max_usuarios")
+  /// Cuántas automatizaciones puede tener a la vez.
+  maxAutomatizaciones Int? @map("max_automatizaciones")
+  /// ⭐ EL TOPE QUE IMPORTA: conversaciones que ATIENDE LA IA en un mes natural.
+  /// Es lo único de este producto que cuesta dinero de verdad (cada conversación son
+  /// llamadas al modelo). Topar cuentas o contactos sería topar lo que no cuesta.
+  maxConversacionesMes Int? @map("max_conversaciones_mes")
+
+  /// Cuántos meses de histórico conserva. NULO = sin límite.
+  mesesRetencion Int?     @default(1) @map("meses_retencion")
+  permiteMarca   Boolean  @default(true) @map("permite_marca")
+  caracteristicas String[] @default([])
+  activo         Boolean  @default(true)
+  orden          Int      @default(0)
+  creado         DateTime @default(now()) @map("creado_en")
+  actualizado    DateTime @updatedAt @map("actualizado_en")
+
+  suscripciones Suscripcion[]
+
+  @@map("planes")
+}
+
+/// Un cliente. Unidad de aislamiento, de marca y de cobro.
+model Inquilino {
+  id     Int    @id @default(autoincrement())
+  slug   String @unique @db.VarChar(60)
+  nombre String
+
+  // ── Marca (la configura el propio cliente)
+  logoUrl     String? @map("logo_url")
+  colorAcento String  @default("#4B2D8E") @map("color_acento") @db.VarChar(7)
+  tema        Tema    @default(CLARO)
+
+  moneda      String @default("USD") @db.VarChar(3)
+  zonaHoraria String @default("America/Guayaquil") @map("zona_horaria")
+
+  estado      EstadoInquilino @default(PRUEBA)
+  /// Escaparate: se recorre entero, no se guarda nada.
+  soloLectura Boolean         @default(false) @map("solo_lectura")
+  /// Acceso del grupo: no paga mensualidad, no tiene topes ni retención.
+  cortesia    Boolean         @default(false)
+
+  /// El cliente en `gcc_world.clients`, cuando existe. Es informativo: la llave que
+  /// une producto y plataforma es el CORREO (ver `lib/productos/accesos.ts` en la
+  /// plataforma), porque `users.id` es uuid y esto es un entero.
+  gccClienteId     Int?    @map("gcc_cliente_id")
+  contactoNombre   String? @map("contacto_nombre")
+  contactoEmail    String? @map("contacto_email")
+  contactoTelefono String? @map("contacto_telefono")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  suscripcion     Suscripcion?
+  usuarios        Usuario[]
+  automatizaciones Automatizacion[]
+  canales         Canal[]
+  contactos       Contacto[]
+  conversaciones  Conversacion[]
+  mensajes        Mensaje[]
+  listas          ListaContactos[]
+  contactosLista  ContactoLista[]
+  campanas        Campana[]
+  plantillasWa    PlantillaWa[]
+  pagos           PagoMensual[]
+  purgas          Purga[]
+
+  @@map("inquilinos")
+}
+
+model Suscripcion {
+  id          Int               @id @default(autoincrement())
+  inquilinoId Int               @unique @map("inquilino_id")
+  inquilino   Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  planId      Int               @map("plan_id")
+  plan        Plan              @relation(fields: [planId], references: [id])
+  estado      EstadoSuscripcion @default(PRUEBA)
+  inicio      DateTime          @default(now()) @db.Date
+  /// LA PUERTA: hasta cuándo está pagado el acceso. NULO = nunca se ha pagado.
+  pagadoHasta DateTime?         @map("pagado_hasta") @db.Date
+  metodoPago  MetodoPago        @default(AUTOSERVICIO) @map("metodo_pago")
+  /// El identificador del cobro en quien lo cobró: la transacción de la pasarela, o
+  /// el identificador de la suscripción en App Store / Google Play.
+  referenciaExterna String?     @map("referencia_externa")
+  notas       String?
+  creado      DateTime          @default(now()) @map("creado_en")
+  actualizado DateTime          @updatedAt @map("actualizado_en")
+
+  pagos PagoMensual[]
+
+  @@map("suscripciones")
+}
+
+model PagoMensual {
+  id            Int               @id @default(autoincrement())
+  inquilinoId   Int               @map("inquilino_id")
+  inquilino     Inquilino         @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  suscripcionId Int               @map("suscripcion_id")
+  suscripcion   Suscripcion       @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  /// 'AAAA-MM'. Es la constancia contable del mes cobrado.
+  periodo       String            @db.VarChar(7)
+  monto         Decimal           @db.Decimal(10, 2)
+  moneda        String            @default("USD") @db.VarChar(3)
+  metodo        MetodoPago        @default(AUTOSERVICIO)
+  estado        EstadoPagoMensual @default(PENDIENTE)
+  referencia    String?
+  pagadoEn      DateTime?         @map("pagado_en")
+  registradoPor String?           @map("registrado_por")
+  creado        DateTime          @default(now()) @map("creado_en")
+
+  @@unique([suscripcionId, periodo])
+  @@map("pagos_mensuales")
+}
+
+/// Quien opera el producto desde el equipo GCC. Su sesión es OTRA cookie: un operador
+/// que abre el panel de un cliente no hereda permisos dentro de él.
+model OperadorGcc {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  nombre       String
+  claveHash    String    @map("clave_hash")
+  activo       Boolean   @default(true)
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime  @default(now()) @map("creado_en")
+
+  @@map("operadores_gcc")
+}
+
+/// Constancia de cada purga de retención. Sin ella, un borrado automático es
+/// indistinguible de una pérdida de datos.
+model Purga {
+  id            Int      @id @default(autoincrement())
+  inquilinoId   Int      @map("inquilino_id")
+  inquilino     Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  corteHasta    DateTime @map("corte_hasta") @db.Date
+  conversaciones Int     @default(0)
+  mensajes      Int      @default(0)
+  eventos       Int      @default(0)
+  creado        DateTime @default(now()) @map("creado_en")
+
+  @@map("purgas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Las personas que entran
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Una persona con acceso al inquilino.
+///
+/// ⭐ DOS ORÍGENES, Y LA DIFERENCIA IMPORTA (Fernando, 2026-09-23):
+///
+///  · `GCC`      — es la cuenta de cliente de GCC World. **No tiene contraseña aquí**:
+///                 `claveHash` es nulo a propósito y la contraseña se comprueba contra
+///                 `gcc_world.users` en el momento de entrar. Así, el día que el cliente
+///                 la cambie en la plataforma, cambia aquí sin hacer nada; y si se
+///                 copiara el hash, habría dos verdades y una se quedaría vieja.
+///  · `PRODUCTO` — la crea el administrador del inquilino desde dentro del producto.
+///                 Esa sí tiene su `claveHash` aquí, porque no existe en ningún otro sitio.
+model Usuario {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+
+  /// Con qué se escribe en la pantalla de acceso. Para los de origen GCC es su correo.
+  usuario String @db.VarChar(120)
+  nombre  String
+  email   String? @db.VarChar(180)
+
+  origen   OrigenCuenta @default(PRODUCTO)
+  /// NULO cuando `origen = GCC`: la contraseña no vive aquí.
+  claveHash String?     @map("clave_hash")
+
+  rol    Rol     @default(OPERADOR)
+  activo Boolean @default(true)
+
+  ultimoAcceso DateTime? @map("ultimo_acceso")
+  creado       DateTime  @default(now()) @map("creado_en")
+  actualizado  DateTime  @updatedAt @map("actualizado_en")
+
+  conversacionesTomadas Conversacion[] @relation("TomadaPor")
+  enviosLanzados        Envio[]        @relation("LanzadoPor")
+
+  @@unique([inquilinoId, usuario])
+  @@map("usuarios")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// El dominio: automatizaciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Una automatización del inquilino. Es el antiguo `gcc_world.flows`.
+model Automatizacion {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+
+  nombre      String
+  tipo        TipoAutomatizacion
+  descripcion String?
+  categoria   String?
+  estado      EstadoAutomatizacion @default(BORRADOR)
+  config      Json                 @default("{}")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  canales      Canal[]
+  listas       ListaContactos[]
+  campanas     Campana[]
+  plantillasWa PlantillaWa[]
+
+  @@index([inquilinoId])
+  @@map("automatizaciones")
+}
+
+/// El canal de WhatsApp de una automatización de agente: la conexión con Meta y los
+/// ajustes del modelo.
+///
+/// ⚠️ Los tres secretos (`waTokenCifrado`, `iaApiKeyCifrada`, `pinCifrado`) viajan
+/// CIFRADOS, igual que en la plataforma. Nunca se devuelven a una pantalla.
+model Canal {
+  id               Int            @id @default(autoincrement())
+  inquilinoId      Int            @map("inquilino_id")
+  inquilino        Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  automatizacionId Int            @map("automatizacion_id")
+  automatizacion   Automatizacion @relation(fields: [automatizacionId], references: [id], onDelete: Cascade)
+
+  wabaId           String? @map("waba_id") @db.VarChar(64)
+  /// El identificador del número en Meta. Es por donde entra un mensaje: el webhook
+  /// lo trae y con él se sabe de qué inquilino es. Único en todo el producto.
+  phoneNumberId    String? @unique @map("phone_number_id") @db.VarChar(64)
+  numeroVisible    String? @map("numero_visible") @db.VarChar(40)
+  nombreVerificado String? @map("nombre_verificado")
+
+  waTokenCifrado   String? @map("wa_token_cifrado")
+  iaApiKeyCifrada  String? @map("ia_api_key_cifrada")
+  pinCifrado       String? @map("pin_cifrado")
+
+  iaProveedor      String  @default("openai") @map("ia_proveedor") @db.VarChar(40)
+  modelo           String  @default("gpt-5.6-luna") @db.VarChar(60)
+  razonamiento     String  @default("low") @db.VarChar(20)
+  maxTokens        Int     @default(4096) @map("max_tokens")
+  /// Segundos que se espera antes de contestar, por si el contacto sigue escribiendo.
+  debounceSegundos Int     @default(8) @map("debounce_segundos")
+  ventanaMensajes  Int     @default(40) @map("ventana_mensajes")
+  botActivo        Boolean @default(false) @map("bot_activo")
+
+  estado                 String    @default("sin_conectar") @db.VarChar(30)
+  coexistenciaVerificada Boolean   @default(false) @map("coexistencia_verificada")
+  ultimoError            String?   @map("ultimo_error")
+  ultimoErrorEn          DateTime? @map("ultimo_error_en")
+
+  contactosSincronizadosEn DateTime? @map("contactos_sincronizados_en")
+  historialSincronizadoEn  DateTime? @map("historial_sincronizado_en")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  contactos      Contacto[]
+  conversaciones Conversacion[]
+  conocimiento   Conocimiento[]
+  prompts        Prompt[]
+  plantillas     PlantillaAgente[]
+  envios         Envio[]
+  eventos        EventoWebhook[]
+
+  @@index([inquilinoId])
+  @@map("canales")
+}
+
+model Contacto {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  canalId     Int       @map("canal_id")
+  canal       Canal     @relation(fields: [canalId], references: [id], onDelete: Cascade)
+
+  waId          String  @map("wa_id") @db.VarChar(40)
+  nombrePerfil  String? @map("nombre_perfil")
+  /// El nombre que el cliente tiene guardado en su agenda, si se sincronizó.
+  nombreAgenda  String? @map("nombre_agenda")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  conversaciones Conversacion[]
+
+  @@unique([canalId, waId])
+  @@index([inquilinoId])
+  @@map("contactos")
+}
+
+model Conversacion {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  canalId     Int       @map("canal_id")
+  canal       Canal     @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  contactoId  Int       @map("contacto_id")
+  contacto    Contacto  @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+
+  /// Si el bot contesta en ESTA conversación. Se apaga cuando una persona la toma.
+  botActivo      Boolean   @default(true) @map("bot_activo")
+  tomadaPorId    Int?      @map("tomada_por_id")
+  tomadaPor      Usuario?  @relation("TomadaPor", fields: [tomadaPorId], references: [id], onDelete: SetNull)
+  tomadaEn       DateTime? @map("tomada_en")
+  motivoEscalado String?   @map("motivo_escalado")
+
+  /// Resumen de lo ya hablado, para no mandarle al modelo la conversación entera.
+  resumen        String?
+  resumenHastaId Int?      @map("resumen_hasta_id")
+
+  ultimoMensajeEn DateTime? @map("ultimo_mensaje_en")
+  creado          DateTime  @default(now()) @map("creado_en")
+  actualizado     DateTime  @updatedAt @map("actualizado_en")
+
+  mensajes  Mensaje[]
+  trabajos  TrabajoCola[]
+  usoModelo UsoModelo[]
+
+  @@unique([canalId, contactoId])
+  @@index([inquilinoId, ultimoMensajeEn])
+  @@map("conversaciones")
+}
+
+model Mensaje {
+  id             Int          @id @default(autoincrement())
+  inquilinoId    Int          @map("inquilino_id")
+  inquilino      Inquilino    @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  conversacionId Int          @map("conversacion_id")
+  conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  direccion    Direccion
+  waMessageId  String?   @map("wa_message_id") @db.VarChar(120)
+  tipo         String    @default("text") @db.VarChar(30)
+  texto        String?
+  payload      Json?
+
+  ubicacionLat         Float?    @map("ubicacion_lat")
+  ubicacionLng         Float?    @map("ubicacion_lng")
+  ubicacionTexto       String?   @map("ubicacion_texto")
+  ubicacionResueltaEn  DateTime? @map("ubicacion_resuelta_en")
+  medioResueltoEn      DateTime? @map("medio_resuelto_en")
+
+  /// Cuando el mensaje lo produjo una herramienta del agente, cuál fue y por qué.
+  herramienta String? @db.VarChar(60)
+  motivo      String?
+
+  enviadoOk  Boolean? @map("enviado_ok")
+  errorEnvio String?  @map("error_envio")
+
+  envioId Int?   @map("envio_id")
+  envio   Envio? @relation(fields: [envioId], references: [id], onDelete: SetNull)
+
+  creado DateTime @default(now()) @map("creado_en")
+
+  @@index([conversacionId, creado])
+  @@index([inquilinoId, creado])
+  @@map("mensajes")
+}
+
+/// La cola del agente. El webhook encola y el worker consume: si el webhook pensara,
+/// Meta lo deshabilitaría al primer timeout.
+model TrabajoCola {
+  id             Int          @id @default(autoincrement())
+  inquilinoId    Int          @map("inquilino_id")
+  conversacionId Int          @map("conversacion_id")
+  conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  estado      String    @default("pendiente") @db.VarChar(20)
+  ejecutarEn  DateTime  @default(now()) @map("ejecutar_en")
+  intentos    Int       @default(0)
+  reclamadoEn DateTime? @map("reclamado_en")
+  error       String?
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  @@index([estado, ejecutarEn])
+  @@map("cola")
+}
+
+/// Lo que llega del webhook, tal cual. Es el único sitio donde se puede reconstruir
+/// qué mandó Meta cuando algo no cuadra.
+model EventoWebhook {
+  id          Int      @id @default(autoincrement())
+  inquilinoId Int?     @map("inquilino_id")
+  canalId     Int?     @map("canal_id")
+  canal       Canal?   @relation(fields: [canalId], references: [id], onDelete: SetNull)
+  firmaValida Boolean  @default(false) @map("firma_valida")
+  payload     Json?
+  recibidoEn  DateTime @default(now()) @map("recibido_en")
+
+  @@index([recibidoEn])
+  @@map("eventos_webhook")
+}
+
+/// Lo que el agente sabe del negocio: bloques de texto que entran en su instrucción.
+model Conocimiento {
+  id          Int      @id @default(autoincrement())
+  inquilinoId Int      @map("inquilino_id")
+  canalId     Int      @map("canal_id")
+  canal       Canal    @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  clave       String   @db.VarChar(60)
+  titulo      String
+  contenido   String   @default("")
+  orden       Int      @default(0)
+  activo      Boolean  @default(true)
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  @@unique([canalId, clave])
+  @@map("conocimiento")
+}
+
+/// Las instrucciones del agente, versionadas: cambiar el prompt no borra el anterior.
+model Prompt {
+  id        Int      @id @default(autoincrement())
+  inquilinoId Int    @map("inquilino_id")
+  canalId   Int      @map("canal_id")
+  canal     Canal    @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  tipo      String   @db.VarChar(40)
+  version   Int      @default(1)
+  contenido String   @default("")
+  activo    Boolean  @default(true)
+  creado    DateTime @default(now()) @map("creado_en")
+
+  @@index([canalId, tipo, activo])
+  @@map("prompts")
+}
+
+/// Plantilla de WhatsApp del AGENTE, sincronizada con Meta (tiene `metaId` y estado
+/// de aprobación). No confundir con `PlantillaWa`, que es la de las campañas.
+model PlantillaAgente {
+  id             Int      @id @default(autoincrement())
+  inquilinoId    Int      @map("inquilino_id")
+  canalId        Int      @map("canal_id")
+  canal          Canal    @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  metaId         String?  @map("meta_id") @db.VarChar(64)
+  nombre         String   @db.VarChar(120)
+  idioma         String   @default("es") @db.VarChar(10)
+  categoria      String   @default("UTILITY") @db.VarChar(30)
+  estado         String   @default("local") @db.VarChar(30)
+  motivoRechazo  String?  @map("motivo_rechazo")
+  encabezado     String?
+  cuerpo         String
+  pie            String?
+  variables      Json     @default("[]")
+  sincronizadoEn DateTime? @map("sincronizado_en")
+  creado         DateTime @default(now()) @map("creado_en")
+  actualizado    DateTime @updatedAt @map("actualizado_en")
+
+  listas PlantillaLista[]
+  envios Envio[]
+
+  @@map("plantillas_agente")
+}
+
+model PlantillaLista {
+  plantillaId Int             @map("plantilla_id")
+  plantilla   PlantillaAgente @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  listaId     Int             @map("lista_id")
+  lista       ListaContactos  @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  creado      DateTime        @default(now()) @map("creado_en")
+
+  @@id([plantillaId, listaId])
+  @@map("plantilla_listas")
+}
+
+/// Un envío masivo por plantilla: cuántos salieron, cuántos fallaron.
+model Envio {
+  id          Int              @id @default(autoincrement())
+  inquilinoId Int              @map("inquilino_id")
+  canalId     Int              @map("canal_id")
+  canal       Canal            @relation(fields: [canalId], references: [id], onDelete: Cascade)
+  plantillaId Int              @map("plantilla_id")
+  plantilla   PlantillaAgente  @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  listaId     Int?             @map("lista_id")
+  lista       ListaContactos?  @relation(fields: [listaId], references: [id], onDelete: SetNull)
+
+  estado   String @default("enviando") @db.VarChar(20)
+  total    Int    @default(0)
+  enviados Int    @default(0)
+  fallidos Int    @default(0)
+  error    String?
+
+  lanzadoPorId Int?     @map("lanzado_por_id")
+  lanzadoPor   Usuario? @relation("LanzadoPor", fields: [lanzadoPorId], references: [id], onDelete: SetNull)
+
+  creado      DateTime  @default(now()) @map("creado_en")
+  terminadoEn DateTime? @map("terminado_en")
+
+  mensajes Mensaje[]
+
+  @@map("envios")
+}
+
+/// Lo que costó cada llamada al modelo. Es lo que permite saber si el plan da margen.
+model UsoModelo {
+  id             Int           @id @default(autoincrement())
+  inquilinoId    Int           @map("inquilino_id")
+  conversacionId Int?          @map("conversacion_id")
+  conversacion   Conversacion? @relation(fields: [conversacionId], references: [id], onDelete: SetNull)
+
+  modelo               String  @db.VarChar(60)
+  tokensEntrada        Int     @default(0) @map("tokens_entrada")
+  tokensSalida         Int     @default(0) @map("tokens_salida")
+  tokensCacheEscritura Int     @default(0) @map("tokens_cache_escritura")
+  tokensCacheLectura   Int     @default(0) @map("tokens_cache_lectura")
+  herramienta          String? @db.VarChar(60)
+  duracionMs           Int?    @map("duracion_ms")
+
+  creado DateTime @default(now()) @map("creado_en")
+
+  @@index([inquilinoId, creado])
+  @@map("uso_modelo")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Listas, campañas de correo y plantillas de WhatsApp
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ListaContactos {
+  id               Int            @id @default(autoincrement())
+  inquilinoId      Int            @map("inquilino_id")
+  inquilino        Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  automatizacionId Int            @map("automatizacion_id")
+  automatizacion   Automatizacion @relation(fields: [automatizacionId], references: [id], onDelete: Cascade)
+
+  nombre String
+
+  /// Token de la página pública donde alguien se apunta solo. NULO = no compartida.
+  tokenCompartir     String?   @unique @map("token_compartir")
+  compartidaEn       DateTime? @map("compartida_en")
+
+  creado DateTime @default(now()) @map("creado_en")
+
+  contactos  ContactoLista[]
+  campanas   CampanaLista[]
+  plantillas PlantillaLista[]
+  envios     Envio[]
+
+  @@index([inquilinoId])
+  @@map("listas_contactos")
+}
+
+model ContactoLista {
+  id          Int            @id @default(autoincrement())
+  inquilinoId Int            @map("inquilino_id")
+  inquilino   Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  listaId     Int            @map("lista_id")
+  lista       ListaContactos @relation(fields: [listaId], references: [id], onDelete: Cascade)
+
+  nombre   String
+  email    String? @db.VarChar(180)
+  telefono String? @db.VarChar(40)
+  cargo    String? @db.VarChar(120)
+  /// Si se apuntó desde el enlace público en vez de escribirlo el cliente.
+  desdeCompartir Boolean @default(false) @map("desde_compartir")
+
+  creado DateTime @default(now()) @map("creado_en")
+
+  @@index([listaId])
+  @@index([inquilinoId])
+  @@map("contactos_lista")
+}
+
+model Campana {
+  id               Int            @id @default(autoincrement())
+  inquilinoId      Int            @map("inquilino_id")
+  inquilino        Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  automatizacionId Int            @map("automatizacion_id")
+  automatizacion   Automatizacion @relation(fields: [automatizacionId], references: [id], onDelete: Cascade)
+
+  remitente  String? @map("remitente") @db.VarChar(180)
+  asunto     String?
+  cuerpoHtml String  @default("") @map("cuerpo_html")
+  pieHtml    String  @default("") @map("pie_html")
+  adjuntos   Json    @default("[]")
+
+  plantillaWaId Int?         @map("plantilla_wa_id")
+  plantillaWa   PlantillaWa? @relation(fields: [plantillaWaId], references: [id], onDelete: SetNull)
+
+  estado String @default("borrador") @db.VarChar(20)
+
+  // ── Programación (una vez, o repetida)
+  programadaPara DateTime? @map("programada_para")
+  tipoPrograma   String?   @map("tipo_programa") @db.VarChar(20)
+  frecuenciaUnidad   String? @map("frecuencia_unidad") @db.VarChar(20)
+  frecuenciaIntervalo Int?   @map("frecuencia_intervalo")
+  repetirHasta   DateTime? @map("repetir_hasta")
+  proximaEn      DateTime? @map("proxima_en")
+  vueltas        Int       @default(0)
+
+  enviadaEn     DateTime? @map("enviada_en")
+  envioIniciado DateTime? @map("envio_iniciado_en")
+
+  creado      DateTime @default(now()) @map("creado_en")
+  actualizado DateTime @updatedAt @map("actualizado_en")
+
+  listas CampanaLista[]
+  envios CampanaEnvio[]
+
+  @@index([inquilinoId])
+  @@index([proximaEn])
+  @@map("campanas")
+}
+
+model CampanaLista {
+  campanaId Int            @map("campana_id")
+  campana   Campana        @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  listaId   Int            @map("lista_id")
+  lista     ListaContactos @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  creado    DateTime       @default(now()) @map("creado_en")
+
+  @@id([campanaId, listaId])
+  @@map("campana_listas")
+}
+
+model CampanaEnvio {
+  id          Int      @id @default(autoincrement())
+  inquilinoId Int      @map("inquilino_id")
+  campanaId   Int      @map("campana_id")
+  campana     Campana  @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+
+  contactoNombre String? @map("contacto_nombre")
+  contactoEmail  String  @map("contacto_email") @db.VarChar(180)
+  /// El identificador del correo en Resend, para seguir su suerte.
+  resendId       String? @map("resend_id") @db.VarChar(120)
+  estado         String  @default("pendiente") @db.VarChar(20)
+  error          String?
+  enviadoEn      DateTime? @map("enviado_en")
+
+  @@index([campanaId])
+  @@map("campana_envios")
+}
+
+/// Plantilla de WhatsApp de una CAMPAÑA (la escribe el cliente; no se sincroniza con
+/// Meta). La del agente es `PlantillaAgente`.
+model PlantillaWa {
+  id               Int            @id @default(autoincrement())
+  inquilinoId      Int            @map("inquilino_id")
+  inquilino        Inquilino      @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  automatizacionId Int            @map("automatizacion_id")
+  automatizacion   Automatizacion @relation(fields: [automatizacionId], references: [id], onDelete: Cascade)
+
+  nombre           String  @db.VarChar(120)
+  idioma           String  @default("es") @db.VarChar(10)
+  tipoEncabezado   String  @default("ninguno") @map("tipo_encabezado") @db.VarChar(20)
+  encabezado       String? @map("encabezado")
+  encabezadoArchivo String? @map("encabezado_archivo")
+  cuerpo           String
+  pie              String?
+  botones          Json    @default("[]")
+
+  creado DateTime @default(now()) @map("creado_en")
+
+  campanas Campana[]
+
+  @@index([inquilinoId])
+  @@map("plantillas_wa")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enumeraciones
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Tema {
+  CLARO
+  OSCURO
+
+  @@map("tema")
+}
+
+enum EstadoInquilino {
+  PRUEBA
+  ACTIVO
+  SUSPENDIDO
+
+  @@map("estado_inquilino")
+}
+
+enum EstadoSuscripcion {
+  PRUEBA
+  ACTIVA
+  VENCIDA
+  CANCELADA
+
+  @@map("estado_suscripcion")
+}
+
+/// Cómo se cobró un mes. `APP_STORE` y `GOOGLE_PLAY` existen desde el primer día
+/// aunque todavía no haya app: enchufar la tienda no puede ser una migración de datos.
+enum MetodoPago {
+  AUTOSERVICIO
+  TARJETA
+  APP_STORE
+  GOOGLE_PLAY
+
+  @@map("metodo_pago")
+}
+
+enum EstadoPagoMensual {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+
+  @@map("estado_pago_mensual")
+}
+
+enum OrigenCuenta {
+  PRODUCTO
+  GCC
+
+  @@map("origen_cuenta")
+}
+
+enum Rol {
+  ADMIN
+  OPERADOR
+  CONSULTA
+
+  @@map("rol")
+}
+
+enum TipoAutomatizacion {
+  AGENTE_IA
+  CORREO
+  WHATSAPP
+
+  @@map("tipo_automatizacion")
+}
+
+enum EstadoAutomatizacion {
+  BORRADOR
+  ACTIVA
+  PAUSADA
+
+  @@map("estado_automatizacion")
+}
+
+enum Direccion {
+  ENTRANTE
+  SALIENTE
+
+  @@map("direccion")
+}
