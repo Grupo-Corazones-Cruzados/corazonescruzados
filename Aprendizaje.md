@@ -132,6 +132,14 @@ producto, es **mudar uno que está funcionando** sin que se caiga mientras se mu
   aislamiento.** El panel vacío de la bandeja es `hidden lg:flex`, así que «no veo la
   conversación ajena» salía falso por culpa del ancho de la ventana, no por un fallo. Lo
   que hay que medir es que **el dato no esté en el HTML**, que es la propiedad de verdad.
+- 🪤 **⭐ UN BUILD QUE PASA EN LOCAL DENTRO DE `productos/<slug>/` PUEDE ESTAR RESOLVIENDO
+  DEPENDENCIAS DE LA RAÍZ.** Node sube por los `node_modules` de las carpetas padre, así
+  que `openai` —que solo estaba en el `package.json` de la plataforma— compilaba aquí sin
+  quejarse. Railway construye **solo la carpeta del producto** (`rootDirectory`) y allí no
+  hay raíz: `Module not found: Can't resolve 'openai'`, y el despliegue falló después de
+  haber dado el build por bueno tres veces. *Regla: al portar código de la plataforma a un
+  producto, comparar los `import` de paquetes externos contra SU `package.json`, no fiarse
+  de que compile.*
 - 🪤 **⭐ `@updatedAt` de Prisma vive en el CLIENTE, no en la base.** La columna queda NOT
   NULL y **sin defecto**, así que cualquier `INSERT` en SQL crudo la viola. Se descubrió de
   la peor manera posible: el mensaje del webhook se guardaba bien pero **no se encolaba**,
