@@ -3563,6 +3563,33 @@ que convierte «5 $» en «5 $ por esto».
 menú lateral están ocultos hasta pasar el puntero, así que «no aparece Conversaciones» sale
 cierto por CSS aunque la puerta estuviera abierta. Se mide sobre los **enlaces del HTML**.
 
+### ⭐ NO SE INVENTAN ESTILOS ENTRE PRODUCTOS (Fernando, 2026-09-23)
+Textual: *«aunque los productos son diferentes, los diseños, estilos, consideraciones y
+buenas prácticas […] deben ser muy iguales o parecidos entre todos, no podemos
+inventarnos estilos»*. Dos correcciones suyas que lo ilustran, y las dos eran mías:
+
+**1. Un botón no ocupa todo el ancho porque sí.** La bandeja tenía «Devolvérsela al
+agente» como una barra a todo lo ancho abajo: 1.400 px para cinco palabras, y encima lejos
+de la insignia que le da sentido. Ahora va **en la cabecera, junto al indicador**, ocupando
+lo que ocupa.
+
+> **Regla:** se aprovecha el espacio. Una acción va donde hay hueco y del tamaño que
+> necesita. El ancho completo se reserva para lo que de verdad lo pide: el botón de un
+> formulario dentro de una tarjeta estrecha o de un panel lateral.
+
+**2. La `Insignia` no lleva iconos dentro.** Le había metido un icono además de su punto de
+color, y quedaban dos marcas para una sola cosa. El punto es el estándar compartido con
+Reservas, Pedidos y Catering; el icono era una invención de este producto.
+
+> **Regla antes de añadir nada a un componente compartido: mirar cómo se ve en los otros
+> cuatro productos.** Si allí no lo lleva, no es una mejora, es una divergencia.
+
+### La configuración tiene submenú, no módulos sueltos
+«Suscripción» dejó de ser un destino del menú y vive dentro de **Configuración**, junto a
+**Marca** y **Mi cuenta** — el mismo raíl que Gestión de Pedidos. Lo que se mira a diario
+—conversaciones, estudio, envíos— es lo que merece un sitio arriba; lo que se consulta de
+vez en cuando, no.
+
 ### El marketplace ya no tiene pestaña de «Automatizaciones»
 Dejó de ser una categoría el día que pasó a ser un producto: quedan **Proyectos** y
 **Productos**. ⚠️ Al quitar una pestaña hay que mirar **quién la nombraba**: la apertura

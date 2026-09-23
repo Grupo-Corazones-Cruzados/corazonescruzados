@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { ChevronLeft, Bot, Hand, Search, Wrench, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Hand, Search, Wrench, AlertCircle } from 'lucide-react';
 import { Boton, Insignia, Tarjeta } from '@/componentes/ui';
 import { cambiarBot } from '@/acciones/conversaciones';
 import { cn } from '@/lib/utils';
@@ -143,17 +143,35 @@ export default function Bandeja({
                 <p className="truncate text-[14px] font-semibold text-texto">{abierta.nombre}</p>
                 <p className="truncate text-[11.5px] text-tenue">{abierta.numero}</p>
               </div>
-              {abierta.botActivo ? (
-                <Insignia tono="exito">
-                  <Bot className="mr-1 inline h-3 w-3" />
-                  Contesta el agente
-                </Insignia>
-              ) : (
-                <Insignia tono="aviso">
-                  <Hand className="mr-1 inline h-3 w-3" />
-                  {abierta.tomadaPor ? `La lleva ${abierta.tomadaPor}` : 'A mano'}
-                </Insignia>
+              {/*
+                LA ACCIÓN VA JUNTO AL INDICADOR QUE EXPLICA POR QUÉ HACE FALTA, y ocupa lo
+                que ocupa (Fernando, 2026-09-23). Antes era una barra a todo lo ancho abajo:
+                un botón que se come 1.400 px para decir cinco palabras no aprovecha el
+                espacio, y encima queda lejos de la insignia que le da sentido.
+
+                ⚠️ Y la insignia NO lleva icono dentro: el punto de color es el estándar
+                compartido con Reservas, Pedidos y Catering. Meterle además un icono era
+                inventarse un estilo para este producto.
+              */}
+              {puedeOperar && (
+                <Boton
+                  variante={abierta.botActivo ? 'secundario' : 'primario'}
+                  disabled={cambiando}
+                  onClick={() =>
+                    arranca(async () => {
+                      await cambiarBot(slug, abierta.id, !abierta.botActivo);
+                      router.refresh();
+                    })
+                  }
+                >
+                  {cambiando ? 'Cambiando…' : abierta.botActivo ? 'Tomar la conversación' : 'Devolvérsela al agente'}
+                </Boton>
               )}
+              <Insignia tono={abierta.botActivo ? 'exito' : 'aviso'}>
+                {abierta.botActivo
+                  ? 'Contesta el agente'
+                  : abierta.tomadaPor ? `La lleva ${abierta.tomadaPor}` : 'A mano'}
+              </Insignia>
             </header>
 
             <div className="flex-1 space-y-2 overflow-y-auto bg-fondo p-3">
@@ -195,33 +213,6 @@ export default function Bandeja({
               ))}
             </div>
 
-            {puedeOperar && (
-              <footer className="border-t border-borde p-2.5">
-                {/*
-                  Apagar el bot es LA acción de esta pantalla: es lo que hace una
-                  persona cuando la conversación se le tuerce al agente. Por eso está
-                  siempre visible y no escondida en un menú.
-                */}
-                <Boton
-                  variante={abierta.botActivo ? 'secundario' : 'primario'}
-                  tamano="lg"
-                  className="w-full"
-                  disabled={cambiando}
-                  onClick={() =>
-                    arranca(async () => {
-                      await cambiarBot(slug, abierta.id, !abierta.botActivo);
-                      router.refresh();
-                    })
-                  }
-                >
-                  {cambiando
-                    ? 'Cambiando…'
-                    : abierta.botActivo
-                      ? 'Tomar la conversación (apagar el agente)'
-                      : 'Devolvérsela al agente'}
-                </Boton>
-              </footer>
-            )}
           </>
         )}
       </section>

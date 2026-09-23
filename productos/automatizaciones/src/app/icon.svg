@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    Icono de pestaña de «Automatizaciones».
+
+    Cuadrado violeta del grupo (#4B2D8E) con un globo de conversación y, dentro, una
+    chispa: el agente que contesta. A 16 px no se ve ningún detalle fino, así que el
+    trazo va GRUESO (2,6) y el glifo ocupa casi todo el cuadrado — lo que se reconoce
+    a ese tamaño es la silueta y el color, no el dibujo.
+
+    Se comprueba rasterizándolo a 16 px, no mirándolo en grande.
+
+    ⚠️ El violeta es FIJO aunque el inquilino tenga su propio color: el navegador
+    cachea este icono por origen y es el mismo para todos los clientes. Además es la
+    marca del grupo, que debe reconocerse siempre.
+  -->
+  <rect width="32" height="32" rx="7" fill="#4B2D8E"/>
+  <g fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- el globo, casi a sangre para que se lea pequeño -->
+    <path d="M26 17c0 4.4-4.5 8-10 8-1.1 0-2.2-.15-3.2-.42L6 26l1.7-4.2C6.6 20.5 6 18.8 6 17c0-4.4 4.5-8 10-8s10 3.6 10 8Z"/>
+  </g>
+  <!-- la chispa, maciza: a 16 px un trazo fino aquí desaparece -->
+  <path d="M16 12.2l1.5 3.3 3.3 1.5-3.3 1.5-1.5 3.3-1.5-3.3-3.3-1.5 3.3-1.5z" fill="#ffffff"/>
+</svg>

@@ -13,7 +13,15 @@ import { pool } from '@/lib/db';
 import { secretoDelCanal, anotarError } from './canales';
 import { plantillasDeWaba, enviarPlantilla } from './meta';
 
-/** Las columnas de `flow_contacts` que pueden alimentar una variable. */
+/**
+ * Las columnas de un contacto de lista que pueden alimentar una variable de plantilla.
+ *
+ * ⚠️ LAS CLAVES SIGUEN EN INGLÉS Y NO ES UN OLVIDO DEL PORTE. Son las que están GUARDADAS
+ * en `plantillas_agente.variables` de las plantillas que se migraron: renombrarlas a
+ * `nombre`/`telefono` dejaría esas plantillas apuntando a columnas que ya no existen, y el
+ * envío saldría con un guion en vez del nombre del destinatario. La traducción se hace
+ * donde toca —en el `SELECT` de `enviarAListado`— y no en el contrato.
+ */
 export const COLUMNAS_CONTACTO = [
   { clave: 'name', etiqueta: 'Nombre' },
   { clave: 'position', etiqueta: 'Puesto' },
@@ -153,7 +161,8 @@ export async function enviarAListado(
   canal: any,
   plantilla: any,
   listaId: number,
-  lanzadoPor: string | null,
+  /** El usuario DEL PRODUCTO (entero), que es lo que guarda `lanzado_por_id`. */
+  lanzadoPor: number | null,
 ): Promise<{ envioId: number; enviados: number; fallidos: number }> {
   const token = secretoDelCanal(canal, 'wa_token');
   if (!token) throw new Error('El canal no tiene token de WhatsApp.');
@@ -162,9 +171,12 @@ export async function enviarAListado(
     throw new Error(`La plantilla está en «${plantilla.estado}». Solo se puede enviar una aprobada por Meta.`);
   }
 
+  // Las columnas del producto se devuelven con el nombre que esperan las variables ya
+  // guardadas en las plantillas (ver COLUMNAS_CONTACTO).
   const { rows: contactos } = await pool.query(
-    `SELECT id, name, email, phone, position FROM contactos_lista
-      WHERE list_id = $1 AND phone IS NOT NULL AND TRIM(phone) <> '' ORDER BY id`,
+    `SELECT id, nombre AS name, email, telefono AS phone, cargo AS position
+       FROM contactos_lista
+      WHERE lista_id = $1 AND telefono IS NOT NULL AND TRIM(telefono) <> '' ORDER BY id`,
     [listaId],
   );
 

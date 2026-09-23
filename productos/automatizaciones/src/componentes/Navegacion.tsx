@@ -6,10 +6,10 @@ import { useState, useTransition } from 'react';
 import {
   LayoutDashboard,
   MessagesSquare,
-  Workflow,
+  SlidersHorizontal,
+  Send,
   Users,
   Settings,
-  CreditCard,
   LogOut,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
@@ -58,13 +58,20 @@ type Item = {
 const PRINCIPAL: Item[] = [
   { ruta: 'panel', etiqueta: 'Panel', icono: LayoutDashboard, tambien: [] },
   { ruta: 'conversaciones', etiqueta: 'Conversaciones', icono: MessagesSquare, tambien: [], tipo: 'AGENTE_IA' },
-  { ruta: 'automatizaciones', etiqueta: 'Automatizaciones', icono: Workflow, tambien: [] },
+  { ruta: 'estudio', etiqueta: 'Estudio', icono: SlidersHorizontal, tambien: [], tipo: 'AGENTE_IA' },
+  { ruta: 'envios', etiqueta: 'Envíos', icono: Send, tambien: [] },
 ];
 
+/**
+ * ⚠️ «Suscripción» NO es un destino del menú (Fernando, 2026-09-23): vive dentro de
+ * Configuración, junto a Marca y Mi cuenta, como en Gestión de Pedidos. No es algo que se
+ * mire a diario; lo que se mira a diario es lo que merece un sitio arriba.
+ *
+ * Y «Automatizaciones» tampoco: dentro del producto sobra, porque el producto ES eso.
+ */
 const ADMINISTRACION: Item[] = [
   { ruta: 'usuarios', etiqueta: 'Cuentas', icono: Users, tambien: [] },
-  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, tambien: [] },
-  { ruta: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard, tambien: [] },
+  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, tambien: ['suscripcion'] },
 ];
 
 const estaActivo = (ruta: string, slug: string, item: Item) =>
