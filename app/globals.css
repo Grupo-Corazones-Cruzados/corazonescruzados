@@ -976,6 +976,17 @@ html {
 }
 .corp .field-control,
 .corp select { min-height: 34px; }
+/* ⭐ EL DESTINO TÁCTIL DE LOS CAMPOS, EN LA FUENTE (2026-09-22).
+   Igual que con `BTN_*`: esta regla fija 34 px a TODOS los campos y desplegables del
+   panel, y gana por especificidad a una utilidad suelta —poner `min-h-11` en el JSX no
+   servía de nada, el campo seguía midiendo 34—. Aquí, **todos los formularios del panel
+   ganan los 44 px de golpe**; en escritorio vuelven a 34, donde hay puntero.
+   ⚠️ Los `textarea` se excluyen: su alto lo pone `rows` y ya son grandes. */
+@media (hover: none), (pointer: coarse) {
+  .corp .field-control:not(textarea),
+  .corp select,
+  .corp input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) { min-height: 44px; }
+}
 .corp .field-control:focus,
 .corp input:focus,
 .corp select:focus,

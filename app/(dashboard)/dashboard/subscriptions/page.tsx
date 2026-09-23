@@ -229,6 +229,134 @@ export default function SubscriptionsPage() {
   const totalPages = Math.ceil(total / PER_PAGE);
 
 
+  /** El cuerpo del panel de meses, una sola vez: columna en escritorio, panel en teléfono. */
+  const cuerpoMeses = !selected || loadingDetail || !detail ? null : (
+  <div className="p-4 space-y-3">
+    <div className="grid grid-cols-2 gap-2 text-[12px]" style={mf}>
+      <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${fmt2(Number(detail.monthly_cost))}</span></div>
+      <div><span className="text-digi-muted">Día corte:</span> <span className="text-digi-text">{detail.cut_day}</span></div>
+      <div className="col-span-2"><span className="text-digi-muted">Inicio:</span> <span className="text-digi-text">{detail.start_date}</span></div>
+    </div>
+
+    <div className="flex items-center justify-between border-y border-digi-border py-2">
+      {/* El cliente VE su estado; cambiarlo es del staff (el PATCH lo
+          rechaza, y un control que falla al usarlo es peor que no tenerlo). */}
+      <div className="flex items-center gap-2">
+        <label className="text-[11px] text-digi-muted" style={mf}>Estado</label>
+        {esCliente ? (
+          <PixelBadge variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
+            {detail.status === 'active' ? 'Activa' : detail.status === 'paused' ? 'Pausada' : 'Cancelada'}
+          </PixelBadge>
+        ) : (
+          <select value={detail.status} onChange={e => changeStatus(e.target.value)} disabled={updatingStatus}
+            className="field-control field-select appearance-none min-h-11 sm:min-h-0 px-2.5 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+            <option value="active">Activa</option><option value="paused">Pausada</option><option value="cancelled">Cancelada</option>
+          </select>
+        )}
+      </div>
+      <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{detail.summary?.paidCount}/{detail.summary?.totalPeriods} pagados</span>
+    </div>
+
+    {payError && (
+      <div className="border border-red-300 rounded bg-red-50 px-3 py-2 flex items-start justify-between gap-2">
+        <div className="text-[12px] text-red-700 leading-relaxed" style={mf}><span className="font-semibold">No se pudo facturar:</span> {payError}</div>
+        <button onClick={() => setPayError(null)} className="text-red-500 hover:text-red-600 shrink-0"><X className="w-3.5 h-3.5" /></button>
+      </div>
+    )}
+
+    {/* Solo el staff confirma transferencias; al cliente no le sale nada
+        porque el endpoint le responde 403 y el bloque no se pinta. */}
+    {!esCliente && (
+      <CobrosEnEspera tipo="subscription" id={String(detail.id)} alConfirmar={() => openDetail(detail)} />
+    )}
+
+    <div className="space-y-2 max-h-[46vh] overflow-y-auto -mx-1 px-1">
+      {detail.periods.slice().reverse().map((p: any) => {
+        const busy = busyPeriod === p.period;
+        return (
+          /* ⇒ EL COLOR, EN UNA FRANJA Y NO EN TODO EL RECUADRO.
+             Cada mes venía con el fondo entero teñido —verde el pagado, rojo
+             el vencido— y la lista parecía un semáforo: tres bloques de color
+             saturado compitiendo entre ellos y con el botón de pagar, que es
+             lo único que hay que pulsar ahí.
+             Ahora la superficie es la misma que el resto del panel y el estado
+             lo dice una barra de 3 px en el canto izquierdo. Se distingue igual
+             de rápido —el ojo encuentra el color aunque sea poco— y deja de
+             gritar. El texto de «Pagado» y «Vencido» conserva su color, que es
+             donde el dato de verdad está escrito. */
+          <div key={p.period}
+            className="relative flex items-center justify-between gap-2 pl-4 pr-3 py-2 rounded border border-digi-border bg-digi-darker overflow-hidden">
+            <span
+              aria-hidden
+              className={`absolute left-0 top-0 bottom-0 w-[3px] ${
+                p.paid ? 'bg-green-500'
+                : p.status === 'overdue' ? 'bg-red-500'
+                : p.status === 'due_soon' ? 'bg-amber-500'
+                : 'bg-digi-border'}`}
+            />
+            <div className="min-w-0">
+              <div className="text-[12px] font-medium text-digi-text" style={mf}>{p.label}</div>
+              <div className="text-[11px] text-digi-muted" style={mf}>
+                Vence {p.dueDate}
+                {p.paid
+                  ? <> · <span className="text-green-600">Pagado{p.paidAt ? ` el ${String(p.paidAt).split('T')[0]}` : ''}</span></>
+                  : <> · {p.status === 'overdue' ? <span className="text-red-600">{dueText(p.daysUntilDue)}</span> : p.status === 'due_soon' ? <span className="text-amber-700">{dueText(p.daysUntilDue)}</span> : <span>{dueText(p.daysUntilDue)}</span>}</>}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {p.paid ? (
+                <>
+                  {p.invoiceId && (
+                    <button onClick={() => window.open(`/api/invoices/${p.invoiceId}/pdf`, '_blank')}
+                      className="destino-tactil inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-accent hover:border-accent transition-colors" style={mf}><FileText className="w-3 h-3" /> PDF</button>
+                  )}
+                  {/* Desmarcar es cosa de quien administra el cobro, no del
+                      cliente: para él, un mes pagado está pagado. */}
+                  {!esCliente && (
+                    <button onClick={() => requestUnmarkPaid(p.period, p.label)} disabled={busy}
+                      className="destino-tactil px-2 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={mf}>
+                      {busy ? '...' : 'Desmarcar'}
+                    </button>
+                  )}
+                </>
+              ) : esCliente ? (
+                /* EL CLIENTE PAGA SU MES. Lo suyo no es «marcar pagado»
+                   —eso lo hace quien ya cobró por otra vía— sino pagar de
+                   verdad, así que va a la pasarela. */
+                <button onClick={() => router.push(`/pagar/cobro?tipo=subscription&id=${detail.id}&periodo=${p.period}`)}
+                  disabled={detail.status === 'cancelled'}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-[11px] font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+                  <Lock className="w-3 h-3" /> Pagar ${fmt2(Number(detail.monthly_cost || 0))}
+                </button>
+              ) : (
+                <button onClick={() => requestMarkPaid(p.period, p.label)} disabled={busy || detail.status === 'cancelled'}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-[11px] font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+                  {busy ? 'Procesando…' : 'Marcar pagado'}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
+      {esCliente
+        ? 'Al pagar un mes se emite tu factura electrónica y te llega al correo.'
+        : 'Al marcar un mes como pagado se genera la factura electrónica (SRI), se envía por correo al cliente y se registra el ingreso. Un mes con factura emitida no puede desmarcarse (requiere nota de crédito).'}
+    </p>
+
+    {user?.role === 'admin' && (
+      <div className="pt-2 border-t border-digi-border">
+        <button onClick={requestDelete}
+          className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 w-full sm:w-auto text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
+          <Trash2 className="w-3.5 h-3.5" /> Eliminar suscripción
+        </button>
+      </div>
+    )}
+  </div>
+  );
+
   return (
     <div>
       <PageHeader title="Suscripciones" description="Cobros mensuales recurrentes y su facturación" />
@@ -249,7 +377,7 @@ export default function SubscriptionsPage() {
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por título o cliente..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                className="field-control w-full min-h-11 sm:min-h-0 pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf} />
             </div>
             {/* Crear suscripciones es del staff. El servidor ya lo rechaza, pero enseñarle
@@ -304,6 +432,42 @@ export default function SubscriptionsPage() {
                     <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{s.paid_count}/{s.total_periods}</span>
                   ) },
                 ]}
+                /* ── La suscripción, contada para un teléfono ─────────────────────────
+                   La tabla esconde con `hideOnMobile` el título, el PRÓXIMO COBRO y los
+                   pagados: la fila se quedaba en «CONSUMIDOR FINAL · $5,00», sin decir de
+                   qué es ni si debe dinero — y esta es la pantalla donde se cobra, así que
+                   **quién debe y cuándo es justo lo que se viene a mirar**. Aquí está todo,
+                   con el vencimiento destacado por color. */
+                tarjetaMovil={(s: any) => {
+                  const cancelada = s.status === 'cancelled';
+                  const tono = cancelada ? 'text-digi-muted'
+                    : s.alert === 'overdue' ? 'text-red-600'
+                    : s.alert === 'due_soon' ? 'text-amber-600'
+                    : 'text-green-600';
+                  const punto = cancelada ? 'bg-digi-muted'
+                    : s.alert === 'overdue' ? 'bg-red-500'
+                    : s.alert === 'due_soon' ? 'bg-amber-500'
+                    : 'bg-green-500';
+                  return (
+                    <>
+                      <div className="flex items-start gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${punto}`} />
+                        <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{s.client_name || '—'}</span>
+                        <span className="shrink-0 text-[13px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(Number(s.monthly_cost))}<span className="text-[11px] font-normal text-digi-muted">/mes</span></span>
+                      </div>
+                      {s.title && <p className="mt-0.5 pl-4 text-[12px] text-digi-muted leading-snug" style={mf}>{s.title}</p>}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 text-[12px]" style={mf}>
+                        <span className="tabular-nums text-digi-muted">#{s.id}</span>
+                        <span className={`font-medium ${tono}`}>
+                          {cancelada ? 'Cancelada'
+                            : !s.next_due ? 'Al día'
+                            : `${s.next_due.label} · ${dueText(s.next_due.daysUntilDue)}`}
+                        </span>
+                        <span className="ml-auto tabular-nums text-digi-muted">{s.paid_count}/{s.total_periods} pagados</span>
+                      </div>
+                    </>
+                  );
+                }}
               />
 
               {totalPages > 1 && (
@@ -323,8 +487,11 @@ export default function SubscriptionsPage() {
               )}
             </div>
 
-            {/* ── Detail panel: meses ── */}
-            <aside className="w-full xl:w-[360px]">
+            {/* ── Los meses y el cobro ────────────────────────────────────────────
+                Es donde se COBRA. En teléfono caía bajo la lista, así que tocar una
+                suscripción no producía ningún cambio visible. Ahí se abre a pantalla
+                completa. */}
+            <aside className="hidden xl:block w-full xl:w-[360px]">
               {!selected ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
@@ -347,135 +514,27 @@ export default function SubscriptionsPage() {
                     <button onClick={() => { setSelected(null); setDetail(null); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
                   </div>
 
-                  <div className="p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-[12px]" style={mf}>
-                      <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${fmt2(Number(detail.monthly_cost))}</span></div>
-                      <div><span className="text-digi-muted">Día corte:</span> <span className="text-digi-text">{detail.cut_day}</span></div>
-                      <div className="col-span-2"><span className="text-digi-muted">Inicio:</span> <span className="text-digi-text">{detail.start_date}</span></div>
-                    </div>
-
-                    <div className="flex items-center justify-between border-y border-digi-border py-2">
-                      {/* El cliente VE su estado; cambiarlo es del staff (el PATCH lo
-                          rechaza, y un control que falla al usarlo es peor que no tenerlo). */}
-                      <div className="flex items-center gap-2">
-                        <label className="text-[11px] text-digi-muted" style={mf}>Estado</label>
-                        {esCliente ? (
-                          <PixelBadge variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
-                            {detail.status === 'active' ? 'Activa' : detail.status === 'paused' ? 'Pausada' : 'Cancelada'}
-                          </PixelBadge>
-                        ) : (
-                          <select value={detail.status} onChange={e => changeStatus(e.target.value)} disabled={updatingStatus}
-                            className="field-control field-select appearance-none px-2.5 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                            <option value="active">Activa</option><option value="paused">Pausada</option><option value="cancelled">Cancelada</option>
-                          </select>
-                        )}
-                      </div>
-                      <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>{detail.summary?.paidCount}/{detail.summary?.totalPeriods} pagados</span>
-                    </div>
-
-                    {payError && (
-                      <div className="border border-red-300 rounded bg-red-50 px-3 py-2 flex items-start justify-between gap-2">
-                        <div className="text-[12px] text-red-700 leading-relaxed" style={mf}><span className="font-semibold">No se pudo facturar:</span> {payError}</div>
-                        <button onClick={() => setPayError(null)} className="text-red-500 hover:text-red-600 shrink-0"><X className="w-3.5 h-3.5" /></button>
-                      </div>
-                    )}
-
-                    {/* Solo el staff confirma transferencias; al cliente no le sale nada
-                        porque el endpoint le responde 403 y el bloque no se pinta. */}
-                    {!esCliente && (
-                      <CobrosEnEspera tipo="subscription" id={String(detail.id)} alConfirmar={() => openDetail(detail)} />
-                    )}
-
-                    <div className="space-y-2 max-h-[46vh] overflow-y-auto -mx-1 px-1">
-                      {detail.periods.slice().reverse().map((p: any) => {
-                        const busy = busyPeriod === p.period;
-                        return (
-                          /* ⇒ EL COLOR, EN UNA FRANJA Y NO EN TODO EL RECUADRO.
-                             Cada mes venía con el fondo entero teñido —verde el pagado, rojo
-                             el vencido— y la lista parecía un semáforo: tres bloques de color
-                             saturado compitiendo entre ellos y con el botón de pagar, que es
-                             lo único que hay que pulsar ahí.
-                             Ahora la superficie es la misma que el resto del panel y el estado
-                             lo dice una barra de 3 px en el canto izquierdo. Se distingue igual
-                             de rápido —el ojo encuentra el color aunque sea poco— y deja de
-                             gritar. El texto de «Pagado» y «Vencido» conserva su color, que es
-                             donde el dato de verdad está escrito. */
-                          <div key={p.period}
-                            className="relative flex items-center justify-between gap-2 pl-4 pr-3 py-2 rounded border border-digi-border bg-digi-darker overflow-hidden">
-                            <span
-                              aria-hidden
-                              className={`absolute left-0 top-0 bottom-0 w-[3px] ${
-                                p.paid ? 'bg-green-500'
-                                : p.status === 'overdue' ? 'bg-red-500'
-                                : p.status === 'due_soon' ? 'bg-amber-500'
-                                : 'bg-digi-border'}`}
-                            />
-                            <div className="min-w-0">
-                              <div className="text-[12px] font-medium text-digi-text" style={mf}>{p.label}</div>
-                              <div className="text-[11px] text-digi-muted" style={mf}>
-                                Vence {p.dueDate}
-                                {p.paid
-                                  ? <> · <span className="text-green-600">Pagado{p.paidAt ? ` el ${String(p.paidAt).split('T')[0]}` : ''}</span></>
-                                  : <> · {p.status === 'overdue' ? <span className="text-red-600">{dueText(p.daysUntilDue)}</span> : p.status === 'due_soon' ? <span className="text-amber-700">{dueText(p.daysUntilDue)}</span> : <span>{dueText(p.daysUntilDue)}</span>}</>}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {p.paid ? (
-                                <>
-                                  {p.invoiceId && (
-                                    <button onClick={() => window.open(`/api/invoices/${p.invoiceId}/pdf`, '_blank')}
-                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-accent hover:border-accent transition-colors" style={mf}><FileText className="w-3 h-3" /> PDF</button>
-                                  )}
-                                  {/* Desmarcar es cosa de quien administra el cobro, no del
-                                      cliente: para él, un mes pagado está pagado. */}
-                                  {!esCliente && (
-                                    <button onClick={() => requestUnmarkPaid(p.period, p.label)} disabled={busy}
-                                      className="px-2 py-0.5 text-[11px] border border-digi-border rounded text-digi-muted hover:text-digi-text transition-colors disabled:opacity-50" style={mf}>
-                                      {busy ? '...' : 'Desmarcar'}
-                                    </button>
-                                  )}
-                                </>
-                              ) : esCliente ? (
-                                /* EL CLIENTE PAGA SU MES. Lo suyo no es «marcar pagado»
-                                   —eso lo hace quien ya cobró por otra vía— sino pagar de
-                                   verdad, así que va a la pasarela. */
-                                <button onClick={() => router.push(`/pagar/cobro?tipo=subscription&id=${detail.id}&periodo=${p.period}`)}
-                                  disabled={detail.status === 'cancelled'}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-[11px] font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
-                                  <Lock className="w-3 h-3" /> Pagar ${fmt2(Number(detail.monthly_cost || 0))}
-                                </button>
-                              ) : (
-                                <button onClick={() => requestMarkPaid(p.period, p.label)} disabled={busy || detail.status === 'cancelled'}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-[11px] font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
-                                  {busy ? 'Procesando…' : 'Marcar pagado'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <p className="text-[11px] text-digi-muted leading-relaxed" style={mf}>
-                      {esCliente
-                        ? 'Al pagar un mes se emite tu factura electrónica y te llega al correo.'
-                        : 'Al marcar un mes como pagado se genera la factura electrónica (SRI), se envía por correo al cliente y se registra el ingreso. Un mes con factura emitida no puede desmarcarse (requiere nota de crédito).'}
-                    </p>
-
-                    {user?.role === 'admin' && (
-                      <div className="pt-2 border-t border-digi-border">
-                        <button onClick={requestDelete}
-                          className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
-                          <Trash2 className="w-3.5 h-3.5" /> Eliminar suscripción
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {cuerpoMeses}
                 </div>
               )}
             </aside>
           </div>
         </div>
+      </div>
+
+
+      {/* Los meses en teléfono: panel a pantalla completa. Mismo contenido, otro envoltorio. */}
+      <div className="xl:hidden">
+        <PixelModal
+          open={!!selected}
+          onClose={() => { setSelected(null); setDetail(null); }}
+          title={detail ? `${detail.title} · ${detail.client_name || ''}` : 'Suscripción'}
+          size="md"
+        >
+          {loadingDetail || !detail
+            ? <p className="py-10 text-center text-[12px] text-digi-muted" style={mf}>Cargando…</p>
+            : cuerpoMeses}
+        </PixelModal>
       </div>
 
       {/* Create Modal */}

@@ -3388,6 +3388,31 @@ cliente, desde su teléfono, para reportar un fallo:
 
 ---
 
+### Séptima aplicación: SUSCRIPCIONES (2026-09-22)
+`/dashboard/subscriptions`. La pantalla llegó **ya medio resuelta** —heredaba el rail de
+fichas y los botones de 44 px de los módulos anteriores—, que es justo lo que se buscaba.
+Lo que faltaba:
+
+- **⭐⭐ EL DESTINO TÁCTIL DE LOS CAMPOS, TAMBIÉN EN LA FUENTE.** `.corp .field-control,
+  .corp select { min-height: 34px }` fija el alto de **todos** los campos y desplegables
+  del panel, y **gana por especificidad a una utilidad suelta**: poner `min-h-11` en el JSX
+  no servía de nada, el campo seguía midiendo 34 px. Se añadió el bloque
+  `@media (hover: none), (pointer: coarse) { … min-height: 44px }` en `globals.css`, y
+  **todos los formularios del panel ganan el destino táctil de golpe**. Los `textarea` se
+  excluyen: su alto lo pone `rows`.
+  *Comprobado: 0 controles pequeños en Suscripciones, Tickets, Proyectos y Recordatorios;
+  en escritorio los campos vuelven a 38 px en cuatro pantallas más.*
+  > Es el mismo hallazgo que con `BTN_*`, y juntos cierran el asunto: **en el panel, el
+  > tamaño de botones y campos se decide en dos sitios, no en cada página.**
+- **La tabla escondía lo único que importa aquí.** Con `hideOnMobile` desaparecían el
+  título, el **próximo cobro** y los meses pagados: la fila se quedaba en «CONSUMIDOR FINAL
+  · $5,00», sin decir de qué es ni **si debe dinero** — y esta es la pantalla donde se
+  cobra. La tarjeta lleva todo, con el vencimiento en rojo/ámbar/verde.
+- **El panel de meses es donde se cobra** y en teléfono caía bajo la lista: se abre a
+  pantalla completa, con el cuerpo extraído a `cuerpoMeses`.
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3558,6 +3583,10 @@ mientras se escribe.
     en 9 archivos más** (lista en la regla 6-bis).
   - **`FilterRail` con tira de fichas bajo `lg`** (2026-09-22) — **19 pantallas** la
     heredan de golpe. Sus `actions` pasan a `.acciones-al-pasar`.
+  - **Campos y desplegables a 44 px en táctil** (2026-09-22) — bloque
+    `@media (hover: none), (pointer: coarse)` sobre `.corp .field-control` / `.corp select`
+    / `.corp input` en `globals.css`. Va ahí porque **la regla de 34 px gana por
+    especificidad** a cualquier `min-h-11` escrito en el JSX.
   - **`BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_DANGER` con `min-h-11 sm:min-h-0`** (2026-09-22) —
     el destino táctil en la fuente; **57 archivos** lo heredan. Deja de hacer falta añadir
     `h-11` a mano en cada pantalla.

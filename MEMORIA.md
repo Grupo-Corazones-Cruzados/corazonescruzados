@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Suscripciones en teléfono — y el destino táctil de los CAMPOS, también en la fuente
+  (2026-09-22).** La pantalla llegó ya medio resuelta (heredaba el rail de fichas y los botones
+  de 44 px), que era el objetivo de haber ido arreglando por componentes. Lo que faltaba:
+  (1) **`.corp .field-control` / `.corp select` fijan `min-height: 34px` a todos los campos del
+  panel y GANAN POR ESPECIFICIDAD a un `min-h-11` escrito en el JSX** — poner la utilidad en la
+  página no servía de nada. Con un bloque `@media (hover:none),(pointer:coarse)` en
+  `globals.css`, **todos los formularios del panel ganan los 44 px de golpe** (los `textarea` se
+  excluyen). Junto con lo de `BTN_*`, cierra el asunto: en el panel, el tamaño de botones y
+  campos se decide en DOS sitios, no en cada página. (2) La tabla escondía con `hideOnMobile` el
+  título, el **próximo cobro** y los meses pagados: la fila decía «CONSUMIDOR FINAL · $5,00», sin
+  decir de qué es ni **si debe dinero**, y esta es la pantalla donde se cobra. (3) El panel de
+  meses —donde se cobra— caía bajo la lista en teléfono; ahora abre a pantalla completa.
+  Medido: 0 controles < 44 px en Suscripciones, Tickets, Proyectos y Recordatorios; escritorio
+  sin cambios en cuatro pantallas más.
 - **Módulo de PROYECTOS con diseño de teléfono, y el destino táctil movido a la fuente
   (2026-09-22).** Cuatro rutas: lista, detalle (2.999 líneas, la página más grande del panel),
   el portal de incidencias del cliente y `/panel/projects`. **Dos hallazgos que valen para todo
