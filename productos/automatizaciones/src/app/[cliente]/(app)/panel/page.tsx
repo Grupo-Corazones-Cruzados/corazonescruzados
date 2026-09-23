@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { MessagesSquare, Users2, Bot } from 'lucide-react';
+import { MessagesSquare, Users2, Bot, Coins } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { Tarjeta, Insignia } from '@/componentes/ui';
+import { costoEnDolares, costoLegible, PRECIOS_COMPROBADOS_EN } from '@/lib/ia/precios';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,38 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
     prisma.conversacion.count({ where: { ...donde, ultimoMensajeEn: { gte: inicioDeMes() } } }),
   ]);
 
+  /**
+   * LO QUE LLEVA CONSUMIDO EL AGENTE (Fernando, 2026-09-23).
+   *
+   * Se suman los dos periodos en UNA consulta —el total y el mes en curso— porque son la
+   * misma tabla y dos viajes a la base para dos números de la misma tarjeta es un viaje
+   * de más.
+   */
+  const [gasto] = await prisma.$queryRaw<
+    { entrada: number; salida: number; cache: number; corridas: number;
+      entrada_mes: number; salida_mes: number; cache_mes: number; corridas_mes: number }[]
+  >`
+    SELECT COALESCE(SUM(tokens_entrada), 0)::int        AS entrada,
+           COALESCE(SUM(tokens_salida), 0)::int         AS salida,
+           COALESCE(SUM(tokens_cache_lectura), 0)::int  AS cache,
+           COUNT(*)::int                                AS corridas,
+           COALESCE(SUM(tokens_entrada)       FILTER (WHERE creado_en >= date_trunc('month', now())), 0)::int AS entrada_mes,
+           COALESCE(SUM(tokens_salida)        FILTER (WHERE creado_en >= date_trunc('month', now())), 0)::int AS salida_mes,
+           COALESCE(SUM(tokens_cache_lectura) FILTER (WHERE creado_en >= date_trunc('month', now())), 0)::int AS cache_mes,
+           COUNT(*)                           FILTER (WHERE creado_en >= date_trunc('month', now()))::int     AS corridas_mes
+      FROM uso_modelo WHERE inquilino_id = ${inquilino.id}`;
+
+  const consumido = costoEnDolares({
+    tokensEntrada: gasto?.entrada ?? 0,
+    tokensSalida: gasto?.salida ?? 0,
+    tokensCacheLectura: gasto?.cache ?? 0,
+  });
+  const consumidoMes = costoEnDolares({
+    tokensEntrada: gasto?.entrada_mes ?? 0,
+    tokensSalida: gasto?.salida_mes ?? 0,
+    tokensCacheLectura: gasto?.cache_mes ?? 0,
+  });
+
   const plan = inquilino.suscripcion?.plan ?? null;
 
   const recientes = !montados.includes('AGENTE_IA') ? [] : await prisma.conversacion.findMany({
@@ -55,6 +88,15 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
             <Cifra icono={MessagesSquare} etiqueta="Conversaciones" valor={conversaciones} />
             <Cifra icono={Bot} etiqueta="Esperando a una persona" valor={sinLeer} tono={sinLeer > 0 ? 'aviso' : 'neutro'} />
             <Cifra icono={Users2} etiqueta="Contactos" valor={contactos} />
+            {/* Lo que cuesta el agente, en dinero. El total responde «cuánto llevo» y el
+                mes es el que sirve para decidir, porque la suscripción es mensual. */}
+            <Cifra
+              icono={Coins}
+              etiqueta="Consumido en IA"
+              valor={costoLegible(consumido)}
+              detalle={`${costoLegible(consumidoMes)} este mes · ${(gasto?.corridas ?? 0).toLocaleString('es-ES')} respuestas`}
+              titulo={`Tarifa comprobada el ${PRECIOS_COMPROBADOS_EN}. ${(gasto?.entrada ?? 0).toLocaleString('es-ES')} tokens de entrada (${(gasto?.cache ?? 0).toLocaleString('es-ES')} leídos de caché) y ${(gasto?.salida ?? 0).toLocaleString('es-ES')} de salida.`}
+            />
           </>
         )}
       </div>
@@ -122,11 +164,17 @@ function Cifra({
   icono: Icono,
   etiqueta,
   valor,
+  detalle,
+  titulo,
   tono = 'neutro',
 }: {
   icono: React.ComponentType<{ className?: string }>;
   etiqueta: string;
-  valor: number;
+  /** Texto además de número: una cifra de dinero ya viene formateada. */
+  valor: number | string;
+  /** Una línea pequeña debajo, para el matiz que no cabe en la cifra. */
+  detalle?: string;
+  titulo?: string;
   tono?: 'neutro' | 'aviso';
 }) {
   return (
@@ -135,9 +183,13 @@ function Cifra({
         <Icono className={tono === 'aviso' ? 'h-3.5 w-3.5 shrink-0 text-aviso' : 'h-3.5 w-3.5 shrink-0 text-acento'} />
         <span className="truncate">{etiqueta}</span>
       </p>
-      <p className="mt-0.5 text-[19px] font-semibold tabular-nums leading-tight text-texto sm:text-[21px]">
+      <p
+        title={titulo}
+        className="mt-0.5 text-[19px] font-semibold tabular-nums leading-tight text-texto sm:text-[21px]"
+      >
         {valor}
       </p>
+      {detalle && <p className="mt-0.5 truncate text-[11px] text-tenue">{detalle}</p>}
     </Tarjeta>
   );
 }
