@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-09-23) — UN SOLO PROYECTO QUE ACABE EN LAS TIENDAS: PWA hoy, Capacitor mañana, dos apps · 🔎 45 %
+## Objetivo ACTUAL (declarado 2026-09-23) — UN SOLO PROYECTO QUE ACABE EN LAS TIENDAS: PWA hoy, Capacitor mañana, dos apps · 🔎 60 %
 
 **Declarado por Fernando el 2026-09-23**, textual en lo esencial: *«lo que busco es un solo
 proyecto realmente, porque si dejo dos proyectos separados es posible que en actualizaciones a
@@ -19,7 +19,7 @@ viene resolviendo pantalla a pantalla— sino en tres fronteras: **qué carga el
 viaja la sesión** y **qué deja publicar Apple**.
 
 ### Progreso
-- **% de información para el objetivo:** 45 %
+- **% de información para el objetivo:** 60 %
 - **Estado:** el primer escalón está hecho (la PWA es instalable). Lo investigado en el repo
   descarta ya una de las dos arquitecturas posibles y deja **un riesgo mayor sin resolver** (la
   sesión en el WebView) y **una decisión de negocio que solo Fernando puede tomar** (la comisión
@@ -87,16 +87,50 @@ viaja la sesión** y **qué deja publicar Apple**.
   la pestaña abierta. **No hay nada que reemplazar: hay que construirlo.** Y conviene construirlo
   una sola vez para los tres sitios (web, iOS, Android), porque si no se harán dos.
 
-#### P5 — La suscripción de 5 $/mes se cobra con PayPhone. ¿Deja Apple cobrar así dentro de la app? · ⏸ Bloqueada — decisión de Fernando
+#### P5 — La suscripción de 5 $/mes se cobra con PayPhone. ¿Deja Apple cobrar así dentro de la app? · ✅ Resuelta — **Fernando decidió el 2026-09-23: se compra EN LA TIENDA; PayPhone queda solo en la web**
 - **Por qué importa:** es **dinero**, y condiciona el diseño de GCC Productos. La guía **3.1.1**
-  obliga a usar **la compra dentro de la app** (comisión del 15–30 %) para desbloquear funciones
-  digitales, y **prohíbe** llevar al usuario fuera a pagar. La pasarela propia (`lib/pagos/payphone.ts`,
-  con su comisión ya calculada en `lib/pagos/comision.ts`) es justo eso.
-- **La salida habitual** es el modelo «multiplataforma»: **el cliente contrata en la web** y la app
-  **solo le deja usar lo que ya contrató**, sin botón de comprar ni enlace a la pasarela. Apple lo
-  acepta; a cambio, desde el iPhone **no se vende**.
-- **Lo que hay que decidir (y es suyo, no técnico):** si GCC Productos en iOS **renuncia a vender**
-  y se queda como llave de lo ya contratado. → **Pregunta 1 para Fernando.**
+  obliga a usar la compra dentro de la app (15–30 %) para desbloquear funciones digitales, y
+  **prohíbe** llevar al usuario fuera a pagar. La pasarela propia (`lib/pagos/payphone.ts`) es eso.
+- **Decisión (Fernando, textual):** *«en el caso de las tiendas creo que debemos configurar para
+  que la compra se haga desde la tienda de apple o android directamente, y la opción de payphone
+  va a tener que quedar solo en la versión web»*. Con ello **el bloqueo desaparece**: es el camino
+  que Apple acepta sin discusión, y el que menos riesgo de rechazo deja.
+- **Lo que cuesta, en números (2026-09-23):** hoy la comisión **la paga el cliente** —
+  `lib/pagos/comision.ts` despeja al revés para que a GCC le lleguen los 5 $ limpios, y con el
+  5,75 % de PayPhone el cliente paga **5,31 $**. En las tiendas **eso no se puede hacer**: el
+  precio de la ficha es lo que paga el usuario y la comisión sale del lado de GCC. Sus precios van
+  por escalones, así que el plan se publica a **4,99 $**; con el programa de pequeñas empresas
+  (15 % hasta 1 M$/año, **se solicita**, no es automático) quedan **4,24 $**, y sin él, 3,49 $.
+  → **Un cliente de móvil deja ~1 $/mes menos que uno de web, y eso es una decisión tomada, no un
+  descuido.** Conviene revisarlo cuando los productos tengan volumen.
+- **Dos reglas que vienen de regalo con la decisión:**
+  1. **Dentro de la app de iPhone no se menciona el pago de la web.** Ni botón, ni enlace, ni
+     texto comparando precios (regla antidesvío). Es causa de rechazo por sí sola.
+  2. **Quien contrató en la web entra desde la app sin volver a pagar.** Es el modelo
+     «multiplataforma», y es lo que hace que las dos vías conviviesen sin duplicar el cobro.
+- **Lo que YA está a favor (código del repo, 2026-09-23):** *cómo se pagó* y *la puerta se abre*
+  ya están separados. `registrarPago` (`productos/*/src/acciones/gcc.ts:113`) recibe
+  `periodo · monto · metodo · referencia`, **solo adelanta `pagado_hasta`** —«la fecha solo
+  AVANZA»— y es idempotente por `upsert` sobre `(suscripcion, periodo)`. Y `lib/productos/accesos.ts`
+  es **la única lectura** que la plataforma hace de esa fecha. Así que la tienda no necesita una
+  tubería nueva: necesita **un método más** en el enum `MetodoPago` (hoy `AUTOSERVICIO | TARJETA`,
+  idéntico en los cuatro productos) y **un receptor de avisos** que llame a esa misma función.
+
+#### P9 — El cobro va por periodo AAAA-MM; las tiendas renuevan por aniversario. ¿Cómo se casan? · 🔎 Investigando
+- **Por qué importa:** es el único punto donde el modelo de cobro actual **no encaja** con el de
+  las tiendas, y si se resuelve mal el cliente pierde días de acceso pagados o gana un mes gratis.
+  `registrarPago` calcula `hasta = finDeMes(periodo)`: quien paga el 2026-09 tiene hasta el 30 de
+  septiembre. Una suscripción de tienda comprada un día 14 vence **un día 14**.
+- **Salida propuesta:** que `pagado_hasta` tome **la fecha de caducidad que da la propia tienda**
+  (Apple y Google la mandan exacta en cada aviso de renovación) y que el `periodo` quede solo como
+  constancia contable del mes en que entró el cobro. La regla de «la fecha solo avanza» ya protege
+  el caso de que lleguen avisos desordenados.
+- **Falta comprobar:** cómo se ata la compra de la tienda a la cuenta GCC del cliente —Apple lo
+  resuelve con `appAccountToken` y Google con `obfuscatedExternalAccountId`, que **hay que enviar
+  en el momento de comprar**; si no se envía, al llegar el aviso **no se sabe de quién es el pago**,
+  y eso no se puede arreglar después.
+- **También falta decidir** qué pasa con la devolución y con el periodo de gracia: las tiendas
+  avisan de ambos, y hoy no hay nada que recorte un acceso ya concedido (a propósito).
 
 #### P6 — El videojuego dentro de la app de GCC World · ❓ Abierta
 - **Por qué importa:** el juego (Godot, exportado a web, en `public/game`) dentro de un WebView de
@@ -107,11 +141,16 @@ viaja la sesión** y **qué deja publicar Apple**.
   o sin él**. Salir sin el juego es un camino más corto y no cierra ninguna puerta.
   → **Pregunta 2 para Fernando.**
 
-#### P7 — ¿Cuándo se muda Automatizaciones a Productos? · ❓ Abierta
-- **Por qué importa:** ayer mismo se rehizo la bandeja del agente para teléfono. Si esa sección
-  **va a desaparecer** como tal y a renacer dentro de Productos con inquilinos y pasarela, hay que
-  saber si lo siguiente que se toca es su diseño o su arquitectura — **no tiene sentido pulir dos
-  veces la misma pantalla.** → **Pregunta 3 para Fernando.**
+#### P7 — ¿Cuándo se muda Automatizaciones a Productos? · ✅ Resuelta — **ahora; es lo siguiente (Fernando, 2026-09-23)**
+- **Por qué importaba:** el 2026-09-22 se rehizo la bandeja del agente para teléfono. Si la
+  sección iba a desaparecer, pulirla otra vez era trabajo tirado.
+- **Respuesta (Fernando, textual):** *«lo siguiente que quiero que hagas es trabajar completamente
+  en automatizaciones su migración a productos… el producto queda creado como parte de mi cuenta
+  lfgonzalezm0@grupocc.org»*. Así que **no se sigue con Herramientas/Marketplace/Centralizado**:
+  lo siguiente es la migración, y el primer inquilino es **la propia cuenta de Fernando**.
+- **Consecuencia inmediata:** la bandeja del agente **no se vuelve a tocar como diseño** hasta que
+  esté decidida su arquitectura dentro de Productos. Lo hecho no se pierde —los componentes de
+  teléfono viajan con ella—, pero el orden es arquitectura primero.
 
 #### P8 — Dos apps de un solo proyecto: ¿cómo se separan sin duplicar? · 🔎 Investigando
 - **Por qué importa:** es la condición que puso Fernando (*«prefiero uno solo»*). Dos apps en las

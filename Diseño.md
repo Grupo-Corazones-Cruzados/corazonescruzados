@@ -3534,6 +3534,23 @@ a ser el producto**. Lo que aquí se decida es lo que se publicará en una tiend
 - **Las notificaciones push nativas pueden sustituir lo que ya existe**, no sumarse: la idea
   es *«un solo stack que combine lo mejor de ambos lados»*.
 
+### La contratación NO se diseña igual en la web que en la app (2026-09-23)
+Fernando decidió que **en las tiendas se compra con la compra de la tienda**, y que **PayPhone se
+queda solo en la web**. Eso no es una decisión de cobro: es una **regla de diseño**, porque Apple
+rechaza una app que **mencione** el pago de fuera —ni botón, ni enlace, ni un texto comparando
+precios—.
+
+Así que la pantalla de contratación tiene **dos caras**, y hay que construirla sabiéndolo:
+- **Web:** como hoy. Precio con el recargo de la pasarela como línea aparte (5 $ → **5,31 $**).
+- **App:** el precio de la ficha de la tienda (**4,99 $**), el botón de la tienda, y **ni una
+  palabra** de la otra vía.
+- **Las dos:** quien ya contrató en la web **entra desde la app sin volver a pagar**. La app nunca
+  vuelve a pedir dinero por algo que ya está pagado.
+
+> **Regla:** lo que cambia entre plataformas no es el estilo, es **qué se puede decir**. Un texto
+> de más en la pantalla equivocada es causa de rechazo, así que esa diferencia se resuelve en el
+> componente de contratación, una vez, y no a base de condicionales repartidos por las pantallas.
+
 **Primer escalón, hecho:** el panel ya es instalable — `app/manifest.ts` (id `/gcc-world`,
 `start_url: /dashboard`, `standalone`, iconos 192/512/**maskable** y tres atajos) y
 `public/sw.js`.

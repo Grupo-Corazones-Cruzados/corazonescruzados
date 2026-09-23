@@ -299,6 +299,33 @@ Stack estándar de la casa, con particularidades de este repo:
     el patrón que ya se viene aplicando (lista → panel).
   - **Las notificaciones push nativas pueden REEMPLAZAR lo que ya hay** si sirven también en
     escritorio: *«dejar un solo stack pero que combine lo mejor de ambos lados»*.
+  - **⭐ LA COMPRA SE HACE EN LA TIENDA; PAYPHONE SE QUEDA EN LA WEB (Fernando, 2026-09-23).**
+    *«en el caso de las tiendas creo que debemos configurar para que la compra se haga desde la
+    tienda de apple o android directamente, y la opción de payphone va a tener que quedar solo en
+    la versión web»*. Con eso **desaparece el bloqueo de la guía 3.1.1 de Apple** y aparecen tres
+    cosas que hay que tener presentes:
+    1. **La comisión ya NO la paga el cliente.** `lib/pagos/comision.ts` sube el precio para que a
+       GCC le lleguen los 5 $ limpios (PayPhone: 5,75 % → el cliente paga **5,31 $**). Con Apple y
+       Google **eso no se puede hacer**: el precio de la ficha es lo que paga el usuario y la
+       comisión sale del lado de GCC. Además sus precios van por escalones, así que el plan de
+       5 $ se publica como **4,99 $**. Inscribiéndose en el programa de pequeñas empresas (15 %
+       hasta 1 M$/año, **hay que solicitarlo, no es automático**) a GCC le quedan **4,24 $**; sin
+       inscribirse, 3,49 $. **Un cliente de móvil deja ~1 $/mes menos que uno de web.**
+    2. **Dentro de la app de iPhone no se puede ni mencionar el pago de la web** (regla
+       antidesvío): ni botón, ni enlace, ni «págalo más barato en grupocc.org».
+    3. **Quien contrató en la web sigue entrando desde la app** sin volver a pagar. Eso Apple sí
+       lo acepta (modelo multiplataforma) y es lo que salva el caso.
+    **La buena noticia (código, 2026-09-23):** el enganche es pequeño porque *cómo se pagó* y
+    *la puerta se abre* ya están separados. `registrarPago` (en `productos/*/src/acciones/gcc.ts`)
+    recibe periodo, importe, método y referencia, y **solo adelanta `pagado_hasta`** —nunca lo
+    recorta— con un `upsert` por `(suscripcion, periodo)` que lo hace idempotente. La tienda no
+    necesita una tubería nueva: necesita **un método más** (`MetodoPago` es hoy
+    `AUTOSERVICIO | TARJETA` en los cuatro productos) y **un receptor de avisos** de Apple y de
+    Google que llame a esa misma función.
+    ⚠️ **Lo que no encaja solo:** el cobro de hoy se lleva por `periodo` AAAA-MM y cierra a fin de
+    mes; una suscripción de tienda renueva **en su aniversario** (si se compró un día 14, vence un
+    día 14). La tienda sí dice la fecha exacta de caducidad, así que lo razonable es que
+    `pagado_hasta` la tome **tal cual** y el `periodo` quede solo como constancia contable.
   - **Hecho el 2026-09-23 (primer escalón):** el panel ya es **instalable** — `app/manifest.ts`
     (id `/gcc-world`, `start_url: /dashboard`, standalone, iconos 192/512/maskable y tres
     atajos), un **service worker deliberadamente MÍNIMO** (`public/sw.js`: no cachea nada de la
