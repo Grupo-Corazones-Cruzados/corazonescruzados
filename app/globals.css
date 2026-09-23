@@ -808,6 +808,20 @@ html {
 .corp { --cabecera-movil: 0px; }
 @media (max-width: 1023.98px) { .corp { --cabecera-movil: 3.5rem; } }
 
+/* ⭐ EL ALTO DEL PIE DEL PANEL, EN UN SOLO SITIO (Fernando, 2026-09-23: «el header y el
+   footer se ven muy chiquitos… esos botones son muy chiquitos para los dedos»).
+   ────────────────────────────────────────────────────────────────────────────────────
+   El pie medía **36 px** con Chat, Mis chats y Notificaciones dentro: imposible de acertar
+   con el pulgar. En teléfono pasa a **56 px**, que es lo que necesita un botón de 44 con
+   su aire.
+
+   ⚠️ SE DECLARA AQUÍ PORQUE CINCO SITIOS DEPENDÍAN DE ÉL A MANO: la propia barra (`h-9`),
+   los paneles de chat, notificaciones y del bot (`bottom-11`, «11 porque el pie mide 9») y
+   el relleno inferior del `main` (`pb-14`). Cambiar el alto sin esta variable descoloca los
+   cuatro y el fallo solo se ve en el teléfono. */
+:root { --pie-panel: 2.25rem; }
+@media (max-width: 639.98px) { :root { --pie-panel: 3.5rem; } }
+
 /* ── El parpadeo de la barra de desplazamiento del raíl ───────────────────────
    Al pasar el puntero, el menú se ensancha en 200 ms y aparecen las etiquetas de
    los módulos. Durante esa animación el contenido del `nav` mide un poco más de

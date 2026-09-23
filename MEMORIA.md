@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **El ARMAZÓN del panel en teléfono — cabecera y pie (2026-09-23).** Fernando: *«el header y
+  footer se ven muy chiquitos… esos botones son muy chiquitos para los dedos»*. Era la deuda más
+  transversal: está en **todas** las pantallas. El pie medía **36 px** con Chat, Mis chats y
+  Notificaciones dentro a 26 px cada uno; ahora 56 y 44 en teléfono, y 36/26 desde `sm`.
+  **⭐ Dos lecciones:** (1) **el alto del pie estaba escrito a mano en CINCO sitios** —la barra
+  (`h-9`), los tres paneles flotantes (`bottom-11`) y el `pb-14` del `main`—, así que cambiarlo
+  sin más habría metido los paneles por debajo del pie **y solo se vería en el teléfono**; ahora
+  sale de `--pie-panel`. *Si un valor está en varios archivos porque «los otros lo saben», no es
+  un valor, es una variable.* (2) **El destino táctil arregla el acierto, NO la lectura**: un
+  botón de 44 px con un icono de 14 sigue viéndose pequeño, y Fernando señaló las dos cosas —
+  el icono del pie pasa a 20 px, y como la etiqueta se oculta bajo `sm`, es lo único que
+  identifica el botón. La cabecera: menú de 40 → 44 px, icono 24, logo 30.
 - **Facturación/SRI en teléfono — el peor caso de todo el panel (2026-09-22).** La lista
   recortaba el **número de factura**, que es *lo único* que identifica a una factura: las **52
   filas decían «001-001-0000000…», idénticas todas**, con el cliente en «Co…»/«PET…» y el estado

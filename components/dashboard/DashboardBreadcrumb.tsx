@@ -43,22 +43,22 @@ export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?:
       /* `overflow-visible` a propósito: la ranura de acciones lleva un contador que sale
          un poco por arriba del botón, y con `overflow-x-auto` quedaba recortado. La ruta,
          que es lo que podía desbordar, se desplaza en su propio contenedor. */
-      className={`fixed bottom-0 right-0 left-0 z-20 h-9 flex items-center gap-1 px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur whitespace-nowrap transition-[left] duration-200 ${
+      className={`fixed bottom-0 right-0 left-0 z-20 h-[var(--pie-panel)] flex items-center gap-1 px-3 sm:px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur whitespace-nowrap transition-[left] duration-200 ${
         collapsed ? 'lg:left-16' : 'lg:left-56'
       }`}
       style={mf}
     >
       <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
-      <Home className="w-3.5 h-3.5 text-digi-muted shrink-0" />
+      <Home className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-digi-muted shrink-0" />
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1;
         return (
           <span key={c.href} className="flex items-center gap-1 shrink-0">
-            {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-digi-muted/60" />}
+            {i > 0 && <ChevronRight className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-digi-muted/60" />}
             {last ? (
-              <span className="text-[12px] font-medium text-digi-text">{c.label}</span>
+              <span className="text-[13px] sm:text-[12px] font-medium text-digi-text">{c.label}</span>
             ) : (
-              <Link href={c.href} className="text-[12px] text-digi-muted hover:text-accent transition-colors">{c.label}</Link>
+              <Link href={c.href} className="destino-tactil inline-flex items-center text-[13px] sm:text-[12px] text-digi-muted hover:text-accent transition-colors">{c.label}</Link>
             )}
           </span>
         );

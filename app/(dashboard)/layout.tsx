@@ -66,7 +66,10 @@ function Panel({ children }: { children: React.ReactNode }) {
           La columna solo apila la cabecera y el contenido; no impone altura ninguna. */}
       <div className="flex-1 min-w-0 flex flex-col ml-0 lg:ml-16">
         <CabeceraMovil />
-        <main className="flex-1 p-4 md:p-6 pb-14 overflow-auto min-h-screen">
+        {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
+            `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
+            el contenido se le habría metido debajo. */}
+        <main className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto min-h-screen">
           <DashboardAccessGuard>{children}</DashboardAccessGuard>
         </main>
       </div>

@@ -16,7 +16,7 @@ type Panel = 'none' | 'group' | 'personal';
 
 /**
  * Muelle de chats, fijo en la esquina inferior derecha y **justo encima de la barra de ruta**
- * (`DashboardBreadcrumb` es `fixed bottom-0 h-9`, de ahí el `bottom-11`). Dentro del `.corp`
+ * (`DashboardBreadcrumb` es `fixed bottom-0 h-9`, de ahí el `bottom-[calc(var(--pie-panel)+0.5rem)]`). Dentro del `.corp`
  * del layout para heredar el tema.
  *
  * POSICIÓN: el ancla de la esquina es la **campanita de notificaciones**
@@ -90,12 +90,12 @@ export default function ChatDock() {
           notificaciones para colocarse a su izquierda, y si aquel no se pintaba, caía a un
           valor escrito a mano. Ahora el orden lo da un `flex`. */}
       {panel === 'group' && canGroup && (
-        <div className="fixed bottom-11 right-3 lg:right-4 z-[90]">
+        <div className="fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[90]">
           <GroupPanel onClose={() => open('none')} onRead={() => setGroupUnread(0)} />
         </div>
       )}
       {panel === 'personal' && (
-        <div className="fixed bottom-11 right-3 lg:right-4 z-[90]">
+        <div className="fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[90]">
           <PersonalPanel chats={chats} loading={loadingChats} onClose={() => open('none')} onRefresh={refreshCounts} />
         </div>
       )}

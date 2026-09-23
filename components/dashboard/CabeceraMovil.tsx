@@ -34,21 +34,25 @@ export default function CabeceraMovil() {
   return (
     // `rail` para heredar los colores del menú: la cabecera y el menú que abre son la
     // misma cosa, y verlos del mismo color lo dice sin explicarlo.
-    <header className="rail lg:hidden shrink-0 h-14 flex items-center gap-3 px-3 bg-digi-card border-b border-digi-border">
+    /* ⚠️ Fernando, 2026-09-23: «el header y el footer se ven muy chiquitos… esos botones
+       son muy chiquitos para los dedos». El botón de menú medía 40 px y el logo 26 en una
+       pantalla de 390–430 px de ancho: el único control de esta barra, y había que
+       apuntarle. Ahora el menú es de 44 px —el destino táctil— y la marca crece con él. */
+    <header className="rail lg:hidden shrink-0 h-14 flex items-center gap-2 px-2 bg-digi-card border-b border-digi-border">
       <button
         onClick={abrir}
-        className="w-10 h-10 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125"
+        className="w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
         aria-label="Abrir menú"
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="w-6 h-6" />
       </button>
 
-      <Link href="/" className="flex items-center gap-2 min-w-0">
+      <Link href="/" className="flex items-center gap-2 min-w-0 h-11 px-1 rounded-lg">
         <Image
-          src="/logo-gcc.png" alt="" width={26} height={26} priority
+          src="/logo-gcc.png" alt="" width={30} height={30} priority
           className="rounded-full select-none shrink-0"
         />
-        <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>
+        <span className="text-[15px] font-bold text-digi-text tracking-tight truncate" style={mf}>
           GCC WORLD
         </span>
       </Link>

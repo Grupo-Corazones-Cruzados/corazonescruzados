@@ -3463,6 +3463,35 @@ de 44 px en lista, resumen y detalle, sin desbordamiento. Escritorio sin cambios
 
 ---
 
+### El ARMAZÓN: cabecera y pie del panel (2026-09-23)
+Fernando: *«en la vista de teléfono, el header y footer se ven muy chiquitos… esos botones
+son muy chiquitos para los dedos del usuario»*. Tenía razón, y era la deuda más transversal
+que quedaba: **está en todas las pantallas del panel**.
+
+- **El pie medía 36 px** (`h-9`) con Chat, Mis chats y Notificaciones dentro, a **26 px**
+  cada uno (`BotonPie`, la definición única). En teléfono pasa a **56 px** y los botones a
+  **44**; desde `sm` vuelve a 36/26, que es lo correcto con puntero.
+- **⭐ EL ALTO DEL PIE ESTABA ESCRITO A MANO EN CINCO SITIOS** y ninguno se enteraba de los
+  otros: la barra (`h-9`), los paneles de chat, notificaciones y del bot (`bottom-11`, «11
+  porque el pie mide 9») y el relleno del `main` (`pb-14`). Cambiarlo sin más **habría
+  metido los tres paneles por debajo del pie, y solo se vería en el teléfono**. Ahora sale
+  de **`--pie-panel`**, declarada una vez en `globals.css`.
+  > **Regla:** si un valor aparece en más de un archivo porque «los otros lo saben», no es
+  > un valor, es una variable. Antes de cambiarlo, buscar quién más lo conoce.
+- **⭐ EL DESTINO TÁCTIL ARREGLA EL ACIERTO, NO LA LECTURA.** Subir el botón a 44 px con un
+  icono de 14 lo deja igual de pequeño **a la vista** — y Fernando señaló las dos cosas. En
+  teléfono el icono del pie pasa a 20 px, y como ahí la etiqueta no se pinta (se oculta bajo
+  `sm`), el icono es lo **único** que identifica el botón. Igual la miga de pan y el
+  contador de sin leer.
+- **La cabecera**: el botón de menú era de 40 px y el logo de 26 en una pantalla de 390–430.
+  Es el único control de esa barra. Ahora 44 px, icono de 24 y logo de 30.
+
+*Medido a 390 y 430 px: cabecera 56, pie 56, menú 44, los tres botones 44, icono 20, y el
+panel de notificaciones **no se solapa** con el pie. En escritorio: pie 36, botones 26,
+icono 14 — intacto.*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3633,6 +3662,9 @@ mientras se escribe.
     en 9 archivos más** (lista en la regla 6-bis).
   - **`FilterRail` con tira de fichas bajo `lg`** (2026-09-22) — **19 pantallas** la
     heredan de golpe. Sus `actions` pasan a `.acciones-al-pasar`.
+  - **`--pie-panel` + armazón táctil** (2026-09-23) — el alto del pie en una variable
+    (estaba a mano en 5 sitios); pie y cabecera a 56 px, `BotonPie` y el menú a 44, iconos
+    a 20. Afecta a **todas** las pantallas del panel.
   - **`.corp .pixel-btn` a 44 px en táctil** (2026-09-22) — la tercera familia de botones
     (25 archivos). Con esta quedan los **tres** sitios donde se decide el tamaño en el
     panel: `BTN_*`, los campos y `.pixel-btn`.

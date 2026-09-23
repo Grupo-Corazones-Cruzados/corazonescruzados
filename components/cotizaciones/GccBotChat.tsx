@@ -70,7 +70,7 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
         <BotonPie Icon={Bot} label="GCC Bot" activo={open} tono="acento" onClick={() => setOpen(!open)} />
       </EnElPie>
       {open && (
-        <div className={`fixed bottom-11 right-3 z-[92] w-[92vw] max-w-sm h-[70vh] max-h-[560px] flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-hidden`}>
+        <div className={`fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 z-[92] w-[92vw] max-w-sm h-[70vh] max-h-[560px] flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-hidden`}>
           <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-digi-border bg-accent text-white">
             <span className="inline-flex items-center gap-2 text-[13px] font-semibold" style={mf}><Bot className="w-4 h-4" /> GCC Bot · Cotización</span>
             <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>

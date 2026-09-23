@@ -98,24 +98,28 @@ export function BotonPie({
       aria-label={activo ? `Cerrar ${label}` : `Abrir ${label}${sinLeer ? `, ${sinLeer} sin leer` : ''}`}
       aria-expanded={!!activo}
       title={label}
-      className={`relative inline-flex items-center gap-1.5 h-[26px] px-2 rounded transition-colors
+      className={`relative inline-flex items-center gap-1.5 min-h-11 sm:min-h-0 h-11 sm:h-[26px] px-2.5 sm:px-2 rounded transition-colors
         ${activo
           ? 'bg-accent-light text-accent'
           : tono === 'acento'
             ? 'text-accent hover:bg-accent-light'
             : 'text-digi-muted hover:text-accent hover:bg-accent-light'}`}
     >
-      <Icon className="w-3.5 h-3.5 shrink-0" />
+      {/* ⚠️ El icono también crece. Un botón de 44 px con un icono de 14 SIGUE
+          viéndose pequeño: el destino táctil arregla el acierto, no la lectura —
+          y Fernando señaló las dos cosas. En teléfono, donde además la etiqueta no
+          se pinta, el icono es lo ÚNICO que identifica el botón. */}
+      <Icon className="w-5 h-5 sm:w-3.5 sm:h-3.5 shrink-0" />
       {/* La etiqueta se esconde en pantallas estrechas: el icono ya identifica el botón y
           la barra de ruta necesita su sitio. */}
       <span className="hidden sm:inline text-[12px] font-medium">{label}</span>
       {cuenta != null && cuenta > 0 && (
-        <span className="text-[11px] opacity-70 tabular-nums">{cuenta}</span>
+        <span className="text-[12px] sm:text-[11px] opacity-70 tabular-nums">{cuenta}</span>
       )}
       {!activo && !!sinLeer && sinLeer > 0 && (
         <span
-          className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 flex items-center justify-center
-                     rounded-full bg-red-600 text-white text-[9.5px] font-bold tabular-nums border border-digi-card"
+          className="absolute top-0.5 right-0 sm:-top-0.5 sm:-right-0.5 min-w-[17px] h-[17px] sm:min-w-[15px] sm:h-[15px] px-1 flex items-center justify-center
+                     rounded-full bg-red-600 text-white text-[10px] sm:text-[9.5px] font-bold tabular-nums border border-digi-card"
         >
           {sinLeer > 99 ? '99+' : sinLeer}
         </span>
