@@ -115,13 +115,13 @@ export default function SupportDetailPage() {
         actions={
           <>
             {isAdmin && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
-              <button onClick={() => updateStatus('resolved')} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors">
+              <button onClick={() => updateStatus('resolved')} className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors">
                 <Check className="w-4 h-4" /> Resolver
               </button>
             )}
             {/* Cambiar el estado es solo del admin: el solicitante hace seguimiento. */}
             {isAdmin && ticket.status !== 'closed' && (
-              <button onClick={() => updateStatus('closed')} className={BTN_SECONDARY}><Lock className="w-4 h-4" /> Cerrar</button>
+              <button onClick={() => updateStatus('closed')} className={`${BTN_SECONDARY} h-11 sm:h-auto`}><Lock className="w-4 h-4" /> Cerrar</button>
             )}
           </>
         }
@@ -166,9 +166,11 @@ export default function SupportDetailPage() {
             <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3}
               placeholder={isAdmin ? 'Escribe tu respuesta...' : 'Añade información al ticket...'}
               className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none mb-3" style={mf} />
-            <div className="flex justify-end">
+            {/* En teléfono el botón ocupa el ancho: es la acción de la pantalla y así cae
+                bajo el pulgar sin apuntar a una esquina. */}
+            <div className="flex justify-stretch sm:justify-end">
               <button onClick={sendReply} disabled={sending || !reply.trim()}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50">
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50">
                 <Send className="w-4 h-4" /> {sending ? 'Enviando...' : isAdmin ? 'Enviar respuesta' : 'Enviar comentario'}
               </button>
             </div>

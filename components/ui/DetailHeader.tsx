@@ -44,9 +44,11 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
 
   return (
     <div className="mb-5">
+      {/* La miga de pan es el «atrás» de esta pantalla: en teléfono, con 11 px de texto
+          y sin más altura, es el enlace que más se falla. 44 px de destino. */}
       <Link
         href={breadcrumb.href}
-        className="inline-flex items-center gap-0.5 text-[11px] text-digi-muted hover:text-accent transition-colors mb-2"
+        className="inline-flex items-center gap-0.5 h-11 sm:h-auto text-[11px] text-digi-muted hover:text-accent transition-colors mb-1 sm:mb-2"
         style={{ fontFamily: 'var(--font-body)' }}
       >
         <ChevronRight className="w-3.5 h-3.5 rotate-180" />
@@ -54,8 +56,11 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
       </Link>
 
       <div className="flex items-start justify-between gap-3 flex-wrap pb-3 border-b border-digi-border">
-        <div className="min-w-0">
-          <h1 className="page-title pixel-heading text-digi-text truncate">{title}</h1>
+        <div className="min-w-0 w-full sm:w-auto">
+          {/* ⚠️ `truncate` SOLO desde `sm`. En un teléfono el título de un registro es lo
+              que dice de qué registro se trata, y recortarlo a «Consultoría
+              Automatización de …» deja la pantalla sin identificar. Aquí envuelve. */}
+          <h1 className="page-title pixel-heading text-digi-text sm:truncate leading-tight">{title}</h1>
           {(status || chips) && (
             <div className="flex items-center flex-wrap gap-2 mt-2">
               {status}
@@ -65,7 +70,7 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
         </div>
 
         {(actions || hasOverflow || trailing) && (
-          <div className="flex flex-wrap items-center gap-2 justify-end" ref={ref}>
+          <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end w-full sm:w-auto" ref={ref}>
             {actions}
             {hasOverflow && (
               <div className="relative">
@@ -74,7 +79,7 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
                   onClick={() => setOpen((o) => !o)}
                   aria-label="Más acciones"
                   aria-expanded={open}
-                  className={`w-9 h-9 flex items-center justify-center border rounded transition-colors ${open ? 'border-accent/40 bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:bg-accent/10 hover:text-accent hover:border-accent/40'}`}
+                  className={`w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center border rounded transition-colors ${open ? 'border-accent/40 bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:bg-accent/10 hover:text-accent hover:border-accent/40'}`}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
@@ -85,7 +90,7 @@ export default function DetailHeader({ breadcrumb, title, status, chips, actions
                         key={i}
                         type="button"
                         onClick={() => { it.onClick(); setOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 text-[12px] rounded-md transition-colors ${it.danger ? 'text-red-500 hover:bg-red-500/10' : 'text-digi-text hover:bg-accent/10'}`}
+                        className={`w-full text-left flex items-center min-h-11 sm:min-h-0 px-2.5 py-1.5 text-[12px] rounded-md transition-colors ${it.danger ? 'text-red-500 hover:bg-red-500/10' : 'text-digi-text hover:bg-accent/10'}`}
                         style={{ fontFamily: 'var(--font-body)' }}
                       >
                         {it.label}

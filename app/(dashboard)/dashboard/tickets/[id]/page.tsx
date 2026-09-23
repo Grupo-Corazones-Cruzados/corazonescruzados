@@ -705,7 +705,7 @@ export default function TicketDetailPage() {
             {canCompleteTicket && (
               <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>
             )}
-            {canEdit && <button onClick={startEdit} className={BTN_SECONDARY}><Pencil className="w-3.5 h-3.5" /> Editar</button>}
+            {canEdit && <button onClick={startEdit} className={`${BTN_SECONDARY} h-11 sm:h-auto`}><Pencil className="w-3.5 h-3.5" /> Editar</button>}
           </>
         )}
         overflow={[
@@ -745,7 +745,7 @@ export default function TicketDetailPage() {
                   {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
                 </h3>
                 {canEdit && !isClosed && (
-                  <button onClick={startEditSlots} className="shrink-0 text-[11px] text-accent border border-digi-border rounded px-2 py-1 hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
+                  <button onClick={startEditSlots} className="shrink-0 h-11 sm:h-auto px-3 sm:px-2 sm:py-1 inline-flex items-center text-[11px] text-accent border border-digi-border rounded hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
                 )}
               </div>
               {timeSlots.length > 0 ? (
@@ -897,7 +897,7 @@ export default function TicketDetailPage() {
                               <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
                             )}
                             {canManageActions && (
-                              <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 transition-opacity shrink-0"><X className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="acciones-al-pasar shrink-0 w-11 h-11 sm:w-auto sm:h-auto inline-flex items-center justify-center text-red-500 hover:text-red-600"><X className="w-4 h-4 sm:w-3.5 sm:h-3.5" /></button>
                             )}
                           </div>
                           );
@@ -1014,7 +1014,7 @@ export default function TicketDetailPage() {
                   {(payments.invoices || []).length > 0 && (
                     <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
                       {payments.invoices.map((inv: any) => (
-                        <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
+                        <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 min-h-11 sm:min-h-0 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
                           <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
                           <span className="flex items-center gap-1.5 shrink-0">
                             <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>

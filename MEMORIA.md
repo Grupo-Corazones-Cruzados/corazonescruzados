@@ -275,6 +275,18 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **Módulo de TICKETS entero con diseño de teléfono (2026-09-22).** Las cinco pantallas: lista,
+  detalle, portal del cliente (`/dashboard/support` + detalle) y **la pública**
+  (`/ticket/[id]?token=`, pixel-art, la que se manda por enlace y por eso se abre más en un
+  teléfono que en un escritorio). Lo que se gana una sola vez: **`DetailHeader` estrena
+  teléfono y lo usan 6 páginas de detalle** — su `h1` llevaba `truncate` SIEMPRE, y el título
+  de un registro es lo que dice de qué registro se trata; ahora `sm:truncate`, más la miga de
+  pan y el menú `⋯` a 44 px. Lo demás es el patrón ya asentado: tabla → `tarjetaMovil` (la
+  lista escondía cliente y costo con `hideOnMobile`, justo lo que se mira para reconocer un
+  ticket), resumen lateral → panel a pantalla completa con el cuerpo extraído a una variable, y
+  botones a 44 px compartiendo fila. En la pública, la fila de propiedades pegaba etiqueta y
+  valor («ClienteCompañía Internacional…»). Medido con `hover:none/pointer:coarse` en las cinco:
+  0 invisibles, 0 destinos < 44 px, sin desbordamiento; escritorio sin cambios.
 - **«Recordatorios» con diseño de teléfono — y el arreglo entra por los componentes
   compartidos (2026-09-22).** Detalle en `Diseño.md`. Lo importante es que casi todo se hizo
   **una sola vez**: (1) **`FilterRail` estrena modo teléfono** (tira de fichas de 44 px bajo

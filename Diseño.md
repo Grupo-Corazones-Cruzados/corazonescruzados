@@ -3296,6 +3296,34 @@ comprobado en Recordatorios, Proyectos y Centralizado (rail con secciones): sin 
 
 ---
 
+### Quinta aplicación: TICKETS, el módulo entero (2026-09-22)
+Cinco pantallas: la lista (`/dashboard/tickets`), el detalle (`/dashboard/tickets/[id]`), el
+portal del cliente (`/dashboard/support` y su detalle) y **la página pública**
+(`/ticket/[id]?token=`, que es pixel-art y no `.corp`). Lo nuevo:
+
+- **⭐ `DetailHeader` ESTRENA TELÉFONO — y lo usan 6 PÁGINAS DE DETALLE.** Su `h1` llevaba
+  `truncate` siempre: en un teléfono el título de un registro es **lo que dice de qué
+  registro se trata**, y recortarlo a «Consultoría Automatización de …» deja la pantalla sin
+  identificar. Ahora `sm:truncate` — envuelve en teléfono, recorta en escritorio, donde hay
+  sitio. Además: la **miga de pan a 44 px** (es el «atrás» de la pantalla y el enlace que
+  más se falla), el menú `⋯` a 44 px y sus opciones con `min-h-11`.
+- **El mismo patrón de las dos pantallas anteriores, ya asentado**: tabla → `tarjetaMovil`
+  (la lista escondía cliente y costo con `hideOnMobile`, que es justo lo que se mira para
+  reconocer un ticket); resumen lateral → **panel a pantalla completa**, con el cuerpo
+  extraído a `cuerpoResumen` para no tener dos copias; botones de la barra compartiendo
+  fila y a 44 px.
+- **La página PÚBLICA también cuenta.** Es la que se manda al cliente por enlace, así que
+  se abre en un teléfono más que en un escritorio. Su fila de propiedades era
+  `flex justify-between` sin `gap`: con un valor largo —el nombre de una empresa— las dos
+  palabras se pegaban («ClienteCompañía Internacional…»). `gap-3`, etiqueta `shrink-0`,
+  valor `min-w-0 break-words`.
+
+*Medido con `hover: none` / `pointer: coarse` en las cinco: **0** invisibles, **0** destinos
+por debajo de 44 px, sin desbordamiento horizontal, títulos completos y el panel a 390×844
+al tocar. Escritorio comprobado en las cinco: sin cambios.*
+
+---
+
 > **Cómo se aplica a una pantalla nueva:** cifras → `RejillaCifras`/`Cifra`; tabla →
 > `tarjetaMovil`; botones → `h-11 sm:h-auto`; filas de formulario →
 > `flex-col sm:flex-row`. Si hace falta un patrón que no existe, **se crea como definición
@@ -3466,6 +3494,8 @@ mientras se escribe.
     en 9 archivos más** (lista en la regla 6-bis).
   - **`FilterRail` con tira de fichas bajo `lg`** (2026-09-22) — **19 pantallas** la
     heredan de golpe. Sus `actions` pasan a `.acciones-al-pasar`.
+  - **`DetailHeader` con teléfono** (2026-09-22) — `sm:truncate` en el título (envuelve en
+    teléfono), miga de pan y menú `⋯` a 44 px. **6 páginas de detalle** lo heredan.
   - **`PixelModal`: título con `min-w-0 truncate`** y cierre `shrink-0` (2026-09-22).
   - **Destino táctil ampliado sin cambiar el dibujo**: `before:-inset-3 sm:before:inset-0`
     sobre un control pequeño (la casilla de 18 px de una tarea).

@@ -140,11 +140,16 @@ export default function PublicTicketPage() {
   );
 }
 
+/**
+ * Una propiedad del ticket. `gap-3` y la etiqueta que no se encoge: sin eso, con un
+ * valor largo —el nombre de una empresa— el valor se comía el hueco y quedaba
+ * «ClienteCompañía Internacional…», las dos palabras pegadas, en un teléfono.
+ */
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between py-1 border-b border-digi-border/30 last:border-0">
-      <span className="text-digi-muted">{label}</span>
-      <span className="text-digi-text text-right">{value}</span>
+    <div className="flex justify-between items-start gap-3 py-1 border-b border-digi-border/30 last:border-0">
+      <span className="text-digi-muted shrink-0">{label}</span>
+      <span className="text-digi-text text-right min-w-0 break-words">{value}</span>
     </div>
   );
 }
