@@ -36,7 +36,8 @@ export async function GET() {
     if (!clientId) return NextResponse.json({ hasPasskeys: false });
 
     const c = await pool.query(
-      `SELECT COUNT(*)::int AS n FROM gcc_world.client_passkeys WHERE client_id = $1`,
+      // Solo las que sirven: una de antes del cambio de dominio no cuenta (migración 062).
+      `SELECT COUNT(*)::int AS n FROM gcc_world.client_passkeys WHERE client_id = $1 AND rp_id IS NOT NULL`,
       [clientId],
     );
     return NextResponse.json({ hasPasskeys: (c.rows[0]?.n ?? 0) > 0 });

@@ -112,7 +112,8 @@ export async function POST(req: Request) {
     await setAuthCookie(jwt);
 
     const pk = await pool.query(
-      `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
+      // Solo las que sirven: una de antes del cambio de dominio no cuenta (migración 062).
+      `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 AND rp_id IS NOT NULL LIMIT 1`,
       [character.id],
     );
     return NextResponse.json({

@@ -88,10 +88,13 @@ export async function POST(req: Request) {
       );
     }
 
+    // Solo las passkeys del dominio actual: una de antes del 2026-09-24 nació con otro
+    // RP ID y el navegador no la encontraría (migración 062).
+    const { rpId: rpActual } = await getWebAuthnRP();
     const pk = await pool.query(
       `SELECT credential_id, transports
-         FROM gcc_world.client_passkeys WHERE client_id = $1`,
-      [client.id],
+         FROM gcc_world.client_passkeys WHERE client_id = $1 AND rp_id = $2`,
+      [client.id, rpActual],
     );
     if (pk.rows.length === 0) {
       return NextResponse.json(
@@ -100,9 +103,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { rpId } = await getWebAuthnRP();
     const options = await generateAuthenticationOptions({
-      rpID: rpId,
+      rpID: rpActual,
       allowCredentials: pk.rows.map(
         (p: { credential_id: string; transports: string[] | null }) => ({
           id: p.credential_id,

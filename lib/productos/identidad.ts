@@ -75,10 +75,19 @@ async function fichaCliente(email: string) {
   return rows[0] ?? null;
 }
 
+/**
+ * ¿Tiene alguna passkey QUE SIRVA?
+ *
+ * ⚠️ No basta con que exista la fila. Las creadas antes del 2026-09-24 nacieron atadas a
+ * otro dominio (`app.grupocc.org`, `www.grupocc.org`) y ningún navegador las acepta ya;
+ * contarlas hacía que la pantalla dijera «tienes passkey» y pintara un botón que solo
+ * sabía fallar. `rp_id` nulo significa justo eso: de antes, inservible (migración 062).
+ */
 async function tienePasskey(clientId: number | undefined): Promise<boolean> {
   if (!clientId) return false;
   const { rows } = await pool.query(
-    `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
+    `SELECT 1 FROM gcc_world.client_passkeys
+      WHERE client_id = $1 AND rp_id IS NOT NULL LIMIT 1`,
     [clientId],
   );
   return rows.length > 0;

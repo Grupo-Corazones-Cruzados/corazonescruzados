@@ -30,14 +30,20 @@ export async function POST() {
       );
     }
 
+    const { rpId } = await getWebAuthnRP();
     const existing = await pool.query(
-      `SELECT credential_id, transports FROM gcc_world.client_passkeys WHERE client_id = $1`,
-      [row.id],
+      // ⚠️ SOLO LAS DEL DOMINIO ACTUAL. `excludeCredentials` existe para que el mismo
+      // dispositivo no registre dos veces; si se le pasan las de antes del 2026-09-24
+      // —que ya no sirven— el navegador responde «este dispositivo ya está registrado» y
+      // deja a la persona SIN poder crear la que sí necesita. Justo lo contrario de lo
+      // que hace falta tras el cambio de dominio (migración 062).
+      `SELECT credential_id, transports FROM gcc_world.client_passkeys
+        WHERE client_id = $1 AND rp_id = $2`,
+      [row.id, rpId],
     );
 
     const userId = new TextEncoder().encode(`client-${row.id}`);
 
-    const { rpId } = await getWebAuthnRP();
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: rpId,

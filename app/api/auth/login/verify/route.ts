@@ -48,8 +48,11 @@ export async function POST(req: NextRequest) {
       [cleanEmail],
     );
     if (cl.rows[0]) {
+      // `rp_id IS NOT NULL` → solo las que sirven. Si la única que tiene es de antes del
+      // cambio de dominio, se le ofrece registrar una nueva, que es lo que necesita.
       const pk = await pool.query(
-        `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 LIMIT 1`,
+        `SELECT 1 FROM gcc_world.client_passkeys
+          WHERE client_id = $1 AND rp_id IS NOT NULL LIMIT 1`,
         [cl.rows[0].id],
       );
       hasPasskey = pk.rows.length > 0;

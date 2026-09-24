@@ -112,16 +112,19 @@ export async function POST(req: NextRequest) {
         if (!cuenta || !ficha)
           return NextResponse.json({ error: 'No hay passkeys para esta cuenta.' }, { status: 404 });
 
+        const { rpId: rpEsperado } = rpDelProducto(origen);
+        // Solo las de ESTE dominio: ofrecerle al navegador una credencial que no puede
+        // casar no da un error útil, da un diálogo que no encuentra nada.
         const { rows: llaves } = await pool.query(
-          `SELECT credential_id, transports FROM gcc_world.client_passkeys WHERE client_id = $1`,
-          [ficha.id],
+          `SELECT credential_id, transports FROM gcc_world.client_passkeys
+            WHERE client_id = $1 AND rp_id = $2`,
+          [ficha.id, rpEsperado],
         );
         if (llaves.length === 0)
           return NextResponse.json({ error: 'No hay passkeys para esta cuenta.' }, { status: 404 });
 
-        const { rpId } = rpDelProducto(origen);
         const opciones = await generateAuthenticationOptions({
-          rpID: rpId,
+          rpID: rpEsperado,
           allowCredentials: llaves.map((l: { credential_id: string; transports: string[] | null }) => ({
             id: l.credential_id,
             transports: (l.transports ?? undefined) as Transporte[] | undefined,

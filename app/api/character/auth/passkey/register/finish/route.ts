@@ -53,10 +53,10 @@ export async function POST(req: Request) {
     await pool.query(
       `INSERT INTO gcc_world.client_passkeys
          (client_id, credential_id, credential_public_key, counter,
-          device_type, backed_up, transports, last_used_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+          device_type, backed_up, transports, rp_id, last_used_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        ON CONFLICT (credential_id) DO UPDATE
-          SET counter = EXCLUDED.counter, last_used_at = NOW()`,
+          SET counter = EXCLUDED.counter, rp_id = EXCLUDED.rp_id, last_used_at = NOW()`,
       [
         row.id,
         cred.id,
@@ -65,6 +65,9 @@ export async function POST(req: Request) {
         info.credentialDeviceType ?? null,
         info.credentialBackedUp ?? null,
         cred.transports ?? null,
+        // ⚠️ El dominio con el que nace. Sin esto no se puede saber si una passkey
+        // guardada sigue sirviendo, y se acaba ofreciendo un botón que solo falla.
+        rpId,
       ],
     );
     await pool.query(

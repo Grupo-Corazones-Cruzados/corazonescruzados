@@ -85,9 +85,14 @@ export async function POST(req: Request) {
       }
     }
 
+    // Solo las del dominio actual: las anteriores al 2026-09-24 nacieron con otro RP ID
+    // y el navegador no las encuentra, así que ofrecerlas da un diálogo vacío en vez de
+    // un mensaje que se entienda (migración 062).
+    const { rpId } = await getWebAuthnRP();
     const passkeys = await pool.query(
-      `SELECT credential_id, transports FROM gcc_world.client_passkeys WHERE client_id = $1`,
-      [client.id],
+      `SELECT credential_id, transports FROM gcc_world.client_passkeys
+        WHERE client_id = $1 AND rp_id = $2`,
+      [client.id, rpId],
     );
     if (passkeys.rows.length === 0) {
       return NextResponse.json(
@@ -96,7 +101,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const { rpId } = await getWebAuthnRP();
     const options = await generateAuthenticationOptions({
       rpID: rpId,
       allowCredentials: passkeys.rows.map(
