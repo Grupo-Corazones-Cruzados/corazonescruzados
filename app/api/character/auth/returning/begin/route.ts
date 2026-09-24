@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyPassword } from '@/lib/auth/password';
-import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
+import { sendCodigoDeAccesoEmail, sendCodigoDeRecuperacionEmail } from '@/lib/integrations/email';
 import { CLIENT_COOKIE } from '@/lib/world/session';
 
 function maskEmail(email: string): string {
@@ -127,7 +127,8 @@ export async function POST(req: Request) {
         [code, account.id],
       );
       try {
-        await sendCharacterRecoveryCodeEmail(
+        // Es un ACCESO: acaba de escribirse `users.login_code`, no un código de rescate.
+        await sendCodigoDeAccesoEmail(
           cleanEmail,
           code,
           account.first_name || (accountKind === 'client' ? 'Cliente' : 'Miembro'),
@@ -163,7 +164,8 @@ export async function POST(req: Request) {
       [code, row.id],
     );
     try {
-      await sendCharacterRecoveryCodeEmail(cleanEmail, code, row.alias || 'Jugador');
+      // Aquí sí: `clients.recovery_code`, el jugador recupera su personaje.
+      await sendCodigoDeRecuperacionEmail(cleanEmail, code, row.alias || 'Jugador');
     } catch (e) {
       console.error('Returning candidate code email failed:', e);
       return NextResponse.json({ error: 'No se pudo enviar el código' }, { status: 502 });

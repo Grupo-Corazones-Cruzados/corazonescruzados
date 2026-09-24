@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { verifyPassword } from '@/lib/auth/password';
-import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
+import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     );
 
     try {
-      await sendCharacterRecoveryCodeEmail(cleanEmail, code, user.first_name || 'Miembro');
+      await sendCodigoDeAccesoEmail(cleanEmail, code, user.first_name || 'Miembro');
     } catch (e) {
       console.error('Member login code email failed:', e);
       return NextResponse.json({ error: 'No se pudo enviar el código' }, { status: 502 });

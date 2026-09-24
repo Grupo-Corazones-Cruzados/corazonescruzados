@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
-import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
+import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 import { PERFILES, cuentaEncaja, esTipoValido } from '@/lib/auth/tipos';
 
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     );
 
     try {
-      await sendCharacterRecoveryCodeEmail(cleanEmail, code, user.first_name || 'Usuario');
+      await sendCodigoDeAccesoEmail(cleanEmail, code, user.first_name || 'Usuario');
     } catch (e) {
       console.error('Login code email failed:', e);
       return NextResponse.json({ error: 'No se pudo enviar el código' }, { status: 502 });

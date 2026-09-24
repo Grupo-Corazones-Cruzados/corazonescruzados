@@ -103,23 +103,78 @@ function emailCodeBox(value: string, letterSpacing = '0.5em', fontSize = 30): st
   </div>`;
 }
 
-export async function sendCharacterRecoveryCodeEmail(
+/**
+ * EL CÓDIGO DE UN SOLO USO, CON DOS REDACCIONES.
+ *
+ * ── POR QUÉ SE PARTIÓ EN DOS (Fernando, 2026-09-24) ──────────────────────────────
+ * «Al enviar un correo de verificación de clave está llegando un correo que dice
+ * recuperación; debería ser diferente la redacción cuando es verificación».
+ *
+ * Tenía razón, y el origen es de manual: la función se llamaba
+ * `sendCharacterRecoveryCodeEmail` porque nació para recuperar la cuenta del juego, y
+ * después se reutilizó para el segundo paso del acceso **sin tocarle el texto**. El
+ * asunto ya decía «Código de acceso» y el cuerpo seguía diciendo «Recupera tu cuenta»:
+ * dos mensajes contradictorios en el mismo correo. De los seis sitios que la llamaban,
+ * **cuatro eran accesos** y solo dos recuperaciones — se había puesto el nombre de la
+ * minoría.
+ *
+ * Y no es cosmética. Un correo que dice «recupera tu cuenta» cuando lo único que hiciste
+ * fue entrar te hace dudar de si alguien te la está robando; y el día que de verdad pase,
+ * el aviso ya no significará nada porque lo habrás visto cien veces sin motivo.
+ *
+ * ── UNA PLANTILLA, DOS PROPÓSITOS ───────────────────────────────────────────────
+ * El envoltorio, la caja del código y los 15 minutos son los mismos; lo que cambia es lo
+ * que la persona estaba haciendo. Por eso hay una sola plantilla con el propósito como
+ * parámetro, y dos funciones con nombre para llamarla — no dos copias que se separen.
+ */
+type PropositoDelCodigo = 'acceso' | 'recuperacion';
+
+const TEXTO_DEL_CODIGO: Record<PropositoDelCodigo, {
+  titulo: string; bajada: string; cuerpo: (nombre: string) => string; nota: string; asunto: string;
+}> = {
+  acceso: {
+    titulo: 'Confirma que eres tú',
+    bajada: 'Un paso más para iniciar sesión',
+    cuerpo: (nombre) =>
+      `Hola ${nombre},<br/>Estás iniciando sesión. Usa este código para terminar de entrar. Caduca en 15 minutos.`,
+    // ⚠️ Dice qué hacer si NO fuiste tú, y lo que importa: que con esto solo no se entra.
+    nota: 'Si no estás intentando entrar, ignora este correo: sin este código nadie puede acceder a tu cuenta. Tu contraseña no ha cambiado.',
+    asunto: 'Código de acceso — GCC World',
+  },
+  recuperacion: {
+    titulo: 'Recupera tu cuenta',
+    bajada: 'Para volver a entrar a GCC World',
+    cuerpo: (nombre) =>
+      `Hola ${nombre},<br/>Pediste recuperar el acceso a tu cuenta. Usa este código para continuar. Caduca en 15 minutos.`,
+    nota: 'Si no fuiste tú quien lo pidió, ignora este correo. Tu contraseña no ha cambiado.',
+    asunto: 'Recupera tu cuenta — GCC World',
+  },
+};
+
+async function enviarCodigo(
   email: string,
   code: string,
-  alias: string,
+  nombre: string,
+  proposito: PropositoDelCodigo,
 ) {
+  const t = TEXTO_DEL_CODIGO[proposito];
   const html = emailShell(
-    emailHeading('Recupera tu cuenta', 'Estás iniciando sesión en un nuevo dispositivo') +
-    emailParagraph(`Hola ${accentStrong(escapeHtml(alias))},<br/>Usa este código para confirmar que eres tú e iniciar sesión desde este dispositivo. El código caduca en 15 minutos.`) +
+    emailHeading(t.titulo, t.bajada) +
+    emailParagraph(t.cuerpo(accentStrong(escapeHtml(nombre)))) +
     emailCodeBox(code) +
-    emailNote('Si no fuiste tú, ignora este correo. Tu contraseña no ha cambiado.'),
+    emailNote(t.nota),
   );
-  return deliver({
-    from: FROM_EMAIL,
-    to: email,
-    subject: 'Código de acceso — GCC World',
-    html,
-  });
+  return deliver({ from: FROM_EMAIL, to: email, subject: t.asunto, html });
+}
+
+/** El código del segundo paso al INICIAR SESIÓN (plataforma, juego y los cinco productos). */
+export async function sendCodigoDeAccesoEmail(email: string, code: string, nombre: string) {
+  return enviarCodigo(email, code, nombre, 'acceso');
+}
+
+/** El código para RECUPERAR una cuenta a la que ya no se puede entrar. */
+export async function sendCodigoDeRecuperacionEmail(email: string, code: string, alias: string) {
+  return enviarCodigo(email, code, alias, 'recuperacion');
 }
 
 export async function sendCharacterVerificationEmail(

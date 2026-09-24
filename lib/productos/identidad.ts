@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { verifyPassword } from '@/lib/auth/password';
-import { sendCharacterRecoveryCodeEmail } from '@/lib/integrations/email';
+import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { cuentaEncaja } from '@/lib/auth/tipos';
 import { dominioDeLasPasskeys } from '@/lib/world/webauthn';
 
@@ -159,7 +159,7 @@ export async function mandarCodigo(email: string, nombre: string): Promise<void>
       WHERE lower(email) = $2`,
     [codigo, correo],
   );
-  await sendCharacterRecoveryCodeEmail(correo, codigo, nombre || 'Usuario');
+  await sendCodigoDeAccesoEmail(correo, codigo, nombre || 'Usuario');
 }
 
 /**
