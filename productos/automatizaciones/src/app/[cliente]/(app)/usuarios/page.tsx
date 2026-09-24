@@ -1,4 +1,5 @@
 import { exigirContexto, topeUsuarios } from '@/lib/inquilino';
+import { EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
 import PanelUsuarios, { type UsuarioVista } from './PanelUsuarios';
 
@@ -8,7 +9,7 @@ export const metadata = { title: 'Usuarios' };
 export default async function PaginaUsuarios({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
   // ADMIN: crear cuentas es gobernar el cliente, no operarlo.
-  const { inquilino, sesion } = await exigirContexto(cliente, 'ADMIN');
+  const { inquilino, sesion } = await exigirContexto(cliente, EXIGE_ROL.usuarios, 'usuarios');
 
   const usuarios = await prisma.usuario.findMany({
     where: { inquilinoId: inquilino.id },

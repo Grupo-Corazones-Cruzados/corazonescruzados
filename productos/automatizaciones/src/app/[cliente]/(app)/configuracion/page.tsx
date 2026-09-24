@@ -1,4 +1,5 @@
 import { exigirContexto } from '@/lib/inquilino';
+import { EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
 import { hayCloudinary } from '@/lib/imagenes';
 import { miOrigen } from '@/acciones/configuracion';
@@ -10,7 +11,7 @@ export const metadata = { title: 'Configuración' };
 
 export default async function PaginaConfiguracion({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
-  const ctx = await exigirContexto(cliente, 'ADMIN');
+  const ctx = await exigirContexto(cliente, EXIGE_ROL.configuracion, 'configuracion');
   const { inquilino } = ctx;
 
   const pagos = await prisma.pagoMensual.findMany({

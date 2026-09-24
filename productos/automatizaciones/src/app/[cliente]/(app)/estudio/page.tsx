@@ -1,4 +1,5 @@
 import { exigirContexto } from '@/lib/inquilino';
+import { EXIGE_ROL } from '@/lib/modulos';
 import { pool } from '@/lib/db';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { EstadoVacio } from '@/componentes/ui';
@@ -16,7 +17,7 @@ export const metadata = { title: 'Estudio del agente' };
  */
 export default async function PaginaEstudio({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
-  const { inquilino } = await exigirContexto(cliente, 'ADMIN');
+  const { inquilino } = await exigirContexto(cliente, EXIGE_ROL.estudio, 'estudio');
 
   const { rows: [canal] } = await pool.query(
     `SELECT id, numero_visible, nombre_verificado, estado, bot_activo, coexistencia_verificada,

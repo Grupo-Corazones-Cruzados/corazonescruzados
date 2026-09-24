@@ -37,11 +37,11 @@ export const NOMBRE_PRODUCTO: Record<TipoAutomatizacion, string> = {
   WHATSAPP: 'Campañas de WhatsApp',
 };
 
-const ESCALA: Record<Rol, number> = { CONSULTA: 0, OPERADOR: 1, ADMIN: 2 };
-
-export function alMenos(rol: Rol, minimo: Rol) {
-  return ESCALA[rol] >= ESCALA[minimo];
-}
+// La escala vive en `lib/modulos.ts` (datos puros) para que también la pueda leer el
+// menú, que es un componente de cliente y no puede arrastrar Prisma. Se reexporta para no
+// tocar a quien ya la importaba de aquí — y se usa aquí mismo, en `exigirContexto`.
+import { alMenos, type RutaDeModulo } from '@/lib/modulos';
+export { alMenos };
 
 export function hoySinHora() {
   const d = new Date();
@@ -139,7 +139,16 @@ export type Contexto = NonNullable<Awaited<ReturnType<typeof cargarContexto>>>;
  * Contexto de una página del cliente. Corta antes de devolver datos.
  *
  */
-export async function exigirContexto(slug: string, minimo: Rol = 'CONSULTA') {
+export async function exigirContexto(
+  slug: string,
+  minimo: Rol = 'CONSULTA',
+  /**
+   * De qué módulo se trata. Solo sirve para poder DECIRLO al devolver a alguien al panel:
+   * un salto mudo es indistinguible de una aplicación rota, y así llegó reportado
+   * (Fernando, 2026-09-24: «entro a estudio y me retorna automático al dashboard»).
+   */
+  modulo?: RutaDeModulo,
+) {
   const sesion = await leerSesionUsuario();
   if (!sesion || sesion.slug !== slug) redirect(`/${slug}/acceso`);
 
@@ -155,7 +164,8 @@ export async function exigirContexto(slug: string, minimo: Rol = 'CONSULTA') {
    * que se puede ver sin tener nada al día, porque es donde se arregla justamente eso.
    */
   if (accesoDelContexto(ctx) !== 'ok') redirect(`/${slug}/suscripcion`);
-  if (!alMenos(sesion.rol, minimo)) redirect(`/${slug}/panel`);
+  if (!alMenos(sesion.rol, minimo))
+    redirect(modulo ? `/${slug}/panel?sinPermiso=${modulo}` : `/${slug}/panel`);
 
   return ctx;
 }

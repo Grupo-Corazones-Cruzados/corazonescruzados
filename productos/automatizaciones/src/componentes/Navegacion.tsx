@@ -15,6 +15,7 @@ import {
 import { salir } from '@/acciones/acceso';
 import { LogoHotel } from '@/componentes/Marca';
 import { cn } from '@/lib/utils';
+import { EXIGE_ROL, esRutaDeModulo, alMenos } from '@/lib/modulos';
 import type { Rol, TipoAutomatizacion } from '@/generated/prisma/enums';
 
 /**
@@ -83,8 +84,21 @@ const ROL_ETIQUETA: Record<Rol, string> = {
   CONSULTA: 'Consulta',
 };
 
-const utiles = (items: Item[], montados: TipoAutomatizacion[]) =>
-  items.filter((i) => !i.tipo || montados.includes(i.tipo));
+/**
+ * Qué destinos se pintan. Dos filtros, y los dos importan:
+ *
+ *  · **de sentido** — quien no tiene ningún agente montado no tiene conversaciones que
+ *    mirar;
+ *  · **de permiso** — ⚠️ el que faltaba. El menú enseñaba el Estudio a un operador y la
+ *    página lo devolvía al panel sin decir nada (Fernando, 2026-09-24). El requisito sale
+ *    de `EXIGE_ROL`, la misma tabla que usa la puerta, para que no vuelvan a discrepar.
+ */
+const utiles = (items: Item[], montados: TipoAutomatizacion[], rol: Rol) =>
+  items.filter(
+    (i) =>
+      (!i.tipo || montados.includes(i.tipo)) &&
+      (!esRutaDeModulo(i.ruta) || alMenos(rol, EXIGE_ROL[i.ruta])),
+  );
 
 type Props = {
   slug: string;
@@ -103,7 +117,7 @@ export function BarraLateral({ slug, cliente, logoUrl, usuario, rol, montados }:
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const colapsado = !sobreElMenu;
   const esAdmin = rol === 'ADMIN';
-  const principales = utiles(PRINCIPAL, montados);
+  const principales = utiles(PRINCIPAL, montados, rol);
 
   const Enlace = ({ item }: { item: Item }) => {
     const activo = estaActivo(ruta, slug, item);
@@ -226,7 +240,7 @@ export function BarraLateral({ slug, cliente, logoUrl, usuario, rol, montados }:
 export function BarraInferior({ slug, rol, montados }: Pick<Props, 'slug' | 'rol' | 'montados'>) {
   const ruta = usePathname();
   const [, arranca] = useTransition();
-  const principales = utiles(PRINCIPAL, montados);
+  const principales = utiles(PRINCIPAL, montados, rol);
   const destinos = (rol === 'ADMIN' ? [...principales, ...ADMINISTRACION] : principales).slice(0, 4);
 
   return (

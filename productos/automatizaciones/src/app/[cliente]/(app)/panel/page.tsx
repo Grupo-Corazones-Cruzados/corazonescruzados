@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { MessagesSquare, Users2, Bot, Coins } from 'lucide-react';
+import { MessagesSquare, Users2, Bot, Coins, ShieldAlert } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
+import { NOMBRE_DEL_MODULO, esRutaDeModulo, EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
 import { Tarjeta, Insignia } from '@/componentes/ui';
 import { costoEnDolares, costoLegible, PRECIOS_COMPROBADOS_EN } from '@/lib/ia/precios';
@@ -20,9 +21,25 @@ function inicioDeMes() {
  * Las cifras van en DOS columnas en teléfono y en cuatro desde `lg`: las mismas cinco
  * se leen de una vez en vez de costar 600 px de desplazamiento.
  */
-export default async function PaginaPanel({ params }: { params: Promise<{ cliente: string }> }) {
+export default async function PaginaPanel({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ cliente: string }>;
+  searchParams: Promise<{ sinPermiso?: string }>;
+}) {
   const { cliente } = await params;
-  const { inquilino, montados } = await exigirContexto(cliente);
+  const { sinPermiso } = await searchParams;
+  const { inquilino, montados, sesion } = await exigirContexto(cliente);
+
+  /**
+   * ⚠️ POR QUÉ ESTÁS AQUÍ Y NO DONDE QUERÍAS IR.
+   *
+   * El menú ya no ofrece lo que tu rol no permite, pero a un módulo se puede llegar por un
+   * enlace guardado o compartido. En ese caso la puerta te devuelve al panel, y sin este
+   * aviso el salto parece un fallo de la aplicación — que es exactamente como se reportó.
+   */
+  const rebotadoDe = sinPermiso && esRutaDeModulo(sinPermiso) ? sinPermiso : null;
   const donde = { inquilinoId: inquilino.id };
 
   const [conversaciones, sinLeer, contactos, delMes] = await Promise.all([
@@ -81,6 +98,17 @@ export default async function PaginaPanel({ params }: { params: Promise<{ client
   return (
     <>
       <CabeceraPagina titulo={inquilino.nombre} descripcion="Panel de control" />
+      {rebotadoDe && (
+        <div className="mx-4 mt-4 flex items-start gap-2 rounded border border-borde bg-aviso-suave px-3 py-2.5 text-[12.5px] leading-relaxed text-aviso sm:mx-6">
+          <ShieldAlert className="mt-px h-4 w-4 shrink-0" />
+          <span>
+            Te trajimos al panel porque <strong>{NOMBRE_DEL_MODULO[rebotadoDe]}</strong> es solo para
+            cuentas de {EXIGE_ROL[rebotadoDe] === 'ADMIN' ? 'administrador' : 'operador'}, y la tuya es
+            de {sesion.rol === 'OPERADOR' ? 'operador' : 'consulta'}. Pídeselo a quien administre
+            {inquilino.nombre}.
+          </span>
+        </div>
+      )}
       <div className="px-4 py-5 sm:px-6">
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         {conAgente && (
