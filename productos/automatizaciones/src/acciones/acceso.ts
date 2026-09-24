@@ -6,14 +6,28 @@ import { prisma } from '@/lib/db';
 import { evaluarAcceso } from '@/lib/inquilino';
 import { verificarCuentaGcc } from '@/lib/cuentaGcc';
 import {
+  reconocer, claveGccCorrecta, enviarCodigo, codigoCorrecto,
+  passkeyIniciar, passkeyTerminar,
+} from '@/lib/identidadGcc';
+import {
   abrirSesionUsuario,
   abrirSesionOperador,
   cerrarSesion,
+  abrirPasoDos,
+  leerPasoDos,
+  cerrarPasoDos,
   COOKIE_GCC,
   COOKIE_SESION,
 } from '@/lib/sesion';
 
-export type ResultadoAcceso = { error?: string };
+/**
+ * Lo que puede pasar al escribir usuario y contraseña. `segundoPaso` NO es una sesión:
+ * dice que la contraseña era correcta y que falta la segunda prueba.
+ */
+export type ResultadoAcceso = {
+  error?: string;
+  segundoPaso?: { email: string; correoTapado: string; tienePasskey: boolean };
+};
 
 /** Un hash que no puede salir de `bcrypt.hash`: sirve para gastar el mismo tiempo. */
 const HASH_FALSO = '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin';
@@ -98,28 +112,56 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
   // primer error de quien ya esperó sus 15 minutos le costaría otros 15.
   const fallosPrevios = cerradaHasta ? 0 : (cuenta?.intentosFallidos ?? 0);
 
+  /**
+   * ⭐ ¿ES UN CLIENTE DE GCC WORLD? SE DESCUBRE, NO SE ELIGE (Fernando, 2026-09-24).
+   *
+   * Se pregunta por el CORREO a la plataforma. Si ese correo es de una cuenta de cliente
+   * de GCC World, entonces —sea la cuenta de origen GCC o una que creó el administrador
+   * del inquilino— manda la contraseña de GCC World y **el segundo paso es obligatorio**:
+   * «siendo una sola contraseña su acceso».
+   *
+   * Nadie marca esto en un formulario. Esa fue exactamente la puerta que se cerró el
+   * 2026-09-24 por la mañana: cuando el cliente podía declarar que una cuenta era de GCC
+   * World, tenía dónde probar contraseñas de la plataforma. Descubrirlo por el correo no
+   * da esa capacidad — la cuenta ya existía antes y no la creó él.
+   */
+  const correoDeLaCuenta = cuenta?.email || (escrito.includes('@') ? escrito : null);
+  const gcc = cuenta && correoDeLaCuenta ? await reconocer(correoDeLaCuenta) : null;
+
+  // Una cuenta enlazada a mano por el equipo sigue entrando por GCC World aunque su
+  // correo no tenga ficha de cliente (el caso del revisor de Meta, por ejemplo).
+  const porGccWorld = Boolean(gcc?.esClienteGcc) || Boolean(cuenta?.origen === 'GCC' && cuenta.enlazadoPor);
+
   let vale = false;
-  if (cuenta?.origen === 'GCC') {
-    /**
-     * ⚠️ SOLO SI LO ENLAZÓ GCC. Una cuenta de origen GCC comprueba la contraseña contra
-     * `gcc_world.users`, así que existir no basta: tiene que haberla enlazado el equipo
-     * (`enlazadoPor`). El administrador de un inquilino ya no puede crearlas —ver
-     * `acciones/usuarios.ts`— y la base lo impide además por restricción; esto es el
-     * tercer cerrojo, el que se comprueba en el momento de abrir la puerta.
-     */
-    if (cuenta.enlazadoPor) {
-      // La contraseña NO está aquí: vive en GCC World y allí se comprueba. Así, cuando el
-      // cliente la cambie en la plataforma, cambia también su entrada a este producto.
-      const correo = cuenta.email || cuenta.usuario;
-      vale = (await verificarCuentaGcc(correo, clave)) !== null;
+  let segundoPaso: ResultadoAcceso['segundoPaso'] | null = null;
+
+  if (cuenta && porGccWorld && correoDeLaCuenta) {
+    if (gcc?.esClienteGcc) {
+      // Cliente de GCC World: su contraseña la comprueba la plataforma, que además dice
+      // qué segundos pasos tiene disponibles.
+      const r = await claveGccCorrecta(correoDeLaCuenta, clave);
+      if (r) {
+        vale = true;
+        segundoPaso = { email: correoDeLaCuenta, correoTapado: r.correoTapado, tienePasskey: r.tienePasskey };
+      }
     } else {
-      // Se gasta el mismo tiempo que una comprobación de verdad: si se volviera antes,
-      // el reloj diría cuáles son las cuentas enlazadas.
-      await bcrypt.compare(clave, HASH_FALSO);
+      // Enlazada por el equipo pero sin ficha de cliente: se comprueba igual contra
+      // `gcc_world.users`, como se venía haciendo.
+      vale = (await verificarCuentaGcc(correoDeLaCuenta, clave)) !== null;
+      if (vale)
+        segundoPaso = {
+          email: correoDeLaCuenta,
+          correoTapado: gcc?.correoTapado ?? correoDeLaCuenta,
+          tienePasskey: false,
+        };
     }
+  } else if (cuenta?.origen === 'GCC') {
+    // Origen GCC sin enlace del equipo: no entra. Se gasta el mismo tiempo para que el
+    // reloj no diga cuáles están enlazadas.
+    await bcrypt.compare(clave, HASH_FALSO);
   } else {
-    // Se compara siempre, exista la cuenta o no, para no delatar por el tiempo de
-    // respuesta cuáles existen.
+    // Cuenta del producto y sin cuenta de cliente en GCC World: su contraseña vive aquí.
+    // Se compara siempre, exista o no, para no delatar por el tiempo cuáles existen.
     vale = await bcrypt.compare(clave, cuenta?.claveHash ?? HASH_FALSO);
   }
 
@@ -128,6 +170,21 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     // apuntarlo, y tampoco hace falta: no hay contraseña que adivinar.
     if (cuenta && !inquilino.soloLectura) await apuntarFallo(cuenta.id, fallosPrevios);
     return { error: 'Usuario o contraseña incorrectos.' };
+  }
+
+  /**
+   * ⚠️ AQUÍ TODAVÍA NO HAY SESIÓN. La contraseña era correcta, nada más. Se deja el
+   * testigo firmado del primer paso y se le pide a la pantalla el segundo — passkey o
+   * código—, que es lo que Fernando quiere para todo cliente de GCC World.
+   */
+  if (segundoPaso) {
+    await abrirPasoDos({
+      uid: cuenta.id,
+      inquilinoId: inquilino.id,
+      slug: inquilino.slug,
+      email: segundoPaso.email,
+    });
+    return { segundoPaso };
   }
 
   // En un escaparate no se escribe NADA, ni siquiera la hora del último acceso: con
@@ -154,8 +211,105 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
   redirect(evaluarAcceso(inquilino) === 'ok' ? `/${slug}/panel` : `/${slug}/suscripcion`);
 }
 
+// ── EL SEGUNDO PASO ──────────────────────────────────────────────────────────
+//
+// Las dos opciones son las MISMAS que en la pantalla de GCC World, y a propósito: quien
+// ya entra a la plataforma no tiene que aprender nada nuevo para entrar a un producto.
+//
+// ⚠️ Todas empiezan igual: leyendo el testigo del primer paso. Sin él no hay nada que
+// completar —y sobre todo, no se puede entrar solo con un código o una passkey sin haber
+// pasado por la contraseña—.
+
+/** Quién pasó el primer paso, junto con su inquilino. */
+async function continuar(slug: string) {
+  const p = await leerPasoDos();
+  if (!p || p.slug !== slug) return null;
+  const inquilino = await prisma.inquilino.findUnique({
+    where: { id: p.inquilinoId },
+    include: { suscripcion: true },
+  });
+  const cuenta = await prisma.usuario.findFirst({
+    where: { id: p.uid, inquilinoId: p.inquilinoId, activo: true },
+  });
+  if (!inquilino || !cuenta || inquilino.slug !== slug) return null;
+  return { p, inquilino, cuenta };
+}
+
+/** Abre la sesión de verdad. Solo se llega aquí con los dos pasos hechos. */
+async function terminarDeEntrar(
+  inquilino: { id: number; slug: string; soloLectura: boolean },
+  cuenta: { id: number; nombre: string; rol: 'ADMIN' | 'OPERADOR' | 'CONSULTA' },
+  evaluable: Parameters<typeof evaluarAcceso>[0],
+) {
+  if (!inquilino.soloLectura)
+    await prisma.usuario.update({
+      where: { id: cuenta.id },
+      data: { ultimoAcceso: new Date(), intentosFallidos: 0, bloqueadoHasta: null },
+    });
+  await cerrarPasoDos();
+  await abrirSesionUsuario({
+    uid: cuenta.id,
+    inquilinoId: inquilino.id,
+    slug: inquilino.slug,
+    nombre: cuenta.nombre,
+    rol: cuenta.rol,
+  });
+  redirect(evaluarAcceso(evaluable) === 'ok' ? `/${inquilino.slug}/panel` : `/${inquilino.slug}/suscripcion`);
+}
+
+/** Pide que le manden el código de seis cifras al correo. */
+export async function pedirCodigo(slug: string, clave: string): Promise<ResultadoAcceso> {
+  const c = await continuar(slug);
+  if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  // Se vuelve a exigir la contraseña para mandar el correo: así el testigo por sí solo no
+  // sirve para llenarle el buzón a nadie.
+  const enviado = await enviarCodigo(c.p.email, clave);
+  if (!enviado) return { error: 'No se pudo enviar el código. Inténtalo otra vez.' };
+  return { segundoPaso: { email: c.p.email, correoTapado: enviado, tienePasskey: false } };
+}
+
+/** Segundo paso con el código del correo. */
+export async function entrarConCodigo(slug: string, codigo: string): Promise<ResultadoAcceso> {
+  const c = await continuar(slug);
+  if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+
+  if (!(await codigoCorrecto(c.p.email, codigo))) {
+    // Un código equivocado cuenta como intento fallido: si no, el segundo paso sería el
+    // único sitio del acceso sin freno, y es de seis cifras.
+    if (!c.inquilino.soloLectura) await apuntarFallo(c.cuenta.id, c.cuenta.intentosFallidos);
+    return { error: 'Código incorrecto o caducado.' };
+  }
+  await terminarDeEntrar(c.inquilino, c.cuenta, c.inquilino);
+  return {};
+}
+
+/** Segundo paso con passkey: lo que el navegador necesita para pedirla. */
+export async function passkeyOpciones(slug: string, origen: string) {
+  const c = await continuar(slug);
+  if (!c) return null;
+  return passkeyIniciar(c.p.email, origen);
+}
+
+/** Segundo paso con passkey: comprobación. */
+export async function entrarConPasskey(
+  slug: string,
+  origen: string,
+  credencial: unknown,
+): Promise<ResultadoAcceso> {
+  const c = await continuar(slug);
+  if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+
+  if (!(await passkeyTerminar(c.p.email, origen, credencial))) {
+    if (!c.inquilino.soloLectura) await apuntarFallo(c.cuenta.id, c.cuenta.intentosFallidos);
+    return { error: 'No se pudo comprobar la passkey.' };
+  }
+  await terminarDeEntrar(c.inquilino, c.cuenta, c.inquilino);
+  return {};
+}
+
 export async function salir(slug: string) {
   await cerrarSesion(COOKIE_SESION);
+  await cerrarPasoDos();
   redirect(`/${slug}/acceso`);
 }
 

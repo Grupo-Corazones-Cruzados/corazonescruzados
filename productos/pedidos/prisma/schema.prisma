@@ -185,6 +185,12 @@ model Usuario {
   email        String?
   passwordHash String     @map("password_hash")
   rol          RolUsuario @default(MESERO)
+  /// Intentos fallidos seguidos y hasta cuándo está cerrada la puerta. Desde el
+  /// 2026-09-24 esta pantalla comprueba contraseñas de GCC World para quien es cliente
+  /// de la plataforma: sin freno sería un sitio cómodo donde probarlas.
+  intentosFallidos Int       @default(0) @map("intentos_fallidos")
+  bloqueadoHasta   DateTime? @map("bloqueado_hasta") @db.Timestamptz(3)
+
   activo       Boolean    @default(true)
   ultimoAcceso DateTime?  @map("ultimo_acceso")
   creado       DateTime   @default(now()) @map("creado_en")

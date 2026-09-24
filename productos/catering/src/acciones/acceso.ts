@@ -7,15 +7,51 @@ import { prisma } from '@/lib/db';
 import { evaluarAcceso } from '@/lib/inquilino';
 import { INICIO_DE_ROL } from '@/lib/permisos';
 import { TIPOS_COMIDA } from '@/lib/catalogo';
+import type { RolUsuario } from '@/generated/prisma/enums';
+import {
+  reconocer, claveGccCorrecta, enviarCodigo, codigoCorrecto,
+  passkeyIniciar, passkeyTerminar,
+} from '@/lib/identidadGcc';
 import {
   abrirSesionUsuario,
   abrirSesionOperador,
   cerrarSesion,
+  abrirPasoDos,
+  leerPasoDos,
+  cerrarPasoDos,
   COOKIE_GCC,
   COOKIE_SESION,
 } from '@/lib/sesion';
 
-export type ResultadoAcceso = { error?: string };
+/**
+ * Lo que puede pasar al escribir usuario y contraseña. `segundoPaso` NO es una sesión:
+ * dice que la contraseña era correcta y que falta la segunda prueba.
+ */
+export type ResultadoAcceso = {
+  error?: string;
+  segundoPaso?: { email: string; correoTapado: string; tienePasskey: boolean };
+};
+
+/** A partir de cuántos fallos seguidos se cierra la puerta, y por cuánto. */
+const FALLOS_PARA_CERRAR = 8;
+const MINUTOS_CERRADA = 15;
+
+/**
+ * Apunta un intento fallido del PERSONAL y, al llegar al tope, cierra la cuenta un rato.
+ * Desde el 2026-09-24 esta pantalla comprueba contraseñas de GCC World para quien es
+ * cliente de la plataforma: sin freno sería un sitio cómodo donde probarlas.
+ */
+async function apuntarFallo(id: number, fallosPrevios: number) {
+  const fallos = fallosPrevios + 1;
+  await prisma.usuario.update({
+    where: { id },
+    data: {
+      intentosFallidos: fallos,
+      bloqueadoHasta:
+        fallos >= FALLOS_PARA_CERRAR ? new Date(Date.now() + MINUTOS_CERRADA * 60_000) : null,
+    },
+  });
+}
 
 const HASH_FALSO = '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin';
 
@@ -40,13 +76,26 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
 
   const abierto = evaluarAcceso(inquilino) === 'ok';
 
-  if (quien.includes('@')) {
+  /**
+   * ⚠️ UN CORREO YA NO SIGNIFICA «CLIENTE FINAL» SIN MÁS (2026-09-24).
+   *
+   * Desde que el personal puede entrar con su correo de GCC World, un «@» dejó de
+   * distinguir las dos poblaciones: si no hay ningún cliente final con ese correo, se
+   * sigue hacia el personal, donde puede estar como `email`. Antes se devolvía «usuario o
+   * contraseña incorrectos» sin mirar siquiera — y el dueño del negocio, que es quien más
+   * probabilidades tiene de ser cliente de GCC World, no habría podido entrar nunca.
+   */
+  const clienteFinal = quien.includes('@')
+    ? await prisma.cliente.findUnique({
+        where: { inquilinoId_email: { inquilinoId: inquilino.id, email: quien } },
+      })
+    : null;
+
+  if (clienteFinal) {
     // ── Cliente final
-    const cliente = await prisma.cliente.findUnique({
-      where: { inquilinoId_email: { inquilinoId: inquilino.id, email: quien } },
-    });
-    const vale = await bcrypt.compare(clave, cliente?.passwordHash ?? HASH_FALSO);
-    if (!cliente || !vale) return { error: 'Usuario o contraseña incorrectos.' };
+    const cliente = clienteFinal;
+    const vale = await bcrypt.compare(clave, cliente.passwordHash ?? HASH_FALSO);
+    if (!vale) return { error: 'Usuario o contraseña incorrectos.' };
     // Aquí SÍ se distingue el estado: la contraseña ya fue correcta, así que no
     // se revela nada que el cliente no sepa, y le sirve saber por qué no entra.
     if (cliente.estado === 'PENDIENTE')
@@ -67,18 +116,80 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     redirect(abierto ? `/${slug}/mi-servicio` : `/${slug}/suscripcion`);
   }
 
-  // ── Personal
-  const cuenta = await prisma.usuario.findUnique({
-    where: { inquilinoId_usuario: { inquilinoId: inquilino.id, usuario: quien } },
+  // ── Personal (por usuario o por correo)
+  const cuenta = await prisma.usuario.findFirst({
+    where: { inquilinoId: inquilino.id, OR: [{ usuario: quien }, { email: quien }] },
   });
-  // Se compara igual aunque la cuenta no exista, para no delatar por el tiempo de
-  // respuesta cuáles sí existen.
-  const vale = await bcrypt.compare(clave, cuenta?.passwordHash ?? HASH_FALSO);
-  if (!cuenta || !vale || !cuenta.activo) return { error: 'Usuario o contraseña incorrectos.' };
 
+  // El freno va antes de comprobar nada.
+  const cerradaHasta = cuenta?.bloqueadoHasta ?? null;
+  if (cerradaHasta && cerradaHasta > new Date()) {
+    const minutos = Math.max(1, Math.ceil((cerradaHasta.getTime() - Date.now()) / 60_000));
+    return { error: `Demasiados intentos. Vuelve a probar en ${minutos} minuto(s).` };
+  }
+  const fallosPrevios = cerradaHasta ? 0 : (cuenta?.intentosFallidos ?? 0);
+
+  /**
+   * ⭐ ¿ES UN CLIENTE DE GCC WORLD? SE DESCUBRE POR EL CORREO (Fernando, 2026-09-24).
+   * Si lo es, manda su contraseña de GCC World y el segundo paso es obligatorio.
+   */
+  const correo = cuenta?.email || (quien.includes('@') ? quien : null);
+  const gcc = cuenta && correo ? await reconocer(correo) : null;
+
+  let vale = false;
+  let segundoPaso: ResultadoAcceso['segundoPaso'] | null = null;
+
+  if (cuenta && correo && gcc?.esClienteGcc) {
+    const r = await claveGccCorrecta(correo, clave);
+    if (r) {
+      vale = true;
+      segundoPaso = { email: correo, correoTapado: r.correoTapado, tienePasskey: r.tienePasskey };
+    }
+  } else {
+    // Se compara igual aunque la cuenta no exista, para no delatar por el tiempo de
+    // respuesta cuáles sí existen.
+    vale = await bcrypt.compare(clave, cuenta?.passwordHash ?? HASH_FALSO);
+  }
+
+  if (!cuenta || !vale || !cuenta.activo) {
+    if (cuenta && !inquilino.soloLectura) await apuntarFallo(cuenta.id, fallosPrevios);
+    return { error: 'Usuario o contraseña incorrectos.' };
+  }
+
+  // ⚠️ Todavía NO hay sesión: la contraseña era correcta, nada más.
+  if (segundoPaso) {
+    await abrirPasoDos({
+      uid: cuenta.id,
+      inquilinoId: inquilino.id,
+      slug: inquilino.slug,
+      email: segundoPaso.email,
+    });
+    return { segundoPaso };
+  }
+
+  await terminarDeEntrar(inquilino, cuenta);
+  // Se mira la mensualidad AQUÍ para ir directo, sin un salto de más por el panel.
+  redirect(abierto ? `/${slug}/${INICIO_DE_ROL[cuenta.rol]}` : `/${slug}/suscripcion`);
+}
+
+// ── EL SEGUNDO PASO ──────────────────────────────────────────────────────────
+//
+// Las dos opciones son las MISMAS que en la pantalla de GCC World. ⚠️ Todas empiezan
+// leyendo el testigo del primer paso: sin él no se puede entrar solo con un código o una
+// passkey, sin haber pasado por la contraseña.
+
+/** Abre la sesión del personal. Solo se llega aquí con los pasos que tocaban hechos. */
+async function terminarDeEntrar(
+  inquilino: { id: number; slug: string; soloLectura: boolean },
+  cuenta: { id: number; nombre: string; rol: RolUsuario },
+) {
   // En un escaparate no se escribe NADA, ni siquiera la hora del último acceso.
   if (!inquilino.soloLectura)
-    await prisma.usuario.update({ where: { id: cuenta.id }, data: { ultimoAcceso: new Date() } });
+    await prisma.usuario.update({
+      where: { id: cuenta.id },
+      data: { ultimoAcceso: new Date(), intentosFallidos: 0, bloqueadoHasta: null },
+    });
+  await cerrarPasoDos();
   await abrirSesionUsuario({
     tipo: 'personal',
     uid: cuenta.id,
@@ -87,12 +198,74 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     nombre: cuenta.nombre,
     rol: cuenta.rol,
   });
-  // Se mira la mensualidad AQUÍ para ir directo, sin un salto de más por el panel.
-  redirect(abierto ? `/${slug}/${INICIO_DE_ROL[cuenta.rol]}` : `/${slug}/suscripcion`);
+}
+
+/** Quién pasó el primer paso, junto con su inquilino. */
+async function continuar(slug: string) {
+  const p = await leerPasoDos();
+  if (!p || p.slug !== slug) return null;
+  const inquilino = await prisma.inquilino.findUnique({
+    where: { id: p.inquilinoId },
+    include: { suscripcion: true },
+  });
+  const cuenta = await prisma.usuario.findFirst({
+    where: { id: p.uid, inquilinoId: p.inquilinoId, activo: true },
+  });
+  if (!inquilino || !cuenta || inquilino.slug !== slug) return null;
+  return { p, inquilino, cuenta };
+}
+
+/** Pide que le manden el código de seis cifras al correo. */
+export async function pedirCodigo(slug: string, clave: string): Promise<ResultadoAcceso> {
+  const c = await continuar(slug);
+  if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  const enviado = await enviarCodigo(c.p.email, clave);
+  if (!enviado) return { error: 'No se pudo enviar el código. Inténtalo otra vez.' };
+  return { segundoPaso: { email: c.p.email, correoTapado: enviado, tienePasskey: false } };
+}
+
+/** Segundo paso con el código del correo. */
+export async function entrarConCodigo(slug: string, codigo: string): Promise<ResultadoAcceso> {
+  const c = await continuar(slug);
+  if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  if (!(await codigoCorrecto(c.p.email, codigo))) {
+    if (!c.inquilino.soloLectura) await apuntarFallo(c.cuenta.id, c.cuenta.intentosFallidos);
+    return { error: 'Código incorrecto o caducado.' };
+  }
+  await terminarDeEntrar(c.inquilino, c.cuenta);
+  redirect(evaluarAcceso(c.inquilino) === 'ok'
+    ? `/${c.inquilino.slug}/${INICIO_DE_ROL[c.cuenta.rol]}`
+    : `/${c.inquilino.slug}/suscripcion`);
+}
+
+/** Segundo paso con passkey: lo que el navegador necesita para pedirla. */
+export async function passkeyOpciones(slug: string, origen: string) {
+  const c = await continuar(slug);
+  if (!c) return null;
+  return passkeyIniciar(c.p.email, origen);
+}
+
+/** Segundo paso con passkey: comprobación. */
+export async function entrarConPasskey(
+  slug: string,
+  origen: string,
+  credencial: unknown,
+): Promise<ResultadoAcceso> {
+  const c = await continuar(slug);
+  if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  if (!(await passkeyTerminar(c.p.email, origen, credencial))) {
+    if (!c.inquilino.soloLectura) await apuntarFallo(c.cuenta.id, c.cuenta.intentosFallidos);
+    return { error: 'No se pudo comprobar la passkey.' };
+  }
+  await terminarDeEntrar(c.inquilino, c.cuenta);
+  redirect(evaluarAcceso(c.inquilino) === 'ok'
+    ? `/${c.inquilino.slug}/${INICIO_DE_ROL[c.cuenta.rol]}`
+    : `/${c.inquilino.slug}/suscripcion`);
 }
 
 export async function salir(slug: string) {
   await cerrarSesion(COOKIE_SESION);
+  await cerrarPasoDos();
   redirect(`/${slug}/acceso`);
 }
 
