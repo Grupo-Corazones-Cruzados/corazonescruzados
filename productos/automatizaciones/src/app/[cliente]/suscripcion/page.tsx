@@ -3,6 +3,7 @@ import { AlertTriangle, Clock, CheckCircle2, Gift } from 'lucide-react';
 import { exigirSesionDelCliente, accesoDelContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
 import { Tarjeta, Insignia, Boton } from '@/componentes/ui';
+import BotonPagar from './BotonPagar';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Suscripción' };
@@ -96,20 +97,32 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
             </>
           )}
 
-          {!inquilino.cortesia && (
+          {!inquilino.cortesia && sus && sus.pendientes.length > 0 && !sus.esperandoConfirmacion && (
             <p className="mt-4 rounded border border-borde bg-realce px-3 py-2.5 text-[12.5px] leading-relaxed text-tenue">
-              Para pagar con tarjeta o enviar el comprobante de una transferencia, escríbenos a
-              hola@grupocc.org. El pago que registre GCC abre el acceso al instante.
+              Puedes pagar con <strong>tarjeta</strong> o por <strong>transferencia</strong>, adjuntando
+              el comprobante. Si es transferencia, alguien de GCC lo revisa y el acceso se abre en
+              cuanto lo confirme.
             </p>
           )}
 
-          {alDia && (
-            <div className="mt-4 flex justify-end">
+          {/* Las acciones, abajo a la derecha. Y la de pagar SIEMPRE que haya algo que pagar,
+              esté el acceso abierto o cerrado: si solo apareciera al bloquearse, el cliente
+              que quiere ponerse al día antes no tendría por dónde. */}
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            {alDia && (
               <Link href={`/${cliente}/panel`}>
-                <Boton>Volver al panel</Boton>
+                <Boton variante="secundario">Volver al panel</Boton>
               </Link>
-            </div>
-          )}
+            )}
+            {!inquilino.cortesia && sus && sus.pendientes.length > 0 && !sus.esperandoConfirmacion && (
+              <BotonPagar
+                slug={cliente}
+                periodo={sus.pendientes[0]}
+                importe={sus.costoMensual}
+                moneda={sus.moneda}
+              />
+            )}
+          </div>
         </Tarjeta>
       </div>
     </AplicaMarca>

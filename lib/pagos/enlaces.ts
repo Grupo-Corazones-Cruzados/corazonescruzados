@@ -69,7 +69,15 @@ export async function crearEnlaceDePago(opts: {
   const proveedor = proveedorActivo();
   const cobrable = await cotizarCobro({ sourceType, sourceId, stageId }, proveedor.nombre);
 
-  // El correo: el que manden, y si no, el del cliente asociado.
+  /**
+   * El correo: el que manden, y si no, el del cliente asociado.
+   *
+   * ⚠️ CADA ORIGEN BUSCA EN SU TABLA, y el `sourceId` de una SUSCRIPCIÓN no es un número:
+   * es «<id>-<AAAA-MM>». Antes esta consulta solo distinguía ticket de proyecto, así que
+   * una suscripción caía en la rama de proyectos e intentaba convertir «1-2026-09» a
+   * entero — reventando antes de llegar a ninguna validación. Por eso no se podían crear
+   * enlaces de pago de una suscripción.
+   */
   const { rows: [duenio] } = await pool.query(
     sourceType === 'ticket'
       ? `SELECT c.email AS client_email, m.name AS responsable
@@ -77,6 +85,11 @@ export async function crearEnlaceDePago(opts: {
            LEFT JOIN gcc_world.clients c ON c.id = t.client_id
            LEFT JOIN gcc_world.members m ON m.id = t.member_id
           WHERE t.id = ($1)::bigint`
+      : sourceType === 'subscription'
+      ? `SELECT COALESCE(c.email, s.client_email_sri) AS client_email, NULL AS responsable
+           FROM gcc_world.subscriptions s
+           LEFT JOIN gcc_world.clients c ON c.id = s.client_id
+          WHERE s.id = (split_part($1, '-', 1))::bigint`
       : `SELECT c.email AS client_email, m.name AS responsable
            FROM gcc_world.projects p
            LEFT JOIN gcc_world.clients c ON c.id = p.client_id
@@ -87,7 +100,11 @@ export async function crearEnlaceDePago(opts: {
 
   const email = String(opts.email || duenio?.client_email || '').trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    throw new Error(`Hace falta el correo del cliente: este ${sourceType === 'ticket' ? 'ticket' : 'proyecto'} no tiene uno asociado.`);
+    throw new Error(
+      `Hace falta el correo del cliente: esta ${
+        sourceType === 'ticket' ? 'ticket' : sourceType === 'subscription' ? 'suscripción' : 'proyecto'
+      } no tiene uno asociado.`,
+    );
   }
 
   const token = randomBytes(32).toString('base64url');
