@@ -111,7 +111,10 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     const r = await claveGccCorrecta(correo, clave);
     if (r) {
       vale = true;
-      segundoPaso = { email: correo, correoTapado: r.correoTapado, tienePasskey: r.tienePasskey };
+      // Exenta del segundo paso (el revisor de Meta y similares): la contraseña
+      // ya bastó, y un código a un buzón que no es suyo lo dejaría fuera.
+      if (!r.sinSegundoPaso)
+        segundoPaso = { email: correo, correoTapado: r.correoTapado, tienePasskey: r.tienePasskey };
     }
   } else {
     // Se compara igual aunque la cuenta no exista, para no delatar por el tiempo de

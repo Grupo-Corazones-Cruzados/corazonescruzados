@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
           ok: true,
           esClienteGcc: !!cuenta,
           tienePasskey: cuenta?.tienePasskey ?? false,
+          sinSegundoPaso: cuenta?.sinSegundoPaso ?? false,
           correoTapado: taparCorreo(email),
         });
       }
@@ -71,9 +72,13 @@ export async function POST(req: NextRequest) {
         // cuáles de los correos probados son cuentas de la plataforma.
         const vale = await claveCorrecta(email, String(c.clave || ''));
         if (!cuenta || !vale) return NextResponse.json({ ok: false }, { status: 401 });
+        if (cuenta.sinSegundoPaso)
+          console.info(`[identidad] acceso a producto sin segundo factor (cuenta exenta): ${cuenta.email}`);
         return NextResponse.json({
           ok: true,
           tienePasskey: cuenta.tienePasskey,
+          // La exención la decide la plataforma, no el producto: él solo la obedece.
+          sinSegundoPaso: cuenta.sinSegundoPaso,
           correoTapado: taparCorreo(cuenta.email),
         });
       }

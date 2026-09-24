@@ -68,6 +68,13 @@ export type Reconocimiento = {
   esClienteGcc: boolean;
   tienePasskey: boolean;
   correoTapado: string;
+  /**
+   * ⚠️ Cuentas EXENTAS del segundo paso (`users.sin_doble_factor` en la plataforma). El
+   * caso real es el revisor de Meta: su cuenta vive en nuestro dominio, así que el código
+   * le llegaría a un buzón nuestro y se quedaría fuera justo mientras revisa. La
+   * plataforma ya lo contempla en su login; aquí se obedece, no se decide.
+   */
+  sinSegundoPaso: boolean;
 };
 
 /** ¿El correo de esta cuenta es el de un cliente de GCC World? */
@@ -78,6 +85,7 @@ export async function reconocer(email: string): Promise<Reconocimiento> {
     // sin el segundo paso. Ante la duda, la puerta más estrecha.
     esClienteGcc: r?.ok === true && r.esClienteGcc === true,
     tienePasskey: r?.tienePasskey === true,
+    sinSegundoPaso: r?.sinSegundoPaso === true,
     correoTapado: String(r?.correoTapado ?? email),
   };
 }
@@ -89,6 +97,7 @@ export async function claveGccCorrecta(email: string, clave: string): Promise<Re
   return {
     esClienteGcc: true,
     tienePasskey: r.tienePasskey === true,
+    sinSegundoPaso: r.sinSegundoPaso === true,
     correoTapado: String(r.correoTapado ?? email),
   };
 }

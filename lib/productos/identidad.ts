@@ -41,6 +41,18 @@ export type CuentaCliente = {
   email: string;
   nombre: string;
   tienePasskey: boolean;
+  /**
+   * ⚠️ CUENTAS EXENTAS DEL SEGUNDO PASO (`users.sin_doble_factor`, migración 029).
+   *
+   * El código va al correo de la cuenta, lo que deja fuera a quien no controla ese buzón.
+   * El caso real es el revisor de Meta, cuya cuenta vive en NUESTRO dominio: el código le
+   * llegaría a un buzón nuestro, no suyo. La plataforma ya lo contempla, y los productos
+   * tienen que contemplarlo igual — si no, al revisor se le cierra la puerta del producto
+   * justo cuando está revisándolo.
+   *
+   * Se marca solo en la base, nunca desde la aplicación.
+   */
+  sinSegundoPaso: boolean;
 };
 
 /** Oculta el correo para poder enseñarlo sin regalarlo: `lf****@grupocc.org`. */
@@ -88,7 +100,7 @@ export async function clienteGccPorCorreo(email: string): Promise<CuentaCliente 
   if (!correo) return null;
 
   const { rows } = await pool.query(
-    `SELECT id, email, first_name, last_name, role, is_verified
+    `SELECT id, email, first_name, last_name, role, is_verified, sin_doble_factor
        FROM gcc_world.users WHERE lower(email) = $1 LIMIT 1`,
     [correo],
   );
@@ -104,6 +116,7 @@ export async function clienteGccPorCorreo(email: string): Promise<CuentaCliente 
     email: u.email,
     nombre: [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email,
     tienePasskey: await tienePasskey(ficha?.id),
+    sinSegundoPaso: u.sin_doble_factor === true,
   };
 }
 
