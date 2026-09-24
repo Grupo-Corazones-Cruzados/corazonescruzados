@@ -3,12 +3,13 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Palette, CreditCard, KeyRound, Upload, Gift, CheckCircle2, AlertTriangle, Bot, Mail, MessageCircle, Check } from 'lucide-react';
+import { Palette, CreditCard, KeyRound, Upload } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, RailFiltro } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { LogoHotel } from '@/componentes/Marca';
 import { guardarMarca, subirLogo, cambiarMiClave } from '@/acciones/configuracion';
 import { cn } from '@/lib/utils';
+import PanelSuscripcion, { type SuscripcionVista } from '@/componentes/PanelSuscripcion';
 
 export type MarcaVista = {
   nombre: string;
@@ -18,16 +19,13 @@ export type MarcaVista = {
   zonaHoraria: string;
 };
 
-export type PlanVista = {
-  cortesia: boolean;
-  acceso: string;
-  plan: string | null;
-  precio: number;
-  moneda: string;
-  pagadoHasta: string | null;
-  maxUsuarios: number | null;
-  mesesRetencion: number | null;
-};
+/**
+ * La suscripción la pinta `PanelSuscripcion`, que es el MISMO que ve un cliente
+ * bloqueado en `/‹cliente›/suscripcion`. Por eso el tipo viene de allí y no se
+ * declara aquí: con dos tipos, una de las dos pantallas acabaría sin el botón de
+ * pagar —que es exactamente lo que pasó—.
+ */
+export type { SuscripcionVista };
 
 export type PagoVista = {
   id: number; periodo: string; monto: number; moneda: string; estado: string; metodo: string; pagadoEn: string | null;
@@ -47,14 +45,14 @@ type Seccion = 'marca' | 'suscripcion' | 'cuenta';
 export default function ConfiguracionCliente({
   slug,
   marca,
-  plan,
+  suscripcion,
   pagos,
   hayCloudinary,
   miOrigen,
 }: {
   slug: string;
   marca: MarcaVista;
-  plan: PlanVista;
+  suscripcion: SuscripcionVista;
   pagos: PagoVista[];
   hayCloudinary: boolean;
   miOrigen: 'GCC' | 'PRODUCTO' | null;
@@ -76,7 +74,7 @@ export default function ConfiguracionCliente({
         />
         <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">
           {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} hayCloudinary={hayCloudinary} />}
-          {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} pagos={pagos} />}
+          {seccion === 'suscripcion' && <SeccionSuscripcion slug={slug} s={suscripcion} pagos={pagos} />}
           {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
         </div>
       </div>
@@ -249,73 +247,23 @@ function SeccionMarca({ slug, marca, hayCloudinary }: { slug: string; marca: Mar
 }
 
 // ── Suscripción ──────────────────────────────────────────────────────────────
-const INCLUYE = [
-  { icono: Bot, que: 'Agente de IA que contesta tu WhatsApp con el conocimiento de tu negocio.' },
-  { icono: Mail, que: 'Campañas de correo: listas de contactos y envíos programados.' },
-  { icono: MessageCircle, que: 'Campañas de WhatsApp: plantillas y difusión a tus listas.' },
-];
-
 const ETIQUETA_METODO: Record<string, string> = {
   AUTOSERVICIO: 'Registrado por GCC', TARJETA: 'Tarjeta', APP_STORE: 'App Store', GOOGLE_PLAY: 'Google Play',
 };
 
-function SeccionSuscripcion({ plan, pagos }: { plan: PlanVista; pagos: PagoVista[] }) {
-  const alDia = plan.acceso === 'ok';
+/**
+ * ⭐ AQUÍ SE PAGA (Fernando, 2026-09-23: «aquí no debería estar la opción para pagar,
+ * no veo la interfaz que permita pagar»).
+ *
+ * Tenía razón: el botón existía, pero solo en la pantalla que se ve con el acceso ya
+ * cerrado. Y esta —Configuración → Suscripción— es la que se mira normalmente, y la que
+ * él pidió desde el principio. Ahora las dos son el mismo componente, así que no puede
+ * volver a haber una con botón y otra sin él.
+ */
+function SeccionSuscripcion({ slug, s, pagos }: { slug: string; s: SuscripcionVista; pagos: PagoVista[] }) {
   return (
     <div className="space-y-3">
-      <Tarjeta className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-[15px] font-semibold text-texto">{plan.cortesia ? 'Acceso del grupo' : (plan.plan ?? 'Sin plan')}</p>
-            {!plan.cortesia && (
-              <p className="text-[13px] text-tenue">
-                {plan.precio > 0 ? `${plan.precio.toFixed(2)} ${plan.moneda} al mes` : 'Precio por definir'}
-              </p>
-            )}
-          </div>
-          <Insignia
-            tono={alDia ? 'exito' : plan.acceso === 'suspendido' ? 'error' : 'aviso'}
-            icono={alDia ? CheckCircle2 : AlertTriangle}
-          >
-            {alDia ? 'Al día' : plan.acceso === 'suspendido' ? 'Suspendida' : plan.acceso === 'vencido' ? 'Vencida' : 'Sin pagar'}
-          </Insignia>
-        </div>
-
-        {plan.cortesia && (
-          <p className="mt-3 flex items-start gap-2 rounded border border-borde bg-acento-suave px-3 py-2.5 text-[12.5px] leading-relaxed text-acento">
-            <Gift className="mt-px h-4 w-4 shrink-0" />
-            Todo abierto, sin mensualidad y sin topes.
-          </p>
-        )}
-
-        <ul className="mt-4 space-y-2 border-t border-borde pt-4">
-          {INCLUYE.map(({ icono: Icono, que }) => (
-            <li key={que} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-texto">
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-exito-suave">
-                <Check className="h-3 w-3 text-exito" />
-              </span>
-              <Icono className="mt-0.5 h-4 w-4 shrink-0 text-tenue" />
-              <span>{que}</span>
-            </li>
-          ))}
-        </ul>
-
-        {!plan.cortesia && (
-          <dl className="mt-4 space-y-2 border-t border-borde pt-4 text-[13px]">
-            <Fila etiqueta="Pagado hasta">{plan.pagadoHasta ?? 'Todavía no se ha pagado'}</Fila>
-            <Fila etiqueta="Cuentas incluidas">{plan.maxUsuarios ?? 'Sin límite'}</Fila>
-            <Fila etiqueta="Histórico que se conserva">
-              {plan.mesesRetencion ? `${plan.mesesRetencion} mes(es)` : 'Todo'}
-            </Fila>
-          </dl>
-        )}
-
-        {!alDia && (
-          <p className="mt-4 rounded border border-borde bg-aviso-suave px-3 py-2.5 text-[12.5px] leading-relaxed text-aviso">
-            Escríbenos a hola@grupocc.org y te decimos cómo ponerla al día.
-          </p>
-        )}
-      </Tarjeta>
+      <PanelSuscripcion slug={slug} s={s} />
 
       {pagos.length > 0 && (
         <Tarjeta className="divide-y divide-borde">
@@ -383,11 +331,3 @@ function SeccionCuenta({ slug, miOrigen }: { slug: string; miOrigen: 'GCC' | 'PR
   );
 }
 
-function Fila({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-tenue">{etiqueta}</dt>
-      <dd className="text-right font-medium text-texto">{children}</dd>
-    </div>
-  );
-}

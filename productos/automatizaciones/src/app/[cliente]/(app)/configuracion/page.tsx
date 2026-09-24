@@ -1,8 +1,9 @@
-import { exigirContexto, accesoDelContexto, topeUsuarios } from '@/lib/inquilino';
+import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { hayCloudinary } from '@/lib/imagenes';
 import { miOrigen } from '@/acciones/configuracion';
-import ConfiguracionCliente, { type MarcaVista, type PlanVista, type PagoVista } from './ConfiguracionCliente';
+import { vistaSuscripcion } from '@/lib/vistaSuscripcion';
+import ConfiguracionCliente, { type MarcaVista, type PagoVista } from './ConfiguracionCliente';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Configuración' };
@@ -10,7 +11,7 @@ export const metadata = { title: 'Configuración' };
 export default async function PaginaConfiguracion({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
   const ctx = await exigirContexto(cliente, 'ADMIN');
-  const { inquilino, suscripcionGcc: sus } = ctx;
+  const { inquilino } = ctx;
 
   const pagos = await prisma.pagoMensual.findMany({
     where: { inquilinoId: inquilino.id },
@@ -26,22 +27,9 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
     zonaHoraria: inquilino.zonaHoraria,
   };
 
-  const s = inquilino.suscripcion;
-  const plan: PlanVista = {
-    cortesia: inquilino.cortesia,
-    // ⚠️ La MISMA respuesta que da la puerta. Si esta pantalla calculara el estado por su
-    // cuenta, diría «al día» a alguien a quien la aplicación está bloqueando —o al revés—,
-    // que es justo lo que se quería evitar al enlazar la suscripción.
-    acceso: accesoDelContexto(ctx),
-    plan: sus?.titulo ?? s?.plan.nombre ?? null,
-    precio: sus ? sus.costoMensual : (s ? Number(s.plan.precioMensual) : 0),
-    moneda: sus?.moneda ?? s?.plan.moneda ?? 'USD',
-    pagadoHasta: sus
-      ? (sus.cubiertoHasta ? sus.cubiertoHasta.toLocaleDateString('es-EC') : null)
-      : (s?.pagadoHasta ? s.pagadoHasta.toLocaleDateString('es-EC') : null),
-    maxUsuarios: topeUsuarios(inquilino),
-    mesesRetencion: inquilino.cortesia ? null : (s?.plan.mesesRetencion ?? null),
-  };
+  // El mismo objeto que recibe la pantalla de impago: una sola forma de contar lo que
+  // se debe, y por tanto un solo sitio donde aparece el botón de pagar.
+  const suscripcion = vistaSuscripcion(ctx);
 
   const historial: PagoVista[] = pagos.map((p) => ({
     id: p.id,
@@ -57,7 +45,7 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
     <ConfiguracionCliente
       slug={cliente}
       marca={marca}
-      plan={plan}
+      suscripcion={suscripcion}
       pagos={historial}
       hayCloudinary={hayCloudinary}
       miOrigen={await miOrigen(cliente)}
