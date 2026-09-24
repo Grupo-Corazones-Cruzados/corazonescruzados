@@ -4301,3 +4301,21 @@ En el editor de días (`tickets/[id]`, `renderSlotEditor`) los `PixelInput type=
 muestran **siempre** (label "Inicio/Fin (opcional)" en días normales; "Inicio/Fin" en días Evento donde son
 obligatorios). Debajo de cada día, nota `text-[10px] text-digi-muted` que explica el efecto (bloque ocupado en Mi
 día + acción «Sesión» con costo `duración × $tarifa/h`). Reusa controles y tokens existentes; sin nuevos estilos.
+
+### Automatizaciones — una suscripción, un panel (2026-09-23)
+**Desviación:** la suscripción se pintaba **dos veces**: `SeccionSuscripcion` dentro de
+`configuracion/ConfiguracionCliente.tsx` y otra tarjeta a mano en `[cliente]/suscripcion/page.tsx`.
+Al añadir el pago, el botón entró **solo en la segunda** —la que se ve con el acceso ya cerrado—, así
+que en la pestaña que el cliente mira a diario no había forma de pagar. Fernando: «aquí no debería
+estar la opción para pagar? no la veo o no veo la interfaz que permita pagar».
+
+**Resuelto (adoptado como estándar):** un único `componentes/PanelSuscripcion.tsx` (tarjeta + estado +
+lo incluido + avisos + acciones abajo a la derecha) y un único armador de sus datos,
+`lib/vistaSuscripcion.ts`, que sale del **mismo** `accesoDelContexto` que usa la puerta. Las dos
+pantallas lo consumen; la de impago añade `volverAlPanel`. `BotonPagar.tsx` desaparece: el botón vive
+dentro del panel.
+
+**Regla que confirma:** cuando dos pantallas enseñan **lo mismo**, se extrae un componente y una
+fuente de datos — no se copia la tarjeta. Una copia no se rompe el día que nace, se rompe el día que
+solo una de las dos recibe la función nueva. Y los periodos se escriben **en palabras**
+(«septiembre de 2026»), nunca en el formato de la base («2026-09»).
