@@ -4319,3 +4319,27 @@ dentro del panel.
 fuente de datos — no se copia la tarjeta. Una copia no se rompe el día que nace, se rompe el día que
 solo una de las dos recibe la función nueva. Y los periodos se escriben **en palabras**
 («septiembre de 2026»), nunca en el formato de la base («2026-09»).
+
+### Esconder con CSS no es no montar — el `<dialog>` invisible que bloqueaba el dashboard (2026-09-23)
+**Desviación:** siete módulos con patrón maestro-detalle (`clients`, `tickets`, `invoices`, `projects`,
+`subscriptions`, `support`, `recordatorios`) tenían el panel lateral de escritorio **y** un `PixelModal`
+para teléfono envuelto en `<div className="xl:hidden">`. En escritorio el modal no se veía, pero seguía
+**montado**: al seleccionar una ficha, `showModal()` abría un `<dialog>` de 0×0 y **el navegador dejaba
+inerte el resto de la página**. Fernando: «le estoy dando al botón de pagar pero parece que no lo puedo
+seleccionar, como si algo lo estuviese tapando, algo invisible y el mouse no hace nada».
+
+**Resuelto (regla nueva):** `xl:hidden` decide **cómo se ve** algo, no **si existe**. Cuando lo que
+cambia con el tamaño de pantalla es **qué se monta** —un `<dialog>`, un `<video>`, un observador, un
+sondeo—, la decisión va en JavaScript:
+
+```tsx
+const enTelefono = !useConsultaMedia(PANTALLA_XL);   // lib/hooks/useConsultaMedia.ts
+…
+{enTelefono && <PixelModal open={!!selected} …>{cuerpo}</PixelModal>}
+```
+
+La consulta se escribe en `rem` (`(min-width: 80rem)`), la misma unidad que los cortes de Tailwind v4:
+con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tamaño de letra del navegador.
+
+`components/ui/PixelModal.tsx` lleva además un seguro: no llama a `showModal()` si un ancestro está en
+`display:none`. Es la red, no la solución — la solución es no montarlo.

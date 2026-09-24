@@ -15,13 +15,40 @@ interface PixelModalProps {
 
 const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-5xl' };
 
+/**
+ * ⚠️ ¿ESTE MODAL LLEGARÍA A VERSE? — LA RED DE SEGURIDAD DE `showModal()`.
+ *
+ * `showModal()` **deja inerte todo lo que quede fuera del diálogo**, y eso NO depende de
+ * que el diálogo se vea. Si un ancestro lo tiene escondido con CSS (`xl:hidden`, por
+ * ejemplo), el navegador abre un diálogo de 0×0 sin fondo y, a cambio, **el resto de la
+ * página deja de responder al ratón**. Medido con un navegador de verdad el 2026-09-23:
+ * el mismo botón registra el clic antes de `showModal()`, no lo registra con el diálogo
+ * invisible abierto, y vuelve a registrarlo tras `close()`.
+ *
+ * Es el fallo más desagradable que puede tener un control compartido: no se ve, no da
+ * error, y quien lo sufre solo sabe que «los botones ya no funcionan».
+ *
+ * Quien monta el modal debe decidir con JavaScript si toca montarlo (ver
+ * `useConsultaMedia`); esto es solo el seguro para que, si alguien vuelve a esconderlo
+ * con una clase, el resultado sea un modal que no se abre y no que la página se cuelgue.
+ *
+ * Un `<dialog>` cerrado siempre es `display:none`, así que se mira al PADRE: sin cajas
+ * (`getClientRects()`) significa que algún ancestro está en `display:none`.
+ */
+function sePinta(el: HTMLDialogElement): boolean {
+  const padre = el.parentElement;
+  if (!padre) return false;
+  if (typeof padre.checkVisibility === 'function') return padre.checkVisibility();
+  return padre.getClientRects().length > 0;
+}
+
 export default function PixelModal({ open, onClose, title, size = 'md', busy = false, children }: PixelModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
-    if (open && !el.open) el.showModal();
+    if (open && !el.open) { if (sePinta(el)) el.showModal(); }
     else if (!open && el.open) el.close();
   }, [open]);
 

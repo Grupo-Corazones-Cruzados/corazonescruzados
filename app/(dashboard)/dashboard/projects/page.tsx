@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
@@ -61,6 +62,20 @@ const PER_PAGE = 15;
 const QUOTE_AGENTS = [{ value: 'cotizaciones-software', label: 'Cotizaciones Software' }];
 
 export default function ProjectsPage() {
+  /**
+   * ⚠️ EL MODAL DE TELÉFONO **NO SE MONTA** EN ESCRITORIO, y no es una optimización.
+   *
+   * Antes iba envuelto en `<div className="xl:hidden">`: invisible en pantalla grande,
+   * pero montado. Y un `<dialog>` montado al que se le llama `showModal()` **deja inerte
+   * el resto de la página** aunque no se vea — así que al abrir una ficha en escritorio
+   * dejaban de funcionar TODOS los botones, sin nada que mirar. (Fernando, 2026-09-23:
+   * «como si algo lo estuviese tapando, algo invisible y el mouse no hace nada».)
+   *
+   * Aquí no se elige un aspecto, se elige QUÉ SE MONTA: o el panel lateral o el modal.
+   * Eso se decide en JavaScript, no con una clase.
+   */
+  const enTelefono = !useConsultaMedia(PANTALLA_XL);
+
   const { user } = useAuth();
   const router = useRouter();
   const [projects, setProjects] = useState<any[]>([]);
@@ -538,8 +553,8 @@ export default function ProjectsPage() {
       </div>
 
 
-      {/* El resumen en teléfono: panel a pantalla completa. Mismo contenido, otro envoltorio. */}
-      <div className="xl:hidden">
+      {/* El detalle en teléfono. En escritorio NO se monta: ver `enTelefono`. */}
+      {enTelefono && (
         <PixelModal
           open={!!selected}
           onClose={() => setSelected(null)}
@@ -548,7 +563,7 @@ export default function ProjectsPage() {
         >
           {cuerpoResumen}
         </PixelModal>
-      </div>
+      )}
 
       {/* Panel lateral DERECHO — Nueva cotización (agente IA) */}
       {showQuote && (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -101,6 +102,20 @@ function relative(iso?: string | null): string {
 }
 
 export default function RecordatoriosPage() {
+  /**
+   * ⚠️ EL MODAL DE TELÉFONO **NO SE MONTA** EN ESCRITORIO, y no es una optimización.
+   *
+   * Antes iba envuelto en `<div className="xl:hidden">`: invisible en pantalla grande,
+   * pero montado. Y un `<dialog>` montado al que se le llama `showModal()` **deja inerte
+   * el resto de la página** aunque no se vea — así que al abrir una ficha en escritorio
+   * dejaban de funcionar TODOS los botones, sin nada que mirar. (Fernando, 2026-09-23:
+   * «como si algo lo estuviese tapando, algo invisible y el mouse no hace nada».)
+   *
+   * Aquí no se elige un aspecto, se elige QUÉ SE MONTA: o el panel lateral o el modal.
+   * Eso se decide en JavaScript, no con una clase.
+   */
+  const enTelefono = !useConsultaMedia(PANTALLA_XL);
+
   const [list, setList] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
@@ -553,9 +568,8 @@ export default function RecordatoriosPage() {
         </div>
       </div>
 
-      {/* El detalle en teléfono: panel a pantalla completa (PixelModal `md` ocupa el
-          ancho entero por debajo de 644 px). Mismo contenido, otro envoltorio. */}
-      <div className="xl:hidden">
+      {/* El detalle en teléfono. En escritorio NO se monta: ver `enTelefono`. */}
+      {enTelefono && (
         <PixelModal
           open={!!detail}
           onClose={() => { setSelected(null); setSelDetail(null); }}
@@ -564,7 +578,7 @@ export default function RecordatoriosPage() {
         >
           {cuerpoDetalle}
         </PixelModal>
-      </div>
+      )}
 
       {/* Modal: reuniones de Meet → generar recordatorio a mano */}
       <PixelModal open={meetModal} onClose={() => setMeetModal(false)} title="Reuniones recientes de Meet" size="lg" busy={!!generating}>
