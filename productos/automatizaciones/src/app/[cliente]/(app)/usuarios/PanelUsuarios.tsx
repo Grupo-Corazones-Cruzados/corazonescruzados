@@ -25,12 +25,14 @@ const ETIQUETA_ROL = { ADMIN: 'Administrador', OPERADOR: 'Operador', CONSULTA: '
  * LAS CUENTAS DEL CLIENTE. La pantalla que pidió Fernando el 2026-09-23 para que el
  * dueño del inquilino cree a su gente sin depender de GCC.
  *
- * ── LO QUE ESTA PANTALLA TIENE QUE DEJAR CLARO ──────────────────────────────────
- * Que hay DOS clases de cuenta y que la diferencia importa, porque decide a quién se
- * le pide la contraseña cuando se le olvida:
- *   · «Cuenta de GCC World» → su contraseña es la de la plataforma; aquí no se toca.
- *   · «Cuenta de este producto» → la contraseña se genera aquí y se enseña UNA vez.
- * Por eso cada fila lleva su marca y el formulario lo explica al elegir.
+ * ── LO QUE SE CREA AQUÍ ES DEL CLIENTE, Y SOLO DEL CLIENTE ──────────────────────
+ * Las cuentas que crea el administrador pertenecen a su empresa: su contraseña vive en
+ * este producto y no abren absolutamente nada en GCC World. El formulario ya no ofrece
+ * elegir (Fernando, 2026-09-24) — ver `acciones/usuarios.ts` para el porqué.
+ *
+ * Las filas marcadas «Cuenta de GCC World» las enlazó el equipo de GCC y se gobiernan
+ * desde `/gcc`; aquí se ven, pero ni se crean ni se les toca la contraseña. Que se vean
+ * importa: el administrador tiene que saber quién puede entrar a su empresa.
  */
 export default function PanelUsuarios({
   slug,
@@ -45,7 +47,6 @@ export default function PanelUsuarios({
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
-  const [origen, setOrigen] = useState<'GCC' | 'PRODUCTO'>('GCC');
   const [enCurso, arranca] = useTransition();
   const [claveNueva, setClaveNueva] = useState<{ texto: string; de: string } | null>(null);
 
@@ -179,35 +180,14 @@ export default function PanelUsuarios({
             <Entrada name="nombre" required autoFocus />
           </Campo>
 
-          <Campo etiqueta="¿Cómo va a entrar?">
-            <Selector name="origen" value={origen} onChange={(e) => setOrigen(e.target.value as 'GCC' | 'PRODUCTO')}>
-              <option value="GCC">Con su cuenta de GCC World</option>
-              <option value="PRODUCTO">Con una cuenta de este producto</option>
-            </Selector>
-          </Campo>
-
           <p className="rounded border border-borde bg-realce px-3 py-2 text-[12px] leading-relaxed text-tenue">
-            {origen === 'GCC' ? (
-              <>
-                Entrará con el correo y la contraseña que ya usa en GCC World. Aquí no se
-                guarda ninguna contraseña suya, así que si la cambia allí, cambia aquí.
-                Hace falta que la cuenta exista ya en la plataforma.
-              </>
-            ) : (
-              <>
-                Se le generará una contraseña que verás UNA vez. Úsalo para quien no
-                tenga cuenta en GCC World.
-              </>
-            )}
+            Se le generará una contraseña que verás <strong>una sola vez</strong>. Es una cuenta
+            de tu empresa dentro de este producto: no da acceso a GCC World ni a ningún otro
+            sitio.
           </p>
 
-          <Campo etiqueta={origen === 'GCC' ? 'Correo de su cuenta de GCC World' : 'Usuario'}>
-            <Entrada
-              name="usuario"
-              type={origen === 'GCC' ? 'email' : 'text'}
-              placeholder={origen === 'GCC' ? 'persona@empresa.com' : 'nombre.apellido'}
-              required
-            />
+          <Campo etiqueta="Usuario">
+            <Entrada name="usuario" type="text" placeholder="nombre.apellido" required />
           </Campo>
 
           <Campo etiqueta="Qué puede hacer">

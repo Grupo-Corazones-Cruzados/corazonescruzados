@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura, topeUsuarios } from '@/lib/inquilino';
-import { existeCuentaGcc } from '@/lib/cuentaGcc';
 
 export type ResultadoUsuario =
   | { ok: true; mensaje?: string; clave?: string }
@@ -16,7 +15,6 @@ const claveAlAzar = () => randomBytes(9).toString('base64url');
 
 const Alta = z.object({
   nombre: z.string().trim().min(2, 'Escribe el nombre de la persona.'),
-  origen: z.enum(['PRODUCTO', 'GCC']),
   usuario: z.string().trim().toLowerCase().min(3, 'El usuario necesita al menos 3 caracteres.'),
   rol: z.enum(['ADMIN', 'OPERADOR', 'CONSULTA']),
 });
@@ -26,16 +24,28 @@ const Alta = z.object({
  * producto nuevo una sección para que el administrador o dueño del tenant pueda crear
  * usuarios»).
  *
- * Dos clases de cuenta, y la diferencia es de dónde sale la contraseña:
+ * ⚠️ LAS CUENTAS QUE SE CREAN AQUÍ SON **DEL INQUILINO**, Y SOLO DEL INQUILINO.
  *
- *  · `GCC`      — la persona ya tiene cuenta de cliente en GCC World. Aquí NO se le
- *                 pone contraseña: entra con la suya de siempre. Se comprueba que la
- *                 cuenta exista, porque una cuenta enlazada a un correo que no está en
- *                 la plataforma **no podría entrar nunca** y nadie se enteraría hasta
- *                 que la persona lo intentara.
- *  · `PRODUCTO` — no tiene cuenta en GCC World. Se le genera una contraseña aquí y se
- *                 enseña UNA vez: guardarla para volver a mostrarla obligaría a poder
- *                 descifrarla, y entonces no estaría protegida.
+ * Su contraseña vive en este esquema, no abren nada fuera de este producto y no tienen
+ * ninguna relación con GCC World. Es lo que pidió Fernando el 2026-09-24: «todas las
+ * cuentas que se crean en los productos pertenecen al tenant del cliente que compró el
+ * producto… pero no son cuentas de clientes de gcc world», porque «son cuentas de gente
+ * externa que no conocemos ni confiamos».
+ *
+ * ── POR QUÉ YA NO SE PUEDE ELEGIR «CUENTA DE GCC WORLD» ──────────────────────────
+ * Antes esta misma acción aceptaba `origen: 'GCC'`, que enlaza la cuenta con la
+ * plataforma y hace que la contraseña se compruebe contra `gcc_world.users`. Parecía una
+ * comodidad; era una puerta:
+ *
+ *   · el formulario confirmaba si un correo cualquiera tiene cuenta en GCC World —un
+ *     listín de nuestros clientes, consultable por cualquiera que tenga un inquilino—;
+ *   · y después esa cuenta se podía usar para **probar contraseñas de GCC World** desde
+ *     la pantalla de acceso del inquilino. Acertar una vez es entrar en la plataforma.
+ *
+ * Enlazar un correo de GCC World es decidir a quién confiamos, y eso no lo decide un
+ * cliente: lo hace el equipo desde `/gcc` (`acciones/gccUsuarios.ts`). La base lo
+ * respalda con la restricción `usuarios_enlace_coherente` (migración 012), así que
+ * aunque alguien vuelva a abrir este camino por código, no se puede guardar.
  */
 export async function crearUsuario(slug: string, datos: FormData): Promise<ResultadoUsuario> {
   const permiso = await contextoEscritura(slug, 'ADMIN');
@@ -45,16 +55,6 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
   const leido = Alta.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
-
-  if (d.origen === 'GCC') {
-    if (!z.string().email().safeParse(d.usuario).success)
-      return { ok: false, error: 'Para una cuenta de GCC World hay que escribir su correo.' };
-    if (!(await existeCuentaGcc(d.usuario)))
-      return {
-        ok: false,
-        error: `No hay ninguna cuenta de GCC World con el correo ${d.usuario}. Que la cree primero en la plataforma, o dale una cuenta de este producto.`,
-      };
-  }
 
   // EL TOPE SE COMPRUEBA AL CREAR, y se cuentan solo las ACTIVAS: contar también las
   // desactivadas obligaría a borrar personas del histórico para dar de alta a otra.
@@ -78,27 +78,24 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
   });
   if (repetido) return { ok: false, error: 'Ya hay una cuenta con ese usuario.' };
 
-  const clave = d.origen === 'PRODUCTO' ? claveAlAzar() : null;
+  const clave = claveAlAzar();
 
   await prisma.usuario.create({
     data: {
       inquilinoId: ctx.inquilino.id,
       usuario: d.usuario,
       nombre: d.nombre,
+      // El correo se guarda solo para poder escribirle, nunca para enlazar nada: que
+      // coincida con una cuenta de GCC World no le da ni un permiso más.
       email: d.usuario.includes('@') ? d.usuario : null,
-      origen: d.origen,
-      claveHash: clave ? await bcrypt.hash(clave, 10) : null,
+      origen: 'PRODUCTO',
+      claveHash: await bcrypt.hash(clave, 10),
       rol: d.rol,
     },
   });
 
   revalidatePath(`/${slug}/usuarios`);
-  return clave
-    ? { ok: true, mensaje: `Cuenta creada para ${d.nombre}.`, clave }
-    : {
-        ok: true,
-        mensaje: `${d.nombre} ya puede entrar con su cuenta de GCC World y su contraseña de siempre.`,
-      };
+  return { ok: true, mensaje: `Cuenta creada para ${d.nombre}.`, clave };
 }
 
 /** Activar o desactivar. No se borra: el histórico de quién atendió qué se conserva. */

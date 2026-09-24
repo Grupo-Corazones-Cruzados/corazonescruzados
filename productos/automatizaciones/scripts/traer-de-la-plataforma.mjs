@@ -179,8 +179,11 @@ async function main() {
 
       // Su administrador, con la cuenta de GCC World: sin contraseña aquí.
       await cli.query(
-        `INSERT INTO usuarios (inquilino_id, usuario, nombre, email, origen, clave_hash, rol, actualizado_en)
-              VALUES ($1, $2, $3, $2, 'GCC', NULL, 'ADMIN', now())
+        // `enlazado_por`: quién de GCC autorizó el enlace. Desde la migración 012 es
+        // obligatorio para entrar con origen GCC — el cliente no puede enlazar cuentas
+        // de la plataforma, solo el equipo (ver `acciones/gccUsuarios.ts`).
+        `INSERT INTO usuarios (inquilino_id, usuario, nombre, email, origen, clave_hash, rol, enlazado_por, actualizado_en)
+              VALUES ($1, $2, $3, $2, 'GCC', NULL, 'ADMIN', 'migración', now())
          ON CONFLICT (inquilino_id, usuario) DO NOTHING`,
         [fila.id, inq.contactoEmail, inq.contactoNombre],
       );
@@ -197,8 +200,8 @@ async function main() {
       if (!u?.email) return null;
       const nombre = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email;
       const { rows: [creado] } = await cli.query(
-        `INSERT INTO usuarios (inquilino_id, usuario, nombre, email, origen, clave_hash, rol, actualizado_en)
-              VALUES ($1, $2, $3, $2, 'GCC', NULL, 'OPERADOR', now())
+        `INSERT INTO usuarios (inquilino_id, usuario, nombre, email, origen, clave_hash, rol, enlazado_por, actualizado_en)
+              VALUES ($1, $2, $3, $2, 'GCC', NULL, 'OPERADOR', 'migración', now())
          ON CONFLICT (inquilino_id, usuario) DO UPDATE SET usuario = EXCLUDED.usuario
            RETURNING id`,
         [inquilinoId, u.email.toLowerCase(), nombre],

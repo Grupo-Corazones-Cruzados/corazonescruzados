@@ -6,6 +6,7 @@ import { leerSesionOperador } from '@/lib/sesion';
 import { evaluarAcceso } from '@/lib/inquilino';
 import { estadoSuscripcionGcc, accesoSegunGcc } from '@/lib/suscripcionGcc';
 import { Tarjeta, Insignia } from '@/componentes/ui';
+import CuentasDelCliente, { type CuentaVista } from './CuentasDelCliente';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Clientes' };
@@ -22,6 +23,15 @@ export default async function PaginaGcc() {
     orderBy: [{ cortesia: 'desc' }, { nombre: 'asc' }],
     include: {
       suscripcion: { include: { plan: true } },
+      // Las cuentas se traen enteras: desde aquí se ve quién puede entrar a cada cliente
+      // y se enlazan las de GCC World, que ya no puede enlazar el propio cliente.
+      usuarios: {
+        orderBy: [{ origen: 'asc' }, { nombre: 'asc' }],
+        select: {
+          id: true, usuario: true, nombre: true, rol: true, origen: true,
+          activo: true, enlazadoPor: true, bloqueadoHasta: true,
+        },
+      },
       _count: { select: { usuarios: true, automatizaciones: true, conversaciones: true } },
     },
   });
@@ -86,6 +96,22 @@ export default async function PaginaGcc() {
                 <Dato etiqueta="Automatizaciones">{i._count.automatizaciones}</Dato>
                 <Dato etiqueta="Conversaciones">{i._count.conversaciones}</Dato>
               </dl>
+
+              <CuentasDelCliente
+                inquilinoId={i.id}
+                nombre={i.nombre}
+                soloLectura={i.soloLectura}
+                cuentas={i.usuarios.map<CuentaVista>((u) => ({
+                  id: u.id,
+                  usuario: u.usuario,
+                  nombre: u.nombre,
+                  rol: u.rol,
+                  origen: u.origen,
+                  activo: u.activo,
+                  enlazadoPor: u.enlazadoPor,
+                  bloqueada: !!u.bloqueadoHasta && u.bloqueadoHasta > new Date(),
+                }))}
+              />
             </Tarjeta>
           );
         })}

@@ -234,6 +234,20 @@ model Usuario {
   /// NULO cuando `origen = GCC`: la contraseña no vive aquí.
   claveHash String?     @map("clave_hash")
 
+  /// ⚠️ QUIÉN DE GCC ENLAZÓ ESTA CUENTA CON LA PLATAFORMA. Obligatorio para entrar con
+  /// `origen = GCC`, y por eso existe: una cuenta de GCC World solo vale dentro de un
+  /// inquilino si la puso el equipo de GCC. El administrador del inquilino **no puede
+  /// crearlas** (ver `acciones/usuarios.ts`), porque enlazar un correo de la plataforma
+  /// es decidir a quién confiamos, y eso no lo decide un cliente. Nulo en las cuentas
+  /// del producto.
+  enlazadoPor String? @map("enlazado_por")
+
+  /// Intentos fallidos seguidos y hasta cuándo está cerrada la puerta. La pantalla de
+  /// acceso comprueba contraseñas contra `gcc_world.users` para las cuentas enlazadas:
+  /// sin freno sería un sitio cómodo donde probar contraseñas de la plataforma.
+  intentosFallidos Int       @default(0) @map("intentos_fallidos")
+  bloqueadoHasta   DateTime? @map("bloqueado_hasta") @db.Timestamptz(3)
+
   rol    Rol     @default(OPERADOR)
   activo Boolean @default(true)
 

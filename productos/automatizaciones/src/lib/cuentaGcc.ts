@@ -88,10 +88,16 @@ export async function verificarCuentaGcc(
 }
 
 /**
- * ¿Existe en GCC World una cuenta con este correo? Se usa al dar de alta un usuario de
- * origen GCC desde el área del equipo o desde la pantalla de usuarios del cliente: si
- * no existe, la cuenta que se cree no podría entrar nunca y nadie se enteraría hasta
- * que el cliente lo intentara.
+ * ¿Existe en GCC World una cuenta con este correo?
+ *
+ * ⚠️ **SOLO PUEDE LLAMARSE DESDE EL ÁREA DEL EQUIPO** (`acciones/gccUsuarios.ts`). Puesta
+ * delante de un cliente, esta función es un listín de la clientela de GCC: cualquiera con
+ * un inquilino podría ir probando correos y averiguar cuáles tienen cuenta en la
+ * plataforma. Hasta el 2026-09-24 la llamaba el alta de usuarios del inquilino; ya no.
+ *
+ * Sirve para avisar a tiempo: una cuenta enlazada a un correo que no está en la
+ * plataforma no podría entrar nunca y nadie se enteraría hasta que la persona lo
+ * intentara.
  */
 export async function existeCuentaGcc(email: string): Promise<boolean> {
   const correo = email.trim().toLowerCase();
