@@ -100,6 +100,13 @@ model Inquilino {
   /// une producto y plataforma es el CORREO (ver `lib/productos/accesos.ts` en la
   /// plataforma), porque `users.id` es uuid y esto es un entero.
   gccClienteId     Int?    @map("gcc_cliente_id")
+  /// ⭐ La suscripción de `gcc_world.subscriptions` que cobra a este cliente.
+  ///
+  /// Cuando está puesta, **manda ella**: el acceso se decide con los pagos registrados en
+  /// la plataforma, no con el `pagado_hasta` de aquí. Es lo que hace que pagar en el
+  /// módulo de suscripciones y pagar desde el producto sean literalmente lo mismo, en vez
+  /// de dos copias que se separan a la primera.
+  gccSuscripcionId Int?    @map("gcc_suscripcion_id")
   contactoNombre   String? @map("contacto_nombre")
   contactoEmail    String? @map("contacto_email")
   contactoTelefono String? @map("contacto_telefono")

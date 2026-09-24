@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { leerSesionUsuario, type SesionUsuario } from '@/lib/sesion';
 import type { Rol, TipoAutomatizacion } from '@/generated/prisma/enums';
+import { estadoSuscripcionGcc, accesoSegunGcc, type EstadoSuscripcionGcc } from '@/lib/suscripcionGcc';
 
 /**
  * EL ÚNICO SITIO donde se decide a qué inquilino pertenece una petición, QUÉ PRODUCTOS
@@ -90,6 +91,21 @@ async function cargarContexto(slug: string, sesion: SesionUsuario) {
   });
   if (!inquilino || inquilino.slug !== slug) return null;
 
+  /**
+   * ⭐ SI EL CLIENTE ESTÁ ENLAZADO A UNA SUSCRIPCIÓN DE LA PLATAFORMA, MANDA ELLA.
+   *
+   * Es lo que hace que «pagar aquí o en el módulo de suscripciones sea lo mismo»
+   * (Fernando, 2026-09-23): no hay dos estados que sincronizar, hay uno que se lee. Un
+   * pago registrado en la plataforma abre la puerta aquí en el acto, sin que nadie tenga
+   * que acordarse de copiar nada.
+   *
+   * Y el mes de espera vive ahí: se bloquea **un mes después** del último periodo pagado,
+   * no el día del corte.
+   */
+  const suscripcionGcc: EstadoSuscripcionGcc | null = inquilino.gccSuscripcionId
+    ? await estadoSuscripcionGcc(inquilino.gccSuscripcionId)
+    : null;
+
   // QUÉ TIENE MONTADO, que es lo que decide las secciones. No es lo que pagó —el producto
   // se vende entero— sino lo que ha llegado a usar: un cliente con solo un agente no
   // necesita ver «Campañas», porque no tiene ninguna.
@@ -98,7 +114,23 @@ async function cargarContexto(slug: string, sesion: SesionUsuario) {
     select: { tipo: true },
     distinct: ['tipo'],
   });
-  return { inquilino, sesion, montados: tipos.map((t) => t.tipo) };
+  return { inquilino, sesion, montados: tipos.map((t) => t.tipo), suscripcionGcc };
+}
+
+/**
+ * La puerta, teniendo en cuenta de dónde viene la verdad.
+ *
+ * La cortesía y la suspensión siguen mandando sobre todo lo demás: son decisiones de GCC,
+ * no del estado de un cobro.
+ */
+export function accesoDelContexto(ctx: {
+  inquilino: { estado: string; cortesia: boolean; suscripcion: { estado: string; pagadoHasta: Date | null } | null };
+  suscripcionGcc: EstadoSuscripcionGcc | null;
+}): EstadoAcceso {
+  if (ctx.inquilino.estado === 'SUSPENDIDO') return 'suspendido';
+  if (ctx.inquilino.cortesia) return 'ok';
+  if (ctx.suscripcionGcc) return accesoSegunGcc(ctx.suscripcionGcc);
+  return evaluarAcceso(ctx.inquilino);
 }
 
 export type Contexto = NonNullable<Awaited<ReturnType<typeof cargarContexto>>>;
@@ -116,7 +148,13 @@ export async function exigirContexto(slug: string, minimo: Rol = 'CONSULTA') {
 
   // ⚠️ La suscripción se mira ANTES que el rol: si no, a un operador con la mensualidad
   // vencida se le mandaría al panel, que también está cerrado.
-  if (evaluarAcceso(ctx.inquilino) !== 'ok') redirect(`/${slug}/suscripcion`);
+  /**
+   * ⚠️ AQUÍ NO SE PUEDE MANDAR A `/configuracion`. Esa pantalla vive dentro de `(app)`, así
+   * que exige acceso —y además ser ADMIN—: un cliente bloqueado entraría en un bucle
+   * infinito entre las dos. `/suscripcion` está FUERA del grupo a propósito: es la única
+   * que se puede ver sin tener nada al día, porque es donde se arregla justamente eso.
+   */
+  if (accesoDelContexto(ctx) !== 'ok') redirect(`/${slug}/suscripcion`);
   if (!alMenos(sesion.rol, minimo)) redirect(`/${slug}/panel`);
 
   return ctx;
@@ -141,7 +179,7 @@ export async function contextoApi(slug: string, minimo: Rol = 'CONSULTA') {
   const sesion = await leerSesionUsuario();
   if (!sesion || sesion.slug !== slug) return null;
   const ctx = await cargarContexto(slug, sesion);
-  if (!ctx || evaluarAcceso(ctx.inquilino) !== 'ok' || !alMenos(sesion.rol, minimo)) return null;
+  if (!ctx || accesoDelContexto(ctx) !== 'ok' || !alMenos(sesion.rol, minimo)) return null;
   return ctx;
 }
 

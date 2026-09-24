@@ -4,6 +4,7 @@ import { ExternalLink } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { leerSesionOperador } from '@/lib/sesion';
 import { evaluarAcceso } from '@/lib/inquilino';
+import { estadoSuscripcionGcc, accesoSegunGcc } from '@/lib/suscripcionGcc';
 import { Tarjeta, Insignia } from '@/componentes/ui';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,21 @@ export default async function PaginaGcc() {
     },
   });
 
+  /**
+   * El estado REAL de cada cliente. Para los enlazados a una suscripción de la plataforma
+   * manda esa, igual que en la puerta: el equipo tiene que ver lo mismo que ve el cliente.
+   */
+  const estados = new Map<number, ReturnType<typeof accesoSegunGcc>>();
+  for (const i of inquilinos) {
+    if (i.estado === 'SUSPENDIDO') { estados.set(i.id, 'suspendido'); continue; }
+    if (i.cortesia) { estados.set(i.id, 'ok'); continue; }
+    if (i.gccSuscripcionId) {
+      estados.set(i.id, accesoSegunGcc(await estadoSuscripcionGcc(i.gccSuscripcionId)));
+    } else {
+      estados.set(i.id, evaluarAcceso(i));
+    }
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="mb-4 flex items-baseline justify-between gap-3">
@@ -34,7 +50,7 @@ export default async function PaginaGcc() {
 
       <div className="space-y-2.5">
         {inquilinos.map((i) => {
-          const acceso = evaluarAcceso(i);
+          const acceso = estados.get(i.id) ?? 'sin-pago';
           return (
             <Tarjeta key={i.id} className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
