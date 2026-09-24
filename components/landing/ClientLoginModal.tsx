@@ -37,6 +37,15 @@ export default function ClientLoginModal({
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
   const [masked, setMasked] = useState<string | null>(null);
+  /**
+   * ⚠️ ¿Tiene una passkey que sirva? Lo dice el servidor en el paso 1.
+   *
+   * Sin esto el botón «Ingresar con passkey» salía SIEMPRE, y quien no tenía ninguna
+   * recibía un texto en rojo al pulsarlo, como si hubiera hecho algo mal. Lo que
+   * necesitaba no era un error, era no ver el botón — y saber que al entrar con el código
+   * podrá configurarla.
+   */
+  const [tienePasskey, setTienePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +74,7 @@ export default function ClientLoginModal({
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
       if (j?.sinCodigo) { onLoggedIn(); return; }
       setMasked(j?.masked ?? null);
+      setTienePasskey(j?.tienePasskey === true);
       setStep('factor');
     } catch {
       setError('Error de red');
@@ -109,9 +119,10 @@ export default function ClientLoginModal({
       });
       const opts = await begin.json();
       if (!begin.ok) {
-        setError(
-          'Aún no tienes una passkey. Inicia sesión con tu código (botón de arriba) para poder configurarla.',
-        );
+        // No debería llegarse aquí —el botón solo se pinta si hay passkey—, pero si la
+        // borraron entre el paso 1 y este clic, se explica sin alarmar.
+        setTienePasskey(false);
+        setError('Esa passkey ya no está disponible. Entra con el código y podrás configurar una nueva.');
         return;
       }
       const credential = await startAuthentication({ optionsJSON: opts });
@@ -333,25 +344,43 @@ export default function ClientLoginModal({
               >
                 {busy ? 'Enviando código...' : 'Enviar código'}
               </button>
-              <button
-                type="button"
-                onClick={loginWithPasskey}
-                disabled={busy}
-                className="pixel-btn pixel-btn-secondary"
-                style={{ opacity: busy ? 0.6 : 1 }}
-              >
-                <span
+              {/* ⚠️ Solo si hay una passkey que sirva. El botón se pintaba siempre y
+                  quien no tenía ninguna recibía un aviso en rojo al pulsarlo; ahora, en
+                  su lugar, se le dice lo útil: que al entrar podrá configurarla. */}
+              {tienePasskey ? (
+                <button
+                  type="button"
+                  onClick={loginWithPasskey}
+                  disabled={busy}
+                  className="pixel-btn pixel-btn-secondary"
+                  style={{ opacity: busy ? 0.6 : 1 }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <FingerprintIcon />
+                    Ingresar con passkey
+                  </span>
+                </button>
+              ) : (
+                <p
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
+                    fontFamily: BODY,
+                    fontSize: '0.78rem',
+                    lineHeight: 1.5,
+                    color: '#9b93b4',
+                    margin: '2px 0 0',
+                    textAlign: 'center',
                   }}
                 >
-                  <FingerprintIcon />
-                  Ingresar con passkey
-                </span>
-              </button>
+                  Al entrar podrás configurar una passkey y la próxima vez no hará falta el código.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => {

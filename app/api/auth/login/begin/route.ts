@@ -4,6 +4,31 @@ import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 import { PERFILES, cuentaEncaja, esTipoValido } from '@/lib/auth/tipos';
+import { getWebAuthnRP } from '@/lib/world/webauthn';
+
+/**
+ * ¿Esta cuenta tiene alguna passkey QUE SIRVA EN ESTE DOMINIO?
+ *
+ * ⚠️ Lo pregunta el paso 1 para que la pantalla no ofrezca «Ingresar con passkey» a quien
+ * no puede usarla. Antes el botón salía siempre y, al pulsarlo, contestaba «aún no tienes
+ * una passkey» — un botón que solo sabe fallar, y encima en rojo, como si el usuario
+ * hubiera hecho algo mal.
+ *
+ * `rp_id` filtra además las creadas antes del 2026-09-24, que nacieron con otro dominio y
+ * ya no acepta ningún navegador (migración 062).
+ */
+async function tienePasskeyUtilizable(email: string): Promise<boolean> {
+  const { rpId } = await getWebAuthnRP();
+  const { rows } = await pool.query(
+    `SELECT 1
+       FROM gcc_world.client_passkeys pk
+       JOIN gcc_world.clients c ON c.id = pk.client_id
+      WHERE lower(c.email) = $1 AND pk.rp_id = $2
+      LIMIT 1`,
+    [email, rpId],
+  );
+  return rows.length > 0;
+}
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
@@ -102,8 +127,14 @@ export async function POST(req: NextRequest) {
     }
 
     // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
+    // Se le dice también QUÉ segundos pasos tiene disponibles, para que la pantalla no
+    // ofrezca una passkey que no existe.
     if (validateOnly) {
-      return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
+      return NextResponse.json({
+        ok: true,
+        masked: maskEmail(cleanEmail),
+        tienePasskey: await tienePasskeyUtilizable(cleanEmail),
+      });
     }
 
 

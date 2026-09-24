@@ -26,6 +26,8 @@ export default function MemberLoginModal({
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
   const [masked, setMasked] = useState<string | null>(null);
+  /** ¿Tiene una passkey que sirva? Lo dice el servidor en el paso 1 (ver la ruta). */
+  const [tienePasskey, setTienePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +51,7 @@ export default function MemberLoginModal({
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
       if (j?.sinCodigo) { onLoggedIn(true); return; }
       setMasked(j?.masked ?? null);
+      setTienePasskey(j?.tienePasskey === true);
       setStep('factor');
     } catch {
       setError('Error de red');
@@ -311,25 +314,42 @@ export default function MemberLoginModal({
               >
                 {busy ? 'Enviando código...' : 'Enviar código'}
               </button>
-              <button
-                type="button"
-                onClick={loginWithPasskey}
-                disabled={busy}
-                className="pixel-btn pixel-btn-secondary"
-                style={{ opacity: busy ? 0.6 : 1 }}
-              >
-                <span
+              {/* Solo si hay una passkey que sirva: un botón que solo sabe fallar es
+                  peor que no tener botón. */}
+              {tienePasskey ? (
+                <button
+                  type="button"
+                  onClick={loginWithPasskey}
+                  disabled={busy}
+                  className="pixel-btn pixel-btn-secondary"
+                  style={{ opacity: busy ? 0.6 : 1 }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <FingerprintIcon />
+                    Ingresar con passkey
+                  </span>
+                </button>
+              ) : (
+                <p
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
+                    fontFamily: BODY,
+                    fontSize: '0.78rem',
+                    lineHeight: 1.5,
+                    color: '#9b93b4',
+                    margin: '2px 0 0',
+                    textAlign: 'center',
                   }}
                 >
-                  <FingerprintIcon />
-                  Ingresar con passkey
-                </span>
-              </button>
+                  Al entrar podrás configurar una passkey y la próxima vez no hará falta el código.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => {
