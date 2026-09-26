@@ -60,7 +60,11 @@ export async function POST() {
         }),
       ),
       authenticatorSelection: {
-        residentKey: 'preferred',
+        // El autenticador integrado (Touch ID, Face ID, Windows Hello) en vez del
+        // selector con el código QR. Ver la explicación larga en
+        // `app/api/auth/passkey/register/begin/route.ts`.
+        authenticatorAttachment: 'platform',
+        residentKey: 'required',
         userVerification: 'preferred',
       },
     });

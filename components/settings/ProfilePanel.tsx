@@ -8,6 +8,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import PasskeysPanel from '@/components/settings/PasskeysPanel';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 
 /** Idiomas del selector. Vive aquí porque aquí es donde se eligen. */
@@ -282,6 +283,13 @@ export default function ProfilePanel() {
         {/* Sin la sección «Cuenta»: correo, ID, rol y verificado son datos del
             sistema, no del perfil que se edita. Quien entra ya sabe con qué cuenta
             está, y el correo está arriba junto a la foto. Lo quitó Fernando. */}
+
+        {/* Las passkeys sí van aquí: no son un dato del sistema, son algo que se
+            gestiona —se añade la de este equipo, se quita la que ya no se usa—. Antes
+            solo se podían crear desde el modal de acceso, y solo si no tenías ninguna.
+            ⚠️ Sus botones llevan `type="button"`: dentro de un <form>, un botón sin
+            tipo envía el formulario. */}
+        <PasskeysPanel />
 
       </form>
     </SettingsPanel>

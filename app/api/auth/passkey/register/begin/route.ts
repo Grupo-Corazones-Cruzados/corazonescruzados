@@ -11,8 +11,34 @@ type TransportLike =
  * Registro de passkey para un USUARIO (cliente/staff) ya autenticado por JWT.
  * La passkey vive en una fila de gcc_world.clients vinculada por correo (la
  * misma que usa el login con passkey de /api/auth/passkey).
+ *
+ * ⚠️ `authenticatorAttachment: 'platform'` — LA HUELLA DE ESTE APARATO, NO UN CÓDIGO QR.
+ *
+ * ── QUÉ PASABA (Fernando, 2026-09-26) ────────────────────────────────────────────
+ * «Al tratar de ingresar con passkey sale este código QR… el problema es que no puedo
+ * registrar mi passkey con mi Face ID o huella digital en macOS».
+ *
+ * Sin `authenticatorAttachment`, WebAuthn acepta CUALQUIER autenticador, y entonces el
+ * sistema abre el selector completo: llavero del dispositivo, llave USB… y «usa tu
+ * teléfono o tablet», que es el del código QR. Cuando además no hay ninguna credencial
+ * local que ofrecer, el navegador va directo al QR y parece que la única forma de entrar
+ * fuera con otro aparato.
+ *
+ * Con `platform` se le pide explícitamente **el autenticador integrado**: Touch ID en el
+ * Mac, Face ID en el iPhone, Windows Hello en un PC. La llave nace en el llavero del
+ * sistema —en Apple, iCloud Keychain—, así que se sincroniza sola entre los aparatos de
+ * la misma cuenta: se registra una vez en el Mac y el iPhone ya la tiene.
+ *
+ * ── LO QUE SE PIERDE, Y POR QUÉ SE ACEPTA ───────────────────────────────────────
+ * Deja fuera registrar con una llave USB o con el teléfono de otro. Nadie lo ha pedido, y
+ * el coste de lo contrario es el que acaba de pagarse: un QR delante de quien solo quería
+ * poner el dedo. Si algún día hace falta, se añade un segundo botón que mande
+ * `cualquierDispositivo: true` y esto se queda como el camino por defecto.
  */
-export async function POST() {
+export async function POST(req: Request) {
+  // Por defecto, el autenticador de este aparato (ver arriba).
+  const cuerpo = await req.json().catch(() => ({}));
+  const cualquierDispositivo = cuerpo?.cualquierDispositivo === true;
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -63,7 +89,13 @@ export async function POST() {
           transports: (p.transports ?? undefined) as TransportLike[] | undefined,
         }),
       ),
-      authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
+      authenticatorSelection: {
+        authenticatorAttachment: cualquierDispositivo ? undefined : 'platform',
+        // `required`: la llave se guarda en el dispositivo y se puede usar sin escribir
+        // antes el correo. Es lo que hace que «entrar con passkey» sea de verdad un paso.
+        residentKey: 'required',
+        userVerification: 'preferred',
+      },
     });
 
     await pool.query(
