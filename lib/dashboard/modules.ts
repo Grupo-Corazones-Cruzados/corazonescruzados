@@ -39,9 +39,16 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
   // corte del 2026-09-23 vive en `automatizaciones.grupocc.org`, se vende en el
   // marketplace a 5 $/mes y se entra por «Entrar a Organización».
   //
-  // El código viejo (`/dashboard/automatizaciones` y `app/api/admin/flows/**`) NO se ha
-  // borrado todavía a propósito: el corte es de hoy y esos datos en `gcc_world` son la
-  // red de seguridad. Se retira cuando el producto lleve unos días respondiendo.
+  // ⚠️ SUS DATOS YA NO ESTÁN (2026-09-26). El producto llevaba tres días respondiendo, así
+  // que se vaciaron las tablas duplicadas de `gcc_world`: `agente_mensajes`,
+  // `agente_contactos`, `agente_conversaciones`, `agente_cola`, `agente_uso_modelo` y
+  // `agente_eventos_webhook` — 98.877 filas, 83 MB. Antes se comprobó una por una que
+  // estuvieran en el producto (por `wa_message_id`, no por id: los ids NO se conservaron
+  // en la mudanza) y se guardó un volcado comprimido fuera del repo.
+  //
+  // El CÓDIGO viejo sigue aquí (`/dashboard/automatizaciones`, `app/api/admin/flows/**`)
+  // y ahora consulta tablas vacías: no falla, no enseña nada. Se puede borrar cuando se
+  // quiera; ya no protege ningún dato.
   { href: '/dashboard/tools',            label: 'Herramientas',     group: 'Plataforma', icon: 'Wrench' },
   { href: '/dashboard/centralized',      label: 'Centralizado',     group: 'Plataforma', icon: 'Network' },
   { href: '/dashboard/settings',         label: 'Configuración',    group: 'Sistema',    icon: 'Settings' },
