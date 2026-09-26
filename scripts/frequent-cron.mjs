@@ -38,9 +38,6 @@
 const FREQUENT_JOBS = [
   { name: 'Recordatorios · correos escalados',   path: '/api/reminders/cron/notify' },
   { name: 'Recordatorios · generar desde Meet',  path: '/api/reminders/cron/generate-from-meetings' },
-  // Campañas de email masivo: arranca las programadas cuya hora llegó y continúa por lotes
-  // las que quedaron a medias (una lista grande se completa en varios pases).
-  { name: 'Campañas · programadas y por lotes',  path: '/api/admin/flows/cron/send-scheduled' },
 ];
 
 const NIGHTLY_JOBS = [
@@ -49,9 +46,6 @@ const NIGHTLY_JOBS = [
   // Estaba solo en nightly-cron.mjs: al cambiar el servicio a este script se habría dejado
   // de reindexar los talentos sin que nadie se enterara. Ver la nota de arriba.
   { name: 'Talentos · embeddings al día', path: '/api/talentos/cron/reindexar' },
-  // No es opcional: la política publicada en /legal/whatsapp promete borrar la traza de
-  // webhooks a los 30 días. Si este trabajo deja de correr, la promesa se vuelve falsa.
-  { name: 'Agente WhatsApp · retención',  path: '/api/agente/cron/purgar' },
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');
@@ -63,10 +57,21 @@ const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http
 //
 // Se llama UNA VEZ POR HORA (no cada 10 min): la purga solo hace algo en la última
 // hora del mes y llamarla seis veces por hora sería llenar el registro de nada.
+//
+// ⚠️ FALTABA AUTOMATIZACIONES (2026-09-26), y no era opcional: `/legal/whatsapp` (A.8)
+// promete borrar la traza cruda de Meta a los 30 días. Hasta hoy ese borrado lo hacía la
+// plataforma sobre sus tablas viejas; al retirarse el módulo, lo hace el producto, y sin
+// esta línea no lo haría NADIE. Un trabajo que no se ejecuta no da error: solo deja de
+// cumplirse una promesa publicada.
+//
+// ⚠️ `planificaciones` NO está aquí porque todavía no tiene `/api/cron/purgar`. Ponerlo
+// sin endpoint sería un 404 cada hora fingiendo que algo se purga. Cuando lo tenga, se
+// añade la línea y sus dos variables.
 const PRODUCTOS = [
-  { name: 'Reservas · purga de fin de mes', url: process.env.RESERVAS_URL, token: process.env.RESERVAS_CRON_TOKEN },
-  { name: 'Pedidos · purga de fin de mes',  url: process.env.PEDIDOS_URL,  token: process.env.PEDIDOS_CRON_TOKEN },
-  { name: 'Catering · purga de fin de mes', url: process.env.CATERING_URL, token: process.env.CATERING_CRON_TOKEN },
+  { name: 'Reservas · purga de fin de mes', url: process.env.RESERVAS_URL,         token: process.env.RESERVAS_CRON_TOKEN },
+  { name: 'Pedidos · purga de fin de mes',  url: process.env.PEDIDOS_URL,          token: process.env.PEDIDOS_CRON_TOKEN },
+  { name: 'Catering · purga de fin de mes', url: process.env.CATERING_URL,         token: process.env.CATERING_CRON_TOKEN },
+  { name: 'Automatizaciones · retención',   url: process.env.AUTOMATIZACIONES_URL, token: process.env.AUTOMATIZACIONES_CRON_TOKEN },
 ].filter((p) => p.url && p.token);
 const TOKEN = process.env.CRON_TOKEN || '';
 

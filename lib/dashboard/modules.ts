@@ -39,16 +39,18 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
   // corte del 2026-09-23 vive en `automatizaciones.grupocc.org`, se vende en el
   // marketplace a 5 $/mes y se entra por «Entrar a Organización».
   //
-  // ⚠️ SUS DATOS YA NO ESTÁN (2026-09-26). El producto llevaba tres días respondiendo, así
-  // que se vaciaron las tablas duplicadas de `gcc_world`: `agente_mensajes`,
-  // `agente_contactos`, `agente_conversaciones`, `agente_cola`, `agente_uso_modelo` y
-  // `agente_eventos_webhook` — 98.877 filas, 83 MB. Antes se comprobó una por una que
-  // estuvieran en el producto (por `wa_message_id`, no por id: los ids NO se conservaron
-  // en la mudanza) y se guardó un volcado comprimido fuera del repo.
+  // ⚠️ «Automatizaciones» YA NO EXISTE EN LA PLATAFORMA — ni el módulo, ni sus datos, ni
+  // su código (2026-09-26). Fernando: «lo que ya no sirve te pedí que lo eliminaras,
+  // incluso la página de automatizaciones; lo único que se va a utilizar ahora es el
+  // producto que tenemos».
   //
-  // El CÓDIGO viejo sigue aquí (`/dashboard/automatizaciones`, `app/api/admin/flows/**`)
-  // y ahora consulta tablas vacías: no falla, no enseña nada. Se puede borrar cuando se
-  // quiera; ya no protege ningún dato.
+  // Se borraron `/dashboard/automatizaciones`, `app/api/admin/flows/**`, `app/api/agente/**`,
+  // `lib/{flows,agente,automatizaciones}`, `components/dashboard/flows` y sus guiones, y se
+  // vaciaron las tablas `agente_*` y `flow_*` de `gcc_world`. Vive en
+  // `automatizaciones.grupocc.org` y se vende en el marketplace a 5 $/mes.
+  //
+  // La purga de retención que prometía `/legal/whatsapp` A.8 la hace ahora el producto
+  // (`/api/cron/purgar`), disparada desde `scripts/frequent-cron.mjs`.
   { href: '/dashboard/tools',            label: 'Herramientas',     group: 'Plataforma', icon: 'Wrench' },
   { href: '/dashboard/centralized',      label: 'Centralizado',     group: 'Plataforma', icon: 'Network' },
   { href: '/dashboard/settings',         label: 'Configuración',    group: 'Sistema',    icon: 'Settings' },

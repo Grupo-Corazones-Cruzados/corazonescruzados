@@ -20,7 +20,6 @@
  *    comprobante del mismo cobro — y ese sí hay que anularlo con nota de crédito.
  */
 import { pool } from '@/lib/db';
-import { aprovisionarAutomatizacion } from '@/lib/automatizaciones/aprovisionar';
 import { getProjectBilling, getTicketPayments } from '@/lib/payments';
 import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
@@ -799,18 +798,18 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     nombreEtapa = `${titulo} — primer mes`;
 
     /**
-     * ⇒ SI LO COMPRADO ES UNA AUTOMATIZACIÓN, AQUÍ SE LE MONTA SU FLUJO.
+     * ⚠️ AQUÍ SE APROVISIONABA UN FLUJO DEL MÓDULO VIEJO, Y YA NO EXISTE (2026-09-26).
      *
-     * Una automatización vive dentro de esta plataforma: lo que se compra es el derecho a
-     * usar un flujo. Si la compra solo dejara la suscripción, el cliente vería el cargo en
-     * su tarjeta, entraría a Automatizaciones y no habría nada — y para él la compra
-     * habría fallado, por bien que funcionara el cobro.
+     * Hasta hoy, comprar una automatización del marketplace creaba un `flow` dentro de
+     * esta plataforma. Ese módulo se retiró —lo que se vende ahora es el PRODUCTO
+     * «Automatizaciones de WhatsApp», que vive en su propio servicio— así que llamar a
+     * aquello crearía una fila que ninguna pantalla sabe pintar.
      *
-     * Va en el mismo sitio y por el mismo motivo que la creación de la suscripción: hasta
-     * que el dinero no entra no se materializa nada. Y no lanza nunca — ver
-     * `aprovisionarAutomatizacion`.
+     * ⚠️ Quedan tres fichas del marketplace con `flow_type` puesto (26, 27 y 28). Ya no
+     * provisionan nada: la compra deja la suscripción y punto. Retirarlas o reapuntarlas
+     * al producto es una decisión de catálogo, de Fernando, no de este archivo.
      */
-    await aprovisionarAutomatizacion({ itemId, subscriptionId: subId, compradorUserId: compradorId });
+
 
     // Desde aquí se comporta como una suscripción a todos los efectos.
     esSuscripcion = true;
