@@ -141,15 +141,17 @@ export default function MemberLoginModal({
         setError(j?.error ?? 'Código incorrecto');
         return;
       }
-      // Con personaje: si NO tiene passkey, ofrece configurarla; si ya tiene,
-      // entra directo. Sin personaje: entra (irá a crear su personaje).
+      /**
+       * Con personaje se ofrece la passkey; sin personaje entra (irá a crearlo).
+       *
+       * ⚠️ Se ofrece AUNQUE ya tenga una, porque puede estar en otro aparato. Haber
+       * llegado hasta aquí es la señal: con una passkey utilizable en este equipo habría
+       * entrado con ella en vez de pedir un código. Antes solo se ofrecía a quien no
+       * tenía ninguna, y eso dejaba encerrado a quien sí (ver `ClientLoginModal`).
+       */
       if (j.hasCharacter) {
-        if (j.hasPasskey) {
-          onLoggedIn(true);
-        } else {
-          setError(null);
-          setStep('passkeyOffer');
-        }
+        setError(null);
+        setStep('passkeyOffer');
       } else {
         onLoggedIn(false);
       }

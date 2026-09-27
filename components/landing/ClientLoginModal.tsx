@@ -160,13 +160,24 @@ export default function ClientLoginModal({
         setError(j?.error ?? 'Código incorrecto');
         return;
       }
-      // Si NO tiene passkey, ofrece configurarla; si ya tiene, entra directo.
-      if (j.hasPasskey) {
-        onLoggedIn();
-      } else {
-        setError(null);
-        setStep('passkeyOffer');
-      }
+      /**
+       * ⚠️ SE OFRECE LA PASSKEY AUNQUE YA TENGA UNA — pero de OTRO aparato.
+       *
+       * Antes solo se ofrecía a quien no tenía ninguna, y eso encerraba a quien sí:
+       * Fernando tenía una registrada en otro dispositivo, así que al entrar en el Mac el
+       * botón «Ingresar con passkey» abría el código QR («usa tu teléfono») y la oferta
+       * de crear una aquí no volvía a salir NUNCA. No podía entrar con huella ni crear
+       * una que lo permitiera.
+       *
+       * Haber llegado hasta aquí YA ES la señal: si hubiera una passkey utilizable en
+       * este aparato, habría entrado con ella en vez de pedir un código. Así que se
+       * ofrece, y quien no quiera le da a «Ahora no».
+       *
+       * Una passkey es de un aparato aunque se sincronice; tener una por equipo es lo
+       * normal, no una anomalía.
+       */
+      setError(null);
+      setStep('passkeyOffer');
     } catch {
       setError('Error de red');
     } finally {
@@ -242,7 +253,7 @@ export default function ClientLoginModal({
                 ? 'Elige cómo continuar'
                 : step === 'code'
                   ? 'Confirma el código'
-                  : 'Configura tu passkey'}
+                  : tienePasskey ? 'Añade este dispositivo' : 'Configura tu passkey'}
           </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
             {step === 'creds'
@@ -251,7 +262,9 @@ export default function ClientLoginModal({
                 ? 'Verificamos tus credenciales. Por seguridad, completa un segundo paso.'
                 : step === 'code'
                   ? `Te enviamos un código a ${masked ?? 'tu correo'}.`
-                  : 'Crea una passkey (huella, Face ID o PIN) para entrar más rápido y seguro la próxima vez, sin código.'}
+                  : tienePasskey
+                    ? 'Tienes una passkey, pero en otro dispositivo. Añade una para ESTE equipo y entrarás con tu huella o tu cara, sin código.'
+                    : 'Crea una passkey (huella, Face ID o PIN) para entrar más rápido y seguro la próxima vez, sin código.'}
           </p>
 
           {step === 'passkeyOffer' ? (
