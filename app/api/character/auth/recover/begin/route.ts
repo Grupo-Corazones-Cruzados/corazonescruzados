@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeRecuperacionEmail } from '@/lib/integrations/email';
+import { getWebAuthnRP } from '@/lib/world/webauthn';
 
 function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
@@ -68,9 +69,27 @@ export async function POST(req: Request) {
       );
     }
 
-    // validateOnly: solo confirma las credenciales (paso 1) sin enviar el código.
+    /**
+     * validateOnly: solo confirma las credenciales (paso 1) sin enviar el código, y dice
+     * QUÉ segundos pasos hay disponibles.
+     *
+     * ⚠️ `tienePasskey` no es un adorno: sin él la pantalla pintaba «Ingresar con passkey»
+     * a todo el mundo y quien no tenía ninguna recibía un aviso en rojo al pulsarlo
+     * (Fernando, 2026-09-27: «cuando el usuario no tiene passkey configurado, en ninguna
+     * pantalla de login debería aparecerle el botón»). Se filtra por `rp_id` porque las
+     * de antes del cambio de dominio ya no las acepta el navegador (migración 062).
+     */
     if (validateOnly) {
-      return NextResponse.json({ ok: true, masked: maskEmail(row.email) });
+      const { rpId } = await getWebAuthnRP();
+      const { rows: llaves } = await pool.query(
+        `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 AND rp_id = $2 LIMIT 1`,
+        [row.id, rpId],
+      );
+      return NextResponse.json({
+        ok: true,
+        masked: maskEmail(row.email),
+        tienePasskey: llaves.length > 0,
+      });
     }
 
     const code = generateCode();

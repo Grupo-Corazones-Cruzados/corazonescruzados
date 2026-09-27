@@ -25,6 +25,8 @@ export default function AccountRecoveryModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [masked, setMasked] = useState<string | null>(null);
+  /** ¿Tiene una passkey que sirva en este dominio? Lo dice el servidor en el paso 1. */
+  const [tienePasskey, setTienePasskey] = useState(false);
 
   // Paso 1: valida credenciales (sin enviar código) → muestra opciones.
   const submitCreds = async (e: React.FormEvent) => {
@@ -46,6 +48,7 @@ export default function AccountRecoveryModal({
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
       if (j?.sinCodigo) { onSuccess(); return; }
       setMasked(j?.masked ?? null);
+      setTienePasskey(j?.tienePasskey === true);
       setStep('factor');
     } catch {
       setError('Error de red');
@@ -96,7 +99,7 @@ export default function AccountRecoveryModal({
           return;
         }
         setError(
-          'Aún no tienes una passkey. Inicia sesión con tu código (botón de arriba); al entrar podrás configurar tu passkey para la próxima vez.',
+          'Esa passkey ya no está disponible. Entra con el código y podrás configurar una nueva.',
         );
         return;
       }
@@ -135,13 +138,13 @@ export default function AccountRecoveryModal({
         setError(j?.error ?? 'Código incorrecto');
         return;
       }
-      // Si NO tiene passkey, ofrece configurarla; si ya tiene, entra directo.
-      if (j.hasPasskey) {
-        onSuccess();
-      } else {
-        setError(null);
-        setStep('passkeyOffer');
-      }
+      /**
+       * Se ofrece la passkey AUNQUE ya tenga una: puede estar en otro aparato. Haber
+       * llegado hasta aquí es la señal —con una utilizable en este equipo se habría
+       * entrado con ella en vez de pedir un código—. Quien no la quiera pulsa «Ahora no».
+       */
+      setError(null);
+      setStep('passkeyOffer');
     } catch {
       setError('Error de red');
     } finally {
@@ -302,25 +305,42 @@ export default function AccountRecoveryModal({
               >
                 {busy ? 'Enviando código...' : 'Enviar código'}
               </button>
-              <button
-                type="button"
-                onClick={loginWithPasskey}
-                disabled={busy}
-                className="pixel-btn pixel-btn-secondary"
-                style={{ opacity: busy ? 0.6 : 1 }}
-              >
-                <span
+              {/* ⚠️ Solo si hay una passkey que sirva. Un botón que solo sabe fallar es
+                  peor que no tener botón (Fernando, 2026-09-27). */}
+              {tienePasskey ? (
+                <button
+                  type="button"
+                  onClick={loginWithPasskey}
+                  disabled={busy}
+                  className="pixel-btn pixel-btn-secondary"
+                  style={{ opacity: busy ? 0.6 : 1 }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <FingerprintIcon />
+                    Ingresar con passkey
+                  </span>
+                </button>
+              ) : (
+                <p
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
+                    fontFamily: BODY,
+                    fontSize: '0.78rem',
+                    lineHeight: 1.5,
+                    color: '#9b93b4',
+                    margin: '2px 0 0',
+                    textAlign: 'center',
                   }}
                 >
-                  <FingerprintIcon />
-                  Ingresar con passkey
-                </span>
-              </button>
+                  Al entrar podrás configurar una passkey y la próxima vez no hará falta el código.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => {
