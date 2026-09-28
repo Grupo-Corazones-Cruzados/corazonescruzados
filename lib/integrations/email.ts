@@ -611,6 +611,8 @@ export async function sendPaymentLinkEmail(params: {
   email: string;
   projectTitle: string;
   stageName: string;
+  /** «esta etapa del proyecto», «el proyecto», «este ticket»… Lo que dice el párrafo. */
+  queSePaga?: string;
   neto: number;
   recargo: number;
   total: number;
@@ -618,6 +620,7 @@ export async function sendPaymentLinkEmail(params: {
   expiresAt: Date;
   responsibleName?: string | null;
 }) {
+  const queSePaga = params.queSePaga || 'esta etapa del proyecto';
   const dinero = (n: number) => `$${Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const caduca = params.expiresAt.toLocaleString('es-EC', {
     dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Guayaquil',
@@ -643,8 +646,8 @@ export async function sendPaymentLinkEmail(params: {
     emailBadge('PAGO PENDIENTE', CORP.accent) +
     emailHeading('Tienes un pago disponible', escapeHtml(params.projectTitle)) +
     emailParagraph(params.responsibleName
-      ? `${accentStrong(escapeHtml(params.responsibleName))} te comparte el enlace para pagar esta etapa del proyecto.`
-      : 'Te compartimos el enlace para pagar esta etapa del proyecto.') +
+      ? `${accentStrong(escapeHtml(params.responsibleName))} te comparte el enlace para pagar ${escapeHtml(queSePaga)}.`
+      : `Te compartimos el enlace para pagar ${escapeHtml(queSePaga)}.`) +
     desglose +
     emailButton(params.url, 'Ver el proyecto y pagar') +
     emailParagraph('No necesitas crear una cuenta. Al entrar verás el detalle del proyecto y podrás completar tus datos de facturación antes de pagar; la factura electrónica te llegará por correo en cuanto el pago se confirme.') +
@@ -653,7 +656,10 @@ export async function sendPaymentLinkEmail(params: {
 
   return deliver({
     to: params.email,
-    subject: `Pago de ${params.stageName} — ${params.projectTitle}`,
+    // Un proyecto entero se llama igual que su concepto: «Pago de X — X» se lee como error.
+    subject: params.stageName === params.projectTitle
+      ? `Pago de ${params.projectTitle}`
+      : `Pago de ${params.stageName} — ${params.projectTitle}`,
     html,
   });
 }

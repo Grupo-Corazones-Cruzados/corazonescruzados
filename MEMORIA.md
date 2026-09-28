@@ -275,6 +275,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **💳 ENLACE DE PAGO DEL PROYECTO ENTERO, sin plan de etapas (Fernando, 2026-09-28).**
+  *«como usuario responsable del proyecto pueda compartir por token y correo un enlace a los
+  clientes para que puedan pagar el proyecto cuando su estado ya está por completar y
+  facturar»* — con el mismo formulario de «Compartir acceso a la cotización».
+  - **El hueco:** el enlace (canal 3) **exigía etapa**, y el proyecto #36 (Imadexa, «en
+    revisión», 370 $) no tiene plan: solo podía pagarlo el cliente CON cuenta. Ahora un enlace
+    de proyecto **sin etapa cobra lo que queda por facturar**, y la factura sale con un renglón
+    por requerimiento (lo mismo que el canal 2). Al pagarse, el proyecto se completa solo.
+  - **Quién y cuándo:** botón **«Compartir enlace de pago»** en `trailing` de la cabecera (el
+    sitio de «Compartir acceso»), para admin o responsable. Sin plan: en revisión o completado
+    y con importe por facturar. Con plan: el mismo panel con un selector de etapa pendiente.
+  - **⚠️ Candado nuevo en `cotizarProyectoSinEtapas`:** con plan se rechaza el cobro «entero».
+    Antes no hacía falta porque nada llegaba sin etapa, pero el botón «Completar y facturar»
+    del cliente sí podía: habría facturado los requerimientos dejando las etapas pendientes,
+    cobrables otra vez. Ese botón del cliente ahora solo sale sin plan.
+  - **«Generar enlace» sin correo** (`enviar: false`): para mandarlo por WhatsApp. Un correo
+    inválido no se guarda en `payment_links.email` (la pantalla de pago lo usaría como destino).
+  - **Un solo formulario:** `components/ui/PanelCompartirEnlace.tsx` (cotización, proyecto y
+    ticket). Las dos ventanitas centradas del enlace de pago desaparecieron.
+  - ⚠️ **Visto de paso, NO arreglado:** `GET /api/projects/[id]/payments` solo mira que haya
+    sesión — cualquier usuario puede leer la facturación de cualquier proyecto. Pendiente.
 - **⭐⭐ CÓMO SE DISEÑA, DICHO POR FERNANDO EL 2026-09-23.** Una tarde entera de
   correcciones suyas, todas sobre lo mismo: **el reparto del espacio**. Es la norma para
   los cinco productos y para la plataforma; el detalle y los fragmentos, en `Diseño.md`.

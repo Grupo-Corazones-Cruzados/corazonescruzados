@@ -1,5 +1,35 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-09-28) — ENLACE DE PAGO DEL PROYECTO por token y correo · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+
+**Fernando:** *«como usuario responsable del proyecto pueda compartir por token y correo un
+enlace a los clientes para que puedan pagar el proyecto cuando su estado ya está por completar
+y facturar»*, con el formulario de «Compartir acceso a la cotización». **Rol:** ingeniero de
+pagos/backend + UI del panel.
+
+### P1 — ¿Existía ya el enlace de pago de proyecto? · ✅
+Sí (canal 3, `lib/pagos/enlaces.ts`), pero **solo por etapa**: `crearEnlaceDePago` exigía
+`stageId` y `validarEnlace` rechazaba un enlace de proyecto sin etapa. El proyecto #36
+(Imadexa) no tiene plan → no había forma. (fuente: código)
+
+### P2 — ¿Sabe el cobro cobrar un proyecto sin plan? · ✅
+Sí: `cotizarProyectoSinEtapas` (desde el 2026-08-28, canal 2). Exige en revisión o completado
+e importe por facturar; la factura va con un renglón por requerimiento y el pago completa el
+proyecto. Bastaba con dejar pasar al enlace sin etapa. (fuente: `lib/pagos/intentos.ts`)
+
+### P3 — ¿Qué pasa si un proyecto CON plan recibe un cobro sin etapa? · ✅ (riesgo real, cerrado)
+Se facturaban los requerimientos y las etapas seguían pendientes → doble cobro posible. El
+botón del cliente ya podía provocarlo. Candado añadido al principio de
+`cotizarProyectoSinEtapas`, y el botón del cliente solo sale sin plan.
+
+### Verificado (2026-09-28)
+- `tsc` limpio · `npm run build` limpio.
+- Contra la base real, en transacción con ROLLBACK: se crea el enlace del #36 sin etapa ni
+  correo (neto 370 $, 392,58 $ con tarjeta), valida y cotiza lo mismo; el #32 (con plan) se
+  rechaza «se cobra por etapas»; el #3 (en curso) se rechaza «no está listo». 0 filas quedaron.
+- Navegador real (build de producción, puerto 3099): botón en la cabecera y panel idéntico al
+  de la cotización, con el importe debajo del correo.
+
 ## Objetivo (declarado 2026-09-23) — AUTOMATIZACIONES SE CONVIERTE EN PRODUCTO(S), con su cliente real dentro · 🔎 80 %
 
 **Declarado por Fernando el 2026-09-23:** *«lo siguiente que quiero que hagas es trabajar

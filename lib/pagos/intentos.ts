@@ -205,6 +205,18 @@ export async function cotizarProyectoSinEtapas(
   if (billing.status === 'cancelled') {
     throw new Error('Este proyecto está cancelado. Escríbenos antes de pagar.');
   }
+  /**
+   * ⚠️ CON PLAN DE ETAPAS NO SE COBRA «ENTERO» (2026-09-28).
+   *
+   * Con plan, `billable` es la suma de las ETAPAS pendientes, pero la factura de un cobro
+   * sin etapa sale de los REQUERIMIENTOS y no marca ninguna etapa: el proyecto quedaría
+   * cobrado y sus etapas seguirían «pendientes», listas para cobrarse otra vez. Hasta hoy
+   * nada llegaba aquí con plan por un enlace (el enlace exigía etapa), pero ahora que un
+   * enlace puede ir sin ella, esta es la puerta que lo impide.
+   */
+  if (billing.mode === 'etapas') {
+    throw new Error('Este proyecto se cobra por etapas: hay que pagar cada etapa por separado.');
+  }
   if (billing.status !== 'review' && billing.status !== 'completed') {
     throw new Error('Este proyecto todavía no está listo para cobrarse: falta que se entregue a revisión.');
   }

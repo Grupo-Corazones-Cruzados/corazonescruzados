@@ -37,6 +37,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       stageId: Number(cuerpo.stage_id) || null,
       email: cuerpo.email,
       horas: Number(cuerpo.horas),
+      // Sin etapa = el proyecto entero (proyectos sin plan). `enviar: false` = solo generar.
+      enviar: cuerpo.enviar !== false,
       createdBy: userId,
       baseUrl: process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin,
     });

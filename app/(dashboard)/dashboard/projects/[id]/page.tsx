@@ -23,6 +23,7 @@ import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
 import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
+import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import { fmt2 } from '@/lib/format';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -176,13 +177,11 @@ export default function ProjectDetailPage() {
   const [showStagesPanel, setShowStagesPanel] = useState(false);
   const [planDraft, setPlanDraft] = useState<{ id: number | null; name: string; amount: string; invoiceNumber: string | null }[]>([]);
   const [savingPlan, setSavingPlan] = useState(false);
-  // ENLACE DE PAGO (canal 3): el responsable comparte un enlace de UNA etapa, con la
-  // caducidad que él elige, y sale un correo al cliente. Ver `lib/pagos/`.
-  const [linkStage, setLinkStage] = useState<{ id: number; name: string; amount: number } | null>(null);
-  const [linkEmail, setLinkEmail] = useState('');
-  const [linkHoras, setLinkHoras] = useState('72');
-  const [linkSaving, setLinkSaving] = useState(false);
-  const [linkResult, setLinkResult] = useState<{ url: string; email: string; total: number; correoEnviado: boolean } | null>(null);
+  // ENLACE DE PAGO (canal 3): el responsable comparte un enlace con la caducidad que él
+  // elige, y puede salir un correo al cliente. Con plan cobra UNA etapa (`enlaceEtapa`);
+  // sin plan, el proyecto entero (`null`). Ver `lib/pagos/`.
+  const [enlaceAbierto, setEnlaceAbierto] = useState(false);
+  const [enlaceEtapa, setEnlaceEtapa] = useState<number | null>(null);
   // Cancelar el proyecto: solo admin, con motivo escrito.
   const [showCancelar, setShowCancelar] = useState(false);
   const [motivoCancelar, setMotivoCancelar] = useState('');
@@ -577,39 +576,14 @@ export default function ProjectDetailPage() {
   };
 
   /**
-   * Abre la ventanita de compartir el enlace de pago de una etapa.
-   * El correo se prerrellena con el del cliente del proyecto, como pidió Fernando; si el
-   * proyecto no tiene cliente asociado, se escribe a mano.
+   * Abre el panel de compartir el enlace de pago: de una etapa si se le pasa (el icono de
+   * cada etapa), o de lo que toque si no (el botón de la cabecera). El correo lo prerrellena
+   * el panel con el del cliente del proyecto, como pidió Fernando.
    */
-  const abrirEnlacePago = (e: any) => {
-    setLinkStage({ id: Number(e.id), name: e.name, amount: Number(e.amount) || 0 });
-    setLinkEmail(project?.client_email || completeClientEmail || '');
-    setLinkHoras('72');
-    setLinkResult(null);
-  };
-
-  const compartirEnlacePago = async () => {
-    if (!linkStage) return;
-    setLinkSaving(true);
-    try {
-      const res = await fetch(`/api/projects/${id}/payment-link`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage_id: linkStage.id, email: linkEmail.trim(), horas: Number(linkHoras) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'No se pudo generar el enlace');
-      // El enlace se enseña SIEMPRE, aunque el correo falle: ya es válido y el responsable
-      // puede copiarlo y mandarlo por donde quiera.
-      setLinkResult({
-        url: data.url, email: data.email,
-        total: Number(data.importes?.total || 0),
-        correoEnviado: Boolean(data.correoEnviado),
-      });
-      toast[data.correoEnviado ? 'success' : 'warning'](
-        data.correoEnviado ? `Enlace enviado a ${data.email}` : 'Enlace creado, pero el correo no salió: cópialo y envíalo tú',
-      );
-    } catch (e: any) { toast.error(e.message); }
-    finally { setLinkSaving(false); }
+  const abrirEnlacePago = (e?: any) => {
+    const pendientes = (billing?.etapas || []).filter((x: any) => !x.invoiceId);
+    setEnlaceEtapa(e ? Number(e.id) : billing?.mode === 'etapas' ? (pendientes[0] ? Number(pendientes[0].id) : null) : null);
+    setEnlaceAbierto(true);
   };
 
   const borrarPlan = async () => {
@@ -1090,6 +1064,19 @@ export default function ProjectDetailPage() {
     return sum + accepted.reduce((s: number, a: any) => s + Number(a.member_cost ?? a.proposed_cost ?? 0), 0);
   }, 0);
   const isTerminal = ['completed', 'closed', 'cancelled'].includes(project.status);
+  /**
+   * ¿Puede el responsable mandarle al cliente un enlace de pago desde la cabecera?
+   *
+   * Sin plan, cuando el proyecto está «en revisión» (listo para completar y facturar) o ya
+   * completado, y queda algo por facturar: es el mismo criterio de `cotizarProyectoSinEtapas`,
+   * y enseñar el botón antes solo serviría para que el servidor contestara que no.
+   * Con plan, cada etapa se cobra cuando toca, así que vale mientras quede una pendiente.
+   */
+  const puedeCompartirPago = Boolean(isOwner) && Number(billing?.billable || 0) > 0 && (
+    billing?.mode === 'etapas'
+      ? !['cotizacion', 'cotizacion_rechazada', 'cancelled'].includes(project.status)
+      : ['review', 'completed'].includes(project.status)
+  );
   // Editar texto/costo de un requerimiento: dueño y en un estado que la API permite.
   const canEditReqText = isOwner && !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
   const hasReqs = reqs.length > 0;
@@ -1368,7 +1355,7 @@ export default function ProjectDetailPage() {
 
                   Solo cuando queda algo por facturar: si ya está pagado, ofrecerle pagar
                   otra vez sería mandarle a un error. */}
-              {project.status === 'review' && esCliente && Number(billing?.billable || 0) > 0 && (
+              {project.status === 'review' && esCliente && billing?.mode !== 'etapas' && Number(billing?.billable || 0) > 0 && (
                 <button
                   onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}`)}
                   className={BTN_PRIMARY}
@@ -1416,6 +1403,13 @@ export default function ProjectDetailPage() {
           trailing={project.status === 'cotizacion' && isOwner ? (
             <button onClick={() => setShowShare(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
               <Share2 className="w-4 h-4" /> Compartir acceso
+            </button>
+          ) : puedeCompartirPago ? (
+            /* ⇒ EL ENLACE DE PAGO, en el mismo sitio y con la misma forma que «Compartir
+               acceso» de la cotización (Fernando, 2026-09-28): el responsable se lo manda al
+               cliente cuando el proyecto está listo para cobrarse. */
+            <button onClick={() => abrirEnlacePago()} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+              <Share2 className="w-4 h-4" /> Compartir enlace de pago
             </button>
           ) : undefined}
       />
@@ -2462,58 +2456,38 @@ export default function ProjectDetailPage() {
         </div>
       </QuickEditDialog>
 
-      {/* Ventanita: ENLACE DE PAGO de una etapa (canal 3).
-          Son DOS campos —correo y duración—, así que va en ventanita centrada y no en
-          panel lateral, según la regla de «DÓNDE SE EDITA». */}
-      <QuickEditDialog
-        open={!!linkStage}
-        title={linkResult ? 'Enlace de pago listo' : `Cobrar «${linkStage?.name || ''}»`}
-        onClose={() => !linkSaving && setLinkStage(null)}
-        onSave={linkResult ? () => setLinkStage(null) : compartirEnlacePago}
-        saving={linkSaving}
-        canSave={linkResult ? true : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(linkEmail.trim()) && Number(linkHoras) > 0}
-        saveLabel={linkResult ? 'Listo' : 'Generar y enviar'}
-      >
-        {linkResult ? (
-          <div className="space-y-3">
-            <p className="text-[12.5px] text-digi-text" style={mf}>
-              {linkResult.correoEnviado
-                ? <>Le enviamos a <strong>{linkResult.email}</strong> un correo con el enlace para pagar <strong>${fmt2(linkResult.total)}</strong>.</>
-                : <>El enlace está listo, pero <strong>el correo no salió</strong>. Cópialo y envíaselo tú.</>}
-            </p>
-            <EditField label="Enlace" hint="Cualquiera con este enlace ve el detalle del proyecto y puede pagar la etapa. No lo publiques.">
-              <input readOnly className={EDIT_INPUT} value={linkResult.url}
-                onFocus={(ev) => ev.currentTarget.select()} />
-            </EditField>
-            <button type="button" className={BTN_SECONDARY}
-              onClick={() => { navigator.clipboard.writeText(linkResult.url); toast.success('Enlace copiado'); }}>
-              Copiar enlace
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <EditField label="Correo del cliente" hint="Es a donde llega el enlace.">
-              <input type="email" className={EDIT_INPUT} value={linkEmail}
-                onChange={(ev) => setLinkEmail(ev.target.value)} placeholder="cliente@empresa.com" />
-            </EditField>
-            {/* «el usuario miembro responsable del proyecto define el tiempo máximo de
-                duración del token» — Fernando, 2026-08-25. */}
-            <EditField label="El enlace caduca en" hint="Pasado ese tiempo deja de servir y hay que generar otro.">
-              <select className={EDIT_INPUT} value={linkHoras} onChange={(ev) => setLinkHoras(ev.target.value)}>
-                <option value="24">24 horas</option>
-                <option value="72">3 días</option>
-                <option value="168">7 días</option>
-                <option value="360">15 días</option>
-                <option value="720">30 días</option>
-              </select>
-            </EditField>
-            <EditAmount label="Importe de la etapa" value={`$${fmt2(linkStage?.amount || 0)}`}
-              hint={<>Es el importe limpio de la etapa. Al cliente se le suman aparte los gastos de
-                procesamiento del pago en línea, que paga él y ve antes de confirmar. La factura se
-                emite sola en cuanto el pago se confirme.</>} />
-          </div>
-        )}
-      </QuickEditDialog>
+      {/* ENLACE DE PAGO (canal 3): el mismo formulario que «Compartir acceso a la
+          cotización» (`PanelEnlacePago` → `PanelCompartirEnlace`). Con plan se elige la
+          etapa; sin plan se cobra lo que queda por facturar del proyecto. */}
+      {(() => {
+        const hayPlan = billing?.mode === 'etapas';
+        const pendientes = hayPlan ? (billing?.etapas || []).filter((x: any) => !x.invoiceId) : [];
+        const etapa = pendientes.find((x: any) => Number(x.id) === enlaceEtapa);
+        return (
+          <PanelEnlacePago
+            open={enlaceAbierto} onClose={() => setEnlaceAbierto(false)}
+            titulo="Compartir enlace de pago"
+            que={hayPlan ? (etapa ? `la etapa «${etapa.name}»` : 'una etapa del proyecto') : 'el proyecto'}
+            endpoint={`/api/projects/${id}/payment-link`}
+            cuerpo={hayPlan ? { stage_id: enlaceEtapa } : {}}
+            correoInicial={project?.client_email || completeClientEmail || ''}
+            importe={hayPlan ? Number(etapa?.amount || 0) : Number(billing?.billable || 0)}
+            etiquetaImporte={hayPlan ? 'Importe de la etapa' : 'Por facturar'}
+            puedeGenerar={!hayPlan || !!etapa}
+          >
+            {hayPlan && (
+              <div className="flex flex-col gap-1">
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={{ fontFamily: 'var(--font-display)' }}>Etapa que se cobra</label>
+                <select value={enlaceEtapa ?? ''} onChange={(ev) => setEnlaceEtapa(Number(ev.target.value) || null)}
+                  className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  {pendientes.length === 0 && <option value="">No quedan etapas por cobrar</option>}
+                  {pendientes.map((x: any) => <option key={x.id} value={x.id}>{x.name} — ${fmt2(Number(x.amount))}</option>)}
+                </select>
+              </div>
+            )}
+          </PanelEnlacePago>
+        );
+      })()}
 
       {/* Panel: ETAPAS DE FACTURACIÓN. Formulario con lista → panel lateral derecho
           (regla del sistema). La última etapa recoge el resto y no se escribe. */}

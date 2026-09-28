@@ -55,16 +55,35 @@ export async function crearEnlaceDePago(opts: {
   horas: number;
   createdBy: string;
   baseUrl: string;
+  /**
+   * `false` = solo generar el enlace, sin correo: el responsable lo copia y lo manda por
+   * WhatsApp o por donde hable con su cliente. Es el «Generar enlace» del formulario, el
+   * mismo par de botones que el de compartir una cotización.
+   */
+  enviar?: boolean;
 }): Promise<EnlaceCreado> {
   const { sourceType, sourceId, stageId, horas, createdBy, baseUrl } = opts;
+  const enviar = opts.enviar !== false;
 
   if (!Number.isFinite(horas) || horas < 1 || horas > MAX_HORAS_ENLACE) {
     throw new Error(`La duración debe estar entre 1 hora y ${MAX_HORAS_ENLACE / 24} días.`);
   }
-  if (sourceType === 'project' && !stageId) throw new Error('Elige la etapa que se va a cobrar.');
-
+  /**
+   * ⚠️ UN PROYECTO SIN ETAPA YA NO ES UN ERROR (2026-09-28).
+   *
+   * Antes aquí se exigía la etapa, y un proyecto sin plan —la mayoría de los pequeños— no
+   * tenía forma de mandarle a su cliente un enlace de pago: solo podía pagarlo el cliente
+   * CON cuenta. Fernando lo pidió para el proyecto de Imadexa, «en revisión» y sin plan.
+   *
+   * Sin etapa se cobra el proyecto entero, y QUIÉN decide si se puede es
+   * `cotizarProyectoSinEtapas` (en revisión o completado, con importe por facturar y SIN
+   * plan). Validarlo aquí también sería una segunda definición de «esto se puede cobrar».
+   */
   const yaPagado = await cobroPagadoDe({ sourceType, sourceId, stageId });
-  if (yaPagado) throw new Error(sourceType === 'ticket' ? 'Este ticket ya fue pagado.' : 'Esta etapa ya fue pagada.');
+  if (yaPagado) {
+    throw new Error(sourceType === 'ticket' ? 'Este ticket ya fue pagado.'
+      : stageId ? 'Esta etapa ya fue pagada.' : 'Este proyecto ya fue pagado.');
+  }
 
   const proveedor = proveedorActivo();
   const cobrable = await cotizarCobro({ sourceType, sourceId, stageId }, proveedor.nombre);
@@ -99,7 +118,9 @@ export async function crearEnlaceDePago(opts: {
   );
 
   const email = String(opts.email || duenio?.client_email || '').trim();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  // Sin correo solo se puede GENERAR: la columna lo exige, pero para copiar el enlace a
+  // mano no hace falta, y pedirlo sería un campo obligatorio que no sirve para nada.
+  if (enviar && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     throw new Error(
       `Hace falta el correo del cliente: esta ${
         sourceType === 'ticket' ? 'ticket' : sourceType === 'subscription' ? 'suscripción' : 'proyecto'
@@ -115,18 +136,24 @@ export async function crearEnlaceDePago(opts: {
        (token, source_type, source_id, stage_id, email, expires_at, created_by)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id`,
-    [token, sourceType, sourceId, stageId, email, expiresAt, createdBy],
+    // Un correo mal escrito en un enlace que no se envía no se guarda: la pantalla de pago lo
+    // usaría como destino de la factura.
+    [token, sourceType, sourceId, stageId, /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? email : '', expiresAt, createdBy],
   );
 
   const url = `${baseUrl}/pagar/${token}`;
 
-  let correoEnviado = true;
+  let correoEnviado = false;
   let avisoCorreo: string | null = null;
-  try {
+  if (enviar) try {
     await sendPaymentLinkEmail({
       email,
       projectTitle: cobrable.title,
       stageName: cobrable.conceptName,
+      queSePaga: sourceType === 'ticket' ? 'este ticket'
+        : sourceType === 'subscription' ? 'esta suscripción'
+        : sourceType === 'product' ? 'este producto'
+        : stageId ? 'esta etapa del proyecto' : 'el proyecto',
       neto: cobrable.neto,
       recargo: cobrable.recargo,
       total: cobrable.total,
@@ -135,10 +162,10 @@ export async function crearEnlaceDePago(opts: {
       responsibleName: duenio?.responsable || null,
     });
     await pool.query(`UPDATE gcc_world.payment_links SET sent_at = NOW() WHERE id = $1`, [enlace.id]);
+    correoEnviado = true;
   } catch (e: any) {
     // El enlace YA existe y es válido: que el correo falle no lo invalida. Se devuelve
     // igualmente para que el responsable pueda copiarlo y mandarlo por donde quiera.
-    correoEnviado = false;
     avisoCorreo = e.message;
     console.error('[pagos] no se pudo enviar el enlace de pago:', e.message);
   }

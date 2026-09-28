@@ -36,6 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       stageId: null,
       email: cuerpo.email,
       horas: Number(cuerpo.horas),
+      enviar: cuerpo.enviar !== false,
       createdBy: userId,
       baseUrl: process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin,
     });

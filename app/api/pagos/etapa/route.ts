@@ -202,7 +202,8 @@ export async function GET(req: NextRequest) {
           : null,
       },
       facturacion,
-      correoDestino: auth.solicitante.tipo === 'enlace' ? auth.solicitante.email : (facturacion?.email || null),
+      // Un enlace generado sin enviar puede no llevar correo: entonces manda la cuenta de facturación.
+      correoDestino: (auth.solicitante.tipo === 'enlace' && auth.solicitante.email) || facturacion?.email || null,
       canal: auth.canal,
       yaPagada: pagada ? { invoiceId: pagada.invoice_id } : null,
     });

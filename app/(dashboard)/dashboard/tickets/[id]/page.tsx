@@ -10,7 +10,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
-import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
+import { EditPanel } from '@/components/ui/EditDialog';
+import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -55,10 +56,6 @@ export default function TicketDetailPage() {
   const [ticket, setTicket] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
   const [linkAbierto, setLinkAbierto] = useState(false);
-  const [linkEmail, setLinkEmail] = useState('');
-  const [linkHoras, setLinkHoras] = useState('72');
-  const [linkSaving, setLinkSaving] = useState(false);
-  const [linkResult, setLinkResult] = useState<{ url: string; email: string; total: number; correoEnviado: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [bids, setBids] = useState<any[]>([]);
   const [proposalText, setProposalText] = useState('');
@@ -533,33 +530,8 @@ export default function TicketDetailPage() {
 
   // ENLACE DE PAGO del ticket (canal 3). Gemelo del de proyectos y con la misma lógica
   // detrás (`lib/pagos/enlaces.ts`); aquí no hay etapa que elegir: se cobra entero.
-  const abrirEnlacePagoTicket = () => {
-    setLinkEmail(ticket?.client_email || '');
-    setLinkHoras('72');
-    setLinkResult(null);
-    setLinkAbierto(true);
-  };
+  const abrirEnlacePagoTicket = () => setLinkAbierto(true);
 
-  const compartirEnlacePagoTicket = async () => {
-    setLinkSaving(true);
-    try {
-      const res = await fetch(`/api/tickets/${id}/payment-link`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: linkEmail.trim(), horas: Number(linkHoras) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'No se pudo generar el enlace');
-      setLinkResult({
-        url: data.url, email: data.email,
-        total: Number(data.importes?.total || 0),
-        correoEnviado: Boolean(data.correoEnviado),
-      });
-      toast[data.correoEnviado ? 'success' : 'warning'](
-        data.correoEnviado ? `Enlace enviado a ${data.email}` : 'Enlace creado, pero el correo no salió: cópialo y envíalo tú',
-      );
-    } catch (e: any) { toast.error(e.message); }
-    finally { setLinkSaving(false); }
-  };
   const isMember = user?.role === 'member';
   const canEdit = isAdmin || isMember;
   const isClosed = ['completed', 'cancelled'].includes(ticket.status);
@@ -1053,54 +1025,15 @@ export default function TicketDetailPage() {
           </div>
         </div>
 
-      {/* Ventanita: ENLACE DE PAGO del ticket. Dos campos —correo y caducidad—, así que va
-          en ventanita centrada y no en panel lateral (regla de «DÓNDE SE EDITA»). */}
-      <QuickEditDialog
-        open={linkAbierto}
-        title={linkResult ? 'Enlace de pago listo' : 'Cobrar este ticket'}
-        onClose={() => !linkSaving && setLinkAbierto(false)}
-        onSave={linkResult ? () => setLinkAbierto(false) : compartirEnlacePagoTicket}
-        saving={linkSaving}
-        canSave={linkResult ? true : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(linkEmail.trim()) && Number(linkHoras) > 0}
-        saveLabel={linkResult ? 'Listo' : 'Generar y enviar'}
-      >
-        {linkResult ? (
-          <div className="space-y-3">
-            <p className="text-[12.5px] text-digi-text" style={mf}>
-              {linkResult.correoEnviado
-                ? <>Le enviamos a <strong>{linkResult.email}</strong> un correo con el enlace para pagar <strong>${fmt2(linkResult.total)}</strong>.</>
-                : <>El enlace está listo, pero <strong>el correo no salió</strong>. Cópialo y envíaselo tú.</>}
-            </p>
-            <EditField label="Enlace" hint="Cualquiera con este enlace ve el detalle del ticket y puede pagarlo. No lo publiques.">
-              <input readOnly className={EDIT_INPUT} value={linkResult.url} onFocus={(ev) => ev.currentTarget.select()} />
-            </EditField>
-            <button type="button" className={BTN_SECONDARY}
-              onClick={() => { navigator.clipboard.writeText(linkResult.url); toast.success('Enlace copiado'); }}>
-              Copiar enlace
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <EditField label="Correo del cliente" hint="Es a donde llega el enlace.">
-              <input type="email" className={EDIT_INPUT} value={linkEmail}
-                onChange={(ev) => setLinkEmail(ev.target.value)} placeholder="cliente@empresa.com" />
-            </EditField>
-            <EditField label="El enlace caduca en" hint="Pasado ese tiempo deja de servir y hay que generar otro.">
-              <select className={EDIT_INPUT} value={linkHoras} onChange={(ev) => setLinkHoras(ev.target.value)}>
-                <option value="24">24 horas</option>
-                <option value="72">3 días</option>
-                <option value="168">7 días</option>
-                <option value="360">15 días</option>
-                <option value="720">30 días</option>
-              </select>
-            </EditField>
-            <EditAmount label="Saldo pendiente" value={`$${fmt2(Number(payments?.pending || 0))}`}
-              hint={<>Es el saldo limpio del ticket. Al cliente se le suman aparte los gastos de
-                procesamiento del pago en línea, que paga él y ve antes de confirmar. La factura se
-                emite sola al confirmarse el pago.</>} />
-          </div>
-        )}
-      </QuickEditDialog>
+      {/* ENLACE DE PAGO del ticket: el mismo formulario que el de la cotización y el del
+          proyecto (`PanelEnlacePago` → `PanelCompartirEnlace`). */}
+      <PanelEnlacePago
+        open={linkAbierto} onClose={() => setLinkAbierto(false)}
+        titulo="Compartir enlace de pago" que="este ticket"
+        endpoint={`/api/tickets/${id}/payment-link`}
+        correoInicial={ticket?.client_email || ''}
+        importe={Number(payments?.pending || 0)} etiquetaImporte="Saldo pendiente"
+      />
 
       {/* ========== Modal de edición del ticket (overlay centrado) ========== */}
       <PixelModal open={editing} onClose={() => setEditing(false)} title="Editar ticket" size="lg">

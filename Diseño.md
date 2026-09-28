@@ -778,14 +778,28 @@ formularios de pago se separan al primer arreglo, y el que se queda atrás es el
 - **En modo de pruebas la pantalla lo grita** con una caja ámbar. Una pasarela simulada que
   se ve igual que la real es una forma de cobrar de mentira creyendo que se cobró.
 
-**Compartir el enlace (dashboard):** icono `Share2` en cada etapa **no facturada** de la
-tarjeta de Pagos → `QuickEditDialog` (ventanita centrada, **dos campos**: correo y
-caducidad), según la regla de «DÓNDE SE EDITA». Tras generarlo, la misma ventanita enseña
-el enlace con «Copiar enlace» — porque si el correo falla, el enlace ya es válido igual.
-**El mismo patrón, idéntico, en el detalle del ticket** (2026-08-26).
+**Compartir el enlace (dashboard) — `PanelCompartirEnlace` (2026-09-28, sustituye a la
+ventanita centrada).** Fernando pidió que el enlace de pago se compartiera **con el mismo
+formulario que «Compartir acceso a la cotización»**. Ese formulario es ahora la definición
+ÚNICA de «compartir un enlace con token»: `components/ui/PanelCompartirEnlace.tsx`
+(`PixelModal` = panel lateral derecho). Lo usan `QuoteShareButton` (cotización) y
+`components/pagos/PanelEnlacePago.tsx` (proyecto y ticket).
 
-Dentro de esa ventanita, el importe se enseña con **`EditAmount` debajo del último campo** y
-sin recargos sumados — ver «`EditAmount` — el importe va DEBAJO, y limpio».
+- Orden: texto de arriba · `children` (p. ej. «Etapa que se cobra») · **Vigencia del enlace** ·
+  **Correo del cliente (para enviarlo)** · `pie` (el importe con `EditAmount`, debajo del
+  último campo y limpio) · dos botones a medias: **«Generar enlace»** (`BTN_SECONDARY`, solo
+  genera) y **«Generar y enviar»** (`BTN_PRIMARY` + `Send`). El enlace sale al pie con copiar.
+- Se abre desde el botón **«Compartir enlace de pago»** en `trailing` de la cabecera del
+  proyecto —mismo sitio y misma clase que «Compartir acceso»— y desde el icono `Share2` de
+  cada etapa pendiente (que llega con esa etapa preseleccionada). En el ticket, desde su botón.
+- ⛔ No volver a hacer una ventanita para compartir un enlace: se usa este panel.
+
+```tsx
+<PanelCompartirEnlace open={open} onClose={cerrar} title="Compartir acceso a la cotización"
+  intro={<>Genera un enlace de <strong>solo lectura</strong>…</>}
+  duraciones={[{ v: 24, l: '1 día' }, { v: 168, l: '1 semana' }]} duracionInicial={168}
+  generar={async ({ horas, email, enviar }) => ({ url, mensaje: 'Enlace generado' })} />
+```
 
 #### Ancho de la pantalla de pago (2026-08-26)
 
@@ -3887,6 +3901,11 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-28 · Compartir un enlace con token · CORREGIDO a una sola definición.** Había tres
+  versiones del mismo control: el panel de la cotización y dos `QuickEditDialog` centrados
+  (enlace de pago de proyecto y de ticket). Ahora las tres usan `PanelCompartirEnlace`.
+  ⏳ `components/settings/PanelCompartirCv.tsx` es primo (sin correo, con «abrir»): se dejó
+  como está; si se toca, valorar pasarlo al panel común.
 - **2026-09-21 · Teléfono · ADOPTADO como regla rectora** (ver «CADA PÁGINA SE DISEÑA PARA
   EL TELÉFONO»). Controles nuevos, los dos con definición única:
   - **`components/ui/Cifra.tsx`** — `RejillaCifras` (2 col en teléfono, 3 desde `lg`) +

@@ -13,8 +13,8 @@
  *                 usan `/api/projects` y `/api/projects/[id]`. Inventar aquí otro criterio
  *                 sería crear una segunda definición de «este proyecto es tuyo», y esas
  *                 dos se separan al primer cambio.
- *   · `enlace`  — sin cuenta: un token de un solo proyecto y una sola etapa, con la
- *                 caducidad que puso el responsable.
+ *   · `enlace`  — sin cuenta: un token de una sola cosa —una etapa, o el proyecto entero
+ *                 si no tiene plan—, con la caducidad que puso el responsable.
  */
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
@@ -65,9 +65,9 @@ export async function validarEnlace(token: string): Promise<{
   if (new Date(l.expires_at) < new Date()) {
     throw new SinAcceso('Este enlace de pago ya caducó. Pídele uno nuevo a tu contacto en GCC.', 410);
   }
-  // Un enlace de proyecto SIEMPRE cobra una etapa; uno de ticket cobra el ticket entero.
-  // Exigirlo aquí evita que un enlace mal insertado a mano acabe cobrando algo distinto.
-  if (l.source_type === 'project' && !l.stage_id) throw new SinAcceso('Enlace inválido.', 404);
+  // Un enlace de proyecto SIN etapa cobra el proyecto entero (2026-09-28): es el de los
+  // proyectos sin plan. Si el proyecto tiene plan, `cotizarProyectoSinEtapas` lo rechaza,
+  // así que un enlace así no puede acabar cobrando algo distinto de lo que dice.
   if (!['project', 'ticket', 'subscription', 'product'].includes(l.source_type)) {
     throw new SinAcceso('Enlace inválido.', 404);
   }
