@@ -1228,7 +1228,10 @@ xl:[minmax(0,1fr)_340px]` list · panel.
 **quita la columna "Estado"** y el estado se muestra como un **punto de color** (`w-2 h-2 rounded-full`)
 antes del texto principal, con **tooltip** (`title`) del estado. El color sale de un mapa
 `STATUS_DOT` por variante (`success→bg-green-500`, `warning→bg-amber-500`, `error→bg-red-500`,
-`info→bg-accent`, `default→bg-digi-muted`). Usado en Tickets/Proyectos/Suscripciones/Facturas/Soporte.
+`info→bg-accent`, `default→bg-digi-muted`). Usado en Tickets/Suscripciones/Facturas/Soporte.
+⚠️ **Proyectos ya NO lo lleva** (Fernando, 2026-09-28: *«quita ese círculo que representa el
+estado del proyecto»*): el título va solo, ni en la tabla ni en la tarjeta del teléfono —esa
+ya enseña el badge completo—. Pendiente de Fernando si aplica igual a las demás tablas.
 El panel de detalle sigue mostrando el badge completo. En **Suscripciones** el círculo refleja el
 **estado de cobro** (vencido/por vencer/al día) y el estado activo/pausado/cancelado se distingue con
 **relleno de fila** vía el prop **`rowClassName(item)`** de `PixelDataTable` (pausada `bg-amber-50`,
@@ -3901,6 +3904,8 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-28 · Punto de estado en la tabla de Proyectos · QUITADO por decisión de Fernando.**
+  Solo en Proyectos; Tickets, Suscripciones, Facturas y Soporte lo conservan hasta que diga.
 - **2026-09-28 · Compartir un enlace con token · CORREGIDO a una sola definición.** Había tres
   versiones del mismo control: el panel de la cotización y dos `QuickEditDialog` centrados
   (enlace de pago de proyecto y de ticket). Ahora las tres usan `PanelCompartirEnlace`.
