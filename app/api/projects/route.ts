@@ -9,12 +9,31 @@ import { ensureAdminMember } from '@/lib/ensure-admin-member';
 import { ensureQuoteShareColumns } from '@/lib/cotizaciones/schema';
 import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
 
+/** `invoice_projects` para los LEFT JOIN de la lista — una vez por proceso, no en cada clic. */
+let asegurandoFacturasProyecto: Promise<void> | null = null;
+function ensureInvoiceProjects(): Promise<void> {
+  const enCurso = asegurandoFacturasProyecto ?? pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.invoice_projects (
+    id SERIAL PRIMARY KEY, invoice_id INT NOT NULL, project_id TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+  )`).then(() => undefined).catch((e: any) => { asegurandoFacturasProyecto = null; throw e; });
+  asegurandoFacturasProyecto = enCurso;
+  return enCurso;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    await ensureProjectMembersTable();
-    await ensureQuoteShareColumns(); // asegura `quote_status` para separar cotizaciones pendientes/rechazadas
+    /**
+     * ⚡ LA LISTA SE PIDE EN CADA CAMBIO DE FILTRO, así que cada viaje a la base cuenta
+     * (2026-09-28: 1,8 s por clic). Las preparaciones de esquema se hacen una vez por
+     * proceso y en paralelo, y las lecturas de abajo salen todas a la vez.
+     */
+    await Promise.all([
+      ensureProjectMembersTable(),
+      ensureQuoteShareColumns(), // asegura `quote_status` para separar cotizaciones pendientes/rechazadas
+      ensureRequirementColumns(),
+      ensureInvoiceProjects(),
+    ]);
 
     const { searchParams } = req.nextUrl;
     const status = searchParams.get('status');
@@ -43,6 +62,19 @@ export async function GET(req: NextRequest) {
         accessWhere += ` AND p.client_id = $${accessParams.length}`;
       }
     }
+    /**
+     * ⚠️ SOLO EL ADMIN VE TODO — y se decide por DEFECTO, no por omisión (2026-09-28).
+     *
+     * Antes, un miembro sin `member_id` o un cliente sin ficha en `clients` se quedaban sin
+     * ningún filtro, y un `WHERE 1=1` les enseñaba todos los proyectos, privados incluidos.
+     * Ahora: el miembro sin ficha ve lo público (lo mismo que cualquier miembro ve de lo
+     * ajeno) y el cliente sin ficha, nada — no tiene proyectos.
+     */
+    if (user.role === 'member' && !mId) {
+      accessWhere += ` AND p.is_private = false AND p.status NOT IN ('draft','cotizacion')`;
+    } else if (user.role !== 'admin' && user.role !== 'member' && accessParams.length === 0) {
+      accessWhere += ` AND false`;
+    }
     // admin sees everything
     if (search) {
       accessParams.push(`%${search}%`);
@@ -69,42 +101,9 @@ export async function GET(req: NextRequest) {
       where += ` AND p.status = $${params.length}`;
     }
 
-    // Per-tab counts for the rail (respect access + search; ignore scope/status filter).
-    const counts: Record<string, number> = {};
-    const statusCountsQ = await pool.query(
-      `SELECT p.status, COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} GROUP BY p.status`,
-      accessParams,
-    );
-    let allCount = 0;
-    for (const r of statusCountsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
-    counts.all = allCount;
-    // Separa las cotizaciones en pendientes vs rechazadas (el GROUP BY status las agrupa juntas).
-    const cotRejQ = await pool.query(
-      `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.status = 'cotizacion' AND p.quote_status = 'rejected'`,
-      accessParams,
-    );
-    const cotRej = Number(cotRejQ.rows[0].n);
-    counts.cotizacion_rechazada = cotRej;
-    counts.cotizacion = Math.max(0, Number(counts.cotizacion || 0) - cotRej);
-    if (user.role === 'member' && mId) {
-      const mineQ = await pool.query(
-        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.assigned_member_id = $${accessParams.length + 1}`,
-        [...accessParams, mId],
-      );
-      counts.mine = Number(mineQ.rows[0].n);
-      const invQ = await pool.query(
-        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND (EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${accessParams.length + 1} AND pb2.status = 'invited') OR EXISTS (SELECT 1 FROM gcc_world.project_members pm2 WHERE pm2.project_id = p.id AND pm2.member_id = $${accessParams.length + 1} AND pm2.role = 'responsible' AND pm2.status = 'invited'))`,
-        [...accessParams, mId],
-      );
-      counts.invited = Number(invQ.rows[0].n);
-    } else if (user.role === 'client') {
-      counts.mine = allCount;
-    }
-
     // Filtro por TALENTO: encaja el proyecto si ALGUNO de sus requerimientos pide alguno
     // de los talentos buscados. Va después de los conteos del rail (que son por estado) y
     // antes del conteo total y de la paginación, para que ambos lo respeten.
-    await ensureRequirementColumns();
     const talents = normalizeTalents((req.nextUrl.searchParams.get('talents') || '').split(',').filter(Boolean));
     if (talents.length) {
       params.push(talents);
@@ -133,68 +132,100 @@ export async function GET(req: NextRequest) {
      * volcar el catálogo entero enseñaría a quién tenemos como cliente a quien no lo
      * puede ver.
      */
-    const { rows: clientOpt } = await pool.query(
-      `SELECT DISTINCT c.id::text AS id, c.name
+    const pagina = [...params, limit, offset];
+    const [statusCountsQ, cotRejQ, mineQ, invQ, { rows: clientOpt }, { rows: talentOpt }, countQ, dataQ] = await Promise.all([
+      // Per-tab counts for the rail (respect access + search; ignore scope/status filter).
+      pool.query(
+        `SELECT p.status, COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} GROUP BY p.status`,
+        accessParams,
+      ),
+      // Separa las cotizaciones en pendientes vs rechazadas (el GROUP BY status las agrupa juntas).
+      pool.query(
+        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.status = 'cotizacion' AND p.quote_status = 'rejected'`,
+        accessParams,
+      ),
+      user.role === 'member' && mId ? pool.query(
+        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND p.assigned_member_id = $${accessParams.length + 1}`,
+        [...accessParams, mId],
+      ) : null,
+      user.role === 'member' && mId ? pool.query(
+        `SELECT COUNT(*)::int AS n FROM gcc_world.projects p ${accessWhere} AND (EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${accessParams.length + 1} AND pb2.status = 'invited') OR EXISTS (SELECT 1 FROM gcc_world.project_members pm2 WHERE pm2.project_id = p.id AND pm2.member_id = $${accessParams.length + 1} AND pm2.role = 'responsible' AND pm2.status = 'invited'))`,
+        [...accessParams, mId],
+      ) : null,
+      /**
+       * Los clientes que aparecen en el desplegable: los que de verdad tienen proyectos
+       * visibles para este usuario. Sale de `accessWhere`, no de la tabla de clientes —
+       * volcar el catálogo entero enseñaría a quién tenemos como cliente a quien no lo
+       * puede ver.
+       */
+      pool.query(
+        `SELECT DISTINCT c.id::text AS id, c.name
+           FROM gcc_world.projects p
+           JOIN gcc_world.clients c ON c.id = p.client_id
+           ${accessWhere}
+           ORDER BY c.name`,
+        accessParams,
+      ),
+      // Opciones del desplegable: los talentos que de verdad piden los proyectos visibles
+      // para este usuario (respetando su control de acceso), no los 525 de la lista.
+      pool.query(
+        `SELECT DISTINCT t AS talent
+           FROM gcc_world.projects p
+           JOIN gcc_world.project_requirements pr ON pr.project_id = p.id, UNNEST(pr.talents) AS t
+           ${accessWhere}
+           ORDER BY 1`,
+        accessParams,
+      ),
+      pool.query(`SELECT COUNT(*) FROM gcc_world.projects p ${where}`, params),
+      pool.query(
+        `SELECT p.id, p.title, p.description, p.status, p.is_private,
+                p.budget_min, p.budget_max, p.final_cost, p.deadline,
+                p.client_id, p.assigned_member_id, p.created_by_user_id,
+                p.is_marketplace_published, p.marketplace_source_id,
+                p.confirmed_at,
+                p.created_at, p.updated_at,
+                (p.proforma IS NOT NULL) as has_proforma,
+                c.name as client_name,
+                inv_info.invoice_id,
+                inv_info.invoice_sri_status,
+                COALESCE((SELECT SUM(r.slots)::int FROM gcc_world.project_requirements r WHERE r.project_id = p.id), 0) as slots_total,
+                ${talentsAggSql('p')} as talents
          FROM gcc_world.projects p
-         JOIN gcc_world.clients c ON c.id = p.client_id
-         ${accessWhere}
-         ORDER BY c.name`,
-      accessParams,
-    );
+         LEFT JOIN gcc_world.clients c ON c.id = p.client_id
+         LEFT JOIN LATERAL (
+           SELECT inv_all.invoice_id, inv_all.invoice_sri_status FROM (
+             SELECT id as invoice_id, sri_status as invoice_sri_status
+             FROM gcc_world.invoices
+             WHERE project_id = p.id AND status != 'cancelled'
+             UNION ALL
+             SELECT ip.invoice_id, i.sri_status
+             FROM gcc_world.invoice_projects ip
+             JOIN gcc_world.invoices i ON i.id = ip.invoice_id AND i.status != 'cancelled'
+             WHERE ip.project_id = CAST(p.id AS TEXT)
+           ) inv_all
+           ORDER BY CASE inv_all.invoice_sri_status WHEN 'authorized' THEN 0 ELSE 1 END
+           LIMIT 1
+         ) inv_info ON true
+         ${where}
+         ORDER BY p.created_at DESC
+         LIMIT $${pagina.length - 1} OFFSET $${pagina.length}`,
+        pagina,
+      ),
+    ]);
 
-    // Opciones del desplegable: los talentos que de verdad piden los proyectos visibles
-    // para este usuario (respetando su control de acceso), no los 525 de la lista.
-    const { rows: talentOpt } = await pool.query(
-      `SELECT DISTINCT t AS talent
-         FROM gcc_world.projects p
-         JOIN gcc_world.project_requirements pr ON pr.project_id = p.id, UNNEST(pr.talents) AS t
-         ${accessWhere}
-         ORDER BY 1`,
-      accessParams,
-    );
-
-    const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.projects p ${where}`, params);
-    params.push(limit, offset);
-
-    // Ensure invoice_projects table exists for the LEFT JOINs
-    await pool.query(`CREATE TABLE IF NOT EXISTS gcc_world.invoice_projects (
-      id SERIAL PRIMARY KEY, invoice_id INT NOT NULL, project_id TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
-
-    const dataQ = await pool.query(
-      `SELECT p.id, p.title, p.description, p.status, p.is_private,
-              p.budget_min, p.budget_max, p.final_cost, p.deadline,
-              p.client_id, p.assigned_member_id, p.created_by_user_id,
-              p.is_marketplace_published, p.marketplace_source_id,
-              p.confirmed_at,
-              p.created_at, p.updated_at,
-              (p.proforma IS NOT NULL) as has_proforma,
-              c.name as client_name,
-              inv_info.invoice_id,
-              inv_info.invoice_sri_status,
-              COALESCE((SELECT SUM(r.slots)::int FROM gcc_world.project_requirements r WHERE r.project_id = p.id), 0) as slots_total,
-              ${talentsAggSql('p')} as talents
-       FROM gcc_world.projects p
-       LEFT JOIN gcc_world.clients c ON c.id = p.client_id
-       LEFT JOIN LATERAL (
-         SELECT inv_all.invoice_id, inv_all.invoice_sri_status FROM (
-           SELECT id as invoice_id, sri_status as invoice_sri_status
-           FROM gcc_world.invoices
-           WHERE project_id = p.id AND status != 'cancelled'
-           UNION ALL
-           SELECT ip.invoice_id, i.sri_status
-           FROM gcc_world.invoice_projects ip
-           JOIN gcc_world.invoices i ON i.id = ip.invoice_id AND i.status != 'cancelled'
-           WHERE ip.project_id = CAST(p.id AS TEXT)
-         ) inv_all
-         ORDER BY CASE inv_all.invoice_sri_status WHEN 'authorized' THEN 0 ELSE 1 END
-         LIMIT 1
-       ) inv_info ON true
-       ${where}
-       ORDER BY p.created_at DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    for (const r of statusCountsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    counts.all = allCount;
+    const cotRej = Number(cotRejQ.rows[0].n);
+    counts.cotizacion_rechazada = cotRej;
+    counts.cotizacion = Math.max(0, Number(counts.cotizacion || 0) - cotRej);
+    if (mineQ && invQ) {
+      counts.mine = Number(mineQ.rows[0].n);
+      counts.invited = Number(invQ.rows[0].n);
+    } else if (user.role === 'client') {
+      counts.mine = allCount;
+    }
 
     return NextResponse.json({
       data: dataQ.rows,

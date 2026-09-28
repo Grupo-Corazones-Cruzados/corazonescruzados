@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -211,7 +211,16 @@ export default function ProjectsPage() {
   const [clientOptions, setClientOptions] = useState<{ id: string; name: string }[]>([]);
   const veVariosClientes = accessRoleOf(user) !== 'client';
 
+  /**
+   * ⚡ SOLO CUENTA LA ÚLTIMA PETICIÓN (2026-09-28). Al pulsar dos filtros seguidos salen
+   * dos peticiones, y si la primera llega DESPUÉS se pintaba la lista del filtro que ya no
+   * está elegido. Cada petición lleva su número y la que no es la última se ignora.
+   */
+  const ultimaPeticion = useRef(0);
+  const [cargando, setCargando] = useState(true);
   const fetchData = useCallback(async () => {
+    const mia = ++ultimaPeticion.current;
+    setCargando(true);
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
     if (tab !== 'all') params.set('status', tab);
     if (search) params.set('search', search);
@@ -220,6 +229,7 @@ export default function ProjectsPage() {
     try {
       const res = await fetch(`/api/projects?${params}`);
       const data = await res.json();
+      if (mia !== ultimaPeticion.current) return;
       // Un fallo del servidor NO debe verse como "no hay proyectos": se avisa.
       if (!res.ok || data.error) toast.error(data.error || 'No se pudo cargar la lista de proyectos');
       setProjects(data.data || []);
@@ -229,7 +239,12 @@ export default function ProjectsPage() {
       // proyectos visibles para este usuario.
       if (Array.isArray(data.talentOptions)) setTalentOptions(data.talentOptions);
       if (Array.isArray(data.clientOptions)) setClientOptions(data.clientOptions);
-    } catch { setProjects([]); }
+    } catch {
+      if (mia !== ultimaPeticion.current) return;
+      toast.error('No se pudo cargar la lista de proyectos');
+    } finally {
+      if (mia === ultimaPeticion.current) setCargando(false);
+    }
   }, [page, tab, search, talentFilter, clientFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -458,6 +473,7 @@ export default function ProjectsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
           <PixelDataTable
+            cargando={cargando}
             singleLine
             columns={[
               { key: 'id', header: 'ID', render: (p: any) => <span className="tabular-nums text-digi-muted">#{p.id}</span>, width: '56px' },

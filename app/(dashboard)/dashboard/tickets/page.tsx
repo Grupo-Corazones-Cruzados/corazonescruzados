@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -130,6 +130,10 @@ export default function TicketsPage() {
   const [members, setMembers] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
 
+  // ⚡ Solo cuenta la última petición: con dos filtros pulsados seguidos, la respuesta del
+  // primero podía llegar después y pintar una lista que ya no es la elegida (2026-09-28).
+  const ultimaPeticion = useRef(0);
+  const [cargando, setCargando] = useState(true);
   const fetchTickets = useCallback(async () => {
     // Sin sesión todavía no se sabe si «Abiertos» le toca: esperar evita que un cliente pida,
     // aunque sea una vez, la lista que no se le enseña.
@@ -139,13 +143,22 @@ export default function TicketsPage() {
     if (tab === 'open') params.set('open', '1');
     else if (tab !== 'all') params.set('status', tab);
     if (search) params.set('search', search);
+    const mia = ++ultimaPeticion.current;
+    setCargando(true);
     try {
       const res = await fetch(`/api/tickets?${params}`);
       const data = await res.json();
+      if (mia !== ultimaPeticion.current) return;
+      // Un fallo NO se enseña como «no hay tickets»: se avisa y se deja lo que había.
+      if (!res.ok || data.error) { toast.error(data.error || 'No se pudo cargar la lista de tickets'); return; }
       setTickets(data.data || []);
       setTotal(data.total || 0);
       setCounts(data.counts || {});
-    } catch { setTickets([]); }
+    } catch {
+      if (mia === ultimaPeticion.current) toast.error('No se pudo cargar la lista de tickets');
+    } finally {
+      if (mia === ultimaPeticion.current) setCargando(false);
+    }
   }, [page, tab, search, user]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
@@ -378,6 +391,7 @@ export default function TicketsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
           <PixelDataTable
+            cargando={cargando}
             singleLine
             columns={[
               { key: 'id', header: 'ID', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span>, width: '56px' },

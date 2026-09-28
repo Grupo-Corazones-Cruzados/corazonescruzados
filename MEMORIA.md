@@ -6394,6 +6394,23 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
 
 ## Lecciones técnicas
 
+### 🪤 Una lista que se pide en cada clic no puede hacer DDL ni consultas en fila (2026-09-28)
+Fernando: *«al cambiar de estado en los filtros… tarda muchísimo»*. Medido: **1,5–1,8 s** por
+clic en Proyectos y Tickets, con una sola petición cada vez. La culpa era de **~10 viajes
+a la base uno detrás de otro**, cuatro de ellos `ALTER/CREATE TABLE … IF NOT EXISTS` repetidos
+en cada petición (un DDL que no hace nada igual pide el bloqueo exclusivo de la tabla). Las
+consultas en sí tardan milisegundos.
+- **Esquema: una vez por proceso**, con una promesa en memoria que se olvida si falla
+  (`ensureProjectMembersTable`, `asegurarColumnasLista` de tickets, `ensureInvoiceProjects`).
+- **Lecturas independientes con `Promise.all`**: conteos, opciones de filtros, total y
+  página salen a la vez. Resultado: ~0,45 s desde local, casi todo latencia hasta Railway.
+- **En la interfaz**: `PixelDataTable` tiene `cargando` (atenúa y no dice «Sin datos») y
+  las páginas numeran sus peticiones — solo pinta la ÚLTIMA. Antes, dos clics seguidos
+  podían dejar en pantalla la lista del filtro que ya no estaba elegido.
+- ⚠️ **De paso, un agujero cerrado** en `GET /api/projects`: un miembro sin `member_id` o un
+  cliente sin ficha en `clients` no recibían ningún filtro y veían TODOS los proyectos (había
+  2 clientes así). Ahora solo el admin ve todo; el cliente sin ficha no ve ninguno.
+
 ### 🪤 `after()` de Next muere con el despliegue; una acción de servidor topa en 1 MB (2026-09-17)
 Un trabajo en segundo plano de tres minutos (importar el currículo, nueve llamadas al agente) se
 quedó a medias porque se hizo push mientras corría: Railway cambió de contenedor y el `after()`

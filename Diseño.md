@@ -3904,6 +3904,10 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-28 · `PixelDataTable` gana `cargando` · ADOPTADO.** Mientras hay una petición en
+  curso, las filas que ya se ven se atenúan (`opacity-50`, sin clics) y una lista vacía dice
+  «Cargando…» en vez de «Sin datos». Lo usan Proyectos y Tickets; cualquier lista que se
+  recargue al cambiar un filtro debería pasárselo.
 - **2026-09-28 · Punto de estado en la tabla de Proyectos · QUITADO por decisión de Fernando.**
   Solo en Proyectos; Tickets, Suscripciones, Facturas y Soporte lo conservan hasta que diga.
 - **2026-09-28 · Compartir un enlace con token · CORREGIDO a una sola definición.** Había tres

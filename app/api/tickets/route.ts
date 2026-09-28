@@ -9,6 +9,25 @@ import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import { sendClientInvitationEmail } from '@/lib/integrations/email';
 
 
+/**
+ * Columnas que la lista necesita. ⚡ UNA VEZ POR PROCESO (2026-09-28): corrían en CADA
+ * petición, y la lista se pide en cada cambio de filtro — cuatro `ALTER TABLE` por clic,
+ * cada uno un viaje a la base que además pide el bloqueo exclusivo de la tabla.
+ */
+let asegurandoColumnas: Promise<void> | null = null;
+function asegurarColumnasLista(): Promise<void> {
+  const enCurso = asegurandoColumnas ?? (async () => {
+    await pool.query(`
+      ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
+      ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_id TEXT;
+      ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_talent BOOLEAN DEFAULT false;
+      ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS required_talents TEXT[] DEFAULT '{}';
+    `);
+  })().catch((e) => { asegurandoColumnas = null; throw e; });
+  asegurandoColumnas = enCurso;
+  return enCurso;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -50,34 +69,23 @@ export async function GET(req: NextRequest) {
       where += ` AND t.status = $${params.length}`;
     }
 
-    // Ensure invoice source columns exist for the invoice LEFT JOIN (additive, safe)
-    await pool.query(`
-      ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
-      ALTER TABLE gcc_world.invoices ADD COLUMN IF NOT EXISTS source_id TEXT;
-    `);
-    // Columnas de "abierto por talento".
-    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_talent BOOLEAN DEFAULT false`);
-    await pool.query(`ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS required_talents TEXT[] DEFAULT '{}'`);
+    await asegurarColumnasLista();
 
+    // Las cuatro lecturas son independientes: salen A LA VEZ, no una tras otra.
+    const pagina = [...params, limit, offset];
+    const [countsQ, openCountQ, countQ, dataQ] = await Promise.all([
     // Per-status counts (respect base filters, ignore the status filter) for the rail.
-    const countsQ = await pool.query(
+    pool.query(
       `SELECT t.status, COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} GROUP BY t.status`,
       baseParams,
-    );
-    const counts: Record<string, number> = {};
-    let allCount = 0;
-    for (const r of countsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
-    counts.all = allCount;
+    ),
     // Conteo de la pestaña "Abiertos".
-    const openCountQ = await pool.query(
+    pool.query(
       `SELECT COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} AND ${openCond}`,
       baseParams,
-    );
-    counts.open = Number(openCountQ.rows[0].n);
-
-    const countQ = await pool.query(`SELECT COUNT(*) FROM gcc_world.tickets t ${where}`, params);
-    params.push(limit, offset);
-    const dataQ = await pool.query(
+    ),
+    pool.query(`SELECT COUNT(*) FROM gcc_world.tickets t ${where}`, params),
+    pool.query(
       `SELECT t.*, COALESCE(c.name, inv_info.invoice_client_name) as client_name, m.name as member_name,
               inv_info.invoice_id, inv_info.invoice_sri_status, inv_info.invoice_total
        FROM gcc_world.tickets t
@@ -92,14 +100,21 @@ export async function GET(req: NextRequest) {
        ) inv_info ON true
        ${where}
        ORDER BY t.created_at DESC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
+       LIMIT $${pagina.length - 1} OFFSET $${pagina.length}`,
+      pagina
+    ),
+    ]);
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    for (const r of countsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    counts.all = allCount;
+    counts.open = Number(openCountQ.rows[0].n);
 
     return NextResponse.json({ data: dataQ.rows, total: Number(countQ.rows[0].count), counts });
   } catch (err: any) {
     console.error('Tickets error:', err.message);
-    return NextResponse.json({ data: [], total: 0, counts: {} });
+    // ⚠️ Antes respondía 200 con la lista vacía: un fallo se leía como «no hay tickets».
+    return NextResponse.json({ error: 'No se pudo cargar la lista de tickets', data: [], total: 0, counts: {} }, { status: 500 });
   }
 }
 

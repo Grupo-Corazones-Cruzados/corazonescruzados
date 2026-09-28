@@ -51,6 +51,13 @@ interface PixelDataTableProps<T> {
    * equivocado.
    */
   tarjetaMovil?: (item: T) => React.ReactNode;
+  /**
+   * Hay una petición en curso (p. ej. se acaba de cambiar el filtro). Las filas que ya se
+   * ven se ATENÚAN y dejan de responder hasta que llegan las nuevas, y una lista vacía dice
+   * «Cargando…» en vez de «Sin datos» (2026-09-28). Sin esto, al cambiar de filtro la tabla
+   * se quedaba igual un segundo largo y parecía que el clic no había hecho nada.
+   */
+  cargando?: boolean;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -87,6 +94,7 @@ export default function PixelDataTable<T>({
   onSort,
   rowClassName,
   tarjetaMovil,
+  cargando = false,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -136,17 +144,20 @@ export default function PixelDataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="pixel-card text-center py-12">
-        <p className="pixel-heading text-sm text-digi-muted">{emptyTitle}</p>
-        <p className="text-xs text-digi-muted/60 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
-          {emptyDesc}
-        </p>
+      <div className="pixel-card text-center py-12" aria-busy={cargando || undefined}>
+        <p className="pixel-heading text-sm text-digi-muted">{cargando ? 'Cargando…' : emptyTitle}</p>
+        {!cargando && (
+          <p className="text-xs text-digi-muted/60 mt-1" style={{ fontFamily: 'var(--font-body)' }}>
+            {emptyDesc}
+          </p>
+        )}
       </div>
     );
   }
 
   return (
-    <>
+    <div aria-busy={cargando || undefined}
+      className={`transition-opacity duration-150 ${cargando ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* ── El mismo contenido, contado para un teléfono ── */}
       {tarjetaMovil && (
         <div className="lg:hidden space-y-2">
@@ -254,6 +265,6 @@ export default function PixelDataTable<T>({
         </div>
       )}
       </div>
-    </>
+    </div>
   );
 }

@@ -17,7 +17,20 @@ import { pool } from '@/lib/db';
  *    status='invited' (debe ACEPTAR el liderazgo). En "Nuevo proyecto" el creador entra
  *    directamente como role='responsible', status='active'.
  */
-export async function ensureProjectMembersTable(): Promise<void> {
+/**
+ * ⚠️ UNA VEZ POR PROCESO (2026-09-28). Antes corría en CADA petición —la lista de proyectos
+ * la llama en cada cambio de filtro— y un DDL, aunque no haga nada, es un viaje más a la
+ * base y pide el bloqueo de la tabla. Si falla, se olvida la promesa y se reintenta.
+ */
+let asegurandoMiembros: Promise<void> | null = null;
+export function ensureProjectMembersTable(): Promise<void> {
+  if (!asegurandoMiembros) {
+    asegurandoMiembros = crearTablaMiembros().catch((e) => { asegurandoMiembros = null; throw e; });
+  }
+  return asegurandoMiembros;
+}
+
+async function crearTablaMiembros(): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.project_members (
       id BIGSERIAL PRIMARY KEY,
