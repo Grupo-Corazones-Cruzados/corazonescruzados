@@ -45,10 +45,6 @@ const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente', confirmed: 'Confirmado', in_progress: 'En progreso',
   completed: 'Completado', cancelled: 'Cancelado', withdrawn: 'Retirado',
 };
-// Punto de color por variante para mostrar el estado sin columna dedicada.
-const STATUS_DOT: Record<string, string> = {
-  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
-};
 
 const PER_PAGE = 15;
 
@@ -395,11 +391,10 @@ export default function TicketsPage() {
             singleLine
             columns={[
               { key: 'id', header: 'ID', render: (t: any) => <span className="tabular-nums text-digi-muted">#{t.id}</span>, width: '56px' },
+              // Sin el punto de color del estado (Fernando, 2026-09-28), igual que en Proyectos:
+              // el filtro de la izquierda ya dice qué estado se está viendo.
               { key: 'title', header: 'Título', render: (t: any) => (
-                <span className="flex items-center gap-2 min-w-0">
-                  <span title={STATUS_LABEL[t.status] || t.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_VARIANT[t.status] || 'default']}`} />
-                  <span className={`truncate text-[13px] font-medium ${selected?.id === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.title}</span>
-                </span>
+                <span className={`block truncate text-[13px] font-medium ${selected?.id === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.title}</span>
               ) },
               { key: 'client', header: 'Cliente', width: '160px', hideOnMobile: true, render: (t: any) => <span className="text-[12px] text-digi-text" style={mf}>{t.client_name || '—'}</span> },
               { key: 'final_cost', header: 'Costo', width: '100px', hideOnMobile: true, render: (t: any) => {
@@ -424,11 +419,10 @@ export default function TicketsPage() {
               return (
                 <>
                   <div className="flex items-start gap-2">
-                    <span title={STATUS_LABEL[t.status] || t.status} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_VARIANT[t.status] || 'default']}`} />
                     <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{t.title}</span>
                     <span className="shrink-0"><PixelBadge variant={STATUS_VARIANT[t.status] || 'default'}>{STATUS_LABEL[t.status] || t.status}</PixelBadge></span>
                   </div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 text-[12px] text-digi-muted" style={mf}>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-digi-muted" style={mf}>
                     <span className="tabular-nums">#{t.id}</span>
                     {t.client_name && <span className="min-w-0 truncate max-w-[55%]">{t.client_name}</span>}
                     {costo != null && costo !== '' && <span className="tabular-nums text-digi-text">${fmt2(Number(costo))}</span>}
