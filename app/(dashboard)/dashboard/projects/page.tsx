@@ -32,24 +32,28 @@ import {
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
+// «Todos» va AL FINAL, debajo de «Completados», y la lista abre en «Cotizaciones»
+// (Fernando, 2026-09-28): lo que se trabaja a diario son las cotizaciones.
 const STATUS_TABS = [
-  { value: 'all', label: 'Todos', Icon: FolderKanban },
   { value: 'cotizacion', label: 'Cotizaciones', Icon: Calculator },
   { value: 'cotizacion_rechazada', label: 'Cotiz. rechazadas', Icon: XCircle },
   { value: 'draft', label: 'Borrador', Icon: FileEdit },
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   { value: 'in_progress', label: 'En progreso', Icon: Loader },
-  { value: 'in_review', label: 'En revisión', Icon: Eye },
+  // ⚠️ `review`, no `in_review`: la API graba `review` (ver `lib/chat/participants.ts`), así
+  // que con `in_review` esta pestaña salía siempre vacía aunque hubiera proyectos en revisión.
+  { value: 'review', label: 'En revisión', Icon: Eye },
   { value: 'completed', label: 'Completados', Icon: CheckCircle2 },
+  { value: 'all', label: 'Todos', Icon: FolderKanban },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   cotizacion: 'info', cotizacion_rechazada: 'error', draft: 'default', open: 'info', in_progress: 'warning',
-  in_review: 'info', completed: 'success', closed: 'success', cancelled: 'error',
+  review: 'info', in_review: 'info', completed: 'success', closed: 'success', cancelled: 'error',
 };
 const STATUS_LABEL: Record<string, string> = {
   cotizacion: 'Cotización', cotizacion_rechazada: 'Rechazada', draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
-  in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
+  review: 'En revisión', in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
 };
 // Punto de color por variante para mostrar el estado sin columna dedicada.
 const STATUS_DOT: Record<string, string> = {
@@ -80,7 +84,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState('cotizacion');
   const [selected, setSelected] = useState<any>(null);
   const [selDetail, setSelDetail] = useState<any>(null);
   const [selLoading, setSelLoading] = useState(false);

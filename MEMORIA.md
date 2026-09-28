@@ -275,6 +275,10 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📋 La lista de proyectos abre en «Cotizaciones», y «Todos» va al final (Fernando,
+  2026-09-28)**, debajo de «Completados» (`STATUS_TABS` de `dashboard/projects/page.tsx`). De
+  paso: la pestaña «En revisión» filtraba por `in_review`, pero la API graba `review` → salía
+  siempre vacía (había 2 proyectos en revisión). Corregida a `review`.
 - **💳 ENLACE DE PAGO DEL PROYECTO ENTERO, sin plan de etapas (Fernando, 2026-09-28).**
   *«como usuario responsable del proyecto pueda compartir por token y correo un enlace a los
   clientes para que puedan pagar el proyecto cuando su estado ya está por completar y
