@@ -26,13 +26,15 @@ import {
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
+// «Todos» va AL FINAL, debajo de «Cancelados», y la lista abre en «Abiertos» — igual que
+// Proyectos abre en «Cotizaciones» (Fernando, 2026-09-28).
 const STATUS_TABS = [
-  { value: 'all', label: 'Todos', Icon: Inbox },
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   { value: 'pending', label: 'Pendientes', Icon: Clock },
   { value: 'confirmed', label: 'Confirmados', Icon: CircleCheck },
   { value: 'completed', label: 'Completados', Icon: CheckCircle2 },
   { value: 'cancelled', label: 'Cancelados', Icon: XCircle },
+  { value: 'all', label: 'Todos', Icon: Inbox },
 ];
 
 const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -92,7 +94,12 @@ export default function TicketsPage() {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState('open');
+  // Al cliente no se le enseña «Abiertos» (son los tickets abiertos a propuestas del equipo):
+  // su lista abre en la primera opción que sí ve, «Pendientes».
+  useEffect(() => {
+    if (accessRoleOf(user) === 'client') setTab((t) => (t === 'open' ? 'pending' : t));
+  }, [user]);
   const [selected, setSelected] = useState<any>(null);
   const [selDetail, setSelDetail] = useState<any>(null);
   const [selLoading, setSelLoading] = useState(false);
@@ -124,6 +131,10 @@ export default function TicketsPage() {
   const [clients, setClients] = useState<any[]>([]);
 
   const fetchTickets = useCallback(async () => {
+    // Sin sesión todavía no se sabe si «Abiertos» le toca: esperar evita que un cliente pida,
+    // aunque sea una vez, la lista que no se le enseña.
+    if (!user) return;
+    if (tab === 'open' && accessRoleOf(user) === 'client') return;
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
     if (tab === 'open') params.set('open', '1');
     else if (tab !== 'all') params.set('status', tab);
@@ -135,7 +146,7 @@ export default function TicketsPage() {
       setTotal(data.total || 0);
       setCounts(data.counts || {});
     } catch { setTickets([]); }
-  }, [page, tab, search]);
+  }, [page, tab, search, user]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
   useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);

@@ -279,6 +279,10 @@ Stack estándar de la casa, con particularidades de este repo:
   2026-09-28)**, debajo de «Completados» (`STATUS_TABS` de `dashboard/projects/page.tsx`). De
   paso: la pestaña «En revisión» filtraba por `in_review`, pero la API graba `review` → salía
   siempre vacía (había 2 proyectos en revisión). Corregida a `review`.
+- **🎫 Tickets igual: abre en «Abiertos» y «Todos» va al final, tras «Cancelados» (Fernando,
+  2026-09-28).** «Abiertos» NO es un estado: son los tickets abiertos a propuestas, y al
+  cliente no se le enseña → su lista abre en «Pendientes». La carga espera a la sesión para
+  que un cliente no pida nunca `?open=1`.
 - **💳 ENLACE DE PAGO DEL PROYECTO ENTERO, sin plan de etapas (Fernando, 2026-09-28).**
   *«como usuario responsable del proyecto pueda compartir por token y correo un enlace a los
   clientes para que puedan pagar el proyecto cuando su estado ya está por completar y
