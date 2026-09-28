@@ -3904,6 +3904,10 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-28 · Panel de resumen de Proyectos y Tickets SIN botón de cerrar · por decisión de
+  Fernando.** El panel de la derecha (escritorio) se queda con la fila elegida; se cambia
+  eligiendo otra. En el teléfono el resumen es un `PixelModal` a pantalla completa y **sí**
+  conserva su X: ahí tapa la lista y es la única salida.
 - **2026-09-28 · `PixelDataTable` gana `cargando` · ADOPTADO.** Mientras hay una petición en
   curso, las filas que ya se ven se atenúan (`opacity-50`, sin clics) y una lista vacía dice
   «Cargando…» en vez de «Sin datos». Lo usan Proyectos y Tickets; cualquier lista que se

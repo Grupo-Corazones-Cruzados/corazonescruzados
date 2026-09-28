@@ -556,7 +556,9 @@ export default function ProjectsPage() {
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Proyecto #{selected.id}</p>
                     </div>
-                    <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                    {/* Sin botón de cerrar (Fernando, 2026-09-28): el panel siempre enseña la
+                        fila elegida, y se cambia eligiendo otra. En el teléfono sí hay X,
+                        porque ahí el resumen tapa la lista. */}
                   </div>
                   {cuerpoResumen}
                 </div>

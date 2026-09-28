@@ -20,7 +20,7 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
-  X, ArrowRight, Ticket as TicketIcon, DoorOpen,
+  ArrowRight, Ticket as TicketIcon, DoorOpen,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -471,7 +471,9 @@ export default function TicketsPage() {
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Ticket #{selected.id}</p>
                     </div>
-                    <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                    {/* Sin botón de cerrar (Fernando, 2026-09-28): el panel siempre enseña la
+                        fila elegida, y se cambia eligiendo otra. En el teléfono sí hay X,
+                        porque ahí el resumen tapa la lista. */}
                   </div>
                   {cuerpoResumen}
                 </div>
