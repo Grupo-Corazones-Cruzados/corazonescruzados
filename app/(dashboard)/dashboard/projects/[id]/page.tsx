@@ -1985,11 +1985,13 @@ export default function ProjectDetailPage() {
                 <div className="space-y-1.5">
                   <span className="block text-[12px] font-semibold text-digi-text" style={pf}>Campos adicionales</span>
                   {completeAdditionalFields.map((f, i) => (
-                    <div key={i} className="flex gap-2 items-center">
+                    // Rejilla y no flex: `EDIT_INPUT` lleva `w-full`, que pisaba el `w-1/3`/`flex-1`
+                    // y dejaba el VALOR en unos pocos píxeles. Nombre 1/3, valor 2/3, papelera.
+                    <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] gap-2 items-center">
                       <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
-                        placeholder="Nombre" className={`${EDIT_INPUT} w-1/3`} style={mf} />
+                        placeholder="Nombre" className={EDIT_INPUT} style={mf} />
                       <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
-                        placeholder="Valor" className={`${EDIT_INPUT} flex-1`} style={mf} />
+                        placeholder="Valor" className={EDIT_INPUT} style={mf} />
                       <BotonQuitar onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" />
                     </div>
                   ))}

@@ -3913,6 +3913,11 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · 🪤 `EDIT_INPUT` lleva `w-full`: en una FILA no se reparte con `w-1/3`/`flex-1`.**
+  En «Campos adicionales» el nombre se quedaba con todo el ancho y el valor en unos pocos
+  píxeles (Fernando lo vio). Para poner varios campos en una fila se usa una **rejilla** en el
+  contenedor —p. ej. `grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] gap-2`— y el campo se
+  queda con su `w-full`. Aplicado: nombre 1/3, valor 2/3, papelera.
 - **2026-09-29 · Cerrar = `BotonCerrar` (X) · ADOPTADO como estándar por Fernando.** Definición
   única: `components/ui/BotonCerrar.tsx`. Cuadrado de 32 px (`md`) o 28 px (`sm`), `rounded-lg`,
   icono `X` con trazo 2.25, **fondo gris suave siempre visible** (6 % del color de texto) que
