@@ -3904,6 +3904,14 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Formulario de facturar en UNA columna · por decisión de Fernando.** Arriba, a
+  todo el ancho, «Adquirente» (`components/facturacion/AdquirenteFactura.tsx`: selector
+  Cliente | Consumidor final, buscador de cuentas facturables y resumen de solo lectura), y
+  forma de pago · moneda · tasa en tres columnas, y campos adicionales. Debajo, «Detalle» en
+  **tabla** (`DetalleFactura.tsx`): una línea por ítem, etiquetas una sola vez en la cabecera,
+  celdas sin marco que se lo ponen al pasar o enfocar, papelera al final y totales a la
+  derecha. Pie con `BTN_SECONDARY`/`BTN_PRIMARY` (antes `pixel-btn`). Usado en el proyecto;
+  ⏳ pendiente en ticket y factura manual.
 - **2026-09-29 · «Completar y facturar» sin la sección «Requerimientos/Etapas a facturar»** · por
   decisión de Fernando: el formulario solo se abre en revisión y se factura todo lo pendiente
   (`selectedStages` arranca con todo). El aviso de comprobantes antiguos (`invoicedLegacy`),

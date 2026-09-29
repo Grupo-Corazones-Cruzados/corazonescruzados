@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createInvoiceFromProject, sendInvoiceToSri, projectHasInvoice } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
-import { upsertBillingForClient } from '@/lib/billing-clients';
+import { upsertBillingForClient, cuentaFacturable, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
 import { getProjectBilling } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
@@ -16,8 +16,41 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Completar y FACTURAR un proyecto es exclusivo del admin (regla de negocio).
     if (user.role !== 'admin') return NextResponse.json({ error: 'Solo un administrador puede completar y facturar el proyecto.' }, { status: 403 });
     const { id } = await params;
-    const { action, skip_invoice, requirement_ids, stage_ids, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate } = await req.json();
+    const { action, skip_invoice, requirement_ids, stage_ids, review_deadline, send_email, client_id_type, client_email, client_name, client_ruc, client_phone, client_address, payment_code, invoice_items, additional_fields, currency, exchange_rate, adquirente, billing_client_id } = await req.json();
     const etapas: string[] = Array.isArray(requirement_ids) ? requirement_ids.map(String) : [];
+
+    /**
+     * ⇒ EL ADQUIRENTE SE ELIGE, NO SE ESCRIBE (Fernando, 2026-09-29).
+     *
+     * El formulario nuevo manda `adquirente: 'cliente' | 'consumidor_final'` y, si es cliente,
+     * `billing_client_id`. Los datos del comprador se leen AQUÍ de esa cuenta —no se aceptan
+     * del navegador— y NO se reescriben ni la ficha del cliente del proyecto ni su cuenta:
+     * antes el formulario mandaba los datos sueltos y esta ruta los grababa encima de la
+     * ficha del cliente, así que facturar a otra razón social le cambiaba el nombre.
+     * Sin `adquirente` (llamadas antiguas) todo sigue como estaba.
+     * Se valida ANTES de cambiar el estado del proyecto.
+     */
+    const bodyAdquirente = adquirente === 'cliente' || adquirente === 'consumidor_final' ? adquirente : null;
+    let comprador: { idType: string; ruc: string; name: string; address?: string | null; email?: string | null; phone?: string | null } | undefined;
+    if (bodyAdquirente && action === 'confirm_completion' && !skip_invoice) {
+      if (bodyAdquirente === 'consumidor_final') {
+        const totalItems = (Array.isArray(invoice_items) ? invoice_items : []).reduce((s: number, it: any) => {
+          const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
+          return s + base + base * ((Number(it.ivaRate) || 0) / 100);
+        }, 0);
+        if (totalItems > 50) {
+          return NextResponse.json({ error: 'El SRI no admite facturar a consumidor final por más de $50.00: elige un cliente.' }, { status: 400 });
+        }
+        comprador = { idType: '07', ruc: CONSUMIDOR_FINAL_RUC, name: 'CONSUMIDOR FINAL' };
+      } else {
+        const { rows: [bc] } = await pool.query(`SELECT * FROM gcc_world.billing_clients WHERE id = $1`, [Number(billing_client_id) || 0]);
+        if (!bc) return NextResponse.json({ error: 'La cuenta de facturación elegida no existe.' }, { status: 400 });
+        if (!cuentaFacturable(bc)) {
+          return NextResponse.json({ error: 'A esa cuenta de facturación le faltan datos (identificación, dirección o correo). Complétala antes de facturar.' }, { status: 400 });
+        }
+        comprador = { idType: bc.id_type, ruc: bc.ruc, name: bc.name, address: bc.address, email: bc.email, phone: bc.phone };
+      }
+    }
     const etapasPlan: string[] = Array.isArray(stage_ids) ? stage_ids.map(String) : [];
 
     let invoiceId: number | null = null;
@@ -39,7 +72,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       let clientId = proj?.client_id;
       const emailNorm = (client_email || '').trim() || null;
 
-      if (!clientId && client_name) {
+      if (bodyAdquirente) {
+        // Formulario nuevo: la ficha del cliente NO se toca (ver arriba).
+      } else if (!clientId && client_name) {
         // Find an existing client by email (the email column is UNIQUE) to avoid a duplicate-key error
         if (emailNorm) {
           const { rows: [ex] } = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [emailNorm]);
@@ -109,7 +144,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           invoiceId = existingInvoice.invoiceId ?? null;
           sriResult = { ok: true, authorized: true, skipped: true, message: 'Todas las etapas del proyecto ya están facturadas' };
         } else {
-        invoiceId = await createInvoiceFromProject(id, { clientIdType: client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate, requirementIds: etapas, stageIds: etapasPlan });
+        invoiceId = await createInvoiceFromProject(id, { clientIdType: comprador ? comprador.idType : client_id_type, paymentCode: payment_code, invoiceItems: invoice_items, additionalFields: additional_fields, currency, exchangeRate: exchange_rate, requirementIds: etapas, stageIds: etapasPlan, comprador });
 
         // Sign and send to SRI
         if (invoiceId) {
@@ -118,7 +153,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           // Fase 2: crea/actualiza la cuenta de facturación del cliente del proyecto
           // (para prellenar las próximas facturas del mismo cliente).
           try {
-            if (clientId) await upsertBillingForClient(clientId, {
+            // Con el formulario nuevo la cuenta ya existe y se eligió: no se reescribe.
+            if (clientId && !bodyAdquirente) await upsertBillingForClient(clientId, {
               id_type: client_id_type, ruc: client_ruc, name: client_name,
               email: client_email, phone: client_phone, address: client_address,
             });

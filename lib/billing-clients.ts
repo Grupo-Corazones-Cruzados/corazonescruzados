@@ -207,6 +207,31 @@ export type BillingData = {
 };
 
 /** La cuenta de facturación (1 por cliente, por ahora) del cliente de portal `clientId`, o null. */
+/**
+ * ¿Se puede FACTURAR con esta cuenta tal cual? (Fernando, 2026-09-29).
+ *
+ * El formulario de «Completar y facturar» ya no deja editar los datos del comprador: salen
+ * de la cuenta de facturación elegida. Por eso una cuenta a medias no se ofrece — si no, se
+ * emitiría una factura sin dirección o con una cédula mal escrita que el SRI devuelve.
+ * Una sola definición para la lista y para la API que factura.
+ *   · tipo 04 (RUC) con 13 dígitos · 05 (cédula) con 10 · 06 (pasaporte) con algo escrito
+ *   · razón social, dirección y correo
+ *   · consumidor final NO: se elige aparte, como opción propia.
+ */
+export function cuentaFacturable(bc: { id_type?: string | null; ruc?: string | null; name?: string | null; address?: string | null; email?: string | null } | null | undefined): boolean {
+  if (!bc) return false;
+  const ruc = String(bc.ruc || '').trim();
+  const tipo = String(bc.id_type || '');
+  const idOk = tipo === '04' ? /^\d{13}$/.test(ruc)
+    : tipo === '05' ? /^\d{10}$/.test(ruc)
+    : tipo === '06' ? ruc.length > 0
+    : false;
+  return idOk && ruc !== CONSUMIDOR_FINAL_RUC
+    && !!String(bc.name || '').trim()
+    && !!String(bc.address || '').trim()
+    && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(bc.email || '').trim());
+}
+
 export async function getBillingForClient(clientId: number | string): Promise<any | null> {
   await ensureBillingClientsTable();
   const { rows } = await pool.query(

@@ -167,6 +167,13 @@ interface InvoiceOptions {
   requirementIds?: (string | number)[];
   /** Etapas del plan que cubre esta factura; quedan marcadas como facturadas. */
   stageIds?: (string | number)[];
+  /**
+   * COMPRADOR EXPLÍCITO (2026-09-29). Si viene, la factura sale a su nombre y NO se leen los
+   * datos de la ficha del cliente del proyecto. Es lo que permite facturar a la cuenta de
+   * facturación elegida —o a consumidor final— sin reescribir antes la ficha del cliente,
+   * que es lo que se hacía y pisaba sus datos reales.
+   */
+  comprador?: { idType: string; ruc: string; name: string; address?: string | null; email?: string | null; phone?: string | null };
 }
 
 export async function createInvoiceFromProject(projectId: string, options?: InvoiceOptions): Promise<number> {
@@ -230,7 +237,10 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   const secuencial = await getNextSecuencial();
   const fecha = new Date();
 
-  const isConsumidorFinal = !project.client_ruc || project.client_ruc === '9999999999999' || clientIdType === '07';
+  const comprador = options?.comprador;
+  const isConsumidorFinal = comprador
+    ? comprador.idType === '07'
+    : (!project.client_ruc || project.client_ruc === '9999999999999' || clientIdType === '07');
 
   // Build additional fields — inject currency reference if not USD
   const baseAdditionalFields = options?.additionalFields?.filter(f => f.name && f.value) || [];
@@ -247,12 +257,12 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   const invoiceData: InvoiceData = {
     secuencial,
     fecha,
-    clienteIdTipo: isConsumidorFinal ? '07' : clientIdType,
-    clienteRuc: isConsumidorFinal ? '9999999999999' : project.client_ruc,
-    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (project.client_name || 'CONSUMIDOR FINAL'),
-    clienteDireccion: project.client_address || 'N/A',
-    clienteEmail: project.client_email || '',
-    clienteTelefono: project.client_phone || '',
+    clienteIdTipo: isConsumidorFinal ? '07' : (comprador ? comprador.idType : clientIdType),
+    clienteRuc: isConsumidorFinal ? '9999999999999' : (comprador ? comprador.ruc : project.client_ruc),
+    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : ((comprador ? comprador.name : project.client_name) || 'CONSUMIDOR FINAL'),
+    clienteDireccion: (comprador ? comprador.address : project.client_address) || 'N/A',
+    clienteEmail: (comprador ? comprador.email : project.client_email) || '',
+    clienteTelefono: (comprador ? comprador.phone : project.client_phone) || '',
     items,
     payments: options?.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
     additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,

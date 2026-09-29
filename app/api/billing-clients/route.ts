@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureBillingClientsTable, getBillingForClient, SQL_FACTURA_CUENTA } from '@/lib/billing-clients';
+import { ensureBillingClientsTable, getBillingForClient, SQL_FACTURA_CUENTA, cuentaFacturable } from '@/lib/billing-clients';
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `SELECT bc.id, bc.id_type, bc.ruc, bc.name, bc.email, bc.phone, bc.address, bc.notes, bc.aliases, bc.country,
+      `SELECT bc.id, bc.id_type, bc.ruc, bc.name, bc.email, bc.phone, bc.address, bc.notes, bc.aliases, bc.country, bc.portal_client_id,
               COALESCE(s.facturas, 0) AS facturas,
               COALESCE(s.total, 0) AS total,
               COALESCE(s.autorizadas, 0) AS autorizadas,
@@ -52,8 +52,14 @@ export async function GET(req: NextRequest) {
       facturas: Number(r.facturas), total: Number(r.total), autorizadas: Number(r.autorizadas),
       ultima: r.ultima || null,
       is_consumidor_final: r.ruc === '9999999999999',
+      portal_client_id: r.portal_client_id != null ? Number(r.portal_client_id) : null,
     }));
 
+    // `?facturables=1` → solo las cuentas con las que se puede facturar tal cual (el
+    // selector de «Completar y facturar»). Ver `cuentaFacturable`.
+    if (new URL(req.url).searchParams.get('facturables') === '1') {
+      return NextResponse.json({ data: data.filter(cuentaFacturable) });
+    }
     return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Billing clients list error:', err.message);

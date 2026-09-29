@@ -23,6 +23,8 @@ import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
 import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
+import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL } from '@/components/facturacion/AdquirenteFactura';
+import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
 import { fmt2 } from '@/lib/format';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
@@ -190,6 +192,12 @@ export default function ProjectDetailPage() {
   const [motivoCancelar, setMotivoCancelar] = useState('');
   const [cancelando, setCancelando] = useState(false);
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
+  // ⇒ El adquirente se ELIGE (Fernando, 2026-09-29): cliente —una cuenta de facturación
+  // completa— o consumidor final. Sus datos ya no se editan en el formulario.
+  const [completeAdquirente, setCompleteAdquirente] = useState<ModoAdquirente>('cliente');
+  const [completeCuentaId, setCompleteCuentaId] = useState('');
+  const [cuentasFacturables, setCuentasFacturables] = useState<CuentaFacturable[]>([]);
+  const [cargandoCuentas, setCargandoCuentas] = useState(false);
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [completeStep, setCompleteStep] = useState('');
@@ -453,31 +461,21 @@ export default function ProjectDetailPage() {
 
   // --- Complete project with invoice ---
   const openCompleteModal = async () => {
-    const ruc = project?.client_ruc || '';
-    setCompleteClientName(project?.client_name || '');
-    setCompleteClientRuc(ruc);
-    setCompleteClientEmail(project?.client_email || '');
-    setCompleteClientPhone(project?.client_phone || '');
-    setCompleteClientAddress(project?.client_address || '');
-    if (ruc.length === 13 && ruc.endsWith('001')) setCompleteIdType('04');
-    else if (ruc.length === 10) setCompleteIdType('05');
-    else if (ruc.length > 0) setCompleteIdType('06');
-    else setCompleteIdType('07');
-    // Fase 2: si el cliente ya tiene cuenta de facturación, se prellena desde ahí (editable).
-    if (project?.client_id) {
-      try {
-        const r = await fetch(`/api/billing-clients?portal_client_id=${project.client_id}`);
-        const { data: bc } = await r.json();
-        if (bc) {
-          setCompleteIdType(bc.id_type || '07');
-          setCompleteClientRuc(bc.ruc || '9999999999999');
-          setCompleteClientName(bc.name || 'CONSUMIDOR FINAL');
-          setCompleteClientEmail(bc.email || '');
-          setCompleteClientPhone(bc.phone || '');
-          setCompleteClientAddress(bc.address || '');
-        }
-      } catch { /* sin cuenta de facturación → se llena a mano */ }
-    }
+    // Las cuentas con las que se puede facturar tal cual; se preselecciona la del cliente del
+    // proyecto si la tiene completa. Ver `cuentaFacturable` en lib/billing-clients.ts.
+    setCompleteAdquirente('cliente');
+    setCompleteCuentaId('');
+    setCargandoCuentas(true);
+    fetch('/api/billing-clients?facturables=1')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        const lista: CuentaFacturable[] = Array.isArray(data) ? data : [];
+        setCuentasFacturables(lista);
+        const propia = project?.client_id ? lista.find((c) => Number(c.portal_client_id) === Number(project.client_id)) : null;
+        if (propia) { setCompleteCuentaId(String(propia.id)); setCompleteClientEmail(propia.email || ''); }
+      })
+      .catch(() => setCuentasFacturables([]))
+      .finally(() => setCargandoCuentas(false));
     setCompletePaymentCode('20');
     // El detalle arranca con las etapas que faltan por facturar: las que ya tienen
     // factura no vuelven a entrar (se facturaron al entregarse). Sigue siendo
@@ -642,12 +640,9 @@ export default function ProjectDetailPage() {
           requirement_ids: skipInvoice || billing?.mode === 'etapas' ? [] : selectedStages,
           stage_ids: skipInvoice || billing?.mode !== 'etapas' ? [] : selectedStages,
           send_email: completeSendEmail,
-          client_id_type: completeIdType,
-          client_name: completeClientName,
-          client_ruc: completeClientRuc,
-          client_email: completeClientEmail,
-          client_phone: completeClientPhone,
-          client_address: completeClientAddress,
+          // El comprador lo arma el servidor desde la cuenta elegida: aquí solo va QUÉ se eligió.
+          adquirente: completeAdquirente,
+          billing_client_id: completeAdquirente === 'cliente' ? Number(completeCuentaId) || null : null,
           payment_code: completePaymentCode,
           invoice_items: completeItems.map(it => ({
             description: it.description,
@@ -681,7 +676,7 @@ export default function ProjectDetailPage() {
         'Proyecto completado' +
         (skipInvoice ? ' (sin factura)' : (data.invoiceId ? ' — Factura generada' : '')) +
         (!skipInvoice && sriOk ? ' y autorizada por el SRI' : '') +
-        (!skipInvoice && completeSendEmail && completeClientEmail && sriOk ? ' — Enviada por correo' : '')
+        (!skipInvoice && completeSendEmail && completeAdquirente === 'cliente' && sriOk ? ' — Enviada por correo' : '')
       );
       if (sriError && !sriOk) {
         toast.error(`SRI: ${sriError}`);
@@ -1935,223 +1930,109 @@ export default function ProjectDetailPage() {
                   comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar dos veces lo mismo.
                 </p>
               )}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* ─── LEFT: Adquirente + Pago ─── */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between border-b border-digi-border pb-1">
-                    <h4 className="text-[12px] text-accent" style={pf}>Adquirente</h4>
-                    <span className="text-[10.5px] text-digi-muted" style={pf}>Datos del cliente del proyecto</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-600">*</span></label>
-                      <select value={completeIdType} onChange={e => {
-                        const t = e.target.value;
-                        setCompleteIdType(t);
-                        if (t === '07') { setCompleteClientRuc('9999999999999'); setCompleteClientName('CONSUMIDOR FINAL'); }
-                        else { if (completeClientRuc === '9999999999999') setCompleteClientRuc(''); if (completeClientName === 'CONSUMIDOR FINAL') setCompleteClientName(''); }
-                      }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                        <option value="04">RUC</option><option value="05">Cedula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Identificacion <span className="text-red-600">*</span></label>
-                      <input value={completeClientRuc} onChange={e => setCompleteClientRuc(e.target.value)} disabled={completeIdType === '07'}
-                        placeholder={completeIdType === '04' ? '0900000000001' : '0900000000'} maxLength={completeIdType === '04' ? 13 : completeIdType === '05' ? 10 : 20}
-                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                      {completeIdType === '04' && completeClientRuc && completeClientRuc.length !== 13 && <p className="text-[11px] text-red-600" style={mf}>13 digitos</p>}
-                      {completeIdType === '05' && completeClientRuc && completeClientRuc.length !== 10 && <p className="text-[11px] text-red-600" style={mf}>10 digitos</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Razon Social <span className="text-red-600">*</span></label>
-                    <input value={completeClientName} onChange={e => setCompleteClientName(e.target.value)} disabled={completeIdType === '07'}
-                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                  </div>
-                  <div>
-                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Direccion <span className="text-red-600">*</span></label>
-                    <input value={completeClientAddress} onChange={e => setCompleteClientAddress(e.target.value)} placeholder="Direccion"
-                      className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Email {completeIdType !== '07' && <span className="text-red-600">*</span>}</label>
-                      <input value={completeClientEmail} onChange={e => setCompleteClientEmail(e.target.value)} type="email" placeholder="correo@ejemplo.com"
-                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    </div>
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Telefono</label>
-                      <input value={completeClientPhone} onChange={e => setCompleteClientPhone(e.target.value)} placeholder="0999999999"
-                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    </div>
-                  </div>
+              {/* ⇒ UNA COLUMNA (Fernando, 2026-09-29): arriba, a todo el ancho, A QUIÉN se factura
+                  y cómo se paga; debajo, el detalle en tabla. Antes eran dos columnas —datos del
+                  cliente a mano a la izquierda, ítems de dos alturas a la derecha—. */}
+              <section className="space-y-3">
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Adquirente</h4>
+                <AdquirenteFactura
+                  modo={completeAdquirente}
+                  onModo={setCompleteAdquirente}
+                  cuentaId={completeCuentaId}
+                  onCuenta={(v) => { setCompleteCuentaId(v); setCompleteClientEmail(cuentasFacturables.find((c) => String(c.id) === v)?.email || ''); }}
+                  cuentas={cuentasFacturables}
+                  total={totalFactura(completeItems)}
+                  cargando={cargandoCuentas}
+                />
 
-                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Forma de Pago</h4>
-                  <select value={completePaymentCode} onChange={e => setCompletePaymentCode(e.target.value)}
-                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                    <option value="01">Sin utilizacion del sistema financiero</option>
-                    <option value="15">Compensacion de deudas</option>
-                    <option value="16">Tarjeta de debito</option>
-                    <option value="17">Dinero electronico</option>
-                    <option value="18">Tarjeta prepago</option>
-                    <option value="19">Tarjeta de credito</option>
-                    <option value="20">Otros con utilizacion del sistema financiero</option>
-                    <option value="21">Endoso de titulos</option>
-                  </select>
-
-                  {currencies.length > 0 && (
-                  <>
-                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Moneda</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Moneda</label>
-                      <select value={completeCurrency} onChange={e => {
-                        const code = e.target.value;
-                        setCompleteCurrency(code);
-                        const c = currencies.find(c => c.code === code);
-                        setCompleteExchangeRate(c ? String(c.rate) : '1');
-                      }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                        {currencies.map(c => (
-                          <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tasa (1 USD = ?)</label>
-                      <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
-                        type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
-                        className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                    </div>
-                  </div>
-                  {completeCurrency !== 'USD' && (
-                    <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent mt-1" style={mf}>
-                      Equivalente para el cliente: {(() => {
-                        const t = completeItems.reduce((s, it) => {
-                          const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                          return s + base + base * ((Number(it.ivaRate) || 0) / 100);
-                        }, 0);
-                        const sym = currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency;
-                        return `${sym} ${fmt2((t * (Number(completeExchangeRate) || 1)))} ${completeCurrency}`;
-                      })()}
-                      <span className="text-digi-muted"> (referencia, factura en USD)</span>
-                    </div>
-                  )}
-                  </>
-                  )}
-
-                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Campos Adicionales</h4>
-                  <div className="space-y-1">
-                    {completeAdditionalFields.map((f, i) => (
-                      <div key={i} className="flex gap-1">
-                        <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
-                          placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                        <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
-                          placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                        <BotonQuitar onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" className="self-center" />
-                      </div>
-                    ))}
-                    <button onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
-                      className="text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>+ Campo adicional</button>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <EditField label="Forma de pago">
+                    <select value={completePaymentCode} onChange={e => setCompletePaymentCode(e.target.value)} className={EDIT_INPUT} style={mf}>
+                      <option value="01">Sin utilización del sistema financiero</option>
+                      <option value="15">Compensación de deudas</option>
+                      <option value="16">Tarjeta de débito</option>
+                      <option value="17">Dinero electrónico</option>
+                      <option value="18">Tarjeta prepago</option>
+                      <option value="19">Tarjeta de crédito</option>
+                      <option value="20">Otros con utilización del sistema financiero</option>
+                      <option value="21">Endoso de títulos</option>
+                    </select>
+                  </EditField>
+                  <EditField label="Moneda">
+                    <select value={completeCurrency} onChange={e => {
+                      const code = e.target.value;
+                      setCompleteCurrency(code);
+                      const c = currencies.find(c => c.code === code);
+                      setCompleteExchangeRate(c ? String(c.rate) : '1');
+                    }} className={EDIT_INPUT} style={mf}>
+                      {currencies.length === 0 && <option value="USD">USD — Dólar estadounidense</option>}
+                      {currencies.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+                    </select>
+                  </EditField>
+                  <EditField label="Tasa (1 USD = ?)">
+                    <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
+                      type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
+                      className={`${EDIT_INPUT} tabular-nums disabled:opacity-50`} style={mf} />
+                  </EditField>
                 </div>
+                {completeCurrency !== 'USD' && (
+                  <p className="px-3 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent" style={mf}>
+                    Equivalente para el cliente: {currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency} {fmt2(totalFactura(completeItems) * (Number(completeExchangeRate) || 1))} {completeCurrency}
+                    <span className="text-digi-muted"> (referencia, la factura va en USD)</span>
+                  </p>
+                )}
 
-                {/* ─── RIGHT: Detalle + Totales ─── */}
-                <div className="space-y-2">
-                  <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Detalle</h4>
-                  <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
-                    {completeItems.map((item, i) => (
-                      <div key={i} className="border border-digi-border rounded-lg p-2">
-                        <div className="flex gap-1 mb-1">
-                          <input value={item.description} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], description: e.target.value }; setCompleteItems(n); }}
-                            placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                          <BotonQuitar onClick={() => setCompleteItems(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar ítem" tamano="xs" className="self-center" />
-                        </div>
-                        <div className="grid grid-cols-4 gap-1">
-                          <div>
-                            <label className="text-[11px] text-digi-muted" style={pf}>Cant.</label>
-                            <input value={item.quantity} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], quantity: e.target.value }; setCompleteItems(n); }}
-                              type="number" min="0.01" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-digi-muted" style={pf}>P.Unit.</label>
-                            <input value={item.unitPrice} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setCompleteItems(n); }}
-                              type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-digi-muted" style={pf}>IVA</label>
-                            <select value={item.ivaRate} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], ivaRate: e.target.value }; setCompleteItems(n); }}
-                              className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                              <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[11px] text-digi-muted" style={pf}>Desc.</label>
-                            <input value={item.discount} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], discount: e.target.value }; setCompleteItems(n); }}
-                              type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => setCompleteItems(prev => [...prev, { description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }])}
-                    className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>+ Item</button>
-
-                  {/* Totales */}
-                  {(() => {
-                    const subtotal = completeItems.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0), 0);
-                    const totalDiscount = completeItems.reduce((s, it) => s + (Number(it.discount) || 0), 0);
-                    const ivaByRate: Record<string, number> = {};
-                    completeItems.forEach(it => {
-                      const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                      const rate = it.ivaRate || '0';
-                      ivaByRate[rate] = (ivaByRate[rate] || 0) + base;
-                    });
-                    const totalIva = completeItems.reduce((s, it) => {
-                      const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                      return s + base * ((Number(it.ivaRate) || 0) / 100);
-                    }, 0);
-                    return (
-                      <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
-                        {Object.entries(ivaByRate).map(([rate, base]) => (
-                          <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${fmt2(base)}</span></div>
-                        ))}
-                        {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${fmt2(totalDiscount)}</span></div>}
-                        {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${fmt2(totalIva)}</span></div>}
-                        <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${fmt2((subtotal + totalIva))}</span></div>
-                      </div>
-                    );
-                  })()}
+                <div className="space-y-1.5">
+                  <span className="block text-[12px] font-semibold text-digi-text" style={pf}>Campos adicionales</span>
+                  {completeAdditionalFields.map((f, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
+                        placeholder="Nombre" className={`${EDIT_INPUT} w-1/3`} style={mf} />
+                      <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
+                        placeholder="Valor" className={`${EDIT_INPUT} flex-1`} style={mf} />
+                      <BotonQuitar onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" />
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
+                    className="inline-flex items-center gap-1 text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>
+                    <Plus className="w-3.5 h-3.5" /> Campo adicional
+                  </button>
                 </div>
-              </div>
+              </section>
 
-              {/* ─── Footer ─── */}
+              <section className="space-y-2 mt-5">
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Detalle</h4>
+                <DetalleFactura items={completeItems} onChange={setCompleteItems} />
+              </section>
+
+              {/* ─── Pie ─── */}
               {(() => {
-                const invoiceTotal = completeItems.reduce((s, it) => {
-                  const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                  return s + base + base * ((Number(it.ivaRate) || 0) / 100);
-                }, 0);
-                const consumidorFinalOver50 = completeIdType === '07' && invoiceTotal > 50;
-                const isFormValid = !completing && completeClientName.trim() && completeClientRuc.trim() && completeClientAddress.trim() && (completeIdType === '07' || completeClientEmail.trim()) && completeItems.length > 0 && !(completeIdType === '04' && completeClientRuc.length !== 13) && !(completeIdType === '05' && completeClientRuc.length !== 10) && !consumidorFinalOver50;
+                const invoiceTotal = totalFactura(completeItems);
+                const cfExcede = completeAdquirente === 'consumidor_final' && invoiceTotal > TOPE_CONSUMIDOR_FINAL;
+                const faltaCuenta = completeAdquirente === 'cliente' && !completeCuentaId;
+                const isFormValid = !completing && completeItems.length > 0 && !cfExcede && !faltaCuenta;
                 return (
-                  <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
-                    {consumidorFinalOver50 && (
+                  <div className="pt-3 mt-4 border-t border-digi-border space-y-2">
+                    {cfExcede && (
                       <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
-                        El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${fmt2(invoiceTotal)}. Cambia el tipo de identificacion.
+                        El SRI no admite facturar a consumidor final por más de ${TOPE_CONSUMIDOR_FINAL}.00. El total es ${fmt2(invoiceTotal)}: elige un cliente.
                       </div>
                     )}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={completeSendEmail} onChange={e => setCompleteSendEmail(e.target.checked)} className="accent-[#4B2D8E]" />
                         <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
                       </label>
-                      <div className="flex gap-2">
-                        <button onClick={() => setShowCompleteModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
-                        <button onClick={() => handleComplete(true)} disabled={completing} className="pixel-btn pixel-btn-secondary text-sm disabled:opacity-50" style={pf}>
-                          Completar sin Facturar
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setShowCompleteModal(false)} className={BTN_SECONDARY}>Cancelar</button>
+                        <button onClick={() => handleComplete(true)} disabled={completing} className={BTN_SECONDARY}>
+                          Completar sin facturar
                         </button>
-                        <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                          Completar y Facturar
-                        </button>
+                        <span title={faltaCuenta ? 'Elige el cliente al que se factura' : undefined} className="inline-flex">
+                          <button onClick={() => handleComplete(false)} disabled={!isFormValid} className={BTN_PRIMARY}>
+                            <Receipt className="w-4 h-4" /> Completar y facturar
+                          </button>
+                        </span>
                       </div>
                     </div>
                   </div>

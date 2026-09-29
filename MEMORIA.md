@@ -275,6 +275,20 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧾 «Completar y facturar»: el adquirente se ELIGE, no se escribe (Fernando, 2026-09-29).**
+  Dos opciones: **Cliente** (una cuenta de `billing_clients` COMPLETA —`cuentaFacturable` en
+  `lib/billing-clients.ts`: 04 con 13 dígitos / 05 con 10 / 06 con algo, razón social,
+  dirección y correo—) o **Consumidor final** (deshabilitado por encima de 50 $, regla del SRI,
+  validada también en el servidor). Solo se rellenan forma de pago, moneda y campos
+  adicionales; el detalle va en tabla, una línea por ítem (`components/facturacion/`).
+  - ⚠️ **La API ya no reescribe la ficha del cliente.** Antes `/api/projects/[id]/complete`
+    grababa los datos del formulario encima de `clients` y de su cuenta de facturación, así
+    que facturar a otra razón social le cambiaba el nombre al cliente. Ahora la pantalla manda
+    `adquirente` + `billing_client_id`, el servidor lee la cuenta y la pasa como `comprador` a
+    `createInvoiceFromProject`. Sin `adquirente` (llamadas antiguas) todo sigue como antes.
+  - Una cuenta incompleta NO aparece: se completa en **Clientes** (`/dashboard/clients`). El
+    2026-09-29 había 9 facturables de 13; la de Imadexa (#36) estaba a medias.
+  - ⏳ El ticket y la factura manual siguen con el formulario viejo.
 - **👥 Plazas: mínimo 1, nunca «sin definir» (Fernando, 2026-09-29).** El agente de
   cotizaciones propone `slots` y, si no está seguro, pone 1 (instrucción en
   `services/cotizador-worker/index.mjs`); la web lo guarda con suelo 1 (`normalizeQuotePayload`,
