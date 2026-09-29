@@ -275,6 +275,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **✏️ Título y descripción de un requerimiento se editan también en revisión y completado
+  (Fernando, 2026-09-28).** Lo que se cobra —costo, plazas, talentos, marcar hecho,
+  subtareas y asignaciones— sigue cerrado en esos estados; el texto no mueve nada facturado
+  (la factura guarda su propia copia de cada línea). Cancelado o cerrado: todo bloqueado.
+  - ⚠️ **Agujeros cerrados de paso** en las tres rutas del trabajo de un proyecto
+    (`requirements`, `requirements/items`, `requirements/assign`): solo exigían sesión.
+    Cualquiera —un cliente incluido— podía editar o BORRAR requerimientos ajenos fuera de
+    «en progreso», crear y ACEPTAR asignaciones (fijan lo que se paga a un miembro) y tocar
+    subtareas; y el id no se cruzaba con el proyecto de la URL. Ahora todo pasa por
+    `lib/projects/permisos.ts` (gestor = admin o creador/responsable; asignado = miembro con
+    asignación aceptada en ESE requerimiento). Contraofertar: solo el miembro propuesto.
 - **📋 La lista de proyectos abre en «Cotizaciones», y «Todos» va al final (Fernando,
   2026-09-28)**, debajo de «Completados» (`STATUS_TABS` de `dashboard/projects/page.tsx`). De
   paso: la pestaña «En revisión» filtraba por `in_review`, pero la API graba `review` → salía

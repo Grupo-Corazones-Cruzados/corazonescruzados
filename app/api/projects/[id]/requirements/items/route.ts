@@ -1,36 +1,25 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { esGestorDelProyecto, esAsignadoAlRequerimiento, requerimientoDelProyecto, ESTADOS_CERRADOS } from '@/lib/projects/permisos';
 
+/**
+ * Quién puede tocar las subtareas de un requerimiento (2026-09-28): el gestor del proyecto o
+ * el miembro asignado a ESE requerimiento, en cualquier estado abierto — lo mismo que deja
+ * la pantalla (`canMemberEditReq`). Antes, fuera de «en progreso» no se miraba quién pedía,
+ * y dentro pasaba cualquiera sin ficha de miembro. Ver `lib/projects/permisos.ts`.
+ */
 async function checkItemPermission(user: any, requirementId: number, projectId: string): Promise<string | null> {
+  if (!(await requerimientoDelProyecto(requirementId, projectId))) {
+    return 'El requerimiento no pertenece a este proyecto';
+  }
   const { rows: [proj] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [projectId]);
-  if (['review', 'completed', 'cancelled', 'closed'].includes(proj?.status)) {
+  if (ESTADOS_CERRADOS.includes(proj?.status)) {
     return 'No se pueden modificar tareas en el estado actual del proyecto';
   }
-
-  if (proj?.status === 'in_progress' && user.role !== 'admin') {
-    // Only the assigned member can modify sub-items of their requirement
-    const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
-    if (u?.member_id) {
-      const { rows } = await pool.query(
-        `SELECT 1 FROM gcc_world.requirement_assignments WHERE requirement_id = $1 AND member_id = $2 AND status = 'accepted' LIMIT 1`,
-        [requirementId, u.member_id]
-      );
-      if (rows.length === 0) {
-        // Check if user is project creator
-        await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS created_by_user_id TEXT`);
-        const { rows: [p] } = await pool.query(`SELECT created_by_user_id, assigned_member_id FROM gcc_world.projects WHERE id = $1`, [projectId]);
-        const isCreator = p?.created_by_user_id === user.userId || p?.assigned_member_id == u.member_id;
-        if (!isCreator) return 'Solo el miembro asignado a este requerimiento puede modificar sus tareas';
-      }
-    }
-  }
-  return null;
-}
-
-async function getReqProjectId(requirementId: number): Promise<string | null> {
-  const { rows: [r] } = await pool.query(`SELECT project_id FROM gcc_world.project_requirements WHERE id = $1`, [requirementId]);
-  return r?.project_id || null;
+  if (await esGestorDelProyecto(user, projectId)) return null;
+  if (await esAsignadoAlRequerimiento(user, requirementId)) return null;
+  return 'Solo el responsable del proyecto o el miembro asignado a este requerimiento puede modificar sus tareas';
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -73,7 +62,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (err) return NextResponse.json({ error: err }, { status: 403 });
 
       for (let i = 0; i < body.ordered_ids.length; i++) {
-        await pool.query(`UPDATE gcc_world.requirement_items SET sort_order = $1 WHERE id = $2`, [i, body.ordered_ids[i]]);
+        // Solo subtareas de ESTE requerimiento: el permiso se comprobó sobre él.
+        await pool.query(`UPDATE gcc_world.requirement_items SET sort_order = $1 WHERE id = $2 AND requirement_id = $3`, [i, body.ordered_ids[i], body.requirement_id]);
       }
       return NextResponse.json({ message: 'Reordered' });
     }
@@ -82,10 +72,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.item_id) {
       // Get requirement_id from item to check permission
       const { rows: [item] } = await pool.query(`SELECT requirement_id FROM gcc_world.requirement_items WHERE id = $1`, [body.item_id]);
-      if (item) {
-        const err = await checkItemPermission(user, item.requirement_id, id);
-        if (err) return NextResponse.json({ error: err }, { status: 403 });
-      }
+      if (!item) return NextResponse.json({ error: 'La subtarea no existe' }, { status: 404 });
+      const err = await checkItemPermission(user, item.requirement_id, id);
+      if (err) return NextResponse.json({ error: err }, { status: 403 });
 
       if (body.is_completed !== undefined) {
         await pool.query(
@@ -115,10 +104,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     // Get requirement_id to check permission
     const { rows: [item] } = await pool.query(`SELECT requirement_id FROM gcc_world.requirement_items WHERE id = $1`, [item_id]);
-    if (item) {
-      const err = await checkItemPermission(user, item.requirement_id, id);
-      if (err) return NextResponse.json({ error: err }, { status: 403 });
-    }
+    if (!item) return NextResponse.json({ error: 'La subtarea no existe' }, { status: 404 });
+    const err = await checkItemPermission(user, item.requirement_id, id);
+    if (err) return NextResponse.json({ error: err }, { status: 403 });
 
     await pool.query(`DELETE FROM gcc_world.requirement_items WHERE id = $1`, [item_id]);
     return NextResponse.json({ message: 'Deleted' });

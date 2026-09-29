@@ -2,6 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureRequirementColumns, normalizeTalents, normalizeSlots } from '@/lib/projects/requirements';
+// Quién puede tocar requerimientos: definición única, compartida con subtareas y asignaciones.
+import { esGestorDelProyecto as esGestor, requerimientoDelProyecto } from '@/lib/projects/permisos';
 
 async function syncFinalCost(projectId: string) {
   await pool.query(
@@ -63,6 +65,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (['review', 'completed', 'cancelled', 'closed'].includes(proj?.status)) {
       return NextResponse.json({ error: 'No se pueden agregar requerimientos en el estado actual' }, { status: 400 });
     }
+    if (!(await esGestor(user, id))) {
+      return NextResponse.json({ error: 'Solo el responsable del proyecto puede agregar requerimientos.' }, { status: 403 });
+    }
 
     const body = await req.json();
     const { title, description, cost } = body;
@@ -100,8 +105,36 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!requirement_id) return NextResponse.json({ error: 'requirement_id required' }, { status: 400 });
 
     const { rows: [proj] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [id]);
-    if (['review', 'completed', 'cancelled', 'closed'].includes(proj?.status)) {
+    if (!(await requerimientoDelProyecto(requirement_id, id))) {
+      return NextResponse.json({ error: 'El requerimiento no pertenece a este proyecto.' }, { status: 404 });
+    }
+    if (['cancelled', 'closed'].includes(proj?.status)) {
       return NextResponse.json({ error: 'No se pueden editar requerimientos en el estado actual' }, { status: 400 });
+    }
+
+    /**
+     * ⇒ EN REVISIÓN O COMPLETADO, SOLO EL TEXTO (Fernando, 2026-09-28).
+     *
+     * El bloqueo de estos estados protege lo que se COBRA: costo, plazas, talentos y el
+     * marcado de hecho. El título y la descripción son texto —una factura ya emitida guarda
+     * su propia copia de cada línea—, así que corregirlos no mueve nada facturado.
+     */
+    if (['review', 'completed'].includes(proj?.status)) {
+      const tocaAlgoMas = ['completed', 'cost', 'talents', 'slots'].some((k) => patchBody[k] !== undefined);
+      if (tocaAlgoMas) {
+        return NextResponse.json({ error: 'En este estado solo se pueden cambiar el título y la descripción.' }, { status: 400 });
+      }
+      if (!(await esGestor(user, id))) {
+        return NextResponse.json({ error: 'Solo el responsable del proyecto puede editar este requerimiento.' }, { status: 403 });
+      }
+    } else if (proj?.status !== 'in_progress' && !(await esGestor(user, id))) {
+      // Fuera de «en progreso» (que tiene su regla abajo): el gestor, o el miembro asignado a
+      // ESTE requerimiento, que puede marcarlo hecho — lo mismo que le deja la pantalla.
+      const asignado = await getReqOwnerMemberId(requirement_id);
+      const yo = await getUserMemberId(user.userId);
+      if (!asignado || yo == null || asignado != yo) {
+        return NextResponse.json({ error: 'No puedes editar este requerimiento.' }, { status: 403 });
+      }
     }
 
     // Permission check in in_progress
@@ -176,6 +209,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const { requirement_id } = await req.json();
+    if (!(await requerimientoDelProyecto(requirement_id, id))) {
+      return NextResponse.json({ error: 'El requerimiento no pertenece a este proyecto.' }, { status: 404 });
+    }
+    if (!(await esGestor(user, id))) {
+      return NextResponse.json({ error: 'Solo el responsable del proyecto puede eliminar requerimientos.' }, { status: 403 });
+    }
 
     // In in_progress: cannot delete requirements that have an assigned owner (admins can bypass)
     if (proj?.status === 'in_progress' && user.role !== 'admin') {

@@ -847,14 +847,14 @@ export default function ProjectDetailPage() {
     if (editingReqId == null) return;
     // Quien solo puede tocar subtareas o asignar no guarda datos: esas secciones se aplican
     // al momento, y el botón del pie solo cierra.
-    if (!canEditReqText) { setEditingReqId(null); return; }
+    if (!canEditReqTexto) { setEditingReqId(null); return; }
     const reqId = editingReqId;
     const title = editReqData.title.trim();
     if (!title) { toast.error('El título no puede quedar vacío'); return; }
     const costStr = editReqData.cost.trim();
     const cost = costStr === '' ? null : Number(costStr);
     if (cost != null && !Number.isFinite(cost)) { toast.error('El costo no es válido'); return; }
-    if (editReqData.talents.length === 0) { toast.error('Elige al menos un talento para el requerimiento.'); return; }
+    if (canEditReqText && editReqData.talents.length === 0) { toast.error('Elige al menos un talento para el requerimiento.'); return; }
     const slots = Math.max(1, Math.round(Number(editReqData.slots) || 1));
     const description = editReqData.description.trim() || null;
     const talents = editReqData.talents;
@@ -862,11 +862,16 @@ export default function ProjectDetailPage() {
     try {
       const res = await fetch(`/api/projects/${id}/requirements`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requirement_id: reqId, title, description, cost, talents, slots }),
+        // En revisión o completado solo viaja el texto: la API rechaza lo demás en esos estados.
+        body: JSON.stringify(canEditReqText
+          ? { requirement_id: reqId, title, description, cost, talents, slots }
+          : { requirement_id: reqId, title, description }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || 'No se pudo actualizar');
-      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId ? { ...r, title, description, cost, talents, slots } : r) } : p);
+      setProject((p: any) => p ? { ...p, requirements: (p.requirements || []).map((r: any) => r.id === reqId
+        ? (canEditReqText ? { ...r, title, description, cost, talents, slots } : { ...r, title, description })
+        : r) } : p);
       setEditingReqId(null);
       toast.success('Requerimiento actualizado');
     } catch (e: any) { toast.error(e.message || 'Error'); }
@@ -1084,6 +1089,12 @@ export default function ProjectDetailPage() {
   );
   // Editar texto/costo de un requerimiento: dueño y en un estado que la API permite.
   const canEditReqText = isOwner && !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
+  // Título y descripción: también en revisión y completado (Fernando, 2026-09-28). Lo que se
+  // cobra —costo, plazas, talentos— sigue bloqueado ahí; el texto no mueve nada facturado.
+  const canEditReqTexto = isOwner && !['cancelled', 'closed'].includes(project.status);
+  // El TRABAJO (marcar hecho, subtareas, asignaciones) se cierra en revisión y después: las
+  // APIs lo rechazan, así que la pantalla lo enseña pero no deja pulsarlo.
+  const trabajoAbierto = !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
   const hasReqs = reqs.length > 0;
   // Images: visible when project is not draft; editable by owner or accepted participant
   // En 'cotizacion' se ocultan las imágenes del proyecto (aún no aprobado por el cliente).
@@ -1547,7 +1558,7 @@ export default function ProjectDetailPage() {
                 {reqs.map((r: any) => {
                   const assignments = r.assignments || [];
                   const items = r.items || [];
-                  const canEditThis = canMemberEditReq(r.id);
+                  const canEditThis = canMemberEditReq(r.id) && trabajoAbierto;
                   const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
                   const pendingAssignments = assignments.filter((a: any) => a.status !== 'accepted');
                   const expanded = expandedReqs.has(r.id);
@@ -1603,7 +1614,7 @@ export default function ProjectDetailPage() {
                                 los miembros y las subtareas; por eso lo ve también quien solo
                                 puede tocar las subtareas (el miembro asignado). */}
                             <ActionsMenu lado="izquierda" label="Acciones del requerimiento" items={[
-                              ...((canEditReqText || canManageThis || canEditThis) ? [{ label: 'Editar', icon: Pencil, onClick: () => startEditReq(r) }] : []),
+                              ...((canEditReqTexto || canManageThis || canEditThis) ? [{ label: 'Editar', icon: Pencil, onClick: () => startEditReq(r) }] : []),
                               // Se VE siempre para quien administra el proyecto, pero BLOQUEADO cuando la
                               // API no lo acepta —en revisión, completado, cancelado o cerrado—
                               // (Fernando, 2026-09-28): así se sabe que existe y por qué no se puede.
@@ -1649,14 +1660,14 @@ export default function ProjectDetailPage() {
                                 <span className="text-[12px] text-digi-text" style={mf}>{a.member_name}</span>
                                 <span className="text-[11px] text-digi-muted" style={mf}>Propuesto ${a.proposed_cost}{a.member_cost != null && ` → contra $${a.member_cost}`}</span>
                                 <PixelBadge variant={a.status === 'counter' ? 'warning' : a.status === 'rejected' ? 'error' : 'info'}>{a.status === 'counter' ? 'Contraoferta' : a.status === 'rejected' ? 'Rechazada' : 'Propuesta'}</PixelBadge>
-                                {a.status === 'proposed' && a.member_id == memberId && (
+                                {trabajoAbierto && a.status === 'proposed' && a.member_id == memberId && (
                                   <div className="flex items-center gap-1.5 ml-auto">
                                     <input value={counterCosts[a.id] || ''} onChange={(e) => setCounterCosts(prev => ({ ...prev, [a.id]: e.target.value }))} placeholder="Tu costo" type="number"
                                       className="field-control w-20 px-2 py-1 bg-white border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                                     <button onClick={() => submitCounter(a.id)} className="text-[12px] font-medium text-accent border border-accent/40 rounded px-2 py-1 hover:bg-accent-light transition-colors" style={mf}>Enviar</button>
                                   </div>
                                 )}
-                                {a.status === 'counter' && isOwner && (
+                                {trabajoAbierto && a.status === 'counter' && isOwner && (
                                   <div className="flex gap-1.5 ml-auto">
                                     <button onClick={() => resolveAssignment(a.id, 'accept')} className="inline-flex items-center gap-1 text-[12px] font-medium text-white bg-green-600 rounded px-2 py-1 hover:bg-green-700 transition-colors" style={mf}><Check className="w-3.5 h-3.5" /> Aceptar</button>
                                     <button onClick={() => resolveAssignment(a.id, 'reject')} className="inline-flex items-center gap-1 text-[12px] font-medium text-red-600 border border-red-300 rounded px-2 py-1 hover:bg-red-50 transition-colors" style={mf}><X className="w-3.5 h-3.5" /> Rechazar</button>
@@ -2779,8 +2790,8 @@ export default function ProjectDetailPage() {
       {(() => {
         const r = reqs.find((x: any) => x.id === editingReqId);
         const items = r?.items || [];
-        const puedeSubtareas = r ? canMemberEditReq(r.id) : false;
-        const puedeAsignar = !!(isOwner && (isAdmin || project.confirmed_at || isMemberCreator));
+        const puedeSubtareas = r ? canMemberEditReq(r.id) && trabajoAbierto : false;
+        const puedeAsignar = !!(isOwner && (isAdmin || project.confirmed_at || isMemberCreator)) && trabajoAbierto;
         const aceptados = (r?.assignments || []).filter((a: any) => a.status === 'accepted');
         const candidatos = bids.filter((b: any) => b.status === 'accepted');
         const tituloSeccion = 'text-[10px] font-semibold text-digi-muted uppercase tracking-wide';
@@ -2796,10 +2807,10 @@ export default function ProjectDetailPage() {
             onClose={() => { setEditingReqId(null); setEditingItemId(null); }}
             onSave={saveReqEdit}
             saving={savingReqEdit}
-            saveLabel={canEditReqText ? 'Guardar' : 'Listo'}
-            canSave={!canEditReqText || (!!editReqData.title.trim() && editReqData.talents.length > 0)}
+            saveLabel={canEditReqTexto ? 'Guardar' : 'Listo'}
+            canSave={!canEditReqTexto || (!!editReqData.title.trim() && (!canEditReqText || editReqData.talents.length > 0))}
           >
-            {canEditReqText ? (<>
+            {canEditReqTexto ? (<>
               <EditField label="Título">
                 <input value={editReqData.title} onChange={(e) => setEditReqData((d) => ({ ...d, title: e.target.value }))}
                   autoFocus placeholder="Título del requerimiento" className={EDIT_INPUT} style={mf} />
@@ -2808,6 +2819,7 @@ export default function ProjectDetailPage() {
                 <textarea value={editReqData.description} onChange={(e) => setEditReqData((d) => ({ ...d, description: e.target.value }))}
                   rows={4} placeholder="Descripción detallada… (opcional)" className={`${EDIT_INPUT} resize-y`} style={mf} />
               </EditField>
+              {canEditReqText ? (<>
               <div className="grid grid-cols-2 gap-3">
                 <EditField label="Costo ($)">
                   <input value={editReqData.cost} onChange={(e) => setEditReqData((d) => ({ ...d, cost: e.target.value }))}
@@ -2826,6 +2838,15 @@ export default function ProjectDetailPage() {
                   placeholder="Busca el talento que necesita este requerimiento…"
                 />
               </EditField>
+              </>) : r && (
+                // En revisión o completado lo que se cobra no se toca: se enseña, no se edita.
+                <div className="rounded-md bg-black/[0.03] px-3 py-2 text-[12px] space-y-1" style={mf}>
+                  <div className="flex justify-between gap-3"><span className="text-digi-muted">Costo</span><span className="tabular-nums text-digi-text">{r.cost != null ? `$${fmt2(Number(r.cost))}` : '—'}</span></div>
+                  <div className="flex justify-between gap-3"><span className="text-digi-muted">Plazas</span><span className="text-digi-text">{r.slots ?? 'sin definir'}</span></div>
+                  <div className="flex justify-between gap-3"><span className="text-digi-muted shrink-0">Talentos</span><span className="text-digi-text text-right">{(r.talents || []).join(', ') || '—'}</span></div>
+                  <p className="text-[11px] text-digi-muted pt-1">Costo, plazas y talentos no se cambian con el proyecto en este estado.</p>
+                </div>
+              )}
             </>) : (
               <div>
                 <p className="text-[13px] font-semibold text-digi-text" style={mf}>{r?.title}</p>
@@ -2834,7 +2855,7 @@ export default function ProjectDetailPage() {
             )}
 
             {/* ── Miembros ─────────────────────────────────────────────────────────── */}
-            {(puedeAsignar || aceptados.length > 0) && (
+            {(puedeAsignar || aceptados.length > 0 || !trabajoAbierto) && (
               <div className="pt-3 border-t border-digi-border space-y-2">
                 <p className={tituloSeccion} style={pf}>Miembros ({aceptados.length})</p>
                 {aceptados.length > 0 ? (
@@ -2888,6 +2909,9 @@ export default function ProjectDetailPage() {
             {r && (
               <div className="pt-3 border-t border-digi-border space-y-2">
                 <p className={tituloSeccion} style={pf}>Subtareas ({items.length})</p>
+                {!trabajoAbierto && (
+                  <p className="text-[11px] text-digi-muted" style={mf}>Con el proyecto en este estado, las subtareas y los miembros ya no se cambian.</p>
+                )}
                 <div className="space-y-0.5">
                   {items.length > 0 ? items.map((item: any) => (
                     <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-black/[0.03]">

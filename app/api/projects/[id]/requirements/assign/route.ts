@@ -1,6 +1,14 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+// ⚠️ Antes ninguna de estas llamadas miraba quién pedía: cualquiera con sesión podía crear
+// y ACEPTAR asignaciones, que es lo que fija cuánto se le paga a un miembro (2026-09-28).
+import { esGestorDelProyecto, miembroDe, requerimientoDelProyecto, ESTADOS_CERRADOS } from '@/lib/projects/permisos';
+
+async function proyectoCerrado(projectId: string): Promise<boolean> {
+  const { rows: [p] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [projectId]);
+  return !p || ESTADOS_CERRADOS.includes(p.status);
+}
 
 async function syncFinalCost(projectId: string) {
   await pool.query(
@@ -40,6 +48,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const { requirement_id, member_id, proposed_cost } = await req.json();
 
+    // Asignar es del gestor del proyecto, sobre un requerimiento SUYO y con el proyecto abierto.
+    if (!(await requerimientoDelProyecto(requirement_id, id))) {
+      return NextResponse.json({ error: 'El requerimiento no pertenece a este proyecto.' }, { status: 404 });
+    }
+    if (await proyectoCerrado(id)) {
+      return NextResponse.json({ error: 'No se pueden asignar miembros en el estado actual del proyecto.' }, { status: 400 });
+    }
+    if (!(await esGestorDelProyecto(user, id))) {
+      return NextResponse.json({ error: 'Solo el responsable del proyecto puede asignar miembros.' }, { status: 403 });
+    }
+
     const userRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
     const callerMemberId = userRes.rows[0]?.member_id;
     const isSelfAssign = callerMemberId != null && Number(callerMemberId) === Number(member_id);
@@ -64,6 +83,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
     const { assignment_id, action, member_cost } = await req.json();
+
+    // La asignación tiene que ser de ESTE proyecto, y el proyecto seguir abierto.
+    const { rows: [asig] } = await pool.query(
+      `SELECT member_id FROM gcc_world.requirement_assignments WHERE id = $1 AND project_id = ($2)::bigint`,
+      [assignment_id, id],
+    );
+    if (!asig) return NextResponse.json({ error: 'La asignación no existe en este proyecto.' }, { status: 404 });
+    if (await proyectoCerrado(id)) {
+      return NextResponse.json({ error: 'No se pueden cambiar asignaciones en el estado actual del proyecto.' }, { status: 400 });
+    }
+    // Contraofertar es del miembro al que va la asignación; aceptar o rechazar, del gestor.
+    if (action === 'counter') {
+      const yo = await miembroDe(user.userId);
+      if (yo == null || Number(asig.member_id) !== yo) {
+        return NextResponse.json({ error: 'Solo el miembro propuesto puede contraofertar.' }, { status: 403 });
+      }
+    } else if (!(await esGestorDelProyecto(user, id))) {
+      return NextResponse.json({ error: 'Solo el responsable del proyecto puede aceptar o rechazar.' }, { status: 403 });
+    }
 
     if (action === 'counter') {
       await pool.query(

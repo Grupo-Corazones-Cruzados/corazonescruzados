@@ -3910,6 +3910,9 @@ mientras se escribe.
   - A la derecha: precio · **expandir** · **⋯** (`ActionsMenu lado="izquierda"`). El menú lleva
     **Editar** y **Eliminar**; Eliminar se ve siempre para quien administra, pero **bloqueado**
     (con `hint` al pasar el ratón) cuando la API no lo permite. Eliminar pide `PixelConfirm`.
+  - En revisión/completado la ventana deja editar **título y descripción**; costo, plazas y
+    talentos se enseñan en una caja de solo lectura, y miembros y subtareas sin controles, con
+    una línea que lo explica.
   - **Una sola ventana** (`EditPanel`) con tres secciones: datos (se guardan con el pie),
     **Miembros** (asignar se aplica al momento) y **Subtareas** (marcar, editar EN SU FILA,
     borrar, añadir). Se eliminaron las ventanas «Asignar miembro», «Subtareas» y la ventanita
