@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
-import { upsertBillingForClient } from '@/lib/billing-clients';
+import { upsertBillingForClient, cuentaFacturable, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
 import { getTicketPayments } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
@@ -17,6 +17,7 @@ async function ensureTicketPublicTokenColumns() {
 }
 
 export async function POST(req: NextRequest) {
+  let cuerpo: any = {};
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -26,10 +27,41 @@ export async function POST(req: NextRequest) {
       skip_invoice,
       is_abono,
       invoice_items: rawItems,
-      client_id_type, client_name, client_ruc, client_email,
-      client_phone, client_address, payment_code,
+      payment_code,
       additional_fields, send_email, currency, exchange_rate,
-    } = await req.json();
+      adquirente, billing_client_id,
+    } = await req.json().then((b: any) => (cuerpo = b));
+    let { client_id_type, client_name, client_ruc, client_email, client_phone, client_address } = cuerpo;
+
+    /**
+     * ⇒ EL ADQUIRENTE SE ELIGE, NO SE ESCRIBE (Fernando, 2026-09-29) — igual que en el proyecto.
+     * Con `adquirente` los datos del comprador se leen AQUÍ de la cuenta elegida (no se aceptan
+     * del navegador) y la cuenta del cliente del ticket NO se reescribe: antes el formulario
+     * mandaba los datos sueltos y esta ruta los grababa encima de ella. Se valida antes de
+     * tocar nada. Sin `adquirente` (llamadas antiguas) todo sigue como estaba.
+     */
+    const bodyAdquirente = adquirente === 'cliente' || adquirente === 'consumidor_final' ? adquirente : null;
+    if (bodyAdquirente && !skip_invoice) {
+      if (bodyAdquirente === 'consumidor_final') {
+        const totalItems = (Array.isArray(rawItems) ? rawItems : []).reduce((s: number, it: any) => {
+          const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
+          return s + base + base * ((Number(it.ivaRate) || 0) / 100);
+        }, 0);
+        if (totalItems > 50) {
+          return NextResponse.json({ error: 'El SRI no admite facturar a consumidor final por más de $50.00: elige un cliente.' }, { status: 400 });
+        }
+        client_id_type = '07'; client_ruc = CONSUMIDOR_FINAL_RUC; client_name = 'CONSUMIDOR FINAL';
+        client_email = ''; client_phone = ''; client_address = '';
+      } else {
+        const { rows: [bc] } = await pool.query(`SELECT * FROM gcc_world.billing_clients WHERE id = $1`, [Number(billing_client_id) || 0]);
+        if (!bc) return NextResponse.json({ error: 'La cuenta de facturación elegida no existe.' }, { status: 400 });
+        if (!cuentaFacturable(bc)) {
+          return NextResponse.json({ error: 'A esa cuenta de facturación le faltan datos (identificación, dirección o correo). Complétala antes de facturar.' }, { status: 400 });
+        }
+        client_id_type = bc.id_type; client_ruc = bc.ruc; client_name = bc.name;
+        client_email = bc.email || ''; client_phone = bc.phone || ''; client_address = bc.address || '';
+      }
+    }
 
     if (!ticket_id) return NextResponse.json({ error: 'ticket_id requerido' }, { status: 400 });
 
@@ -106,7 +138,8 @@ export async function POST(req: NextRequest) {
     // (para prellenar las próximas facturas del mismo cliente).
     try {
       await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [ticket.client_id, invoiceId]);
-      await upsertBillingForClient(ticket.client_id, {
+      // Con el formulario nuevo la cuenta ya existe y se eligió: no se reescribe.
+      if (!bodyAdquirente) await upsertBillingForClient(ticket.client_id, {
         id_type: client_id_type, ruc: client_ruc, name: client_name,
         email: client_email, phone: client_phone, address: client_address,
       });

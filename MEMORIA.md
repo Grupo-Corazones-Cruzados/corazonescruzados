@@ -288,7 +288,9 @@ Stack estándar de la casa, con particularidades de este repo:
     `createInvoiceFromProject`. Sin `adquirente` (llamadas antiguas) todo sigue como antes.
   - Una cuenta incompleta NO aparece: se completa en **Clientes** (`/dashboard/clients`). El
     2026-09-29 había 9 facturables de 13; la de Imadexa (#36) estaba a medias.
-  - ⏳ El ticket y la factura manual siguen con el formulario viejo.
+  - 2026-09-29: el **ticket** ya usa el mismo formulario y `/api/invoices/from-ticket` acepta
+    `adquirente` + `billing_client_id` igual (no reescribe la cuenta del cliente). ⏳ Queda la
+    factura manual (`invoices/page.tsx`) con el formulario viejo.
 - **👥 Plazas: mínimo 1, nunca «sin definir» (Fernando, 2026-09-29).** El agente de
   cotizaciones propone `slots` y, si no está seguro, pone 1 (instrucción en
   `services/cotizador-worker/index.mjs`); la web lo guarda con suelo 1 (`normalizeQuotePayload`,

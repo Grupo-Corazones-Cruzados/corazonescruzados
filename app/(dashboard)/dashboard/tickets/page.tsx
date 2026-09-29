@@ -523,12 +523,6 @@ export default function TicketsPage() {
             <MultiSelectSearch options={TALENT_OPTIONS} selected={form.required_talents}
               onChange={(vals) => setForm({ ...form, required_talents: vals })}
               placeholder="Talentos que requiere la tarea…" />
-            {form.required_talents.length === 0 && (
-              <p className="text-[10.5px] text-amber-600" style={mf}>
-                Elige al menos un talento: es lo que clasifica el ticket y lo hace aparecer
-                en la web dentro de su solución.
-              </p>
-            )}
           </div>
 
           {/* Servicio: solo al crear un ticket propio, no al solicitarlo. */}
@@ -569,11 +563,6 @@ export default function TicketsPage() {
                   {/* El selector de talentos ya NO vive aquí: subió a campo propio del
                       ticket, porque desde el 2026-08-18 se pide siempre. Lo que queda es
                       recordar que en esta opción, además, decide quién puede tomarlo. */}
-                  {form.request_option === 'talent' && (
-                    <p className="pt-1 px-2 text-[10.5px] text-digi-muted" style={mf}>
-                      Lo tomará el primer miembro que tenga alguno de los talentos del ticket.
-                    </p>
-                  )}
                 </div>
               </div>
             ) : (
@@ -623,7 +612,6 @@ export default function TicketsPage() {
                     placeholder="correo@cliente.com"
                     className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
                 )}
-                <p className="text-[10.5px] text-digi-muted/80 mt-1" style={mf}>Si el correo no tiene cuenta, se registra y se le invita a crearla.</p>
               </div>
             )}
           </div>
@@ -644,28 +632,28 @@ export default function TicketsPage() {
           {/* Time slots */}
           {(user?.role === 'member' || user?.role === 'admin') && (
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <label className="field-label text-[10px] text-accent-glow opacity-70 block" style={df}>
-                  Días de trabajo {user?.role === 'member' ? '*' : ''}
-                </label>
-                {!form.deadline && <p className="text-[11px] text-amber-600 mt-0.5" style={mf}>Primero elige la fecha límite</p>}
-                {form.deadline && selectedDates.length > 0 && (
-                  <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selectedDates.length} día(s) seleccionados</p>
-                )}
-              </div>
-              <button type="button"
-                onClick={() => { setSelectedDates(prev => prev.filter(d => d <= form.deadline)); setSlotsModal(true); }}
-                disabled={!form.deadline}
-                className="text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0" style={mf}>
-                {selectedDates.length > 0 ? 'Editar días' : 'Seleccionar días'}
-              </button>
+              <label className="field-label text-[10px] text-accent-glow opacity-70 block" style={df}>
+                Días de trabajo {user?.role === 'member' ? '*' : ''}
+              </label>
+              {/* Sin notas debajo (Fernando, 2026-09-29): sin fecha límite el botón se ve
+                  deshabilitado con el porqué al pasar el ratón; los días elegidos, en su texto. */}
+              <span title={!form.deadline ? 'Primero elige la fecha límite' : undefined} className="inline-flex shrink-0">
+                <button type="button"
+                  onClick={() => { setSelectedDates(prev => prev.filter(d => d <= form.deadline)); setSlotsModal(true); }}
+                  disabled={!form.deadline}
+                  className="text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}>
+                  {selectedDates.length > 0 ? `Editar días (${selectedDates.length})` : 'Seleccionar días'}
+                </button>
+              </span>
             </div>
           )}
 
-          <button onClick={handleCreate} disabled={creating || !form.title.trim()}
-            className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-            {creating ? 'Creando...' : 'Crear ticket'}
-          </button>
+          {/* Acción abajo a la derecha, no a todo el ancho (regla de disposición). */}
+          <div className="flex justify-end pt-3 border-t border-digi-border">
+            <button onClick={handleCreate} disabled={creating || !form.title.trim()} className={BTN_PRIMARY}>
+              {creating ? 'Creando…' : 'Crear ticket'}
+            </button>
+          </div>
         </div>
       </PixelModal>
 
@@ -734,9 +722,11 @@ export default function TicketsPage() {
                 </div>
               )}
 
-              <button onClick={() => setSlotsModal(false)} className="pixel-btn pixel-btn-primary w-full">
-                Confirmar ({selectedDates.length} días)
-              </button>
+              <div className="flex justify-end pt-2">
+                <button onClick={() => setSlotsModal(false)} className={BTN_PRIMARY}>
+                  Confirmar ({selectedDates.length} días)
+                </button>
+              </div>
             </div>
           );
         })()}

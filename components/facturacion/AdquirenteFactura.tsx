@@ -1,6 +1,7 @@
 'use client';
 
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import Segmentado from '@/components/ui/Segmentado';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -42,22 +43,18 @@ export default function AdquirenteFactura({
   const cfBloqueado = total > TOPE_CONSUMIDOR_FINAL;
   const cuenta = cuentas.find((c) => String(c.id) === cuentaId) || null;
 
-  const opcion = (m: ModoAdquirente, texto: string, deshabilitada = false, porque?: string) => (
-    <button type="button" onClick={() => !deshabilitada && onModo(m)} disabled={deshabilitada} title={porque}
-      aria-pressed={modo === m}
-      className={`flex-1 px-3 py-1.5 text-[12.5px] font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-        modo === m ? 'bg-accent text-white' : 'text-digi-text enabled:hover:bg-black/[0.04]'}`} style={mf}>
-      {texto}
-    </button>
-  );
-
   return (
     <div className="space-y-2">
-      <div className="flex gap-1 p-1 rounded-lg border border-digi-border bg-digi-card max-w-sm">
-        {opcion('cliente', 'Cliente')}
-        {opcion('consumidor_final', 'Consumidor final', cfBloqueado,
-          cfBloqueado ? `El SRI no admite facturar a consumidor final por más de $${TOPE_CONSUMIDOR_FINAL}.00` : undefined)}
-      </div>
+      <Segmentado<ModoAdquirente>
+        etiqueta="Adquirente"
+        valor={modo}
+        onChange={onModo}
+        opciones={[
+          { valor: 'cliente', texto: 'Cliente' },
+          { valor: 'consumidor_final', texto: 'Consumidor final', deshabilitada: cfBloqueado,
+            porque: `El SRI no admite facturar a consumidor final por más de $${TOPE_CONSUMIDOR_FINAL}.00` },
+        ]}
+      />
 
       {modo === 'cliente' && (
         <>

@@ -10,11 +10,16 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
-import { EditPanel } from '@/components/ui/EditDialog';
+import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
+import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL } from '@/components/facturacion/AdquirenteFactura';
+import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
+import Segmentado from '@/components/ui/Segmentado';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock } from 'lucide-react';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
@@ -57,6 +62,8 @@ export default function TicketDetailPage() {
   const [ticket, setTicket] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
   const [linkAbierto, setLinkAbierto] = useState(false);
+  // Alto de las tres columnas del detalle: hasta el pie de la pantalla, como en el proyecto.
+  const altoColumnas = useAltoHastaElPie({ minimo: 520 });
   const [loading, setLoading] = useState(true);
   const [bids, setBids] = useState<any[]>([]);
   const [proposalText, setProposalText] = useState('');
@@ -114,6 +121,11 @@ export default function TicketDetailPage() {
   const [completePaymentCode, setCompletePaymentCode] = useState('20');
   const [completeItems, setCompleteItems] = useState<{ description: string; quantity: string; unitPrice: string; ivaRate: string; discount: string }[]>([]);
   const [completeAdditionalFields, setCompleteAdditionalFields] = useState<{ name: string; value: string }[]>([]);
+  // ⇒ El adquirente se ELIGE (Fernando, 2026-09-29), igual que en el proyecto.
+  const [completeAdquirente, setCompleteAdquirente] = useState<ModoAdquirente>('cliente');
+  const [completeCuentaId, setCompleteCuentaId] = useState('');
+  const [cuentasFacturables, setCuentasFacturables] = useState<CuentaFacturable[]>([]);
+  const [cargandoCuentas, setCargandoCuentas] = useState(false);
   const [completeSendEmail, setCompleteSendEmail] = useState(true);
   const [completeCurrency, setCompleteCurrency] = useState('USD');
   const [completeExchangeRate, setCompleteExchangeRate] = useState('1');
@@ -287,30 +299,21 @@ export default function TicketDetailPage() {
   const openCompleteModal = async () => {
     // Fase 2: para facturar, el ticket debe tener un cliente asignado.
     if (!ticket?.client_id) { toast.error('Asigna un cliente al ticket antes de facturar (edítalo y elige el cliente).'); return; }
-    // Prellenado por defecto desde los datos del cliente del ticket.
-    const ruc = ticket?.client_ruc || '';
-    setCompleteClientName(ticket?.client_name || 'CONSUMIDOR FINAL');
-    setCompleteClientRuc(ruc || '9999999999999');
-    setCompleteClientEmail(ticket?.client_email || '');
-    setCompleteClientPhone(ticket?.client_phone || '');
-    setCompleteClientAddress(ticket?.client_address || '');
-    if (ruc.length === 13 && ruc.endsWith('001')) setCompleteIdType('04');
-    else if (ruc.length === 10) setCompleteIdType('05');
-    else if (ruc.length > 0) setCompleteIdType('06');
-    else setCompleteIdType('07');
-    // Si el cliente ya tiene cuenta de facturación, se prellena desde ahí (editable).
-    try {
-      const r = await fetch(`/api/billing-clients?portal_client_id=${ticket.client_id}`);
-      const { data: bc } = await r.json();
-      if (bc) {
-        setCompleteIdType(bc.id_type || '07');
-        setCompleteClientRuc(bc.ruc || '9999999999999');
-        setCompleteClientName(bc.name || 'CONSUMIDOR FINAL');
-        setCompleteClientEmail(bc.email || '');
-        setCompleteClientPhone(bc.phone || '');
-        setCompleteClientAddress(bc.address || '');
-      }
-    } catch { /* sin cuenta de facturación → se llena a mano */ }
+    // Las cuentas con las que se puede facturar tal cual; se preselecciona la del cliente del
+    // ticket si la tiene completa. Ver `cuentaFacturable` en lib/billing-clients.ts.
+    setCompleteAdquirente('cliente');
+    setCompleteCuentaId('');
+    setCargandoCuentas(true);
+    fetch('/api/billing-clients?facturables=1')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        const lista: CuentaFacturable[] = Array.isArray(data) ? data : [];
+        setCuentasFacturables(lista);
+        const propia = lista.find((c) => Number(c.portal_client_id) === Number(ticket.client_id));
+        if (propia) { setCompleteCuentaId(String(propia.id)); setCompleteClientEmail(propia.email || ''); }
+      })
+      .catch(() => setCuentasFacturables([]))
+      .finally(() => setCargandoCuentas(false));
     setCompletePaymentCode('20');
     setCompleteCurrency('USD');
     setCompleteExchangeRate('1');
@@ -348,12 +351,9 @@ export default function TicketDetailPage() {
           skip_invoice: skipInvoice,
           is_abono: useAbono,
           send_email: completeSendEmail,
-          client_id_type: completeIdType,
-          client_name: completeClientName,
-          client_ruc: completeClientRuc,
-          client_email: completeClientEmail,
-          client_phone: completeClientPhone,
-          client_address: completeClientAddress,
+          // El comprador lo arma el servidor desde la cuenta elegida: aquí solo va QUÉ se eligió.
+          adquirente: completeAdquirente,
+          billing_client_id: completeAdquirente === 'cliente' ? Number(completeCuentaId) || null : null,
           payment_code: completePaymentCode,
           invoice_items: (useAbono ? abonoItems : completeItems).map(it => ({
             description: it.description,
@@ -383,7 +383,7 @@ export default function TicketDetailPage() {
         'Ticket completado' +
         (skipInvoice ? ' (sin factura)' : (data.invoiceId ? ' — Factura generada' : '')) +
         (!skipInvoice && sriOk ? ' y autorizada por el SRI' : '') +
-        (!skipInvoice && completeSendEmail && completeClientEmail && sriOk ? ' — Enviada por correo' : '')
+        (!skipInvoice && completeSendEmail && completeAdquirente === 'cliente' && sriOk ? ' — Enviada por correo' : '')
       );
       if (sriError && !sriOk) toast.error(`SRI: ${sriError}`);
 
@@ -672,13 +672,19 @@ export default function TicketDetailPage() {
         )}
         actions={(
           <>
+            {/* ⇒ SOLO ICONOS, como en el proyecto (Fernando, 2026-09-29). Nombre en title/aria-label. */}
             {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
-              <button onClick={() => updateStatus('confirmed')} className={BTN_PRIMARY}><Check className="w-4 h-4" /> Confirmar</button>
+              <button onClick={() => updateStatus('confirmed')} className={BTN_ICONO_PRIMARIO} title="Confirmar" aria-label="Confirmar"><Check className="w-4 h-4" /></button>
+            )}
+            {/* El enlace de pago, a la izquierda de «Completar y facturar» —las dos formas de
+                cobrar van juntas—. Estaba al pie de la tarjeta de Pagos. */}
+            {!esClienteDelTicket && ticket.status === 'completed' && Number(payments?.pending || 0) > 0 && (
+              <button onClick={abrirEnlacePagoTicket} className={BTN_ICONO_ACENTO} title="Compartir enlace de pago" aria-label="Compartir enlace de pago"><Share2 className="w-4 h-4" /></button>
             )}
             {canCompleteTicket && (
-              <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>
+              <button onClick={openCompleteModal} className={BTN_ICONO_PRIMARIO} title="Completar y facturar" aria-label="Completar y facturar"><Receipt className="w-4 h-4" /></button>
             )}
-            {canEdit && <button onClick={startEdit} className={`${BTN_SECONDARY} h-11 sm:h-auto`}><Pencil className="w-3.5 h-3.5" /> Editar</button>}
+            {canEdit && <button onClick={startEdit} className={BTN_ICONO_SECUNDARIO} title="Editar" aria-label="Editar"><Pencil className="w-4 h-4" /></button>}
           </>
         )}
         overflow={[
@@ -708,10 +714,15 @@ export default function TicketDetailPage() {
 
 
       {/* ========== VIEW MODE — panel unificado (sin pestañas) + property rail ========== */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
+      {/* ⇒ LAS TRES COLUMNAS MIDEN HASTA EL PIE y cada una se desplaza por dentro, igual que en
+          el detalle del proyecto (Fernando, 2026-09-29). Solo desde `lg`; en el teléfono se
+          apilan y la página se desplaza como siempre. */}
+      <div ref={altoColumnas.ref}
+        style={altoColumnas.style ? ({ '--alto-columnas': `${altoColumnas.style.height}px` } as React.CSSProperties) : undefined}
+        className="flex flex-col lg:flex-row gap-4 items-start lg:items-stretch lg:h-[var(--alto-columnas)]">
           {/* ── IZQUIERDA: Días de trabajo ── */}
-          <aside className="w-full lg:w-[300px] shrink-0 order-2 lg:order-1">
-            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 lg:sticky lg:top-4">
+          <aside className="w-full lg:w-[300px] shrink-0 order-2 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
                   <CalendarDays className="w-4 h-4 text-accent" /> Días de trabajo
@@ -744,7 +755,7 @@ export default function TicketDetailPage() {
           </aside>
 
           {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
-          <div className="flex-1 min-w-0 w-full space-y-4 order-1 lg:order-2">
+          <div className="flex-1 min-w-0 w-full space-y-4 order-1 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             {ticket.open_for_talent && (
               <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -879,19 +890,22 @@ export default function TicketDetailPage() {
                         )}
                       </div>
 
-                      {canManageActions && (
-                        estimated <= 0 ? (
-                          <p className="text-[11px] text-amber-600 pt-2" style={mf}>Define un costo estimado en el ticket para registrar acciones.</p>
-                        ) : budgetExhausted ? (
-                          <p className="text-[11px] text-amber-600 pt-2" style={mf}>Presupuesto agotado. No puedes agregar más acciones.</p>
-                        ) : (
+                      {/* ⇒ SIN NOTAS DE AYUDA (Fernando, 2026-09-29): si no se puede registrar
+                          —sin costo estimado o sin presupuesto—, el formulario se ve DESHABILITADO
+                          y el porqué sale al pasar el ratón por «Agregar». */}
+                      {canManageActions && (() => {
+                        const bloqueo = estimated <= 0 ? 'Define un costo estimado en el ticket para registrar acciones'
+                          : budgetExhausted ? 'Presupuesto agotado: no se pueden agregar más acciones' : '';
+                        return (
                           <div className="border-t border-digi-border pt-3 mt-2 flex flex-col sm:flex-row gap-2 sm:items-end">
-                            <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." /></div>
-                            <div className="w-full sm:w-36"><PixelInput label={`Costo (máx $${fmt2(remaining)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" /></div>
-                            <button onClick={handleAddAction} disabled={savingAction || !actionForm.description.trim() || !actionForm.cost} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">{savingAction ? '...' : 'Agregar'}</button>
+                            <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." disabled={!!bloqueo} /></div>
+                            <div className="w-full sm:w-36"><PixelInput label={bloqueo ? 'Costo' : `Costo (máx $${fmt2(remaining)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" disabled={!!bloqueo} /></div>
+                            <span title={bloqueo || undefined} className="inline-flex shrink-0">
+                              <button onClick={handleAddAction} disabled={!!bloqueo || savingAction || !actionForm.description.trim() || !actionForm.cost} className={BTN_PRIMARY}>{savingAction ? '…' : 'Agregar'}</button>
+                            </span>
                           </div>
-                        )
-                      )}
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -919,9 +933,6 @@ export default function TicketDetailPage() {
                   <div className="bg-accent-light border border-accent/20 rounded-lg p-3 text-[12px] text-digi-text" style={mf}>
                     Ya enviaste tu propuesta{myBid.status === 'accepted' ? ' y fue aceptada ✓' : myBid.status === 'rejected' ? ' (no fue seleccionada).' : ' — a la espera de que el cliente decida.'}
                   </div>
-                )}
-                {!isOwner && !canBid && !myBid && (
-                  <p className="text-[11px] text-digi-muted" style={mf}>Solo miembros pueden postularse a este ticket.</p>
                 )}
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-digi-border">
@@ -957,7 +968,7 @@ export default function TicketDetailPage() {
             )}
           </div>
 
-          <div className="w-full lg:w-[300px] shrink-0 order-3">
+          <div className="w-full lg:w-[300px] shrink-0 order-3 lg:min-h-0 lg:overflow-y-auto">
           <PropertyRail
             items={[
               { label: 'Cliente', value: ticket.client_name || '-' },
@@ -974,7 +985,6 @@ export default function TicketDetailPage() {
             }} />
 
             {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
-              const pct = payments.total > 0 ? Math.min(100, (payments.invoiced / payments.total) * 100) : 0;
               return (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
                   <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Pagos</h3>
@@ -983,7 +993,7 @@ export default function TicketDetailPage() {
                     <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(payments.invoiced)}</span></div>
                     <div className="flex justify-between"><span className="text-digi-muted">Pendiente</span><span className={`tabular-nums ${payments.pending > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(payments.pending)}</span></div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden my-2"><div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} /></div>
+                  {/* Sin barra de «% facturado» (Fernando, 2026-09-29), como en el proyecto. */}
                   {(payments.invoices || []).length > 0 && (
                     <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
                       {payments.invoices.map((inv: any) => (
@@ -1000,23 +1010,15 @@ export default function TicketDetailPage() {
 
                   {/* COBRO EN LÍNEA. Solo con saldo pendiente y el ticket completado: cobrar
                       por un trabajo sin entregar es justo lo que evita facturar por etapas. */}
-                  {Number(payments.pending) > 0 && ticket?.status === 'completed' && (
+                  {/* El cliente paga desde aquí; el enlace de pago del equipo está en la cabecera. */}
+                  {Number(payments.pending) > 0 && ticket?.status === 'completed' && esClienteDelTicket && (
                     <div className="mt-2 pt-2 border-t border-digi-border">
-                      {esClienteDelTicket ? (
-                        <button
-                          onClick={() => router.push(`/pagar/cobro?tipo=ticket&id=${id}`)}
-                          className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-[12px] font-semibold text-white hover:opacity-90 transition-opacity"
-                          style={pf}>
-                          <Lock className="w-3.5 h-3.5" /> Pagar ${fmt2(payments.pending)}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={abrirEnlacePagoTicket}
-                          className="w-full inline-flex items-center justify-center gap-1.5 text-[11.5px] text-accent hover:underline"
-                          style={pf}>
-                          <Share2 className="w-3.5 h-3.5" /> Compartir enlace de pago
-                        </button>
-                      )}
+                      <button
+                        onClick={() => router.push(`/pagar/cobro?tipo=ticket&id=${id}`)}
+                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-[12px] font-semibold text-white hover:opacity-90 transition-opacity"
+                        style={pf}>
+                        <Lock className="w-3.5 h-3.5" /> Pagar ${fmt2(payments.pending)}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1061,9 +1063,9 @@ export default function TicketDetailPage() {
             <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} />
             <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
           </div>
-          <div className="flex gap-2 pt-2 border-t border-digi-border">
-            <button onClick={() => setEditing(false)} className={`${BTN_SECONDARY} flex-1`}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+          <div className="flex justify-end gap-2 pt-3 border-t border-digi-border">
+            <button onClick={() => setEditing(false)} className={BTN_SECONDARY}>Cancelar</button>
+            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={BTN_PRIMARY}>
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
@@ -1100,269 +1102,156 @@ export default function TicketDetailPage() {
         ) : (
         <div className="max-h-[80vh] overflow-y-auto pr-1">
           {/* Fase 3: Tipo de cobro — factura total o abono parcial */}
+          {/* ⇒ MISMA ESTRUCTURA QUE EL FORMULARIO DEL PROYECTO (Fernando, 2026-09-29): arriba lo
+              que se elige, a todo el ancho; debajo el detalle en tabla. Lo propio del ticket
+              —tipo de cobro y origen de los ítems— va con el mismo `Segmentado`. Sin notas de
+              ayuda permanentes. */}
           {payments && (() => {
             const hasInvoiced = (payments.invoices || []).some((i: any) => i.status !== 'cancelled');
             return (
-              <div className="mb-3">
-                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mb-2" style={pf}>Tipo de cobro</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setAbonoMode(false)} disabled={hasInvoiced}
-                    className={`py-2 text-[12px] rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${!abonoMode ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                    Factura total<br /><span className="text-[11px] opacity-70">${fmt2(payments.total)}</span>
-                  </button>
-                  <button type="button" onClick={() => { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); }}
-                    className={`py-2 text-[12px] rounded border transition-colors ${abonoMode ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                    Abono parcial<br /><span className="text-[11px] opacity-70">pendiente ${fmt2(payments.pending)}</span>
-                  </button>
+              <section className="space-y-2 mb-4">
+                <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Tipo de cobro</h4>
+                <div className="flex flex-wrap items-end gap-3">
+                  <Segmentado<'total' | 'abono'>
+                    etiqueta="Tipo de cobro"
+                    valor={abonoMode ? 'abono' : 'total'}
+                    onChange={(v) => { if (v === 'abono') { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); } else setAbonoMode(false); }}
+                    opciones={[
+                      { valor: 'total', texto: 'Factura total', detalle: `$${fmt2(payments.total)}`, deshabilitada: hasInvoiced,
+                        porque: 'Ya hay una factura: lo que queda se cobra como abono' },
+                      { valor: 'abono', texto: 'Abono parcial', detalle: `pendiente $${fmt2(payments.pending)}` },
+                    ]}
+                  />
+                  {abonoMode && (
+                    <div className="w-40">
+                      <EditField label="Monto del abono ($)">
+                        <input value={abonoAmount} onChange={e => setAbonoAmount(e.target.value)} type="number" placeholder="0.00"
+                          className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+                      </EditField>
+                    </div>
+                  )}
                 </div>
-                {abonoMode && (
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <label className="text-[11px] text-digi-muted" style={pf}>Monto del abono ($)</label>
-                    <input value={abonoAmount} onChange={e => setAbonoAmount(e.target.value)} type="number" placeholder="0.00"
-                      className="field-control w-32 px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <span className="text-[11px] text-digi-muted" style={pf}>de ${fmt2(payments.pending)} pendiente · factura una línea "Abono a cuenta"</span>
-                  </div>
-                )}
-                <p className="text-[11px] text-digi-muted mt-1" style={pf}>El abono no completa el ticket hasta cubrir el total.</p>
-              </div>
+              </section>
             );
           })()}
 
-          {/* Items mode toggle — exclusivo de tickets: define el origen de los items */}
-          {!abonoMode && (
-          <div className="mb-3">
-            <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mb-2" style={pf}>Items de la factura</h4>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => applyItemsMode('title')}
-                className={`py-2 text-[12px] rounded border transition-colors ${itemsMode === 'title' ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                Titulo del ticket<br /><span className="text-[11px] opacity-70">${fmt2(Number(ticket.estimated_cost || 0))}</span>
-              </button>
-              <button type="button" onClick={() => applyItemsMode('breakdown')} disabled={(ticket.actions || []).length === 0}
-                className={`py-2 text-[12px] rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${itemsMode === 'breakdown' ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:border-accent/50'}`} style={pf}>
-                Desglose de acciones<br /><span className="text-[11px] opacity-70">{(ticket.actions || []).length} items - ${fmt2(Number(ticket.actions_total || 0))}</span>
+          <section className="space-y-3">
+            <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Adquirente</h4>
+            <AdquirenteFactura
+              modo={completeAdquirente}
+              onModo={setCompleteAdquirente}
+              cuentaId={completeCuentaId}
+              onCuenta={(v) => { setCompleteCuentaId(v); setCompleteClientEmail(cuentasFacturables.find((c) => String(c.id) === v)?.email || ''); }}
+              cuentas={cuentasFacturables}
+              total={abonoMode ? Number(abonoAmount) || 0 : totalFactura(completeItems)}
+              cargando={cargandoCuentas}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <EditField label="Forma de pago">
+                <select value={completePaymentCode} onChange={e => setCompletePaymentCode(e.target.value)} className={EDIT_INPUT} style={mf}>
+                  <option value="01">Sin utilización del sistema financiero</option>
+                  <option value="15">Compensación de deudas</option>
+                  <option value="16">Tarjeta de débito</option>
+                  <option value="17">Dinero electrónico</option>
+                  <option value="18">Tarjeta prepago</option>
+                  <option value="19">Tarjeta de crédito</option>
+                  <option value="20">Otros con utilización del sistema financiero</option>
+                  <option value="21">Endoso de títulos</option>
+                </select>
+              </EditField>
+              <EditField label="Moneda">
+                <select value={completeCurrency} onChange={e => {
+                  const code = e.target.value;
+                  setCompleteCurrency(code);
+                  const c = currencies.find(c => c.code === code);
+                  setCompleteExchangeRate(c ? String(c.rate) : '1');
+                }} className={EDIT_INPUT} style={mf}>
+                  {currencies.length === 0 && <option value="USD">USD — Dólar estadounidense</option>}
+                  {currencies.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+                </select>
+              </EditField>
+              <EditField label="Tasa (1 USD = ?)">
+                <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
+                  type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
+                  className={`${EDIT_INPUT} tabular-nums disabled:opacity-50`} style={mf} />
+              </EditField>
+            </div>
+            {completeCurrency !== 'USD' && (
+              <p className="px-3 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent" style={mf}>
+                Equivalente para el cliente: {currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency} {fmt2((abonoMode ? Number(abonoAmount) || 0 : totalFactura(completeItems)) * (Number(completeExchangeRate) || 1))} {completeCurrency}
+                <span className="text-digi-muted"> (referencia, la factura va en USD)</span>
+              </p>
+            )}
+
+            <div className="space-y-1.5">
+              <span className="block text-[12px] font-semibold text-digi-text" style={pf}>Campos adicionales</span>
+              {completeAdditionalFields.map((f, i) => (
+                // Rejilla: `EDIT_INPUT` lleva `w-full`. Nombre 1/3, valor 2/3, papelera.
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] gap-2 items-center">
+                  <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
+                    placeholder="Nombre" className={EDIT_INPUT} style={mf} />
+                  <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
+                    placeholder="Valor" className={EDIT_INPUT} style={mf} />
+                  <BotonQuitar onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" />
+                </div>
+              ))}
+              <button type="button" onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
+                className="inline-flex items-center gap-1 text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>
+                <Plus className="w-3.5 h-3.5" /> Campo adicional
               </button>
             </div>
-            <p className="text-[11px] text-digi-muted mt-1" style={pf}>Cambiar el modo recarga los items; luego puedes editarlos abajo.</p>
-          </div>
+          </section>
+
+          {/* Detalle: con abono es una sola línea «Abono a cuenta», que se arma al enviar. */}
+          {!abonoMode && (
+            <section className="space-y-2 mt-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-digi-border pb-1.5">
+                <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Detalle</h4>
+                <Segmentado<'title' | 'breakdown'>
+                  etiqueta="Origen de los ítems"
+                  className=""
+                  valor={itemsMode}
+                  onChange={applyItemsMode}
+                  opciones={[
+                    { valor: 'title', texto: 'Título del ticket', detalle: `$${fmt2(Number(ticket.estimated_cost || 0))}` },
+                    { valor: 'breakdown', texto: 'Desglose de acciones', detalle: `${(ticket.actions || []).length} · $${fmt2(Number(ticket.actions_total || 0))}`,
+                      deshabilitada: (ticket.actions || []).length === 0, porque: 'El ticket no tiene acciones registradas' },
+                  ]}
+                />
+              </div>
+              <DetalleFactura items={completeItems} onChange={setCompleteItems} />
+            </section>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* ─── LEFT: Adquirente + Pago ─── */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between border-b border-digi-border pb-1">
-                <h4 className="text-[12px] font-semibold text-digi-text" style={mf}>Adquirente</h4>
-                <span className="text-[10.5px] text-digi-muted" style={pf}>Datos del cliente del ticket</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-500">*</span></label>
-                  <select value={completeIdType} onChange={e => {
-                    const t = e.target.value;
-                    setCompleteIdType(t);
-                    if (t === '07') { setCompleteClientRuc('9999999999999'); setCompleteClientName('CONSUMIDOR FINAL'); }
-                    else { if (completeClientRuc === '9999999999999') setCompleteClientRuc(''); if (completeClientName === 'CONSUMIDOR FINAL') setCompleteClientName(''); }
-                  }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                    <option value="04">RUC</option><option value="05">Cedula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Identificacion <span className="text-red-500">*</span></label>
-                  <input value={completeClientRuc} onChange={e => setCompleteClientRuc(e.target.value)} disabled={completeIdType === '07'}
-                    placeholder={completeIdType === '04' ? '0900000000001' : '0900000000'} maxLength={completeIdType === '04' ? 13 : completeIdType === '05' ? 10 : 20}
-                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                  {completeIdType === '04' && completeClientRuc && completeClientRuc.length !== 13 && <p className="text-[11px] text-red-500" style={mf}>13 digitos</p>}
-                  {completeIdType === '05' && completeClientRuc && completeClientRuc.length !== 10 && <p className="text-[11px] text-red-500" style={mf}>10 digitos</p>}
-                </div>
-              </div>
-              <div>
-                <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Razon Social <span className="text-red-500">*</span></label>
-                <input value={completeClientName} onChange={e => setCompleteClientName(e.target.value)} disabled={completeIdType === '07'}
-                  className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-              </div>
-              <div>
-                <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Direccion <span className="text-red-500">*</span></label>
-                <input value={completeClientAddress} onChange={e => setCompleteClientAddress(e.target.value)} placeholder="Direccion"
-                  className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Email {completeIdType !== '07' && <span className="text-red-500">*</span>}</label>
-                  <input value={completeClientEmail} onChange={e => setCompleteClientEmail(e.target.value)} type="email" placeholder="correo@ejemplo.com"
-                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                </div>
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Telefono</label>
-                  <input value={completeClientPhone} onChange={e => setCompleteClientPhone(e.target.value)} placeholder="0999999999"
-                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                </div>
-              </div>
-
-              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Forma de Pago</h4>
-              <select value={completePaymentCode} onChange={e => setCompletePaymentCode(e.target.value)}
-                className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                <option value="01">Sin utilizacion del sistema financiero</option>
-                <option value="15">Compensacion de deudas</option>
-                <option value="16">Tarjeta de debito</option>
-                <option value="17">Dinero electronico</option>
-                <option value="18">Tarjeta prepago</option>
-                <option value="19">Tarjeta de credito</option>
-                <option value="20">Otros con utilizacion del sistema financiero</option>
-                <option value="21">Endoso de titulos</option>
-              </select>
-
-              {currencies.length > 0 && (
-              <>
-              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Moneda</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Moneda</label>
-                  <select value={completeCurrency} onChange={e => {
-                    const code = e.target.value;
-                    setCompleteCurrency(code);
-                    const c = currencies.find(c => c.code === code);
-                    setCompleteExchangeRate(c ? String(c.rate) : '1');
-                  }} className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                    {currencies.map(c => (
-                      <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tasa (1 USD = ?)</label>
-                  <input value={completeExchangeRate} onChange={e => setCompleteExchangeRate(e.target.value)}
-                    type="number" min="0.0001" step="0.0001" disabled={completeCurrency === 'USD'}
-                    className="w-full field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-                </div>
-              </div>
-              {completeCurrency !== 'USD' && (
-                <div className="px-2 py-1.5 border border-accent/30 rounded bg-accent-light text-[12px] text-accent mt-1" style={mf}>
-                  Equivalente para el cliente: {(() => {
-                    const t = completeItems.reduce((s, it) => {
-                      const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                      return s + base + base * ((Number(it.ivaRate) || 0) / 100);
-                    }, 0);
-                    const sym = currencies.find(c => c.code === completeCurrency)?.symbol || completeCurrency;
-                    return `${sym} ${fmt2((t * (Number(completeExchangeRate) || 1)))} ${completeCurrency}`;
-                  })()}
-                  <span className="text-digi-muted"> (referencia, factura en USD)</span>
-                </div>
-              )}
-              </>
-              )}
-
-              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 mt-3" style={pf}>Campos Adicionales</h4>
-              <div className="space-y-1">
-                {completeAdditionalFields.map((f, i) => (
-                  <div key={i} className="flex gap-1">
-                    <input value={f.name} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], name: e.target.value }; setCompleteAdditionalFields(n); }}
-                      placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
-                      placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <BotonQuitar onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" className="self-center" />
-                  </div>
-                ))}
-                <button onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
-                  className="text-[12px] text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={pf}>+ Campo adicional</button>
-              </div>
-            </div>
-
-            {/* ─── RIGHT: Detalle + Totales ─── */}
-            <div className="space-y-2">
-              <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Detalle</h4>
-              <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
-                {completeItems.map((item, i) => (
-                  <div key={i} className="border border-digi-border rounded-lg p-2">
-                    <div className="flex gap-1 mb-1">
-                      <input value={item.description} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], description: e.target.value }; setCompleteItems(n); }}
-                        placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                      <BotonQuitar onClick={() => setCompleteItems(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar ítem" tamano="xs" className="self-center" />
-                    </div>
-                    <div className="grid grid-cols-4 gap-1">
-                      <div>
-                        <label className="text-[11px] text-digi-muted" style={pf}>Cant.</label>
-                        <input value={item.quantity} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], quantity: e.target.value }; setCompleteItems(n); }}
-                          type="number" min="0.01" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-digi-muted" style={pf}>P.Unit.</label>
-                        <input value={item.unitPrice} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setCompleteItems(n); }}
-                          type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-digi-muted" style={pf}>IVA</label>
-                        <select value={item.ivaRate} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], ivaRate: e.target.value }; setCompleteItems(n); }}
-                          className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                          <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-digi-muted" style={pf}>Desc.</label>
-                        <input value={item.discount} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], discount: e.target.value }; setCompleteItems(n); }}
-                          type="number" min="0" step="0.01" className="w-full field-control px-2 py-1 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setCompleteItems(prev => [...prev, { description: '', quantity: '1', unitPrice: '0', ivaRate: '0', discount: '0' }])}
-                className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>+ Item</button>
-
-              {/* Totales */}
-              {(() => {
-                const subtotal = completeItems.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0), 0);
-                const totalDiscount = completeItems.reduce((s, it) => s + (Number(it.discount) || 0), 0);
-                const ivaByRate: Record<string, number> = {};
-                completeItems.forEach(it => {
-                  const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                  const rate = it.ivaRate || '0';
-                  ivaByRate[rate] = (ivaByRate[rate] || 0) + base;
-                });
-                const totalIva = completeItems.reduce((s, it) => {
-                  const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-                  return s + base * ((Number(it.ivaRate) || 0) / 100);
-                }, 0);
-                return (
-                  <div className="border border-digi-border rounded-lg p-3 text-[12px] space-y-1" style={mf}>
-                    {Object.entries(ivaByRate).map(([rate, base]) => (
-                      <div key={rate} className="flex justify-between"><span className="text-digi-muted">Subtotal {rate}%:</span><span className="text-digi-text">${fmt2(base)}</span></div>
-                    ))}
-                    {totalDiscount > 0 && <div className="flex justify-between"><span className="text-digi-muted">Total descuento:</span><span className="text-digi-text">${fmt2(totalDiscount)}</span></div>}
-                    {totalIva > 0 && <div className="flex justify-between"><span className="text-digi-muted">IVA:</span><span className="text-digi-text">${fmt2(totalIva)}</span></div>}
-                    <div className="flex justify-between border-t border-digi-border pt-1"><span className="text-accent font-semibold">Total:</span><span className="text-accent font-semibold">${fmt2((subtotal + totalIva))}</span></div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* ─── Footer ─── */}
+          {/* ─── Pie ─── */}
           {(() => {
-            const invoiceTotal = completeItems.reduce((s, it) => {
-              const base = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) - (Number(it.discount) || 0);
-              return s + base + base * ((Number(it.ivaRate) || 0) / 100);
-            }, 0);
-            const consumidorFinalOver50 = completeIdType === '07' && invoiceTotal > 50;
-            const isFormValid = !completing && completeClientName.trim() && completeClientRuc.trim() && completeClientAddress.trim() && (completeIdType === '07' || completeClientEmail.trim()) && completeItems.length > 0 && !(completeIdType === '04' && completeClientRuc.length !== 13) && !(completeIdType === '05' && completeClientRuc.length !== 10) && !consumidorFinalOver50;
+            const invoiceTotal = abonoMode ? Number(abonoAmount) || 0 : totalFactura(completeItems);
+            const cfExcede = completeAdquirente === 'consumidor_final' && invoiceTotal > TOPE_CONSUMIDOR_FINAL;
+            const faltaCuenta = completeAdquirente === 'cliente' && !completeCuentaId;
+            const isFormValid = !completing && (abonoMode ? invoiceTotal > 0 : completeItems.length > 0) && !cfExcede && !faltaCuenta;
             return (
-              <div className="pt-3 mt-3 border-t border-digi-border space-y-2">
-                {consumidorFinalOver50 && (
+              <div className="pt-3 mt-4 border-t border-digi-border space-y-2">
+                {cfExcede && (
                   <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
-                    El SRI requiere identificar al cliente (RUC o Cedula) en facturas mayores a $50.00. El total actual es ${fmt2(invoiceTotal)}. Cambia el tipo de identificacion.
+                    El SRI no admite facturar a consumidor final por más de ${TOPE_CONSUMIDOR_FINAL}.00. El total es ${fmt2(invoiceTotal)}: elige un cliente.
                   </div>
                 )}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={completeSendEmail} onChange={e => setCompleteSendEmail(e.target.checked)} className="accent-[#4B2D8E]" />
                     <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
                   </label>
-                  <div className="flex gap-2">
-                    <button onClick={() => setCompleteModal(false)} className="pixel-btn pixel-btn-secondary text-sm" style={pf}>Cancelar</button>
-                    <button onClick={() => handleComplete(true)} disabled={completing} className="pixel-btn pixel-btn-secondary text-sm disabled:opacity-50" style={pf}>
-                      Completar sin Facturar
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setCompleteModal(false)} className={BTN_SECONDARY}>Cancelar</button>
+                    <button onClick={() => handleComplete(true)} disabled={completing} className={BTN_SECONDARY}>
+                      Completar sin facturar
                     </button>
-                    <button onClick={() => handleComplete(false)} disabled={!isFormValid} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50" style={pf}>
-                      Completar y Facturar
-                    </button>
+                    <span title={faltaCuenta ? 'Elige el cliente al que se factura' : undefined} className="inline-flex">
+                      <button onClick={() => handleComplete(false)} disabled={!isFormValid} className={BTN_PRIMARY}>
+                        <Receipt className="w-4 h-4" /> {abonoMode ? 'Facturar abono' : 'Completar y facturar'}
+                      </button>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1372,18 +1261,16 @@ export default function TicketDetailPage() {
         )}
       </PixelModal>
 
-      <PixelModal open={deleteModal} onClose={() => setDeleteModal(false)} title="Eliminar Ticket">
-        <div className="space-y-4">
-          <p className="text-xs text-digi-muted" style={mf}>Esta accion no se puede deshacer.</p>
-          <div className="flex gap-2">
-            <button onClick={() => setDeleteModal(false)} className="pixel-btn pixel-btn-secondary flex-1 text-sm" style={pf}>Cancelar</button>
-            <button onClick={handleDelete} disabled={deleting}
-              className="flex-1 py-2 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors disabled:opacity-50" style={pf}>
-              {deleting ? 'Eliminando...' : 'Si, eliminar'}
-            </button>
-          </div>
-        </div>
-      </PixelModal>
+      {/* Eliminar: la confirmación estándar, la misma del proyecto. */}
+      <PixelConfirm
+        open={deleteModal}
+        title="Eliminar ticket"
+        message="¿Eliminar este ticket? Esta acción no se puede deshacer."
+        confirmLabel={deleting ? 'Eliminando…' : 'Sí, eliminar'}
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteModal(false)}
+      />
 
       {/* Días de trabajo — panel lateral derecho (la edición nunca sustituye la tarjeta). */}
       <EditPanel

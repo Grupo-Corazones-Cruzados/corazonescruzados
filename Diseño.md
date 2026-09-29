@@ -3913,6 +3913,17 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Tickets al nivel de Proyectos · por decisión de Fernando** («aplicar todo lo
+  aprendido al módulo de tickets»). Detalle: cabecera solo iconos (`BTN_ICONO_*`), «Compartir
+  enlace de pago» sube a la cabecera a la izquierda de «Completar y facturar», columnas a alto
+  de pantalla (`useAltoHastaElPie`) con scroll propio, Pagos sin barra de «% facturado»,
+  «Eliminar» con `PixelConfirm`, «Editar ticket» con acciones abajo a la derecha, y el
+  registro de acciones deshabilitado con `title` en vez de notas ámbar. Formulario de facturar:
+  el mismo que el proyecto (`AdquirenteFactura` + `DetalleFactura` + campos adicionales en
+  rejilla), más «Tipo de cobro» y «Origen de los ítems» con el nuevo **`Segmentado`**
+  (`components/ui/Segmentado.tsx`, definición única del selector de 2–3 opciones; también lo
+  usa `AdquirenteFactura`). Lista: «Crear ticket»/«Confirmar días» abajo a la derecha y fuera
+  las notas de ayuda. ⏳ Fuera: la vista pública `/ticket/[id]` (estilo pixel, otra familia).
 - **2026-09-29 · 🪤 `EDIT_INPUT` lleva `w-full`: en una FILA no se reparte con `w-1/3`/`flex-1`.**
   En «Campos adicionales» el nombre se quedaba con todo el ancho y el valor en unos pocos
   píxeles (Fernando lo vio). Para poner varios campos en una fila se usa una **rejilla** en el
