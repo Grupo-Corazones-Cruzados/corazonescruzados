@@ -2363,7 +2363,6 @@ export default function ProjectDetailPage() {
           {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
             || Number(billing?.stagesTotal || 0) > 0) && (() => {
             const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
-            const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
             return (
               <div className="pixel-card">
                 {/* «Editar» a la altura del título (Fernando, 2026-09-29): es la puerta a las
@@ -2380,7 +2379,8 @@ export default function ProjectDetailPage() {
                   <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
                   <div className="flex justify-between"><span className="text-digi-muted">Por facturar</span><span className={`tabular-nums ${Number(billing?.billable ?? payments.pending) > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(Number(billing?.billable ?? payments.pending))}</span></div>
                 </div>
-                <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
+                {/* Sin barra de «% facturado» (Fernando, 2026-09-29): vacía parecía algo cargando,
+                    y Facturado / Por facturar ya dicen lo mismo con cifras. */}
                 {(payments.invoices || []).length > 0 && (
                   <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
                     {payments.invoices.map((inv: any) => (

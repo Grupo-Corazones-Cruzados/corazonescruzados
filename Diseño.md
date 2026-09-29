@@ -3908,6 +3908,8 @@ mientras se escribe.
   derecha del título «Pagos» (mismo botón que el de Descripción) abre el panel de etapas de
   facturación. La sección «Etapas de facturación» solo se pinta cuando hay etapas; sin ellas
   desapareció el texto «Sin etapas: se factura con el detalle de requerimientos».
+  También se quitó la barra de «% facturado»: vacía parecía algo cargando, y las cifras de
+  Facturado / Por facturar ya lo dicen.
 - **2026-09-28 · Fila de requerimiento y su edición · por decisión de Fernando.**
   - Sin franja de color a la izquierda (`border-l-[3px]` verde/acento) y, desde el 2026-09-29,
     **sin tachado** en el título de un requerimiento hecho (ni en el detalle ni en el resumen
