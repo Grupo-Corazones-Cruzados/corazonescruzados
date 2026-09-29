@@ -3904,6 +3904,18 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-28 · Fila de requerimiento y su edición · por decisión de Fernando.**
+  - Sin franja de color a la izquierda (`border-l-[3px]` verde/acento): el estado ya lo dicen
+    la casilla y el tachado.
+  - A la derecha: precio · **expandir** · **⋯** (`ActionsMenu lado="izquierda"`). El menú lleva
+    **Editar** y **Eliminar**; Eliminar se ve siempre para quien administra, pero **bloqueado**
+    (con `hint` al pasar el ratón) cuando la API no lo permite. Eliminar pide `PixelConfirm`.
+  - **Una sola ventana** (`EditPanel`) con tres secciones: datos (se guardan con el pie),
+    **Miembros** (asignar se aplica al momento) y **Subtareas** (marcar, editar EN SU FILA,
+    borrar, añadir). Se eliminaron las ventanas «Asignar miembro», «Subtareas» y la ventanita
+    de editar subtarea, y los botones que salían al desplegar.
+  - `ActionsMenu` gana `lado: 'izquierda'` (posición fija, se cierra al desplazar: dentro de
+    una lista con scroll propio un menú `absolute` se recorta) y `hint` por opción.
 - **2026-09-28 · Detalle de proyecto: columnas a alto de pantalla · por decisión de Fernando.**
   - Las tres columnas miden **hasta el pie** (`useAltoHastaElPie`, pasado por la variable
     `--alto-columnas` para que solo aplique desde `lg`) y cada una se desplaza por dentro.

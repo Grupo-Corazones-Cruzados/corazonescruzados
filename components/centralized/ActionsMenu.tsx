@@ -11,29 +11,56 @@ export interface ActionItem {
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;
+  /** Por qué está deshabilitada (sale al pasar el ratón). Una opción bloqueada sin motivo confunde. */
+  hint?: string;
 }
 
 /**
  * Botón de acciones (solo icono ⋮) que abre un menú desplegable de opciones.
- * Reusable para el panel de detalle (candidatos, miembros…).
+ * Reusable para el panel de detalle (candidatos, miembros…) y las filas de requerimientos.
+ *
+ * `lado`:
+ *   · `'abajo'` (por defecto) — el menú cae bajo el botón, alineado a su derecha.
+ *   · `'izquierda'` (2026-09-28) — el menú flota A LA IZQUIERDA del botón, a su altura. Va
+ *     con `position: fixed` calculada al abrir: dentro de una lista con desplazamiento
+ *     propio (los requerimientos de un proyecto), un menú `absolute` queda RECORTADO por el
+ *     `overflow` en la última fila. Por eso se cierra al desplazar o redimensionar — fijo,
+ *     se quedaría flotando lejos de su fila.
  */
-export default function ActionsMenu({ items, label = 'Acciones' }: { items: ActionItem[]; label?: string }) {
+export default function ActionsMenu({ items, label = 'Acciones', lado = 'abajo' }: { items: ActionItem[]; label?: string; lado?: 'abajo' | 'izquierda' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
+    if (lado !== 'izquierda') return () => document.removeEventListener('mousedown', onDoc);
+    const cerrar = () => setOpen(false);
+    window.addEventListener('scroll', cerrar, true);
+    window.addEventListener('resize', cerrar);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('scroll', cerrar, true);
+      window.removeEventListener('resize', cerrar);
+    };
+  }, [open, lado]);
+
+  const alternar = () => {
+    if (!open && lado === 'izquierda' && ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      setPos({ top: r.top, right: window.innerWidth - r.left + 4 });
+    }
+    setOpen((o) => !o);
+  };
 
   if (!items.length) return null;
 
   return (
     <div className="relative shrink-0" ref={ref}>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={alternar}
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -42,12 +69,15 @@ export default function ActionsMenu({ items, label = 'Acciones' }: { items: Acti
         <MoreVertical className="w-4 h-4" />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-9 z-30 min-w-[190px] bg-digi-card border border-digi-border rounded-lg shadow-lg py-1">
+        <div role="menu"
+          className={`${lado === 'izquierda' ? 'fixed z-[60]' : 'absolute right-0 top-9 z-30'} min-w-[190px] bg-digi-card border border-digi-border rounded-lg shadow-lg py-1`}
+          style={lado === 'izquierda' && pos ? { top: pos.top, right: pos.right } : undefined}>
           {items.map((it, i) => (
             <button
               key={i}
               role="menuitem"
               disabled={it.disabled}
+              title={it.hint}
               onClick={() => { setOpen(false); it.onClick(); }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[12.5px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 it.danger ? 'text-red-600 hover:bg-red-50' : 'text-digi-text hover:bg-black/[0.04]'

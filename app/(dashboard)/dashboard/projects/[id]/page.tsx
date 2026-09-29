@@ -24,6 +24,7 @@ import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
 import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
+import ActionsMenu from '@/components/centralized/ActionsMenu';
 import { fmt2 } from '@/lib/format';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
@@ -103,7 +104,8 @@ export default function ProjectDetailPage() {
   const [talentOptions, setTalentOptions] = useState<{ value: string; label: string }[]>([]);
   const [savingReq, setSavingReq] = useState(false);
   const [newItemText, setNewItemText] = useState<Record<number, string>>({});
-  const [subtaskReqId, setSubtaskReqId] = useState<number | null>(null);
+  // Requerimiento que se va a eliminar, esperando confirmación (el «⋯ → Eliminar»).
+  const [reqAEliminar, setReqAEliminar] = useState<{ id: number; title: string } | null>(null);
   // Requerimientos desplegados (por defecto TODOS contraídos).
   const [expandedReqs, setExpandedReqs] = useState<Set<number>>(new Set());
   const toggleReqExpand = (rid: number) => setExpandedReqs((s) => { const n = new Set(s); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
@@ -122,7 +124,9 @@ export default function ProjectDetailPage() {
   const [editBudgetMax, setEditBudgetMax] = useState('');
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [editDeadline, setEditDeadline] = useState('');
-  // Edición de requerimientos (panel derecho) y de subtareas (ventanita centrada).
+  // Edición de un requerimiento: UNA sola ventana (panel derecho) con sus datos, sus
+  // miembros y sus subtareas (Fernando, 2026-09-28). La subtarea se edita en su propia fila
+  // dentro de esa ventana, no en otra encima.
   const [editingReqId, setEditingReqId] = useState<number | null>(null);
   const [editReqData, setEditReqData] = useState<{ title: string; description: string; cost: string; talents: string[]; slots: string }>({ title: '', description: '', cost: '', talents: [], slots: '1' });
   const [savingReqEdit, setSavingReqEdit] = useState(false);
@@ -132,7 +136,6 @@ export default function ProjectDetailPage() {
   const [savingClient, setSavingClient] = useState(false);
 
   // Assignment states
-  const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignReqId, setAssignReqId] = useState<number | null>(null);
   const [assignMemberId, setAssignMemberId] = useState('');
   const [assignCost, setAssignCost] = useState('');
@@ -826,6 +829,11 @@ export default function ProjectDetailPage() {
 
   const startEditReq = (r: any) => {
     setEditingReqId(r.id);
+    // La misma ventana lleva la sección de asignar: arranca limpia, con el costo de referencia.
+    setAssignReqId(r.id);
+    setAssignMemberId('');
+    setAssignCost(r.cost ? String(r.cost) : '');
+    setEditingItemId(null);
     setEditReqData({
       title: r.title || '',
       description: r.description || '',
@@ -837,6 +845,9 @@ export default function ProjectDetailPage() {
   };
   const saveReqEdit = async () => {
     if (editingReqId == null) return;
+    // Quien solo puede tocar subtareas o asignar no guarda datos: esas secciones se aplican
+    // al momento, y el botón del pie solo cierra.
+    if (!canEditReqText) { setEditingReqId(null); return; }
     const reqId = editingReqId;
     const title = editReqData.title.trim();
     if (!title) { toast.error('El título no puede quedar vacío'); return; }
@@ -881,15 +892,6 @@ export default function ProjectDetailPage() {
     finally { setSavingItemEdit(false); }
   };
 
-  const openAssignModal = (reqId: number) => {
-    setAssignReqId(reqId);
-    setAssignMemberId('');
-    // Pre-fill cost from requirement's reference cost
-    const req = reqs.find((r: any) => r.id === reqId);
-    setAssignCost(req?.cost ? String(req.cost) : '');
-    setShowAssignModal(true);
-  };
-
   // When member is selected in assign modal, try to use their bid cost for this requirement
   const handleAssignMemberChange = (mId: string) => {
     setAssignMemberId(mId);
@@ -913,7 +915,7 @@ export default function ProjectDetailPage() {
       });
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Error'); return; }
       toast.success('Miembro asignado');
-      setShowAssignModal(false);
+      setAssignMemberId('');
       fetchProject();
     } catch { toast.error('Error'); }
     finally { setSavingAssign(false); }
@@ -1552,7 +1554,9 @@ export default function ProjectDetailPage() {
                   const canManageThis = isOwner && (isAdmin || project.confirmed_at || isMemberCreator);
                   return (
                     <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
-                      <div className={`p-2.5 border-l-[3px] ${r.is_completed ? 'border-l-green-500' : 'border-l-accent'}`}>
+                      {/* Sin la franja de color a la izquierda (Fernando, 2026-09-28): el estado ya
+                          lo dice la casilla y el tachado. */}
+                      <div className="p-2.5">
                         {/* La edición NUNCA es inline: el lápiz abre el panel lateral derecho. */}
                         <div className={`flex items-start gap-3 ${editingReqId === r.id ? 'opacity-60' : ''}`}>
                           <button
@@ -1586,35 +1590,36 @@ export default function ProjectDetailPage() {
                               </p>
                             )}
                           </button>
-                          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                          {/* `-my-1.5`: los botones miden 32 px y la línea del título 20; sin esto
+                              la fila crece y el título se queda arriba, desalineado del precio. */}
+                          <div className="flex items-center gap-1 sm:gap-2 shrink-0 -my-1.5">
                             {r.cost && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${r.cost}</span>}
-                            {canEditReqText && (
-                              <button onClick={() => startEditReq(r)} aria-label="Editar requerimiento" title="Editar" className="destino-tactil text-digi-muted/60 hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                            )}
-                            {isOwner && (
-                              <button onClick={() => deleteRequirement(r.id)} aria-label="Eliminar requerimiento" className="destino-tactil text-digi-muted/60 hover:text-red-600 transition-colors"><X className="w-4 h-4" /></button>
-                            )}
                             <button onClick={() => toggleReqExpand(r.id)} aria-label={expanded ? 'Contraer' : 'Ver detalle'} title={expanded ? 'Contraer' : 'Ver detalle'}
-                              className="destino-tactil text-digi-muted hover:text-accent transition-colors">
+                              className="destino-tactil w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
                               <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                             </button>
+                            {/* ⇒ «⋯» CON EDITAR Y ELIMINAR (Fernando, 2026-09-28). Sustituye al
+                                lápiz y la × sueltos. «Editar» abre UNA sola ventana con los datos,
+                                los miembros y las subtareas; por eso lo ve también quien solo
+                                puede tocar las subtareas (el miembro asignado). */}
+                            <ActionsMenu lado="izquierda" label="Acciones del requerimiento" items={[
+                              ...((canEditReqText || canManageThis || canEditThis) ? [{ label: 'Editar', icon: Pencil, onClick: () => startEditReq(r) }] : []),
+                              // Se VE siempre para quien administra el proyecto, pero BLOQUEADO cuando la
+                              // API no lo acepta —en revisión, completado, cancelado o cerrado—
+                              // (Fernando, 2026-09-28): así se sabe que existe y por qué no se puede.
+                              ...(isOwner ? [{
+                                label: 'Eliminar', icon: Trash2, danger: true,
+                                disabled: !canEditReqText,
+                                hint: canEditReqText ? undefined : 'No se pueden eliminar requerimientos de un proyecto en revisión, completado o cerrado.',
+                                onClick: () => setReqAEliminar({ id: r.id, title: r.title }),
+                              }] : []),
+                            ]} />
                           </div>
                         </div>
 
-                        {/* Detalle desplegable: botones + miembros + subtareas */}
+                        {/* Detalle desplegable: miembros + subtareas, para LEER. Asignar y editar
+                            subtareas se hace desde «⋯ → Editar» (una sola ventana). */}
                         {expanded && (<>
-                        {/* Botones de acción (solo al desplegar) */}
-                        {(canManageThis || canEditThis) && (
-                          <div className="flex flex-wrap items-center gap-2 mt-2.5 ml-[30px]">
-                            {canManageThis && (
-                              <button onClick={() => openAssignModal(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><UserPlus className="w-3.5 h-3.5" /> Asignar miembro</button>
-                            )}
-                            {canEditThis && (
-                              <button onClick={() => setSubtaskReqId(r.id)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors" style={mf}><ListPlus className="w-3.5 h-3.5" /> Subtareas{items.length > 0 ? ` (${items.length})` : ''}</button>
-                            )}
-                          </div>
-                        )}
-
                         {acceptedAssignments.length > 0 && (
                           <div className="flex items-center gap-1.5 mt-2.5 ml-[30px]">
                             {acceptedAssignments.map((a: any) => (
@@ -2656,58 +2661,6 @@ export default function ProjectDetailPage() {
         </div>
       </PixelModal>
 
-      {/* Subtasks Modal (centered) */}
-      <PixelModal open={subtaskReqId != null} onClose={() => setSubtaskReqId(null)} title="Subtareas" size="sm">
-        {(() => {
-          const r = reqs.find((x: any) => x.id === subtaskReqId);
-          if (!r) return null;
-          const items = r.items || [];
-          const canEditThis = canMemberEditReq(r.id);
-          return (
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Requerimiento</p>
-                <p className="text-sm font-medium text-digi-text mt-0.5" style={mf}>{r.title}</p>
-                {r.description && <p className="text-xs text-digi-muted mt-1" style={mf}>{r.description}</p>}
-              </div>
-              <div className="space-y-1">
-                {items.length > 0 ? items.map((item: any) => (
-                  <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-[#f3f2f1]">
-                    <button onClick={() => canEditThis && toggleSubItem(item.id, !item.is_completed)} disabled={!canEditThis || editingItemId === item.id} aria-label={item.is_completed ? 'Marcar incompleto' : 'Marcar completo'} className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis && editingItemId !== item.id ? 'cursor-pointer hover:border-accent' : ''}`}>
-                      {item.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
-                    </button>
-                    {/* La subtarea se edita en una ventanita centrada (un campo), no aquí encima. */}
-                    <span className={`text-[13px] flex-1 break-words ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
-                    {canEditThis && (
-                      <>
-                        <button onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar" className="acciones-al-pasar destino-tactil text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" className="text-digi-muted/60 hover:text-red-600 transition-colors text-[16px] leading-none px-1 shrink-0">×</button>
-                      </>
-                    )}
-                  </div>
-                )) : (
-                  <p className="text-xs text-digi-muted py-2" style={mf}>Sin subtareas aún.</p>
-                )}
-              </div>
-              {canEditThis && (
-                <div className="flex gap-2 items-center border-t border-digi-border pt-3">
-                  <input
-                    value={newItemText[r.id] || ''}
-                    onChange={(e) => setNewItemText(prev => ({ ...prev, [r.id]: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubItem(r.id); } }}
-                    placeholder="Nueva subtarea..."
-                    autoFocus
-                    className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                    style={mf}
-                  />
-                  <button onClick={() => addSubItem(r.id)} disabled={!(newItemText[r.id] || '').trim()} className="pixel-btn pixel-btn-primary text-sm disabled:opacity-50 shrink-0">Agregar</button>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </PixelModal>
-
       {/* Add Requirement Modal */}
       {/* Withdraw/Exit Modal */}
       <PixelModal open={showWithdrawModal} onClose={() => !submittingWithdraw && setShowWithdrawModal(false)}
@@ -2787,40 +2740,6 @@ export default function ProjectDetailPage() {
         </div>
       </PixelModal>
 
-      {/* Assign Member Modal */}
-      <PixelModal open={showAssignModal} onClose={() => setShowAssignModal(false)} title="Asignar Miembro" size="sm">
-        <div className="space-y-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Miembro</label>
-            <select
-              value={assignMemberId}
-              onChange={(e) => handleAssignMemberChange(e.target.value)}
-              className="w-full px-2 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none appearance-none cursor-pointer"
-              style={{ ...mf, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '28px' }}
-            >
-              <option value="">Seleccionar miembro...</option>
-              {bids.filter((b: any) => b.status === 'accepted').map((b: any) => (
-                <option key={b.member_id} value={b.member_id}>{b.member_name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[12px] font-semibold text-digi-text opacity-70" style={pf}>Costo Propuesto ($)</label>
-            <input
-              value={assignCost}
-              onChange={(e) => setAssignCost(e.target.value)}
-              type="number"
-              placeholder="0.00"
-              className="w-full px-3 py-2 field-control bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
-              style={mf}
-            />
-          </div>
-          <button onClick={submitAssignment} disabled={savingAssign || !assignMemberId || !assignCost} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-            {savingAssign ? '...' : 'Asignar'}
-          </button>
-        </div>
-      </PixelModal>
-
       <PixelConfirm
         open={confirmDeleteProject}
         title="Eliminar proyecto"
@@ -2849,40 +2768,187 @@ export default function ProjectDetailPage() {
           uno o dos campos sueltos → ventanita centrada (`QuickEditDialog`).
           ============================================================================ */}
 
-      {/* Requerimiento (formulario) — panel lateral derecho */}
-      <EditPanel
-        open={editingReqId != null}
-        title="Editar requerimiento"
-        onClose={() => setEditingReqId(null)}
-        onSave={saveReqEdit}
-        saving={savingReqEdit}
-        canSave={!!editReqData.title.trim() && editReqData.talents.length > 0}
-      >
-        <EditField label="Título">
-          <input value={editReqData.title} onChange={(e) => setEditReqData((d) => ({ ...d, title: e.target.value }))}
-            autoFocus placeholder="Título del requerimiento" className={EDIT_INPUT} style={mf} />
-        </EditField>
-        <EditField label="Descripción">
-          <textarea value={editReqData.description} onChange={(e) => setEditReqData((d) => ({ ...d, description: e.target.value }))}
-            rows={4} placeholder="Descripción detallada… (opcional)" className={`${EDIT_INPUT} resize-y`} style={mf} />
-        </EditField>
-        <EditField label="Costo ($)">
-          <input value={editReqData.cost} onChange={(e) => setEditReqData((d) => ({ ...d, cost: e.target.value }))}
-            type="number" placeholder="0.00 (opcional)" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
-        </EditField>
-        <EditField label="Talentos requeridos *" hint="Con esto el requerimiento aparece a quien busque por ese talento.">
-          <MultiSelectSearch
-            options={talentOptions}
-            selected={editReqData.talents}
-            onChange={(v: string[]) => setEditReqData((d) => ({ ...d, talents: v }))}
-            placeholder="Busca el talento que necesita este requerimiento…"
-          />
-        </EditField>
-        <EditField label="Plazas" hint="Cuántas personas se necesitan para este requerimiento.">
-          <input value={editReqData.slots} onChange={(e) => setEditReqData((d) => ({ ...d, slots: e.target.value }))}
-            type="number" min={1} placeholder="1" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
-        </EditField>
-      </EditPanel>
+      {/* ⇒ EL REQUERIMIENTO EN UNA SOLA VENTANA (Fernando, 2026-09-28): sus datos, sus
+          miembros y sus subtareas. Antes eran tres ventanas —este panel, «Asignar miembro» y
+          «Subtareas»— más una cuarta para editar una subtarea encima de la tercera.
+          · Los DATOS se guardan con el botón del pie.
+          · Asignar un miembro y tocar subtareas se aplican AL MOMENTO (cada cosa es su propia
+            llamada), igual que antes en sus ventanas.
+          Cada sección sale solo si quien la abre puede usarla: el miembro asignado ve las
+          subtareas; el responsable, todo. */}
+      {(() => {
+        const r = reqs.find((x: any) => x.id === editingReqId);
+        const items = r?.items || [];
+        const puedeSubtareas = r ? canMemberEditReq(r.id) : false;
+        const puedeAsignar = !!(isOwner && (isAdmin || project.confirmed_at || isMemberCreator));
+        const aceptados = (r?.assignments || []).filter((a: any) => a.status === 'accepted');
+        const candidatos = bids.filter((b: any) => b.status === 'accepted');
+        const tituloSeccion = 'text-[10px] font-semibold text-digi-muted uppercase tracking-wide';
+        // Intro en estos campos hace SU acción; sin esto, el panel lo tomaría como «Guardar».
+        const soloAqui = (e: React.KeyboardEvent, accion: () => void) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault(); e.stopPropagation(); accion();
+        };
+        return (
+          <EditPanel
+            open={editingReqId != null}
+            title="Editar requerimiento"
+            onClose={() => { setEditingReqId(null); setEditingItemId(null); }}
+            onSave={saveReqEdit}
+            saving={savingReqEdit}
+            saveLabel={canEditReqText ? 'Guardar' : 'Listo'}
+            canSave={!canEditReqText || (!!editReqData.title.trim() && editReqData.talents.length > 0)}
+          >
+            {canEditReqText ? (<>
+              <EditField label="Título">
+                <input value={editReqData.title} onChange={(e) => setEditReqData((d) => ({ ...d, title: e.target.value }))}
+                  autoFocus placeholder="Título del requerimiento" className={EDIT_INPUT} style={mf} />
+              </EditField>
+              <EditField label="Descripción">
+                <textarea value={editReqData.description} onChange={(e) => setEditReqData((d) => ({ ...d, description: e.target.value }))}
+                  rows={4} placeholder="Descripción detallada… (opcional)" className={`${EDIT_INPUT} resize-y`} style={mf} />
+              </EditField>
+              <div className="grid grid-cols-2 gap-3">
+                <EditField label="Costo ($)">
+                  <input value={editReqData.cost} onChange={(e) => setEditReqData((d) => ({ ...d, cost: e.target.value }))}
+                    type="number" placeholder="0.00 (opcional)" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+                </EditField>
+                <EditField label="Plazas">
+                  <input value={editReqData.slots} onChange={(e) => setEditReqData((d) => ({ ...d, slots: e.target.value }))}
+                    type="number" min={1} placeholder="1" className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+                </EditField>
+              </div>
+              <EditField label="Talentos requeridos *" hint="Con esto el requerimiento aparece a quien busque por ese talento.">
+                <MultiSelectSearch
+                  options={talentOptions}
+                  selected={editReqData.talents}
+                  onChange={(v: string[]) => setEditReqData((d) => ({ ...d, talents: v }))}
+                  placeholder="Busca el talento que necesita este requerimiento…"
+                />
+              </EditField>
+            </>) : (
+              <div>
+                <p className="text-[13px] font-semibold text-digi-text" style={mf}>{r?.title}</p>
+                {r?.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
+              </div>
+            )}
+
+            {/* ── Miembros ─────────────────────────────────────────────────────────── */}
+            {(puedeAsignar || aceptados.length > 0) && (
+              <div className="pt-3 border-t border-digi-border space-y-2">
+                <p className={tituloSeccion} style={pf}>Miembros ({aceptados.length})</p>
+                {aceptados.length > 0 ? (
+                  <div className="space-y-1">
+                    {aceptados.map((a: any) => (
+                      <div key={a.id} className="flex items-center gap-2 text-[12.5px]" style={mf}>
+                        {a.photo_url
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={a.photo_url} alt="" className="w-6 h-6 rounded-full border border-digi-border object-cover" />
+                          : <span className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent">{(a.member_name || '?')[0].toUpperCase()}</span>}
+                        <span className="flex-1 min-w-0 truncate text-digi-text">{a.member_name}</span>
+                        <span className="tabular-nums text-digi-text">${fmt2(Number(a.member_cost ?? a.proposed_cost ?? 0))}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay miembros asignados.</p>
+                )}
+                {puedeAsignar && (
+                  candidatos.length === 0 ? (
+                    <p className="text-[11.5px] text-digi-muted" style={mf}>
+                      Para asignar, el miembro tiene que tener una propuesta aceptada en el proyecto.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="flex-1 min-w-[160px]">
+                        <EditField label="Asignar miembro">
+                          <select value={assignMemberId} onChange={(e) => handleAssignMemberChange(e.target.value)} className={EDIT_INPUT} style={mf}>
+                            <option value="">Seleccionar miembro…</option>
+                            {candidatos.map((b: any) => <option key={b.member_id} value={b.member_id}>{b.member_name}</option>)}
+                          </select>
+                        </EditField>
+                      </div>
+                      <div className="w-28">
+                        <EditField label="Costo ($)">
+                          <input value={assignCost} onChange={(e) => setAssignCost(e.target.value)} type="number" placeholder="0.00"
+                            onKeyDown={(e) => soloAqui(e, submitAssignment)}
+                            className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+                        </EditField>
+                      </div>
+                      <button type="button" onClick={submitAssignment} disabled={savingAssign || !assignMemberId || !assignCost} className={BTN_SECONDARY}>
+                        <UserPlus className="w-4 h-4" /> {savingAssign ? 'Asignando…' : 'Asignar'}
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* ── Subtareas ────────────────────────────────────────────────────────── */}
+            {r && (
+              <div className="pt-3 border-t border-digi-border space-y-2">
+                <p className={tituloSeccion} style={pf}>Subtareas ({items.length})</p>
+                <div className="space-y-0.5">
+                  {items.length > 0 ? items.map((item: any) => (
+                    <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-black/[0.03]">
+                      <button type="button" onClick={() => puedeSubtareas && toggleSubItem(item.id, !item.is_completed)} disabled={!puedeSubtareas || editingItemId === item.id}
+                        aria-label={item.is_completed ? 'Marcar incompleta' : 'Marcar completa'}
+                        className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${puedeSubtareas && editingItemId !== item.id ? 'cursor-pointer hover:border-accent' : ''}`}>
+                        {item.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
+                      </button>
+                      {editingItemId === item.id ? (<>
+                        {/* Se edita en SU fila: una ventana encima de esta sería la cuarta. */}
+                        <input value={editItemText} onChange={(e) => setEditItemText(e.target.value)} autoFocus
+                          onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setEditingItemId(null); } soloAqui(e, saveItemEdit); }}
+                          className={`${EDIT_INPUT} flex-1 !py-1`} style={mf} />
+                        <button type="button" onClick={saveItemEdit} disabled={savingItemEdit || !editItemText.trim()} aria-label="Guardar subtarea"
+                          className="destino-tactil text-accent hover:opacity-70 disabled:opacity-40 shrink-0"><Check className="w-4 h-4" /></button>
+                        <button type="button" onClick={() => setEditingItemId(null)} aria-label="Cancelar"
+                          className="destino-tactil text-digi-muted hover:text-digi-text shrink-0"><X className="w-4 h-4" /></button>
+                      </>) : (<>
+                        <span className={`text-[13px] flex-1 break-words ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{item.title}</span>
+                        {puedeSubtareas && (<>
+                          <button type="button" onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar"
+                            className="acciones-al-pasar destino-tactil text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" title="Eliminar"
+                            className="acciones-al-pasar destino-tactil text-digi-muted/50 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </>)}
+                      </>)}
+                    </div>
+                  )) : (
+                    <p className="text-[12px] text-digi-muted px-2 py-1" style={mf}>Sin subtareas aún.</p>
+                  )}
+                </div>
+                {puedeSubtareas && (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      value={newItemText[r.id] || ''}
+                      onChange={(e) => setNewItemText(prev => ({ ...prev, [r.id]: e.target.value }))}
+                      onKeyDown={(e) => soloAqui(e, () => addSubItem(r.id))}
+                      placeholder="Nueva subtarea…"
+                      className={`${EDIT_INPUT} flex-1`} style={mf}
+                    />
+                    <button type="button" onClick={() => addSubItem(r.id)} disabled={!(newItemText[r.id] || '').trim()} className={`${BTN_SECONDARY} shrink-0`}>
+                      <ListPlus className="w-4 h-4" /> Agregar
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </EditPanel>
+        );
+      })()}
+
+      {/* Eliminar un requerimiento: pide confirmación (antes bastaba un clic en la ×). */}
+      <PixelConfirm
+        open={!!reqAEliminar}
+        title="Eliminar requerimiento"
+        message={`¿Eliminar «${reqAEliminar?.title || ''}»? Se borran también sus subtareas y asignaciones.`}
+        confirmLabel="Sí, eliminar"
+        danger
+        onConfirm={() => { const r = reqAEliminar; setReqAEliminar(null); if (r) deleteRequirement(r.id); }}
+        onCancel={() => setReqAEliminar(null)}
+      />
 
       {/* Descripción del proyecto (campo rico) — panel lateral derecho */}
       <EditPanel
@@ -2972,19 +3038,6 @@ export default function ProjectDetailPage() {
         </EditField>
       </QuickEditDialog>
 
-      {/* Subtarea (un campo) — ventanita centrada, sobre el panel de Subtareas */}
-      <QuickEditDialog
-        open={editingItemId != null}
-        title="Editar subtarea"
-        onClose={() => setEditingItemId(null)}
-        onSave={saveItemEdit}
-        saving={savingItemEdit}
-        canSave={!!editItemText.trim()}
-      >
-        <EditField label="Subtarea">
-          <input value={editItemText} onChange={(e) => setEditItemText(e.target.value)} autoFocus className={EDIT_INPUT} style={mf} />
-        </EditField>
-      </QuickEditDialog>
     </div>
   );
 }
