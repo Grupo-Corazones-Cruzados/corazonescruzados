@@ -1153,7 +1153,6 @@ export default function TicketDetailPage() {
                 <h4 className="text-[12px] font-semibold text-digi-text" style={mf}>Adquirente</h4>
                 <span className="text-[10.5px] text-digi-muted" style={pf}>Datos del cliente del ticket</span>
               </div>
-              <p className="text-[10.5px] text-digi-muted" style={pf}>Se prellenan desde la cuenta de facturación del cliente. Al facturar, los cambios se guardan para las próximas facturas.</p>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Tipo ID <span className="text-red-500">*</span></label>
@@ -1259,8 +1258,7 @@ export default function TicketDetailPage() {
                       placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <input value={f.value} onChange={e => { const n = [...completeAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setCompleteAdditionalFields(n); }}
                       placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <button onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))}
-                      className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
+                    <BotonQuitar onClick={() => setCompleteAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" className="self-center" />
                   </div>
                 ))}
                 <button onClick={() => setCompleteAdditionalFields(prev => [...prev, { name: '', value: '' }])}
@@ -1277,8 +1275,7 @@ export default function TicketDetailPage() {
                     <div className="flex gap-1 mb-1">
                       <input value={item.description} onChange={e => { const n = [...completeItems]; n[i] = { ...n[i], description: e.target.value }; setCompleteItems(n); }}
                         placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                      <button onClick={() => setCompleteItems(prev => prev.filter((_, idx) => idx !== i))}
-                        className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
+                      <BotonQuitar onClick={() => setCompleteItems(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar ítem" tamano="xs" className="self-center" />
                     </div>
                     <div className="grid grid-cols-4 gap-1">
                       <div>

@@ -14,6 +14,7 @@ import BotonAyuda from '@/components/ui/BotonAyuda';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -869,8 +870,7 @@ function InvoicesPageInner() {
                         placeholder="Nombre" className="w-1/3 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                       <input value={f.value} onChange={e => { const n = [...mAdditionalFields]; n[i] = { ...n[i], value: e.target.value }; setMAdditionalFields(n); }}
                         placeholder="Descripcion" className="flex-1 field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                      <button onClick={() => setMAdditionalFields(prev => prev.filter((_, idx) => idx !== i))}
-                        className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
+                      <BotonQuitar onClick={() => setMAdditionalFields(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar campo adicional" className="self-center" />
                     </div>
                   ))}
                   <button onClick={() => setMAdditionalFields(prev => [...prev, { name: '', value: '' }])}
@@ -888,8 +888,7 @@ function InvoicesPageInner() {
                       <div className="flex gap-1 mb-1">
                         <input value={item.description} onChange={e => { const n = [...mItems]; n[i] = { ...n[i], description: e.target.value }; setMItems(n); }}
                           placeholder="Descripcion" className="flex-1 px-2 py-0.5 bg-digi-darker border border-digi-border text-[10px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                        <button onClick={() => setMItems(prev => prev.filter((_, idx) => idx !== i))}
-                          className="text-red-500/70 hover:text-red-600 text-[13px] px-1" style={pf}>X</button>
+                        <BotonQuitar onClick={() => setMItems(prev => prev.filter((_, idx) => idx !== i))} etiqueta="Quitar ítem" tamano="xs" className="self-center" />
                       </div>
                       <div className="grid grid-cols-4 gap-1">
                         <div>

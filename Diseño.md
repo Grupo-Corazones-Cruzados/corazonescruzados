@@ -3904,6 +3904,8 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Formulario de facturar: fuera la nota «Se prellenan desde la cuenta de
+  facturación del cliente…»** bajo «Adquirente» (proyecto y ticket), por decisión de Fernando.
 - **2026-09-29 · Requerimientos en DOS PARTES (lista + detalle) · por decisión de Fernando.**
   Sustituye al desplegable por fila. Izquierda (`lg:w-[42%]`, con scroll propio): cada fila es
   casilla · título en **una línea** (`truncate`, con `title` para el texto completo) · precio
@@ -3940,7 +3942,12 @@ mientras se escribe.
     recordatorios, pensamientos, razones, categorías/subcategorías de incidentes, CV,
     portafolio, passkeys, admin (soluciones, fuentes, tutoriales) y los sistemas de
     Centralizado (datos, condiciones, metodología, comandos, social, percepción).
-  - Fuera: `app/(public)/panel` y `app/(main)/projects` (pantallas del estilo pixel antiguo).
+  - Fuera: `app/(public)/panel` y `app/(main)/projects` (pantallas del estilo pixel antiguo), y
+    `components/projects/ScriptStoryboardEditor.tsx` (no se usa en ninguna pantalla).
+  - **2026-09-29, segunda pasada:** faltaban las que eran la **letra «X» como texto**
+    (`>X</button>`), que la primera búsqueda no cubría: ítems y campos adicionales del
+    formulario de **facturar** (proyecto, ticket y factura manual). Al buscar ×, buscar
+    también `>X<` y `>x<`.
 - **2026-09-29 · Tarjeta de Pagos del proyecto · por decisión de Fernando.** «Editar» a la
   derecha del título «Pagos» (mismo botón que el de Descripción) abre el panel de etapas de
   facturación. La sección «Etapas de facturación» solo se pinta cuando hay etapas; sin ellas
