@@ -854,7 +854,7 @@ export default function ProjectDetailPage() {
       description: r.description || '',
       cost: r.cost != null ? String(r.cost) : '',
       talents: Array.isArray(r.talents) ? r.talents : [],
-      // `slots` sin definir (requerimientos que vienen del agente de cotizaciones) → 1.
+      // Por si queda alguno sin plazas de antes del 2026-09-29: se edita como 1.
       slots: r.slots != null ? String(r.slots) : '1',
     });
   };
@@ -1617,17 +1617,19 @@ export default function ProjectDetailPage() {
                             {expanded && r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
                             {/* Talentos que pide el requerimiento y cuántas plazas ofrece:
                                 es lo que hace que el proyecto salga en el filtro por talento. */}
-                            {expanded && (r.talents?.length > 0 || r.slots == null || r.slots > 1) && (
+                            {expanded && (r.talents?.length > 0 || r.slots != null) && (
                               <p className="flex flex-wrap items-center gap-1 mt-1">
                                 {(r.talents || []).map((t: string) => (
                                   <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20" style={mf}>{t}</span>
                                 ))}
-                                {r.slots == null ? (
-                                  // El agente de cotizaciones no define plazas: se avisa para que se pongan.
-                                  <span className="text-[10.5px] text-amber-700" style={mf}>· plazas sin definir</span>
-                                ) : r.slots > 1 ? (
-                                  <span className="text-[10.5px] text-digi-muted" style={mf}>· {r.slots} plazas</span>
-                                ) : null}
+                                {/* ⇒ PLAZAS: icono de personas + número, cuando están definidas; si no,
+                                    nada (Fernando, 2026-09-29 — antes salía «plazas sin definir»). */}
+                                {r.slots != null && (
+                                  <span title={`${r.slots} plaza${Number(r.slots) === 1 ? '' : 's'}`}
+                                    className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border border-digi-border text-digi-muted tabular-nums" style={mf}>
+                                    <Users className="w-3 h-3" />{r.slots}
+                                  </span>
+                                )}
                               </p>
                             )}
                           </button>
@@ -2818,7 +2820,7 @@ export default function ProjectDetailPage() {
                 // En revisión o completado lo que se cobra no se toca: se enseña, no se edita.
                 <div className="rounded-md bg-black/[0.03] px-3 py-2 text-[12px] space-y-1" style={mf}>
                   <div className="flex justify-between gap-3"><span className="text-digi-muted">Costo</span><span className="tabular-nums text-digi-text">{r.cost != null ? `$${fmt2(Number(r.cost))}` : '—'}</span></div>
-                  <div className="flex justify-between gap-3"><span className="text-digi-muted">Plazas</span><span className="text-digi-text">{r.slots ?? 'sin definir'}</span></div>
+                  <div className="flex justify-between gap-3"><span className="text-digi-muted">Plazas</span><span className="text-digi-text inline-flex items-center gap-1 tabular-nums">{r.slots != null ? (<><Users className="w-3.5 h-3.5 text-digi-muted" />{r.slots}</>) : '—'}</span></div>
                   <div className="flex justify-between gap-3"><span className="text-digi-muted shrink-0">Talentos</span><span className="text-digi-text text-right">{(r.talents || []).join(', ') || '—'}</span></div>
                   <p className="text-[11px] text-digi-muted pt-1">Costo, plazas y talentos no se cambian con el proyecto en este estado.</p>
                 </div>

@@ -62,9 +62,9 @@ Metodo de precios:
 - Puedes usar la herramienta list_my_projects para revisar cotizaciones/proyectos previos del mismo miembro y calibrar precios y desglose.
 
 Reglas de la cotizacion:
-- Desglosa el proyecto en REQUERIMIENTOS claros (modulos/entregables). Cada requerimiento tiene: title, description breve, hours (numero), cost (numero USD), 2-6 subtasks (pasos concretos) y talents (talentos requeridos).
+- Desglosa el proyecto en REQUERIMIENTOS claros (modulos/entregables). Cada requerimiento tiene: title, description breve, hours (numero), cost (numero USD), 2-6 subtasks (pasos concretos), talents (talentos requeridos) y slots (plazas).
 - TALENTOS (obligatorio en cada requerimiento): describe con tus palabras el trabajo del requerimiento y llama a buscar_talentos para ver los talentos reales de la organizacion. Elige de los resultados 1-3 talentos, COPIANDO EL NOMBRE EXACTO tal como te lo devuelve la herramienta. No inventes talentos ni escribas variantes: si el nombre no vino de la herramienta, no vale. Busca por separado para cada requerimiento, porque cada uno necesita perfiles distintos.
-- NO indiques plazas ni cantidad de personas: eso lo define despues una persona.
+- PLAZAS (slots, entero >= 1): cuantas personas hacen falta a la vez en ese requerimiento. Pon mas de 1 solo si el trabajo claramente lo exige (volumen o especialidades en paralelo). SI NO ESTAS SEGURO, PON 1: nunca lo dejes vacio ni en 0.
 - COSTOS ADICIONALES (additional_costs): servicios de PROVEEDORES EXTERNOS que el cliente debera adquirir aparte del desarrollo (p. ej. hosting/servidor, dominio, pasarela de pago, APIs de terceros, licencias, correo transaccional, SMS, almacenamiento, mapas). Segun el contexto del proyecto, propon los que apliquen con un costo estimado en USD (mensual o unico) y una breve descripcion. Si no aplica ninguno, devuelve una lista vacia.
 - Propon una FECHA LIMITE (deadline) realista en formato ISO (YYYY-MM-DD), acorde al total de horas.
 - Escribe en español. Se concreto y evita relleno.
@@ -108,7 +108,7 @@ Responde SOLO con este JSON (sin nada mas):
   "summary": "resumen de 2-4 frases del alcance",
   "deadline": "YYYY-MM-DD",
   "requirements": [
-    { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["...", "..."], "talents": ["Nombre exacto devuelto por buscar_talentos"] }
+    { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["...", "..."], "talents": ["Nombre exacto devuelto por buscar_talentos"], "slots": 1 }
   ],
   "additional_costs": [
     { "label": "Servicio de proveedor externo", "description": "para que sirve", "amount": 0 }
@@ -156,7 +156,7 @@ Responde SOLO con este JSON (sin nada mas):
     "title": "...",
     "summary": "...",
     "deadline": "YYYY-MM-DD",
-    "requirements": [ { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["..."], "talents": ["..."] } ],
+    "requirements": [ { "title": "...", "description": "...", "hours": 0, "cost": 0, "subtasks": ["..."], "talents": ["..."], "slots": 1 } ],
     "additional_costs": [ { "label": "...", "description": "...", "amount": 0 } ]
   }
 }

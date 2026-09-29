@@ -20,8 +20,8 @@ async function materialize(projectId: number, payload: QuotePayload): Promise<nu
     total += Number(r.cost) || 0;
     const { rows: [reqRow] } = await pool.query(
       `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
-       VALUES ($1, $2, $3, $4, $5::text[], NULL) RETURNING id`,
-      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents)],
+       VALUES ($1, $2, $3, $4, $5::text[], $6) RETURNING id`,
+      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents), Math.max(1, Number(r.slots) || 1)],
     );
     let order = 0;
     for (const st of r.subtasks) {

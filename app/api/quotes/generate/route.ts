@@ -99,14 +99,14 @@ export async function POST(req: NextRequest) {
     );
     await setResponsible(project.id, respId, { invited: false });
 
-    // 3) Materializa requerimientos + subtareas + costo. Las PLAZAS quedan sin definir
-    //    (NULL): las decide una persona, no el agente.
+    // 3) Materializa requerimientos + subtareas + costo. Las PLAZAS las propone el agente
+    //    y nunca bajan de 1 (Fernando, 2026-09-29); una persona las ajusta si hace falta.
     await ensureRequirementColumns();
     for (const r of payload.requirements) {
       const { rows: [reqRow] } = await pool.query(
         `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
-         VALUES ($1, $2, $3, $4, $5::text[], NULL) RETURNING id`,
-        [project.id, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents)],
+         VALUES ($1, $2, $3, $4, $5::text[], $6) RETURNING id`,
+        [project.id, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents), Math.max(1, Number(r.slots) || 1)],
       );
       let order = 0;
       for (const st of r.subtasks) {

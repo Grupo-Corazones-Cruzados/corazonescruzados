@@ -110,6 +110,12 @@ export type QuoteRequirement = {
   subtasks: string[];
   /** Talentos que el agente eligió con la herramienta `buscar_talentos` (nombres exactos). */
   talents: string[];
+  /**
+   * Plazas: cuántas personas a la vez. SIEMPRE ≥ 1 (Fernando, 2026-09-29: «si no está seguro
+   * cuántas plazas definir, ponerle 1 como mínimo»). Antes se guardaban vacías (NULL) y la
+   * pantalla avisaba «plazas sin definir» en cada requerimiento de cada cotización.
+   */
+  slots: number;
 };
 /** Costo adicional: servicio de proveedor externo (hosting, dominio, APIs, licencias…). */
 export type AdditionalCost = { label: string; description?: string; amount: number };
@@ -145,6 +151,8 @@ export function normalizeQuotePayload(raw: any): QuotePayload {
     talents: Array.isArray(r?.talents)
       ? [...new Set(r.talents.map((t: any) => String(t || '').trim()).filter(Boolean))].slice(0, 5)
       : [],
+    // Lo que diga el agente, con suelo 1: vacío, 0, negativo o texto → 1.
+    slots: Math.min(999, Math.max(1, Math.floor(Number(r?.slots)) || 1)),
   })).filter((r: QuoteRequirement) => r.title) : [];
   const additional_costs = normalizeAdditionalCosts(raw?.additional_costs);
   const total = reqs.reduce((s, r) => s + (Number(r.cost) || 0), 0) + additional_costs.reduce((s, c) => s + (Number(c.amount) || 0), 0);

@@ -24,9 +24,12 @@ export function ensureRequirementColumns(): Promise<void> {
   ensuring = (async () => {
     await pool.query(`ALTER TABLE gcc_world.project_requirements ADD COLUMN IF NOT EXISTS talents TEXT[] NOT NULL DEFAULT '{}'`);
     await pool.query(`ALTER TABLE gcc_world.project_requirements ADD COLUMN IF NOT EXISTS slots INT DEFAULT 1`);
-    // Las plazas pueden quedar SIN DEFINIR (NULL): el agente de cotizaciones no las decide,
-    // las pone una persona al revisar el requerimiento.
-    await pool.query(`ALTER TABLE gcc_world.project_requirements ALTER COLUMN slots DROP NOT NULL`).catch(() => {});
+    // ⇒ LAS PLAZAS YA NO QUEDAN «SIN DEFINIR» (Fernando, 2026-09-29): mínimo 1. Antes esto
+    // soltaba el NOT NULL para que el agente de cotizaciones las dejara vacías. Los 71
+    // requerimientos que había en NULL se pasaron a 1 ese día; esto lo deja cerrado.
+    await pool.query(`ALTER TABLE gcc_world.project_requirements ALTER COLUMN slots SET DEFAULT 1`);
+    await pool.query(`UPDATE gcc_world.project_requirements SET slots = 1 WHERE slots IS NULL OR slots < 1`);
+    await pool.query(`ALTER TABLE gcc_world.project_requirements ALTER COLUMN slots SET NOT NULL`).catch(() => {});
     // Índice GIN: el filtro por talento hace `talents && ARRAY[...]` sobre todos los
     // requerimientos, y sin él sería un recorrido completo de la tabla.
     await pool.query(`CREATE INDEX IF NOT EXISTS project_requirements_talents_idx ON gcc_world.project_requirements USING GIN (talents)`);
@@ -49,11 +52,14 @@ export function normalizeTalents(input: unknown): string[] {
   return out;
 }
 
-/** Plazas: entero ≥ 1, o `null` = sin definir (lo que deja el agente de cotizaciones). */
-export function normalizeSlots(input: unknown): number | null {
-  if (input === null || input === undefined || input === '') return null;
+/**
+ * Plazas: entero entre 1 y 999. **Nunca «sin definir»** (Fernando, 2026-09-29): vacío, 0 o
+ * algo que no es un número cuenta como 1. Antes devolvía `null`, que es lo que dejaba el
+ * agente de cotizaciones, y la pantalla avisaba «plazas sin definir» en cada requerimiento.
+ */
+export function normalizeSlots(input: unknown): number {
   const n = Math.floor(Number(input));
-  if (!Number.isFinite(n) || n < 1) return null;
+  if (!Number.isFinite(n) || n < 1) return 1;
   return Math.min(n, 999);
 }
 

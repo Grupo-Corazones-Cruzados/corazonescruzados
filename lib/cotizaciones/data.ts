@@ -14,11 +14,11 @@ export async function materializeQuote(projectId: number, payload: QuotePayload)
   let total = 0;
   for (const r of payload.requirements) {
     total += Number(r.cost) || 0;
-    // Las PLAZAS se dejan sin definir (NULL): las decide una persona después, no el agente.
+    // Las PLAZAS: las que proponga el agente, nunca menos de 1 (Fernando, 2026-09-29).
     const { rows: [reqRow] } = await pool.query(
       `INSERT INTO gcc_world.project_requirements (project_id, title, description, cost, talents, slots)
-       VALUES ($1, $2, $3, $4, $5::text[], NULL) RETURNING id`,
-      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents)],
+       VALUES ($1, $2, $3, $4, $5::text[], $6) RETURNING id`,
+      [projectId, r.title.slice(0, 300), r.description || null, Number(r.cost) || 0, normalizeTalents(r.talents), Math.max(1, Number(r.slots) || 1)],
     );
     let order = 0;
     for (const st of r.subtasks) {

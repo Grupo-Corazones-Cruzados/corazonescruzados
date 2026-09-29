@@ -275,6 +275,13 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **👥 Plazas: mínimo 1, nunca «sin definir» (Fernando, 2026-09-29).** El agente de
+  cotizaciones propone `slots` y, si no está seguro, pone 1 (instrucción en
+  `services/cotizador-worker/index.mjs`); la web lo guarda con suelo 1 (`normalizeQuotePayload`,
+  `normalizeSlots`) y la columna pasa a `DEFAULT 1 NOT NULL` en `ensureRequirementColumns`.
+  Datos: los **71 requerimientos** que había en NULL (12 proyectos) se pusieron a 1 ese día;
+  ninguno tenía más de 1, así que no se pisó nada. En pantalla: icono de personas + número, y
+  nada si no hay plazas. ⚠️ Recordatorio: el worker se despliega A MANO (`railway up`).
 - **✏️ Título y descripción de un requerimiento se editan también en revisión y completado
   (Fernando, 2026-09-28).** Lo que se cobra —costo, plazas, talentos, marcar hecho,
   subtareas y asignaciones— sigue cerrado en esos estados; el texto no mueve nada facturado
