@@ -1599,7 +1599,10 @@ export default function ProjectDetailPage() {
                             onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
                             disabled={!canEditThis}
                             aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
-                            className={`destino-tactil mt-0.5 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : 'cursor-default'}`}
+                            // ⇒ BLOQUEADA EN REVISIÓN Y DESPUÉS (Fernando, 2026-09-29): ya lo estaba, pero se
+                            // veía igual que una activa. Atenuada y con el porqué al pasar el ratón.
+                            title={!trabajoAbierto ? 'Bloqueado: el proyecto ya está en revisión o cerrado' : undefined}
+                            className={`destino-tactil mt-0.5 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : !trabajoAbierto ? 'opacity-50 cursor-not-allowed' : 'cursor-default'}`}
                           >
                             {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                           </button>
@@ -2941,7 +2944,8 @@ export default function ProjectDetailPage() {
                     <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-black/[0.03]">
                       <button type="button" onClick={() => puedeSubtareas && toggleSubItem(item.id, !item.is_completed)} disabled={!puedeSubtareas || editingItemId === item.id}
                         aria-label={item.is_completed ? 'Marcar incompleta' : 'Marcar completa'}
-                        className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${puedeSubtareas && editingItemId !== item.id ? 'cursor-pointer hover:border-accent' : ''}`}>
+                        title={!trabajoAbierto ? 'Bloqueado: el proyecto ya está en revisión o cerrado' : undefined}
+                        className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${item.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${puedeSubtareas && editingItemId !== item.id ? 'cursor-pointer hover:border-accent' : !trabajoAbierto ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         {item.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                       </button>
                       {editingItemId === item.id ? (<>
