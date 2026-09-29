@@ -291,8 +291,8 @@ Stack estándar de la casa, con particularidades de este repo:
     revisión», 370 $) no tiene plan: solo podía pagarlo el cliente CON cuenta. Ahora un enlace
     de proyecto **sin etapa cobra lo que queda por facturar**, y la factura sale con un renglón
     por requerimiento (lo mismo que el canal 2). Al pagarse, el proyecto se completa solo.
-  - **Quién y cuándo:** botón **«Compartir enlace de pago»** en `trailing` de la cabecera (el
-    sitio de «Compartir acceso»), para admin o responsable. Sin plan: en revisión o completado
+  - **Quién y cuándo:** botón **«Compartir enlace de pago»** en la cabecera, a la izquierda de
+    «Completar y facturar» (movido ahí el mismo día), para admin o responsable. Sin plan: en revisión o completado
     y con importe por facturar. Con plan: el mismo panel con un selector de etapa pendiente.
   - **⚠️ Candado nuevo en `cotizarProyectoSinEtapas`:** con plan se rechaza el cobro «entero».
     Antes no hacía falta porque nada llegaba sin etapa, pero el botón «Completar y facturar»

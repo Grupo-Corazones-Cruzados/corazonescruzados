@@ -789,8 +789,8 @@ formulario que «Compartir acceso a la cotización»**. Ese formulario es ahora 
   **Correo del cliente (para enviarlo)** · `pie` (el importe con `EditAmount`, debajo del
   último campo y limpio) · dos botones a medias: **«Generar enlace»** (`BTN_SECONDARY`, solo
   genera) y **«Generar y enviar»** (`BTN_PRIMARY` + `Send`). El enlace sale al pie con copiar.
-- Se abre desde el botón **«Compartir enlace de pago»** en `trailing` de la cabecera del
-  proyecto —mismo sitio y misma clase que «Compartir acceso»— y desde el icono `Share2` de
+- Se abre desde el botón **«Compartir enlace de pago»** de la cabecera del proyecto, a la
+  izquierda de «Completar y facturar» (misma clase que «Compartir acceso») y desde el icono `Share2` de
   cada etapa pendiente (que llega con esa etapa preseleccionada). En el ticket, desde su botón.
 - ⛔ No volver a hacer una ventanita para compartir un enlace: se usa este panel.
 
@@ -3904,6 +3904,16 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-28 · Detalle de proyecto: columnas a alto de pantalla · por decisión de Fernando.**
+  - Las tres columnas miden **hasta el pie** (`useAltoHastaElPie`, pasado por la variable
+    `--alto-columnas` para que solo aplique desde `lg`) y cada una se desplaza por dentro.
+  - Centro: **Requerimientos** se estira (`lg:flex-1 lg:min-h-0`) y desplaza su lista; debajo,
+    **anclados**, Costos adicionales → cobros en espera → Pagos, con tope `lg:max-h-[50%]`
+    (si crecen, se desplazan ellos, no Requerimientos). Salieron del panel derecho.
+  - **Requerimiento contraído = solo el título** (más precio y botones de la fila). Descripción,
+    etiquetas de talento/plazas y subtareas, al desplegar. Se quitó el resumen «N subtareas».
+  - **«Compartir enlace de pago» va en `actions`, a la izquierda de «Completar y facturar»**, no
+    en `trailing`: son las dos formas de cobrar y van juntas.
 - **2026-09-28 · Panel de resumen de Proyectos y Tickets SIN botón de cerrar · por decisión de
   Fernando.** El panel de la derecha (escritorio) se queda con la fila elegida; se cambia
   eligiendo otra. En el teléfono el resumen es un `PixelModal` a pantalla completa y **sí**

@@ -25,6 +25,7 @@ import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import { fmt2 } from '@/lib/format';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -202,6 +203,8 @@ export default function ProjectDetailPage() {
   const memberId = user?.member_id;
   const isMemberCreator = isMember && memberId && project?.assigned_member_id == memberId;
   const isOwner = isAdmin || isMemberCreator;
+  // Alto de las tres columnas del detalle: hasta el pie de la pantalla (ver el JSX).
+  const altoColumnas = useAltoHastaElPie({ minimo: 520 });
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [newParticipantId, setNewParticipantId] = useState('');
   // Modales "Ver más" del panel izquierdo (equipo / propuestas completas).
@@ -1344,6 +1347,14 @@ export default function ProjectDetailPage() {
                     title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}><Send className="w-4 h-4" /> Enviar a revisión</button>
                 );
               })()}
+              {/* ⇒ EL ENLACE DE PAGO, A LA IZQUIERDA DE «Completar y facturar» (Fernando,
+                  2026-09-28): son las dos formas de cobrar el proyecto y van juntas. Misma
+                  forma que «Compartir acceso» de la cotización. */}
+              {puedeCompartirPago && (
+                <button onClick={() => abrirEnlacePago()} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
+                  <Share2 className="w-4 h-4" /> Compartir enlace de pago
+                </button>
+              )}
               {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>}
 
               {/* ⇒ EL MISMO BOTÓN PARA EL CLIENTE, PERO NO LA MISMA PANTALLA.
@@ -1404,13 +1415,6 @@ export default function ProjectDetailPage() {
             <button onClick={() => setShowShare(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
               <Share2 className="w-4 h-4" /> Compartir acceso
             </button>
-          ) : puedeCompartirPago ? (
-            /* ⇒ EL ENLACE DE PAGO, en el mismo sitio y con la misma forma que «Compartir
-               acceso» de la cotización (Fernando, 2026-09-28): el responsable se lo manda al
-               cliente cuando el proyecto está listo para cobrarse. */
-            <button onClick={() => abrirEnlacePago()} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
-              <Share2 className="w-4 h-4" /> Compartir enlace de pago
-            </button>
           ) : undefined}
       />
 
@@ -1449,9 +1453,16 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
+      {/* ⇒ LAS TRES COLUMNAS MIDEN HASTA EL PIE (2026-09-28) y cada una se desplaza por
+          dentro: es lo que deja fijos abajo Costos adicionales y Pagos en la del centro.
+          Solo desde `lg`; en el teléfono se apilan y la página se desplaza como siempre.
+          El alto lo MIDE `useAltoHastaElPie` —nada de `calc` a ojo—, y se pasa por una
+          variable para que la clase `lg:` decida cuándo aplica. */}
+      <div ref={altoColumnas.ref}
+        style={altoColumnas.style ? ({ '--alto-columnas': `${altoColumnas.style.height}px` } as React.CSSProperties) : undefined}
+        className="flex flex-col lg:flex-row gap-4 items-start lg:items-stretch lg:h-[var(--alto-columnas)]">
         {/* ====== IZQUIERDA: Equipo + Propuestas ====== */}
-        <aside className="w-full lg:w-[280px] shrink-0 space-y-4 order-2 lg:order-1">
+        <aside className="w-full lg:w-[280px] shrink-0 space-y-4 order-2 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
           {/* Equipo del proyecto (compacto: responsable + hasta 5 participantes) */}
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between gap-2 mb-3">
@@ -1498,18 +1509,18 @@ export default function ProjectDetailPage() {
         </aside>
 
         {/* ====== PRINCIPAL: Requerimientos (la Descripción se movió al rail derecho) ====== */}
-        <div className="flex-1 min-w-0 space-y-4 order-1 lg:order-2">
+        <div className="w-full flex-1 min-w-0 flex flex-col gap-4 order-1 lg:order-2 lg:min-h-0">
 
           {(<>
-          {/* Requirements */}
-          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5">
+          {/* Requirements — se estira hasta Costos adicionales y desplaza su lista por dentro. */}
+          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-5 lg:flex-1 lg:min-h-0 flex flex-col">
             {/* ⚠️ SE SALÍA 30 px DEL ANCHO EN UN TELÉFONO. La fila era
                 `flex justify-between` sin `flex-wrap` y con la barra de progreso a `w-28`
                 fija: el título, la barra, el porcentaje y «Agregar» suman más de los
                 350 px útiles, y el botón quedaba cortado contra el borde. Ahora la fila
                 envuelve y **la barra se va a una segunda línea a ancho completo**, donde
                 además se lee mejor. */}
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
+            <div className="shrink-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
               <h3 className="text-[14px] font-semibold text-digi-text" style={mf}>
                 Requerimientos <span className="text-digi-muted font-normal">({completedReqs}/{reqs.length})</span>
               </h3>
@@ -1526,6 +1537,7 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:-mr-2 lg:pr-2">
             {reqs.length === 0 ? (
               <p className="text-[13px] text-digi-muted text-center py-6" style={mf}>Sin requerimientos aún.</p>
             ) : (
@@ -1553,10 +1565,14 @@ export default function ProjectDetailPage() {
                           </button>
                           <button onClick={() => toggleReqExpand(r.id)} className="min-w-0 flex-1 text-left">
                             <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
-                            {r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
+                            {/* ⇒ CONTRAÍDO, SOLO EL TÍTULO (Fernando, 2026-09-28). La descripción,
+                                las etiquetas y las subtareas se ven al desplegar: con todo a la
+                                vista, cinco requerimientos llenaban la pantalla y no se veía la
+                                lista de un vistazo. */}
+                            {expanded && r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
                             {/* Talentos que pide el requerimiento y cuántas plazas ofrece:
                                 es lo que hace que el proyecto salga en el filtro por talento. */}
-                            {(r.talents?.length > 0 || r.slots == null || r.slots > 1) && (
+                            {expanded && (r.talents?.length > 0 || r.slots == null || r.slots > 1) && (
                               <p className="flex flex-wrap items-center gap-1 mt-1">
                                 {(r.talents || []).map((t: string) => (
                                   <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20" style={mf}>{t}</span>
@@ -1567,11 +1583,6 @@ export default function ProjectDetailPage() {
                                 ) : r.slots > 1 ? (
                                   <span className="text-[10.5px] text-digi-muted" style={mf}>· {r.slots} plazas</span>
                                 ) : null}
-                              </p>
-                            )}
-                            {!expanded && (items.length > 0 || acceptedAssignments.length > 0 || pendingAssignments.length > 0) && (
-                              <p className="text-[11px] text-digi-muted/80 mt-0.5" style={mf}>
-                                {[items.length > 0 ? `${items.length} subtarea${items.length !== 1 ? 's' : ''}` : '', acceptedAssignments.length > 0 ? `${acceptedAssignments.length} asignado${acceptedAssignments.length !== 1 ? 's' : ''}` : '', pendingAssignments.length > 0 ? `${pendingAssignments.length} pendiente${pendingAssignments.length !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ')}
                               </p>
                             )}
                           </button>
@@ -1672,6 +1683,125 @@ export default function ProjectDetailPage() {
                 })}
               </div>
             )}
+            </div>
+          </div>
+
+          {/* ⇒ ABAJO Y FIJOS: COSTOS ADICIONALES y PAGOS (Fernando, 2026-09-28).
+              Estaban al fondo del panel derecho, bajo Propiedades y Descripción, y había
+              que desplazar la página entera para llegar a ellos. Ahora van anclados al pie
+              de la columna central, y Requerimientos ocupa el hueco que queda encima y se
+              desplaza por dentro.
+              El tope de la mitad es para que Requerimientos nunca quede reducido a una
+              franja: si costos y pagos crecen mucho, son ELLOS los que se desplazan. */}
+          <div className="shrink-0 space-y-4 lg:max-h-[50%] lg:overflow-y-auto">
+          {/* Costos adicionales (servicios de proveedores externos) */}
+          {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0) && (
+            <AdditionalCostsCard projectId={project.id} costs={project.additional_costs || []} canEdit={!!(isOwner && !isTerminal)} onSaved={fetchProject} />
+          )}
+
+          {/* Pagos por transferencia que esperan que alguien los confirme. Va ANTES de la
+              tarjeta de Pagos porque es lo único de este panel que pide una acción hoy. */}
+          <CobrosEnEspera tipo="project" id={String(id)} alConfirmar={fetchProject} />
+
+          {/* Pagos (facturado vs pendiente) */}
+          {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
+              `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
+          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
+            || Number(billing?.stagesTotal || 0) > 0) && (() => {
+            const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
+            const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
+            return (
+              <div className="pixel-card">
+                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
+                <div className="space-y-1 text-[12px]" style={mf}>
+                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(baseTotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Por facturar</span><span className={`tabular-nums ${Number(billing?.billable ?? payments.pending) > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(Number(billing?.billable ?? payments.pending))}</span></div>
+                </div>
+                <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
+                {(payments.invoices || []).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
+                    {payments.invoices.map((inv: any) => (
+                      <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
+                        <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>
+                          {inv.status === 'cancelled' ? <span className="text-[9px] text-red-500">anulada</span> : inv.sri_status === 'authorized' ? <span className="text-[9px] text-green-600">SRI</span> : null}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* CANAL 2 — el CLIENTE paga su etapa desde aquí (2026-08-26).
+                    Ve solo lo que le incumbe: qué tramos hay, cuáles están pagados y cuál
+                    le toca. Nada del reparto interno, igual que en la página pública. */}
+                {esCliente && (billing?.etapas || []).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-digi-border space-y-1">
+                    <span className="text-[11px] text-digi-muted" style={pf}>Etapas del proyecto</span>
+                    {(billing.etapas || []).map((e: any) => (
+                      <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                        <span className="min-w-0 truncate text-digi-text">{e.name}</span>
+                        <span className="flex items-center gap-2 shrink-0">
+                          <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
+                          {e.invoiceId
+                            ? <span className="text-[9px] text-green-600">pagada</span>
+                            : (
+                              <button
+                                onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}&etapa=${e.id}`)}
+                                className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">
+                                Pagar
+                              </button>
+                            )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ETAPAS DE FACTURACIÓN: el acuerdo con el cliente («50% al empezar,
+                    50% al entregar»). No son los requerimientos, que son trabajo interno.
+                    Con plan definido, el proyecto se factura SOLO por etapas. */}
+                {isAdmin && (
+                  <div className="mt-2 pt-2 border-t border-digi-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-digi-muted" style={pf}>Etapas de facturación</span>
+                      <button onClick={openStagesPanel} className="destino-tactil text-[11px] text-accent hover:underline" style={pf}>
+                        {(billing?.etapas || []).length > 0 ? 'Editar' : 'Definir'}
+                      </button>
+                    </div>
+                    {(billing?.etapas || []).length === 0 ? (
+                      <p className="text-[10.5px] text-digi-muted" style={pf}>
+                        Sin etapas: se factura con el detalle de requerimientos.
+                      </p>
+                    ) : (
+                      (billing.etapas || []).map((e: any) => (
+                        <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                          <span className="min-w-0 truncate text-digi-text">{e.name}</span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
+                            {e.invoiceId
+                              ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>facturada</span>
+                              : <span className="text-[9px] text-amber-600">pendiente</span>}
+                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en
+                                las que aún no tienen comprobante: una etapa ya facturada no
+                                se cobra otra vez. */}
+                            {!e.invoiceId && (
+                              <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
+                                className="destino-tactil text-accent hover:opacity-70 transition-opacity">
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+              </div>
+            );
+          })()}
           </div>
 
           </>)}
@@ -2243,7 +2373,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* ====== DERECHA: pestañas Propiedades / Incidentes ====== */}
-        <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3">
+        <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3 lg:min-h-0 lg:overflow-y-auto">
           <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
             <button onClick={() => setRightTab('propiedades')} className={`flex-1 min-h-11 sm:min-h-0 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
             <button onClick={() => setRightTab('incidentes')} className={`flex-1 min-h-11 sm:min-h-0 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'incidentes' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Incidentes</button>
@@ -2310,115 +2440,6 @@ export default function ProjectDetailPage() {
               <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description || <span className="text-digi-muted">Sin descripción. Pulsa “Editar” para agregar una.</span>}</p>
             </div>
           )}
-
-          {/* Costos adicionales (servicios de proveedores externos) */}
-          {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0) && (
-            <AdditionalCostsCard projectId={project.id} costs={project.additional_costs || []} canEdit={!!(isOwner && !isTerminal)} onSaved={fetchProject} />
-          )}
-
-          {/* Pagos por transferencia que esperan que alguien los confirme. Va ANTES de la
-              tarjeta de Pagos porque es lo único de este panel que pide una acción hoy. */}
-          <CobrosEnEspera tipo="project" id={String(id)} alConfirmar={fetchProject} />
-
-          {/* Pagos (facturado vs pendiente) */}
-          {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
-              `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
-          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
-            || Number(billing?.stagesTotal || 0) > 0) && (() => {
-            const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
-            const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
-            return (
-              <div className="pixel-card">
-                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
-                <div className="space-y-1 text-[12px]" style={mf}>
-                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(baseTotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
-                  <div className="flex justify-between"><span className="text-digi-muted">Por facturar</span><span className={`tabular-nums ${Number(billing?.billable ?? payments.pending) > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(Number(billing?.billable ?? payments.pending))}</span></div>
-                </div>
-                <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
-                {(payments.invoices || []).length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
-                    {payments.invoices.map((inv: any) => (
-                      <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
-                        <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>
-                          {inv.status === 'cancelled' ? <span className="text-[9px] text-red-500">anulada</span> : inv.sri_status === 'authorized' ? <span className="text-[9px] text-green-600">SRI</span> : null}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* CANAL 2 — el CLIENTE paga su etapa desde aquí (2026-08-26).
-                    Ve solo lo que le incumbe: qué tramos hay, cuáles están pagados y cuál
-                    le toca. Nada del reparto interno, igual que en la página pública. */}
-                {esCliente && (billing?.etapas || []).length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-digi-border space-y-1">
-                    <span className="text-[11px] text-digi-muted" style={pf}>Etapas del proyecto</span>
-                    {(billing.etapas || []).map((e: any) => (
-                      <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
-                        <span className="min-w-0 truncate text-digi-text">{e.name}</span>
-                        <span className="flex items-center gap-2 shrink-0">
-                          <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                          {e.invoiceId
-                            ? <span className="text-[9px] text-green-600">pagada</span>
-                            : (
-                              <button
-                                onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}&etapa=${e.id}`)}
-                                className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">
-                                Pagar
-                              </button>
-                            )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* ETAPAS DE FACTURACIÓN: el acuerdo con el cliente («50% al empezar,
-                    50% al entregar»). No son los requerimientos, que son trabajo interno.
-                    Con plan definido, el proyecto se factura SOLO por etapas. */}
-                {isAdmin && (
-                  <div className="mt-2 pt-2 border-t border-digi-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-digi-muted" style={pf}>Etapas de facturación</span>
-                      <button onClick={openStagesPanel} className="destino-tactil text-[11px] text-accent hover:underline" style={pf}>
-                        {(billing?.etapas || []).length > 0 ? 'Editar' : 'Definir'}
-                      </button>
-                    </div>
-                    {(billing?.etapas || []).length === 0 ? (
-                      <p className="text-[10.5px] text-digi-muted" style={pf}>
-                        Sin etapas: se factura con el detalle de requerimientos.
-                      </p>
-                    ) : (
-                      (billing.etapas || []).map((e: any) => (
-                        <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
-                          <span className="min-w-0 truncate text-digi-text">{e.name}</span>
-                          <span className="flex items-center gap-1.5 shrink-0">
-                            <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                            {e.invoiceId
-                              ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>facturada</span>
-                              : <span className="text-[9px] text-amber-600">pendiente</span>}
-                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en
-                                las que aún no tienen comprobante: una etapa ya facturada no
-                                se cobra otra vez. */}
-                            {!e.invoiceId && (
-                              <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
-                                className="destino-tactil text-accent hover:opacity-70 transition-opacity">
-                                <Share2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-
-              </div>
-            );
-          })()}
 
           </>)}
 
