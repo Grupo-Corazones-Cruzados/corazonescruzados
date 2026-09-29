@@ -16,7 +16,6 @@ import AssigneePicker from '@/components/tickets/AssigneePicker';
 import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
-import BotonAyuda from '@/components/ui/BotonAyuda';
 import BrandLoader from '@/components/ui/BrandLoader';
 import IncidentsTab from '@/components/projects/IncidentsTab';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
@@ -623,21 +622,9 @@ export default function ProjectDetailPage() {
     finally { setSavingPlan(false); }
   };
 
-  /** Marca/desmarca una etapa y rehace el detalle con las que queden elegidas. */
-  const toggleStage = (stageId: number) => {
-    const next = selectedStages.includes(stageId)
-      ? selectedStages.filter(x => x !== stageId)
-      : [...selectedStages, stageId];
-    setSelectedStages(next);
-    const conPlan = billing?.mode === 'etapas';
-    const fuente = conPlan ? (billing?.etapas || []) : (billing?.stages || []);
-    const elegidas = fuente.filter((e: any) => next.includes(e.id));
-    setCompleteItems(elegidas.map((e: any) => conPlan ? etapaToItem(e) : stageToItem(e)));
-  };
-
   const handleComplete = async (skipInvoice = false) => {
     if (!skipInvoice && completeItems.length === 0) {
-      toast.error('Elige al menos una etapa para facturar');
+      toast.error('Agrega al menos un ítem al detalle para facturar');
       return;
     }
     setCompleting(true);
@@ -1935,61 +1922,19 @@ export default function ProjectDetailPage() {
               </div>
             ) : (
             <div className="max-h-[80vh] overflow-y-auto pr-1">
-              {/* Qué se factura. Si el proyecto tiene PLAN DE ETAPAS se ofrece solo eso
-                  —el acuerdo con el cliente—; si no, el detalle por requerimientos.
-                  El comprobante se emite al cumplirse cada fase (LRTI art. 61; Rgto.
-                  Comprobantes art. 17 lit. e) y cada tramo se factura una sola vez. */}
-              {billing && (() => {
-                const conPlan = billing.mode === 'etapas';
-                const filas: any[] = conPlan ? (billing.etapas || []) : (billing.stages || []);
-                if (filas.length === 0) return null;
-                return (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between border-b border-digi-border pb-1.5 mb-2">
-                      <div className="flex items-center gap-1">
-                        <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>
-                          {conPlan ? 'Etapas a facturar' : 'Requerimientos a facturar'}
-                        </h4>
-                        <BotonAyuda titulo={conPlan ? 'Etapas a facturar' : 'Requerimientos a facturar'}>
-                          {conPlan
-                            ? <>Se factura por las etapas acordadas con el cliente. Las ya facturadas no vuelven a entrar; para corregir una, anula antes su factura.</>
-                            : <>Se factura al entregar cada requerimiento. Los ya facturados no vuelven a entrar, y el detalle de abajo sigue siendo editable.</>}
-                          {Number(billing.invoicedLegacy) > 0 && (
-                            <p className="mt-2">
-                              <strong>Ojo:</strong> este proyecto ya tiene ${fmt2(Number(billing.invoicedLegacy))} facturados
-                              en comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no
-                              cobrar dos veces lo mismo.
-                            </p>
-                          )}
-                        </BotonAyuda>
-                      </div>
-                      <span className="text-[11px] text-digi-muted" style={pf}>
-                        Facturado ${fmt2(billing.invoiced)} · Por facturar ${fmt2(billing.billable)}
-                      </span>
-                    </div>
-                    <div className="border border-digi-border rounded-lg divide-y divide-digi-border/60 max-h-48 overflow-y-auto">
-                      {filas.map((e: any) => {
-                        const facturada = !!e.invoiceId;
-                        return (
-                          <label key={e.id} className={`flex items-center gap-2 px-2 py-1.5 text-[12px] ${facturada ? 'opacity-60' : 'cursor-pointer hover:bg-accent/5'}`} style={pf}>
-                            <input type="checkbox" disabled={facturada} checked={selectedStages.includes(e.id)}
-                              onChange={() => toggleStage(e.id)} className="accent-[#4B2D8E]" />
-                            <span className="flex-1 min-w-0 truncate text-digi-text">{conPlan ? e.name : e.title}</span>
-                            {facturada ? (
-                              <span className="text-[11px] text-digi-muted shrink-0">Facturada · {e.invoiceNumber}</span>
-                            ) : !conPlan && e.deliveredAt ? (
-                              <span className="text-[11px] text-green-600 shrink-0">Entregada</span>
-                            ) : !conPlan ? (
-                              <span className="text-[11px] text-amber-600 shrink-0">Sin entregar</span>
-                            ) : null}
-                            <span className="tabular-nums text-digi-text shrink-0">${fmt2(Number(e.amount))}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
+              {/* ⇒ SIN «REQUERIMIENTOS A FACTURAR» (Fernando, 2026-09-29): este formulario solo se
+                  abre con el proyecto EN REVISIÓN, y ahí se factura todo lo pendiente — elegir no
+                  tenía sentido. Lo que se factura sigue siendo `selectedStages`, que al abrir
+                  arranca con TODO lo pendiente (ver `openCompleteModal`); el detalle de abajo
+                  sigue siendo editable.
+                  Lo único que se conserva es el aviso de comprobantes antiguos, que vivía
+                  dentro de la ayuda de esa sección y evita cobrar dos veces lo mismo. */}
+              {Number(billing?.invoicedLegacy) > 0 && (
+                <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-800" style={pf}>
+                  <strong>Ojo:</strong> este proyecto ya tiene ${fmt2(Number(billing.invoicedLegacy))} facturados en
+                  comprobantes anteriores a la facturación por etapas. Revísalos antes de emitir para no cobrar dos veces lo mismo.
+                </p>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* ─── LEFT: Adquirente + Pago ─── */}
                 <div className="space-y-2">

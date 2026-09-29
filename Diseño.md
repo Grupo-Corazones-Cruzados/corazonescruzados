@@ -3904,6 +3904,10 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · «Completar y facturar» sin la sección «Requerimientos/Etapas a facturar»** · por
+  decisión de Fernando: el formulario solo se abre en revisión y se factura todo lo pendiente
+  (`selectedStages` arranca con todo). El aviso de comprobantes antiguos (`invoicedLegacy`),
+  que vivía en su ayuda, pasa a una franja ámbar visible solo cuando aplica.
 - **2026-09-29 · Formulario de facturar: fuera la nota «Se prellenan desde la cuenta de
   facturación del cliente…»** bajo «Adquirente» (proyecto y ticket), por decisión de Fernando.
 - **2026-09-29 · Requerimientos en DOS PARTES (lista + detalle) · por decisión de Fernando.**
