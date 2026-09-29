@@ -13,8 +13,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, BarChart3, Pencil } from 'lucide-react';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -62,7 +62,6 @@ export default function ProjectDetailPage() {
   const [rightTab, setRightTab] = useState<'propiedades' | 'incidentes'>('propiedades');
   const [showShare, setShowShare] = useState(false);
   // Paneles de acceso rápido desde el header (Progreso / Imágenes).
-  const [showProgresoModal, setShowProgresoModal] = useState(false);
   const [showImagesModal, setShowImagesModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
@@ -1374,26 +1373,29 @@ export default function ProjectDetailPage() {
           }
           actions={
             <>
-              {project.status === 'draft' && isOwner && <button onClick={() => updateStatus('open')} className={BTN_PRIMARY}><DoorOpen className="w-4 h-4" /> Publicar</button>}
-              {project.status === 'open' && isOwner && <button onClick={() => updateStatus('in_progress')} className={BTN_PRIMARY}><Play className="w-4 h-4" /> Iniciar</button>}
+              {/* ⇒ SOLO ICONOS (Fernando, 2026-09-29). El nombre va en `title` y `aria-label`. */}
+              {project.status === 'draft' && isOwner && <button onClick={() => updateStatus('open')} className={BTN_ICONO_PRIMARIO} title="Publicar" aria-label="Publicar"><DoorOpen className="w-4 h-4" /></button>}
+              {project.status === 'open' && isOwner && <button onClick={() => updateStatus('in_progress')} className={BTN_ICONO_PRIMARIO} title="Iniciar" aria-label="Iniciar"><Play className="w-4 h-4" /></button>}
               {project.status === 'in_progress' && isOwner && (() => {
                 const reqs = project.requirements || [];
                 const allDone = reqs.length > 0 && reqs.every((r: any) => r.is_completed || r.completed_at);
                 return (
-                  <button onClick={() => updateStatus('review')} disabled={!allDone}
-                    className={allDone ? BTN_PRIMARY : BTN_SECONDARY}
-                    title={!allDone ? 'Todos los requerimientos deben estar completados' : ''}><Send className="w-4 h-4" /> Enviar a revisión</button>
+                  // `disabled` quita el puntero, así que el porqué va en un envoltorio con `title`.
+                  <span title={allDone ? 'Enviar a revisión' : 'Enviar a revisión — todos los requerimientos deben estar completados'} className="inline-flex">
+                    <button onClick={() => updateStatus('review')} disabled={!allDone} aria-label="Enviar a revisión"
+                      className={allDone ? BTN_ICONO_PRIMARIO : BTN_ICONO_SECUNDARIO}><Send className="w-4 h-4" /></button>
+                  </span>
                 );
               })()}
               {/* ⇒ EL ENLACE DE PAGO, A LA IZQUIERDA DE «Completar y facturar» (Fernando,
                   2026-09-28): son las dos formas de cobrar el proyecto y van juntas. Misma
                   forma que «Compartir acceso» de la cotización. */}
               {puedeCompartirPago && (
-                <button onClick={() => abrirEnlacePago()} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
-                  <Share2 className="w-4 h-4" /> Compartir enlace de pago
+                <button onClick={() => abrirEnlacePago()} className={BTN_ICONO_ACENTO} title="Compartir enlace de pago" aria-label="Compartir enlace de pago">
+                  <Share2 className="w-4 h-4" />
                 </button>
               )}
-              {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className={BTN_PRIMARY}><Receipt className="w-4 h-4" /> Completar y facturar</button>}
+              {project.status === 'review' && isAdmin && <button onClick={openCompleteModal} className={BTN_ICONO_PRIMARIO} title="Completar y facturar" aria-label="Completar y facturar"><Receipt className="w-4 h-4" /></button>}
 
               {/* ⇒ EL MISMO BOTÓN PARA EL CLIENTE, PERO NO LA MISMA PANTALLA.
                   Un proyecto «en revisión» está esperando que el cliente diga que sí, y
@@ -1407,20 +1409,19 @@ export default function ProjectDetailPage() {
               {project.status === 'review' && esCliente && billing?.mode !== 'etapas' && Number(billing?.billable || 0) > 0 && (
                 <button
                   onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}`)}
-                  className={BTN_PRIMARY}
+                  className={BTN_ICONO_PRIMARIO} title="Completar y pagar" aria-label="Completar y pagar"
                 >
-                  <Receipt className="w-4 h-4" /> Completar y facturar
-                </button>
-              )}
-              {/* Accesos rápidos reformulados como botones del header */}
-              {['in_progress', 'review', 'completed'].includes(project.status) && reqs.length > 0 && (
-                <button onClick={() => setShowProgresoModal(true)} className="inline-flex items-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
-                  <BarChart3 className="w-4 h-4" /> Progreso {reqs.length ? `${Math.round((completedReqs / reqs.length) * 100)}%` : ''}
+                  <Receipt className="w-4 h-4" />
                 </button>
               )}
               {showImages && (
-                <button onClick={() => setShowImagesModal(true)} className="inline-flex items-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 border border-digi-border text-digi-text text-sm font-medium rounded hover:border-accent hover:text-accent transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
-                  <ImageIcon className="w-4 h-4" /> Imágenes{projectImages.length > 0 ? ` (${projectImages.length})` : ''}
+                <button onClick={() => setShowImagesModal(true)} className={BTN_ICONO_SECUNDARIO}
+                  title={`Imágenes${projectImages.length > 0 ? ` (${projectImages.length})` : ''}`} aria-label={`Imágenes (${projectImages.length})`}>
+                  <ImageIcon className="w-4 h-4" />
+                  {/* El número de imágenes, que antes iba en el texto, como burbujita. */}
+                  {projectImages.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-accent text-white text-[9.5px] font-semibold leading-4 text-center tabular-nums">{projectImages.length}</span>
+                  )}
                 </button>
               )}
             </>
@@ -1450,8 +1451,8 @@ export default function ProjectDetailPage() {
             ...(isAdmin ? [{ label: 'Eliminar proyecto', onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
           ]}
           trailing={project.status === 'cotizacion' && isOwner ? (
-            <button onClick={() => setShowShare(true)} className="inline-flex items-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors" style={{ fontFamily: 'var(--font-body)' }}>
-              <Share2 className="w-4 h-4" /> Compartir acceso
+            <button onClick={() => setShowShare(true)} className={BTN_ICONO_ACENTO} title="Compartir acceso a la cotización" aria-label="Compartir acceso a la cotización">
+              <Share2 className="w-4 h-4" />
             </button>
           ) : undefined}
       />
@@ -2616,58 +2617,6 @@ export default function ProjectDetailPage() {
         </div>
 
       </EditPanel>
-
-      {/* Panel: Progreso del equipo (se abre desde el header) */}
-      <PixelModal open={showProgresoModal} onClose={() => setShowProgresoModal(false)} title="Progreso del equipo" size="md">
-        {(() => {
-          const rqs = project.requirements || [];
-          const memberMap: Record<string, { name: string; photo_url: string; total: number; completed: number }> = {};
-          for (const req of rqs) {
-            for (const a of (req.assignments || [])) {
-              if (a.status !== 'accepted') continue;
-              if (!memberMap[a.member_id]) memberMap[a.member_id] = { name: a.member_name, photo_url: a.photo_url, total: 0, completed: 0 };
-              memberMap[a.member_id].total++;
-              if (req.is_completed || req.completed_at) memberMap[a.member_id].completed++;
-            }
-          }
-          const members = Object.values(memberMap);
-          const overallPct = reqs.length ? Math.round((completedReqs / reqs.length) * 100) : 0;
-          return (
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between text-[12px] mb-1" style={mf}><span className="text-digi-muted">Requerimientos completados</span><span className="text-digi-text tabular-nums">{completedReqs}/{reqs.length} ({overallPct}%)</span></div>
-                <div className="h-2 rounded-full bg-digi-border/60 overflow-hidden"><div className={`h-full rounded-full transition-all ${overallPct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${overallPct}%` }} /></div>
-              </div>
-              {members.length > 0 ? (
-                <div>
-                  <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={mf}>Por miembro</p>
-                  <div className="space-y-2.5">
-                    {members.map((m, i) => {
-                      const pct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
-                      return (
-                        <div key={i} className="flex items-center gap-2.5">
-                          {m.photo_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={m.photo_url} alt={m.name} className="w-7 h-7 rounded-full object-cover border border-digi-border shrink-0" />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-accent-light border border-accent/40 flex items-center justify-center shrink-0"><span className="text-[12px] text-accent" style={mf}>{m.name?.charAt(0)}</span></div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-0.5"><span className="text-[12px] text-digi-text truncate" style={mf}>{m.name}</span><span className="text-[11px] text-digi-muted shrink-0" style={mf}>{m.completed}/{m.total} ({pct}%)</span></div>
-                            <div className="h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${pct}%` }} /></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay miembros con requerimientos asignados.</p>
-              )}
-            </div>
-          );
-        })()}
-      </PixelModal>
 
       {/* Panel: Imágenes del proyecto (se abre desde el header) */}
       <PixelModal open={showImagesModal} onClose={() => setShowImagesModal(false)} title={`Imágenes del proyecto (${projectImages.length}/30)`} size="md">

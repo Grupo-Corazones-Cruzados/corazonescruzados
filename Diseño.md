@@ -789,8 +789,8 @@ formulario que «Compartir acceso a la cotización»**. Ese formulario es ahora 
   **Correo del cliente (para enviarlo)** · `pie` (el importe con `EditAmount`, debajo del
   último campo y limpio) · dos botones a medias: **«Generar enlace»** (`BTN_SECONDARY`, solo
   genera) y **«Generar y enviar»** (`BTN_PRIMARY` + `Send`). El enlace sale al pie con copiar.
-- Se abre desde el botón **«Compartir enlace de pago»** de la cabecera del proyecto, a la
-  izquierda de «Completar y facturar» (misma clase que «Compartir acceso») y desde el icono `Share2` de
+- Se abre desde el botón **«Compartir enlace de pago»** de la cabecera del proyecto (solo
+  icono `Share2`, `BTN_ICONO_ACENTO`), a la izquierda de «Completar y facturar» y desde el icono `Share2` de
   cada etapa pendiente (que llega con esa etapa preseleccionada). En el ticket, desde su botón.
 - ⛔ No volver a hacer una ventanita para compartir un enlace: se usa este panel.
 
@@ -3904,6 +3904,13 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Cabecera del detalle de proyecto: SOLO ICONOS · por decisión de Fernando.**
+  Nuevas constantes en `components/ui/Button.tsx`: `BTN_ICONO_PRIMARIO`, `BTN_ICONO_SECUNDARIO`
+  y `BTN_ICONO_ACENTO` — cuadrados de 36 px (44 en táctil), el mismo tamaño que el «⋯» de
+  `DetailHeader`. El nombre va en `title` y `aria-label`; un botón deshabilitado lleva el
+  porqué en un `<span title>` que lo envuelve (sin puntero, el `title` del botón no sale).
+  Un contador (imágenes) va como burbuja en la esquina. **Se eliminó «Progreso»** y su
+  ventana «Progreso del equipo»: el avance ya se ve en la barra de Requerimientos.
 - **2026-09-29 · «Hacer público/privado» sube al título de Propiedades · por decisión de
   Fernando.** A la derecha de «Propiedades», con el estilo de los «Editar». Solo se ve cuando
   la API lo acepta (nunca en borrador, revisión, completado, cancelado o cerrado; y a público
