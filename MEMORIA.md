@@ -6412,6 +6412,15 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
 
 ## Lecciones técnicas
 
+### 🪤 `railway up` del cotizador-worker salía «SKIPPED» sin avisar (2026-09-29)
+El servicio tenía `watchPatterns: ["services/cotizador-worker/**"]`, pero `railway up` desde
+esa carpeta sube su contenido COMO RAÍZ (`index.mjs`, no `services/cotizador-worker/index.mjs`):
+ningún archivo casa con el filtro y Railway marca el despliegue `SKIPPED` («No changes to
+watched files»). La CLI solo imprime «Uploading…», así que parece desplegado. Se quitó el
+filtro (`serviceInstanceUpdate … watchPatterns: []` por la API) porque el servicio no está
+conectado al repo y siempre se sube a mano. **Después de `railway up`, mirar
+`railway deployment list`**: SUCCESS, no solo que subió.
+
 ### 🪤 Una lista que se pide en cada clic no puede hacer DDL ni consultas en fila (2026-09-28)
 Fernando: *«al cambiar de estado en los filtros… tarda muchísimo»*. Medido: **1,5–1,8 s** por
 clic en Proyectos y Tickets, con una sola petición cada vez. La culpa era de **~10 viajes
