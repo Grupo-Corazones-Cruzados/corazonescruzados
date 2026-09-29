@@ -3905,8 +3905,9 @@ mientras se escribe.
 
 ## Desviaciones detectadas y resolución
 - **2026-09-28 · Fila de requerimiento y su edición · por decisión de Fernando.**
-  - Sin franja de color a la izquierda (`border-l-[3px]` verde/acento): el estado ya lo dicen
-    la casilla y el tachado.
+  - Sin franja de color a la izquierda (`border-l-[3px]` verde/acento) y, desde el 2026-09-29,
+    **sin tachado** en el título de un requerimiento hecho (ni en el detalle ni en el resumen
+    de la lista): lo dicen la casilla marcada y el gris. Las subtareas sí conservan el tachado.
   - A la derecha: precio · **expandir** · **⋯** (`ActionsMenu lado="izquierda"`). El menú lleva
     **Editar** y **Eliminar**; Eliminar se ve siempre para quien administra, pero **bloqueado**
     (con `hint` al pasar el ratón) cuando la API no lo permite. Eliminar pide `PixelConfirm`.

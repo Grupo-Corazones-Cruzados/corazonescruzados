@@ -1579,7 +1579,8 @@ export default function ProjectDetailPage() {
                             {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
                           </button>
                           <button onClick={() => toggleReqExpand(r.id)} className="min-w-0 flex-1 text-left">
-                            <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</p>
+                            {/* Sin tachado (Fernando, 2026-09-29): hecho ya lo dice la casilla; el gris basta. */}
+                            <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted' : 'text-digi-text'}`} style={mf}>{r.title}</p>
                             {/* ⇒ CONTRAÍDO, SOLO EL TÍTULO (Fernando, 2026-09-28). La descripción,
                                 las etiquetas y las subtareas se ven al desplegar: con todo a la
                                 vista, cinco requerimientos llenaban la pantalla y no se veía la

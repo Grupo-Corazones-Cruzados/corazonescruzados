@@ -352,7 +352,7 @@ export default function ProjectsPage() {
                   <span className={`w-3.5 h-3.5 rounded-[4px] shrink-0 flex items-center justify-center ${r.is_completed ? 'bg-accent text-white' : 'border border-digi-border'}`}>
                     {r.is_completed && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
                   </span>
-                  <span className={`flex-1 truncate ${r.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</span>
+                  <span className={`flex-1 truncate ${r.is_completed ? 'text-digi-muted' : 'text-digi-text'}`} style={mf}>{r.title}</span>
                   {acc && (
                     acc.photo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
