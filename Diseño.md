@@ -3904,6 +3904,11 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · «Hacer público/privado» sube al título de Propiedades · por decisión de
+  Fernando.** A la derecha de «Propiedades», con el estilo de los «Editar». Solo se ve cuando
+  la API lo acepta (nunca en borrador, revisión, completado, cancelado o cerrado; y a público
+  solo si queda un requerimiento sin asignar). Antes el aviso de éxito salía aunque la API
+  respondiera 400 — ver [[gcc-no-fingir-vacio]].
 - **2026-09-29 · Quitar un elemento de una lista = `BotonQuitar` (papelera) · ADOPTADO como
   estándar por Fernando.** Definición única: `components/ui/BotonQuitar.tsx`.
   - Cuadrado de 28 px (`tamano="sm"`) o 24 px (`"xs"`, listas densas), `rounded-md`, papelera

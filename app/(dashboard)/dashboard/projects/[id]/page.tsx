@@ -593,6 +593,21 @@ export default function ProjectDetailPage() {
     setEnlaceAbierto(true);
   };
 
+  /**
+   * Cambia la visibilidad y dice lo que PASÓ. Antes el aviso de éxito salía siempre, sin
+   * mirar la respuesta: en revisión la API respondía 400 y el aviso decía «ahora es público».
+   */
+  const cambiarVisibilidad = async () => {
+    const aPublico = !!project?.is_private;
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !aPublico }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'No se pudo cambiar la visibilidad');
+      toast.success(aPublico ? 'El proyecto ahora es público' : 'El proyecto ahora es privado');
+      fetchProject();
+    } catch (e: any) { toast.error(e.message); }
+  };
+
   const borrarPlan = async () => {
     setSavingPlan(true);
     try {
@@ -1061,6 +1076,15 @@ export default function ProjectDetailPage() {
   const hasUnassignedReqs = reqs.some((r: any) => !(r.assignments || []).some((a: any) => a.status === 'accepted'));
   // Can invite: only in open/in_progress and if unassigned reqs exist
   const canInvite = isOwner && ['open', 'in_progress'].includes(project.status) && hasUnassignedReqs;
+  /**
+   * ¿Se enseña el botón de visibilidad? Solo cuando la API lo va a aceptar (Fernando,
+   * 2026-09-29: en revisión «muestra una notificación pero no parece hacer nada»). La API
+   * rechaza el cambio en borrador y en revisión, y hacerlo PÚBLICO cuando ya no queda ningún
+   * requerimiento sin asignar. En completado, cancelado o cerrado no se toca.
+   */
+  const puedeCambiarVisibilidad = isOwner && reqs.length > 0
+    && !['draft', 'review', 'completed', 'cancelled', 'closed'].includes(project.status)
+    && (!project.is_private || hasUnassignedReqs);
   // Check if current member is assigned (accepted) to a specific requirement
   const canMemberEditReq = (reqId: number) => {
     if (isOwner) return true;
@@ -2299,7 +2323,15 @@ export default function ProjectDetailPage() {
           {rightTab === 'propiedades' && (<>
           {/* Propiedades */}
           <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
-            <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Propiedades</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Propiedades</h3>
+              {/* Arriba a la derecha, como el «Editar» de las otras tarjetas (Fernando, 2026-09-29). */}
+              {puedeCambiarVisibilidad && (
+                <button onClick={cambiarVisibilidad} className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>
+                  {project.is_private ? 'Hacer público' : 'Hacer privado'}
+                </button>
+              )}
+            </div>
             <dl className="space-y-2.5 text-[12px]" style={mf}>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Cliente</dt>
@@ -2327,12 +2359,7 @@ export default function ProjectDetailPage() {
               </div>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Visibilidad</dt>
-                <dd className="text-right flex items-center gap-2 justify-end flex-wrap">
-                  <span className="text-digi-text">{project.is_private ? 'Privado' : 'Público'}</span>
-                  {isOwner && !isTerminal && hasReqs && (
-                    <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_private: !project.is_private }) }); toast.success(project.is_private ? 'Proyecto ahora es publico' : 'Proyecto ahora es privado'); fetchProject(); }} className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 hover:bg-accent/10 transition-colors" style={pf}>{project.is_private ? 'Hacer público' : 'Hacer privado'}</button>
-                  )}
-                </dd>
+                <dd className="text-right text-digi-text">{project.is_private ? 'Privado' : 'Público'}</dd>
               </div>
               {project.status === 'cotizacion' && project.quote_client_budget != null && (
                 <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Presup. cliente</dt><dd className="text-accent font-semibold text-right tabular-nums">${fmt2(Number(project.quote_client_budget))}</dd></div>
