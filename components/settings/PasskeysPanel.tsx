@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
-import { Fingerprint, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Fingerprint, AlertTriangle, RefreshCw } from 'lucide-react';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -132,15 +133,7 @@ export default function PasskeysPanel() {
                   Creada el {fecha(p.creada)} · {p.usada ? `usada el ${fecha(p.usada)}` : 'sin usar'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => quitar(p.id)}
-                disabled={ocupado}
-                title="Quitar esta passkey"
-                className="shrink-0 p-2 rounded text-digi-muted hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <BotonQuitar onClick={() => quitar(p.id)} disabled={ocupado} etiqueta="Quitar esta passkey" />
             </li>
           ))}
         </ul>

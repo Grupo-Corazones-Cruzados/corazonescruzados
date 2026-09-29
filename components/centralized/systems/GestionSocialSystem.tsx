@@ -15,6 +15,7 @@ import {
   Layers, FileEdit, Megaphone, PlayCircle, CheckCircle2, XCircle, Plus, Trash2, Pencil,
   CalendarDays, MapPin, Clock, Users, Gem, Sparkles, PartyPopper, Square, Info,
 } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -536,7 +537,7 @@ function TaskRow({ task, editable, onEdit, onDelete }: { task: EventTask; editab
         {editable && (
           <div className="flex items-center gap-1 shrink-0">
             <button onClick={onEdit} className="text-digi-muted hover:text-accent" aria-label="Editar tarea"><Pencil className="w-3.5 h-3.5" /></button>
-            <button onClick={onDelete} className="text-digi-muted hover:text-red-500" aria-label="Eliminar tarea"><Trash2 className="w-3.5 h-3.5" /></button>
+            <BotonQuitar onClick={onDelete} etiqueta="Eliminar tarea" />
           </div>
         )}
       </div>

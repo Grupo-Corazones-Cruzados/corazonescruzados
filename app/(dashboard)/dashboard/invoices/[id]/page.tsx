@@ -9,10 +9,11 @@ import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 import DetailHeader from '@/components/ui/DetailHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2, FileText, Plus, X } from 'lucide-react';
+import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2, FileText, Plus } from 'lucide-react';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { fmt2 } from '@/lib/format';
 import { SRI_MAX } from '@/lib/integrations/sri/text';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -504,11 +505,9 @@ export default function InvoiceDetailPage() {
                     onChange={e => { const n = [...detalleItems]; n[i] = { ...n[i], unitPrice: e.target.value }; setDetalleItems(n); }}
                     className={`${EDIT_INPUT} tabular-nums`} />
                 </div>
-                <button type="button" onClick={() => setDetalleItems(detalleItems.filter((_, idx) => idx !== i))}
-                  disabled={detalleItems.length <= 1}
-                  className="mb-1.5 text-red-500/70 hover:text-red-600 disabled:opacity-30 shrink-0" title="Quitar">
-                  <X className="w-4 h-4" />
-                </button>
+                <BotonQuitar onClick={() => setDetalleItems(detalleItems.filter((_, idx) => idx !== i))}
+                  disabled={detalleItems.length <= 1} className="mb-1" etiqueta="Quitar línea"
+                  title={detalleItems.length <= 1 ? 'La factura necesita al menos una línea' : 'Quitar línea'} />
               </div>
             ))}
             <button type="button"
@@ -679,8 +678,8 @@ export default function InvoiceDetailPage() {
                     <option value={12}>12%</option>
                     <option value={15}>15%</option>
                   </select>
-                  <button onClick={() => setEditForm({ ...editForm, items: editForm.items.filter((_, i) => i !== idx) })}
-                    className="col-span-1 py-1.5 text-[12px] text-red-600 border-2 border-red-300 hover:bg-red-50" style={pf}>×</button>
+                  <BotonQuitar onClick={() => setEditForm({ ...editForm, items: editForm.items.filter((_, i) => i !== idx) })}
+                    etiqueta="Quitar línea" className="col-span-1 justify-self-center self-center" />
                 </div>
               ))}
               {editForm.items.length === 0 && (

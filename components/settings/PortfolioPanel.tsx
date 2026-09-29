@@ -9,7 +9,8 @@ import PixelInput from '@/components/ui/PixelInput';
 import ImageGallery from '@/components/ui/ImageGallery';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
-import { Briefcase, FolderKanban, Package, Workflow, Plus, Pencil, Trash2, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
+import { Briefcase, FolderKanban, Package, Workflow, Plus, Pencil, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const TABS = [
   { value: 'project', label: 'Proyectos', Icon: FolderKanban },
@@ -310,16 +311,14 @@ export default function PortfolioPanel() {
                             que aparece y desaparece según la fila descoloca la columna y
                             deja al usuario adivinando por qué unas filas sí y otras no.
                             Deshabilitado, el `title` lo explica. */}
-                        <button
+                        <BotonQuitar
                           onClick={() => handleDelete(item.id)}
                           disabled={item.__team}
+                          etiqueta="Eliminar"
                           title={item.__team
                             ? 'Un proyecto del equipo no se elimina desde el portafolio: se gestiona en el módulo de Proyectos'
                             : 'Eliminar'}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-digi-muted transition-colors enabled:hover:text-red-600 enabled:hover:border-red-300 enabled:hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        />
                       </div>
                     </td>
                   </tr>

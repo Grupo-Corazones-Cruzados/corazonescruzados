@@ -18,6 +18,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -626,7 +627,7 @@ export default function TicketDetailPage() {
                     <span className="text-[12px] font-medium text-digi-text truncate min-w-0" style={mf}>
                       {new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })}
                     </span>
-                    <button onClick={() => toggleDate(d)} className="shrink-0 text-digi-muted hover:text-red-500 text-[15px] leading-none">×</button>
+                    <BotonQuitar onClick={() => toggleDate(d)} etiqueta="Quitar fecha" tamano="xs" />
                   </div>
                   <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer mt-1.5" style={mf}>
                     <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
@@ -869,7 +870,7 @@ export default function TicketDetailPage() {
                               <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
                             )}
                             {canManageActions && (
-                              <button onClick={() => handleDeleteAction(a.id)} aria-label="Eliminar acción" className="acciones-al-pasar shrink-0 w-11 h-11 sm:w-auto sm:h-auto inline-flex items-center justify-center text-red-500 hover:text-red-600"><X className="w-4 h-4 sm:w-3.5 sm:h-3.5" /></button>
+                              <BotonQuitar onClick={() => handleDeleteAction(a.id)} etiqueta="Eliminar acción" className="acciones-al-pasar" />
                             )}
                           </div>
                           );

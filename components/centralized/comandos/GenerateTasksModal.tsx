@@ -10,7 +10,8 @@ import { VALORES } from '@/lib/centralized/valores';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import { DAY_LABELS_ES_SHORT } from '@/lib/calendar/recurrence';
 import type { TaskProgram } from '@/lib/centralized/comandos';
-import { Plus, Trash2, Save, X, Gem, Sparkles, Users, UserRound, ListChecks } from 'lucide-react';
+import { Plus, Save, X, Gem, Sparkles, Users, UserRound, ListChecks } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -247,7 +248,7 @@ export default function GenerateTasksModal({
                         <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{t.title}</p>
                         <p className="text-[10.5px] text-digi-muted truncate mt-0.5" style={mf}>Para: {t.userName}</p>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); removeTask(i); }} title="Quitar" className="text-digi-muted hover:text-red-600 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <BotonQuitar onClick={(e) => { e.stopPropagation(); removeTask(i); }} etiqueta="Quitar tarea" tamano="xs" />
                     </div>
                     <p className="text-[10.5px] text-digi-muted/80 mt-1 ml-5" style={mf}>{spanLabel(t)}</p>
                     {(t.valores.length > 0 || t.talentos.length > 0) && (

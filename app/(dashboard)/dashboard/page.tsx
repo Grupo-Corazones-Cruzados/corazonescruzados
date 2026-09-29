@@ -9,10 +9,9 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import { fmt2 } from '@/lib/format';
-import {
-  Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, Plus, X, ChevronRight, type LucideIcon,
-} from 'lucide-react';
+import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
+  Download, Plus, ChevronRight, type LucideIcon } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -314,13 +313,7 @@ function BloqueImportes({
                 className={`${CAMPO} flex-1 sm:flex-none sm:w-28 sm:shrink-0 text-right`} style={mf}
               />
               {editable && (
-                <button
-                  onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))}
-                  aria-label="Quitar"
-                  className="w-11 h-11 sm:w-7 sm:h-7 shrink-0 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <BotonQuitar onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))} etiqueta="Quitar" />
               )}
             </div>
           </div>

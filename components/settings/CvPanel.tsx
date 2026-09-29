@@ -10,7 +10,8 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { money } from '@/lib/format';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import { MAX_SKILLS } from '@/lib/members/cv-tipos';
-import { Plus, Trash2, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check, Languages } from 'lucide-react';
+import { Plus, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check, Languages } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -221,8 +222,7 @@ export default function CvPanel() {
                     <div key={tt.key} onClick={() => setActiveTalent(i)}
                       className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-medium border-b-2 -mb-px whitespace-nowrap cursor-pointer transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
                       <Sparkles className="w-3.5 h-3.5" /> {tt.key}
-                      <button type="button" title="Quitar talento" onClick={(e) => { e.stopPropagation(); setConfirmDelTalent(i); }}
-                        className="ml-1 -mr-1 p-0.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <BotonQuitar onClick={(e) => { e.stopPropagation(); setConfirmDelTalent(i); }} etiqueta="Quitar talento" tamano="xs" className="ml-1 -mr-1" />
                     </div>
                   );
                 })}
@@ -390,7 +390,7 @@ function ItemRow({ title, subtitle, meta, badge, onEdit, onRemove }: {
       </button>
       {meta && <span className="shrink-0 text-[11.5px] text-digi-muted whitespace-nowrap tabular-nums" style={mf}>{meta}</span>}
       <button type="button" onClick={onEdit} title="Editar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-      <button type="button" onClick={onRemove} title="Eliminar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+      <BotonQuitar onClick={onRemove} etiqueta="Eliminar" />
     </div>
   );
 }

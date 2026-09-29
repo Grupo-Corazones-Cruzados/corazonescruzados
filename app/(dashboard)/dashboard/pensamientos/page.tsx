@@ -11,9 +11,8 @@ import { DIMENSION_LABEL, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import { DIMENSION_ICON } from '@/components/centralized/dimensionIcons';
 import { intensityOf } from '@/lib/centralized/pensamientos';
 import { useAuth } from '@/components/providers/AuthProvider';
-import {
-  BrainCircuit, Plus, LineChart, CalendarDays, Trash2, Pencil, X, Check, Clock, Megaphone, Globe,
-} from 'lucide-react';
+import { BrainCircuit, Plus, LineChart, CalendarDays, Pencil, X, Check, Clock, Megaphone, Globe } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -422,7 +421,7 @@ function ThoughtCard({
           </button>
         )}
         <button onClick={onStartEdit} className="w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.04] transition-colors" aria-label="Editar pensamiento"><Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" /></button>
-        <button onClick={onDelete} className="w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-red-500 hover:bg-red-50 transition-colors" aria-label="Eliminar pensamiento"><Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" /></button>
+        <BotonQuitar onClick={onDelete} etiqueta="Eliminar pensamiento" />
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import {
   AlertTriangle, Plus, Share2, Tags, X, Trash2, Copy, Link2, RefreshCw, ImagePlus,
 } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -329,7 +330,7 @@ function CategoriesModal({ projectId, initial, onClose, onSaved }: {
               <div className="flex items-center gap-2">
                 <input value={c.name} onChange={(e) => setCats((p) => p.map((x, i) => i === ci ? { ...x, name: e.target.value } : x))}
                   placeholder="Categoría" className="field-control flex-1 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                <button onClick={() => setCats((p) => p.filter((_, i) => i !== ci))} className="text-digi-muted hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                <BotonQuitar onClick={() => setCats((p) => p.filter((_, i) => i !== ci))} etiqueta="Quitar categoría" />
               </div>
               <div className="pl-3 space-y-1.5">
                 {c.subcategories.map((s, si) => (
@@ -337,7 +338,7 @@ function CategoriesModal({ projectId, initial, onClose, onSaved }: {
                     <span className="text-digi-muted text-[11px]">›</span>
                     <input value={s.name} onChange={(e) => setCats((p) => p.map((x, i) => i === ci ? { ...x, subcategories: x.subcategories.map((y, j) => j === si ? { name: e.target.value } : y) } : x))}
                       placeholder="Subcategoría" className="field-control flex-1 px-2.5 py-1 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-                    <button onClick={() => setCats((p) => p.map((x, i) => i === ci ? { ...x, subcategories: x.subcategories.filter((_, j) => j !== si) } : x))} className="text-digi-muted hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                    <BotonQuitar onClick={() => setCats((p) => p.map((x, i) => i === ci ? { ...x, subcategories: x.subcategories.filter((_, j) => j !== si) } : x))} etiqueta="Quitar subcategoría" tamano="xs" />
                   </div>
                 ))}
                 <button onClick={() => setCats((p) => p.map((x, i) => i === ci ? { ...x, subcategories: [...x.subcategories, { name: '' }] } : x))}

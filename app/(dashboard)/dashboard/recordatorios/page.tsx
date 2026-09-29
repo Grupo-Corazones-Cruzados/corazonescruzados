@@ -17,6 +17,7 @@ import {
   Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
   RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -690,7 +691,7 @@ export default function RecordatoriosPage() {
                     {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
                   </button>
                   <span className={`flex-1 text-[13px] ${t.done ? 'line-through text-digi-muted' : 'text-digi-text'}`} style={mf}>{t.text}</span>
-                  <button type="button" onClick={() => removeTask(t.id)} aria-label="Quitar tarea" className="acciones-al-pasar shrink-0 w-11 h-11 sm:w-auto sm:h-auto inline-flex items-center justify-center text-digi-muted/50 hover:text-red-500"><X className="w-4 h-4 sm:w-3.5 sm:h-3.5" /></button>
+                  <BotonQuitar onClick={() => removeTask(t.id)} etiqueta="Quitar tarea" tamano="xs" className="acciones-al-pasar" />
                 </div>
               ))}
             </div>
@@ -712,7 +713,7 @@ export default function RecordatoriosPage() {
                   {a.id && editId && (
                     <a href={`/api/reminders/${editId}/attachments/${a.id}`} onClick={(e) => e.stopPropagation()} className="text-digi-muted hover:text-accent" title="Descargar"><Download className="w-3.5 h-3.5" /></a>
                   )}
-                  <button type="button" onClick={() => removeAttach(a, i)} className="text-digi-muted/60 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                  <BotonQuitar onClick={() => removeAttach(a, i)} etiqueta="Quitar adjunto" tamano="xs" />
                 </div>
               ))}
             </div>

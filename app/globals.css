@@ -1047,6 +1047,27 @@ html {
   .acciones-al-pasar { opacity: 1 !important; }
 }
 
+/* ── BOTÓN DE QUITAR UN ELEMENTO (`components/ui/BotonQuitar.tsx`, 2026-09-29) ───────
+   La papelera estándar de las listas. Gris en reposo; al pasar, rojo con fondo y borde
+   suaves. Va aquí y no en clases `hover:` porque el modo oscuro corrige los rojos por
+   nombre de clase y estas tienen que cambiar con él. Deshabilitado no reacciona. */
+.boton-quitar:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-red-500) 35%, transparent); }
+.boton-quitar:enabled:hover {
+  color: var(--color-red-600);
+  background-color: var(--color-red-50);
+  border-color: var(--color-red-200);
+}
+.corp.dark .boton-quitar:enabled:hover {
+  color: #f1707b;
+  background-color: rgba(241,112,123,0.18);
+  border-color: rgba(241,112,123,0.35);
+}
+.boton-quitar--oscuro:enabled:hover {
+  color: #fca5a5;
+  background-color: rgba(239,68,68,0.15);
+  border-color: rgba(248,113,113,0.3);
+}
+
 /* ⭐ DESTINO TÁCTIL SIN CAMBIAR EL DIBUJO.
    Un botón de 16–20 px —la X de quitar una imagen, el lápiz de una fila— no se acierta
    con el pulgar, pero agrandarlo rompería la composición donde vive (suelen ir en

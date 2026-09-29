@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  Inbox, Hexagon, ShieldCheck, Plus, X, Check, Trash2, Puzzle, ExternalLink, Beaker, Lock, CheckCircle2, RotateCcw,
-} from 'lucide-react';
+import { Inbox, Hexagon, ShieldCheck, Plus, X, Check, Puzzle, ExternalLink, Beaker, Lock, CheckCircle2, RotateCcw } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import GdGraph from '@/components/centralized/gestion-datos/GdGraph';
 import { FACTORES, FACTOR_LABEL, FACTOR_COLOR, causaLabel, RESTRICCION_TIPOS, RESTRICCION_LABEL, type RestriccionTipo } from '@/lib/centralized/condiciologia';
 import type { GdGraph as GdGraphT } from '@/lib/centralized/gestion-datos';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -200,7 +199,7 @@ export default function GestionDeCondicionesSystem({ isAdmin }: { system?: any; 
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[12.5px] font-semibold text-digi-text flex-1" style={mf}>{r.titulo}</span>
                         <button onClick={() => setEntregableFor(r.id)} className="text-[10.5px] text-accent hover:underline inline-flex items-center gap-0.5"><Plus className="w-3 h-3" /> Entregable</button>
-                        <button onClick={() => delReq(r.id)} className="text-digi-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                        <BotonQuitar onClick={() => delReq(r.id)} etiqueta="Quitar requisito" tamano="xs" />
                       </div>
                       {r.descripcion && <p className="text-[11px] text-digi-muted mb-1.5" style={mf}>{r.descripcion}</p>}
                       <div className="space-y-1">
@@ -365,7 +364,7 @@ function CondicionDetalle({ cond, catalogo, readOnly, onReload, onDelete, onTogg
       <div className="flex items-center gap-2 mb-2">
         <span className="text-[14px] font-semibold text-digi-text" style={df}>{cond.nombre}</span>
         <button onClick={onToggleVerificada} disabled={readOnly} className={`ml-auto inline-flex items-center gap-1 text-[10.5px] px-2 py-1 rounded border transition-colors disabled:opacity-50 ${cond.verificada ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'text-digi-muted border-digi-border hover:border-accent'}`} style={mf}><ShieldCheck className="w-3 h-3" /> {cond.verificada ? 'Verificada' : 'Verificar'}</button>
-        {!readOnly && <button onClick={onDelete} className="text-digi-muted hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>}
+        {!readOnly && <BotonQuitar onClick={onDelete} etiqueta="Eliminar" />}
       </div>
 
       {/* Variables */}
@@ -392,7 +391,7 @@ function CondicionDetalle({ cond, catalogo, readOnly, onReload, onDelete, onTogg
           <div key={r.id} className="flex items-center gap-2 text-[10.5px] bg-black/[0.02] border border-digi-border rounded px-2 py-1" style={mf}>
             <span className="font-medium text-digi-text">{RESTRICCION_LABEL[r.tipo]}</span>
             <span className="text-digi-muted truncate flex-1">{r.config?.variables?.join(', ') || r.config?.categorias?.join(', ') || '—'}</span>
-            {!readOnly && <button onClick={() => delRestr(r.id)} className="text-digi-muted hover:text-red-500"><X className="w-3 h-3" /></button>}
+            {!readOnly && <BotonQuitar onClick={() => delRestr(r.id)} etiqueta="Quitar restricción" tamano="xs" />}
           </div>
         ))}
         {cond.restricciones.length === 0 && <span className="text-[11px] text-digi-muted" style={mf}>Sin restricciones.</span>}
@@ -414,7 +413,7 @@ function CondicionDetalle({ cond, catalogo, readOnly, onReload, onDelete, onTogg
           <div key={e.id} className="flex items-center gap-2 text-[11px] bg-black/[0.02] border border-digi-border rounded px-2 py-1">
             <span className="text-digi-text flex-1 truncate" style={mf}>{e.titulo}</span>
             {e.url && <a href={e.url} target="_blank" rel="noreferrer" className="text-accent"><ExternalLink className="w-3 h-3" /></a>}
-            {!readOnly && <button onClick={() => delEvento(e.id)} className="text-digi-muted hover:text-red-500"><X className="w-3 h-3" /></button>}
+            {!readOnly && <BotonQuitar onClick={() => delEvento(e.id)} etiqueta="Quitar evento" tamano="xs" />}
           </div>
         ))}
         {cond.eventos.length === 0 && <span className="text-[11px] text-digi-muted" style={mf}>Sin eventos (se requiere ≥1 para verificar).</span>}

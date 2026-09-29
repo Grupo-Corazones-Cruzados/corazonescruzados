@@ -14,6 +14,7 @@ import {
   Boxes, Network, GitBranch, Folder, ChevronsDownUp, ChevronsUpDown,
   type LucideIcon,
 } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const nf = new Intl.NumberFormat('es-ES');
@@ -458,14 +459,7 @@ export default function FuentesPanel() {
                           })}
                           <td className="dt-td text-right">
                             {editable && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); remove(row); }}
-                                title="Eliminar registro"
-                                aria-label="Eliminar registro"
-                                className="w-7 h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <BotonQuitar onClick={(e) => { e.stopPropagation(); remove(row); }} etiqueta="Eliminar registro" />
                             )}
                           </td>
                         </tr>

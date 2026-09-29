@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { Flame, Plus, CalendarDays, Trash2, Pencil, X, Check, Clock } from 'lucide-react';
+import { Flame, Plus, CalendarDays, Pencil, X, Check, Clock } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -212,7 +213,7 @@ function RazonCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSave
         <span className="text-[11px] text-digi-muted/60 tabular-nums ml-auto" style={mf}>{nf.format(t.charCount)} car.</span>
         <div className="acciones-al-pasar flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button onClick={onStartEdit} className="text-digi-muted hover:text-accent" aria-label="Editar razón"><Pencil className="w-3.5 h-3.5" /></button>
-          <button onClick={onDelete} className="text-digi-muted hover:text-red-500" aria-label="Eliminar razón"><Trash2 className="w-3.5 h-3.5" /></button>
+          <BotonQuitar onClick={onDelete} etiqueta="Eliminar razón" />
         </div>
       </div>
       <p className={`text-[13px] text-digi-text whitespace-pre-wrap leading-relaxed ${!expanded && long ? 'line-clamp-4' : ''}`} style={mf}>{t.content}</p>

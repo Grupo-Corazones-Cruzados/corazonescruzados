@@ -3904,6 +3904,24 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Quitar un elemento de una lista = `BotonQuitar` (papelera) · ADOPTADO como
+  estándar por Fernando.** Definición única: `components/ui/BotonQuitar.tsx`.
+  - Cuadrado de 28 px (`tamano="sm"`) o 24 px (`"xs"`, listas densas), `rounded-md`, papelera
+    `Trash2` gris; al pasar, rojo con fondo y borde suaves. El color de «al pasar» vive en
+    `globals.css` (`.boton-quitar`, con su versión `.corp.dark` y `--oscuro` para el cristal
+    de Centralizado), no en clases `hover:`, para que el modo oscuro lo alcance.
+  - `type="button"` siempre, `etiqueta` para `aria-label`/`title`, `disabled` con `title`
+    que explique por qué.
+  - **La × se queda para lo que CIERRA** (ventanas, avisos), para **Cancelar/Rechazar**, para
+    **limpiar una selección** (ClientPicker, AssigneePicker, MultiSelectSearch) y, de momento,
+    para **las etiquetas** con × dentro y **la esquina de una miniatura de imagen** — pendiente
+    de que Fernando diga si también pasan a papelera.
+  - Migrados: etapas de facturación, líneas de factura (detalle y edición), costos adicionales,
+    participantes, subtareas, acciones de ticket, fechas de ticket, tareas y adjuntos de
+    recordatorios, pensamientos, razones, categorías/subcategorías de incidentes, CV,
+    portafolio, passkeys, admin (soluciones, fuentes, tutoriales) y los sistemas de
+    Centralizado (datos, condiciones, metodología, comandos, social, percepción).
+  - Fuera: `app/(public)/panel` y `app/(main)/projects` (pantallas del estilo pixel antiguo).
 - **2026-09-29 · Tarjeta de Pagos del proyecto · por decisión de Fernando.** «Editar» a la
   derecha del título «Pagos» (mismo botón que el de Descripción) abre el panel de etapas de
   facturación. La sección «Etapas de facturación» solo se pinta cuando hay etapas; sin ellas

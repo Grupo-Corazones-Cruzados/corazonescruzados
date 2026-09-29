@@ -27,6 +27,7 @@ import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
 import { fmt2 } from '@/lib/format';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -1251,7 +1252,7 @@ export default function ProjectDetailPage() {
       {renderAvatar(m)}
       <span className="text-[12.5px] text-digi-text flex-1 min-w-0 truncate" style={mf}>{m.member_name}</span>
       {isOwner && (
-        <button onClick={() => removeParticipant(String(m.member_id))} title="Quitar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+        <BotonQuitar onClick={() => removeParticipant(String(m.member_id))} etiqueta="Quitar participante" />
       )}
     </div>
   );
@@ -2571,12 +2572,9 @@ export default function ProjectDetailPage() {
                     type="number" min="0" step="0.01" placeholder="0.00"
                     className={`${EDIT_INPUT} tabular-nums ${esUltima || facturada ? 'opacity-60' : ''}`} />
                 </div>
-                <button type="button" disabled={facturada || planDraft.length <= 2}
+                <BotonQuitar disabled={facturada || planDraft.length <= 2} className="mb-1"
                   onClick={() => setPlanDraft(planDraft.filter((_, idx) => idx !== i))}
-                  className="mb-1.5 text-red-500/70 hover:text-red-600 disabled:opacity-30 disabled:hover:text-red-500/70 shrink-0"
-                  title={facturada ? 'Ya facturada' : 'Quitar etapa'}>
-                  <X className="w-4 h-4" />
-                </button>
+                  etiqueta="Quitar etapa" title={facturada ? 'Ya facturada' : planDraft.length <= 2 ? 'Un plan necesita al menos dos etapas' : 'Quitar etapa'} />
               </div>
             );
           })}
@@ -2933,8 +2931,7 @@ export default function ProjectDetailPage() {
                         {puedeSubtareas && (<>
                           <button type="button" onClick={() => startEditItem(item)} aria-label="Editar subtarea" title="Editar"
                             className="acciones-al-pasar destino-tactil text-digi-muted/50 hover:text-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
-                          <button type="button" onClick={() => deleteSubItem(item.id)} aria-label="Eliminar subtarea" title="Eliminar"
-                            className="acciones-al-pasar destino-tactil text-digi-muted/50 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <BotonQuitar onClick={() => deleteSubItem(item.id)} etiqueta="Eliminar subtarea" tamano="xs" className="acciones-al-pasar" />
                         </>)}
                       </>)}
                     </div>

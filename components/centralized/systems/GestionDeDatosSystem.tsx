@@ -17,6 +17,7 @@ import {
   type PiezaTipo, type VariableFactor,
 } from '@/lib/centralized/gestion-datos';
 import { APA_TIPOS, apaTipoLabel, formatApaSegments, formatApaText } from '@/lib/centralized/apa';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -311,7 +312,7 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
                 <span className="text-[12.5px] font-medium text-digi-text truncate flex-1" style={mf}>{p.name}</span>
                 <div className="acciones-al-pasar flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => { e.stopPropagation(); openProbModal(p); }} className="p-1 text-digi-muted hover:text-accent" title="Editar"><Pencil className="w-3 h-3" /></button>
-                  <button onClick={(e) => { e.stopPropagation(); setConfirmProb(p); }} className="p-1 text-digi-muted hover:text-red-500" title="Eliminar"><Trash2 className="w-3 h-3" /></button>
+                  <BotonQuitar onClick={(e) => { e.stopPropagation(); setConfirmProb(p); }} etiqueta="Eliminar" tamano="xs" />
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-1 pl-0.5">
@@ -1243,7 +1244,7 @@ function ConexionPesosModal({ premisaId, allPesos, usableP, applied, busy, initi
                     <span className="text-[11px] font-bold text-[#60a5fa]" style={df}>{a.peso_nomenclatura}</span>
                     <span className="text-[10.5px] text-white/50 tabular-nums" style={mf}>{Math.round(a.cred_antes)}→{Math.round(a.cred_despues)}%</span>
                     {full && <span className="text-[10px] text-white/35" style={mf}>{TIPO_DATO_LABEL[full.tipo_dato]}</span>}
-                    <button onClick={() => onRemove(a.peso_fuente_id)} disabled={busy} className="ml-auto text-white/40 hover:text-red-400 disabled:opacity-40" title="Quitar de la premisa"><X className="w-3.5 h-3.5" /></button>
+                    <BotonQuitar onClick={() => onRemove(a.peso_fuente_id)} disabled={busy} etiqueta="Quitar de la premisa" tamano="xs" tono="oscuro" className="ml-auto" />
                   </div>
                   <p className="text-[11.5px] text-white/80 mt-1 leading-relaxed" style={mf}>{full?.contenido || a.peso_contenido}</p>
                   {full?.ref_tipo && formatApaText(full.ref_tipo, full.ref_datos) && (
@@ -1325,7 +1326,7 @@ function PesosManager({ premisa, pesos, onReload, onOpenAgent }: { premisa: Fuen
             <span className="font-bold text-[#60a5fa]" style={df}>{a.peso_nomenclatura}</span>
             <span className="text-white/50 truncate flex-1" style={mf}>{a.peso_contenido?.slice(0, 24)}</span>
             <span className="text-white/60 tabular-nums" style={mf}>{Math.round(a.cred_antes)}→{Math.round(a.cred_despues)}%</span>
-            <button onClick={() => remove(a.peso_fuente_id)} className="text-white/40 hover:text-red-400"><X className="w-3 h-3" /></button>
+            <BotonQuitar onClick={() => remove(a.peso_fuente_id)} etiqueta="Quitar fuente" tamano="xs" tono="oscuro" />
           </div>
         ))}
         {applied.length > 6 && (
@@ -1597,7 +1598,7 @@ function CodigoDetail({ c, premisas = [], enfrentamientos = [], onReload, onDele
             <div key={ev.id} className="flex items-center gap-2 text-[11px] bg-white/[0.04] rounded px-2 py-1">
               <span className="text-white/85 flex-1 truncate" style={mf}>{ev.titulo}</span>
               {ev.url && <a href={ev.url} target="_blank" rel="noreferrer" className="text-accent hover:underline"><ExternalLink className="w-3 h-3" /></a>}
-              <button onClick={() => delEvento(ev.id)} className="text-white/40 hover:text-red-400"><X className="w-3 h-3" /></button>
+              <BotonQuitar onClick={() => delEvento(ev.id)} etiqueta="Quitar evento" tamano="xs" tono="oscuro" />
             </div>
           ))}
           {(c.eventos || []).length === 0 && <p className="text-[11px] text-white/45" style={mf}>Sin eventos. Se necesita demostración empírica (video/streaming) para verificar.</p>}
@@ -1640,7 +1641,7 @@ function CategoriaDetail({ cat, onReload, onDelete, header }: any) {
           <div key={c.id} className="flex items-center gap-2 text-[11px] bg-white/[0.04] rounded px-2 py-1">
             <Hexagon className="w-3 h-3 text-emerald-400 shrink-0" />
             <span className="text-white/85 flex-1 truncate font-mono" style={{ fontFamily: 'var(--font-mono, monospace)' }}>{c.nomenclatura}</span>
-            <button onClick={() => removeCodigo(c.id)} className="text-white/40 hover:text-red-400"><X className="w-3 h-3" /></button>
+            <BotonQuitar onClick={() => removeCodigo(c.id)} etiqueta="Quitar código" tamano="xs" tono="oscuro" />
           </div>
         ))}
         {cat.codigos.length === 0 && <p className="text-[11px] text-white/45" style={mf}>Sin códigos.</p>}
@@ -1773,7 +1774,7 @@ function CodigoModal({ probId, premisas, enfrentamientos, onClose, onSaved }: { 
                     <div key={`${u.kind}${u.id}`} className="flex items-start gap-2 text-[11.5px] bg-white/[0.05] border border-white/10 rounded-md px-2 py-1.5">
                       <span className="font-bold shrink-0" style={{ ...df, color: isP ? '#22d3ee' : '#a855f7' }}>{item.nomenclatura}</span>
                       <span className="text-white/70 line-clamp-2 flex-1" style={mf}>{isP ? item.contenido : (item.texto || '(sin texto)')}</span>
-                      <button onClick={() => toggle(u.kind, u.id)} className="text-white/40 hover:text-red-400 shrink-0" title="Quitar"><X className="w-3.5 h-3.5" /></button>
+                      <BotonQuitar onClick={() => toggle(u.kind, u.id)} etiqueta="Quitar" tamano="xs" tono="oscuro" />
                     </div>
                   );
                 })}
@@ -1946,7 +1947,7 @@ function SubtemaModal({ probId, rompecabezas, edit, onClose, onSaved }: { probId
             {hipotesis.map((h, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <textarea className={`${GLASS_INPUT} resize-none flex-1`} rows={2} value={h} onChange={(e) => setHip(i, e.target.value)} placeholder={`Hipótesis ${i + 1}`} />
-                {hipotesis.length > 1 && <button onClick={() => delHip(i)} className="text-white/40 hover:text-red-400 shrink-0"><X className="w-3.5 h-3.5" /></button>}
+                {hipotesis.length > 1 && <BotonQuitar onClick={() => delHip(i)} etiqueta="Quitar hipótesis" tono="oscuro" />}
               </div>
             ))}
           </div>

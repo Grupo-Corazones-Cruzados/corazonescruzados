@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -92,7 +93,7 @@ export default function AdditionalCostsCard({ projectId, costs, canEdit, onSaved
                     <input type="number" value={c.amount} onChange={(e) => upd(i, { amount: Number(e.target.value) })} placeholder="0.00" min="0"
                       className="field-control w-full pl-5 pr-2 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                   </div>
-                  <button onClick={() => del(i)} aria-label="Quitar" className="shrink-0 p-1.5 rounded text-digi-muted hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <BotonQuitar onClick={() => del(i)} etiqueta="Quitar costo" />
                 </div>
                 <input value={c.description || ''} onChange={(e) => upd(i, { description: e.target.value })} placeholder="Descripción (opcional)"
                   className="field-control w-full mt-1.5 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf} />

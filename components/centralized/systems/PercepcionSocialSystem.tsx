@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  Camera, MapPin, Trash2, RefreshCw, Loader2, X, Check,
-  Package, PawPrint, User, ExternalLink, ScanEye, Images, ImageOff, CircleDot,
-} from 'lucide-react';
+import { Camera, MapPin, RefreshCw, Loader2, X, Check,
+  Package, PawPrint, User, ExternalLink, ScanEye, Images, ImageOff, CircleDot } from 'lucide-react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import ImageGallery from '@/components/ui/ImageGallery';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -294,7 +293,7 @@ function DetailPanel({ detalle, onRequeue, onDelete }: { detalle: Detalle; onReq
         <span className={`w-2 h-2 rounded-full ${est.dot}`} />
         <span className="text-[12px] font-semibold text-digi-text" style={df}>Captura #{detalle.id}</span>
         <span className="text-[10.5px] text-digi-muted" style={mf}>{fmtFecha(detalle.capturado_en)}</span>
-        <button onClick={onDelete} className="ml-auto text-red-500 hover:text-red-600" title="Eliminar"><Trash2 className="w-3.5 h-3.5" /></button>
+        <BotonQuitar onClick={onDelete} etiqueta="Eliminar" className="ml-auto" />
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">

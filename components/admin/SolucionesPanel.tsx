@@ -52,7 +52,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Layers, Plus, Pencil, Trash2, ArrowUp, ArrowDown, X, AlertTriangle } from 'lucide-react';
+import { Layers, Plus, Pencil, Trash2, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -64,6 +64,7 @@ import { TALENTOS } from '@/lib/centralized/talentos';
 import { ICONOS } from '@/components/sitio/piezas';
 import GaleriaIconos from './GaleriaIconos';
 import type { Solucion, CoberturaTalento, TalentoDeSolucion, Concepto } from '@/lib/soluciones';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const CAMPO =
@@ -496,11 +497,8 @@ export default function SolucionesPanel() {
                     <span className={`tabular-nums ${f.tickets ? 'text-digi-text' : 'text-digi-muted'}`}>{f.tickets}</span>
                   ) },
                   { key: 'quitar', header: '', width: '48px', render: (f: FilaTalento) => (
-                    <button type="button" aria-label={`Quitar ${f.talento}`} title="Quitar de la solución"
-                      className={iconoBoton}
-                      onClick={(e) => { e.stopPropagation(); quitarTalento(f); }}>
-                      <X className="w-4 h-4" />
-                    </button>
+                    <BotonQuitar etiqueta={`Quitar ${f.talento}`} title="Quitar de la solución"
+                      onClick={(e) => { e.stopPropagation(); quitarTalento(f); }} />
                   ) },
                 ]}
               />
@@ -601,9 +599,7 @@ export default function SolucionesPanel() {
                     className={iconoBoton}
                     onClick={() => { setConceptoEnEdicion(c); setCTitulo(c.titulo); setCIcono(c.icono); setCDescripcion(c.descripcion ?? ''); }}>
                     <Pencil className="w-3.5 h-3.5" /></button>
-                  <button type="button" aria-label={`Eliminar ${c.titulo}`} title="Eliminar"
-                    className={iconoBoton} onClick={() => setConceptoPorBorrar(c)}>
-                    <Trash2 className="w-3.5 h-3.5" /></button>
+                  <BotonQuitar etiqueta={`Eliminar ${c.titulo}`} title="Eliminar" onClick={() => setConceptoPorBorrar(c)} />
                 </span>
               ) },
             ]}

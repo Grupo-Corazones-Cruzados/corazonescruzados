@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  FolderPlus, Pencil, Trash2, Plus, Check, X, FlaskConical, Hexagon, Send, ShieldCheck, ClipboardList,
-} from 'lucide-react';
+import { FolderPlus, Pencil, Plus, Check, FlaskConical, Hexagon, Send, ShieldCheck, ClipboardList } from 'lucide-react';
 import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { METODOLOGIA_PASOS, type MetodologiaPaso } from '@/lib/centralized/condiciologia';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -129,7 +128,7 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
                 <span className="text-[12.5px] font-medium text-digi-text truncate flex-1" style={mf}>{p.name}</span>
                 <div className="acciones-al-pasar flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => { e.stopPropagation(); openProy(p); }} className="p-1 text-digi-muted hover:text-accent"><Pencil className="w-3 h-3" /></button>
-                  <button onClick={(e) => { e.stopPropagation(); setConfirmProy(p); }} className="p-1 text-digi-muted hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                  <BotonQuitar onClick={(e) => { e.stopPropagation(); setConfirmProy(p); }} etiqueta="Eliminar proyecto" tamano="xs" />
                 </div>
               </div>
               {p.purpose && <p className="text-[10.5px] text-digi-muted mt-0.5 line-clamp-2" style={mf}>{p.purpose}</p>}
@@ -223,7 +222,7 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${t.estado === 'completada' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                           <span className="text-digi-text font-medium truncate flex-1" style={mf}>{t.titulo}</span>
                           <span className="text-[10px] text-digi-muted" style={mf}>{t.codigoIds.length} códigos</span>
-                          <button onClick={() => delTarea(t.id)} className="text-digi-muted hover:text-red-500"><X className="w-3 h-3" /></button>
+                          <BotonQuitar onClick={() => delTarea(t.id)} etiqueta="Quitar tarea" tamano="xs" />
                         </div>
                       ))}
                     </div>

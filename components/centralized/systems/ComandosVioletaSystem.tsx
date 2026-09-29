@@ -14,6 +14,7 @@ import {
 import {
   Plus, Trash2, X, MousePointerClick, Sparkles, FolderPlus, MessageSquareText, Ban, ListChecks, Power, Pencil, Check, FileText,
 } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -276,7 +277,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                 </button>
                 <div className="flex items-center gap-0.5 pr-1.5 shrink-0">
                   <button onClick={() => setEditingCat({ id: c.id, name: c.name })} title="Renombrar" className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.04] transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => setConfirmDelCat(c)} title="Eliminar" className="w-6 h-6 flex items-center justify-center rounded text-digi-muted hover:text-red-600 hover:bg-black/[0.04] transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <BotonQuitar onClick={() => setConfirmDelCat(c)} etiqueta="Eliminar categoría" tamano="xs" />
                 </div>
               </div>
             );

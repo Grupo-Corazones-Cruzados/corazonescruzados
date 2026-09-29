@@ -10,6 +10,7 @@ import { DASHBOARD_MODULES, moduleLabel } from '@/lib/dashboard/modules';
 import {
   Video, Plus, Trash2, Youtube, EyeOff, GripVertical, Info, ExternalLink,
 } from 'lucide-react';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -274,13 +275,7 @@ export default function TutorialesPanel() {
                   >
                     <EyeOff className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => remove(t)}
-                    title="Eliminar tutorial" aria-label="Eliminar tutorial"
-                    className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <BotonQuitar onClick={() => remove(t)} etiqueta="Eliminar tutorial" />
                 </div>
               </div>
             ))}
