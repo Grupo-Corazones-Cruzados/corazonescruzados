@@ -2649,7 +2649,6 @@ export default function ProjectDetailPage() {
                   <div className="flex justify-between gap-3"><span className="text-digi-muted">Costo</span><span className="tabular-nums text-digi-text">{r.cost != null ? `$${fmt2(Number(r.cost))}` : '—'}</span></div>
                   <div className="flex justify-between gap-3"><span className="text-digi-muted">Plazas</span><span className="text-digi-text inline-flex items-center gap-1 tabular-nums">{r.slots != null ? (<><Users className="w-3.5 h-3.5 text-digi-muted" />{r.slots}</>) : '—'}</span></div>
                   <div className="flex justify-between gap-3"><span className="text-digi-muted shrink-0">Talentos</span><span className="text-digi-text text-right">{(r.talents || []).join(', ') || '—'}</span></div>
-                  <p className="text-[11px] text-digi-muted pt-1">Costo, plazas y talentos no se cambian con el proyecto en este estado.</p>
                 </div>
               )}
             </>) : (
@@ -2679,12 +2678,10 @@ export default function ProjectDetailPage() {
                 ) : (
                   <p className="text-[12px] text-digi-muted" style={mf}>Aún no hay miembros asignados.</p>
                 )}
+                {/* Sin notas de ayuda permanentes (Fernando, 2026-09-29): si nadie tiene una
+                    propuesta aceptada, simplemente no hay a quién asignar y no se muestra. */}
                 {puedeAsignar && (
-                  candidatos.length === 0 ? (
-                    <p className="text-[11.5px] text-digi-muted" style={mf}>
-                      Para asignar, el miembro tiene que tener una propuesta aceptada en el proyecto.
-                    </p>
-                  ) : (
+                  candidatos.length === 0 ? null : (
                     <div className="flex flex-wrap items-end gap-2">
                       <div className="flex-1 min-w-[160px]">
                         <EditField label="Asignar miembro">
@@ -2714,9 +2711,6 @@ export default function ProjectDetailPage() {
             {r && (
               <div className="pt-3 border-t border-digi-border space-y-2">
                 <p className={tituloSeccion} style={pf}>Subtareas ({items.length})</p>
-                {!trabajoAbierto && (
-                  <p className="text-[11px] text-digi-muted" style={mf}>Con el proyecto en este estado, las subtareas y los miembros ya no se cambian.</p>
-                )}
                 <div className="space-y-0.5">
                   {items.length > 0 ? items.map((item: any) => (
                     <div key={item.id} className="flex items-center gap-2.5 group px-2 py-1.5 rounded hover:bg-black/[0.03]">

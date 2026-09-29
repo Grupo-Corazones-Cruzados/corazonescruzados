@@ -32,7 +32,7 @@ const PixelSelect = forwardRef<HTMLSelectElement, PixelSelectProps>(
           ref={ref}
           id={selectId}
           name={name}
-          className={`field-control field-select w-full px-3 py-2.5 bg-digi-darker border-2 text-sm text-digi-text focus:border-accent focus:outline-none transition-colors appearance-none cursor-pointer ${
+          className={`field-control field-select w-full px-3 py-2.5 bg-digi-darker border-2 text-sm text-digi-text focus:outline-none transition-colors appearance-none cursor-pointer ${
             error ? 'border-red-500/60' : 'border-digi-border'
           } ${className}`}
           style={{ fontFamily: 'var(--font-body)' }}

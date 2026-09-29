@@ -16,7 +16,7 @@ export function totalFactura(items: ItemFactura[]): number {
   return items.reduce((s, it) => s + base(it) + base(it) * ((Number(it.ivaRate) || 0) / 100), 0);
 }
 
-const CELDA = 'w-full h-8 px-2 bg-transparent border border-transparent rounded text-[12.5px] text-digi-text hover:border-digi-border focus:border-accent focus:bg-white focus:outline-none tabular-nums';
+const CELDA = 'w-full h-8 px-2 bg-transparent border border-transparent rounded text-[12.5px] text-digi-text hover:border-digi-border focus:outline-none tabular-nums';
 
 /**
  * EL DETALLE DE LA FACTURA EN TABLA — una línea por ítem (Fernando, 2026-09-29).

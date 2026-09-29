@@ -2005,6 +2005,15 @@ en oscuro**, así que el blanco deja de leerse en uno de los dos. Ahora el conta
 
 ### 📌 REGLA DE FORMULARIOS: solo el título del campo y el campo (Fernando, 2026-08-01)
 
+> ⚠️ **REAFIRMADA el 2026-09-29, porque la incumplí** (Fernando: *«deja de estar agregando estas
+> etiquetas de ayuda»*). Añadí notas grises permanentes bajo los controles —«Solo aparecen los
+> clientes con sus datos de facturación completos…», «La factura sale a nombre de CONSUMIDOR
+> FINAL…», «Costo, plazas y talentos no se cambian…», «Para asignar, el miembro tiene que…»— y se
+> quitaron todas. **Vale para CUALQUIER control, no solo campos de formulario**: un selector, una
+> lista o una sección tampoco llevan una frase explicativa debajo. Si algo no se puede usar, se
+> muestra deshabilitado con el porqué en `title`, o no se muestra. Los mensajes de lista vacía
+> («Sin subtareas aún») no son ayuda: son el contenido cuando no hay nada, y se quedan.
+
 > **En un formulario se ve el título del campo y el campo a rellenar. Nada más.** Toda
 > explicación —para qué sirve, rangos, recomendaciones, avisos, estado— va **dentro del botón de
 > ayuda (?)** que se pone a la izquierda del título.
@@ -3904,6 +3913,19 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · ⛔ NADA DE BORDE MORADO AL ENFOCAR UN CAMPO · regla de Fernando.** *«ese
+  enfoque con borde morado se ve muy mal, quítalo de todas partes»*. La regla global de
+  `app/globals.css` (`.corp input/select/textarea/.field-control:focus`) ponía borde de acento +
+  halo de 1 px, y ~180 campos repetían `focus:border-accent` / `focus:ring-*`. Ahora el foco de
+  un campo es **solo** que su borde pasa a `--color-digi-muted` (gris medio), sin halo; va con
+  `!important` para ganar a todas esas utilidades sin tocar 180 archivos. Se quitó
+  `focus:border-accent` de las definiciones compartidas (`EDIT_INPUT`, `PixelInput`,
+  `PixelSelect`, `SearchableSelect`, `MultiSelectSearch`, `DetalleFactura`). El campo de
+  búsqueda DENTRO de un desplegable es `field-plain` (sin marco ni al enfocar).
+  **Regla:** en un campo nuevo no se escribe `focus:border-accent`, `focus:ring-*` ni ningún
+  color de foco — no hace falta nada, lo pone la regla global. El acento morado es para
+  botones y selección, no para el contorno de un campo.
+- **2026-09-29 · Notas de ayuda permanentes retiradas** (ver «REGLA DE FORMULARIOS», reafirmada).
 - **2026-09-29 · Formulario de facturar en UNA columna · por decisión de Fernando.** Arriba, a
   todo el ancho, «Adquirente» (`components/facturacion/AdquirenteFactura.tsx`: selector
   Cliente | Consumidor final, buscador de cuentas facturables y resumen de solo lectura), y

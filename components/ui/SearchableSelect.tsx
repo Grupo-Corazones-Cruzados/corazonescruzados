@@ -56,7 +56,7 @@ export default function SearchableSelect({
           type="button"
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
-          className="field-control w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none flex items-center justify-between gap-2 text-left disabled:opacity-50"
+          className="field-control w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:outline-none flex items-center justify-between gap-2 text-left disabled:opacity-50"
           style={bodyFont}
         >
           <span className={`truncate ${selected ? '' : 'text-digi-muted/60'}`}>{selected ? selected.label : placeholder}</span>
@@ -72,7 +72,7 @@ export default function SearchableSelect({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full bg-transparent text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:outline-none"
+                className="field-plain w-full bg-transparent text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:outline-none"
                 style={bodyFont}
               />
             </div>

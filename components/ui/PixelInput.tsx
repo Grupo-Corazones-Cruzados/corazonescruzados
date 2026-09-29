@@ -25,7 +25,7 @@ const PixelInput = forwardRef<HTMLInputElement, PixelInputProps>(
           ref={ref}
           id={inputId}
           name={name}
-          className={`field-control w-full px-3 py-2.5 bg-digi-darker border-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none transition-colors ${
+          className={`field-control w-full px-3 py-2.5 bg-digi-darker border-2 text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none transition-colors ${
             error ? 'border-red-500/60' : 'border-digi-border'
           } ${className}`}
           style={{ fontFamily: 'var(--font-body)' }}

@@ -140,7 +140,7 @@ export function EditField({ label, hint, children }: { label: string; hint?: Rea
 
 /** Clase estándar de los campos dentro de una superficie de edición. */
 export const EDIT_INPUT =
-  'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none';
+  'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none';
 
 /**
  * Fila de IMPORTE al pie de una superficie de edición — el precio, a secas.

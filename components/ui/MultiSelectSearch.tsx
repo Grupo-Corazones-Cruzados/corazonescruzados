@@ -71,7 +71,7 @@ export default function MultiSelectSearch({
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder={hayFiltro ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}` : placeholder}
-          className={`w-full pl-8 py-2 bg-digi-darker border-2 rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none ${
+          className={`w-full pl-8 py-2 bg-digi-darker border-2 rounded-md text-[13px] text-digi-text focus:outline-none ${
             hayFiltro
               // Con filtro puesto, el control lo dice por sí mismo: borde de acento y el
               // recuento en el hueco del texto. Así se sabe que está filtrando sin mirar

@@ -77,15 +77,8 @@ export default function AdquirenteFactura({
               <div className="flex gap-2 min-w-0"><dt className="text-digi-muted shrink-0">Dirección</dt><dd className="text-digi-text truncate" title={cuenta.address || ''}>{cuenta.address}</dd></div>
               <div className="flex gap-2 min-w-0"><dt className="text-digi-muted shrink-0">Teléfono</dt><dd className="text-digi-text truncate">{cuenta.phone || '—'}</dd></div>
             </dl>
-          ) : !cargando && (
-            <p className="text-[11.5px] text-digi-muted" style={mf}>
-              Solo aparecen los clientes con sus datos de facturación completos (identificación, dirección y correo).
-            </p>
-          )}
+          ) : null}
         </>
-      )}
-      {modo === 'consumidor_final' && (
-        <p className="text-[12px] text-digi-muted" style={mf}>La factura sale a nombre de CONSUMIDOR FINAL (9999999999999).</p>
       )}
     </div>
   );

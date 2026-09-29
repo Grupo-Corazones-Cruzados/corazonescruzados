@@ -1005,14 +1005,31 @@ html {
      táctil se decide aquí, no en cada página. */
   .corp .pixel-btn { min-height: 44px; }
 }
+/* ⛔ SIN BORDE MORADO AL ENFOCAR UN CAMPO (Fernando, 2026-09-29: «ese enfoque con borde
+   morado se ve muy mal, quítalo de todas partes»).
+   Antes: borde de acento + halo de 1 px, y además ~180 campos repetían `focus:border-accent`
+   o un `focus:ring-*` en sus clases. Ahora el foco de un campo es SOLO que su borde pasa de
+   gris claro a gris medio (`--color-digi-muted`, que tiene su versión oscura): se sigue
+   viendo dónde está el cursor —hace falta para usar el teclado— sin recuadro de color.
+   ⚠️ Va con `!important` A PROPÓSITO: es la única forma de ganar a las utilidades
+   `focus:border-accent` / `focus:ring-*` repartidas por el panel sin tocar 180 archivos, y
+   de que un campo nuevo que las copie no vuelva a pintar el morado. No escribir
+   `focus:border-accent` ni `focus:ring-*` en campos nuevos: no hace falta nada. */
 .corp .field-control:focus,
 .corp input:focus,
 .corp select:focus,
 .corp textarea:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 1px var(--color-accent);
-  outline: none;
+  border-color: var(--color-digi-muted) !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
+/* Los contenedores que se coloreaban al enfocar su campo (buscadores con icono). */
+.corp .focus-within\:border-accent:focus-within {
+  border-color: var(--color-digi-muted) !important;
+  box-shadow: none !important;
+}
+/* Los campos sin marco que lo dibuja su contenedor siguen sin marco al enfocar. */
+.corp .field-plain:focus { border-color: transparent !important; }
 /* Tira que se desliza en horizontal (fichas de filtro en teléfono), sin barra a la
    vista: en táctil se arrastra con el dedo y la barra solo robaría alto. */
 .desplaza-x { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
