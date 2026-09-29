@@ -3908,8 +3908,9 @@ mientras se escribe.
   - Las tres columnas miden **hasta el pie** (`useAltoHastaElPie`, pasado por la variable
     `--alto-columnas` para que solo aplique desde `lg`) y cada una se desplaza por dentro.
   - Centro: **Requerimientos** se estira (`lg:flex-1 lg:min-h-0`) y desplaza su lista; debajo,
-    **anclados**, Costos adicionales → cobros en espera → Pagos, con tope `lg:max-h-[50%]`
-    (si crecen, se desplazan ellos, no Requerimientos). Salieron del panel derecho.
+    **anclado**, Costos adicionales, con tope `lg:max-h-[50%]` (si crece, se desplaza él, no
+    Requerimientos). **Pagos se queda en el panel derecho**, bajo Descripción, con los cobros
+    en espera encima: se probó abajo en el centro y Fernando lo devolvió a su sitio.
   - **Requerimiento contraído = solo el título** (más precio y botones de la fila). Descripción,
     etiquetas de talento/plazas y subtareas, al desplegar. Se quitó el resumen «N subtareas».
   - **«Compartir enlace de pago» va en `actions`, a la izquierda de «Completar y facturar»**, no

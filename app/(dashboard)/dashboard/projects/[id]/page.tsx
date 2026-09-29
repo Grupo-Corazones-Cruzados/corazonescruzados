@@ -1686,122 +1686,17 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* ⇒ ABAJO Y FIJOS: COSTOS ADICIONALES y PAGOS (Fernando, 2026-09-28).
-              Estaban al fondo del panel derecho, bajo Propiedades y Descripción, y había
-              que desplazar la página entera para llegar a ellos. Ahora van anclados al pie
-              de la columna central, y Requerimientos ocupa el hueco que queda encima y se
-              desplaza por dentro.
+          {/* ⇒ ABAJO Y FIJO: COSTOS ADICIONALES (Fernando, 2026-09-28). Estaba al fondo del
+              panel derecho; ahora va anclado al pie de la columna central, y Requerimientos
+              ocupa el hueco que queda encima y se desplaza por dentro. Pagos se probó aquí
+              también y volvió al panel derecho, a petición suya.
               El tope de la mitad es para que Requerimientos nunca quede reducido a una
-              franja: si costos y pagos crecen mucho, son ELLOS los que se desplazan. */}
+              franja: si los costos crecen mucho, son ELLOS los que se desplazan. */}
           <div className="shrink-0 space-y-4 lg:max-h-[50%] lg:overflow-y-auto">
           {/* Costos adicionales (servicios de proveedores externos) */}
           {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0) && (
             <AdditionalCostsCard projectId={project.id} costs={project.additional_costs || []} canEdit={!!(isOwner && !isTerminal)} onSaved={fetchProject} />
           )}
-
-          {/* Pagos por transferencia que esperan que alguien los confirme. Va ANTES de la
-              tarjeta de Pagos porque es lo único de este panel que pide una acción hoy. */}
-          <CobrosEnEspera tipo="project" id={String(id)} alConfirmar={fetchProject} />
-
-          {/* Pagos (facturado vs pendiente) */}
-          {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
-              `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
-          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
-            || Number(billing?.stagesTotal || 0) > 0) && (() => {
-            const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
-            const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
-            return (
-              <div className="pixel-card">
-                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
-                <div className="space-y-1 text-[12px]" style={mf}>
-                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(baseTotal)}</span></div>
-                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
-                  <div className="flex justify-between"><span className="text-digi-muted">Por facturar</span><span className={`tabular-nums ${Number(billing?.billable ?? payments.pending) > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(Number(billing?.billable ?? payments.pending))}</span></div>
-                </div>
-                <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
-                {(payments.invoices || []).length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
-                    {payments.invoices.map((inv: any) => (
-                      <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
-                        <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>
-                          {inv.status === 'cancelled' ? <span className="text-[9px] text-red-500">anulada</span> : inv.sri_status === 'authorized' ? <span className="text-[9px] text-green-600">SRI</span> : null}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* CANAL 2 — el CLIENTE paga su etapa desde aquí (2026-08-26).
-                    Ve solo lo que le incumbe: qué tramos hay, cuáles están pagados y cuál
-                    le toca. Nada del reparto interno, igual que en la página pública. */}
-                {esCliente && (billing?.etapas || []).length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-digi-border space-y-1">
-                    <span className="text-[11px] text-digi-muted" style={pf}>Etapas del proyecto</span>
-                    {(billing.etapas || []).map((e: any) => (
-                      <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
-                        <span className="min-w-0 truncate text-digi-text">{e.name}</span>
-                        <span className="flex items-center gap-2 shrink-0">
-                          <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                          {e.invoiceId
-                            ? <span className="text-[9px] text-green-600">pagada</span>
-                            : (
-                              <button
-                                onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}&etapa=${e.id}`)}
-                                className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">
-                                Pagar
-                              </button>
-                            )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* ETAPAS DE FACTURACIÓN: el acuerdo con el cliente («50% al empezar,
-                    50% al entregar»). No son los requerimientos, que son trabajo interno.
-                    Con plan definido, el proyecto se factura SOLO por etapas. */}
-                {isAdmin && (
-                  <div className="mt-2 pt-2 border-t border-digi-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-digi-muted" style={pf}>Etapas de facturación</span>
-                      <button onClick={openStagesPanel} className="destino-tactil text-[11px] text-accent hover:underline" style={pf}>
-                        {(billing?.etapas || []).length > 0 ? 'Editar' : 'Definir'}
-                      </button>
-                    </div>
-                    {(billing?.etapas || []).length === 0 ? (
-                      <p className="text-[10.5px] text-digi-muted" style={pf}>
-                        Sin etapas: se factura con el detalle de requerimientos.
-                      </p>
-                    ) : (
-                      (billing.etapas || []).map((e: any) => (
-                        <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
-                          <span className="min-w-0 truncate text-digi-text">{e.name}</span>
-                          <span className="flex items-center gap-1.5 shrink-0">
-                            <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                            {e.invoiceId
-                              ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>facturada</span>
-                              : <span className="text-[9px] text-amber-600">pendiente</span>}
-                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en
-                                las que aún no tienen comprobante: una etapa ya facturada no
-                                se cobra otra vez. */}
-                            {!e.invoiceId && (
-                              <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
-                                className="destino-tactil text-accent hover:opacity-70 transition-opacity">
-                                <Share2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-
-              </div>
-            );
-          })()}
           </div>
 
           </>)}
@@ -2440,6 +2335,110 @@ export default function ProjectDetailPage() {
               <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{project.description || <span className="text-digi-muted">Sin descripción. Pulsa “Editar” para agregar una.</span>}</p>
             </div>
           )}
+
+          {/* Pagos por transferencia que esperan que alguien los confirme. Va ANTES de la
+              tarjeta de Pagos porque es lo único de este panel que pide una acción hoy. */}
+          <CobrosEnEspera tipo="project" id={String(id)} alConfirmar={fetchProject} />
+
+          {/* Pagos (facturado vs pendiente) */}
+          {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
+              `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
+          {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0
+            || Number(billing?.stagesTotal || 0) > 0) && (() => {
+            const baseTotal = Number(payments.total) > 0 ? Number(payments.total) : Number(billing?.stagesTotal || 0);
+            const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
+            return (
+              <div className="pixel-card">
+                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
+                <div className="space-y-1 text-[12px]" style={mf}>
+                  <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(baseTotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
+                  <div className="flex justify-between"><span className="text-digi-muted">Por facturar</span><span className={`tabular-nums ${Number(billing?.billable ?? payments.pending) > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(Number(billing?.billable ?? payments.pending))}</span></div>
+                </div>
+                <div className="h-1.5 rounded-full bg-digi-darker border border-digi-border overflow-hidden my-2"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
+                {(payments.invoices || []).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-digi-border space-y-0.5">
+                    {payments.invoices.map((inv: any) => (
+                      <button key={inv.id} onClick={() => router.push(`/dashboard/invoices/${inv.id}`)} className="w-full flex items-center justify-between gap-2 text-[11.5px] hover:bg-black/[0.03] rounded px-1.5 py-1 transition-colors" style={mf}>
+                        <span className="min-w-0 truncate text-digi-text">{inv.invoice_number || `#${inv.id}`}</span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className={`tabular-nums ${inv.status === 'cancelled' ? 'line-through text-digi-muted' : 'text-digi-text'}`}>${fmt2(inv.total)}</span>
+                          {inv.status === 'cancelled' ? <span className="text-[9px] text-red-500">anulada</span> : inv.sri_status === 'authorized' ? <span className="text-[9px] text-green-600">SRI</span> : null}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* CANAL 2 — el CLIENTE paga su etapa desde aquí (2026-08-26).
+                    Ve solo lo que le incumbe: qué tramos hay, cuáles están pagados y cuál
+                    le toca. Nada del reparto interno, igual que en la página pública. */}
+                {esCliente && (billing?.etapas || []).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-digi-border space-y-1">
+                    <span className="text-[11px] text-digi-muted" style={pf}>Etapas del proyecto</span>
+                    {(billing.etapas || []).map((e: any) => (
+                      <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                        <span className="min-w-0 truncate text-digi-text">{e.name}</span>
+                        <span className="flex items-center gap-2 shrink-0">
+                          <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
+                          {e.invoiceId
+                            ? <span className="text-[9px] text-green-600">pagada</span>
+                            : (
+                              <button
+                                onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}&etapa=${e.id}`)}
+                                className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">
+                                Pagar
+                              </button>
+                            )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ETAPAS DE FACTURACIÓN: el acuerdo con el cliente («50% al empezar,
+                    50% al entregar»). No son los requerimientos, que son trabajo interno.
+                    Con plan definido, el proyecto se factura SOLO por etapas. */}
+                {isAdmin && (
+                  <div className="mt-2 pt-2 border-t border-digi-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-digi-muted" style={pf}>Etapas de facturación</span>
+                      <button onClick={openStagesPanel} className="destino-tactil text-[11px] text-accent hover:underline" style={pf}>
+                        {(billing?.etapas || []).length > 0 ? 'Editar' : 'Definir'}
+                      </button>
+                    </div>
+                    {(billing?.etapas || []).length === 0 ? (
+                      <p className="text-[10.5px] text-digi-muted" style={pf}>
+                        Sin etapas: se factura con el detalle de requerimientos.
+                      </p>
+                    ) : (
+                      (billing.etapas || []).map((e: any) => (
+                        <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                          <span className="min-w-0 truncate text-digi-text">{e.name}</span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
+                            {e.invoiceId
+                              ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>facturada</span>
+                              : <span className="text-[9px] text-amber-600">pendiente</span>}
+                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en
+                                las que aún no tienen comprobante: una etapa ya facturada no
+                                se cobra otra vez. */}
+                            {!e.invoiceId && (
+                              <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
+                                className="destino-tactil text-accent hover:opacity-70 transition-opacity">
+                                <Share2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+              </div>
+            );
+          })()}
 
           </>)}
 
