@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { Ticket, FolderKanban, Plus, X, Check, Link2, Search } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -119,7 +120,7 @@ export default function AlternativeLinks({ subjectKind, subjectId, alternativeId
             <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border shrink-0">
               <Link2 className="w-4 h-4 text-accent shrink-0" />
               <p className="text-[13px] font-semibold text-digi-text leading-tight min-w-0 flex-1" style={mf}>Asociar proyecto o ticket</p>
-              <button onClick={() => setPos(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              <BotonCerrar onClick={() => setPos(null)} />
             </div>
             {loading ? (
               <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>

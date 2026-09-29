@@ -14,6 +14,7 @@ import { anfitrionDe, type AccesoProducto } from '@/lib/productos/tipos';
 import { fmt2 } from '@/lib/format';
 import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
 import { slugDeTitulo } from '@/lib/marketplace/slug';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -508,7 +509,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
             <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
             <p className="text-[11px] text-digi-muted mt-0.5 capitalize" style={mf}>{isProject ? 'Proyecto' : tabLabel.replace(/s$/, '')}</p>
           </div>
-          <button onClick={() => { setSelected(null); onSeleccion?.(null, tab); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+          <BotonCerrar onClick={() => { setSelected(null); onSeleccion?.(null, tab); }} />
         </div>
         <div className="p-4 space-y-3">
           <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} alt={t.title} onOpen={openGalleryFromPanel} />

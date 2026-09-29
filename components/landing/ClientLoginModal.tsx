@@ -11,6 +11,7 @@ import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 import { PANEL_AUTH, TITULO_AUTH, CAMPO_AUTH } from './authEstilos';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const PIXEL = "'Silkscreen', cursive";
 const BODY = "'Inter', system-ui, -apple-system, sans-serif";
@@ -242,9 +243,7 @@ export default function ClientLoginModal({
         </div>
 
         <div style={panel}>
-          <button type="button" aria-label="Cerrar" onClick={onClose} style={closeBtn}>
-            ✕
-          </button>
+          <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
 
           <h2 style={title}>
             {step === 'creds'
@@ -477,18 +476,6 @@ const overlay: React.CSSProperties = {
 
 const panel = PANEL_AUTH;
 
-const closeBtn: React.CSSProperties = {
-  position: 'absolute',
-  top: 10,
-  right: 12,
-  background: 'transparent',
-  border: 0,
-  color: 'rgba(225,215,255,0.6)',
-  fontFamily: 'var(--font-body)',
-  fontSize: '0.85rem',
-  cursor: 'pointer',
-  padding: 6,
-};
 
 const title = TITULO_AUTH;
 

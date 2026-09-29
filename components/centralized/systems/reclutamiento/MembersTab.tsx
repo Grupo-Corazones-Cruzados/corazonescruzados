@@ -13,6 +13,7 @@ import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSec
 import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBar';
 import { fmt2 } from '@/lib/format';
 import { PISOS, PASOS, PISO_LABEL, PASO_LABEL, pisosAtOrBelow } from '@/lib/centralized/systems';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -184,7 +185,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                       { label: demoting ? 'Convirtiendo…' : 'Convertir a candidato', icon: UserMinus, danger: true, onClick: () => setConfirmDemote(true), disabled: isAdminMember || demoting },
                     ]} />
                   )}
-                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                  <BotonCerrar onClick={() => setSelectedId(null)} />
                 </div>
               </div>
               {/* Fila completa: estado/rol a la izquierda (bajo el nombre), prospección al borde derecho */}
@@ -264,7 +265,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted" style={df}>Prospección</p>
                 <h3 className="text-[14px] font-semibold text-digi-text truncate leading-tight" style={df}>{displayName(selected)}</h3>
               </div>
-              <button onClick={() => setProspectOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              <BotonCerrar onClick={() => setProspectOpen(false)} />
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <CriteriaSections criteria={selected.criteria || null} />

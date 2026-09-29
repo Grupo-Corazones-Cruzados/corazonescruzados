@@ -51,6 +51,7 @@ import LogoGirando from '@/components/ui/LogoGirando';
 import Button from '@/components/ui/Button';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelTabs from '@/components/ui/PixelTabs';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 export type PostulacionData = {
   email: string;
@@ -1355,14 +1356,7 @@ export default function OnboardingSlidersModal({
                   ))}
                 </div>
               </div>
-              <button
-                type="button"
-                aria-label="Cerrar"
-                onClick={onClose}
-                className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:bg-[#f3f2f1] hover:text-digi-text transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <BotonCerrar onClick={onClose} />
             </header>
 
             {/* Cuerpo (scroll + animación de entrada) */}

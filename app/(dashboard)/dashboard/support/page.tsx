@@ -12,6 +12,7 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import Button, { BTN_PRIMARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, Search, MessageSquare } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -226,7 +227,7 @@ export default function SupportPage() {
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.subject}</h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Ticket #{selected.id}</p>
                     </div>
-                    <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                    <BotonCerrar onClick={() => setSelected(null)} />
                   </div>
                   {cuerpoResumen}
                 </div>

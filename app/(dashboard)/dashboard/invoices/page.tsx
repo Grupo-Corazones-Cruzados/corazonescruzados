@@ -15,6 +15,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -592,7 +593,7 @@ function InvoicesPageInner() {
                   <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.invoice_number || `Factura #${selected.id}`}</h3>
                   <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selected.client_name_sri || selected.client_name || '—'}</p>
                 </div>
-                <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                <BotonCerrar onClick={() => setSelected(null)} />
               </div>
               {cuerpoResumen}
             </div>

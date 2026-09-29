@@ -9,6 +9,7 @@ import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSec
 import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBar';
 import { Users, Mail, X, Search, Phone, Building2, Globe, UserCheck } from 'lucide-react';
 import { type CandidateCriteria } from '@/lib/centralized/reclutamiento';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -141,7 +142,7 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
                       { label: converting === String(selected.id) ? 'Convirtiendo…' : 'Convertir en miembro', icon: UserCheck, onClick: () => setConfirmConvert(true), disabled: converting === String(selected.id) },
                     ]} />
                   )}
-                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                  <BotonCerrar onClick={() => setSelectedId(null)} />
                 </div>
               </div>
               {/* Fecha a la izquierda, Prospección al borde derecho (misma altura) */}

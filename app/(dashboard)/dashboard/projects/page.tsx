@@ -28,6 +28,7 @@ import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
   Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle,
 } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -588,7 +589,7 @@ export default function ProjectsPage() {
           <aside className="relative w-full max-w-md h-full bg-digi-card border-l border-digi-border shadow-2xl overflow-y-auto ml-auto">
             <div className="flex items-center justify-between p-4 border-b border-digi-border sticky top-0 bg-digi-card z-10">
               <h2 className="text-[15px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}><Calculator className="w-5 h-5 text-accent" /> Nueva cotización</h2>
-              <button onClick={() => !generatingQuote && setShowQuote(false)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              <BotonCerrar onClick={() => !generatingQuote && setShowQuote(false)} />
             </div>
 
             {generatingQuote ? (

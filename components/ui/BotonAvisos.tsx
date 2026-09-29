@@ -27,6 +27,7 @@ import { useCallback, useRef, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { TONO } from './tonos';
 import { usarBurbuja, Burbuja } from './burbuja';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -85,10 +86,7 @@ export default function BotonAvisos({
         <Burbuja caja={caja} burbujaRef={burbujaRef} lado="izquierda" etiqueta={titulo}>
           <div className="flex items-center justify-between px-3 py-2 border-b border-digi-border">
             <span className="text-[12px] font-semibold text-digi-text" style={mf}>{titulo}</span>
-            <button type="button" onClick={cerrar} aria-label="Cerrar"
-              className="text-digi-muted hover:text-digi-text">
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <BotonCerrar onClick={cerrar} tamano="sm" />
           </div>
 
           <ul className="py-1 max-h-[60vh] overflow-y-auto">

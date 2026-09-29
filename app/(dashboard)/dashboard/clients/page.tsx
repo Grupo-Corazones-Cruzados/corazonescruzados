@@ -18,6 +18,7 @@ import {
   Users, Building2, Contact, BookUser, UserRound, Globe, Search, Plus, X,
   Trash2, CheckCircle2, ChevronDown, ExternalLink, FileText,
 } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const inputCls = 'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none';
@@ -434,7 +435,7 @@ export default function ClientsPage() {
                       </h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{ID_TYPE_LABEL[detail.id_type] || detail.id_type} · {detail.ruc}</p>
                     </div>
-                    <button onClick={() => { setSelected(null); setDetail(null); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                    <BotonCerrar onClick={() => { setSelected(null); setDetail(null); }} />
                   </div>
 
                   {cuerpoFicha}

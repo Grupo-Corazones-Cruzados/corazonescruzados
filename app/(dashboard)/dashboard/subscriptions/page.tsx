@@ -17,6 +17,7 @@ import FilterRail from '@/components/ui/FilterRail';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -275,7 +276,7 @@ export default function SubscriptionsPage() {
     {payError && (
       <div className="border border-red-300 rounded bg-red-50 px-3 py-2 flex items-start justify-between gap-2">
         <div className="text-[12px] text-red-700 leading-relaxed" style={mf}><span className="font-semibold">No se pudo facturar:</span> {payError}</div>
-        <button onClick={() => setPayError(null)} className="text-red-500 hover:text-red-600 shrink-0"><X className="w-3.5 h-3.5" /></button>
+        <BotonCerrar onClick={() => setPayError(null)} etiqueta="Cerrar aviso" />
       </div>
     )}
 
@@ -526,7 +527,7 @@ export default function SubscriptionsPage() {
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{detail.title}</h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{detail.client_name || '—'}</p>
                     </div>
-                    <button onClick={() => { setSelected(null); setDetail(null); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                    <BotonCerrar onClick={() => { setSelected(null); setDetail(null); }} />
                   </div>
 
                   {cuerpoMeses}

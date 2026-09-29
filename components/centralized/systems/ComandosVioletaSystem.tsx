@@ -15,6 +15,7 @@ import {
   Plus, Trash2, X, MousePointerClick, Sparkles, FolderPlus, MessageSquareText, Ban, ListChecks, Power, Pencil, Check, FileText,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -346,7 +347,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                   <div className={`${GLASS} p-3.5 space-y-3`}>
                     <div className="flex items-center justify-between">
                       <h3 className="text-[13.5px] font-semibold text-white" style={df}>Nueva política</h3>
-                      <button onClick={() => setCreatingPolicy(false)} className="text-white/60 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                      <BotonCerrar onClick={() => setCreatingPolicy(false)} tono="oscuro" />
                     </div>
                     <input autoFocus value={policyName} onChange={(e) => setPolicyName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createPolicy()} placeholder="Nombre de la política" className={GLASS_INPUT} style={mf} />
                     <div className="flex gap-2">
@@ -359,7 +360,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                   <div className={`${GLASS} p-3.5 space-y-3`}>
                     <div className="flex items-center justify-between">
                       <h3 className="text-[13.5px] font-semibold text-white" style={df}>{funcForm.editingId ? 'Editar función' : 'Nueva función'}</h3>
-                      <button onClick={() => setFuncForm(null)} className="text-white/60 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                      <BotonCerrar onClick={() => setFuncForm(null)} tono="oscuro" />
                     </div>
                     <div>
                       <label className="text-[10.5px] font-semibold uppercase tracking-wide text-white/50" style={df}>Acción</label>
@@ -422,7 +423,7 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                           </p>
                           <h3 className="text-[14.5px] font-semibold text-white leading-snug" style={mf}>{selectedNode.title}</h3>
                         </div>
-                        <button onClick={() => setSelectedKey(null)} className="text-white/60 hover:text-white shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                        <BotonCerrar onClick={() => setSelectedKey(null)} tono="oscuro" />
                       </div>
                     </div>
 

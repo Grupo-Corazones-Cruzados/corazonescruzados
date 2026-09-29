@@ -1064,22 +1064,42 @@ html {
   .acciones-al-pasar { opacity: 1 !important; }
 }
 
+/* ── BOTÓN DE CERRAR (`components/ui/BotonCerrar.tsx`, 2026-09-29) ──────────────────
+   Fondo gris muy suave SIEMPRE visible (se lee como botón), más intenso al pasar. Sale de
+   `--color-digi-text` mezclado, así que en modo oscuro es un blanco tenue sin tocar nada.
+   Anillo de teclado GRIS: nada de morado en el contorno (ver «SIN BORDE MORADO»). */
+.boton-cerrar {
+  color: var(--color-digi-muted);
+  background-color: color-mix(in srgb, var(--color-digi-text) 6%, transparent);
+}
+.boton-cerrar:hover,
+.boton-cerrar:focus-visible { color: var(--color-digi-text); background-color: color-mix(in srgb, var(--color-digi-text) 12%, transparent); }
+/* SIN ANILLO: una ventana pone el foco en su primer botón al abrirse —la X—, y un anillo
+   saldría en CADA ventana. El foco de teclado se ve igual que el «al pasar». */
+.boton-cerrar:focus-visible { box-shadow: none; outline: none; }
+.boton-cerrar--oscuro { color: rgba(255,255,255,0.75); background-color: rgba(255,255,255,0.1); }
+.boton-cerrar--oscuro:hover,
+.boton-cerrar--oscuro:focus-visible { color: #fff; background-color: rgba(255,255,255,0.2); }
+
 /* ── BOTÓN DE QUITAR UN ELEMENTO (`components/ui/BotonQuitar.tsx`, 2026-09-29) ───────
    La papelera estándar de las listas. Gris en reposo; al pasar, rojo con fondo y borde
    suaves. Va aquí y no en clases `hover:` porque el modo oscuro corrige los rojos por
    nombre de clase y estas tienen que cambiar con él. Deshabilitado no reacciona. */
-.boton-quitar:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-red-500) 35%, transparent); }
-.boton-quitar:enabled:hover {
+.boton-quitar:focus-visible { box-shadow: none; outline: none; }
+.boton-quitar:enabled:hover,
+.boton-quitar:enabled:focus-visible {
   color: var(--color-red-600);
   background-color: var(--color-red-50);
   border-color: var(--color-red-200);
 }
-.corp.dark .boton-quitar:enabled:hover {
+.corp.dark .boton-quitar:enabled:hover,
+.corp.dark .boton-quitar:enabled:focus-visible {
   color: #f1707b;
   background-color: rgba(241,112,123,0.18);
   border-color: rgba(241,112,123,0.35);
 }
-.boton-quitar--oscuro:enabled:hover {
+.boton-quitar--oscuro:enabled:hover,
+.boton-quitar--oscuro:enabled:focus-visible {
   color: #fca5a5;
   background-color: rgba(239,68,68,0.15);
   border-color: rgba(248,113,113,0.3);
@@ -1146,21 +1166,10 @@ html {
   border-bottom: 1px solid var(--color-digi-border);
 }
 .corp .modal-title { font-size: 1.0625rem; font-weight: 600; letter-spacing: normal; }
-.corp .modal-close {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  color: var(--color-digi-muted);
-}
-.corp .modal-close:hover { background: #f3f2f1; color: var(--color-digi-text); }
 /* ⭐ DESTINO TÁCTIL EN TELÉFONO: 44 px (Fernando, 2026-09-21 — «un diseño hecho para
-   teléfono»). 32 px es la medida de un puntero, no la de un pulgar; la X de cerrar es
-   además el control que más se busca con prisa. Va aquí, en la definición única del
-   diálogo, así que lo heredan las ~30 pantallas que usan `PixelModal`. */
+   teléfono»). La X de cerrar ya no se agranda aquí: es `BotonCerrar`, que lleva
+   `destino-tactil` (44 px de área en táctil sin cambiar el dibujo). */
 @media (max-width: 639.98px) {
-  .corp .modal-close { width: 44px; height: 44px; margin: -6px -6px -6px 0; }
   .corp .modal-header { padding: 14px 16px; }
   .corp .modal-body { padding: 16px; }
 }
@@ -1325,7 +1334,6 @@ html {
 
 /* Hardcoded neutrals inside .corp rules → dark equivalents */
 .corp.dark .dt-row:hover { background: #2d2c2b; }
-.corp.dark .modal-close:hover { background: #33322f; }
 .corp.dark ::-webkit-scrollbar-thumb { background: #4a4948; }
 .corp.dark ::-webkit-scrollbar-thumb:hover { background: #5a5958; }
 

@@ -15,6 +15,7 @@ import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
 import { DIMENSION_COLOR, DIMENSION_LABEL } from '@/lib/centralized/apoyo';
 import { DIMENSION_ICON as DIM_ICON } from '@/components/centralized/dimensionIcons';
 import { TALENTOS } from '@/lib/centralized/talentos';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -481,7 +482,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
               <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
                   <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
-                  <button onClick={() => setPanel(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                  <BotonCerrar onClick={() => setPanel(null)} />
                 </div>
                 <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] overflow-y-auto">
                   <div>
@@ -558,7 +559,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
             <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
               <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
                 <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
-                <button onClick={() => setGenPanel(null)} className="text-digi-muted hover:text-digi-text" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                <BotonCerrar onClick={() => setGenPanel(null)} />
               </div>
               <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] overflow-y-auto">
                 <div>

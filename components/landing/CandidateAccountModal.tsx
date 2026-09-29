@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const PIXEL = "'Silkscreen', cursive";
 const BODY = "'Inter', system-ui, -apple-system, sans-serif";
@@ -115,14 +116,7 @@ export default function CandidateAccountModal({
           padding: '28px 26px 24px',
         }}
       >
-        <button
-          type="button"
-          aria-label="Cerrar"
-          onClick={onClose}
-          style={{ position: 'absolute', top: 10, right: 12, background: 'transparent', border: 0, color: 'rgba(225,215,255,0.6)', fontFamily: PIXEL, fontSize: '0.85rem', cursor: 'pointer', padding: 6 }}
-        >
-          ✕
-        </button>
+        <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
 
         <h2 style={{ fontFamily: PIXEL, fontSize: '0.95rem', color: '#f1eefb', textAlign: 'center', margin: '0 0 6px', textShadow: '1px 1px 0 rgba(0,0,0,0.6)' }}>
           Crea tu cuenta

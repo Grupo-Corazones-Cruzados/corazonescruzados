@@ -23,6 +23,7 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { X, Loader2 } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -77,12 +78,7 @@ export function AuthDialog({
             <h2 className="text-[17px] font-semibold text-digi-text leading-tight" style={mf}>{titulo}</h2>
             {subtitulo && <p className="mt-0.5 text-[12.5px] text-digi-muted leading-relaxed" style={mf}>{subtitulo}</p>}
           </div>
-          <button
-            type="button" onClick={onClose} aria-label="Cerrar"
-            className="w-8 h-8 rounded-md flex items-center justify-center text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <BotonCerrar onClick={onClose} />
         </div>
 
         {/* Cuerpo con el fondo de página, para que los campos se separen de la tarjeta. */}

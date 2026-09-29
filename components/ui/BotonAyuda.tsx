@@ -21,6 +21,7 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 import { usarBurbuja, Burbuja, type LadoBurbuja } from './burbuja';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -68,10 +69,7 @@ export default function BotonAyuda({
           contenedor={botonRef.current?.closest('dialog')}>
           <div className="flex items-center justify-between px-3 py-2 border-b border-digi-border">
             <span className="text-[12px] font-semibold text-digi-text" style={mf}>{titulo}</span>
-            <button type="button" onClick={cerrar} aria-label="Cerrar"
-              className="text-digi-muted hover:text-digi-text">
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <BotonCerrar onClick={cerrar} tamano="sm" />
           </div>
           <div
             className="px-3 py-2.5 text-[12.5px] text-digi-muted leading-relaxed max-h-[60vh] overflow-y-auto

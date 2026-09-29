@@ -3913,6 +3913,17 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Cerrar = `BotonCerrar` (X) · ADOPTADO como estándar por Fernando.** Definición
+  única: `components/ui/BotonCerrar.tsx`. Cuadrado de 32 px (`md`) o 28 px (`sm`), `rounded-lg`,
+  icono `X` con trazo 2.25, **fondo gris suave siempre visible** (6 % del color de texto) que
+  sube a 12 % al pasar o con el foco de teclado, y `active:scale-[0.94]`. Color en `globals.css`
+  (`.boton-cerrar`, con `--oscuro` para fondos oscuros o de color). **Sin anillo de foco**: una
+  ventana enfoca su primer botón —la X— al abrirse, y el anillo salía en todas. Lo usan
+  `PixelModal` (todas las ventanas; se retiró la «X» de texto pixel y el CSS `.modal-close`) y
+  las ~40 X sueltas de paneles de detalle, burbujas de ayuda/avisos, dock de notificaciones,
+  chat GCC Bot, Centralizado y las ventanas de acceso de la portada. **Fuera, a propósito:** el
+  sitio público y el CV público (su diseño se acuerda con Fernando). La × de QUITAR de una lista
+  es `BotonQuitar`; la de «Cancelar»/«Rechazar» va con texto en su botón.
 - **2026-09-29 · ⛔ NADA DE BORDE MORADO AL ENFOCAR UN CAMPO · regla de Fernando.** *«ese
   enfoque con borde morado se ve muy mal, quítalo de todas partes»*. La regla global de
   `app/globals.css` (`.corp input/select/textarea/.field-control:focus`) ponía borde de acento +

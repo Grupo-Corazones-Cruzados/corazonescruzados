@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 interface PixelModalProps {
   open: boolean;
@@ -76,15 +77,9 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
             >
               {title}
             </h2>
-            <button
-              onClick={onClose}
-              disabled={busy}
-              aria-label="Cerrar"
-              className="modal-close shrink-0 w-8 h-8 flex items-center justify-center text-digi-muted hover:text-digi-text border-2 border-digi-border hover:border-accent transition-colors disabled:opacity-40 disabled:pointer-events-none"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              X
-            </button>
+            {/* La X de todas las ventanas: `BotonCerrar` (2026-09-29). Antes era la letra «X»
+                con la tipografía pixel dentro de un borde. */}
+            <BotonCerrar onClick={onClose} disabled={busy} className="modal-close" />
           </div>
 
           {/* Body */}

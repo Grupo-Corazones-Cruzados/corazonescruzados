@@ -7,6 +7,7 @@ import { Camera, MapPin, RefreshCw, Loader2, X, Check,
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import ImageGallery from '@/components/ui/ImageGallery';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -509,7 +510,7 @@ function CaptureOverlay({ onClose, onSaved }: { onClose: () => void; onSaved: (i
             {geoStatus === 'ok' && coords ? `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : geoStatus === 'loading' ? 'Ubicando…' : geoStatus === 'error' ? 'Sin GPS' : 'GPS'}
           </span>
           {geoStatus === 'error' && <button onClick={requestGeo} className="text-white/70 hover:text-white"><RefreshCw className="w-3.5 h-3.5" /></button>}
-          <button onClick={close} className="w-8 h-8 flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white"><X className="w-4 h-4" /></button>
+          <BotonCerrar onClick={close} tono="oscuro" />
         </div>
       </div>
 

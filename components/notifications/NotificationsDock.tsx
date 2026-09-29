@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Bell, X, FolderKanban, Crown, Ticket, ChevronRight } from 'lucide-react';
 import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const POLL = 60000;
@@ -117,13 +118,7 @@ export default function NotificationsDock() {
           <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border">
             <Bell className="w-4 h-4 text-accent" />
             <span className="text-[13px] font-semibold text-digi-text flex-1">Notificaciones</span>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Cerrar notificaciones"
-              className="w-7 h-7 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <BotonCerrar onClick={() => setOpen(false)} etiqueta="Cerrar notificaciones" tamano="sm" />
           </div>
 
           {/* Scroll PROPIO de la ventana: la lista completa, de la más reciente a la más antigua */}

@@ -11,6 +11,7 @@ import {
   NODE_TYPES, NODE_META, DIMENSIONS, DIMENSION_LABEL, DIMENSION_COLOR, nodeKey,
   type ApoyoGraph, type GraphNode, type ApoyoNodeType,
 } from '@/lib/centralized/apoyo';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -283,7 +284,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                   <div className={`${GLASS} p-3.5 space-y-3`}>
                     <div className="flex items-center justify-between">
                       <h3 className="text-[13.5px] font-semibold text-white" style={df}>Nueva {NODE_META[createCtx.type].label.toLowerCase()}</h3>
-                      <button onClick={() => setCreateCtx(null)} className="text-white/60 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                      <BotonCerrar onClick={() => setCreateCtx(null)} tono="oscuro" />
                     </div>
                     <input autoFocus value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Título" className={GLASS_INPUT} style={mf} />
                     {createCtx.type === 'problem' && (
@@ -314,7 +315,7 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                             </p>
                           )}
                         </div>
-                        <button onClick={() => setSelectedKey(null)} className="text-white/60 hover:text-white shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                        <BotonCerrar onClick={() => setSelectedKey(null)} tono="oscuro" />
                       </div>
                       {selectedNode.description && <p className="text-[12.5px] text-white/80 leading-relaxed mt-2.5" style={mf}>{selectedNode.description}</p>}
                     </div>

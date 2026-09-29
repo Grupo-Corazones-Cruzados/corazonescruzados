@@ -18,6 +18,7 @@ import {
 } from '@/lib/centralized/gestion-datos';
 import { APA_TIPOS, apaTipoLabel, formatApaSegments, formatApaText } from '@/lib/centralized/apa';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -871,7 +872,7 @@ function FuenteForm({ form, setForm, onCancel, onSave, saving }: any) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-[13px] font-semibold text-white" style={df}>{form.id ? 'Editar fuente' : 'Nueva fuente'}</h3>
-        <button onClick={onCancel} className="text-white/50 hover:text-white"><X className="w-4 h-4" /></button>
+        <BotonCerrar onClick={onCancel} tono="oscuro" />
       </div>
       {/* 2 columnas: referencia bibliográfica a la IZQUIERDA · datos de la fuente a la derecha.
           Así el formulario no crece en altura (la referencia puede tener muchos campos). */}
@@ -912,7 +913,7 @@ function ProblemaForm({ form, setForm, onCancel, onSave, saving }: any) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-[13px] font-semibold text-white" style={df}>{form.id ? 'Editar problema' : 'Nuevo problema'}</h3>
-        <button onClick={onCancel} className="text-white/50 hover:text-white"><X className="w-4 h-4" /></button>
+        <BotonCerrar onClick={onCancel} tono="oscuro" />
       </div>
       <Field label="Título del problema">
         <input className={GLASS_INPUT} value={form.title} onChange={(e) => setForm((f: any) => ({ ...f, title: e.target.value }))} placeholder="Ej. Deserción escolar temprana" autoFocus />
@@ -937,7 +938,7 @@ function NodeDetail({ node, fuentes, pesos, enfrentamientos, codigos, categorias
         <span className="text-[9.5px] uppercase tracking-wide font-bold" style={{ ...df, color: meta.color }}>{meta.label}</span>
         <p className="text-[13.5px] font-semibold text-white leading-tight break-words" style={df}>{node.title}</p>
       </div>
-      <button onClick={onClose} className="text-white/50 hover:text-white shrink-0"><X className="w-4 h-4" /></button>
+      <BotonCerrar onClick={onClose} tono="oscuro" />
     </div>
   );
 

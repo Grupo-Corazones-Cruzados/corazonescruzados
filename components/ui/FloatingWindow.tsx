@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, GripHorizontal } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -73,7 +74,7 @@ export default function FloatingWindow({
       <div onPointerDown={start('move')} className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border bg-digi-dark cursor-move select-none shrink-0">
         <GripHorizontal className="w-4 h-4 text-digi-muted shrink-0" />
         <span className="text-[13px] font-semibold text-digi-text flex-1 min-w-0 truncate" style={mf}>{title}</span>
-        <button onPointerDown={(e) => e.stopPropagation()} onClick={onClose} aria-label="Cerrar" className="w-7 h-7 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.05] transition-colors shrink-0"><X className="w-4 h-4" /></button>
+        <BotonCerrar onClick={onClose} tamano="sm" onPointerDown={(e) => e.stopPropagation()} />
       </div>
 
       {/* Contenido */}

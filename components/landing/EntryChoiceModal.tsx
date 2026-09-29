@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import PixelBadge from '@/components/ui/PixelBadge';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 type Tone = 'default' | 'success' | 'warning';
 
@@ -183,14 +184,7 @@ export default function EntryChoiceModal({
             </h2>
             <p className="text-[12.5px] text-digi-muted mt-0.5">Elige tu camino para continuar.</p>
           </div>
-          <button
-            type="button"
-            aria-label="Cerrar"
-            onClick={onClose}
-            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:bg-[#f3f2f1] hover:text-digi-text transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <BotonCerrar onClick={onClose} />
         </div>
 
         {/* Opciones */}

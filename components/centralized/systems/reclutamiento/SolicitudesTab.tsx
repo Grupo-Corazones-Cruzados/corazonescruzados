@@ -9,6 +9,7 @@ import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import {
   Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, UserPlus, Search, AtSign,
 } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -164,7 +165,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                   <span className="text-[11.5px] text-digi-muted" style={mf}>Postuló el {fmtDate(selected.created_at)}</span>
                 </div>
               </div>
-              <button onClick={() => setSelectedId(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+              <BotonCerrar onClick={() => setSelectedId(null)} />
             </div>
 
             <div className="p-4 space-y-4">

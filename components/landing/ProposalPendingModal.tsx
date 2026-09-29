@@ -1,4 +1,5 @@
 'use client';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 /**
  * ProposalPendingModal
@@ -62,25 +63,7 @@ export default function ProposalPendingModal({
           textAlign: 'center',
         }}
       >
-        <button
-          type="button"
-          aria-label="Cerrar"
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 12,
-            background: 'transparent',
-            border: 0,
-            color: 'rgba(225,215,255,0.6)',
-            fontFamily: PIXEL,
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            padding: 6,
-          }}
-        >
-          ✕
-        </button>
+        <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
 
         <div style={{ fontSize: '2rem', marginBottom: 8 }}>{approved ? '🎉' : isClient ? '📬' : '⏳'}</div>
         <h2

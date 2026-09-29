@@ -19,6 +19,7 @@ import {
 import {
   PISOS, PASOS, PISO_LABEL, PASO_LABEL, CELL_MAP, systemPath,
 } from '@/lib/centralized/systems';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -260,9 +261,7 @@ export default function CentralizedPage() {
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.name}</h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selected.cell_name}</p>
                     </div>
-                    <button onClick={() => setSelected(null)} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar">
-                      <X className="w-4 h-4" />
-                    </button>
+                    <BotonCerrar onClick={() => setSelected(null)} />
                   </div>
 
                   <div className="p-4 space-y-2.5">

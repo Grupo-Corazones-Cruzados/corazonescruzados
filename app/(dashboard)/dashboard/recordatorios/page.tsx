@@ -18,6 +18,7 @@ import {
   RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -559,7 +560,7 @@ export default function RecordatoriosPage() {
                       </h3>
                       <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{detail.source === 'meeting' ? 'Generado de una reunión' : 'Recordatorio manual'}</p>
                     </div>
-                    <button onClick={() => { setSelected(null); setSelDetail(null); }} className="text-digi-muted hover:text-digi-text shrink-0" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+                    <BotonCerrar onClick={() => { setSelected(null); setSelDetail(null); }} />
                   </div>
                   {cuerpoDetalle}
                 </div>

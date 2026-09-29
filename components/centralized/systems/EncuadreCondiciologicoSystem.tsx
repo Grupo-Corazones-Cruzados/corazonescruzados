@@ -7,6 +7,7 @@ import {
   Layers, Plus, Trash2, Search, Sparkles, Gem, MapPin, BookOpen, Zap, Target, Gauge,
   Map as MapIcon, Brain, Shapes, X, ChevronRight,
 } from 'lucide-react';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -220,13 +221,7 @@ export default function EncuadreCondiciologicoSystem({
           <>
             <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2">
               <span className="text-[12px] font-semibold text-digi-text flex-1 truncate" style={df}>Detalle</span>
-              <button
-                onClick={() => setSelOpt(null)}
-                title="Cerrar" aria-label="Cerrar"
-                className="w-7 h-7 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text hover:bg-black/[0.04] transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <BotonCerrar onClick={() => setSelOpt(null)} tamano="sm" />
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-3">

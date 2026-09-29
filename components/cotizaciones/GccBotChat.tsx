@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Bot, X, Send } from 'lucide-react';
 import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
+import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -73,7 +74,7 @@ export default function GccBotChat({ projectId, onChanged, chatUrl, extraBody, s
         <div className={`fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 z-[92] w-[92vw] max-w-sm h-[70vh] max-h-[560px] flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-2xl overflow-hidden`}>
           <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-digi-border bg-accent text-white">
             <span className="inline-flex items-center gap-2 text-[13px] font-semibold" style={mf}><Bot className="w-4 h-4" /> GCC Bot · Cotización</span>
-            <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white" aria-label="Cerrar"><X className="w-4 h-4" /></button>
+            <BotonCerrar onClick={() => setOpen(false)} tono="oscuro" />
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {msgs.map((m, i) => (
