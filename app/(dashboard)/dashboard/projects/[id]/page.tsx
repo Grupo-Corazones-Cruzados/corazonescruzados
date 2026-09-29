@@ -106,9 +106,9 @@ export default function ProjectDetailPage() {
   const [newItemText, setNewItemText] = useState<Record<number, string>>({});
   // Requerimiento que se va a eliminar, esperando confirmación (el «⋯ → Eliminar»).
   const [reqAEliminar, setReqAEliminar] = useState<{ id: number; title: string } | null>(null);
-  // Requerimientos desplegados (por defecto TODOS contraídos).
-  const [expandedReqs, setExpandedReqs] = useState<Set<number>>(new Set());
-  const toggleReqExpand = (rid: number) => setExpandedReqs((s) => { const n = new Set(s); n.has(rid) ? n.delete(rid) : n.add(rid); return n; });
+  // Requerimiento seleccionado: su detalle sale a la derecha de la lista (Fernando,
+  // 2026-09-29). Sin elegir, o si el elegido ya no existe, se muestra el primero.
+  const [reqSeleccionado, setReqSeleccionado] = useState<number | null>(null);
 
   // Edición: SIEMPRE en panel derecho (formularios) o ventanita centrada (1-2 campos).
   // Nunca inline "por encima" del contenido (regla del sistema, ver Diseño.md).
@@ -1072,6 +1072,7 @@ export default function ProjectDetailPage() {
   // Can add requirements: not in review/completed/cancelled; in in_progress only creator/admin
   const canAddReqs = isOwner && !['review', 'completed', 'cancelled', 'closed'].includes(project.status);
   // Has unassigned requirements (for invite/visibility controls)
+  const reqActivo = reqs.find((r: any) => r.id === reqSeleccionado) || reqs[0] || null;
   const hasUnassignedReqs = reqs.some((r: any) => !(r.assignments || []).some((a: any) => a.status === 'accepted'));
   // Can invite: only in open/in_progress and if unassigned reqs exist
   const canInvite = isOwner && ['open', 'in_progress'].includes(project.status) && hasUnassignedReqs;
@@ -1576,111 +1577,113 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:-mr-2 lg:pr-2">
+            {/* ⇒ REQUERIMIENTOS EN DOS PARTES (Fernando, 2026-09-29): a la izquierda la lista
+                —casilla, título en UNA línea con «…» y el precio debajo—; a la derecha, el
+                detalle del seleccionado: etiquetas, plazas, miembros y subtareas. Sustituye al
+                desplegable por fila. En el teléfono las dos partes se apilan. */}
             {reqs.length === 0 ? (
               <p className="text-[13px] text-digi-muted text-center py-6" style={mf}>Sin requerimientos aún.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-3">
+                <div className="lg:w-[42%] lg:shrink-0 lg:min-h-0 lg:overflow-y-auto space-y-1.5 lg:pr-1">
                 {reqs.map((r: any) => {
-                  const assignments = r.assignments || [];
-                  const items = r.items || [];
                   const canEditThis = canMemberEditReq(r.id) && trabajoAbierto;
-                  const acceptedAssignments = assignments.filter((a: any) => a.status === 'accepted');
-                  const pendingAssignments = assignments.filter((a: any) => a.status !== 'accepted');
-                  const expanded = expandedReqs.has(r.id);
                   const canManageThis = isOwner && (isAdmin || project.confirmed_at || isMemberCreator);
+                  const elegido = reqActivo?.id === r.id;
                   return (
-                    <div key={r.id} className={`rounded-lg border border-digi-border bg-white overflow-hidden`}>
-                      {/* Sin la franja de color a la izquierda (Fernando, 2026-09-28): el estado ya
-                          lo dice la casilla y el tachado. */}
-                      <div className="p-2.5">
-                        {/* La edición NUNCA es inline: el lápiz abre el panel lateral derecho. */}
-                        <div className={`flex items-start gap-3 ${editingReqId === r.id ? 'opacity-60' : ''}`}>
-                          <button
-                            onClick={() => canEditThis && toggleReqComplete(r.id, !r.is_completed)}
-                            disabled={!canEditThis}
-                            aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
-                            // ⇒ BLOQUEADA EN REVISIÓN Y DESPUÉS (Fernando, 2026-09-29): ya lo estaba, pero se
-                            // veía igual que una activa. Atenuada y con el porqué al pasar el ratón.
-                            title={!trabajoAbierto ? 'Bloqueado: el proyecto ya está en revisión o cerrado' : undefined}
-                            className={`destino-tactil mt-0.5 w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : !trabajoAbierto ? 'opacity-50 cursor-not-allowed' : 'cursor-default'}`}
-                          >
-                            {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
-                          </button>
-                          <button onClick={() => toggleReqExpand(r.id)} className="min-w-0 flex-1 text-left">
-                            {/* Sin tachado (Fernando, 2026-09-29): hecho ya lo dice la casilla; el gris basta. */}
-                            <p className={`text-[13px] font-medium ${r.is_completed ? 'text-digi-muted' : 'text-digi-text'}`} style={mf}>{r.title}</p>
-                            {/* ⇒ CONTRAÍDO, SOLO EL TÍTULO (Fernando, 2026-09-28). La descripción,
-                                las etiquetas y las subtareas se ven al desplegar: con todo a la
-                                vista, cinco requerimientos llenaban la pantalla y no se veía la
-                                lista de un vistazo. */}
-                            {expanded && r.description && <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{r.description}</p>}
-                            {/* Talentos que pide el requerimiento y cuántas plazas ofrece:
-                                es lo que hace que el proyecto salga en el filtro por talento. */}
-                            {expanded && (r.talents?.length > 0 || r.slots != null) && (
-                              <p className="flex flex-wrap items-center gap-1 mt-1">
-                                {(r.talents || []).map((t: string) => (
-                                  <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20" style={mf}>{t}</span>
-                                ))}
-                                {/* ⇒ PLAZAS: icono de personas + número, cuando están definidas; si no,
-                                    nada (Fernando, 2026-09-29 — antes salía «plazas sin definir»). */}
-                                {r.slots != null && (
-                                  <span title={`${r.slots} plaza${Number(r.slots) === 1 ? '' : 's'}`}
-                                    className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border border-digi-border text-digi-muted tabular-nums" style={mf}>
-                                    <Users className="w-3 h-3" />{r.slots}
-                                  </span>
-                                )}
-                              </p>
-                            )}
-                          </button>
-                          {/* `-my-1.5`: los botones miden 32 px y la línea del título 20; sin esto
-                              la fila crece y el título se queda arriba, desalineado del precio. */}
-                          <div className="flex items-center gap-1 sm:gap-2 shrink-0 -my-1.5">
-                            {r.cost && <span className="text-[13px] font-semibold text-accent tabular-nums" style={mf}>${r.cost}</span>}
-                            <button onClick={() => toggleReqExpand(r.id)} aria-label={expanded ? 'Contraer' : 'Ver detalle'} title={expanded ? 'Contraer' : 'Ver detalle'}
-                              className="destino-tactil w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors">
-                              <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-                            </button>
-                            {/* ⇒ «⋯» CON EDITAR Y ELIMINAR (Fernando, 2026-09-28). Sustituye al
-                                lápiz y la × sueltos. «Editar» abre UNA sola ventana con los datos,
-                                los miembros y las subtareas; por eso lo ve también quien solo
-                                puede tocar las subtareas (el miembro asignado). */}
-                            <ActionsMenu lado="izquierda" label="Acciones del requerimiento" items={[
-                              ...((canEditReqTexto || canManageThis || canEditThis) ? [{ label: 'Editar', icon: Pencil, onClick: () => startEditReq(r) }] : []),
-                              // Se VE siempre para quien administra el proyecto, pero BLOQUEADO cuando la
-                              // API no lo acepta —en revisión, completado, cancelado o cerrado—
-                              // (Fernando, 2026-09-28): así se sabe que existe y por qué no se puede.
-                              ...(isOwner ? [{
-                                label: 'Eliminar', icon: Trash2, danger: true,
-                                disabled: !canEditReqText,
-                                hint: canEditReqText ? undefined : 'No se pueden eliminar requerimientos de un proyecto en revisión, completado o cerrado.',
-                                onClick: () => setReqAEliminar({ id: r.id, title: r.title }),
-                              }] : []),
-                            ]} />
-                          </div>
+                    <div key={r.id}
+                      role="button" tabIndex={0} aria-pressed={elegido}
+                      onClick={() => setReqSeleccionado(r.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setReqSeleccionado(r.id); } }}
+                      className={`flex items-center gap-3 rounded-lg border px-2.5 py-2 cursor-pointer transition-colors ${elegido ? 'border-accent/50 bg-accent-light/60' : 'border-digi-border bg-white hover:border-accent/30'} ${editingReqId === r.id ? 'opacity-60' : ''}`}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (canEditThis) toggleReqComplete(r.id, !r.is_completed); }}
+                        disabled={!canEditThis}
+                        aria-label={r.is_completed ? 'Marcar incompleto' : 'Marcar completo'}
+                        // ⇒ BLOQUEADA EN REVISIÓN Y DESPUÉS (Fernando, 2026-09-29): atenuada y con el porqué.
+                        title={!trabajoAbierto ? 'Bloqueado: el proyecto ya está en revisión o cerrado' : undefined}
+                        className={`destino-tactil w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${r.is_completed ? 'bg-accent border-accent text-white' : 'border-digi-border bg-white'} ${canEditThis ? 'cursor-pointer hover:border-accent' : !trabajoAbierto ? 'opacity-50 cursor-not-allowed' : 'cursor-default'}`}
+                      >
+                        {r.is_completed && <Check className="w-3 h-3" strokeWidth={3} />}
+                      </button>
+                      {/* Altura FIJA: el título ocupa una sola línea y lo que no cabe se corta con
+                          «…» (el completo sale al pasar el ratón y en el detalle). El precio, debajo.
+                          Sin tachado cuando está hecho: lo dice la casilla; el gris basta. */}
+                      <div className="min-w-0 flex-1">
+                        <p title={r.title} className={`truncate text-[13px] font-medium leading-5 ${r.is_completed ? 'text-digi-muted' : 'text-digi-text'}`} style={mf}>{r.title}</p>
+                        <p className="text-[12px] font-semibold text-accent tabular-nums leading-4" style={mf}>{r.cost != null && r.cost !== '' ? `$${fmt2(Number(r.cost))}` : '—'}</p>
+                      </div>
+                      {/* «⋯» con Editar y Eliminar (Fernando, 2026-09-28). */}
+                      <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                        <ActionsMenu lado="izquierda" label="Acciones del requerimiento" items={[
+                          ...((canEditReqTexto || canManageThis || canEditThis) ? [{ label: 'Editar', icon: Pencil, onClick: () => startEditReq(r) }] : []),
+                          // Se VE siempre para quien administra, pero BLOQUEADO cuando la API no lo acepta.
+                          ...(isOwner ? [{
+                            label: 'Eliminar', icon: Trash2, danger: true,
+                            disabled: !canEditReqText,
+                            hint: canEditReqText ? undefined : 'No se pueden eliminar requerimientos de un proyecto en revisión, completado o cerrado.',
+                            onClick: () => setReqAEliminar({ id: r.id, title: r.title }),
+                          }] : []),
+                        ]} />
+                      </div>
+                    </div>
+                  );
+                })}
+                </div>
+
+                {/* ── Detalle del requerimiento seleccionado ─────────────────────────── */}
+                {reqActivo && (() => {
+                  const r = reqActivo;
+                  const items = r.items || [];
+                  const acceptedAssignments = (r.assignments || []).filter((a: any) => a.status === 'accepted');
+                  const pendingAssignments = (r.assignments || []).filter((a: any) => a.status !== 'accepted');
+                  const tituloSeccion = 'text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5';
+                  return (
+                    <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto rounded-lg border border-digi-border bg-white p-3.5 space-y-3.5">
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-[13.5px] font-semibold text-digi-text leading-snug" style={mf}>{r.title}</p>
+                          <span className="text-[13px] font-semibold text-accent tabular-nums shrink-0" style={mf}>{r.cost != null && r.cost !== '' ? `$${fmt2(Number(r.cost))}` : ''}</span>
                         </div>
+                        {r.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{r.description}</p>}
+                      </div>
 
-                        {/* Detalle desplegable: miembros + subtareas, para LEER. Asignar y editar
-                            subtareas se hace desde «⋯ → Editar» (una sola ventana). */}
-                        {expanded && (<>
-                        {acceptedAssignments.length > 0 && (
-                          <div className="flex items-center gap-1.5 mt-2.5 ml-[30px]">
-                            {acceptedAssignments.map((a: any) => (
-                              a.photo_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={a.id} src={a.photo_url} alt="" title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-digi-border object-cover" />
-                              ) : (
-                                <div key={a.id} title={`${a.member_name} · $${a.member_cost ?? a.proposed_cost}`} className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent" style={mf}>
-                                  {(a.member_name || '?')[0].toUpperCase()}
+                      {/* Talentos y plazas: lo que hace que el proyecto salga en el filtro por talento.
+                          Plazas con icono de personas y número; sin plazas, nada. */}
+                      {(r.talents?.length > 0 || r.slots != null) && (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {(r.talents || []).map((t: string) => (
+                            <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20" style={mf}>{t}</span>
+                          ))}
+                          {r.slots != null && (
+                            <span title={`${r.slots} plaza${Number(r.slots) === 1 ? '' : 's'}`}
+                              className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border border-digi-border text-digi-muted tabular-nums" style={mf}>
+                              <Users className="w-3 h-3" />{r.slots}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {(acceptedAssignments.length > 0 || pendingAssignments.length > 0) && (
+                        <div>
+                          <p className={tituloSeccion} style={pf}>Miembros</p>
+                          {acceptedAssignments.length > 0 && (
+                            <div className="space-y-1 mb-1.5">
+                              {acceptedAssignments.map((a: any) => (
+                                <div key={a.id} className="flex items-center gap-2 text-[12px]" style={mf}>
+                                  {a.photo_url
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    ? <img src={a.photo_url} alt="" className="w-6 h-6 rounded-full border border-digi-border object-cover" />
+                                    : <span className="w-6 h-6 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[11px] font-semibold text-accent">{(a.member_name || '?')[0].toUpperCase()}</span>}
+                                  <span className="flex-1 min-w-0 truncate text-digi-text">{a.member_name}</span>
+                                  <span className="tabular-nums text-digi-muted">${fmt2(Number(a.member_cost ?? a.proposed_cost ?? 0))}</span>
                                 </div>
-                              )
-                            ))}
-                          </div>
-                        )}
-
+                              ))}
+                            </div>
+                          )}
                         {/* Pending assignments (proposed / counter) */}
                         {pendingAssignments.length > 0 && (
-                          <div className="mt-2.5 ml-[30px] space-y-1.5">
+                          <div className="space-y-1.5">
                             {pendingAssignments.map((a: any) => (
                               <div key={a.id} className="flex items-center gap-2 flex-wrap rounded-md border border-digi-border bg-digi-darker px-2.5 py-1.5">
                                 {a.photo_url ? (
@@ -1710,28 +1713,29 @@ export default function ProjectDetailPage() {
                           </div>
                         )}
 
-                        {/* Subtasks list */}
-                        {items.length > 0 && (
-                          <ol className="mt-2.5 ml-[30px] space-y-1">
+                        </div>
+                      )}
+
+                      <div>
+                        <p className={tituloSeccion} style={pf}>Subtareas ({items.length})</p>
+                        {items.length > 0 ? (
+                          <ol className="space-y-1">
                             {items.map((item: any, i: number) => (
                               <li key={item.id} className={`text-[12px] flex gap-1.5 ${item.is_completed ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>
-                                <span className="text-digi-muted shrink-0">{i + 1}.</span>
+                                <span className="text-digi-muted shrink-0 tabular-nums">{i + 1}.</span>
                                 <span className="break-words">{item.title}</span>
                               </li>
                             ))}
                           </ol>
+                        ) : (
+                          <p className="text-[12px] text-digi-muted" style={mf}>Sin subtareas aún.</p>
                         )}
-                        {acceptedAssignments.length === 0 && pendingAssignments.length === 0 && items.length === 0 && (
-                          <p className="text-[11.5px] text-digi-muted mt-2.5 ml-[30px]" style={mf}>Sin subtareas ni miembros asignados aún.</p>
-                        )}
-                        </>)}
                       </div>
                     </div>
                   );
-                })}
+                })()}
               </div>
             )}
-            </div>
           </div>
 
           {/* ⇒ ABAJO Y FIJO: COSTOS ADICIONALES (Fernando, 2026-09-28). Estaba al fondo del

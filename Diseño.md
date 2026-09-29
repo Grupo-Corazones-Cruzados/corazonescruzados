@@ -3904,6 +3904,13 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-29 · Requerimientos en DOS PARTES (lista + detalle) · por decisión de Fernando.**
+  Sustituye al desplegable por fila. Izquierda (`lg:w-[42%]`, con scroll propio): cada fila es
+  casilla · título en **una línea** (`truncate`, con `title` para el texto completo) · precio
+  **debajo** · ⋯. Altura fija (54 px). La fila elegida lleva `border-accent/50 bg-accent-light/60`.
+  Derecha: el detalle del elegido —título completo y precio, descripción, etiquetas de talento,
+  plazas (icono `Users` + número), miembros y propuestas, subtareas—. Sin elegir se muestra el
+  primero. En el teléfono las dos partes se apilan.
 - **2026-09-29 · Cabecera del detalle de proyecto: SOLO ICONOS · por decisión de Fernando.**
   Nuevas constantes en `components/ui/Button.tsx`: `BTN_ICONO_PRIMARIO`, `BTN_ICONO_SECUNDARIO`
   y `BTN_ICONO_ACENTO` — cuadrados de 36 px (44 en táctil), el mismo tamaño que el «⋯» de
