@@ -2366,7 +2366,15 @@ export default function ProjectDetailPage() {
             const pct = baseTotal > 0 ? Math.min(100, (Number(billing?.invoiced || payments.invoiced) / baseTotal) * 100) : 0;
             return (
               <div className="pixel-card">
-                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Pagos</h3>
+                {/* «Editar» a la altura del título (Fernando, 2026-09-29): es la puerta a las
+                    etapas de facturación, que abajo solo se enseñan cuando existen. Mismo botón
+                    que el «Editar» de Descripción y de Costos adicionales. */}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Pagos</h3>
+                  {isAdmin && (
+                    <button onClick={openStagesPanel} title="Etapas de facturación" className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
+                  )}
+                </div>
                 <div className="space-y-1 text-[12px]" style={mf}>
                   <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(baseTotal)}</span></div>
                   <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(Number(billing?.invoiced ?? payments.invoiced))}</span></div>
@@ -2416,20 +2424,11 @@ export default function ProjectDetailPage() {
                 {/* ETAPAS DE FACTURACIÓN: el acuerdo con el cliente («50% al empezar,
                     50% al entregar»). No son los requerimientos, que son trabajo interno.
                     Con plan definido, el proyecto se factura SOLO por etapas. */}
-                {isAdmin && (
+                {/* Sin etapas, la sección no se pinta: se crean desde el «Editar» del título. */}
+                {isAdmin && (billing?.etapas || []).length > 0 && (
                   <div className="mt-2 pt-2 border-t border-digi-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-digi-muted" style={pf}>Etapas de facturación</span>
-                      <button onClick={openStagesPanel} className="destino-tactil text-[11px] text-accent hover:underline" style={pf}>
-                        {(billing?.etapas || []).length > 0 ? 'Editar' : 'Definir'}
-                      </button>
-                    </div>
-                    {(billing?.etapas || []).length === 0 ? (
-                      <p className="text-[10.5px] text-digi-muted" style={pf}>
-                        Sin etapas: se factura con el detalle de requerimientos.
-                      </p>
-                    ) : (
-                      (billing.etapas || []).map((e: any) => (
+                    <span className="block text-[11px] text-digi-muted mb-1" style={pf}>Etapas de facturación</span>
+                    {(billing.etapas || []).map((e: any) => (
                         <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
                           <span className="min-w-0 truncate text-digi-text">{e.name}</span>
                           <span className="flex items-center gap-1.5 shrink-0">
@@ -2448,8 +2447,7 @@ export default function ProjectDetailPage() {
                             )}
                           </span>
                         </div>
-                      ))
-                    )}
+                      ))}
                   </div>
                 )}
 
