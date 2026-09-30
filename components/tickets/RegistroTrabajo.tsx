@@ -152,7 +152,9 @@ export default function RegistroTrabajo({
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,42%)_minmax(0,1fr)] gap-3 lg:min-h-0 lg:flex-1">
+      {/* `grid-rows-[minmax(0,1fr)]`: sin esto la fila mide lo que su contenido y la lista y el
+          registro no se desplazan por dentro —empujan la tarjeta más allá del pie—. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,42%)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] gap-3 lg:min-h-0 lg:flex-1">
         {/* ── Registros del día ── */}
         <div className="flex flex-col gap-1.5 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {delDia.map((r) => {

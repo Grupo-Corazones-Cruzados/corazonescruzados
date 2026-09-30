@@ -768,7 +768,7 @@ export default function TicketDetailPage() {
                         {r.n > 0 && (
                           <span className="flex items-center gap-1.5 text-[11px] text-digi-muted tabular-nums" style={mf}>
                             {r.enMarcha && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                            {r.n} · {fmtTiempo(r.seg)}
+                            {fmtTiempo(r.seg)}
                           </span>
                         )}
                       </div>
@@ -788,7 +788,9 @@ export default function TicketDetailPage() {
           </aside>
 
           {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
-          <div className="flex-1 min-w-0 w-full space-y-4 order-1 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
+          {/* Columna en FLEX (no space-y): la tarjeta de trabajo se estira hasta el pie y lo que
+              se desplaza es su interior, no la columna (Fernando, 2026-09-30). */}
+          <div className="flex-1 min-w-0 w-full flex flex-col gap-4 order-1 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             {ticket.open_for_talent && (
               <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -824,10 +826,13 @@ export default function TicketDetailPage() {
               // Descripción + Registro. Si no hay ninguno, no se renderiza (evita caja vacía).
               if (!ticket.description && !showActions) return null;
               return (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+                // ⇒ ALTO FIJO AL DE LA PANTALLA (Fernando, 2026-09-30): ocupa lo que queda de la
+                // columna —que ya mide hasta el pie— y dentro se desplazan la lista y el registro.
+                // `min-h` para que con otras tarjetas encima no quede reducida a una franja.
+                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden flex flex-col lg:flex-1 lg:min-h-[420px]">
                   {/* Descripción */}
                   {ticket.description && (
-                    <div className="p-4 border-b border-digi-border">
+                    <div className="p-4 border-b border-digi-border shrink-0 max-h-40 overflow-y-auto">
                       <SectionHead Icon={LayoutList} title="Descripción" />
                       <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
                     </div>
@@ -837,7 +842,7 @@ export default function TicketDetailPage() {
                       marcado en «Días de trabajo», en dos partes —lista y registro elegido con
                       su reloj—. Sin tope por presupuesto: lo consumido se avisa en Propiedades. */}
                   {showActions && (
-                    <div className="p-4">
+                    <div className="p-4 flex flex-col lg:flex-1 lg:min-h-0">
                       <SectionHead Icon={ListChecks} title="Registro de trabajo" count={actions.length || undefined} />
                       {diaActivo ? (
                         <RegistroTrabajo

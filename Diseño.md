@@ -3919,7 +3919,12 @@ mientras se escribe.
   editable, **reloj** grande (`text-[26px]`, `font-display`, en acento mientras corre) con
   Iniciar/Detener (`BTN_PRIMARY` + `Play`/`Square`), «Tiempo consumido (h:mm)» + «Corregir»,
   «Observaciones» + «Guardar» abajo a la derecha. Los **días de trabajo** son botones elegibles
-  (`aria-pressed`, `border-accent/50 bg-accent-light/60`) con «n · tiempo» a la derecha.
+  (`aria-pressed`, `border-accent/50 bg-accent-light/60`) con **solo el tiempo** a la derecha
+  (Fernando quitó el número de registros el mismo día).
+  - **Alto fijo a la pantalla:** la columna central es `flex flex-col` (no `space-y`), la
+    tarjeta de trabajo `lg:flex-1 lg:min-h-[420px]`, la descripción `max-h-40` con scroll, y la
+    rejilla lista/detalle lleva **`lg:grid-rows-[minmax(0,1fr)]`** — sin eso la fila mide su
+    contenido y empuja la tarjeta por debajo del pie en vez de desplazar por dentro.
   En Propiedades, un aviso que acompaña a un valor va como **icono** (`AlertTriangle`
   `text-amber-500`) a su derecha con el porqué en `title`, no como texto.
 - **2026-09-29 · Tickets al nivel de Proyectos · por decisión de Fernando** («aplicar todo lo
