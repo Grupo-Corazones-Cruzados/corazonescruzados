@@ -3913,6 +3913,15 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-30 · Registro de trabajo del ticket en dos partes + reloj** · por decisión de
+  Fernando. Mismo patrón que los requerimientos del proyecto: lista (título en una línea,
+  tiempo y costo debajo, punto rojo pulsante si el reloj corre) y a la derecha el elegido: título
+  editable, **reloj** grande (`text-[26px]`, `font-display`, en acento mientras corre) con
+  Iniciar/Detener (`BTN_PRIMARY` + `Play`/`Square`), «Tiempo consumido (h:mm)» + «Corregir»,
+  «Observaciones» + «Guardar» abajo a la derecha. Los **días de trabajo** son botones elegibles
+  (`aria-pressed`, `border-accent/50 bg-accent-light/60`) con «n · tiempo» a la derecha.
+  En Propiedades, un aviso que acompaña a un valor va como **icono** (`AlertTriangle`
+  `text-amber-500`) a su derecha con el porqué en `title`, no como texto.
 - **2026-09-29 · Tickets al nivel de Proyectos · por decisión de Fernando** («aplicar todo lo
   aprendido al módulo de tickets»). Detalle: cabecera solo iconos (`BTN_ICONO_*`), «Compartir
   enlace de pago» sube a la cabecera a la izquierda de «Completar y facturar», columnas a alto

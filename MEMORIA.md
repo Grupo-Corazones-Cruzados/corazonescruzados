@@ -275,6 +275,24 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⏱ Registro de trabajo del ticket por DÍA y por TIEMPO (Fernando, 2026-09-30).**
+  - `ticket_actions` gana `work_date`, `duration_seconds`, `notes` y `timer_started_at`. El
+    costo es SIEMPRE tiempo × tarifa del servicio (`slotCost`), no se escribe a mano.
+  - **Sin tope por presupuesto**: el estimado es una estimación; en Propiedades, «Consumido»
+    lleva ⚠ amarillo si lo supera.
+  - Los días de trabajo se ELIGEN y el registro del centro muestra el del día, en dos partes
+    (`components/tickets/RegistroTrabajo.tsx`): lista + registro elegido con reloj
+    (iniciar/detener, uno por ticket, vive en el servidor), tiempo corregible (h:mm o
+    decimal), costo calculado y observaciones. «Sesión con Meet» crea un registro con el reloj
+    en marcha y se detiene igual. Añadir/mover un registro a un día crea ese día de trabajo;
+    editar los días nunca deja un registro sin el suyo.
+  - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
+    facturado); la API lo rechaza.
+  - **Datos migrados el 2026-09-30** (una transacción, copia previa): 27 registros tenían la
+    fecha en el título («… - dd/mm/aaaa»): pasó a `work_date` y se quitó del título; los 36
+    restantes tomaron su fecha de creación (no hay otra). Tiempo = costo ÷ tarifa (15 $/h en
+    los 14 tickets; 59 de 63 daban minutos exactos). **Los costos no cambiaron** (3.286,96 $,
+    todo facturado). Se crearon 33 días de trabajo que faltaban.
 - **🧾 «Completar y facturar»: el adquirente se ELIGE, no se escribe (Fernando, 2026-09-29).**
   Dos opciones: **Cliente** (una cuenta de `billing_clients` COMPLETA —`cuentaFacturable` en
   `lib/billing-clients.ts`: 04 con 13 dígitos / 05 con 10 / 06 con algo, razón social,

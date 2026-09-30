@@ -42,6 +42,16 @@ export function slotSeconds(date: string, start: string, end: string): number {
   return Math.max(0, (e - s) / 1000);
 }
 
+/** Hoy en Ecuador como `AAAA-MM-DD` (el servidor corre en UTC: ver [[gcc-servidor-utc-zona-inquilino]]). */
+export function hoyEcuador(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: ECUADOR_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+/** ¿Es una fecha `AAAA-MM-DD` válida? */
+export function esFechaISO(s: unknown): s is string {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(new Date(s + 'T12:00:00Z').getTime());
+}
+
 /** Costo de una sesión = tiempo (segundos) × tarifa/hora del servicio, a centavos. */
 export function slotCost(seconds: number, ratePerHour: number): number {
   return Math.round((seconds / 3600) * (Number(ratePerHour) || 0) * 100) / 100;
@@ -96,7 +106,17 @@ export function ensureTicketActionColumns(): Promise<void> {
         ADD COLUMN IF NOT EXISTS session_ended_at   TIMESTAMPTZ,
         ADD COLUMN IF NOT EXISTS meeting_url        TEXT,
         ADD COLUMN IF NOT EXISTS meeting_event_id   TEXT,
-        ADD COLUMN IF NOT EXISTS calendar_event_id  TEXT;
+        ADD COLUMN IF NOT EXISTS calendar_event_id  TEXT,
+        -- ⇒ EL REGISTRO DE TRABAJO POR DÍA Y POR TIEMPO (Fernando, 2026-09-30):
+        --   work_date        el día de trabajo al que pertenece (antes solo había created_at,
+        --                    y la fecha real se escribía en el título: «… - 19/08/2026»)
+        --   duration_seconds el tiempo consumido; el costo es SIEMPRE tiempo × tarifa
+        --   notes            observaciones del registro
+        --   timer_started_at el reloj en marcha (NULL = parado)
+        ADD COLUMN IF NOT EXISTS work_date          DATE,
+        ADD COLUMN IF NOT EXISTS duration_seconds   INT NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS notes              TEXT,
+        ADD COLUMN IF NOT EXISTS timer_started_at   TIMESTAMPTZ;
     `)
     .then(() => undefined)
     .catch((err: unknown) => { ensuringActions = null; throw err; });

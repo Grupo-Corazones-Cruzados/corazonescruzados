@@ -14,11 +14,12 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL } from '@/components/facturacion/AdquirenteFactura';
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import Segmentado from '@/components/ui/Segmentado';
+import RegistroTrabajo, { diaDe, segundosDe, fmtTiempo } from '@/components/tickets/RegistroTrabajo';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
@@ -86,6 +87,10 @@ export default function TicketDetailPage() {
   const [slotCfg, setSlotCfg] = useState<Record<string, { is_event: boolean; start_time: string; end_time: string }>>({});
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [savingSlots, setSavingSlots] = useState(false);
+
+  // ⇒ DÍA DE TRABAJO ELEGIDO (Fernando, 2026-09-30): el registro del centro muestra el de
+  // este día. Sin elegir, el último día con registros (o el último día de trabajo, u hoy).
+  const [diaSel, setDiaSel] = useState<string | null>(null);
 
   // Sesiones en vivo ("inicio ahora")
   const [sessionBusy, setSessionBusy] = useState(false);
@@ -538,6 +543,15 @@ export default function TicketDetailPage() {
   const isClosed = ['completed', 'cancelled'].includes(ticket.status);
   const isPending = ticket.status === 'pending';
   const timeSlots = ticket.time_slots || [];
+  const diasDeTrabajo: string[] = [...new Set<string>(timeSlots.map((s: any) => String(s.date).slice(0, 10)))].sort();
+  const diasConRegistro: string[] = [...new Set<string>((ticket.actions || []).map((a: any) => diaDe(a)))].sort();
+  const diaActivo: string | null = (diaSel && (diasDeTrabajo.includes(diaSel) || diasConRegistro.includes(diaSel)) ? diaSel : null)
+    || diasConRegistro[diasConRegistro.length - 1] || diasDeTrabajo[diasDeTrabajo.length - 1] || null;
+  // Por día: cuántos registros y cuánto tiempo (para la columna de días).
+  const resumenDia = (d: string) => {
+    const del = (ticket.actions || []).filter((a: any) => diaDe(a) === d);
+    return { n: del.length, seg: del.reduce((s: number, a: any) => s + segundosDe(a), 0), enMarcha: del.some((a: any) => a.timer_started_at) };
+  };
   // Is this a request from a client to this member?
   const isRequestForMe = isPending && isMember && user?.member_id && ticket.member_id === user.member_id;
   const showActions = !isPending && ticket.status !== 'withdrawn';
@@ -734,19 +748,38 @@ export default function TicketDetailPage() {
               </div>
               {timeSlots.length > 0 ? (
                 <div className="space-y-2">
-                  {timeSlots.map((slot: any, i: number) => (
-                    <div key={i} className={`px-2.5 py-2 border rounded ${slot.is_event ? 'border-accent/40 bg-accent-light' : 'border-digi-border bg-[#faf9f8]'}`}>
+                  {/* ⇒ LOS DÍAS SE ELIGEN (Fernando, 2026-09-30): al pulsar uno, el registro del
+                      centro muestra el de ese día. Cada día dice cuántos registros tiene y cuánto
+                      tiempo suman, y un punto rojo si hay un reloj en marcha. */}
+                  {timeSlots.map((slot: any, i: number) => {
+                    const d = String(slot.date).slice(0, 10);
+                    const elegido = d === diaActivo;
+                    const r = resumenDia(d);
+                    return (
+                    <div key={i} role="button" tabIndex={0} aria-pressed={elegido}
+                      onClick={() => setDiaSel(d)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDiaSel(d); } }}
+                      className={`px-2.5 py-2 border rounded cursor-pointer transition-colors ${elegido ? 'border-accent/50 bg-accent-light/60' : slot.is_event ? 'border-accent/40 bg-accent-light hover:border-accent/60' : 'border-digi-border bg-[#faf9f8] hover:border-accent/30'}`}>
                       {slot.is_event && (
                         <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
                       )}
-                      <p className="text-xs text-digi-text" style={mf}>{new Date(String(slot.date).split('T')[0] + 'T12:00:00').toLocaleDateString()}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-digi-text" style={mf}>{new Date(d + 'T12:00:00').toLocaleDateString()}</p>
+                        {r.n > 0 && (
+                          <span className="flex items-center gap-1.5 text-[11px] text-digi-muted tabular-nums" style={mf}>
+                            {r.enMarcha && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                            {r.n} · {fmtTiempo(r.seg)}
+                          </span>
+                        )}
+                      </div>
                       {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
                       {slot.is_event && slot.meeting_url && (
-                        <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer"
+                        <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                           className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
@@ -782,16 +815,11 @@ export default function TicketDetailPage() {
 
             {/* ── PANEL DE TRABAJO: descripción + días + registro/sesiones, todo en una tarjeta ── */}
             {(() => {
-              const estimated = Number(ticket.estimated_cost) || 0;
               const actions = ticket.actions || [];
-              const total = Number(ticket.actions_total) || 0;
-              const remaining = Math.max(0, estimated - total);
-              const canManageActions =
-                (isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id)) && !isClosed;
-              const budgetExhausted = estimated > 0 && remaining <= 0;
-              const pct = estimated > 0 ? Math.min(100, (total / estimated) * 100) : 0;
+              // Quien puede gestionar el registro: admin o el miembro asignado. Con el ticket
+              // cerrado lo sigue VIENDO todo, pero bloqueado (`bloqueo` en el componente).
+              const puedeRegistrar = isAdmin || (isMember && user?.member_id && ticket.member_id === user.member_id);
               const serviceRate = Number(ticket.service_base_price) || 0;
-              const runningSession = actions.find((a: any) => a.session_started_at && !a.session_ended_at);
               // Días de trabajo se movió al panel izquierdo; esta tarjeta solo agrupa
               // Descripción + Registro. Si no hay ninguno, no se renderiza (evita caja vacía).
               if (!ticket.description && !showActions) return null;
@@ -805,107 +833,27 @@ export default function TicketDetailPage() {
                     </div>
                   )}
 
-                  {/* Registro de trabajo y sesiones (antes pestaña "Acciones") */}
+                  {/* ⇒ REGISTRO DE TRABAJO DEL DÍA ELEGIDO (Fernando, 2026-09-30): depende del día
+                      marcado en «Días de trabajo», en dos partes —lista y registro elegido con
+                      su reloj—. Sin tope por presupuesto: lo consumido se avisa en Propiedades. */}
                   {showActions && (
                     <div className="p-4">
                       <SectionHead Icon={ListChecks} title="Registro de trabajo" count={actions.length || undefined} />
-
-                      {estimated > 0 && (
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between text-[11px] mb-1.5" style={mf}>
-                            <span className="text-digi-muted">Presupuesto</span>
-                            <span className="text-digi-text">${fmt2(total)} / ${fmt2(estimated)} · disp. <span className={remaining <= 0 ? 'text-red-500' : 'text-green-600'}>${fmt2(remaining)}</span></span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-[#edebe9] overflow-hidden">
-                            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
+                      {diaActivo ? (
+                        <RegistroTrabajo
+                          ticketId={String(id)}
+                          registros={actions}
+                          dia={diaActivo}
+                          tarifa={serviceRate}
+                          puede={!!puedeRegistrar}
+                          bloqueo={isClosed ? 'El ticket está cerrado: lo consumido ya está facturado' : undefined}
+                          onCambio={fetchTicket}
+                          onSesionMeet={async () => { await handleStartSession(); setDiaSel(hoyEcuadorCliente()); }}
+                          sesionOcupada={sessionBusy}
+                        />
+                      ) : (
+                        <p className="text-[12px] text-digi-muted py-4 text-center" style={mf}>Sin días de trabajo.</p>
                       )}
-
-                      {/* Sesión en vivo ("inicio ahora"): inicia reunión + cronómetro; cobra el tiempo real. */}
-                      {canManageActions && (
-                        <div className="mb-2 rounded-md border border-accent/25 bg-accent-light/60 p-3">
-                          {runningSession ? (
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                              <div className="min-w-0">
-                                <p className="text-[11px] font-semibold text-accent flex items-center gap-1.5" style={mf}>
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Sesión en curso
-                                </p>
-                                <p className="text-[20px] font-bold text-digi-text tabular-nums leading-tight" style={df}>{elapsedLabel(runningSession.session_started_at)}</p>
-                                {serviceRate > 0 && (
-                                  <p className="text-[10px] text-digi-muted" style={mf}>
-                                    ${fmt2(serviceRate)}/h · llevas ${fmt2((Math.max(0, (Date.now() - new Date(runningSession.session_started_at).getTime()) / 1000) / 3600) * serviceRate)}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {runningSession.meeting_url && (
-                                  <a href={runningSession.meeting_url} target="_blank" rel="noopener noreferrer" className={BTN_SECONDARY}>Unirse (Meet)</a>
-                                )}
-                                <button onClick={() => handleFinishSession(runningSession.id)} disabled={sessionBusy} className={`${BTN_PRIMARY} disabled:opacity-50`}>
-                                  <Check className="w-4 h-4" /> {sessionBusy ? '...' : 'Terminar sesión'}
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                              <div className="min-w-0">
-                                <p className="text-[12px] font-semibold text-digi-text" style={mf}>Iniciar sesión ahora</p>
-                                <p className="text-[10.5px] text-digi-muted" style={mf}>
-                                  {serviceRate > 0
-                                    ? `Crea la reunión (Meet) e inicia el cronómetro. Se cobra el tiempo real a $${fmt2(serviceRate)}/h.`
-                                    : 'El servicio del ticket no tiene precio por hora definido.'}
-                                </p>
-                              </div>
-                              <button onClick={handleStartSession} disabled={sessionBusy || serviceRate <= 0} className={`${BTN_PRIMARY} disabled:opacity-50`}>
-                                {sessionBusy ? '...' : 'Iniciar sesión ahora'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="-mx-1">
-                        {actions.length > 0 ? actions.map((a: any) => {
-                          const isRunning = a.session_started_at && !a.session_ended_at;
-                          return (
-                          <div key={a.id} className="group flex items-center gap-3 px-3 py-2 rounded hover:bg-[#f3f2f1] transition-colors">
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isRunning ? 'bg-red-500 animate-pulse' : 'bg-accent'}`} />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] text-digi-text break-words" style={mf}>{a.description}</p>
-                              <p className="text-[10px] text-digi-muted" style={mf}>{new Date(a.created_at).toLocaleDateString()}</p>
-                            </div>
-                            {isRunning ? (
-                              <span className="text-[12px] font-semibold text-accent shrink-0 tabular-nums" style={mf}>{elapsedLabel(a.session_started_at)}</span>
-                            ) : (
-                              <span className="text-[12px] font-semibold text-digi-text shrink-0" style={mf}>${fmt2(Number(a.cost))}</span>
-                            )}
-                            {canManageActions && (
-                              <BotonQuitar onClick={() => handleDeleteAction(a.id)} etiqueta="Eliminar acción" className="acciones-al-pasar" />
-                            )}
-                          </div>
-                          );
-                        }) : (
-                          <p className="text-[11px] text-digi-muted px-3 py-5 text-center" style={mf}>Sin acciones registradas</p>
-                        )}
-                      </div>
-
-                      {/* ⇒ SIN NOTAS DE AYUDA (Fernando, 2026-09-29): si no se puede registrar
-                          —sin costo estimado o sin presupuesto—, el formulario se ve DESHABILITADO
-                          y el porqué sale al pasar el ratón por «Agregar». */}
-                      {canManageActions && (() => {
-                        const bloqueo = estimated <= 0 ? 'Define un costo estimado en el ticket para registrar acciones'
-                          : budgetExhausted ? 'Presupuesto agotado: no se pueden agregar más acciones' : '';
-                        return (
-                          <div className="border-t border-digi-border pt-3 mt-2 flex flex-col sm:flex-row gap-2 sm:items-end">
-                            <div className="flex-1"><PixelInput label="Nueva acción" value={actionForm.description} onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })} placeholder="Qué se hizo..." disabled={!!bloqueo} /></div>
-                            <div className="w-full sm:w-36"><PixelInput label={bloqueo ? 'Costo' : `Costo (máx $${fmt2(remaining)})`} type="number" value={actionForm.cost} onChange={(e) => setActionForm({ ...actionForm, cost: e.target.value })} placeholder="0.00" disabled={!!bloqueo} /></div>
-                            <span title={bloqueo || undefined} className="inline-flex shrink-0">
-                              <button onClick={handleAddAction} disabled={!!bloqueo || savingAction || !actionForm.description.trim() || !actionForm.cost} className={BTN_PRIMARY}>{savingAction ? '…' : 'Agregar'}</button>
-                            </span>
-                          </div>
-                        );
-                      })()}
                     </div>
                   )}
                 </div>
@@ -977,6 +925,23 @@ export default function TicketDetailPage() {
               { label: 'Límite', value: ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : '-' },
               { label: 'Horas est.', value: ticket.estimated_hours ? `${ticket.estimated_hours}h` : '-' },
               { label: 'Costo est.', value: ticket.estimated_cost ? `$${fmt2(Number(ticket.estimated_cost))}` : '-' },
+              // ⇒ CONSUMIDO, con ⚠ amarillo si pasa del costo estimado (Fernando, 2026-09-30). El
+              // estimado ya no pone tope al registro: solo se avisa aquí.
+              { label: 'Consumido', value: (() => {
+                const consumido = Number(ticket.actions_total) || 0;
+                const estimado = Number(ticket.estimated_cost) || 0;
+                const excede = estimado > 0 && consumido > estimado + 0.009;
+                return (
+                  <span className="inline-flex items-center gap-1.5 justify-end">
+                    <span className="tabular-nums">${fmt2(consumido)} · {fmtTiempo(Number(ticket.actions_seconds) || 0)}</span>
+                    {excede && (
+                      <span title={`Supera el costo estimado en $${fmt2(consumido - estimado)}`} aria-label="Supera el costo estimado" className="inline-flex">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      </span>
+                    )}
+                  </span>
+                );
+              })() },
               { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString() },
             ]}
           >
@@ -1295,4 +1260,9 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <span className="text-digi-text text-right">{value}</span>
     </div>
   );
+}
+
+/** Hoy en Ecuador como `AAAA-MM-DD`, en el navegador (el día que la API pone a una sesión). */
+function hoyEcuadorCliente(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }

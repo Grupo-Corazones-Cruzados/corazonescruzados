@@ -214,11 +214,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             calendarEventId = cal.rows[0]?.id != null ? String(cal.rows[0].id) : null;
           }
 
+          // Con su DÍA y su TIEMPO (2026-09-30): el registro se ve en el día que toca y el
+          // costo sigue siendo tiempo × tarifa, como cualquier otro registro.
           const act = await client.query(
             `INSERT INTO gcc_world.ticket_actions
-               (ticket_id, description, cost, created_by, created_at, calendar_event_id)
-             VALUES ($1, $2, $3, $4, NOW(), $5) RETURNING id`,
-            [id, slotSessionLabel(s.date, s.start!, s.end!), s.cost, user.userId || null, calendarEventId],
+               (ticket_id, description, cost, created_by, created_at, calendar_event_id, work_date, duration_seconds)
+             VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7) RETURNING id`,
+            [id, slotSessionLabel(s.date, s.start!, s.end!), s.cost, user.userId || null, calendarEventId,
+             s.date, Math.round(slotSeconds(s.date, s.start!, s.end!))],
           );
           actionId = act.rows[0]?.id != null ? Number(act.rows[0].id) : null;
         }
@@ -231,6 +234,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         );
       }
 
+      // Ningún registro se queda sin su día: si al editar se quitó un día que tenía registros,
+      // vuelve (2026-09-30). Se borran los registros, no los días.
+      await client.query(
+        `INSERT INTO gcc_world.ticket_time_slots (ticket_id, date, status, created_at)
+         SELECT DISTINCT a.ticket_id, a.work_date, 'scheduled', NOW() FROM gcc_world.ticket_actions a
+          WHERE a.ticket_id = $1 AND a.work_date IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM gcc_world.ticket_time_slots s WHERE s.ticket_id = a.ticket_id AND s.date = a.work_date)`,
+        [id],
+      );
       await client.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
       await client.query('COMMIT');
     } catch (err) {

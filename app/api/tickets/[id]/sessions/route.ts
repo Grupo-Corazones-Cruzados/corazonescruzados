@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   ensureTicketActionColumns, formatEcuador, ECUADOR_TZ,
-  loadTicketForSession, canManageTicket,
+  loadTicketForSession, canManageTicket, hoyEcuador,
 } from '@/lib/tickets/schema';
 import { isGoogleWorkspaceConfigured, createMeetEvent } from '@/lib/integrations/google-workspace';
 import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
@@ -43,13 +43,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Una sola sesión en curso por ticket.
     const running = await pool.query(
+      // Cualquier reloj en marcha del ticket, sea una sesión o un registro normal: con dos a
+      // la vez el mismo rato se contaría dos veces (2026-09-30).
       `SELECT id FROM gcc_world.ticket_actions
-        WHERE ticket_id = $1 AND session_started_at IS NOT NULL AND session_ended_at IS NULL
+        WHERE ticket_id = $1 AND timer_started_at IS NOT NULL
         LIMIT 1`,
       [id],
     );
     if (running.rows[0]) {
-      return NextResponse.json({ error: 'Ya hay una sesión en curso. Termínala antes de iniciar otra.' }, { status: 409 });
+      return NextResponse.json({ error: 'Ya hay un reloj en marcha en este ticket. Detenlo antes de iniciar otra sesión.' }, { status: 409 });
     }
 
     const now = new Date();
@@ -113,14 +115,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const description = `Sesión ${formatEcuador(now)}`;
     const { rows } = await pool.query(
+      // Nace con el RELOJ del registro en marcha (`timer_started_at`) y en el día de hoy: se
+      // detiene igual que cualquier registro (PATCH /actions/[id] `detener`), que además
+      // cierra la sesión y su evento del calendario (2026-09-30).
       `INSERT INTO gcc_world.ticket_actions
          (ticket_id, description, cost, created_by, created_at,
-          session_started_at, meeting_url, meeting_event_id, calendar_event_id)
-       VALUES ($1, $2, 0, $3, NOW(), $4, $5, $6, $7)
+          session_started_at, meeting_url, meeting_event_id, calendar_event_id,
+          timer_started_at, work_date)
+       VALUES ($1, $2, 0, $3, NOW(), $4, $5, $6, $7, $4, $8)
        RETURNING *`,
-      [id, description, user.userId || null, now.toISOString(), meetingUrl, meetingEventId, calendarEventId],
+      [id, description, user.userId || null, now.toISOString(), meetingUrl, meetingEventId, calendarEventId, hoyEcuador()],
     );
 
+    // El día de hoy como día de trabajo, si no lo era: un registro nunca queda en un día que
+    // no se ve en la columna de días (2026-09-30).
+    await pool.query(
+      `INSERT INTO gcc_world.ticket_time_slots (ticket_id, date, status)
+       SELECT $1, $2::date, 'scheduled'
+        WHERE NOT EXISTS (SELECT 1 FROM gcc_world.ticket_time_slots WHERE ticket_id = $1 AND date = $2::date)`,
+      [id, hoyEcuador()],
+    );
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
 
     return NextResponse.json({ data: rows[0], meetingUrl });

@@ -18,8 +18,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               c.phone as client_phone, c.ruc as client_ruc, c.address as client_address,
               m.name as member_name, s.name as service_name, s.base_price as service_base_price,
               (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots,
-              (SELECT json_agg(ta ORDER BY ta.created_at) FROM gcc_world.ticket_actions ta WHERE ta.ticket_id = t.id) as actions,
-              (SELECT COALESCE(SUM(cost), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_total
+              (SELECT json_agg(ta ORDER BY ta.work_date NULLS LAST, ta.created_at) FROM gcc_world.ticket_actions ta WHERE ta.ticket_id = t.id) as actions,
+              (SELECT COALESCE(SUM(cost), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_total,
+              (SELECT COALESCE(SUM(duration_seconds), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_seconds
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.clients c ON c.id = t.client_id
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
