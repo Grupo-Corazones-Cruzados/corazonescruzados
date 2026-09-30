@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { Fingerprint, AlertTriangle, RefreshCw } from 'lucide-react';
-import { BTN_PRIMARY } from '@/components/ui/Button';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -98,7 +97,16 @@ export default function PasskeysPanel() {
 
   return (
     <div className="pt-3 border-t border-digi-border space-y-3">
-      <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Acceso sin contraseña</h4>
+      {/* Título «Passkey» con su acción a la altura, a la derecha (Fernando, 2026-09-30): el
+          mismo botón pequeño de acento que el «Editar» junto a los títulos de las tarjetas. */}
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Passkey</h4>
+        <button type="button" onClick={registrar} disabled={ocupado} title="Añadir passkey de este equipo"
+          className="destino-tactil inline-flex items-center gap-1 text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}>
+          {ocupado ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}
+          {ocupado ? 'Esperando…' : 'Añadir'}
+        </button>
+      </div>
 
       {error && (
         <p className="flex items-start gap-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300" style={mf}>
@@ -153,16 +161,6 @@ export default function PasskeysPanel() {
           </span>
         </p>
       )}
-
-      {/* La acción, abajo a la derecha. */}
-      <div className="flex justify-end">
-        <button type="button" onClick={registrar} disabled={ocupado} className={BTN_PRIMARY}>
-          <span className="inline-flex items-center gap-2">
-            {ocupado ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
-            {ocupado ? 'Esperando…' : 'Añadir passkey de este equipo'}
-          </span>
-        </button>
-      </div>
     </div>
   );
 }
