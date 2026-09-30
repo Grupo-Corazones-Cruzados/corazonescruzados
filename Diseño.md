@@ -3913,6 +3913,10 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-30 · Botones del resumen lateral de las listas** · **CORREGIDO** en Tickets y
+  Proyectos: «Ver detalle» y «Ver factura» van JUSTO BAJO los datos fijos (tras «Límite»), antes
+  de presupuesto, días, acciones o requerimientos. Lo que cambia de alto entre filas va debajo
+  de los botones, nunca encima: si no, los botones saltan de sitio al cambiar de fila.
 - **2026-09-30 · Selector de estado del ticket** · **ADOPTADO**: la insignia de estado de la
   cabecera + `ChevronDown` abre un menú Pendiente / Completado / Cancelado (la opción vigente con ✓
   y bloqueada). No es un control nuevo: es `ActionsMenu` con la prop `disparador` (sustituye el ⋮;
