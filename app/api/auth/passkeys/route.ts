@@ -70,8 +70,10 @@ export async function DELETE(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-  const id = Number(req.nextUrl.searchParams.get('id'));
-  if (!Number.isInteger(id) || id <= 0)
+  // ⚠️ El id es un UUID, no un número: con `Number(id)` salía NaN y NINGUNA passkey se podía
+  // quitar («Falta la passkey.», Fernando, 2026-09-30).
+  const id = String(req.nextUrl.searchParams.get('id') || '').trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
     return NextResponse.json({ error: 'Falta la passkey.' }, { status: 400 });
 
   const clientId = await fichaDe(String(user.email).trim().toLowerCase());

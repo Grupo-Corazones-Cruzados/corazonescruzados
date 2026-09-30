@@ -9,7 +9,7 @@ import BotonQuitar from '@/components/ui/BotonQuitar';
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 type Passkey = {
-  id: number;
+  id: string;
   /** ¿Sirve hoy? Las de antes del cambio de dominio siguen guardadas pero no valen. */
   sirve: boolean;
   sincronizada: boolean;
@@ -79,7 +79,7 @@ export default function PasskeysPanel() {
     }
   };
 
-  const quitar = async (id: number) => {
+  const quitar = async (id: string) => {
     setError(null); setAviso(null); setOcupado(true);
     try {
       const r = await fetch(`/api/auth/passkeys?id=${id}`, { method: 'DELETE' });
@@ -99,11 +99,6 @@ export default function PasskeysPanel() {
   return (
     <div className="pt-3 border-t border-digi-border space-y-3">
       <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Acceso sin contraseña</h4>
-      <p className="text-[12px] leading-relaxed text-digi-muted" style={mf}>
-        Una passkey usa la huella, la cara o el PIN de este equipo en lugar del código por
-        correo. Se guarda en el llavero del sistema, así que si tienes iCloud o tu cuenta de
-        Google sincronizada, sirve también en tus otros aparatos.
-      </p>
 
       {error && (
         <p className="flex items-start gap-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300" style={mf}>
@@ -149,7 +144,7 @@ export default function PasskeysPanel() {
             septiembre. Ya no las acepta el navegador; crea una nueva aquí.
             <button
               type="button"
-              onClick={() => caducadas.forEach((p) => void quitar(p.id))}
+              onClick={async () => { for (const p of caducadas) await quitar(p.id); }}
               disabled={ocupado}
               className="ml-1 underline underline-offset-2 hover:text-digi-text disabled:opacity-40"
             >
