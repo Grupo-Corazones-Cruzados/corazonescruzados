@@ -9,13 +9,14 @@ import PixelInput from '@/components/ui/PixelInput';
 import ImageGallery from '@/components/ui/ImageGallery';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
-import { Briefcase, FolderKanban, Package, Workflow, Plus, Pencil, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
+import { Briefcase, FolderKanban, Package, Plus, Pencil, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 
+// Sin «Automatizaciones» (Fernando, 2026-09-30): pasó a ser un producto el 2026-09-23 y ya
+// había salido del marketplace. Las tres fichas antiguas de tipo `automation` siguen en la base.
 const TABS = [
   { value: 'project', label: 'Proyectos', Icon: FolderKanban },
   { value: 'product', label: 'Productos', Icon: Package },
-  { value: 'automation', label: 'Automatizaciones', Icon: Workflow },
 ];
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -25,7 +26,7 @@ const emptyForm = {
   es_suscripcion: false, demo_url: '', demo_usuario: '', demo_clave: '', demo_nota: '',
 };
 
-/** Panel de Portafolio: proyectos/productos/automatizaciones propios + proyectos del equipo.
+/** Panel de Portafolio: proyectos/productos propios + proyectos del equipo.
  *  Adaptado a columna angosta: pestañas en píldoras, lista vertical y detalle/galería en modal. */
 export default function PortfolioPanel() {
   const { user } = useAuth();
