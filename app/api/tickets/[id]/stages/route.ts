@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const billing = await getTicketBilling(id);
     if (!billing) return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 });
-    return NextResponse.json({ data: billing.etapas, baseTotal: billing.total });
+    return NextResponse.json({ data: billing.etapas, baseTotal: billing.base });
   } catch (err: any) {
     console.error('Ticket stages error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -71,11 +71,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ ok: true, data: [] });
     }
     if (entrantes.length < 2) return NextResponse.json({ error: 'Un plan necesita al menos dos etapas' }, { status: 400 });
+    // Con todo lo consumido ya facturado o cobrado no hay nada que repartir (el «Editar» ni se ve).
+    if (cerradas.length === 0 && billing.pending <= 0.009) {
+      return NextResponse.json({ error: 'Lo consumido ya está facturado: no queda nada por cobrar.' }, { status: 409 });
+    }
 
-    // Las que no son la última no pueden pasarse de lo consumido: la última quedaría negativa.
+    // Las que no son la última no pueden pasarse de lo que queda por repartir (lo consumido
+    // menos lo ya cobrado fuera del plan): la última quedaría negativa.
     const anteriores = entrantes.slice(0, -1).reduce((s: number, e: any) => s + e.amount, 0);
-    if (anteriores > billing.total + 0.009) {
-      return NextResponse.json({ error: `Las etapas suman más de lo consumido ($${billing.total.toFixed(2)}).` }, { status: 400 });
+    if (anteriores > billing.base + 0.009) {
+      return NextResponse.json({ error: `Las etapas suman más de lo que queda por cobrar ($${billing.base.toFixed(2)}).` }, { status: 400 });
     }
 
     const conservar = entrantes.filter((e: any) => e.id).map((e: any) => e.id);

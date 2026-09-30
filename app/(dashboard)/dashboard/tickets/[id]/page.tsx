@@ -26,6 +26,8 @@ import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelEtapas from '@/components/facturacion/PanelEtapas';
+import PestanasRail from '@/components/ui/PestanasRail';
+import IncidentsTab from '@/components/projects/IncidentsTab';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -66,6 +68,7 @@ export default function TicketDetailPage() {
   // COBRO DEL TICKET (2026-09-30): lo consumido, lo facturado, lo cobrado y el plan de etapas.
   const [billing, setBilling] = useState<any>(null);
   const [etapasAbierto, setEtapasAbierto] = useState(false);
+  const [rightTab, setRightTab] = useState<'propiedades' | 'incidentes'>('propiedades');
   // Enlace de pago: de una etapa (su id) o de todo lo pendiente (null).
   const [enlaceEtapa, setEnlaceEtapa] = useState<number | null>(null);
   const [linkAbierto, setLinkAbierto] = useState(false);
@@ -945,7 +948,15 @@ export default function TicketDetailPage() {
             )}
           </div>
 
-          <div className="w-full lg:w-[300px] shrink-0 order-3 lg:min-h-0 lg:overflow-y-auto">
+          {/* ====== DERECHA: pestañas Propiedades / Incidentes, como en el proyecto ====== */}
+          <div className="w-full lg:w-[300px] shrink-0 order-3 lg:min-h-0 lg:overflow-y-auto space-y-3">
+          <PestanasRail valor={rightTab} onChange={setRightTab}
+            opciones={[{ valor: 'propiedades', texto: 'Propiedades' }, { valor: 'incidentes', texto: 'Incidentes' }]} />
+          {rightTab === 'incidentes' && (
+            <IncidentsTab api={`/api/tickets/${id}`}
+              canManage={isAdmin || (!!user?.member_id && Number(ticket.member_id) === Number(user.member_id))} />
+          )}
+          {rightTab === 'propiedades' && (
           <PropertyRail
             items={[
               { label: 'Cliente', value: ticket.client_name || '-' },
@@ -985,10 +996,11 @@ export default function TicketDetailPage() {
                   {/* «Editar» a la altura del título, como en el proyecto: la puerta al plan de etapas. */}
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Pagos</h3>
-                    {isAdmin && (
-                      <button onClick={() => setEtapasAbierto(true)} disabled={ticket.status === 'cancelled' || Number(billing.total) <= 0}
-                        title={ticket.status === 'cancelled' ? 'El ticket está cancelado' : Number(billing.total) <= 0 ? 'Aún no hay consumo que repartir' : 'Etapas de facturación'}
-                        className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={pf}>Editar</button>
+                    {/* Solo si lo consumido supera lo facturado y cobrado (Fernando, 2026-09-30):
+                        un ticket pagado entero no tiene nada que repartir en etapas. */}
+                    {isAdmin && ticket.status !== 'cancelled' && pendienteTicket > 0.009 && (
+                      <button onClick={() => setEtapasAbierto(true)} title="Etapas de facturación"
+                        className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
                     )}
                   </div>
                   <div className="space-y-1 text-[12px]" style={mf}>
@@ -1069,6 +1081,7 @@ export default function TicketDetailPage() {
               );
             })()}
           </PropertyRail>
+          )}
           </div>
         </div>
 
@@ -1089,8 +1102,8 @@ export default function TicketDetailPage() {
         open={etapasAbierto}
         onClose={() => setEtapasAbierto(false)}
         endpoint={`/api/tickets/${id}/stages`}
-        base={Number(billing?.total || 0)}
-        etiquetaBase="Consumido hasta hoy"
+        base={Number(billing?.base || 0)}
+        etiquetaBase="Por cobrar de lo consumido"
         etapas={(billing?.etapas || []).map((e: any) => ({ id: e.id, name: e.name, amount: e.amount, invoiceNumber: e.invoiceNumber, cerrada: !!e.invoiceId || !!e.cobro }))}
         onGuardado={() => cargarPagos()}
         avisoQuitar="Plan de etapas eliminado — el ticket vuelve a cobrarse por su total"

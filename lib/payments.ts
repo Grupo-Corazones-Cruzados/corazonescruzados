@@ -437,6 +437,13 @@ export type TicketBilling = {
    * mismo saldo se podría cobrar dos veces.
    */
   cobradoSinFactura: number;
+  /**
+   * Lo que REPARTE el plan de etapas: lo consumido menos lo que ya se facturó o cobró FUERA del
+   * plan (una factura total previa, un abono, un cobro del total). Sin esto, un ticket ya
+   * facturado entero volvía a repartir su consumo en etapas y se cobraba dos veces (Fernando,
+   * 2026-09-30, ticket #28). Las etapas —cerradas y abiertas— suman exactamente esto.
+   */
+  base: number;
   /** Lo que queda por cobrar: total − facturado − cobrado sin factura. */
   pending: number;
   mode: 'etapas' | 'total';
@@ -461,7 +468,9 @@ export async function getTicketBilling(ticketId: string | number): Promise<Ticke
   if (!t) return null;
   const pagos = await getTicketPayments(ticketId);
   const { rows: sinFactura } = await pool.query(
-    `SELECT COALESCE(SUM(net_amount), 0) AS neto FROM gcc_world.payment_intents
+    `SELECT COALESCE(SUM(net_amount), 0) AS neto,
+            COALESCE(SUM(net_amount) FILTER (WHERE stage_id IS NULL), 0) AS neto_sin_etapa
+       FROM gcc_world.payment_intents
       WHERE source_type = 'ticket' AND source_id = $1 AND invoice_id IS NULL AND status IN ('paid','awaiting')`,
     [String(ticketId)],
   );
@@ -486,17 +495,21 @@ export async function getTicketBilling(ticketId: string | number): Promise<Ticke
     resto: i === filas.length - 1 && r.invoice_id == null && r.cobro == null,
     cobro: r.cobro ?? null,
   }));
+  const cobradoSinFactura = round2(Number(sinFactura[0]?.neto) || 0);
+  const facturadoEnEtapas = etapas.filter((e) => e.invoiceId).reduce((s, e) => s + e.amount, 0);
+  const fueraDelPlan = Math.max(0, pagos.invoiced - facturadoEnEtapas) + (Number(sinFactura[0]?.neto_sin_etapa) || 0);
+  const base = round2(Math.max(0, total - fueraDelPlan));
   const ultima = etapas[etapas.length - 1];
   if (ultima?.resto) {
     const otras = etapas.slice(0, -1).reduce((s, e) => s + e.amount, 0);
-    ultima.amount = round2(Math.max(0, total - otras));
+    ultima.amount = round2(Math.max(0, base - otras));
   }
-  const cobradoSinFactura = round2(Number(sinFactura[0]?.neto) || 0);
   return {
     ticketId: Number(t.id),
     title: t.title,
     status: t.status,
     total,
+    base,
     invoiced: pagos.invoiced,
     cobradoSinFactura,
     pending: round2(Math.max(0, total - pagos.invoiced - cobradoSinFactura)),

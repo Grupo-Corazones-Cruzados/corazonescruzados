@@ -40,7 +40,11 @@ const fileToDataUrl = (f: File) => new Promise<string>((res, rej) => {
   const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsDataURL(f);
 });
 
-export default function IncidentsTab({ projectId, canManage }: { projectId: string; canManage: boolean }) {
+/**
+ * Incidentes de un proyecto o de un ticket (2026-09-30). `api` es la ruta de su dueño
+ * —`/api/projects/12` o `/api/tickets/34`—; lo demás es igual para los dos.
+ */
+export default function IncidentsTab({ api, canManage }: { api: string; canManage: boolean }) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [token, setToken] = useState<string | null>(null);
@@ -54,14 +58,14 @@ export default function IncidentsTab({ projectId, canManage }: { projectId: stri
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/incidents`);
+      const res = await fetch(`${api}/incidents`);
       const d = await res.json();
       setIncidents(d.incidents || []);
       setCategories(d.categories || []);
       setToken(d.token || null);
     } catch { toast.error('Error al cargar incidentes'); }
     finally { setLoading(false); }
-  }, [projectId]);
+  }, [api]);
   useEffect(() => { load(); }, [load]);
 
   return (
@@ -110,18 +114,18 @@ export default function IncidentsTab({ projectId, canManage }: { projectId: stri
       )}
 
       {createOpen && (
-        <IncidentCreateModal projectId={projectId} categories={categories}
+        <IncidentCreateModal api={api} categories={categories}
           onClose={() => setCreateOpen(false)} onSaved={() => { setCreateOpen(false); load(); }} />
       )}
       {catsOpen && (
-        <CategoriesModal projectId={projectId} initial={categories}
+        <CategoriesModal api={api} initial={categories}
           onClose={() => setCatsOpen(false)} onSaved={(c) => { setCategories(c); setCatsOpen(false); }} />
       )}
       {shareOpen && (
-        <ShareModal projectId={projectId} token={token} onToken={setToken} onClose={() => setShareOpen(false)} />
+        <ShareModal api={api} token={token} onToken={setToken} onClose={() => setShareOpen(false)} />
       )}
       {detailId != null && (
-        <IncidentDetailModal projectId={projectId} incidentId={detailId} canManage={canManage}
+        <IncidentDetailModal api={api} incidentId={detailId} canManage={canManage}
           onClose={() => setDetailId(null)} onChanged={() => { setDetailId(null); load(); }} />
       )}
     </div>
@@ -129,8 +133,8 @@ export default function IncidentsTab({ projectId, canManage }: { projectId: stri
 }
 
 /* ─── Crear incidente (panel lateral derecho con overlay) ─── */
-function IncidentCreateModal({ projectId, categories, onClose, onSaved }: {
-  projectId: string; categories: Category[]; onClose: () => void; onSaved: () => void;
+function IncidentCreateModal({ api, categories, onClose, onSaved }: {
+  api: string; categories: Category[]; onClose: () => void; onSaved: () => void;
 }) {
   const [reporter, setReporter] = useState('');
   const [title, setTitle] = useState('');
@@ -152,7 +156,7 @@ function IncidentCreateModal({ projectId, categories, onClose, onSaved }: {
     if (!title.trim()) { toast.error('El título es obligatorio'); return; }
     setBusy(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/incidents`, {
+      const res = await fetch(`${api}/incidents`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, severity, category: category || null, subcategory: subcategory || null, reporter_name: reporter || null, images }),
       });
@@ -223,8 +227,8 @@ function IncidentCreateModal({ projectId, categories, onClose, onSaved }: {
 }
 
 /* ─── Detalle de incidente ─── */
-function IncidentDetailModal({ projectId, incidentId, canManage, onClose, onChanged }: {
-  projectId: string; incidentId: number; canManage: boolean; onClose: () => void; onChanged: () => void;
+function IncidentDetailModal({ api, incidentId, canManage, onClose, onChanged }: {
+  api: string; incidentId: number; canManage: boolean; onClose: () => void; onChanged: () => void;
 }) {
   const [inc, setInc] = useState<any>(null);
   const [status, setStatus] = useState('pending');
@@ -232,15 +236,15 @@ function IncidentDetailModal({ projectId, incidentId, canManage, onClose, onChan
   const [confirmDel, setConfirmDel] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/incidents/${incidentId}`).then((r) => r.json()).then((d) => {
+    fetch(`${api}/incidents/${incidentId}`).then((r) => r.json()).then((d) => {
       setInc(d.data); if (d.data) setStatus(d.data.status);
     }).catch(() => {});
-  }, [projectId, incidentId]);
+  }, [api, incidentId]);
 
   const saveStatus = async () => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/incidents/${incidentId}`, {
+      const res = await fetch(`${api}/incidents/${incidentId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error();
@@ -250,7 +254,7 @@ function IncidentDetailModal({ projectId, incidentId, canManage, onClose, onChan
   const del = async () => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/incidents/${incidentId}`, { method: 'DELETE' });
+      const res = await fetch(`${api}/incidents/${incidentId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       toast.success('Incidente eliminado'); onChanged();
     } catch { toast.error('No se pudo eliminar'); } finally { setBusy(false); }
@@ -300,8 +304,8 @@ function IncidentDetailModal({ projectId, incidentId, canManage, onClose, onChan
 }
 
 /* ─── Editor de categorías / subcategorías ─── */
-function CategoriesModal({ projectId, initial, onClose, onSaved }: {
-  projectId: string; initial: Category[]; onClose: () => void; onSaved: (c: Category[]) => void;
+function CategoriesModal({ api, initial, onClose, onSaved }: {
+  api: string; initial: Category[]; onClose: () => void; onSaved: (c: Category[]) => void;
 }) {
   type Draft = { name: string; subcategories: { name: string }[] };
   const [cats, setCats] = useState<Draft[]>(initial.map((c) => ({ name: c.name, subcategories: c.subcategories.map((s) => ({ name: s.name })) })));
@@ -311,7 +315,7 @@ function CategoriesModal({ projectId, initial, onClose, onSaved }: {
     setBusy(true);
     try {
       const payload = cats.map((c) => ({ name: c.name.trim(), subcategories: c.subcategories.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim() })) })).filter((c) => c.name);
-      const res = await fetch(`/api/projects/${projectId}/incidents/categories`, {
+      const res = await fetch(`${api}/incidents/categories`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ categories: payload }),
       });
       if (!res.ok) throw new Error();
@@ -359,8 +363,8 @@ function CategoriesModal({ projectId, initial, onClose, onSaved }: {
 }
 
 /* ─── Compartir enlace (token) ─── */
-function ShareModal({ projectId, token, onToken, onClose }: {
-  projectId: string; token: string | null; onToken: (t: string | null) => void; onClose: () => void;
+function ShareModal({ api, token, onToken, onClose }: {
+  api: string; token: string | null; onToken: (t: string | null) => void; onClose: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const base = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -369,7 +373,7 @@ function ShareModal({ projectId, token, onToken, onClose }: {
   const gen = async (regenerate = false) => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/incidents/token`, {
+      const res = await fetch(`${api}/incidents/token`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regenerate }),
       });
       const d = await res.json();
@@ -380,7 +384,7 @@ function ShareModal({ projectId, token, onToken, onClose }: {
   const revoke = async () => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/incidents/token`, { method: 'DELETE' });
+      const res = await fetch(`${api}/incidents/token`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       onToken(null); toast.success('Enlace revocado');
     } catch { toast.error('Error'); } finally { setBusy(false); }

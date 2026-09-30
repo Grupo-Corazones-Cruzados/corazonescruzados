@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 
 /**
- * Sistema de INCIDENTES por proyecto (módulo de Proyectos, no DigiMundo).
+ * Sistema de INCIDENTES por proyecto y, desde la 063 (2026-09-30), por ticket.
  *
  * Tablas (raw SQL, esquema gcc_world) — reemplazan al viejo sistema Prisma
  * (Incident/Project/Module/Section/Subsection ligado a proyectos del DigiMundo):
@@ -71,7 +71,14 @@ export const STATUS_LABELS: Record<string, string> = {
   completed: 'Completado', rejected: 'Rechazado',
 };
 
-export type ProjectForIncidents = {
+/**
+ * EL DUEÑO DE UN INCIDENTE: un proyecto o un ticket (2026-09-30, migración 063).
+ * Los dos comparten tablas —la fila lleva `project_id` O `ticket_id`—, rutas, componente y
+ * portal público. `columna` es la que filtra en SQL; nunca sale de la entrada del usuario.
+ */
+export type IncidentOwnerType = 'project' | 'ticket';
+export type IncidentOwner = {
+  tipo: IncidentOwnerType;
   id: number;
   title: string;
   client_id: number | null;
@@ -79,17 +86,22 @@ export type ProjectForIncidents = {
   incidents_token: string | null;
 };
 
-/** Carga el proyecto (app) con lo necesario para gestionar sus incidentes. */
-export async function loadProjectForIncidents(projectId: string): Promise<ProjectForIncidents | null> {
+export const COLUMNA_DUENO: Record<IncidentOwnerType, 'project_id' | 'ticket_id'> = { project: 'project_id', ticket: 'ticket_id' };
+const TABLA_DUENO: Record<IncidentOwnerType, 'projects' | 'tickets'> = { project: 'projects', ticket: 'tickets' };
+
+/** Carga el proyecto o el ticket con lo necesario para gestionar sus incidentes. */
+export async function loadOwnerForIncidents(tipo: IncidentOwnerType, id: string): Promise<IncidentOwner | null> {
   await ensureIncidentTables();
+  const miembro = tipo === 'project' ? 'assigned_member_id' : 'member_id';
   const { rows } = await pool.query(
-    `SELECT id, title, client_id, assigned_member_id, incidents_token
-       FROM gcc_world.projects WHERE id = $1`,
-    [projectId],
+    `SELECT id, title, client_id, ${miembro} AS assigned_member_id, incidents_token
+       FROM gcc_world.${TABLA_DUENO[tipo]} WHERE id = $1`,
+    [Number(id) || 0],
   );
   const r = rows[0];
   if (!r) return null;
   return {
+    tipo,
     id: Number(r.id),
     title: r.title,
     client_id: r.client_id != null ? Number(r.client_id) : null,
@@ -98,14 +110,30 @@ export async function loadProjectForIncidents(projectId: string): Promise<Projec
   };
 }
 
+/** Guarda (o borra, con null) el token del portal público del dueño. */
+export async function setIncidentsToken(owner: IncidentOwner, token: string | null): Promise<void> {
+  await pool.query(`UPDATE gcc_world.${TABLA_DUENO[owner.tipo]} SET incidents_token = $1 WHERE id = $2`, [token, owner.id]);
+}
+
+/** Resuelve el dueño a partir del token del portal público (revocable). */
+export async function ownerByIncidentsToken(token: string): Promise<IncidentOwner | null> {
+  if (!token || token.length < 16) return null;
+  await ensureIncidentTables();
+  for (const tipo of ['project', 'ticket'] as const) {
+    const { rows } = await pool.query(`SELECT id FROM gcc_world.${TABLA_DUENO[tipo]} WHERE incidents_token = $1 LIMIT 1`, [token]);
+    if (rows[0]) return loadOwnerForIncidents(tipo, String(rows[0].id));
+  }
+  return null;
+}
+
 /**
- * ¿Puede el usuario GESTIONAR incidentes del proyecto (definir categorías, compartir
- * token, cambiar estado, borrar)? = admin, o el miembro asignado, o el responsable
+ * ¿Puede el usuario GESTIONAR los incidentes (definir categorías, compartir token, cambiar
+ * estado, borrar)? = admin, o el miembro asignado; en un proyecto también el responsable
  * activo en project_members. Crear/ver está permitido a cualquier usuario autenticado.
  */
-export async function canManageProjectIncidents(
+export async function canManageIncidents(
   user: { userId: string; role: string },
-  project: ProjectForIncidents,
+  owner: IncidentOwner,
 ): Promise<boolean> {
   if (user.role === 'admin') return true;
   const { rows } = await pool.query(
@@ -114,28 +142,30 @@ export async function canManageProjectIncidents(
   );
   const memberId = rows[0]?.member_id != null ? Number(rows[0].member_id) : null;
   if (!memberId) return false;
-  if (project.assigned_member_id === memberId) return true;
+  if (owner.assigned_member_id === memberId) return true;
+  if (owner.tipo !== 'project') return false;
   const { rows: pm } = await pool.query(
     `SELECT 1 FROM gcc_world.project_members
       WHERE project_id = $1 AND member_id = $2 AND role = 'responsible' AND status = 'active' LIMIT 1`,
-    [project.id, memberId],
+    [owner.id, memberId],
   );
   return pm.length > 0;
 }
 
-/** Categorías del proyecto con sus subcategorías (para selectores y editor). */
-export async function loadCategories(projectId: number): Promise<{ id: number; name: string; subcategories: { id: number; name: string }[] }[]> {
+/** Categorías del proyecto o del ticket, con sus subcategorías (para selectores y editor). */
+export async function loadCategories(owner: IncidentOwner): Promise<{ id: number; name: string; subcategories: { id: number; name: string }[] }[]> {
+  const col = COLUMNA_DUENO[owner.tipo];
   const { rows: cats } = await pool.query(
-    `SELECT id, name FROM gcc_world.project_incident_categories WHERE project_id = $1 ORDER BY sort_order, id`,
-    [projectId],
+    `SELECT id, name FROM gcc_world.project_incident_categories WHERE ${col} = $1 ORDER BY sort_order, id`,
+    [owner.id],
   );
   if (cats.length === 0) return [];
   const { rows: subs } = await pool.query(
     `SELECT s.id, s.name, s.category_id
        FROM gcc_world.project_incident_subcategories s
        JOIN gcc_world.project_incident_categories c ON c.id = s.category_id
-      WHERE c.project_id = $1 ORDER BY s.sort_order, s.id`,
-    [projectId],
+      WHERE c.${col} = $1 ORDER BY s.sort_order, s.id`,
+    [owner.id],
   );
   return cats.map((c: any) => ({
     id: Number(c.id),

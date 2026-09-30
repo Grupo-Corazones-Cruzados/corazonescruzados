@@ -3913,6 +3913,10 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-30 · Pestañas «Propiedades / Incidentes» escritas dentro del proyecto** · **EXTRAÍDAS a
+  `components/ui/PestanasRail.tsx`** al llevarlas al ticket. Tarjeta `bg-digi-card border rounded-lg
+  p-1`, pestañas a partes iguales, activa `bg-accent-light text-accent`, `role="tab"`. Proyecto y
+  ticket la usan igual; la columna derecha va con `space-y-3` bajo ella.
 - **2026-09-30 · El panel de etapas vivía dentro del detalle del proyecto** · **EXTRAÍDO a
   `components/facturacion/PanelEtapas.tsx`** al llevarlo al ticket (regla «equivalente no es
   igual»). Una definición para los dos: `EditPanel` «Etapas de facturación», base de reparto de

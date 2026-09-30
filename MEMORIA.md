@@ -6089,11 +6089,25 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
       borra ni cambia de importe. **Con plan no hay abono** (la API lo rechaza y el modal lo
       bloquea): se cruzaría con las etapas y cobraría dos veces. «Factura total» con plan factura
       las etapas abiertas y las marca.
+    - **La base del plan es lo que queda por cobrar, no el consumo entero** (corregido el mismo
+      día con el ticket #28, facturado entero en la 001-001-000000086): `billing.base` = consumido
+      − lo facturado o cobrado FUERA del plan (factura total previa, abono, cobro sin etapa).
+      «Editar» solo aparece si lo consumido supera lo facturado y cobrado; el PUT sin nada
+      pendiente responde 409.
     - Prueba: `npm run pagos:prueba-bd` ya espera la regla nueva (segundo cobro de ticket sí,
       segundo de proyecto sin etapa no).
     - ⚠️ **Pendiente:** `GET /api/tickets/[id]` y `/payments` solo comprueban que haya sesión;
       un cliente podría leer un ticket ajeno por id. Ya estaba así antes (ver «Hay sesión no es
       tuyo»); no se tocó en este cambio.
+  - **INCIDENTES EN TICKETS (Fernando, 2026-09-30).** El detalle del ticket tiene las pestañas
+    Propiedades / Incidentes del proyecto (`components/ui/PestanasRail.tsx`, extraído). Las tablas
+    `project_incidents` y `project_incident_categories` llevan `project_id` O `ticket_id`
+    (migración **063**, aplicada) y `tickets.incidents_token` da el portal público `/incidentes/<token>`,
+    que resuelve el token de proyecto o de ticket. **Las rutas son una sola definición**:
+    `lib/incidents/rutas.ts` (`rutasIncidentes('project'|'ticket')`); las de
+    `/api/projects/[id]/incidents/…` y `/api/tickets/[id]/incidents/…` solo la exportan.
+    `IncidentsTab` recibe `api` (la ruta del dueño). Gestiona el admin o el miembro asignado
+    (en proyecto, también el responsable activo).
   - **Histórico:** la migración `047_facturacion_por_etapas.sql` enlazó las etapas de los
     proyectos cuya facturación anterior ya cubría el total (≥99%), para que no se ofrezcan otra
     vez. Los que quedaron facturados a medias muestran un aviso en ámbar («ya tiene $X

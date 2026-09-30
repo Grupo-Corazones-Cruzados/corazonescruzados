@@ -30,6 +30,7 @@ import { fmt2 } from '@/lib/format';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelEtapas from '@/components/facturacion/PanelEtapas';
+import PestanasRail from '@/components/ui/PestanasRail';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -2091,13 +2092,11 @@ export default function ProjectDetailPage() {
 
         {/* ====== DERECHA: pestañas Propiedades / Incidentes ====== */}
         <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3 lg:min-h-0 lg:overflow-y-auto">
-          <div className="flex gap-1 bg-digi-card border border-digi-border rounded-lg p-1">
-            <button onClick={() => setRightTab('propiedades')} className={`flex-1 min-h-11 sm:min-h-0 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'propiedades' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Propiedades</button>
-            <button onClick={() => setRightTab('incidentes')} className={`flex-1 min-h-11 sm:min-h-0 text-[12px] font-medium py-1.5 rounded-md transition-colors ${rightTab === 'incidentes' ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>Incidentes</button>
-          </div>
+          <PestanasRail valor={rightTab} onChange={setRightTab}
+            opciones={[{ valor: 'propiedades', texto: 'Propiedades' }, { valor: 'incidentes', texto: 'Incidentes' }]} />
 
           {rightTab === 'incidentes' && (
-            <IncidentsTab projectId={id as string} canManage={!!isOwner} />
+            <IncidentsTab api={`/api/projects/${id}`} canManage={!!isOwner} />
           )}
 
           {rightTab === 'propiedades' && (<>
