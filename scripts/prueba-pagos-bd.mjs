@@ -235,6 +235,9 @@ async function main() {
     await nuevoTicket('paid', 'tk-A');
     p('un ticket pagado entra sin problema', true);
 
+    // Desde la 062 (2026-09-30) el total de un TICKET es lo consumido, que sigue creciendo:
+    // su saldo se cobra varias veces. Lo que lo protege es lo pendiente (descuenta lo cobrado
+    // sin factura) y el candado de «una sola transferencia en espera», probado arriba.
     let segundoTicket = false;
     try {
       await c.query('SAVEPOINT t1');
@@ -244,8 +247,7 @@ async function main() {
     } catch {
       await c.query('ROLLBACK TO SAVEPOINT t1');
     }
-    p('🔑 el MISMO ticket no se puede pagar dos veces', !segundoTicket,
-      'el índice idx_payment_intents_origen_pagado no está actuando (migración 054)');
+    p('un ticket admite un segundo cobro de su saldo (062)', segundoTicket);
 
     let otroTicket = true;
     try {
@@ -276,6 +278,22 @@ async function main() {
       await c.query('ROLLBACK TO SAVEPOINT t3');
     }
     p('los dos candados conviven sin pisarse', proyectoSinEtapa);
+
+    // El candado «un cobro por origen sin etapa» sigue en pie para todo lo que no es ticket.
+    let segundoProyecto = false;
+    try {
+      await c.query('SAVEPOINT t4');
+      await c.query(
+        `INSERT INTO gcc_world.payment_intents
+           (source_type, source_id, stage_id, channel, provider, net_amount, fee_amount, charge_amount, status)
+         VALUES ('project','-779',NULL,'client','simulado',10,0.5,10.5,'paid')`);
+      segundoProyecto = true;
+      await c.query('RELEASE SAVEPOINT t4');
+    } catch {
+      await c.query('ROLLBACK TO SAVEPOINT t4');
+    }
+    p('🔑 el MISMO proyecto sin etapa no se paga dos veces', !segundoProyecto,
+      'el índice idx_payment_intents_origen_pagado no está actuando (migración 062)');
 
     await c.query('ROLLBACK');
 

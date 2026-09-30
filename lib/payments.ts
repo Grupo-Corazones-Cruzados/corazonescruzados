@@ -61,12 +61,19 @@ const FEE_SQL = `COALESCE((
 ), 0)`;
 
 /** Resumen de pagos de un TICKET: total = estimated_cost; facturas ligadas por source_type/ticket_id. */
+/**
+ * ⚠️ EL TOTAL DE UN TICKET ES LO CONSUMIDO (Fernando, 2026-09-30), no el costo estimado: la
+ * suma de sus registros de trabajo (tiempo × tarifa). El estimado es solo una estimación, y
+ * lo que se cobra es lo que se trabajó. En los tickets viejos ya facturados puede salir un
+ * «Facturado» mayor que el total: es lo que se facturó entonces sobre el estimado.
+ */
 export async function getTicketPayments(ticketId: string | number): Promise<PaymentsSummary> {
   const idStr = String(ticketId);
   const { rows: [t] } = await pool.query(
-    `SELECT estimated_cost FROM gcc_world.tickets WHERE id = $1`, [ticketId],
+    `SELECT COALESCE((SELECT SUM(cost) FROM gcc_world.ticket_actions WHERE ticket_id = t.id), 0) AS consumido
+       FROM gcc_world.tickets t WHERE t.id = $1`, [ticketId],
   );
-  const total = Number(t?.estimated_cost) || 0;
+  const total = Number(t?.consumido) || 0;
   const { rows } = await pool.query(
     `SELECT i.id, i.invoice_number, i.total, ${FEE_SQL} AS fee, i.status, i.sri_status, i.created_at
        FROM gcc_world.invoices i
@@ -406,4 +413,94 @@ export async function getBillableProjects(): Promise<(ProjectBilling & {
     clientPhone: p.client_phone ?? null,
     clientAddress: p.client_address ?? null,
   }));
+}
+
+/** Una etapa del plan de un ticket, con lo que se sabe de su cobro. */
+export type TicketStage = BillingStage & {
+  /** La última sin pagar: su importe se calcula como el resto de lo consumido. */
+  resto: boolean;
+  /** Un cobro en línea de esta etapa: pagado (aunque aún sin factura) o esperando transferencia. */
+  cobro: 'paid' | 'awaiting' | null;
+};
+
+export type TicketBilling = {
+  ticketId: number;
+  title: string;
+  status: string;
+  /** Lo consumido: suma de los registros de trabajo. */
+  total: number;
+  /** Facturado sin el recargo de la pasarela, en facturas vigentes. */
+  invoiced: number;
+  /**
+   * Cobrado en línea que AÚN no tiene factura (el SRI falló, o una transferencia espera a que
+   * alguien la confirme). Cuenta como cobrado: el dinero manda sobre la factura, y sin esto el
+   * mismo saldo se podría cobrar dos veces.
+   */
+  cobradoSinFactura: number;
+  /** Lo que queda por cobrar: total − facturado − cobrado sin factura. */
+  pending: number;
+  mode: 'etapas' | 'total';
+  etapas: TicketStage[];
+};
+
+/**
+ * FACTURACIÓN DE UN TICKET (Fernando, 2026-09-30): lo consumido, lo facturado, lo pendiente y
+ * el plan de etapas si lo hay.
+ *
+ * El plan reparte LO CONSUMIDO. Como el consumo sigue creciendo, la ÚLTIMA etapa —mientras no
+ * esté pagada— no guarda importe: se calcula aquí como lo que falta (consumido − las demás),
+ * igual que en el proyecto «la última recoge el resto». Al pagarse, su importe se congela.
+ */
+export async function getTicketBilling(ticketId: string | number): Promise<TicketBilling | null> {
+  await ensureStageBilling();
+  const { rows: [t] } = await pool.query(
+    `SELECT t.id, t.title, t.status,
+            COALESCE((SELECT SUM(cost) FROM gcc_world.ticket_actions WHERE ticket_id = t.id), 0) AS consumido
+       FROM gcc_world.tickets t WHERE t.id = ($1)::bigint`, [String(ticketId)],
+  );
+  if (!t) return null;
+  const pagos = await getTicketPayments(ticketId);
+  const { rows: sinFactura } = await pool.query(
+    `SELECT COALESCE(SUM(net_amount), 0) AS neto FROM gcc_world.payment_intents
+      WHERE source_type = 'ticket' AND source_id = $1 AND invoice_id IS NULL AND status IN ('paid','awaiting')`,
+    [String(ticketId)],
+  );
+  const { rows: filas } = await pool.query(
+    `SELECT e.id, e.name, e.amount, e.sort_order, i.id AS invoice_id, i.invoice_number,
+            (SELECT pi.status FROM gcc_world.payment_intents pi
+              WHERE pi.stage_id = e.id AND pi.status IN ('paid','awaiting') LIMIT 1) AS cobro
+       FROM gcc_world.project_stages e
+       LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
+      WHERE e.ticket_id = ($1)::bigint
+      ORDER BY e.sort_order, e.id`,
+    [String(ticketId)],
+  );
+  const total = round2(Number(t.consumido) || 0);
+  const etapas: TicketStage[] = filas.map((r: any, i: number) => ({
+    id: Number(r.id),
+    name: r.name,
+    amount: round2(Number(r.amount) || 0),
+    sortOrder: Number(r.sort_order) || 0,
+    invoiceId: r.invoice_id != null ? Number(r.invoice_id) : null,
+    invoiceNumber: r.invoice_number ?? null,
+    resto: i === filas.length - 1 && r.invoice_id == null && r.cobro == null,
+    cobro: r.cobro ?? null,
+  }));
+  const ultima = etapas[etapas.length - 1];
+  if (ultima?.resto) {
+    const otras = etapas.slice(0, -1).reduce((s, e) => s + e.amount, 0);
+    ultima.amount = round2(Math.max(0, total - otras));
+  }
+  const cobradoSinFactura = round2(Number(sinFactura[0]?.neto) || 0);
+  return {
+    ticketId: Number(t.id),
+    title: t.title,
+    status: t.status,
+    total,
+    invoiced: pagos.invoiced,
+    cobradoSinFactura,
+    pending: round2(Math.max(0, total - pagos.invoiced - cobradoSinFactura)),
+    mode: etapas.length > 0 ? 'etapas' : 'total',
+    etapas,
+  };
 }

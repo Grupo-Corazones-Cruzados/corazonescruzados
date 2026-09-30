@@ -14,6 +14,7 @@ import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
 import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion, partesAltaProducto } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { getBillingForClient } from '@/lib/billing-clients';
+import { getTicketBilling } from '@/lib/payments';
 import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 
 export async function GET(req: NextRequest) {
@@ -104,8 +105,11 @@ export async function GET(req: NextRequest) {
     // El plan completo, para que el cliente vea DÓNDE encaja lo que va a pagar. Pagar una
     // etapa suelta sin ver el resto es firmar a ciegas; es la misma información que ya le
     // enseña la página pública del proyecto, y por las mismas razones.
-    // Ni un ticket ni una suscripción tienen plan que enseñar: se cobran enteros.
-    const { rows: etapasPlan } = (esTicket || esSuscripcion || esProducto) ? { rows: [] as any[] } : await pool.query(
+    // Ni una suscripción ni un producto tienen plan. Un TICKET sí desde el 2026-09-30, y sus
+    // importes salen de `getTicketBilling` (la última etapa abierta es el resto de lo consumido).
+    const { rows: etapasPlan } = esTicket
+      ? { rows: ((await getTicketBilling(auth.sourceId))?.etapas || []).map((e) => ({ id: e.id, name: e.name, amount: e.amount, facturada: !!e.invoiceId })) }
+      : (esSuscripcion || esProducto) ? { rows: [] as any[] } : await pool.query(
       `SELECT e.id, e.name, e.amount, (e.invoice_id IS NOT NULL) AS facturada
          FROM gcc_world.project_stages e
          LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
@@ -131,8 +135,11 @@ export async function GET(req: NextRequest) {
                 (SELECT name FROM gcc_world.services s WHERE s.id = t.service_id) AS servicio
            FROM gcc_world.tickets t WHERE t.id = ($1)::bigint`, [idPropio]).catch(() => ({ rows: [null] }));
       if (t?.servicio) detalle.push({ etiqueta: 'Servicio', valor: t.servicio });
-      const horas = Number(t?.actual_hours) || Number(t?.estimated_hours) || 0;
-      if (horas > 0) detalle.push({ etiqueta: 'Horas', valor: `${horas}` });
+      // Las horas CONSUMIDAS (registros de trabajo), que es lo que se cobra desde el 2026-09-30.
+      const { rows: [c] } = await pool.query(
+        `SELECT COALESCE(SUM(duration_seconds), 0) AS seg FROM gcc_world.ticket_actions WHERE ticket_id = ($1)::bigint`, [idPropio]);
+      const horas = Math.round(((Number(c?.seg) || 0) / 3600) * 100) / 100 || Number(t?.actual_hours) || Number(t?.estimated_hours) || 0;
+      if (horas > 0) detalle.push({ etiqueta: 'Horas consumidas', valor: `${horas}` });
       if (fecha(t?.completed_at)) detalle.push({ etiqueta: 'Entregado', valor: fecha(t.completed_at)! });
     } else if (esSuscripcion) {
       const { subId, periodo: per } = partesMesSuscripcion(auth.sourceId);

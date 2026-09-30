@@ -29,6 +29,7 @@ import ActionsMenu from '@/components/centralized/ActionsMenu';
 import { fmt2 } from '@/lib/format';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import PanelEtapas from '@/components/facturacion/PanelEtapas';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -180,8 +181,6 @@ export default function ProjectDetailPage() {
   // Plan de etapas: el acuerdo con el cliente («50% al empezar, 50% al entregar»).
   // No son los requerimientos, que son el trabajo interno.
   const [showStagesPanel, setShowStagesPanel] = useState(false);
-  const [planDraft, setPlanDraft] = useState<{ id: number | null; name: string; amount: string; invoiceNumber: string | null }[]>([]);
-  const [savingPlan, setSavingPlan] = useState(false);
   // ENLACE DE PAGO (canal 3): el responsable comparte un enlace con la caducidad que él
   // elige, y puede salir un correo al cliente. Con plan cobra UNA etapa (`enlaceEtapa`);
   // sin plan, el proyecto entero (`null`). Ver `lib/pagos/`.
@@ -522,23 +521,6 @@ export default function ProjectDetailPage() {
     discount: '0',
   });
 
-  /** Abre el panel del plan con lo que ya haya definido (o dos etapas en blanco). */
-  const openStagesPanel = () => {
-    const etapas = billing?.etapas || [];
-    setPlanDraft(etapas.length > 0
-      ? etapas.map((e: any) => ({ id: e.id, name: e.name, amount: String(e.amount), invoiceNumber: e.invoiceNumber }))
-      : [{ id: null, name: 'Etapa 1', amount: '', invoiceNumber: null },
-         { id: null, name: 'Etapa 2', amount: '', invoiceNumber: null }]);
-    setShowStagesPanel(true);
-  };
-
-  /** La última etapa recoge el resto de la base; se recalcula en cada cambio. */
-  const planBase = Number(billing?.baseTotal || 0);
-  const planRestante = (() => {
-    const anteriores = planDraft.slice(0, -1).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-    return Math.max(0, Math.round((planBase - anteriores) * 100) / 100);
-  })();
-
   /** Refleja el plan recién guardado sin esperar al refresco del proyecto. */
   const aplicarPlan = (etapas: any[]) => {
     setBilling((b: any) => b ? {
@@ -555,27 +537,6 @@ export default function ProjectDetailPage() {
         ? etapas.filter((e: any) => !e.invoiceId).reduce((s: number, e: any) => s + Number(e.amount || 0), 0)
         : b.stages.filter((e: any) => !e.invoiceId).reduce((s: number, e: any) => s + Number(e.amount || 0), 0),
     } : b);
-  };
-
-  const savePlan = async () => {
-    const limpio = planDraft.filter(e => e.name.trim());
-    if (limpio.length < 2) { toast.error('Define al menos dos etapas'); return; }
-    setSavingPlan(true);
-    try {
-      const res = await fetch(`/api/projects/${id}/stages`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stages: limpio.map(e => ({ id: e.id, name: e.name.trim(), amount: Number(e.amount) || 0 })) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'No se pudo guardar el plan');
-      // Se aplica ya con lo que devuelve el guardado: si se esperara al refresco, abrir
-      // el modal de facturar justo después todavía ofrecía requerimientos.
-      aplicarPlan(data.data || []);
-      toast.success('Etapas guardadas');
-      setShowStagesPanel(false);
-      fetchProject();
-    } catch (e: any) { toast.error(e.message); }
-    finally { setSavingPlan(false); }
   };
 
   /**
@@ -602,22 +563,6 @@ export default function ProjectDetailPage() {
       toast.success(aPublico ? 'El proyecto ahora es público' : 'El proyecto ahora es privado');
       fetchProject();
     } catch (e: any) { toast.error(e.message); }
-  };
-
-  const borrarPlan = async () => {
-    setSavingPlan(true);
-    try {
-      const res = await fetch(`/api/projects/${id}/stages`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stages: [] }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'No se pudo quitar el plan');
-      aplicarPlan([]);
-      toast.success('Plan de etapas eliminado — el proyecto vuelve a facturarse por requerimientos');
-      setShowStagesPanel(false);
-      fetchProject();
-    } catch (e: any) { toast.error(e.message); }
-    finally { setSavingPlan(false); }
   };
 
   const handleComplete = async (skipInvoice = false) => {
@@ -2234,7 +2179,7 @@ export default function ProjectDetailPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Pagos</h3>
                   {isAdmin && (
-                    <button onClick={openStagesPanel} title="Etapas de facturación" className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
+                    <button onClick={() => setShowStagesPanel(true)} title="Etapas de facturación" className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors" style={pf}>Editar</button>
                   )}
                 </div>
                 <div className="space-y-1 text-[12px]" style={mf}>
@@ -2387,67 +2332,17 @@ export default function ProjectDetailPage() {
         );
       })()}
 
-      {/* Panel: ETAPAS DE FACTURACIÓN. Formulario con lista → panel lateral derecho
-          (regla del sistema). La última etapa recoge el resto y no se escribe. */}
-      <EditPanel
+      {/* Panel: ETAPAS DE FACTURACIÓN — el mismo formulario que el del ticket. */}
+      <PanelEtapas
         open={showStagesPanel}
-        title="Etapas de facturación"
-        onClose={() => !savingPlan && setShowStagesPanel(false)}
-        onSave={savePlan}
-        saving={savingPlan}
-        canSave={planDraft.filter(e => e.name.trim()).length >= 2}
-        saveLabel="Guardar etapas"
-        danger={(billing?.etapas || []).length > 0 && !(billing?.etapas || []).some((e: any) => e.invoiceId)
-          ? { label: 'Quitar plan de etapas', onClick: borrarPlan } : undefined}
-      >
-        <EditField label="Total del proyecto" hint={
-          <>Es la base sobre la que se reparten las etapas: el costo final del proyecto y, mientras no
-          esté sincronizado, la suma de sus requerimientos. La última etapa siempre recoge lo que
-          quede para llegar a este total.</>
-        }>
-          <div className={`${EDIT_INPUT} flex items-center justify-between opacity-70`}>
-            <span>Base de reparto</span>
-            <span className="tabular-nums">${fmt2(planBase)}</span>
-          </div>
-        </EditField>
-
-        <div className="space-y-2">
-          {planDraft.map((e, i) => {
-            const esUltima = i === planDraft.length - 1;
-            const facturada = !!e.invoiceNumber;
-            return (
-              <div key={i} className="flex items-end gap-2">
-                <div className="flex-1 min-w-0">
-                  <label className="text-[11px] text-digi-muted mb-1 block" style={pf}>Etapa {i + 1}</label>
-                  <input value={e.name} disabled={facturada}
-                    onChange={ev => { const n = [...planDraft]; n[i] = { ...n[i], name: ev.target.value }; setPlanDraft(n); }}
-                    placeholder={`Etapa ${i + 1}`} className={EDIT_INPUT} />
-                </div>
-                <div className="w-28 shrink-0">
-                  <label className="text-[11px] text-digi-muted mb-1 block" style={pf}>
-                    {esUltima && !facturada ? 'Resto' : 'Importe'}
-                  </label>
-                  <input
-                    value={esUltima && !facturada ? String(planRestante) : e.amount}
-                    disabled={esUltima || facturada}
-                    onChange={ev => { const n = [...planDraft]; n[i] = { ...n[i], amount: ev.target.value }; setPlanDraft(n); }}
-                    type="number" min="0" step="0.01" placeholder="0.00"
-                    className={`${EDIT_INPUT} tabular-nums ${esUltima || facturada ? 'opacity-60' : ''}`} />
-                </div>
-                <BotonQuitar disabled={facturada || planDraft.length <= 2} className="mb-1"
-                  onClick={() => setPlanDraft(planDraft.filter((_, idx) => idx !== i))}
-                  etiqueta="Quitar etapa" title={facturada ? 'Ya facturada' : planDraft.length <= 2 ? 'Un plan necesita al menos dos etapas' : 'Quitar etapa'} />
-              </div>
-            );
-          })}
-          <button type="button"
-            onClick={() => setPlanDraft([...planDraft, { id: null, name: `Etapa ${planDraft.length + 1}`, amount: '', invoiceNumber: null }])}
-            className="inline-flex items-center gap-1 text-[12px] text-accent border border-accent/40 rounded px-2.5 py-1 hover:bg-accent-light transition-colors" style={pf}>
-            <Plus className="w-3.5 h-3.5" /> Añadir etapa
-          </button>
-        </div>
-
-      </EditPanel>
+        onClose={() => setShowStagesPanel(false)}
+        endpoint={`/api/projects/${id}/stages`}
+        base={Number(billing?.baseTotal || 0)}
+        etiquetaBase="Total del proyecto"
+        etapas={(billing?.etapas || []).map((e: any) => ({ id: e.id, name: e.name, amount: e.amount, invoiceNumber: e.invoiceNumber, cerrada: !!e.invoiceId }))}
+        onGuardado={(etapas) => { aplicarPlan(etapas); fetchProject(); }}
+        avisoQuitar="Plan de etapas eliminado — el proyecto vuelve a facturarse por requerimientos"
+      />
 
       {/* Panel: Imágenes del proyecto (se abre desde el header) */}
       <PixelModal open={showImagesModal} onClose={() => setShowImagesModal(false)} title={`Imágenes del proyecto (${projectImages.length}/30)`} size="md">

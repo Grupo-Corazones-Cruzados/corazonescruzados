@@ -34,7 +34,8 @@ function Contenido() {
   const consulta =
     tipo === 'product' ? `producto_id=${encodeURIComponent(id)}`
     : tipo === 'subscription' ? `sub_id=${encodeURIComponent(id)}&periodo=${encodeURIComponent(periodo)}`
-    : tipo === 'ticket' ? `ticket_id=${encodeURIComponent(id)}`
+    // Un ticket puede cobrarse por ETAPA desde el 2026-09-30.
+    : tipo === 'ticket' ? `ticket_id=${encodeURIComponent(id)}${etapa ? `&stage_id=${encodeURIComponent(etapa)}` : ''}`
     : `project_id=${encodeURIComponent(id)}&stage_id=${encodeURIComponent(etapa || '')}`;
 
   return (

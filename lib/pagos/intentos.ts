@@ -20,7 +20,7 @@
  *    comprobante del mismo cobro — y ese sí hay que anularlo con nota de crédito.
  */
 import { pool } from '@/lib/db';
-import { getProjectBilling, getTicketPayments } from '@/lib/payments';
+import { getProjectBilling, getTicketBilling } from '@/lib/payments';
 import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
@@ -252,51 +252,58 @@ export async function cotizarProyectoSinEtapas(
 }
 
 /**
- * Qué cuesta cobrar un TICKET por esta pasarela.
+ * Qué cuesta cobrar un TICKET — una ETAPA de su plan o TODO LO PENDIENTE (Fernando, 2026-09-30).
  *
- * ⚠️ Un ticket no tiene etapas: se cobra **el saldo que le queda por facturar**, entero y
- * una sola vez. El «abono parcial» sigue existiendo por el canal manual, donde lo controla
- * una persona; abrirlo a la pasarela obligaría a renunciar al candado que impide cobrarle
- * dos veces a quien hace doble clic (ver migración 054).
- *
- * Y se exige que esté **completado**: cobrarle a un cliente por un trabajo que todavía no
- * se entregó es justo lo que la facturación por etapas evita en los proyectos.
+ * ⚠️ Cambió de raíz:
+ *  · El total es LO CONSUMIDO (sus registros de trabajo), no el costo estimado.
+ *  · Se puede cobrar en cuanto HAY CONSUMO, aunque el ticket siga en curso: «pagar según lo
+ *    consumido hasta la fecha». Antes había que completarlo.
+ *  · Sin etapa se cobra todo lo pendiente, y puede hacerse VARIAS VECES a lo largo del ticket
+ *    (el consumo sigue creciendo). Lo que impide cobrar dos veces el mismo saldo es que
+ *    «pendiente» descuenta también lo ya cobrado que aún no tiene factura (`getTicketBilling`).
+ *  · Con etapa se cobra esa etapa; el candado «una etapa se paga una vez» es el de siempre.
+ * El «abono parcial» sigue existiendo por el canal manual.
  */
 export async function cotizarTicket(
   ticketId: string | number,
   proveedor: string,
+  stageId: number | null = null,
 ): Promise<Cobrable> {
-  const { rows: [t] } = await pool.query(
-    `SELECT id, title, status, estimated_cost FROM gcc_world.tickets WHERE id = $1`,
-    [ticketId],
-  );
-  if (!t) throw new Error('El ticket no existe.');
-  if (t.status !== 'completed') {
-    throw new Error('Este ticket todavía no está completado, así que no se puede cobrar.');
+  const billing = await getTicketBilling(ticketId);
+  if (!billing) throw new Error('El ticket no existe.');
+  if (billing.status === 'cancelled') throw new Error('Este ticket está cancelado. Escríbenos antes de pagar.');
+
+  if (stageId != null) {
+    const etapa = billing.etapas.find((e) => e.id === Number(stageId));
+    if (!etapa) throw new Error('La etapa no pertenece a este ticket.');
+    if (etapa.invoiceId) throw new Error(`La etapa «${etapa.name}» ya está facturada (${etapa.invoiceNumber}).`);
+    const enCurso = await cobroPagadoDeEtapa(etapa.id);
+    if (enCurso?.status === 'awaiting') throw new Error(`La etapa «${etapa.name}» ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.`);
+    if (enCurso?.status === 'paid') throw new Error(`La etapa «${etapa.name}» ya está pagada.`);
+    if (!(etapa.amount > 0)) throw new Error(`La etapa «${etapa.name}» no tiene importe todavía.`);
+    const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaDe(proveedor));
+    return {
+      importes: importesPorMetodo(neto, proveedor),
+      sourceType: 'ticket', sourceId: String(billing.ticketId), title: billing.title,
+      stageId: etapa.id, conceptName: etapa.name,
+      neto, recargo, total, proveedor,
+    };
   }
 
-  const pagos = await getTicketPayments(ticketId);
-  if (!(pagos.pending > 0)) {
-    throw new Error(pagos.invoiced > 0
-      ? 'Este ticket ya está facturado por completo.'
-      : 'Este ticket no tiene importe por cobrar.');
+  // Todo lo pendiente. Una transferencia del total esperando confirmación ocupa el sitio: si
+  // no, quien ya subió su comprobante acabaría pagando dos veces mientras alguien lo revisa.
+  const enEspera = await cobroPagadoDeOrigen('ticket', String(billing.ticketId));
+  if (enEspera?.status === 'awaiting') {
+    throw new Error('Este ticket ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.');
   }
-
-  const yaPagado = await cobroPagadoDeOrigen('ticket', String(ticketId));
-  if (yaPagado) {
-    throw new Error(yaPagado.status === 'awaiting'
-      ? 'Este ticket ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.'
-      : 'Este ticket ya fue pagado en línea.');
+  if (!(billing.pending > 0)) {
+    throw new Error(billing.total > 0 ? 'Este ticket no tiene nada pendiente de pago.' : 'Este ticket todavía no tiene consumo que cobrar.');
   }
-
-  const { neto, recargo, total } = calcularRecargo(pagos.pending, tarifaDe(proveedor));
+  const { neto, recargo, total } = calcularRecargo(billing.pending, tarifaDe(proveedor));
   return {
     importes: importesPorMetodo(neto, proveedor),
-    sourceType: 'ticket',
-    sourceId: String(t.id),
-    title: t.title,
-    stageId: null,
-    conceptName: t.title,
+    sourceType: 'ticket', sourceId: String(billing.ticketId), title: billing.title,
+    stageId: null, conceptName: billing.title,
     neto, recargo, total, proveedor,
   };
 }
@@ -457,7 +464,7 @@ export async function cotizarCobro(
     const { itemId, userId } = partesAltaProducto(destino.sourceId);
     return cotizarProducto(itemId, userId, proveedor);
   }
-  if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor);
+  if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor, destino.stageId);
   // Sin etapa ya no es un error: es un proyecto sin plan, y se cobra entero de una vez.
   if (destino.stageId == null) return cotizarProyectoSinEtapas(destino.sourceId, proveedor);
   return cotizarEtapa(destino.sourceId, destino.stageId, proveedor);
@@ -484,11 +491,15 @@ export async function cobroPagadoDe(
 export async function cobroPagadoDeOrigen(
   sourceType: string, sourceId: string,
 ): Promise<{ id: number; invoice_id: number | null; status: string } | null> {
+  // ⚠️ En un TICKET el total se cobra varias veces (lo consumido sigue creciendo, 2026-09-30):
+  // un cobro ya pagado NO significa «ya está pagado» —se descuenta de lo pendiente—. Lo único
+  // que ocupa el sitio es una transferencia esperando confirmación.
+  const estados = sourceType === 'ticket' ? ['awaiting'] : ['paid', 'awaiting'];
   const { rows } = await pool.query(
     `SELECT id, invoice_id, status FROM gcc_world.payment_intents
       WHERE source_type = $1 AND source_id = $2 AND stage_id IS NULL
-        AND status IN ('paid','awaiting') LIMIT 1`,
-    [sourceType, sourceId],
+        AND status = ANY($3::text[]) LIMIT 1`,
+    [sourceType, sourceId, estados],
   );
   return rows[0] || null;
 }
@@ -837,6 +848,11 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     const { rows: [t] } = await pool.query(`SELECT title FROM gcc_world.tickets WHERE id = $1`, [sourceId]);
     titulo = t?.title || `Ticket ${sourceId}`;
     nombreEtapa = titulo;
+    // Una ETAPA del plan del ticket (2026-09-30): la línea lleva su nombre.
+    if (stageId != null) {
+      const { rows: [e] } = await pool.query(`SELECT name FROM gcc_world.project_stages WHERE id = $1 AND ticket_id = ($2)::bigint`, [stageId, sourceId]);
+      nombreEtapa = e?.name || `Etapa ${stageId}`;
+    }
   } else {
     const billing = await getProjectBilling(sourceId);
     titulo = billing?.title || 'Proyecto';
@@ -878,7 +894,7 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
       }))
     : [
       {
-        description: esSuscripcion ? nombreEtapa : esTicket ? titulo : `${titulo} — ${nombreEtapa}`,
+        description: esSuscripcion ? nombreEtapa : esTicket ? (stageId != null ? `${titulo} — ${nombreEtapa}` : titulo) : `${titulo} — ${nombreEtapa}`,
         quantity: 1,
         unitPrice: esSuscripcion ? baseSuscripcion : neto,
         ivaRate: esSuscripcion ? ivaSuscripcion : 0,
@@ -960,6 +976,35 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     `UPDATE gcc_world.payment_intents SET invoice_id = $1, updated_at = NOW() WHERE id = $2`,
     [invoiceId, intento.id],
   );
+
+  // ⇒ LAS ETAPAS DEL TICKET QUEDAN FACTURADAS (2026-09-30), con su importe CONGELADO: la última
+  // no guarda importe mientras está abierta (es el resto de lo consumido), así que al cobrarse
+  // se escribe lo que se cobró. Sin esto la etapa seguiría «pendiente» y se podría cobrar otra vez.
+  //  · Cobro de una etapa → esa etapa, por lo cobrado sin recargo.
+  //  · Cobro de TODO lo pendiente → todas las etapas abiertas, cada una por su importe de ese
+  //    momento (el de la última, calculado como el resto).
+  if (esTicket) {
+    try {
+      if (stageId != null) {
+        await pool.query(
+          `UPDATE gcc_world.project_stages SET invoice_id = $1, amount = $2, updated_at = NOW()
+            WHERE id = $3 AND ticket_id = ($4)::bigint`,
+          [invoiceId, neto.toFixed(2), stageId, sourceId],
+        );
+      } else {
+        const tb = await getTicketBilling(sourceId);
+        for (const e of (tb?.etapas || []).filter((x) => !x.invoiceId && !x.cobro)) {
+          await pool.query(
+            `UPDATE gcc_world.project_stages SET invoice_id = $1, amount = $2, updated_at = NOW()
+              WHERE id = $3 AND ticket_id = ($4)::bigint`,
+            [invoiceId, e.amount.toFixed(2), e.id, sourceId],
+          );
+        }
+      }
+    } catch (e: any) {
+      console.error('[pagos] cobro', intento.id, 'no pudo marcar las etapas del ticket:', e.message);
+    }
+  }
 
   // Enlaza la factura con el cliente del proyecto y guarda su cuenta de facturación, igual
   // que hace el canal manual. Una cuenta por cliente: Fernando lo confirmó el 2026-08-25.

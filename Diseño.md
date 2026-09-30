@@ -3913,6 +3913,14 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-30 · El panel de etapas vivía dentro del detalle del proyecto** · **EXTRAÍDO a
+  `components/facturacion/PanelEtapas.tsx`** al llevarlo al ticket (regla «equivalente no es
+  igual»). Una definición para los dos: `EditPanel` «Etapas de facturación», base de reparto de
+  solo lectura, filas nombre + importe + `BotonQuitar`, la última dice «Resto» y no se escribe,
+  «Añadir etapa» y «Quitar plan de etapas» como `danger`. Se fue la nota de ayuda del campo base.
+  La tarjeta Pagos del ticket copia la del proyecto: «Editar» junto al título, filas de etapa con
+  estado en `text-[9px]` (pendiente ámbar / facturada o pagada verde / en revisión gris) e icono
+  `Share2` por etapa abierta; bloqueado con el motivo en `title` si la etapa aún vale 0.
 - **2026-09-30 · Registro de trabajo del ticket en dos partes + reloj** · por decisión de
   Fernando. Mismo patrón que los requerimientos del proyecto: lista (título en una línea,
   tiempo y costo debajo, punto rojo pulsante si el reloj corre) y a la derecha el elegido: título

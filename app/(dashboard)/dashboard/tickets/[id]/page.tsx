@@ -25,6 +25,7 @@ import ClientPicker from '@/components/clients/ClientPicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import PanelEtapas from '@/components/facturacion/PanelEtapas';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -62,6 +63,11 @@ export default function TicketDetailPage() {
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
+  // COBRO DEL TICKET (2026-09-30): lo consumido, lo facturado, lo cobrado y el plan de etapas.
+  const [billing, setBilling] = useState<any>(null);
+  const [etapasAbierto, setEtapasAbierto] = useState(false);
+  // Enlace de pago: de una etapa (su id) o de todo lo pendiente (null).
+  const [enlaceEtapa, setEnlaceEtapa] = useState<number | null>(null);
   const [linkAbierto, setLinkAbierto] = useState(false);
   // Alto de las tres columnas del detalle: hasta el pie de la pantalla, como en el proyecto.
   const altoColumnas = useAltoHastaElPie({ minimo: 520 });
@@ -136,19 +142,24 @@ export default function TicketDetailPage() {
   const [completeExchangeRate, setCompleteExchangeRate] = useState('1');
   const [currencies, setCurrencies] = useState<{ code: string; symbol: string; name: string; rate: number }[]>([]);
 
+  const cargarPagos = useCallback(() => {
+    fetch(`/api/tickets/${id}/payments`).then(r => r.json())
+      .then(d => { setPayments(d.data || null); setBilling(d.billing || null); }).catch(() => {});
+  }, [id]);
+
   const fetchTicket = useCallback(async () => {
     try {
       const res = await fetch(`/api/tickets/${id}`);
       if (!res.ok) throw new Error();
       const { data } = await res.json();
       setTicket(data);
-      fetch(`/api/tickets/${id}/payments`).then(r => r.json()).then(d => setPayments(d.data || null)).catch(() => {});
+      cargarPagos();
     } catch {
       toast.error('Error al cargar ticket');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, cargarPagos]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
@@ -279,10 +290,16 @@ export default function TicketDetailPage() {
 
   const buildItemsForMode = (mode: 'title' | 'breakdown') => {
     if (mode === 'title') {
+      // El total es LO CONSUMIDO (2026-09-30); con plan de etapas, lo que falta por cobrar de
+      // las etapas abiertas —las ya facturadas o cobradas no se vuelven a facturar—.
+      const abiertas = (billing?.etapas || []).filter((e: any) => !e.invoiceId && !e.cobro);
+      const importe = billing?.mode === 'etapas'
+        ? abiertas.reduce((s: number, e: any) => s + Number(e.amount || 0), 0)
+        : Number(billing?.total ?? ticket.estimated_cost) || 0;
       return [{
         description: ticket.title || `Ticket #${ticket.id}`,
         quantity: '1',
-        unitPrice: String(Number(ticket.estimated_cost) || 0),
+        unitPrice: String(Math.round(importe * 100) / 100),
         ivaRate: '0',
         discount: '0',
       }];
@@ -324,7 +341,9 @@ export default function TicketDetailPage() {
     setCompleteExchangeRate('1');
     setCompleteAdditionalFields([]);
     setCompleteSendEmail(true);
-    const defaultMode: 'title' | 'breakdown' = (ticket.actions || []).length > 0 ? 'breakdown' : 'title';
+    // Con parte del plan ya cobrada, el desglose por registros cobraría otra vez lo cobrado.
+    const planEmpezado = billing?.mode === 'etapas' && (billing.etapas || []).some((e: any) => e.invoiceId || e.cobro);
+    const defaultMode: 'title' | 'breakdown' = (ticket.actions || []).length > 0 && !planEmpezado ? 'breakdown' : 'title';
     setItemsMode(defaultMode);
     setCompleteItems(buildItemsForMode(defaultMode));
     setAbonoMode(false);
@@ -535,8 +554,11 @@ export default function TicketDetailPage() {
   const esClienteDelTicket = user?.role === 'client';
 
   // ENLACE DE PAGO del ticket (canal 3). Gemelo del de proyectos y con la misma lógica
-  // detrás (`lib/pagos/enlaces.ts`); aquí no hay etapa que elegir: se cobra entero.
-  const abrirEnlacePagoTicket = () => setLinkAbierto(true);
+  // detrás (`lib/pagos/enlaces.ts`): el de la cabecera cobra TODO lo pendiente; el icono de
+  // cada etapa, solo esa etapa.
+  const abrirEnlacePagoTicket = (etapa: number | null = null) => { setEnlaceEtapa(etapa); setLinkAbierto(true); };
+  const pendienteTicket = Number(billing?.pending || 0);
+  const conPlan = billing?.mode === 'etapas';
 
   const isMember = user?.role === 'member';
   const canEdit = isAdmin || isMember;
@@ -692,8 +714,10 @@ export default function TicketDetailPage() {
             )}
             {/* El enlace de pago, a la izquierda de «Completar y facturar» —las dos formas de
                 cobrar van juntas—. Estaba al pie de la tarjeta de Pagos. */}
-            {!esClienteDelTicket && ticket.status === 'completed' && Number(payments?.pending || 0) > 0 && (
-              <button onClick={abrirEnlacePagoTicket} className={BTN_ICONO_ACENTO} title="Compartir enlace de pago" aria-label="Compartir enlace de pago"><Share2 className="w-4 h-4" /></button>
+            {/* Cobra TODO lo pendiente de lo consumido; se puede en cuanto hay consumo
+                (Fernando, 2026-09-30), no solo al completar. */}
+            {!esClienteDelTicket && ticket.status !== 'cancelled' && pendienteTicket > 0 && (
+              <button onClick={() => abrirEnlacePagoTicket(null)} className={BTN_ICONO_ACENTO} title="Compartir enlace de pago de todo lo pendiente" aria-label="Compartir enlace de pago de todo lo pendiente"><Share2 className="w-4 h-4" /></button>
             )}
             {canCompleteTicket && (
               <button onClick={openCompleteModal} className={BTN_ICONO_PRIMARIO} title="Completar y facturar" aria-label="Completar y facturar"><Receipt className="w-4 h-4" /></button>
@@ -951,17 +975,29 @@ export default function TicketDetailPage() {
             ]}
           >
             <CobrosEnEspera tipo="ticket" id={String(id)} alConfirmar={() => {
-              fetch(`/api/tickets/${id}/payments`).then(r => r.json()).then(d => setPayments(d.data || null)).catch(() => {});
+              cargarPagos();
             }} />
 
-            {payments && (Number(payments.total) > 0 || (payments.invoices || []).length > 0) && (() => {
+            {billing && payments && (Number(billing.total) > 0 || (payments.invoices || []).length > 0) && (() => {
+              const etapas: any[] = billing.etapas || [];
               return (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
-                  <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-2" style={pf}>Pagos</h3>
+                  {/* «Editar» a la altura del título, como en el proyecto: la puerta al plan de etapas. */}
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Pagos</h3>
+                    {isAdmin && (
+                      <button onClick={() => setEtapasAbierto(true)} disabled={ticket.status === 'cancelled' || Number(billing.total) <= 0}
+                        title={ticket.status === 'cancelled' ? 'El ticket está cancelado' : Number(billing.total) <= 0 ? 'Aún no hay consumo que repartir' : 'Etapas de facturación'}
+                        className="destino-tactil text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={pf}>Editar</button>
+                    )}
+                  </div>
                   <div className="space-y-1 text-[12px]" style={mf}>
-                    <div className="flex justify-between"><span className="text-digi-muted">Total</span><span className="text-digi-text tabular-nums">${fmt2(payments.total)}</span></div>
-                    <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(payments.invoiced)}</span></div>
-                    <div className="flex justify-between"><span className="text-digi-muted">Pendiente</span><span className={`tabular-nums ${payments.pending > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(payments.pending)}</span></div>
+                    <div className="flex justify-between"><span className="text-digi-muted">Consumido</span><span className="text-digi-text tabular-nums">${fmt2(billing.total)}</span></div>
+                    <div className="flex justify-between"><span className="text-digi-muted">Facturado</span><span className="text-green-600 tabular-nums">${fmt2(billing.invoiced)}</span></div>
+                    {Number(billing.cobradoSinFactura) > 0 && (
+                      <div className="flex justify-between"><span className="text-digi-muted">Cobrado sin factura</span><span className="text-digi-text tabular-nums">${fmt2(billing.cobradoSinFactura)}</span></div>
+                    )}
+                    <div className="flex justify-between"><span className="text-digi-muted">Pendiente</span><span className={`tabular-nums ${pendienteTicket > 0 ? 'text-amber-600' : 'text-digi-text'}`}>${fmt2(pendienteTicket)}</span></div>
                   </div>
                   {/* Sin barra de «% facturado» (Fernando, 2026-09-29), como en el proyecto. */}
                   {(payments.invoices || []).length > 0 && (
@@ -978,16 +1014,54 @@ export default function TicketDetailPage() {
                     </div>
                   )}
 
-                  {/* COBRO EN LÍNEA. Solo con saldo pendiente y el ticket completado: cobrar
-                      por un trabajo sin entregar es justo lo que evita facturar por etapas. */}
-                  {/* El cliente paga desde aquí; el enlace de pago del equipo está en la cabecera. */}
-                  {Number(payments.pending) > 0 && ticket?.status === 'completed' && esClienteDelTicket && (
+                  {/* ETAPAS: reparten lo consumido; la última recoge el resto. Sin plan, la
+                      sección no se pinta (se crea desde «Editar»). */}
+                  {etapas.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-digi-border">
+                      <span className="block text-[11px] text-digi-muted mb-1" style={pf}>Etapas de facturación</span>
+                      {etapas.map((e: any) => {
+                        const cerrada = !!e.invoiceId || !!e.cobro;
+                        const cobrable = !cerrada && Number(e.amount) > 0 && ticket.status !== 'cancelled';
+                        return (
+                          <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                            <span className="min-w-0 truncate text-digi-text">{e.name}</span>
+                            <span className="flex items-center gap-1.5 shrink-0">
+                              <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
+                              {e.invoiceId
+                                ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>{esClienteDelTicket ? 'pagada' : 'facturada'}</span>
+                                : e.cobro === 'awaiting'
+                                  ? <span className="text-[9px] text-digi-muted">en revisión</span>
+                                  : e.cobro === 'paid'
+                                    ? <span className="text-[9px] text-green-600">pagada</span>
+                                    : <span className="text-[9px] text-amber-600">pendiente</span>}
+                              {!esClienteDelTicket && !cerrada && (
+                                <button onClick={() => abrirEnlacePagoTicket(Number(e.id))} disabled={!cobrable}
+                                  title={cobrable ? 'Compartir enlace de pago de esta etapa' : 'La etapa aún no tiene importe'}
+                                  className="destino-tactil text-accent hover:opacity-70 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed">
+                                  <Share2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {esClienteDelTicket && cobrable && (
+                                <button onClick={() => router.push(`/pagar/cobro?tipo=ticket&id=${id}&etapa=${e.id}`)}
+                                  className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">
+                                  Pagar
+                                </button>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* El cliente paga TODO lo pendiente desde aquí; el enlace del equipo está en la cabecera. */}
+                  {pendienteTicket > 0 && ticket.status !== 'cancelled' && esClienteDelTicket && (
                     <div className="mt-2 pt-2 border-t border-digi-border">
                       <button
                         onClick={() => router.push(`/pagar/cobro?tipo=ticket&id=${id}`)}
                         className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-2 text-[12px] font-semibold text-white hover:opacity-90 transition-opacity"
                         style={pf}>
-                        <Lock className="w-3.5 h-3.5" /> Pagar ${fmt2(payments.pending)}
+                        <Lock className="w-3.5 h-3.5" /> Pagar pendiente ${fmt2(pendienteTicket)}
                       </button>
                     </div>
                   )}
@@ -1004,8 +1078,22 @@ export default function TicketDetailPage() {
         open={linkAbierto} onClose={() => setLinkAbierto(false)}
         titulo="Compartir enlace de pago" que="este ticket"
         endpoint={`/api/tickets/${id}/payment-link`}
+        cuerpo={enlaceEtapa ? { stage_id: enlaceEtapa } : undefined}
         correoInicial={ticket?.client_email || ''}
-        importe={Number(payments?.pending || 0)} etiquetaImporte="Saldo pendiente"
+        importe={enlaceEtapa ? Number((billing?.etapas || []).find((e: any) => Number(e.id) === enlaceEtapa)?.amount || 0) : pendienteTicket}
+        etiquetaImporte={enlaceEtapa ? `Etapa «${(billing?.etapas || []).find((e: any) => Number(e.id) === enlaceEtapa)?.name || ''}»` : 'Todo lo pendiente'}
+      />
+
+      {/* ETAPAS DE FACTURACIÓN del ticket: el mismo panel que el del proyecto. Reparte lo consumido. */}
+      <PanelEtapas
+        open={etapasAbierto}
+        onClose={() => setEtapasAbierto(false)}
+        endpoint={`/api/tickets/${id}/stages`}
+        base={Number(billing?.total || 0)}
+        etiquetaBase="Consumido hasta hoy"
+        etapas={(billing?.etapas || []).map((e: any) => ({ id: e.id, name: e.name, amount: e.amount, invoiceNumber: e.invoiceNumber, cerrada: !!e.invoiceId || !!e.cobro }))}
+        onGuardado={() => cargarPagos()}
+        avisoQuitar="Plan de etapas eliminado — el ticket vuelve a cobrarse por su total"
       />
 
       {/* ========== Modal de edición del ticket (overlay centrado) ========== */}
@@ -1087,9 +1175,12 @@ export default function TicketDetailPage() {
                     valor={abonoMode ? 'abono' : 'total'}
                     onChange={(v) => { if (v === 'abono') { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); } else setAbonoMode(false); }}
                     opciones={[
-                      { valor: 'total', texto: 'Factura total', detalle: `$${fmt2(payments.total)}`, deshabilitada: hasInvoiced,
+                      // Con plan, «Factura total» factura las etapas que quedan abiertas; el abono se
+                      // cruzaría con ellas y cobraría dos veces lo mismo.
+                      { valor: 'total', texto: 'Factura total', detalle: `$${fmt2(conPlan ? pendienteTicket : payments.total)}`, deshabilitada: hasInvoiced && !conPlan,
                         porque: 'Ya hay una factura: lo que queda se cobra como abono' },
-                      { valor: 'abono', texto: 'Abono parcial', detalle: `pendiente $${fmt2(payments.pending)}` },
+                      { valor: 'abono', texto: 'Abono parcial', detalle: `pendiente $${fmt2(payments.pending)}`, deshabilitada: conPlan,
+                        porque: 'El ticket se cobra por etapas' },
                     ]}
                   />
                   {abonoMode && (

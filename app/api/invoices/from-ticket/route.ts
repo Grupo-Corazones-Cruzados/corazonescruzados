@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient, cuentaFacturable, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
-import { getTicketPayments } from '@/lib/payments';
+import { getTicketPayments , getTicketBilling } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -93,6 +93,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Asigna un cliente al ticket antes de facturar.' }, { status: 400 });
     }
 
+    // ⇒ CON PLAN DE ETAPAS NO HAY ABONO (2026-09-30): un abono de importe libre no sabe a qué
+    // etapa descontarse, y la etapa seguiría cobrable por entero —se cobraría dos veces—.
+    const planTicket = await getTicketBilling(ticket_id);
+    if (is_abono && planTicket?.mode === 'etapas') {
+      return NextResponse.json({ error: 'Este ticket tiene plan de etapas: se cobra por etapas, no por abono.' }, { status: 400 });
+    }
+
     // Normalize editable items array sent from the modal
     const invoice_items = Array.isArray(rawItems)
       ? rawItems
@@ -144,6 +151,20 @@ export async function POST(req: NextRequest) {
         email: client_email, phone: client_phone, address: client_address,
       });
     } catch (e: any) { console.error('[from-ticket] billing upsert error:', e.message); }
+
+    // La factura TOTAL cubre las etapas abiertas del plan: quedan facturadas con su importe de
+    // ahora (la última, como el resto). Sin esto se podrían volver a cobrar en línea (2026-09-30).
+    if (!is_abono && planTicket?.mode === 'etapas') {
+      try {
+        for (const e of planTicket.etapas.filter((x) => !x.invoiceId && !x.cobro)) {
+          await pool.query(
+            `UPDATE gcc_world.project_stages SET invoice_id = $1, amount = $2, updated_at = NOW()
+              WHERE id = $3 AND ticket_id = ($4)::bigint`,
+            [invoiceId, e.amount.toFixed(2), e.id, ticket_id],
+          );
+        }
+      } catch (e: any) { console.error('[from-ticket] no se pudieron marcar las etapas:', e.message); }
+    }
 
     // Sign and send to SRI
     const sriResult = await sendInvoiceToSri(invoiceId);

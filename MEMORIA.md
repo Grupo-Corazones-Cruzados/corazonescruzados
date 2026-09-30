@@ -6066,7 +6066,34 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
     proyecto, el modal trae solo lo que falte por facturar. **El modal relee la facturación del
     servidor al abrirse**: fiarse del estado de la pantalla hacía que, justo después de definir el
     plan, todavía ofreciera requerimientos. Se eliminó el modo «Abono parcial» del
-    modal de proyectos. **En tickets sigue existiendo el abono** — decidir con la contadora.
+    modal de proyectos. **En tickets sigue existiendo el abono**, salvo si el ticket tiene plan de etapas (2026-09-30).
+  - **ETAPAS Y ENLACE DE PAGO EN TICKETS (Fernando, 2026-09-30).** «Que esto del módulo de
+    proyectos también se pueda gestionar en tickets… pagar por etapas según lo consumido, o un
+    solo enlace para el pago total de los consumos.» Decisiones suyas:
+    - **El total del ticket es LO CONSUMIDO** (`SUM(ticket_actions.cost)`), no el costo estimado.
+      Lo leen `getTicketPayments` y `getTicketBilling` (`lib/payments.ts`); la factura total por
+      título también parte de ahí.
+    - **Se cobra en cuanto hay consumo**, no hace falta completar el ticket. Cabecera → icono
+      «Compartir enlace de pago de todo lo pendiente» (staff); el cliente ve «Pagar pendiente».
+    - **Plan de etapas**: tarjeta Pagos → «Editar» (solo admin) → el MISMO panel que el proyecto
+      (`components/facturacion/PanelEtapas.tsx`, extraído del proyecto). **La última etapa recoge
+      el resto** y NO guarda importe: se calcula al leer, porque el consumo sigue creciendo.
+      Cada etapa abierta tiene su icono de enlace (staff) o su «Pagar» (cliente).
+    - Las etapas viven en `project_stages` con `ticket_id` (migración **062**, aplicada): así
+      comparten el candado «una etapa se paga una vez» por id. Una fila es de proyecto O de ticket.
+    - **El total de un ticket se cobra varias veces** (su saldo crece): la 062 sacó los tickets
+      del índice «un cobro por origen» y puso «como mucho UNA transferencia en espera». Lo que
+      evita cobrar dos veces lo mismo es que **pendiente = consumido − facturado − cobrado aún sin
+      factura** (`cobradoSinFactura`).
+    - Una etapa **facturada O con cobro** (aunque sea transferencia en espera) queda cerrada: ni se
+      borra ni cambia de importe. **Con plan no hay abono** (la API lo rechaza y el modal lo
+      bloquea): se cruzaría con las etapas y cobraría dos veces. «Factura total» con plan factura
+      las etapas abiertas y las marca.
+    - Prueba: `npm run pagos:prueba-bd` ya espera la regla nueva (segundo cobro de ticket sí,
+      segundo de proyecto sin etapa no).
+    - ⚠️ **Pendiente:** `GET /api/tickets/[id]` y `/payments` solo comprueban que haya sesión;
+      un cliente podría leer un ticket ajeno por id. Ya estaba así antes (ver «Hay sesión no es
+      tuyo»); no se tocó en este cambio.
   - **Histórico:** la migración `047_facturacion_por_etapas.sql` enlazó las etapas de los
     proyectos cuya facturación anterior ya cubría el total (≥99%), para que no se ofrezcan otra
     vez. Los que quedaron facturados a medias muestran un aviso en ámbar («ya tiene $X

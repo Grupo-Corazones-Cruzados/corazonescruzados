@@ -33,7 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const enlace = await crearEnlaceDePago({
       sourceType: 'ticket',
       sourceId: String(id),
-      stageId: null,
+      // Una ETAPA del plan, o nada = todo lo pendiente (2026-09-30).
+      stageId: Number(cuerpo.stage_id) || null,
       email: cuerpo.email,
       horas: Number(cuerpo.horas),
       enviar: cuerpo.enviar !== false,
