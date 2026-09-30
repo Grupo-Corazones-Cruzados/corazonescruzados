@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MoreVertical } from 'lucide-react';
+import { Check, MoreVertical } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export interface ActionItem {
   label: string;
+  /** Marca la opción vigente (✓ a la derecha), para usar el menú como SELECTOR. */
+  activo?: boolean;
   icon?: any;
   onClick: () => void;
   danger?: boolean;
@@ -26,8 +28,13 @@ export interface ActionItem {
  *     propio (los requerimientos de un proyecto), un menú `absolute` queda RECORTADO por el
  *     `overflow` en la última fila. Por eso se cierra al desplazar o redimensionar — fijo,
  *     se quedaría flotando lejos de su fila.
+ *
+ * `disparador` (2026-09-30): sustituye el ⋮ por otro contenido —el selector de estado del
+ * ticket enseña su insignia con un chevron—. El menú y su comportamiento son los mismos.
  */
-export default function ActionsMenu({ items, label = 'Acciones', lado = 'abajo' }: { items: ActionItem[]; label?: string; lado?: 'abajo' | 'izquierda' }) {
+export default function ActionsMenu({ items, label = 'Acciones', lado = 'abajo', disparador }: {
+  items: ActionItem[]; label?: string; lado?: 'abajo' | 'izquierda'; disparador?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
@@ -64,13 +71,15 @@ export default function ActionsMenu({ items, label = 'Acciones', lado = 'abajo' 
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors"
+        className={disparador
+          ? 'inline-flex items-center gap-1 rounded-md hover:bg-black/[0.05] transition-colors'
+          : 'w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.05] transition-colors'}
       >
-        <MoreVertical className="w-4 h-4" />
+        {disparador ?? <MoreVertical className="w-4 h-4" />}
       </button>
       {open && (
         <div role="menu"
-          className={`${lado === 'izquierda' ? 'fixed z-[60]' : 'absolute right-0 top-9 z-30'} min-w-[190px] bg-digi-card border border-digi-border rounded-lg shadow-lg py-1`}
+          className={`${lado === 'izquierda' ? 'fixed z-[60]' : disparador ? 'absolute left-0 top-full mt-1 z-30' : 'absolute right-0 top-9 z-30'} min-w-[190px] bg-digi-card border border-digi-border rounded-lg shadow-lg py-1`}
           style={lado === 'izquierda' && pos ? { top: pos.top, right: pos.right } : undefined}>
           {items.map((it, i) => (
             <button
@@ -85,7 +94,8 @@ export default function ActionsMenu({ items, label = 'Acciones', lado = 'abajo' 
               style={mf}
             >
               {it.icon && <it.icon className="w-4 h-4 shrink-0" />}
-              <span className="truncate">{it.label}</span>
+              <span className="truncate flex-1">{it.label}</span>
+              {it.activo && <Check className="w-3.5 h-3.5 shrink-0 text-accent" />}
             </button>
           ))}
         </div>

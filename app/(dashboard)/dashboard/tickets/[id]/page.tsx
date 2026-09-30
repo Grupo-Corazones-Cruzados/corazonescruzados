@@ -19,7 +19,7 @@ import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
@@ -27,6 +27,7 @@ import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelEtapas from '@/components/facturacion/PanelEtapas';
 import PestanasRail from '@/components/ui/PestanasRail';
+import ActionsMenu from '@/components/centralized/ActionsMenu';
 import IncidentsTab from '@/components/projects/IncidentsTab';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -69,6 +70,7 @@ export default function TicketDetailPage() {
   const [billing, setBilling] = useState<any>(null);
   const [etapasAbierto, setEtapasAbierto] = useState(false);
   const [rightTab, setRightTab] = useState<'propiedades' | 'incidentes'>('propiedades');
+  const [confirmarCancelar, setConfirmarCancelar] = useState(false);
   // Enlace de pago: de una etapa (su id) o de todo lo pendiente (null).
   const [enlaceEtapa, setEnlaceEtapa] = useState<number | null>(null);
   const [linkAbierto, setLinkAbierto] = useState(false);
@@ -210,14 +212,16 @@ export default function TicketDetailPage() {
 
   const updateStatus = async (status: string) => {
     try {
-      await fetch(`/api/tickets/${id}`, {
+      const res = await fetch(`/api/tickets/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'No se pudo cambiar el estado');
       toast.success('Estado actualizado');
       fetchTicket();
-    } catch { toast.error('Error'); }
+    } catch (e: any) { toast.error(e.message || 'Error'); }
   };
 
   const startEdit = async () => {
@@ -582,6 +586,9 @@ export default function TicketDetailPage() {
   const showActions = !isPending && ticket.status !== 'withdrawn';
   // Propuestas (tickets abiertos a propuestas).
   const isOpen = !!ticket.open_for_proposals;
+  // El selector de estado aparece cuando el ticket ya NO está abierto a propuestas (Fernando,
+  // 2026-09-30); nunca al cliente ni en una solicitud que aún hay que aceptar.
+  const puedeElegirEstado = canEdit && !isOpen && !isRequestForMe;
   const isOwner = !!ticket.user_id && String(ticket.user_id) === String(user?.id);
   const myBid = bids.find((b: any) => b.member_id === user?.member_id);
   const canBid = isOpen && !isOwner && !!user?.member_id;
@@ -701,7 +708,26 @@ export default function TicketDetailPage() {
       <DetailHeader
         breadcrumb={{ label: 'Tickets', href: '/dashboard/tickets' }}
         title={ticket.title || `Ticket #${ticket.id}`}
-        status={<PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge>}
+        status={puedeElegirEstado ? (
+          /* SELECTOR DE ESTADO (Fernando, 2026-09-30): una vez el ticket deja de estar abierto a
+             propuestas, la insignia abre el menú Pendiente / Completado / Cancelado. «Completado»
+             pasa por «Completar y facturar» para no saltarse el cobro; «Cancelado» pide confirmación. */
+          <ActionsMenu label="Cambiar estado" disparador={(
+            <span className="inline-flex items-center gap-0.5">
+              <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge>
+              <ChevronDown className="w-3.5 h-3.5 text-digi-muted" />
+            </span>
+          )} items={[
+            { label: 'Pendiente', activo: ticket.status === 'pending', disabled: ticket.status === 'pending',
+              onClick: () => updateStatus('pending') },
+            { label: 'Completado', activo: ticket.status === 'completed', disabled: ticket.status === 'completed' || !isAdmin,
+              hint: !isAdmin ? 'Solo un administrador puede completar y facturar' : undefined,
+              onClick: openCompleteModal },
+            { label: 'Cancelado', activo: ticket.status === 'cancelled', disabled: ticket.status === 'cancelled' || !isAdmin, danger: true,
+              hint: !isAdmin ? 'Solo un administrador puede cancelar un ticket' : undefined,
+              onClick: () => setConfirmarCancelar(true) },
+          ]} />
+        ) : <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge>}
         chips={(
           <>
             {ticket.client_name && <HeaderChip>{ticket.client_name}</HeaderChip>}
@@ -729,7 +755,8 @@ export default function TicketDetailPage() {
           </>
         )}
         overflow={[
-          ...(isAdmin && ticket.status !== 'cancelled' ? [{ label: 'Cancelar ticket', onClick: () => updateStatus('cancelled'), danger: true }] : []),
+          // Con el selector de estado a la vista, cancelar se hace desde él.
+          ...(isAdmin && ticket.status !== 'cancelled' && !puedeElegirEstado ? [{ label: 'Cancelar ticket', onClick: () => setConfirmarCancelar(true), danger: true }] : []),
           ...(isAdmin ? [{ label: 'Eliminar ticket', onClick: () => setDeleteModal(true), danger: true }] : []),
         ]}
       />
@@ -1336,6 +1363,16 @@ export default function TicketDetailPage() {
       </PixelModal>
 
       {/* Eliminar: la confirmación estándar, la misma del proyecto. */}
+      <PixelConfirm
+        open={confirmarCancelar}
+        title="Cancelar ticket"
+        message="El ticket pasará a Cancelado y dejará de poder cobrarse. Las facturas ya emitidas siguen siendo válidas."
+        confirmLabel="Sí, cancelar"
+        danger
+        onConfirm={() => { setConfirmarCancelar(false); updateStatus('cancelled'); }}
+        onCancel={() => setConfirmarCancelar(false)}
+      />
+
       <PixelConfirm
         open={deleteModal}
         title="Eliminar ticket"

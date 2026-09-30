@@ -3913,6 +3913,12 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-09-30 · Selector de estado del ticket** · **ADOPTADO**: la insignia de estado de la
+  cabecera + `ChevronDown` abre un menú Pendiente / Completado / Cancelado (la opción vigente con ✓
+  y bloqueada). No es un control nuevo: es `ActionsMenu` con la prop `disparador` (sustituye el ⋮;
+  el menú cae alineado a la izquierda) y `activo` por opción. Una opción que el usuario no puede
+  usar se ve bloqueada con el motivo en `title`. Las acciones con consecuencias no cambian el
+  estado a pelo: «Completado» abre «Completar y facturar» y «Cancelado» pide `PixelConfirm`.
 - **2026-09-30 · Pestañas «Propiedades / Incidentes» escritas dentro del proyecto** · **EXTRAÍDAS a
   `components/ui/PestanasRail.tsx`** al llevarlas al ticket. Tarjeta `bg-digi-card border rounded-lg
   p-1`, pestañas a partes iguales, activa `bg-accent-light text-accent`, `role="tab"`. Proyecto y

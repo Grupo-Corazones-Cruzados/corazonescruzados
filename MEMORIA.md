@@ -6099,6 +6099,11 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
     - ⚠️ **Pendiente:** `GET /api/tickets/[id]` y `/payments` solo comprueban que haya sesión;
       un cliente podría leer un ticket ajeno por id. Ya estaba así antes (ver «Hay sesión no es
       tuyo»); no se tocó en este cambio.
+  - **SELECTOR DE ESTADO DEL TICKET (Fernando, 2026-09-30).** En cuanto el ticket deja de estar
+    abierto a propuestas, la insignia de la cabecera es un selector Pendiente / Completado /
+    Cancelado (equipo; nunca el cliente ni en una solicitud por aceptar). Decisión suya:
+    **«Completado» abre «Completar y facturar»**, para no saltarse el cobro; «Cancelado» pide
+    confirmación. Completar y cancelar solo el admin. «Pendiente» reabre un ticket completado.
   - **INCIDENTES EN TICKETS (Fernando, 2026-09-30).** El detalle del ticket tiene las pestañas
     Propiedades / Incidentes del proyecto (`components/ui/PestanasRail.tsx`, extraído). Las tablas
     `project_incidents` y `project_incident_categories` llevan `project_id` O `ticket_id`
