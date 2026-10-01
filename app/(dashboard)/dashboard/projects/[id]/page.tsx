@@ -13,7 +13,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil, Clock, BadgeDollarSign, CircleCheck } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -21,7 +21,7 @@ import IncidentsTab from '@/components/projects/IncidentsTab';
 import GccBotChat from '@/components/cotizaciones/GccBotChat';
 import QuoteShareButton from '@/components/cotizaciones/QuoteShareButton';
 import AdditionalCostsCard from '@/components/cotizaciones/AdditionalCostsCard';
-import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
+import { useCobrosEnEspera, VentanaTransferencia, type CobroEnEspera } from '@/components/pagos/CobrosEnEspera';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL } from '@/components/facturacion/AdquirenteFactura';
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
@@ -182,6 +182,10 @@ export default function ProjectDetailPage() {
   // Plan de etapas: el acuerdo con el cliente («50% al empezar, 50% al entregar»).
   // No son los requerimientos, que son el trabajo interno.
   const [showStagesPanel, setShowStagesPanel] = useState(false);
+  // Transferencias que esperan a que el responsable mire su banco. Se confirman desde el
+  // icono de su etapa en Pagos, en ventanita centrada (Fernando, 2026-10-01).
+  const { cobros: enEspera, recargar: recargarEnEspera } = useCobrosEnEspera('project', String(id));
+  const [cobroAbierto, setCobroAbierto] = useState<CobroEnEspera | null>(null);
   // ENLACE DE PAGO (canal 3): el responsable comparte un enlace con la caducidad que él
   // elige, y puede salir un correo al cliente. Con plan cobra UNA etapa (`enlaceEtapa`);
   // sin plan, el proyecto entero (`null`). Ver `lib/pagos/`.
@@ -546,7 +550,7 @@ export default function ProjectDetailPage() {
    * el panel con el del cliente del proyecto, como pidió Fernando.
    */
   const abrirEnlacePago = (e?: any) => {
-    const pendientes = (billing?.etapas || []).filter((x: any) => !x.invoiceId);
+    const pendientes = (billing?.etapas || []).filter((x: any) => !x.invoiceId && !x.cobro);
     setEnlaceEtapa(e ? Number(e.id) : billing?.mode === 'etapas' ? (pendientes[0] ? Number(pendientes[0].id) : null) : null);
     setEnlaceAbierto(true);
   };
@@ -2160,10 +2164,6 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {/* Pagos por transferencia que esperan que alguien los confirme. Va ANTES de la
-              tarjeta de Pagos porque es lo único de este panel que pide una acción hoy. */}
-          <CobrosEnEspera tipo="project" id={String(id)} alConfirmar={fetchProject} />
-
           {/* Pagos (facturado vs pendiente) */}
           {/* La tarjeta aparece también cuando el proyecto tiene etapas o cobros aunque
               `final_cost` sea 0 (pasa mientras no hay asignaciones aceptadas). */}
@@ -2213,8 +2213,10 @@ export default function ProjectDetailPage() {
                         <span className="min-w-0 truncate text-digi-text">{e.name}</span>
                         <span className="flex items-center gap-2 shrink-0">
                           <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                          {e.invoiceId
+                          {e.invoiceId || e.cobro === 'paid'
                             ? <span className="text-[9px] text-green-600">pagada</span>
+                            : e.cobro === 'awaiting'
+                            ? <span className="text-[9px] text-digi-muted">en revisión</span>
                             : (
                               <button
                                 onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}&etapa=${e.id}`)}
@@ -2235,18 +2237,42 @@ export default function ProjectDetailPage() {
                 {isAdmin && (billing?.etapas || []).length > 0 && (
                   <div className="mt-2 pt-2 border-t border-digi-border">
                     <span className="block text-[11px] text-digi-muted mb-1" style={pf}>Etapas de facturación</span>
-                    {(billing.etapas || []).map((e: any) => (
+                    {(billing.etapas || []).map((e: any) => {
+                      // Tres estados, un icono cada uno (Fernando, 2026-10-01): pendiente
+                      // (reloj), transferencia por verificar (clicable: abre la confirmación)
+                      // y pagada (visto verde: confirmada, cobrada con tarjeta o facturada).
+                      const espera = enEspera.find((c) => Number(c.stage_id) === Number(e.id));
+                      const pagada = !!e.invoiceId || e.cobro === 'paid';
+                      const porVerificar = !pagada && (!!espera || e.cobro === 'awaiting');
+                      return (
                         <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
                           <span className="min-w-0 truncate text-digi-text">{e.name}</span>
                           <span className="flex items-center gap-1.5 shrink-0">
                             <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                            {e.invoiceId
-                              ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>facturada</span>
-                              : <span className="text-[9px] text-amber-600">pendiente</span>}
-                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en
-                                las que aún no tienen comprobante: una etapa ya facturada no
+                            {pagada ? (
+                              <span title={e.invoiceId ? `Pagada · factura ${e.invoiceNumber}` : 'Pagada'} aria-label="Pagada" className="inline-flex">
+                                <CircleCheck className="w-3.5 h-3.5 text-green-600" />
+                              </span>
+                            ) : porVerificar ? (
+                              espera ? (
+                                <button onClick={() => setCobroAbierto(espera)} title="Transferencia por verificar" aria-label="Transferencia por verificar"
+                                  className="destino-tactil text-amber-600 hover:opacity-70 transition-opacity">
+                                  <BadgeDollarSign className="w-3.5 h-3.5" />
+                                </button>
+                              ) : (
+                                <span title="Transferencia por verificar" aria-label="Transferencia por verificar" className="inline-flex">
+                                  <BadgeDollarSign className="w-3.5 h-3.5 text-amber-600" />
+                                </span>
+                              )
+                            ) : (
+                              <span title="Pendiente" aria-label="Pendiente" className="inline-flex">
+                                <Clock className="w-3.5 h-3.5 text-digi-muted" />
+                              </span>
+                            )}
+                            {/* Compartir el enlace de pago de ESTA etapa (canal 3). Solo en las
+                                pendientes: una etapa pagada o con una transferencia esperando no
                                 se cobra otra vez. */}
-                            {!e.invoiceId && (
+                            {!pagada && !porVerificar && (
                               <button onClick={() => abrirEnlacePago(e)} title="Compartir enlace de pago"
                                 className="destino-tactil text-accent hover:opacity-70 transition-opacity">
                                 <Share2 className="w-3.5 h-3.5" />
@@ -2254,9 +2280,34 @@ export default function ProjectDetailPage() {
                             )}
                           </span>
                         </div>
-                      ))}
+                      );
+                    })}
                   </div>
                 )}
+
+                {/* Transferencias que no cuelgan de una etapa visible: las del proyecto sin
+                    plan (cobran el total) y, para el responsable que no es admin, todas —él
+                    no ve las etapas—. Mismo icono y misma ventanita que en la etapa. */}
+                {(() => {
+                  const sueltas = enEspera.filter((c) => !(isAdmin && (billing?.etapas || []).some((e: any) => Number(e.id) === Number(c.stage_id))));
+                  if (sueltas.length === 0) return null;
+                  return (
+                    <div className="mt-2 pt-2 border-t border-digi-border">
+                      {sueltas.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+                          <span className="min-w-0 truncate text-digi-text">Transferencia</span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <span className="tabular-nums text-digi-text">${fmt2(Number(c.charge_amount))}</span>
+                            <button onClick={() => setCobroAbierto(c)} title="Transferencia por verificar" aria-label="Transferencia por verificar"
+                              className="destino-tactil text-amber-600 hover:opacity-70 transition-opacity">
+                              <BadgeDollarSign className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
               </div>
             );
@@ -2303,7 +2354,7 @@ export default function ProjectDetailPage() {
           etapa; sin plan se cobra lo que queda por facturar del proyecto. */}
       {(() => {
         const hayPlan = billing?.mode === 'etapas';
-        const pendientes = hayPlan ? (billing?.etapas || []).filter((x: any) => !x.invoiceId) : [];
+        const pendientes = hayPlan ? (billing?.etapas || []).filter((x: any) => !x.invoiceId && !x.cobro) : [];
         const etapa = pendientes.find((x: any) => Number(x.id) === enlaceEtapa);
         return (
           <PanelEnlacePago
@@ -2332,6 +2383,15 @@ export default function ProjectDetailPage() {
       })()}
 
       {/* Panel: ETAPAS DE FACTURACIÓN — el mismo formulario que el del ticket. */}
+      {/* Ventanita centrada de la transferencia: se MONTA solo con un cobro elegido. */}
+      {cobroAbierto && (
+        <VentanaTransferencia
+          cobro={cobroAbierto}
+          onClose={() => setCobroAbierto(null)}
+          alDecidir={() => { recargarEnEspera(); fetchProject(); }}
+        />
+      )}
+
       <PanelEtapas
         open={showStagesPanel}
         onClose={() => setShowStagesPanel(false)}

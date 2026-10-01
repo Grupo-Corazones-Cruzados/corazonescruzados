@@ -1251,7 +1251,7 @@ export async function cobrosEnEspera(sourceType: string, id: string) {
     : sourceType === 'product' ? `p${id}-u%`
     : id;
   const { rows } = await pool.query(
-    `SELECT id, source_id, net_amount, fee_amount, charge_amount, payer_email, proof_at,
+    `SELECT id, source_id, stage_id, net_amount, fee_amount, charge_amount, payer_email, proof_at,
             proof_name, proof_type, proof_reference, proof_bank, billing_snapshot, created_at
        FROM gcc_world.payment_intents
       WHERE source_type = $1 AND status = 'awaiting'

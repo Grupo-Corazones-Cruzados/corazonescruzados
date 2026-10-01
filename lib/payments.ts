@@ -127,6 +127,12 @@ export type BillingStage = {
   sortOrder: number;
   invoiceId: number | null;
   invoiceNumber: string | null;
+  /**
+   * El cobro en línea de la etapa, si lo hay: `awaiting` es una transferencia que espera a
+   * que alguien la confirme y `paid` un cobro hecho (aunque su factura no haya salido). Solo
+   * lo trae `getProjectEtapas`, que es lo que lee el detalle del proyecto.
+   */
+  cobro?: 'paid' | 'awaiting' | null;
 };
 
 /** Requerimiento del proyecto, con su importe facturable (modo por requerimientos). */
@@ -266,7 +272,9 @@ export async function getProjectStages(projectId: string | number): Promise<Proj
 export async function getProjectEtapas(projectId: string | number): Promise<BillingStage[]> {
   await ensureStageBilling();
   const { rows } = await pool.query(
-    `SELECT e.id, e.name, e.amount, e.sort_order, i.id AS invoice_id, i.invoice_number
+    `SELECT e.id, e.name, e.amount, e.sort_order, i.id AS invoice_id, i.invoice_number,
+            (SELECT pi.status FROM gcc_world.payment_intents pi
+              WHERE pi.stage_id = e.id AND pi.status IN ('paid','awaiting') LIMIT 1) AS cobro
        FROM gcc_world.project_stages e
        LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
       WHERE e.project_id = ($1)::bigint
@@ -280,6 +288,7 @@ export async function getProjectEtapas(projectId: string | number): Promise<Bill
     sortOrder: Number(r.sort_order) || 0,
     invoiceId: r.invoice_id != null ? Number(r.invoice_id) : null,
     invoiceNumber: r.invoice_number ?? null,
+    cobro: r.cobro ?? null,
   }));
 }
 

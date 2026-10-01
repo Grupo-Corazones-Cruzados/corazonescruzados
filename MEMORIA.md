@@ -275,6 +275,22 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **💵 Proyecto ▸ Pagos: el estado de cada etapa es un icono y la transferencia se confirma desde ahí
+  (Fernando, 2026-10-01).** La tarjeta amarilla «Pago por transferencia sin confirmar» que iba
+  ENCIMA de Pagos desaparece del proyecto. En «Etapas de facturación», a la izquierda del icono de
+  compartir: **reloj** (pendiente) · **`BadgeDollarSign` ámbar** (transferencia por verificar,
+  clicable) · **`CircleCheck` verde** (pagada: confirmada, cobrada con tarjeta o facturada). Clic
+  en el ámbar → `VentanaTransferencia` (ventanita centrada, título **«Transferencia»**, X de
+  `PixelModal`, botones «Confirmar y facturar» y «Rechazar»; rechazar sigue pidiendo motivo).
+  Compartir solo se ofrece en las pendientes.
+  - Las etapas traen `cobro` (`getProjectEtapas`, como ya hacía el ticket) y `cobrosEnEspera`
+    devuelve `stage_id`. Todo en `components/pagos/CobrosEnEspera.tsx`: `useCobrosEnEspera`,
+    `VentanaTransferencia` y la tarjeta de siempre, que **siguen usando ticket y suscripción**
+    (su título también pasó a «Transferencia»).
+  - ⚠️ Una transferencia que no cuelga de una etapa visible (proyecto sin plan, o responsable no
+    admin, que no ve las etapas) sale como fila «Transferencia» en Pagos con el mismo icono: si no,
+    se quedaría sin nadie que la confirme.
+  - El cliente ve «en revisión» en la etapa con transferencia esperando, en vez de un «Pagar» que fallaría.
 - **⏱️ Mi día ▸ estado «Trabajando» con lista de tareas (Fernando, 2026-10-01).** Quinto estado
   de disponibilidad (`lib/calendar/availability.ts`, naranja `#f97316`): abre un bloque en el
   calendario como «Ocupado» (en el público sale como «Ocupado», igual que todos). Al elegirlo se

@@ -1,5 +1,12 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-01) — PROYECTO ▸ Pagos: estado de la etapa con icono y confirmación de transferencia en ventanita · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+- **Rol:** ingeniero frontend/pagos.
+- **Pedido:** mover la confirmación de la tarjeta encima de Pagos a cada etapa (reloj / por verificar / visto verde), clic → ventanita centrada con overlay «Transferencia», «Confirmar y facturar» + «Rechazar» + X.
+- **Resuelto investigando (sin preguntar):** la etapa no sabía de su cobro → se añade `cobro` en `getProjectEtapas`; el cobro en espera ya guardaba `stage_id` (solo faltaba devolverlo); `PixelModal size="sm"` es la ventanita centrada estándar y trae su X.
+- **Riesgo cubierto:** transferencia sin etapa visible (sin plan / responsable no admin) → fila propia en Pagos.
+- **Verificado:** tsc, `npm run build`, consultas contra la base real (proyecto #25: Etapa 1 `awaiting`, Etapa 2 pendiente) y navegador (iconos y ventanita centrada de 384 px). No se pulsó confirmar ni rechazar: el cobro es real.
+
 
 ## Objetivo ACTUAL (declarado 2026-10-01) — MI DÍA ▸ estado «Trabajando» con lista de tareas · ✅ 90 % — CONSTRUIDO Y VERIFICADO (P2-P5 por confirmar)
 
