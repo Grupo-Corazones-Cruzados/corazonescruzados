@@ -52,6 +52,13 @@ para escribir todo el contenido que quiera»*.
   local no hay `JWT_SECRET` (el servidor usa el valor por defecto), `tsc && build` encadenado
   dejó corriendo el build viejo, y cambiar `isMobile` en puppeteer recarga la página.
 
+### Ajuste (2026-10-01) — filtro de estado en vez de grupos
+Fernando: *«poner un filtro en el panel izquierdo para seleccionar el estado del proyecto, y
+quitar esa agrupación […] el filtro de estado vamos a ponerlo encima del buscador»*. Hecho con
+`PixelSelect` (34 px, igual que el buscador; su `py-2.5` lo dejaba en 42). Verificado en Chrome:
+cada estado muestra su número exacto de proyectos, el conteo de la cabecera sigue al filtro y
+filtro y buscador quedan alineados.
+
 ### Verificado (2026-10-01)
 tsc + `next build` + Chrome real contra el servidor de producción local: pestaña, rail, formato
 por la barra, guardado automático, MD (título, negrita, lista, tarea, tabla con celdas vacías,

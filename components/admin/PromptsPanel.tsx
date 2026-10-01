@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { FileText, FolderKanban, Search } from 'lucide-react';
 import PixelBadge from '@/components/ui/PixelBadge';
+import PixelSelect from '@/components/ui/PixelSelect';
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import type { DocumentoEditorHandle } from '@/components/admin/prompts/DocumentoEditor';
 
@@ -14,9 +15,9 @@ const DocumentoEditor = dynamic(() => import('@/components/admin/prompts/Documen
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
-const INPUT = 'w-full px-2.5 py-1.5 bg-digi-darker border border-digi-border rounded-md text-[13px] text-digi-text placeholder-digi-muted focus:outline-none';
+const INPUT = 'w-full h-[34px] px-2.5 py-0 bg-digi-darker border border-digi-border rounded-md text-[13px] text-digi-text placeholder-digi-muted focus:outline-none';
 
-/** Orden de los grupos del rail: primero lo que se trabaja, al final lo cerrado. */
+/** Orden de los estados en el filtro: primero lo que se trabaja, al final lo cerrado. */
 const ORDEN = ['in_progress', 'review', 'in_review', 'cotizacion', 'open', 'draft', 'completed', 'closed', 'cotizacion_rechazada', 'cancelled'];
 const ULTIMO_KEY = 'admin.prompts.proyecto';
 
@@ -39,6 +40,7 @@ export default function PromptsPanel() {
   const [height, setHeight] = useState<number>();
   const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
   const [q, setQ] = useState('');
+  const [estado, setEstado] = useState('all');
   const [sel, setSel] = useState<number | null>(null);
   const [doc, setDoc] = useState<Doc | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -103,21 +105,20 @@ export default function PromptsPanel() {
     setProyectos((ps) => ps?.map((p) => (p.id === sel ? { ...p, chars, updatedAt } : p)) ?? ps);
   }, [sel]);
 
-  const grupos = useMemo(() => {
+  // Las opciones del filtro: solo los estados que tienen proyectos, con su conteo.
+  const estados = useMemo(() => {
+    const cuenta = new Map<string, number>();
+    for (const p of proyectos ?? []) cuenta.set(p.status, (cuenta.get(p.status) ?? 0) + 1);
+    const rango = (s: string) => { const i = ORDEN.indexOf(s); return i === -1 ? ORDEN.length : i; };
+    return [...cuenta.entries()].sort((x, y) => rango(x[0]) - rango(y[0]));
+  }, [proyectos]);
+
+  const visibles = useMemo(() => {
     const t = q.trim().toLowerCase();
-    const filtrados = (proyectos ?? []).filter((p) =>
-      !t || p.title.toLowerCase().includes(t) || (p.client ?? '').toLowerCase().includes(t));
-    const por = new Map<string, Proyecto[]>();
-    for (const p of filtrados) {
-      const k = PROJECT_STATUS_LABEL[p.status] ?? p.status;
-      por.set(k, [...(por.get(k) ?? []), p]);
-    }
-    const rango = (label: string) => {
-      const i = ORDEN.findIndex((s) => (PROJECT_STATUS_LABEL[s] ?? s) === label);
-      return i === -1 ? ORDEN.length : i;
-    };
-    return [...por.entries()].sort((a, b) => rango(a[0]) - rango(b[0]));
-  }, [proyectos, q]);
+    return (proyectos ?? []).filter((p) =>
+      (estado === 'all' || p.status === estado)
+      && (!t || p.title.toLowerCase().includes(t) || (p.client ?? '').toLowerCase().includes(t)));
+  }, [proyectos, q, estado]);
 
   const actual = proyectos?.find((p) => p.id === sel) ?? null;
 
@@ -128,9 +129,19 @@ export default function PromptsPanel() {
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-1.5">
           <FolderKanban className="w-4 h-4 text-accent" />
           <span className="text-[12px] font-semibold text-digi-text flex-1" style={df}>Proyectos</span>
-          {proyectos && <span className="text-[10.5px] text-digi-muted tabular-nums" style={mf}>{proyectos.length}</span>}
+          {proyectos && <span className="text-[10.5px] text-digi-muted tabular-nums" style={mf}>{visibles.length}</span>}
         </div>
-        <div className="px-2 py-2 border-b border-digi-border">
+        <div className="px-2 py-2 border-b border-digi-border space-y-2">
+          <PixelSelect
+            aria-label="Estado del proyecto"
+            className="h-[34px] !py-0 !px-2.5 !text-[13px]"
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+            options={[
+              { value: 'all', label: `Todos los estados (${proyectos?.length ?? 0})` },
+              ...estados.map(([s, n]) => ({ value: s, label: `${PROJECT_STATUS_LABEL[s] ?? s} (${n})` })),
+            ]}
+          />
           <div className="relative">
             <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input className={`${INPUT} pl-8`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar proyecto o cliente…" />
@@ -139,40 +150,35 @@ export default function PromptsPanel() {
         <div className="flex-1 min-h-0 overflow-y-auto p-1.5">
           {proyectos === null ? (
             <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>Cargando…</p>
-          ) : grupos.length === 0 ? (
-            <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>{q ? 'Sin coincidencias.' : 'No hay proyectos.'}</p>
-          ) : grupos.map(([label, lista]) => (
-            <div key={label} className="mb-2 last:mb-0">
-              <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1.5 pb-1" style={df}>
-                {label} <span className="tabular-nums">· {lista.length}</span>
-              </p>
-              <div className="space-y-0.5">
-                {lista.map((p) => {
-                  const activo = p.id === sel;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => void elegir(p.id)}
-                      className={`w-full flex items-start gap-2 px-2.5 py-2 rounded-lg text-left border transition-colors ${
-                        activo ? 'bg-accent-light border-accent/30' : 'border-transparent hover:bg-black/[0.03]'
-                      }`}
-                    >
-                      <span className="flex-1 min-w-0">
-                        <span className={`block text-[12.5px] font-medium truncate ${activo ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.title}</span>
-                        {p.client && <span className="block text-[11px] text-digi-muted truncate" style={mf}>{p.client}</span>}
-                      </span>
-                      {p.chars > 0 && (
-                        <FileText
-                          className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${activo ? 'text-accent' : 'text-digi-muted'}`}
-                          aria-label="Tiene documentación"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+          ) : visibles.length === 0 ? (
+            <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>{q || estado !== 'all' ? 'Sin coincidencias.' : 'No hay proyectos.'}</p>
+          ) : (
+            <div className="space-y-0.5">
+              {visibles.map((p) => {
+                const activo = p.id === sel;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => void elegir(p.id)}
+                    className={`w-full flex items-start gap-2 px-2.5 py-2 rounded-lg text-left border transition-colors ${
+                      activo ? 'bg-accent-light border-accent/30' : 'border-transparent hover:bg-black/[0.03]'
+                    }`}
+                  >
+                    <span className="flex-1 min-w-0">
+                      <span className={`block text-[12.5px] font-medium truncate ${activo ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.title}</span>
+                      {p.client && <span className="block text-[11px] text-digi-muted truncate" style={mf}>{p.client}</span>}
+                    </span>
+                    {p.chars > 0 && (
+                      <FileText
+                        className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${activo ? 'text-accent' : 'text-digi-muted'}`}
+                        aria-label="Tiene documentación"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          ))}
+          )}
         </div>
       </aside>
 
