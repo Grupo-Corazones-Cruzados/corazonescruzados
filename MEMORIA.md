@@ -275,6 +275,24 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📝 Admin ▸ «Prompts»: la documentación de cada proyecto, como en Word (Fernando, 2026-10-01).**
+  Séptima pestaña del admin (solo admin). Izquierda: los proyectos del módulo Proyectos
+  agrupados por estado, con buscador e icono si ya tienen documento; derecha: una hoja (página
+  centrada de 816 px) con editor **TipTap 3** de formato completo y **guardado automático**
+  (1,2 s tras dejar de escribir). Un documento por proyecto, sin historial.
+  - Tabla `gcc_world.project_prompts` (migración `064`): `content_html` (lo que abre el editor)
+    + `content_md` (Markdown derivado EN EL SERVIDOR al guardar, para que un agente lo lea sin
+    convertir nada). `updated_at` es el control de concurrencia: el PUT trae la fecha que
+    conocía y si otro guardó después da 409 → la hoja ofrece «Cargar esa versión» / «Quedarme
+    con la mía». Nunca se pisa en silencio.
+  - «Copiar como prompt» / «Descargar .md» convierten EN EL NAVEGADOR lo que hay en pantalla con
+    la misma regla que el servidor (`lib/admin/prompts-md.ts`), con el título del proyecto como
+    `# encabezado`.
+  - Las imágenes (pegar, arrastrar o botón) suben a Cloudinary (`corazones-cruzados/prompts`,
+    `/api/admin/prompts/imagen`), nunca base64 dentro del HTML: el documento entero viaja en cada
+    guardado.
+  - Cambiar de proyecto guarda antes lo pendiente; si no se puede (error/conflicto), no cambia.
+  - De paso: etiquetas y tonos de estado de proyecto extraídos a `lib/projects/estados.ts`.
 - **⏱ Registro de trabajo del ticket por DÍA y por TIEMPO (Fernando, 2026-09-30).**
   - `ticket_actions` gana `work_date`, `duration_seconds`, `notes` y `timer_started_at`. El
     costo es SIEMPRE tiempo × tarifa del servicio (`slotCost`), no se escribe a mano.
@@ -6502,6 +6520,13 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **TipTap: `useEditorState` con el editor en `null` se queda vacío (2026-10-01).** Con
+  `immediatelyRender:false` el primer render tiene `editor = null`; un `useEditorState` montado
+  entonces no se recalcula hasta la primera transacción, así que la barra de formato no salía
+  hasta tocar la hoja. Montar lo que use `useEditorState` solo cuando `editor` ya existe.
+- **TipTap → Markdown con turndown (2026-10-01):** quitar el `<colgroup>` antes (si no, la tabla
+  sale como HTML), tratar el `<p>` dentro de `li`/`td` como contenido (si no, listas sueltas) y
+  `blankReplacement` para celdas vacías (si no, parten la tabla). Ver `lib/admin/prompts-md.ts`.
 
 ### 🪤 `railway up` del cotizador-worker salía «SKIPPED» sin avisar (2026-09-29)
 El servicio tenía `watchPatterns: ["services/cotizador-worker/**"]`, pero `railway up` desde
