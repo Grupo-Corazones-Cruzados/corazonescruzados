@@ -24,8 +24,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
  * resto (base − las anteriores), que es como Fernando las acuerda y evita que el plan
  * se descuadre por un redondeo de la pantalla.
  *
- * Una etapa YA FACTURADA no se toca: ni se borra ni cambia de importe, porque su
- * comprobante ya salió. Si hay que corregirla, primero se anula la factura.
+ * Una etapa FACTURADA o CON COBRO (pagado, o una transferencia esperando confirmación) no
+ * se toca: ni se borra ni cambia de importe. Las demás sí se pueden cambiar.
+ *
+ * ⚠️ Antes solo se cerraban las facturadas, y el 2026-10-01 eso rompió un pago real: el
+ * proyecto #25 tenía una transferencia esperando en la Etapa 1; al cambiar el costo se rehizo
+ * el plan, la etapa se borró y al confirmar, la factura salió sin etapa a la que marcar. Igual
+ * que en el ticket: lo que cierra una etapa es el dinero, no solo la factura.
  */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -39,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const billing = await getProjectBilling(id);
     if (!billing) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
 
-    const facturadas = billing.etapas.filter(e => e.invoiceId);
+    const cerradas = billing.etapas.filter(e => e.invoiceId || e.cobro);
     const entrantes = stages
       .map((e: any, i: number) => ({
         id: e.id != null ? Number(e.id) : null,
@@ -48,12 +53,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }))
       .filter((e: any) => e.name);
 
-    // Las etapas ya facturadas tienen que seguir estando, con su mismo importe.
-    for (const f of facturadas) {
+    // Las etapas cerradas tienen que seguir estando, con su mismo nombre e importe.
+    for (const f of cerradas) {
       const sigue = entrantes.find((e: any) => e.id === f.id);
       if (!sigue) {
         return NextResponse.json({
-          error: `La etapa «${f.name}» ya está facturada (${f.invoiceNumber}) y no se puede eliminar. Anula esa factura primero.`,
+          error: f.invoiceId
+            ? `La etapa «${f.name}» ya está facturada (${f.invoiceNumber}) y no se puede eliminar. Anula esa factura primero.`
+            : f.cobro === 'awaiting'
+            ? `La etapa «${f.name}» tiene una transferencia esperando confirmación y no se puede eliminar. Confírmala o recházala primero.`
+            : `La etapa «${f.name}» ya está pagada y no se puede eliminar.`,
         }, { status: 409 });
       }
       sigue.amount = f.amount;
@@ -62,8 +71,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (entrantes.length === 0) {
       // Plan vacío = el proyecto vuelve a facturarse por requerimientos.
-      if (facturadas.length > 0) {
-        return NextResponse.json({ error: 'Hay etapas facturadas: no se puede vaciar el plan.' }, { status: 409 });
+      if (cerradas.length > 0) {
+        return NextResponse.json({ error: 'Hay etapas pagadas o con un cobro en curso: no se puede vaciar el plan.' }, { status: 409 });
       }
       await pool.query(`DELETE FROM gcc_world.project_stages WHERE project_id = ($1)::bigint`, [id]);
       return NextResponse.json({ ok: true, data: [] });
@@ -73,7 +82,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const base = Number(billing.baseTotal) || 0;
     const anteriores = entrantes.slice(0, -1).reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
     const ultima = entrantes[entrantes.length - 1];
-    if (!facturadas.some(f => f.id === ultima.id)) {
+    if (!cerradas.some(f => f.id === ultima.id)) {
       ultima.amount = Math.max(0, Math.round((base - anteriores) * 100) / 100);
     }
 

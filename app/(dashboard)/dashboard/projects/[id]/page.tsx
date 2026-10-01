@@ -1677,8 +1677,10 @@ export default function ProjectDetailPage() {
               El tope de la mitad es para que Requerimientos nunca quede reducido a una
               franja: si los costos crecen mucho, son ELLOS los que se desplazan. */}
           <div className="shrink-0 space-y-4 lg:max-h-[50%] lg:overflow-y-auto">
-          {/* Costos adicionales (servicios de proveedores externos) */}
-          {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0) && (
+          {/* Costos adicionales (servicios de proveedores externos). Vacía también se pinta para
+              quien puede editarla: si no, al quitar el último costo la tarjeta desaparecía y ya
+              no había por dónde volver a agregar uno (Fernando, 2026-10-01). */}
+          {(project.status === 'cotizacion' || (project.additional_costs || []).length > 0 || (isOwner && !isTerminal)) && (
             <AdditionalCostsCard projectId={project.id} costs={project.additional_costs || []} canEdit={!!(isOwner && !isTerminal)} onSaved={fetchProject} />
           )}
           </div>
@@ -2398,7 +2400,7 @@ export default function ProjectDetailPage() {
         endpoint={`/api/projects/${id}/stages`}
         base={Number(billing?.baseTotal || 0)}
         etiquetaBase="Total del proyecto"
-        etapas={(billing?.etapas || []).map((e: any) => ({ id: e.id, name: e.name, amount: e.amount, invoiceNumber: e.invoiceNumber, cerrada: !!e.invoiceId }))}
+        etapas={(billing?.etapas || []).map((e: any) => ({ id: e.id, name: e.name, amount: e.amount, invoiceNumber: e.invoiceNumber, cerrada: !!e.invoiceId || !!e.cobro }))}
         onGuardado={(etapas) => { aplicarPlan(etapas); fetchProject(); }}
         avisoQuitar="Plan de etapas eliminado — el proyecto vuelve a facturarse por requerimientos"
       />

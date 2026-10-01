@@ -275,6 +275,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔒 Proyecto ▸ una etapa con cobro ya no se borra (Fernando, 2026-10-01).** Pasó con dinero
+  real en el #25: había una transferencia esperando en la Etapa 1 (id 47). Al cambiar el costo,
+  Fernando rehízo el plan, la 47 se borró (el PUT solo protegía las FACTURADAS) y al confirmar, la
+  factura 001-001-000000089 salió sin etapa a la que marcar. **Regla:** una etapa facturada **o con
+  cobro** (`paid` o `awaiting`) no se borra ni cambia de nombre o importe; las demás sí. Va en
+  `PUT /api/projects/[id]/stages` y en el `cerrada` que recibe `PanelEtapas`, igual que ya hacía el
+  ticket. **Reparado a mano** en una transacción: etapa 49 ← factura 77; cobro 153 y enlaces 23/24
+  `stage_id` 47 → 49. ⚠️ `payment_intents.stage_id` y `payment_links.stage_id` **no tienen FK**:
+  borrar una etapa no avisa de nada, deja la referencia colgando.
+  - Costos adicionales: la tarjeta se pinta vacía también para quien puede editarla. Antes
+    desaparecía al quitar el último costo y no había forma de volver a agregar uno.
 - **💵 Proyecto ▸ Pagos: el estado de cada etapa es un icono y la transferencia se confirma desde ahí
   (Fernando, 2026-10-01).** La tarjeta amarilla «Pago por transferencia sin confirmar» que iba
   ENCIMA de Pagos desaparece del proyecto. En «Etapas de facturación», a la izquierda del icono de
