@@ -279,7 +279,7 @@ Stack estándar de la casa, con particularidades de este repo:
   Séptima pestaña del admin (solo admin). Izquierda: los proyectos del módulo Proyectos con un
   **filtro de estado encima del buscador** (`PixelSelect`, «Todos los estados» + solo los
   estados con proyectos y su conteo; Fernando, 2026-10-01 — sustituyó a la agrupación por
-  títulos de estado, que se quitó) e icono si ya tienen documento; derecha: una hoja (página
+  títulos de estado, que se quitó; **abre en «En progreso»**, o en «Todos» si no hay ninguno) e icono si ya tienen documento; derecha: una hoja (página
   centrada de 816 px) con editor **TipTap 3** de formato completo y **guardado automático**
   (1,2 s tras dejar de escribir). Un documento por proyecto, sin historial.
   - Tabla `gcc_world.project_prompts` (migración `064`): `content_html` (lo que abre el editor)

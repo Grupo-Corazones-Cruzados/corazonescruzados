@@ -20,6 +20,7 @@ const INPUT = 'w-full h-[34px] px-2.5 py-0 bg-digi-darker border border-digi-bor
 /** Orden de los estados en el filtro: primero lo que se trabaja, al final lo cerrado. */
 const ORDEN = ['in_progress', 'review', 'in_review', 'cotizacion', 'open', 'draft', 'completed', 'closed', 'cotizacion_rechazada', 'cancelled'];
 const ULTIMO_KEY = 'admin.prompts.proyecto';
+const ESTADO_INICIAL = 'in_progress';
 
 interface Proyecto {
   id: number; title: string; status: string; client: string | null; chars: number; updatedAt: string | null;
@@ -40,7 +41,8 @@ export default function PromptsPanel() {
   const [height, setHeight] = useState<number>();
   const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
   const [q, setQ] = useState('');
-  const [estado, setEstado] = useState('all');
+  // Abre en «En progreso», que es lo que se documenta a diario (Fernando, 2026-10-01).
+  const [estado, setEstado] = useState(ESTADO_INICIAL);
   const [sel, setSel] = useState<number | null>(null);
   const [doc, setDoc] = useState<Doc | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -70,7 +72,10 @@ export default function PromptsPanel() {
         setProyectos(lista);
         let ultimo: number | null = null;
         try { ultimo = Number(localStorage.getItem(ULTIMO_KEY)) || null; } catch { /* sin almacenamiento */ }
-        setSel((s) => s ?? (lista.find((p) => p.id === ultimo)?.id ?? lista[0]?.id ?? null));
+        // Sin proyectos en progreso, el filtro no tendría esa opción: se cae a «Todos».
+        const enProgreso = lista.filter((p) => p.status === ESTADO_INICIAL);
+        if (!enProgreso.length) setEstado('all');
+        setSel((s) => s ?? (lista.find((p) => p.id === ultimo)?.id ?? (enProgreso[0] ?? lista[0])?.id ?? null));
       })
       .catch((e) => { toast.error(e.message); setProyectos([]); });
   }, []);
