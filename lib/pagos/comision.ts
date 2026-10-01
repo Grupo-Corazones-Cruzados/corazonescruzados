@@ -2,7 +2,8 @@
  * EL RECARGO DE LA PASARELA — módulo PURO (sin `pg`, sin red, sin `process` en el cálculo).
  *
  * Fernando decidió el 2026-08-25 que **la comisión la paga el cliente**, subiendo el
- * precio de origen y mostrándose como línea aparte en la factura. Este archivo es la
+ * precio de origen y mostrándose como línea aparte en la factura. ⚠️ DEROGADO el 2026-09-30:
+ * ahora el cliente paga el precio final (ver `tarifaAlCliente`); el cálculo se conserva. Este archivo es la
  * ÚNICA definición de esa aritmética: la usan el servidor al crear el cobro, la pantalla
  * del cliente al enseñarle cuánto va a pagar, y el correo del enlace de pago. Si el
  * cálculo viviera en dos sitios, el importe de la pantalla y el del cobro se separarían
@@ -105,6 +106,23 @@ export function tarifaDe(proveedor: string): Tarifa {
     porcentaje: Number.isFinite(pct) && pct >= 0 && pct < 1 ? pct : base.porcentaje,
     fijo: Number.isFinite(fijo) && fijo >= 0 ? fijo : base.fijo,
   };
+}
+
+/**
+ * ⚠️ EL CLIENTE YA NO PAGA LA COMISIÓN (Fernando, 2026-09-30) — deroga lo del 2026-08-25.
+ * «En todos los enlaces de pago el pago de la tarjeta debe ser el mismo valor del producto,
+ * servicio o proyecto que se está pagando». Con tarjeta y con transferencia se cobra el
+ * PRECIO FINAL; la comisión de la pasarela la absorbe GCC, y él subirá los precios de origen
+ * cuando quiera cubrirla.
+ *
+ * Esta es la tarifa que se le TRASLADA al cliente, y es la que usan TODOS los cobros
+ * (`lib/pagos/intentos.ts`). `TARIFAS` y `tarifaDe` siguen siendo las reales del proveedor:
+ * sirven para conciliar con `netoRecibido`, no para cobrar. Volver a trasladar la comisión
+ * sería devolver aquí `tarifaDe(proveedor)`, en una sola línea.
+ */
+export function tarifaAlCliente(proveedor: string): Tarifa {
+  tarifaDe(proveedor); // Un proveedor sin tarifa sigue siendo un error de configuración.
+  return { porcentaje: 0, fijo: 0 };
 }
 
 /**

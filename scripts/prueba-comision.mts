@@ -8,7 +8,7 @@
  *
  *   npm run pagos:prueba
  */
-import { calcularRecargo, netoRecibido, TARIFAS, centavosArriba } from '../lib/pagos/comision.ts';
+import { calcularRecargo, netoRecibido, TARIFAS, centavosArriba, tarifaAlCliente } from '../lib/pagos/comision.ts';
 
 let fallos = 0;
 const p = (d: string, real: any, esperado: any) => {
@@ -66,6 +66,15 @@ p('una tarifa del 100 % es un error, no un infinito',
 p('20,61 ya redondeado no sube a 20,62', centavosArriba(20.61), 20.61);
 p('20,610000000000003 tampoco', centavosArriba(20.610000000000003), 20.61);
 p('20,601 sí sube', centavosArriba(20.601), 20.61);
+
+// ── Desde el 2026-09-30 el cliente paga el PRECIO FINAL con tarjeta ────────────
+// Es lo que cobran todos los enlaces (`lib/pagos/intentos.ts` usa `tarifaAlCliente`).
+for (const prov of ['payphone', 'kushki', 'simulado', 'manual']) {
+  p(`con ${prov} el cliente paga el precio exacto`, calcularRecargo(165, tarifaAlCliente(prov)),
+    { neto: 165, recargo: 0, total: 165 });
+}
+p('un proveedor sin tarifa sigue siendo un error',
+  (() => { try { tarifaAlCliente('inventado'); return false; } catch { return true; } })(), true);
 
 console.log(fallos ? `\n❌ ${fallos} fallos` : '\n✅ todas pasan');
 process.exit(fallos ? 1 : 0);

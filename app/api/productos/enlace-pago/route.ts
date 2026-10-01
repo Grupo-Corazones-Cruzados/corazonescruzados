@@ -16,7 +16,7 @@
  * No cobra, no confirma y no toca facturas. Solo crea el mismo enlace que el equipo GCC
  * crea a mano desde el panel, con la misma función (`crearEnlaceDePago`) y por tanto con
  * las mismas comprobaciones: que el periodo no esté ya pagado, que haya correo del
- * cliente, y la cotización con el recargo de la pasarela.
+ * cliente, y la cotización (precio final: sin recargo de la pasarela desde el 2026-09-30).
  *
  * ── LA AUTENTICACIÓN ─────────────────────────────────────────────────────────────
  * Secreto compartido en `CRON_TOKEN`, el mismo que ya usa el worker del agente. Se reusa a

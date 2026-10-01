@@ -396,9 +396,9 @@ export default function FormularioPago({
         <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
           Cómo quieres pagar
         </legend>
-        {/* ⚠️ CADA MÉTODO ENSEÑA SU PRECIO, y no es un adorno: la transferencia no lleva
-            recargo porque ahí no cobra ninguna pasarela. Ver los dos importes juntos hace
-            que el método más barato —para el cliente y para GCC— se elija solo. */}
+        {/* CADA MÉTODO ENSEÑA SU PRECIO. Desde el 2026-09-30 los dos son el precio final (la
+            comisión de la tarjeta ya no se traslada al cliente); si algún día vuelve a
+            haber recargo, la diferencia se verá aquí sin tocar nada. */}
         <div className="grid gap-3 sm:grid-cols-2">
           {puedeTarjeta && (
             <button type="button" onClick={() => setMetodo('card')}
@@ -426,9 +426,9 @@ export default function FormularioPago({
               <span className="flex items-center gap-2 text-[14px] font-medium text-[var(--texto)]">
                 <Landmark className="w-[18px] h-[18px]" /> Transferencia
               </span>
-              <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Sin recargo · se verifica el pago</span>
+              <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Se verifica el pago</span>
             </span>
-            <span className="shrink-0 text-[15px] font-semibold tabular-nums text-emerald-700">
+            <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[var(--texto)]">
               ${fmt2(datos.importesPorMetodo?.transfer?.total ?? importes.neto)}
             </span>
           </button>

@@ -12,7 +12,7 @@ import { payphone } from './payphone';
 import { simulado } from './simulado';
 
 export * from './tipos';
-export { calcularRecargo, tarifaDe, netoRecibido, TARIFAS, CONCEPTO_RECARGO } from './comision';
+export { calcularRecargo, tarifaDe, tarifaAlCliente, netoRecibido, TARIFAS, CONCEPTO_RECARGO } from './comision';
 
 // El orden importa cuando no se fija `PAGOS_PROVEEDOR`: gana el primero con credenciales.
 // PayPhone va delante porque es el que GCC tiene contratado desde el 2026-08-25; Kushki se

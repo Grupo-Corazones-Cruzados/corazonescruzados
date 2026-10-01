@@ -26,7 +26,7 @@ import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoice
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
-import { calcularRecargo, tarifaDe, CONCEPTO_RECARGO } from './comision';
+import { calcularRecargo, tarifaAlCliente, CONCEPTO_RECARGO } from './comision';
 import { TARIFA_TRANSFERENCIA } from './cuentas';
 import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
 
@@ -52,7 +52,7 @@ export type DatosFacturacion = {
  * recargo ahí sería inventarse un cargo.
  */
 function importesPorMetodo(neto: number, proveedor: string) {
-  const tarjeta = calcularRecargo(neto, tarifaDe(proveedor));
+  const tarjeta = calcularRecargo(neto, tarifaAlCliente(proveedor));
   const transferencia = calcularRecargo(neto, TARIFA_TRANSFERENCIA);
   return {
     card: { recargo: tarjeta.recargo, total: tarjeta.total },
@@ -161,7 +161,7 @@ export async function cotizarEtapa(
   }
   if (!(etapa.amount > 0)) throw new Error(`La etapa «${etapa.name}» no tiene importe.`);
 
-  const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaDe(proveedor));
+  const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaAlCliente(proveedor));
   return {
     importes: importesPorMetodo(neto, proveedor),
     sourceType: 'project',
@@ -235,7 +235,7 @@ export async function cotizarProyectoSinEtapas(
       : 'Este proyecto ya fue pagado en línea.');
   }
 
-  const { neto, recargo, total } = calcularRecargo(billing.billable, tarifaDe(proveedor));
+  const { neto, recargo, total } = calcularRecargo(billing.billable, tarifaAlCliente(proveedor));
   return {
     importes: importesPorMetodo(neto, proveedor),
     sourceType: 'project',
@@ -281,7 +281,7 @@ export async function cotizarTicket(
     if (enCurso?.status === 'awaiting') throw new Error(`La etapa «${etapa.name}» ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.`);
     if (enCurso?.status === 'paid') throw new Error(`La etapa «${etapa.name}» ya está pagada.`);
     if (!(etapa.amount > 0)) throw new Error(`La etapa «${etapa.name}» no tiene importe todavía.`);
-    const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaDe(proveedor));
+    const { neto, recargo, total } = calcularRecargo(etapa.amount, tarifaAlCliente(proveedor));
     return {
       importes: importesPorMetodo(neto, proveedor),
       sourceType: 'ticket', sourceId: String(billing.ticketId), title: billing.title,
@@ -299,7 +299,7 @@ export async function cotizarTicket(
   if (!(billing.pending > 0)) {
     throw new Error(billing.total > 0 ? 'Este ticket no tiene nada pendiente de pago.' : 'Este ticket todavía no tiene consumo que cobrar.');
   }
-  const { neto, recargo, total } = calcularRecargo(billing.pending, tarifaDe(proveedor));
+  const { neto, recargo, total } = calcularRecargo(billing.pending, tarifaAlCliente(proveedor));
   return {
     importes: importesPorMetodo(neto, proveedor),
     sourceType: 'ticket', sourceId: String(billing.ticketId), title: billing.title,
@@ -359,7 +359,7 @@ export async function cotizarSuscripcion(
   const neto = Number(sub.monthly_cost) || 0;
   if (!(neto > 0)) throw new Error('Esta suscripción no tiene importe mensual.');
 
-  const { recargo, total } = calcularRecargo(neto, tarifaDe(proveedor));
+  const { recargo, total } = calcularRecargo(neto, tarifaAlCliente(proveedor));
   return {
     importes: importesPorMetodo(neto, proveedor),
     sourceType: 'subscription',
@@ -432,7 +432,7 @@ export async function cotizarProducto(
       : 'Ya contrataste este producto. Tus meses siguientes se pagan desde Suscripciones.');
   }
 
-  const { recargo, total } = calcularRecargo(neto, tarifaDe(proveedor));
+  const { recargo, total } = calcularRecargo(neto, tarifaAlCliente(proveedor));
   return {
     importes: importesPorMetodo(neto, proveedor),
     sourceType: 'product',

@@ -1359,6 +1359,17 @@ Stack estándar de la casa, con particularidades de este repo:
     la liquidación (T+2/T+3), así que se elige el banco donde ya haya cuenta.
   - **Descartado:** `mintel.kushkipagos.com` aparece en las búsquedas como «Afíliate a
     Kushki», pero es **solo para instituciones públicas**. No aplica.
+- **💳 EL CLIENTE YA NO PAGA LA COMISIÓN DE LA TARJETA (Fernando, 2026-09-30).** *«En todos
+  los enlaces de pago el pago de la tarjeta debe ser el mismo valor del producto, servicio o
+  proyecto… en el pago con transferencia usaremos igualmente el precio final.»* Deroga «la
+  comisión la paga el cliente» del 2026-08-25. Él ajustará los precios de origen para que ya
+  incluyan la comisión.
+  - **Dónde:** `tarifaAlCliente(proveedor)` en `lib/pagos/comision.ts` (tarifa cero); los 7
+    cobros de `lib/pagos/intentos.ts` la usan. `TARIFAS`/`tarifaDe` siguen siendo las reales
+    para conciliar con `netoRecibido`. Con recargo 0, ni la pantalla de pago, ni el correo, ni
+    la factura pintan la línea de «Gastos de procesamiento».
+  - Los enlaces no guardan importes: los ya enviados cobran el precio nuevo. No quedaba ningún
+    cobro a medias con el recargo viejo.
 - **💳 LA PASARELA QUEDA DECIDIDA Y SU FONTANERÍA CONSTRUIDA (2026-08-25, migración 053).**
   Fernando cerró las seis decisiones abiertas y se levantó toda la maquinaria del cobro.
   **Falta la pantalla del cliente**, que es suya (ver abajo).

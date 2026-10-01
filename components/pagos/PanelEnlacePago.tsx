@@ -60,9 +60,8 @@ export default function PanelEnlacePago({
           ? { url: d.url, mensaje: `Enlace enviado a ${d.email}` }
           : { url: d.url, mensaje: 'Enlace creado, pero el correo no salió: cópialo y envíalo tú', ok: false };
       }}
-      pie={<EditAmount label={etiquetaImporte} value={`$${fmt2(importe)}`}
-        hint={<>Es el importe limpio. Al cliente se le suman aparte los gastos de procesamiento del
-          pago con tarjeta, que paga él y ve antes de confirmar.</>} />}
+      // Lo que paga el cliente, con tarjeta o por transferencia: el precio final (2026-09-30).
+      pie={<EditAmount label={etiquetaImporte} value={`$${fmt2(importe)}`} />}
     >
       {children}
     </PanelCompartirEnlace>
