@@ -61,6 +61,8 @@ export const FUENTES_TAXONOMY: TreeSpec[] = [
         tables: ['quote_sessions', 'quote_versions', 'project_observations'] },
       { name: 'Incidentes', kind: 'subsystem',
         tables: ['project_incidents', 'project_incident_categories', 'project_incident_subcategories'] },
+      { name: 'Documentación (Prompts)', kind: 'subsystem', hint: 'Admin ▸ Prompts',
+        tables: ['project_prompts'] },
     ],
   },
   {

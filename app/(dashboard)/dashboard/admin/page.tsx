@@ -9,7 +9,8 @@ import TutorialesPanel from '@/components/admin/TutorialesPanel';
 import ListasPanel from '@/components/admin/ListasPanel';
 import FaqsPanel from '@/components/admin/FaqsPanel';
 import SolucionesPanel from '@/components/admin/SolucionesPanel';
-import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers } from 'lucide-react';
+import PromptsPanel from '@/components/admin/PromptsPanel';
+import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -30,6 +31,9 @@ const TABS = [
   // Los ÁMBITOS que se publican en /soluciones: los tipos de proyecto que maneja el grupo y
   // los talentos de cada uno. Segunda pestaña cuyo contenido sale de cara al mundo.
   { value: 'soluciones', label: 'Soluciones', Icon: Layers },
+  // La documentación de cada proyecto, escrita como en Word y exportable como prompt
+  // (Markdown) para dársela a una IA (Fernando, 2026-10-01).
+  { value: 'prompts', label: 'Prompts', Icon: NotebookPen },
 ];
 
 
@@ -75,6 +79,7 @@ export default function AdminPage() {
         {tab === 'listas' && <ListasPanel />}
         {tab === 'faqs' && <FaqsPanel />}
         {tab === 'soluciones' && <SolucionesPanel />}
+        {tab === 'prompts' && <PromptsPanel />}
       </div>
     </div>
   );

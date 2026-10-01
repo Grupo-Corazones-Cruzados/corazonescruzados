@@ -24,6 +24,7 @@ const REQUEST_OPTIONS: { value: 'proposals' | 'talent' | 'invite'; label: string
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { fmt2 } from '@/lib/format';
+import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
   Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle,
@@ -48,14 +49,8 @@ const STATUS_TABS = [
   { value: 'all', label: 'Todos', Icon: FolderKanban },
 ];
 
-const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  cotizacion: 'info', cotizacion_rechazada: 'error', draft: 'default', open: 'info', in_progress: 'warning',
-  review: 'info', in_review: 'info', completed: 'success', closed: 'success', cancelled: 'error',
-};
-const STATUS_LABEL: Record<string, string> = {
-  cotizacion: 'Cotización', cotizacion_rechazada: 'Rechazada', draft: 'Borrador', open: 'Abierto', in_progress: 'En progreso',
-  review: 'En revisión', in_review: 'En revisión', completed: 'Completado', closed: 'Cerrado', cancelled: 'Cancelado',
-};
+const STATUS_V = PROJECT_STATUS_VARIANT;
+const STATUS_LABEL = PROJECT_STATUS_LABEL;
 
 const PER_PAGE = 15;
 

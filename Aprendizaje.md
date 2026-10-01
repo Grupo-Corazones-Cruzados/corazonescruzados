@@ -1,5 +1,80 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+
+## Objetivo ACTUAL (declarado 2026-10-01) — ADMIN ▸ «PROMPTS»: la documentación de cada proyecto, escrita como en Word · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+
+**Fernando:** *«módulo de admin, nueva pestaña llamada Prompts, en donde tendremos acceso a todos
+los proyectos del sistema, dentro de un panel izquierdo, según el proyecto seleccionado, a la
+derecha debe existir una entrada de texto que permite llenar todo el detalle de ese proyecto […]
+muy parecido a la herramienta de word, en donde una página o entrada de texto va a ser el espacio
+para escribir todo el contenido que quiera»*.
+
+**Rol:** ingeniero frontend de editores de documentos + modelado de datos (Postgres `gcc_world`).
+
+### Fuentes consultadas (2026-10-01)
+- `app/(dashboard)/dashboard/admin/page.tsx`: pestañas en `TABS` (Razones, Fuentes, Tutoriales,
+  Listas, FAQs, Soluciones), solo `role === 'admin'`. Paneles en `components/admin/`.
+- BD: `gcc_world.projects` = 26 proyectos (3 cotización, 7 en progreso, 14 completados, 2
+  cancelados). Ninguna columna sirve de documento libre (`description` es la descripción
+  comercial; `proforma`, `public_docs`, `video_script` son de flujos retirados o públicos).
+- No hay tabla de documentación ni de «prompts» de proyecto (`gcont_prompts` es de Generación de
+  Contenido, otra cosa).
+- `package.json`: **no hay editor enriquecido** (ni TipTap, Lexical, Quill…), ni un
+  `contentEditable` en el repo. Sí hay `react-markdown` + `remark-gfm` (solo para MOSTRAR).
+
+### Preguntas y respuestas
+#### P1 — ¿Dónde se pone la pestaña y quién la ve? · ✅ Resuelta
+- **Respuesta:** séptima entrada de `TABS` en el admin, solo admin (la página entera ya lo exige).
+  Panel nuevo `components/admin/PromptsPanel.tsx`. (fuente: código)
+#### P2 — ¿Qué es «todos los proyectos del sistema»? · ✅ Resuelta
+- **Respuesta:** los del módulo Proyectos (`gcc_world.projects`, todos los estados), con buscador.
+  (Fernando, 2026-10-01)
+#### P3 — ¿Para qué se usa el texto? · ✅ Resuelta
+- **Respuesta:** documentación Y contexto para IA → «Copiar como prompt» y «Descargar .md», y el
+  servidor guarda `content_md` en cada guardado. (Fernando, 2026-10-01)
+#### P4 — ¿Cuánto de Word? · ✅ Resuelta
+- **Respuesta:** formato completo: títulos, marcas, alineación, listas y casillas, tablas, citas,
+  código, enlaces e imágenes. TipTap 3. (Fernando, 2026-10-01)
+#### P5 — ¿Cómo se guarda? · ✅ Resuelta
+- **Respuesta:** automático, sin historial, un documento por proyecto (P6 queda resuelta con
+  esto). (Fernando, 2026-10-01)
+
+### 🪤 Lo que salió al probarlo en el navegador (2026-10-01)
+- **El Markdown de TipTap no sale limpio con turndown a secas:** cada `<li>`/`<td>` lleva su
+  `<p>` (listas «sueltas» con líneas en blanco), el `<colgroup>` delante de la tabla impide que
+  el plugin gfm reconozca la cabecera (la tabla salía como HTML), y una celda vacía se convertía
+  en `\n\n` y partía la tabla. Reglas propias en `lib/admin/prompts-md.ts`.
+- **`useEditorState` con el editor en `null` no se recalcula hasta la primera transacción:** la
+  barra de formato y el contador salían vacíos hasta tocar la hoja. En escritorio no se vio
+  porque la prueba hacía clic antes; lo destapó la prueba en teléfono. Se montan cuando el
+  editor ya existe.
+- Trampas del banco de pruebas, no del código: la clave del tema es `gcc_dash_theme:<id>`, en
+  local no hay `JWT_SECRET` (el servidor usa el valor por defecto), `tsc && build` encadenado
+  dejó corriendo el build viejo, y cambiar `isMobile` en puppeteer recarga la página.
+
+### Verificado (2026-10-01)
+tsc + `next build` + Chrome real contra el servidor de producción local: pestaña, rail, formato
+por la barra, guardado automático, MD (título, negrita, lista, tarea, tabla con celdas vacías,
+imagen), cambio inmediato de proyecto sin perder lo escrito, recarga, 409 con fecha vieja, los
+dos botones del aviso de conflicto, copiar, recordar el último proyecto, tema oscuro, 390 px sin
+desborde y barra en una fila, 403 a un no-admin, subida a Cloudinary y rechazo de no-imagen.
+Limpieza: filas de prueba borradas (tabla en 0) e imágenes de prueba destruidas en Cloudinary.
+
+### Plan de solución (ejecutado)
+1. Tabla `gcc_world.project_prompts` (`project_id` PK/FK → `projects` ON DELETE CASCADE,
+   `content` jsonb de TipTap + `content_md` texto, `updated_at`, `updated_by`), creación perezosa
+   como `razones` + migración en `sql/migrations/`; añadirla a la taxonomía de Fuentes.
+2. API `/api/admin/prompts` (GET lista de proyectos con «tiene documento» y fecha) y
+   `/api/admin/prompts/[projectId]` (GET/PUT), solo admin.
+3. `PromptsPanel`: rail izquierdo con buscador y estado (reusar `FilterRail`/patrón de Listas),
+   derecha la hoja con barra de herramientas; alto heredado (regla de disposición).
+4. Verificar: tsc + build + prueba real en el navegador; ninguna prueba borra datos reales.
+
+### Riesgos
+- Perder lo escrito al cambiar de proyecto o al desplegar → guardado con antirrebote y aviso de
+  «cambios sin guardar».
+- Dos pestañas pisándose → `updated_at` como control de concurrencia en el PUT.
+
 ## Objetivo (declarado 2026-09-28) — ENLACE DE PAGO DEL PROYECTO por token y correo · ✅ 100 % — CONSTRUIDO Y VERIFICADO
 
 **Fernando:** *«como usuario responsable del proyecto pueda compartir por token y correo un
