@@ -5,6 +5,7 @@ import FloatingWindow from '@/components/ui/FloatingWindow';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
+import { WorkTasksSummary } from '@/components/calendar/WorkTasks';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import { Save, Trash2, X, AlertTriangle, Video, Copy, Check } from 'lucide-react';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
@@ -291,6 +292,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
     >
       <div className="space-y-4">
         {event?.meeting_url && <MeetingLink url={event.meeting_url} />}
+        {event?.availability_status === 'trabajando' && <WorkTasksSummary eventId={event.id} />}
 
         <PixelInput
           label="TÍTULO"

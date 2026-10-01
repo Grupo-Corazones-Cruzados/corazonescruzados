@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { openEndSql } from '@/lib/calendar/availability-db';
 
 type RouteCtx = { params: Promise<{ memberId: string }> };
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     const { rows } = await pool.query(
       `SELECT
          e.id,
-         e.start_at, e.end_at, e.all_day, e.timezone,
+         e.start_at, ${openEndSql('e')} AS end_at, e.all_day, e.timezone,
          e.recurrence_type, e.recurrence_days, e.recurrence_interval,
          to_char(e.recurrence_until, 'YYYY-MM-DD') AS recurrence_until,
          e.status

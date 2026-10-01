@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Plus, Share2, CalendarDays, ListTodo, Lock, Ticket, FolderKanban,
-  Briefcase, Dumbbell, Brain, Users, ShieldCheck, Clock, PartyPopper,
+  Briefcase, Dumbbell, Brain, Users, ShieldCheck, Clock, PartyPopper, ListChecks,
 } from 'lucide-react';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
 import EventModal, { type EventFormPayload, type ClientOption, type TaskOption } from '@/components/calendar/EventModal';
 import ShareDialog from '@/components/calendar/ShareDialog';
 import ProposalsPanel from '@/components/calendar/ProposalsPanel';
+import WorkTasksWindow from '@/components/calendar/WorkTasks';
 import TaskStatusButtons from '@/components/centralized/TaskStatusButtons';
 import {
   type CalendarEvent, type EventInstance, type EventType,
@@ -72,6 +73,10 @@ export default function MiDiaPage() {
   const [genPopover, setGenPopover] = useState<{ id: number; title: string; status: Status; x: number; y: number; kind: 'policy' | 'social'; locked?: boolean; eventName?: string } | null>(null);
   const [availability, setAvailability] = useState<AvailabilityStatus>('conectado');
   const [savingAvail, setSavingAvail] = useState(false);
+  // Ventana flotante de las tareas de «Trabajando»: se abre sola al entrar en ese estado (y
+  // al volver a Mi día con él activo); si se cierra, el botón «Tareas» la reabre.
+  const [workOpen, setWorkOpen] = useState(false);
+  const workAutoOpened = useRef(false);
   // Grupos de fecha del panel de eventos: contraídos por defecto (Set de días expandidos).
   const [openEventDays, setOpenEventDays] = useState<Set<string>>(new Set());
   const toggleEventDay = (day: string) => setOpenEventDays((s) => { const n = new Set(s); n.has(day) ? n.delete(day) : n.add(day); return n; });
@@ -105,7 +110,12 @@ export default function MiDiaPage() {
       const clData = await clRes.json();
       setEvents(evData.data || []);
       setClients((clData.data || []).map((c: any) => ({ id: c.id, name: c.name })));
-      if (avRes.ok) { const av = await avRes.json(); if (av.status) setAvailability(av.status); }
+      if (avRes.ok) {
+        const av = await avRes.json();
+        if (av.status) setAvailability(av.status);
+        // Al llegar a Mi día con «Trabajando» activo, la ventana de tareas se abre sola (una vez).
+        if (av.status === 'trabajando' && !workAutoOpened.current) { workAutoOpened.current = true; setWorkOpen(true); }
+      }
     } catch { toast.error('Error al cargar el calendario'); }
     finally { setLoading(false); }
   }, []);
@@ -327,7 +337,9 @@ export default function MiDiaPage() {
     try {
       const res = await fetch('/api/members/calendar/availability', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
       if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error(data.error || 'Error'); }
-      toast.success(`Disponibilidad: ${AVAILABILITY[status].label}`); await load();
+      toast.success(`Disponibilidad: ${AVAILABILITY[status].label}`);
+      setWorkOpen(status === 'trabajando');
+      await load();
     } catch (err: any) { setAvailability(prev); toast.error(err?.message || 'Error'); }
     finally { setSavingAvail(false); }
   };
@@ -446,6 +458,9 @@ export default function MiDiaPage() {
                   {AVAILABILITY_ORDER.map((s) => <option key={s} value={s}>{AVAILABILITY[s].label}</option>)}
                 </select>
               </div>
+              {availability === 'trabajando' && (
+                <button onClick={() => setWorkOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><ListChecks className="w-4 h-4" /> Tareas</button>
+              )}
               <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><Share2 className="w-4 h-4" /> Compartir</button>
             </div>
           </div>
@@ -568,6 +583,12 @@ export default function MiDiaPage() {
       />
 
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+
+      <WorkTasksWindow
+        open={workOpen && availability === 'trabajando'}
+        onClose={() => setWorkOpen(false)}
+        onCompleted={() => { setWorkOpen(false); setAvailability('conectado'); load(); }}
+      />
 
       {/* Popover de estado de una tarea sintética (clic en su bloque del calendario) */}
       {genPopover && (

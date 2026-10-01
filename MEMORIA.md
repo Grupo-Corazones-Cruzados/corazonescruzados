@@ -275,6 +275,24 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **⏱️ Mi día ▸ estado «Trabajando» con lista de tareas (Fernando, 2026-10-01).** Quinto estado
+  de disponibilidad (`lib/calendar/availability.ts`, naranja `#f97316`): abre un bloque en el
+  calendario como «Ocupado» (en el público sale como «Ocupado», igual que todos). Al elegirlo se
+  abre una **ventana flotante** (`components/calendar/WorkTasks.tsx`, sobre `FloatingWindow`)
+  para agregar/eliminar tareas; cada una se guarda al instante con su hora en
+  **`gcc_world.member_work_tasks`** (migración 065), colgada del **bloque** (`event_id`, cascada).
+  La **casilla es solo visual** (no se guarda). **«Completado»** marca todas las tareas
+  (`completed_at`) y pasa a «Conectado» en UNA transacción (`POST .../work/complete`). El
+  detalle del bloque (`EventModal`) enseña «Tareas de la sesión» (✓ completada / ○ no).
+  - El cambio de estado es **una sola función** para el selector y para «Completado»:
+    `setMemberAvailability` en `lib/calendar/availability-db.ts`.
+  - **Un bloque de disponibilidad abierto se pinta hasta AHORA** (`openEndSql`: `GREATEST(end_at,
+    NOW())`) en el calendario propio, el público y el control de solapes de propuestas. Antes
+    se veía solo su hora provisional hasta cerrarse — también le pasaba a «Ocupado».
+  - Decisiones por defecto, pendientes de que Fernando las confirme: salir de «Trabajando» con el
+    selector cierra la sesión y deja las tareas **sin completar**; las tareas de una sesión
+    cerrada son de solo lectura; «Completado» exige al menos una tarea; la ventana se reabre con
+    el botón «Tareas» junto al selector y se abre sola al volver a Mi día con el estado activo.
 - **📝 Admin ▸ «Prompts»: la documentación de cada proyecto, como en Word (Fernando, 2026-10-01).**
   Séptima pestaña del admin (solo admin). Izquierda: los proyectos del módulo Proyectos con un
   **filtro de estado encima del buscador** (`PixelSelect`, «Todos los estados» + solo los

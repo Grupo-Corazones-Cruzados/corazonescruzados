@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { openEndSql } from '@/lib/calendar/availability-db';
 import { notifyCalendarSubscribers } from '@/lib/calendar/notify';
 import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 
@@ -22,7 +23,8 @@ const SELECT_SQL = `
     e.client_id,
     c.name AS client_name,
     e.start_at,
-    e.end_at,
+    -- Un bloque de disponibilidad abierto ocupa, como mínimo, hasta ahora.
+    ${openEndSql('e')} AS end_at,
     e.all_day,
     e.timezone,
     e.recurrence_type,
@@ -34,6 +36,8 @@ const SELECT_SQL = `
     e.color,
     e.status,
     e.alternative_id,
+    e.availability_status,
+    e.availability_open,
     e.meeting_url,
     e.meeting_provider,
     e.created_at,

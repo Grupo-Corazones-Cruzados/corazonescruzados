@@ -1,6 +1,60 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
 
+## Objetivo ACTUAL (declarado 2026-10-01) — MI DÍA ▸ estado «Trabajando» con lista de tareas · ✅ 90 % — CONSTRUIDO Y VERIFICADO (P2-P5 por confirmar)
+
+**Fernando:** *«agregar un nuevo estado que se llame "trabajando", y cuando escoja ese estado, la
+interfaz se muestre como ocupado ese espacio mientras el estado se encuentra trabajando, y luego
+debe aparecer una ventana [flotante] que permita registrar una lista de tareas […] que guarde la
+fecha y hora automáticamente […] agregar o eliminar […] un botón para marcar completado […] y
+automáticamente cambiar el estado de trabajando a conectado […] cuando vea en el calendario ese
+tiempo, la ventana con el detalle muestre las tareas que se hicieron […] check o uncheck, solo
+visual»*.
+
+**Rol:** ingeniero full-stack (modelo de datos Postgres `gcc_world` + React del calendario).
+
+### Fuentes consultadas (2026-10-01)
+- `lib/calendar/availability.ts`: estados `conectado | ocupado | descanso | fuera_de_casa`;
+  todos menos «conectado» crean un bloque (`createsEvent`).
+- `app/api/members/calendar/availability/route.ts` (POST): en una transacción cierra el bloque
+  abierto (`end_at = NOW()`, `availability_open = FALSE`), guarda `members.availability_status`
+  y, si el estado crea bloque, inserta en `member_calendar_events` uno de `NOW()` a `NOW()+1h`
+  con `availability_status` y `availability_open = TRUE`.
+- BD: dos CHECK limitan los valores — `members_availability_chk` y `mce_availability_chk`.
+  Hay que ampliarlos (migración), si no el INSERT falla.
+- **Mientras el bloque está abierto el calendario lo pinta de solo 1 h** (su `end_at` provisional);
+  no crece con el tiempo. Para que «ocupe el espacio mientras trabaja» el GET devuelve
+  `GREATEST(end_at, NOW())` en los bloques abiertos (también en el calendario público).
+- La «ventana con el detalle» del calendario es `EventModal` (un `FloatingWindow`).
+- Controles existentes que se reúsan: `FloatingWindow`, `FilaMarcable` (casilla), `BotonQuitar`.
+
+### Preguntas y respuestas
+#### P1 — ¿Dónde viven las tareas? · ✅ Resuelta
+- **Respuesta:** tabla nueva `gcc_world.member_work_tasks`, colgada del bloque de calendario de la
+  sesión (`event_id` → `member_calendar_events.id`, `ON DELETE CASCADE`: el bloque se edita con
+  UPDATE, nunca se borra y reinserta). `created_at` automático. (decisión de diseño)
+#### P2 — ¿Qué pasa si se sale de «Trabajando» con el selector y no con «Completado»? · 🔎 decidido por defecto
+- **Respuesta provisional:** la sesión se cierra igual; sus tareas quedan registradas **sin
+  completar** (`completed_at` NULL) y el detalle lo muestra así. «Completado» es lo único que
+  las marca. (pendiente de confirmar con Fernando)
+#### P3 — ¿Se pueden tocar las tareas de una sesión ya cerrada? · 🔎 decidido por defecto
+- **Respuesta provisional:** no; en el detalle del calendario son de solo lectura. Agregar y
+  eliminar solo mientras la sesión está abierta.
+#### P4 — ¿La ventana se puede cerrar y volver a abrir? · 🔎 decidido por defecto
+- **Respuesta provisional:** sí; mientras dure «Trabajando» hay un botón «Tareas» junto al
+  selector, y al volver a Mi día con el estado activo se abre sola.
+#### P5 — ¿«Completado» con la lista vacía? · 🔎 decidido por defecto
+- **Respuesta provisional:** deshabilitado hasta que haya al menos una tarea.
+
+### Verificación (2026-10-01)
+- `tsc` y `npm run build` limpios; migración 065 aplicada en producción (aditiva).
+- SQL contra la base real **en transacción con ROLLBACK**: rechaza título vacío, el bloque abierto
+  se pinta hasta ahora, borrar solo con sesión abierta, «Completado» marca y cierra, cascada.
+- Chrome (puppeteer, con TODA escritura interceptada): el selector ofrece «Trabajando», la
+  ventana se abre sola, agregar 3 / eliminar 1, casilla marca y desmarca, cerrar y reabrir con
+  «Tareas», «Completado» deja «Conectado», y el detalle del bloque lista las tareas. En 390 px
+  la ventana cabe (12 px de margen) sin desplazamiento horizontal. Cero errores de página.
+
 ## Objetivo ACTUAL (declarado 2026-10-01) — ADMIN ▸ «PROMPTS»: la documentación de cada proyecto, escrita como en Word · ✅ 100 % — CONSTRUIDO Y VERIFICADO
 
 **Fernando:** *«módulo de admin, nueva pestaña llamada Prompts, en donde tendremos acceso a todos

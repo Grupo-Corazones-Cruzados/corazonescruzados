@@ -22,6 +22,9 @@ export interface CalendarEvent {
   alternative_id?: number | null; // tarea del Horario de Vida que justifica el evento
   meeting_url?: string | null; // enlace de reunión (Google Meet) si se agendó desde el calendario público
   meeting_provider?: string | null;
+  /** Bloque abierto por un estado de disponibilidad (`trabajando` lleva lista de tareas). */
+  availability_status?: string | null;
+  availability_open?: boolean;
 }
 
 export interface EventInstance extends CalendarEvent {
