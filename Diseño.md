@@ -3943,6 +3943,9 @@ mientras se escribe.
     y «Editar ticket» (con `sinAsignar`). Se fue el flyout lateral que tenía antes.
     Se quitaron el texto de ayuda de «Solicitar proyecto» y la casilla «Crear/usar mi cuenta de
     tipo cliente»: la API ya la crea o la reutiliza sola (`ensureUserClientAccount`).
+  - **2026-10-03 · «Nueva cotización» también usa `CampoClienteOCorreo`** (era un `<select>` a mano
+    con la nota «Si el correo no tiene cuenta…» debajo, que se fue). Y «Nuevo proyecto» perdió su
+    texto de ayuda: ningún formulario de creación de Proyectos lleva ya una frase de presentación.
 - **2026-10-02 · Desplegables `<select>` escritos a mano, aplastados** · **CORREGIDO EN LA
   FUENTE** (`app/globals.css`, regla `.corp select:not(.field-plain):not([multiple])`). Fernando lo
   vio en «Mis clientes» del nuevo proyecto: más bajo que los campos de al lado y con las flechas

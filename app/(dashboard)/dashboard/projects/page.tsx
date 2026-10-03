@@ -607,29 +607,13 @@ export default function ProjectsPage() {
                   {quoteServices.length === 0 && <p className="text-[10.5px] text-amber-600" style={mf}>No tienes servicios activos. Créalos en Configuración → Mi CV.</p>}
                 </div>
 
-                {/* Cliente obligatorio */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente <span className="text-accent">*</span></label>
-                    <button type="button" onClick={() => { setQuoteClientMode(quoteClientMode === 'existing' ? 'email' : 'existing'); setQuoteClientId(''); setQuoteClientEmail(''); }}
-                      className="text-[11px] text-digi-muted hover:text-accent border border-digi-border rounded px-1.5 py-0.5 transition-colors" style={mf}>
-                      {quoteClientMode === 'existing' ? 'Usar un correo' : 'Elegir de mis clientes'}
-                    </button>
-                  </div>
-                  {quoteClientMode === 'existing' ? (
-                    <select value={quoteClientId} onChange={(e) => setQuoteClientId(e.target.value)}
-                      className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf}>
-                      <option value="">— Elige un cliente —</option>
-                      {quoteClients.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name || c.email}{c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input type="email" value={quoteClientEmail} onChange={(e) => setQuoteClientEmail(e.target.value)} placeholder="correo@cliente.com"
-                      className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                  )}
-                  <p className="text-[10.5px] text-digi-muted/80 mt-1" style={mf}>Si el correo no tiene cuenta, se registra y se le invita a crearla.</p>
-                </div>
+                {/* Cliente obligatorio: el mismo control que «Nuevo ticket» y «Nuevo proyecto». */}
+                <CampoClienteOCorreo
+                  modo={quoteClientMode === 'existing' ? 'lista' : 'correo'}
+                  onModo={(m) => { setQuoteClientMode(m === 'lista' ? 'existing' : 'email'); setQuoteClientId(''); setQuoteClientEmail(''); }}
+                  clienteId={quoteClientId} onClienteId={setQuoteClientId}
+                  correo={quoteClientEmail} onCorreo={setQuoteClientEmail}
+                  clientes={quoteClients} />
 
                 <div className="flex flex-col gap-1">
                   <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Detalle de la cotización *</label>
@@ -668,11 +652,6 @@ export default function ProjectsPage() {
       {/* Create/Request Modal */}
       <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title={createMode === 'request' ? 'Solicitar proyecto' : 'Nuevo proyecto'}>
         <div className="space-y-3">
-          {createMode === 'create' && (
-            <p className="text-[11.5px] text-digi-muted" style={mf}>
-              Creas un proyecto del que serás el responsable. Elige el cliente entre los tuyos o invítalo por email.
-            </p>
-          )}
 
           <PixelInput label="Título *" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nombre del proyecto" />
           <div className="flex flex-col gap-1">
