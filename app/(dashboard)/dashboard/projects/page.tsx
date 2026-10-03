@@ -28,7 +28,7 @@ import { fmt2 } from '@/lib/format';
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle,
+  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle, CircleUserRound,
 } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -697,7 +697,15 @@ export default function ProjectsPage() {
               </div>
               {clientMode === 'existing' ? (
                 <SearchableSelect value={createClientId} onChange={setCreateClientId}
-                  options={myClients.map((c) => ({ value: String(c.id), label: `${c.name}${c.email ? ` — ${c.email}` : ''}${c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}` }))}
+                  options={myClients.map((c) => {
+                    // Con cuenta en GCC World = cliente activo; el icono va en color, y gris si no.
+                    const conCuenta = !c.status || c.status === 'activo';
+                    return {
+                      value: String(c.id), label: c.name || c.email || '', hint: c.name ? c.email || undefined : undefined,
+                      icon: <CircleUserRound className={`w-4 h-4 ${conCuenta ? 'text-accent' : 'text-digi-muted/50'}`}
+                        aria-label={conCuenta ? 'Tiene cuenta en GCC World' : 'Sin cuenta en GCC World'} />,
+                    };
+                  })}
                   placeholder="Elige un cliente" searchPlaceholder="Buscar por nombre o correo…" />
               ) : (
                 <>

@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, Search, Check } from 'lucide-react';
 
 const bodyFont = { fontFamily: 'var(--font-body)' } as const;
 
-interface Option { value: string; label: string; }
+/** `hint` es una segunda línea bajo la etiqueta (p. ej. el correo) y entra en la búsqueda;
+ *  `icon` va a la izquierda de la primera línea. Los dos son opcionales. */
+interface Option { value: string; label: string; hint?: string; icon?: ReactNode; }
 interface Props {
   label?: string;
   value: string;
@@ -33,7 +35,7 @@ export default function SearchableSelect({
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return options;
-    return options.filter((o) => o.label.toLowerCase().includes(s) || o.value.toLowerCase().includes(s));
+    return options.filter((o) => o.label.toLowerCase().includes(s) || o.value.toLowerCase().includes(s) || (o.hint?.toLowerCase().includes(s) ?? false));
   }, [q, options]);
 
   useEffect(() => {
@@ -84,11 +86,15 @@ export default function SearchableSelect({
                   key={o.value}
                   type="button"
                   onClick={() => { onChange(o.value); setOpen(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-[13px] transition-colors ${o.value === value ? 'bg-accent-light text-accent' : 'text-digi-text hover:bg-black/[0.04]'}`}
+                  className={`w-full flex ${o.hint ? 'items-start py-2' : 'items-center py-1.5'} gap-2 px-3 text-left text-[13px] transition-colors ${o.value === value ? 'bg-accent-light text-accent' : 'text-digi-text hover:bg-black/[0.04]'}`}
                   style={bodyFont}
                 >
-                  <span className="flex-1 min-w-0 truncate">{o.label}</span>
-                  {o.value === value && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  {o.icon && <span className="shrink-0 h-[18px] flex items-center">{o.icon}</span>}
+                  <span className="flex-1 min-w-0">
+                    <span className="block truncate leading-[18px]">{o.label}</span>
+                    {o.hint && <span className="block truncate text-[11.5px] leading-4 text-digi-muted">{o.hint}</span>}
+                  </span>
+                  {o.value === value && <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" />}
                 </button>
               ))}
             </div>

@@ -3913,6 +3913,13 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-03 · `SearchableSelect` admite segunda línea e icono por opción** · **ADOPTADO**
+  (Fernando, al pedir el buscador de clientes del nuevo proyecto). Cada opción puede traer
+  `hint` (segunda línea en `text-digi-muted` 11,5 px, y también se busca por ella) e `icon` (a la
+  izquierda de la PRIMERA línea, alineado con el nombre). Sin `hint` ni `icon` la fila es la de
+  siempre. Uso canónico, el cliente: nombre arriba, correo debajo y `CircleUserRound` en
+  `text-accent` si tiene cuenta en GCC World (`clients.status = 'activo'`) o en
+  `text-digi-muted/50` si no. Ya no se escribe «· sin cuenta» en el texto: lo dice el icono.
 - **2026-10-02 · Desplegables `<select>` escritos a mano, aplastados** · **CORREGIDO EN LA
   FUENTE** (`app/globals.css`, regla `.corp select:not(.field-plain):not([multiple])`). Fernando lo
   vio en «Mis clientes» del nuevo proyecto: más bajo que los campos de al lado y con las flechas
