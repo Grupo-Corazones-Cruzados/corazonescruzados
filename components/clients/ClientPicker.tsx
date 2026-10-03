@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BadgeCheck } from 'lucide-react';
+import IconoCuenta from './IconoCuenta';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-body)' } as const;
@@ -78,13 +78,12 @@ export default function ClientPicker({
               const active = c.status === 'activo';
               return (
                 <button key={c.id} type="button" onClick={() => pick(c)}
-                  className="w-full text-left px-3 py-1.5 hover:bg-accent/10 border-b border-digi-border/30 last:border-b-0 transition-colors flex items-center gap-2">
+                  className={`w-full text-left px-3 ${c.name && c.email ? 'py-2 items-start' : 'py-1.5 items-center'} hover:bg-black/[0.04] transition-colors flex gap-2`}>
+                  <span className="shrink-0 h-[18px] flex items-center"><IconoCuenta conCuenta={active} /></span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[13px] text-digi-text truncate" style={mf}>{c.name || c.email}</span>
-                    {c.email && <span className="block text-[11px] text-digi-muted truncate" style={mf}>{c.email}</span>}
+                    <span className="block text-[13px] leading-[18px] text-digi-text truncate" style={mf}>{c.name || c.email}</span>
+                    {c.name && c.email && <span className="block text-[11.5px] leading-4 text-digi-muted truncate" style={mf}>{c.email}</span>}
                   </span>
-                  <BadgeCheck aria-label={active ? 'Cuenta activa' : 'Sin cuenta'}
-                    className={`w-4 h-4 shrink-0 ${active ? 'text-white fill-green-600' : 'text-digi-muted/50'}`} />
                 </button>
               );
             })}

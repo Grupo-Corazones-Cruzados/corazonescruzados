@@ -22,6 +22,8 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
+import SearchableSelect from '@/components/ui/SearchableSelect';
+import IconoCuenta from '@/components/clients/IconoCuenta';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
@@ -1151,8 +1153,12 @@ export default function TicketDetailPage() {
               options={services.map((s: any) => ({ value: String(s.id), label: s.name }))} placeholder="-- Sin servicio --" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelSelect label="Miembro asignado" value={form.member_id} onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-              options={members.map((m: any) => ({ value: String(m.id), label: m.name }))} placeholder="-- Sin asignar --" />
+            <SearchableSelect label="Miembro" value={String(form.member_id || '')} onChange={(id) => setForm({ ...form, member_id: id })}
+              options={[{ value: '', label: 'Sin asignar' }, ...members.map((m: any) => ({
+                value: String(m.id), label: m.name || m.email || '', hint: m.name ? m.email || undefined : undefined,
+                icon: <IconoCuenta conCuenta={!!m.con_cuenta} />,
+              }))]}
+              placeholder="Sin asignar" searchPlaceholder="Buscar por nombre o correo…" />
             <ClientPicker clientId={form.client_id} clientEmail={form.client_email || ''}
               onChange={(v) => setForm({ ...form, client_id: v.clientId, client_email: v.clientEmail })} />
           </div>

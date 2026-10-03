@@ -20,7 +20,7 @@ export async function GET() {
     // Usuarios con perfil de miembro (member_id). El candidato se detecta por su fila clients.
     const { rows } = await pool.query(
       `SELECT u.member_id::text AS member_id, u.role,
-              COALESCE(m.name, u.first_name, u.email) AS name,
+              COALESCE(m.name, u.first_name, u.email) AS name, COALESCE(m.email, u.email) AS email,
               c.id::text AS client_id, c.account_type
          FROM gcc_world.users u
          JOIN gcc_world.members m ON m.id = u.member_id
@@ -60,6 +60,7 @@ export async function GET() {
       return {
         member_id: r.member_id,
         name: r.name,
+        email: r.email,
         role: roleLabel,
         prospeccion: prospeccion(crit),
         top_talents: sortedTalents(crit?.talents).slice(0, 5).map((t) => t.name),

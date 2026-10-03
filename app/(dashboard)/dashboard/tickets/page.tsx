@@ -14,7 +14,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
-import AssigneePicker from '@/components/tickets/AssigneePicker';
+import SearchableSelect from '@/components/ui/SearchableSelect';
+import IconoCuenta from '@/components/clients/IconoCuenta';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -173,7 +174,12 @@ export default function TicketsPage() {
       (mode === 'create' && user?.member_id
         ? fetch(`/api/members/${user.member_id}/services?active=1`)
         : fetch('/api/services')).then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/members/list').then(r => r.json()).catch(() => ({ data: [] })),
+      // Solicitar: a quién se puede invitar (candidatos, miembros y admin, todos con cuenta).
+      mode === 'request'
+        ? fetch('/api/tickets/assignees').then(r => r.json())
+            .then(d => ({ data: (d.data || []).map((a: any) => ({ id: a.member_id, name: a.name, email: a.email, con_cuenta: true })) }))
+            .catch(() => ({ data: [] }))
+        : Promise.resolve({ data: [] }),
       // Nuevo: clientes ASOCIADOS a mi sesión; Solicitar: no usa lista (cliente = mi cuenta).
       mode === 'create'
         ? fetch('/api/clients?mine=1').then(r => r.json()).catch(() => ({ data: [] }))
@@ -560,7 +566,12 @@ export default function TicketsPage() {
                   })}
                   {form.request_option === 'invite' && (
                     <div className="pt-1">
-                      <AssigneePicker value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })} />
+                      <SearchableSelect value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })}
+                        options={members.map((m: any) => ({
+                          value: String(m.id), label: m.name || m.email || '', hint: m.name ? m.email || undefined : undefined,
+                          icon: <IconoCuenta conCuenta={!!m.con_cuenta} />,
+                        }))}
+                        placeholder="Elige un miembro" searchPlaceholder="Buscar por nombre o correo…" />
                     </div>
                   )}
                   {/* El selector de talentos ya NO vive aquí: subió a campo propio del
@@ -572,7 +583,7 @@ export default function TicketsPage() {
               // Nuevo ticket: el miembro asignado SIEMPRE es el usuario de la sesión
               // (candidato/miembro/admin). Se muestra de solo lectura.
               <div>
-                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro asignado</label>
+                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro</label>
                 <div className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-muted rounded" style={mf}>
                   Tú — {user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'}
                 </div>
@@ -605,10 +616,14 @@ export default function TicketsPage() {
                   </button>
                 </div>
                 {form.client_mode === 'select' ? (
-                  <PixelSelect value={form.client_id}
-                    onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                    options={clients.map((c: any) => ({ value: String(c.id), label: `${c.name || c.email}${c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}` }))}
-                    placeholder="-- Elige un cliente --" />
+                  <SearchableSelect value={form.client_id}
+                    onChange={(id) => setForm({ ...form, client_id: id })}
+                    options={clients.map((c: any) => ({
+                      value: String(c.id), label: c.name || c.email || '', hint: c.name ? c.email || undefined : undefined,
+                      // Con cuenta en GCC World = cliente activo.
+                      icon: <IconoCuenta conCuenta={!c.status || c.status === 'activo'} />,
+                    }))}
+                    placeholder="Elige un cliente" searchPlaceholder="Buscar por nombre o correo…" />
                 ) : (
                   <input type="email" value={form.client_email}
                     onChange={(e) => setForm({ ...form, client_email: e.target.value })}

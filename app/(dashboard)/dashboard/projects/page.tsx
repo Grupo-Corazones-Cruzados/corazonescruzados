@@ -10,6 +10,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import IconoCuenta from '@/components/clients/IconoCuenta';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
@@ -28,7 +29,7 @@ import { fmt2 } from '@/lib/format';
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle, CircleUserRound,
+  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle,
 } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -702,8 +703,7 @@ export default function ProjectsPage() {
                     const conCuenta = !c.status || c.status === 'activo';
                     return {
                       value: String(c.id), label: c.name || c.email || '', hint: c.name ? c.email || undefined : undefined,
-                      icon: <CircleUserRound className={`w-4 h-4 ${conCuenta ? 'text-accent' : 'text-digi-muted/50'}`}
-                        aria-label={conCuenta ? 'Tiene cuenta en GCC World' : 'Sin cuenta en GCC World'} />,
+                      icon: <IconoCuenta conCuenta={conCuenta} />,
                     };
                   })}
                   placeholder="Elige un cliente" searchPlaceholder="Buscar por nombre o correo…" />

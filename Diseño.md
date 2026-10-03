@@ -3920,6 +3920,13 @@ mientras se escribe.
   siempre. Uso canónico, el cliente: nombre arriba, correo debajo y `CircleUserRound` en
   `text-accent` si tiene cuenta en GCC World (`clients.status = 'activo'`) o en
   `text-digi-muted/50` si no. Ya no se escribe «· sin cuenta» en el texto: lo dice el icono.
+  - **2026-10-03 · El icono es UNA pieza: `components/clients/IconoCuenta.tsx`** (`conCuenta`).
+    Lo usan el cliente del nuevo proyecto, el cliente y el miembro de Tickets (nuevo, solicitar y
+    editar) y `ClientPicker`, que tenía su equivalente propio (`BadgeCheck` verde a la DERECHA) y
+    pasó a esta. Para un miembro, «tiene cuenta» = hay un `users` con su `member_id`
+    (`/api/members/list` devuelve `con_cuenta`); `/api/tickets/assignees` devuelve el correo.
+    En Tickets la etiqueta es **«Miembro»**, no «Miembro asignado». ⚠️ Proyectos sigue con
+    `AssigneePicker` (rol, prospección y talentos) al invitar a un miembro: pendiente de decidir.
 - **2026-10-02 · Desplegables `<select>` escritos a mano, aplastados** · **CORREGIDO EN LA
   FUENTE** (`app/globals.css`, regla `.corp select:not(.field-plain):not([multiple])`). Fernando lo
   vio en «Mis clientes» del nuevo proyecto: más bajo que los campos de al lado y con las flechas

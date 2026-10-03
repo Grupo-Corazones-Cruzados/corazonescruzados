@@ -8,7 +8,9 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { rows } = await pool.query(
-      `SELECT id, name, email, photo_url FROM gcc_world.members WHERE is_active = true ORDER BY name`
+      `SELECT m.id, m.name, m.email, m.photo_url,
+              EXISTS (SELECT 1 FROM gcc_world.users u WHERE u.member_id = m.id) AS con_cuenta
+         FROM gcc_world.members m WHERE m.is_active = true ORDER BY m.name`
     );
     return NextResponse.json({ data: rows });
   } catch (err: any) {
