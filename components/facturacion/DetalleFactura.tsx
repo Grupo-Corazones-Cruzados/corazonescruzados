@@ -71,7 +71,7 @@ export default function DetalleFactura({ items, onChange }: { items: ItemFactura
                     className={`${CELDA} text-right`} style={mf} aria-label="Precio unitario" />
                 </td>
                 <td className="px-1 py-0.5">
-                  <select value={it.ivaRate} onChange={(e) => cambiar(i, 'ivaRate', e.target.value)} className={CELDA} style={mf} aria-label="IVA">
+                  <select value={it.ivaRate} onChange={(e) => cambiar(i, 'ivaRate', e.target.value)} className={`${CELDA} select-compacto`} style={mf} aria-label="IVA">
                     <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
                   </select>
                 </td>

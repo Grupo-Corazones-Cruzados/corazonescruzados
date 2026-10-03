@@ -1144,6 +1144,25 @@ html {
 .corp .field-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23605e5c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
+/* ⭐ TODO DESPLEGABLE DEL PANEL ES EL DE `PixelSelect` (2026-10-02).
+   Un `<select>` escrito a mano sin `appearance-none` lo dibuja el sistema: en macOS ignora el
+   relleno y la altura y sale aplastado, con sus flechas dobles (Fernando, 2026-10-02 — el
+   «Mis clientes» del nuevo proyecto). Había 40 así en 20 archivos. En vez de perseguirlos,
+   la flecha y el `appearance: none` se ponen aquí, para todos. `field-plain` se excluye: su
+   marco lo pone el contenedor. Las celdas estrechas usan `select-compacto`. */
+.corp select:not(.field-plain):not([multiple]) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23605e5c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+}
+.corp select:not(.field-plain):not([multiple]):disabled { cursor: default; }
+/* Variante con nombre para celdas estrechas (IVA de una línea de factura): la flecha
+   pegada al borde, para que el valor no se corte. */
+.corp select.select-compacto:not([multiple]) { padding-left: 6px; padding-right: 18px; background-position: right 4px center; }
 .corp .field-label {
   font-family: var(--font-display);
   font-size: 0.75rem;             /* 12px */

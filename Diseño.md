@@ -1045,7 +1045,7 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
 | Tabla | `components/ui/PixelDataTable` | `.corp .data-table`; `onRowClick`, orden por columna |
 | Badge/estado | `components/ui/PixelBadge` | variantes success/warning/error/info/default |
 | Modal / Panel | `components/ui/PixelModal` | md/lg se vuelven **panel lateral derecho** (Fluent) |
-| Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px |
+| Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px. Todo `<select>` del panel recibe `appearance: none` + la flecha de `PixelSelect` desde `globals.css` (2026-10-02); `select-compacto` para celdas estrechas |
 | Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
 | Listas de contactos + su tabla | `components/dashboard/flows/PanelListasContactos` | La columna de listas (con casilla de asociación, y renombrar/compartir/borrar al borde derecho) y la tabla de contactos con importar/exportar Excel. Extraído del correo masivo el 2026-08-03 al pedir Fernando la misma disposición para las plantillas de WhatsApp. ⚠️ **PENDIENTE:** `EmailFlowWorkspace` todavía tiene su propia copia dentro de sus 1.500 líneas; migrarlo es el siguiente paso |
 | Estilos de las superficies de acceso | `components/landing/authEstilos` | `PANEL_AUTH`, `TITULO_AUTH`, `SUBTITULO_AUTH`, `CAMPO_AUTH`, `ENLACE_AUTH`. Los del diálogo de acceso de la portada, que es el aspecto canónico: campos **sin etiqueta** (el marcador de posición hace de rótulo) y primario a ancho completo. Los importa `ClientLoginModal`, para que no haya dos |
@@ -3913,6 +3913,19 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-02 · Desplegables `<select>` escritos a mano, aplastados** · **CORREGIDO EN LA
+  FUENTE** (`app/globals.css`, regla `.corp select:not(.field-plain):not([multiple])`). Fernando lo
+  vio en «Mis clientes» del nuevo proyecto: más bajo que los campos de al lado y con las flechas
+  dobles del sistema. Causa: ~40 `<select>` en 20 archivos sin `appearance-none` ni `field-select`;
+  sin eso, macOS dibuja el control nativo e ignora relleno y altura (el `min-height: 34px` de
+  `.corp select` ya estaba). Ahora **todo `<select>` del panel lleva `appearance: none` y la
+  flecha de `PixelSelect`**, se escriba como se escriba. Excepciones: `field-plain` (el marco lo pone
+  el contenedor, como la disponibilidad de «Mi día») y `multiple`. **Variante nueva
+  `select-compacto`** para celdas estrechas (IVA en `DetalleFactura` y en el detalle de factura):
+  flecha a 4 px y 18 px de relleno, para que «15%» no se corte en 64 px. «Mis clientes» además pasó
+  a `PixelSelect`. La pantalla de pago (`/pagar`) no está en `.corp` y no cambia.
+  - Sigue siendo la regla: un desplegable nuevo es `PixelSelect`. La regla global es la red, no
+    permiso para escribirlos a mano.
 - **2026-09-30 · Botones del resumen lateral de las listas** · **CORREGIDO** en Tickets y
   Proyectos: «Ver detalle» y «Ver factura» van JUSTO BAJO los datos fijos (tras «Límite»), antes
   de presupuesto, días, acciones o requerimientos. Lo que cambia de alto entre filas va debajo

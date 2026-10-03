@@ -672,7 +672,7 @@ export default function InvoiceDetailPage() {
                   <select value={it.ivaRate} onChange={e => {
                     const items = [...editForm.items]; items[idx] = { ...it, ivaRate: Number(e.target.value) };
                     setEditForm({ ...editForm, items });
-                  }} className="col-span-2 px-1 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                  }} className="select-compacto col-span-2 px-1 py-1.5 bg-digi-darker border-2 border-digi-border text-[12px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
                     <option value={0}>0%</option>
                     <option value={5}>5%</option>
                     <option value={12}>12%</option>
