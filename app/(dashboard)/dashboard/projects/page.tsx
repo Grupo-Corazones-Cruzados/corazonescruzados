@@ -9,7 +9,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
-import PixelSelect from '@/components/ui/PixelSelect';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
@@ -696,9 +696,9 @@ export default function ProjectsPage() {
                   className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'email' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Usar un correo</button>
               </div>
               {clientMode === 'existing' ? (
-                <PixelSelect value={createClientId} onChange={(e) => setCreateClientId(e.target.value)}
+                <SearchableSelect value={createClientId} onChange={setCreateClientId}
                   options={myClients.map((c) => ({ value: String(c.id), label: `${c.name}${c.email ? ` — ${c.email}` : ''}${c.status && c.status !== 'activo' ? ' · sin cuenta' : ''}` }))}
-                  placeholder="-- Elige un cliente --" />
+                  placeholder="Elige un cliente" searchPlaceholder="Buscar por nombre o correo…" />
               ) : (
                 <>
                   <PixelInput label="" value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com" />
