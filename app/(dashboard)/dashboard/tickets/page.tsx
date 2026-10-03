@@ -14,8 +14,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
-import SearchableSelect from '@/components/ui/SearchableSelect';
-import IconoCuenta from '@/components/clients/IconoCuenta';
+import AssigneePicker from '@/components/tickets/AssigneePicker';
 import { CampoMiembroPropio, CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
@@ -175,12 +174,8 @@ export default function TicketsPage() {
       (mode === 'create' && user?.member_id
         ? fetch(`/api/members/${user.member_id}/services?active=1`)
         : fetch('/api/services')).then(r => r.json()).catch(() => ({ data: [] })),
-      // Solicitar: a quién se puede invitar (candidatos, miembros y admin, todos con cuenta).
-      mode === 'request'
-        ? fetch('/api/tickets/assignees').then(r => r.json())
-            .then(d => ({ data: (d.data || []).map((a: any) => ({ id: a.member_id, name: a.name, email: a.email, con_cuenta: true })) }))
-            .catch(() => ({ data: [] }))
-        : Promise.resolve({ data: [] }),
+      // A quién se puede invitar lo carga el propio `AssigneePicker`.
+      Promise.resolve({ data: [] }),
       // Nuevo: clientes ASOCIADOS a mi sesión; Solicitar: no usa lista (cliente = mi cuenta).
       mode === 'create'
         ? fetch('/api/clients?mine=1').then(r => r.json()).catch(() => ({ data: [] }))
@@ -567,12 +562,7 @@ export default function TicketsPage() {
                   })}
                   {form.request_option === 'invite' && (
                     <div className="pt-1">
-                      <SearchableSelect value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })}
-                        options={members.map((m: any) => ({
-                          value: String(m.id), label: m.name || m.email || '', hint: m.name && m.email && m.email !== m.name ? m.email : undefined,
-                          icon: <IconoCuenta conCuenta={!!m.con_cuenta} />,
-                        }))}
-                        placeholder="Elige un miembro" searchPlaceholder="Buscar por nombre o correo…" />
+                      <AssigneePicker value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })} />
                     </div>
                   )}
                   {/* El selector de talentos ya NO vive aquí: subió a campo propio del

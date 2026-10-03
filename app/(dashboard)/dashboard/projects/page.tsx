@@ -109,7 +109,6 @@ export default function ProjectsPage() {
   const [createClientId, setCreateClientId] = useState('');
   const [createClientEmail, setCreateClientEmail] = useState('');
   // Solicitar: casilla OBLIGATORIA para crear/usar la cuenta de cliente del solicitante.
-  const [confirmClientAccount, setConfirmClientAccount] = useState(false);
   const [myClients, setMyClients] = useState<any[]>([]);
   // request: responsable sugerido o abierto a propuestas
   const [createMemberId, setCreateMemberId] = useState('');
@@ -173,7 +172,7 @@ export default function ProjectsPage() {
   const openCreateModal = (mode: 'create' | 'request') => {
     setCreateMode(mode);
     setCreateTitle(''); setCreateDesc(''); setCreateBudgetMin(''); setCreateBudgetMax(''); setCreateDeadline('');
-    setCreateClientId(''); setCreateClientEmail(''); setClientMode('existing'); setConfirmClientAccount(false);
+    setCreateClientId(''); setCreateClientEmail(''); setClientMode('existing');
     setCreateMemberId(''); setOpenProposals(false); setRequestOption('invite'); setRequiredTalents([]);
     setShowCreate(true);
     if (mode === 'create') {
@@ -254,9 +253,6 @@ export default function ProjectsPage() {
       const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createClientEmail.trim());
       if (clientMode === 'existing' && !createClientId) { toast.error('Selecciona un cliente o usa un correo'); return; }
       if (clientMode === 'email' && !emailOk) { toast.error('Ingresa un correo de cliente válido'); return; }
-    }
-    if (createMode === 'request' && !confirmClientAccount) {
-      toast.error('Marca la casilla para crear/usar tu cuenta de cliente'); return;
     }
     setCreating(true);
     try {
@@ -672,11 +668,11 @@ export default function ProjectsPage() {
       {/* Create/Request Modal */}
       <PixelModal open={showCreate} onClose={() => setShowCreate(false)} title={createMode === 'request' ? 'Solicitar proyecto' : 'Nuevo proyecto'}>
         <div className="space-y-3">
-          <p className="text-[11.5px] text-digi-muted" style={mf}>
-            {createMode === 'request'
-              ? 'Solicitas un proyecto como cliente. Puedes sugerir un responsable (queda invitado a aceptar) o dejarlo abierto a propuestas.'
-              : 'Creas un proyecto del que serás el responsable. Elige el cliente entre los tuyos o invítalo por email.'}
-          </p>
+          {createMode === 'create' && (
+            <p className="text-[11.5px] text-digi-muted" style={mf}>
+              Creas un proyecto del que serás el responsable. Elige el cliente entre los tuyos o invítalo por email.
+            </p>
+          )}
 
           <PixelInput label="Título *" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Nombre del proyecto" />
           <div className="flex flex-col gap-1">
@@ -725,12 +721,6 @@ export default function ProjectsPage() {
                   </div>
                 )}
               </div>
-              <label className="flex items-start gap-2 mt-1 cursor-pointer" style={mf}>
-                <input type="checkbox" checked={confirmClientAccount}
-                  onChange={(e) => setConfirmClientAccount(e.target.checked)}
-                  className="mt-0.5 accent-accent" />
-                <span className="text-[11px] text-digi-text">Crear/usar mi cuenta de tipo cliente para esta solicitud <span className="text-accent">*</span></span>
-              </label>
             </div>
           )}
 

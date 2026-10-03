@@ -3935,6 +3935,14 @@ mientras se escribe.
     Las dos etiquetas van en una fila de `h-6` (si no, el botón empujaba «Cliente» y «Miembro»
     quedaba desalineado) y los valores con `py-2.5`, como `SearchableSelect`. El correo bajo el
     nombre no se repite cuando el nombre ES el correo.
+  - **2026-10-03 · Elegir un MIEMBRO = `AssigneePicker`, ya montado sobre `SearchableSelect`.**
+    Por fila: nombre (con `IconoCuenta`), correo, rol y, en la línea del rol al borde derecho, la
+    prospección (`Target` + neto en verde/rojo). Los talentos no se enseñan, pero se buscan
+    (`keywords`). `SearchableSelect` ganó `meta` (tercera línea), `metaRight` y `keywords`.
+    Lo usan «Solicitar proyecto → invitar», «Agregar participante», «Solicitar ticket → invitar»
+    y «Editar ticket» (con `sinAsignar`). Se fue el flyout lateral que tenía antes.
+    Se quitaron el texto de ayuda de «Solicitar proyecto» y la casilla «Crear/usar mi cuenta de
+    tipo cliente»: la API ya la crea o la reutiliza sola (`ensureUserClientAccount`).
 - **2026-10-02 · Desplegables `<select>` escritos a mano, aplastados** · **CORREGIDO EN LA
   FUENTE** (`app/globals.css`, regla `.corp select:not(.field-plain):not([multiple])`). Fernando lo
   vio en «Mis clientes» del nuevo proyecto: más bajo que los campos de al lado y con las flechas
