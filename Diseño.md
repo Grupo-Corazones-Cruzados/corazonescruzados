@@ -3927,6 +3927,14 @@ mientras se escribe.
     (`/api/members/list` devuelve `con_cuenta`); `/api/tickets/assignees` devuelve el correo.
     En Tickets la etiqueta es **«Miembro»**, no «Miembro asignado». ⚠️ Proyectos sigue con
     `AssigneePicker` (rol, prospección y talentos) al invitar a un miembro: pendiente de decidir.
+  - **2026-10-03 · «Miembro» + «Cliente» al crear: `components/clients/CamposResponsable.tsx`.**
+    `CampoMiembroPropio` (solo lectura, «Tú — nombre») a la izquierda y `CampoClienteOCorreo`
+    (buscador de mis clientes, o correo con el botoncito «Usar un correo» junto a la etiqueta) a
+    la derecha, en `grid sm:grid-cols-2`. Lo usan «Nuevo ticket» y «Nuevo proyecto»: el proyecto
+    tenía dos botones grandes «Mis clientes / Usar un correo» encima del campo y ya no.
+    Las dos etiquetas van en una fila de `h-6` (si no, el botón empujaba «Cliente» y «Miembro»
+    quedaba desalineado) y los valores con `py-2.5`, como `SearchableSelect`. El correo bajo el
+    nombre no se repite cuando el nombre ES el correo.
 - **2026-10-02 · Desplegables `<select>` escritos a mano, aplastados** · **CORREGIDO EN LA
   FUENTE** (`app/globals.css`, regla `.corp select:not(.field-plain):not([multiple])`). Fernando lo
   vio en «Mis clientes» del nuevo proyecto: más bajo que los campos de al lado y con las flechas

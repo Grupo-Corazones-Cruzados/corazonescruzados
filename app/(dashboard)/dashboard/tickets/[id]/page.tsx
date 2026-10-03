@@ -1155,7 +1155,7 @@ export default function TicketDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <SearchableSelect label="Miembro" value={String(form.member_id || '')} onChange={(id) => setForm({ ...form, member_id: id })}
               options={[{ value: '', label: 'Sin asignar' }, ...members.map((m: any) => ({
-                value: String(m.id), label: m.name || m.email || '', hint: m.name ? m.email || undefined : undefined,
+                value: String(m.id), label: m.name || m.email || '', hint: m.name && m.email && m.email !== m.name ? m.email : undefined,
                 icon: <IconoCuenta conCuenta={!!m.con_cuenta} />,
               }))]}
               placeholder="Sin asignar" searchPlaceholder="Buscar por nombre o correo…" />

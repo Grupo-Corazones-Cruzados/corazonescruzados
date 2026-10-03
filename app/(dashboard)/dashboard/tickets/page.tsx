@@ -16,6 +16,7 @@ import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import IconoCuenta from '@/components/clients/IconoCuenta';
+import { CampoMiembroPropio, CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -568,7 +569,7 @@ export default function TicketsPage() {
                     <div className="pt-1">
                       <SearchableSelect value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })}
                         options={members.map((m: any) => ({
-                          value: String(m.id), label: m.name || m.email || '', hint: m.name ? m.email || undefined : undefined,
+                          value: String(m.id), label: m.name || m.email || '', hint: m.name && m.email && m.email !== m.name ? m.email : undefined,
                           icon: <IconoCuenta conCuenta={!!m.con_cuenta} />,
                         }))}
                         placeholder="Elige un miembro" searchPlaceholder="Buscar por nombre o correo…" />
@@ -580,14 +581,8 @@ export default function TicketsPage() {
                 </div>
               </div>
             ) : (
-              // Nuevo ticket: el miembro asignado SIEMPRE es el usuario de la sesión
-              // (candidato/miembro/admin). Se muestra de solo lectura.
-              <div>
-                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Miembro</label>
-                <div className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-muted rounded" style={mf}>
-                  Tú — {user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'}
-                </div>
-              </div>
+              // Nuevo ticket: el miembro SIEMPRE es el usuario de la sesión (solo lectura).
+              <CampoMiembroPropio nombre={user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'} />
             )}
 
             {/* Cliente */}
@@ -605,32 +600,12 @@ export default function TicketsPage() {
                 </label>
               </div>
             ) : (
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente <span className="text-accent">*</span></label>
-                  <button type="button" onClick={() => setForm(prev => ({
-                    ...prev, client_mode: prev.client_mode === 'select' ? 'email' : 'select', client_id: '', client_email: '',
-                  }))}
-                    className="text-[11px] text-digi-muted hover:text-accent border border-digi-border rounded px-1.5 py-0.5 transition-colors" style={mf}>
-                    {form.client_mode === 'select' ? 'Usar un correo' : 'Elegir de mis clientes'}
-                  </button>
-                </div>
-                {form.client_mode === 'select' ? (
-                  <SearchableSelect value={form.client_id}
-                    onChange={(id) => setForm({ ...form, client_id: id })}
-                    options={clients.map((c: any) => ({
-                      value: String(c.id), label: c.name || c.email || '', hint: c.name ? c.email || undefined : undefined,
-                      // Con cuenta en GCC World = cliente activo.
-                      icon: <IconoCuenta conCuenta={!c.status || c.status === 'activo'} />,
-                    }))}
-                    placeholder="Elige un cliente" searchPlaceholder="Buscar por nombre o correo…" />
-                ) : (
-                  <input type="email" value={form.client_email}
-                    onChange={(e) => setForm({ ...form, client_email: e.target.value })}
-                    placeholder="correo@cliente.com"
-                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-                )}
-              </div>
+              <CampoClienteOCorreo
+                modo={form.client_mode === 'select' ? 'lista' : 'correo'}
+                onModo={(m) => setForm(prev => ({ ...prev, client_mode: m === 'lista' ? 'select' : 'email', client_id: '', client_email: '' }))}
+                clienteId={form.client_id} onClienteId={(id) => setForm(prev => ({ ...prev, client_id: id }))}
+                correo={form.client_email} onCorreo={(v) => setForm(prev => ({ ...prev, client_email: v }))}
+                clientes={clients} />
             )}
           </div>
 

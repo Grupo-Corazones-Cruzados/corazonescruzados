@@ -9,8 +9,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
-import SearchableSelect from '@/components/ui/SearchableSelect';
-import IconoCuenta from '@/components/clients/IconoCuenta';
+import { CampoMiembroPropio, CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
@@ -687,32 +686,15 @@ export default function ProjectsPage() {
           </div>
 
           {createMode === 'create' ? (
-            /* ── Cliente (mis clientes o usar un correo) ── */
-            <div className="flex flex-col gap-1.5">
-              <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente <span className="text-accent">*</span></label>
-              <div className="flex gap-1.5">
-                <button type="button" onClick={() => setClientMode('existing')}
-                  className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'existing' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Mis clientes</button>
-                <button type="button" onClick={() => setClientMode('email')}
-                  className={`flex-1 px-2.5 py-1.5 rounded text-[12px] border transition-colors ${clientMode === 'email' ? 'border-accent text-accent bg-accent-light' : 'border-digi-border text-digi-muted'}`} style={mf}>Usar un correo</button>
-              </div>
-              {clientMode === 'existing' ? (
-                <SearchableSelect value={createClientId} onChange={setCreateClientId}
-                  options={myClients.map((c) => {
-                    // Con cuenta en GCC World = cliente activo; el icono va en color, y gris si no.
-                    const conCuenta = !c.status || c.status === 'activo';
-                    return {
-                      value: String(c.id), label: c.name || c.email || '', hint: c.name ? c.email || undefined : undefined,
-                      icon: <IconoCuenta conCuenta={conCuenta} />,
-                    };
-                  })}
-                  placeholder="Elige un cliente" searchPlaceholder="Buscar por nombre o correo…" />
-              ) : (
-                <>
-                  <PixelInput label="" value={createClientEmail} onChange={(e) => setCreateClientEmail(e.target.value)} placeholder="cliente@email.com" />
-                  <p className="text-[10.5px] text-digi-muted" style={mf}>Si el correo no tiene cuenta, se registra y se le invita a crearla.</p>
-                </>
-              )}
+            /* ── Miembro (yo) a la izquierda y cliente a la derecha, como en «Nuevo ticket» ── */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <CampoMiembroPropio nombre={user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'} />
+              <CampoClienteOCorreo
+                modo={clientMode === 'existing' ? 'lista' : 'correo'}
+                onModo={(m) => { setClientMode(m === 'lista' ? 'existing' : 'email'); setCreateClientId(''); setCreateClientEmail(''); }}
+                clienteId={createClientId} onClienteId={setCreateClientId}
+                correo={createClientEmail} onCorreo={setCreateClientEmail}
+                clientes={myClients} />
             </div>
           ) : (
             /* ── Opciones de asignación ── */
