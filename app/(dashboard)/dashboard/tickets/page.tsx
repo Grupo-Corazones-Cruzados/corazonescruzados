@@ -15,7 +15,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { CampoMiembroPropio, CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
+import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -533,8 +533,8 @@ export default function TicketsPage() {
               placeholder="-- Seleccionar servicio --" />
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Miembro asignado */}
+          <div className="grid grid-cols-1 gap-3">
+            {/* Opciones de asignación (solo al solicitar) */}
             {createMode === 'request' ? (
               <div className="sm:col-span-2">
                 <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Opciones</label>
@@ -565,10 +565,7 @@ export default function TicketsPage() {
                       recordar que en esta opción, además, decide quién puede tomarlo. */}
                 </div>
               </div>
-            ) : (
-              // Nuevo ticket: el miembro SIEMPRE es el usuario de la sesión (solo lectura).
-              <CampoMiembroPropio nombre={user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'} />
-            )}
+            ) : null /* Nuevo ticket: el miembro es quien lo crea; no se enseña (Fernando, 2026-10-04). */}
 
             {/* Cliente: al SOLICITAR no se enseña — es el propio usuario, y la API crea o
                 reutiliza su cuenta de tipo cliente sola (`ensureUserClientAccount`). */}

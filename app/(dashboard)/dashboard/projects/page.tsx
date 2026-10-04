@@ -9,7 +9,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
-import { CampoMiembroPropio, CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
+import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
@@ -661,16 +661,13 @@ export default function ProjectsPage() {
           </div>
 
           {createMode === 'create' ? (
-            /* ── Miembro (yo) a la izquierda y cliente a la derecha, como en «Nuevo ticket» ── */
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <CampoMiembroPropio nombre={user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'} />
-              <CampoClienteOCorreo
-                modo={clientMode === 'existing' ? 'lista' : 'correo'}
-                onModo={(m) => { setClientMode(m === 'lista' ? 'existing' : 'email'); setCreateClientId(''); setCreateClientEmail(''); }}
-                clienteId={createClientId} onClienteId={setCreateClientId}
-                correo={createClientEmail} onCorreo={setCreateClientEmail}
-                clientes={myClients} />
-            </div>
+            /* ── Cliente: el responsable es quien crea, y ya no se enseña (Fernando, 2026-10-04) ── */
+            <CampoClienteOCorreo
+              modo={clientMode === 'existing' ? 'lista' : 'correo'}
+              onModo={(m) => { setClientMode(m === 'lista' ? 'existing' : 'email'); setCreateClientId(''); setCreateClientEmail(''); }}
+              clienteId={createClientId} onClienteId={setCreateClientId}
+              correo={createClientEmail} onCorreo={setCreateClientEmail}
+              clientes={myClients} />
           ) : (
             /* ── Opciones de asignación ── */
             <div className="flex flex-col gap-1.5">

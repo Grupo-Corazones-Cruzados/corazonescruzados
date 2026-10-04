@@ -3913,6 +3913,10 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-04 · Fuera el campo «Miembro» de «Nuevo ticket» y «Nuevo proyecto»** (Fernando: «ya no es
+  necesario, solo deja cliente»). El miembro/responsable sigue siendo quien crea —lo pone el
+  formulario por detrás—, solo que ya no se enseña. «Cliente» queda a todo el ancho.
+  `CampoMiembroPropio` se borró de `CamposResponsable.tsx`; queda `CampoClienteOCorreo`.
 - **2026-10-04 · Tres anchos de panel derecho (644 / 840 / 1040)** · **UNIFICADO** (Fernando: «todos
   los formularios […] un ancho igual y estándar […] usa el de mayor ancho»). Todo panel lateral
   derecho con velo mide **1040px**, desde una sola variable: `--ancho-panel-derecho` en `.corp`
