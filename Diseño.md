@@ -3913,6 +3913,11 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-04 · Resultado de una revisión con IA (Admin ▸ Prompts ▸ Validar contradicciones)** ·
+  **ADOPTADO**: veredicto en una caja `TONO.exito`/`TONO.aviso` (icono `CircleCheck`/`TriangleAlert` +
+  título + resumen), y debajo una tarjeta por hallazgo: `MapPin` + sección, citas en `blockquote` con
+  borde izquierdo y «», «Por qué», y la acción («Ver en el documento», `BTN_SECONDARY`) abajo a la
+  derecha. El campo de entrada no lleva nota debajo: su marcador de posición dice qué pasa si va vacío.
 - **2026-10-04 · Fuera el campo «Miembro» de «Nuevo ticket» y «Nuevo proyecto»** (Fernando: «ya no es
   necesario, solo deja cliente»). El miembro/responsable sigue siendo quien crea —lo pone el
   formulario por detrás—, solo que ya no se enseña. «Cliente» queda a todo el ancho.

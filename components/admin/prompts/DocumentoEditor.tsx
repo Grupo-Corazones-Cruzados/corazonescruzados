@@ -14,11 +14,12 @@ import {
   Undo2, Redo2, Pilcrow, Heading1, Heading2, Heading3, Bold, Italic, Underline, Strikethrough,
   Highlighter, Code, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered,
   ListChecks, Quote, SquareCode, Minus, Link2, ImagePlus, Table as TableIcon, RemoveFormatting,
-  Rows3, Columns3, Trash2, Copy, Download,
+  Rows3, Columns3, Trash2, Copy, Download, ScanSearch,
 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EDIT_INPUT, EditField, QuickEditDialog } from '@/components/ui/EditDialog';
 import { htmlToMarkdown } from '@/lib/admin/prompts-md';
+import ValidarContradicciones from './ValidarContradicciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -59,6 +60,8 @@ const DocumentoEditor = forwardRef<DocumentoEditorHandle, {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enCursoRef = useRef<Promise<void> | null>(null);
   const editorRef = useRef<Editor | null>(null);
+  // «Validar contradicciones»: se abre con lo que haya seleccionado en la hoja.
+  const [validar, setValidar] = useState<{ open: boolean; seleccion: string }>({ open: false, seleccion: '' });
 
   const guardar = useCallback(async (forzar = false): Promise<void> => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
@@ -225,6 +228,14 @@ const DocumentoEditor = forwardRef<DocumentoEditorHandle, {
           onSobrescribir={() => { if (estado.k === 'conflicto') { baseRef.current = estado.at; void guardar(true); } }} />
         {editor && <Contador editor={editor} />}
         <div className="ml-auto flex items-center gap-2">
+          <button type="button" disabled={!editor} className={BTN_SECONDARY}
+            onClick={() => {
+              const sel = editor?.state.selection;
+              const seleccion = sel && !sel.empty ? editor!.state.doc.textBetween(sel.from, sel.to, '\n').trim() : '';
+              setValidar({ open: true, seleccion });
+            }}>
+            <ScanSearch className="w-4 h-4" /> Validar contradicciones
+          </button>
           <button type="button" onClick={descargar} className={BTN_SECONDARY} title="Descargar el documento en Markdown">
             <Download className="w-4 h-4" /> Descargar .md
           </button>
@@ -233,6 +244,16 @@ const DocumentoEditor = forwardRef<DocumentoEditorHandle, {
           </button>
         </div>
       </div>
+
+      {editor && (
+        <ValidarContradicciones
+          open={validar.open}
+          onClose={() => setValidar((v) => ({ ...v, open: false }))}
+          editor={editor}
+          projectId={projectId}
+          textoInicial={validar.seleccion}
+        />
+      )}
     </div>
   );
 });

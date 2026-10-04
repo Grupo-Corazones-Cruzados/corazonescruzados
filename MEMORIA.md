@@ -275,6 +275,21 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔎 Admin ▸ Prompts ▸ «Validar contradicciones» (Fernando, 2026-10-04).** Botón en el pie de la
+  hoja: abre un panel con «Texto nuevo» (entra lo seleccionado en la hoja) y compara ese texto con el
+  documento COMPLETO que hay en pantalla —aunque no se haya guardado—. Vacío, revisa el documento
+  contra sí mismo. Responde sí/no y, por contradicción: sección, cita literal del documento, cita del
+  texto nuevo, por qué, y «Ver en el documento» (selecciona el pasaje en la hoja).
+  - `lib/admin/contradicciones.ts` (una llamada a `chatJSON`, esfuerzo `high`, 32k de techo porque el
+    razonamiento cuenta dentro) + `POST /api/admin/prompts/[id]/contradicciones` (solo admin, no guarda
+    nada) + `components/admin/prompts/ValidarContradicciones.tsx`.
+  - El veredicto sale de la LISTA, no de la bandera del modelo: un «sí» sin contradicciones concretas no
+    vale. Se manda lo derogado/«antes… ahora…» como no contradictorio y las excepciones explícitas también.
+  - 🪤 Calibrado contra el modelo real: con «ante la duda no la cuentes» no veía «Todo panel mide 1040» vs
+    «el de nuevo ticket mide 644». Se cambió por: una regla general («todo», «siempre», «nunca»…) SÍ
+    queda contradicha por un caso que la incumple, salvo excepción expresa.
+  - Las citas se buscan en la hoja quitando los símbolos de Markdown y colapsando espacios; si la cita
+    entera no aparece, se prueba con su comienzo (80 y 40 caracteres).
 - **🔒 Proyecto ▸ una etapa con cobro ya no se borra (Fernando, 2026-10-01).** Pasó con dinero
   real en el #25: había una transferencia esperando en la Etapa 1 (id 47). Al cambiar el costo,
   Fernando rehízo el plan, la 47 se borró (el PUT solo protegía las FACTURADAS) y al confirmar, la
