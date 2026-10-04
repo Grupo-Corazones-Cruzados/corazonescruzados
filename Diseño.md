@@ -3920,8 +3920,13 @@ mientras se escribe.
   Proyectos —un `<aside>` propio, antes `max-w-md` (448px)— lee la misma variable. En teléfono
   sigue topado a `100vw`. **Deroga** la regla de `WideEditPanel` («1040px solo si hay una tabla
   dentro; un formulario de campos sueltos a 1040px deja los campos flotando»): ahora es igual
-  que `EditPanel`. Fuera de alcance, a propósito: el panel de **Prospección** de Reclutamiento
-  (680px), que es una ficha de consulta y no un formulario.
+  que `EditPanel`. El panel de **Prospección** de Reclutamiento (era 680px) también pasó a la
+  variable, a petición de Fernando.
+- **2026-10-04 · Pulsar el VELO cierra el panel o la ventanita** (Fernando). `PixelModal` solo
+  cerraba si el clic caía en el `<dialog>`, pero lo tapa entero `.modal-overlay`, que es quien lo
+  recibía: no cerraba nunca. Ahora cierra si la pulsación **empieza y termina** en el velo
+  (arrastrar desde dentro al seleccionar texto y soltar fuera no cierra), y nunca con `busy`.
+  La cotización de Proyectos y Prospección ya cerraban con su propio velo.
 - **2026-10-04 · «Solicitar ticket» sin campo «Cliente» ni casilla de cuenta cliente** · igual
   que «Solicitar proyecto»: el cliente es el propio usuario y la API crea o reutiliza su cuenta
   (`ensureUserClientAccount`).

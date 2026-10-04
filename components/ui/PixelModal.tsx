@@ -46,6 +46,11 @@ function sePinta(el: HTMLDialogElement): boolean {
 
 export default function PixelModal({ open, onClose, title, size = 'md', busy = false, children }: PixelModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  // Dónde empezó la pulsación. Arrastrar desde dentro del formulario (al seleccionar texto)
+  // y soltar fuera dispara el `click` en el velo; eso no debe cerrar nada.
+  const pulsadoEnVelo = useRef(false);
+  const esVelo = (t: EventTarget | null) => t === dialogRef.current || t === overlayRef.current;
 
   useEffect(() => {
     const el = dialogRef.current;
@@ -59,10 +64,13 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
       ref={dialogRef}
       onClose={onClose}
       onCancel={(e) => { if (busy) e.preventDefault(); }}
-      onClick={(e) => { if (!busy && e.target === dialogRef.current) onClose(); }}
+      // Pulsar el VELO cierra (Fernando, 2026-10-04). Antes solo se miraba el `<dialog>`, pero
+      // lo tapa entero `.modal-overlay`, que era quien recibía el clic: no cerraba nunca.
+      onMouseDown={(e) => { pulsadoEnVelo.current = esVelo(e.target); }}
+      onClick={(e) => { if (!busy && pulsadoEnVelo.current && esVelo(e.target)) onClose(); pulsadoEnVelo.current = false; }}
       className="fixed inset-0 z-50 m-0 w-full h-full bg-transparent backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
-      <div className="modal-overlay flex items-center justify-center min-h-full p-4">
+      <div ref={overlayRef} className="modal-overlay flex items-center justify-center min-h-full p-4">
         <div
           data-size={size}
           className={`modal-surface pixel-card w-full ${SIZES[size]} animate-[pixelFadeIn_0.2s_ease-out]`}
