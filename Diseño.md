@@ -1044,7 +1044,7 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
 | Tabs (pivot) | `components/ui/PixelTabs` (`flush`) | `.corp .pivot` subrayado azul marca |
 | Tabla | `components/ui/PixelDataTable` | `.corp .data-table`; `onRowClick`, orden por columna |
 | Badge/estado | `components/ui/PixelBadge` | variantes success/warning/error/info/default |
-| Modal / Panel | `components/ui/PixelModal` | md/lg se vuelven **panel lateral derecho** (Fluent) |
+| Modal / Panel | `components/ui/PixelModal` | md/lg/xl se vuelven **panel lateral derecho** (Fluent), **todos de 1040px** (`--ancho-panel-derecho`, 2026-10-04); `sm` es la ventanita centrada |
 | Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px. Todo `<select>` del panel recibe `appearance: none` + la flecha de `PixelSelect` desde `globals.css` (2026-10-02); `select-compacto` para celdas estrechas |
 | Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
 | Listas de contactos + su tabla | `components/dashboard/flows/PanelListasContactos` | La columna de listas (con casilla de asociación, y renombrar/compartir/borrar al borde derecho) y la tabla de contactos con importar/exportar Excel. Extraído del correo masivo el 2026-08-03 al pedir Fernando la misma disposición para las plantillas de WhatsApp. ⚠️ **PENDIENTE:** `EmailFlowWorkspace` todavía tiene su propia copia dentro de sus 1.500 líneas; migrarlo es el siguiente paso |
@@ -3913,6 +3913,18 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-04 · Tres anchos de panel derecho (644 / 840 / 1040)** · **UNIFICADO** (Fernando: «todos
+  los formularios […] un ancho igual y estándar […] usa el de mayor ancho»). Todo panel lateral
+  derecho con velo mide **1040px**, desde una sola variable: `--ancho-panel-derecho` en `.corp`
+  (`app/globals.css`). `PixelModal` `md`, `lg` y `xl` miden lo mismo, y la cotización de
+  Proyectos —un `<aside>` propio, antes `max-w-md` (448px)— lee la misma variable. En teléfono
+  sigue topado a `100vw`. **Deroga** la regla de `WideEditPanel` («1040px solo si hay una tabla
+  dentro; un formulario de campos sueltos a 1040px deja los campos flotando»): ahora es igual
+  que `EditPanel`. Fuera de alcance, a propósito: el panel de **Prospección** de Reclutamiento
+  (680px), que es una ficha de consulta y no un formulario.
+- **2026-10-04 · «Solicitar ticket» sin campo «Cliente» ni casilla de cuenta cliente** · igual
+  que «Solicitar proyecto»: el cliente es el propio usuario y la API crea o reutiliza su cuenta
+  (`ensureUserClientAccount`).
 - **2026-10-03 · `SearchableSelect` admite segunda línea e icono por opción** · **ADOPTADO**
   (Fernando, al pedir el buscador de clientes del nuevo proyecto). Cada opción puede traer
   `hint` (segunda línea en `text-digi-muted` 11,5 px, y también se busca por ella) e `icon` (a la

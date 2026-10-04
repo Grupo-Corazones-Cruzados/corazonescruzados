@@ -7,7 +7,8 @@ interface PixelModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  /** `sm` = ventanita centrada · `md`/`lg`/`xl` = panel lateral derecho (ver `.corp` en globals.css). */
+  /** `sm` = ventanita centrada · `md`/`lg`/`xl` = panel lateral derecho, los tres del MISMO ancho
+   *  (`--ancho-panel-derecho` en globals.css, 2026-10-04). */
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Cuando está ocupado (p. ej. guardando), bloquea el cierre por overlay/Escape/X. */
   busy?: boolean;

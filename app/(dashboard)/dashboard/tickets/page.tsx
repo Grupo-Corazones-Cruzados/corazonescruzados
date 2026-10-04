@@ -61,7 +61,6 @@ const emptyForm = {
   request_option: 'invite' as 'invite' | 'proposals' | 'talent',
   required_talents: [] as string[],
   // Solicitar: casilla OBLIGATORIA para crear/usar la cuenta de cliente del solicitante.
-  confirm_client_account: false,
 };
 
 const TALENT_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
@@ -199,10 +198,6 @@ export default function TicketsPage() {
       const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.client_email.trim());
       if (form.client_mode === 'select' && !form.client_id) { toast.error('Selecciona un cliente o agrega un correo'); return; }
       if (form.client_mode === 'email' && !emailOk) { toast.error('Ingresa un correo de cliente válido'); return; }
-    }
-    // Solicitar: la casilla de cuenta de cliente es obligatoria.
-    if (createMode === 'request' && !form.confirm_client_account) {
-      toast.error('Marca la casilla para crear/usar tu cuenta de cliente'); return;
     }
     // El talento es OBLIGATORIO en todo ticket (Fernando, 2026-08-18): es lo que lo
     // coloca bajo una solución en la web pública. Se comprueba aquí para no gastar un viaje
@@ -575,21 +570,9 @@ export default function TicketsPage() {
               <CampoMiembroPropio nombre={user?.first_name || user?.email?.split('@')[0] || 'tu cuenta'} />
             )}
 
-            {/* Cliente */}
-            {createMode === 'request' ? (
-              <div>
-                <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Cliente</label>
-                <div className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-muted rounded" style={mf}>
-                  Tú — {user?.email || 'tu cuenta cliente'}
-                </div>
-                <label className="flex items-start gap-2 mt-1.5 cursor-pointer" style={mf}>
-                  <input type="checkbox" checked={form.confirm_client_account}
-                    onChange={(e) => setForm({ ...form, confirm_client_account: e.target.checked })}
-                    className="mt-0.5 accent-accent" />
-                  <span className="text-[11px] text-digi-text">Crear/usar mi cuenta de tipo cliente para esta solicitud <span className="text-accent">*</span></span>
-                </label>
-              </div>
-            ) : (
+            {/* Cliente: al SOLICITAR no se enseña — es el propio usuario, y la API crea o
+                reutiliza su cuenta de tipo cliente sola (`ensureUserClientAccount`). */}
+            {createMode === 'create' && (
               <CampoClienteOCorreo
                 modo={form.client_mode === 'select' ? 'lista' : 'correo'}
                 onModo={(m) => setForm(prev => ({ ...prev, client_mode: m === 'lista' ? 'select' : 'email', client_id: '', client_email: '' }))}

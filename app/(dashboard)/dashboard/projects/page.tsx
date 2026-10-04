@@ -581,7 +581,7 @@ export default function ProjectsPage() {
       {showQuote && (
         <div className="fixed inset-0 z-[95] flex justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={() => !generatingQuote && setShowQuote(false)} />
-          <aside className="relative w-full max-w-md h-full bg-digi-card border-l border-digi-border shadow-2xl overflow-y-auto ml-auto">
+          <aside className="relative w-full max-w-[var(--ancho-panel-derecho)] h-full bg-digi-card border-l border-digi-border shadow-2xl overflow-y-auto ml-auto">
             <div className="flex items-center justify-between p-4 border-b border-digi-border sticky top-0 bg-digi-card z-10">
               <h2 className="text-[15px] font-semibold text-digi-text inline-flex items-center gap-2" style={df}><Calculator className="w-5 h-5 text-accent" /> Nueva cotización</h2>
               <BotonCerrar onClick={() => !generatingQuote && setShowQuote(false)} />

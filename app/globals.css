@@ -1209,7 +1209,7 @@ html {
   right: 0;
   height: 100vh;
   max-height: 100vh;
-  width: 644px;                 /* Fluent Panel "medium" */
+  width: var(--ancho-panel-derecho);
   max-width: 100vw;
   border-radius: 0;
   display: flex;
@@ -1217,11 +1217,13 @@ html {
   box-shadow: -8px 0 16px rgba(0, 0, 0, 0.18), -1.2px 0 3.6px rgba(0, 0, 0, 0.11);
   animation: panelSlideInRight 0.27s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
-.corp .modal-surface[data-size='lg'] { width: 840px; }  /* Fluent Panel "large" */
-/* Panel "extra grande": el mismo ancho que ya usa FlowPanelShell para los editores de
-   Automatizaciones (1040px). Es para un panel que lleva DENTRO una tabla —los conceptos de
-   un talento—: con 644px las columnas se parten y vuelve el corte que se quiso quitar. */
-.corp .modal-surface[data-size='xl'] { width: 1040px; }
+/* ⭐ UN SOLO ANCHO PARA TODO PANEL DERECHO CON VELO (Fernando, 2026-10-04: «que todos los
+   formularios tengan un ancho igual y estándar […] usa el de mayor ancho»). Antes había tres:
+   644 (`md`), 840 (`lg`) y 1040 (`xl`), y el mismo tipo de formulario salía de un ancho u otro
+   según quién lo escribiera. Ahora `md`, `lg` y `xl` miden lo mismo; el `size` que se pase ya
+   solo distingue `sm` (ventanita centrada) del panel. Los paneles que no usan `PixelModal`
+   (la cotización de Proyectos) leen la misma variable. */
+.corp { --ancho-panel-derecho: 1040px; }
 .corp .modal-surface[data-size='md'] .modal-header,
 .corp .modal-surface[data-size='lg'] .modal-header,
 .corp .modal-surface[data-size='xl'] .modal-header { flex: 0 0 auto; }
