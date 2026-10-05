@@ -291,6 +291,8 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Todo panel derecho con velo mide 1040px** (`--ancho-panel-derecho` en `.corp`): `PixelModal`
     md/lg/xl, la cotización y Prospección. **Pulsar el velo cierra** (empezar y terminar el clic en él).
   - **Recordatorios** abre en Pendientes y «Todos» va el último.
+  - **Facturas** abre en «Pendientes» y «Todas» va el último, bajo «Canceladas» (2026-10-05). Mismo
+    patrón que Proyectos, Tickets y Recordatorios: la pestaña por defecto es la de trabajo pendiente.
 - **📁 Proyecto #39 «Grupo Corazones Cruzados» (2026-10-03).** Creado a petición de Fernando como el
   proyecto de la propia plataforma: responsable miembro 1 (`lfgonzalezm0@grupocc.org`), cliente #25 (la
   cuenta de cliente de esa misma cuenta, que se llama «Tagi»), borrador privado, 22 requerimientos (uno por

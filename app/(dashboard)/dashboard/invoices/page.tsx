@@ -21,13 +21,14 @@ import BotonCerrar from '@/components/ui/BotonCerrar';
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
+// Abre en «Pendientes» y «Todas» va al final, bajo «Canceladas» (Fernando, 2026-10-05).
 const STATUS_TABS = [
-  { value: 'all', label: 'Todas', Icon: Receipt },
   { value: 'pending', label: 'Pendientes', Icon: Clock },
   { value: 'sent', label: 'Enviadas', Icon: Send },
   { value: 'paid', label: 'Pagadas', Icon: CheckCircle2 },
   { value: 'failed', label: 'Fallidas', Icon: XCircle },
   { value: 'cancelled', label: 'Canceladas', Icon: Ban },
+  { value: 'all', label: 'Todas', Icon: Receipt },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -76,7 +77,7 @@ function InvoicesPageInner() {
   const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState('pending');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any>(null);
   const isAdmin = user?.role === 'admin';

@@ -1,5 +1,11 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-05) — FACTURAS: abrir en «Pendientes» con «Todas» al final · ✅ 100 % — HECHO Y VERIFICADO
+- **Rol:** ingeniero frontend.
+- **Pedido:** *«en el modulo de facturas, el estado por defecto dejemos que sea pendientes, y el boton de todos debajo de canceladas»*.
+- **Resuelto investigando:** `STATUS_TABS` + `useState('pending')` en `app/(dashboard)/dashboard/invoices/page.tsx`; la API ya devuelve el conteo por estado. Los enlaces directos (`/invoices/[id]`, `?refactor=`) no dependen de la pestaña.
+- **Verificado:** tsc + `npm run build`.
+
 ## Objetivo (2026-10-04) — ADMIN ▸ PROMPTS: validar si un texto nuevo contradice las decisiones del documento · ✅ 100 % — CONSTRUIDO Y VERIFICADO
 - **Rol:** ingeniero de IA aplicada (prompting + evaluación) y frontend del editor.
 - **Pedido:** *«una herramienta que permita validar si un nuevo texto incluido represente una contradicción en las decisiones del sistema […] leer el documento completo […] responder si existe o no, y dónde y por qué»*.
