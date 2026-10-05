@@ -1043,7 +1043,7 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
 | Command bar de módulo | `components/ui/ModuleToolbar` | pivot tabs izq · buscador + acción der |
 | Tabs (pivot) | `components/ui/PixelTabs` (`flush`) | `.corp .pivot` subrayado azul marca |
 | Tabla | `components/ui/PixelDataTable` | `.corp .data-table`; `onRowClick`, orden por columna |
-| Badge/estado | `components/ui/PixelBadge` | variantes success/warning/error/info/default |
+| Badge/estado | `components/ui/PixelBadge` | variantes success/warning/error/info/default. Lleva punto de color salvo en `default`; `punto={false}` lo quita donde el texto ya basta (columna SRI de Facturas, Fernando 2026-10-05) |
 | Modal / Panel | `components/ui/PixelModal` | md/lg/xl se vuelven **panel lateral derecho** (Fluent), **todos de 1040px** (`--ancho-panel-derecho`, 2026-10-04); `sm` es la ventanita centrada |
 | Input / Select | `components/ui/PixelInput` · `PixelSelect` | `.corp .field-control` alto 34px. Todo `<select>` del panel recibe `appearance: none` + la flecha de `PixelSelect` desde `globals.css` (2026-10-02); `select-compacto` para celdas estrechas |
 | Rail de propiedades | `components/ui/PropertyRail` | panel sticky de metadatos clave/valor |
@@ -4626,3 +4626,4 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
 
 `components/ui/PixelModal.tsx` lleva además un seguro: no llama a `showModal()` si un ancestro está en
 `display:none`. Es la red, no la solución — la solución es no montarlo.
+- **2026-10-05 · Facturas sin puntos de estado (Fernando).** La columna «No. Factura» llevaba un punto con el estado de la factura y la etiqueta SRI su punto de `PixelBadge`: *«no es necesario»*. Se quitan los dos (tabla y tarjeta móvil). El punto de la insignia se quita con la variante nombrada `punto={false}`, no editando la insignia global; el resto de la app la conserva. **Adoptado** como variante.

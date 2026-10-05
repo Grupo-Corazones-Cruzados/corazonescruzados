@@ -37,10 +37,6 @@ const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'err
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Pendiente', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada', failed: 'Fallida',
 };
-// Punto de color por variante para mostrar el estado sin columna dedicada.
-const STATUS_DOT: Record<string, string> = {
-  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
-};
 const SRI_STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
   generated: 'default', signed: 'info', sent: 'info', authorized: 'success', rejected: 'error', error: 'error', voided: 'error',
 };
@@ -525,7 +521,6 @@ function InvoicesPageInner() {
         columns={[
           { key: 'number', header: 'No. Factura', width: '190px', render: (i: any) => (
             <span className="flex items-center gap-2 min-w-0">
-              <span title={STATUS_LABEL[i.status] || i.status} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_V[i.status] || 'default']}`} />
               <span className={`flex-1 truncate ${selected?.id === i.id ? 'text-accent font-medium' : 'text-digi-text'}`}>{i.invoice_number || `#${i.id}`}</span>
               {i.is_manual
                 ? <span title="Factura manual" className="shrink-0 text-digi-muted"><PenLine className="w-3.5 h-3.5" /></span>
@@ -535,7 +530,7 @@ function InvoicesPageInner() {
           { key: 'client', header: 'Cliente', render: (i: any) => <span className="text-digi-text">{i.client_name_sri || i.client_name || '-'}</span> },
           { key: 'total', header: 'Total', width: '100px', render: (i: any) => <span className="text-accent tabular-nums">${fmt2(Number(i.total || 0))}</span> },
           { key: 'sri', header: 'SRI', width: '150px', hideOnMobile: true, render: (i: any) => i.sri_status ? (
-            <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
+            <PixelBadge punto={false} variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
           { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
         ]}
@@ -551,14 +546,13 @@ function InvoicesPageInner() {
         tarjetaMovil={(i: any) => (
           <>
             <div className="flex items-start gap-2">
-              <span title={STATUS_LABEL[i.status] || i.status} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_V[i.status] || 'default']}`} />
               <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text tabular-nums leading-snug">{i.invoice_number || `#${i.id}`}</span>
               <span className="shrink-0 text-[13px] font-semibold text-accent tabular-nums">${fmt2(Number(i.total || 0))}</span>
             </div>
-            <p className="mt-0.5 pl-4 text-[12px] text-digi-muted leading-snug">{i.client_name_sri || i.client_name || '—'}</p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 pl-4 text-[12px] text-digi-muted">
+            <p className="mt-0.5 text-[12px] text-digi-muted leading-snug">{i.client_name_sri || i.client_name || '—'}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-digi-muted">
               {i.sri_status
-                ? <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
+                ? <PixelBadge punto={false} variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
                 : <span>Sin enviar al SRI</span>}
               <span className="inline-flex items-center gap-1" title={i.is_manual ? 'Factura manual' : 'Factura automática'}>
                 {i.is_manual ? <PenLine className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}

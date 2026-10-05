@@ -293,6 +293,8 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Recordatorios** abre en Pendientes y «Todos» va el último.
   - **Facturas** abre en «Pendientes» y «Todas» va el último, bajo «Canceladas» (2026-10-05). Mismo
     patrón que Proyectos, Tickets y Recordatorios: la pestaña por defecto es la de trabajo pendiente.
+  - **Facturas sin puntos** (2026-10-05): fuera el punto de estado de «No. Factura» y el de la etiqueta SRI
+    (`PixelBadge punto={false}`; el resto de insignias de la app lo conservan).
 - **📁 Proyecto #39 «Grupo Corazones Cruzados» (2026-10-03).** Creado a petición de Fernando como el
   proyecto de la propia plataforma: responsable miembro 1 (`lfgonzalezm0@grupocc.org`), cliente #25 (la
   cuenta de cliente de esa misma cuenta, que se llama «Tagi»), borrador privado, 22 requerimientos (uno por

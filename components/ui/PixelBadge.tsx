@@ -13,10 +13,13 @@ export default function PixelBadge({
   children,
   variant = 'default',
   className = '',
+  punto = true,
 }: {
   children: React.ReactNode;
   variant?: keyof typeof VARIANTS;
   className?: string;
+  /** `false` quita el punto de color: para columnas donde el texto ya basta (SRI de Facturas). */
+  punto?: boolean;
 }) {
   return (
     <span
@@ -24,7 +27,7 @@ export default function PixelBadge({
       className={`pixel-badge inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-medium border ${VARIANTS[variant] || VARIANTS.default} ${className}`}
       style={{ fontFamily: 'var(--font-body)' }}
     >
-      {variant !== 'default' && <span aria-hidden className="pixel-badge-dot w-1.5 h-1.5 rounded-full bg-current shrink-0" />}
+      {punto && variant !== 'default' && <span aria-hidden className="pixel-badge-dot w-1.5 h-1.5 rounded-full bg-current shrink-0" />}
       {children}
     </span>
   );
