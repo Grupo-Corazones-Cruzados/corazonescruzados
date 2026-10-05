@@ -1,5 +1,25 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-04) — ADMIN ▸ PROMPTS: validar si un texto nuevo contradice las decisiones del documento · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+- **Rol:** ingeniero de IA aplicada (prompting + evaluación) y frontend del editor.
+- **Pedido:** *«una herramienta que permita validar si un nuevo texto incluido represente una contradicción en las decisiones del sistema […] leer el documento completo […] responder si existe o no, y dónde y por qué»*.
+- **Resuelto investigando (sin preguntar):** el editor guarda HTML y `htmlToMarkdown` ya sirve en los dos lados; `chatJSON` (`lib/ia/openai.ts`) es la llamada estándar y ya evita `temperature`/`max_tokens`; el JSON no necesita `/v1/responses`.
+- **Decisiones por defecto (a confirmar si Fernando quiere otra cosa):** el texto nuevo se escribe en el panel y entra lo seleccionado en la hoja; se compara con lo que hay EN PANTALLA, no con lo guardado; vacío = el documento contra sí mismo; no se guarda historial.
+- **🪤 Aprendido al medir:** con «ante la duda, no la cuentes» no se veían contradicciones claras de regla general vs caso concreto. Criterio final: una regla general («todo», «siempre», «nunca») queda contradicha por un caso que la incumple, salvo excepción expresa; lo derogado no cuenta. El veredicto sale de la lista de contradicciones, no de la bandera del modelo.
+- **Verificado:** API contra el modelo real (sí / no / excepción + derogación / documento consigo mismo: 2 de 2), 3-6 s por consulta; Chrome de punta a punta con «Ver en el documento» seleccionando el pasaje; el documento real del #39 sin tocar (guardados bloqueados en la prueba).
+
+## Objetivo (2026-10-02 → 05) — FORMULARIOS DEL PANEL: selectores de cliente y miembro, ancho único y cierre por el velo · ✅ 100 % — HECHO Y VERIFICADO
+- **Rol:** ingeniero frontend / sistema de diseño.
+- **Pedidos de Fernando, en orden:** el selector «Mis clientes» salía aplastado → que sea buscador → nombre, correo debajo e icono de cuenta → lo mismo en Tickets (cliente y miembro) y «Miembro asignado» → «Miembro» → mismo diseño en «Nuevo proyecto» → miembro con nombre, correo, rol y prospección → quitar textos de presentación y la casilla de cuenta cliente al solicitar → cotización con el mismo campo → todos los paneles al ancho del mayor → Prospección también → el velo cierra → quitar el campo «Miembro» al crear → Recordatorios abre en Pendientes con «Todos» al final.
+- **P1 — ¿Por qué el `<select>` salía bajo? · ✅** Le faltaba `appearance: none`; macOS ignoraba relleno y altura. Se corrigió en la fuente (`globals.css`) para los ~40 escritos a mano. (fuente: prueba en Chrome con el CSS compilado)
+- **P2 — ¿Había ya un desplegable con buscador? · ✅** Sí, `SearchableSelect`; se amplió (`hint`, `icon`, `meta`, `metaRight`, `keywords`) en vez de escribir otro. `AssigneePicker` y `ClientPicker` tenían equivalentes propios y pasaron a la misma pieza / al mismo `IconoCuenta`. (regla «equivalente no es igual»)
+- **P3 — ¿«Tiene cuenta en GCC World»? · ✅** Cliente: `clients.status = 'activo'` (hoy 5 activos, 17 inactivos). Miembro: hay un `users` con su `member_id` (todos los asignables la tienen).
+- **P4 — ¿La casilla de cuenta cliente hacía algo en el servidor? · ✅** No: las APIs de ticket y proyecto ya llaman a `ensureUserClientAccount` al solicitar. Era solo un freno de pantalla.
+- **P5 — ¿Cuál era el panel derecho más ancho? · ✅** El `xl` de 1040px (había 644 / 840 / 1040, y la cotización a 448). Ahora una variable para todos; deroga la regla «1040 solo con tabla dentro».
+- **P6 — ¿Por qué el velo no cerraba? · ✅** El clic lo recibía `.modal-overlay`, no el `<dialog>`. Se cierra si la pulsación empieza y termina en el velo.
+- **Verificado:** tsc + `npm run build` + Chrome contra el build local con sesión de admin y TODA escritura bloqueada, en cada paso (medidas de ancho, alineación de etiquetas, desplegables abiertos, búsqueda por rol, cierre por velo con los tres casos).
+- **❓ Abiertas:** «Todos» al final en Tickets y Proyectos · confirmación al cerrar con datos escritos · historial de validaciones.
+
 ## Objetivo (2026-10-01) — PROYECTO ▸ Pagos: estado de la etapa con icono y confirmación de transferencia en ventanita · ✅ 100 % — CONSTRUIDO Y VERIFICADO
 - **Rol:** ingeniero frontend/pagos.
 - **Pedido:** mover la confirmación de la tarjeta encima de Pagos a cada etapa (reloj / por verificar / visto verde), clic → ventanita centrada con overlay «Transferencia», «Confirmar y facturar» + «Rechazar» + X.

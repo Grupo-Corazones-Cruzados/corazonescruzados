@@ -275,6 +275,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🗂️ Formularios del panel: selectores, ancho y velo (Fernando, 2026-10-02 → 05).** Detalle de cada
+  control en `Diseño.md` (desviaciones de esas fechas); aquí, lo que manda:
+  - **Todo `<select>` del panel lleva `appearance: none` y la flecha de `PixelSelect`** desde
+    `app/globals.css` (`.corp select:not(.field-plain):not([multiple])`); `select-compacto` para celdas
+    estrechas (IVA). Había ~40 escritos a mano que macOS dibujaba aplastados.
+  - **Elegir cliente** = `CampoClienteOCorreo` (`components/clients/CamposResponsable.tsx`): buscador
+    `SearchableSelect` con nombre, correo debajo e `IconoCuenta` (violeta = tiene cuenta, `clients.status
+    = 'activo'`; gris = no), o correo con el botoncito «Usar un correo». En «Nuevo ticket», «Nuevo
+    proyecto» y «Nueva cotización». **Sin campo «Miembro»** al crear: el responsable es quien crea.
+  - **Elegir miembro** = `AssigneePicker`, ya sobre `SearchableSelect`: nombre, correo, rol y la
+    prospección al borde derecho; busca también por rol y talento. En Tickets la etiqueta es «Miembro».
+  - **Solicitar ticket / proyecto**: sin campo «Cliente», sin la casilla «Crear/usar mi cuenta de tipo
+    cliente» y sin texto de presentación. La API ya crea o reutiliza la cuenta (`ensureUserClientAccount`).
+  - **Todo panel derecho con velo mide 1040px** (`--ancho-panel-derecho` en `.corp`): `PixelModal`
+    md/lg/xl, la cotización y Prospección. **Pulsar el velo cierra** (empezar y terminar el clic en él).
+  - **Recordatorios** abre en Pendientes y «Todos» va el último.
+- **📁 Proyecto #39 «Grupo Corazones Cruzados» (2026-10-03).** Creado a petición de Fernando como el
+  proyecto de la propia plataforma: responsable miembro 1 (`lfgonzalezm0@grupocc.org`), cliente #25 (la
+  cuenta de cliente de esa misma cuenta, que se llama «Tagi»), borrador privado, 22 requerimientos (uno por
+  módulo/producto de GCC World) sin costo y con 1 plaza. Se insertó con SQL en una transacción imitando la
+  API. 🪤 `projects.open_for_talent` no existía en producción: la API la crea en el primer POST.
 - **🔎 Admin ▸ Prompts ▸ «Validar contradicciones» (Fernando, 2026-10-04).** Botón en el pie de la
   hoja: abre un panel con «Texto nuevo» (entra lo seleccionado en la hoja) y compara ese texto con el
   documento COMPLETO que hay en pantalla —aunque no se haya guardado—. Vacío, revisa el documento
@@ -6582,6 +6603,24 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Probar una pantalla del panel con sesión, en local y sin escribir nada (2026-10-04).** En local no hay
+  `JWT_SECRET`: el servidor firma con el valor por defecto, así que basta firmar con `jose` un token
+  `{ userId, email, role: 'admin' }` y ponerlo en la cookie `auth_token`. `npm run build` + `next start
+  -p 3099` (se mata por puerto), Chrome del sistema en puppeteer (`executablePath`), y
+  `setRequestInterception` respondiendo `{}` a todo lo que no sea GET en `/api/`: la prueba no escribe en
+  la base de producción. Lo que sí debe llegar (p. ej. una consulta a la IA) se deja pasar por URL.
+  - Para probar CSS suelto en `file://`: enlazar **todas** las hojas de `.next/static/css` y poner
+    `<meta charset="utf-8">`; sin él, la «á» de la ruta del repo rompe el enlace y no carga nada.
+- **Un `<dialog>` tapado entero por su propia capa nunca recibe el clic (2026-10-04).** `PixelModal`
+  cerraba con `e.target === dialog`, pero `.modal-overlay` lo cubre y era quien recibía el clic. Y el
+  `click` cae en el ancestro común: arrastrar desde dentro y soltar en el velo lo dispara en el velo —
+  por eso se mira también dónde empezó (`mousedown`).
+- **Un `<select>` sin `appearance: none` lo dibuja el sistema (2026-10-02):** en macOS ignora relleno y
+  `min-height`. La regla global de `.corp` lo arregla en todos; una variante de selector necesita más
+  especificidad que `.corp select:not(...):not(...)` (por eso `select-compacto` repite `:not([multiple])`).
+- **Validar con IA: lo que dice el prompt pesa más de lo que parece (2026-10-04).** «Ante la duda, no la
+  cuentes» bastó para que el modelo no viera «todo panel mide 1040» vs «este mide 644». Se calibra con
+  casos reales (sí, no, excepción expresa, regla derogada) antes de dar la herramienta por buena.
 - **TipTap: `useEditorState` con el editor en `null` se queda vacío (2026-10-01).** Con
   `immediatelyRender:false` el primer render tiene `editor = null`; un `useEditorState` montado
   entonces no se recalcula hasta la primera transacción, así que la barra de formato no salía
@@ -7338,6 +7377,9 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   corregir uno, no dar por hecho que ya pasa.
 
 ## Pendientes / preguntas abiertas
+- (2026-10-05) Preguntas abiertas a Fernando de la sesión de formularios: ¿«Todos» al final también en
+  los raíles de Tickets y Proyectos? · ¿pulsar el velo con datos escritos debe pedir confirmación? ·
+  ¿guardar un historial de validaciones de contradicciones por proyecto?
 - **Confirmación visual del usuario:** sigue siendo suya la última palabra, pero desde el 2026-07-30
   la verificación visual **ya no depende de él**: ver la lección "Verificar la UI de verdad".
 - `ModuleToolbar` en los **3 módulos restantes**: `admin` (sub-tabs anidados), `admin/incidents`, `centralized`.

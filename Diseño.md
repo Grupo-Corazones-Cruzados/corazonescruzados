@@ -3913,6 +3913,9 @@ más «Volver al original». Un prompt de miles de caracteres en 644px no se pue
 mientras se escribe.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-05 · Filtro de estado de Recordatorios** · **AJUSTADO** (Fernando): abre en **Pendientes**
+  —lo que hay que atender— y **«Todos» va el ÚLTIMO**, bajo «Completados». ⚠️ Pendiente de decidir si
+  es regla para todos los raíles de estado (Tickets y Proyectos siguen con «Todos» en otra posición).
 - **2026-10-04 · Resultado de una revisión con IA (Admin ▸ Prompts ▸ Validar contradicciones)** ·
   **ADOPTADO**: veredicto en una caja `TONO.exito`/`TONO.aviso` (icono `CircleCheck`/`TriangleAlert` +
   título + resumen), y debajo una tarjeta por hallazgo: `MapPin` + sección, citas en `blockquote` con
@@ -3954,7 +3957,9 @@ mientras se escribe.
     En Tickets la etiqueta es **«Miembro»**, no «Miembro asignado». ⚠️ Proyectos sigue con
     `AssigneePicker` (rol, prospección y talentos) al invitar a un miembro: pendiente de decidir.
   - **2026-10-03 · «Miembro» + «Cliente» al crear: `components/clients/CamposResponsable.tsx`.**
-    `CampoMiembroPropio` (solo lectura, «Tú — nombre») a la izquierda y `CampoClienteOCorreo`
+    ⚠️ **SUSTITUIDO el 2026-10-04**: el campo «Miembro» se quitó (ver la entrada de arriba) y hoy
+    solo queda `CampoClienteOCorreo` a todo el ancho. Lo que sigue vale para el campo cliente.
+    Antes: `CampoMiembroPropio` (solo lectura, «Tú — nombre») a la izquierda y `CampoClienteOCorreo`
     (buscador de mis clientes, o correo con el botoncito «Usar un correo» junto a la etiqueta) a
     la derecha, en `grid sm:grid-cols-2`. Lo usan «Nuevo ticket» y «Nuevo proyecto»: el proyecto
     tenía dos botones grandes «Mis clientes / Usar un correo» encima del campo y ya no.
