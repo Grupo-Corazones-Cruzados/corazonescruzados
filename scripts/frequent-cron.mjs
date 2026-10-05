@@ -55,8 +55,16 @@ const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http
 // dispara la purga de fin de mes; quien decide si toca correr es el propio
 // endpoint, porque la hora que importa es la del cliente, no la del servidor.
 //
-// Se llama UNA VEZ POR HORA (no cada 10 min): la purga solo hace algo en la última
-// hora del mes y llamarla seis veces por hora sería llenar el registro de nada.
+// ⚠️ CUÁNDO SE LLAMA (2026-10-05). Antes, una vez por hora a todos. Cada llamada DESPIERTA
+// el servicio, que duerme cuando nadie lo usa (`sleepApplication`), y se queda encendido
+// unos minutos cobrando RAM: 720 despertares al mes para una purga que borra una vez. Ahora:
+//  - `cambioDeMes` (Reservas, Pedidos, Catering): el producto solo borra en la ÚLTIMA HORA
+//    del último día del mes, hora del cliente. Se le llama cada hora, pero solo en la franja
+//    UTC en la que alguna zona del mundo (UTC-12 … UTC+14) puede estar en esa hora: desde el
+//    último día del mes a las 09:00 UTC hasta el día 1 a las 11:59 UTC. Unas 27 llamadas al
+//    mes. La regla de cada producto no cambia: quien decide sigue siendo su endpoint.
+//  - `diaria` (Automatizaciones): su retención es móvil (traza de Meta de más de 30 días),
+//    así que basta una vez al día, en la ventana de los nocturnos.
 //
 // ⚠️ FALTABA AUTOMATIZACIONES (2026-09-26), y no era opcional: `/legal/whatsapp` (A.8)
 // promete borrar la traza cruda de Meta a los 30 días. Hasta hoy ese borrado lo hacía la
@@ -68,11 +76,19 @@ const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http
 // sin endpoint sería un 404 cada hora fingiendo que algo se purga. Cuando lo tenga, se
 // añade la línea y sus dos variables.
 const PRODUCTOS = [
-  { name: 'Reservas · purga de fin de mes', url: process.env.RESERVAS_URL,         token: process.env.RESERVAS_CRON_TOKEN },
-  { name: 'Pedidos · purga de fin de mes',  url: process.env.PEDIDOS_URL,          token: process.env.PEDIDOS_CRON_TOKEN },
-  { name: 'Catering · purga de fin de mes', url: process.env.CATERING_URL,         token: process.env.CATERING_CRON_TOKEN },
-  { name: 'Automatizaciones · retención',   url: process.env.AUTOMATIZACIONES_URL, token: process.env.AUTOMATIZACIONES_CRON_TOKEN },
+  { name: 'Reservas · purga de fin de mes', cuando: 'cambioDeMes', url: process.env.RESERVAS_URL,         token: process.env.RESERVAS_CRON_TOKEN },
+  { name: 'Pedidos · purga de fin de mes',  cuando: 'cambioDeMes', url: process.env.PEDIDOS_URL,          token: process.env.PEDIDOS_CRON_TOKEN },
+  { name: 'Catering · purga de fin de mes', cuando: 'cambioDeMes', url: process.env.CATERING_URL,         token: process.env.CATERING_CRON_TOKEN },
+  { name: 'Automatizaciones · retención',   cuando: 'diaria',      url: process.env.AUTOMATIZACIONES_URL, token: process.env.AUTOMATIZACIONES_CRON_TOKEN },
 ].filter((p) => p.url && p.token);
+
+/** ¿Puede ser, en alguna zona horaria del mundo, la última hora del último día del mes? */
+function enCambioDeMes(ahora) {
+  const dia = ahora.getUTCDate();
+  const hora = ahora.getUTCHours();
+  const ultimoDia = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() + 1, 0)).getUTCDate();
+  return (dia === ultimoDia && hora >= 9) || (dia === 1 && hora < 12);
+}
 const TOKEN = process.env.CRON_TOKEN || '';
 
 if (!TOKEN) {
@@ -130,9 +146,12 @@ for (const job of jobs) {
   }
 }
 
-// Purga de los productos, una vez por hora.
-if (now.getUTCMinutes() < 10 && PRODUCTOS.length) {
-  for (const prod of PRODUCTOS) {
+// Purga de los productos: un disparo por hora (minuto < 10), y solo a los que les toca.
+const productosAhora = now.getUTCMinutes() < 10
+  ? PRODUCTOS.filter((p) => (p.cuando === 'diaria' ? nightlyWindow : enCambioDeMes(now)))
+  : [];
+if (productosAhora.length) {
+  for (const prod of productosAhora) {
     try {
       const res = await fetch(`${prod.url.replace(/\/+$/, '')}/api/cron/purgar`, {
         method: 'POST',

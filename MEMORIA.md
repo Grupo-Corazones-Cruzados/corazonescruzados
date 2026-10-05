@@ -275,6 +275,13 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **💸 Railway: la purga de los productos ya no los despierta cada hora (Fernando, 2026-10-05).** El
+  ciclo 16 sep → 16 oct llevaba 7,97 $ en Servidor-GCC, casi todo RAM por minuto (CPU ≈ 0). Reservas,
+  Pedidos y Catering duermen (`sleepApplication`) pero `scripts/frequent-cron.mjs` los llamaba cada hora
+  (720 despertares/mes para borrar una vez). Ahora solo en la franja del cambio de mes
+  (`enCambioDeMes`: último día ≥09:00 UTC o día 1 <12:00 UTC; simulado 2 años × 423 zonas, 0 purgas
+  perdidas, 27 llamadas/mes) y Automatizaciones una vez al día (06:00 UTC). ⏳ Propuesto y NO hecho: el
+  `automatizaciones-worker` pregunta cada 5 s y no deja dormir a `automatizaciones` (~2-2,5 $/mes).
 - **🗂️ Formularios del panel: selectores, ancho y velo (Fernando, 2026-10-02 → 05).** Detalle de cada
   control en `Diseño.md` (desviaciones de esas fechas); aquí, lo que manda:
   - **Todo `<select>` del panel lleva `appearance: none` y la flecha de `PixelSelect`** desde
