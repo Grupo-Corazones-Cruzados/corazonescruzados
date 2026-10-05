@@ -21,11 +21,12 @@ import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
+// Abre en «Activas» y «Todas» va al final, bajo «Canceladas» (Fernando, 2026-10-05).
 const STATUS_TABS = [
-  { value: 'all', label: 'Todas', Icon: Layers },
   { value: 'active', label: 'Activas', Icon: CheckCircle2 },
   { value: 'paused', label: 'Pausadas', Icon: PauseCircle },
   { value: 'cancelled', label: 'Canceladas', Icon: XCircle },
+  { value: 'all', label: 'Todas', Icon: Layers },
 ];
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -76,7 +77,7 @@ export default function SubscriptionsPage() {
   const esCliente = user?.role !== 'admin' && user?.role !== 'member';
   const [subs, setSubs] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState('active');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -260,7 +261,7 @@ export default function SubscriptionsPage() {
       <div className="flex items-center gap-2">
         <label className="text-[11px] text-digi-muted" style={mf}>Estado</label>
         {esCliente ? (
-          <PixelBadge variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
+          <PixelBadge punto={false} variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
             {detail.status === 'active' ? 'Activa' : detail.status === 'paused' ? 'Pausada' : 'Cancelada'}
           </PixelBadge>
         ) : (
@@ -416,22 +417,9 @@ export default function SubscriptionsPage() {
                 emptyDesc="No hay suscripciones en este estado."
                 columns={[
                   { key: 'id', header: 'ID', width: '56px', render: (s: any) => <span className="tabular-nums text-digi-muted">#{s.id}</span> },
-                  { key: 'client', header: 'Cliente', render: (s: any) => {
-                    const dot = s.status === 'cancelled' ? 'bg-digi-muted'
-                      : s.alert === 'overdue' ? 'bg-red-500'
-                      : s.alert === 'due_soon' ? 'bg-amber-500'
-                      : 'bg-green-500';
-                    const dotTitle = s.status === 'cancelled' ? 'Cancelada'
-                      : s.alert === 'overdue' ? `Vencido${s.next_due ? ` · ${dueText(s.next_due.daysUntilDue)}` : ''}`
-                      : s.alert === 'due_soon' ? `Por vencer${s.next_due ? ` · ${dueText(s.next_due.daysUntilDue)}` : ''}`
-                      : (s.next_due ? 'Al día' : 'Sin cobros pendientes');
-                    return (
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span title={dotTitle} className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                        <span className={`truncate text-[13px] font-medium ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.client_name || '—'}</span>
-                      </span>
-                    );
-                  } },
+                  { key: 'client', header: 'Cliente', render: (s: any) => (
+                    <span className={`block truncate text-[13px] font-medium ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{s.client_name || '—'}</span>
+                  ) },
                   { key: 'title', header: 'Razón / Título', hideOnMobile: true, render: (s: any) => <span className="text-[12px] text-digi-text" style={mf}>{s.title}</span> },
                   { key: 'cost', header: 'Costo', width: '100px', render: (s: any) => <span className="text-[12px] text-digi-text tabular-nums" style={mf}>${fmt2(Number(s.monthly_cost))}</span> },
                   { key: 'next', header: 'Próximo cobro', width: '200px', hideOnMobile: true, render: (s: any) => {
@@ -460,19 +448,14 @@ export default function SubscriptionsPage() {
                     : s.alert === 'overdue' ? 'text-red-600'
                     : s.alert === 'due_soon' ? 'text-amber-600'
                     : 'text-green-600';
-                  const punto = cancelada ? 'bg-digi-muted'
-                    : s.alert === 'overdue' ? 'bg-red-500'
-                    : s.alert === 'due_soon' ? 'bg-amber-500'
-                    : 'bg-green-500';
                   return (
                     <>
                       <div className="flex items-start gap-2">
-                        <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${punto}`} />
                         <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{s.client_name || '—'}</span>
                         <span className="shrink-0 text-[13px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(Number(s.monthly_cost))}<span className="text-[11px] font-normal text-digi-muted">/mes</span></span>
                       </div>
-                      {s.title && <p className="mt-0.5 pl-4 text-[12px] text-digi-muted leading-snug" style={mf}>{s.title}</p>}
-                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 text-[12px]" style={mf}>
+                      {s.title && <p className="mt-0.5 text-[12px] text-digi-muted leading-snug" style={mf}>{s.title}</p>}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]" style={mf}>
                         <span className="tabular-nums text-digi-muted">#{s.id}</span>
                         <span className={`font-medium ${tono}`}>
                           {cancelada ? 'Cancelada'

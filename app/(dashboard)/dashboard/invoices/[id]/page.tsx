@@ -272,8 +272,8 @@ export default function InvoiceDetailPage() {
         title={invoice.invoice_number || `Factura #${invoice.id}`}
         status={
           <span className="flex items-center gap-2">
-            {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
-            <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
+            {invoice.sri_status && <PixelBadge punto={false} variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
+            <PixelBadge punto={false} variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
           </span>
         }
         actions={
