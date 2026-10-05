@@ -49,11 +49,12 @@ const SCAN_NOTE: Record<string, string> = {
   'no-workspace-email': 'Tu usuario no tiene una cuenta corporativa @grupocc.org vinculada, que es la que guarda las reuniones de Meet.',
 };
 
+// «Todos» va al final, bajo «Completados» (Fernando, 2026-10-05).
 const STATUS_TABS = [
-  { value: 'all', label: 'Todos', Icon: Inbox },
   { value: 'active', label: 'Pendientes', Icon: Clock },
   { value: 'expired', label: 'Vencidos', Icon: AlertTriangle },
   { value: 'done', label: 'Completados', Icon: CheckCircle2 },
+  { value: 'all', label: 'Todos', Icon: Inbox },
 ];
 
 const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
@@ -120,7 +121,8 @@ export default function RecordatoriosPage() {
 
   const [list, setList] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('all');
+  // Abre en «Pendientes», que es lo que hay que atender (Fernando, 2026-10-05).
+  const [tab, setTab] = useState('active');
   const [search, setSearch] = useState('');
 
   // Selección / detalle (panel derecho).
