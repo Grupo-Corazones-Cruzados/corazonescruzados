@@ -606,6 +606,15 @@ Stack estándar de la casa, con particularidades de este repo:
       hace nada) y `components/providers/RelojesNativos.tsx` en `app/layout.tsx` (sincroniza al
       abrir, al volver a primer plano y con el evento `gcc:relojes`).
     - **Límite:** el sistema dibuja un reloj, no un costo que sube; se enseña la tarifa por hora.
+    - **Primera prueba de Fernando (2026-10-06):** «Detener» desde la notificación SÍ llegó
+      al servidor (registro 106 parado, 2 min 33 s), pero la página del ticket seguía
+      contando: **no se enteraba de cambios hechos fuera**. Arreglo: el detalle del ticket
+      sondea en silencio (`useSondeo`: 15 s con reloj en marcha, 60 s sin él, y al volver a la
+      pestaña/app). *Regla: en cuanto un dato se puede cambiar desde otro dispositivo, la
+      pantalla que lo enseña tiene que volver a preguntarlo.* Además: logo GCC en la
+      notificación y botón «Recargar» en la cabecera, solo en la app/PWA.
+    - Su «ya no veo el ticket pendiente»: el único abierto (#41) está **Confirmado**, no
+      Pendiente; no hay ningún ticket pendiente en la base. Pendiente de que lo confirme.
     - **Lo que falta para «al instante» desde el computador:** push (FCM en Android, APNs en
       iPhone). Hoy el computador → teléfono llega al abrir la app o en ≤ 15 min.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».

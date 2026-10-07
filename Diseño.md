@@ -1032,7 +1032,11 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
   Si cambia el acento en `app/globals.css`, **cambiarlo también aquí** (y en
   `movil/www/error.html`): es la única copia fuera de la fuente única, y es inevitable.
 - **Notificación del reloj del ticket** (`movil/android/.../reloj/Relojes.java`): icono pequeño
-  `ic_reloj` (cronómetro blanco, vector), título = título del ticket, texto = `cliente · registro`,
+  **`ic_gcc`** (silueta blanca del logo GCC, PNG por densidad; Fernando pidió el logo el
+  2026-10-06 — el cronómetro genérico «no se veía») + **icono grande `ic_gcc_grande`** (el logo a
+  color sobre blanco, a la derecha). ⚠️ `public/icono-512.png` tiene las esquinas
+  TRANSPARENTES: al sacar la silueta hay que mirar el canal alfa, o lo transparente cuenta como
+  negro y sale un aro alrededor del logo. Título = título del ticket, texto = `cliente · registro`,
   subtexto = tarifa `$15,00/h` (miles «.» y decimales «,», como `lib/format.ts`), cronómetro del
   sistema, una sola acción **«Detener»** (`ic_detener`). Sin sonido ni vibración (canal de
   importancia baja). Detenido sin conexión: «Detenido en h:mm:ss · se enviará al volver la conexión».
@@ -1040,6 +1044,10 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
   con fondo blanco y el logo al 66 %; arranque blanco con el logo al 40 % del lado corto.
 - **Pantalla sin conexión** (`movil/www/error.html`): fondo `#faf9f8`, texto `#242424`/`#605e5c`,
   botón primario morado de 44 px de alto. Es HTML suelto, no Tailwind: se sirve sin servidor.
+- **Botón «Recargar»** (`components/dashboard/CabeceraMovil.tsx`, 2026-10-06): arriba a la
+  derecha de la cabecera del teléfono, 44 px, icono `RotateCw` (gira mientras recarga). **Solo
+  dentro de la app o de la PWA instalada** (`Capacitor.isNativePlatform()` o
+  `display-mode: standalone`): ahí no hay barra del navegador; en el navegador sobraría.
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 

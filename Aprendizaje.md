@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 70 % — ANDROID CONSTRUIDO (falta probarlo en el teléfono)
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 74 % — ANDROID PROBADO POR FERNANDO; corregido lo que vio
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
@@ -160,6 +160,14 @@ Swift puro, en una extensión aparte).
 - **Cómo se construiría:** una pantalla «Mis tickets» propia del paquete (en `movil/www`, servida
   local) que lee de una copia en el teléfono y escribe en una cola; la cola se envía con la hora
   real de cada acción y las reglas de conflicto del servidor (las mismas de `en`).
+
+#### P18 — Primera prueba en el Samsung (2026-10-06) · ✅ Resuelta
+- **«Detener» funciona** (la parada llegó: registro 106, 153 s, 0,64 $) pero **la web no lo
+  reflejaba**: la página del ticket no volvía a preguntar. → sondeo silencioso en el detalle.
+- **La notificación no enseñaba logo** → silueta GCC (`ic_gcc`) + logo a color como icono grande.
+- **Pidió un botón de recargar** arriba a la derecha en la app → hecho en `CabeceraMovil`.
+- **Firebase:** dice que ya tiene un proyecto. `gcloud` está con su cuenta pero la sesión
+  caducó y pide `gcloud auth login` (interactivo): lo tiene que correr él.
 
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un

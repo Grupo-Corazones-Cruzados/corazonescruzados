@@ -9,6 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -45,6 +47,14 @@ public final class Relojes {
     private static final int MORADO = 0xFF4B2D8E;
 
     private Relojes() {}
+
+    private static Bitmap logo;
+
+    /** El logo a color, a la derecha de la notificación (el pequeño de la barra es la silueta). */
+    static synchronized Bitmap logo(Context c) {
+        if (logo == null) logo = BitmapFactory.decodeResource(c.getResources(), R.drawable.ic_gcc_grande);
+        return logo;
+    }
 
     static SharedPreferences prefs(Context c) {
         return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -133,8 +143,9 @@ public final class Relojes {
         if (!registro.isEmpty()) texto.append(texto.length() > 0 ? " · " : "").append(registro);
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CANAL)
-            .setSmallIcon(R.drawable.ic_reloj)
+            .setSmallIcon(R.drawable.ic_gcc)
             .setColor(MORADO)
+            .setLargeIcon(logo(c))
             .setContentTitle(r.optString("titulo"))
             .setContentText(texto.toString())
             .setSubText(tarifa > 0 ? dinero(tarifa) + "/h" : null)
@@ -160,7 +171,7 @@ public final class Relojes {
         long seg = Math.max(0, (detenidoEn - inicio) / 1000);
         String tiempo = String.format(Locale.ROOT, "%d:%02d:%02d", seg / 3600, (seg % 3600) / 60, seg % 60);
         return new NotificationCompat.Builder(c, CANAL)
-            .setSmallIcon(R.drawable.ic_reloj)
+            .setSmallIcon(R.drawable.ic_gcc)
             .setColor(MORADO)
             .setContentTitle(r.optString("titulo"))
             .setContentText("Detenido en " + tiempo + " · se enviará al volver la conexión")
@@ -178,7 +189,7 @@ public final class Relojes {
         PendingIntent alTocar = PendingIntent.getActivity(c, (int) (ticketId + 900000), abrir,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         return new NotificationCompat.Builder(c, CANAL)
-            .setSmallIcon(R.drawable.ic_reloj)
+            .setSmallIcon(R.drawable.ic_gcc)
             .setColor(MORADO)
             .setContentTitle(titulo)
             .setContentText(mensaje)

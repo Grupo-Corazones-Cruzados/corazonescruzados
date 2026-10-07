@@ -17,6 +17,7 @@ import Segmentado from '@/components/ui/Segmentado';
 import RegistroTrabajo, { diaDe, segundosDe, fmtTiempo } from '@/components/tickets/RegistroTrabajo';
 import { avisarCambioDeReloj } from '@/lib/movil/reloj-nativo';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import { useSondeo } from '@/lib/hooks/useSondeo';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -169,6 +170,21 @@ export default function TicketDetailPage() {
   }, [id, cargarPagos]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
+
+  /* ⇒ EL TICKET SE ENTERA DE LO QUE PASA FUERA (Fernando, 2026-10-06). El reloj ya no se
+     toca solo desde esta pantalla: se detiene desde la notificación del teléfono y se
+     arranca desde otro dispositivo. Detuvo el reloj desde la notificación y aquí seguía
+     contando. Ahora se vuelve a pedir el ticket al volver a la pestaña o a la app, y
+     periódicamente: cada 15 s con un reloj en marcha (es lo que se mira), cada minuto si no.
+     En silencio: un fallo del sondeo no es un error del usuario. */
+  const recargarEnSilencio = useCallback(async () => {
+    const res = await fetch(`/api/tickets/${id}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { data } = await res.json();
+    if (data) setTicket(data);
+  }, [id]);
+  const relojEnMarcha = !!ticket?.actions?.some((a: any) => a.timer_started_at);
+  useSondeo(recargarEnSilencio, relojEnMarcha ? 15_000 : 60_000);
 
   const loadBids = useCallback(async () => {
     try { const res = await fetch(`/api/tickets/${id}/bids`); const d = await res.json(); setBids(d.data || []); }

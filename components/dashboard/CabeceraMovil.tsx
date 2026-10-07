@@ -19,17 +19,31 @@
  *
  * Solo en teléfono: en escritorio el menú lateral está siempre a la vista y esta barra
  * sobraría.
+ *
+ * ── RECARGAR (Fernando, 2026-10-06) ───────────────────────────────────────────────────
+ * Dentro de la app (Capacitor) o instalada como PWA no hay barra del navegador, y con ella
+ * se va el botón de recargar: si algo cambió fuera (un reloj detenido desde la
+ * notificación, un dato tocado en el computador) no había cómo traerlo. Por eso, SOLO ahí,
+ * un botón arriba a la derecha que recarga la página. En el navegador sobra: ya tiene el suyo.
  */
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu } from 'lucide-react';
+import { Menu, RotateCw } from 'lucide-react';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function CabeceraMovil() {
   const { abrir } = useMenuMovil();
+  // Se decide tras montar: en el servidor no hay `window` y el HTML tiene que coincidir.
+  const [enApp, setEnApp] = useState(false);
+  const [recargando, setRecargando] = useState(false);
+  useEffect(() => {
+    const w = window as any;
+    setEnApp(!!w.Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches);
+  }, []);
 
   return (
     // `rail` para heredar los colores del menú: la cabecera y el menú que abre son la
@@ -56,6 +70,18 @@ export default function CabeceraMovil() {
           GCC WORLD
         </span>
       </Link>
+
+      {enApp && (
+        <button
+          onClick={() => { setRecargando(true); window.location.reload(); }}
+          disabled={recargando}
+          className="ml-auto w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
+          aria-label="Recargar"
+          title="Recargar"
+        >
+          <RotateCw className={`w-5 h-5 ${recargando ? 'animate-spin' : ''}`} />
+        </button>
+      )}
     </header>
   );
 }
