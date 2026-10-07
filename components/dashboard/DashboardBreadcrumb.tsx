@@ -43,7 +43,7 @@ export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?:
       /* `overflow-visible` a propósito: la ranura de acciones lleva un contador que sale
          un poco por arriba del botón, y con `overflow-x-auto` quedaba recortado. La ruta,
          que es lo que podía desbordar, se desplaza en su propio contenedor. */
-      className={`fixed bottom-0 right-0 left-0 z-20 h-[var(--pie-panel)] flex items-center gap-1 px-3 sm:px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur whitespace-nowrap transition-[left] duration-200 ${
+      className={`fixed bottom-0 right-0 left-0 z-20 h-[var(--pie-panel)] pb-[var(--seguro-abajo)] flex items-center gap-1 px-3 sm:px-4 border-t border-digi-border bg-digi-card/95 backdrop-blur whitespace-nowrap transition-[left] duration-200 ${
         collapsed ? 'lg:left-16' : 'lg:left-56'
       }`}
       style={mf}

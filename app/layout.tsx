@@ -129,6 +129,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // La app nativa (y la PWA instalada) ocupa la pantalla ENTERA, bajo la hora, la batería y
+  // la barra de inicio. `cover` es lo que da valor a `env(safe-area-inset-*)`; sin él vale 0
+  // y la cabecera queda debajo de la hora (Fernando, iPhone 17, 2026-10-06). En el navegador
+  // normal los márgenes valen 0 y no cambia nada.
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

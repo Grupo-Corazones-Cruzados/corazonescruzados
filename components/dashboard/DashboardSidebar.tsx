@@ -171,7 +171,7 @@ export default function DashboardSidebar() {
         /* ⚠️ Los niveles, de abajo arriba: pie (z-20) · velo de escritorio (z-30) ·
            menú cerrado (z-40) · velo del teléfono (z-40) · menú abierto en teléfono
            (z-50). El menú siempre por encima de su propio velo. */
-        className={`rail fixed top-0 left-0 h-full ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width] duration-200
+        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width] duration-200
           ${collapsed ? 'w-16' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
         `}

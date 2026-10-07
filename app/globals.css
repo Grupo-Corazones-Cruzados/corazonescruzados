@@ -819,8 +819,20 @@ html {
    los paneles de chat, notificaciones y del bot (`bottom-11`, «11 porque el pie mide 9») y
    el relleno inferior del `main` (`pb-14`). Cambiar el alto sin esta variable descoloca los
    cuatro y el fallo solo se ve en el teléfono. */
-:root { --pie-panel: 2.25rem; }
-@media (max-width: 639.98px) { :root { --pie-panel: 3.5rem; } }
+:root { --pie-panel: calc(2.25rem + var(--seguro-abajo)); }
+@media (max-width: 639.98px) { :root { --pie-panel: calc(3.5rem + var(--seguro-abajo)); } }
+
+/* ── LOS MÁRGENES DEL SISTEMA (app nativa / PWA instalada, 2026-10-06) ──────────
+   Con `viewport-fit: cover` la página llega hasta los bordes del teléfono: arriba está la
+   hora y la batería (y la isla dinámica), abajo la barra de inicio. Fernando lo vio en el
+   iPhone 17: la cabecera chocaba con la hora y el pie con la barra. Estas dos variables son
+   lo que mide ese margen; en el navegador valen 0.
+   El pie ya crece solo: `--pie-panel` incluye `--seguro-abajo`, así que los paneles
+   flotantes y el relleno del `main` (que leen la variable) suben con él. */
+:root {
+  --seguro-arriba: env(safe-area-inset-top, 0px);
+  --seguro-abajo: env(safe-area-inset-bottom, 0px);
+}
 
 /* ── El parpadeo de la barra de desplazamiento del raíl ───────────────────────
    Al pasar el puntero, el menú se ensancha en 200 ms y aparecen las etiquetas de
@@ -1226,12 +1238,19 @@ html {
 .corp { --ancho-panel-derecho: 1040px; }
 .corp .modal-surface[data-size='md'] .modal-header,
 .corp .modal-surface[data-size='lg'] .modal-header,
-.corp .modal-surface[data-size='xl'] .modal-header { flex: 0 0 auto; }
+.corp .modal-surface[data-size='xl'] .modal-header { flex: 0 0 auto; padding-top: calc(14px + var(--seguro-arriba)); }
+@media (min-width: 640px) {
+  .corp .modal-surface[data-size='md'] .modal-header,
+  .corp .modal-surface[data-size='lg'] .modal-header,
+  .corp .modal-surface[data-size='xl'] .modal-header { padding-top: calc(16px + var(--seguro-arriba)); }
+}
 .corp .modal-surface[data-size='md'] .modal-body,
 .corp .modal-surface[data-size='lg'] .modal-body,
 .corp .modal-surface[data-size='xl'] .modal-body {
   flex: 1 1 auto;
   max-height: none;             /* override the centered-dialog 70vh cap */
+  /* Lo último del formulario (sus botones) no puede quedar bajo la barra de inicio. */
+  padding-bottom: calc(24px + var(--seguro-abajo));
 }
 
 /* Tabs — Fluent pivot */

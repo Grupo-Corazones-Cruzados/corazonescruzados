@@ -1048,6 +1048,15 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
   derecha de la cabecera del teléfono, 44 px, icono `RotateCw` (gira mientras recarga). **Solo
   dentro de la app o de la PWA instalada** (`Capacitor.isNativePlatform()` o
   `display-mode: standalone`): ahí no hay barra del navegador; en el navegador sobraría.
+- **⭐ Márgenes del sistema (Fernando, iPhone 17, 2026-10-06: «se choca con los datos del
+  teléfono»).** `viewport-fit: cover` (`app/layout.tsx`) + dos tokens en `app/globals.css`:
+  `--seguro-arriba` / `--seguro-abajo` = `env(safe-area-inset-top/bottom, 0px)` (0 en el
+  navegador). Quién los usa: la cabecera del teléfono (alto `3.5rem + arriba`, `pt` arriba),
+  `--pie-panel` (ya incluye `abajo`, así que el pie, los paneles flotantes y el `main` suben
+  solos), el pie (`pb` abajo), los paneles derechos a pantalla completa (cabecera `+ arriba`,
+  cuerpo `+ abajo`) y el menú lateral. **Regla: todo lo nuevo que vaya pegado al borde
+  superior o inferior de la pantalla usa estos tokens**, nunca un número. Barra de estado en
+  iPhone: iconos blancos (`UIStatusBarStyleLightContent`) porque la cabecera es oscura.
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 

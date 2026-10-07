@@ -52,7 +52,9 @@ export default function CabeceraMovil() {
        son muy chiquitos para los dedos». El botón de menú medía 40 px y el logo 26 en una
        pantalla de 390–430 px de ancho: el único control de esta barra, y había que
        apuntarle. Ahora el menú es de 44 px —el destino táctil— y la marca crece con él. */
-    <header className="rail lg:hidden shrink-0 h-14 flex items-center gap-2 px-2 bg-digi-card border-b border-digi-border">
+    /* `--seguro-arriba`: en la app nativa la cabecera baja lo que mide la zona de la hora y
+       la batería, y su fondo la cubre; los 56 px de controles quedan debajo, intactos. */
+    <header className="rail lg:hidden shrink-0 h-[calc(3.5rem+var(--seguro-arriba))] pt-[var(--seguro-arriba)] flex items-center gap-2 px-2 bg-digi-card border-b border-digi-border">
       <button
         onClick={abrir}
         className="w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
