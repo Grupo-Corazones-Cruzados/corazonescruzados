@@ -634,6 +634,17 @@ Stack estándar de la casa, con particularidades de este repo:
       `data/AuthKey_4P7D5UZD8N.p8` (gitignored; falta subirla a Railway como variable). Firmar:
       `xcodebuild -allowProvisioningUpdates -allowProvisioningDeviceRegistration`; instalar:
       `xcrun devicectl device install app`.
+    - **⭐ Actividad en Vivo del reloj (2026-10-07).** Extensión `RelojWidget`
+      (`movil/ios/App/RelojWidget/`, «Reloj GCC», `…provisional.RelojWidget`) con pantalla de
+      bloqueo + isla dinámica; `Text(timerInterval:)` cuenta solo. Código compartido app +
+      extensión en `movil/ios/App/Compartido/` (atributos, `ServidorReloj`, `DetenerRelojIntent`).
+      Plugin iOS `App/RelojTicketPlugin.swift`, registrado en `VistaPrincipal`
+      (`CAPBridgeViewController` propio que pone `SceneDelegate`). «Detener» es un
+      `LiveActivityIntent` (corre en el proceso de la APP) que usa la cookie `auth_token`
+      copiada al llavero en cada sincronización; sin red guarda `{ticket, registro, en}` y se
+      envía al sincronizar. Tocarla abre `gccworld://ticket/<id>`.
+      ⚠️ El objetivo se añadió editando `project.pbxproj` a mano (no hay gem `xcodeproj`): al
+      tocarlo, `plutil -lint` y compilar.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
   (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el

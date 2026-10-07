@@ -16,7 +16,43 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
+		A1CC0000000000000000000B /* RelojTicketPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000001 /* RelojTicketPlugin.swift */; };
+		A1CC0000000000000000000C /* VistaPrincipal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000002 /* VistaPrincipal.swift */; };
+		A1CC0000000000000000000D /* RelojAtributos.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000003 /* RelojAtributos.swift */; };
+		A1CC0000000000000000000E /* ServidorReloj.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000004 /* ServidorReloj.swift */; };
+		A1CC0000000000000000000F /* DetenerRelojIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000005 /* DetenerRelojIntent.swift */; };
+		A1CC00000000000000000010 /* RelojAtributos.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000003 /* RelojAtributos.swift */; };
+		A1CC00000000000000000011 /* ServidorReloj.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000004 /* ServidorReloj.swift */; };
+		A1CC00000000000000000012 /* DetenerRelojIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000005 /* DetenerRelojIntent.swift */; };
+		A1CC00000000000000000013 /* RelojWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000006 /* RelojWidgetBundle.swift */; };
+		A1CC00000000000000000014 /* RelojLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000007 /* RelojLiveActivity.swift */; };
+		A1CC00000000000000000015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000008 /* Assets.xcassets */; };
+		A1CC00000000000000000016 /* RelojWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1CC0000000000000000000A /* RelojWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A1CC00000000000000000022 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1CC00000000000000000019;
+			remoteInfo = RelojWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1CC0000000000000000001D /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1CC00000000000000000016 /* RelojWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -30,6 +66,16 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		A1CC00000000000000000001 /* RelojTicketPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelojTicketPlugin.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000002 /* VistaPrincipal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VistaPrincipal.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000003 /* RelojAtributos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelojAtributos.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000004 /* ServidorReloj.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServidorReloj.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000005 /* DetenerRelojIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetenerRelojIntent.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000006 /* RelojWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelojWidgetBundle.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000007 /* RelojLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelojLiveActivity.swift; sourceTree = "<group>"; };
+		A1CC00000000000000000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1CC00000000000000000009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1CC0000000000000000000A /* RelojWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RelojWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +87,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1CC0000000000000000001B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -49,6 +102,8 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				A1CC00000000000000000017 /* Compartido */,
+				A1CC00000000000000000018 /* RelojWidget */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -57,6 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				A1CC0000000000000000000A /* RelojWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -65,6 +121,8 @@
 			isa = PBXGroup;
 			children = (
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+				A1CC00000000000000000002 /* VistaPrincipal.swift */,
+				A1CC00000000000000000001 /* RelojTicketPlugin.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -77,6 +135,27 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		A1CC00000000000000000017 /* Compartido */ = {
+			isa = PBXGroup;
+			children = (
+				A1CC00000000000000000003 /* RelojAtributos.swift */,
+				A1CC00000000000000000004 /* ServidorReloj.swift */,
+				A1CC00000000000000000005 /* DetenerRelojIntent.swift */,
+			);
+			path = Compartido;
+			sourceTree = "<group>";
+		};
+		A1CC00000000000000000018 /* RelojWidget */ = {
+			isa = PBXGroup;
+			children = (
+				A1CC00000000000000000006 /* RelojWidgetBundle.swift */,
+				A1CC00000000000000000007 /* RelojLiveActivity.swift */,
+				A1CC00000000000000000008 /* Assets.xcassets */,
+				A1CC00000000000000000009 /* Info.plist */,
+			);
+			path = RelojWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -87,10 +166,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				A1CC0000000000000000001D /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1CC00000000000000000021 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -99,6 +180,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A1CC00000000000000000019 /* RelojWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1CC0000000000000000001E /* Build configuration list for PBXNativeTarget "RelojWidget" */;
+			buildPhases = (
+				A1CC0000000000000000001A /* Sources */,
+				A1CC0000000000000000001B /* Frameworks */,
+				A1CC0000000000000000001C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RelojWidget;
+			productName = RelojWidget;
+			productReference = A1CC0000000000000000000A /* RelojWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -133,6 +231,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				A1CC00000000000000000019 /* RelojWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -151,6 +250,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1CC0000000000000000001C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1CC00000000000000000015 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -160,10 +267,35 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+				A1CC0000000000000000000C /* VistaPrincipal.swift in Sources */,
+				A1CC0000000000000000000B /* RelojTicketPlugin.swift in Sources */,
+				A1CC0000000000000000000D /* RelojAtributos.swift in Sources */,
+				A1CC0000000000000000000E /* ServidorReloj.swift in Sources */,
+				A1CC0000000000000000000F /* DetenerRelojIntent.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1CC0000000000000000001A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1CC00000000000000000013 /* RelojWidgetBundle.swift in Sources */,
+				A1CC00000000000000000014 /* RelojLiveActivity.swift in Sources */,
+				A1CC00000000000000000010 /* RelojAtributos.swift in Sources */,
+				A1CC00000000000000000011 /* ServidorReloj.swift in Sources */,
+				A1CC00000000000000000012 /* DetenerRelojIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1CC00000000000000000021 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1CC00000000000000000019 /* RelojWidget */;
+			targetProxy = A1CC00000000000000000022 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -340,6 +472,57 @@
 			};
 			name = Release;
 		};
+		A1CC0000000000000000001F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5H27NSRYKQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RelojWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Reloj GCC";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gccworld.provisional.RelojWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+			name = Debug;
+		};
+		A1CC00000000000000000020 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5H27NSRYKQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RelojWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Reloj GCC";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gccworld.provisional.RelojWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -357,6 +540,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1CC0000000000000000001E /* Build configuration list for PBXNativeTarget "RelojWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1CC0000000000000000001F /* Debug */,
+				A1CC00000000000000000020 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
