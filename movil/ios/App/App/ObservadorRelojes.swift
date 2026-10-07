@@ -1,5 +1,7 @@
 import ActivityKit
 import Foundation
+import UIKit
+import UserNotifications
 
 /**
  * Escucha los tokens de push de las Actividades en Vivo y se los da al servidor
@@ -20,6 +22,22 @@ import Foundation
 enum ObservadorRelojes {
     private static var observadas = Set<String>()
     private static var tokenArranque: String?
+    private static var tokenAvisos: String?
+
+    /// El token de avisos normales llega a `AppDelegate`; se guarda y se registra.
+    static func tokenDeAvisos(_ d: Data) {
+        let t = hex(d)
+        cola.sync { tokenAvisos = t }
+        Task { await ServidorReloj.registrarToken(tipo: "apns", token: t) }
+    }
+
+    /// Pide permiso para avisos (una vez; iOS no vuelve a preguntar) y registra el teléfono.
+    static func pedirAvisos() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { concedido, _ in
+            guard concedido else { return }
+            DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
+        }
+    }
     private static let cola = DispatchQueue(label: "org.grupocc.gccworld.relojes")
 
     static func iniciar() {
@@ -46,6 +64,9 @@ enum ObservadorRelojes {
         print("[reloj] reintentar; token de arranque: \(cola.sync { tokenArranque }?.prefix(12) ?? "ninguno"), sesión: \(ServidorReloj.sesion() != nil)")
         if let t = cola.sync(execute: { tokenArranque }) {
             await ServidorReloj.registrarToken(tipo: "apns_live_start", token: t)
+        }
+        if let t = cola.sync(execute: { tokenAvisos }) {
+            await ServidorReloj.registrarToken(tipo: "apns", token: t)
         }
         for a in Activity<RelojAtributos>.activities {
             if let d = a.pushToken {

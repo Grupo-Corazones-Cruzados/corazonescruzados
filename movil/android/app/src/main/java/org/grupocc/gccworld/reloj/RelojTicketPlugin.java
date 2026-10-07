@@ -43,9 +43,10 @@ public class RelojTicketPlugin extends Plugin {
     public void sincronizar(PluginCall call) {
         JSONArray lista = call.getArray("relojes");
         if (lista == null) lista = new JSONArray();
-        if (lista.length() > 0 && Build.VERSION.SDK_INT >= 33
-            && getPermissionState("notificaciones") != PermissionState.GRANTED) {
-            // Se pide el permiso la primera vez que hay algo que enseñar, no al abrir la app.
+        if (Build.VERSION.SDK_INT >= 33
+            && getPermissionState("notificaciones") != PermissionState.GRANTED && getPermissionState("notificaciones") != PermissionState.DENIED) {
+            // Desde los avisos (recordatorios, suscripciones) la app avisa aunque no haya
+            // reloj: el permiso se pide la primera vez que se abre con sesión, una sola vez.
             requestPermissionForAlias("notificaciones", call, "trasPermiso");
             return;
         }

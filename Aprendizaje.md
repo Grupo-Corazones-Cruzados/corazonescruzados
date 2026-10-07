@@ -250,6 +250,20 @@ Swift puro, en una extensión aparte).
   edita sin red en cada borrador? (c) ¿pantalla «Borradores» aparte o dentro de Tickets /
   Proyectos? (d) regla de conflicto.
 
+#### P23 — Avisos de recordatorios y de suscripciones (Fernando, 2026-10-07) · ✅ Construido
+- Recordatorios: mismo calendario que el correo (`escalation.ts`). Suscripciones: no existía
+  ningún aviso (ni correo); se creó con su tabla de enviados. No hay columna de responsable:
+  se usa `created_by` (correo de quien la creó).
+- Simulación contra la BD real (2026-10-07): sub 1 «Suscripción Mensual a Servidor» → etapa
+  «próximo» (1 cliente con cuenta + 1 responsable); sub 2 «Servidor Carliza Hotel» → «vencida»
+  (cliente SIN cuenta → solo responsable). Saldrán desde las 8:00 de Ecuador.
+
+#### P16b — Estado «Sin conexión» (Fernando, 2026-10-07) · ✅ Decidido
+- Lo creado sin red queda en «Sin conexión» (vive en el dispositivo); con red pasa solo a
+  «Borrador» en el servidor. Propuesta aceptada: borrador en tickets, pantalla sin red,
+  sincronización. Pendiente de diseño: qué se edita sin red y la regla de conflicto (se
+  propuso la de Prompts).
+
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
   **Samsung «Galaxy 12s»** (modelo exacto por confirmar: es lo que decide si hay Android 16 y con

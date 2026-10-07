@@ -40,6 +40,7 @@ import org.json.JSONObject;
 public final class Relojes {
     public static final String BASE = "https://app.grupocc.org";
     static final String CANAL = "reloj-ticket";
+    static final String CANAL_AVISOS = "avisos";
     static final String PREFS = "relojes";
     static final String K_MOSTRADOS = "mostrados";
     static final String K_PENDIENTES = "pendientes";
@@ -68,6 +69,32 @@ public final class Relojes {
         canal.setSound(null, null);
         canal.enableVibration(false);
         c.getSystemService(NotificationManager.class).createNotificationChannel(canal);
+        NotificationChannel avisos = new NotificationChannel(CANAL_AVISOS, "Avisos", NotificationManager.IMPORTANCE_DEFAULT);
+        avisos.setDescription("Recordatorios, suscripciones por vencer y demás avisos de la plataforma.");
+        c.getSystemService(NotificationManager.class).createNotificationChannel(avisos);
+    }
+
+    /** Aviso normal de la plataforma (recordatorio, suscripción…): al tocarlo abre `ruta`. */
+    public static void mostrarAviso(Context c, String titulo, String cuerpo, String ruta) {
+        crearCanal(c);
+        if (!puedeAvisar(c) || titulo == null) return;
+        int id = (int) (System.currentTimeMillis() % 1_000_000_000L) + 1_000_000;
+        Intent abrir = new Intent(c, MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (ruta != null && ruta.startsWith("/")) abrir.putExtra(MainActivity.EXTRA_RUTA, ruta);
+        PendingIntent alTocar = PendingIntent.getActivity(c, id, abrir,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification n = new NotificationCompat.Builder(c, CANAL_AVISOS)
+            .setSmallIcon(R.drawable.ic_gcc)
+            .setColor(MORADO)
+            .setLargeIcon(logo(c))
+            .setContentTitle(titulo)
+            .setContentText(cuerpo)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(cuerpo))
+            .setAutoCancel(true)
+            .setContentIntent(alTocar)
+            .build();
+        try { NotificationManagerCompat.from(c).notify(id, n); } catch (SecurityException ignorada) { }
     }
 
     static boolean puedeAvisar(Context c) {

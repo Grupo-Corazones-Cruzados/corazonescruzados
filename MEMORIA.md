@@ -660,6 +660,22 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Sin conexión — alcance (Fernando, 2026-10-07):** tickets y proyectos funcionan sin red
       MIENTRAS ESTÁN EN BORRADOR; pasar al siguiente estado exige conexión. Los tickets aún no
       tienen borrador. Propuesta y preguntas en `Aprendizaje.md` § P16.
+    - **⭐ Avisos al teléfono (2026-10-07).** Pieza común `lib/push/avisos.ts`
+      `avisarUsuarios(userIds, {titulo, cuerpo, ruta})`: Android = datos `tipo=aviso` pintados por
+      `MensajeriaService` en el canal «Avisos» con el logo GCC; iPhone = banner APNs al token
+      `apns` (permiso pedido en la primera sincronización; tocarlo abre `ruta`).
+      - **Recordatorios:** `lib/reminders/escalation.ts` avisa al teléfono en los MISMOS momentos
+        que el correo (5 h, 3 h, 30 min, al vencer) y solo después de que el correo salió.
+      - **Suscripciones por vencer:** `lib/avisos-suscripciones.ts` + cron frecuente
+        (`/api/subscriptions/cron/avisos`). Al CLIENTE (cuenta enlazada o por correo) y a quien
+        la OFRECIÓ (`created_by` = correo; si no hay cuenta, a los admins). Etapas «próximo»
+        (2–7 días), «mañana», «hoy» y «vencida» (solo si venció hace ≤ 3 días), cada una una vez
+        (`subscription_alerts`, migración 068), de 8:00 a 20:00 de Ecuador. También deja el
+        aviso en la campanita. `?simular=1` (admin) dice qué saldría sin enviar.
+    - **Sin conexión — decidido (Fernando, 2026-10-07):** acepta la propuesta (borrador también
+      en tickets, pantalla que funciona sin red, sincronización al volver) y añade un estado
+      **«Sin conexión»**: ahí quedan los tickets/proyectos CREADOS sin red; al recuperar la
+      conexión pasan SOLOS a «Borrador». Pasar de borrador al siguiente estado exige red.
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

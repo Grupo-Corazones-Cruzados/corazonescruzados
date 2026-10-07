@@ -38,6 +38,9 @@
 const FREQUENT_JOBS = [
   { name: 'Recordatorios · correos escalados',   path: '/api/reminders/cron/notify' },
   { name: 'Recordatorios · generar desde Meet',  path: '/api/reminders/cron/generate-from-meetings' },
+  // Avisos al cliente y a quien ofreció la suscripción (teléfono + campanita). Cada uno sale
+  // una vez (`subscription_alerts`) y solo de 8:00 a 20:00 de Ecuador (2026-10-07).
+  { name: 'Suscripciones · avisos por vencer',   path: '/api/subscriptions/cron/avisos' },
 ];
 
 const NIGHTLY_JOBS = [

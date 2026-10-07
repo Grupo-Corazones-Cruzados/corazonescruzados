@@ -33,6 +33,7 @@ public class RelojTicketPlugin: CAPPlugin, CAPBridgedPlugin {
                 let excluir = Set(pendientes.map(\.registroId))
                 await Self.aplicar(lista, excluyendo: excluir, congelados: Set(quedan.map(\.registroId)))
                 await ObservadorRelojes.reintentar()
+                ObservadorRelojes.pedirAvisos()
                 call.resolve(["permitido": ActivityAuthorizationInfo().areActivitiesEnabled])
             }
         }

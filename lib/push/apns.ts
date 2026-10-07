@@ -97,6 +97,44 @@ export async function enviarActividadEnVivo(
   }
 }
 
+/**
+ * Aviso normal (banner) al iPhone: título, texto y la ruta de la plataforma que abre al
+ * tocarlo (`ruta`, la lee `AppDelegate`). Va al token `apns` del teléfono.
+ */
+export async function enviarAvisoApns(
+  destinos: { token: string; entorno: EntornoApns }[],
+  aviso: { titulo: string; cuerpo: string; ruta?: string },
+): Promise<void> {
+  if (!destinos.length) return;
+  const c = configurado();
+  if (!c) { console.error('APNs: faltan APNS_KEY / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID'); return; }
+  try {
+    const bearer = await token(c);
+    const cuerpo = JSON.stringify({
+      aps: { alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: 'default' },
+      ruta: aviso.ruta || null,
+    });
+    const muertos: string[] = [];
+    await Promise.all(destinos.map(async ({ token: t, entorno }) => {
+      const r = await enviarUno(entorno, `/3/device/${t}`, {
+        authorization: `bearer ${bearer}`,
+        'apns-push-type': 'alert',
+        'apns-topic': c.bundle,
+        'apns-priority': '10',
+        'content-type': 'application/json',
+      }, cuerpo);
+      if (r.estado === 200) return;
+      if (r.estado === 410 || r.motivo === 'BadDeviceToken' || r.motivo === 'Unregistered') muertos.push(t);
+      else console.error('APNs aviso', r.estado, r.motivo);
+    }));
+    if (muertos.length) {
+      await pool.query(`DELETE FROM gcc_world.push_devices WHERE kind = 'apns' AND token = ANY($1)`, [muertos]);
+    }
+  } catch (e: any) {
+    console.error('APNs aviso error:', e?.message);
+  }
+}
+
 /** Las fechas de ActivityKit viajan como segundos desde el 1-ene-2001 (`Date` de Swift). */
 export function fechaSwift(iso: string): number {
   return new Date(iso).getTime() / 1000 - 978_307_200;

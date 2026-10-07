@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,7 +10,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Tokens de push de la Actividad en Vivo del reloj (también en arranques en segundo plano).
         ObservadorRelojes.iniciar()
+        // Avisos normales (recordatorios, suscripciones…): mostrarlos también con la app abierta
+        // y abrir su pantalla al tocarlos.
+        UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    // MARK: Avisos (APNs)
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        ObservadorRelojes.tokenDeAvisos(deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("[reloj] avisos: no se pudo registrar: \(error.localizedDescription)")
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -41,5 +55,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                           sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list, .sound])
+    }
+
+    /// Tocar un aviso abre su pantalla de la plataforma (`ruta` en el mensaje).
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        if let ruta = response.notification.request.content.userInfo["ruta"] as? String {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                let escena = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                (escena?.windows.first?.rootViewController as? VistaPrincipal)?.abrir(ruta: ruta)
+            }
+        }
+        completionHandler()
     }
 }
