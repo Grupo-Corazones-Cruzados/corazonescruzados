@@ -75,10 +75,15 @@ async function pedir(url: string, metodo = 'GET', cuerpo?: unknown) {
   return { s: r.status, j };
 }
 
-/** La cuenta de quien usa el dispositivo; se guarda para poder trabajar sin conexión. */
+/**
+ * La cuenta de quien usa el dispositivo; se guarda para poder trabajar sin conexión.
+ * `null` = el servidor respondió que no hay sesión. Si NO responde (sin red, servidor caído)
+ * LANZA: no es lo mismo «no has entrado» que «no hay conexión», y confundirlos enseñaba
+ * «Con conexión» sin servidor.
+ */
 export async function duenoActual(): Promise<Dueno | null> {
+  const { s, j } = await pedir('/api/auth/me');
   try {
-    const { s, j } = await pedir('/api/auth/me');
     if (s !== 200 || !j?.user) return null;
     const u = j.user;
     const d: Dueno = {

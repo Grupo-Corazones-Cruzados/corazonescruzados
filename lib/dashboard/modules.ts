@@ -30,6 +30,8 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
   { href: '/dashboard/recordatorios',    label: 'Recordatorios',    group: 'Principal',  icon: 'AlarmClock' },
   { href: '/dashboard/tickets',          label: 'Tickets',          group: 'Operación',  icon: 'Ticket' },
   { href: '/dashboard/projects',         label: 'Proyectos',        group: 'Operación',  icon: 'FolderKanban' },
+  // Fuera de `/dashboard` a propósito: es la pantalla que abre SIN CONEXIÓN (2026-10-07).
+  { href: '/borradores',                 label: 'Borradores',       group: 'Operación',  icon: 'FilePen' },
   { href: '/dashboard/subscriptions',    label: 'Suscripciones',    group: 'Operación',  icon: 'CalendarClock' },
   { href: '/dashboard/clients',          label: 'Clientes',         group: 'Operación',  icon: 'Users' },
   { href: '/dashboard/invoices',         label: 'Facturas',         group: 'Operación',  icon: 'ReceiptText' },

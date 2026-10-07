@@ -21,7 +21,7 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
-  ArrowRight, Ticket as TicketIcon, DoorOpen,
+  ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -31,6 +31,8 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 // Proyectos abre en «Cotizaciones» (Fernando, 2026-09-28).
 const STATUS_TABS = [
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
+  // Borradores (2026-10-07): solo los míos; se crean también sin conexión (`/borradores`).
+  { value: 'draft', label: 'Borradores', Icon: FilePen },
   { value: 'pending', label: 'Pendientes', Icon: Clock },
   { value: 'confirmed', label: 'Confirmados', Icon: CircleCheck },
   { value: 'completed', label: 'Completados', Icon: CheckCircle2 },
@@ -39,11 +41,11 @@ const STATUS_TABS = [
 ];
 
 const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  pending: 'warning', confirmed: 'info', in_progress: 'info',
+  draft: 'default', pending: 'warning', confirmed: 'info', in_progress: 'info',
   completed: 'success', cancelled: 'error', withdrawn: 'default',
 };
 const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendiente', confirmed: 'Confirmado', in_progress: 'En progreso',
+  draft: 'Borrador', pending: 'Pendiente', confirmed: 'Confirmado', in_progress: 'En progreso',
   completed: 'Completado', cancelled: 'Cancelado', withdrawn: 'Retirado',
 };
 
@@ -246,7 +248,7 @@ export default function TicketsPage() {
   // Rail de estado: el componente compartido `FilterRail` (antes estaba duplicado aquí
   // como `RailItem`, lo que hacía que Tickets y Soporte se vieran distintos).
   const railItems: FilterRailItem<string>[] = STATUS_TABS
-    .filter((s) => s.value !== 'open' || accessRoleOf(user) !== 'client')
+    .filter((s) => (s.value !== 'open' && s.value !== 'draft') || accessRoleOf(user) !== 'client')
     .map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] ?? 0 }));
 
   /**

@@ -43,6 +43,8 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   // Recordatorios: privado por fila; correos escalados según fecha/hora.
   { path: '/dashboard/recordatorios', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/tickets', roles: ALL },
+  // Borradores (tickets y proyectos sin conexión): los crea quien los atiende, no un cliente.
+  { path: '/borradores', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/projects', roles: ALL },
   { path: '/dashboard/clients', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/invoices', roles: ['candidate', 'member', 'admin'] },

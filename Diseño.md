@@ -1062,6 +1062,13 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
   cuerpo `+ abajo`) y el menú lateral. **Regla: todo lo nuevo que vaya pegado al borde
   superior o inferior de la pantalla usa estos tokens**, nunca un número. Barra de estado en
   iPhone: iconos blancos (`UIStatusBarStyleLightContent`) porque la cabecera es oscura.
+- **Pantalla «Borradores» (sin conexión, 2026-10-07)** — `app/(sin-conexion)/borradores/page.tsx`:
+  cabecera oscura como la del teléfono (‹ solo con conexión, título, indicador
+  «Con conexión»/«Sin conexión» con `Cloud`/`CloudOff`, botón sincronizar 44 px); secciones
+  Tickets/Proyectos con «+ Nuevo»; tarjetas con la etiqueta de estado **«Sin conexión»**
+  (gris, `CloudOff`) o **«Borrador»** (acento claro) + número; avisos «Cambios sin subir» (ámbar)
+  y bloque de conflicto ámbar con dos botones. El formulario es `EditPanel` con los controles de
+  siempre (`EditField`, `CampoClienteOCorreo`, `MultiSelectSearch`, `BotonQuitar` en los días).
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 

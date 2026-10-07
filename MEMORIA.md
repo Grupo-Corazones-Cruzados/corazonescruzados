@@ -725,11 +725,24 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Ticket #41:** lo borró Fernando. Sus restos (2 registros, 2 días, 1 bloque de calendario)
       se limpiaron con su OK, y desde ahora borrar un ticket borra también lo que cuelga de él
       (transacción en `DELETE /api/tickets/[id]`).
-    - **Borradores — fase 2 APARCADA (2026-10-07)** para hacer los chats: escritos y sin conectar
-      `lib/borradores/almacen.ts` (IndexedDB) y `lib/borradores/sincronizar.ts`. Falta: la
-      pantalla `/borradores` (fuera del layout del dashboard para que abra sin red), el service
-      worker que la guarde con sus archivos y redirija ahí sin red, la pestaña «Borradores» y el
-      botón «Enviar» en tickets, y el sincronizador global.
+    - **⭐ Borradores — fase 2, SIN CONEXIÓN (2026-10-07, verificado).** Pantalla
+      `/borradores` (`app/(sin-conexion)/`, FUERA del layout del panel: aquel arranca comprobando
+      sesión y montando menús que sin red no cargan; entrada «Borradores» en el menú, solo
+      candidato/miembro/admin). Datos en el dispositivo (`lib/borradores/almacen.ts`, IndexedDB,
+      por cuenta) y `lib/borradores/sincronizar.ts` (sube lo creado sin red con `offline_id` →
+      pasa SOLO a «Borrador»; sube ediciones con `si_no_cambio_desde` → conflicto «Quedarme con
+      la mía / Usar la de la plataforma»; baja mis borradores; guarda clientes y servicios con su
+      fecha). `components/providers/SincronizadorBorradores.tsx` sincroniza en el panel al entrar
+      y al volver la red, y pide al SW volver a guardar la pantalla tras cada despliegue.
+      `public/sw.js` (v3): guarda `/borradores` y SUS archivos de `/_next/static/`; navegación
+      sin red → 302 a `/borradores`; navegaciones con `cache: 'no-store'` (si no, el navegador
+      servía el panel de su caché HTTP y entraba en bucle con /auth). El resto de la plataforma
+      sigue sin caché. Pestaña «Borradores» en Tickets y botón «Enviar» en el detalle.
+      Indicador de conexión = ¿llegó la sincronización? (no `navigator.onLine`, que miente con
+      wifi sin internet). Probado de punta a punta en Chrome apagando el servidor: abrir panel →
+      Borradores; crear → «Sin conexión»; encender → «Borrador #47» en la base (borrado por id).
+      ⚠️ En pruebas, el modo «sin red» de Chrome NO afecta al service worker: hay que apagar el
+      servidor (y matarlo con `-sTCP:LISTEN`, ver memoria del puerto).
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

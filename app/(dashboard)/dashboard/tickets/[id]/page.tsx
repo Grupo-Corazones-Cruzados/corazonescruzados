@@ -39,11 +39,12 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
 const STATUS_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  pending: 'warning', confirmed: 'info', in_progress: 'info',
+  draft: 'default', pending: 'warning', confirmed: 'info', in_progress: 'info',
   completed: 'success', cancelled: 'error', withdrawn: 'default',
 };
 
 const STATUSES = [
+  { value: 'draft', label: 'Borrador' },
   { value: 'pending', label: 'Pendiente' },
   { value: 'confirmed', label: 'Confirmado' },
   { value: 'in_progress', label: 'En progreso' },
@@ -544,6 +545,20 @@ export default function TicketDetailPage() {
     finally { setSavingSlots(false); }
   };
 
+  // --- Enviar un borrador (2026-10-07) ---
+  const [enviando, setEnviando] = useState(false);
+  const enviarBorrador = async () => {
+    setEnviando(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}/enviar`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error);
+      toast.success('Ticket enviado: ya está «Pendiente» y el cliente recibió el aviso');
+      await fetchTicket();
+    } catch (e: any) { toast.error(e?.message || 'No se pudo enviar'); }
+    finally { setEnviando(false); }
+  };
+
   // --- Sesiones en vivo ("inicio ahora") ---
   const handleStartSession = async () => {
     setSessionBusy(true);
@@ -608,7 +623,7 @@ export default function TicketDetailPage() {
   const isOpen = !!ticket.open_for_proposals;
   // El selector de estado aparece cuando el ticket ya NO está abierto a propuestas (Fernando,
   // 2026-09-30); nunca al cliente ni en una solicitud que aún hay que aceptar.
-  const puedeElegirEstado = canEdit && !isOpen && !isRequestForMe;
+  const puedeElegirEstado = canEdit && !isOpen && !isRequestForMe && ticket.status !== 'draft';
   const isOwner = !!ticket.user_id && String(ticket.user_id) === String(user?.id);
   const myBid = bids.find((b: any) => b.member_id === user?.member_id);
   const canBid = isOpen && !isOwner && !!user?.member_id;
@@ -758,6 +773,10 @@ export default function TicketDetailPage() {
         actions={(
           <>
             {/* ⇒ SOLO ICONOS, como en el proyecto (Fernando, 2026-09-29). Nombre en title/aria-label. */}
+            {/* Un BORRADOR sale con «Enviar» (2026-10-07): pasa a Pendiente y avisa al cliente. */}
+            {ticket.status === 'draft' && canEdit && (
+              <button onClick={enviarBorrador} disabled={enviando} className={BTN_ICONO_PRIMARIO} title="Enviar (pasa a Pendiente y avisa al cliente)" aria-label="Enviar borrador"><Send className="w-4 h-4" /></button>
+            )}
             {(ticket.status === 'pending' || ticket.status === 'withdrawn') && canEdit && !isRequestForMe && (
               <button onClick={() => updateStatus('confirmed')} className={BTN_ICONO_PRIMARIO} title="Confirmar" aria-label="Confirmar"><Check className="w-4 h-4" /></button>
             )}
@@ -872,7 +891,7 @@ export default function TicketDetailPage() {
                           dia={diaActivo}
                           tarifa={serviceRate}
                           puede={!!puedeRegistrar}
-                          bloqueo={isClosed ? 'El ticket está cerrado: lo consumido ya está facturado' : undefined}
+                          bloqueo={isClosed ? 'El ticket está cerrado: lo consumido ya está facturado' : ticket.status === 'draft' ? 'Es un borrador: envíalo antes de registrar trabajo' : undefined}
                           onCambio={fetchTicket}
                           onSesionMeet={async () => { await handleStartSession(); setDiaSel(hoyEcuadorCliente()); }}
                           sesionOcupada={sessionBusy}

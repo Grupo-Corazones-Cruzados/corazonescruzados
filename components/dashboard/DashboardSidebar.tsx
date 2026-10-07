@@ -14,7 +14,7 @@ import { accessRoleOf, canAccessModule, isPathBlocked, type AccessRole } from '@
 import { DASHBOARD_MODULES, MODULE_GROUPS } from '@/lib/dashboard/modules';
 import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
-  Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench,
+  Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
   LogOut, Sun, Moon, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
   type LucideIcon,
@@ -38,7 +38,7 @@ const ROLE_LABEL_ES: Record<AccessRole, string> = {
 // Iconos por nombre: el catálogo de módulos (`lib/dashboard/modules.ts`) es data pura
 // (también lo usan rutas de servidor), así que el componente resuelve el icono aquí.
 const ICONS: Record<string, LucideIcon> = {
-  Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket, FolderKanban,
+  Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket, FolderKanban, FilePen,
   CalendarClock, Users, ReceiptText, Store, Workflow, Wrench, Network, Settings,
   LifeBuoy, ShieldCheck,
 };
