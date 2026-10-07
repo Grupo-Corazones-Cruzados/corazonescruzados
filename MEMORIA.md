@@ -563,6 +563,23 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Precio: sin poner.** El plan está a 0 con su descripción diciéndolo, y por eso
     **todavía no hay ficha en el marketplace**: publicarla a «0,00 /mes» dejaría que
     alguien se suscribiera gratis. **Pendiente de Fernando.**
+- **📱 APP NATIVA SIN TIENDAS + EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO (Fernando, 2026-10-06).**
+  Modifica el enfoque del 2026-09-23 (abajo): sigue siendo **un solo proyecto con Capacitor**, pero
+  *«no me interesa necesariamente publicar en tiendas, me basta con que se pueda descargar e
+  instalar»*. Lo que quiere de nativo: **notificaciones**, **widgets** y sobre todo **el reloj del
+  ticket visible como el cronómetro del iPhone** (Actividad en Vivo / isla dinámica; en Android,
+  notificación en curso con cronómetro).
+  - Mientras no se publique, **dejan de aplicar** la guía 4.2, la compra en tienda y el problema
+    de los aniversarios (P2/P5/P9 de `Aprendizaje.md`); no se borran, quedan para cuando se publique.
+  - **El reloj ya vive en el servidor** (`ticket_actions.timer_started_at` + `duration_seconds`):
+    el teléfono solo recibe la hora de inicio y el sistema dibuja el reloj; nada cuenta en la app.
+  - **Corrección a P3:** con `server.url` remoto el WebView navega al dominio real y la cookie
+    `auth_token` viaja; el token propio solo hace falta para lo nativo que llama al servidor sin
+    WebView (botón Detener de la Actividad en Vivo / notificación, registro de push).
+  - **iPhone sin tienda = cuenta Apple Developer (99 $/año) + TestFlight o Ad Hoc**; con cuenta
+    gratuita la app caduca a los 7 días y no hay push. **Pendiente de Fernando.**
+  - En esta Mac (2026-10-06): Android Studio + JDK 21 + adb sí; **Xcode no instalado**.
+  - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
   (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el
   móvil» y pasa a ser **el camino a las tiendas**. Lo que él decidió, textual en lo esencial:

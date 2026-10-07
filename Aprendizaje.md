@@ -1,5 +1,156 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 55 %
+
+**Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
+nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
+pueda descargar e instalar, y tener opciones nativas como enviar notificaciones, o que genere
+widgets o controles que funcionen en segundo plano… un contador que se vea en el iphone como se ve
+el cronómetro del iphone pero basado en esta aplicación; es para contar el tiempo que consumo en un
+ticket de un cliente»*.
+
+**Es una modificación del objetivo del 2026-09-23 (§ «UN SOLO PROYECTO QUE ACABE EN LAS TIENDAS»),
+no uno nuevo:** sigue siendo un solo proyecto empaquetado con Capacitor, pero **las tiendas dejan
+de ser la meta**. Eso cambia mucho: lo que más riesgo tenía allí (guía 4.2, compra en la tienda,
+aniversarios de renovación — P2, P5, P9) **deja de aplicar mientras no se publique**, y entra un
+requisito que allí no estaba: **la Actividad en Vivo del reloj del ticket**.
+
+**Rol asumido:** ingeniero móvil nativo (iOS ActivityKit/WidgetKit + Android notificaciones en
+curso) sobre un contenedor Capacitor. El riesgo ya no está en el revisor de Apple sino en **la
+distribución sin tienda** y en **el código nativo que Capacitor no trae** (la Actividad en Vivo es
+Swift puro, en una extensión aparte).
+
+### Progreso
+- **% de información para el objetivo:** 55 %
+- **Estado:** el reloj ya existe y está bien hecho para esto (vive en el servidor). La arquitectura
+  está clara. Faltan **tres decisiones de Fernando** (cuenta de Apple, desde dónde se arranca el
+  reloj, qué botones lleva) y **una medición** (la sesión dentro del contenedor).
+
+### Fuentes consultadas (2026-10-06)
+- `components/tickets/RegistroTrabajo.tsx`, `app/api/tickets/[id]/actions/[actionId]/route.ts:60-140`,
+  `lib/tickets/schema.ts:115-119` → P10.
+- `middleware.ts:14` (sesión = cookie `auth_token`) → P3 revisada.
+- `app/manifest.ts`, `public/sw.js`, `components/providers/RegistroServiceWorker.tsx` → la PWA ya instalable.
+- Esta Mac: **Xcode NO instalado** (solo Command Line Tools), **Android Studio sí**, JDK 21 y `adb` sí,
+  CocoaPods no → P13.
+
+### Preguntas y respuestas
+
+#### P10 — ¿Hay ya un reloj de ticket del que colgar el contador nativo? · ✅ Resuelta — **sí, y su forma es la ideal**
+- **Por qué importa:** si el reloj viviera en la pantalla (un `setInterval`), la versión nativa
+  tendría que inventarse su propio estado y habría dos verdades.
+- **Respuesta (código):** `ticket_actions.timer_started_at` (TIMESTAMPTZ) + `duration_seconds`
+  acumulado; `iniciar`/`detener` por `PATCH /api/tickets/[id]/actions/[actionId]`; **uno en marcha
+  por ticket**; el tiempo se calcula `duration_seconds + (ahora − timer_started_at)`
+  (`segundosDe`). El costo = tiempo × tarifa del servicio.
+- **Consecuencia:** el contador nativo **no cuenta nada**: recibe la **hora de inicio** y el
+  sistema operativo dibuja el reloj solo. En iOS es `Text(timerInterval:)` /
+  `Text(fecha, style: .timer)` dentro de la Actividad en Vivo; en Android, una notificación en curso
+  con `setUsesChronometer(true)` y `setWhen(inicio − acumulado)`. **Ninguno de los dos necesita que la
+  app esté abierta ni que se le mande una actualización por segundo.** El servidor sigue siendo la
+  única verdad; el teléfono solo la enseña.
+- ⚠️ **Detalle a no olvidar:** si el registro ya tenía tiempo acumulado (`duration_seconds > 0`) y se
+  reanuda, la hora que se le da al sistema es `timer_started_at − duration_seconds`, no
+  `timer_started_at`, o el reloj del teléfono empezará en cero mientras la web dice 1:20:00.
+
+#### P11 — Sin tienda, ¿cómo se instala en un iPhone? · ⏸ Bloqueada (decisión de Fernando: dinero)
+- **Por qué importa:** en Android es trivial (un `.apk` que se descarga y se instala, gratis). En
+  iPhone **no existe instalar «un archivo» sin pasar por Apple**, y la vía elegida decide qué
+  funciones nativas son posibles.
+- **Las tres vías reales:**
+  1. **Cuenta gratuita de Apple + Xcode** (cable al Mac): la app **caduca a los 7 días** y hay que
+     reinstalarla; el equipo personal gratuito **no puede activar notificaciones push** y tiene
+     capacidades limitadas. Sirve para probar, no para usar a diario.
+  2. **Apple Developer Program, 99 $/año** → *Ad Hoc* (hasta 100 iPhones registrados por su
+     identificador, el `.ipa` se instala desde un enlace y dura hasta que caduca el perfil, ~1 año)
+     o **TestFlight** (enlace de invitación, cada versión dura 90 días). Con esta cuenta funcionan
+     **push, Actividad en Vivo actualizada por push y widgets con App Group**.
+  3. **Solo la PWA** (ya hecha): en iOS 16.4+ admite notificaciones web si está anclada al inicio,
+     pero **no** Actividad en Vivo, **no** isla dinámica, **no** widgets. No cumple el objetivo del
+     cronómetro.
+- **Recomendación:** la vía 2 con **TestFlight** para el día a día (el más cómodo) — es la única que
+  da lo que Fernando pidió en iPhone. Android, `.apk` directo.
+
+#### P12 — ¿Desde dónde se arranca el reloj? · ⏸ Bloqueada (decisión de Fernando)
+- **Por qué importa:** cambia la arquitectura entera del lado de Apple.
+  - **Solo desde el teléfono** → la app arranca la Actividad en Vivo localmente al pulsar
+    «Iniciar». Simple: no hace falta servidor de push para esto.
+  - **También desde el computador** (iniciar en la web y que aparezca en el iPhone) → hace falta
+    **push-to-start de ActivityKit** (iOS 17.2+): el servidor guarda el token del teléfono y manda
+    a APNs la orden de crear/terminar la actividad. Y al revés: detener en la web debe **cerrar**
+    la actividad del teléfono, o quedaría un reloj fantasma contando.
+- **Recomendación:** hacerlo bien desde el principio (las dos direcciones), porque Fernando trabaja
+  los tickets en el computador; un reloj que solo se ve si lo arrancó desde el móvil se queda corto.
+
+#### P13 — ¿Con qué se compila? · ✅ Resuelta (parcial)
+- **Respuesta (esta Mac, 2026-10-06):** Android Studio + JDK 21 + `adb` instalados → Android se
+  puede compilar ya. **Xcode no está instalado** (solo Command Line Tools) y **CocoaPods tampoco**
+  (Capacitor 7+ usa Swift Package Manager, así que CocoaPods no hace falta). **Instalar Xcode es
+  requisito** para cualquier cosa de iPhone.
+
+#### P3 (revisada 2026-10-06) — ¿Viaja la sesión? · 🔎 Investigando — **menos grave de lo que se creía**
+- **Corrección a lo escrito el 2026-09-23:** se dio por hecho que el WebView serviría desde
+  `capacitor://localhost`. Con `server.url: 'https://<dominio de la plataforma>'` **el WebView
+  navega al dominio real**: el origen es el de la plataforma y la cookie `auth_token` es del mismo
+  sitio, como en Safari. Y como ya no hay revisión de Apple, cargar el contenido remoto no tiene
+  coste. Capacitor inyecta su puente también en esa URL, así que los plugins funcionan.
+- **Donde sí hace falta otra cosa:** las partes **nativas que hablan con el servidor sin el
+  WebView** — el botón «Detener» de la Actividad en Vivo (un `LiveActivityIntent`, iOS 17+), el de
+  la notificación de Android, y el registro del token de push. Esas no tienen la cookie. Solución:
+  un **token de dispositivo** propio (emitido al iniciar sesión en la app, guardado en Keychain /
+  Keystore, revocable desde la plataforma) que el servidor acepte **solo** en las rutas del reloj y
+  del registro de push. No se abre la API entera a un segundo tipo de sesión.
+- **Se cierra midiendo:** un contenedor mínimo en un iPhone y un Android reales, entrar y pedir
+  una ruta autenticada.
+
+#### P14 — ¿Qué muestra y qué botones lleva el contador? · ⏸ Bloqueada (decisión de Fernando — diseño)
+- **Propuesta:** en la pantalla de bloqueo, el logo GCC (cuadrado `#4B2D8E`, como los iconos de
+  producto en `Diseño.md`), **título del ticket**, **cliente**, el **reloj** grande y, a la derecha,
+  **costo acumulado** opcional; un solo botón **Detener**. En la isla dinámica: compacta = icono +
+  reloj; expandida = lo mismo que la pantalla de bloqueo. Tocarla abre el ticket en la app.
+- Preguntar: ¿«Pausar» además de «Detener»? (hoy el modelo no distingue: detener = pausar, porque
+  se puede volver a iniciar el mismo registro).
+
+#### P15 — ¿Qué notificaciones quiere? · ❓ Abierta
+- **Por qué importa:** la infraestructura es la misma (APNs + FCM, un `device_tokens` por usuario),
+  pero la lista de eventos se decide con él. Hoy los avisos viven en `NotificationsDock` /
+  `lib/notifications.ts`: lo natural es que **todo lo que hoy entra ahí salga también como push**,
+  con un interruptor por tipo, en vez de elegir eventos sueltos.
+- **Recordatorio útil derivado del reloj:** un push si un reloj lleva > N horas en marcha (el
+  olvido típico que infla un cobro).
+
+### Decisiones de diseño / arquitectura (firmes, 2026-10-06)
+1. **Sigue siendo un solo proyecto con Capacitor** (decisión del 2026-09-23), con `server.url`
+   remoto: el contenido es la plataforma desplegada; el paquete aporta lo nativo.
+2. **El reloj vive en el servidor; el teléfono solo lo dibuja** con la hora de inicio (P10).
+3. **El código nativo propio se limita a dos piezas:** extensión Swift (Actividad en Vivo +
+   widget, ActivityKit/WidgetKit) y en Android una notificación en curso (servicio en primer plano
+   o, más simple, notificación `ongoing` con cronómetro) + widget opcional. Se exponen a la web con
+   **un plugin local de Capacitor** (`iniciarReloj` / `detenerReloj`), no con plugins de terceros
+   de mantenimiento dudoso.
+4. **Push con un solo backend:** APNs (iOS) y FCM (Android) desde el servidor de Next, una tabla de
+   tokens por dispositivo; la web sigue con su `NotificationsDock`.
+
+### Plan de solución (se refina al cerrar P11, P12, P14)
+1. **Contenedor mínimo** (`capacitor.config.ts`, `android/`, `ios/` en la raíz del repo) con
+   `server.url` → medir P3 en dos teléfonos reales.
+2. **Android primero** (no depende de pagar nada): `.apk` instalable + notificación en curso con
+   el cronómetro del ticket + botón Detener.
+3. **Token de dispositivo** + rutas del reloj que lo acepten.
+4. **iPhone:** Xcode, cuenta de Apple, extensión Swift con la Actividad en Vivo, TestFlight.
+5. **Push** (APNs + FCM) y, si P12 dice «también desde el computador», push-to-start/end de la
+   Actividad en Vivo.
+6. Widgets (resumen del día / ticket activo) al final: son lo de menos valor frente al reloj.
+
+### Riesgos y cómo se mitigan
+| Riesgo | Cómo se mitiga |
+|---|---|
+| Sin cuenta de pago, el iPhone no tiene push ni dura más de 7 días (P11) | Decidirlo antes de escribir Swift; Android avanza mientras |
+| Reloj fantasma: se detiene en la web y el teléfono sigue contando | Toda parada (web, app, otro dispositivo) termina la actividad por push; y al abrir la app se reconcilia contra el servidor |
+| El reloj del teléfono no coincide con la web al reanudar | La hora de inicio enviada es `timer_started_at − duration_seconds` (P10) |
+| Un token de dispositivo abre más de lo debido | Solo vale en las rutas del reloj y de push, revocable, y la pertenencia se comprueba igual que con la cookie |
+| Desplegar mientras corre un reloj | No afecta: el reloj es una fecha en la BD, no un proceso |
+
 ## Objetivo (2026-10-05) — FACTURAS: abrir en «Pendientes» con «Todas» al final · ✅ 100 % — HECHO Y VERIFICADO
 - **Rol:** ingeniero frontend.
 - **Pedido:** *«en el modulo de facturas, el estado por defecto dejemos que sea pendientes, y el boton de todos debajo de canceladas»*.
