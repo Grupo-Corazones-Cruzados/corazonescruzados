@@ -577,7 +577,12 @@ Stack estándar de la casa, con particularidades de este repo:
     `auth_token` viaja; el token propio solo hace falta para lo nativo que llama al servidor sin
     WebView (botón Detener de la Actividad en Vivo / notificación, registro de push).
   - **iPhone sin tienda = cuenta Apple Developer (99 $/año) + TestFlight o Ad Hoc**; con cuenta
-    gratuita la app caduca a los 7 días y no hay push. **Pendiente de Fernando.**
+    gratuita la app caduca a los 7 días y no hay push. **Decidido (2026-10-06): de forma
+    provisional, la cuenta Apple Developer de un cliente donde Fernando es Admin**, con
+    identificador PROVISIONAL (el definitivo `org.grupocc.gccworld` se reserva para su cuenta
+    propia), solo **TestFlight interno** (sin revisión, nada publicado a nombre del cliente), y
+    Team ID / Key ID / clave APNs solo en variables de Railway para que mudarse sea cambiar
+    variables y recompilar. Requiere permiso escrito del titular de esa cuenta.
   - En esta Mac (2026-10-06): Android Studio + JDK 21 + adb sí; **Xcode no instalado**.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR

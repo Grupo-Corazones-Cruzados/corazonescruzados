@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 55 %
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 62 %
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
@@ -21,8 +21,8 @@ distribución sin tienda** y en **el código nativo que Capacitor no trae** (la 
 Swift puro, en una extensión aparte).
 
 ### Progreso
-- **% de información para el objetivo:** 55 %
-- **Estado:** el reloj ya existe y está bien hecho para esto (vive en el servidor). La arquitectura
+- **% de información para el objetivo:** 62 %
+- **Estado:** cuenta de Apple decidida (P11, provisional la del cliente). El reloj ya existe y está bien hecho para esto (vive en el servidor). La arquitectura
   está clara. Faltan **tres decisiones de Fernando** (cuenta de Apple, desde dónde se arranca el
   reloj, qué botones lleva) y **una medición** (la sesión dentro del contenedor).
 
@@ -53,7 +53,7 @@ Swift puro, en una extensión aparte).
   reanuda, la hora que se le da al sistema es `timer_started_at − duration_seconds`, no
   `timer_started_at`, o el reloj del teléfono empezará en cero mientras la web dice 1:20:00.
 
-#### P11 — Sin tienda, ¿cómo se instala en un iPhone? · ⏸ Bloqueada (decisión de Fernando: dinero)
+#### P11 — Sin tienda, ¿cómo se instala en un iPhone? · ✅ Resuelta (2026-10-06) — **con la cuenta de un cliente, de forma provisional**
 - **Por qué importa:** en Android es trivial (un `.apk` que se descarga y se instala, gratis). En
   iPhone **no existe instalar «un archivo» sin pasar por Apple**, y la vía elegida decide qué
   funciones nativas son posibles.
@@ -70,6 +70,34 @@ Swift puro, en una extensión aparte).
      cronómetro.
 - **Recomendación:** la vía 2 con **TestFlight** para el día a día (el más cómodo) — es la única que
   da lo que Fernando pidió en iPhone. Android, `.apk` directo.
+
+- **Decisión (Fernando, 2026-10-06):** es **administrador** de la cuenta Apple Developer (pagada) de
+  un cliente y quiere usarla **mientras no tenga la suya**, y llevarse la app a su cuenta cuando la
+  pague. Es técnicamente viable: un Admin crea identificadores, certificados, la clave de push y
+  sube a TestFlight.
+- **Cómo se hace para que la mudanza sea limpia (reglas firmes):**
+  1. **Identificador provisional**: `org.grupocc.gccworld.provisional` (o similar) en la cuenta del
+     cliente. **El definitivo (`org.grupocc.gccworld`) NO se registra ahí**: un identificador queda
+     atado al equipo que lo registra —y al crear la ficha en App Store Connect para TestFlight, ya
+     no se suelta—; si se usara el definitivo, después no se podría usar en la cuenta propia.
+  2. **TestFlight interno** (testers = usuarios del equipo en App Store Connect; Fernando ya lo
+     es): sin revisión de Apple, actualizaciones automáticas, cada versión dura 90 días. Nada de
+     TestFlight externo ni de enviar a revisión: eso sí publica a nombre del cliente.
+  3. **Clave de push (APNs `.p8`) propia y con nombre claro** («GCC World — provisional»), guardada
+     solo en las variables de Railway; el código lee el *Team ID*, el *Key ID* y el identificador
+     de variables, **nunca escritos en el código**, para que mudarse sea cambiar variables y
+     recompilar.
+  4. **La mudanza** = registrar el identificador definitivo en la cuenta propia, compilar,
+     instalar la app nueva y borrar la provisional. No se pierde ningún dato: todo vive en el
+     servidor; solo se vuelven a registrar los tokens de push del teléfono (automático al abrir).
+- **Lo que hay que tener presente:**
+  - **Hace falta el permiso por escrito del titular de la cuenta (Account Holder) del cliente.** Ser
+    Admin da la capacidad técnica, no el consentimiento para usar su cuenta en un producto propio;
+    y en TestFlight la app figura como **de su equipo**.
+  - **El cliente puede cortarlo en cualquier momento** (quitarle el rol, revocar la clave o el
+    certificado) y la app dejaría de recibir push / de instalarse. Es aceptable para algo provisional.
+  - **Para la cuenta propia no hace falta tener empresa:** Apple permite inscribirse como
+    **persona** (99 $/año, sin D-U-N-S); la de organización es la que pide empresa constituida.
 
 #### P12 — ¿Desde dónde se arranca el reloj? · ⏸ Bloqueada (decisión de Fernando)
 - **Por qué importa:** cambia la arquitectura entera del lado de Apple.
