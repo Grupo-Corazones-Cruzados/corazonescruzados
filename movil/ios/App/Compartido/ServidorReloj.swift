@@ -91,7 +91,7 @@ extension ServidorReloj {
     /// reintenta en la siguiente sincronización de la página.
     @discardableResult
     static func registrarToken(tipo: String, token: String, registroId: Int? = nil) async -> Bool {
-        guard let s = sesion() else { return false }
+        guard let s = sesion() else { print("[reloj] registrarToken \(tipo): sin sesión en el llavero"); return false }
         var req = URLRequest(url: base.appendingPathComponent("api/dispositivos"))
         req.httpMethod = "POST"
         req.timeoutInterval = 15
@@ -100,7 +100,9 @@ extension ServidorReloj {
         var cuerpo: [String: Any] = ["tipo": tipo, "token": token, "entorno": entorno]
         if let r = registroId { cuerpo["registroId"] = r }
         req.httpBody = try? JSONSerialization.data(withJSONObject: cuerpo)
-        guard let (_, resp) = try? await URLSession.shared.data(for: req) else { return false }
-        return ((resp as? HTTPURLResponse)?.statusCode ?? 0) == 200
+        guard let (datos, resp) = try? await URLSession.shared.data(for: req) else { print("[reloj] registrarToken \(tipo): sin red"); return false }
+        let codigo = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        print("[reloj] registrarToken \(tipo) → \(codigo) \(String(data: datos, encoding: .utf8) ?? "")")
+        return codigo == 200
     }
 }

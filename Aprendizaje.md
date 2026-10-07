@@ -209,6 +209,18 @@ Swift puro, en una extensión aparte).
 - Instalar: `xcrun devicectl device install app --device <UDID> App.app`. Para abrirla desde la
   Mac el teléfono tiene que estar desbloqueado.
 
+#### P22 — «Inicié un reloj en el computador y no apareció en el iPhone» (2026-10-07) · 🔎
+- **Diagnóstico:** el reloj sí arrancó (registro 106), pero `push_devices` estaba VACÍA: ni el
+  iPhone ni el Samsung habían registrado token, así que la orden no tenía destino. No se sabe
+  con certeza por qué el iPhone no lo hizo en su primer arranque (probablemente se abrió antes
+  de que terminara el despliegue o no se llegó a abrir tras instalar).
+- **Herramienta que queda:** trazas `[reloj]` en la app; se leen con
+  `xcrun devicectl device process launch --console --terminate-existing --device <UDID> <bundle>`
+  (en esta Mac no hay `timeout`: lanzar en segundo plano y matarlo).
+- Tras relanzarla: token de arranque y token de la actividad del 106 registrados (200), y un
+  `update` inofensivo por APNs sandbox a esa actividad → **200**. Falta que Fernando repita la
+  prueba (detener e iniciar desde el computador).
+
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
   **Samsung «Galaxy 12s»** (modelo exacto por confirmar: es lo que decide si hay Android 16 y con

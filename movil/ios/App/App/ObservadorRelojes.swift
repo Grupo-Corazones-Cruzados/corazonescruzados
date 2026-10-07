@@ -23,9 +23,11 @@ enum ObservadorRelojes {
     private static let cola = DispatchQueue(label: "org.grupocc.gccworld.relojes")
 
     static func iniciar() {
+        print("[reloj] observador iniciado; actividades: \(Activity<RelojAtributos>.activities.count)")
         Task {
             for await datos in Activity<RelojAtributos>.pushToStartTokenUpdates {
                 let t = hex(datos)
+                print("[reloj] token de arranque recibido: \(t.prefix(12))…")
                 cola.sync { tokenArranque = t }
                 await ServidorReloj.registrarToken(tipo: "apns_live_start", token: t)
             }
@@ -41,6 +43,7 @@ enum ObservadorRelojes {
     /// Tras guardar la sesión (la página sincronizó): se vuelven a mandar los tokens, por si
     /// llegaron antes de que hubiera sesión. El servidor los guarda sin duplicar.
     static func reintentar() async {
+        print("[reloj] reintentar; token de arranque: \(cola.sync { tokenArranque }?.prefix(12) ?? "ninguno"), sesión: \(ServidorReloj.sesion() != nil)")
         if let t = cola.sync(execute: { tokenArranque }) {
             await ServidorReloj.registrarToken(tipo: "apns_live_start", token: t)
         }

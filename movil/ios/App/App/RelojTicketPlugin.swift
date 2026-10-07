@@ -42,6 +42,7 @@ public class RelojTicketPlugin: CAPPlugin, CAPBridgedPlugin {
     private func guardarSesion(_ hecho: @escaping () -> Void) {
         DispatchQueue.main.async {
             WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
+                print("[reloj] cookies del WebView: \(cookies.map { "\($0.name)@\($0.domain)" })")
                 if let c = cookies.first(where: { $0.name == "auth_token" && ServidorReloj.base.host?.hasSuffix($0.domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))) == true }) {
                     ServidorReloj.guardarSesion(c.value)
                 }
