@@ -66,6 +66,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<!-- Dominios de la app: iOS solo da service worker (lo que permite usar la app sin red)
+	     si la navegación se limita a estos dominios (2026-10-07). -->
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>app.grupocc.org</string>
+		<string>grupocc.org</string>
+	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

@@ -5,12 +5,16 @@
   "server": {
     "url": "https://app.grupocc.org/dashboard",
     "errorPath": "error.html",
-    "allowNavigation": ["app.grupocc.org", "*.grupocc.org"]
+    "allowNavigation": [
+      "app.grupocc.org",
+      "*.grupocc.org"
+    ]
   },
   "android": {
     "path": "movil/android"
   },
   "ios": {
-    "path": "movil/ios"
+    "path": "movil/ios",
+    "limitsNavigationsToAppBoundDomains": true
   }
 }

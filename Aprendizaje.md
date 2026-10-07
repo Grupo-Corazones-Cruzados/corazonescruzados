@@ -264,6 +264,19 @@ Swift puro, en una extensión aparte).
   sincronización. Pendiente de diseño: qué se edita sin red y la regla de conflicto (se
   propuso la de Prompts).
 
+#### P24 — ¿Hay service worker dentro de la app del iPhone? · ✅ Resuelta — **sí, con App-Bound Domains** (medido, 2026-10-07)
+- **Medido en el iPhone 17:** sin ajuste, `'serviceWorker' in navigator` = **false** (WKWebView
+  no lo da a apps). Con `WKAppBoundDomains` (`app.grupocc.org`, `grupocc.org`) en `Info.plist` +
+  `ios.limitsNavigationsToAppBoundDomains: true` en `capacitor.config.json`: **true**, con
+  `controller` activo y el registro de `grupocc.org` visible en `WKWebsiteDataStore`. Android lo da
+  por defecto.
+- **Consecuencia:** el camino «una ruta de la plataforma que funciona sin red» (service worker +
+  datos en el dispositivo) es viable en los dos sistemas, sin una app aparte.
+- **Coste del ajuste:** la vista principal solo navega por esos dominios (máx. 10). Lo de fuera
+  (Meet, pasarela…) Capacitor ya lo abre en Safari. ⚠️ Probar que enlaces externos y vídeos
+  incrustados sigan bien.
+- Sondear desde nativo: `fetchDataRecords(ofTypes: [WKWebsiteDataTypeServiceWorkerRegistrations])`.
+
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
   **Samsung «Galaxy 12s»** (modelo exacto por confirmar: es lo que decide si hay Android 16 y con
