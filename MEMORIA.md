@@ -403,6 +403,11 @@ Stack estándar de la casa, con particularidades de este repo:
     editar los días nunca deja un registro sin el suyo.
   - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
     facturado); la API lo rechaza.
+  - **2026-10-07 (Fernando): interfaz por ancho.** Renombrar y eliminar un registro son
+    botones de su FILA (el detalle ya no repite el título); eliminar pide confirmación. En el
+    teléfono la lista abre un panel con solo reloj, tiempo y observaciones. En tableta, Días
+    de trabajo y Propiedades comparten una columna lateral para dejar sitio al registro.
+    Detalle de diseño en `Diseño.md` (desviaciones, 2026-10-07).
   - **Datos migrados el 2026-09-30** (una transacción, copia previa): 27 registros tenían la
     fecha en el título («… - dd/mm/aaaa»): pasó a `work_date` y se quitó del título; los 36
     restantes tomaron su fecha de creación (no hay otra). Tiempo = costo ÷ tarifa (15 $/h en

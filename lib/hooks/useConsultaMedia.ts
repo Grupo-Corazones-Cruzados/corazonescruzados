@@ -24,6 +24,8 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 /** `xl` de Tailwind. Encima de esto se usa el panel lateral; debajo, el modal. */
 export const PANTALLA_XL = '(min-width: 80rem)';
+/** `md` de Tailwind. Debajo es un teléfono: lo que se elige se abre en un panel propio. */
+export const PANTALLA_MD = '(min-width: 48rem)';
 
 export function useConsultaMedia(consulta: string): boolean {
   const suscribir = useCallback(

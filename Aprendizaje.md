@@ -9614,3 +9614,47 @@ clases»*. Lo que se aprendió construyéndolo:
   comprobar un deslizador. Se comprueba midiendo (`scrollWidth > clientWidth` y que la página no
   se salga de `innerWidth`) y, para el usuario, se añaden flechas además de la barra.
 
+
+
+---
+
+# Objetivo (declarado 2026-10-07) — MEJORAS DE INTERFAZ POR DISPOSITIVO, empezando por el registro de trabajo del ticket · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+
+## Objetivo / necesidad
+Recorrer la aplicación mejorando su interfaz en escritorio, tableta y teléfono. Primera
+pantalla: detalle del ticket → registro de trabajo.
+- **Teléfono:** al elegir un registro, un panel con SOLO tiempo consumido, observaciones y reloj.
+- **Escritorio:** el título del registro fuera del detalle (ya se ve en la lista) y el botón de
+  eliminar en la lista.
+- **Tableta:** que se vea bien (a criterio).
+
+## Rol asumido
+Diseñador de interfaz / ingeniero frontend (Next + Tailwind v4), con el sistema de `Diseño.md`.
+
+## Preguntas y respuestas
+### P1 — ¿Cómo se ve hoy en cada ancho? · ✅ Resuelta
+- Medido con navegador real y sesión de admin (ticket #41): a **1024 px** (tableta horizontal)
+  las tres columnas de 300 px dejaban el centro en ~280 px y el registro partido en dos quedaba
+  ilegible (reloj cortado, campo de tiempo de 20 px). A 820 px se apilaba todo y «Días de
+  trabajo» quedaba debajo del registro. (fuente: capturas antes/después en el scratchpad)
+### P2 — Sin el título en el detalle, ¿dónde se renombra un registro? · ✅ Resuelta
+- La regla de no editar en línea obliga a una superficie: lápiz en la fila → `QuickEditDialog`.
+  Se creó `BotonEditar` como definición única (no había ninguna; cinco lápices distintos).
+### P3 — ¿El panel del teléfono puede ir escondido con CSS? · ✅ Resuelta
+- No: un `<dialog>` con `showModal()` deja inerte la página aunque esté escondido
+  (`gcc-dialog-escondido-bloquea-todo`). Se monta solo en teléfono con `useConsultaMedia`.
+### P4 — ¿Eliminar en la fila sin confirmación? · ✅ Resuelta
+- Antes borraba al primer clic; en una lista el error es más fácil → `PixelConfirm`, como el
+  resto de eliminaciones del ticket.
+
+## Decisiones
+- Lista y detalle lado a lado según el ancho de la tarjeta (`@container`/`@xl:`), no de la ventana.
+- Tableta: rejilla `md [260px_1fr]` / `lg [280px_1fr]` con las dos columnas laterales apiladas;
+  escritorio `xl [300px_1fr_300px]` sin cambios.
+
+## Verificación
+`tsc` limpio, `next build` correcto, capturas a 390/820/1024/1180/1440 px sin desbordamiento
+horizontal, panel del teléfono y diálogos de renombrar/eliminar abiertos en el navegador.
+
+## Siguiente
+Fernando dirá la próxima pantalla. ⏳ Migrar los lápices sueltos a `BotonEditar` al tocarlas.

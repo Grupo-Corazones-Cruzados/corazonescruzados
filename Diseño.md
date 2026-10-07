@@ -4054,8 +4054,27 @@ mientras se escribe.
   La tarjeta Pagos del ticket copia la del proyecto: «Editar» junto al título, filas de etapa con
   estado en `text-[9px]` (pendiente ámbar / facturada o pagada verde / en revisión gris) e icono
   `Share2` por etapa abierta; bloqueado con el motivo en `title` si la etapa aún vale 0.
+- **2026-10-07 · Registro de trabajo del ticket por ancho de pantalla · por decisión de
+  Fernando** (`components/tickets/RegistroTrabajo.tsx` + `tickets/[id]/page.tsx`):
+  - **El título y la papelera se fueron del detalle a la FILA** de la lista: el título ya se lee
+    ahí. Cada fila = tarjeta pulsable (título, tiempo, costo) + `BotonEditar` (renombrar →
+    `QuickEditDialog`) + `BotonQuitar` (eliminar → `PixelConfirm`, antes borraba sin preguntar).
+    Los botones van FUERA de la tarjeta, como hermanos: dos destinos que no se pisan (regla 4).
+    El detalle queda con reloj, tiempo consumido y observaciones; «Guardar» guarda solo estas.
+  - **Teléfono (< `md`)**: solo la lista; tocar un registro abre un **panel** (`PixelModal`, a
+    pantalla completa) con reloj, tiempo y observaciones. Se monta con
+    `useConsultaMedia(PANTALLA_MD)` (nuevo, `48rem`), nunca con `md:hidden`.
+  - **Lista y detalle lado a lado según el ancho de la TARJETA**, no de la ventana:
+    `@container` + `@xl:` (36rem). Ejemplo de container query con utilidades de Tailwind v4.
+  - **Tableta**: tres columnas a 1024 px dejaban el centro en ~280 px y el registro roto. La
+    página pasó de `flex` a `grid`: `md` = `[260px_1fr]`, `lg` = `[280px_1fr]` con Días de trabajo
+    **y** Propiedades apilados en una sola columna lateral que se desplaza entera; `xl` =
+    `[300px_1fr_300px]` como siempre (el envoltorio lateral es `xl:contents`). Teléfono: registro,
+    días y propiedades, en ese orden.
+  - Medido a 390, 820, 1024, 1180 y 1440 px: sin desplazamiento horizontal; escritorio igual.
 - **2026-09-30 · Registro de trabajo del ticket en dos partes + reloj** · por decisión de
-  Fernando. Mismo patrón que los requerimientos del proyecto: lista (título en una línea,
+  Fernando. *(El título editable y la papelera del detalle se movieron a la fila el
+  2026-10-07, ver arriba.)* Mismo patrón que los requerimientos del proyecto: lista (título en una línea,
   tiempo y costo debajo, punto rojo pulsante si el reloj corre) y a la derecha el elegido: título
   editable, **reloj** grande (`text-[26px]`, `font-display`, en acento mientras corre) con
   Iniciar/Detener (`BTN_PRIMARY` + `Play`/`Square`), «Tiempo consumido (h:mm)» + «Corregir»,
@@ -4141,6 +4160,13 @@ mientras se escribe.
   la API lo acepta (nunca en borrador, revisión, completado, cancelado o cerrado; y a público
   solo si queda un requerimiento sin asignar). Antes el aviso de éxito salía aunque la API
   respondiera 400 — ver [[gcc-no-fingir-vacio]].
+- **2026-10-07 · Editar un elemento de una lista = `BotonEditar` (lápiz) · NUEVO estándar.**
+  Definición única: `components/ui/BotonEditar.tsx`, hermano de `BotonQuitar`: mismas medidas
+  (28/24 px, `destino-tactil`), gris en reposo y **acento** al pasar (edita, no borra). Va a la
+  izquierda de la papelera y abre `QuickEditDialog`/`EditPanel`, nunca edita en la fila. Había
+  lápices sueltos con cinco estilos (`projects/[id]`, `CvPanel`, `FaqsPanel`, sistemas de
+  Centralizado…): ⏳ migrarlos cuando se toque cada pantalla. Primer uso: registro de trabajo
+  del ticket.
 - **2026-09-29 · Quitar un elemento de una lista = `BotonQuitar` (papelera) · ADOPTADO como
   estándar por Fernando.** Definición única: `components/ui/BotonQuitar.tsx`.
   - Cuadrado de 28 px (`tamano="sm"`) o 24 px (`"xs"`, listas densas), `rounded-md`, papelera

@@ -807,64 +807,11 @@ export default function TicketDetailPage() {
           apilan y la página se desplaza como siempre. */}
       <div ref={altoColumnas.ref}
         style={altoColumnas.style ? ({ '--alto-columnas': `${altoColumnas.style.height}px` } as React.CSSProperties) : undefined}
-        className="flex flex-col lg:flex-row gap-4 items-start lg:items-stretch lg:h-[var(--alto-columnas)]">
-          {/* ── IZQUIERDA: Días de trabajo ── */}
-          <aside className="w-full lg:w-[300px] shrink-0 order-2 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
-            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
-                  <CalendarDays className="w-4 h-4 text-accent" /> Días de trabajo
-                  {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
-                </h3>
-                {canEdit && !isClosed && (
-                  <button onClick={startEditSlots} className="shrink-0 h-11 sm:h-auto px-3 sm:px-2 sm:py-1 inline-flex items-center text-[11px] text-accent border border-digi-border rounded hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
-                )}
-              </div>
-              {timeSlots.length > 0 ? (
-                <div className="space-y-2">
-                  {/* ⇒ LOS DÍAS SE ELIGEN (Fernando, 2026-09-30): al pulsar uno, el registro del
-                      centro muestra el de ese día. Cada día dice cuántos registros tiene y cuánto
-                      tiempo suman, y un punto rojo si hay un reloj en marcha. */}
-                  {timeSlots.map((slot: any, i: number) => {
-                    const d = String(slot.date).slice(0, 10);
-                    const elegido = d === diaActivo;
-                    const r = resumenDia(d);
-                    return (
-                    <div key={i} role="button" tabIndex={0} aria-pressed={elegido}
-                      onClick={() => setDiaSel(d)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDiaSel(d); } }}
-                      className={`px-2.5 py-2 border rounded cursor-pointer transition-colors ${elegido ? 'border-accent/50 bg-accent-light/60' : slot.is_event ? 'border-accent/40 bg-accent-light hover:border-accent/60' : 'border-digi-border bg-[#faf9f8] hover:border-accent/30'}`}>
-                      {slot.is_event && (
-                        <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
-                      )}
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs text-digi-text" style={mf}>{new Date(d + 'T12:00:00').toLocaleDateString()}</p>
-                        {r.n > 0 && (
-                          <span className="flex items-center gap-1.5 text-[11px] text-digi-muted tabular-nums" style={mf}>
-                            {r.enMarcha && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-                            {fmtTiempo(r.seg)}
-                          </span>
-                        )}
-                      </div>
-                      {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
-                      {slot.is_event && slot.meeting_url && (
-                        <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                          className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
-                      )}
-                    </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
-              )}
-            </div>
-          </aside>
-
+        className="grid grid-cols-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)] md:items-start lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch lg:h-[var(--alto-columnas)] xl:grid-cols-[300px_minmax(0,1fr)_300px]">
           {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
           {/* Columna en FLEX (no space-y): la tarjeta de trabajo se estira hasta el pie y lo que
               se desplaza es su interior, no la columna (Fernando, 2026-09-30). */}
-          <div className="flex-1 min-w-0 w-full flex flex-col gap-4 order-1 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
+          <div className="min-w-0 flex flex-col gap-4 md:col-start-2 md:row-start-1 lg:min-h-0 lg:overflow-y-auto">
             {ticket.open_for_talent && (
               <div className="bg-digi-card border border-accent/30 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -995,8 +942,67 @@ export default function TicketDetailPage() {
             )}
           </div>
 
-          {/* ====== DERECHA: pestañas Propiedades / Incidentes, como en el proyecto ====== */}
-          <div className="w-full lg:w-[300px] shrink-0 order-3 lg:min-h-0 lg:overflow-y-auto space-y-3">
+          {/* ⇒ LAS DOS COLUMNAS LATERALES (2026-10-07). En escritorio (`xl`) este envoltorio es
+              `contents`: Días de trabajo va a la izquierda y Propiedades a la derecha, como
+              siempre. En tableta (`md`–`xl`) tres columnas dejaban al registro en ~280 px, así
+              que las dos se apilan en UNA columna lateral que se desplaza entera y el registro
+              se queda con el resto del ancho. En el teléfono van debajo del registro. */}
+          <div className="min-w-0 flex flex-col gap-4 md:col-start-1 md:row-start-1 lg:min-h-0 lg:overflow-y-auto xl:contents">
+          {/* ── Días de trabajo: a la izquierda (arriba, en la columna lateral de tableta) ── */}
+          <aside className="min-w-0 xl:col-start-1 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
+                  <CalendarDays className="w-4 h-4 text-accent" /> Días de trabajo
+                  {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
+                </h3>
+                {canEdit && !isClosed && (
+                  <button onClick={startEditSlots} className="shrink-0 h-11 sm:h-auto px-3 sm:px-2 sm:py-1 inline-flex items-center text-[11px] text-accent border border-digi-border rounded hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
+                )}
+              </div>
+              {timeSlots.length > 0 ? (
+                <div className="space-y-2">
+                  {/* ⇒ LOS DÍAS SE ELIGEN (Fernando, 2026-09-30): al pulsar uno, el registro del
+                      centro muestra el de ese día. Cada día dice cuántos registros tiene y cuánto
+                      tiempo suman, y un punto rojo si hay un reloj en marcha. */}
+                  {timeSlots.map((slot: any, i: number) => {
+                    const d = String(slot.date).slice(0, 10);
+                    const elegido = d === diaActivo;
+                    const r = resumenDia(d);
+                    return (
+                    <div key={i} role="button" tabIndex={0} aria-pressed={elegido}
+                      onClick={() => setDiaSel(d)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDiaSel(d); } }}
+                      className={`px-2.5 py-2 border rounded cursor-pointer transition-colors ${elegido ? 'border-accent/50 bg-accent-light/60' : slot.is_event ? 'border-accent/40 bg-accent-light hover:border-accent/60' : 'border-digi-border bg-[#faf9f8] hover:border-accent/30'}`}>
+                      {slot.is_event && (
+                        <span className="inline-block mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent" style={mf}>Evento</span>
+                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-digi-text" style={mf}>{new Date(d + 'T12:00:00').toLocaleDateString()}</p>
+                        {r.n > 0 && (
+                          <span className="flex items-center gap-1.5 text-[11px] text-digi-muted tabular-nums" style={mf}>
+                            {r.enMarcha && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                            {fmtTiempo(r.seg)}
+                          </span>
+                        )}
+                      </div>
+                      {slot.start_time && <p className="text-[11px] text-digi-muted" style={mf}>{slot.start_time} - {slot.end_time}</p>}
+                      {slot.is_event && slot.meeting_url && (
+                        <a href={slot.meeting_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                          className="inline-block mt-1 text-[10.5px] font-medium text-accent hover:underline" style={mf}>Unirse (Meet)</a>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-digi-muted" style={mf}>Sin días asignados</p>
+              )}
+            </div>
+          </aside>
+
+          {/* ====== Pestañas Propiedades / Incidentes, como en el proyecto ====== */}
+          <div className="min-w-0 space-y-3 xl:col-start-3 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
           <PestanasRail valor={rightTab} onChange={setRightTab}
             opciones={[{ valor: 'propiedades', texto: 'Propiedades' }, { valor: 'incidentes', texto: 'Incidentes' }]} />
           {rightTab === 'incidentes' && (
@@ -1129,6 +1135,7 @@ export default function TicketDetailPage() {
             })()}
           </PropertyRail>
           )}
+          </div>
           </div>
         </div>
 
