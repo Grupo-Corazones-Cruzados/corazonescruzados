@@ -629,6 +629,11 @@ Stack estándar de la casa, con particularidades de este repo:
       `tipo=relojes` → `MensajeriaService` pregunta `/api/tickets/relojes` y ajusta la
       notificación. El aviso no trae el reloj: un aviso perdido no deja nada mal.
     - En iPhone hará falta APNs (clave .p8 del equipo del cliente) para lo mismo.
+    - **iPhone instalado (2026-10-06):** equipo del cliente `5H27NSRYKQ`, identificador
+      `org.grupocc.gccworld.provisional`, clave APNs Key ID `4P7D5UZD8N` en
+      `data/AuthKey_4P7D5UZD8N.p8` (gitignored; falta subirla a Railway como variable). Firmar:
+      `xcodebuild -allowProvisioningUpdates -allowProvisioningDeviceRegistration`; instalar:
+      `xcrun devicectl device install app`.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
   (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el

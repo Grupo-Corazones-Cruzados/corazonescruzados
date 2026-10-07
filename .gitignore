@@ -5,6 +5,9 @@ node_modules/
 data/uploads/
 data/*.p12
 data/google-sa.json
+# Clave de notificaciones de Apple (APNs). Se descarga UNA vez; vive aquí y en Railway.
+data/*.p8
+*.p8
 certificates/
 
 # Documentos legales del negocio (RUC, certificados). Llevan datos personales y el

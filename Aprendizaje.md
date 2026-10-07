@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 82 % — ANDROID CON PUSH (APK 1.2, por probar); iPhone arrancado
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 85 % — ANDROID CON PUSH (APK 1.2, por probar); iPhone INSTALADO en el teléfono de Fernando
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
@@ -196,6 +196,18 @@ Swift puro, en una extensión aparte).
 - **Lo que solo puede hacer Fernando:** añadir su Apple ID en Xcode ▸ Settings ▸ Accounts (verá
   el equipo del cliente), decir el **Team ID**, crear la **clave APNs (.p8)** en ese equipo, y
   conectar el iPhone por cable con el **Modo desarrollador** activado (Ajustes ▸ Privacidad).
+
+#### P21 — Primera instalación en el iPhone (2026-10-06) · ✅
+- Fernando entró en Xcode con su Apple ID; equipo del cliente **Team ID `5H27NSRYKQ`**; clave APNs
+  **Key ID `4P7D5UZD8N`** («GCC World provisional»), guardada en `data/AuthKey_4P7D5UZD8N.p8`
+  (⚠️ `.p8` NO estaba en `.gitignore`: se añadió antes de mover el archivo).
+- iPhone 17 (`iPhone18,3`) con **iOS 26.6.1**, UDID `00008150-000450203446401C`.
+- Identificador **provisional** `org.grupocc.gccworld.provisional` (el definitivo se reserva).
+- Firmar por línea de comandos: `xcodebuild … -allowProvisioningUpdates
+  -allowProvisioningDeviceRegistration` — sin el segundo, falla con «Device isn't registered»;
+  con él, Xcode registra el teléfono en el equipo y crea el perfil solo.
+- Instalar: `xcrun devicectl device install app --device <UDID> App.app`. Para abrirla desde la
+  Mac el teléfono tiene que estar desbloqueado.
 
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
