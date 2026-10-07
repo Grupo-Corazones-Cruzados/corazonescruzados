@@ -680,6 +680,23 @@ Stack estándar de la casa, con particularidades de este repo:
       `00008112-000A3158143BC01E`) registrado en el equipo provisional e instalado. En iPad NO
       hay Actividades en Vivo (Apple no las permite): sin reloj en la pantalla de bloqueo; el
       plugin lo detecta (`areActivitiesEnabled`) y no hace nada. Avisos normales sí.
+    - **⭐ Borradores — fase 1, servidor (2026-10-07, verificado).** Tickets admiten `'draft'`
+      (migración 070: el CHECK `tickets_status_check` SÍ existía, solo en la base). Un ticket nace
+      borrador con `borrador: true` en «Nuevo ticket»: privado (lista, detalle y edición solo para
+      quien lo creó o el admin; fuera de «Todos» y «Abiertos», con su contador `draft`), SIN correo
+      al cliente, sin aviso, sin ficha/invitación del cliente por correo (`draft_client_email`),
+      sin registros de trabajo, reloj, sesiones ni reuniones de Meet, y fuera de Mi día y de los
+      vínculos. **Se sale de borrador solo con `POST /api/tickets/[id]/enviar`** (exige título,
+      talento, cliente y fecha límite; pasa a «Pendiente» y hace lo de una creación normal, que
+      vive ahora en `lib/tickets/alta.ts` `anunciarTicket`). `offline_id` (migración 069) hace
+      idempotente la subida desde el dispositivo (tickets y proyectos); `si_no_cambio_desde` en
+      los PATCH de ticket y proyecto → 409 con la versión actual. `GET /api/borradores` = mis
+      borradores. Probado de punta a punta en local contra la base real con un ticket y un
+      proyecto de prueba borrados por su id (el envío mandó un correo de prueba al Gmail de
+      Fernando).
+    - ⚠️ **Hallazgo (2026-10-07), ANTERIOR a esto:** `GET/PATCH/DELETE /api/tickets/[id]` no
+      comprueban que el ticket sea de quien llama (solo los borradores quedaron protegidos).
+      Cualquiera con sesión podía leer, editar o BORRAR cualquier ticket. Pendiente de Fernando.
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

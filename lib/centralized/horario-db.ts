@@ -191,7 +191,7 @@ export async function getSubjectHorario(subjectKind: string, subjectId: string, 
     `SELECT l.alternative_id AS aid, 'ticket'::text AS source, t.title AS ref_title, t.status AS ref_status, t.description AS ref_desc,
             to_char(t.created_at::date, 'YYYY-MM-DD') AS start, to_char(t.deadline::date, 'YYYY-MM-DD') AS end
        FROM gcc_world.aa_alternative_tickets l JOIN gcc_world.tickets t ON t.id = l.ticket_id
-      WHERE l.alternative_id = ANY($1::bigint[])
+      WHERE l.alternative_id = ANY($1::bigint[]) AND t.status <> 'draft'
      UNION ALL
      SELECT l.alternative_id, 'project'::text, p.title, p.status, p.description,
             to_char(COALESCE(p.confirmed_at, p.created_at)::date, 'YYYY-MM-DD'), to_char(p.deadline::date, 'YYYY-MM-DD')

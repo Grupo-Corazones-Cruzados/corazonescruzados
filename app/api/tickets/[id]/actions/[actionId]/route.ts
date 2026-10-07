@@ -89,6 +89,10 @@ export async function PATCH(
     if (!(await canManageTicket(user, ticket.member_id))) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
+    // Un borrador aún no es trabajo: sin registros, reloj ni sesiones hasta enviarlo (2026-10-07).
+    if (ticket.status === 'draft') {
+      return NextResponse.json({ error: 'Es un borrador: envíalo antes de registrar trabajo' }, { status: 400 });
+    }
     if (['completed', 'cancelled'].includes(ticket.status)) {
       return NextResponse.json({ error: 'El ticket está cerrado: lo consumido ya no se cambia' }, { status: 400 });
     }

@@ -2,11 +2,9 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
-import { createNotification } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 import { TALENTOS_SET } from '@/lib/centralized/talentos';
-import { sendViaGmail } from '@/lib/integrations/google-workspace';
-import { sendClientInvitationEmail } from '@/lib/integrations/email';
+import { anunciarTicket } from '@/lib/tickets/alta';
 
 
 /**
@@ -54,6 +52,11 @@ export async function GET(req: NextRequest) {
       baseWhere += ` AND t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = $${baseParams.length})`;
     }
 
+    // ⭐ BORRADORES (2026-10-07): solo los ve quien los creó, y no cuentan en «Todos» ni en
+    // «Abiertos»: tienen su propia pestaña.
+    baseParams.push(user.userId);
+    baseWhere += ` AND (t.status <> 'draft' OR t.user_id = $${baseParams.length}::uuid)`;
+
     // "Abierto" = a propuestas (todos) o por talento (solo miembro/admin, sin params → seguro inline).
     const openCond = (user.role === 'admin' || user.role === 'member')
       ? `(t.open_for_proposals = true OR t.open_for_talent = true)`
@@ -63,10 +66,12 @@ export async function GET(req: NextRequest) {
     let where = baseWhere;
     const params: any[] = [...baseParams];
     if (openMode) {
-      where += ` AND ${openCond}`;
+      where += ` AND ${openCond} AND t.status <> 'draft'`;
     } else if (status && status !== 'all') {
       params.push(status);
       where += ` AND t.status = $${params.length}`;
+    } else {
+      where += ` AND t.status <> 'draft'`;
     }
 
     await asegurarColumnasLista();
@@ -81,7 +86,7 @@ export async function GET(req: NextRequest) {
     ),
     // Conteo de la pestaña "Abiertos".
     pool.query(
-      `SELECT COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} AND ${openCond}`,
+      `SELECT COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} AND ${openCond} AND t.status <> 'draft'`,
       baseParams,
     ),
     pool.query(`SELECT COUNT(*) FROM gcc_world.tickets t ${where}`, params),
@@ -106,7 +111,7 @@ export async function GET(req: NextRequest) {
     ]);
     const counts: Record<string, number> = {};
     let allCount = 0;
-    for (const r of countsQ.rows) { counts[r.status] = Number(r.n); allCount += Number(r.n); }
+    for (const r of countsQ.rows) { counts[r.status] = Number(r.n); if (r.status !== 'draft') allCount += Number(r.n); }
     counts.all = allCount;
     counts.open = Number(openCountQ.rows[0].n);
 
@@ -133,6 +138,22 @@ export async function POST(req: NextRequest) {
     const openForTalent = mode === 'request' && body.open_for_talent === true;
 
     /**
+     * BORRADOR (Fernando, 2026-10-07). Solo en «Nuevo ticket» (el que lo crea es quien lo
+     * atiende): nace en 'draft', privado, y no habla con nadie hasta enviarlo. Es lo que se
+     * crea sin conexión: `offline_id` lo pone el dispositivo, y si la misma subida llega dos
+     * veces se devuelve el borrador ya creado en vez de duplicarlo.
+     */
+    const esBorrador = mode === 'create' && body.borrador === true;
+    const offlineId = esBorrador && typeof body.offline_id === 'string' && /^[0-9a-f-]{36}$/i.test(body.offline_id)
+      ? body.offline_id : null;
+    if (offlineId) {
+      const { rows: ya } = await pool.query(
+        `SELECT * FROM gcc_world.tickets WHERE offline_id = $1 AND user_id = $2`, [offlineId, user.userId],
+      );
+      if (ya[0]) return NextResponse.json({ data: ya[0], repetido: true });
+    }
+
+    /**
      * ⭐ EL TALENTO ES OBLIGATORIO EN TODO TICKET (Fernando, 2026-08-18).
      *
      * Antes solo se guardaba cuando el ticket se abría «por talento» —uno de tres caminos—,
@@ -156,7 +177,9 @@ export async function POST(req: NextRequest) {
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
     }
-    if (requiredTalents.length === 0) {
+    // El talento se exige al ENVIAR un borrador, no al crearlo: sin conexión no se puede
+    // consultar nada y el borrador es justamente lo que aún no está completo.
+    if (requiredTalents.length === 0 && !esBorrador) {
       // Se distingue «no mandaste ninguno» de «mandaste nombres que no existen»: el segundo
       // caso, con un mensaje genérico, deja a quien lo sufre sin saber qué corregir.
       return NextResponse.json({
@@ -189,7 +212,11 @@ export async function POST(req: NextRequest) {
     }
 
     let invitePlaceholderEmail: string | null = null;
-    if (!resolvedClientId && resolvedClientEmail) {
+    // Borrador con cliente por correo: solo se guarda el correo (ver `draft_client_email`).
+    const correoDeBorrador = esBorrador && !resolvedClientId ? resolvedClientEmail : null;
+    if (esBorrador) {
+      // nada: ni ficha de cliente ni invitación hasta enviarlo
+    } else if (!resolvedClientId && resolvedClientEmail) {
       // RUTA 3: por correo → reusa el cliente existente o crea un placeholder inactivo,
       // ligado al miembro que lo crea (para "mis clientes"). Si es nuevo, se le invita.
       const createdBy = await resolveMemberId(user.userId);
@@ -211,8 +238,8 @@ export async function POST(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, status, user_id, open_for_proposals, open_for_talent, required_talents, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12::text[], NOW(), NOW())
+      `INSERT INTO gcc_world.tickets (title, description, service_id, member_id, client_id, deadline, estimated_hours, estimated_cost, status, user_id, open_for_proposals, open_for_talent, required_talents, offline_id, draft_client_email, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $13, $9, $10, $11, $12::text[], $14, $15, NOW(), NOW())
        RETURNING *`,
       [
         title.trim(),
@@ -227,27 +254,13 @@ export async function POST(req: NextRequest) {
         openForProposals,
         openForTalent,
         requiredTalents,
+        esBorrador ? 'draft' : 'pending',
+        offlineId,
+        correoDeBorrador,
       ]
     );
 
     const ticket = rows[0];
-
-    // Solicitar ticket con miembro escogido → notificar al miembro (usuario) elegido.
-    if (mode === 'request' && resolvedMemberId) {
-      try {
-        const { rows: [u] } = await pool.query(
-          `SELECT id FROM gcc_world.users WHERE member_id = $1 LIMIT 1`, [resolvedMemberId]
-        );
-        if (u?.id) {
-          await createNotification(String(u.id), {
-            type: 'ticket_request',
-            title: title.trim(),
-            message: description?.trim() || 'Te solicitaron atender este ticket.',
-            link: `/dashboard/tickets/${ticket.id}`,
-          });
-        }
-      } catch (e) { console.error('No se pudo crear la notificación de solicitud de ticket:', (e as any)?.message); }
-    }
 
     // Insert time slots if provided
     if (Array.isArray(time_slots) && time_slots.length > 0) {
@@ -270,52 +283,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send email notification to client
-    if (resolvedClientEmail) {
-      try {
-        const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.grupocc.org'}/dashboard/tickets/${ticket.id}`;
-        await sendViaGmail({
-          from: process.env.EMAIL_FROM || 'GCC World <noreply@gccworld.com>',
-          to: resolvedClientEmail,
-          bcc: 'lfgonzalezm0@grupocc.org',
-          subject: `Nuevo Ticket #${ticket.id}: ${title} — GCC World`,
-          html: `<div style="font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;background:#faf9f8;padding:0;margin:0;">
-<div style="max-width:600px;margin:0 auto;background:#ffffff;">
-  <div style="height:6px;background:#4B2D8E;"></div>
-  <div style="padding:30px 40px;">
-    <h1 style="color:#1a1a2e;font-size:22px;margin:0 0 6px;">Nuevo Ticket Creado</h1>
-    <p style="color:#888;font-size:14px;margin:0 0 24px;">Se ha registrado un nuevo ticket de servicio a tu nombre.</p>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #e1dfdd;border-radius:8px;overflow:hidden;">
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:35%"><strong>Ticket:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">#${ticket.id}</td></tr>
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Titulo:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${title}</td></tr>
-      ${description ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Descripcion:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${description}</td></tr>` : ''}
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Estado:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Pendiente</td></tr>
-      ${deadline ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Fecha Limite:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${new Date(deadline).toLocaleDateString('es-EC')}</td></tr>` : ''}
-      ${estimated_cost ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Costo Estimado:</strong></td><td style="padding:10px 16px;font-size:13px;">$${Number(estimated_cost).toFixed(2)}</td></tr>` : ''}
-    </table>
-    <div style="text-align:center;margin:24px 0 0;">
-      <a href="${ticketUrl}" style="display:inline-block;padding:12px 24px;background:#4B2D8E;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;border-radius:4px;">Ver Ticket</a>
-    </div>
-    <p style="color:#888;font-size:12px;margin:16px 0 0;text-align:center;">Este correo fue generado automaticamente por GCC World.</p>
-  </div>
-  <div style="height:3px;background:#4B2D8E;"></div>
-</div>
-</div>`,
-        });
-      } catch (emailErr: any) {
-        console.error('Error sending ticket email:', emailErr.message);
-      }
-    }
-
-    // RUTA 3: si se creó un placeholder nuevo por correo, invítale a crear su cuenta de cliente.
-    if (invitePlaceholderEmail) {
-      try {
-        await sendClientInvitationEmail({ email: invitePlaceholderEmail, context: 'un ticket', contextTitle: title.trim() });
-      } catch (e: any) { console.error('Ticket client invite email failed:', e.message); }
+    // Un BORRADOR no habla con nadie: el correo al cliente, el aviso al miembro y la
+    // invitación salen al enviarlo (`/api/tickets/[id]/enviar`).
+    if (!esBorrador) {
+      await anunciarTicket(ticket, { mode, resolvedMemberId, resolvedClientEmail, invitePlaceholderEmail });
     }
 
     return NextResponse.json({ data: ticket }, { status: 201 });
   } catch (err: any) {
+    // Dos subidas del mismo borrador a la vez: el índice único deja pasar una; la otra
+    // devuelve la que entró.
+    if (err?.code === '23505' && String(err?.constraint || '').includes('offline_id')) {
+      try {
+        const b = await req.clone().json().catch(() => ({}));
+        const { rows } = await pool.query(`SELECT * FROM gcc_world.tickets WHERE offline_id = $1`, [b.offline_id]);
+        if (rows[0]) return NextResponse.json({ data: rows[0], repetido: true });
+      } catch { /* cae al error de abajo */ }
+    }
     console.error('Ticket create error:', err.message);
     return NextResponse.json({ error: 'Error al crear ticket' }, { status: 500 });
   }

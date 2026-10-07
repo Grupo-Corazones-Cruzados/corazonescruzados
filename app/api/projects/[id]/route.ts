@@ -132,8 +132,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
 
     // Get current project state
-    const { rows: [current] } = await pool.query(`SELECT status, is_private FROM gcc_world.projects WHERE id = $1`, [id]);
+    const { rows: [current] } = await pool.query(`SELECT status, is_private, updated_at FROM gcc_world.projects WHERE id = $1`, [id]);
     if (!current) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    // Edición hecha SIN CONEXIÓN (2026-10-07): trae la `updated_at` que conocía. Si alguien lo
+    // cambió después, 409 con la versión actual: no se pisa en silencio.
+    if (body.si_no_cambio_desde && current.updated_at
+        && new Date(body.si_no_cambio_desde).getTime() !== new Date(current.updated_at).getTime()) {
+      const { rows: [ahora] } = await pool.query(`SELECT * FROM gcc_world.projects WHERE id = $1`, [id]);
+      return NextResponse.json({ error: 'Este borrador cambió en otro sitio', conflicto: true, data: ahora }, { status: 409 });
+    }
 
     // Validate status transitions
     const VALID_TRANSITIONS: Record<string, string[]> = {

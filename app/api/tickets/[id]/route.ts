@@ -30,6 +30,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     );
 
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    // Un borrador es de quien lo creó (y del admin): para los demás no existe.
+    if (rows[0].status === 'draft' && String(rows[0].user_id) !== user.userId && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
     console.error('Ticket GET error:', err.message);
@@ -45,6 +49,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     const body = await req.json();
 
+    /**
+     * BORRADORES (2026-10-07):
+     *  · solo quien lo creó (o el admin) lo toca;
+     *  · de 'draft' se sale ENVIANDO (`/enviar`), no cambiando el estado aquí: enviar es lo
+     *    que avisa al cliente, y saltárselo dejaría un ticket «pendiente» que nadie conoce;
+     *  · nada vuelve a 'draft' por aquí;
+     *  · el cliente por correo de un borrador se guarda como correo, sin dar de alta a nadie;
+     *  · `si_no_cambio_desde` (la `updated_at` que conocía quien edita): si alguien lo cambió
+     *    después, 409 con la versión actual — lo editado sin conexión no pisa en silencio.
+     */
+    const { rows: [actual] } = await pool.query(
+      `SELECT status, user_id, updated_at FROM gcc_world.tickets WHERE id = $1`, [id],
+    );
+    if (!actual) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const esBorrador = actual.status === 'draft';
+    if (esBorrador && String(actual.user_id) !== user.userId && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    if (body.status !== undefined && body.status !== actual.status && (esBorrador || body.status === 'draft')) {
+      return NextResponse.json({ error: esBorrador ? 'Un borrador se envía con «Enviar», no cambiando el estado' : 'Un ticket no vuelve a borrador' }, { status: 400 });
+    }
+    if (body.si_no_cambio_desde && new Date(body.si_no_cambio_desde).getTime() !== new Date(actual.updated_at).getTime()) {
+      const { rows: [ahora] } = await pool.query(`SELECT * FROM gcc_world.tickets WHERE id = $1`, [id]);
+      return NextResponse.json({ error: 'Este borrador cambió en otro sitio', conflicto: true, data: ahora }, { status: 409 });
+    }
+    if (esBorrador && body.client_email !== undefined && !body.client_id) {
+      body.draft_client_email = String(body.client_email || '').trim().toLowerCase() || null;
+      delete body.client_email;
+    }
+    if (esBorrador && body.client_id) body.draft_client_email = null;
+
     // Cliente por CORREO nuevo: se resuelve a un placeholder inactivo (ligado al creador) y se
     // usa como client_id. Así editar un ticket puede asignar un cliente nuevo por correo.
     if (body.client_email && String(body.client_email).trim() && !body.client_id) {
@@ -58,7 +93,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     let idx = 1;
 
     for (const [key, val] of Object.entries(body)) {
-      if (['title', 'description', 'status', 'member_id', 'client_id', 'service_id', 'deadline', 'estimated_hours', 'estimated_cost', 'cancellation_reason'].includes(key)) {
+      if (['title', 'description', 'status', 'member_id', 'client_id', 'service_id', 'deadline', 'estimated_hours', 'estimated_cost', 'cancellation_reason',
+           ...(esBorrador ? ['draft_client_email', 'required_talents'] : [])].includes(key)) {
         fields.push(`${key} = $${idx++}`);
         values.push(val);
       }

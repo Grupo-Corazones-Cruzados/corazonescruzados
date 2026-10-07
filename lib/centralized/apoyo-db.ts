@@ -80,9 +80,9 @@ export async function getSubjectLinkOptions(subjectKind: string, subjectId: stri
 
   const tickets = (await pool.query(
     `SELECT id, title, status FROM gcc_world.tickets
-      WHERE ($3 = 'member' AND member_id::text = $1)
+      WHERE status <> 'draft' AND (($3 = 'member' AND member_id::text = $1)
          OR ($3 = 'candidate' AND client_id::text = $1)
-         OR ($2::text IS NOT NULL AND user_id::text = $2::text)
+         OR ($2::text IS NOT NULL AND user_id::text = $2::text))
       ORDER BY created_at DESC NULLS LAST, id DESC`,
     [subjectId, userId, subjectKind],
   )).rows.map((r: any) => ({ id: String(r.id), title: r.title, status: r.status ?? null }));

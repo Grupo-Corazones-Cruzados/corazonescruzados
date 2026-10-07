@@ -31,7 +31,7 @@ export async function relojesDelMiembro(memberId: number, registroId?: number): 
        LEFT JOIN gcc_world.clients c   ON c.id = t.client_id
        LEFT JOIN gcc_world.services s  ON s.id = t.service_id
       WHERE t.member_id = $1
-        AND t.status NOT IN ('completed', 'cancelled')
+        AND t.status NOT IN ('completed', 'cancelled', 'draft')
         AND ($2::bigint IS NULL OR a.id = $2)
       ORDER BY a.timer_started_at`,
     [memberId, registroId ?? null],

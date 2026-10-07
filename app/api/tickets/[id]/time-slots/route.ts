@@ -51,6 +51,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!(await canManageTicket(user, ticket.member_id))) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
+    // Un borrador no invita a nadie: sus días se guardan, pero sin reuniones de Meet hasta enviarlo.
+    if (ticket.status === 'draft' && Array.isArray(time_slots) && time_slots.some((s: any) => s?.is_event)) {
+      return NextResponse.json({ error: 'Es un borrador: envíalo antes de crear reuniones' }, { status: 400 });
+    }
 
     const rate = Number(ticket.service_base_price) || 0;
     const estimated = Number(ticket.estimated_cost) || 0;

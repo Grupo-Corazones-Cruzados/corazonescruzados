@@ -263,6 +263,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (!body.title) return NextResponse.json({ error: 'title required' }, { status: 400 });
 
+    // Borrador creado SIN CONEXIÓN (2026-10-07): el dispositivo le pone `offline_id`; si la
+    // misma subida llega dos veces, se devuelve el que ya entró en vez de duplicarlo.
+    const offlineId = body.mode !== 'request' && typeof body.offline_id === 'string' && /^[0-9a-f-]{36}$/i.test(body.offline_id)
+      ? body.offline_id : null;
+    if (offlineId) {
+      const { rows: ya } = await pool.query(
+        `SELECT * FROM gcc_world.projects WHERE offline_id = $1 AND created_by_user_id = $2`, [offlineId, user.userId],
+      );
+      if (ya[0]) return NextResponse.json({ data: ya[0], repetido: true });
+    }
+
     // Self-heal columnas usadas.
     await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS created_by_user_id TEXT`);
     await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS client_email TEXT`);
@@ -342,9 +353,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, budget_min, budget_max, deadline, status, is_private, final_cost, created_by_user_id, open_for_talent, required_talents)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::text[]) RETURNING *`,
-      [clientId, clientEmail, assignedMemberId, body.title, body.description || null, body.budget_min || null, body.budget_max || null, body.deadline || null, status, isPrivate, body.final_cost || null, user.userId, openForTalent, requiredTalents],
+      `INSERT INTO gcc_world.projects (client_id, client_email, assigned_member_id, title, description, budget_min, budget_max, deadline, status, is_private, final_cost, created_by_user_id, open_for_talent, required_talents, offline_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::text[], $15) RETURNING *`,
+      [clientId, clientEmail, assignedMemberId, body.title, body.description || null, body.budget_min || null, body.budget_max || null, body.deadline || null, status, isPrivate, body.final_cost || null, user.userId, openForTalent, requiredTalents, offlineId],
     );
     const project = rows[0];
 
