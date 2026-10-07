@@ -615,6 +615,10 @@ Stack estándar de la casa, con particularidades de este repo:
       notificación y botón «Recargar» en la cabecera, solo en la app/PWA.
     - Su «ya no veo el ticket pendiente»: el único abierto (#41) está **Confirmado**, no
       Pendiente; no hay ningún ticket pendiente en la base. Pendiente de que lo confirme.
+    - **APK 1.1 confirmado por Fernando: «ya funciona todo» (2026-10-06).**
+    - **iPhone (2026-10-06):** `movil/ios/` (Capacitor 8 + SPM), compila sin firmar con Xcode 27;
+      mínimo iOS 18. Firebase: solo existe en `motordesa-rutago` (de un cliente); se propone
+      activarlo en `grupo-corazones-cruzados`.
     - **Lo que falta para «al instante» desde el computador:** push (FCM en Android, APNs en
       iPhone). Hoy el computador → teléfono llega al abrir la app o en ≤ 15 min.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».

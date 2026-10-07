@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 74 % — ANDROID PROBADO POR FERNANDO; corregido lo que vio
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 78 % — ANDROID FUNCIONANDO (confirmado por Fernando); iPhone arrancado
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
@@ -168,6 +168,24 @@ Swift puro, en una extensión aparte).
 - **Pidió un botón de recargar** arriba a la derecha en la app → hecho en `CabeceraMovil`.
 - **Firebase:** dice que ya tiene un proyecto. `gcloud` está con su cuenta pero la sesión
   caducó y pide `gcloud auth login` (interactivo): lo tiene que correr él.
+
+#### P19 — ¿Hay Firebase para las push de Android? · ⏸ Bloqueada (decisión de Fernando, 2026-10-06)
+- **Lo que hay (consultado con su cuenta `lfgonzalezm0@grupocc.org`, 2026-10-06):** tres proyectos
+  de Google Cloud; **solo `motordesa-rutago` («Motordesa Rutago») tiene Firebase**, y es de un
+  cliente. `grupo-corazones-cruzados` (el del grupo) **no** lo tiene.
+- **Recomendación:** activar Firebase en `grupo-corazones-cruzados` (plan gratuito; FCM no cuesta)
+  y NO colgar las push de GCC del proyecto de un cliente: si ese proyecto se cierra o cambia de
+  manos, las notificaciones de GCC se caen con él. Activarlo no se deshace (Firebase no se quita
+  de un proyecto), por eso se pregunta antes.
+- **Fernando probó el APK 1.1 (2026-10-06): «ya funciona todo».** Ticket #41 sí era Confirmado.
+
+#### P20 — iPhone: arranque · 🔎 En curso (2026-10-06)
+- Xcode 27.0 instalado y licencia aceptada; SDK iOS 27 (sin simulador descargado).
+- `movil/ios/` creado con Capacitor 8 (Swift Package Manager, sin CocoaPods); **compila para
+  dispositivo sin firmar**. Versión mínima subida a **iOS 18** (solo teléfonos modernos).
+- **Lo que solo puede hacer Fernando:** añadir su Apple ID en Xcode ▸ Settings ▸ Accounts (verá
+  el equipo del cliente), decir el **Team ID**, crear la **clave APNs (.p8)** en ese equipo, y
+  conectar el iPhone por cable con el **Modo desarrollador** activado (Ajustes ▸ Privacidad).
 
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
