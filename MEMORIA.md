@@ -655,6 +655,11 @@ Stack estándar de la casa, con particularidades de este repo:
       una push la despierta en segundo plano sin vista); `entorno` sandbox (Xcode) / production
       (TestFlight). Si el reloj se inició en el propio iPhone llegan dos actividades: la app
       cierra la repetida. Permiso `aps-environment` en `App/App.entitlements`.
+    - **✅ Fernando, 2026-10-07: el reloj iniciado en el computador aparece y desaparece al
+      instante en el iPhone Y en Android, con la app cerrada — «funcionó, excelente».**
+    - **Sin conexión — alcance (Fernando, 2026-10-07):** tickets y proyectos funcionan sin red
+      MIENTRAS ESTÁN EN BORRADOR; pasar al siguiente estado exige conexión. Los tickets aún no
+      tienen borrador. Propuesta y preguntas en `Aprendizaje.md` § P16.
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

@@ -144,7 +144,7 @@ Swift puro, en una extensión aparte).
   cada poco (servicio en primer plano / push por minuto). Se muestra la **tarifa** (`$15,00/h`) y el
   costo exacto está en el ticket. Si lo quiere en vivo, es un servicio en primer plano en Android.
 
-#### P16 — «Ciertas funciones sin conexión, y que se sincronicen al volver» · ❓ Abierta (nuevo requisito, Fernando, 2026-10-06)
+#### P16 — «Ciertas funciones sin conexión, y que se sincronicen al volver» · 🔎 Alcance definido (Fernando, 2026-10-07)
 - **Por qué importa:** choca con dos decisiones de arquitectura: (1) la app **carga la plataforma
   desde el servidor** (`server.url`), así que sin red **no se abre la plataforma**; (2) el
   service worker **no cachea a propósito** (cifras viejas presentadas como de hoy). Lo sin conexión
@@ -220,6 +220,35 @@ Swift puro, en una extensión aparte).
 - Tras relanzarla: token de arranque y token de la actividad del 106 registrados (200), y un
   `update` inofensivo por APNs sandbox a esa actividad → **200**. Falta que Fernando repita la
   prueba (detener e iniciar desde el computador).
+
+- **Alcance (Fernando, 2026-10-07, textual):** *«los tickets y proyectos pueden funcionar sin
+  conexión mientras su estado de creación sea borrador, luego cuando ya quieren llevarla al
+  siguiente estado deben tener conexión obligatoria»*.
+- **Lo que hay hoy (código y BD, 2026-10-07):**
+  - Proyectos: el estado `draft` («Borrador») YA existe; «Nuevo proyecto» nace `draft` +
+    privado (`app/api/projects/route.ts:295-327`) y lo ven solo su responsable y el admin. Hoy
+    no hay ninguno en borrador (2 en `cotizacion`, 4 `in_progress`…).
+  - Tickets: NO hay borrador. Un miembro crea en `confirmed`; un cliente solicita en `pending`.
+    Hay que crearlo (privado al creador, fuera de contadores y de la vista del cliente).
+  - La app carga la plataforma del servidor: sin red no hay pantalla. Lo sin conexión exige que
+    la pantalla de borradores Y sus datos vivan en el teléfono.
+- **Arquitectura propuesta (pendiente de su OK):**
+  1. Estado `draft` también en tickets. Pasar de borrador al siguiente estado = llamada al
+     servidor (la API lo rechaza sin red, que es justo la regla).
+  2. Una pantalla «Borradores» (tickets + proyectos) que funciona sin red: el service worker
+     guarda ESA ruta y sus archivos (solo esa; el resto de la plataforma sigue sin caché, por
+     la regla de no enseñar cifras viejas). Los borradores se guardan en el propio dispositivo
+     (IndexedDB del dominio de la plataforma) y se sincronizan al volver la red. Sirve igual en
+     el computador (PWA) y en los teléfonos, y reutiliza los controles de la plataforma.
+     ⚠️ En iPhone el service worker dentro de la app exige «App-Bound Domains»
+     (`WKAppBoundDomains` + `limitsNavigationsToAppBoundDomains`): a comprobar en el teléfono.
+  3. Catálogos para elegir sin red (clientes, servicios): copia guardada al abrir con red,
+     con la fecha de la copia a la vista.
+  4. Conflictos (el mismo borrador editado en dos sitios sin red): como en Prompts — el
+     servidor detecta la versión vieja (409) y se ofrece «quedarme con la mía» / «cargar la otra».
+- **Preguntas para Fernando:** (a) ¿borrador también en tickets, privado al creador? (b) ¿qué se
+  edita sin red en cada borrador? (c) ¿pantalla «Borradores» aparte o dentro de Tickets /
+  Proyectos? (d) regla de conflicto.
 
 #### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
 - **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
