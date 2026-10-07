@@ -584,6 +584,30 @@ Stack estándar de la casa, con particularidades de este repo:
     Team ID / Key ID / clave APNs solo en variables de Railway para que mudarse sea cambiar
     variables y recompilar. Requiere permiso escrito del titular de esa cuenta.
   - En esta Mac (2026-10-06): Android Studio + JDK 21 + adb sí; **Xcode no instalado**.
+  - **Decidido (Fernando, 2026-10-06):** el reloj se arranca desde el teléfono **y** desde el
+    computador; la notificación lleva logo, ticket, cliente, reloj, tarifa y «Detener» (sin
+    «Pausar»); solo teléfonos modernos (iPhone 17, Samsung moderno). **Nuevo requisito:
+    funciones sin conexión que se sincronicen al volver** — por definir cuáles (P16).
+  - **⭐ Android construido (2026-10-06).** Un solo proyecto: `capacitor.config.json` en la raíz
+    (`appId org.grupocc.gccworld`, `server.url https://app.grupocc.org/dashboard`,
+    `errorPath` → `movil/www/error.html`), proyecto nativo en **`movil/android/`** (y `movil/ios/`
+    cuando toque). Compilar: `cd movil/android && ./gradlew assembleDebug` →
+    `app/build/outputs/apk/debug/app-debug.apk`. Firmado con la clave de depuración de ESTA Mac
+    (`~/.android/debug.keystore`): si se pierde, el teléfono no acepta la actualización y hay que
+    desinstalar.
+    - Plugin propio `RelojTicket` (`movil/android/app/src/main/java/org/grupocc/gccworld/reloj/`):
+      notificación en curso con `setUsesChronometer` + `setWhen(inicio)`, extra
+      `android.requestPromotedOngoing` (Android 16); «Detener» → `DetenerReceiver` (toma la hora
+      al pulsar) → `DetenerWorker` (WorkManager, espera red, PATCH con `en`); `RevisarWorker` cada
+      15 min reconcilia con el servidor con la app cerrada. Las llamadas nativas usan la cookie
+      del WebView (`CookieManager`), no un token aparte.
+    - Web: `GET /api/tickets/relojes` (mis relojes, `inicio` = `timer_started_at − duration_seconds`),
+      `lib/movil/reloj-nativo.ts` (importa `@capacitor/core` dinámicamente; en el navegador no
+      hace nada) y `components/providers/RelojesNativos.tsx` en `app/layout.tsx` (sincroniza al
+      abrir, al volver a primer plano y con el evento `gcc:relojes`).
+    - **Límite:** el sistema dibuja un reloj, no un costo que sube; se enseña la tarifa por hora.
+    - **Lo que falta para «al instante» desde el computador:** push (FCM en Android, APNs en
+      iPhone). Hoy el computador → teléfono llega al abrir la app o en ≤ 15 min.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
   (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el

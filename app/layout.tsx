@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import RegistroServiceWorker from '@/components/providers/RegistroServiceWorker';
+import RelojesNativos from '@/components/providers/RelojesNativos';
 import { SITIO } from '@/lib/sitio/contenido';
 import './globals.css';
 
@@ -148,6 +149,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-digi-darker text-digi-text antialiased">
         <RegistroServiceWorker />
+        <RelojesNativos />
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -7,6 +7,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { fmt2 } from '@/lib/format';
+import { avisarCambioDeReloj } from '@/lib/movil/reloj-nativo';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -112,6 +113,7 @@ export default function RegistroTrabajo({
       if (!r.ok) throw new Error(d.error || 'No se pudo guardar');
       if (ok) toast.success(ok);
       onCambio();
+      avisarCambioDeReloj();
       return d.data;
     } catch (e: any) { toast.error(e.message); return null; }
     finally { setOcupado(false); }

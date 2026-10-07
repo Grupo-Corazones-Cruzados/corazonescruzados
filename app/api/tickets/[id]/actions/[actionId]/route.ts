@@ -61,6 +61,11 @@ export async function DELETE(
  *               el mismo rato se contaría dos veces.
  *  · `detener`  suma lo transcurrido a `duration_seconds`. Si el registro nació de «Iniciar
  *               sesión» (Meet), cierra también la sesión y su evento del calendario.
+ *  · `en` (ISO, opcional, con `iniciar`/`detener`): la hora a la que se pulsó DE VERDAD. La
+ *               manda la app del teléfono cuando el botón se pulsó sin conexión y la orden
+ *               llega después (Fernando, 2026-10-06). Sin `en`, la hora es la del servidor.
+ *               No se acepta del futuro, ni un inicio de hace más de un día, ni una parada
+ *               anterior al inicio: lo que no cuadra se rechaza, no se corrige a ojo.
  *  · `duration_seconds` corrige el tiempo a mano (no con el reloj en marcha: se pisarían).
  *  · El COSTO se recalcula SIEMPRE desde el tiempo: tiempo × tarifa del servicio. No se
  *    escribe a mano.
@@ -98,6 +103,19 @@ export async function PATCH(
     let timer: string | null = a.timer_started_at;
     let sesionTerminada: Date | null = null;
 
+    // La hora de la orden: la del teléfono si la pulsó sin conexión, si no la del servidor.
+    let cuando = new Date();
+    if (cuerpo.en !== undefined && cuerpo.en !== null && (cuerpo.accion === 'iniciar' || cuerpo.accion === 'detener')) {
+      const t = new Date(String(cuerpo.en));
+      if (Number.isNaN(t.getTime())) return NextResponse.json({ error: 'Hora no válida' }, { status: 400 });
+      // Dos minutos de holgura: el reloj del teléfono nunca va clavado con el del servidor.
+      if (t.getTime() > cuando.getTime() + 2 * 60_000) return NextResponse.json({ error: 'La hora llega del futuro' }, { status: 400 });
+      if (cuerpo.accion === 'iniciar' && t.getTime() < cuando.getTime() - 24 * 3600_000) {
+        return NextResponse.json({ error: 'Ese inicio tiene más de un día: corrige el tiempo a mano' }, { status: 400 });
+      }
+      cuando = t.getTime() > cuando.getTime() ? cuando : t;
+    }
+
     if (cuerpo.accion === 'iniciar') {
       if (!timer) {
         const { rows: otro } = await pool.query(
@@ -107,11 +125,14 @@ export async function PATCH(
         if (otro[0]) {
           return NextResponse.json({ error: `Ya hay un reloj en marcha en «${otro[0].description}». Detenlo primero.` }, { status: 409 });
         }
-        timer = new Date().toISOString();
+        timer = cuando.toISOString();
       }
     } else if (cuerpo.accion === 'detener') {
       if (timer) {
-        const ahora = new Date();
+        const ahora = cuando;
+        if (ahora.getTime() < new Date(timer).getTime()) {
+          return NextResponse.json({ error: 'La parada es anterior al inicio del reloj' }, { status: 400 });
+        }
         segundos += Math.max(0, Math.round((ahora.getTime() - new Date(timer).getTime()) / 1000));
         timer = null;
         if (a.session_started_at && !a.session_ended_at) sesionTerminada = ahora;

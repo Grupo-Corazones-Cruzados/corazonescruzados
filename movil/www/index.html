@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GCC World</title>
+<style>
+  :root { --fondo: #faf9f8; --texto: #242424; --suave: #605e5c; --marca: #4B2D8E; }
+  html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--texto);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; padding: 24px; box-sizing: border-box; text-align: center; }
+  .logo { width: 64px; height: 64px; border-radius: 16px; background: var(--marca); }
+  p { margin: 0; color: var(--suave); font-size: 15px; line-height: 1.45; max-width: 320px; }
+  button { margin-top: 6px; min-height: 44px; padding: 0 22px; border: 0; border-radius: 8px;
+    background: var(--marca); color: #fff; font: inherit; font-size: 15px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo" aria-hidden="true"></div>
+  <strong>Sin conexión</strong>
+  <p>GCC World necesita internet para abrirse. Los relojes de tus tickets siguen contando en la notificación.</p>
+  <button type="button" onclick="location.href='https://app.grupocc.org/dashboard'">Reintentar</button>
+</main>
+</body>
+</html>

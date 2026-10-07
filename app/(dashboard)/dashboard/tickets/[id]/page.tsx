@@ -15,6 +15,7 @@ import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CON
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import Segmentado from '@/components/ui/Segmentado';
 import RegistroTrabajo, { diaDe, segundosDe, fmtTiempo } from '@/components/tickets/RegistroTrabajo';
+import { avisarCambioDeReloj } from '@/lib/movil/reloj-nativo';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
@@ -536,6 +537,7 @@ export default function TicketDetailPage() {
       if (!res.ok) throw new Error(data.error);
       toast.success('Sesión iniciada');
       await fetchTicket();
+      avisarCambioDeReloj();
     } catch (e: any) { toast.error(e?.message || 'Error al iniciar la sesión'); }
     finally { setSessionBusy(false); }
   };
@@ -549,6 +551,7 @@ export default function TicketDetailPage() {
       toast.success(`Sesión terminada · ${data.durationLabel} · $${fmt2(Number(data.cost))}`);
       if (data.overBudget) toast.warning(`Se superó el presupuesto estimado en $${fmt2(Number(data.over))}`);
       await fetchTicket();
+      avisarCambioDeReloj();
     } catch (e: any) { toast.error(e?.message || 'Error al terminar la sesión'); }
     finally { setSessionBusy(false); }
   };

@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 62 %
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 70 % — ANDROID CONSTRUIDO (falta probarlo en el teléfono)
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
@@ -21,8 +21,8 @@ distribución sin tienda** y en **el código nativo que Capacitor no trae** (la 
 Swift puro, en una extensión aparte).
 
 ### Progreso
-- **% de información para el objetivo:** 62 %
-- **Estado:** cuenta de Apple decidida (P11, provisional la del cliente). El reloj ya existe y está bien hecho para esto (vive en el servidor). La arquitectura
+- **% de información para el objetivo:** 70 %
+- **Estado (2026-10-06, noche):** Android construido: APK con el reloj en la notificación, «Detener» sin conexión y revisión cada 15 min; falta probarlo en el teléfono de Fernando. Nuevo requisito abierto: funciones SIN CONEXIÓN (P16). Antes: cuenta de Apple decidida (P11, provisional la del cliente). El reloj ya existe y está bien hecho para esto (vive en el servidor). La arquitectura
   está clara. Faltan **tres decisiones de Fernando** (cuenta de Apple, desde dónde se arranca el
   reloj, qué botones lleva) y **una medición** (la sesión dentro del contenedor).
 
@@ -99,7 +99,7 @@ Swift puro, en una extensión aparte).
   - **Para la cuenta propia no hace falta tener empresa:** Apple permite inscribirse como
     **persona** (99 $/año, sin D-U-N-S); la de organización es la que pide empresa constituida.
 
-#### P12 — ¿Desde dónde se arranca el reloj? · ⏸ Bloqueada (decisión de Fernando)
+#### P12 — ¿Desde dónde se arranca el reloj? · ✅ Resuelta (Fernando, 2026-10-06) — **desde el teléfono Y desde el computador**
 - **Por qué importa:** cambia la arquitectura entera del lado de Apple.
   - **Solo desde el teléfono** → la app arranca la Actividad en Vivo localmente al pulsar
     «Iniciar». Simple: no hace falta servidor de push para esto.
@@ -131,13 +131,47 @@ Swift puro, en una extensión aparte).
 - **Se cierra midiendo:** un contenedor mínimo en un iPhone y un Android reales, entrar y pedir
   una ruta autenticada.
 
-#### P14 — ¿Qué muestra y qué botones lleva el contador? · ⏸ Bloqueada (decisión de Fernando — diseño)
+#### P14 — ¿Qué muestra y qué botones lleva el contador? · ✅ Resuelta (Fernando, 2026-10-06) — **la propuesta tal cual, sin «Pausar»**
 - **Propuesta:** en la pantalla de bloqueo, el logo GCC (cuadrado `#4B2D8E`, como los iconos de
   producto en `Diseño.md`), **título del ticket**, **cliente**, el **reloj** grande y, a la derecha,
   **costo acumulado** opcional; un solo botón **Detener**. En la isla dinámica: compacta = icono +
   reloj; expandida = lo mismo que la pantalla de bloqueo. Tocarla abre el ticket en la app.
 - Preguntar: ¿«Pausar» además de «Detener»? (hoy el modelo no distingue: detener = pausar, porque
   se puede volver a iniciar el mismo registro).
+
+- **⚠️ Límite que hay que decirle (2026-10-06):** ni Android ni iOS saben dibujar solos un
+  **costo que sube** — solo un reloj. El costo exacto en vivo exigiría actualizar la notificación
+  cada poco (servicio en primer plano / push por minuto). Se muestra la **tarifa** (`$15,00/h`) y el
+  costo exacto está en el ticket. Si lo quiere en vivo, es un servicio en primer plano en Android.
+
+#### P16 — «Ciertas funciones sin conexión, y que se sincronicen al volver» · ❓ Abierta (nuevo requisito, Fernando, 2026-10-06)
+- **Por qué importa:** choca con dos decisiones de arquitectura: (1) la app **carga la plataforma
+  desde el servidor** (`server.url`), así que sin red **no se abre la plataforma**; (2) el
+  service worker **no cachea a propósito** (cifras viejas presentadas como de hoy). Lo sin conexión
+  no se «activa»: se diseña **función por función**, con su cola y su regla de conflicto.
+- **Hecho ya para el reloj (2026-10-06):** «Detener» desde la notificación funciona sin red — la
+  hora se toma al pulsar y viaja como `en` cuando vuelve la conexión (WorkManager con reintentos);
+  la API acepta `en` en `iniciar`/`detener` (no del futuro, inicio ≤ 1 día, parada ≥ inicio).
+  Sin red la app enseña una pantalla propia «Sin conexión» (`movil/www/error.html`).
+- **Lo que hay que preguntarle:** QUÉ funciones. Propuesta de alcance: (a) iniciar/detener el reloj
+  y escribir observaciones de un registro; (b) crear un registro de trabajo nuevo; (c) ver la lista
+  de mis tickets abiertos (solo lectura, con la fecha de la última sincronización a la vista).
+  Lo que toca dinero (facturar, cobrar) **nunca** sin conexión.
+- **Cómo se construiría:** una pantalla «Mis tickets» propia del paquete (en `movil/www`, servida
+  local) que lee de una copia en el teléfono y escribe en una cola; la cola se envía con la hora
+  real de cada acción y las reglas de conflicto del servidor (las mismas de `en`).
+
+#### P17 — ¿Qué teléfonos? · ✅ Resuelta (Fernando, 2026-10-06)
+- **iPhone 17** (iOS 26: Actividad en Vivo, isla dinámica, push-to-start — todo disponible) y un
+  **Samsung «Galaxy 12s»** (modelo exacto por confirmar: es lo que decide si hay Android 16 y con
+  ello el chip de «actualización en vivo»). Decisión: **solo teléfonos modernos**; nada de
+  compatibilidad con versiones viejas.
+
+#### P3 (cierre para Android, 2026-10-06) · ✅ — **no hace falta token propio en Android**
+- Lo nativo que habla con el servidor sin la página (Detener, revisión periódica) lee la cookie
+  `auth_token` del almacén del WebView (`CookieManager.getCookie`, que incluye las `httpOnly`).
+  Una sola sesión, sin segunda puerta. En iPhone se probará lo mismo con
+  `WKWebsiteDataStore.httpCookieStore` desde el `LiveActivityIntent` (corre en el proceso de la app).
 
 #### P15 — ¿Qué notificaciones quiere? · ❓ Abierta
 - **Por qué importa:** la infraestructura es la misma (APNs + FCM, un `device_tokens` por usuario),

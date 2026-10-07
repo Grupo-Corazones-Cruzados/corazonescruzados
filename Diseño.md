@@ -1023,6 +1023,26 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
 
 ---
 
+## App nativa (Capacitor) — lo que dibuja el SISTEMA, no la página (2026-10-06)
+
+La app carga la plataforma tal cual (mismo diseño `.corp`); lo único con diseño propio es lo que
+pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí no llega el CSS:
+
+- **Morado de marca `#4B2D8E`** = `Relojes.MORADO` (Android) y `theme_color` del manifiesto.
+  Si cambia el acento en `app/globals.css`, **cambiarlo también aquí** (y en
+  `movil/www/error.html`): es la única copia fuera de la fuente única, y es inevitable.
+- **Notificación del reloj del ticket** (`movil/android/.../reloj/Relojes.java`): icono pequeño
+  `ic_reloj` (cronómetro blanco, vector), título = título del ticket, texto = `cliente · registro`,
+  subtexto = tarifa `$15,00/h` (miles «.» y decimales «,», como `lib/format.ts`), cronómetro del
+  sistema, una sola acción **«Detener»** (`ic_detener`). Sin sonido ni vibración (canal de
+  importancia baja). Detenido sin conexión: «Detenido en h:mm:ss · se enviará al volver la conexión».
+- **Icono de la app y arranque:** salen de `public/icono-512.png` (el mismo de la PWA): adaptativo
+  con fondo blanco y el logo al 66 %; arranque blanco con el logo al 40 % del lado corto.
+- **Pantalla sin conexión** (`movil/www/error.html`): fondo `#faf9f8`, texto `#242424`/`#605e5c`,
+  botón primario morado de 44 px de alto. Es HTML suelto, no Tailwind: se sirve sin servidor.
+- **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
+  misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
+
 ## Dashboard — Fluent (`.corp`)
 
 ### Stack y fuente única
