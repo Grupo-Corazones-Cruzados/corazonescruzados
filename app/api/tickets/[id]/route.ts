@@ -149,7 +149,35 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!puedeBorrarTicket(user, t)) {
       return NextResponse.json({ error: 'Solo un administrador borra un ticket' }, { status: 403 });
     }
-    await pool.query('DELETE FROM gcc_world.tickets WHERE id = $1', [id]);
+    /**
+     * Lo que cuelga del ticket se va CON él (2026-10-07). No hay claves foráneas con cascada,
+     * y borrar solo la fila dejó huérfanos los registros, los días y el bloque de calendario
+     * de una sesión del #41. Todo en una transacción: o se va todo, o no se va nada.
+     */
+    const cx = await pool.connect();
+    try {
+      await cx.query('BEGIN');
+      const { rows: sesiones } = await cx.query(
+        `SELECT calendar_event_id FROM gcc_world.ticket_actions WHERE ticket_id = $1 AND calendar_event_id IS NOT NULL`, [id],
+      );
+      if (sesiones.length) {
+        await cx.query(`DELETE FROM gcc_world.member_calendar_events WHERE id = ANY($1::uuid[])`,
+          [sesiones.map((r: any) => r.calendar_event_id)]);
+      }
+      await cx.query(`DELETE FROM gcc_world.ticket_actions WHERE ticket_id = $1`, [id]);
+      await cx.query(`DELETE FROM gcc_world.ticket_time_slots WHERE ticket_id = $1`, [id]);
+      // Un error dentro de la transacción la invalida entera: se pregunta antes si la tabla existe.
+      if ((await cx.query(`SELECT to_regclass('gcc_world.ticket_bids') AS t`)).rows[0]?.t) {
+        await cx.query(`DELETE FROM gcc_world.ticket_bids WHERE ticket_id = $1`, [id]);
+      }
+      await cx.query('DELETE FROM gcc_world.tickets WHERE id = $1', [id]);
+      await cx.query('COMMIT');
+    } catch (e) {
+      await cx.query('ROLLBACK').catch(() => {});
+      throw e;
+    } finally {
+      cx.release();
+    }
     return NextResponse.json({ message: 'Deleted' });
   } catch (err: any) {
     console.error('Ticket DELETE error:', err.message);
