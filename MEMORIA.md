@@ -676,6 +676,10 @@ Stack estándar de la casa, con particularidades de este repo:
       en tickets, pantalla que funciona sin red, sincronización al volver) y añade un estado
       **«Sin conexión»**: ahí quedan los tickets/proyectos CREADOS sin red; al recuperar la
       conexión pasan SOLOS a «Borrador». Pasar de borrador al siguiente estado exige red.
+    - **iPad (2026-10-07):** iPad Pro 12,9″ 6.ª gen (iPadOS 26.6.2, UDID
+      `00008112-000A3158143BC01E`) registrado en el equipo provisional e instalado. En iPad NO
+      hay Actividades en Vivo (Apple no las permite): sin reloj en la pantalla de bloqueo; el
+      plugin lo detecta (`areActivitiesEnabled`) y no hace nada. Avisos normales sí.
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo
