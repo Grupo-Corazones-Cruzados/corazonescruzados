@@ -32,6 +32,7 @@ public class RelojTicketPlugin: CAPPlugin, CAPBridgedPlugin {
                 ServidorReloj.guardarPendientes(quedan)
                 let excluir = Set(pendientes.map(\.registroId))
                 await Self.aplicar(lista, excluyendo: excluir, congelados: Set(quedan.map(\.registroId)))
+                await ObservadorRelojes.reintentar()
                 call.resolve(["permitido": ActivityAuthorizationInfo().areActivitiesEnabled])
             }
         }
@@ -77,7 +78,7 @@ public class RelojTicketPlugin: CAPPlugin, CAPBridgedPlugin {
                 cliente: r["cliente"] as? String ?? "",
                 registro: r["registro"] as? String ?? "",
                 tarifa: (r["tarifa"] as? NSNumber)?.doubleValue ?? 0)
-            _ = try? Activity.request(attributes: atributos, content: ActivityContent(state: estado, staleDate: nil), pushType: nil)
+            _ = try? Activity.request(attributes: atributos, content: ActivityContent(state: estado, staleDate: nil), pushType: .token)
         }
         for a in Activity<RelojAtributos>.activities
         where !vistos.contains(a.attributes.registroId) && !congelados.contains(a.attributes.registroId) {

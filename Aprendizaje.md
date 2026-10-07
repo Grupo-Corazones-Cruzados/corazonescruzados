@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 85 % — ANDROID CON PUSH (APK 1.2, por probar); iPhone INSTALADO en el teléfono de Fernando
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 92 % — ANDROID CON PUSH; IPHONE CON ACTIVIDAD EN VIVO (confirmada) + PUSH DE APPLE (por probar)
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se

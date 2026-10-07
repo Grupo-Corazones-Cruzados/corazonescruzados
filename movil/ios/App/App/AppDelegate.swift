@@ -7,7 +7,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Tokens de push de la Actividad en Vivo del reloj (también en arranques en segundo plano).
+        ObservadorRelojes.iniciar()
         return true
     }
 

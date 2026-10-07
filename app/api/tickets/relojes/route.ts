@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { ensureTicketActionColumns } from '@/lib/tickets/schema';
+import { relojesDelMiembro } from '@/lib/tickets/relojes';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,7 @@ export const dynamic = 'force-dynamic';
  * de los demás: es su pantalla de bloqueo, no un tablero. Sin miembro enlazado, lista vacía
  * (y es de verdad vacía: no hay relojes que puedan ser suyos).
  *
- * `inicio` es la hora desde la que el teléfono cuenta: `timer_started_at` MENOS lo ya
- * acumulado. Si no se resta, al reanudar un registro el teléfono empezaría en cero mientras la
- * web dice 1:20:00.
+ * La consulta vive en `lib/tickets/relojes.ts` (la usan también las push del iPhone).
  */
 export async function GET() {
   try {
@@ -27,31 +26,8 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureTicketActionColumns();
 
-    const { rows } = await pool.query(
-      `SELECT a.id AS registro_id, a.ticket_id, a.description, a.timer_started_at,
-              COALESCE(a.duration_seconds, 0) AS duration_seconds,
-              t.title AS ticket_titulo, c.name AS cliente,
-              COALESCE(s.base_price, 0) AS tarifa
-         FROM gcc_world.users u
-         JOIN gcc_world.tickets t        ON t.member_id = u.member_id
-         JOIN gcc_world.ticket_actions a ON a.ticket_id = t.id AND a.timer_started_at IS NOT NULL
-         LEFT JOIN gcc_world.clients c   ON c.id = t.client_id
-         LEFT JOIN gcc_world.services s  ON s.id = t.service_id
-        WHERE u.id = $1 AND u.member_id IS NOT NULL
-          AND t.status NOT IN ('completed', 'cancelled')
-        ORDER BY a.timer_started_at`,
-      [user.userId],
-    );
-
-    const data = rows.map((r: any) => ({
-      registroId: Number(r.registro_id),
-      ticketId: Number(r.ticket_id),
-      titulo: r.ticket_titulo || `Ticket #${r.ticket_id}`,
-      registro: r.description,
-      cliente: r.cliente || null,
-      tarifa: Number(r.tarifa) || 0,
-      inicio: new Date(new Date(r.timer_started_at).getTime() - Number(r.duration_seconds) * 1000).toISOString(),
-    }));
+    const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
+    const data = u?.member_id != null ? await relojesDelMiembro(Number(u.member_id)) : [];
     return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Relojes en marcha GET error:', err.message);

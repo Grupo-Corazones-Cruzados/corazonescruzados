@@ -45,7 +45,7 @@ export async function DELETE(
       [actionId, id]
     );
     // Si era el reloj en marcha, el teléfono tiene que quitarlo.
-    after(() => avisarRelojesDelMiembro(ticket.member_id));
+    after(() => avisarRelojesDelMiembro(ticket.member_id, { registroId: Number(actionId), accion: 'detener' }));
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
 
     return NextResponse.json({ message: 'Eliminado' });
@@ -184,7 +184,13 @@ export async function PATCH(
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
 
     // El reloj cambió: los teléfonos del miembro ajustan su notificación al instante.
-    if (cuerpo.accion === 'iniciar' || cuerpo.accion === 'detener') after(() => avisarRelojesDelMiembro(ticket.member_id));
+    // Solo si de verdad pasó de parado a en marcha (o al revés): un «iniciar» repetido no
+    // arranca otra Actividad en Vivo en el iPhone.
+    const arrancado = !a.timer_started_at && !!timer;
+    const parado = !!a.timer_started_at && !timer;
+    if (arrancado || parado) {
+      after(() => avisarRelojesDelMiembro(ticket.member_id, { registroId: Number(actionId), accion: arrancado ? 'iniciar' : 'detener' }));
+    }
 
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {

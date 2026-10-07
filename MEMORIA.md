@@ -643,6 +643,23 @@ Stack estándar de la casa, con particularidades de este repo:
       `LiveActivityIntent` (corre en el proceso de la APP) que usa la cookie `auth_token`
       copiada al llavero en cada sincronización; sin red guarda `{ticket, registro, en}` y se
       envía al sincronizar. Tocarla abre `gccworld://ticket/<id>`.
+      **Fernando, 2026-10-07: «ya funciona el reloj en la pantalla de bloqueo».**
+    - **⭐ Push del iPhone (2026-10-07).** Reloj iniciado en el computador → `start` por APNs al
+      token de arranque (`apns_live_start`) → la Actividad en Vivo aparece con la app cerrada;
+      detenido → `end` al token de esa actividad (`apns_live_update` + `registro_id`, migración
+      067). `lib/push/apns.ts` (HTTP/2 + JWT ES256; variables `APNS_KEY`, `APNS_KEY_ID`,
+      `APNS_TEAM_ID`, `APNS_BUNDLE_ID` en el servicio Railway **`corazonescruzados`** — la CLI
+      local está enlazada a `automatizaciones-worker`: pasar `--service`). ⚠️ Las fechas de
+      ActivityKit en el JSON son **segundos desde 2001-01-01** (`fechaSwift`). Los tokens los
+      registra la app nativa (`App/ObservadorRelojes.swift`, arrancado en `AppDelegate` porque
+      una push la despierta en segundo plano sin vista); `entorno` sandbox (Xcode) / production
+      (TestFlight). Si el reloj se inició en el propio iPhone llegan dos actividades: la app
+      cierra la repetida. Permiso `aps-environment` en `App/App.entitlements`.
+    - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
+      de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
+      el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo
+      grande, arranque), los de la PWA (`public/icono-192/512.png`) y la silueta de la
+      Actividad en Vivo.
       ⚠️ El objetivo se añadió editando `project.pbxproj` a mano (no hay gem `xcodeproj`): al
       tocarlo, `plutil -lint` y compilar.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».

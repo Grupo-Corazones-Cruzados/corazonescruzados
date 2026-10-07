@@ -1040,8 +1040,13 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
   subtexto = tarifa `$15,00/h` (miles «.» y decimales «,», como `lib/format.ts`), cronómetro del
   sistema, una sola acción **«Detener»** (`ic_detener`). Sin sonido ni vibración (canal de
   importancia baja). Detenido sin conexión: «Detenido en h:mm:ss · se enviará al volver la conexión».
-- **Icono de la app y arranque:** salen de `public/icono-512.png` (el mismo de la PWA): adaptativo
-  con fondo blanco y el logo al 66 %; arranque blanco con el logo al 40 % del lado corto.
+- **Icono de la app y arranque — fuente única (2026-10-07):** `movil/generar-iconos.py` toma
+  `public/LogoApp.png`, extrae SOLO el trazo del logo (descarta la marca de agua «miro», que
+  queda fuera del círculo) y compone: icono del iPhone (1024, fondo blanco, trazo al 62 %),
+  Android (cuadrado al 62 %, redondo al 58 %, adaptativo al 42 % del lienzo = dentro de la zona
+  segura), silueta blanca de notificación, logo grande, arranque (30 % del lado corto), PWA
+  (`public/icono-192/512.png`) y la silueta de la Actividad en Vivo. **Cambiar el logo = cambiar
+  `LogoApp.png` y volver a ejecutar el script**; nunca retocar un icono suelto.
 - **Pantalla sin conexión** (`movil/www/error.html`): fondo `#faf9f8`, texto `#242424`/`#605e5c`,
   botón primario morado de 44 px de alto. Es HTML suelto, no Tailwind: se sirve sin servidor.
 - **Botón «Recargar»** (`components/dashboard/CabeceraMovil.tsx`, 2026-10-06): arriba a la

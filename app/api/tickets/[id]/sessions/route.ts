@@ -138,7 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
 
-    after(() => avisarRelojesDelMiembro(ticket.member_id));
+    after(() => avisarRelojesDelMiembro(ticket.member_id, { registroId: Number(rows[0].id), accion: 'iniciar' }));
     return NextResponse.json({ data: rows[0], meetingUrl });
   } catch (err: any) {
     console.error('Session POST error:', err.message);

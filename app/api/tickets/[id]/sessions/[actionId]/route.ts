@@ -89,7 +89,7 @@ export async function PATCH(
     const overBudget = est > 0 && total > est;
     const over = overBudget ? Math.round((total - est) * 100) / 100 : 0;
 
-    after(() => avisarRelojesDelMiembro(ticket.member_id));
+    after(() => avisarRelojesDelMiembro(ticket.member_id, { registroId: Number(actionId), accion: 'detener' }));
     return NextResponse.json({
       data: rows[0],
       cost,

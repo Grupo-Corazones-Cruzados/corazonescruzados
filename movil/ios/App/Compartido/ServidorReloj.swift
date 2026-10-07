@@ -76,3 +76,31 @@ enum ServidorReloj {
         }
     }
 }
+
+extension ServidorReloj {
+    /// `sandbox` instalada desde Xcode; `production` en TestFlight (compilación Release).
+    static var entorno: String {
+        #if DEBUG
+        return "sandbox"
+        #else
+        return "production"
+        #endif
+    }
+
+    /// Registra un token de push con la sesión guardada. Sin sesión no hace nada: se
+    /// reintenta en la siguiente sincronización de la página.
+    @discardableResult
+    static func registrarToken(tipo: String, token: String, registroId: Int? = nil) async -> Bool {
+        guard let s = sesion() else { return false }
+        var req = URLRequest(url: base.appendingPathComponent("api/dispositivos"))
+        req.httpMethod = "POST"
+        req.timeoutInterval = 15
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("auth_token=\(s)", forHTTPHeaderField: "Cookie")
+        var cuerpo: [String: Any] = ["tipo": tipo, "token": token, "entorno": entorno]
+        if let r = registroId { cuerpo["registroId"] = r }
+        req.httpBody = try? JSONSerialization.data(withJSONObject: cuerpo)
+        guard let (_, resp) = try? await URLSession.shared.data(for: req) else { return false }
+        return ((resp as? HTTPURLResponse)?.statusCode ?? 0) == 200
+    }
+}
