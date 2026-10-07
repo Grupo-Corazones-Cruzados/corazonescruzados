@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { avisarRelojesDelMiembro } from '@/lib/push/relojes';
 import {
   ensureTicketActionColumns, formatEcuador, ECUADOR_TZ,
   loadTicketForSession, canManageTicket, hoyEcuador,
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
 
+    after(() => avisarRelojesDelMiembro(ticket.member_id));
     return NextResponse.json({ data: rows[0], meetingUrl });
   } catch (err: any) {
     console.error('Session POST error:', err.message);

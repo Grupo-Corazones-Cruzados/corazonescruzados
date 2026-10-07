@@ -8,6 +8,7 @@ import androidx.work.NetworkType;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import com.getcapacitor.JSObject;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -52,6 +53,21 @@ public class RelojTicketPlugin extends Plugin {
         JSObject r = new JSObject();
         r.put("permitido", Relojes.puedeAvisar(getContext()));
         call.resolve(r);
+    }
+
+    /** El token de push de este teléfono, para que la página lo registre con su sesión. */
+    @PluginMethod
+    public void tokenPush(PluginCall call) {
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(t -> {
+            if (!t.isSuccessful() || t.getResult() == null) {
+                call.reject("No se pudo obtener el token de push");
+                return;
+            }
+            JSObject r = new JSObject();
+            r.put("tipo", "fcm");
+            r.put("token", t.getResult());
+            call.resolve(r);
+        });
     }
 
     @PermissionCallback

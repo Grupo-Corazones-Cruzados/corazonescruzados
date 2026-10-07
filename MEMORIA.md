@@ -619,8 +619,16 @@ Stack estándar de la casa, con particularidades de este repo:
     - **iPhone (2026-10-06):** `movil/ios/` (Capacitor 8 + SPM), compila sin firmar con Xcode 27;
       mínimo iOS 18. Firebase: solo existe en `motordesa-rutago` (de un cliente); se propone
       activarlo en `grupo-corazones-cruzados`.
-    - **Lo que falta para «al instante» desde el computador:** push (FCM en Android, APNs en
-      iPhone). Hoy el computador → teléfono llega al abrir la app o en ≤ 15 min.
+    - **⭐ Push en Android (2026-10-06, APK 1.2).** Firebase activado en `grupo-corazones-cruzados`
+      (autorizado por Fernando); se envía con `GOOGLE_SA_KEY` (cuenta `meet-creator`, con rol
+      `firebasecloudmessaging.admin`): una credencial, no dos. Tabla `push_devices` (migración
+      066; token por `kind`: `fcm` | `apns` | `apns_live_start`, upsert por token → el teléfono
+      pasa a quien entre en él). La página registra el token al abrirse con sesión
+      (`POST /api/dispositivos`). Toda acción que cambia un reloj (iniciar/detener/borrar,
+      sesiones Meet) hace `after(() => avisarRelojesDelMiembro(memberId))` → mensaje de DATOS
+      `tipo=relojes` → `MensajeriaService` pregunta `/api/tickets/relojes` y ajusta la
+      notificación. El aviso no trae el reloj: un aviso perdido no deja nada mal.
+    - En iPhone hará falta APNs (clave .p8 del equipo del cliente) para lo mismo.
   - Detalle, preguntas abiertas y plan: `Aprendizaje.md` § «APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS».
 - **⭐⭐ EL ENFOQUE NUEVO: UN SOLO PROYECTO, PROBADO COMO PWA Y PUBLICADO CON CAPACITOR
   (Fernando, 2026-09-23).** Todo el trabajo de teléfono deja de ser «que se vea bien en el

@@ -7,8 +7,8 @@ android {
         applicationId "org.grupocc.gccworld"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.1"
+        versionCode 3
+        versionName "1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -39,6 +39,9 @@ dependencies {
     // El reloj del ticket: la parada sin conexión espera a la red y la revisión periódica.
     implementation "androidx.work:work-runtime:2.10.1"
     implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    // Push (Firebase, proyecto grupo-corazones-cruzados; config en google-services.json).
+    implementation platform("com.google.firebase:firebase-bom:34.4.0")
+    implementation "com.google.firebase:firebase-messaging"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

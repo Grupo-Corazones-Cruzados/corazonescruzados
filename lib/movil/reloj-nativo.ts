@@ -15,11 +15,31 @@ export function avisarCambioDeReloj() {
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('gcc:relojes'));
 }
 
+type PluginReloj = {
+  sincronizar(o: { relojes: unknown[] }): Promise<{ permitido: boolean }>;
+  tokenPush?(): Promise<{ tipo: string; token: string }>;
+};
+
+/** El token de push se registra UNA vez por carga de la página, y solo con sesión. */
+let tokenRegistrado = false;
+
+async function registrarTokenPush(plugin: PluginReloj): Promise<void> {
+  if (tokenRegistrado || !plugin.tokenPush) return;
+  try {
+    const { tipo, token } = await plugin.tokenPush();
+    const r = await fetch('/api/dispositivos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo, token }),
+    });
+    if (r.ok) tokenRegistrado = true;
+  } catch { /* se reintenta en la siguiente sincronización */ }
+}
+
 export async function sincronizarRelojesNativos(): Promise<void> {
   if (typeof window === 'undefined') return;
   const { Capacitor, registerPlugin } = await import('@capacitor/core');
   if (!Capacitor.isNativePlatform() || !Capacitor.isPluginAvailable('RelojTicket')) return;
-  const RelojTicket = registerPlugin<{ sincronizar(o: { relojes: unknown[] }): Promise<{ permitido: boolean }> }>('RelojTicket');
+  const RelojTicket = registerPlugin<PluginReloj>('RelojTicket');
 
   const r = await fetch('/api/tickets/relojes', { cache: 'no-store' });
   // Sin sesión no hay de quién enseñar relojes: se quitan. Cualquier otro fallo NO toca lo
@@ -28,4 +48,7 @@ export async function sincronizarRelojesNativos(): Promise<void> {
   if (!r.ok) return;
   const { data } = await r.json();
   await RelojTicket.sincronizar({ relojes: Array.isArray(data) ? data : [] });
+  // Con sesión confirmada: este teléfono recibe el aviso al instante cuando un reloj cambia
+  // en otro sitio (APK 1.2 en adelante; las versiones anteriores no tienen `tokenPush`).
+  await registrarTokenPush(RelojTicket);
 }

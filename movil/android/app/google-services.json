@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "588476197914",
+    "project_id": "grupo-corazones-cruzados",
+    "storage_bucket": "grupo-corazones-cruzados.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588476197914:android:fb89df706005d24df2f5a3",
+        "android_client_info": {
+          "package_name": "org.grupocc.gccworld"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfbconCF_1ZXzdQAHcb1qyod0eLzD5Eo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

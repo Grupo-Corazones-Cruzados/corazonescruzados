@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 78 % — ANDROID FUNCIONANDO (confirmado por Fernando); iPhone arrancado
+## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 82 % — ANDROID CON PUSH (APK 1.2, por probar); iPhone arrancado
 
 **Declarado por Fernando el 2026-10-06**, textual en lo esencial: *«convertir esta aplicación a
 nativa en iphone y android, no me interesa necesariamente publicar en tiendas, me basta con que se
@@ -169,7 +169,7 @@ Swift puro, en una extensión aparte).
 - **Firebase:** dice que ya tiene un proyecto. `gcloud` está con su cuenta pero la sesión
   caducó y pide `gcloud auth login` (interactivo): lo tiene que correr él.
 
-#### P19 — ¿Hay Firebase para las push de Android? · ⏸ Bloqueada (decisión de Fernando, 2026-10-06)
+#### P19 — ¿Hay Firebase para las push de Android? · ✅ Resuelta — **activado en `grupo-corazones-cruzados` (Fernando lo autorizó, 2026-10-06)**
 - **Lo que hay (consultado con su cuenta `lfgonzalezm0@grupocc.org`, 2026-10-06):** tres proyectos
   de Google Cloud; **solo `motordesa-rutago` («Motordesa Rutago») tiene Firebase**, y es de un
   cliente. `grupo-corazones-cruzados` (el del grupo) **no** lo tiene.
@@ -178,6 +178,16 @@ Swift puro, en una extensión aparte).
   manos, las notificaciones de GCC se caen con él. Activarlo no se deshace (Firebase no se quita
   de un proyecto), por eso se pregunta antes.
 - **Fernando probó el APK 1.1 (2026-10-06): «ya funciona todo».** Ticket #41 sí era Confirmado.
+
+- **Hecho (2026-10-06):** APIs `firebase`, `fcm` y `fcmregistrations` activadas; Firebase añadido
+  al proyecto; app Android `org.grupocc.gccworld` registrada
+  (`1:588476197914:android:fb89df706005d24df2f5a3`) y su `google-services.json` en
+  `movil/android/app/`. Se envía con la cuenta de servicio que YA usa la plataforma
+  (`meet-creator@…`, `GOOGLE_SA_KEY`), a la que se le dio SOLO `roles/firebasecloudmessaging.admin`.
+  Probado: con un token falso FCM responde `INVALID_ARGUMENT` (autenticación y permiso bien).
+- `gcloud` en esta Mac va lentísimo (listar proyectos > 2 min); la API REST con
+  `gcloud auth print-access-token` responde al momento. Firebase Management exige la cabecera
+  `X-Goog-User-Project`.
 
 #### P20 — iPhone: arranque · 🔎 En curso (2026-10-06)
 - Xcode 27.0 instalado y licencia aceptada; SDK iOS 27 (sin simulador descargado).

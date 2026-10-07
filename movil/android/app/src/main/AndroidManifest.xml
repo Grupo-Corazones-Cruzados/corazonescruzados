@@ -25,6 +25,15 @@
         </activity>
 
         <!-- El botón «Detener» de la notificación del reloj del ticket. -->
+        <!-- Las push de la plataforma (Firebase). -->
+        <service
+            android:name=".reloj.MensajeriaService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".reloj.DetenerReceiver"
             android:exported="false" />

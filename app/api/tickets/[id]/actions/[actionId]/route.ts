@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { avisarRelojesDelMiembro } from '@/lib/push/relojes';
 import { ensureTicketActionColumns, ensureTicketSlotColumns, loadTicketForSession, canManageTicket, slotCost, esFechaISO } from '@/lib/tickets/schema';
 import { isGoogleWorkspaceConfigured, deleteMeetEvent } from '@/lib/integrations/google-workspace';
 
@@ -43,6 +44,8 @@ export async function DELETE(
       `DELETE FROM gcc_world.ticket_actions WHERE id = $1 AND ticket_id = $2`,
       [actionId, id]
     );
+    // Si era el reloj en marcha, el teléfono tiene que quitarlo.
+    after(() => avisarRelojesDelMiembro(ticket.member_id));
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
 
     return NextResponse.json({ message: 'Eliminado' });
@@ -179,6 +182,9 @@ export async function PATCH(
       } catch (err: any) { console.error('Action calendar end update error:', err.message); }
     }
     await pool.query(`UPDATE gcc_world.tickets SET updated_at = NOW() WHERE id = $1`, [id]);
+
+    // El reloj cambió: los teléfonos del miembro ajustan su notificación al instante.
+    if (cuerpo.accion === 'iniciar' || cuerpo.accion === 'detener') after(() => avisarRelojesDelMiembro(ticket.member_id));
 
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {

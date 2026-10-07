@@ -63,6 +63,15 @@ function loadKey(): SAKey | null {
   return _key;
 }
 
+/**
+ * La clave de la cuenta de servicio de Google (`meet-creator@grupo-corazones-cruzados`), para
+ * quien la necesite fuera de Workspace. Hoy: las push de la app (FCM), que viven en el mismo
+ * proyecto — la cuenta tiene el rol `firebasecloudmessaging.admin` desde el 2026-10-06.
+ */
+export function claveCuentaServicio(): SAKey | null {
+  return loadKey();
+}
+
 /** True si hay clave + cuenta organizadora configuradas (para poder usar Gmail/Meet). */
 export function isGoogleWorkspaceConfigured(): boolean {
   return !!ORGANIZER && !!loadKey();

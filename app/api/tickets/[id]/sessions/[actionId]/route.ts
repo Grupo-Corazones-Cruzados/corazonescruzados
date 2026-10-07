@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { avisarRelojesDelMiembro } from '@/lib/push/relojes';
 import {
   ensureTicketActionColumns, formatEcuador, formatDuration,
   loadTicketForSession, canManageTicket,
@@ -88,6 +89,7 @@ export async function PATCH(
     const overBudget = est > 0 && total > est;
     const over = overBudget ? Math.round((total - est) * 100) / 100 : 0;
 
+    after(() => avisarRelojesDelMiembro(ticket.member_id));
     return NextResponse.json({
       data: rows[0],
       cost,
