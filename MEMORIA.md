@@ -699,9 +699,18 @@ Stack estándar de la casa, con particularidades de este repo:
       borradores. Probado de punta a punta en local contra la base real con un ticket y un
       proyecto de prueba borrados por su id (el envío mandó un correo de prueba al Gmail de
       Fernando).
-    - ⚠️ **Hallazgo (2026-10-07), ANTERIOR a esto:** `GET/PATCH/DELETE /api/tickets/[id]` no
-      comprueban que el ticket sea de quien llama (solo los borradores quedaron protegidos).
-      Cualquiera con sesión podía leer, editar o BORRAR cualquier ticket. Pendiente de Fernando.
+    - ⚠️ **Hallazgo y arreglo (2026-10-07, OK de Fernando):** `GET/PATCH/DELETE /api/tickets/[id]`
+      y `GET …/bids` solo pedían sesión: cualquiera —un cliente— podía leer, editar o BORRAR
+      cualquier ticket. Regla nueva en `lib/tickets/permisos.ts` (respeta que los miembros ven y
+      editan todos desde la lista): ver = admin, miembros, asignado, creador, cliente del ticket
+      (cuenta o correo), quien propuso, y perfil de miembro si está abierto; editar = admin,
+      miembros, asignado (completar por PATCH solo admin: registra el ingreso); borrar = admin o
+      el creador de un borrador. 12 comprobaciones en local (ticket real 28 solo leído; las
+      escrituras sobre uno de prueba borrado por id).
+    - ⚠️ **El ticket #41 («Desarrollo», cliente 34 = Gmail de Fernando) desapareció el 2026-10-07**
+      dejando huérfanos sus registros 106/107 y 2 días (no hay cascada). No lo borró ninguna
+      prueba (la limpieza filtra por id Y título); Railway solo guarda minutos de registro HTTP,
+      no se puede saber quién. Preguntado a Fernando; los huérfanos NO se tocan sin su OK.
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { addTicketIncomeToFinance } from '@/lib/finance';
 import { ensureTicketSlotColumns, ensureTicketActionColumns } from '@/lib/tickets/schema';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
+import { puedeVerTicket, puedeEditarTicket, puedeBorrarTicket, cargarTicketParaPermiso } from '@/lib/tickets/permisos';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,8 +31,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     );
 
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    // Un borrador es de quien lo creó (y del admin): para los demás no existe.
-    if (rows[0].status === 'draft' && String(rows[0].user_id) !== user.userId && user.role !== 'admin') {
+    // Quien no puede verlo no sabe ni que existe (`lib/tickets/permisos.ts`).
+    if (!(await puedeVerTicket(user, rows[0]))) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
     return NextResponse.json({ data: rows[0] });
@@ -60,12 +61,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
      *    después, 409 con la versión actual — lo editado sin conexión no pisa en silencio.
      */
     const { rows: [actual] } = await pool.query(
-      `SELECT status, user_id, updated_at FROM gcc_world.tickets WHERE id = $1`, [id],
+      `SELECT id, status, user_id, member_id, client_id, open_for_proposals, open_for_talent, updated_at
+         FROM gcc_world.tickets WHERE id = $1`, [id],
     );
     if (!actual) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const esBorrador = actual.status === 'draft';
-    if (esBorrador && String(actual.user_id) !== user.userId && user.role !== 'admin') {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!(await puedeEditarTicket(user, actual))) {
+      return NextResponse.json({ error: (await puedeVerTicket(user, actual)) ? 'No autorizado' : 'Not found' },
+        { status: (await puedeVerTicket(user, actual)) ? 403 : 404 });
+    }
+    // «Completado» registra el ingreso en finanzas: por esta vía, solo el administrador.
+    if (body.status === 'completed' && actual.status !== 'completed' && user.role !== 'admin') {
+      return NextResponse.json({ error: 'Solo un administrador completa un ticket desde aquí' }, { status: 403 });
     }
     if (body.status !== undefined && body.status !== actual.status && (esBorrador || body.status === 'draft')) {
       return NextResponse.json({ error: esBorrador ? 'Un borrador se envía con «Enviar», no cambiando el estado' : 'Un ticket no vuelve a borrador' }, { status: 400 });
@@ -137,6 +144,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
+    const t = await cargarTicketParaPermiso(id);
+    if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!puedeBorrarTicket(user, t)) {
+      return NextResponse.json({ error: 'Solo un administrador borra un ticket' }, { status: 403 });
+    }
     await pool.query('DELETE FROM gcc_world.tickets WHERE id = $1', [id]);
     return NextResponse.json({ message: 'Deleted' });
   } catch (err: any) {

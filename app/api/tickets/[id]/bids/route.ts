@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { listTicketBids, createTicketBid, acceptTicketBid, deleteTicketBid } from '@/lib/tickets/bids';
 import { createNotification } from '@/lib/notifications';
+import { puedeVerTicket, cargarTicketParaPermiso } from '@/lib/tickets/permisos';
 
 async function myMemberId(userId: string): Promise<number | null> {
   const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [userId]);
@@ -19,6 +20,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     const { id } = await params;
+    // Las propuestas de un ticket, solo para quien puede ver el ticket (2026-10-07).
+    const t = await cargarTicketParaPermiso(id);
+    if (!t || !(await puedeVerTicket(user, t))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ data: await listTicketBids(Number(id)) });
   } catch (err: any) {
     console.error('Ticket bids GET error:', err.message);
