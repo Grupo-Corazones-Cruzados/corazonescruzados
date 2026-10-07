@@ -1274,6 +1274,8 @@ antes del texto principal, con **tooltip** (`title`) del estado. El color sale d
 ⚠️ **Proyectos y Tickets ya NO lo llevan** (Fernando, 2026-09-28: *«quita ese círculo que representa el
 estado del proyecto»*): el título va solo, ni en la tabla ni en la tarjeta del teléfono —esa
 ya enseña el badge completo—. Pendiente de Fernando si aplica igual a las demás tablas.
+Tampoco lo llevan ya **Suscripciones, Facturas, Clientes** ni **Recordatorios** (2026-10-07: fuera
+el punto de la tabla y de la tarjeta del teléfono, y `PixelBadge punto={false}` en sus insignias de estado).
 El panel de detalle sigue mostrando el badge completo. En **Suscripciones** el círculo refleja el
 **estado de cobro** (vencido/por vencer/al día) y el estado activo/pausado/cancelado se distingue con
 **relleno de fila** vía el prop **`rowClassName(item)`** de `PixelDataTable` (pausada `bg-amber-50`,

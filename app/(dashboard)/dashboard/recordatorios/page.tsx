@@ -61,9 +61,6 @@ const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' 
   active: 'info', expired: 'error', done: 'success',
 };
 const STATUS_LABEL: Record<string, string> = { active: 'Pendiente', expired: 'Vencido', done: 'Completado' };
-const STATUS_DOT: Record<string, string> = {
-  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
-};
 
 /** Estado efectivo para la UI: los activos ya vencidos se muestran como "Vencido" aunque el cron aún no los haya marcado. */
 function effStatus(r: { status: string; remind_at?: string | null }): 'active' | 'expired' | 'done' {
@@ -360,7 +357,7 @@ export default function RecordatoriosPage() {
   <div className="p-4 space-y-3">
     <div className="flex items-center justify-between gap-3 text-[12px]">
       <span className="text-digi-muted" style={mf}>Estado</span>
-      <PixelBadge variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
+      <PixelBadge punto={false} variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
     </div>
     <div className="flex items-center justify-between gap-3 text-[12px]">
       <span className="text-digi-muted" style={mf}>Fecha y hora</span>
@@ -487,7 +484,6 @@ export default function RecordatoriosPage() {
                 columns={[
                   { key: 'title', header: 'Recordatorio', render: (r: Reminder) => (
                     <span className="flex items-center gap-2 min-w-0">
-                      <span title={STATUS_LABEL[effStatus(r)]} className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[STATUS_VARIANT[effStatus(r)] || 'default']}`} />
                       {r.source === 'meeting' && <Video className="w-3.5 h-3.5 text-accent shrink-0" />}
                       <span className={`truncate text-[13px] font-medium ${selected?.id === r.id ? 'text-accent' : effStatus(r) === 'done' ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>{r.title}</span>
                     </span>
@@ -518,18 +514,17 @@ export default function RecordatoriosPage() {
                   return (
                     <>
                       <div className="flex items-start gap-2">
-                        <span title={STATUS_LABEL[est]} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_VARIANT[est] || 'default']}`} />
                         {r.source === 'meeting' && <Video className="w-4 h-4 text-accent shrink-0 mt-0.5" />}
                         <span className={`flex-1 min-w-0 text-[13.5px] font-medium leading-snug ${est === 'done' ? 'text-digi-muted line-through' : 'text-digi-text'}`} style={mf}>
                           {r.title}
                         </span>
                       </div>
-                      <div className="mt-1.5 flex items-center gap-3 pl-4 text-[12px] text-digi-muted" style={mf}>
+                      <div className="mt-1.5 flex items-center gap-3 text-[12px] text-digi-muted" style={mf}>
                         <span className="inline-flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" /> {fmtShort(r.remind_at)}</span>
                         {tareas.length > 0 && (
                           <span className="inline-flex items-center gap-1 tabular-nums"><ListChecks className="w-3.5 h-3.5" /> {hechas}/{tareas.length}</span>
                         )}
-                        <span className="ml-auto"><PixelBadge variant={STATUS_VARIANT[est] || 'default'}>{STATUS_LABEL[est]}</PixelBadge></span>
+                        <span className="ml-auto"><PixelBadge punto={false} variant={STATUS_VARIANT[est] || 'default'}>{STATUS_LABEL[est]}</PixelBadge></span>
                       </div>
                     </>
                   );
