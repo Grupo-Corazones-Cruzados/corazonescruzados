@@ -23,6 +23,11 @@ import org.json.JSONObject;
 public class MensajeriaService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(@NonNull RemoteMessage mensaje) {
+        if ("chat".equals(mensaje.getData().get("tipo"))) {
+            java.util.Map<String, String> d = mensaje.getData();
+            Chats.mostrar(this, d.get("chat"), d.get("titulo"), d.get("remitente"), d.get("mensaje"), d.get("ruta"));
+            return;
+        }
         if ("aviso".equals(mensaje.getData().get("tipo"))) {
             Relojes.mostrarAviso(this, mensaje.getData().get("titulo"), mensaje.getData().get("cuerpo"), mensaje.getData().get("ruta"));
             return;

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarMensajeDeChat } from '@/lib/chat/avisos';
 import { requireChatUser } from '@/lib/chat/access';
 import { getGroupConversation, listMessages, postMessage, getUnreadCount, touchPresence } from '@/lib/chat/chat-db';
 
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
 
     const conv = await getGroupConversation();
     const message = await postMessage(conv.id, u.userId, body);
+    after(() => avisarMensajeDeChat({ chat: 'grupo', remitenteId: u.userId, remitenteNombre: (message as any).authorName || 'Alguien', cuerpo: body }));
     return NextResponse.json({ data: message });
   } catch (err: any) {
     console.error('Chat grupal POST:', err.message);

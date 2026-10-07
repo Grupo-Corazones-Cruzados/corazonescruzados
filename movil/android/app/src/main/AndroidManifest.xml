@@ -34,6 +34,11 @@
             </intent-filter>
         </service>
 
+        <!-- «Responder» desde el aviso de un chat. -->
+        <receiver
+            android:name=".reloj.ResponderReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".reloj.DetenerReceiver"
             android:exported="false" />

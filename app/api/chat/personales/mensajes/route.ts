@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarMensajeDeChat } from '@/lib/chat/avisos';
 import { guardScope } from '@/lib/chat/scope-guard';
 import { listMessages, postMessage, getUnreadCount } from '@/lib/chat/chat-db';
 
@@ -35,6 +37,10 @@ export async function POST(req: NextRequest) {
     if (body.length > MAX_LEN) return NextResponse.json({ error: `Máximo ${MAX_LEN} caracteres.` }, { status: 400 });
 
     const message = await postMessage(g.conversationId, g.userId, body);
+    after(() => avisarMensajeDeChat({
+      chat: { kind: b.kind, ref: String(b.ref) }, remitenteId: g.userId,
+      remitenteNombre: (message as any).authorName || 'Alguien', cuerpo: body,
+    }));
     return NextResponse.json({ data: message });
   } catch (err: any) {
     console.error('Chat personal POST:', err.message);

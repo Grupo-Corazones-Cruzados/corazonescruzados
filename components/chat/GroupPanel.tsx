@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ChatThread, { type Msg } from '@/components/chat/ChatThread';
-import { MessageCircle, ChevronDown } from 'lucide-react';
+import { MessageCircle, ChevronDown, ChevronLeft } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -13,7 +13,11 @@ const POLL = 4000;
  * Panel del CHAT GRUPAL. Único chat abierto de la organización (sin chats persona a persona).
  * Es dueño de sus datos; el hilo y el compositor los pone `ChatThread`.
  */
-export default function GroupPanel({ onClose, onRead }: { onClose: () => void; onRead: () => void }) {
+export default function GroupPanel({ onClose, onRead, pantallaCompleta = false }: {
+  onClose: () => void; onRead: () => void;
+  /** Teléfono: ocupa toda la pantalla, como una conversación de WhatsApp (2026-10-07). */
+  pantallaCompleta?: boolean;
+}) {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [me, setMe] = useState('');
   const [loading, setLoading] = useState(true);
@@ -95,13 +99,22 @@ export default function GroupPanel({ onClose, onRead }: { onClose: () => void; o
   };
 
   return (
-    <section className="w-[min(92vw,360px)] h-[min(70vh,460px)] flex flex-col rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden" aria-label="Chat general">
-      <header className="shrink-0 flex items-center gap-2 px-3 h-11 border-b border-digi-border bg-accent text-white">
+    <section className={pantallaCompleta
+      ? 'w-full h-full flex flex-col bg-digi-card overflow-hidden'
+      : 'w-[min(92vw,360px)] h-[min(70vh,460px)] flex flex-col rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden'} aria-label="Chat general">
+      <header className={`shrink-0 flex items-center gap-2 border-b border-digi-border bg-accent text-white ${pantallaCompleta ? 'h-14 px-1.5' : 'h-11 px-3'}`}>
+        {pantallaCompleta && (
+          <button onClick={onClose} aria-label="Volver" className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-white/15 transition-colors">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
         <MessageCircle className="w-4 h-4 shrink-0" />
-        <p className="flex-1 min-w-0 text-[13px] font-semibold truncate" style={df}>Chat general</p>
-        <button onClick={onClose} aria-label="Minimizar chat" className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/15 transition-colors">
-          <ChevronDown className="w-4 h-4" />
-        </button>
+        <p className={`flex-1 min-w-0 font-semibold truncate ${pantallaCompleta ? 'text-[15px]' : 'text-[13px]'}`} style={df}>Chat general</p>
+        {!pantallaCompleta && (
+          <button onClick={onClose} aria-label="Minimizar chat" className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/15 transition-colors">
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
       </header>
       <ChatThread
         messages={msgs} me={me} loading={loading} sending={sending} err={err}

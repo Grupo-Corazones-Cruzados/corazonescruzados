@@ -103,16 +103,23 @@ export async function enviarActividadEnVivo(
  */
 export async function enviarAvisoApns(
   destinos: { token: string; entorno: EntornoApns }[],
-  aviso: { titulo: string; cuerpo: string; ruta?: string },
+  aviso: { titulo: string; cuerpo: string; ruta?: string; categoria?: string; hilo?: string; datos?: Record<string, string> },
 ): Promise<void> {
   if (!destinos.length) return;
   const c = configurado();
   if (!c) { console.error('APNs: faltan APNS_KEY / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID'); return; }
   try {
     const bearer = await token(c);
+    // `category` decide los botones (CHAT = «Responder» con texto); `thread-id` agrupa los
+    // avisos de una misma conversación, como WhatsApp.
     const cuerpo = JSON.stringify({
-      aps: { alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: 'default' },
+      aps: {
+        alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: 'default',
+        ...(aviso.categoria ? { category: aviso.categoria } : {}),
+        ...(aviso.hilo ? { 'thread-id': aviso.hilo } : {}),
+      },
       ruta: aviso.ruta || null,
+      ...(aviso.datos || {}),
     });
     const muertos: string[] = [];
     await Promise.all(destinos.map(async ({ token: t, entorno }) => {

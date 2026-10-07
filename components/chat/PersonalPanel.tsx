@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ChatThread, { type Msg, initials } from '@/components/chat/ChatThread';
 import {
-  Ticket, FolderKanban, PartyPopper, ChevronDown, ChevronLeft, Users, Inbox,
+  Ticket, FolderKanban, PartyPopper, ChevronDown, ChevronLeft, Users, Inbox, MessageCircle,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -57,11 +57,26 @@ const fmtLastSeen = (iso: string | null) => {
  * solo el cliente y los responsables/participantes de ese ticket/proyecto/evento entran.
  */
 export default function PersonalPanel({
-  chats, loading, onClose, onRefresh,
+  chats, loading, onClose, onRefresh, pantallaCompleta = false, inicial, grupo,
 }: {
   chats: ScopeChat[]; loading: boolean; onClose: () => void; onRefresh: () => void;
+  /** Teléfono: lista y conversación a pantalla completa, como WhatsApp (2026-10-07). */
+  pantallaCompleta?: boolean;
+  /** Conversación que abrir al llegar (p. ej. desde un aviso: `?chat=ticket:41`). */
+  inicial?: { kind: string; ref: string } | null;
+  /** En teléfono, el chat general va arriba de la lista, como una conversación más. */
+  grupo?: { unread: number; onAbrir: () => void } | null;
 }) {
   const [sel, setSel] = useState<ScopeChat | null>(null);
+  // Abrir la conversación pedida en cuanto la lista la trae (una sola vez por petición).
+  const inicialAbierta = useRef<string | null>(null);
+  useEffect(() => {
+    if (!inicial) return;
+    const clave = `${inicial.kind}:${inicial.ref}`;
+    if (inicialAbierta.current === clave) return;
+    const c = chats.find((x) => x.kind === inicial.kind && x.refId === inicial.ref);
+    if (c) { inicialAbierta.current = clave; setSel(c); }
+  }, [inicial, chats]);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [me, setMe] = useState('');
   const [loadingMsgs, setLoadingMsgs] = useState(false);
@@ -180,17 +195,41 @@ export default function PersonalPanel({
   const onlineCount = people?.filter((p) => p.online).length ?? 0;
 
   return (
-    <section className="w-[min(94vw,640px)] h-[min(74vh,500px)] flex rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden" aria-label="Chats personales">
+    <section className={pantallaCompleta
+      ? 'w-full h-full flex bg-digi-card overflow-hidden'
+      : 'w-[min(94vw,640px)] h-[min(74vh,500px)] flex rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden'} aria-label="Chats personales">
       {/* Lista de chats */}
-      <div className={`${sel ? 'hidden sm:flex' : 'flex'} w-full sm:w-[220px] shrink-0 flex-col border-r border-digi-border`}>
-        <header className="shrink-0 flex items-center gap-2 px-3 h-11 border-b border-digi-border bg-accent text-white">
+      <div className={`${sel ? (pantallaCompleta ? 'hidden' : 'hidden sm:flex') : 'flex'} ${pantallaCompleta ? 'w-full' : 'w-full sm:w-[220px] border-r border-digi-border'} shrink-0 flex-col`}>
+        <header className={`shrink-0 flex items-center gap-2 border-b border-digi-border bg-accent text-white ${pantallaCompleta ? 'h-14 px-1.5' : 'h-11 px-3'}`}>
+          {pantallaCompleta && (
+            <button onClick={onClose} aria-label="Cerrar chats" className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-white/15">
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
           <Inbox className="w-4 h-4 shrink-0" />
-          <p className="flex-1 min-w-0 text-[13px] font-semibold truncate" style={df}>Mis chats</p>
-          <button onClick={onClose} aria-label="Minimizar" className="w-7 h-7 sm:hidden flex items-center justify-center rounded-md hover:bg-white/15">
-            <ChevronDown className="w-4 h-4" />
-          </button>
+          <p className={`flex-1 min-w-0 font-semibold truncate ${pantallaCompleta ? 'text-[15px]' : 'text-[13px]'}`} style={df}>{pantallaCompleta ? 'Chats' : 'Mis chats'}</p>
+          {!pantallaCompleta && (
+            <button onClick={onClose} aria-label="Minimizar" className="w-7 h-7 sm:hidden flex items-center justify-center rounded-md hover:bg-white/15">
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          )}
         </header>
         <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-1">
+          {grupo && (
+            <button onClick={grupo.onAbrir}
+              className={`w-full text-left rounded-lg border-l-2 border-transparent hover:bg-black/[0.03] transition-colors ${pantallaCompleta ? 'px-3 py-3' : 'px-2.5 py-2'}`}>
+              <div className="flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5 shrink-0 text-accent" />
+                <span className={`flex-1 min-w-0 font-medium truncate text-digi-text ${pantallaCompleta ? 'text-[14px]' : 'text-[12px]'}`} style={mf}>Chat general</span>
+                {grupo.unread > 0 && (
+                  <span className="min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9.5px] font-semibold tabular-nums">
+                    {grupo.unread > 99 ? '99+' : grupo.unread}
+                  </span>
+                )}
+              </div>
+              <p className="text-[10.5px] text-digi-muted truncate mt-0.5" style={mf}>Todo el equipo</p>
+            </button>
+          )}
           {loading ? (
             <p className="text-center text-[12px] text-digi-muted py-6" style={mf}>Cargando…</p>
           ) : chats.length === 0 ? (
@@ -206,7 +245,7 @@ export default function PersonalPanel({
             const active = sel?.kind === c.kind && sel?.refId === c.refId;
             return (
               <button key={`${c.kind}-${c.refId}`} onClick={() => setSel(c)}
-                className={`w-full text-left rounded-lg px-2.5 py-2 transition-colors border-l-2 ${
+                className={`w-full text-left rounded-lg ${pantallaCompleta ? 'px-3 py-3' : 'px-2.5 py-2'} transition-colors border-l-2 ${
                   active ? 'bg-accent-light border-accent' : 'border-transparent hover:bg-black/[0.03]'
                 }`}>
                 <div className="flex items-center gap-1.5">
@@ -223,7 +262,7 @@ export default function PersonalPanel({
                 <p className="text-[10.5px] text-digi-muted truncate mt-0.5" style={mf}>
                   {c.lastBody ? c.lastBody : <span className="text-digi-muted/60">Sin mensajes</span>}
                 </p>
-                <p className="text-[9.5px] text-digi-muted/70 mt-0.5" style={mf}>{meta.label} · {fmtWhen(c.lastAt)}</p>
+                <p className="text-[9.5px] text-digi-muted/70 mt-0.5" style={mf}>{meta.label}{c.lastAt ? ` · ${fmtWhen(c.lastAt)}` : ''}</p>
               </button>
             );
           })}
@@ -231,16 +270,19 @@ export default function PersonalPanel({
       </div>
 
       {/* Conversación */}
-      <div className={`${sel ? 'flex' : 'hidden sm:flex'} flex-1 min-w-0 flex-col relative`}>
+      <div className={`${sel ? 'flex' : (pantallaCompleta ? 'hidden' : 'hidden sm:flex')} flex-1 min-w-0 flex-col relative`}>
         {!sel ? (
           <div className="flex-1 flex items-center justify-center text-center px-6">
             <p className="text-[12px] text-digi-muted" style={mf}>Elige un chat para ver los mensajes.</p>
           </div>
         ) : (
           <>
-            <header className="shrink-0 flex items-center gap-1.5 px-2 h-11 border-b border-digi-border bg-digi-card">
-              <button onClick={() => setSel(null)} aria-label="Volver" className="w-7 h-7 sm:hidden flex items-center justify-center rounded-md text-digi-muted hover:text-accent">
-                <ChevronLeft className="w-4 h-4" />
+            <header className={`shrink-0 flex items-center gap-1.5 border-b border-digi-border bg-digi-card ${pantallaCompleta ? 'h-14 px-1.5' : 'h-11 px-2'}`}>
+              <button onClick={() => setSel(null)} aria-label="Volver"
+                className={pantallaCompleta
+                  ? 'w-11 h-11 flex items-center justify-center rounded-lg text-digi-text hover:text-accent'
+                  : 'w-7 h-7 sm:hidden flex items-center justify-center rounded-md text-digi-muted hover:text-accent'}>
+                <ChevronLeft className={pantallaCompleta ? 'w-6 h-6' : 'w-4 h-4'} />
               </button>
               {(() => { const M = KIND_META[sel.kind]; return <M.Icon className={`w-4 h-4 shrink-0 ${M.cls}`} />; })()}
               <p className="flex-1 min-w-0 text-[12.5px] font-semibold text-digi-text truncate" style={df}>{sel.title}</p>
@@ -255,7 +297,7 @@ export default function PersonalPanel({
                 <span className="tabular-nums">{people?.length ?? 0}</span>
                 {onlineCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
               </button>
-              <button onClick={onClose} aria-label="Minimizar" className="w-7 h-7 hidden sm:flex items-center justify-center rounded-md text-digi-muted hover:text-accent">
+              <button onClick={onClose} aria-label="Minimizar" className={`w-7 h-7 ${pantallaCompleta ? 'hidden' : 'hidden sm:flex'} items-center justify-center rounded-md text-digi-muted hover:text-accent`}>
                 <ChevronDown className="w-4 h-4" />
               </button>
             </header>

@@ -711,6 +711,25 @@ Stack estándar de la casa, con particularidades de este repo:
       dejando huérfanos sus registros 106/107 y 2 días (no hay cascada). No lo borró ninguna
       prueba (la limpieza filtra por id Y título); Railway solo guarda minutos de registro HTTP,
       no se puede saber quién. Preguntado a Fernando; los huérfanos NO se tocan sin su OK.
+    - **⭐ Chats como WhatsApp en el teléfono (Fernando, 2026-10-07).** En pantallas < 768 px
+      `ChatDock` abre los paneles a pantalla completa (`pantallaCompleta`): «Mis chats» = lista
+      «Chats» con el chat general arriba; una conversación ocupa la pantalla con «‹». En tablet y
+      computador, los paneles flotantes de siempre. Enlace `/dashboard?chat=grupo` o
+      `?chat=ticket:41` abre esa conversación (lo usan los avisos). Aviso de mensaje nuevo:
+      `lib/chat/avisos.ts` desde las dos rutas que guardan mensajes (con `after`), a los
+      participantes (`participantsOf` / todo el equipo en el general) menos el autor; Android lo
+      agrupa por conversación (MessagingStyle, canal «Chats») e iPhone por `thread-id`; botón
+      «Responder» con texto (Android `ResponderReceiver` con la cookie del WebView; iPhone
+      categoría `CHAT` + `ServidorReloj.responderChat`), que además marca leído. Con la app en
+      primer plano no salta.
+    - **Ticket #41:** lo borró Fernando. Sus restos (2 registros, 2 días, 1 bloque de calendario)
+      se limpiaron con su OK, y desde ahora borrar un ticket borra también lo que cuelga de él
+      (transacción en `DELETE /api/tickets/[id]`).
+    - **Borradores — fase 2 APARCADA (2026-10-07)** para hacer los chats: escritos y sin conectar
+      `lib/borradores/almacen.ts` (IndexedDB) y `lib/borradores/sincronizar.ts`. Falta: la
+      pantalla `/borradores` (fuera del layout del dashboard para que abra sin red), el service
+      worker que la guarde con sus archivos y redirija ahí sin red, la pestaña «Borradores» y el
+      botón «Enviar» en tickets, y el sincronizador global.
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

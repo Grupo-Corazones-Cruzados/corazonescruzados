@@ -9,6 +9,20 @@ import org.grupocc.gccworld.reloj.Relojes;
 public class MainActivity extends BridgeActivity {
     /** Ruta de la plataforma que abrir (p. ej. el ticket al tocar la notificación del reloj). */
     public static final String EXTRA_RUTA = "ruta";
+    /** La app está a la vista: los avisos de chat no saltan (el chat ya se ve). */
+    public static volatile boolean enPrimerPlano = false;
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        enPrimerPlano = true;
+    }
+
+    @Override
+    public void onPause() {
+        enPrimerPlano = false;
+        super.onPause();
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

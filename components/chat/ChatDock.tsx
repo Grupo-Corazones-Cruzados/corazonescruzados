@@ -7,6 +7,7 @@ import GroupPanel from '@/components/chat/GroupPanel';
 import PersonalPanel, { type ScopeChat } from '@/components/chat/PersonalPanel';
 import { MessageCircle, Inbox, X } from 'lucide-react';
 import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
+import { useConsultaMedia, PANTALLA_MD } from '@/lib/hooks/useConsultaMedia';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const POLL_IDLE = 30000;
@@ -44,16 +45,50 @@ export default function ChatDock() {
   const [chats, setChats] = useState<ScopeChat[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
 
+  /**
+   * ⭐ EN EL TELÉFONO, COMO WHATSAPP (Fernando, 2026-10-07). Los paneles dejan de flotar en una
+   * esquina: «Mis chats» es la lista a pantalla completa (con el chat general arriba, como una
+   * conversación más) y tocar una conversación la abre ocupando toda la pantalla, con «‹» para
+   * volver. En pantallas medianas y grandes siguen siendo los paneles flotantes de siempre.
+   */
+  const enTelefono = !useConsultaMedia(PANTALLA_MD);
+  /** Conversación pedida por enlace (`?chat=ticket:41`), p. ej. al tocar un aviso. */
+  const [inicial, setInicial] = useState<{ kind: string; ref: string } | null>(null);
+  /** El chat general se abrió desde la lista del teléfono: «‹» vuelve a la lista. */
+  const [grupoDesdeLista, setGrupoDesdeLista] = useState(false);
+
   useEffect(() => {
+    // En el teléfono no se reabre solo al cargar: taparía la pantalla en cada visita.
+    if (enTelefono) return;
     try {
       const v = localStorage.getItem(LS_PANEL);
       if (v === 'group' || v === 'personal') setPanel(v);
     } catch {}
-  }, []);
+  }, [enTelefono]);
   const open = (p: Panel) => {
     setPanel(p);
+    if (p !== 'group') setGrupoDesdeLista(false);
     try { localStorage.setItem(LS_PANEL, p); } catch {}
   };
+
+  // `?chat=grupo` / `?chat=ticket:41`: abre esa conversación y quita el parámetro de la URL.
+  useEffect(() => {
+    if (!user) return;
+    const leer = () => {
+      const url = new URL(window.location.href);
+      const chat = url.searchParams.get('chat');
+      if (!chat) return;
+      url.searchParams.delete('chat');
+      window.history.replaceState(window.history.state, '', url.pathname + (url.search || '') + url.hash);
+      if (chat === 'grupo') { if (canGroup) open('group'); return; }
+      const [kind, ref] = chat.split(':');
+      if (kind && ref) { setInicial({ kind, ref }); open('personal'); }
+    };
+    leer();
+    window.addEventListener('gcc:abrir-chat', leer);
+    return () => window.removeEventListener('gcc:abrir-chat', leer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, canGroup]);
 
   const refreshCounts = useCallback(async () => {
     if (!user) return;
@@ -90,13 +125,21 @@ export default function ChatDock() {
           notificaciones para colocarse a su izquierda, y si aquel no se pintaba, caía a un
           valor escrito a mano. Ahora el orden lo da un `flex`. */}
       {panel === 'group' && canGroup && (
-        <div className="fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[90]">
-          <GroupPanel onClose={() => open('none')} onRead={() => setGroupUnread(0)} />
+        <div className={enTelefono
+          ? 'fixed inset-0 z-[96] bg-digi-card pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)]'
+          : 'fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[90]'}>
+          <GroupPanel pantallaCompleta={enTelefono} onRead={() => setGroupUnread(0)}
+            onClose={() => (enTelefono && grupoDesdeLista ? open('personal') : open('none'))} />
         </div>
       )}
       {panel === 'personal' && (
-        <div className="fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[90]">
-          <PersonalPanel chats={chats} loading={loadingChats} onClose={() => open('none')} onRefresh={refreshCounts} />
+        <div className={enTelefono
+          ? 'fixed inset-0 z-[96] bg-digi-card pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)]'
+          : 'fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[90]'}>
+          <PersonalPanel chats={chats} loading={loadingChats} onRefresh={refreshCounts}
+            onClose={() => { setInicial(null); open('none'); }}
+            pantallaCompleta={enTelefono} inicial={inicial}
+            grupo={enTelefono && canGroup ? { unread: groupUnread, onAbrir: () => { open('group'); setGrupoDesdeLista(true); } } : null} />
         </div>
       )}
 

@@ -43,6 +43,12 @@ final class Servidor {
         }
     }
 
+    static Respuesta post(String ruta, String json) throws IOException {
+        try (Response r = HTTP.newCall(base(ruta).post(RequestBody.create(json, JSON)).build()).execute()) {
+            return new Respuesta(r.code(), r.body() != null ? r.body().string() : "");
+        }
+    }
+
     static Respuesta patch(String ruta, String json) throws IOException {
         try (Response r = HTTP.newCall(base(ruta).patch(RequestBody.create(json, JSON)).build()).execute()) {
             return new Respuesta(r.code(), r.body() != null ? r.body().string() : "");

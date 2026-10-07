@@ -7,6 +7,13 @@ export type Aviso = {
   cuerpo: string;
   /** Ruta de la plataforma que abre al tocarlo (p. ej. `/dashboard/subscriptions`). */
   ruta?: string;
+  /** Tipo para el teléfono: `aviso` (por defecto) o `chat` (agrupado y con «Responder»). */
+  tipo?: 'aviso' | 'chat';
+  /** Datos extra que viajan al teléfono (p. ej. la conversación, para responder). */
+  datos?: Record<string, string>;
+  /** iPhone: categoría (botones) e hilo (agrupación). */
+  categoria?: string;
+  hilo?: string;
 };
 
 /**
@@ -32,7 +39,8 @@ export async function avisarUsuarios(userIds: string[], aviso: Aviso): Promise<v
     );
     await Promise.all([
       enviarDatosFcm(rows.filter((r: any) => r.kind === 'fcm').map((r: any) => r.token), {
-        tipo: 'aviso', titulo: aviso.titulo, cuerpo: aviso.cuerpo, ruta: aviso.ruta || '',
+        tipo: aviso.tipo || 'aviso', titulo: aviso.titulo, cuerpo: aviso.cuerpo, ruta: aviso.ruta || '',
+        ...(aviso.datos || {}),
       }),
       enviarAvisoApns(
         rows.filter((r: any) => r.kind === 'apns')

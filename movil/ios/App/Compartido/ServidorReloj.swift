@@ -106,3 +106,43 @@ extension ServidorReloj {
         return codigo == 200
     }
 }
+
+extension ServidorReloj {
+    /**
+     * «Responder» desde el aviso de un chat (2026-10-07): envía el texto a esa conversación
+     * (`chat` = «grupo» o «ticket:41») con la sesión guardada y la marca como leída hasta ese
+     * mensaje. Devuelve si salió.
+     */
+    static func responderChat(chat: String, texto: String) async -> Bool {
+        guard let s = sesion() else { return false }
+        var cuerpo: [String: Any] = ["body": texto]
+        var ruta = "api/chat/grupo"
+        var leido = "api/chat/grupo/leido"
+        var marca: [String: Any] = [:]
+        if chat != "grupo" {
+            let p = chat.split(separator: ":", maxSplits: 1).map(String.init)
+            cuerpo["kind"] = p.first ?? ""
+            cuerpo["ref"] = p.count > 1 ? p[1] : ""
+            marca = ["kind": cuerpo["kind"]!, "ref": cuerpo["ref"]!]
+            ruta = "api/chat/personales/mensajes"
+            leido = "api/chat/personales/leido"
+        }
+        func post(_ r: String, _ c: [String: Any]) async -> (Int, Data)? {
+            var req = URLRequest(url: base.appendingPathComponent(r))
+            req.httpMethod = "POST"
+            req.timeoutInterval = 15
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("auth_token=\(s)", forHTTPHeaderField: "Cookie")
+            req.httpBody = try? JSONSerialization.data(withJSONObject: c)
+            guard let (d, resp) = try? await URLSession.shared.data(for: req) else { return nil }
+            return ((resp as? HTTPURLResponse)?.statusCode ?? 0, d)
+        }
+        guard let (codigo, datos) = await post(ruta, cuerpo), (200..<300).contains(codigo) else { return false }
+        if let j = try? JSONSerialization.jsonObject(with: datos) as? [String: Any],
+           let msg = j["data"] as? [String: Any], let id = (msg["id"] as? NSNumber)?.intValue {
+            marca["lastId"] = id
+            _ = await post(leido, marca)
+        }
+        return true
+    }
+}
