@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 70 % — COSTOS MEDIDOS; ESPERA DECISIÓN
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 80 % — APROBADO: RESPALDO + TRABAJOS PESADOS (solo GCC) Y BAJAR RAM EN RAILWAY
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
@@ -61,7 +61,45 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
 - **Respuesta (usuario, 2026-10-09):** **8 GB**. Alcanza para Postgres + respaldos + algunos workers; para
   alojar todo (app + 5 productos + 7 BD + clientes) va justo y sin margen para crecer.
 
-#### P10 — ¿Qué uso del M1 se aprueba? · ⏸ Bloqueada (espera al usuario)
+#### P10 — ¿Qué uso del M1 se aprueba? · ✅ Resuelta
+- **Respuesta (usuario, 2026-10-09):** respaldo diario y trabajos pesados, **solo del proyecto del Grupo
+  Corazones Cruzados** (`Servidor-GCC`; los otros 6 proyectos del workspace NO). Además: **bajar la RAM
+  en Railway**. Producción sigue en Railway.
+
+#### P11 — ¿Cómo se llega al M1? · 🔎 Investigando
+- Tailscale conectado: el M1 es **`fernandos-macbook-air` (100.73.251.124)**, responde en 32 ms. Esta Mac
+  es `luiss-macbook-pro-1`. **SSH cerrado** (puerto 22 rechaza): falta activar «Inicio de sesión remoto»
+  en el M1 y autorizar la clave `~/.ssh/gcc_m1_ed25519.pub` (creada el 2026-10-09 en esta Mac, solo
+  para esto). Falta el usuario de macOS del M1 y el nombre del volumen del SSD.
+
+#### P12 — ¿Dónde se va la RAM de `Servidor-GCC`? · ✅ Resuelta (API de Railway, 7 días, 2026-10-09)
+| Servicio | Duerme | RAM p50 / p95 / máx | Hallazgo |
+|---|---|---|---|
+| `corazonescruzados` (app) | no | 489 / 1.212 / 2.185 MB | picos de Puppeteer (proforma, PDF de cotización, CV) y sharp |
+| `Postgres` | no | 201 / 224 / 267 MB | normal para 195 MB de datos |
+| `automatizaciones` (producto) | sí, pero **no llega a dormir** | 315 MB | su worker le hace `fetch` cada 5 s |
+| `automatizaciones-worker` | no | 116 MB | el que lo mantiene despierto |
+| `cotizador-worker` | no | 79 MB | Agents SDK; candidato al M1 |
+| `agente-worker` | no | — | **muerto desde el 2026-09-26**: `scripts/agente-worker.mjs` se borró en `dbe8f077` y el servicio vive en bucle de `MODULE_NOT_FOUND` (logs) |
+| `nightly-cron` | cron `*/10` | — | despreciable (0,01 $) |
+| reservas/pedidos/catering/planificaciones | sí | — | duermen bien (la purga horaria se quitó el 2026-10-05) |
+
+### Plan aprobado (2026-10-09)
+**Railway — bajar RAM (≈3-4 $/mes de los 12,40 $ de GCC):**
+1. Borrar `agente-worker` (muerto) → 0,40 $.
+2. `automatizaciones-worker`: preguntar a la BD si hay trabajo pendiente y solo entonces llamar a la app
+   → `automatizaciones` puede dormir → hasta ~1,5 $. Riesgo: el primer mensaje tras dormir tarda lo que
+   tarde en despertar (segundos); medir.
+3. `cotizador-worker` → al M1 (trabajo pesado de GCC) → 0,83 $. Si el M1 cae, se vuelve a encender en Railway.
+4. App: probar `NODE_OPTIONS=--max-old-space-size` y medir 7 días antes/después; sin garantía (~1 $).
+- NO conviene: llevar los crons o los PDF al M1 (los PDF los pide un usuario en vivo; los crons duran
+  segundos y Railway cobra la media).
+
+**M1 — respaldo diario de la BD de GCC:** Postgres 16 cliente (`pg_dump` 16) en el M1, `pg_dump -Fc` de
+producción por el proxy público a las 03:00 → SSD, retención 30 diarios + 12 mensuales, restauración de
+prueba en una BD local de pruebas tras cada copia, aviso si falla. launchd + Mac sin suspensión.
+
+
 - Recomendación entregada: producción sigue en Railway; M1 = respaldo diario de las 7 BD + BD de pruebas
   + trabajos en lote. Para bajar costo de verdad al crecer: optimizar RAM en Railway y, si la factura pasa
   de ~100 $/mes, evaluar un VPS en centro de datos, no la casa.
