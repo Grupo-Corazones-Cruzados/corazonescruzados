@@ -1,80 +1,91 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-09) — UN MACBOOK M1 CON SSD DE 2 TB COMO «MÁQUINA DE MEMORIA» DEL PROYECTO · 🔎 25 %
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 35 %
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
 NVMe de 2 TB, PCIe 4.0. Me interesa utilizar este equipo local para que se encargue de consumir toda
 la memoria de nuestro proyecto.»*
 
-**Lectura provisional (por confirmar en P1):** que el M1 guarde e indexe TODO el conocimiento del
-proyecto y lo sirva por consulta, para que una sesión de Claude Code traiga solo lo que necesita en
-vez de leer los documentos enteros.
+**Precisión del usuario (2026-10-09):** *«me refiero a la base de datos del proyecto esté en mi equipo
+local»*. «Memoria» = **la base de datos PostgreSQL** (hoy en Railway), **no** `MEMORIA.md`. La lectura
+inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se conserva abajo como histórico.
 
-**Rol asumido:** arquitecto de conocimiento / infraestructura local (indexación, búsqueda híbrida
-texto + vectores, servidor MCP en red local).
+**Rol asumido:** ingeniero de infraestructura / DBA (Postgres autoalojado, red, respaldos, disponibilidad).
 
 ### Progreso
-- **% de información para el objetivo:** 25 %
-- **Estado (2026-10-09):** medido el problema; falta saber qué significa «consumir» para el usuario, la
-  RAM del M1 y cómo se ven las dos máquinas en la red.
+- **% de información para el objetivo:** 35 %
+- **Estado (2026-10-09):** BD medida. Lo que decide la arquitectura es **dónde corre la app**, no dónde
+  cabe la BD: si la BD se va a casa y la app sigue en Railway, cada consulta cruza internet. Falta saber
+  el **porqué** del cambio (P8) y el M1 (P2).
 
 ### Fuentes consultadas (2026-10-09)
-- Tamaños medidos en esta Mac: `MEMORIA.md` 754 KB (8.179 líneas), `Aprendizaje.md` 707 KB, `Diseño.md`
-  346 KB, `godot/Videojuego.md` 91 KB → **≈1,9 MB de texto, del orden de 500 mil tokens**. Ninguna sesión
-  puede ya «leerlo COMPLETO» como piden `/memoria` y `/aprendizaje`; en la práctica se lee la cabecera y
-  se busca con grep. **Ese es el problema real que el M1 resolvería.**
-- Auto-memoria del harness: 260 KB (41 notas). Transcripciones de sesiones: 146 MB (14 archivos `.jsonl`).
-- `MEMORIA.md` vive en git desde el 2026-06-07; 1.472 commits en el repo.
-- **Esta Mac NO es el M1:** es un **M4 Pro con 24 GB** (`sysctl`). El SSD no está conectado aquí. Tailscale
-  instalado pero **detenido**; Ollama no instalado.
-- Precedentes en el propio proyecto: embeddings `text-embedding-3-small` + **pgvector** ya en uso (talentos,
-  adjuntos de Planificaciones); y la lección contraria de `/estructuracion` (Aprendizaje §P, línea ~2581):
-  **recortar el conocimiento con recuperación le quitó la respuesta al agente** → riesgo central aquí.
+- **BD de producción medida (solo lectura):** PostgreSQL **16.13**, **195 MB en total** — `gcc_world` 88 MB
+  (183 tablas), `automatizaciones` 80 MB, `planificaciones` 3,6 MB, `public` 2,6 MB, `catering` 1 MB,
+  `pedidos` 0,8 MB, `reservas` 0,6 MB. Extensiones: `vector` 0.8.2, `pg_trgm`, `unaccent`, `pgcrypto`,
+  `uuid-ossp`. → **el tamaño no es un problema**: 2 TB es ~10.000 veces lo que hay.
+- **Latencia medida desde esta Mac a la BD de Railway (proxy público `*.proxy.rlwy.net`): 217 ms por
+  viaje.** Dentro de Railway (app↔BD por red privada) es ~1 ms. Un viaje por internet entre Railway y la
+  casa costará del mismo orden (≈100-200 ms).
+- Quién se conecta hoy a esta BD: la app principal, los 5 productos (`productos/{reservas,pedidos,catering,
+  planificaciones,automatizaciones}`, cada uno con su esquema), los workers (p. ej. `agente-worker`) y el
+  cron nocturno. Todos en Railway.
+- MEMORIA: «Listas sin DDL ni consultas en fila» — Proyectos/Tickets llegaron a 1,8 s por **10 viajes en
+  fila** con ~1 ms cada uno; a 150 ms por viaje esa misma pantalla tardaría **segundos**.
+- Mediciones previas de esta misma iteración (siguen siendo ciertas): esta Mac es un **M4 Pro de 24 GB**,
+  no el M1; Tailscale instalado y detenido.
+
+### Las tres arquitecturas posibles (de la medición)
+1. **Solo la BD en el M1, la app sigue en Railway** → ❌ desaconsejada: cada consulta pasa de ~1 ms a
+   ~150 ms (pantallas de varios segundos), hay que abrir Postgres a internet, y si se va la luz o el
+   internet de casa **se caen la plataforma y los 5 productos de los clientes** (Peter Tours, etc.).
+2. **Todo en el M1** (app + productos + workers + BD), publicado con un túnel (Cloudflare Tunnel) → latencia
+   bien, se ahorra Railway; pero la disponibilidad pasa a depender de la casa (luz, internet, que el Mac
+   no duerma), y la RAM del M1 tiene que aguantar ~8 servicios Node + Postgres.
+3. **Producción sigue en Railway; el M1 tiene una copia** (respaldo diario + BD de desarrollo/pruebas
+   restaurada desde ella, o réplica en vivo) → ✅ recomendada si el objetivo es control, respaldo o probar
+   sin tocar datos reales (cumple «Las pruebas no borran datos reales», 2026-08-19).
 
 ### Preguntas y respuestas
 
-#### P1 — ¿Qué significa «consumir toda la memoria»? · ⏸ Bloqueada (espera al usuario)
-- **Por qué importa:** define la solución entera. Opciones: (A) servidor de memoria consultable por Claude
-  Code (índice + búsqueda vía MCP); (B) almacén/respaldo (BD, assets del juego, transcripciones); (C) un
-  modelo local en el M1 que lea la memoria y la resuma/compacte. Recomendación: **A** (con B como extra).
+#### P1 — ¿Qué significa «consumir toda la memoria»? · ✅ Resuelta
+- **Respuesta:** la **base de datos del proyecto** debe estar en el equipo local (usuario, 2026-10-09).
+
+#### P8 — ¿Por qué se quiere la BD en casa? · ⏸ Bloqueada (espera al usuario)
+- **Por qué importa:** decide entre las arquitecturas 1-3. Motivos posibles: ahorrar el coste de
+  Railway, ser dueño de los datos / respaldo propio, tener una BD para desarrollo y pruebas, velocidad,
+  o crecimiento futuro (archivos, imágenes, IA) que en Railway sería caro.
+
+#### P9 — ¿Producción (clientes reales) pasa al M1, o solo una copia? · ⏸ Bloqueada
+- **Por qué importa:** si producción se muda, la casa se vuelve un centro de datos: hace falta SAI/UPS,
+  internet estable, Mac sin suspensión y plan de caída.
 
 #### P2 — ¿Cuánta RAM tiene el M1 (8 o 16 GB)? · ⏸ Bloqueada
-- **Por qué importa:** con 8 GB sirve para Postgres + índice + embeddings remotos; un modelo local útil (C)
-  o embeddings locales cómodos piden 16 GB.
+- **Por qué importa:** Postgres de 195 MB va sobrado con 8 GB; la arquitectura 2 (toda la app) pide 16 GB.
 
-#### P3 — ¿Quién consulta la memoria: solo Claude Code de esta Mac, o también la plataforma en Railway? · ⏸ Bloqueada
-- **Por qué importa:** Railway no llega a un equipo en casa sin túnel público; si solo es Claude Code,
-  basta la red local o Tailscale.
+#### P4 — ¿Qué conexión a internet tiene la casa (velocidad de subida, IP fija o no) y hay UPS? · ⏸ Bloqueada
+- **Por qué importa:** solo relevante para las arquitecturas 1 y 2.
 
-#### P4 — ¿Las dos Mac están en la misma red, o el M1 debe alcanzarse desde fuera? · ⏸ Bloqueada
-- **Por qué importa:** LAN directa vs. Tailscale (ya instalado aquí, detenido).
+#### P3, P5, P6, P7 — (servidor de memoria/RAG) · ⏹ Caducadas el 2026-10-09
+- Pertenecían a la lectura descartada. Plan y riesgos de esa lectura: ver el commit `841d8929`.
 
-#### P5 — ¿Los `.md` siguen siendo la fuente de verdad en git y el M1 solo un índice derivado? · 🔎 Investigando
-- **Por qué importa:** si el índice es derivado, se puede borrar y reconstruir sin perder nada (y no rompe
-  la regla de «MEMORIA.md versionada con el código»). Propuesta: **sí**.
-
-#### P6 — ¿Entran las transcripciones de sesiones (146 MB)? · ⏸ Bloqueada
-- **Por qué importa:** son la memoria más completa, pero pueden contener claves y datos de clientes → habría
-  que limpiarlas antes de indexar.
-
-#### P7 — Embeddings con OpenAI (como ya se hace) o locales en el M1 · ❓ Abierta
-- **Por qué importa:** la regla «un solo proveedor de IA» (2026-08-21) apunta a OpenAI; local = sin coste ni
-  salida de datos, pero depende de P2.
-
-### Plan de solución (borrador, sujeto a P1)
-1. M1: Postgres + pgvector con el directorio de datos en el SSD; el repo clonado ahí.
-2. Indexador que, en cada `git pull`, trocea los `.md` **por sección completa** (encabezados `##`/`###`,
-   nunca fragmentos sueltos) y guarda texto + búsqueda en español (`tsvector`) + vector.
-3. Servidor MCP por HTTP en el M1 con herramientas tipo `buscar_memoria(consulta)` y `leer_seccion(id)`.
-4. Esta Mac: `claude mcp add` apuntando al M1; ajustar `/memoria` y `/aprendizaje` para leer el índice +
-  buscar, en vez de leer el archivo entero. Se sigue escribiendo en los `.md` (git).
+### Plan de solución (borrador para la arquitectura 3, a confirmar con P8/P9)
+1. M1: Postgres **16** + pgvector 0.8.2 (las mismas versiones que producción) con el directorio de datos
+   en el SSD (`/Volumes/<SSD>/postgres`), arranque automático (launchd) y sin suspensión.
+2. Respaldo diario `pg_dump -Fc` de producción → SSD, con retención (p. ej. 30 diarios + 12 mensuales) y
+   prueba de restauración automática.
+3. BD de desarrollo en el M1 restaurada del último respaldo; la app local (`npm run dev`) apunta a ella →
+   las pruebas nunca tocan producción.
+4. Opcional: réplica lógica en vivo (publicación/suscripción) si se quiere la copia al minuto.
+5. Acceso desde esta Mac por LAN o Tailscale; Postgres **nunca** expuesto a internet.
 
 ### Riesgos
-- **Recuperar fragmentos y perder la respuesta** (ya pasó en `/estructuracion`) → devolver secciones
-  enteras, búsqueda híbrida y un índice de títulos que el modelo siempre ve.
-- **Índice desactualizado** → reindexar por hash de sección en cada pull.
-- **M1 apagado o dormido** → las skills caen al grep local si el MCP no responde.
+- **Mover producción a casa sin plan de caída** → clientes sin servicio. Mitigación: no mover producción
+  sin respuesta explícita en P9 y sin UPS/plan.
+- **Extensión o versión distinta en local** (pgvector, unaccent) → la restauración falla. Mitigación:
+  mismas versiones.
+- **Copia con datos de clientes en un equipo de casa** → cifrar el disco (FileVault/APFS cifrado) y
+  Postgres sin acceso desde internet.
 
 ## Objetivo ACTUAL (declarado 2026-10-06) — APP NATIVA EN IPHONE Y ANDROID, SIN TIENDAS, CON EL RELOJ DEL TICKET EN LA PANTALLA DE BLOQUEO · 🔎 92 % — ANDROID CON PUSH; IPHONE CON ACTIVIDAD EN VIVO (confirmada) + PUSH DE APPLE (por probar)
 
