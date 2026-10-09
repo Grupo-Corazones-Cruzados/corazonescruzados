@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 80 % — APROBADO: RESPALDO + TRABAJOS PESADOS (solo GCC) Y BAJAR RAM EN RAILWAY
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 88 % — RESPALDO MONTADO Y PROBADO A MANO; FALTAN 2 PERMISOS EN EL M1 Y EL OK DE RAILWAY
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
@@ -71,6 +71,34 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   es `luiss-macbook-pro-1`. **SSH cerrado** (puerto 22 rechaza): falta activar «Inicio de sesión remoto»
   en el M1 y autorizar la clave `~/.ssh/gcc_m1_ed25519.pub` (creada el 2026-10-09 en esta Mac, solo
   para esto). Falta el usuario de macOS del M1 y el nombre del volumen del SSD.
+
+#### P11 — (cont.) · ✅ Resuelta (2026-10-09)
+- SSH por Tailscale con la clave `~/.ssh/gcc_m1_ed25519` como **`fernandogonzalez@100.73.251.124`**.
+  M1: Apple M1, 8 GB, macOS 26.2, FileVault activo, usuario admin, sin Homebrew/Node.
+- El SSD (`disk4`, «Sandisk Optimus 5100 2TB») llegó **sin formatear**. Se formateó APFS **cifrado**:
+  volumen `GCC-Respaldos` (UUID `F104FA7C-519C-486F-9ED3-A968DA439E99`); la clave vive solo en el M1
+  (`~/.gcc-respaldos/clave-ssd`, disco interno con FileVault). Ownership desactivado (APFS externo).
+- Postgres.app **2.9.6 / PostgreSQL 16.15** en `~/Applications` (sin sudo); trae pgvector hasta 0.8.6.
+- Producción: rol nuevo **`gcc_respaldo`** (`pg_read_all_data` WITH INHERIT, `default_transaction_read_only
+  = on`, límite 3 conexiones). Verificado: lee 24 proyectos; `CREATE TABLE` → «read-only transaction».
+  Su URL vive solo en el M1 (`~/.gcc-respaldos/bd-url`).
+- **Primer respaldo manual (2026-10-09 05:10): 58 MB comprimido, 325 tablas con datos, las 5 extensiones,
+  335 s.** Lento por la bajada desde el proxy público; a las 03:00 no importa.
+- 🪤 **TCC:** un proceso lanzado por launchd **no puede escribir en un disco externo** («Operation not
+  permitted») sin «Acceso total al disco». Por SSH sí puede (sshd tiene permiso), por eso la prueba manual
+  pasó. Solución: mini-app `~/Applications/GCC Respaldo.app` (osacompile) que lanza el script; el permiso
+  se le da a ella, no a `/bin/bash`. **Requiere un clic de Fernando en Ajustes del M1.**
+- 🪤 `~/Library/LaunchAgents` del M1 es de **root** (lo dejó OneDrive): sin `sudo chown` la tarea se carga
+  desde `~/.gcc-respaldos` y **no sobrevive a un reinicio**. Requiere un comando con sudo de Fernando.
+- Código en el repo: `services/m1-respaldos/` (`respaldar.sh`, plist, `instalar.sh`).
+
+#### P13 — automatizaciones-worker sin despertar al producto · ✅ Resuelta (diseño, sin desplegar)
+- El worker llama a `/api/agente/procesar` cada 5 s y eso impide que `automatizaciones` duerma. La cola es
+  la tabla `cola` (estado `pendiente` con `ejecutar_en <= NOW()`, o `procesando` colgado > 5 min).
+- Diseño: el worker pregunta a la BD (red privada de Railway, sin coste de salida) si existe alguna fila
+  así, y **solo entonces** llama a la app. El mensaje de WhatsApp entra por el webhook del propio producto,
+  que lo despierta, y el debounce de 8 s cubre el arranque → el retraso extra debería ser casi nulo.
+- Pendiente del OK del usuario para desplegar.
 
 #### P12 — ¿Dónde se va la RAM de `Servidor-GCC`? · ✅ Resuelta (API de Railway, 7 días, 2026-10-09)
 | Servicio | Duerme | RAM p50 / p95 / máx | Hallazgo |

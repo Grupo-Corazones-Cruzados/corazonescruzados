@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>org.grupocc.respaldo-bd</string>
+  <key>ProgramArguments</key>
+  <!-- Se lanza a través de la mini-app «GCC Respaldo» y no de /bin/bash a secas: macOS solo deja
+       escribir en un disco externo a un proceso con permiso de «Acceso total al disco», y ese
+       permiso se le da a la app (no a bash, que lo extendería a cualquier script). -->
+  <array><string>/Users/fernandogonzalez/Applications/GCC Respaldo.app/Contents/MacOS/applet</string></array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardErrorPath</key><string>/tmp/org.grupocc.respaldo-bd.err</string>
+  <key>LowPriorityIO</key><true/>
+</dict>
+</plist>

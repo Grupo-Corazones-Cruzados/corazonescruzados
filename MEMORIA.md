@@ -6250,6 +6250,15 @@ Stack estándar de la casa, con particularidades de este repo:
   vive inline en `components/world/ChatPanel.tsx` (`toggleMic`); no hay hook compartido aún. Verificado tsc OK.
   Ya commiteado (2026-07-30).
 
+- **Respaldo diario de la BD de GCC en el MacBook Air M1 (2026-10-09):** el M1 (`fernandos-macbook-air`,
+  Tailscale `100.73.251.124`, usuario `fernandogonzalez`, 8 GB) con un SSD externo de 2 TB cifrado
+  (`GCC-Respaldos`) hace a las 03:00 un `pg_dump -Fc` de producción con el rol **`gcc_respaldo`** (solo
+  lectura), lo **restaura** en un Postgres 16 local para comprobarlo, y guarda 30 diarios + 12 mensuales.
+  Código: `services/m1-respaldos/`. Secretos solo en el M1 (`~/.gcc-respaldos/`). **Producción sigue en
+  Railway**: se midió que llevar la BD a casa ahorraba ~2 $/mes y subía cada consulta de ~1 ms a ~200 ms.
+  Solo el proyecto `Servidor-GCC` (decisión del usuario); los demás proyectos del workspace no. Detalle,
+  costos por servicio y plan de RAM en `Aprendizaje.md` (objetivo del 2026-10-09).
+
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
 API en `app/api/` (~40 grupos). Lógica en `lib/`, componentes en `components/`.
