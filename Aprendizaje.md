@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 35 %
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 70 % — COSTOS MEDIDOS; ESPERA DECISIÓN
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
@@ -14,8 +14,11 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
 **Rol asumido:** ingeniero de infraestructura / DBA (Postgres autoalojado, red, respaldos, disponibilidad).
 
 ### Progreso
-- **% de información para el objetivo:** 35 %
-- **Estado (2026-10-09):** BD medida. Lo que decide la arquitectura es **dónde corre la app**, no dónde
+- **% de información para el objetivo:** 70 %
+- **Estado (2026-10-09, tarde):** costo real de Railway medido por servicio (abajo). Conclusión: mover la
+  BD de producción ahorra ~2 $/mes y empeora todo; el M1 rinde más como respaldo, BD de pruebas y
+  trabajos en lote. Falta que el usuario elija (P10).
+- **Estado (2026-10-09, mañana):** BD medida. Lo que decide la arquitectura es **dónde corre la app**, no dónde
   cabe la BD: si la BD se va a casa y la app sigue en Railway, cada consulta cruza internet. Falta saber
   el **porqué** del cambio (P8) y el M1 (P2).
 
@@ -34,6 +37,34 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   fila** con ~1 ms cada uno; a 150 ms por viaje esa misma pantalla tardaría **segundos**.
 - Mediciones previas de esta misma iteración (siguen siendo ciertas): esta Mac es un **M4 Pro de 24 GB**,
   no el M1; Tailscale instalado y detenido.
+
+### Costo real de Railway (medido 2026-10-09 por la API, últimos 30 días)
+- Workspace `lfgonzalezm0's Projects`, **plan PRO** (20 $/mes que incluyen 20 $ de consumo; se paga
+  `max(20, consumo)`). Ciclo 2026-09-16 → 2026-10-16: **22,38 $ consumidos en 23 días ≈ 29-30 $/mes**.
+- Precios usados (cuadran con lo facturado): RAM 10 $/GB-mes, CPU 20 $/vCPU-mes, salida 0,05 $/GB,
+  disco 0,15 $/GB-mes. **Lo que cuesta es la RAM**; la CPU es casi cero.
+- Por proyecto (30 días): `Servidor-GCC` **12,40 $** (app `corazonescruzados` 5,15 · Postgres **2,18** ·
+  automatizaciones 1,57 · cotizador-worker 0,83 · automatizaciones-worker 0,62 · catering 0,56 · reservas
+  0,43 · pedidos 0,40 · agente-worker 0,40 · planificaciones 0,22) · `Servidor-Diego` 8,08 · `Project-Bellaflor`
+  5,58 · `Servidor-Motordesa` 1,96 · `IMADEXA` 1,04 · `Servidor-Gestion-Reservas` 0,38 · `humble-elegance` 0,32.
+  **Total ≈ 29,8 $.**
+- **Los 7 Postgres del workspace suman ≈ 9 $/mes**; el de GCC, 2,18 $. RAM total de todos los servicios ≈ 2,7 GB.
+- Consecuencia del piso PRO: cualquier ahorro solo se nota en la parte por encima de 20 $ (hoy ~10 $).
+- Costo del M1 en casa: ~10-15 W → ≈ 10 kWh/mes ≈ 1 $/mes de luz (estimado, tarifa residencial EC ≈ 0,10 $/kWh)
+  + UPS (compra única).
+
+#### P8 — ¿Por qué se quiere la BD en casa? · ✅ Resuelta
+- **Respuesta (usuario, 2026-10-09):** ahorrar el costo de Railway, tener respaldo, y el proyecto va a
+  crecer mucho.
+
+#### P2 — RAM del M1 · ✅ Resuelta
+- **Respuesta (usuario, 2026-10-09):** **8 GB**. Alcanza para Postgres + respaldos + algunos workers; para
+  alojar todo (app + 5 productos + 7 BD + clientes) va justo y sin margen para crecer.
+
+#### P10 — ¿Qué uso del M1 se aprueba? · ⏸ Bloqueada (espera al usuario)
+- Recomendación entregada: producción sigue en Railway; M1 = respaldo diario de las 7 BD + BD de pruebas
+  + trabajos en lote. Para bajar costo de verdad al crecer: optimizar RAM en Railway y, si la factura pasa
+  de ~100 $/mes, evaluar un VPS en centro de datos, no la casa.
 
 ### Las tres arquitecturas posibles (de la medición)
 1. **Solo la BD en el M1, la app sigue en Railway** → ❌ desaconsejada: cada consulta pasa de ~1 ms a
