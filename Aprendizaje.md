@@ -166,7 +166,7 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - Refresh token revocado por el usuario desde su cuenta Google → detectar `invalid_grant` y mostrar
   «Reconectar» en vez de un error genérico (y nunca fingir lista vacía).
 
-## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 92 % — RESPALDO AUTOMÁTICO FUNCIONANDO (2026-10-13); FALTA `chown` DE LaunchAgents Y EL OK DE RAILWAY
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · ✅ 97 % — RESPALDO FIJO EN EL M1 Y RAM DE RAILWAY RECORTADA (2026-10-13); FALTA MEDIR EL AHORRO REAL
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
@@ -258,6 +258,29 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   desde `~/.gcc-respaldos` y **no sobrevive a un reinicio**. Requiere un comando con sudo de Fernando.
 - Código en el repo: `services/m1-respaldos/` (`respaldar.sh`, plist, `instalar.sh`).
 
+#### P15 — Cambios en Railway (aprobados el 2026-10-13, «si dale») · ✅ Hechos y verificados
+1. **`agente-worker` borrado** (`serviceDelete`), llevaba desde el 2026-09-26 en bucle de `MODULE_NOT_FOUND`.
+2. **`automatizaciones-worker` mira la cola en la base** antes de llamar a la app (commit `c541e1db`,
+   variable `DATABASE_URL` por referencia a Postgres, red privada). 🪤 Al redesplegarlo **se cayó**: le
+   faltaba `CRON_TOKEN` en Railway — seguía vivo solo porque el contenedor viejo la conservaba en el
+   entorno. Caído de ~12:21 a ~12:34 (hora EC); la cola en la base guardó los mensajes: 2 trabajos
+   esperaron 6 y 11 min y terminaron «omitido» (el estado que usa el agente cuando no le toca contestar;
+   no se revisó cuál de las causas fue). Arreglo: `CRON_TOKEN = ${{corazonescruzados.CRON_TOKEN}}`. Verificado:
+   «mira la cola en «automatizaciones» antes de llamar».
+3. **`cotizador-worker` NO va al M1** (corrección del plan): no es un trabajo en lote sino un servidor HTTP
+   que la app llama en vivo por la red privada; llevarlo a casa obligaba a publicar el M1 en internet.
+   En su lugar **duerme en Railway** (`sleepApplication: true`). 🪤 Medido: la 1.ª petición privada a un
+   servicio dormido **lo despierta pero falla** (`ETIMEDOUT` ~300 ms). Arreglo en la app
+   (`lib/cotizaciones/worker.ts`, commit `31a42f68`): tocar `/health` con reintentos antes del POST.
+   Verificado desde el contenedor: despierta en ~2 s (ETIMEDOUT → ECONNREFUSED → 200).
+4. **Límite de memoria (NODE_OPTIONS): NO aplicado.** Midiendo dentro del contenedor salió algo mejor y
+   seguro: **`npm run start` ocupaba 58 MB** solo para lanzar Next y quedarse vivo. Arranque cambiado en
+   Railway a `node node_modules/next/dist/bin/next start` (Next toma `PORT` solo) en la app y en los 5
+   productos (`-H 0.0.0.0`). Probado en local antes; los 6 desplegados con SUCCESS y respondiendo.
+   El límite de heap queda para después de medir unos días.
+- **Ahorro esperado:** agente-worker 0,40 $ + automatizaciones dormida hasta ~1,5 $ + cotizador ~0,7 $ +
+  npm ~0,57 $ (app) → **≈ 3 $/mes**. A medir con la API de `usage` a partir del 2026-10-20.
+
 #### P14 — ¿Funciona la tarea nocturna de verdad? · ✅ Resuelta (2026-10-13)
 - **2026-10-10 03:00 falló:** el SSD cifrado amaneció bloqueado y el desbloqueo no funcionó. Al salir con
   código 1, `do shell script` dejó **un diálogo de error abierto** y launchd dio la tarea por «en marcha»
@@ -270,7 +293,7 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
 - 🔐 La URL con contraseña iba como argumento de `pg_dump` y se veía en `ps` (quedó en el registro de la
   sesión). **Clave de `gcc_respaldo` cambiada el 2026-10-13**; ahora va en `~/.gcc-respaldos/pgpass`
   (`PGPASSFILE`) y `bd-url` no lleva contraseña. Verificado.
-- Pendiente: `sudo chown fernandogonzalez ~/Library/LaunchAgents` en el M1 (sin eso, un reinicio borra la tarea).
+- ✅ `chown` hecho por Fernando el 2026-10-13; la tarea ya vive en `~/Library/LaunchAgents` (sobrevive a reinicios).
 
 #### P13 — automatizaciones-worker sin despertar al producto · ✅ Resuelta (diseño, sin desplegar)
 - El worker llama a `/api/agente/procesar` cada 5 s y eso impide que `automatizaciones` duerma. La cola es

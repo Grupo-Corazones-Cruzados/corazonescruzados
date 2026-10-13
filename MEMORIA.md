@@ -6294,6 +6294,15 @@ Stack estándar de la casa, con particularidades de este repo:
   Solo el proyecto `Servidor-GCC` (decisión del usuario); los demás proyectos del workspace no. Detalle,
   costos por servicio y plan de RAM en `Aprendizaje.md` (objetivo del 2026-10-09).
 
+- **RAM de Railway recortada (2026-10-13):** borrado `agente-worker` (muerto); `automatizaciones-worker`
+  consulta la cola en la base y solo despierta al producto cuando hay trabajo; `cotizador-worker` duerme y
+  la app lo despierta con `/health` antes de mandarle trabajo (`lib/cotizaciones/worker.ts`); la app y los 5
+  productos arrancan con `node node_modules/next/dist/bin/next start` en vez de `npm start` (58 MB menos
+  por servicio). ⚠️ **El comando de arranque vive en Railway, no en el repo**: no volver a `npm start`.
+  ⚠️ Quitar una variable en Railway no reinicia el contenedor: un servicio puede llevar semanas «funcionando»
+  sin una variable que el próximo despliegue echará en falta (le pasó a `automatizaciones-worker` con
+  `CRON_TOKEN`). Detalle en `Aprendizaje.md`, P15.
+
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
 API en `app/api/` (~40 grupos). Lógica en `lib/`, componentes en `components/`.
