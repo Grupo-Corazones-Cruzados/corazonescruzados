@@ -471,8 +471,9 @@ export default function ExperienciasPersonales() {
   return (
     <div className="flex-1 min-w-0 w-full">
       {banner}
-      {espacio && <div className="mb-3">{espacio}</div>}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      {/* Una sola fila (Fernando, 2026-10-13): espacio del Drive · filtro por día · «Nueva experiencia». */}
+      <div className="flex items-center justify-end gap-2 mb-3 flex-wrap">
+        {espacio && <div className="w-full sm:w-[320px]">{espacio}</div>}
         <div className="flex items-center gap-1.5">
           <input type="date" aria-label="Filtrar por fecha" value={diaFiltro} className={`${EDIT_INPUT} !w-auto`}
             onChange={(e) => setDiaFiltro(e.target.value)} />
@@ -483,7 +484,7 @@ export default function ExperienciasPersonales() {
             </button>
           )}
         </div>
-        <button className={`${BTN_PRIMARY} ml-auto`} disabled={!conexion} style={mf}
+        <button className={`${BTN_PRIMARY} max-sm:ml-auto`} disabled={!conexion} style={mf}
           onClick={() => setFormExp({ id: null, nombre: '', descripcion: '', fechaInicio: hoy(), fechaFin: hoy() })}>
           <Plus className="w-4 h-4" /> Nueva experiencia
         </button>

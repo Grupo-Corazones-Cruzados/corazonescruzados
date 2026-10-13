@@ -3974,12 +3974,15 @@ mientras se escribe.
 - **Formularios** en `EditPanel` (experiencia y evento). Los **tipos de beneficio** se eligen con
   `FilaMarcable` (la fila de `ListaMarcable`) dentro de un borde con `divide-y`: cuatro opciones
   fijas, vistas enteras, sin desplegable.
-- **Barra de la lista de Personales:** `EspacioDrive` en su propia fila; debajo, a la izquierda el
-  **filtro por día** (`<input type="date">` con `EDIT_INPUT !w-auto` + botón «×» de 32 px para quitarlo,
-  solo si hay día) y a la derecha la primaria «Nueva experiencia». Rango en el formulario: «Desde» y
+- **Barra de la lista de Personales (Fernando, 2026-10-13): UNA fila a la derecha** — `EspacioDrive`
+  (320 px) · **filtro por día** (`<input type="date">` con `EDIT_INPUT !w-auto` + «×» de 32 px solo si hay
+  día) · primaria «Nueva experiencia». En teléfono el espacio ocupa su propia fila arriba. Rango en el formulario: «Desde» y
   «Hasta» en `grid-cols-2`; en tarjetas y cabecera, `CalendarDays` + «03 oct 2026 – 05 oct 2026».
 - **`EspacioDrive`** (`components/google/EspacioDrive.tsx`) — definición única de la barra de espacio
   del Drive: `h-1.5`, `bg-accent`; **ámbar** desde el 90 %, **roja** y «Sin espacio» al llenarse.
+  Muestra lo **USADO** («6,1 GB usados de 2,00 TB»; lo libre va en el `title`) y la barra tiene una
+  muesca mínima del 1,5 % si hay algo usado: antes ponía «2,0 TB libres de 2,0 TB» y Fernando creyó que
+  no se leía el uso (el redondeo de 1,99 TB lo escondía). TB con 2 decimales.
   `fmtBytes` (es-ES vía `fmtNum`) sale de ahí.
 - **Rejilla de archivos:** tarjetas con miniatura `aspect-[4/3] object-cover` (o icono del tipo:
   `FileText`/`ImageIcon`/`Film`), nombre truncado + tamaño, `BotonQuitar xs` y un `<select>` compacto
