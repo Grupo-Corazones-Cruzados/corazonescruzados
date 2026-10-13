@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 75 %
+## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 90 % — CONSTRUIDO; FALTA LA PRUEBA CON UNA CUENTA REAL Y PUBLICAR LA APP EN GOOGLE
 
 **Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su
 propia experiencia**, que siempre es **personal** (no afecta su perfil: no suma ni resta talentos ni
@@ -15,7 +15,12 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 (modelo de datos, sincronía con una fuente externa, tokens cifrados).
 
 ### Progreso
-- **% de información para el objetivo:** 75 %
+- **% de información para el objetivo:** 90 %
+- **Estado (2026-10-13, noche):** CONSTRUIDO (migración 071 aplicada, variables en Railway). Verificado:
+  tsc + `next build` + rutas en local con sesión (estado, redirección a Google con las URIs y scopes
+  correctos, cookie de estado, callback rechaza estado falso y cancelación, 409 sin conexión, 400/404/401).
+  **Sin probar todavía: las llamadas reales a Drive**, porque necesitan que Fernando conecte su cuenta
+  (la cuenta de servicio no tiene scope de Drive: `unauthorized_client`).
 - **Estado (2026-10-13, tarde):** Fernando respondió P1, P3, P4, P5 y P7. Queda P2 (Gmail/Calendar), la
   prueba del Picker de carpeta y crear el cliente OAuth en la consola.
 - **Estado (2026-10-13):** investigado el módulo actual, Configuración y la integración de Google que
@@ -122,8 +127,22 @@ a la app, entrando **sin categoría** y con opción de asignársela.
   Experiencias; antes de subir se compara con el tamaño del lote y se avisa **antes** de intentar.
   Si Google responde `storageQuotaExceeded`, el mismo aviso. (Cuentas con almacenamiento ilimitado: sin `limit`.)
 
-#### P10 — ¿La experiencia (el contenedor de eventos) lleva campos propios además del nombre? · ❓ Abierta
-- **Por qué importa:** ¿solo nombre + descripción, o también fecha/tipo? Hoy se asume nombre + descripción opcional.
+#### P10 — ¿La experiencia (el contenedor de eventos) lleva campos propios además del nombre? · 🔎 Asumido
+- Construido con nombre + descripción opcional (Fernando no pidió más). Si quiere fecha o tipo, se añade.
+#### P2 — ¿Gmail y Calendar ya o al usarlos? · ✅ Resuelta (Fernando, 2026-10-13): **todo ahora**
+- Se piden `drive`, `gmail.modify` y `calendar` en la misma conexión. Riesgo anotado: la verificación de
+  Google exige mostrar cada permiso en uso en el video.
+
+#### P11 — ¿Cómo se evita que la conexión caduque a los 7 días? · ✅ Resuelta (investigación)
+- La caducidad de 7 días es **solo del estado «Testing»**. Al **publicar** la app (Google Auth Platform →
+  Público → «Publicar app») pasa a producción; sin verificar, Google muestra «app no verificada» y limita
+  a 100 usuarios, **pero el refresh token ya no caduca**. Los tokens emitidos en Testing sí caducan: tras
+  publicar, cada usuario reconecta una vez.
+- Verificación completa (para quitar el aviso y el tope): dominio `grupocc.org` verificado en Search
+  Console, página de inicio y **política de privacidad** con el uso de datos de Google (Limited Use),
+  video de demostración por permiso y **CASA** (auditoría de seguridad anual, de pago) por los permisos
+  restringidos `drive` y `gmail.modify`.
+
 
 ### Decisiones de diseño (provisionales hasta cerrar P1-P5)
 - **Tablas propias, no `gs_*`:** una experiencia personal no tiene tareas, plazas ni ciclo de vida, y

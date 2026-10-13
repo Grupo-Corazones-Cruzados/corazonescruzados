@@ -1,35 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import ProfilePanel from '@/components/settings/ProfilePanel';
 import CvPanel from '@/components/settings/CvPanel';
 import AvailabilityPanel from '@/components/settings/AvailabilityPanel';
 import PortfolioPanel from '@/components/settings/PortfolioPanel';
 import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
+import ConexionesPanel from '@/components/settings/ConexionesPanel';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
-import { FileText, CalendarClock, Briefcase, Share2, type LucideIcon } from 'lucide-react';
+import { FileText, CalendarClock, Briefcase, Share2, Link2, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type TabKey = 'cv' | 'availability' | 'portfolio';
-const TABS: { key: TabKey; label: string; Icon: LucideIcon }[] = [
-  { key: 'cv', label: 'Mi CV', Icon: FileText },
-  { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock },
-  { key: 'portfolio', label: 'Portafolio', Icon: Briefcase },
+type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones';
+const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean }[] = [
+  { key: 'cv', label: 'Mi CV', Icon: FileText, soloMiembro: true },
+  { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock, soloMiembro: true },
+  { key: 'portfolio', label: 'Portafolio', Icon: Briefcase, soloMiembro: true },
+  // Conexiones (Google) es de miembros Y candidatos: la usan las Experiencias personales.
+  { key: 'conexiones', label: 'Conexiones', Icon: Link2, soloMiembro: false },
 ];
 
 /**
  * Configuración: **Perfil fijo a la izquierda** + a la derecha una zona con **pestañas**
  * (CV · Disponibilidad · Portafolio). El contenido de la pestaña activa llena todo el
  * ancho disponible (layouts multi-columna) sin scroll interno — la página se desplaza si
- * hace falta. Las pestañas de miembro solo aparecen si el usuario tiene member_id.
+ * hace falta. Las pestañas de miembro solo aparecen si el usuario tiene member_id;
+ * «Conexiones» la ven también los candidatos. `?tab=conexiones` abre esa pestaña (es a
+ * donde vuelve la conexión con Google).
  */
 export default function SettingsPage() {
   const { user } = useAuth();
   const isMember = !!user?.member_id;
   const [tab, setTab] = useState<TabKey>('cv');
   const [compartir, setCompartir] = useState(false);
+  const esCandidato = user?.account_type === 'candidate';
+  const tabs = TABS.filter((t) => isMember || (!t.soloMiembro && esCandidato));
+  const tabActiva = tabs.some((t) => t.key === tab) ? tab : tabs[0]?.key;
+
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (t && TABS.some((x) => x.key === t)) setTab(t as TabKey);
+  }, []);
 
   /* ── EL ALTO LO PONE EL PIE DE LA APP, NO EL CONTENIDO (Fernando, 2026-08-15) ──
    * Antes la fila crecía con los campos y la página se desplazaba entera, así que
@@ -54,7 +67,7 @@ export default function SettingsPage() {
       >
         <ProfilePanel />
 
-        {isMember && (
+        {tabs.length > 0 && (
           <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
             {/* Barra de pestañas + «Compartir CV» a la derecha, como el «Compartir
                 acceso» de un proyecto.
@@ -71,8 +84,8 @@ export default function SettingsPage() {
                 un elemento menos. */}
             <div className="flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
               <div className="flex items-stretch flex-wrap">
-                {TABS.map((t) => {
-                  const active = tab === t.key;
+                {tabs.map((t) => {
+                  const active = tabActiva === t.key;
                   return (
                     <button key={t.key} onClick={() => setTab(t.key)}
                       className={`inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
@@ -81,12 +94,12 @@ export default function SettingsPage() {
                   );
                 })}
               </div>
-              <div className="flex items-center shrink-0 px-2">
+              {isMember && <div className="flex items-center shrink-0 px-2">
                 <button onClick={() => setCompartir(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-accent text-accent text-[13px] font-medium rounded hover:bg-accent-light transition-colors whitespace-nowrap" style={mf}>
                   <Share2 className="w-4 h-4" /> Compartir CV
                 </button>
-              </div>
+              </div>}
             </div>
 
             {/* ⚠️ Este hueco NO lleva `overflow` ni relleno: **cada panel decide** qué
@@ -94,9 +107,10 @@ export default function SettingsPage() {
                 estuviera aquí, el botón «Guardar CV» se iría con el contenido, que es
                 justo lo que se quería evitar. */}
             <div className="flex-1 min-h-0 flex flex-col">
-              {tab === 'cv' && <CvPanel />}
-              {tab === 'availability' && <AvailabilityPanel />}
-              {tab === 'portfolio' && <PortfolioPanel />}
+              {tabActiva === 'cv' && <CvPanel />}
+              {tabActiva === 'availability' && <AvailabilityPanel />}
+              {tabActiva === 'portfolio' && <PortfolioPanel />}
+              {tabActiva === 'conexiones' && <ConexionesPanel />}
             </div>
           </div>
         )}

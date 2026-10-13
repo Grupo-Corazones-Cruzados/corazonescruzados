@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
+import ExperienciasPersonales from '@/components/experiencias/ExperienciasPersonales';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { VALOR_LABEL } from '@/lib/centralized/valores';
 import {
   Layers, Megaphone, PlayCircle, CheckCircle2, CalendarDays, MapPin, Clock, Users,
-  Gem, Sparkles, PartyPopper, XCircle, Lock, ChevronLeft,
+  Gem, Sparkles, PartyPopper, XCircle, Lock, ChevronLeft, BookHeart,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -60,6 +61,10 @@ const timeLabel = (e: { allDay: boolean; startTime: string | null; endTime: stri
  * marque el inicio del evento.
  *
  * Regla: una sola tarea por evento; se puede soltar mientras el evento no haya iniciado.
+ *
+ * Sección «Personales» del rail (2026-10-13): las experiencias que crea el propio usuario,
+ * con sus eventos y archivos en su Google Drive. NO afectan su perfil
+ * (`components/experiencias/ExperienciasPersonales.tsx`).
  */
 export default function ExperienciasPage() {
   const [filter, setFilter] = useState('all');
@@ -121,10 +126,10 @@ export default function ExperienciasPage() {
     return events.filter((e) => e.status === filter);
   }, [events, filter]);
 
-  const railItems = useMemo(
-    () => FILTERS.map((f) => ({ ...f, count: (counts as any)[f.value] })),
-    [counts],
-  );
+  const railSections = useMemo(() => [
+    { items: FILTERS.map((f) => ({ ...f, count: (counts as any)[f.value] })) },
+    { title: 'Personales', items: [{ value: 'personales', label: 'Mis experiencias personales', Icon: BookHeart }] },
+  ], [counts]);
 
   // ── Detalle de una experiencia (drill-in) ──
   if (detail) {
@@ -159,8 +164,9 @@ export default function ExperienciasPage() {
   // ── Lista de experiencias ──
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
-      <FilterRail title="Experiencias" items={railItems} value={filter} onChange={setFilter} />
+      <FilterRail title="Experiencias" sections={railSections} value={filter} onChange={setFilter} />
 
+      {filter === 'personales' ? <ExperienciasPersonales /> : (
       <div className="flex-1 min-w-0 w-full">
         {err && <ErrorBanner text={err} />}
         {loading ? (
@@ -200,6 +206,7 @@ export default function ExperienciasPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

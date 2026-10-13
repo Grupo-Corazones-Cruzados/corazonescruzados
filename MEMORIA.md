@@ -4645,6 +4645,41 @@ Stack estándar de la casa, con particularidades de este repo:
     **9/9 con datos reales insertados y borrados** (generación del bloque de calendario: ventana
     [from,to), horario propio vs heredado, color, `locked`, y que una tarea sin tomar no genera
     bloque).
+- **Experiencias PERSONALES + conexión de Google por usuario (2026-10-13):** en Experiencias, rail
+  «Personales» → el usuario (miembro **o** candidato) crea experiencias propias que **NO afectan su
+  perfil** (tablas propias `exp_personales` / `exp_personales_eventos`, nunca `gs_*`).
+  - **Modelo (Fernando):** experiencia (nombre + descripción opcional) → **eventos** = la categoría de
+    los archivos: nombre libre, **fecha obligatoria**, descripción opcional y **tipo de beneficio
+    obligatorio y múltiple** (`laboral` · `mental` · `social` · `corporal`, CHECK en la BD).
+  - **Archivos en el Google Drive DEL USUARIO**, `GCC World / Experiencias / <exp> / <fecha · evento>`.
+    **No hay tabla de archivos:** se listan en vivo (Drive es la fuente de verdad ⇒ la «sincronía» es
+    leer). Lo que el usuario suelte desde la app de Drive en la carpeta de la experiencia sale
+    «Sin evento»; asignarle evento = **moverlo** de carpeta. Borrar un evento devuelve sus archivos a
+    «Sin evento»; borrar experiencia/archivo = **papelera de Drive** (nunca borrado definitivo).
+  - **Subida directa navegador → Google** (sesión reanudable que abre el servidor declarando el
+    `Origin`, para que Google dé CORS): los bytes no pasan por Railway. Se avisa de falta de espacio
+    **antes** de subir (`about.storageQuota`). Vista = miniatura por proxy (`/api/google/miniatura/[id]`,
+    unos KB) y abrir en Drive (`webViewLink`); **sin visor propio** (decisión: no gastar RAM).
+  - **OAuth de usuario** (`lib/integrations/google-oauth.ts`) — NO es la cuenta de servicio de
+    `google-workspace.ts`. Cliente OAuth Web del proyecto `grupo-corazones-cruzados` (nº 588476197914),
+    URIs `https://app.grupocc.org/api/google/callback` y `http://localhost:3002/api/google/callback`
+    (la URI se deriva del host de la petición). Scopes (Fernando: **todos ya**): `drive` (completo,
+    para sincronizar), `gmail.modify`, `calendar`. `state` = nonce en cookie `g_oauth_state` +
+    misma sesión (anti-CSRF de enlace de cuentas). Refresh/access token **cifrados** con
+    `lib/cifrado.ts` (copia del de automatizaciones; clave `CLAVE_MAESTRA_SECRETOS`, AAD
+    `google_conexiones:<userId>:<campo>`). `invalid_grant` ⇒ conexión `revocada` + «Reconectar».
+    Botón en **Configuración → Conexiones** (pestaña nueva, visible también para candidatos;
+    `?tab=conexiones`). En la app nativa no se ofrece: Google bloquea OAuth en WebView.
+  - **Variables:** `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `CLAVE_MAESTRA_SECRETOS` en
+    `.env.local` y en Railway (`corazonescruzados`), **la clave es la MISMA en los dos** porque local y
+    producción comparten BD: con claves distintas, un token guardado desde un lado no descifra en el otro.
+  - **Migración `071_experiencias_personales_google.sql`**, aplicada 2026-10-13.
+  - **Pendiente Google:** la app está en **Testing** (100 usuarios, el token caduca a los 7 días). Para
+    que no caduque: **Publicar** la app (producción sin verificar = aviso «app no verificada», tope 100
+    usuarios, pero el token ya NO caduca) y luego **verificación** (dominio en Search Console, política
+    de privacidad con el uso de datos de Google, video de demostración por permiso) + **auditoría CASA**
+    por `drive` y `gmail.modify` (restringidos). Google rechaza permisos que el video no muestre en
+    uso ⇒ Gmail/Calendar sin función todavía son un riesgo para la verificación. Ver `Aprendizaje.md`.
 - **Sistema "Percepción Social" — 1er sistema del piso COLABORADOR (2026-07-17):** Centralizado · `colaborador/gestion`
   · celda **"Líder"** · slug `percepcion-social` · URL `/dashboard/centralized/colaborador/gestion/percepcion-social`.
   Captura eventos del entorno del colaborador: **ubicación GPS + conjunto de fotos** tomadas con la **cámara del

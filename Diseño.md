@@ -3963,6 +3963,26 @@ tarjeta — es la acción rara, no la principal.
 más «Volver al original». Un prompt de miles de caracteres en 644px no se puede leer
 mientras se escribe.
 
+## Experiencias personales y Conexiones (2026-10-13)
+
+- **Rail con secciones:** Experiencias usa `FilterRail sections` — Gestión Social arriba y el grupo
+  «Personales» abajo (`BookHeart`). Nada nuevo: el patrón de Proyectos/Centralizado.
+- **Formularios** en `EditPanel` (experiencia y evento). Los **tipos de beneficio** se eligen con
+  `FilaMarcable` (la fila de `ListaMarcable`) dentro de un borde con `divide-y`: cuatro opciones
+  fijas, vistas enteras, sin desplegable.
+- **`EspacioDrive`** (`components/google/EspacioDrive.tsx`) — definición única de la barra de espacio
+  del Drive: `h-1.5`, `bg-accent`; **ámbar** desde el 90 %, **roja** y «Sin espacio» al llenarse.
+  `fmtBytes` (es-ES vía `fmtNum`) sale de ahí.
+- **Rejilla de archivos:** tarjetas con miniatura `aspect-[4/3] object-cover` (o icono del tipo:
+  `FileText`/`ImageIcon`/`Film`), nombre truncado + tamaño, `BotonQuitar xs` y un `<select>` compacto
+  (`EDIT_INPUT select-compacto`) para cambiar de evento. Pulsar la miniatura **abre en Drive** (nueva
+  pestaña); no hay visor propio.
+- **Chip «Personal»** gris neutro (`bg-black/[0.05] border-digi-border text-digi-muted`), para
+  distinguirla de los eventos de Gestión Social que sí puntúan.
+- **Conexiones** (`components/settings/ConexionesPanel.tsx`): tarjeta con logo de Google (SVG de
+  marca, único color no tokenizado, es el logotipo), chips de permisos (acento = concedido) y acciones
+  abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
+
 ## Desviaciones detectadas y resolución
 - **2026-10-05 · Filtro de estado de Recordatorios** · **AJUSTADO** (Fernando): abre en **Pendientes**
   —lo que hay que atender— y **«Todos» va el ÚLTIMO**, bajo «Completados». ⚠️ Pendiente de decidir si
