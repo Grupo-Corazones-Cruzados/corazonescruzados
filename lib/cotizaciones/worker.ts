@@ -43,10 +43,33 @@ export type QuoteAgentContext = {
   currentQuote?: unknown;
 };
 
+/**
+ * Despierta al worker antes de mandarle trabajo.
+ *
+ * Desde el 2026-10-13 el worker DUERME en Railway cuando no lo usa nadie (ahorra su RAM las
+ * 24 h). Medido: la primera petición por la red privada a un servicio dormido lo despierta
+ * pero ELLA MISMA FALLA (`ETIMEDOUT` a los ~300 ms) mientras el contenedor arranca. Por eso se
+ * toca `/health` —idempotente, no gasta modelo— hasta que conteste, y solo entonces se manda
+ * el POST: reintentar el POST no es seguro, porque podría generar dos veces.
+ */
+async function despertarWorker(): Promise<void> {
+  const base = WORKER_URL.replace(/\/+$/, '');
+  const limite = Date.now() + 45_000;
+  for (let espera = 500; ; espera = Math.min(espera * 2, 4_000)) {
+    try {
+      const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5_000) });
+      if (res.ok) return;
+    } catch { /* todavía arrancando */ }
+    if (Date.now() + espera > limite) return; // que el POST dé el error real
+    await new Promise((r) => setTimeout(r, espera));
+  }
+}
+
 async function callWorker(path: string, body: any): Promise<any> {
   if (!cotizadorConfigured()) {
     throw new Error('El worker de cotizaciones no está configurado (falta COTIZADOR_WORKER_URL / COTIZADOR_WORKER_TOKEN).');
   }
+  await despertarWorker();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
