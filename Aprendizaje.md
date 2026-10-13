@@ -169,6 +169,45 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - Refresh token revocado por el usuario desde su cuenta Google → detectar `invalid_grant` y mostrar
   «Reconectar» en vez de un error genérico (y nunca fingir lista vacía).
 
+## Objetivo ACTUAL (declarado 2026-10-13) — CARLIZA HOTEL PASA AL PRODUCTO RESERVAS DE GCC WORLD · 🔎 60 %
+
+**Pedido del usuario (2026-10-13):** *«que el cliente que consume el servicio de Gestión Reservas vaya a la
+app que tenemos actualmente en gcc world con su propio tenant… migrar sus datos y crear su cliente, el cual
+actualmente ya tiene suscripción y es la suscripción de servidor carliza hotel… y así evitemos el gasto de
+ese otro servidor.»*
+
+**Rol asumido:** ingeniero de migración de datos (multi-inquilino) + integración de cobros.
+
+### Lo que hay (medido 2026-10-13, solo lectura)
+- **App vieja** `velmort-stays` (repo `GCC-Gestion-Reservas`), Railway `Servidor-Gestion-Reservas`, dominio
+  `gcc-carliza-hotel.up.railway.app`, duerme, ~0,38 $/mes (3,4 GB de salida). **Base en Neon** (externa),
+  fotos en Cloudinary (`denkwhhxx`), login NextAuth + **bcryptjs `$2b$10$`**.
+- **Datos:** 9 usuarios (uno es `lfgonzalezm0`, del equipo GCC), 5 ubicaciones (Mesanine, Primer/Segundo/
+  Tercer Piso, CARLIZA 2), 43 suites (32 con foto), **1.785 reservas** (1.394 OCCUPIED + 391 DELETED) desde
+  marzo 2026, ~230/mes, con salidas hasta 2027-06. **Se usa a diario** (última edición 2026-10-13 22:31 EC).
+- **Producto** `productos/reservas` (esquema `reservas`): nació portando esta misma app → mapeo directo
+  User→usuarios (ADMIN→ADMIN, MANAGER→GERENTE, VIEWER→CONSULTA), Location→ubicaciones, Suite→suites,
+  Reservation→reservas (OCCUPIED→OCUPADA, CHECKOUT→POR_SALIR, FINALIZED→FINALIZADA, DELETED→ELIMINADA,
+  PENDING/PAID→PENDIENTE/PAGADO, deposit→anticipo). Mismo bcryptjs → **las contraseñas sirven tal cual**.
+  Un solo plan «Estándar» 5 $/mes, 100 usuarios, **1 mes de histórico** (purga la última hora del mes de lo
+  que TERMINÓ antes del día 1). Fotos del producto hoy a **Cloudinary** (`src/lib/imagenes.ts`).
+- **Suscripción de la plataforma** `gcc_world.subscriptions` **id 2 «Servidor Carliza Hotel»**: 5 $/mes, IVA 0,
+  desde 2026-06-05, activa, **sin cliente** (`client_id` null, factura a CONSUMIDOR FINAL), pagados jun-sep
+  (facturas 51, 58, 62, 72). Octubre sin pagar al 2026-10-13.
+
+### Preguntas · ⏸ al usuario
+- P1 Histórico vs. purga de 1 mes (≈1.350 reservas anteriores a octubre se borrarían el 31-oct).
+- P2 Cobro: ¿la suscripción del producto (autoservicio/tarjeta) sustituye a la id 2, o se sigue cobrando
+  por la plataforma y eso abre el producto? ¿Qué pasa con octubre?
+- P3 Corte: cuándo, y qué pasa con la dirección vieja.
+- P4 Datos del cliente (RUC/razón social/contacto) para crear su ficha y asociar suscripción e inquilino.
+
+### Plan (borrador)
+Inquilino `carliza-hotel` (marca: «Carliza Hotel», `#C9952C`, logo de la app vieja) → usuarios sin
+`lfgonzalezm0` (el equipo entra como operador GCC) → ubicaciones y suites con fotos al **Drive** (Productos /
+Reservas / carliza-hotel; y las subidas del producto pasan a Drive como en Planificaciones) → reservas →
+recuento idéntico → corte (app vieja en solo lectura, última pasada incremental) → apagar el servidor viejo.
+
 ## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · ✅ 98 % — RESPALDO FIJO EN EL M1 Y RAM DE RAILWAY RECORTADA (2026-10-13); FALTA MEDIR EL AHORRO REAL
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
