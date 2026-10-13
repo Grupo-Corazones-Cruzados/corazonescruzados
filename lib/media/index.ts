@@ -43,7 +43,8 @@ export function decodificarDataUri(s: string): { datos: Buffer; mime: string } |
 
 /** Quita lo que Drive no acepta bien en un nombre y lo acota. La extensión la pone quien llama. */
 export function limpiarNombre(s: string): string {
-  return String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
+  // Sin puntos al final: «M.1.4.11.» + «.png» daba «M.1.4.11..png» (2026-10-13).
+  return String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, '').slice(0, 150);
 }
 
 /**

@@ -187,12 +187,15 @@ export async function abrirSubida(token: string, opts: { nombre: string; mime: s
   return location;
 }
 
-/** La miniatura (imagen pequeña) de un archivo, pedida con el token del usuario. */
-export async function miniatura(token: string, id: string): Promise<Response | null> {
+/**
+ * La miniatura (imagen pequeña) de un archivo. `token` es el del usuario o, para el almacén de
+ * la empresa (lib/media/drive.ts), el de la cuenta de servicio. `lado` = lado mayor en px.
+ */
+export async function miniatura(token: string, id: string, lado = 220): Promise<Response | null> {
   const j = await drive(token, `/files/${encodeURIComponent(id)}?fields=thumbnailLink`);
   if (!j.thumbnailLink) return null;
   // `=s220` → lado mayor de 220 px: suficiente para la cuadrícula y unos pocos KB.
-  const url = String(j.thumbnailLink).replace(/=s\d+$/, '=s220');
+  const url = String(j.thumbnailLink).replace(/=s\d+$/, `=s${lado}`);
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
   return res.ok ? res : null;
 }

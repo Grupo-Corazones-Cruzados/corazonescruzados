@@ -757,7 +757,8 @@ export default function PortalPage() {
                               rel="noopener noreferrer"
                             >
                               <img
-                                src={`${img}`}
+                                src={fid ? `${img}?w=240` : `${img}`}
+                                loading="lazy"
                                 alt={nombre || ''}
                                 className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
                               />

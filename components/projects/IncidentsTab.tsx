@@ -285,7 +285,7 @@ function IncidentDetailModal({ api, incidentId, canManage, onClose, onChanged }:
                 return (
                   <div key={i} className="w-20 min-w-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <a href={src} target="_blank" rel="noreferrer"><img src={src} alt={nombre || ''} className="w-20 h-20 object-cover rounded border border-digi-border" /></a>
+                    <a href={src} target="_blank" rel="noreferrer"><img src={fid ? `${src}?w=240` : src} loading="lazy" alt={nombre || ''} className="w-20 h-20 object-cover rounded border border-digi-border" /></a>
                     {fid && nombre && (
                       <NombreArchivo className="mt-1" nombre={nombre} puedeEditar={canManage}
                         renombrar={(base) => renombrarEnPlataforma(fid, base)}

@@ -72,7 +72,7 @@ async function carpeta(ruta) {
   return padre;
 }
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg', 'video/mp4': 'mp4' };
-const limpiar = (s) => String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
+const limpiar = (s) => String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, '').slice(0, 150);
 
 async function subir({ datos, mime, base, ruta, modulo, referencia, origen }) {
   const nombre = `${limpiar(base) || 'archivo'}.${EXT[mime] || mime.split('/')[1] || 'bin'}`;
@@ -205,7 +205,18 @@ async function imagenesDeDestrezas() {
     try {
       const b = deDataUri(d.imagen_url);
       id = await subir({ ...b, base: d.codigo, ruta: ['Productos', 'Planificaciones', d.inquilino, 'Destrezas'], modulo: 'destreza', referencia: d.id, origen: 'base64' });
-      const r = await q(`UPDATE planificaciones.destrezas SET imagen_url = $1 WHERE imagen_url = $2`, [`${BASE_PUBLICA}/api/media/${id}`, d.imagen_url]);
+      // El disparador del escaparate de Planificaciones (`impedir_escritura_escaparate`) busca
+      // `inquilinos` SIN esquema: hay que correr el UPDATE con `planificaciones` en la ruta de
+      // búsqueda, como lo hace el propio producto (si no: «relation "inquilinos" does not exist»).
+      const cli = await pool.connect();
+      let r;
+      try {
+        await cli.query('SET search_path TO planificaciones, public');
+        r = await cli.query(`UPDATE planificaciones.destrezas SET imagen_url = $1 WHERE imagen_url = $2`, [`${BASE_PUBLICA}/api/media/${id}`, d.imagen_url]);
+      } finally {
+        await cli.query('RESET search_path').catch(() => {});
+        cli.release();
+      }
       if (r.rowCount === 0) { await deshacer([id]); resumen.saltadas++; continue; }
       resumen.archivos++; resumen.bytes += b.datos.length; resumen.filas += r.rowCount;
     } catch (e) { if (id) await deshacer([id]); resumen.errores++; console.error(`  ✖ ${e.message}`); }

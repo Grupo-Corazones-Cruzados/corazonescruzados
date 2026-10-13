@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { Readable } from 'stream';
 import { google } from 'googleapis';
 import { authDrive } from '@/lib/integrations/google-workspace';
+import { miniatura as miniaturaDrive } from '@/lib/integrations/google-drive';
 
 /**
  * Drive de la empresa (`lfgonzalezm0@grupocc.org`) como almacén de fotos y videos de
@@ -115,6 +116,18 @@ export async function abrir(id: string, rango?: string | null) {
 export async function descargar(id: string): Promise<Buffer> {
   const { data } = await api().files.get({ fileId: id, alt: 'media' }, { responseType: 'arraybuffer' });
   return Buffer.from(data as ArrayBuffer);
+}
+
+/**
+ * Miniatura de `lado` px que genera Drive (unos KB). Medido el 2026-10-13: la galería de 24
+ * fotos tardaba 53 s pidiendo los originales (12,8 MB); las cuadrículas piden esto y el
+ * original solo se baja al abrir la foto. `null` si Drive aún no la tiene (p. ej. recién
+ * subida) o el archivo no es una imagen: quien llama sirve el original.
+ */
+export async function miniatura(id: string, lado: number): Promise<Response | null> {
+  const { token } = await authDrive().getAccessToken();
+  if (!token) return null;
+  return miniaturaDrive(token, id, lado).catch(() => null);
 }
 
 export async function renombrar(id: string, nombre: string): Promise<void> {

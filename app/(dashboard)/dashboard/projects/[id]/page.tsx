@@ -2431,7 +2431,7 @@ export default function ProjectDetailPage() {
                 <div key={idx} className="min-w-0">
                 <div className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker rounded">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={nombre || `Imagen ${idx + 1}`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreviewImage(img)} />
+                  <img src={fid ? `${img}?w=480` : img} loading="lazy" alt={nombre || `Imagen ${idx + 1}`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreviewImage(img)} />
                   {canEditImages && (
                     <button onClick={() => handleImageDelete(idx)} disabled={deletingImageIdx === idx} title="Eliminar imagen"
                       className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700">

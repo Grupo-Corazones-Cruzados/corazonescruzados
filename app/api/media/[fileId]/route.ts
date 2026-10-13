@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { abrir } from '@/lib/media/drive';
+import { abrir, miniatura } from '@/lib/media/drive';
 import { registro, renombrar } from '@/lib/media';
 import { puedeGestionarImagenes } from '@/lib/projects/permisos';
 
@@ -25,6 +25,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ file
   const { fileId } = await params;
   const r = await registro(fileId).catch(() => null);
   if (!r || r.borrado_en) return new NextResponse(null, { status: 404 });
+
+  // `?w=480` → miniatura de Drive para las cuadrículas (unos KB en vez del original).
+  const w = Number(req.nextUrl.searchParams.get('w'));
+  if (w && r.mime.startsWith('image/')) {
+    const lado = Math.min(1600, Math.max(64, Math.round(w)));
+    const m = await miniatura(fileId, lado);
+    if (m?.body) {
+      return new Response(m.body, {
+        headers: {
+          'Content-Type': m.headers.get('content-type') || 'image/jpeg',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+    // Sin miniatura todavía: se sirve el original.
+  }
 
   try {
     const rango = req.headers.get('range');
