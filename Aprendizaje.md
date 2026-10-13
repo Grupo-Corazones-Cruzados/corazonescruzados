@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 45 %
+## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 70 %
 
 **Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su
 propia experiencia**, que siempre es **personal** (no afecta su perfil: no suma ni resta talentos ni
@@ -15,7 +15,9 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 (modelo de datos, sincronía con una fuente externa, tokens cifrados).
 
 ### Progreso
-- **% de información para el objetivo:** 45 %
+- **% de información para el objetivo:** 70 %
+- **Estado (2026-10-13, tarde):** Fernando respondió P1, P3, P4, P5 y P7. Queda P2 (Gmail/Calendar), la
+  prueba del Picker de carpeta y crear el cliente OAuth en la consola.
 - **Estado (2026-10-13):** investigado el módulo actual, Configuración y la integración de Google que
   ya existe. El diseño técnico está claro salvo **una decisión que lo condiciona todo: el alcance
   (scope) de Drive que se pide**, porque de él depende si la sincronía puede ser automática y cuánto
@@ -40,7 +42,12 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 
 ### Preguntas y respuestas
 
-#### P1 — ¿Qué alcance de Drive se pide? · ⏸ Bloqueada (espera a Fernando) — **CRÍTICA**
+#### P1 — ¿Qué alcance de Drive se pide? · 🔎 Decidido el QUÉ, falta el CÓMO — **CRÍTICA**
+- **Respuesta (Fernando, 2026-10-13):** **sincronización** (no solo «elegir desde Drive»).
+- **Consecuencia:** la sincronía automática con `drive` exige verificación + CASA para cuentas externas.
+  Antes de asumir ese costo se **prueba** si con `drive.file` elegir la CARPETA de la experiencia una
+  vez en el Picker da acceso a lo que se añada después; si sí, sincronía sin auditoría. Si no, `drive`
+  en modo Testing (≤100 usuarios, reconexión cada 7 días) mientras se tramita la verificación.
 - **Por qué importa:** decide si la sincronía «añado en Drive y aparece en la app» puede ser automática.
   - `drive.file` (no sensible, sin auditoría): la app **solo ve lo que ella creó** o lo que el usuario
     **elige en el selector de Google (Picker)**. Un archivo que el usuario suelta en la carpeta desde
@@ -60,15 +67,24 @@ a la app, entrando **sin categoría** y con opción de asignársela.
   función de Gmail/Calendar, la misma conexión pide el permiso extra (`include_granted_scopes`), sin
   reconectar desde cero.
 
-#### P3 — ¿Quién conecta Google y crea experiencias: miembros, candidatos, ambos? · ⏸ Bloqueada
+#### P3 — ¿Quién conecta Google y crea experiencias: miembros, candidatos, ambos? · ✅ Resuelta
+- **Respuesta (Fernando, 2026-10-13):** **miembros y candidatos**. ⇒ el botón de conexión va donde
+  ambos lo ven (pestaña «Conexiones» o el Perfil), no tras `member_id`.
 - **Por qué importa:** en Configuración un candidato solo ve el Perfil; habría que poner el botón en el
   Perfil o en una pestaña nueva «Conexiones» visible para todos.
 
-#### P4 — ¿Qué datos tiene una experiencia personal? · ⏸ Bloqueada
+#### P4 — ¿Qué datos tiene una experiencia personal? · ✅ Resuelta (salvo P10)
+- **Respuesta (Fernando, 2026-10-13):** la **categoría** se puede llamar **«evento»**. Cada evento:
+  **nombre libre** (obligatorio), **fecha** (obligatoria), **descripción** (opcional) y **tipo de
+  beneficio, obligatorio y MÚLTIPLE**: `laboral` · `mental` · `social` · `corporal` (en qué aspectos
+  de su vida le benefició). Sigue siendo personal: el tipo NO suma al perfil.
 - **Por qué importa:** nombre y descripción seguro; ¿fecha?, ¿lugar?, ¿portada? ¿Las categorías son
   libres por experiencia o hay un catálogo común?
 
-#### P5 — Cómo se ven los archivos dentro de la app · ⏸ Bloqueada
+#### P5 — Cómo se ven los archivos dentro de la app · ✅ Resuelta
+- **Respuesta (Fernando, 2026-10-13):** **miniaturas** y al pulsar se abre en el navegador / donde se
+  pueda (Drive). **Sin visor propio** que consuma RAM. ⇒ `thumbnailLink` de Drive (URL firmada de
+  corta vida, se pide al listar) + `webViewLink`. Nada de bytes pasando por Railway.
 - **Por qué importa:** los archivos son privados del Drive del usuario. Opciones: miniaturas + abrir en
   Google Drive (simple), o visor dentro de la app pasando el archivo por nuestro servidor (más trabajo
   y ancho de banda en Railway, sobre todo con videos).
@@ -77,7 +93,12 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - **Propuesta:** Drive es la fuente de verdad. Borrado en Drive → desaparece de la app en la siguiente
   sincronía. Desconectar → la app deja de mostrar los archivos (no se borra nada del Drive).
 
-#### P7 — Credenciales de Google Cloud · ⏸ Bloqueada
+#### P7 — Credenciales de Google Cloud · 🔎 En curso
+- **Encontrado (2026-10-13):** el proyecto **ya existe**: `grupo-corazones-cruzados` (el de la cuenta
+  de servicio `meet-creator` y de Firebase). Falta crear en él la pantalla de consentimiento (External)
+  y el cliente OAuth Web con redirección `https://app.grupocc.org/api/google/callback` (+ la local).
+  Cuenta de Fernando: `lfgonzalezm0@grupocc.org`. **Las credenciales no se guardan aquí ni se usan
+  para entrar en su nombre**: los pasos de consola los hace Fernando.
 - **Por qué importa:** hace falta un **cliente OAuth (Web)** en el proyecto de Google Cloud, la
   **pantalla de consentimiento** (tipo *External*) y la URI de redirección de producción. Solo Fernando
   puede crearlo en la consola (o darme acceso). El secreto va a Railway, **nunca** al repo.
@@ -93,11 +114,14 @@ a la app, entrando **sin categoría** y con opción de asignársela.
   Experiencias; antes de subir se compara con el tamaño del lote y se avisa **antes** de intentar.
   Si Google responde `storageQuotaExceeded`, el mismo aviso. (Cuentas con almacenamiento ilimitado: sin `limit`.)
 
+#### P10 — ¿La experiencia (el contenedor de eventos) lleva campos propios además del nombre? · ❓ Abierta
+- **Por qué importa:** ¿solo nombre + descripción, o también fecha/tipo? Hoy se asume nombre + descripción opcional.
+
 ### Decisiones de diseño (provisionales hasta cerrar P1-P5)
 - **Tablas propias, no `gs_*`:** una experiencia personal no tiene tareas, plazas ni ciclo de vida, y
   no debe entrar nunca en `getSubjectsProfileScores`. Prefijo nuevo (p. ej. `exp_`):
-  `exp_experiencias`, `exp_categorias`, `exp_archivos` (con `drive_file_id`, `categoria_id` NULL = sin
-  categoría) + `google_conexiones` por usuario (email de Google, scopes concedidos, refresh token
+  `exp_experiencias`, `exp_eventos` (nombre, fecha, descripción, `beneficios TEXT[]` con CHECK de los 4
+  valores y al menos uno), `exp_archivos` (con `drive_file_id`, `evento_id` NULL = sin evento) + `google_conexiones` por usuario (email de Google, scopes concedidos, refresh token
   **cifrado**). Migración en `sql/migrations/` (sin DDL en cada petición).
 - **En Drive:** carpeta `GCC World / Experiencias / <experiencia> / <categoría>`. Asignar categoría =
   mover el archivo a la subcarpeta (Drive sigue siendo la verdad; la BD es índice).
