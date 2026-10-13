@@ -4674,6 +4674,10 @@ Stack estándar de la casa, con particularidades de este repo:
     `.env.local` y en Railway (`corazonescruzados`), **la clave es la MISMA en los dos** porque local y
     producción comparten BD: con claves distintas, un token guardado desde un lado no descifra en el otro.
   - **Migración `071_experiencias_personales_google.sql`**, aplicada 2026-10-13.
+  - **Pestañas (Fernando, 2026-10-13):** arriba del rail, «Experiencias Grupales» (Gestión Social) y
+    «Experiencias Personales». **Prueba real contra el Drive de Fernando: 15/15** (subida directa con
+    CORS, suelto = sin evento, mover, miniatura, borrar evento devuelve archivos, papelera). App de
+    Google **publicada** (sin verificar) el 2026-10-13.
   - **Pendiente Google:** la app está en **Testing** (100 usuarios, el token caduca a los 7 días). Para
     que no caduque: **Publicar** la app (producción sin verificar = aviso «app no verificada», tope 100
     usuarios, pero el token ya NO caduca) y luego **verificación** (dominio en Search Console, política

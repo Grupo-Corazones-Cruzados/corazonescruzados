@@ -1089,7 +1089,7 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
 | Control | Componente | Notas |
 |---|---|---|
 | Título de página | `components/ui/PageHeader` | title + description |
-| Command bar de módulo | `components/ui/ModuleToolbar` | pivot tabs izq · buscador + acción der |
+| Command bar de módulo | `components/ui/ModuleToolbar` | pivot tabs izq · buscador + acción der · ⚠️ **2026-10-13: sin ningún uso**, y en teléfono su `-mt-12` mete las pestañas debajo de la cabecera móvil. Para pestañas arriba usar `PixelTabs` |
 | Tabs (pivot) | `components/ui/PixelTabs` (`flush`) | `.corp .pivot` subrayado azul marca |
 | Tabla | `components/ui/PixelDataTable` | `.corp .data-table`; `onRowClick`, orden por columna |
 | Badge/estado | `components/ui/PixelBadge` | variantes success/warning/error/info/default. Lleva punto de color salvo en `default`; `punto={false}` lo quita donde el texto ya basta (Facturas: lista, panel y detalle; Suscripciones: detalle — Fernando 2026-10-05) |
@@ -3965,8 +3965,12 @@ mientras se escribe.
 
 ## Experiencias personales y Conexiones (2026-10-13)
 
-- **Rail con secciones:** Experiencias usa `FilterRail sections` — Gestión Social arriba y el grupo
-  «Personales» abajo (`BookHeart`). Nada nuevo: el patrón de Proyectos/Centralizado.
+- **Dos pestañas arriba (Fernando, 2026-10-13): «Experiencias Grupales» · «Experiencias Personales»**,
+  con `PixelTabs` (las mismas que Gestión Social, el otro lado de esos eventos). Grupales conserva su
+  `FilterRail`; Personales ocupa todo el ancho. `?vista=personales` abre la segunda. (Una primera
+  versión las metía como sección «Personales» del rail; se cambió a pestañas.)
+- **`PixelTabs` ganó `labelCorto`** por pestaña: en teléfono (< sm) se muestra el corto
+  («Grupales» / «Personales») en vez de mandar una pestaña al menú «⋯», que con solo dos estorba.
 - **Formularios** en `EditPanel` (experiencia y evento). Los **tipos de beneficio** se eligen con
   `FilaMarcable` (la fila de `ListaMarcable`) dentro de un borde con `divide-y`: cuatro opciones
   fijas, vistas enteras, sin desplegable.

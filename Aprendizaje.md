@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 90 % — CONSTRUIDO; FALTA LA PRUEBA CON UNA CUENTA REAL Y PUBLICAR LA APP EN GOOGLE
+## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · ✅ 100 % — CONSTRUIDO, PROBADO CONTRA DRIVE REAL Y APP PUBLICADA (falta solo la verificación de Google, aparte)
 
 **Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su
 propia experiencia**, que siempre es **personal** (no afecta su perfil: no suma ni resta talentos ni
@@ -15,7 +15,10 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 (modelo de datos, sincronía con una fuente externa, tokens cifrados).
 
 ### Progreso
-- **% de información para el objetivo:** 90 %
+- **% de información para el objetivo:** 100 %
+- **Estado (2026-10-13, cierre):** Fernando publicó la app y conectó su cuenta. Prueba de punta a punta
+  contra su Drive: 15/15. Pestañas Grupales/Personales añadidas a pedido suyo. Pendiente aparte (no
+  bloquea el uso): verificación de Google (sección de datos de Google en `/legal`, video, CASA, logo).
 - **Estado (2026-10-13, noche):** CONSTRUIDO (migración 071 aplicada, variables en Railway). Verificado:
   tsc + `next build` + rutas en local con sesión (estado, redirección a Google con las URIs y scopes
   correctos, cookie de estado, callback rechaza estado falso y cancelación, 409 sin conexión, 400/404/401).

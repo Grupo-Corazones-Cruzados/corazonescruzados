@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import ExperienciasPersonales from '@/components/experiencias/ExperienciasPersonales';
+import PixelTabs from '@/components/ui/PixelTabs';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { VALOR_LABEL } from '@/lib/centralized/valores';
 import {
   Layers, Megaphone, PlayCircle, CheckCircle2, CalendarDays, MapPin, Clock, Users,
-  Gem, Sparkles, PartyPopper, XCircle, Lock, ChevronLeft, BookHeart,
+  Gem, Sparkles, PartyPopper, XCircle, Lock, ChevronLeft,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -62,11 +63,18 @@ const timeLabel = (e: { allDay: boolean; startTime: string | null; endTime: stri
  *
  * Regla: una sola tarea por evento; se puede soltar mientras el evento no haya iniciado.
  *
- * Sección «Personales» del rail (2026-10-13): las experiencias que crea el propio usuario,
- * con sus eventos y archivos en su Google Drive. NO afectan su perfil
- * (`components/experiencias/ExperienciasPersonales.tsx`).
+ * Arriba, dos pestañas (Fernando, 2026-10-13): **Experiencias Grupales** (lo de arriba, con
+ * su rail de filtros) y **Experiencias Personales** — las que crea el propio usuario, con
+ * sus eventos y archivos en su Google Drive; NO afectan su perfil
+ * (`components/experiencias/ExperienciasPersonales.tsx`). `?vista=personales` abre la segunda.
  */
+type Vista = 'grupales' | 'personales';
+const VISTAS = [
+  { value: 'grupales', label: 'Experiencias Grupales', labelCorto: 'Grupales' },
+  { value: 'personales', label: 'Experiencias Personales', labelCorto: 'Personales' },
+];
 export default function ExperienciasPage() {
+  const [vista, setVista] = useState<Vista>('grupales');
   const [filter, setFilter] = useState('all');
   const [events, setEvents] = useState<SocialEvent[]>([]);
   const [openId, setOpenId] = useState<number | null>(null);
@@ -98,6 +106,15 @@ export default function ExperienciasPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('vista') === 'personales') setVista('personales');
+  }, []);
+  const cambiarVista = (v: string) => {
+    setVista(v as Vista);
+    const p = new URLSearchParams(window.location.search);
+    if (v === 'personales') p.set('vista', v); else p.delete('vista');
+    window.history.replaceState(null, '', `${window.location.pathname}${p.size ? `?${p}` : ''}`);
+  };
   useEffect(() => { if (openId != null) loadDetail(openId); else setDetail(null); }, [openId, loadDetail]);
 
   const act = async (fn: () => Promise<Response>) => {
@@ -126,15 +143,28 @@ export default function ExperienciasPage() {
     return events.filter((e) => e.status === filter);
   }, [events, filter]);
 
-  const railSections = useMemo(() => [
-    { items: FILTERS.map((f) => ({ ...f, count: (counts as any)[f.value] })) },
-    { title: 'Personales', items: [{ value: 'personales', label: 'Mis experiencias personales', Icon: BookHeart }] },
-  ], [counts]);
+  const railItems = useMemo(
+    () => FILTERS.map((f) => ({ ...f, count: (counts as any)[f.value] })),
+    [counts],
+  );
 
   // ── Detalle de una experiencia (drill-in) ──
+  // Las mismas pestañas que Gestión Social (el otro lado de estos eventos): `PixelTabs`.
+  const barra = <div className="mb-4"><PixelTabs tabs={VISTAS} active={vista} onChange={cambiarVista} /></div>;
+
+  if (vista === 'personales') {
+    return (
+      <div>
+        {barra}
+        <ExperienciasPersonales />
+      </div>
+    );
+  }
+
   if (detail) {
     return (
       <div>
+        {barra}
         <button onClick={() => setOpenId(null)} className="inline-flex items-center gap-1 text-[12px] text-digi-muted hover:text-accent transition-colors mb-4" style={mf}>
           <ChevronLeft className="w-4 h-4" /> Experiencias
         </button>
@@ -163,10 +193,11 @@ export default function ExperienciasPage() {
 
   // ── Lista de experiencias ──
   return (
+    <div>
+    {barra}
     <div className="flex flex-col lg:flex-row gap-4 items-start">
-      <FilterRail title="Experiencias" sections={railSections} value={filter} onChange={setFilter} />
+      <FilterRail title="Experiencias" items={railItems} value={filter} onChange={setFilter} />
 
-      {filter === 'personales' ? <ExperienciasPersonales /> : (
       <div className="flex-1 min-w-0 w-full">
         {err && <ErrorBanner text={err} />}
         {loading ? (
@@ -206,7 +237,7 @@ export default function ExperienciasPage() {
           </div>
         )}
       </div>
-      )}
+    </div>
     </div>
   );
 }

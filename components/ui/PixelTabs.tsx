@@ -6,7 +6,18 @@ import { MoreHorizontal } from 'lucide-react';
 interface Tab {
   value: string;
   label: string;
+  /**
+   * Etiqueta para el teléfono (< sm). Con pocas pestañas de nombre largo es mejor
+   * acortarlas que mandar una al menú «⋯» (Experiencias: «Grupales» / «Personales»).
+   */
+  labelCorto?: string;
   count?: number;
+}
+
+/** El texto de la pestaña; con `labelCorto`, el corto en teléfono y el largo desde `sm`. */
+function Etiqueta({ t }: { t: Tab }) {
+  if (!t.labelCorto) return <>{t.label}</>;
+  return <><span className="sm:hidden">{t.labelCorto}</span><span className="hidden sm:inline">{t.label}</span></>;
 }
 
 interface Props {
@@ -101,7 +112,7 @@ export default function PixelTabs({ tabs, active, onChange, flush = false }: Pro
         <div ref={measureRef} className="pivot flex gap-1" style={{ width: 'max-content' }}>
           {tabs.map((t) => (
             <span key={t.value} className={tabClass(false)} style={{ fontFamily: 'var(--font-display)' }}>
-              {t.label}
+              <Etiqueta t={t} />
               {countPill(t, false)}
             </span>
           ))}
@@ -124,7 +135,7 @@ export default function PixelTabs({ tabs, active, onChange, flush = false }: Pro
             className={tabClass(active === tab.value)}
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            {tab.label}
+            <Etiqueta t={tab} />
             {countPill(tab, active === tab.value)}
           </button>
         ))}
