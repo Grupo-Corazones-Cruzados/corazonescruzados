@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { timingSafeEqual } from 'node:crypto';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { guardarConexion, redirectUri, SCOPE_DRIVE } from '@/lib/integrations/google-oauth';
+import { guardarConexion, redirectUri, origenPublico, SCOPE_DRIVE } from '@/lib/integrations/google-oauth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ const iguales = (a: string, b: string) => {
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const volver = (e: string) => {
-    const res = NextResponse.redirect(new URL(`/dashboard/settings?tab=conexiones&google=${e}`, redirectUri(req.headers)));
+    const res = NextResponse.redirect(new URL(`/dashboard/settings?tab=conexiones&google=${e}`, origenPublico(req.headers)));
     res.cookies.set(COOKIE_ESTADO, '', { path: '/api/google', maxAge: 0 });
     return res;
   };

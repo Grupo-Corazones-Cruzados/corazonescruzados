@@ -47,10 +47,16 @@ export function googleOAuthConfigurado(): boolean {
  * producción (app.grupocc.org) sin variables distintas. Las dos están registradas en el
  * cliente OAuth; una que no lo esté la rechaza Google, no nosotros.
  */
-export function redirectUri(headers: Headers): string {
+export function origenPublico(headers: Headers): string {
+  // ⚠️ Detrás de Railway `req.url` trae el host INTERNO (`localhost:8080`): el público
+  // viene en las cabeceras del proxy.
   const host = headers.get('x-forwarded-host') || headers.get('host') || 'localhost:3002';
   const proto = headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https');
-  return `${proto.split(',')[0].trim()}://${host.split(',')[0].trim()}/api/google/callback`;
+  return `${proto.split(',')[0].trim()}://${host.split(',')[0].trim()}`;
+}
+
+export function redirectUri(headers: Headers): string {
+  return `${origenPublico(headers)}/api/google/callback`;
 }
 
 export function urlAutorizacion(opts: { redirectUri: string; state: string; loginHint?: string }): string {

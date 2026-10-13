@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { resolveSubject } from '@/lib/centralized/subject';
-import { googleOAuthConfigurado, redirectUri, urlAutorizacion, leerConexion } from '@/lib/integrations/google-oauth';
+import { googleOAuthConfigurado, redirectUri, origenPublico, urlAutorizacion, leerConexion } from '@/lib/integrations/google-oauth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +17,10 @@ const COOKIE_ESTADO = 'g_oauth_state';
  * atacante (CSRF de enlace de cuentas).
  */
 export async function GET(req: Request) {
-  const base = new URL(req.url);
+  const origen = origenPublico(req.headers);
   const user = await getCurrentUser();
-  if (!user) return NextResponse.redirect(new URL('/login', base));
-  const volver = (e: string) => NextResponse.redirect(new URL(`/dashboard/settings?tab=conexiones&google=${e}`, redirectUri(req.headers)));
+  if (!user) return NextResponse.redirect(new URL('/login', origen));
+  const volver = (e: string) => NextResponse.redirect(new URL(`/dashboard/settings?tab=conexiones&google=${e}`, origen));
   if (!(await resolveSubject(user))) return volver('sin_acceso');
   if (!googleOAuthConfigurado()) return volver('no_configurado');
 
