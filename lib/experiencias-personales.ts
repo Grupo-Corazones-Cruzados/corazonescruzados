@@ -325,6 +325,16 @@ export async function asignarArchivo(userId: string, expId: number, fileId: stri
   await mover(token, fileId, destino, actuales);
 }
 
+/** Renombra el archivo en Drive (la extensión la conserva la pantalla). */
+export async function renombrarArchivo(userId: string, expId: number, fileId: string, nombre: unknown): Promise<void> {
+  const limpio = texto(nombre, 'El nombre del archivo', 255, true)!;
+  if (/[\\/]/.test(limpio)) throw new Invalido('El nombre no puede llevar «/» ni «\\».');
+  const { todas } = await carpetas(userId, expId);
+  const token = await tokenDeAcceso(userId);
+  await archivoDe(token, fileId, todas);
+  await renombrar(token, fileId, limpio);
+}
+
 export async function eliminarArchivo(userId: string, expId: number, fileId: string): Promise<void> {
   const { todas } = await carpetas(userId, expId);
   const token = await tokenDeAcceso(userId);

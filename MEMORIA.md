@@ -4683,6 +4683,10 @@ Stack estándar de la casa, con particularidades de este repo:
     Los **eventos deben caer dentro del rango** y no se puede encoger el rango dejando uno fuera.
     En la lista, un **filtro por día** (a la izquierda de «Nueva experiencia») muestra las experiencias
     cuyo rango incluye ese día. Probado 16/16 contra BD + Drive real y el EXCLUDE en transacción.
+  - **Renombrar archivos (2026-10-13):** lápiz en cada tarjeta → `QuickEditDialog` con el nombre SIN
+    extensión (se conserva sola); `PATCH .../archivos/[fileId] { nombre }` renombra en Drive. La ruta
+    distingue por la PRESENCIA de `nombre`: sin esa rama, el renombrado se leía como `eventoId = null` y
+    movía el archivo a «Sin evento». Rechaza «/» y «\». Probado contra Drive real.
   - **Bug corregido (2026-10-13):** al eliminar una experiencia salía «Experiencia no encontrada»: el
     borrado iba bien, pero `accion()` recargaba después el detalle con el id ya borrado. Ahora el borrado
     pasa `recargarDetalle = false`.

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BotonEditar from '@/components/ui/BotonEditar';
 import BotonQuitar from '@/components/ui/BotonQuitar';
-import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
+import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { FilaMarcable } from '@/components/ui/ListaMarcable';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import EspacioDrive, { fmtBytes, type EspacioDriveDatos } from '@/components/google/EspacioDrive';
@@ -93,6 +93,8 @@ export default function ExperienciasPersonales() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<{ text: string; onOk: () => void } | null>(null);
   const [formExp, setFormExp] = useState<{ id: number | null; nombre: string; descripcion: string; fechaInicio: string; fechaFin: string } | null>(null);
+  /** Renombrar un archivo: se edita el nombre SIN la extensión, que se conserva sola. */
+  const [renombrando, setRenombrando] = useState<{ id: string; base: string; ext: string } | null>(null);
   /** Filtro de la lista: las experiencias cuyo rango incluye este día. '' = todas. */
   const [diaFiltro, setDiaFiltro] = useState('');
   const [formEv, setFormEv] = useState<{ id: number | null; nombre: string; fecha: string; descripcion: string; beneficios: Beneficio[] } | null>(null);
@@ -157,6 +159,22 @@ export default function ExperienciasPersonales() {
     else await pedir(`/api/experiencias/personales/${abierta}/eventos/${formEv.id}`, { method: 'PATCH', body });
     setFormEv(null);
   }); };
+
+  // ── Renombrar archivo ──
+  const abrirRenombrar = (a: Archivo) => {
+    const punto = a.nombre.lastIndexOf('.');
+    // «.bashrc» o «sin-extension»: no hay extensión que proteger.
+    const tieneExt = punto > 0 && punto >= a.nombre.length - 6;
+    setRenombrando({ id: a.id, base: tieneExt ? a.nombre.slice(0, punto) : a.nombre, ext: tieneExt ? a.nombre.slice(punto) : '' });
+  };
+  const guardarNombre = async () => {
+    if (!renombrando || abierta == null) return;
+    const r = renombrando;
+    await accion(async () => {
+      await pedir(`/api/experiencias/personales/${abierta}/archivos/${r.id}`, { method: 'PATCH', body: JSON.stringify({ nombre: `${r.base.trim()}${r.ext}` }) });
+      setRenombrando(null);
+    });
+  };
 
   // ── Subida ──
   const elegirArchivos = (eventoId: number) => {
@@ -320,6 +338,25 @@ export default function ExperienciasPersonales() {
         )}
       </EditPanel>
 
+      <QuickEditDialog
+        open={!!renombrando}
+        title="Renombrar archivo"
+        onClose={() => setRenombrando(null)}
+        onSave={guardarNombre}
+        saving={busy}
+        canSave={!!renombrando?.base.trim()}
+      >
+        {renombrando && (
+          <EditField label="Nombre">
+            <div className="flex items-center gap-2">
+              <input value={renombrando.base} maxLength={240} autoFocus className={EDIT_INPUT}
+                onChange={(e) => setRenombrando({ ...renombrando, base: e.target.value })} />
+              {renombrando.ext && <span className="text-[13px] text-digi-muted shrink-0" style={mf}>{renombrando.ext}</span>}
+            </div>
+          </EditField>
+        )}
+      </QuickEditDialog>
+
       <PixelConfirm
         open={!!confirm}
         danger
@@ -415,6 +452,7 @@ export default function ExperienciasPersonales() {
               >
                 <Rejilla archivos={sueltos} eventos={d.eventos} busy={busy}
                   onMover={(a, ev) => accion(() => pedir(`/api/experiencias/personales/${abierta}/archivos/${a.id}`, { method: 'PATCH', body: JSON.stringify({ eventoId: ev }) }))}
+                  onRenombrar={abrirRenombrar}
                   onQuitar={(a) => setConfirm({ text: `¿Enviar «${a.nombre}» a la papelera de tu Google Drive?`, onOk: () => accion(() => pedir(`/api/experiencias/personales/${abierta}/archivos/${a.id}`, { method: 'DELETE' })) })} />
               </Seccion>
             )}
@@ -452,6 +490,7 @@ export default function ExperienciasPersonales() {
                     ? <p className="text-[12px] text-digi-muted py-3" style={mf}>Sin archivos.</p>
                     : <Rejilla archivos={archivos} eventos={d.eventos} busy={busy}
                         onMover={(a, destino) => accion(() => pedir(`/api/experiencias/personales/${abierta}/archivos/${a.id}`, { method: 'PATCH', body: JSON.stringify({ eventoId: destino }) }))}
+                        onRenombrar={abrirRenombrar}
                         onQuitar={(a) => setConfirm({ text: `¿Enviar «${a.nombre}» a la papelera de tu Google Drive?`, onOk: () => accion(() => pedir(`/api/experiencias/personales/${abierta}/archivos/${a.id}`, { method: 'DELETE' })) })} />}
                 </Seccion>
               );
@@ -557,9 +596,10 @@ function IconoTipo({ mime, className }: { mime: string; className: string }) {
 }
 
 /** Cuadrícula de miniaturas. Al pulsar se abre el archivo en Google Drive (sin visor propio). */
-function Rejilla({ archivos, eventos, busy, onMover, onQuitar }: {
+function Rejilla({ archivos, eventos, busy, onMover, onRenombrar, onQuitar }: {
   archivos: Archivo[]; eventos: Evento[]; busy: boolean;
   onMover: (a: Archivo, eventoId: number | null) => void;
+  onRenombrar: (a: Archivo) => void;
   onQuitar: (a: Archivo) => void;
 }) {
   return (
@@ -582,6 +622,7 @@ function Rejilla({ archivos, eventos, busy, onMover, onQuitar }: {
                 <p className="text-[11.5px] text-digi-text truncate" style={mf} title={a.nombre}>{a.nombre}</p>
                 {a.tamano != null && <p className="text-[10.5px] text-digi-muted tabular-nums" style={mf}>{fmtBytes(a.tamano)}</p>}
               </div>
+              <BotonEditar tamano="xs" etiqueta="Renombrar" disabled={busy} onClick={() => onRenombrar(a)} />
               <BotonQuitar tamano="xs" etiqueta="Enviar a la papelera" disabled={busy} onClick={() => onQuitar(a)} />
             </div>
             {eventos.length > 0 && (
