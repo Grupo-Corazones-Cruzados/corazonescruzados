@@ -13,7 +13,9 @@
 #      la línea de comandos: lo que va ahí lo ve cualquiera con `ps` (así se filtró el 2026-10-13).
 #   3. RESTAURA la copia en un Postgres local (solo socket, sin red) y comprueba que entraron todas
 #      las tablas. Una copia que no se ha restaurado no es una copia.
-#   4. Retención: 30 diarios + el del día 1 de cada mes durante 12 meses.
+#   4. Retención: SOLO LAS 3 COPIAS MÁS RECIENTES (decisión del usuario, 2026-10-13: la copia es
+#      para recuperar los datos actuales, no un historial; nada de copias mensuales ni antiguas).
+#      Se borra DESPUÉS de comprobar la copia nueva: si hoy falla, las 3 buenas siguen ahí.
 #   5. Deja estado.json y registro.log; si falla, aviso en pantalla del M1.
 #
 # Instalar / actualizar desde la Mac de desarrollo: services/m1-respaldos/instalar.sh
@@ -24,7 +26,6 @@ VOL="/Volumes/GCC-Respaldos"
 VOL_UUID="F104FA7C-519C-486F-9ED3-A968DA439E99"
 BIN="$HOME/Applications/Postgres.app/Contents/Versions/16/bin"
 DIARIOS="$VOL/gcc/diarios"
-MENSUALES="$VOL/gcc/mensuales"
 PGDATA_V="$VOL/pg16-verificacion"
 SOCK="$CFG/socket"
 LOG="$CFG/registro.log"
@@ -66,7 +67,7 @@ for intento in 1 2 3; do
   sleep 10
 done
 [ -d "$VOL" ] || fallo "el SSD GCC-Respaldos no está conectado o no se pudo desbloquear"
-mkdir -p "$DIARIOS" "$MENSUALES" "$SOCK"
+mkdir -p "$DIARIOS" "$SOCK"
 
 # 2. Copia (a .tmp, y solo se renombra si sale entera)
 DEST="$DIARIOS/gcc-$HOY.dump"
@@ -92,9 +93,9 @@ PROYECTOS=$("$BIN/psql" -h "$SOCK" -U postgres -d verificacion -Atc "select coun
 log "restauración OK: $RESTAURADAS tablas, $PROYECTOS proyectos"
 
 # 4. Retención
-[ "$(date +%d)" = "01" ] && cp -f "$DEST" "$MENSUALES/gcc-$(date +%Y-%m).dump"
-find "$DIARIOS" -name 'gcc-*.dump' -mtime +30 -delete
-ls -1t "$MENSUALES"/gcc-*.dump 2>/dev/null | tail -n +13 | while read -r f; do rm -f "$f"; done
+# Los nombres llevan la fecha (gcc-AAAA-MM-DD.dump): ordenados al revés, las 3 primeras son las
+# más nuevas y el resto sobra.
+ls -1 "$DIARIOS"/gcc-*.dump 2>/dev/null | sort -r | tail -n +4 | while read -r f; do rm -f "$f"; log "borrada copia antigua: $(basename "$f")"; done
 
 estado ok "$TAM, $RESTAURADAS tablas, $PROYECTOS proyectos"
 log "— fin OK en $(( $(date +%s) - INICIO )) s —"

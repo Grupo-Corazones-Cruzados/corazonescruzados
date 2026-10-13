@@ -331,7 +331,7 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
 
 **M1 — respaldo diario de la BD de GCC:** Postgres 16 cliente (`pg_dump` 16) en el M1, `pg_dump -Fc` de
 producción por el proxy público a las 03:00 → SSD, retención 30 diarios + 12 mensuales, restauración de
-prueba en una BD local de pruebas tras cada copia, aviso si falla. launchd + Mac sin suspensión.
+prueba en una BD local de pruebas tras cada copia, aviso si falla. **Corregido el 2026-10-13: solo se guardan las 3 copias más recientes** (el usuario no quiere historial, solo poder recuperar los datos actuales). launchd + Mac sin suspensión.
 
 
 - Recomendación entregada: producción sigue en Railway; M1 = respaldo diario de las 7 BD + BD de pruebas

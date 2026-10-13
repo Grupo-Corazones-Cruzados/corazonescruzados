@@ -6292,7 +6292,7 @@ Stack estándar de la casa, con particularidades de este repo:
 - **Respaldo diario de la BD de GCC en el MacBook Air M1 (2026-10-09):** el M1 (`fernandos-macbook-air`,
   Tailscale `100.73.251.124`, usuario `fernandogonzalez`, 8 GB) con un SSD externo de 2 TB cifrado
   (`GCC-Respaldos`) hace a las 03:00 un `pg_dump -Fc` de producción con el rol **`gcc_respaldo`** (solo
-  lectura), lo **restaura** en un Postgres 16 local para comprobarlo, y guarda 30 diarios + 12 mensuales.
+  lectura), lo **restaura** en un Postgres 16 local para comprobarlo, y guarda **solo las 3 copias más recientes** (decisión del usuario, 2026-10-13: nada de historial ni copias antiguas).
   Código: `services/m1-respaldos/`. Secretos solo en el M1 (`~/.gcc-respaldos/`). **Producción sigue en
   Railway**: se midió que llevar la BD a casa ahorraba ~2 $/mes y subía cada consulta de ~1 ms a ~200 ms.
   Solo el proyecto `Servidor-GCC` (decisión del usuario); los demás proyectos del workspace no. Detalle,
