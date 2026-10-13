@@ -490,7 +490,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // había). El anterior, si lo había, va a la papelera de Drive.
         const g = await guardar({
           datos: videoBuffer, mime: 'video/mp4', base: `${project.title || `Proyecto ${id}`} · video`,
-          modulo: 'proyecto_video', referencia: id, ruta: ['Proyectos', `${id} · ${project.title || ''}`.trim()],
+          modulo: 'proyecto_video', referencia: id, ruta: ['Proyectos', `${id} · ${project.title || ''}`.trim(), 'Video'],
         });
         const { rows: [previo] } = await pool.query(`SELECT video_file_id FROM gcc_world.projects WHERE id = $1`, [id]);
         await pool.query(

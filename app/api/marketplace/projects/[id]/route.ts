@@ -93,7 +93,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const g = await guardar({
           datos: d.datos, mime: d.mime,
           base: `${actual?.title || `Proyecto ${id}`} · foto ${String(antes.length + cleanImages.length + 1).padStart(2, '0')}`,
-          modulo: 'proyecto_foto', referencia: id, ruta: ['Proyectos', `${id} · ${actual?.title || ''}`.trim()],
+          modulo: 'proyecto_foto', referencia: id, ruta: ['Proyectos', `${id} · ${actual?.title || ''}`.trim(), 'Fotos'],
         });
         cleanImages.push(g.url);
       }

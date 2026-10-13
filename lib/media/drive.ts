@@ -11,11 +11,19 @@ import { authDrive } from '@/lib/integrations/google-workspace';
  * misma que ya manda el correo y crea las reuniones de Meet. No usa el token de ningún
  * usuario: es el almacén de la empresa, no el Drive personal de quien sube.
  *
- * Todo vive bajo `GCC World / Media / …` en la raíz de esa cuenta.
+ * Todo vive en UNA carpeta dedicada en la raíz de esa cuenta, separada de lo personal (ahí
+ * ya hay un «GCC World / Experiencias» del módulo de experiencias, que es otra cosa):
+ *
+ *   GCC World · Archivos de la empresa /
+ *     Proyectos / <id · título> / Fotos | Video | Incidencias
+ *     Documentación de proyectos / <proyecto> / <incidencia>
+ *     Productos / <producto> / <institución> / …
+ *
+ * Una carpeta por proyecto y por producto (Fernando, 2026-10-13).
  */
 
 const CARPETA = 'application/vnd.google-apps.folder';
-const RAIZ = ['GCC World', 'Media'];
+const RAIZ = ['GCC World · Archivos de la empresa'];
 
 function api() {
   return google.drive({ version: 'v3', auth: authDrive() });
@@ -23,7 +31,7 @@ function api() {
 
 const q = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-/** id de carpeta por ruta ("GCC World/Media/Proyectos/7"); dura lo que el proceso. */
+/** id de carpeta por ruta; dura lo que el proceso. */
 const carpetas = new Map<string, Promise<string>>();
 
 async function hija(nombre: string, padre: string | null): Promise<string> {
@@ -41,7 +49,7 @@ async function hija(nombre: string, padre: string | null): Promise<string> {
   return nueva.id!;
 }
 
-/** Carpeta `GCC World / Media / <ruta…>`, creándola si falta. */
+/** Carpeta `<raíz> / <ruta…>`, creándola si falta. */
 export function carpeta(ruta: string[]): Promise<string> {
   const partes = [...RAIZ, ...ruta];
   const clave = partes.join('/');

@@ -3,7 +3,8 @@
  * Muda las fotos y videos de Proyectos y Productos al Drive de la empresa (2026-10-13).
  *
  * Decisión de Fernando: todo lo de Proyectos y Productos vive en el Drive de
- * lfgonzalezm0@grupocc.org («GCC World / Media») y sale de la base (base64/bytea) y de
+ * lfgonzalezm0@grupocc.org («GCC World · Archivos de la empresa», una carpeta por proyecto y
+ * por producto) y sale de la base (base64/bytea) y de
  * Cloudinary. Ver Aprendizaje.md (P17, P18) y sql/migrations/073_media_drive.sql.
  *
  *   node scripts/migrar-media-drive.mjs                     → PRUEBA: cuenta y enseña, no escribe nada
@@ -58,7 +59,7 @@ const CARPETA = 'application/vnd.google-apps.folder';
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 const carpetas = new Map();
 async function carpeta(ruta) {
-  const partes = ['GCC World', 'Media', ...ruta];
+  const partes = ['GCC World · Archivos de la empresa', ...ruta];
   const clave = partes.join('/');
   if (carpetas.has(clave)) return carpetas.get(clave);
   let padre = null;
@@ -132,7 +133,7 @@ async function fotosDeProyectos() {
         if (esNuestra(ref)) { nuevas.push(ref); continue; }
         const b = await bytesDe(ref);
         if (!b) { nuevas.push(ref); continue; }
-        const id = await subir({ ...b, base: `${p.title || `Proyecto ${p.id}`} · foto ${String(i + 1).padStart(2, '0')}`, ruta: ['Proyectos', `${p.id} · ${p.title || ''}`.trim()], modulo: 'proyecto_foto', referencia: p.id });
+        const id = await subir({ ...b, base: `${p.title || `Proyecto ${p.id}`} · foto ${String(i + 1).padStart(2, '0')}`, ruta: ['Proyectos', `${p.id} · ${p.title || ''}`.trim(), 'Fotos'], modulo: 'proyecto_foto', referencia: p.id });
         subidos.push(id); nuevas.push(`/api/media/${id}`);
         resumen.archivos++; resumen.bytes += b.datos.length;
       }
@@ -152,7 +153,7 @@ async function videosDeProyectos() {
     let id = null;
     try {
       const { rows: [v] } = await q(`SELECT video_data FROM gcc_world.projects WHERE id = $1`, [p.id]);
-      id = await subir({ datos: v.video_data, mime: 'video/mp4', base: `${p.title || `Proyecto ${p.id}`} · video`, ruta: ['Proyectos', `${p.id} · ${p.title || ''}`.trim()], modulo: 'proyecto_video', referencia: p.id, origen: 'bytea' });
+      id = await subir({ datos: v.video_data, mime: 'video/mp4', base: `${p.title || `Proyecto ${p.id}`} · video`, ruta: ['Proyectos', `${p.id} · ${p.title || ''}`.trim(), 'Video'], modulo: 'proyecto_video', referencia: p.id, origen: 'bytea' });
       const r = await q(`UPDATE gcc_world.projects SET video_file_id = $1, video_data = NULL WHERE id = $2 AND video_file_id IS NULL AND md5(video_data) = $3`,
         [id, p.id, createHash('md5').update(v.video_data).digest('hex')]);
       if (r.rowCount !== 1) { await deshacer([id]); resumen.saltadas++; console.log('  ↺ cambió mientras tanto'); continue; }
@@ -179,7 +180,7 @@ async function fotosDeIncidencias() {
         if (esNuestra(ref)) { nuevas.push(ref); continue; }
         const b = await bytesDe(ref);
         if (!b) { nuevas.push(ref); continue; }
-        const id = await subir({ ...b, base: `${inc.title} · foto ${String(i + 1).padStart(2, '0')}`, ruta: ['Incidencias', inc.proyecto, inc.title.slice(0, 80)], modulo: 'incidencia', referencia: inc.id });
+        const id = await subir({ ...b, base: `${inc.title} · foto ${String(i + 1).padStart(2, '0')}`, ruta: ['Documentación de proyectos', inc.proyecto, inc.title.slice(0, 80)], modulo: 'incidencia', referencia: inc.id });
         subidos.push(id); nuevas.push(`/api/media/${id}`);
         resumen.archivos++; resumen.bytes += b.datos.length;
       }
@@ -203,7 +204,7 @@ async function imagenesDeDestrezas() {
     let id = null;
     try {
       const b = deDataUri(d.imagen_url);
-      id = await subir({ ...b, base: d.codigo, ruta: ['Productos', 'Planificaciones', d.inquilino], modulo: 'destreza', referencia: d.id, origen: 'base64' });
+      id = await subir({ ...b, base: d.codigo, ruta: ['Productos', 'Planificaciones', d.inquilino, 'Destrezas'], modulo: 'destreza', referencia: d.id, origen: 'base64' });
       const r = await q(`UPDATE planificaciones.destrezas SET imagen_url = $1 WHERE imagen_url = $2`, [`${BASE_PUBLICA}/api/media/${id}`, d.imagen_url]);
       if (r.rowCount === 0) { await deshacer([id]); resumen.saltadas++; continue; }
       resumen.archivos++; resumen.bytes += b.datos.length; resumen.filas += r.rowCount;

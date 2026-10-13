@@ -5,7 +5,7 @@ import { guardar } from '@/lib/media';
  * Fotos de las incidencias de la documentación de proyectos (`gcc_world."Incident"`, las del
  * portal `/portal/<proyecto>`). Hasta el 2026-10-13 iban como base64 DENTRO de la fila
  * («Railway tiene el disco efímero»): 20 MB en 32 incidencias. Ahora van al Drive de la
- * empresa, en `GCC World / Media / Incidencias / <proyecto> / <incidencia>`.
+ * empresa, en `Documentación de proyectos / <proyecto> / <incidencia>`.
  */
 const MIME: Record<string, string> = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp',
@@ -26,7 +26,7 @@ export async function guardarFotosIncidencia(
       datos: Buffer.from(await f.arrayBuffer()), mime,
       base: `${incidencia.title} · foto ${String(yaHay + urls.length + 1).padStart(2, '0')}`,
       modulo: 'incidencia', referencia: incidencia.id,
-      ruta: ['Incidencias', proyecto?.name || incidencia.projectId, incidencia.title.slice(0, 80)],
+      ruta: ['Documentación de proyectos', proyecto?.name || incidencia.projectId, incidencia.title.slice(0, 80)],
     });
     urls.push(g.url);
   }

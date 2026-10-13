@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         const g = await guardar({
           datos: img.datos, mime: img.mime, base: String(b.base || 'imagen'),
           modulo: 'destreza', referencia: String(b.referencia ?? ''),
-          ruta: ['Productos', 'Planificaciones', String(b.inquilino || 'sin-institucion')],
+          ruta: ['Productos', 'Planificaciones', String(b.inquilino || 'sin-institucion'), 'Destrezas'],
         });
         return NextResponse.json({ url: urlMediaAbsoluta(g.fileId), fileId: g.fileId, nombre: g.nombre });
       }

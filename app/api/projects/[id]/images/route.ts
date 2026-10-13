@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         const n = currentImages.length + uploaded.length + 1;
         const g = await guardar({
           datos: d.datos, mime: d.mime, base: `${p?.title || `Proyecto ${id}`} · foto ${String(n).padStart(2, '0')}`,
-          modulo: 'proyecto_foto', referencia: id, ruta: ['Proyectos', `${id} · ${p?.title || ''}`.trim()],
+          modulo: 'proyecto_foto', referencia: id, ruta: ['Proyectos', `${id} · ${p?.title || ''}`.trim(), 'Fotos'],
         });
         uploaded.push(g.url);
       } catch (e: any) {
