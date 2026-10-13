@@ -134,6 +134,11 @@ a la app, entrando **sin categoría** y con opción de asignársela.
   Google exige mostrar cada permiso en uso en el video.
 
 #### P11 — ¿Cómo se evita que la conexión caduque a los 7 días? · ✅ Resuelta (investigación)
+- **Información de marca (2026-10-13):** página principal `https://www.grupocc.org` (200; el dominio
+  desnudo `grupocc.org` da 404 y no sirve), privacidad `https://www.grupocc.org/legal`, condiciones
+  `https://www.grupocc.org/legal#s19`. **NO subir el logotipo antes de publicar:** con logo, Google exige
+  verificación para salir de «Prueba». A `/legal` le falta una sección sobre los datos de Google
+  (requisito de la verificación, no de publicar); su texto se acuerda con Fernando.
 - La caducidad de 7 días es **solo del estado «Testing»**. Al **publicar** la app (Google Auth Platform →
   Público → «Publicar app») pasa a producción; sin verificar, Google muestra «app no verificada» y limita
   a 100 usuarios, **pero el refresh token ya no caduca**. Los tokens emitidos en Testing sí caducan: tras
