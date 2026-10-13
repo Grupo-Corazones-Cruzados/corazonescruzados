@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 70 %
+## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 75 %
 
 **Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su
 propia experiencia**, que siempre es **personal** (no afecta su perfil: no suma ni resta talentos ni
@@ -15,7 +15,7 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 (modelo de datos, sincronía con una fuente externa, tokens cifrados).
 
 ### Progreso
-- **% de información para el objetivo:** 70 %
+- **% de información para el objetivo:** 75 %
 - **Estado (2026-10-13, tarde):** Fernando respondió P1, P3, P4, P5 y P7. Queda P2 (Gmail/Calendar), la
   prueba del Picker de carpeta y crear el cliente OAuth en la consola.
 - **Estado (2026-10-13):** investigado el módulo actual, Configuración y la integración de Google que
@@ -93,7 +93,15 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - **Propuesta:** Drive es la fuente de verdad. Borrado en Drive → desaparece de la app en la siguiente
   sincronía. Desconectar → la app deja de mostrar los archivos (no se borra nada del Drive).
 
-#### P7 — Credenciales de Google Cloud · 🔎 En curso
+#### P7 — Credenciales de Google Cloud · ✅ Resuelta (2026-10-13)
+- **Hecho (Fernando, 2026-10-13):** cliente OAuth Web creado (proyecto nº `588476197914`), en estado
+  **Testing** (solo los usuarios de prueba de la pantalla de consentimiento). ID y secreto en
+  `.env.local` (gitignored) como `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`; en Railway aún NO.
+- **Verificado contra Google:** el token endpoint responde `invalid_grant` a un código falso (⇒ ID y
+  secreto válidos, no `invalid_client`); las dos URIs de redirección (local y `app.grupocc.org`) son
+  aceptadas y una inventada da error ⇒ están bien registradas.
+- **Pendiente:** el secreto pasó por el chat → rotarlo (añadir uno nuevo en la consola y deshabilitar el viejo).
+- **Historial:**
 - **Encontrado (2026-10-13):** el proyecto **ya existe**: `grupo-corazones-cruzados` (el de la cuenta
   de servicio `meet-creator` y de Firebase). Falta crear en él la pantalla de consentimiento (External)
   y el cliente OAuth Web con redirección `https://app.grupocc.org/api/google/callback` (+ la local).
