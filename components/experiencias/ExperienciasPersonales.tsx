@@ -6,6 +6,7 @@ import BotonEditar from '@/components/ui/BotonEditar';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { FilaMarcable } from '@/components/ui/ListaMarcable';
+import PixelDataTable from '@/components/ui/PixelDataTable';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import EspacioDrive, { fmtBytes, type EspacioDriveDatos } from '@/components/google/EspacioDrive';
 import {
@@ -95,6 +96,8 @@ export default function ExperienciasPersonales() {
   const [formExp, setFormExp] = useState<{ id: number | null; nombre: string; descripcion: string; fechaInicio: string; fechaFin: string } | null>(null);
   /** Renombrar un archivo: se edita el nombre SIN la extensión, que se conserva sola. */
   const [renombrando, setRenombrando] = useState<{ id: string; base: string; ext: string } | null>(null);
+  /** Orden de la tabla general (por defecto, la más reciente primero). */
+  const [orden, setOrden] = useState<{ por: 'nombre' | 'descripcion' | 'fechaInicio' | 'fechaFin' | 'eventos'; dir: 'asc' | 'desc' }>({ por: 'fechaInicio', dir: 'desc' });
   /** Filtro de la lista: las experiencias cuyo rango incluye este día. '' = todas. */
   const [diaFiltro, setDiaFiltro] = useState('');
   const [formEv, setFormEv] = useState<{ id: number | null; nombre: string; fecha: string; descripcion: string; beneficios: Beneficio[] } | null>(null);
@@ -507,6 +510,11 @@ export default function ExperienciasPersonales() {
   // ── Lista ──
   // AAAA-MM-DD se compara bien como texto: el día cae dentro si inicio ≤ día ≤ fin.
   const visibles = (lista ?? []).filter((e) => !diaFiltro || (e.fechaInicio <= diaFiltro && diaFiltro <= e.fechaFin));
+  const ordenadas = [...visibles].sort((a, b) => {
+    const va = a[orden.por] ?? '', vb = b[orden.por] ?? '';
+    const c = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+    return orden.dir === 'asc' ? c : -c;
+  });
   return (
     <div className="flex-1 min-w-0 w-full">
       {banner}
@@ -542,22 +550,43 @@ export default function ExperienciasPersonales() {
           <p className="text-[12px] text-digi-muted mt-1" style={mf}>Guarda aquí tus eventos con sus fotos, videos y documentos.</p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {visibles.map((e) => (
-            <button key={e.id} onClick={() => setAbierta(e.id)}
-              className="text-left bg-digi-card border border-digi-border rounded-lg p-3.5 hover:border-accent transition-colors">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[13.5px] font-semibold text-digi-text" style={df}>{e.nombre}</span>
-                <span className="text-[10.5px] px-2 py-0.5 rounded-full border bg-black/[0.05] text-digi-muted border-digi-border" style={mf}>Personal</span>
+        <PixelDataTable
+          singleLine
+          data={ordenadas}
+          onRowClick={(e: Experiencia) => setAbierta(e.id)}
+          sortBy={orden.por}
+          sortDir={orden.dir}
+          onSort={(k) => setOrden((o) => ({ por: k as typeof o.por, dir: o.por === k && o.dir === 'asc' ? 'desc' : 'asc' }))}
+          columns={[
+            { key: 'nombre', header: 'Experiencia', sortKey: 'nombre', render: (e: Experiencia) => (
+              <span className="block truncate text-[13px] font-medium text-digi-text" style={mf}>{e.nombre}</span>
+            ) },
+            { key: 'descripcion', header: 'Descripción', sortKey: 'descripcion', hideOnMobile: true, render: (e: Experiencia) => (
+              <span className="block truncate text-[12px] text-digi-muted" style={mf}>{e.descripcion || '—'}</span>
+            ) },
+            { key: 'fechaInicio', header: 'Desde', width: '130px', sortKey: 'fechaInicio', render: (e: Experiencia) => (
+              <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{fmtFecha(e.fechaInicio)}</span>
+            ) },
+            { key: 'fechaFin', header: 'Hasta', width: '130px', sortKey: 'fechaFin', render: (e: Experiencia) => (
+              <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{fmtFecha(e.fechaFin)}</span>
+            ) },
+            { key: 'eventos', header: 'Eventos', width: '110px', sortKey: 'eventos', render: (e: Experiencia) => (
+              <span className="text-[12px] text-digi-text tabular-nums" style={mf}>{e.eventos}</span>
+            ) },
+          ]}
+          tarjetaMovil={(e: Experiencia) => (
+            <>
+              <div className="flex items-start gap-2">
+                <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{e.nombre}</span>
+                <span className="shrink-0 text-[12px] text-digi-muted tabular-nums" style={mf}>{e.eventos} evento(s)</span>
               </div>
-              {e.descripcion && <p className="text-[12px] text-digi-muted mt-1.5 line-clamp-2" style={mf}>{e.descripcion}</p>}
-              <p className="mt-2 text-[11.5px] text-digi-muted flex items-center gap-1 flex-wrap" style={mf}>
+              <div className="mt-1 flex items-center gap-1 text-[12px] text-digi-muted" style={mf}>
                 <CalendarDays className="w-3.5 h-3.5" /> {fmtRango(e.fechaInicio, e.fechaFin)}
-                <span className="mx-1">·</span>{e.eventos} evento(s)
-              </p>
-            </button>
-          ))}
-        </div>
+              </div>
+              {e.descripcion && <p className="mt-1 text-[12px] text-digi-muted line-clamp-2" style={mf}>{e.descripcion}</p>}
+            </>
+          )}
+        />
       )}
       {formularios}
     </div>

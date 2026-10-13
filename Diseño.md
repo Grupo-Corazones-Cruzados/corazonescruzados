@@ -3984,6 +3984,11 @@ mientras se escribe.
   muesca mínima del 1,5 % si hay algo usado: antes ponía «2,0 TB libres de 2,0 TB» y Fernando creyó que
   no se leía el uso (el redondeo de 1,99 TB lo escondía). TB con 2 decimales.
   `fmtBytes` (es-ES vía `fmtNum`) sale de ahí.
+- **Lista general de Personales = TABLA (Fernando, 2026-10-13):** `PixelDataTable singleLine` con
+  Experiencia · Descripción · Desde · Hasta · Eventos, todas ordenables (por defecto Desde ↓), fila →
+  detalle, y `tarjetaMovil` en el teléfono (nombre + nº de eventos, rango, descripción). Sustituye a la
+  galería de tarjetas. ⚠️ En `PixelDataTable` una columna SIN `sortKey` pinta su encabezado en otro
+  estilo (sin mayúsculas): en una tabla donde las demás se ordenan, darle `sortKey` a todas.
 - **Rejilla de archivos:** tarjetas con miniatura `aspect-[4/3] object-cover` (o icono del tipo:
   `FileText`/`ImageIcon`/`Film`), nombre truncado + tamaño, `BotonQuitar xs` y un `<select>` compacto
   (`EDIT_INPUT select-compacto`) para cambiar de evento. Pulsar la miniatura **abre en Drive** (nueva
