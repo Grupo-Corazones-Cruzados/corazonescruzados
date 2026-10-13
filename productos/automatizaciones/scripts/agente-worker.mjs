@@ -12,7 +12,8 @@
 //     Start command : node scripts/agente-worker.mjs
 //     Sin cron schedule (es un proceso que no termina) · 1 réplica · reinicio ALWAYS
 //     Sin healthcheck: no escucha en ningún puerto, y con uno Railway lo daría por caído.
-//   Variables: CRON_TOKEN (el mismo que el servicio web), APP_URL, AGENTE_INTERVALO_MS=5000
+//   Variables: CRON_TOKEN (el mismo que el servicio web), APP_URL, AGENTE_INTERVALO_MS=5000,
+//   DATABASE_URL (la misma referencia a Postgres que el servicio web, red privada).
 //
 //   Se creó ENTERO por CLI + API, sin tocar el panel: `railway add --service --repo` para el
 //   servicio, y la mutación `serviceInstanceUpdate` de la API pública para el comando de
@@ -23,6 +24,8 @@
 //
 // Todo el trabajo lo hace la app en /api/agente/procesar. Aquí no hay lógica de negocio
 // a propósito: si la hubiera, habría que mantenerla en dos sitios y acabarían divergiendo.
+
+import pg from 'pg';
 
 const APP_URL = (process.env.APP_URL || '').replace(/\/$/, '');
 const TOKEN = process.env.CRON_TOKEN || '';
@@ -43,7 +46,48 @@ function esperaTrasFallo() {
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ── PREGUNTAR A LA BASE ANTES DE DESPERTAR A LA APP (2026-10-13) ───────────────────
+// Llamar a /api/agente/procesar cada 5 s, haya o no trabajo, impedía que el servicio web
+// `automatizaciones` durmiera nunca (Railway lo duerme tras ~10 min sin tráfico): ~315 MB
+// encendidos las 24 h para una cola que casi siempre está vacía. Ahora el worker mira la
+// cola directamente y solo llama a la app cuando hay algo que hacer. No se pierde
+// velocidad: el mensaje de WhatsApp entra por el webhook de la propia app, que la
+// despierta, y el debounce de la cola (8 s) cubre de sobra su arranque.
+//
+// La condición es la MISMA que usan `reclamar()` y `recuperarColgados()` en
+// src/lib/agente/cola.ts (MINUTOS_COLGADO = 5, MAX_INTENTOS = 3): si cambian allí, cambiar aquí.
+//
+// Ante la duda se llama: sin DATABASE_URL, o si la consulta falla, el pase va a la app como
+// antes. Despertarla de más cuesta centavos; no despertarla deja a un cliente sin respuesta.
+const ESQUEMA = (() => {
+  try { return new URL(process.env.DATABASE_URL || '').searchParams.get('schema') || 'automatizaciones'; }
+  catch { return 'automatizaciones'; }
+})();
+const db = process.env.DATABASE_URL
+  ? new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1, idleTimeoutMillis: 30_000 })
+  : null;
+db?.on('error', (e) => console.error('✖ conexión a la base:', e.message));
+
+async function hayTrabajo() {
+  if (!db) return true;
+  try {
+    const { rows } = await db.query(
+      `SELECT EXISTS (
+         SELECT 1 FROM "${ESQUEMA}".cola
+          WHERE (estado = 'pendiente' AND ejecutar_en <= NOW())
+             OR (estado = 'procesando' AND reclamado_en < NOW() - interval '5 minutes' AND intentos < 3)
+       ) AS hay`,
+    );
+    return rows[0].hay;
+  } catch (e) {
+    console.error('✖ no se pudo mirar la cola, se llama a la app igual:', e.message);
+    return true;
+  }
+}
+
 async function unPase() {
+  if (!(await hayTrabajo())) return { ok: true, quedan: false };
+
   const control = new AbortController();
   // Un pase no debería pasar de dos minutos; si se cuelga, se corta y se reintenta.
   const corte = setTimeout(() => control.abort(), 130_000);
@@ -83,7 +127,7 @@ async function unPase() {
 }
 
 async function bucle() {
-  console.log(`▶ Worker del agente en marcha · ${APP_URL} · cada ${INTERVALO} ms`);
+  console.log(`▶ Worker del agente en marcha · ${APP_URL} · cada ${INTERVALO} ms · ${db ? `mira la cola en «${ESQUEMA}» antes de llamar` : 'SIN DATABASE_URL: llama siempre'}`);
   while (corriendo) {
     const r = await unPase();
     if (!corriendo) break;
@@ -92,6 +136,7 @@ async function bucle() {
     if (r.ok && r.quedan) continue;
     await dormir(r.ok ? INTERVALO : esperaTrasFallo());
   }
+  await db?.end().catch(() => {});
   console.log('■ Worker detenido.');
 }
 
