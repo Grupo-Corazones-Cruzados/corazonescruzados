@@ -261,6 +261,38 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   desde `~/.gcc-respaldos` y **no sobrevive a un reinicio**. Requiere un comando con sudo de Fernando.
 - Código en el repo: `services/m1-respaldos/` (`respaldar.sh`, plist, `instalar.sh`).
 
+#### P17 — Fotos y videos de Proyectos y Productos → Google Drive de la empresa · 🔎 Investigando (2026-10-13)
+- **Pedido del usuario (2026-10-13), textual:** *«dejemos todas las fotos y videos que salgan del modulo de
+  proyectos, y productos, a una carpeta en el drive de la empresa que es lfgonzalezm0@grupocc.org, dejalas
+  allí almacenadas y quitalas de donde estan ahora para que puedas aligerar el espacio, las demas mejoras
+  estan aprobadas tambien, a excepcion de las opciones chicas»*.
+- **Hecho el mismo día (aprobado):** P16.1 (sin precarga) y P16.2 (consultas de proyecto sin media,
+  `lib/projects/columnas.ts`), commit `44a72f1e`. Verificado: tsc, build aislado y en ejecución con sesión
+  de admin — detalle del proyecto 7 **32 KB** (antes 33 MB), galería sigue dando sus 24 fotos.
+- **Inventario de media DENTRO de la BD (2026-10-13):**
+  | Dónde | Qué | Cuánto |
+  |---|---|---|
+  | `gcc_world.projects.images` | 9 PNG base64 (las otras 49 ya son URLs de Cloudinary) | 10,6 MB |
+  | `gcc_world.projects.video_data` | 1 video (bytea, proyecto con video generado) | 9,6 MB |
+  | `gcc_world."Incident".images` | 50 imágenes base64 (incidencias de la documentación de proyectos, tabla Prisma `Project`) | 20,1 MB |
+  | `planificaciones.destrezas.imagen_url` | 52 PNG base64 | 0,6 MB |
+  | `planificaciones.inquilinos.logo_*` | 2 logos (se usan en el PDF del PUD) | 75 KB |
+  Total ≈ **41 MB de 205 MB**. Reservas/Pedidos/Catering/Automatizaciones: nada (URLs externas o vacío).
+  **No son fotos ni videos** (se quedan): `proforma_pdf`, `invoices.payment_proof`, adjuntos PDF de campañas.
+- **Acceso a Drive:** la app ya impersona a `lfgonzalezm0@grupocc.org` con la cuenta de servicio
+  (`GOOGLE_SA_KEY*`, client_id `111768031245769195077`), pero la delegación de dominio **solo tiene
+  Gmail/Calendar/Meet/Directory**: probado `drive` y `drive.file` → «unauthorized_client». ⏸ **Fernando
+  debe añadir el scope `https://www.googleapis.com/auth/drive`** en admin.google.com → Seguridad → Acceso y
+  control de datos → Controles de API → Delegación de todo el dominio.
+- **Diseño propuesto:** carpeta `GCC World / Media` (subcarpetas por módulo y por id); en la fila queda una
+  referencia corta `drive:<fileId>` en lugar del base64; una ruta `/api/media/drive/<fileId>` sirve el
+  archivo **en streaming** desde Drive con control de acceso y caché larga en el navegador (el id de Drive no
+  cambia). Las SUBIDAS nuevas también van a Drive, o la base se vuelve a llenar. Migración: respaldo del M1
+  antes → subir → descargar y comparar → actualizar la fila → `VACUUM FULL` de las 3 tablas al final.
+- **Riesgo / coste:** Drive no es un servidor de imágenes público: cada vista pasa por Railway (streaming,
+  poca RAM; salida 0,05 $/GB). Cloudinary, que ya se usa para 49 fotos, no tendría ese paso. Decisión del
+  usuario: Drive.
+
 #### P16 — Revisión a fondo: ¿qué más baja el consumo de `Servidor-GCC`? · ✅ Medido (2026-10-13), pendiente de OK
 1. **Precarga de rutas de Next (`experimental.preloadEntriesOnStart`, `true` por defecto en Next 15.5).**
    La app tiene 354 rutas de API + 60 páginas y las carga TODAS al arrancar. Medido en local con el mismo
