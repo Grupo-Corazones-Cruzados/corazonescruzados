@@ -110,7 +110,7 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - Refresh token revocado por el usuario desde su cuenta Google → detectar `invalid_grant` y mostrar
   «Reconectar» en vez de un error genérico (y nunca fingir lista vacía).
 
-## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 88 % — RESPALDO MONTADO Y PROBADO A MANO; FALTAN 2 PERMISOS EN EL M1 Y EL OK DE RAILWAY
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 92 % — RESPALDO AUTOMÁTICO FUNCIONANDO (2026-10-13); FALTA `chown` DE LaunchAgents Y EL OK DE RAILWAY
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
@@ -201,6 +201,20 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
 - 🪤 `~/Library/LaunchAgents` del M1 es de **root** (lo dejó OneDrive): sin `sudo chown` la tarea se carga
   desde `~/.gcc-respaldos` y **no sobrevive a un reinicio**. Requiere un comando con sudo de Fernando.
 - Código en el repo: `services/m1-respaldos/` (`respaldar.sh`, plist, `instalar.sh`).
+
+#### P14 — ¿Funciona la tarea nocturna de verdad? · ✅ Resuelta (2026-10-13)
+- **2026-10-10 03:00 falló:** el SSD cifrado amaneció bloqueado y el desbloqueo no funcionó. Al salir con
+  código 1, `do shell script` dejó **un diálogo de error abierto** y launchd dio la tarea por «en marcha»
+  → **las noches del 11, 12 y 13 no corrieron**. Arreglo: el script sale siempre con 0 (el fallo queda en
+  `estado.json`, `registro.log` y aviso), y el desbloqueo se reintenta 3 veces registrando la salida.
+- El permiso de «Volúmenes extraíbles» (`kTCCServiceSystemPolicyRemovableVolumes`) es **aparte** del de
+  Acceso total al disco; sin él, `mkdir` en el SSD se queda colgado esperando el diálogo.
+- **2026-10-13 11:13 → 11:42, lanzada por launchd: OK** — 60 MB, 325 tablas, restaurada (24 proyectos).
+  Esta vez la descarga tardó ~29 min (el día 9, 5,5 min): depende del internet de la casa.
+- 🔐 La URL con contraseña iba como argumento de `pg_dump` y se veía en `ps` (quedó en el registro de la
+  sesión). **Clave de `gcc_respaldo` cambiada el 2026-10-13**; ahora va en `~/.gcc-respaldos/pgpass`
+  (`PGPASSFILE`) y `bd-url` no lleva contraseña. Verificado.
+- Pendiente: `sudo chown fernandogonzalez ~/Library/LaunchAgents` en el M1 (sin eso, un reinicio borra la tarea).
 
 #### P13 — automatizaciones-worker sin despertar al producto · ✅ Resuelta (diseño, sin desplegar)
 - El worker llama a `/api/agente/procesar` cada 5 s y eso impide que `automatizaciones` duerma. La cola es

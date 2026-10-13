@@ -8,7 +8,9 @@
 #   1. Desbloquea el SSD cifrado si hace falta (clave en ~/.gcc-respaldos/clave-ssd, en el disco
 #      interno con FileVault).
 #   2. `pg_dump -Fc` de producción con el usuario `gcc_respaldo` (SOLO LECTURA: pg_read_all_data y
-#      default_transaction_read_only). La URL vive en ~/.gcc-respaldos/bd-url, nunca en el repo.
+#      default_transaction_read_only). La URL (SIN contraseña) vive en ~/.gcc-respaldos/bd-url y la
+#      contraseña en ~/.gcc-respaldos/pgpass (formato .pgpass, 600). Nunca en el repo, y nunca en
+#      la línea de comandos: lo que va ahí lo ve cualquiera con `ps` (así se filtró el 2026-10-13).
 #   3. RESTAURA la copia en un Postgres local (solo socket, sin red) y comprueba que entraron todas
 #      las tablas. Una copia que no se ha restaurado no es una copia.
 #   4. Retención: 30 diarios + el del día 1 de cada mes durante 12 meses.
@@ -38,8 +40,15 @@ fallo() {
   log "ERROR: $1"; estado error "$1"
   osascript -e "display notification \"$1\" with title \"Respaldo GCC FALLÓ\" sound name \"Basso\"" 2>/dev/null
   "$BIN/pg_ctl" -D "$PGDATA_V" -m fast stop >/dev/null 2>&1
-  exit 1
+  # Sale con 0 A PROPÓSITO: lo lanza la mini-app «GCC Respaldo» con `do shell script`, y un
+  # código distinto de 0 abre un diálogo de error que se queda esperando un clic. Mientras
+  # ese diálogo sigue abierto launchd da la tarea por «en marcha» y NO lanza las noches
+  # siguientes (así se perdieron del 2026-10-10 al 13). El fallo ya queda en estado.json,
+  # en registro.log y en el aviso de pantalla.
+  exit 0
 }
+
+export PGPASSFILE="$CFG/pgpass"
 
 # No dormir mientras dure el respaldo.
 caffeinate -i -w $$ &
@@ -47,12 +56,16 @@ caffeinate -i -w $$ &
 log "— inicio —"
 
 # 1. SSD
-if [ ! -d "$VOL" ]; then
-  diskutil apfs unlockVolume "$VOL_UUID" -passphrase "$(cat "$CFG/clave-ssd")" >/dev/null 2>&1 \
-    || diskutil mount "$VOL_UUID" >/dev/null 2>&1
-  sleep 3
-  [ -d "$VOL" ] || fallo "el SSD GCC-Respaldos no está conectado o no se pudo desbloquear"
-fi
+# El volumen está cifrado: tras dormir, reconectarse o reiniciar, macOS lo deja BLOQUEADO y
+# sin montar. Se reintenta porque el disco USB puede tardar en despertar.
+for intento in 1 2 3; do
+  [ -d "$VOL" ] && break
+  log "SSD sin montar: desbloqueando (intento $intento)"
+  diskutil apfs unlockVolume "$VOL_UUID" -passphrase "$(cat "$CFG/clave-ssd")" >>"$LOG" 2>&1 \
+    || diskutil mount "$VOL_UUID" >>"$LOG" 2>&1
+  sleep 10
+done
+[ -d "$VOL" ] || fallo "el SSD GCC-Respaldos no está conectado o no se pudo desbloquear"
 mkdir -p "$DIARIOS" "$MENSUALES" "$SOCK"
 
 # 2. Copia (a .tmp, y solo se renombra si sale entera)
