@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { columnasProyecto } from '@/lib/projects/columnas';
 
 /**
  * Esquema del módulo de COTIZACIONES (Fase 1). Tablas nuevas, creadas idempotentemente
@@ -93,7 +94,7 @@ export function ensureQuoteShareColumns(): Promise<void> {
 export async function validateQuoteToken(projectId: number, token: string): Promise<any> {
   await ensureQuoteShareColumns();
   const { rows: [p] } = await pool.query(
-    `SELECT * FROM gcc_world.projects WHERE id = $1`, [projectId]);
+    `SELECT ${await columnasProyecto()} FROM gcc_world.projects WHERE id = $1`, [projectId]);
   if (!p) { const e: any = new Error('Cotización no encontrada'); e.status = 404; throw e; }
   if (p.status !== 'cotizacion') { const e: any = new Error('Este enlace ya no corresponde a una cotización'); e.status = 410; throw e; }
   if (!p.quote_token || !token || token !== p.quote_token) { const e: any = new Error('Enlace inválido'); e.status = 403; throw e; }

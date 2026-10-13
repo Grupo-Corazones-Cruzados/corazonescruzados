@@ -8,6 +8,7 @@ import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/a
 import { ensureAdminMember } from '@/lib/ensure-admin-member';
 import { ensureQuoteShareColumns } from '@/lib/cotizaciones/schema';
 import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
+import { columnasProyecto } from '@/lib/projects/columnas';
 
 /** `invoice_projects` para los LEFT JOIN de la lista — una vez por proceso, no en cada clic. */
 let asegurandoFacturasProyecto: Promise<void> | null = null;
@@ -269,7 +270,7 @@ export async function POST(req: NextRequest) {
       ? body.offline_id : null;
     if (offlineId) {
       const { rows: ya } = await pool.query(
-        `SELECT * FROM gcc_world.projects WHERE offline_id = $1 AND created_by_user_id = $2`, [offlineId, user.userId],
+        `SELECT ${await columnasProyecto()} FROM gcc_world.projects WHERE offline_id = $1 AND created_by_user_id = $2`, [offlineId, user.userId],
       );
       if (ya[0]) return NextResponse.json({ data: ya[0], repetido: true });
     }

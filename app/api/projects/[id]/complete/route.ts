@@ -7,6 +7,7 @@ import { upsertBillingForClient, cuentaFacturable, CONSUMIDOR_FINAL_RUC } from '
 import { getProjectBilling } from '@/lib/payments';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
+import { columnasProyecto } from '@/lib/projects/columnas';
 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -249,7 +250,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await pool.query(`UPDATE gcc_world.projects SET status = 'in_progress', updated_at = NOW() WHERE id = $1`, [id]);
     }
 
-    const { rows } = await pool.query(`SELECT * FROM gcc_world.projects WHERE id = $1`, [id]);
+    const { rows } = await pool.query(`SELECT ${await columnasProyecto()} FROM gcc_world.projects WHERE id = $1`, [id]);
     return NextResponse.json({ data: rows[0], invoiceId, sriResult });
   } catch (err: any) {
     console.error('Project complete error:', err);

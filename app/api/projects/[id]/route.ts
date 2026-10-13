@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, getProjectMembers } from '@/lib/projects/members';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
+import { columnasProyecto } from '@/lib/projects/columnas';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,12 +12,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id } = await params;
 
-    // Ensure proforma column exists
-    try { await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS proforma TEXT`); } catch { /* ignore */ }
     await ensureProjectMembersTable();
 
     const { rows } = await pool.query(
-      `SELECT p.*, c.name as client_name, c.email as client_email,
+      `SELECT ${await columnasProyecto('p')}, c.name as client_name, c.email as client_email,
               m.name as assigned_member_name,
               (p.proforma IS NOT NULL) as has_proforma
        FROM gcc_world.projects p
@@ -138,7 +137,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // cambió después, 409 con la versión actual: no se pisa en silencio.
     if (body.si_no_cambio_desde && current.updated_at
         && new Date(body.si_no_cambio_desde).getTime() !== new Date(current.updated_at).getTime()) {
-      const { rows: [ahora] } = await pool.query(`SELECT * FROM gcc_world.projects WHERE id = $1`, [id]);
+      const { rows: [ahora] } = await pool.query(`SELECT ${await columnasProyecto()} FROM gcc_world.projects WHERE id = $1`, [id]);
       return NextResponse.json({ error: 'Este borrador cambió en otro sitio', conflicto: true, data: ahora }, { status: 409 });
     }
 
@@ -246,7 +245,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     values.push(id);
 
     const { rows } = await pool.query(
-      `UPDATE gcc_world.projects SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+      `UPDATE gcc_world.projects SET ${fields.join(', ')} WHERE id = $${idx} RETURNING ${await columnasProyecto()}`,
       values
     );
 

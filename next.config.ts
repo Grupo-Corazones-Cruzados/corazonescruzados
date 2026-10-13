@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
 
   experimental: {
+    /**
+     * NO cargar las ~414 rutas al arrancar (Next 15 lo hace por defecto). Medido el 2026-10-13
+     * en local con el mismo build: 464 MB → 183 MB al arrancar y 468 → 242 MB tras abrir diez
+     * páginas. En Railway se paga la RAM por minuto. A cambio, la primera visita a cada ruta
+     * después de un despliegue tarda un poco más, mientras se carga.
+     */
+    preloadEntriesOnStart: false,
     serverActions: {
       bodySizeLimit: '50mb',
     },

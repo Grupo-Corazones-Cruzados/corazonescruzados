@@ -5,6 +5,7 @@ import { enviarComprobante, consultarAutorizacion } from './soap-client';
 import { generateRidePdf } from './ride-pdf';
 import { SRI_CONFIG } from './config';
 import { ensureStageBilling } from '@/lib/payments';
+import { columnasProyecto } from '@/lib/projects/columnas';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', COP: 'COP$', MXN: 'MX$',
@@ -188,7 +189,7 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
 
   // Get project with requirements and client
   const { rows: [project] } = await pool.query(
-    `SELECT p.*, c.name as client_name, c.email as client_email, c.phone as client_phone,
+    `SELECT ${await columnasProyecto('p')}, c.name as client_name, c.email as client_email, c.phone as client_phone,
             c.ruc as client_ruc, c.address as client_address
      FROM gcc_world.projects p
      LEFT JOIN gcc_world.clients c ON c.id = p.client_id
@@ -348,7 +349,7 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
 
   for (const pid of options.projectIds) {
     const { rows: [project] } = await pool.query(
-      `SELECT p.*, c.name as client_name FROM gcc_world.projects p LEFT JOIN gcc_world.clients c ON c.id = p.client_id WHERE p.id = $1`, [pid]
+      `SELECT ${await columnasProyecto('p')}, c.name as client_name FROM gcc_world.projects p LEFT JOIN gcc_world.clients c ON c.id = p.client_id WHERE p.id = $1`, [pid]
     );
     if (!project) continue;
 
