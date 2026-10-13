@@ -6323,6 +6323,15 @@ Stack estándar de la casa, con particularidades de este repo:
   sin una variable que el próximo despliegue echará en falta (le pasó a `automatizaciones-worker` con
   `CRON_TOKEN`). Detalle en `Aprendizaje.md`, P15.
 
+- **Fotos y videos de Proyectos y Productos en el Drive de la empresa (2026-10-13):** viven en
+  `GCC World · Archivos de la empresa` del Drive de `lfgonzalezm0@grupocc.org` (cuenta de servicio con
+  delegación, scope `drive`; NO el Drive personal de quien sube), una carpeta por proyecto y por producto.
+  En las filas queda `/api/media/<fileId>`; el registro es `gcc_world.media_drive` y la ruta solo sirve lo
+  registrado. Renombrar = Drive primero y luego la fila; lo cambiado en Drive llega por el cron nocturno
+  (`/api/media/cron/nombres`). Las cuadrículas piden `?w=` (miniatura de Drive). Los productos pasan por
+  `/api/media/productos` con `GCC_TOKEN`. Código en `lib/media/`. Mudanza: `scripts/migrar-media-drive.mjs`.
+  Detalle y trampas en `Aprendizaje.md` (P17-P20).
+
 ## Arquitectura y módulos
 Rutas en `app/`, agrupadas por layout: `(auth)`, `(dashboard)`, `(main)`, `(public)`.
 API en `app/api/` (~40 grupos). Lógica en `lib/`, componentes en `components/`.

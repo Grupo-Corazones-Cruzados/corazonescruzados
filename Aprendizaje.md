@@ -169,7 +169,7 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - Refresh token revocado por el usuario desde su cuenta Google → detectar `invalid_grant` y mostrar
   «Reconectar» en vez de un error genérico (y nunca fingir lista vacía).
 
-## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · ✅ 97 % — RESPALDO FIJO EN EL M1 Y RAM DE RAILWAY RECORTADA (2026-10-13); FALTA MEDIR EL AHORRO REAL
+## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · ✅ 98 % — RESPALDO FIJO EN EL M1 Y RAM DE RAILWAY RECORTADA (2026-10-13); FALTA MEDIR EL AHORRO REAL
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
 conectado a un SABRENT Carcasa SSD NVMe USB4 (EC-U4TN), el cual tiene un Sandisk Optimus 5100 SSD
@@ -292,6 +292,25 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
 - **Riesgo / coste:** Drive no es un servidor de imágenes público: cada vista pasa por Railway (streaming,
   poca RAM; salida 0,05 $/GB). Cloudinary, que ya se usa para 49 fotos, no tendría ese paso. Decisión del
   usuario: Drive.
+
+#### P20 — Mudanza a Drive HECHA en producción (2026-10-13) · ✅ (falta: revisión visual de Fernando y borrar Cloudinary)
+- Fernando añadió el scope `drive` (2026-10-13) y pidió **una carpeta dedicada de la empresa, independiente del
+  usuario, con una carpeta por proyecto / por producto**. Estructura final en el Drive de
+  `lfgonzalezm0@grupocc.org` (2,2 TB; ya existía «GCC World / Experiencias», que es personal y no se mezcla):
+  `GCC World · Archivos de la empresa / Proyectos / <id · título> / {Fotos, Video, Incidencias}`,
+  `… / Documentación de proyectos / <proyecto> / <incidencia>`, `… / Productos / Planificaciones / <institución> / Destrezas`.
+- Orden seguido: prueba real de Drive → respaldo del M1 (14:56, 329 tablas, OK) → push → `--ejecutar`.
+  **124 archivos** (58 fotos de proyecto incl. las 49 de Cloudinary, 1 video, 50 de incidencias, 15 de destrezas
+  en 52 filas). 🪤 Destrezas fallaron la 1.ª vez: el disparador del escaparate de Planificaciones busca
+  `inquilinos` SIN esquema → el UPDATE necesita `SET search_path TO planificaciones, public`. Corregido y repetido.
+- Verificado en producción: bytes idénticos, video por trozos (206 + Content-Range), caché de un año. 🪤 La librería
+  de Google da las cabeceras como `Headers` (`.get()`), no como objeto: sin eso, el video no se podía adelantar.
+- 🪤 **Galería lenta:** 24 originales = 53 s / 12,8 MB desde Ecuador (Railway da ~340 KB/s aquí; Drive la mitad).
+  Arreglo: las cuadrículas piden `?w=480` → miniatura de Drive (reutiliza `miniatura()` de google-drive.ts con el
+  token de la cuenta de servicio). Medido: **5,6 s / 468 KB**. El original solo al abrir la foto.
+- Nombres: se quitó el doble punto (`M.1.4.11..png`); 15 renombrados en Drive y en la tabla.
+- `VACUUM FULL` de projects, "Incident" y destrezas: **BD 205 → 144 MB** (projects 40 MB → 2 MB), <300 ms cada una.
+- Pendiente: que Fernando vea las fotos en pantalla → `migrar-media-drive.mjs --borrar-cloudinary` (49 originales).
 
 #### P19 — Mudanza a Drive: construida y verificada sin Drive; ⏸ falta el permiso (2026-10-13)
 - Decisiones del usuario: **todo en Drive, también las 49 fotos de Cloudinary** (AskUserQuestion);
