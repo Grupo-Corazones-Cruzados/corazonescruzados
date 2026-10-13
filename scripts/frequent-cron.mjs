@@ -49,6 +49,8 @@ const NIGHTLY_JOBS = [
   // Estaba solo en nightly-cron.mjs: al cambiar el servicio a este script se habría dejado
   // de reindexar los talentos sin que nadie se enterara. Ver la nota de arriba.
   { name: 'Talentos · embeddings al día', path: '/api/talentos/cron/reindexar' },
+  // Los nombres que alguien cambió DIRECTAMENTE en Drive llegan a la plataforma (2026-10-13).
+  { name: 'Media · nombres desde Drive',  path: '/api/media/cron/nombres' },
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');

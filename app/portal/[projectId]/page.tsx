@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import type { Incident, IncidentStatus, IncidentSeverity } from '@/types/incidents';
 import type { ProjectStructure, Module, Section } from '@/types/projects';
+import NombreArchivo, { renombrarEnPlataforma } from '@/components/media/NombreArchivo';
+import { fileIdDe } from '@/lib/media/ref';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending:   { label: 'Pendiente',   color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30', icon: Clock },
@@ -744,20 +746,32 @@ export default function PortalPage() {
                       )}
                       {displayImages.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {displayImages.map((img, i) => (
+                          {displayImages.map((img, i) => {
+                            const fid = fileIdDe(img);
+                            const nombre = fid ? fullInc?.nombres?.[fid] : undefined;
+                            return (
+                            <div key={i} className="w-24 min-w-0">
                             <a
-                              key={i}
                               href={`${img}`}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
                               <img
                                 src={`${img}`}
-                                alt=""
+                                alt={nombre || ''}
                                 className="w-24 h-24 object-cover rounded border border-[#2a2a2a] hover:border-white/30 transition-colors cursor-pointer"
                               />
                             </a>
-                          ))}
+                            {fid && nombre && (
+                              <NombreArchivo className="mt-1" nombre={nombre} puedeEditar={!!fullInc?.puedeRenombrar}
+                                renombrar={(base) => renombrarEnPlataforma(fid, base)}
+                                onRenombrado={(final) => setFullIncidents((prev) => ({
+                                  ...prev, [inc.id]: { ...prev[inc.id], nombres: { ...(prev[inc.id]?.nombres || {}), [fid]: final } },
+                                }))} />
+                            )}
+                            </div>
+                            );
+                          })}
                         </div>
                       )}
                       {/* Unresolved comment form */}

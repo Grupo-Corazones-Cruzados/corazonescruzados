@@ -27,6 +27,9 @@ const SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar';
 const SCOPE_MEET = 'https://www.googleapis.com/auth/meetings.space.created';
 const SCOPE_MEET_READONLY = 'https://www.googleapis.com/auth/meetings.space.readonly';
 const SCOPE_DIRECTORY = 'https://www.googleapis.com/auth/admin.directory.user';
+// Drive de la cuenta organizadora: fotos y videos de Proyectos y Productos (lib/media/drive.ts).
+// Hay que autorizarlo en la delegación de dominio de la consola de Google (2026-10-13).
+const SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive';
 
 // Unidad organizativa donde viven las cuentas de candidatos/miembros (para excluirla de
 // la asignación automática de licencias → cuentas gratis Cloud Identity, cuando aplique).
@@ -143,6 +146,11 @@ function getAuth(scopes: string[], subject?: string): JwtClient {
   const jwt = new google.auth.JWT({ email: key.client_email, key: key.private_key, scopes, subject: subj });
   _jwtCache.set(cacheKey, jwt);
   return jwt;
+}
+
+/** Credenciales de Drive como la cuenta organizadora (ver lib/media/drive.ts). */
+export function authDrive(): JwtClient {
+  return getAuth([SCOPE_DRIVE]);
 }
 
 // RFC 2047 para cabeceras con caracteres no ASCII (acentos, em-dash…).

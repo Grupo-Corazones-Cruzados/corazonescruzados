@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { isCloudinaryUrl, cloudinaryDesenfocada } from '@/lib/cloudinary';
 import sharp from 'sharp';
+import { fileIdDe, leerBytes } from '@/lib/media';
 
 /**
  * Sirve UNA imagen de un proyecto del marketplace **redimensionada** (WebP), en vez
@@ -74,9 +75,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // Otra URL remota: redirige tal cual.
     if (/^https?:\/\//i.test(raw)) return NextResponse.redirect(raw);
 
-    // Fallback (aún base64 en BD): reescala con sharp.
-    const b64 = raw.replace(/^data:[^;]+;base64,/, '');
-    const input = Buffer.from(b64, 'base64');
+    // En Drive (2026-10-13) o aún base64 en la BD: se bajan los bytes y se reescala con sharp.
+    // El resultado se guarda en la caché de abajo, así que Drive se toca una vez por ancho.
+    let input: Buffer;
+    if (fileIdDe(raw)) {
+      const leida = await leerBytes(raw);
+      if (!leida) return new NextResponse(null, { status: 404 });
+      input = leida.datos;
+    } else {
+      input = Buffer.from(raw.replace(/^data:[^;]+;base64,/, ''), 'base64');
+    }
     // El desenfoque va DESPUÉS de reescalar: aplicado antes, el reescalado lo diluiría
     // y cada ancho quedaría con una suavidad distinta.
     const out = await sharp(input)

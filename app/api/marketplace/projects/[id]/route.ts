@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { uploadImages } from '@/lib/cloudinary';
+import { decodificarDataUri, guardar, quitar } from '@/lib/media';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function ensureImagesColumn() {
@@ -78,8 +78,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       fields.push(`tags = $${idx++}`);
       values.push(Array.isArray(tags) ? tags.map((t: any) => String(t ?? '').trim()).filter(Boolean).slice(0, 12) : []);
     }
+    // Aquí llega la lista ENTERA de fotos: las nuevas (data URL) van a Drive y las que ya no
+    // están se mandan a la papelera de Drive después de guardar (2026-10-13).
+    let quitadas: string[] = [];
     if (images !== undefined) {
-      const cleanImages = await uploadImages((images as string[]).filter(u => u && u.trim()), `corazones-cruzados/projects/${id}`);
+      const { rows: [actual] } = await pool.query(
+        `SELECT title, COALESCE(images, '{}') AS images FROM gcc_world.projects WHERE id = $1`, [id],
+      );
+      const antes: string[] = actual?.images || [];
+      const cleanImages: string[] = [];
+      for (const img of (images as string[]).filter((u) => u && u.trim())) {
+        const d = decodificarDataUri(img);
+        if (!d || !d.mime.startsWith('image/')) { cleanImages.push(img); continue; }
+        const g = await guardar({
+          datos: d.datos, mime: d.mime,
+          base: `${actual?.title || `Proyecto ${id}`} · foto ${String(antes.length + cleanImages.length + 1).padStart(2, '0')}`,
+          modulo: 'proyecto_foto', referencia: id, ruta: ['Proyectos', `${id} · ${actual?.title || ''}`.trim()],
+        });
+        cleanImages.push(g.url);
+      }
+      quitadas = antes.filter((x) => !cleanImages.includes(x));
       fields.push(`images = $${idx++}`);
       values.push(cleanImages);
     }
@@ -93,6 +111,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       `UPDATE gcc_world.projects SET ${fields.join(', ')} WHERE id = $${idx}`,
       values
     );
+    for (const ref of quitadas) await quitar(ref).catch((e) => console.error('[marketplace] papelera de Drive', e?.message));
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

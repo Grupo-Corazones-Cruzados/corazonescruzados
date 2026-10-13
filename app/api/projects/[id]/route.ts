@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, getProjectMembers } from '@/lib/projects/members';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { columnasProyecto } from '@/lib/projects/columnas';
+import { quitar, urlMedia } from '@/lib/media';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -263,6 +264,16 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params;
     await pool.query('DELETE FROM gcc_world.projects WHERE id = $1', [id]);
+    // Sus fotos, su video y las fotos de sus incidencias en Drive, a la papelera (Drive las
+    // guarda 30 días). Después de borrar la fila: si Drive falla, sobran archivos, no falta nada.
+    const { rows: media } = await pool.query(
+      `SELECT file_id FROM gcc_world.media_drive
+        WHERE borrado_en IS NULL
+          AND ((modulo IN ('proyecto_foto', 'proyecto_video') AND referencia = $1)
+               OR (modulo = 'incidencia' AND referencia = 'proyecto-' || $1))`,
+      [String(id)],
+    );
+    for (const m of media) await quitar(urlMedia(m.file_id)).catch((e) => console.error('[proyecto] papelera de Drive', e?.message));
     return NextResponse.json({ message: 'Deleted' });
   } catch (err: any) {
     console.error('Project DELETE error:', err.message);

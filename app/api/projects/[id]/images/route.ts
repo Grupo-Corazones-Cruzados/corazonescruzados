@@ -1,7 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { uploadImages } from '@/lib/cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
+import { decodificarDataUri, guardar, nombresDe, quitar } from '@/lib/media';
+import { puedeGestionarImagenes } from '@/lib/projects/permisos';
 
 const MAX_IMAGES = 30;
 
@@ -9,26 +10,9 @@ async function ensureImagesColumn() {
   await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS images TEXT[]`);
 }
 
-async function canManageImages(userId: string, userRole: string, projectId: string): Promise<boolean> {
-  if (userRole === 'admin') return true;
-
-  const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [userId]);
-  if (!u?.member_id) return false;
-
-  const { rows: [project] } = await pool.query(
-    `SELECT assigned_member_id FROM gcc_world.projects WHERE id = $1`, [projectId]
-  );
-  if (!project) return false;
-
-  // Project creator
-  if (String(project.assigned_member_id) === String(u.member_id)) return true;
-
-  // Accepted participant
-  const { rows } = await pool.query(
-    `SELECT 1 FROM gcc_world.project_bids WHERE project_id = $1 AND member_id = $2 AND status = 'accepted' LIMIT 1`,
-    [projectId, u.member_id]
-  );
-  return rows.length > 0;
+/** La regla vive en lib/projects/permisos.ts (la usa también el renombrado de /api/media). */
+function canManageImages(userId: string, userRole: string, projectId: string): Promise<boolean> {
+  return puedeGestionarImagenes({ userId, role: userRole }, projectId);
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -44,7 +28,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     );
     if (!project) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
-    return NextResponse.json({ data: { images: project.images, status: project.status } });
+    // `nombres`: { fileId: nombre } de las que viven en Drive, para mostrarlas y renombrarlas.
+    return NextResponse.json({ data: { images: project.images, status: project.status, nombres: await nombresDe(project.images) } });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -83,8 +68,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }, { status: 400 });
     }
 
+    // A Drive (2026-10-13), ya no a Cloudinary ni a la base. Se sube de una en una y cada
+    // una se comprueba por md5; si alguna falla, las ya subidas se quedan y se avisa.
+    const { rows: [p] } = await pool.query(`SELECT title FROM gcc_world.projects WHERE id = $1`, [id]);
     const clean = newImages.filter((img: string) => img && img.trim());
-    const uploaded = await uploadImages(clean, `corazones-cruzados/projects/${id}`);
+    const uploaded: string[] = [];
+    let fallo: string | null = null;
+    for (const img of clean) {
+      const d = decodificarDataUri(img);
+      if (!d || !d.mime.startsWith('image/')) { uploaded.push(img); continue; } // ya era una URL
+      try {
+        const n = currentImages.length + uploaded.length + 1;
+        const g = await guardar({
+          datos: d.datos, mime: d.mime, base: `${p?.title || `Proyecto ${id}`} · foto ${String(n).padStart(2, '0')}`,
+          modulo: 'proyecto_foto', referencia: id, ruta: ['Proyectos', `${id} · ${p?.title || ''}`.trim()],
+        });
+        uploaded.push(g.url);
+      } catch (e: any) {
+        fallo = e?.message || 'No se pudo guardar en Google Drive';
+        break;
+      }
+    }
     const combined = [...currentImages, ...uploaded];
 
     await pool.query(
@@ -92,7 +96,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       [combined, id]
     );
 
-    return NextResponse.json({ data: { images: combined, count: combined.length } });
+    if (fallo) {
+      return NextResponse.json({ error: `Se guardaron ${uploaded.length} de ${clean.length}: ${fallo}`, data: { images: combined, count: combined.length } }, { status: 502 });
+    }
+    return NextResponse.json({ data: { images: combined, count: combined.length, nombres: await nombresDe(combined) } });
   } catch (err: any) {
     console.error('Project images POST error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -131,6 +138,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       `UPDATE gcc_world.projects SET images = $1, updated_at = NOW() WHERE id = $2`,
       [updated, id]
     );
+    // Después de quitarla de la fila: si Drive fallara, la foto ya no se ve y solo queda
+    // un archivo de más en Drive, nunca un hueco roto en la galería.
+    await quitar(currentImages[index]).catch((e) => console.error('[images] papelera de Drive', e?.message));
 
     return NextResponse.json({ data: { images: updated, count: updated.length } });
   } catch (err: any) {

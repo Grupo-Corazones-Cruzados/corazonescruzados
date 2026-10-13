@@ -56,4 +56,24 @@ export async function requerimientoDelProyecto(requirementId: unknown, projectId
 }
 
 /** Estados en los que el trabajo ya no se toca (lo que se cobra está cerrado). */
+/**
+ * ¿Puede subir, quitar y renombrar las FOTOS del proyecto? Admin, el creador (su ficha es
+ * `assigned_member_id`) o un participante con puja ACEPTADA. Es la regla que tenía la galería
+ * (`/api/projects/[id]/images`); vive aquí para que la usen también el renombrado de
+ * `/api/media` y cualquier otra ruta que toque esas fotos (2026-10-13).
+ */
+export async function puedeGestionarImagenes(user: Usuario, projectId: string): Promise<boolean> {
+  if (user.role === 'admin') return true;
+  const yo = await miembroDe(user.userId);
+  if (yo == null) return false;
+  const { rows: [p] } = await pool.query(`SELECT assigned_member_id FROM gcc_world.projects WHERE id = $1`, [projectId]);
+  if (!p) return false;
+  if (String(p.assigned_member_id) === String(yo)) return true;
+  const { rows } = await pool.query(
+    `SELECT 1 FROM gcc_world.project_bids WHERE project_id = $1 AND member_id = $2 AND status = 'accepted' LIMIT 1`,
+    [projectId, yo],
+  );
+  return rows.length > 0;
+}
+
 export const ESTADOS_CERRADOS = ['review', 'completed', 'cancelled', 'closed'];

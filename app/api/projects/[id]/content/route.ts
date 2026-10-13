@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     await ensureContentColumns();
 
     const { rows: [project] } = await pool.query(
-      `SELECT video_script, (video_data IS NOT NULL) as has_video, image_metadata
+      `SELECT video_script, (video_file_id IS NOT NULL OR video_data IS NOT NULL) as has_video, image_metadata
        FROM gcc_world.projects WHERE id = $1`,
       [id]
     );

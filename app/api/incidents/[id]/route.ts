@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth/jwt';
+import { nombresDe } from '@/lib/media';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,5 +15,12 @@ export async function GET(
   if (!incident) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  return NextResponse.json(incident);
+  // `nombres` de las fotos en Drive y si quien mira puede renombrarlas (solo el equipo: el
+  // portal es público y a un cliente no se le enseña un lápiz que le daría error).
+  const user = await getCurrentUser().catch(() => null);
+  return NextResponse.json({
+    ...incident,
+    nombres: await nombresDe(incident.images),
+    puedeRenombrar: !!user && (user.role === 'admin' || user.role === 'member'),
+  });
 }

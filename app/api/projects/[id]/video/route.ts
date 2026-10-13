@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { guardar, leerBytes, quitar, urlMedia } from '@/lib/media';
 import OpenAI from 'openai';
 import { fal } from '@fal-ai/client';
 import { execFile } from 'child_process';
@@ -41,10 +42,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     await ensureColumns();
 
+    // Desde el 2026-10-13 el video vive en el Drive de la empresa: se manda a /api/media, que
+    // lo sirve por trozos (el navegador puede adelantar sin bajarlo entero). `video_data` solo
+    // queda para un video que todavía no se haya migrado.
+    const { rows: [ref] } = await pool.query(
+      `SELECT video_file_id FROM gcc_world.projects WHERE id = $1`, [id]
+    );
+    if (!ref) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+    if (ref.video_file_id) return NextResponse.redirect(new URL(urlMedia(ref.video_file_id), req.url));
+
     const { rows: [project] } = await pool.query(
       `SELECT video_data, title FROM gcc_world.projects WHERE id = $1`, [id]
     );
-    if (!project) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
     if (!project.video_data) return NextResponse.json({ error: 'No hay video generado' }, { status: 404 });
 
     const buffer = project.video_data;
@@ -208,7 +217,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               continue;
             }
           } else {
-            continue;
+            // Fotos en Drive (o en una URL): antes se SALTABAN en silencio y el video salía
+            // sin ellas (2026-10-13).
+            const leida = await leerBytes(imgData).catch(() => null);
+            if (!leida || !leida.mime.startsWith('image/')) continue;
+            const sub = leida.mime.split('/')[1] || 'png';
+            ext = sub === 'jpeg' ? 'jpg' : sub.replace(/[^a-z0-9]/gi, '');
+            buffer = leida.datos;
           }
 
           const imgFile = join(tmpDir, `${sessionId}-img-${i}.${ext}`);
@@ -471,10 +486,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         send({ step: 'Guardando video...' });
         const videoBuffer = await fs.readFile(outputPath);
 
+        // Al Drive de la empresa (2026-10-13), ya no como bytea en la fila (9,6 MB el único que
+        // había). El anterior, si lo había, va a la papelera de Drive.
+        const g = await guardar({
+          datos: videoBuffer, mime: 'video/mp4', base: `${project.title || `Proyecto ${id}`} · video`,
+          modulo: 'proyecto_video', referencia: id, ruta: ['Proyectos', `${id} · ${project.title || ''}`.trim()],
+        });
+        const { rows: [previo] } = await pool.query(`SELECT video_file_id FROM gcc_world.projects WHERE id = $1`, [id]);
         await pool.query(
-          `UPDATE gcc_world.projects SET video_data = $1, updated_at = NOW() WHERE id = $2`,
-          [videoBuffer, id]
+          `UPDATE gcc_world.projects SET video_file_id = $1, video_data = NULL, updated_at = NOW() WHERE id = $2`,
+          [g.fileId, id]
         );
+        if (previo?.video_file_id && previo.video_file_id !== g.fileId) {
+          await quitar(urlMedia(previo.video_file_id)).catch((e) => console.error('[video] papelera de Drive', e?.message));
+        }
 
         send({ step: 'Video generado exitosamente', video_url: `/api/projects/${id}/video` });
         send({ done: true });

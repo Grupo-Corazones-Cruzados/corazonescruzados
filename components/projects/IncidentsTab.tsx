@@ -13,6 +13,8 @@ import {
   AlertTriangle, Plus, Share2, Tags, X, Trash2, Copy, Link2, RefreshCw, ImagePlus,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import NombreArchivo, { renombrarEnPlataforma } from '@/components/media/NombreArchivo';
+import { fileIdDe } from '@/lib/media/ref';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -277,10 +279,21 @@ function IncidentDetailModal({ api, incidentId, canManage, onClose, onChanged }:
           {inc.description && <p className="text-[13px] text-digi-text whitespace-pre-wrap" style={mf}>{inc.description}</p>}
           {Array.isArray(inc.images) && inc.images.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {inc.images.map((src: string, i: number) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <a key={i} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" className="w-20 h-20 object-cover rounded border border-digi-border" /></a>
-              ))}
+              {inc.images.map((src: string, i: number) => {
+                const fid = fileIdDe(src);
+                const nombre = fid ? inc.nombres?.[fid] : undefined;
+                return (
+                  <div key={i} className="w-20 min-w-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <a href={src} target="_blank" rel="noreferrer"><img src={src} alt={nombre || ''} className="w-20 h-20 object-cover rounded border border-digi-border" /></a>
+                    {fid && nombre && (
+                      <NombreArchivo className="mt-1" nombre={nombre} puedeEditar={canManage}
+                        renombrar={(base) => renombrarEnPlataforma(fid, base)}
+                        onRenombrado={(final) => setInc((x: any) => ({ ...x, nombres: { ...(x?.nombres || {}), [fid]: final } }))} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
           {canManage && (

@@ -6,6 +6,7 @@ import {
   ensureIncidentTables, loadOwnerForIncidents, canManageIncidents, loadCategories, setIncidentsToken,
   COLUMNA_DUENO, INCIDENT_SEVERITIES, INCIDENT_STATUSES, type IncidentOwnerType, type IncidentOwner,
 } from '@/lib/incidents/schema';
+import { decodificarDataUri, fileIdDe, guardar, nombresDe, quitar } from '@/lib/media';
 
 /**
  * LAS RUTAS DE INCIDENTES — una definición para proyecto y ticket (2026-09-30).
@@ -38,6 +39,33 @@ export function sanitizeImages(images: unknown): string[] {
   return images.filter((s): s is string => typeof s === 'string' && s.startsWith('data:image/')).slice(0, 8);
 }
 
+/**
+ * Las imágenes que se guardan en la fila. En incidentes de PROYECTO, las nuevas (data URI) van
+ * al Drive de la empresa y queda su `/api/media/<id>` (2026-10-13); en los de ticket siguen
+ * como data URI (fuera de esa decisión). Una referencia a Drive solo se acepta si ya estaba en
+ * el incidente: así nadie cuelga aquí un archivo ajeno.
+ */
+async function prepararImagenes(images: unknown, owner: IncidentOwner, antes: string[] = []): Promise<string[]> {
+  if (!Array.isArray(images)) return [];
+  const out: string[] = [];
+  for (const s of images) {
+    if (out.length >= 8) break;
+    if (typeof s !== 'string') continue;
+    if (fileIdDe(s)) { if (antes.includes(s)) out.push(s); continue; }
+    if (!s.startsWith('data:image/')) continue;
+    if (owner.tipo !== 'project') { out.push(s); continue; }
+    const d = decodificarDataUri(s);
+    if (!d) continue;
+    const g = await guardar({
+      datos: d.datos, mime: d.mime, base: `Incidencia · ${owner.title} · foto ${String(out.length + 1).padStart(2, '0')}`,
+      modulo: 'incidencia', referencia: `proyecto-${owner.id}`,
+      ruta: ['Proyectos', `${owner.id} · ${owner.title}`.trim(), 'Incidencias'],
+    });
+    out.push(g.url);
+  }
+  return out;
+}
+
 export async function listarIncidentes(owner: IncidentOwner) {
   const { rows } = await pool.query(
     `SELECT ${LISTA_SQL} FROM gcc_world.project_incidents WHERE ${COLUMNA_DUENO[owner.tipo]} = $1 ORDER BY created_at DESC`,
@@ -58,7 +86,7 @@ export async function crearIncidente(owner: IncidentOwner, body: any, createdBy:
      VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9)
      RETURNING ${LISTA_SQL}`,
     [
-      owner.id, title, String(body.description || '').trim(), severity, sanitizeImages(body.images),
+      owner.id, title, String(body.description || '').trim(), severity, await prepararImagenes(body.images, owner),
       body.category ? String(body.category).trim() : null,
       body.subcategory ? String(body.subcategory).trim() : null,
       body.reporter_name ? String(body.reporter_name).trim().slice(0, 120) : null,
@@ -110,7 +138,8 @@ export function rutasIncidentes(tipo: IncidentOwnerType) {
           const { rows } = await pool.query(
             `SELECT * FROM gcc_world.project_incidents WHERE id = $1 AND ${col} = $2`, [Number(a.incidentId) || 0, a.owner.id]);
           if (!rows[0]) return NextResponse.json({ error: 'Incidente no encontrado' }, { status: 404 });
-          return NextResponse.json({ data: rows[0] });
+          // Nombre en Drive de cada foto, para mostrarlo y renombrarlo.
+          return NextResponse.json({ data: { ...rows[0], nombres: await nombresDe(rows[0].images || []) } });
         } catch (err: any) { return fallo('detail GET', err); }
       },
       PATCH: async (req: NextRequest, ctx: Ctx) => {
@@ -128,7 +157,17 @@ export function rutasIncidentes(tipo: IncidentOwnerType) {
           if (typeof body.description === 'string') push('description', body.description);
           if ('category' in body) push('category', body.category ? String(body.category).trim() : null);
           if ('subcategory' in body) push('subcategory', body.subcategory ? String(body.subcategory).trim() : null);
-          if (Array.isArray(body.images)) push('images', sanitizeImages(body.images));
+          let quitadas: string[] = [];
+          if (Array.isArray(body.images)) {
+            const { rows: [prev] } = await pool.query(
+              `SELECT COALESCE(images, '{}') AS images FROM gcc_world.project_incidents WHERE id = $1 AND ${col} = $2`,
+              [Number(a.incidentId) || 0, a.owner.id],
+            );
+            const antes: string[] = prev?.images || [];
+            const nuevas = await prepararImagenes(body.images, a.owner, antes);
+            quitadas = antes.filter((x) => fileIdDe(x) && !nuevas.includes(x));
+            push('images', nuevas);
+          }
           if (sets.length === 0) return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 });
           values.push(Number(a.incidentId) || 0, a.owner.id);
           const { rows } = await pool.query(
@@ -137,6 +176,7 @@ export function rutasIncidentes(tipo: IncidentOwnerType) {
             values,
           );
           if (!rows[0]) return NextResponse.json({ error: 'Incidente no encontrado' }, { status: 404 });
+          for (const ref of quitadas) await quitar(ref).catch((e) => console.error('[incidentes] papelera de Drive', e?.message));
           return NextResponse.json({ data: rows[0] });
         } catch (err: any) { return fallo('PATCH', err); }
       },
@@ -144,7 +184,14 @@ export function rutasIncidentes(tipo: IncidentOwnerType) {
         try {
           const a = await acceso(tipo, ctx, true);
           if (a.error) return a.error;
-          await pool.query(`DELETE FROM gcc_world.project_incidents WHERE id = $1 AND ${col} = $2`, [Number(a.incidentId) || 0, a.owner.id]);
+          const { rows: borrados } = await pool.query(
+            `DELETE FROM gcc_world.project_incidents WHERE id = $1 AND ${col} = $2 RETURNING images`,
+            [Number(a.incidentId) || 0, a.owner.id],
+          );
+          // Sus fotos de Drive, a la papelera (después de borrar la fila).
+          for (const ref of borrados[0]?.images || []) {
+            await quitar(ref).catch((e) => console.error('[incidentes] papelera de Drive', e?.message));
+          }
           return NextResponse.json({ ok: true });
         } catch (err: any) { return fallo('DELETE', err); }
       },

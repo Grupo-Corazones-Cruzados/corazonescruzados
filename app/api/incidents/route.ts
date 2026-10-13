@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma, pool } from '@/lib/db';
+import { guardarFotosIncidencia } from '@/lib/media/incidencias';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,34 +41,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
     }
 
-    // Save images as base64 data URIs in the DB (Railway has ephemeral filesystem)
+    // Las fotos van al Drive de la empresa (2026-10-13), no a la fila: hace falta el id de la
+    // incidencia para su carpeta, así que primero se crea y luego se le cuelgan.
     const imageFiles = form.getAll('images') as File[];
-    const savedImages: string[] = [];
 
-    for (const file of imageFiles) {
-      if (file.size === 0) continue;
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const mimeMap: Record<string, string> = {
-        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-        gif: 'image/gif', webp: 'image/webp',
-      };
-      const mime = mimeMap[ext] || 'image/png';
-      const dataUri = `data:${mime};base64,${buffer.toString('base64')}`;
-      savedImages.push(dataUri);
-    }
-
-    const incident = await prisma.incident.create({
-      data: {
-        projectId,
-        clientName,
-        title,
-        description,
-        severity,
-        images: savedImages,
-        status: 'pending',
-      },
+    const creada = await prisma.incident.create({
+      data: { projectId, clientName, title, description, severity, images: [], status: 'pending' },
     });
+    let incident = creada;
+    if (imageFiles.some((f) => f && f.size > 0)) {
+      const urls = await guardarFotosIncidencia(imageFiles, creada);
+      incident = await prisma.incident.update({ where: { id: creada.id }, data: { images: urls } });
+    }
 
     return NextResponse.json(incident, { status: 201 });
   } catch (e: any) {

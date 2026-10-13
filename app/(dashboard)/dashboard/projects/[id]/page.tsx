@@ -31,6 +31,8 @@ import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelEtapas from '@/components/facturacion/PanelEtapas';
 import PestanasRail from '@/components/ui/PestanasRail';
+import NombreArchivo, { renombrarEnPlataforma } from '@/components/media/NombreArchivo';
+import { fileIdDe } from '@/lib/media/ref';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -74,6 +76,8 @@ export default function ProjectDetailPage() {
 
   // Project images states
   const [projectImages, setProjectImages] = useState<string[]>([]);
+  // Nombre en Drive de cada foto ({ fileId: nombre }); las que no están en Drive no aparecen.
+  const [imageNames, setImageNames] = useState<Record<string, string>>({});
   const [uploadingImages, setUploadingImages] = useState(false);
   const [deletingImageIdx, setDeletingImageIdx] = useState<number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -308,6 +312,7 @@ export default function ProjectDetailPage() {
       if (!res.ok) return;
       const { data } = await res.json();
       setProjectImages(data.images || []);
+      setImageNames(data.nombres || {});
     } catch { /* ignore */ }
   }, [id]);
 
@@ -925,6 +930,7 @@ export default function ProjectDetailPage() {
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
       const { data } = await res.json();
       setProjectImages(data.images);
+      if (data.nombres) setImageNames(data.nombres);
       toast.success(`${base64Images.length} imagen(es) subida(s)`);
     } catch (err: any) { toast.error(err.message || 'Error al subir imagenes'); }
     finally { setUploadingImages(false); e.target.value = ''; }
@@ -2418,10 +2424,14 @@ export default function ProjectDetailPage() {
             <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Sin imágenes aún.</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {projectImages.map((img, idx) => (
-                <div key={idx} className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker rounded">
+              {projectImages.map((img, idx) => {
+                const fid = fileIdDe(img);
+                const nombre = fid ? imageNames[fid] : undefined;
+                return (
+                <div key={idx} className="min-w-0">
+                <div className="relative group aspect-square border border-digi-border/50 overflow-hidden bg-digi-darker rounded">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreviewImage(img)} />
+                  <img src={img} alt={nombre || `Imagen ${idx + 1}`} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setPreviewImage(img)} />
                   {canEditImages && (
                     <button onClick={() => handleImageDelete(idx)} disabled={deletingImageIdx === idx} title="Eliminar imagen"
                       className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-5 h-5 flex items-center justify-center rounded bg-red-600/90 text-white text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700">
@@ -2429,7 +2439,14 @@ export default function ProjectDetailPage() {
                     </button>
                   )}
                 </div>
-              ))}
+                {fid && nombre && (
+                  <NombreArchivo className="mt-1" nombre={nombre} puedeEditar={!!canEditImages}
+                    renombrar={(base) => renombrarEnPlataforma(fid, base)}
+                    onRenombrado={(final) => { setImageNames((m) => ({ ...m, [fid]: final })); toast.success('Nombre cambiado también en Drive'); }} />
+                )}
+                </div>
+                );
+              })}
             </div>
           )}
         </div>

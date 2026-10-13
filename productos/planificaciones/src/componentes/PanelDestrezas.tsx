@@ -8,7 +8,7 @@ import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Confirmar, EstadoVacio } 
 import { Aviso } from '@/componentes/campos';
 import { crearDestreza, editarDestreza, eliminarDestreza, seleccionarDestreza } from '@/acciones/destrezas';
 
-export type DestrezaVista = { id: number; codigo: string; descripcion: string; imagenUrl: string | null; materia?: string; criterio?: string | null; indicador?: string | null; activa?: boolean };
+export type DestrezaVista = { id: number; codigo: string; descripcion: string; imagenUrl: string | null; /** Nombre del archivo en el Drive del Grupo, si la imagen vive allí. */ imagenNombre?: string | null; materia?: string; criterio?: string | null; indicador?: string | null; activa?: boolean };
 
 /**
  * LAS DESTREZAS DE UNA MATERIA DE GRADO (Fernando, 2026-09-17): en «Unidades» el
@@ -178,6 +178,23 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
         </div>
         <Entrada name="imagenUrl" className="mt-2" placeholder="…o pega la dirección de una imagen" />
       </Campo>
+      {/* La imagen está en el Drive del Grupo y no se está cambiando: su nombre se puede editar
+          aquí y cambia también en Drive (2026-10-13). Se edita el nombre; la extensión no. */}
+      {editando?.imagenNombre && !vista && !quitarImagen && (() => {
+        const n = editando.imagenNombre;
+        const i = n.lastIndexOf('.');
+        const base = i > 0 ? n.slice(0, i) : n;
+        const ext = i > 0 ? n.slice(i) : '';
+        return (
+          <Campo etiqueta="Nombre del archivo de la imagen">
+            <div className="flex items-center gap-2">
+              <Entrada name="imagenNombre" defaultValue={base} maxLength={150} />
+              {ext && <span className="shrink-0 text-[12px] text-tenue">{ext}</span>}
+            </div>
+            <input type="hidden" name="imagenNombreAntes" value={base} />
+          </Campo>
+        );
+      })()}
       {error && <Aviso texto={error} />}
       <div className="flex justify-end gap-2 border-t border-borde pt-4">
         <Boton type="button" variante="secundario" onClick={volver} disabled={enCurso}>

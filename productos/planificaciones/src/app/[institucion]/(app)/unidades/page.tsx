@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import UnidadesCliente, { type GradoVista, type DocenteVista } from './UnidadesCliente';
 import { destrezasDeMateria } from '@/lib/destrezas';
 import type { DestrezaVista } from '@/componentes/PanelDestrezas';
+import { fileIdDe, nombresImagenes } from '@/lib/mediaGcc';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Unidades' };
@@ -45,6 +46,12 @@ export default async function PaginaUnidades({ params, searchParams }: { params:
 
   // Las destrezas solo de la materia elegida (pueden llevar iconos incrustados).
   const materiaId = Number(b.m) || null;
-  const destrezas: DestrezaVista[] = materiaId && vista.some((g) => g.materias.some((m) => m.id === materiaId)) ? (await destrezasDeMateria(materiaId)).map((d) => ({ id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, criterio: d.criterio, indicador: d.indicador, activa: d.activa })) : [];
+  const filas = materiaId && vista.some((g) => g.materias.some((m) => m.id === materiaId)) ? await destrezasDeMateria(materiaId) : [];
+  // Nombre en Drive de cada imagen, para poder renombrarla desde el formulario.
+  const nombres = await nombresImagenes(filas.map((d) => d.imagenUrl));
+  const destrezas: DestrezaVista[] = filas.map((d) => {
+    const fid = fileIdDe(d.imagenUrl);
+    return { id: d.id, codigo: d.codigo, descripcion: d.descripcion, imagenUrl: d.imagenUrl, imagenNombre: fid ? nombres[fid] ?? null : null, criterio: d.criterio, indicador: d.indicador, activa: d.activa };
+  });
   return <UnidadesCliente slug={institucion} grados={vista} docentes={listaDocentes} gradoId={Number(b.g) || null} materiaId={materiaId} destrezas={destrezas} soloLectura={inquilino.soloLectura} />;
 }

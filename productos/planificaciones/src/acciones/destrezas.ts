@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
 import { imagenADataUrl, normalizarCodigo } from '@/lib/destrezas';
+import { fileIdDe, quitarSiHuerfana, renombrarImagen, subirImagen } from '@/lib/mediaGcc';
 
 export type Resultado = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -26,12 +27,21 @@ async function materiaEditable(slug: string, materiaGradoId: number) {
   return { ok: true as const, ctx, mg };
 }
 
-/** La imagen viene como archivo (se convierte a data URL) o como dirección; si no viene nada, se conserva la que había. */
-async function leerImagen(datos: FormData, actual: string | null): Promise<{ ok: true; url: string | null } | { ok: false; error: string }> {
+/**
+ * La imagen viene como archivo o como dirección; si no viene nada, se conserva la que había.
+ * Un archivo va al Google Drive del Grupo a través de la plataforma (2026-10-13), ya no como
+ * data URL dentro de la fila.
+ */
+async function leerImagen(datos: FormData, actual: string | null, o: { inquilino: string; codigo: string }): Promise<{ ok: true; url: string | null } | { ok: false; error: string }> {
   const archivo = datos.get('imagen');
   if (archivo instanceof File && archivo.size > 0) {
     const r = await imagenADataUrl(archivo);
-    return r.ok ? { ok: true, url: r.url } : r;
+    if (!r.ok) return r;
+    try {
+      return { ok: true, url: await subirImagen(r.url, { inquilino: o.inquilino, referencia: o.codigo, base: o.codigo }) };
+    } catch (e: any) {
+      return { ok: false, error: `No se pudo guardar la imagen: ${e?.message || 'error con Google Drive'}` };
+    }
   }
   if (datos.get('quitarImagen') === 'true') return { ok: true, url: null };
   const url = String(datos.get('imagenUrl') || '').trim();
@@ -46,7 +56,7 @@ export async function crearDestreza(slug: string, materiaGradoId: number, datos:
   const codigo = normalizarCodigo(leido.data.codigo);
   const repetida = await prisma.destreza.findFirst({ where: { materiaGradoId, codigo }, select: { id: true } });
   if (repetida) return { ok: false, error: `Esta materia ya tiene la destreza ${codigo}.` };
-  const img = await leerImagen(datos, null);
+  const img = await leerImagen(datos, null, { inquilino: p.ctx.inquilino.slug, codigo });
   if (!img.ok) return img;
   const ultimo = await prisma.destreza.aggregate({ where: { materiaGradoId }, _max: { orden: true } });
   const d = await prisma.destreza.create({
@@ -67,9 +77,17 @@ export async function editarDestreza(slug: string, id: number, datos: FormData):
   const codigo = normalizarCodigo(leido.data.codigo);
   const repetida = await prisma.destreza.findFirst({ where: { materiaGradoId: d.materiaGradoId, codigo, id: { not: id } }, select: { id: true } });
   if (repetida) return { ok: false, error: `Esta materia ya tiene la destreza ${codigo}.` };
-  const img = await leerImagen(datos, d.imagenUrl);
+  const img = await leerImagen(datos, d.imagenUrl, { inquilino: p.ctx.inquilino.slug, codigo });
   if (!img.ok) return img;
+  // Nombre del archivo en Drive: se renombra allí PRIMERO; si falla no se guarda nada.
+  const nombre = String(datos.get('imagenNombre') ?? '').trim();
+  const nombreAntes = String(datos.get('imagenNombreAntes') ?? '').trim();
+  if (img.url && img.url === d.imagenUrl && fileIdDe(img.url) && nombre && nombre !== nombreAntes) {
+    try { await renombrarImagen(img.url, nombre); }
+    catch (e: any) { return { ok: false, error: `No se pudo renombrar la imagen: ${e?.message || 'error con Google Drive'}` }; }
+  }
   await prisma.destreza.update({ where: { id }, data: { codigo, descripcion: leido.data.descripcion, criterio: leido.data.criterio || null, indicador: leido.data.indicador || null, imagenUrl: img.url } });
+  if (d.imagenUrl && d.imagenUrl !== img.url) await quitarSiHuerfana(d.imagenUrl);
   revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true, id };
@@ -82,6 +100,7 @@ export async function eliminarDestreza(slug: string, id: number): Promise<Result
   const p = await materiaEditable(slug, d.materiaGradoId);
   if (!p.ok) return p;
   await prisma.destreza.delete({ where: { id } });
+  await quitarSiHuerfana(d.imagenUrl);
   revalidatePath(`/${slug}/unidades`);
   revalidatePath(`/${slug}/planificaciones`);
   return { ok: true };

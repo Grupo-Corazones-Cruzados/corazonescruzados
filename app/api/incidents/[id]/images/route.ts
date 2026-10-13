@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { guardarFotosIncidencia } from '@/lib/media/incidencias';
+import { quitar } from '@/lib/media';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,19 +24,8 @@ export async function POST(
       return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
     }
 
-    const newImages: string[] = [];
-    for (const file of imageFiles) {
-      if (file.size === 0) continue;
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const mimeMap: Record<string, string> = {
-        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-        gif: 'image/gif', webp: 'image/webp',
-      };
-      const mime = mimeMap[ext] || 'image/png';
-      const dataUri = `data:${mime};base64,${buffer.toString('base64')}`;
-      newImages.push(dataUri);
-    }
+    // A Drive (2026-10-13), ya no como base64 dentro de la fila.
+    const newImages = await guardarFotosIncidencia(imageFiles, incident, incident.images.length);
 
     const updated = await prisma.incident.update({
       where: { id },
@@ -75,6 +66,8 @@ export async function DELETE(
       where: { id },
       data: { images: updatedImages },
     });
+    // Después de quitarla de la fila: si Drive falla, sobra un archivo, no falta una foto.
+    await quitar(incident.images[imageIndex]).catch((e) => console.error('[incidencias] papelera de Drive', e?.message));
 
     return NextResponse.json(updated);
   } catch (e: any) {
