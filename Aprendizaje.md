@@ -1,5 +1,115 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · 🔎 45 %
+
+**Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su
+propia experiencia**, que siempre es **personal** (no afecta su perfil: no suma ni resta talentos ni
+valores). Cada experiencia tiene **categorías** y en cada categoría se suben **varios archivos del
+dispositivo** (PDF, imágenes, videos). Los archivos se guardan en un **espacio dentro del Google Drive
+del propio usuario**. La conexión con Google se hace desde **Configuración** con un botón que pide Drive
+y, de paso, **Gmail y Calendar** (para funciones futuras). Si el Drive se queda sin espacio, se ve en
+Experiencias. Lo que el usuario añada desde la app de Google Drive debe poder **traerse/sincronizarse**
+a la app, entrando **sin categoría** y con opción de asignársela.
+
+**Rol asumido:** ingeniero de integraciones (OAuth 2.0 de Google, API de Drive) + arquitecto backend
+(modelo de datos, sincronía con una fuente externa, tokens cifrados).
+
+### Progreso
+- **% de información para el objetivo:** 45 %
+- **Estado (2026-10-13):** investigado el módulo actual, Configuración y la integración de Google que
+  ya existe. El diseño técnico está claro salvo **una decisión que lo condiciona todo: el alcance
+  (scope) de Drive que se pide**, porque de él depende si la sincronía puede ser automática y cuánto
+  papeleo exige Google (P1). Hay además 5 decisiones de producto pendientes de Fernando.
+
+### Fuentes consultadas (2026-10-13)
+- `app/(dashboard)/dashboard/experiencias/page.tsx` + `app/api/experiencias/*` — hoy Experiencias solo
+  lista eventos de **Gestión Social** (`gs_events`/`gs_event_tasks`/`gs_task_signups`) y deja tomar
+  una tarea; esas tomas **sí puntúan** el perfil (`getSubjectsProfileScores`).
+- `lib/centralized/subject.ts` — el «sujeto» es miembro (`members.id`) o candidato (`clients.id`).
+  Roles del módulo: candidate/member/admin.
+- `app/(dashboard)/dashboard/settings/page.tsx` — Perfil fijo a la izquierda + pestañas
+  (CV · Disponibilidad · Portafolio) **solo para quien tiene `member_id`**; un candidato hoy solo ve el Perfil.
+- `lib/integrations/google-workspace.ts` + MEMORIA.md («Cuentas corporativas Google Workspace») —
+  lo que existe es una **cuenta de servicio con delegación de dominio** sobre `grupocc.org`. Sirve
+  para cuentas del dominio, **no** para el Gmail/Drive personal de un usuario: aquí hace falta
+  **OAuth de usuario (3 patas)**, que no existe aún. `googleapis@173` ya es dependencia.
+- `productos/automatizaciones/src/lib/agente/cifrado.ts` — AES-256-GCM con AAD; vive en un producto,
+  no en la app principal: se **extrae/reutiliza** para cifrar el refresh token (regla «equivalente no es igual»).
+- `capacitor.config.json` — la app nativa carga la web en un WebView: **Google bloquea OAuth en
+  WebViews** (`disallowed_useragent`) → en la app nativa la conexión debe abrirse en el navegador del sistema.
+
+### Preguntas y respuestas
+
+#### P1 — ¿Qué alcance de Drive se pide? · ⏸ Bloqueada (espera a Fernando) — **CRÍTICA**
+- **Por qué importa:** decide si la sincronía «añado en Drive y aparece en la app» puede ser automática.
+  - `drive.file` (no sensible, sin auditoría): la app **solo ve lo que ella creó** o lo que el usuario
+    **elige en el selector de Google (Picker)**. Un archivo que el usuario suelta en la carpeta desde
+    drive.google.com **no lo ve la app** aunque esté dentro de su carpeta. La «sincronía» sería un botón
+    **«Traer desde Drive»** que abre el Picker; lo elegido entra sin categoría.
+  - `drive` (completo, **restringido**): sincronía automática real (listar la carpeta), pero para
+    usuarios fuera de `grupocc.org` Google exige **verificación + auditoría de seguridad CASA anual**
+    (de pago, semanas). Sin ella: modo «Testing» con máx. 100 usuarios y **tokens que caducan a los 7 días**.
+- **Recomendación:** `drive.file` + Picker. **A verificar con una prueba real:** si elegir la CARPETA
+  en el Picker concede acceso a su contenido (si sí, la sincronía casi automática vuelve a ser posible).
+
+#### P2 — ¿Gmail y Calendar se piden ya o al usarlos? · ⏸ Bloqueada
+- **Por qué importa:** Gmail de lectura es **restringido** (CASA); `gmail.send` y `calendar` son
+  **sensibles** (verificación de Google con video de demostración). Pedirlos ahora obliga a esa
+  verificación **antes** de que nadie pueda conectar Drive, y Google pide scopes mínimos.
+- **Recomendación:** **autorización incremental**: el botón conecta Drive hoy; cuando exista la
+  función de Gmail/Calendar, la misma conexión pide el permiso extra (`include_granted_scopes`), sin
+  reconectar desde cero.
+
+#### P3 — ¿Quién conecta Google y crea experiencias: miembros, candidatos, ambos? · ⏸ Bloqueada
+- **Por qué importa:** en Configuración un candidato solo ve el Perfil; habría que poner el botón en el
+  Perfil o en una pestaña nueva «Conexiones» visible para todos.
+
+#### P4 — ¿Qué datos tiene una experiencia personal? · ⏸ Bloqueada
+- **Por qué importa:** nombre y descripción seguro; ¿fecha?, ¿lugar?, ¿portada? ¿Las categorías son
+  libres por experiencia o hay un catálogo común?
+
+#### P5 — Cómo se ven los archivos dentro de la app · ⏸ Bloqueada
+- **Por qué importa:** los archivos son privados del Drive del usuario. Opciones: miniaturas + abrir en
+  Google Drive (simple), o visor dentro de la app pasando el archivo por nuestro servidor (más trabajo
+  y ancho de banda en Railway, sobre todo con videos).
+
+#### P6 — ¿Qué pasa si el usuario borra o mueve algo en Drive, o desconecta Google? · ❓ Abierta
+- **Propuesta:** Drive es la fuente de verdad. Borrado en Drive → desaparece de la app en la siguiente
+  sincronía. Desconectar → la app deja de mostrar los archivos (no se borra nada del Drive).
+
+#### P7 — Credenciales de Google Cloud · ⏸ Bloqueada
+- **Por qué importa:** hace falta un **cliente OAuth (Web)** en el proyecto de Google Cloud, la
+  **pantalla de consentimiento** (tipo *External*) y la URI de redirección de producción. Solo Fernando
+  puede crearlo en la consola (o darme acceso). El secreto va a Railway, **nunca** al repo.
+
+#### P8 — Subida de archivos grandes (videos) · ✅ Resuelta (diseño)
+- **Respuesta:** **subida reanudable directa del navegador a Google**: el servidor abre la sesión de
+  subida con el token del usuario y devuelve la URL de sesión; el navegador envía los bytes a Google
+  en trozos. Así no pasa por Railway (límite de 1 MB de las acciones de servidor, memoria y
+  ancho de banda) y un video de 1 GB no tumba nada. (Fuente: API de Drive, uploads reanudables.)
+
+#### P9 — Espacio libre · ✅ Resuelta (diseño)
+- **Respuesta:** `about.get(fields=storageQuota)` da `limit` y `usage`. Se muestra una barra en
+  Experiencias; antes de subir se compara con el tamaño del lote y se avisa **antes** de intentar.
+  Si Google responde `storageQuotaExceeded`, el mismo aviso. (Cuentas con almacenamiento ilimitado: sin `limit`.)
+
+### Decisiones de diseño (provisionales hasta cerrar P1-P5)
+- **Tablas propias, no `gs_*`:** una experiencia personal no tiene tareas, plazas ni ciclo de vida, y
+  no debe entrar nunca en `getSubjectsProfileScores`. Prefijo nuevo (p. ej. `exp_`):
+  `exp_experiencias`, `exp_categorias`, `exp_archivos` (con `drive_file_id`, `categoria_id` NULL = sin
+  categoría) + `google_conexiones` por usuario (email de Google, scopes concedidos, refresh token
+  **cifrado**). Migración en `sql/migrations/` (sin DDL en cada petición).
+- **En Drive:** carpeta `GCC World / Experiencias / <experiencia> / <categoría>`. Asignar categoría =
+  mover el archivo a la subcarpeta (Drive sigue siendo la verdad; la BD es índice).
+- **Pertenencia:** cada experiencia y archivo se comprueba contra el usuario y su conexión (regla
+  «hay sesión no es es tuyo»).
+
+### Riesgos
+- Scope restringido sin verificar → tokens que caducan a los 7 días y tope de 100 usuarios.
+- OAuth dentro del WebView de la app nativa → Google lo rechaza; hay que abrir el navegador del sistema.
+- Refresh token revocado por el usuario desde su cuenta Google → detectar `invalid_grant` y mostrar
+  «Reconectar» en vez de un error genérico (y nunca fingir lista vacía).
+
 ## Objetivo ACTUAL (declarado 2026-10-09, precisado el mismo día) — LA BASE DE DATOS DEL PROYECTO EN EL MACBOOK M1 (SSD de 2 TB) · 🔎 88 % — RESPALDO MONTADO Y PROBADO A MANO; FALTAN 2 PERMISOS EN EL M1 Y EL OK DE RAILWAY
 
 **Declarado el 2026-10-09**, textual: *«ya tengo un equipo macbook m1, el cual actualmente ya está
