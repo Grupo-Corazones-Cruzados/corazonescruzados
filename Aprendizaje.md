@@ -293,6 +293,17 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   poca RAM; salida 0,05 $/GB). Cloudinary, que ya se usa para 49 fotos, no tendría ese paso. Decisión del
   usuario: Drive.
 
+#### P18 — Renombrar cada archivo desde la plataforma y que cambie en Drive · 🔎 Diseñado (2026-10-13)
+- **Pedido del usuario (2026-10-13):** *«dame también la opción para editar el nombre de cada archivo subido
+  es posible y que afecte a drive ese cambio?»* → **Sí.**
+- Diseño: tabla `gcc_world.media_drive` (file_id, nombre, módulo, referencia, mime, tamaño, fechas); en las
+  filas queda `drive:<fileId>`. Nombre inicial legible al migrar (`Proyecto 7 · foto 03.png`). Lápiz junto a
+  cada archivo → `components/ui/EditDialog.tsx` (1 campo, regla de la casa). Guardar = `files.update(name)` en
+  Drive PRIMERO y luego la fila; si Drive falla no cambia nada. Se edita solo el nombre base; la extensión
+  queda fija. Renombrar no rompe enlaces (se usa el fileId).
+- Renombres hechos DIRECTAMENTE en Drive: propuesta (a) sincronización nocturna de nombres en el cron;
+  alternativa (b) leer de Drive al abrir cada galería. ⏸ Pendiente de elección (recomendada a).
+
 #### P16 — Revisión a fondo: ¿qué más baja el consumo de `Servidor-GCC`? · ✅ Medido (2026-10-13), pendiente de OK
 1. **Precarga de rutas de Next (`experimental.preloadEntriesOnStart`, `true` por defecto en Next 15.5).**
    La app tiene 354 rutas de API + 60 páginas y las carga TODAS al arrancar. Medido en local con el mismo
