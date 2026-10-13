@@ -4674,6 +4674,18 @@ Stack estándar de la casa, con particularidades de este repo:
     `.env.local` y en Railway (`corazonescruzados`), **la clave es la MISMA en los dos** porque local y
     producción comparten BD: con claves distintas, un token guardado desde un lado no descifra en el otro.
   - **Migración `071_experiencias_personales_google.sql`**, aplicada 2026-10-13.
+  - **RANGO DE FECHAS SIN CRUCES (Fernando, 2026-10-13, migración 072):** la experiencia lleva
+    `fecha_inicio`/`fecha_fin` (ambos días incluidos, obligatorios). Un usuario **no puede tener dos
+    experiencias cuyos rangos se crucen** — compartir un solo día ya es cruce; contiguos (10 y 11) sí
+    se permiten. Lo garantiza la BASE: `EXCLUDE USING gist (user_id WITH =, daterange(...,'[]') WITH &&)`
+    con `btree_gist` (error `23P01`); el código comprueba antes para nombrar la experiencia con la que
+    choca y para no crear la carpeta de Drive en balde (si el INSERT falla, la carpeta va a la papelera).
+    Los **eventos deben caer dentro del rango** y no se puede encoger el rango dejando uno fuera.
+    En la lista, un **filtro por día** (a la izquierda de «Nueva experiencia») muestra las experiencias
+    cuyo rango incluye ese día. Probado 16/16 contra BD + Drive real y el EXCLUDE en transacción.
+  - **Bug corregido (2026-10-13):** al eliminar una experiencia salía «Experiencia no encontrada»: el
+    borrado iba bien, pero `accion()` recargaba después el detalle con el id ya borrado. Ahora el borrado
+    pasa `recargarDetalle = false`.
   - **Pestañas (Fernando, 2026-10-13):** arriba del rail, «Experiencias Grupales» (Gestión Social) y
     «Experiencias Personales». **Prueba real contra el Drive de Fernando: 15/15** (subida directa con
     CORS, suelto = sin evento, mover, miniatura, borrar evento devuelve archivos, papelera). App de

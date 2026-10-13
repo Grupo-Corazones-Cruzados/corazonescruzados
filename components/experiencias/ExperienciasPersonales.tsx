@@ -10,7 +10,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import EspacioDrive, { fmtBytes, type EspacioDriveDatos } from '@/components/google/EspacioDrive';
 import {
   ChevronLeft, FolderOpen, Plus, RefreshCw, Upload, FileText, Film, Image as ImageIcon,
-  CalendarDays, XCircle, AlertTriangle, Link2, Inbox, BookHeart,
+  CalendarDays, XCircle, AlertTriangle, Link2, Inbox, BookHeart, X,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -25,14 +25,14 @@ const BENEFICIOS = [
 type Beneficio = (typeof BENEFICIOS)[number]['valor'];
 const BENEFICIO_LABEL = Object.fromEntries(BENEFICIOS.map((b) => [b.valor, b.etiqueta])) as Record<Beneficio, string>;
 
-interface Experiencia { id: number; nombre: string; descripcion: string | null; eventos: number }
+interface Experiencia { id: number; nombre: string; descripcion: string | null; fechaInicio: string; fechaFin: string; eventos: number }
 interface Evento { id: number; nombre: string; fecha: string; descripcion: string | null; beneficios: Beneficio[] }
 interface Archivo {
   id: string; nombre: string; mime: string; tamano: number | null; verUrl: string;
   tieneMiniatura: boolean; eventoId: number | null;
 }
 interface Detalle {
-  experiencia: { id: number; nombre: string; descripcion: string | null; driveUrl: string };
+  experiencia: { id: number; nombre: string; descripcion: string | null; fechaInicio: string; fechaFin: string; driveUrl: string };
   eventos: Evento[];
   archivos: Archivo[];
   carpetaPerdida: boolean;
@@ -48,6 +48,8 @@ const fmtFecha = (ymd: string) => {
   const [y, m, d] = ymd.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 };
+/** «03 oct 2026 – 10 oct 2026», o un solo día si empieza y termina igual. */
+const fmtRango = (i: string, f: string) => (i === f ? fmtFecha(i) : `${fmtFecha(i)} – ${fmtFecha(f)}`);
 const hoy = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -90,7 +92,9 @@ export default function ExperienciasPersonales() {
   const [err, setErr] = useState<{ text: string; code?: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<{ text: string; onOk: () => void } | null>(null);
-  const [formExp, setFormExp] = useState<{ id: number | null; nombre: string; descripcion: string } | null>(null);
+  const [formExp, setFormExp] = useState<{ id: number | null; nombre: string; descripcion: string; fechaInicio: string; fechaFin: string } | null>(null);
+  /** Filtro de la lista: las experiencias cuyo rango incluye este día. '' = todas. */
+  const [diaFiltro, setDiaFiltro] = useState('');
   const [formEv, setFormEv] = useState<{ id: number | null; nombre: string; fecha: string; descripcion: string; beneficios: Beneficio[] } | null>(null);
   const [subidas, setSubidas] = useState<Subida[]>([]);
   const destinoSubida = useRef<number | null>(null);
@@ -120,19 +124,24 @@ export default function ExperienciasPersonales() {
   useEffect(() => { cargarConexion(); cargarLista(); }, [cargarConexion, cargarLista]);
   useEffect(() => { if (abierta != null) cargarDetalle(abierta); else setDetalle(null); }, [abierta, cargarDetalle]);
 
-  const accion = async (fn: () => Promise<unknown>) => {
+  /**
+   * `recargarDetalle: false` cuando la acción BORRA la experiencia abierta: si no, se
+   * recargaba su detalle con el id viejo y salía «Experiencia no encontrada» aunque el
+   * borrado había ido bien (lo vio Fernando, 2026-10-13).
+   */
+  const accion = async (fn: () => Promise<unknown>, recargarDetalle = true) => {
     setBusy(true);
     try {
       await fn();
       setErr(null);
-      if (abierta != null) await cargarDetalle(abierta);
+      if (recargarDetalle && abierta != null) await cargarDetalle(abierta);
       await cargarLista();
     } catch (e) { fallo(e); } finally { setBusy(false); }
   };
 
   // ── Guardar formularios ──
   const guardarExp = async () => { if (!formExp) return; await accion(async () => {
-    const body = JSON.stringify({ nombre: formExp.nombre, descripcion: formExp.descripcion });
+    const body = JSON.stringify({ nombre: formExp.nombre, descripcion: formExp.descripcion, fechaInicio: formExp.fechaInicio, fechaFin: formExp.fechaFin });
     if (formExp.id == null) {
       const { id } = await pedir<{ id: number }>('/api/experiencias/personales', { method: 'POST', body });
       setAbierta(id);
@@ -236,7 +245,7 @@ export default function ExperienciasPersonales() {
         onClose={() => setFormExp(null)}
         onSave={guardarExp}
         saving={busy}
-        canSave={!!formExp?.nombre.trim()}
+        canSave={!!formExp?.nombre.trim() && !!formExp.fechaInicio && !!formExp.fechaFin && formExp.fechaFin >= formExp.fechaInicio}
         saveLabel={formExp?.id == null ? 'Crear' : 'Guardar'}
       >
         {formExp && (
@@ -245,6 +254,20 @@ export default function ExperienciasPersonales() {
               <input value={formExp.nombre} maxLength={120} autoFocus className={EDIT_INPUT}
                 onChange={(e) => setFormExp({ ...formExp, nombre: e.target.value })} />
             </EditField>
+            <div className="grid gap-3 grid-cols-2">
+              <EditField label="Desde">
+                <input type="date" value={formExp.fechaInicio} className={EDIT_INPUT}
+                  onChange={(e) => {
+                    const fechaInicio = e.target.value;
+                    // Si el fin queda antes que el nuevo inicio, se arrastra con él.
+                    setFormExp({ ...formExp, fechaInicio, fechaFin: formExp.fechaFin && formExp.fechaFin < fechaInicio ? fechaInicio : formExp.fechaFin });
+                  }} />
+              </EditField>
+              <EditField label="Hasta">
+                <input type="date" value={formExp.fechaFin} min={formExp.fechaInicio || undefined} className={EDIT_INPUT}
+                  onChange={(e) => setFormExp({ ...formExp, fechaFin: e.target.value })} />
+              </EditField>
+            </div>
             <EditField label="Descripción (opcional)">
               <textarea value={formExp.descripcion} maxLength={2000} rows={4} className={`${EDIT_INPUT} resize-y`}
                 onChange={(e) => setFormExp({ ...formExp, descripcion: e.target.value })} />
@@ -271,6 +294,7 @@ export default function ExperienciasPersonales() {
               </EditField>
               <EditField label="Fecha">
                 <input type="date" value={formEv.fecha} className={EDIT_INPUT}
+                  min={detalle?.experiencia.fechaInicio} max={detalle?.experiencia.fechaFin}
                   onChange={(e) => setFormEv({ ...formEv, fecha: e.target.value })} />
               </EditField>
             </div>
@@ -327,16 +351,19 @@ export default function ExperienciasPersonales() {
                     <h1 className="text-[17px] font-semibold text-digi-text" style={df}>{d.experiencia.nombre}</h1>
                     <span className="text-[10.5px] px-2 py-0.5 rounded-full border bg-black/[0.05] text-digi-muted border-digi-border" style={mf}>Personal</span>
                   </div>
+                  <p className="text-[12.5px] text-digi-muted mt-1 inline-flex items-center gap-1.5" style={mf}>
+                    <CalendarDays className="w-4 h-4" /> {fmtRango(d.experiencia.fechaInicio, d.experiencia.fechaFin)}
+                  </p>
                   {d.experiencia.descripcion && <p className="text-[13px] text-digi-muted mt-2 whitespace-pre-wrap" style={mf}>{d.experiencia.descripcion}</p>}
                 </div>
                 <div className="flex items-center gap-1">
-                  <BotonEditar etiqueta="Editar experiencia" onClick={() => setFormExp({ id: d.experiencia.id, nombre: d.experiencia.nombre, descripcion: d.experiencia.descripcion || '' })} />
+                  <BotonEditar etiqueta="Editar experiencia" onClick={() => setFormExp({ id: d.experiencia.id, nombre: d.experiencia.nombre, descripcion: d.experiencia.descripcion || '', fechaInicio: d.experiencia.fechaInicio, fechaFin: d.experiencia.fechaFin })} />
                   <BotonQuitar etiqueta="Eliminar experiencia" onClick={() => setConfirm({
                     text: `¿Eliminar «${d.experiencia.nombre}»? Su carpeta y todos sus archivos irán a la papelera de tu Google Drive (se pueden recuperar durante 30 días).`,
                     onOk: () => accion(async () => {
                       await pedir(`/api/experiencias/personales/${d.experiencia.id}`, { method: 'DELETE' });
                       setAbierta(null);
-                    }),
+                    }, false),
                   })} />
                 </div>
               </div>
@@ -356,7 +383,10 @@ export default function ExperienciasPersonales() {
                     <RefreshCw className={`w-4 h-4 ${cargandoDetalle ? 'animate-spin' : ''}`} /> Sincronizar
                   </button>
                   <button className={BTN_PRIMARY} disabled={busy} style={mf}
-                    onClick={() => setFormEv({ id: null, nombre: '', fecha: hoy(), descripcion: '', beneficios: [] })}>
+                    onClick={() => {
+                      const h = hoy(), { fechaInicio: i, fechaFin: f } = d.experiencia;
+                      setFormEv({ id: null, nombre: '', fecha: h < i ? i : h > f ? f : h, descripcion: '', beneficios: [] });
+                    }}>
                     <Plus className="w-4 h-4" /> Nuevo evento
                   </button>
                 </div>
@@ -436,18 +466,35 @@ export default function ExperienciasPersonales() {
   }
 
   // ── Lista ──
+  // AAAA-MM-DD se compara bien como texto: el día cae dentro si inicio ≤ día ≤ fin.
+  const visibles = (lista ?? []).filter((e) => !diaFiltro || (e.fechaInicio <= diaFiltro && diaFiltro <= e.fechaFin));
   return (
     <div className="flex-1 min-w-0 w-full">
       {banner}
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        {espacio && <div className="flex-1 min-w-[260px]">{espacio}</div>}
+      {espacio && <div className="mb-3">{espacio}</div>}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <input type="date" aria-label="Filtrar por fecha" value={diaFiltro} className={`${EDIT_INPUT} !w-auto`}
+            onChange={(e) => setDiaFiltro(e.target.value)} />
+          {diaFiltro && (
+            <button type="button" onClick={() => setDiaFiltro('')} title="Quitar filtro" aria-label="Quitar filtro"
+              className="w-8 h-8 inline-flex items-center justify-center rounded text-digi-muted hover:text-accent hover:bg-black/[0.04]">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
         <button className={`${BTN_PRIMARY} ml-auto`} disabled={!conexion} style={mf}
-          onClick={() => setFormExp({ id: null, nombre: '', descripcion: '' })}>
+          onClick={() => setFormExp({ id: null, nombre: '', descripcion: '', fechaInicio: hoy(), fechaFin: hoy() })}>
           <Plus className="w-4 h-4" /> Nueva experiencia
         </button>
       </div>
       {lista == null ? (
         <p className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
+      ) : visibles.length === 0 && diaFiltro ? (
+        <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
+          <CalendarDays className="w-8 h-8 text-digi-muted mx-auto mb-2" />
+          <p className="text-[13px] text-digi-text font-medium" style={mf}>Ninguna experiencia incluye el {fmtFecha(diaFiltro)}</p>
+        </div>
       ) : lista.length === 0 ? (
         <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
           <BookHeart className="w-8 h-8 text-digi-muted mx-auto mb-2" />
@@ -456,7 +503,7 @@ export default function ExperienciasPersonales() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {lista.map((e) => (
+          {visibles.map((e) => (
             <button key={e.id} onClick={() => setAbierta(e.id)}
               className="text-left bg-digi-card border border-digi-border rounded-lg p-3.5 hover:border-accent transition-colors">
               <div className="flex items-center gap-2 flex-wrap">
@@ -464,8 +511,9 @@ export default function ExperienciasPersonales() {
                 <span className="text-[10.5px] px-2 py-0.5 rounded-full border bg-black/[0.05] text-digi-muted border-digi-border" style={mf}>Personal</span>
               </div>
               {e.descripcion && <p className="text-[12px] text-digi-muted mt-1.5 line-clamp-2" style={mf}>{e.descripcion}</p>}
-              <p className="mt-2 text-[11.5px] text-digi-muted inline-flex items-center gap-1" style={mf}>
-                <CalendarDays className="w-3.5 h-3.5" /> {e.eventos} evento(s)
+              <p className="mt-2 text-[11.5px] text-digi-muted flex items-center gap-1 flex-wrap" style={mf}>
+                <CalendarDays className="w-3.5 h-3.5" /> {fmtRango(e.fechaInicio, e.fechaFin)}
+                <span className="mx-1">·</span>{e.eventos} evento(s)
               </p>
             </button>
           ))}

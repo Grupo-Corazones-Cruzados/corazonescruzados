@@ -3974,6 +3974,10 @@ mientras se escribe.
 - **Formularios** en `EditPanel` (experiencia y evento). Los **tipos de beneficio** se eligen con
   `FilaMarcable` (la fila de `ListaMarcable`) dentro de un borde con `divide-y`: cuatro opciones
   fijas, vistas enteras, sin desplegable.
+- **Barra de la lista de Personales:** `EspacioDrive` en su propia fila; debajo, a la izquierda el
+  **filtro por día** (`<input type="date">` con `EDIT_INPUT !w-auto` + botón «×» de 32 px para quitarlo,
+  solo si hay día) y a la derecha la primaria «Nueva experiencia». Rango en el formulario: «Desde» y
+  «Hasta» en `grid-cols-2`; en tarjetas y cabecera, `CalendarDays` + «03 oct 2026 – 05 oct 2026».
 - **`EspacioDrive`** (`components/google/EspacioDrive.tsx`) — definición única de la barra de espacio
   del Drive: `h-1.5`, `bg-accent`; **ámbar** desde el 90 %, **roja** y «Sin espacio» al llenarse.
   `fmtBytes` (es-ES vía `fmtNum`) sale de ahí.
