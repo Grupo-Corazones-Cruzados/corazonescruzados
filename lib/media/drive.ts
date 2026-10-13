@@ -98,11 +98,16 @@ export async function abrir(id: string, rango?: string | null) {
     { fileId: id, alt: 'media' },
     { responseType: 'stream', headers: rango ? { Range: rango } : undefined },
   );
+  // ⚠️ Las cabeceras llegan como objeto `Headers` (hay que usar `.get()`): indexarlas como
+  // `headers['content-range']` da `undefined` y el video no se podría adelantar. Medido el
+  // 2026-10-13 con una lectura parcial real (206 y `bytes 0-999/5000` solo por `.get()`).
+  const h: any = res.headers;
+  const leer = (k: string): string | null => (typeof h?.get === 'function' ? h.get(k) : h?.[k]) ?? null;
   return {
     stream: res.data as unknown as Readable,
     status: res.status,
-    contentRange: (res.headers['content-range'] as string | undefined) ?? null,
-    contentLength: (res.headers['content-length'] as string | undefined) ?? null,
+    contentRange: leer('content-range'),
+    contentLength: leer('content-length'),
   };
 }
 
