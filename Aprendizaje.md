@@ -261,6 +261,28 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   desde `~/.gcc-respaldos` y **no sobrevive a un reinicio**. Requiere un comando con sudo de Fernando.
 - Código en el repo: `services/m1-respaldos/` (`respaldar.sh`, plist, `instalar.sh`).
 
+#### P16 — Revisión a fondo: ¿qué más baja el consumo de `Servidor-GCC`? · ✅ Medido (2026-10-13), pendiente de OK
+1. **Precarga de rutas de Next (`experimental.preloadEntriesOnStart`, `true` por defecto en Next 15.5).**
+   La app tiene 354 rutas de API + 60 páginas y las carga TODAS al arrancar. Medido en local con el mismo
+   build: **464 MB → 183 MB al arrancar; 468 → 242 MB tras abrir 10 páginas.** ≈ −200 MB ≈ 2 $/mes. Coste:
+   la primera visita a cada ruta tarda un poco más (carga perezosa).
+2. **El detalle de proyecto manda fotos, video y PDF al navegador.** `GET /api/projects/[id]` hace
+   `SELECT p.*` y devuelve `...rows[0]`: `images` (text[] base64), `video_data` (bytea → JSON de números) y
+   `proforma_pdf`. Medido con el proyecto 7: **33,1 MB de JSON y +246 MB de RAM** por apertura, cuando sin
+   esas tres columnas son **26 KB**. Explica los picos de 1,2-2,2 GB de la app. Además hace un
+   `ALTER TABLE … ADD COLUMN IF NOT EXISTS` en cada GET (DDL en el camino caliente, ver «Listas sin DDL»).
+   Falta revisar qué usa la pantalla de esas columnas antes de quitarlas.
+3. **Media dentro de Postgres:** `projects` 42 MB en 24 filas, `Incident` 20 MB de imágenes en 32 filas. Sacarla
+   a almacenamiento de objetos dejaría la BD (y cada respaldo) ~60 MB más ligera. Proyecto más grande.
+4. **Postgres:** `shared_buffers` = 160 MB·8 kB ≈ 1,25 GB para una BD de 205 MB → toda la BD acaba en RAM
+   (~200 MB). Bajarlo a 128 MB ahorraría poco (~0,7 $) con riesgo de consultas más lentas. Baja prioridad.
+5. **Workers en Node:** `automatizaciones-worker` 116 MB para un bucle de una consulta; con
+   `NODE_OPTIONS=--max-old-space-size=64` debería quedar en ~60 MB (≈0,5 $). Sin medir.
+6. **Dormir la app principal de noche: no ahora.** El cron cada 10 min (`frequent-cron`) y el sondeo del chat
+   la despiertan; habría que rehacer los crons. ≈1,5 $ con 6 s de arranque en frío.
+- ⚠️ **Piso del plan PRO:** se paga `max(20 $, consumo)`. Con lo ya hecho el workspace queda ~26-27 $;
+  con 1, 2 y 5 rondaría ~24 $. Por debajo de 20 $ ya no se ahorra nada más.
+
 #### P15 — Cambios en Railway (aprobados el 2026-10-13, «si dale») · ✅ Hechos y verificados
 1. **`agente-worker` borrado** (`serviceDelete`), llevaba desde el 2026-09-26 en bucle de `MODULE_NOT_FOUND`.
 2. **`automatizaciones-worker` mira la cola en la base** antes de llamar a la app (commit `c541e1db`,
