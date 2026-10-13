@@ -293,6 +293,27 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   poca RAM; salida 0,05 $/GB). Cloudinary, que ya se usa para 49 fotos, no tendría ese paso. Decisión del
   usuario: Drive.
 
+#### P19 — Mudanza a Drive: construida y verificada sin Drive; ⏸ falta el permiso (2026-10-13)
+- Decisiones del usuario: **todo en Drive, también las 49 fotos de Cloudinary** (AskUserQuestion);
+  sincronización nocturna de nombres (opción a). Logos de Planificaciones: se quedan (recomendación, sin objeción).
+- Commit **`df81d66f` LOCAL, sin push a propósito**: con el código desplegado y sin permiso de Drive, subir
+  una foto daría error. Migración `073_media_drive.sql` **ya aplicada** en producción (aditiva).
+- Hecho: `lib/media/{drive,index,ref,incidencias}.ts`; `/api/media/[fileId]` (GET por trozos solo de archivos
+  registrados; PATCH renombrar con el permiso de cada módulo), `/api/media/productos` (GCC_TOKEN),
+  `/api/media/cron/nombres` (en `frequent-cron.mjs`, nocturno). Suben a Drive: galería del proyecto,
+  marketplace, video generado (`video_file_id`), incidencias del portal y de la pestaña de proyecto (tickets
+  no), destrezas de Planificaciones. Al quitar o borrar → papelera de Drive. `NombreArchivo` (lápiz +
+  `QuickEditDialog`) en galería, portal e incidencias; en Planificaciones, campo en el formulario.
+  Permiso de fotos movido a `puedeGestionarImagenes` (lib/projects/permisos.ts).
+- Verificado: tsc de la app y del producto, build de los dos, y en ejecución: archivo no registrado → 404,
+  renombrar sin sesión → 401, rutas de secreto cierran sin `CRON_TOKEN`. Prueba de la mudanza:
+  **124 archivos, 88 filas, 0 errores** (58 fotos de proyectos, 1 video, 50 de incidencias, 15 de destrezas en 73 filas).
+- 🔐 Hallazgo aparte: toda `/api/incidents/*` (portal de documentación) responde **sin sesión** — listar,
+  ver, crear, editar e imágenes —, porque el middleware no cubre `/api` y el portal es público. No se tocó:
+  cerrarla rompe el portal. Pendiente de decisión.
+- Orden para cuando llegue el permiso: probar Drive → respaldo del M1 → push y despliegue (app + Planificaciones)
+  → `migrar-media-drive.mjs --ejecutar` → comprobar en pantalla → `--borrar-cloudinary` → `VACUUM FULL`.
+
 #### P18 — Renombrar cada archivo desde la plataforma y que cambie en Drive · 🔎 Diseñado (2026-10-13)
 - **Pedido del usuario (2026-10-13):** *«dame también la opción para editar el nombre de cada archivo subido
   es posible y que afecte a drive ese cambio?»* → **Sí.**
@@ -302,7 +323,7 @@ inicial (servidor de memoria/RAG para Claude Code) **queda descartada**; se cons
   Drive PRIMERO y luego la fila; si Drive falla no cambia nada. Se edita solo el nombre base; la extensión
   queda fija. Renombrar no rompe enlaces (se usa el fileId).
 - Renombres hechos DIRECTAMENTE en Drive: propuesta (a) sincronización nocturna de nombres en el cron;
-  alternativa (b) leer de Drive al abrir cada galería. ⏸ Pendiente de elección (recomendada a).
+  alternativa (b) leer de Drive al abrir cada galería. ✅ Elegida (a) por el usuario el 2026-10-13.
 
 #### P16 — Revisión a fondo: ¿qué más baja el consumo de `Servidor-GCC`? · ✅ Medido (2026-10-13), pendiente de OK
 1. **Precarga de rutas de Next (`experimental.preloadEntriesOnStart`, `true` por defecto en Next 15.5).**
