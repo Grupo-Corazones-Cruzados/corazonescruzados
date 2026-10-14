@@ -17,6 +17,7 @@ import {
 } from '@/lib/reservas';
 import { cn } from '@/lib/utils';
 import type { EstadoReserva, EstadoPagoReserva } from '@/generated/prisma/enums';
+import { miniatura } from '@/lib/miniatura';
 
 export type ReservaVista = {
   id: number;
@@ -187,7 +188,7 @@ export default function PanelCliente({
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-realce">
                       {u.fotoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={u.fotoUrl} alt="" className="h-full w-full object-cover" />
+                        <img loading="lazy" src={miniatura(u.fotoUrl, 480)} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <Building2 className="h-4 w-4 text-tenue" />
                       )}
@@ -240,7 +241,7 @@ export default function PanelCliente({
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded bg-realce">
                       {s.fotoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={s.fotoUrl} alt="" className="h-full w-full object-cover" />
+                        <img loading="lazy" src={miniatura(s.fotoUrl, 480)} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <BedDouble className="h-5 w-5 text-tenue" />
                       )}

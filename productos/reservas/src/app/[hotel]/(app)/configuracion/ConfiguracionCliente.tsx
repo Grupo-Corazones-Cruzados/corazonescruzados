@@ -43,6 +43,7 @@ import {
   eliminarSuite,
 } from '@/acciones/configuracion';
 import { cn } from '@/lib/utils';
+import { miniatura } from '@/lib/miniatura';
 
 type SuiteVista = {
   id: number;
@@ -388,7 +389,7 @@ function SeccionLugares({
             <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-realce">
               {u.fotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={u.fotoUrl} alt="" className="h-full w-full object-cover" />
+                <img loading="lazy" src={miniatura(u.fotoUrl, 240)} alt="" className="h-full w-full object-cover" />
               ) : (
                 <Building2 className="h-4 w-4 text-tenue" />
               )}
@@ -425,7 +426,7 @@ function SeccionLugares({
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-realce">
                     {s.fotoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={s.fotoUrl} alt="" className="h-full w-full object-cover" />
+                      <img loading="lazy" src={miniatura(s.fotoUrl, 240)} alt="" className="h-full w-full object-cover" />
                     ) : (
                       <BedDouble className="h-4 w-4 text-tenue" />
                     )}

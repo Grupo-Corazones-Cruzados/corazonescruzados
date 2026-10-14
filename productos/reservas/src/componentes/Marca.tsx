@@ -51,7 +51,9 @@ export function LogoHotel({
     // eslint-disable-next-line @next/next/no-img-element
     return (
       <img
-        src={logoUrl}
+        // Del Drive se pide la miniatura (`?w=`, el doble del tamaño para pantallas retina):
+        // el logo de Carliza son 288 KB para pintarlo a 36 px.
+        src={/\/api\/media\//.test(logoUrl) ? `${logoUrl}?w=${tamano * 2}` : logoUrl}
         alt={nombre}
         width={tamano}
         height={tamano}
