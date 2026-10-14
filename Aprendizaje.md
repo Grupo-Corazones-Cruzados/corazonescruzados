@@ -169,7 +169,7 @@ a la app, entrando **sin categoría** y con opción de asignársela.
 - Refresh token revocado por el usuario desde su cuenta Google → detectar `invalid_grant` y mostrar
   «Reconectar» en vez de un error genérico (y nunca fingir lista vacía).
 
-## Objetivo ACTUAL (declarado 2026-10-13) — CARLIZA HOTEL PASA AL PRODUCTO RESERVAS DE GCC WORLD · 🔎 60 %
+## Objetivo ACTUAL (declarado 2026-10-13) — CARLIZA HOTEL PASA AL PRODUCTO RESERVAS DE GCC WORLD · ✅ 95 % — MIGRADO; FALTA EL CORTE
 
 **Pedido del usuario (2026-10-13):** *«que el cliente que consume el servicio de Gestión Reservas vaya a la
 app que tenemos actualmente en gcc world con su propio tenant… migrar sus datos y crear su cliente, el cual
@@ -201,6 +201,36 @@ ese otro servidor.»*
   por la plataforma y eso abre el producto? ¿Qué pasa con octubre?
 - P3 Corte: cuándo, y qué pasa con la dirección vieja.
 - P4 Datos del cliente (RUC/razón social/contacto) para crear su ficha y asociar suscripción e inquilino.
+
+### Decisiones del usuario (2026-10-13)
+- **Historial:** la app vieja NUNCA cerraba ni purgaba: de 1.785 reservas, 1.248 ya terminadas seguían «OCCUPIED»
+  (solo 4 alojados y 142 futuras). Fernando: conservar **1 año** → **plan Estándar a 12 meses**
+  (`sql/migraciones/008_historial_de_un_anio.sql`, para TODOS los hoteles; medido: ~1 MB/año por hotel) y
+  **migrar todo**. Las terminadas entran como FINALIZADA.
+- **Cobro:** pasa al **pago del producto**. Suscripción del producto pagada hasta **2026-09-30** (último mes pagado
+  en la plataforma), con los pagos jun-sep copiados. ⚠️ Al entrar estará «vencido»: paga octubre en el producto.
+  La suscripción id 2 de la plataforma se cierra **en el corte**.
+- **Corte:** se migra YA, el servidor viejo sigue funcionando; **Fernando avisa** a Carliza y luego dice cuándo apagarlo.
+- **Cliente:** sigue como Consumidor Final; sus usuarios (incl. los admin/dueños) entran **con su misma credencial**.
+
+### Hecho y verificado (2026-10-13)
+- `scripts/migrar-carliza-reservas.mjs` (repetible; `reservas.migracion_origen`, `sql/migraciones/009`). Respaldo
+  previo de Neon: `Gestión de Reservas/respaldos/2026-10-13/carliza-neon.dump`.
+- **CUADRA:** reservas 1785/1785 (146 OCUPADA · 1248 FINALIZADA · 391 ELIMINADA; 4 alojados hoy), usuarios 8/8
+  (sin `lfgonzalezm0`; hashes `$2b$10$` copiados tal cual → misma contraseña), ubicaciones 5/5, suites 43/43,
+  37 fotos + logo → Drive (`Productos/Reservas/carliza-hotel/…`). Inquilino id 5, `#C9952C`.
+- 🪤 Neon corta conexiones ociosas: el script lee todo el origen al principio y cierra (la 1.ª pasada murió por
+  ETIMEDOUT mientras subía fotos). 🪤 `pg` lee TIMESTAMP sin zona en hora local → el script fija `TZ=UTC`.
+  Las dos apps guardan instantes UTC (la vieja con `toISOString()` en el navegador): se copian tal cual.
+- Fotos del producto Reservas → Drive por la plataforma (`/api/media/productos`, producto `reservas`), ya no a
+  Cloudinary; logo y tarjetas piden miniatura. Verificado: https://reservas.grupocc.org/carliza-hotel/acceso
+  con nombre, color y logo (1,7 s).
+
+### Procedimiento del corte (cuando Fernando lo diga)
+1. Pasada final: `ORIGEN_URL=<Neon> node scripts/migrar-carliza-reservas.mjs --ejecutar` (trae lo nuevo/cambiado; debe decir CUADRA).
+2. Avisar al hotel: entrar en **https://reservas.grupocc.org/carliza-hotel** con su mismo usuario y contraseña; pagar octubre.
+3. Suscripción id 2 de la plataforma → cancelada. 4. Borrar el servicio `GCC-Gestion-Reservas` de Railway
+   (y, si se quiere, la base de Neon, con el respaldo ya hecho).
 
 ### Plan (borrador)
 Inquilino `carliza-hotel` (marca: «Carliza Hotel», `#C9952C`, logo de la app vieja) → usuarios sin
