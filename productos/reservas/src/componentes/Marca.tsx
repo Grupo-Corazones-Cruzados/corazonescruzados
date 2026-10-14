@@ -46,7 +46,7 @@ export function LogoHotel({
   tamano?: number;
 }) {
   if (logoUrl) {
-    // <img> a propósito: el logo vive en la cuenta de Cloudinary del producto y
+    // <img> a propósito: el logo vive en el Drive del Grupo (servido por la plataforma) y
     // next/image obligaría a declarar el dominio de cada cuenta.
     // eslint-disable-next-line @next/next/no-img-element
     return (

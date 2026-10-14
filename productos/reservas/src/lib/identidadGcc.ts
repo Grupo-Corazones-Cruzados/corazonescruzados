@@ -28,7 +28,8 @@
 
 type Respuesta = Record<string, unknown> & { ok?: boolean; error?: string };
 
-function config() {
+/** Dirección y secreto para hablar con la plataforma (también lo usa lib/imagenes.ts). */
+export function config() {
   const base = (process.env.GCC_URL || 'https://app.grupocc.org').replace(/\/$/, '');
   /**
    * ⚠️ `GCC_TOKEN`, no `CRON_TOKEN`. Cada producto tiene su propio `CRON_TOKEN` para sus

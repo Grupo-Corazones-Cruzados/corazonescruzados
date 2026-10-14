@@ -10,7 +10,7 @@ import * as drive from './drive';
  * va en `gcc_world.media_drive`.
  */
 
-export type Modulo = 'proyecto_foto' | 'proyecto_video' | 'incidencia' | 'destreza';
+export type Modulo = 'proyecto_foto' | 'proyecto_video' | 'incidencia' | 'destreza' | 'reserva_foto';
 
 const PREFIJO = '/api/media/';
 const BASE_PUBLICA = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org').replace(/\/$/, '');

@@ -1,6 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
-import { hayCloudinary } from '@/lib/imagenes';
+import { haySubida } from '@/lib/imagenes';
 import ConfiguracionCliente from './ConfiguracionCliente';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ export default async function PaginaConfiguracion({
   return (
     <ConfiguracionCliente
       slug={hotel}
-      hayCloudinary={hayCloudinary}
+      haySubida={haySubida}
       marca={{
         nombre: inquilino.nombre,
         colorAcento: inquilino.colorAcento,

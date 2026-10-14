@@ -79,13 +79,13 @@ export default function ConfiguracionCliente({
   marca,
   plan,
   ubicaciones,
-  hayCloudinary,
+  haySubida,
 }: {
   slug: string;
   marca: Marca;
   plan: Plan | null;
   ubicaciones: UbicacionVista[];
-  hayCloudinary: boolean;
+  haySubida: boolean;
 }) {
   const [seccion, setSeccion] = useState<Seccion>('marca');
 
@@ -104,9 +104,9 @@ export default function ConfiguracionCliente({
           alElegir={(v) => setSeccion(v as Seccion)}
         />
         <div className="min-w-0 flex-1">
-          {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} hayCloudinary={hayCloudinary} />}
+          {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} haySubida={haySubida} />}
           {seccion === 'lugares' && (
-            <SeccionLugares slug={slug} ubicaciones={ubicaciones} hayCloudinary={hayCloudinary} moneda={marca.moneda} />
+            <SeccionLugares slug={slug} ubicaciones={ubicaciones} haySubida={haySubida} moneda={marca.moneda} />
           )}
           {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} />}
           {seccion === 'cuenta' && <SeccionCuenta slug={slug} />}
@@ -120,11 +120,11 @@ export default function ConfiguracionCliente({
 function SeccionMarca({
   slug,
   marca,
-  hayCloudinary,
+  haySubida,
 }: {
   slug: string;
   marca: Marca;
-  hayCloudinary: boolean;
+  haySubida: boolean;
 }) {
   const router = useRouter();
   const [color, setColor] = useState(marca.colorAcento);
@@ -189,7 +189,7 @@ function SeccionMarca({
                 placeholder="https://…  (o sube una imagen)"
                 className="min-w-0 flex-1"
               />
-              {hayCloudinary && (
+              {haySubida && (
                 <label className="cursor-pointer">
                   <input
                     type="file"
@@ -326,12 +326,12 @@ function VistaPrevia({
 function SeccionLugares({
   slug,
   ubicaciones,
-  hayCloudinary,
+  haySubida,
   moneda,
 }: {
   slug: string;
   ubicaciones: UbicacionVista[];
-  hayCloudinary: boolean;
+  haySubida: boolean;
   moneda: string;
 }) {
   const router = useRouter();
@@ -484,7 +484,7 @@ function SeccionLugares({
           </Campo>
           <CampoFoto
             slug={slug}
-            hayCloudinary={hayCloudinary}
+            haySubida={haySubida}
             inicial={panelUbicacion && panelUbicacion !== 'nueva' ? panelUbicacion.fotoUrl : null}
           />
           {error && <Aviso texto={error} />}
@@ -539,7 +539,7 @@ function SeccionLugares({
               />
             </Campo>
           </div>
-          <CampoFoto slug={slug} hayCloudinary={hayCloudinary} inicial={panelSuite?.suite?.fotoUrl ?? null} />
+          <CampoFoto slug={slug} haySubida={haySubida} inicial={panelSuite?.suite?.fotoUrl ?? null} />
           {error && <Aviso texto={error} />}
           <div className="flex justify-end gap-2 border-t border-borde pt-4">
             <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
@@ -579,11 +579,11 @@ function SeccionLugares({
 
 function CampoFoto({
   slug,
-  hayCloudinary,
+  haySubida,
   inicial,
 }: {
   slug: string;
-  hayCloudinary: boolean;
+  haySubida: boolean;
   inicial: string | null;
 }) {
   const [url, setUrl] = useState(inicial ?? '');
@@ -598,7 +598,7 @@ function CampoFoto({
           placeholder="https://…"
           className="min-w-0 flex-1"
         />
-        {hayCloudinary && (
+        {haySubida && (
           <label className="cursor-pointer">
             <input
               type="file"

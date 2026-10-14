@@ -21,13 +21,11 @@
  * Es idempotente: lo que ya es `/api/media/…` se salta, así que se puede repetir.
  */
 import { createHash } from 'node:crypto';
-import { Readable } from 'node:stream';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import fs from 'node:fs';
 import dotenv from 'dotenv';
 import pg from 'pg';
-import { google } from 'googleapis';
+import { crearDrive } from './lib/drive-empresa.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 dotenv.config({ path: path.join(ROOT, '.env.local') });
@@ -41,61 +39,10 @@ const BASE_PUBLICA = (process.env.NEXT_PUBLIC_APP_URL_PRODUCCION || 'https://app
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
 const q = (sql, v) => pool.query(sql, v);
 
-// ── Drive ──────────────────────────────────────────────────────────────────
-function claveSA() {
-  if (process.env.GOOGLE_SA_KEY) return JSON.parse(process.env.GOOGLE_SA_KEY);
-  return JSON.parse(fs.readFileSync(path.resolve(ROOT, process.env.GOOGLE_SA_KEY_PATH || 'data/google-sa.json'), 'utf8'));
-}
-let drive = null;
-function api() {
-  if (!drive) {
-    const k = claveSA();
-    const auth = new google.auth.JWT({ email: k.client_email, key: k.private_key, scopes: ['https://www.googleapis.com/auth/drive'], subject: ORGANIZER });
-    drive = google.drive({ version: 'v3', auth });
-  }
-  return drive;
-}
-const CARPETA = 'application/vnd.google-apps.folder';
-const esc = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-const carpetas = new Map();
-async function carpeta(ruta) {
-  const partes = ['GCC World · Archivos de la empresa', ...ruta];
-  const clave = partes.join('/');
-  if (carpetas.has(clave)) return carpetas.get(clave);
-  let padre = null;
-  for (const nombre of partes) {
-    const dentro = padre ? `'${esc(padre)}' in parents` : `'root' in parents`;
-    const { data } = await api().files.list({ q: `name = '${esc(nombre)}' and mimeType = '${CARPETA}' and ${dentro} and trashed = false`, fields: 'files(id)', pageSize: 1 });
-    padre = data.files?.[0]?.id ?? (await api().files.create({ requestBody: { name: nombre, mimeType: CARPETA, ...(padre ? { parents: [padre] } : {}) }, fields: 'id' })).data.id;
-  }
-  carpetas.set(clave, padre);
-  return padre;
-}
-const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg', 'video/mp4': 'mp4' };
-const limpiar = (s) => String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().replace(/[.\s]+$/, '').slice(0, 150);
-
-async function subir({ datos, mime, base, ruta, modulo, referencia, origen }) {
-  const nombre = `${limpiar(base) || 'archivo'}.${EXT[mime] || mime.split('/')[1] || 'bin'}`;
-  const md5 = createHash('md5').update(datos).digest('hex');
-  const { data } = await api().files.create({
-    requestBody: { name: nombre, parents: [await carpeta(ruta)] },
-    media: { mimeType: mime, body: Readable.from(datos) },
-    fields: 'id,md5Checksum,size',
-  });
-  if (data.md5Checksum !== md5 || Number(data.size) !== datos.length) {
-    await api().files.delete({ fileId: data.id }).catch(() => {});
-    throw new Error(`md5 distinto para «${nombre}»`);
-  }
-  await q(`INSERT INTO gcc_world.media_drive (file_id, nombre, mime, tamano, md5, modulo, referencia, origen) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-    [data.id, nombre, mime, datos.length, md5, modulo, String(referencia), origen]);
-  return data.id;
-}
-async function deshacer(ids) {
-  for (const id of ids) {
-    await api().files.update({ fileId: id, requestBody: { trashed: true } }).catch(() => {});
-    await q(`UPDATE gcc_world.media_drive SET borrado_en = NOW() WHERE file_id = $1`, [id]);
-  }
-}
+// ── Drive (compartido con migrar-carliza-reservas.mjs) ─────────────────────
+const D = crearDrive(ROOT);
+const subir = (o) => D.subir(q, o);
+const deshacer = (ids) => D.aPapelera(q, ids);
 
 // ── Leer lo que hay ────────────────────────────────────────────────────────
 const esNuestra = (s) => /\/api\/media\/[A-Za-z0-9_-]{10,}/.test(String(s));
