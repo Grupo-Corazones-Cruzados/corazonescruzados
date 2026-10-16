@@ -12,6 +12,16 @@ anteriores a hoy; quitar ese tope y dejar solo el de la fecha límite.
   validan fechas pasadas. (fuente: código)
 - **Hecho:** la condición queda en `límite && dateStr > límite`. tsc y `npm run build` limpios.
 
+### P2 — Al elegir un día no se ve su detalle (ticket #28) · ✅ Resuelta
+- **Respuesta:** el #28 está en `pending` (lo pasaron de completado a pendiente el 2026-10-16) y
+  la página ocultaba el registro en ese estado. La API no lo prohíbe. Ahora se ve en todo estado
+  menos `withdrawn`. (fuente: BD + código)
+
+### P3 — Quitar Evento/Inicio/Fin del panel de días · ✅ Resuelta
+- **Respuesta:** el guardado ya rellenaba `slotCfg` con los datos de los días existentes, así que
+  quitar el formulario no borra horas ni Meet. Se reutiliza el control de etiquetas de «Nuevo
+  ticket», extraído a `DiasElegidos`. Verificado en Chrome con sesión local.
+
 ## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · ✅ 100 % — CONSTRUIDO, PROBADO CONTRA DRIVE REAL Y APP PUBLICADA (falta solo la verificación de Google, aparte)
 
 **Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su

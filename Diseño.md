@@ -4000,6 +4000,10 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-16 · Panel «Días de trabajo» del ticket** · **CORREGIDO** (Fernando): debajo del calendario
+  había una tarjeta por día con Evento (Meet) e Inicio/Fin, distinta de las etiquetas de «Nuevo ticket».
+  Ahora los dos usan `components/tickets/DiasElegidos.tsx` (etiquetas `bg-accent-light` con «×»); la
+  configuración de cada día vive en su detalle (`RegistroTrabajo`).
 - **2026-10-05 · Filtro de estado de Recordatorios** · **AJUSTADO** (Fernando): abre en **Pendientes**
   —lo que hay que atender— y **«Todos» va el ÚLTIMO**, bajo «Completados». ⚠️ Pendiente de decidir si
   es regla para todos los raíles de estado (Tickets y Proyectos siguen con «Todos» en otra posición).

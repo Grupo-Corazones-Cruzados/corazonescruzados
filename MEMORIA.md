@@ -405,6 +405,16 @@ Stack estándar de la casa, con particularidades de este repo:
     a hoy.** El único tope es la fecha límite del ticket (días posteriores, deshabilitados).
     Vale para «Nuevo ticket» (`dashboard/tickets/page.tsx`) y el detalle
     (`dashboard/tickets/[id]/page.tsx`); la API nunca lo exigió.
+  - **2026-10-16 (Fernando): el panel «Días de trabajo» SOLO elige días.** Ya no lleva Evento
+    (Meet) ni Inicio/Fin por día: eso se hace en el detalle del día (`RegistroTrabajo`). Bajo el
+    calendario van las etiquetas de `components/tickets/DiasElegidos.tsx`, el mismo control en
+    «Nuevo ticket» y en el detalle. Al guardar, los días que ya existían conservan su hora y su
+    Meet (`slotCfg` se carga de los slots al abrir el panel).
+  - **2026-10-16: el registro de trabajo se ve también en «Pendiente».** Antes
+    `showActions = !isPending` dejaba el centro vacío al elegir un día (pasó con el #28, que
+    volvió de completado a pendiente). Pendiente es el estado con el que nace un ticket enviado
+    y la API ya aceptaba registros ahí. Solo una solicitud de cliente aún sin aceptar lo
+    muestra bloqueado.
   - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
     facturado); la API lo rechaza.
   - **2026-10-07 (Fernando): interfaz por ancho.** Renombrar y eliminar un registro son

@@ -15,6 +15,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
+import DiasElegidos from '@/components/tickets/DiasElegidos';
 import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
@@ -672,19 +673,7 @@ export default function TicketsPage() {
                 })}
               </div>
 
-              {selectedDates.length > 0 && (
-                <div className="border-t border-digi-border pt-2">
-                  <p className="text-[11px] text-digi-muted mb-1.5" style={mf}>{selectedDates.length} día(s) seleccionados:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedDates.map(d => (
-                      <span key={d} className="text-[11px] px-2 py-0.5 rounded bg-accent-light border border-accent/30 text-accent flex items-center gap-1" style={mf}>
-                        {new Date(d + 'T12:00:00').toLocaleDateString('es', { day: '2-digit', month: 'short' })}
-                        <button onClick={() => toggleDate(d)} className="text-digi-muted hover:text-red-500">×</button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <DiasElegidos dias={selectedDates} onQuitar={toggleDate} />
 
               <div className="flex justify-end pt-2">
                 <button onClick={() => setSlotsModal(false)} className={BTN_PRIMARY}>

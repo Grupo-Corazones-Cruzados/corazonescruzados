@@ -14,6 +14,7 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL } from '@/components/facturacion/AdquirenteFactura';
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import Segmentado from '@/components/ui/Segmentado';
+import DiasElegidos from '@/components/tickets/DiasElegidos';
 import RegistroTrabajo, { diaDe, segundosDe, fmtTiempo } from '@/components/tickets/RegistroTrabajo';
 import { avisarCambioDeReloj } from '@/lib/movil/reloj-nativo';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
@@ -618,7 +619,10 @@ export default function TicketDetailPage() {
   };
   // Is this a request from a client to this member?
   const isRequestForMe = isPending && isMember && user?.member_id && ticket.member_id === user.member_id;
-  const showActions = !isPending && ticket.status !== 'withdrawn';
+  // ⇒ EL REGISTRO SE VE TAMBIÉN EN «PENDIENTE» (Fernando, 2026-10-16): es el estado con el que
+  // nace un ticket enviado y la API ya acepta registros en él; esconderlo dejaba el centro
+  // vacío al elegir un día. Solo una solicitud aún sin aceptar lo muestra bloqueado.
+  const showActions = ticket.status !== 'withdrawn';
   // Propuestas (tickets abiertos a propuestas).
   const isOpen = !!ticket.open_for_proposals;
   // El selector de estado aparece cuando el ticket ya NO está abierto a propuestas (Fernando,
@@ -651,7 +655,6 @@ export default function TicketDetailPage() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
-    const slotRate = Number(ticket.service_base_price) || 0;
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
     const toggleDate = (d: string) => setSelectedDates(prev => {
@@ -659,8 +662,6 @@ export default function TicketDetailPage() {
       setSlotCfg(c => c[d] ? c : { ...c, [d]: { is_event: false, start_time: '', end_time: '' } });
       return [...prev, d].sort();
     });
-    const setCfg = (d: string, patch: Partial<{ is_event: boolean; start_time: string; end_time: string }>) =>
-      setSlotCfg(c => ({ ...c, [d]: { ...(c[d] ?? { is_event: false, start_time: '', end_time: '' }), ...patch } }));
     const prevMonth = () => setCalMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
     const nextMonth = () => setCalMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
     const cells: (number | null)[] = [];
@@ -692,47 +693,7 @@ export default function TicketDetailPage() {
             })}
           </div>
         </div>
-        {selectedDates.length > 0 && (
-          <div className="border-t border-digi-border pt-3 space-y-2">
-            {selectedDates.map(d => {
-              const cfg = slotCfg[d] || { is_event: false, start_time: '', end_time: '' };
-              const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return (h || 0) * 60 + (m || 0); };
-              const bothTimes = !!cfg.start_time && !!cfg.end_time && cfg.end_time > cfg.start_time;
-              const mins = bothTimes ? (toMin(cfg.end_time) - toMin(cfg.start_time)) : 0;
-              const sessionCost = Math.round((mins / 60) * slotRate * 100) / 100;
-              const durLabel = `${Math.floor(mins / 60)}h ${mins % 60}m`;
-              return (
-                <div key={d} className="border border-digi-border rounded-md p-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-medium text-digi-text truncate min-w-0" style={mf}>
-                      {new Date(d + 'T12:00:00').toLocaleDateString('es', { weekday: 'short', day: '2-digit', month: 'short' })}
-                    </span>
-                    <BotonQuitar onClick={() => toggleDate(d)} etiqueta="Quitar fecha" tamano="xs" />
-                  </div>
-                  <label className="flex items-center gap-1.5 text-[11px] text-digi-text cursor-pointer mt-1.5" style={mf}>
-                    <input type="checkbox" checked={cfg.is_event} onChange={(e) => setCfg(d, { is_event: e.target.checked })}
-                      className="accent-[var(--accent,#7c6cf5)] shrink-0" />
-                    Evento (reunión Meet)
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <PixelInput label="Inicio" type="time" value={cfg.start_time} onChange={(e) => setCfg(d, { start_time: e.target.value })} className="min-w-0 !px-2" />
-                    <PixelInput label="Fin" type="time" value={cfg.end_time} onChange={(e) => setCfg(d, { end_time: e.target.value })} className="min-w-0 !px-2" />
-                  </div>
-                  {cfg.is_event ? (
-                    <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
-                      Se creará una reunión de Google Meet invitando al cliente{ticket.client_name ? ` (${ticket.client_name})` : ''} y al miembro. Horario de Ecuador (GMT-5).
-                      {bothTimes && ` Se registrará un bloque ocupado en «Mi día» y una acción «Sesión»${slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ''}.`}
-                    </p>
-                  ) : bothTimes ? (
-                    <p className="text-[10px] text-digi-muted mt-1.5" style={mf}>
-                      Bloque ocupado (Progreso) en tu calendario «Mi día» y una acción «Sesión»{slotRate > 0 ? ` · ${durLabel} × $${slotRate}/h = $${fmt2(sessionCost)}` : ' (sin costo: el servicio no tiene tarifa/hora)'}.
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <DiasElegidos dias={selectedDates} onQuitar={toggleDate} />
       </div>
     );
   };
@@ -890,7 +851,7 @@ export default function TicketDetailPage() {
                           dia={diaActivo}
                           tarifa={serviceRate}
                           puede={!!puedeRegistrar}
-                          bloqueo={isClosed ? 'El ticket está cerrado: lo consumido ya está facturado' : ticket.status === 'draft' ? 'Es un borrador: envíalo antes de registrar trabajo' : undefined}
+                          bloqueo={isClosed ? 'El ticket está cerrado: lo consumido ya está facturado' : ticket.status === 'draft' ? 'Es un borrador: envíalo antes de registrar trabajo' : isRequestForMe ? 'Acepta la solicitud antes de registrar trabajo' : undefined}
                           onCambio={fetchTicket}
                           onSesionMeet={async () => { await handleStartSession(); setDiaSel(hoyEcuadorCliente()); }}
                           sesionOcupada={sessionBusy}
