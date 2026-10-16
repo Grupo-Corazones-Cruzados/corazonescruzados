@@ -1,5 +1,17 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-16) — TICKETS: los días de trabajo se pueden elegir antes de hoy · ✅ 100 % — HECHO Y VERIFICADO
+
+**Rol:** ingeniero frontend. **Pedido:** el calendario de días de trabajo bloqueaba los días
+anteriores a hoy; quitar ese tope y dejar solo el de la fecha límite.
+
+### P1 — ¿Dónde está el tope y lo exige también la API? · ✅ Resuelta
+- **Respuesta:** solo en la interfaz, dos calendarios con la misma condición
+  `dateStr < hoy || dateStr > límite`: el de «Nuevo ticket» (`dashboard/tickets/page.tsx`) y
+  el del detalle (`dashboard/tickets/[id]/page.tsx`). `time-slots` y `tickets` (POST) no
+  validan fechas pasadas. (fuente: código)
+- **Hecho:** la condición queda en `límite && dateStr > límite`. tsc y `npm run build` limpios.
+
 ## Objetivo ACTUAL (declarado 2026-10-13) — EXPERIENCIAS PERSONALES CON ARCHIVOS EN EL GOOGLE DRIVE DEL USUARIO · ✅ 100 % — CONSTRUIDO, PROBADO CONTRA DRIVE REAL Y APP PUBLICADA (falta solo la verificación de Google, aparte)
 
 **Declarado el 2026-10-13**, resumido: en el módulo **Experiencias** el usuario puede **crear su

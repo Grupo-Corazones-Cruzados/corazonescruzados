@@ -628,7 +628,6 @@ export default function TicketsPage() {
           const { year, month } = calMonth;
           const firstDay = new Date(year, month, 1).getDay();
           const daysInMonth = new Date(year, month + 1, 0).getDate();
-          const today = new Date().toISOString().split('T')[0];
           const deadline = form.deadline || '';
           const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
           const dayNames = ['Do','Lu','Ma','Mi','Ju','Vi','Sa'];
@@ -659,7 +658,7 @@ export default function TicketsPage() {
                   if (day === null) return <div key={`e${i}`} />;
                   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const isSelected = selectedDates.includes(dateStr);
-                  const isOutOfRange = dateStr < today || (!!deadline && dateStr > deadline);
+                  const isOutOfRange = !!deadline && dateStr > deadline;
                   return (
                     <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
                       className={`py-1.5 text-[12px] text-center rounded border transition-colors ${

@@ -401,6 +401,10 @@ Stack estándar de la casa, con particularidades de este repo:
     decimal), costo calculado y observaciones. «Sesión con Meet» crea un registro con el reloj
     en marcha y se detiene igual. Añadir/mover un registro a un día crea ese día de trabajo;
     editar los días nunca deja un registro sin el suyo.
+  - **2026-10-16 (Fernando): el calendario de días de trabajo ya NO bloquea los días anteriores
+    a hoy.** El único tope es la fecha límite del ticket (días posteriores, deshabilitados).
+    Vale para «Nuevo ticket» (`dashboard/tickets/page.tsx`) y el detalle
+    (`dashboard/tickets/[id]/page.tsx`); la API nunca lo exigió.
   - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
     facturado); la API lo rechaza.
   - **2026-10-07 (Fernando): interfaz por ancho.** Renombrar y eliminar un registro son

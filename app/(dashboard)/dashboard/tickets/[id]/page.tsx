@@ -650,7 +650,6 @@ export default function TicketDetailPage() {
     const { year, month } = calMonth;
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const todayStr = new Date().toISOString().split('T')[0];
     const deadlineStr = ticket.deadline ? ticket.deadline.split('T')[0] : '';
     const slotRate = Number(ticket.service_base_price) || 0;
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -684,7 +683,7 @@ export default function TicketDetailPage() {
               if (day === null) return <div key={`e${i}`} />;
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const isSelected = selectedDates.includes(dateStr);
-              const isOutOfRange = dateStr < todayStr || (!!deadlineStr && dateStr > deadlineStr);
+              const isOutOfRange = !!deadlineStr && dateStr > deadlineStr;
               return (
                 <button key={dateStr} onClick={() => !isOutOfRange && toggleDate(dateStr)} disabled={isOutOfRange}
                   className={`py-1.5 text-[12px] text-center rounded border transition-colors ${isSelected ? 'bg-accent border-accent text-white font-medium' : isOutOfRange ? 'border-transparent text-digi-muted/30 cursor-default' : 'border-digi-border/60 text-digi-text hover:border-accent hover:bg-accent-light'}`}
