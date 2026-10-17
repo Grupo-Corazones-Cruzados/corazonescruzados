@@ -133,6 +133,7 @@ export default function TicketDetailPage() {
   const [abonoMode, setAbonoMode] = useState(false);
   const [abonoAmount, setAbonoAmount] = useState('');
   const [itemsMode, setItemsMode] = useState<'title' | 'breakdown'>('title');
+  const [completeActionIds, setCompleteActionIds] = useState<number[]>([]);
   const [completeIdType, setCompleteIdType] = useState('07');
   const [completeClientName, setCompleteClientName] = useState('CONSUMIDOR FINAL');
   const [completeClientRuc, setCompleteClientRuc] = useState('9999999999999');
@@ -315,14 +316,20 @@ export default function TicketDetailPage() {
     finally { setSavingAction(false); }
   };
 
+  // ⇒ SOLO SE FACTURA LO QUE NO ESTÁ FACTURADO (Fernando, 2026-10-16): los registros sin
+  // factura (`facturada` lo pone la API) y sin el reloj en marcha. Son los que el servidor ata
+  // a la factura nueva (`action_ids`); ver lib/tickets/facturacion.ts.
+  const registrosSinFacturar = (): any[] =>
+    (ticket?.actions || []).filter((a: any) => !a.facturada && !a.timer_started_at);
+
   const buildItemsForMode = (mode: 'title' | 'breakdown') => {
     if (mode === 'title') {
-      // El total es LO CONSUMIDO (2026-09-30); con plan de etapas, lo que falta por cobrar de
-      // las etapas abiertas —las ya facturadas o cobradas no se vuelven a facturar—.
+      // Lo PENDIENTE (lo consumido menos lo ya facturado); con plan de etapas, lo que falta por
+      // cobrar de las etapas abiertas —las ya facturadas o cobradas no se vuelven a facturar—.
       const abiertas = (billing?.etapas || []).filter((e: any) => !e.invoiceId && !e.cobro);
       const importe = billing?.mode === 'etapas'
         ? abiertas.reduce((s: number, e: any) => s + Number(e.amount || 0), 0)
-        : Number(billing?.total ?? ticket.estimated_cost) || 0;
+        : Number(billing?.pending ?? ticket.estimated_cost) || 0;
       return [{
         description: ticket.title || `Ticket #${ticket.id}`,
         quantity: '1',
@@ -331,7 +338,7 @@ export default function TicketDetailPage() {
         discount: '0',
       }];
     }
-    return (ticket.actions || []).map((a: any) => ({
+    return registrosSinFacturar().map((a: any) => ({
       description: a.description,
       quantity: '1',
       unitPrice: String(Number(a.cost) || 0),
@@ -370,7 +377,13 @@ export default function TicketDetailPage() {
     setCompleteSendEmail(true);
     // Con parte del plan ya cobrada, el desglose por registros cobraría otra vez lo cobrado.
     const planEmpezado = billing?.mode === 'etapas' && (billing.etapas || []).some((e: any) => e.invoiceId || e.cobro);
-    const defaultMode: 'title' | 'breakdown' = (ticket.actions || []).length > 0 && !planEmpezado ? 'breakdown' : 'title';
+    // El desglose va por defecto solo si suma lo pendiente: con un abono de por medio cobraría
+    // otra vez lo abonado, y entonces se propone el título con lo pendiente.
+    const sinFacturar = registrosSinFacturar();
+    const sumaSinFacturar = sinFacturar.reduce((s: number, a: any) => s + (Number(a.cost) || 0), 0);
+    const cuadra = billing?.pending == null || Math.abs(sumaSinFacturar - Number(billing.pending)) < 0.01;
+    const defaultMode: 'title' | 'breakdown' = sinFacturar.length > 0 && !planEmpezado && cuadra ? 'breakdown' : 'title';
+    setCompleteActionIds(sinFacturar.map((a: any) => Number(a.id)));
     setItemsMode(defaultMode);
     setCompleteItems(buildItemsForMode(defaultMode));
     setAbonoMode(false);
@@ -405,6 +418,8 @@ export default function TicketDetailPage() {
           // El comprador lo arma el servidor desde la cuenta elegida: aquí solo va QUÉ se eligió.
           adquirente: completeAdquirente,
           billing_client_id: completeAdquirente === 'cliente' ? Number(completeCuentaId) || null : null,
+          // Los registros que esta factura deja facturados: los que se vieron al abrir el modal.
+          action_ids: completeActionIds,
           payment_code: completePaymentCode,
           invoice_items: (useAbono ? abonoItems : completeItems).map(it => ({
             description: it.description,
@@ -1210,7 +1225,6 @@ export default function TicketDetailPage() {
               —tipo de cobro y origen de los ítems— va con el mismo `Segmentado`. Sin notas de
               ayuda permanentes. */}
           {payments && (() => {
-            const hasInvoiced = (payments.invoices || []).some((i: any) => i.status !== 'cancelled');
             return (
               <section className="space-y-2 mb-4">
                 <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Tipo de cobro</h4>
@@ -1221,9 +1235,11 @@ export default function TicketDetailPage() {
                     onChange={(v) => { if (v === 'abono') { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); } else setAbonoMode(false); }}
                     opciones={[
                       // Con plan, «Factura total» factura las etapas que quedan abiertas; el abono se
-                      // cruzaría con ellas y cobraría dos veces lo mismo.
-                      { valor: 'total', texto: 'Factura total', detalle: `$${fmt2(conPlan ? pendienteTicket : payments.total)}`, deshabilitada: hasInvoiced && !conPlan,
-                        porque: 'Ya hay una factura: lo que queda se cobra como abono' },
+                      // cruzaría con ellas y cobraría dos veces lo mismo. ⇒ Desde el 2026-10-16
+                      // (Fernando) cabe otra factura total aunque ya haya una: factura lo PENDIENTE,
+                      // es decir, los registros que aún no tienen factura.
+                      { valor: 'total', texto: 'Factura total', detalle: `$${fmt2(pendienteTicket)}`, deshabilitada: !(pendienteTicket > 0),
+                        porque: 'No queda nada pendiente de facturar' },
                       { valor: 'abono', texto: 'Abono parcial', detalle: `pendiente $${fmt2(payments.pending)}`, deshabilitada: conPlan,
                         porque: 'El ticket se cobra por etapas' },
                     ]}
@@ -1320,9 +1336,9 @@ export default function TicketDetailPage() {
                   valor={itemsMode}
                   onChange={applyItemsMode}
                   opciones={[
-                    { valor: 'title', texto: 'Título del ticket', detalle: `$${fmt2(Number(ticket.estimated_cost || 0))}` },
-                    { valor: 'breakdown', texto: 'Desglose de acciones', detalle: `${(ticket.actions || []).length} · $${fmt2(Number(ticket.actions_total || 0))}`,
-                      deshabilitada: (ticket.actions || []).length === 0, porque: 'El ticket no tiene acciones registradas' },
+                    { valor: 'title', texto: 'Título del ticket', detalle: `$${fmt2(Number(buildItemsForMode('title')[0].unitPrice) || 0)}` },
+                    { valor: 'breakdown', texto: 'Desglose de acciones', detalle: `${registrosSinFacturar().length} · $${fmt2(registrosSinFacturar().reduce((s: number, a: any) => s + (Number(a.cost) || 0), 0))}`,
+                      deshabilitada: registrosSinFacturar().length === 0, porque: 'No quedan registros sin facturar' },
                   ]}
                 />
               </div>

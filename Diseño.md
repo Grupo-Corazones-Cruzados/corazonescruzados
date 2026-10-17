@@ -4000,6 +4000,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-16 · Registro de trabajo facturado** · **ADOPTADO**: en su fila, tras tiempo y costo,
+  `· Facturado` en `text-green-600` (el mismo verde de «Facturado» en Pagos), con la factura en `title`.
+  Reloj, tiempo y papelera deshabilitados con el porqué en `title`; lápiz y observaciones activos.
 - **2026-10-16 · Panel «Días de trabajo» del ticket** · **CORREGIDO** (Fernando): debajo del calendario
   había una tarjeta por día con Evento (Meet) e Inicio/Fin, distinta de las etiquetas de «Nuevo ticket».
   Ahora los dos usan `components/tickets/DiasElegidos.tsx` (etiquetas `bg-accent-light` con «×»); la

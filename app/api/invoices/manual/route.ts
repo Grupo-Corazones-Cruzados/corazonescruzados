@@ -7,6 +7,7 @@ import { getProjectStages, getProjectBilling } from '@/lib/payments';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
+import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
 
 
 export async function POST(req: NextRequest) {
@@ -124,6 +125,8 @@ export async function POST(req: NextRequest) {
               `UPDATE gcc_world.invoices SET source_type = 'ticket', source_id = $1, ticket_id = $1${clientId ? ', client_id = $2' : ''} WHERE id = ${clientId ? '$3' : '$2'}`,
               clientId ? [srcId, clientId, invoiceId] : [srcId, invoiceId]
             );
+            // La refactura cubre los registros que quedaron libres al anular la anterior.
+            await marcarRegistrosFacturados(srcId, invoiceId);
           } else {
             const { rows: [p] } = await pool.query(
               `UPDATE gcc_world.projects SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING title, final_cost`,

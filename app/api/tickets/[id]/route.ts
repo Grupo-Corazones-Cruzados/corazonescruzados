@@ -19,7 +19,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               c.phone as client_phone, c.ruc as client_ruc, c.address as client_address,
               m.name as member_name, s.name as service_name, s.base_price as service_base_price,
               (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots,
-              (SELECT json_agg(ta ORDER BY ta.work_date NULLS LAST, ta.created_at) FROM gcc_world.ticket_actions ta WHERE ta.ticket_id = t.id) as actions,
+              (SELECT json_agg(ta ORDER BY ta.work_date NULLS LAST, ta.created_at) FROM (
+                 -- Cada registro dice si ya está facturado y en qué factura (lib/tickets/facturacion.ts).
+                 SELECT a.*, (fi.id IS NOT NULL) AS facturada, COALESCE(fi.invoice_number, '#' || fi.id) AS factura_numero
+                   FROM gcc_world.ticket_actions a
+                   LEFT JOIN gcc_world.invoices fi ON fi.id = a.invoice_id AND fi.status <> 'cancelled'
+                  WHERE a.ticket_id = t.id) ta) as actions,
               (SELECT COALESCE(SUM(cost), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_total,
               (SELECT COALESCE(SUM(duration_seconds), 0) FROM gcc_world.ticket_actions WHERE ticket_id = t.id) as actions_seconds
        FROM gcc_world.tickets t

@@ -1,5 +1,33 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-16) — TICKETS: facturar solo los registros sin facturar · ✅ 100 % — HECHO Y VERIFICADO
+
+**Rol:** ingeniero backend de facturación. **Pedido:** en el #28 «Consultoría Automatización
+de Procesos», «Completar y facturar» con desglose debe facturar solo los eventos nuevos (26/08,
+17/09 ×2, 18/09 y 16/10). Regla general: al facturar entran todos los registros sin facturar;
+el cobro de una etapa consume todos los registros existentes.
+
+### P1 — ¿Se sabía qué registros estaban facturados? · ✅ Resuelta
+- **Respuesta:** no. El desglose metía los 17 registros (711,75 $) y el título, lo consumido
+  entero. Nueva columna `ticket_actions.invoice_id`. (fuente: código + BD)
+
+### P2 — ¿Están cargados los eventos nuevos? · ✅ Resuelta
+- **Respuesta:** sí, Fernando los creó el 2026-10-16: ids 109–113 = 198,75 $. Los 12 viejos
+  (62–74) = 513,00 $ = factura 086. (fuente: BD)
+
+### P3 — ¿Qué caminos emiten facturas de un ticket? · ✅ Resuelta
+- **Respuesta:** `from-ticket`, `lib/pagos/intentos.ts` (total o etapa) y la refactura de
+  `invoices/manual`. Anular (`invoices/[id]/void`) no necesita cambios: facturado exige factura
+  no anulada. (fuente: código)
+
+### P4 — ¿Y los abonos? · ✅ Resuelta (decisión técnica)
+- **Respuesta:** ningún ticket tiene abonos ni etapas hoy. Un abono no consume registros; si
+  hubo abonos y el desglose no cuadra con lo pendiente, el modal propone el título con lo
+  pendiente.
+
+**Verificación:** tsc + build; `marcarRegistrosFacturados` contra la BD real en transacción con
+ROLLBACK (con ids, sin ids, idempotente, anulación); modal en Chrome: desglose 5 · 198,75 $.
+
 ## Objetivo (2026-10-16) — TICKETS: los días de trabajo se pueden elegir antes de hoy · ✅ 100 % — HECHO Y VERIFICADO
 
 **Rol:** ingeniero frontend. **Pedido:** el calendario de días de trabajo bloqueaba los días

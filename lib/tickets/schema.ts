@@ -116,7 +116,9 @@ export function ensureTicketActionColumns(): Promise<void> {
         ADD COLUMN IF NOT EXISTS work_date          DATE,
         ADD COLUMN IF NOT EXISTS duration_seconds   INT NOT NULL DEFAULT 0,
         ADD COLUMN IF NOT EXISTS notes              TEXT,
-        ADD COLUMN IF NOT EXISTS timer_started_at   TIMESTAMPTZ;
+        ADD COLUMN IF NOT EXISTS timer_started_at   TIMESTAMPTZ,
+        -- ⇒ LA FACTURA QUE CUBRIÓ EL REGISTRO (Fernando, 2026-10-16). Ver lib/tickets/facturacion.ts.
+        ADD COLUMN IF NOT EXISTS invoice_id         INT;
     `)
     .then(() => undefined)
     .catch((err: unknown) => { ensuringActions = null; throw err; });

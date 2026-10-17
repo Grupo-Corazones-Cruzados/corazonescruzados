@@ -79,6 +79,10 @@ export function segundosDe(r: any, ahora = Date.now()): number {
  *
  * Con el ticket cerrado todo se ve pero no se toca, con el porqué en `title`: lo consumido
  * ya está facturado.
+ *
+ * ⇒ UN REGISTRO FACTURADO (Fernando, 2026-10-16) lo dice en su fila y no cambia lo que se cobró:
+ * reloj, tiempo y eliminar quedan bloqueados; renombrarlo y anotarlo, no. Ver
+ * `lib/tickets/facturacion.ts`.
  */
 export default function RegistroTrabajo({
   ticketId, registros, dia, tarifa, puede, bloqueo, onCambio, onSesionMeet, sesionOcupada,
@@ -97,6 +101,9 @@ export default function RegistroTrabajo({
   sesionOcupada?: boolean;
 }) {
   const editable = puede && !bloqueo;
+  /** Por qué no se puede tocar el TIEMPO de un registro: el del ticket o su factura. */
+  const bloqueoTiempo = (r: any): string | undefined =>
+    bloqueo || (r?.facturada ? `Ya facturado en ${r.factura_numero}: su tiempo no cambia` : undefined);
   const enTelefono = !useConsultaMedia(PANTALLA_MD);
   const [ahora, setAhora] = useState(Date.now());
   const delDia = useMemo(() => registros.filter((r) => diaDe(r) === dia), [registros, dia]);
@@ -195,14 +202,14 @@ export default function RegistroTrabajo({
           </p>
         </div>
         {puede && (
-          <span title={bloqueo || (tarifa <= 0 ? 'El servicio del ticket no tiene precio por hora' : undefined)} className="inline-flex">
+          <span title={bloqueoTiempo(r) || (tarifa <= 0 ? 'El servicio del ticket no tiene precio por hora' : undefined)} className="inline-flex">
             {r.timer_started_at ? (
-              <button type="button" onClick={() => pedir(url(r.id), 'PATCH', { accion: 'detener' }, 'Reloj detenido')} disabled={!editable || ocupado} className={`${BTN_PRIMARY} h-11 sm:h-auto`}>
+              <button type="button" onClick={() => pedir(url(r.id), 'PATCH', { accion: 'detener' }, 'Reloj detenido')} disabled={!editable || ocupado || !!r.facturada} className={`${BTN_PRIMARY} h-11 sm:h-auto`}>
                 <Square className="w-4 h-4" /> Detener
               </button>
             ) : (
               <button type="button" onClick={() => pedir(url(r.id), 'PATCH', { accion: 'iniciar' })}
-                disabled={!editable || ocupado || (enMarcha && !r.timer_started_at)} className={`${BTN_PRIMARY} h-11 sm:h-auto`}
+                disabled={!editable || ocupado || !!r.facturada || (enMarcha && !r.timer_started_at)} className={`${BTN_PRIMARY} h-11 sm:h-auto`}
                 title={enMarcha ? 'Ya hay un reloj en marcha en este ticket' : undefined}>
                 <Play className="w-4 h-4" /> Iniciar
               </button>
@@ -211,15 +218,15 @@ export default function RegistroTrabajo({
         )}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-end" title={r.timer_started_at ? 'Detén el reloj para corregir el tiempo' : bloqueo}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-end" title={r.timer_started_at ? 'Detén el reloj para corregir el tiempo' : bloqueoTiempo(r)}>
         <EditField label="Tiempo consumido (h:mm)">
-          <input value={tiempo} onChange={(e) => setTiempo(e.target.value)} disabled={!editable || !!r.timer_started_at}
+          <input value={tiempo} onChange={(e) => setTiempo(e.target.value)} disabled={!editable || !!r.facturada || !!r.timer_started_at}
             inputMode="decimal"
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); guardarTiempo(); } }}
             className={`${EDIT_INPUT} tabular-nums`} style={mf} />
         </EditField>
         <button type="button" onClick={guardarTiempo}
-          disabled={!editable || ocupado || !!r.timer_started_at || deHm(tiempo) === Number(r.duration_seconds)} className={`${BTN_SECONDARY} h-11 sm:h-auto`}>
+          disabled={!editable || ocupado || !!r.facturada || !!r.timer_started_at || deHm(tiempo) === Number(r.duration_seconds)} className={`${BTN_SECONDARY} h-11 sm:h-auto`}>
           Corregir
         </button>
       </div>
@@ -272,14 +279,15 @@ export default function RegistroTrabajo({
                     {r.timer_started_at && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" aria-label="Reloj en marcha" />}
                     <span className="text-digi-muted">{fmtTiempo(seg)}</span>
                     <span className="text-accent font-semibold">${fmt2(r.timer_started_at ? (seg / 3600) * tarifa : Number(r.cost))}</span>
+                    {r.facturada && <span title={`Facturado en ${r.factura_numero}`} className="text-green-600" style={mf}>· Facturado</span>}
                   </p>
                 </button>
                 {puede && (
                   <>
                     <BotonEditar onClick={() => abrirRenombrar(r)} disabled={!editable || ocupado}
                       etiqueta="Renombrar registro" title={bloqueo || 'Renombrar registro'} />
-                    <BotonQuitar onClick={() => setEliminando(r)} disabled={!editable || ocupado}
-                      etiqueta="Eliminar registro" title={bloqueo || 'Eliminar registro'} />
+                    <BotonQuitar onClick={() => setEliminando(r)} disabled={!editable || ocupado || !!r.facturada}
+                      etiqueta="Eliminar registro" title={bloqueo || (r.facturada ? `Ya facturado en ${r.factura_numero}: no se elimina` : 'Eliminar registro')} />
                   </>
                 )}
               </div>

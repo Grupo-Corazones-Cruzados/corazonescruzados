@@ -415,6 +415,24 @@ Stack estándar de la casa, con particularidades de este repo:
     volvió de completado a pendiente). Pendiente es el estado con el que nace un ticket enviado
     y la API ya aceptaba registros ahí. Solo una solicitud de cliente aún sin aceptar lo
     muestra bloqueado.
+  - **💵 2026-10-16 (Fernando): AL FACTURAR UN TICKET ENTRAN TODOS LOS REGISTROS SIN FACTURAR.**
+    `ticket_actions.invoice_id` guarda la factura que cubrió cada registro; «facturado» = esa
+    factura existe y no está anulada (anular la devuelve a facturable). Lógica en
+    `lib/tickets/facturacion.ts` (`marcarRegistrosFacturados`). La marcan los tres caminos:
+    «Completar y facturar» (`from-ticket`, con los `action_ids` que vio el modal), el cobro en
+    línea (`lib/pagos/intentos.ts`: **el cobro de una etapa consume TODOS los registros que
+    existen en ese momento**) y la refactura (`invoices/manual`). Un **abono no consume**
+    registros; el reloj en marcha tampoco entra.
+    - El modal: «Desglose» = solo los registros sin facturar; «Título» y «Factura total» =
+      lo pendiente (antes ponían lo consumido entero y el estimado). Ya **cabe una segunda
+      factura total** aunque haya otra (antes se forzaba abono). El desglose va por defecto
+      solo si su suma cuadra con lo pendiente.
+    - Un registro facturado dice «· Facturado» en su fila; no cambia tiempo, reloj ni día, ni
+      se elimina (API y pantalla). Renombrar y anotar sí, y **ya no se vuelve a tasar el costo
+      si el tiempo no cambió** (antes renombrar recalculaba con la tarifa de hoy).
+    - **Relleno del 2026-10-16** (una transacción): 63 registros de 14 tickets atados a la
+      única factura de su ticket. Quedaron sin facturar solo los 5 nuevos del #28 (109–113,
+      198,75 $); los 12 viejos suman los 513,00 $ de la 001-001-000000086.
   - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
     facturado); la API lo rechaza.
   - **2026-10-07 (Fernando): interfaz por ancho.** Renombrar y eliminar un registro son

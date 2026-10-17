@@ -23,6 +23,7 @@ import { pool } from '@/lib/db';
 import { getProjectBilling, getTicketBilling } from '@/lib/payments';
 import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
+import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
@@ -1004,6 +1005,10 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     } catch (e: any) {
       console.error('[pagos] cobro', intento.id, 'no pudo marcar las etapas del ticket:', e.message);
     }
+    // ⇒ Y LOS REGISTROS DE TRABAJO (Fernando, 2026-10-16): el cobro —de todo o de una etapa—
+    // consume todos los que había sin facturar. Ver lib/tickets/facturacion.ts.
+    try { await marcarRegistrosFacturados(sourceId, invoiceId); }
+    catch (e: any) { console.error('[pagos] cobro', intento.id, 'no pudo marcar los registros del ticket:', e.message); }
   }
 
   // Enlaza la factura con el cliente del proyecto y guarda su cuenta de facturación, igual

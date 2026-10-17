@@ -5,6 +5,7 @@ import { createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrati
 import { addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient, cuentaFacturable, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
 import { getTicketPayments , getTicketBilling } from '@/lib/payments';
+import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
 import crypto from 'crypto';
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
       invoice_items: rawItems,
       payment_code,
       additional_fields, send_email, currency, exchange_rate,
-      adquirente, billing_client_id,
+      adquirente, billing_client_id, action_ids,
     } = await req.json().then((b: any) => (cuerpo = b));
     let { client_id_type, client_name, client_ruc, client_email, client_phone, client_address } = cuerpo;
 
@@ -164,6 +165,15 @@ export async function POST(req: NextRequest) {
           );
         }
       } catch (e: any) { console.error('[from-ticket] no se pudieron marcar las etapas:', e.message); }
+    }
+
+    // ⇒ LOS REGISTROS QUE ENTRAN QUEDAN FACTURADOS (Fernando, 2026-10-16): todos los que estaban
+    // sin facturar —los que vio el modal (`action_ids`), si los manda—. Un abono no consume
+    // registros. Sin esto el próximo desglose volvería a cobrar lo ya cobrado.
+    if (!is_abono) {
+      try {
+        await marcarRegistrosFacturados(ticket_id, invoiceId, Array.isArray(action_ids) ? action_ids : null);
+      } catch (e: any) { console.error('[from-ticket] no se pudieron marcar los registros:', e.message); }
     }
 
     // Sign and send to SRI

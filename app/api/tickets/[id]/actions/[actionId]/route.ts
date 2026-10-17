@@ -4,6 +4,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { avisarRelojesDelMiembro } from '@/lib/push/relojes';
 import { ensureTicketActionColumns, ensureTicketSlotColumns, loadTicketForSession, canManageTicket, slotCost, esFechaISO } from '@/lib/tickets/schema';
 import { isGoogleWorkspaceConfigured, deleteMeetEvent } from '@/lib/integrations/google-workspace';
+import { facturaDelRegistro } from '@/lib/tickets/facturacion';
 
 export async function DELETE(
   _req: NextRequest,
@@ -22,6 +23,10 @@ export async function DELETE(
     }
 
     await ensureTicketActionColumns();
+
+    // Lo facturado no se borra: la factura lo sigue cobrando (Fernando, 2026-10-16).
+    const facturaD = await facturaDelRegistro(actionId);
+    if (facturaD) return NextResponse.json({ error: `Este registro ya está facturado (${facturaD}): no se puede eliminar` }, { status: 400 });
 
     // Si la acción es una sesión, limpia su reunión de Meet y el evento del calendario.
     const { rows: aRows } = await pool.query(
@@ -105,6 +110,12 @@ export async function PATCH(
     if (!a) return NextResponse.json({ error: 'Registro no encontrado' }, { status: 404 });
 
     const cuerpo = await req.json();
+    // ⇒ UN REGISTRO FACTURADO NO CAMBIA LO QUE SE COBRÓ (Fernando, 2026-10-16): ni tiempo, ni
+    // reloj, ni día. El título y las observaciones sí, que no cambian el importe.
+    if (cuerpo.accion !== undefined || cuerpo.duration_seconds !== undefined || cuerpo.work_date !== undefined) {
+      const facturaP = await facturaDelRegistro(actionId);
+      if (facturaP) return NextResponse.json({ error: `Este registro ya está facturado (${facturaP}): su tiempo y su día ya no cambian` }, { status: 400 });
+    }
     const tarifa = Number(ticket.service_base_price) || 0;
     let segundos = Number(a.duration_seconds) || 0;
     let timer: string | null = a.timer_started_at;
@@ -168,7 +179,9 @@ export async function PATCH(
               timer_started_at = $5, work_date = $6,
               session_ended_at = COALESCE($7, session_ended_at)
         WHERE id = $8 AND ticket_id = $9 RETURNING *`,
-      [description, notes, segundos, slotCost(segundos, tarifa), timer, workDate,
+      // El costo se recalcula SOLO si cambió el tiempo: renombrar o anotar un registro no lo
+      // vuelve a tasar con la tarifa de hoy (2026-10-16).
+      [description, notes, segundos, segundos === (Number(a.duration_seconds) || 0) ? a.cost : slotCost(segundos, tarifa), timer, workDate,
        sesionTerminada ? sesionTerminada.toISOString() : null, actionId, id],
     );
     if (workDate) {
