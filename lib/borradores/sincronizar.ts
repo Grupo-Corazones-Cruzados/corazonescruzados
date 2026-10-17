@@ -22,6 +22,7 @@ import {
  */
 
 let enCurso: Promise<ResultadoSync> | null = null;
+export const EVENTO_SINCRONIZADO = 'gcc-borradores-sincronizados';
 export type ResultadoSync = { ok: boolean; motivo?: 'sin-red' | 'sin-sesion' | 'error'; subidos: number; conflictos: number };
 
 const fechaCorta = (v: any) => (v ? String(v).slice(0, 10) : '');
@@ -104,7 +105,11 @@ export async function catalogosGuardados(): Promise<Catalogos | undefined> {
 
 export function sincronizar(): Promise<ResultadoSync> {
   if (enCurso) return enCurso;
-  enCurso = vuelta().finally(() => { enCurso = null; });
+  enCurso = vuelta().finally(() => {
+    enCurso = null;
+    // La pestaña «Sin conexión» de Tickets escucha esto para repintarse tras cada vuelta.
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_SINCRONIZADO));
+  });
   return enCurso;
 }
 

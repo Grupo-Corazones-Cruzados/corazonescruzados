@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * MIS BORRADORES (Fernando, 2026-10-07): los tickets y proyectos en 'draft' que creé yo. Es lo
- * que la pantalla «Borradores» guarda en el dispositivo cuando hay conexión, para poder
+ * que la pantalla de tickets sin conexión guarda en el dispositivo cuando hay conexión, para poder
  * seguir editándolos sin ella. `updated_at` viaja con cada uno: al subir una edición hecha
  * sin red se devuelve como `si_no_cambio_desde`, y si otro la cambió entretanto el servidor
  * responde 409 en vez de pisarla.

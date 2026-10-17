@@ -8,7 +8,7 @@ import { sincronizar } from '@/lib/borradores/sincronizar';
  * Sube los borradores hechos SIN CONEXIÓN en cuanto vuelve la red, en cualquier pantalla del
  * panel (Fernando, 2026-10-07: «una vez el usuario recupere conexión ese proyecto debe ir
  * automáticamente al estado borrador»). Y, con conexión, pide al service worker que vuelva a
- * guardar la pantalla de Borradores: tras cada despliegue cambian sus archivos.
+ * guardar la pantalla de tickets sin conexión: tras cada despliegue cambian sus archivos.
  *
  * Solo dentro del panel: en el sitio público no hay borradores ni sesión que comprobar.
  */

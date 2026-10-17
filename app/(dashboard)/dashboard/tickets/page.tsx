@@ -22,8 +22,11 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
-  ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen,
+  ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen, CloudOff,
 } from 'lucide-react';
+import TicketsSinConexion, { porAtender } from '@/components/tickets/TicketsSinConexion';
+import { listar as listarDelDispositivo } from '@/lib/borradores/almacen';
+import { EVENTO_SINCRONIZADO } from '@/lib/borradores/sincronizar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -32,7 +35,11 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 // Proyectos abre en «Cotizaciones» (Fernando, 2026-09-28).
 const STATUS_TABS = [
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
-  // Borradores (2026-10-07): solo los míos; se crean también sin conexión (`/borradores`).
+  // Sin conexión (2026-10-16): lo creado sin red que vive en ESTE dispositivo y aún no se subió
+  // (o necesita una decisión). No viene del servidor: ver `TicketsSinConexion`. Al subirse pasa
+  // solo a «Borradores». Sin red, la app abre esta misma lista en `/tickets-sin-conexion`.
+  { value: 'offline', label: 'Sin conexión', Icon: CloudOff },
+  // Borradores (2026-10-07): solo los míos.
   { value: 'draft', label: 'Borradores', Icon: FilePen },
   { value: 'pending', label: 'Pendientes', Icon: Clock },
   { value: 'confirmed', label: 'Confirmados', Icon: CircleCheck },
@@ -138,6 +145,7 @@ export default function TicketsPage() {
     // aunque sea una vez, la lista que no se le enseña.
     if (!user) return;
     if (tab === 'open' && accessRoleOf(user) === 'client') return;
+    if (tab === 'offline') { setCargando(false); return; }
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
     if (tab === 'open') params.set('open', '1');
     else if (tab !== 'all') params.set('status', tab);
@@ -161,6 +169,27 @@ export default function TicketsPage() {
   }, [page, tab, search, user]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
+
+  // Cuántos esperan en el dispositivo: se recuenta tras cada sincronización (y entonces la
+  // lista del servidor también cambia: lo subido aparece en «Borradores»).
+  const [enDispositivo, setEnDispositivo] = useState(0);
+  const [enLinea, setEnLinea] = useState(true);
+  useEffect(() => {
+    const contar = () => listarDelDispositivo().then((l) => setEnDispositivo(l.filter(porAtender).length)).catch(() => {});
+    const alSincronizar = () => { contar(); fetchTickets(); };
+    const on = () => setEnLinea(true);
+    const off = () => setEnLinea(false);
+    setEnLinea(navigator.onLine);
+    contar();
+    window.addEventListener(EVENTO_SINCRONIZADO, alSincronizar);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener(EVENTO_SINCRONIZADO, alSincronizar);
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, [fetchTickets]);
   useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);
 
   const openCreateModal = async (mode: 'create' | 'request') => {
@@ -249,8 +278,8 @@ export default function TicketsPage() {
   // Rail de estado: el componente compartido `FilterRail` (antes estaba duplicado aquí
   // como `RailItem`, lo que hacía que Tickets y Soporte se vieran distintos).
   const railItems: FilterRailItem<string>[] = STATUS_TABS
-    .filter((s) => (s.value !== 'open' && s.value !== 'draft') || accessRoleOf(user) !== 'client')
-    .map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] ?? 0 }));
+    .filter((s) => !['open', 'offline', 'draft'].includes(s.value) || accessRoleOf(user) !== 'client')
+    .map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: s.value === 'offline' ? enDispositivo : (counts[s.value] ?? 0) }));
 
   /**
    * EL CUERPO DEL RESUMEN, UNA SOLA VEZ: se pinta en la columna de escritorio y en el
@@ -357,7 +386,7 @@ export default function TicketsPage() {
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
+            <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 value={search}
@@ -387,6 +416,9 @@ export default function TicketsPage() {
             </div>
           </div>
 
+          {tab === 'offline' ? (
+            <TicketsSinConexion enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />
+          ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
           <PixelDataTable
@@ -483,6 +515,7 @@ export default function TicketsPage() {
               )}
             </aside>
           </div>
+          )}
         </div>
       </div>
 

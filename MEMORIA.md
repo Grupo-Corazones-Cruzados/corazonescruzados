@@ -780,6 +780,19 @@ Stack estándar de la casa, con particularidades de este repo:
       Borradores; crear → «Sin conexión»; encender → «Borrador #47» en la base (borrado por id).
       ⚠️ En pruebas, el modo «sin red» de Chrome NO afecta al service worker: hay que apagar el
       servidor (y matarlo con `-sTCP:LISTEN`, ver memoria del puerto).
+    - **⭐ Ya no hay módulo «Borradores» (Fernando, 2026-10-16):** «quita el módulo; dentro del
+      mismo módulo de tickets exista un estado que permita gestionar los tickets creados sin
+      conexión». Ahora: estado **«Sin conexión»** en el raíl de Tickets (entre Abiertos y
+      Borradores; contador = lo del dispositivo sin subir o con error/conflicto; oculto al
+      cliente) y la pantalla sin red se mudó a **`/tickets-sin-conexion`** (cabecera «Tickets ·
+      Sin conexión»; `/borradores` redirige). Las dos pintan el MISMO control,
+      `components/tickets/TicketsSinConexion.tsx`. **Solo tickets**: los proyectos ya no se crean
+      sin red (el motor aún sube los que hubiera). Tras cada vuelta, `sincronizar()` emite
+      `EVENTO_SINCRONIZADO` y la pestaña se repinta. SW v5.
+      ⚠️ **Bug que no se vio el 10-07:** el SW leía las rutas de `/_next/static/` del HTML
+      cortando en `)`, y el archivo de la pantalla vive en `app/(sin-conexion)/…`: sin red salía
+      la cabecera sin lógica («Application error»). Ahora se toma hasta la extensión. Probado de
+      nuevo de punta a punta (ticket #48, borrado por id y título).
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

@@ -1062,10 +1062,13 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
   cuerpo `+ abajo`) y el menú lateral. **Regla: todo lo nuevo que vaya pegado al borde
   superior o inferior de la pantalla usa estos tokens**, nunca un número. Barra de estado en
   iPhone: iconos blancos (`UIStatusBarStyleLightContent`) porque la cabecera es oscura.
-- **Pantalla «Borradores» (sin conexión, 2026-10-07)** — `app/(sin-conexion)/borradores/page.tsx`:
-  cabecera oscura como la del teléfono (‹ solo con conexión, título, indicador
-  «Con conexión»/«Sin conexión» con `Cloud`/`CloudOff`, botón sincronizar 44 px); secciones
-  Tickets/Proyectos con «+ Nuevo»; tarjetas con la etiqueta de estado **«Sin conexión»**
+- **Tickets · Sin conexión (2026-10-07; desde 2026-10-16 es un estado de Tickets, no un
+  módulo)** — control único `components/tickets/TicketsSinConexion.tsx`, pintado en la pestaña
+  «Sin conexión» (`CloudOff`) del raíl de Tickets y en la pantalla sin red
+  `app/(sin-conexion)/tickets-sin-conexion/page.tsx`: cabecera oscura como la del teléfono
+  (‹ solo con conexión, «Tickets» + subtítulo «Sin conexión», indicador
+  «Con conexión»/«Sin conexión» con `Cloud`/`CloudOff`, botón sincronizar 44 px); «+ Nuevo
+  ticket» solo en la pantalla sin red; tarjetas con la etiqueta de estado **«Sin conexión»**
   (gris, `CloudOff`) o **«Borrador»** (acento claro) + número; avisos «Cambios sin subir» (ámbar)
   y bloque de conflicto ámbar con dos botones. El formulario es `EditPanel` con los controles de
   siempre (`EditField`, `CampoClienteOCorreo`, `MultiSelectSearch`, `BotonQuitar` en los días).
