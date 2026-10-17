@@ -433,6 +433,9 @@ Stack estándar de la casa, con particularidades de este repo:
     - **Relleno del 2026-10-16** (una transacción): 63 registros de 14 tickets atados a la
       única factura de su ticket. Quedaron sin facturar solo los 5 nuevos del #28 (109–113,
       198,75 $); los 12 viejos suman los 513,00 $ de la 001-001-000000086.
+  - **2026-10-16 (Fernando): Propiedades/Incidentes se pliega a la derecha** y se abre al pasar
+    el puntero por su indicador (ticket desde `xl`, proyecto desde `lg`; en táctil, fijo como
+    antes). `components/ui/RailDesplegable.tsx`; detalle en `Diseño.md` (desviaciones).
   - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
     facturado); la API lo rechaza.
   - **2026-10-07 (Fernando): interfaz por ancho.** Renombrar y eliminar un registro son

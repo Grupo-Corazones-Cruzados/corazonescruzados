@@ -4000,6 +4000,14 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-16 · Raíl derecho Propiedades/Incidentes plegado** · **ADOPTADO** (Fernando: «su uso es
+  para eso», consultar): `components/ui/RailDesplegable.tsx`, en el detalle del ticket (desde `xl`) y
+  del proyecto (desde `lg`). Plegado deja un indicador vertical de `w-5` en el borde derecho
+  («Propiedades · Incidentes», `PanelRightOpen`); al pasar el puntero se despliega ENCIMA del
+  contenido (no lo empuja, como el menú izquierdo), panel de 324 px `bg-digi-dark` + `shadow-2xl`, y
+  se pliega al salir. No se cierra mientras se escribe en un campo suyo; un clic en el indicador lo
+  fija. Sin puntero (táctil) o por debajo del corte, es la columna de siempre. El contenedor lleva
+  `relative` + `RAIL_HUECO` y pierde su tercera columna (`useRailDesplegable`).
 - **2026-10-16 · Registro de trabajo facturado** · **ADOPTADO**: en su fila, tras tiempo y costo,
   `· Facturado` en `text-green-600` (el mismo verde de «Facturado» en Pagos), con la factura en `title`.
   Reloj, tiempo y papelera deshabilitados con el porqué en `title`; lápiz y observaciones activos.

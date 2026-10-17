@@ -15,6 +15,8 @@ import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CON
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import Segmentado from '@/components/ui/Segmentado';
 import DiasElegidos from '@/components/tickets/DiasElegidos';
+import RailDesplegable, { useRailDesplegable, RAIL_HUECO } from '@/components/ui/RailDesplegable';
+import { PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import RegistroTrabajo, { diaDe, segundosDe, fmtTiempo } from '@/components/tickets/RegistroTrabajo';
 import { avisarCambioDeReloj } from '@/lib/movil/reloj-nativo';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
@@ -81,6 +83,8 @@ export default function TicketDetailPage() {
   const [linkAbierto, setLinkAbierto] = useState(false);
   // Alto de las tres columnas del detalle: hasta el pie de la pantalla, como en el proyecto.
   const altoColumnas = useAltoHastaElPie({ minimo: 520 });
+  // Propiedades / Incidentes plegado a la derecha en escritorio con puntero (RailDesplegable).
+  const railPlegado = useRailDesplegable(PANTALLA_XL);
   const [loading, setLoading] = useState(true);
   const [bids, setBids] = useState<any[]>([]);
   const [proposalText, setProposalText] = useState('');
@@ -801,7 +805,7 @@ export default function TicketDetailPage() {
           apilan y la página se desplaza como siempre. */}
       <div ref={altoColumnas.ref}
         style={altoColumnas.style ? ({ '--alto-columnas': `${altoColumnas.style.height}px` } as React.CSSProperties) : undefined}
-        className="grid grid-cols-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)] md:items-start lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch lg:h-[var(--alto-columnas)] xl:grid-cols-[300px_minmax(0,1fr)_300px]">
+        className={`grid grid-cols-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)] md:items-start lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:items-stretch lg:h-[var(--alto-columnas)] ${railPlegado ? `relative xl:grid-cols-[300px_minmax(0,1fr)] ${RAIL_HUECO}` : 'xl:grid-cols-[300px_minmax(0,1fr)_300px]'}`}>
           {/* Columna principal: TODO en un solo espacio (resumen + acciones combinados) */}
           {/* Columna en FLEX (no space-y): la tarjeta de trabajo se estira hasta el pie y lo que
               se desplaza es su interior, no la columna (Fernando, 2026-09-30). */}
@@ -996,7 +1000,7 @@ export default function TicketDetailPage() {
           </aside>
 
           {/* ====== Pestañas Propiedades / Incidentes, como en el proyecto ====== */}
-          <div className="min-w-0 space-y-3 xl:col-start-3 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
+          <RailDesplegable desde={PANTALLA_XL} className="min-w-0 space-y-3 xl:col-start-3 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
           <PestanasRail valor={rightTab} onChange={setRightTab}
             opciones={[{ valor: 'propiedades', texto: 'Propiedades' }, { valor: 'incidentes', texto: 'Incidentes' }]} />
           {rightTab === 'incidentes' && (
@@ -1129,7 +1133,7 @@ export default function TicketDetailPage() {
             })()}
           </PropertyRail>
           )}
-          </div>
+          </RailDesplegable>
           </div>
         </div>
 

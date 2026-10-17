@@ -33,6 +33,8 @@ import PanelEtapas from '@/components/facturacion/PanelEtapas';
 import PestanasRail from '@/components/ui/PestanasRail';
 import NombreArchivo, { renombrarEnPlataforma } from '@/components/media/NombreArchivo';
 import { fileIdDe } from '@/lib/media/ref';
+import RailDesplegable, { useRailDesplegable, RAIL_HUECO } from '@/components/ui/RailDesplegable';
+import { PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -223,6 +225,8 @@ export default function ProjectDetailPage() {
   const isOwner = isAdmin || isMemberCreator;
   // Alto de las tres columnas del detalle: hasta el pie de la pantalla (ver el JSX).
   const altoColumnas = useAltoHastaElPie({ minimo: 520 });
+  // Propiedades / Incidentes plegado a la derecha en escritorio con puntero (RailDesplegable).
+  const railPlegado = useRailDesplegable(PANTALLA_LG);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [newParticipantId, setNewParticipantId] = useState('');
   // Modales "Ver más" del panel izquierdo (equipo / propuestas completas).
@@ -1438,7 +1442,7 @@ export default function ProjectDetailPage() {
           variable para que la clase `lg:` decida cuándo aplica. */}
       <div ref={altoColumnas.ref}
         style={altoColumnas.style ? ({ '--alto-columnas': `${altoColumnas.style.height}px` } as React.CSSProperties) : undefined}
-        className="flex flex-col lg:flex-row gap-4 items-start lg:items-stretch lg:h-[var(--alto-columnas)]">
+        className={`flex flex-col lg:flex-row gap-4 items-start lg:items-stretch lg:h-[var(--alto-columnas)] ${railPlegado ? `relative ${RAIL_HUECO}` : ''}`}>
         {/* ====== IZQUIERDA: Equipo + Propuestas ====== */}
         <aside className="w-full lg:w-[280px] shrink-0 space-y-4 order-2 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
           {/* Equipo del proyecto (compacto: responsable + hasta 5 participantes) */}
@@ -2103,7 +2107,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* ====== DERECHA: pestañas Propiedades / Incidentes ====== */}
-        <div className="w-full lg:w-[360px] shrink-0 space-y-4 order-3 lg:min-h-0 lg:overflow-y-auto">
+        <RailDesplegable desde={PANTALLA_LG} className="w-full lg:w-[360px] shrink-0 space-y-4 order-3 lg:min-h-0 lg:overflow-y-auto">
           <PestanasRail valor={rightTab} onChange={setRightTab}
             opciones={[{ valor: 'propiedades', texto: 'Propiedades' }, { valor: 'incidentes', texto: 'Incidentes' }]} />
 
@@ -2324,7 +2328,7 @@ export default function ProjectDetailPage() {
           </>)}
 
 
-        </div>
+        </RailDesplegable>
       </div>
 
       {/* Ventanita: CANCELAR EL PROYECTO. Un solo campo, así que ventanita centrada. */}
