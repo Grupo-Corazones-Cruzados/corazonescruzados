@@ -1,14 +1,21 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelSelect from '@/components/ui/PixelSelect';
 import { fmt2 } from '@/lib/format';
+import PanelCompartirEnlace from '@/components/ui/PanelCompartirEnlace';
+import Interruptor from '@/components/ui/Interruptor';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
+import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import {
   Repeat2, Captions, Search, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
+  Briefcase, Link2, Plus, Table2,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -16,15 +23,26 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 
 type Tool = { id: string; name: string; Icon: any; description: string; category: string };
 
-// Categorías (tipos de herramienta). Por ahora solo "Edición".
+// Categorías (tipos de herramienta).
 const CATEGORIES = [
   { value: 'all', label: 'Todas', Icon: LayoutGrid },
   { value: 'edicion', label: 'Edición', Icon: Wand2 },
+  { value: 'gestion', label: 'Gestión', Icon: Briefcase },
 ];
+
+const CATEGORY_LABEL: Record<string, string> = { edicion: 'Herramienta de edición', gestion: 'Herramienta de gestión' };
+
+// Vigencias del enlace de un solo uso: se cierra al responder o al vencer, lo que pase antes.
+const VIGENCIAS = [
+  { v: 24, l: '1 día' }, { v: 72, l: '3 días' }, { v: 168, l: '1 semana' }, { v: 720, l: '1 mes' },
+];
+
+type ClienteConCuenta = { id: number; nombre: string; email: string };
 
 const TOOLS: Tool[] = [
   { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
   { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
+  { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
 ];
 
 const CONVERSIONS: Record<string, string[]> = {
@@ -51,6 +69,25 @@ export default function ToolsPage() {
   const [transcribeProgress, setTranscribeProgress] = useState(0);
   const [transcribeResult, setTranscribeResult] = useState<{ blob: Blob; name: string } | null>(null);
   const transcribeInputRef = useRef<HTMLInputElement>(null);
+
+  // Enlace de un solo uso (lo que el panel compartido no trae: título, indicaciones, cliente)
+  const [enlaceOpen, setEnlaceOpen] = useState(false);
+  const [enlaceTitulo, setEnlaceTitulo] = useState('');
+  const [enlaceIndicaciones, setEnlaceIndicaciones] = useState('');
+  const [enlaceExigeCuenta, setEnlaceExigeCuenta] = useState(false);
+  const [enlaceCliente, setEnlaceCliente] = useState('');
+  const [clientesConCuenta, setClientesConCuenta] = useState<ClienteConCuenta[] | null>(null);
+
+  useEffect(() => {
+    if (!enlaceOpen || clientesConCuenta) return;
+    fetch('/api/enlaces/clientes').then((r) => r.json()).then((d) => setClientesConCuenta(d.data || [])).catch(() => setClientesConCuenta([]));
+  }, [enlaceOpen, clientesConCuenta]);
+
+  const abrirEnlace = () => {
+    setEnlaceTitulo(''); setEnlaceIndicaciones(''); setEnlaceExigeCuenta(false); setEnlaceCliente('');
+    setEnlaceOpen(true);
+  };
+  const clienteElegido = clientesConCuenta?.find((c) => String(c.id) === enlaceCliente);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: TOOLS.length };
@@ -197,10 +234,10 @@ export default function ToolsPage() {
           </div>
           <div className="min-w-0">
             <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{tool.name}</h3>
-            <p className="text-[11px] text-digi-muted" style={mf}>Herramienta de edición</p>
+            <p className="text-[11px] text-digi-muted" style={mf}>{CATEGORY_LABEL[tool.category]}</p>
           </div>
         </div>
-        <div className="p-4">{tool.id === 'convert' ? renderConvert() : renderTranscribe()}</div>
+        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : renderEnlace()}</div>
       </div>
     );
   };
@@ -297,6 +334,13 @@ export default function ToolsPage() {
     );
   };
 
+  const renderEnlace = () => (
+    <div className="space-y-3">
+      <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
+      <button onClick={abrirEnlace} className={`${BTN_PRIMARY} w-full`}><Plus className="w-4 h-4" /> Generar enlace</button>
+      <Link href="/dashboard/tools/enlaces" className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Ver enlaces generados</Link>
+    </div>
+  );
 
   return (
     <div>
@@ -353,6 +397,50 @@ export default function ToolsPage() {
           </div>
         </div>
       </div>
+
+      <PanelCompartirEnlace
+        open={enlaceOpen} onClose={() => setEnlaceOpen(false)}
+        title="Generar enlace de un solo uso"
+        intro={<>Quien lo abra podrá enviar <strong>un texto y hasta 10 archivos</strong> (100 MB cada uno). Al enviar, el enlace se cierra.</>}
+        duraciones={VIGENCIAS} duracionInicial={168}
+        correoInicial={clienteElegido?.email || ''}
+        etiquetaCorreo="Correo de quien responde (para enviarlo)"
+        aviso={enlaceExigeCuenta
+          ? <>Solo podrá responder quien inicie sesión con la cuenta de <strong>{clienteElegido?.nombre}</strong>.</>
+          : 'Cualquiera con este enlace puede responder una vez.'}
+        puedeGenerar={!!enlaceTitulo.trim() && (!enlaceExigeCuenta || !!enlaceCliente)}
+        generar={async ({ horas, email, enviar }) => {
+          const r = await fetch('/api/enlaces', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              titulo: enlaceTitulo, indicaciones: enlaceIndicaciones, horas, email: enviar ? email : undefined,
+              exige_cuenta: enlaceExigeCuenta, client_id: enlaceExigeCuenta ? Number(enlaceCliente) : null,
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'Error');
+          if (enviar && !d.data.enviado) return { url: d.data.url, mensaje: 'Enlace generado, pero el correo no salió: cópialo y envíalo tú', ok: false };
+          return { url: d.data.url, mensaje: enviar ? 'Enlace enviado por correo' : 'Enlace generado' };
+        }}
+      >
+        <EditField label="Título">
+          <input value={enlaceTitulo} onChange={(e) => setEnlaceTitulo(e.target.value)} maxLength={200}
+            placeholder="Ej.: Documentos para la declaración" className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <EditField label="Indicaciones para quien responde">
+          <AutoGrowTextarea value={enlaceIndicaciones} onChange={(e) => setEnlaceIndicaciones(e.target.value)} minRows={3} maxLength={4000}
+            placeholder="Qué necesitas que te envíen" className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <div className="flex items-center justify-between gap-3 py-1">
+          <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>Pedir la cuenta del cliente</span>
+          <Interruptor activo={enlaceExigeCuenta} onChange={setEnlaceExigeCuenta} etiqueta="Pedir la cuenta del cliente" />
+        </div>
+        {enlaceExigeCuenta && (
+          <PixelSelect label="Cliente" value={enlaceCliente} onChange={(e) => setEnlaceCliente(e.target.value)}
+            placeholder={clientesConCuenta === null ? 'Cargando…' : clientesConCuenta.length ? 'Elige el cliente' : 'Ningún cliente tiene cuenta'}
+            options={(clientesConCuenta || []).map((c) => ({ value: String(c.id), label: `${c.nombre} · ${c.email}` }))} />
+        )}
+      </PanelCompartirEnlace>
     </div>
   );
 }

@@ -7333,6 +7333,23 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   mismo (formulario → progreso → resultado con "Usar de nuevo"). Las APIs `/api/tools/convert` y
   `/api/tools/transcribe` no cambiaron. Para agregar herramientas: añadir a `TOOLS` con su `category` y su
   render en `renderToolPanel`; nuevas categorías van en `CATEGORIES`.
+- **Herramientas → Gestión → «Enlace de un solo uso» (Fernando, 2026-10-16).** Nueva categoría
+  `gestion`. El panel de la herramienta trae «Generar enlace» (abre `PanelCompartirEnlace`, el mismo
+  formulario de cotización y cobro, con Título, Indicaciones, «Pedir la cuenta del cliente» + Cliente
+  dentro) y «Ver enlaces generados» → `/dashboard/tools/enlaces` (rail de estado + tabla + panel con la
+  respuesta y los archivos). Quien recibe el enlace abre `/enlace/<token>` y envía UN texto y hasta
+  10 archivos de 100 MB; al enviar queda `usado`. Estados: vigente · usado · cerrado (a mano) · vencido
+  (calculado con `vence_en`, sin cron). Tabla `gcc_world.enlaces_unicos`; lógica en `lib/enlaces`.
+  - **Decisiones de Fernando:** la credencial es la **cuenta de GCC World** del cliente (solo
+    clientes `account_type='client'` con `user_id`); los enlaces los ve **quien los creó y el admin**.
+  - **Se gasta al ENVIAR, no al abrir** (las vistas previas de WhatsApp/Gmail abren el enlace).
+  - **Los archivos no pasan por Railway:** sesión «resumable» de Drive abierta por el servidor con el
+    tamaño declarado y `Origin`; el navegador sube directo. Carpeta `Enlaces de un solo uso / <id ·
+    título>` del Drive de la empresa. NO van a `media_drive` (`/api/media` es público por id): se
+    bajan por `/api/enlaces/<id>/archivos/<fileId>` con permiso. Tope de 40 sesiones de subida por
+    enlace; lo subido y no enviado va a la papelera al enviar.
+  - `/enlace` se añadió a `DESTINOS_PERMITIDOS` (`lib/sitio/acceso.ts`) para volver tras iniciar sesión.
+  - Probado de punta a punta el 2026-10-16 (21 comprobaciones; las filas y carpetas de prueba se borraron).
 - **Transcripción de audio: TOPE DURO de ~300 s por petición (Railway/Cloudflare) (2026-07-24).**
   `/api/tools/transcribe` (Whisper) trocea el audio en segmentos de 10 min, los transcribe y une en un `.txt`.
   Con un audio de **~1.5 h** (10 segmentos) empezó a fallar con **HTTP 499 a los ~300 s exactos** → **502** en

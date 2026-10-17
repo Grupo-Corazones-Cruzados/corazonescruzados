@@ -559,6 +559,23 @@ export async function sendQuoteToClient(params: {
   return deliver({ to: params.email, subject: `Tu cotización — ${params.projectTitle}`, html });
 }
 
+/** Enlace de un solo uso (Herramientas → Gestión): pide un dato o unos archivos. */
+export async function sendEnlaceUnicoEmail(params: {
+  email: string; titulo: string; indicaciones: string; url: string; remitente?: string; exigeCuenta: boolean;
+}) {
+  const html = emailShell(
+    emailBadge('SOLICITUD', CORP.accent) +
+    emailHeading(escapeHtml(params.titulo), params.remitente ? `Te lo pide ${escapeHtml(params.remitente)}` : 'GCC World') +
+    (params.indicaciones ? emailParagraph(escapeHtml(params.indicaciones)) : '') +
+    emailParagraph(params.exigeCuenta
+      ? `Abre el enlace e ${accentStrong('inicia sesión con tu cuenta de GCC World')} para responder.`
+      : 'Abre el enlace para responder.') +
+    emailButton(params.url, 'Responder') +
+    emailNote('El enlace sirve para una sola respuesta: después de enviarla se cierra.'),
+  );
+  return deliver({ to: params.email, subject: params.titulo, html });
+}
+
 /** Avisa al responsable (miembro) que el cliente aceptó o rechazó la cotización. */
 export async function sendQuoteDecisionToResponsible(params: {
   email: string; name?: string; projectTitle: string; action: 'accepted' | 'rejected'; clientEmail?: string; url: string;

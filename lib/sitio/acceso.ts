@@ -68,7 +68,9 @@ export const ACCESO_VIDEOJUEGO = 'videojuego';
  * escribir `/?acceso=plataforma&redirect=/lo-que-sea` y sacar a alguien de la plataforma
  * justo después de identificarse.
  */
-const DESTINOS_PERMITIDOS = ['/dashboard', '/juego'];
+// `/enlace`: un enlace de un solo uso atado a un cliente pide iniciar sesión y luego vuelve a
+// él (Herramientas → Gestión, 2026-10-16).
+const DESTINOS_PERMITIDOS = ['/dashboard', '/juego', '/enlace'];
 
 export function destinoTrasAccesoValido(ruta: string | null | undefined): string | null {
   if (!ruta) return null;

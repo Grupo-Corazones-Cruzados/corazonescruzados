@@ -4000,6 +4000,14 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-16 · Enlace de un solo uso (Herramientas → Gestión)** · **ADOPTADO**, sin controles nuevos:
+  el formulario es `PanelCompartirEnlace` con los campos propios como `children` (`EditField` +
+  `EDIT_INPUT`, `Interruptor`, `PixelSelect`); la lista `/dashboard/tools/enlaces` es «rail + lista +
+  panel» como Soporte (sin X en escritorio, modal solo en teléfono, `tarjetaMovil`); la página pública
+  `/enlace/<token>` usa el marco del portal de incidentes (`corp page-dark` + `PublicHeader`, tarjeta
+  `max-w-2xl`). Estados: Vigente `info`, Usado `success`, Cerrado `default`, Vencido `warning`.
+  ⚠️ En una tabla `singleLine` las columnas de ancho fijo no deben llenar el ancho: la columna libre
+  (Título) se quedaba en 0 px y desaparecía. Con panel de 360 px caben ~380 px de columnas fijas.
 - **2026-10-16 · Raíl derecho Propiedades/Incidentes plegado** · **ADOPTADO** (Fernando: «su uso es
   para eso», consultar): `components/ui/RailDesplegable.tsx`, en el detalle del ticket (desde `xl`) y
   del proyecto (desde `lg`). Plegado deja un indicador vertical de `w-5` en el borde derecho
