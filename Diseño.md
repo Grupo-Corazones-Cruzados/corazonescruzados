@@ -4008,6 +4008,12 @@ mientras se escribe.
   se pliega al salir. No se cierra mientras se escribe en un campo suyo; un clic en el indicador lo
   fija. Sin puntero (táctil) o por debajo del corte, es la columna de siempre. El contenedor lleva
   `relative` + `RAIL_HUECO` y pierde su tercera columna (`useRailDesplegable`).
+  **Regla (Fernando, 2026-10-16): aplica a TODO detalle con columna de consulta a la derecha.** Además
+  de ticket y proyecto: factura (`invoices/[id]`, «Detalles · SRI · Comprobante», desde `lg`) y soporte
+  (`support/[id]`, «Detalles», desde `lg`). La prop `etiqueta` dice qué hay dentro. En páginas de alto
+  libre (no columnas de alto fijo) el contenedor lleva también `min-h-[calc(100dvh-12rem)]`, para que
+  el panel abierto no quede del alto de una tabla corta. NO aplica al panel de resumen de las listas
+  (rail + lista + panel): ahí el panel ES el detalle de lo seleccionado, no una consulta.
 - **2026-10-16 · Registro de trabajo facturado** · **ADOPTADO**: en su fila, tras tiempo y costo,
   `· Facturado` en `text-green-600` (el mismo verde de «Facturado» en Pagos), con la factura en `title`.
   Reloj, tiempo y papelera deshabilitados con el porqué en `title`; lápiz y observaciones activos.

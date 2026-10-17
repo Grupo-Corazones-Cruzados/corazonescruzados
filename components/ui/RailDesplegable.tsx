@@ -22,7 +22,10 @@ const esCampo = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.matches('input, textarea, select') || el.isContentEditable);
 
 /**
- * ⇒ EL RAÍL DERECHO (PROPIEDADES / INCIDENTES) SE ABRE AL PASAR EL PUNTERO (Fernando, 2026-10-16).
+ * ⇒ EL RAÍL DERECHO DE LOS DETALLES SE ABRE AL PASAR EL PUNTERO (Fernando, 2026-10-16).
+ *
+ * Vale para TODO detalle con columna de consulta a la derecha: ticket y proyecto (Propiedades ·
+ * Incidentes), factura (Detalles · SRI · Comprobante) y soporte (Detalles).
  *
  * Es de consulta: se mira y se vuelve al trabajo. Plegado deja solo un INDICADOR en el borde
  * derecho; al acercar el puntero se despliega y al salir se pliega, igual que el menú de la
@@ -37,9 +40,11 @@ const esCampo = (el: EventTarget | null) =>
  * - Sin puntero (táctil) o por debajo de `desde`, no se pliega: es el bloque de siempre, con
  *   `className`. Se decide en JS porque cambia la estructura, no solo el aspecto.
  */
-export default function RailDesplegable({ desde, className, children }: {
+export default function RailDesplegable({ desde, etiqueta = 'Propiedades · Incidentes', className, children }: {
   /** Consulta de ancho a partir de la cual se pliega (p. ej. `PANTALLA_XL`). */
   desde: string;
+  /** Texto vertical del indicador: lo que hay dentro (p. ej. «Detalles · SRI»). */
+  etiqueta?: string;
   /** Clases del bloque cuando NO se pliega. */
   className?: string;
   children: ReactNode;
@@ -67,13 +72,13 @@ export default function RailDesplegable({ desde, className, children }: {
         </div>
       </div>
       <button type="button" onClick={() => setFijado((f) => !f)} aria-expanded={abierto}
-        aria-label={fijado ? 'Plegar Propiedades e Incidentes' : 'Fijar Propiedades e Incidentes'}
-        title={fijado ? 'Plegar' : 'Propiedades e Incidentes'}
+        aria-label={`${fijado ? 'Plegar' : 'Fijar'} ${etiqueta}`}
+        title={fijado ? 'Plegar' : etiqueta}
         className={`ml-1.5 w-5 h-full flex flex-col items-center gap-2 pt-1 rounded-md border transition-colors ${
           abierto ? 'border-accent/40 bg-accent-light text-accent' : 'border-digi-border bg-digi-card text-digi-muted hover:text-accent hover:border-accent/40'
         }`}>
         <PanelRightOpen className="w-3.5 h-3.5 shrink-0" />
-        <span className="text-[10.5px] font-medium tracking-wide [writing-mode:vertical-rl]">Propiedades · Incidentes</span>
+        <span className="text-[10.5px] font-medium tracking-wide [writing-mode:vertical-rl]">{etiqueta}</span>
       </button>
     </div>
   );

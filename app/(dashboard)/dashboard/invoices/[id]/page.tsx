@@ -14,6 +14,8 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { fmt2 } from '@/lib/format';
 import { SRI_MAX } from '@/lib/integrations/sri/text';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import RailDesplegable, { RAIL_HUECO, useRailDesplegable } from '@/components/ui/RailDesplegable';
+import { PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -38,6 +40,7 @@ export default function InvoiceDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [invoice, setInvoice] = useState<any>(null);
+  const railPlegado = useRailDesplegable(PANTALLA_LG);
   const [sriItems, setSriItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showResend, setShowResend] = useState(false);
@@ -305,7 +308,7 @@ export default function InvoiceDetailPage() {
         ]}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
+      <div className={`grid grid-cols-1 gap-4 items-start ${railPlegado ? `relative min-h-[calc(100dvh-12rem)] ${RAIL_HUECO}` : 'lg:grid-cols-[minmax(0,1fr)_340px]'}`}>
         {/* ─── Items table ─── */}
         <div className="min-w-0 space-y-4">
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
@@ -353,7 +356,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* ─── Right rail ─── */}
-        <div className="space-y-4 lg:sticky lg:top-4">
+        <RailDesplegable desde={PANTALLA_LG} etiqueta="Detalles · SRI · Comprobante" className="space-y-4 lg:sticky lg:top-4">
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Detalles</h3>
             <div className="space-y-2 text-[12px]" style={mf}>
@@ -446,7 +449,7 @@ export default function InvoiceDetailPage() {
               )}
             </div>
           )}
-        </div>
+        </RailDesplegable>
       </div>
 
       {/* Payment Proof Modal */}

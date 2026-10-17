@@ -8,6 +8,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import BrandLoader from '@/components/ui/BrandLoader';
 import DetailHeader from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
+import RailDesplegable, { RAIL_HUECO, useRailDesplegable } from '@/components/ui/RailDesplegable';
+import { PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import { Check, Send, Lock } from 'lucide-react';
 
@@ -52,6 +54,7 @@ export default function SupportDetailPage() {
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const railPlegado = useRailDesplegable(PANTALLA_LG);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -127,7 +130,7 @@ export default function SupportDetailPage() {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
+      <div className={`grid grid-cols-1 gap-4 items-start ${railPlegado ? `relative min-h-[calc(100dvh-12rem)] ${RAIL_HUECO}` : 'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
         <div className="min-w-0 space-y-3">
         {/* Conversation thread */}
         <div className="space-y-3">
@@ -180,6 +183,7 @@ export default function SupportDetailPage() {
         )}
         </div>
 
+        <RailDesplegable desde={PANTALLA_LG} etiqueta="Detalles">
         <PropertyRail
           title="Detalles"
           items={[
@@ -190,6 +194,7 @@ export default function SupportDetailPage() {
             { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString('es-EC') },
           ]}
         />
+        </RailDesplegable>
       </div>
     </div>
   );

@@ -436,6 +436,8 @@ Stack estándar de la casa, con particularidades de este repo:
   - **2026-10-16 (Fernando): Propiedades/Incidentes se pliega a la derecha** y se abre al pasar
     el puntero por su indicador (ticket desde `xl`, proyecto desde `lg`; en táctil, fijo como
     antes). `components/ui/RailDesplegable.tsx`; detalle en `Diseño.md` (desviaciones).
+    Ese mismo día lo extendió a todos los detalles con diseño parecido: también factura y
+    soporte (desde `lg`). Las listas con panel de resumen no, porque ese panel es el detalle.
   - Con el ticket completado o cancelado todo se ve pero no se toca (lo consumido está
     facturado); la API lo rechaza.
   - **2026-10-07 (Fernando): interfaz por ancho.** Renombrar y eliminar un registro son
