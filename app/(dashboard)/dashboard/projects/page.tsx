@@ -28,8 +28,9 @@ import { fmt2 } from '@/lib/format';
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle,
+  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle, CloudOff,
 } from 'lucide-react';
+import ListaSinConexion, { useSinConexion } from '@/components/sin-conexion/ListaSinConexion';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -40,6 +41,10 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 const STATUS_TABS = [
   { value: 'cotizacion', label: 'Cotizaciones', Icon: Calculator },
   { value: 'cotizacion_rechazada', label: 'Cotiz. rechazadas', Icon: XCircle },
+  // Sin conexión (2026-10-17): lo creado sin red en ESTE dispositivo que aún no se subió (o
+  // necesita una decisión). No viene del servidor: ver `ListaSinConexion`. Al subirse pasa solo
+  // a «Borrador». Igual que en Tickets.
+  { value: 'offline', label: 'Sin conexión', Icon: CloudOff },
   { value: 'draft', label: 'Borrador', Icon: FileEdit },
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   { value: 'in_progress', label: 'En progreso', Icon: Loader },
@@ -215,6 +220,7 @@ export default function ProjectsPage() {
   const ultimaPeticion = useRef(0);
   const [cargando, setCargando] = useState(true);
   const fetchData = useCallback(async () => {
+    if (tab === 'offline') { ++ultimaPeticion.current; setCargando(false); return; }
     const mia = ++ultimaPeticion.current;
     setCargando(true);
     const params = new URLSearchParams({ page: String(page), limit: String(PER_PAGE) });
@@ -244,6 +250,7 @@ export default function ProjectsPage() {
   }, [page, tab, search, talentFilter, clientFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  const { enDispositivo, enLinea } = useSinConexion('proyecto', fetchData);
   useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search, talentFilter, clientFilter]);
 
   const createProject = async () => {
@@ -400,7 +407,9 @@ export default function ProjectsPage() {
             ...(scopeItems.length > 0
               ? [{ title: 'Alcance', items: scopeItems.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] })) }]
               : []),
-            { title: 'Estado', items: STATUS_TABS.map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: counts[s.value] })) },
+            { title: 'Estado', items: STATUS_TABS
+              .filter((s) => s.value !== 'offline' || canCreateOwn)
+              .map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: s.value === 'offline' ? enDispositivo : counts[s.value] })) },
           ]}
           value={tab}
           onChange={setTab}
@@ -409,7 +418,7 @@ export default function ProjectsPage() {
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
+            <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 value={search}
@@ -466,6 +475,9 @@ export default function ProjectsPage() {
             </div>
           </div>
 
+          {tab === 'offline' ? (
+            <ListaSinConexion tipo="proyecto" enLinea={enLinea} soloPorAtender onCambio={fetchData} />
+          ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
           <PixelDataTable
@@ -561,6 +573,7 @@ export default function ProjectsPage() {
               )}
             </aside>
           </div>
+          )}
         </div>
       </div>
 

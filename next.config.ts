@@ -69,7 +69,8 @@ const nextConfig: NextConfig = {
     return [
       { source: '/negocio', destination: '/clientes', permanent: true },
       // El módulo «Borradores» pasó a ser el estado «Sin conexión» de Tickets (2026-10-16).
-      { source: '/borradores', destination: '/tickets-sin-conexion', permanent: false },
+      { source: '/borradores', destination: '/sin-conexion', permanent: false },
+      { source: '/tickets-sin-conexion', destination: '/sin-conexion', permanent: false },
       /**
        * ⚠️ `/soluciones` CAMBIÓ DE SIGNIFICADO EL 2026-08-18, y es lo delicado de este bloque.
        *

@@ -793,6 +793,15 @@ Stack estándar de la casa, con particularidades de este repo:
       cortando en `)`, y el archivo de la pantalla vive en `app/(sin-conexion)/…`: sin red salía
       la cabecera sin lógica («Application error»). Ahora se toma hasta la extensión. Probado de
       nuevo de punta a punta (ticket #48, borrado por id y título).
+    - **⭐ Lo mismo en Proyectos (Fernando, 2026-10-17: «sí pues»).** Estado «Sin conexión» en el
+      raíl de Proyectos (antes de «Borrador»; oculto al cliente). La pantalla sin red se llama
+      ahora **`/sin-conexion`**, con selector Tickets / Proyectos; el SW manda ahí lo que falla sin
+      red y, si venía de `/dashboard/projects`, con `?de=proyectos` (`/borradores` y
+      `/tickets-sin-conexion` redirigen). Control único `components/sin-conexion/ListaSinConexion.tsx`
+      (`tipo`) + hook `useSinConexion(tipo, alSincronizar)` para el contador y la red. SW v6.
+      El proyecto subido se abre con «Abrir proyecto» (su flujo de siempre). Probado de punta a
+      punta (proyectos #41-#43; crear un proyecto escribe también en `project_members`, SIN FK:
+      al limpiar hay que borrar esas filas a mano).
     - **Iconos de una sola fuente (2026-10-07):** `python3 movil/generar-iconos.py` saca el TRAZO
       de `public/LogoApp.png` (sin la marca de agua «miro», que está fuera del círculo) y genera
       el icono del iPhone, los de Android (adaptativo, redondo, silueta de notificación, logo

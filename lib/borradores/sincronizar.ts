@@ -155,6 +155,10 @@ async function vuelta(): Promise<ResultadoSync> {
       subidos++;
     }
 
+    // Lo subido se enseña ya como «Borrador», sin esperar a que termine la vuelta (bajar la lista
+    // y los catálogos tarda unos segundos más).
+    if (subidos && typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_SINCRONIZADO));
+
     // 3: bajar mis borradores.
     const { s, j } = await pedir('/api/borradores');
     if (s === 200) {

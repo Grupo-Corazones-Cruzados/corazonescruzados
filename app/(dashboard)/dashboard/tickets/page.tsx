@@ -24,9 +24,7 @@ import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
   ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen, CloudOff,
 } from 'lucide-react';
-import TicketsSinConexion, { porAtender } from '@/components/tickets/TicketsSinConexion';
-import { listar as listarDelDispositivo } from '@/lib/borradores/almacen';
-import { EVENTO_SINCRONIZADO } from '@/lib/borradores/sincronizar';
+import ListaSinConexion, { useSinConexion } from '@/components/sin-conexion/ListaSinConexion';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -36,8 +34,8 @@ const df = { fontFamily: 'var(--font-display)' } as const;
 const STATUS_TABS = [
   { value: 'open', label: 'Abiertos', Icon: DoorOpen },
   // Sin conexión (2026-10-16): lo creado sin red que vive en ESTE dispositivo y aún no se subió
-  // (o necesita una decisión). No viene del servidor: ver `TicketsSinConexion`. Al subirse pasa
-  // solo a «Borradores». Sin red, la app abre esta misma lista en `/tickets-sin-conexion`.
+  // (o necesita una decisión). No viene del servidor: ver `ListaSinConexion`. Al subirse pasa
+  // solo a «Borradores». Sin red, la app abre esta misma lista en `/sin-conexion`.
   { value: 'offline', label: 'Sin conexión', Icon: CloudOff },
   // Borradores (2026-10-07): solo los míos.
   { value: 'draft', label: 'Borradores', Icon: FilePen },
@@ -170,26 +168,7 @@ export default function TicketsPage() {
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  // Cuántos esperan en el dispositivo: se recuenta tras cada sincronización (y entonces la
-  // lista del servidor también cambia: lo subido aparece en «Borradores»).
-  const [enDispositivo, setEnDispositivo] = useState(0);
-  const [enLinea, setEnLinea] = useState(true);
-  useEffect(() => {
-    const contar = () => listarDelDispositivo().then((l) => setEnDispositivo(l.filter(porAtender).length)).catch(() => {});
-    const alSincronizar = () => { contar(); fetchTickets(); };
-    const on = () => setEnLinea(true);
-    const off = () => setEnLinea(false);
-    setEnLinea(navigator.onLine);
-    contar();
-    window.addEventListener(EVENTO_SINCRONIZADO, alSincronizar);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener(EVENTO_SINCRONIZADO, alSincronizar);
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
-  }, [fetchTickets]);
+  const { enDispositivo, enLinea } = useSinConexion('ticket', fetchTickets);
   useEffect(() => { setPage(1); setSelected(null); setSelDetail(null); }, [tab, search]);
 
   const openCreateModal = async (mode: 'create' | 'request') => {
@@ -417,7 +396,7 @@ export default function TicketsPage() {
           </div>
 
           {tab === 'offline' ? (
-            <TicketsSinConexion enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />
+            <ListaSinConexion tipo="ticket" enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />
           ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
