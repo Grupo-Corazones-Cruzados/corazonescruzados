@@ -4006,6 +4006,8 @@ mientras se escribe.
   panel» como Soporte (sin X en escritorio, modal solo en teléfono, `tarjetaMovil`); la página pública
   `/enlace/<token>` usa el marco del portal de incidentes (`corp page-dark` + `PublicHeader`, tarjeta
   `max-w-2xl`). Estados: Vigente `info`, Usado `success`, Cerrado `default`, Vencido `warning`.
+  Pie del panel: «Eliminar» (`BTN_DANGER`) a la izquierda en todo estado; «Cerrar» y «Copiar enlace»
+  a la derecha solo si está vigente. Ambas acciones confirman con `PixelConfirm`.
   ⚠️ En una tabla `singleLine` las columnas de ancho fijo no deben llenar el ancho: la columna libre
   (Título) se quedaba en 0 px y desaparecía. Con panel de 360 px caben ~380 px de columnas fijas.
 - **2026-10-16 · Raíl derecho Propiedades/Incidentes plegado** · **ADOPTADO** (Fernando: «su uso es

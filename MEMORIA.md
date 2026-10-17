@@ -7349,6 +7349,9 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     bajan por `/api/enlaces/<id>/archivos/<fileId>` con permiso. Tope de 40 sesiones de subida por
     enlace; lo subido y no enviado va a la papelera al enviar.
   - `/enlace` se añadió a `DESTINOS_PERMITIDOS` (`lib/sitio/acceso.ts`) para volver tras iniciar sesión.
+  - **Eliminar (Fernando, 2026-10-16):** cualquier enlace, en cualquier estado, desde su panel
+    (`BTN_DANGER` + `PixelConfirm`). Borra la fila (el token deja de abrir) y manda su carpeta de Drive
+    a la **papelera** (30 días para recuperarla), no la borra. Solo quien lo creó o el admin.
   - Probado de punta a punta el 2026-10-16 (21 comprobaciones; las filas y carpetas de prueba se borraron).
 - **Transcripción de audio: TOPE DURO de ~300 s por petición (Railway/Cloudflare) (2026-07-24).**
   `/api/tools/transcribe` (Whisper) trocea el audio en segmentos de 10 min, los transcribe y une en un `.txt`.

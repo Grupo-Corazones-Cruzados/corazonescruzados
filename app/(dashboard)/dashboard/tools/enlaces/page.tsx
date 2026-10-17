@@ -10,9 +10,9 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
-import { Link2, CircleDot, CheckCircle2, Lock, Clock, Search, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
+import { Trash2, Link2, CircleDot, CheckCircle2, Lock, Clock, Search, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -56,8 +56,8 @@ export default function EnlacesPage() {
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [selId, setSelId] = useState<number | null>(null);
-  const [cerrando, setCerrando] = useState(false);
-  const [confirmar, setConfirmar] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [confirmar, setConfirmar] = useState<'cerrar' | 'eliminar' | null>(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -89,18 +89,20 @@ export default function EnlacesPage() {
 
   const copiar = (url: string) => { navigator.clipboard.writeText(url); toast.success('Enlace copiado'); };
 
-  const cerrar = async () => {
-    if (!sel) return;
-    setCerrando(true);
+  const ejecutar = async () => {
+    if (!sel || !confirmar) return;
+    const eliminar = confirmar === 'eliminar';
+    setOcupado(true);
     try {
-      const r = await fetch(`/api/enlaces/${sel.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'cerrar' }),
-      });
+      const r = await fetch(`/api/enlaces/${sel.id}`, eliminar
+        ? { method: 'DELETE' }
+        : { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'cerrar' }) });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'No se pudo cerrar');
-      toast.success('Enlace cerrado');
+      if (!r.ok) throw new Error(d.error || (eliminar ? 'No se pudo eliminar' : 'No se pudo cerrar'));
+      toast.success(eliminar ? 'Enlace eliminado' : 'Enlace cerrado');
+      if (eliminar) setSelId(null);
     } catch (e: any) { toast.error(e.message); }
-    finally { setCerrando(false); setConfirmar(false); cargar(); }
+    finally { setOcupado(false); setConfirmar(null); cargar(); }
   };
 
   const fila = (k: string, v: React.ReactNode) => (
@@ -153,12 +155,15 @@ export default function EnlacesPage() {
         </div>
       )}
 
-      {sel.estado === 'vigente' && (
-        <div className="pt-3 border-t border-digi-border flex gap-2">
-          <button onClick={() => setConfirmar(true)} disabled={cerrando} className={`${BTN_SECONDARY} flex-1`}><Lock className="w-4 h-4" /> Cerrar enlace</button>
-          <button onClick={() => copiar(sel.url)} className={`${BTN_PRIMARY} flex-1`}><Copy className="w-4 h-4" /> Copiar enlace</button>
-        </div>
-      )}
+      <div className="pt-3 border-t border-digi-border flex flex-wrap gap-2">
+        <button onClick={() => setConfirmar('eliminar')} disabled={ocupado} className={BTN_DANGER}><Trash2 className="w-4 h-4" /> Eliminar</button>
+        {sel.estado === 'vigente' && (
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => setConfirmar('cerrar')} disabled={ocupado} className={BTN_SECONDARY}><Lock className="w-4 h-4" /> Cerrar</button>
+            <button onClick={() => copiar(sel.url)} className={BTN_PRIMARY}><Copy className="w-4 h-4" /> Copiar enlace</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -247,13 +252,15 @@ export default function EnlacesPage() {
       )}
 
       <PixelConfirm
-        open={confirmar}
-        title="Cerrar enlace"
-        message="Quien tenga el enlace ya no podrá responder. No se puede volver a abrir."
-        confirmLabel={cerrando ? 'Cerrando…' : 'Cerrar enlace'}
+        open={!!confirmar}
+        title={confirmar === 'eliminar' ? 'Eliminar enlace' : 'Cerrar enlace'}
+        message={confirmar === 'eliminar'
+          ? 'Se borra el enlace con su respuesta, y sus archivos van a la papelera de Drive (30 días para recuperarlos). El enlace dejará de abrir.'
+          : 'Quien tenga el enlace ya no podrá responder. No se puede volver a abrir.'}
+        confirmLabel={ocupado ? (confirmar === 'eliminar' ? 'Eliminando…' : 'Cerrando…') : (confirmar === 'eliminar' ? 'Eliminar' : 'Cerrar enlace')}
         danger
-        onConfirm={cerrar}
-        onCancel={() => setConfirmar(false)}
+        onConfirm={ejecutar}
+        onCancel={() => setConfirmar(null)}
       />
     </div>
   );
