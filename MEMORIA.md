@@ -358,7 +358,7 @@ Stack estándar de la casa, con particularidades de este repo:
   cierra solo). Entrando tarde sale solo el último umbral alcanzado (y «Ya empezó» hasta 5 min
   después). No avisa de días completos, bloques de disponibilidad, propuestas ni cancelados, ni al
   suplantar. Lo ya avisado se guarda en `localStorage` (no se repite al recargar). Con la pestaña
-  oculta y permiso, también notificación del sistema; el permiso se pide en el primer clic.
+  oculta y permiso, también notificación del sistema (el permiso lo pide el botón «Activar avisos»).
   **Reglas compartidas** con el push en `lib/calendar/avisos.ts`.
 - **📱 Push al móvil de esos avisos (Fernando, 2026-10-19).** Botón «Activar avisos» en Mi día
   (`components/calendar/BotonAvisosPush.tsx`), por dispositivo; suscripciones en
