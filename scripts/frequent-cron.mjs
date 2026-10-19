@@ -41,6 +41,8 @@ const FREQUENT_JOBS = [
   // Avisos al cliente y a quien ofreció la suscripción (teléfono + campanita). Cada uno sale
   // una vez (`subscription_alerts`) y solo de 8:00 a 20:00 de Ecuador (2026-10-07).
   { name: 'Suscripciones · avisos por vencer',   path: '/api/subscriptions/cron/avisos' },
+  // Respaldo: el servidor web ya lo corre cada minuto (instrumentation.ts). Idempotente (2026-10-19).
+  { name: 'Mi día · push de reuniones',        path: '/api/calendar/cron/avisos' },
 ];
 
 const NIGHTLY_JOBS = [

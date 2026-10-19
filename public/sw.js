@@ -22,7 +22,7 @@
  * el viejo).
  */
 
-const CACHE = 'gcc-shell-v6';
+const CACHE = 'gcc-shell-v7';
 const OFFLINE = '/offline';
 const BORRADORES = '/sin-conexion';
 
@@ -91,4 +91,37 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.startsWith('/_next/static/')) {
     e.respondWith(caches.match(req).then((r) => r || fetch(req)));
   }
+});
+
+/*
+ * 3. PUSH (2026-10-19): avisos de las reuniones de Mi día (1 h, 30, 15 y 5 min antes) aunque el
+ *    panel esté cerrado. Los manda el servidor (`lib/calendar/avisos-push.ts`) con
+ *    `{ titulo, cuerpo, url, etiqueta, insistir }`. Al tocarla se abre `url`: el Meet si la
+ *    reunión lo tiene, si no Mi día (reutilizando una pestaña del panel si ya hay una).
+ */
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { titulo: e.data ? e.data.text() : 'GCC World' }; }
+  e.waitUntil(self.registration.showNotification(d.titulo || 'GCC World', {
+    body: d.cuerpo || '',
+    icon: '/icono-192.png',
+    badge: '/icono-192.png',
+    tag: d.etiqueta || undefined,
+    renotify: !!d.etiqueta,
+    requireInteraction: !!d.insistir,
+    data: { url: d.url || '/dashboard/mi-dia' },
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const destino = new URL((e.notification.data && e.notification.data.url) || '/dashboard/mi-dia', self.location.origin);
+  e.waitUntil((async () => {
+    if (destino.origin === self.location.origin) {
+      const abiertas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const panel = abiertas.find((c) => new URL(c.url).origin === self.location.origin);
+      if (panel) { await panel.focus(); return panel.navigate(destino.href).catch(() => {}); }
+    }
+    return self.clients.openWindow(destino.href);
+  })());
 });

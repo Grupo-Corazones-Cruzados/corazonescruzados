@@ -359,7 +359,17 @@ Stack estándar de la casa, con particularidades de este repo:
   después). No avisa de días completos, bloques de disponibilidad, propuestas ni cancelados, ni al
   suplantar. Lo ya avisado se guarda en `localStorage` (no se repite al recargar). Con la pestaña
   oculta y permiso, también notificación del sistema; el permiso se pide en el primer clic.
-  Solo funciona con el panel abierto en alguna pestaña (no hay push).
+  **Reglas compartidas** con el push en `lib/calendar/avisos.ts`.
+- **📱 Push al móvil de esos avisos (Fernando, 2026-10-19).** Botón «Activar avisos» en Mi día
+  (`components/calendar/BotonAvisosPush.tsx`), por dispositivo; suscripciones en
+  `push_suscripciones` (`lib/push`, `web-push`, claves `VAPID_*` en `.env.local` y en Railway
+  `corazonescruzados`); `public/sw.js` muestra la notificación y al tocarla abre el Meet o Mi día.
+  Lo envía el propio servidor web **cada minuto** (`instrumentation-node.ts`; el cron de 10 min es
+  respaldo, `/api/calendar/cron/avisos`), reclamando cada aviso con INSERT en `avisos_reunion`
+  (no repite con réplicas ni despliegues). ⚠️ `expandEvents` usa la hora local del proceso y
+  Railway es UTC: el servidor expande con `expandirEnZona` (corre el reloj a la zona del evento).
+  ⚠️ `instrumentation.ts` se compila también para edge: lo de Node va en `instrumentation-node.ts`.
+  En iPhone solo con la app instalada en la pantalla de inicio (iOS 16.4+).
 - **⏱️ Mi día ▸ estado «Trabajando» con lista de tareas (Fernando, 2026-10-01).** Quinto estado
   de disponibilidad (`lib/calendar/availability.ts`, naranja `#f97316`): abre un bloque en el
   calendario como «Ocupado» (en el público sale como «Ocupado», igual que todos). Al elegirlo se

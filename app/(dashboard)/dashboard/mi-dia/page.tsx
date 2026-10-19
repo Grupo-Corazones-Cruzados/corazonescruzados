@@ -12,6 +12,7 @@ import EventModal, { type EventFormPayload, type ClientOption, type TaskOption }
 import ShareDialog from '@/components/calendar/ShareDialog';
 import ProposalsPanel from '@/components/calendar/ProposalsPanel';
 import WorkTasksWindow from '@/components/calendar/WorkTasks';
+import BotonAvisosPush from '@/components/calendar/BotonAvisosPush';
 import TaskStatusButtons from '@/components/centralized/TaskStatusButtons';
 import {
   type CalendarEvent, type EventInstance, type EventType,
@@ -461,6 +462,7 @@ export default function MiDiaPage() {
               {availability === 'trabajando' && (
                 <button onClick={() => setWorkOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><ListChecks className="w-4 h-4" /> Tareas</button>
               )}
+              <BotonAvisosPush className="h-11 md:h-auto shrink-0" />
               <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><Share2 className="w-4 h-4" /> Compartir</button>
             </div>
           </div>
