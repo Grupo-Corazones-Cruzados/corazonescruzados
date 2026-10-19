@@ -27,7 +27,8 @@ async function registro(): Promise<ServiceWorkerRegistration> {
  * ⇒ «AVISOS» DE MI DÍA (Fernando, 2026-10-19): activa en ESTE dispositivo el push de las
  * reuniones (1 h, 30, 15 y 5 min antes) aunque el panel esté cerrado. Cada teléfono u ordenador
  * se activa por separado. En iPhone el push solo existe con la app instalada en la pantalla de
- * inicio; sin instalar, el botón explica cómo.
+ * inicio; sin instalar, el botón explica cómo. En la app nativa (Capacitor) no sale: allí los
+ * avisos llegan solos por el push de la app.
  */
 export default function BotonAvisosPush({ className = '' }: { className?: string }) {
   const [estado, setEstado] = useState<Estado>('cargando');
@@ -35,6 +36,8 @@ export default function BotonAvisosPush({ className = '' }: { className?: string
 
   useEffect(() => {
     (async () => {
+      // En la app nativa los avisos llegan por su push propio (`lib/push/avisos.ts`), sin activar nada.
+      if ((window as any).Capacitor?.isNativePlatform?.()) { setEstado('sin-soporte'); return; }
       if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') {
         setEstado(esIos() && !instalada() ? 'instalar' : 'sin-soporte');
         return;

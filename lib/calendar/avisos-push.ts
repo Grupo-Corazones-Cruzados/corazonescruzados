@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import type { CalendarEvent } from '@/lib/calendar/recurrence';
 import { avisosPendientes, claveAviso, textoAviso, UMBRALES } from '@/lib/calendar/avisos';
 import { asegurarTablaPush, enviarPush } from '@/lib/push';
+import { avisarUsuarios } from '@/lib/push/avisos';
 
 /**
  * ⇒ PUSH DE LAS REUNIONES DE MI DÍA (Fernando, 2026-10-19): 1 h, 30, 15 y 5 min antes, al
@@ -13,7 +14,8 @@ import { asegurarTablaPush, enviarPush } from '@/lib/push';
  * el cron a la vez nunca mandan el mismo aviso dos veces. Si se pierde un minuto (despliegue),
  * sale en el siguiente; pasado el umbral siguiente, sale ese y no el viejo.
  *
- * Solo mira a quien tiene algún dispositivo suscrito: sin suscripción no hay a quién mandar.
+ * Va a los dos canales: push web (navegador / PWA, `push_suscripciones`) y la app nativa
+ * (`push_devices`, por `avisarUsuarios`). Solo mira a quien tiene alguno: si no, no hay a quién mandar.
  */
 
 let asegurando: Promise<void> | null = null;
@@ -50,7 +52,8 @@ export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados:
          JOIN gcc_world.users u ON u.member_id = e.member_id
          LEFT JOIN gcc_world.clients c ON c.id = e.client_id
         WHERE e.status = 'confirmed' AND NOT e.all_day AND e.availability_status IS NULL
-          AND EXISTS (SELECT 1 FROM gcc_world.push_suscripciones s WHERE s.user_id = u.id)
+          AND (EXISTS (SELECT 1 FROM gcc_world.push_suscripciones s WHERE s.user_id = u.id)
+               OR EXISTS (SELECT 1 FROM gcc_world.push_devices d WHERE d.user_id = u.id AND d.kind IN ('fcm', 'apns')))
           AND (
             (e.recurrence_type = 'none' AND e.start_at BETWEEN $1::timestamptz - INTERVAL '6 minutes'
                                                           AND $1::timestamptz + INTERVAL '61 minutes')
@@ -88,6 +91,9 @@ export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados:
           etiqueta: `reunion-${a.ev.id}-${a.inicio}`,
           insistir: a.umbral <= 5,
         });
+        // La app nativa (Android/iPhone) no tiene push web: va por su canal de siempre, el de los
+        // recordatorios. Abre Mi día: el aviso nativo solo sabe abrir rutas de la plataforma.
+        await avisarUsuarios([userId], { titulo, cuerpo: detalle, ruta: '/dashboard/mi-dia', hilo: 'reuniones' });
         enviados++;
       }
     }
