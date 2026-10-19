@@ -371,6 +371,13 @@ Stack estándar de la casa, con particularidades de este repo:
   ⚠️ `instrumentation.ts` se compila también para edge: lo de Node va en `instrumentation-node.ts`.
   En iPhone (navegador) solo con la PWA instalada (iOS 16.4+). **En la app nativa no hay push web**: el
   trabajo manda también por `avisarUsuarios` (`push_devices`, APNs/FCM, abre Mi día) y el botón no sale.
+- **📅 Mi día ▸ enlace iCal para otras apps (Fernando, 2026-10-19).** Portarretrato digital, Google
+  Calendar (→ Alexa), Apple, Outlook. En «Compartir» de Mi día, sección «Conectar con otras apps»:
+  `/api/calendario/ical/<token>.ics` (`lib/calendar/ical.ts`, token en `members.calendar_feed_token`,
+  gestión en `/api/members/calendar/feed-link`). Es SECRETO y aparte del enlace público (aquel es
+  libre/ocupado para clientes; este lleva títulos). Horas con `TZID` de la zona del evento (en UTC el
+  `BYDAY` cambiaría de día); solo confirmados, sin bloques de disponibilidad; lo no repetido desde
+  hace 90 días. Comprobado: 63/63 instancias iguales a las de Mi día con un lector iCal estándar.
 - **⏱️ Mi día ▸ estado «Trabajando» con lista de tareas (Fernando, 2026-10-01).** Quinto estado
   de disponibilidad (`lib/calendar/availability.ts`, naranja `#f97316`): abre un bloque en el
   calendario como «Ocupado» (en el público sale como «Ocupado», igual que todos). Al elegirlo se
