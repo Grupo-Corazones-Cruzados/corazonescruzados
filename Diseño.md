@@ -4014,6 +4014,11 @@ mientras se escribe.
   a la derecha solo si está vigente. Ambas acciones confirman con `PixelConfirm`.
   ⚠️ En una tabla `singleLine` las columnas de ancho fijo no deben llenar el ancho: la columna libre
   (Título) se quedaba en 0 px y desaparecía. Con panel de 360 px caben ~380 px de columnas fijas.
+- **2026-10-19 · Entrega de un solo uso (Herramientas → Gestión)** · **ADOPTADO**, misma forma que el
+  enlace: `PanelCompartirEnlace` + `children`, página «rail + lista + panel» y portal `corp page-dark`.
+  Estados: Vigente `info`, Abierta `success`, Cerrada `default`, Vencida `warning`. La lista de archivos
+  con progreso es UNA definición, `components/ui/SubidaArchivos.tsx` (`ListaSubidas`), que usan el
+  portal del enlace y el panel de la entrega.
 - **2026-10-16 · Raíl derecho Propiedades/Incidentes plegado** · **ADOPTADO** (Fernando: «su uso es
   para eso», consultar): `components/ui/RailDesplegable.tsx`, en el detalle del ticket (desde `xl`) y
   del proyecto (desde `lg`). Plegado deja un indicador vertical de `w-5` en el borde derecho

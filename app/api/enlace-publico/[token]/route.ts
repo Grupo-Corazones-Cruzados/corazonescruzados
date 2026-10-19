@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { aPapelera, carpeta } from '@/lib/media/drive';
-import { authDrive } from '@/lib/integrations/google-workspace';
-import { acceso, MAX_ARCHIVOS, MAX_TEXTO, porToken, rutaDe, verificarArchivos } from '@/lib/enlaces';
+import { acceso, limpiarCarpeta, MAX_ARCHIVOS, MAX_TEXTO, porToken, rutaDe, verificarArchivos } from '@/lib/enlaces';
 
 export const runtime = 'nodejs';
 
@@ -37,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (!texto && ids.length === 0) return NextResponse.json({ error: 'Escribe algo o adjunta un archivo' }, { status: 400 });
 
   let archivos;
-  try { archivos = await verificarArchivos(e, ids); }
+  try { archivos = await verificarArchivos(rutaDe(e), ids); }
   catch (err: any) { return NextResponse.json({ error: err.message }, { status: 400 }); }
 
   // `AND estado = 'vigente' AND vence_en > NOW()`: dos envíos a la vez, solo uno entra.
@@ -50,15 +48,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (!r.rowCount) return NextResponse.json({ error: 'Este enlace ya no admite respuestas', motivo: 'usado' }, { status: 409 });
 
   // Lo que se subió y no se envió (quitado antes de enviar) va a la papelera de Drive.
-  limpiarSobrantes(e, new Set(archivos.map((x) => x.id))).catch((err) => console.error('[enlaces] limpieza', err?.message));
+  limpiarCarpeta(rutaDe(e), new Set(archivos.map((x) => x.id))).catch((err) => console.error('[enlaces] limpieza', err?.message));
   return NextResponse.json({ data: { ok: true } });
-}
-
-async function limpiarSobrantes(e: { id: number; titulo: string }, quedan: Set<string>) {
-  const padre = await carpeta(rutaDe(e));
-  const { token } = await authDrive().getAccessToken();
-  const q = encodeURIComponent(`'${padre}' in parents and trashed = false`);
-  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=100`, { headers: { Authorization: `Bearer ${token}` } });
-  const { files = [] } = await r.json();
-  for (const f of files as { id: string }[]) if (!quedan.has(f.id)) await aPapelera(f.id);
 }

@@ -576,6 +576,22 @@ export async function sendEnlaceUnicoEmail(params: {
   return deliver({ to: params.email, subject: params.titulo, html });
 }
 
+/** Entrega de un solo uso: el enlace para ver y descargar lo que le mandan (ver `lib/entregas`). */
+export async function sendEntregaUnicaEmail(params: {
+  email: string; titulo: string; url: string; remitente?: string; exigeCuenta: boolean;
+}) {
+  const html = emailShell(
+    emailBadge('ENTREGA', CORP.accent) +
+    emailHeading(escapeHtml(params.titulo), params.remitente ? `Te lo envía ${escapeHtml(params.remitente)}` : 'GCC World') +
+    emailParagraph(params.exigeCuenta
+      ? `Abre el enlace e ${accentStrong('inicia sesión con tu cuenta de GCC World')} para verlo y descargarlo.`
+      : 'Abre el enlace para verlo y descargarlo.') +
+    emailButton(params.url, 'Ver la entrega') +
+    emailNote('El enlace sirve una sola vez: al pulsar «Ver y descargar» tienes una hora para bajar los archivos y después se cierra.'),
+  );
+  return deliver({ to: params.email, subject: params.titulo, html });
+}
+
 /** Avisa al responsable (miembro) que el cliente aceptó o rechazó la cotización. */
 export async function sendQuoteDecisionToResponsible(params: {
   email: string; name?: string; projectTitle: string; action: 'accepted' | 'rejected'; clientEmail?: string; url: string;

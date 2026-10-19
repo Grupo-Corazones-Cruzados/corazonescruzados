@@ -7401,6 +7401,23 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     (`BTN_DANGER` + `PixelConfirm`). Borra la fila (el token deja de abrir) y manda su carpeta de Drive
     a la **papelera** (30 días para recuperarla), no la borra. Solo quien lo creó o el admin.
   - Probado de punta a punta el 2026-10-16 (21 comprobaciones; las filas y carpetas de prueba se borraron).
+- **Herramientas → Gestión → «Entrega de un solo uso» (Fernando, 2026-10-19).** La otra cara del enlace:
+  el MIEMBRO manda un mensaje y hasta 10 archivos de 100 MB, y quien recibe los ve y descarga UNA vez.
+  Fernando: «tiene que funcionar igual» que el enlace y «todo separado» (herramienta, tabla y página
+  propias: `/dashboard/tools/entregas`, `/entrega/<token>`, tabla `gcc_world.entregas_unicas`,
+  `lib/entregas`). Reutiliza vigencia, cuenta del cliente, quién lo ve, cerrar y eliminar.
+  - **Se gasta con «Ver y descargar», no al abrir** (como «Enviar» en el enlace): sin gastar solo se ve
+    el título y cuántos archivos hay. Gastada, ESE navegador tiene **1 hora** (`VENTANA_MIN`; cookie
+    httpOnly con un secreto, su hash en `sesion_hash`) para bajar todo y repetir una descarga cortada;
+    cualquier otro ve «ya se abrió». Cada descarga queda en `descargas` (el panel dice cuántas veces).
+  - Los archivos se suben al elegirlos, a un **borrador** (`preparando`) que nace con el primero;
+    cerrar el panel sin generar lo borra (carpeta a la papelera) y `GET /api/entregas` purga los de
+    más de un día. Carpeta `Entregas de un solo uso / <id>` (por id: el título llega al final).
+  - **Piezas compartidas con el enlace:** `components/ui/SubidaArchivos.tsx` (`useSubidaArchivos` +
+    `ListaSubidas`, extraídos de `EnlacePortal`), `abrirSubida`/`verificarArchivos`/`limpiarCarpeta`
+    con `ruta` (`lib/enlaces`), `descargaDeDrive` (`lib/media/descarga-privada.ts`).
+  - Probado de punta a punta el 2026-10-19 (21 comprobaciones + regresión del enlace; filas y
+    carpetas de prueba borradas).
 - **Transcripción de audio: TOPE DURO de ~300 s por petición (Railway/Cloudflare) (2026-07-24).**
   `/api/tools/transcribe` (Whisper) trocea el audio en segmentos de 10 min, los transcribe y une en un `.txt`.
   Con un audio de **~1.5 h** (10 segmentos) empezó a fallar con **HTTP 499 a los ~300 s exactos** → **502** en

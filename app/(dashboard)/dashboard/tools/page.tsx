@@ -13,9 +13,10 @@ import Interruptor from '@/components/ui/Interruptor';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
+import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
   Repeat2, Captions, Search, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
-  Briefcase, Link2, Plus, Table2,
+  Briefcase, Link2, Plus, Table2, PackageOpen,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -43,6 +44,7 @@ const TOOLS: Tool[] = [
   { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
   { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
+  { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
 ];
 
 const CONVERSIONS: Record<string, string[]> = {
@@ -88,6 +90,55 @@ export default function ToolsPage() {
     setEnlaceOpen(true);
   };
   const clienteElegido = clientesConCuenta?.find((c) => String(c.id) === enlaceCliente);
+
+  // Entrega de un solo uso (Fernando, 2026-10-19): misma forma que el enlace, pero los archivos
+  // los sube el miembro. Se suben al elegirlos, a un BORRADOR que nace con el primero; si el
+  // panel se cierra sin generar, el borrador se descarta. Ver `lib/entregas`.
+  const [entregaOpen, setEntregaOpen] = useState(false);
+  const [entregaTitulo, setEntregaTitulo] = useState('');
+  const [entregaMensaje, setEntregaMensaje] = useState('');
+  const [entregaExigeCuenta, setEntregaExigeCuenta] = useState(false);
+  const [entregaCliente, setEntregaCliente] = useState('');
+  const entregaId = useRef<Promise<number> | null>(null);
+  const entregaPublicada = useRef(false);
+  const borradorEntrega = () => {
+    if (!entregaId.current) {
+      entregaId.current = fetch('/api/entregas', { method: 'POST' }).then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) { entregaId.current = null; throw new Error(d.error || 'No se pudo preparar la entrega'); }
+        return d.data.id as number;
+      });
+    }
+    return entregaId.current;
+  };
+  const subidaEntrega = useSubidaArchivos(async (archivo) => {
+    const id = await borradorEntrega();
+    const r = await fetch(`/api/entregas/${id}/subida`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: archivo.name, tipo: archivo.type, tamano: archivo.size }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+    return d.data.url;
+  });
+  useEffect(() => {
+    if (!entregaOpen || clientesConCuenta) return;
+    fetch('/api/enlaces/clientes').then((r) => r.json()).then((d) => setClientesConCuenta(d.data || [])).catch(() => setClientesConCuenta([]));
+  }, [entregaOpen, clientesConCuenta]);
+  const abrirEntrega = () => {
+    setEntregaTitulo(''); setEntregaMensaje(''); setEntregaExigeCuenta(false); setEntregaCliente('');
+    subidaEntrega.setItems([]);
+    entregaId.current = null; entregaPublicada.current = false;
+    setEntregaOpen(true);
+  };
+  const cerrarEntrega = () => {
+    if (subidaEntrega.subiendo) { toast.error('Espera a que terminen de subir los archivos'); return; }
+    setEntregaOpen(false);
+    // Sin generar: el borrador y sus archivos sobran (van a la papelera de Drive).
+    const p = entregaId.current;
+    if (p && !entregaPublicada.current) p.then((id) => fetch(`/api/entregas/${id}`, { method: 'DELETE' })).catch(() => {});
+  };
+  const clienteEntrega = clientesConCuenta?.find((c) => String(c.id) === entregaCliente);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: TOOLS.length };
@@ -237,7 +288,7 @@ export default function ToolsPage() {
             <p className="text-[11px] text-digi-muted" style={mf}>{CATEGORY_LABEL[tool.category]}</p>
           </div>
         </div>
-        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : renderEnlace()}</div>
+        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : renderEnlace()}</div>
       </div>
     );
   };
@@ -342,6 +393,14 @@ export default function ToolsPage() {
     </div>
   );
 
+  const renderEntrega = () => (
+    <div className="space-y-3">
+      <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
+      <button onClick={abrirEntrega} className={`${BTN_PRIMARY} w-full`}><Plus className="w-4 h-4" /> Generar entrega</button>
+      <Link href="/dashboard/tools/entregas" className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Ver entregas generadas</Link>
+    </div>
+  );
+
   return (
     <div>
       <PageHeader title="Herramientas" description="Utilidades de uso interno" />
@@ -437,6 +496,56 @@ export default function ToolsPage() {
         </div>
         {enlaceExigeCuenta && (
           <PixelSelect label="Cliente" value={enlaceCliente} onChange={(e) => setEnlaceCliente(e.target.value)}
+            placeholder={clientesConCuenta === null ? 'Cargando…' : clientesConCuenta.length ? 'Elige el cliente' : 'Ningún cliente tiene cuenta'}
+            options={(clientesConCuenta || []).map((c) => ({ value: String(c.id), label: `${c.nombre} · ${c.email}` }))} />
+        )}
+      </PanelCompartirEnlace>
+
+      <PanelCompartirEnlace
+        open={entregaOpen} onClose={cerrarEntrega}
+        title="Generar entrega de un solo uso"
+        intro={<>Quien abra el enlace podrá ver el mensaje y <strong>descargar los archivos una sola vez</strong>: al pulsar «Ver y descargar» tiene una hora en ese navegador y después se cierra.</>}
+        duraciones={VIGENCIAS} duracionInicial={168}
+        correoInicial={clienteEntrega?.email || ''}
+        etiquetaCorreo="Correo de quien recibe (para enviarlo)"
+        aviso={entregaExigeCuenta
+          ? <>Solo podrá abrirla quien inicie sesión con la cuenta de <strong>{clienteEntrega?.nombre}</strong>.</>
+          : 'Cualquiera con este enlace puede abrirla una vez.'}
+        puedeGenerar={!!entregaTitulo.trim() && !subidaEntrega.subiendo
+          && (!!entregaMensaje.trim() || subidaEntrega.listos.length > 0)
+          && (!entregaExigeCuenta || !!entregaCliente)}
+        generar={async ({ horas, email, enviar }) => {
+          const id = await borradorEntrega();
+          const r = await fetch(`/api/entregas/${id}/publicar`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              titulo: entregaTitulo, mensaje: entregaMensaje, horas, email: enviar ? email : undefined,
+              exige_cuenta: entregaExigeCuenta, client_id: entregaExigeCuenta ? Number(entregaCliente) : null,
+              archivos: subidaEntrega.listos.map((x) => x.fileId),
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'Error');
+          entregaPublicada.current = true;
+          if (enviar && !d.data.enviado) return { url: d.data.url, mensaje: 'Entrega generada, pero el correo no salió: cópialo y envíalo tú', ok: false };
+          return { url: d.data.url, mensaje: enviar ? 'Entrega enviada por correo' : 'Entrega generada' };
+        }}
+      >
+        <EditField label="Título">
+          <input value={entregaTitulo} onChange={(e) => setEntregaTitulo(e.target.value)} maxLength={200}
+            placeholder="Ej.: Accesos del sistema" className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <EditField label="Mensaje para quien recibe">
+          <AutoGrowTextarea value={entregaMensaje} onChange={(e) => setEntregaMensaje(e.target.value)} minRows={3} maxLength={20000}
+            placeholder="La información que le compartes" className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <ListaSubidas items={subidaEntrega.items} agregar={subidaEntrega.agregar} quitar={subidaEntrega.quitar} />
+        <div className="flex items-center justify-between gap-3 py-1">
+          <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>Pedir la cuenta del cliente</span>
+          <Interruptor activo={entregaExigeCuenta} onChange={setEntregaExigeCuenta} etiqueta="Pedir la cuenta del cliente" />
+        </div>
+        {entregaExigeCuenta && (
+          <PixelSelect label="Cliente" value={entregaCliente} onChange={(e) => setEntregaCliente(e.target.value)}
             placeholder={clientesConCuenta === null ? 'Cargando…' : clientesConCuenta.length ? 'Elige el cliente' : 'Ningún cliente tiene cuenta'}
             options={(clientesConCuenta || []).map((c) => ({ value: String(c.id), label: `${c.nombre} · ${c.email}` }))} />
         )}

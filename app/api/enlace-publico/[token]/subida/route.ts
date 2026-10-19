@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { abrirSubida, acceso, MAX_BYTES, MAX_SUBIDAS, porToken } from '@/lib/enlaces';
+import { abrirSubida, acceso, MAX_BYTES, MAX_SUBIDAS, porToken, rutaDe } from '@/lib/enlaces';
 
 export const runtime = 'nodejs';
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
   const origin = req.headers.get('origin') || req.nextUrl.origin;
   try {
-    const url = await abrirSubida({ enlace: e, nombre, mime, tamano, origin });
+    const url = await abrirSubida({ ruta: rutaDe(e), nombre, mime, tamano, origin });
     return NextResponse.json({ data: { url } });
   } catch (err: any) {
     console.error('[enlaces] subida', err?.message);

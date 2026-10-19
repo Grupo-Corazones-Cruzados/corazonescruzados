@@ -1,22 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 import PublicHeader from '@/components/public/PublicHeader';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
-import BotonQuitar from '@/components/ui/BotonQuitar';
+import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { CheckCircle2, FileUp, Link2Off, LogIn, Paperclip } from 'lucide-react';
-import { fmt2 } from '@/lib/format';
+import { CheckCircle2, Link2Off, LogIn } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-const MAX_ARCHIVOS = 10;
-const MAX_BYTES = 100 * 1024 * 1024;
-
 type Datos = { motivo: string | null; titulo?: string; indicaciones?: string; sesion: string | null };
-type Item = { clave: string; archivo: File; progreso: number; fileId?: string; error?: string };
 
 const MOTIVOS: Record<string, { titulo: string; texto: string }> = {
   no_existe: { titulo: 'Enlace no disponible', texto: 'Este enlace no existe. Revisa que lo hayas copiado completo.' },
@@ -25,32 +20,20 @@ const MOTIVOS: Record<string, { titulo: string; texto: string }> = {
   vencido: { titulo: 'Este enlace venció', texto: 'Pasó su fecha de vigencia. Pídele uno nuevo a quien te lo envió.' },
 };
 
-const mb = (b: number) => `${fmt2(b / 1024 / 1024)} MB`;
-
-/** Sube un archivo a la URL de sesión de Drive, con progreso. Devuelve el id del archivo. */
-function subir(url: string, archivo: File, onProgreso: (p: number) => void): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', url);
-    xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) onProgreso(Math.round((ev.loaded / ev.total) * 100)); };
-    xhr.onload = () => {
-      try {
-        if (xhr.status >= 200 && xhr.status < 300) return resolve(JSON.parse(xhr.responseText).id);
-      } catch { /* respuesta rara: cae al rechazo */ }
-      reject(new Error('No se pudo subir'));
-    };
-    xhr.onerror = () => reject(new Error('Se cortó la conexión'));
-    xhr.send(archivo);
-  });
-}
-
 export default function EnlacePortal({ token }: { token: string }) {
   const [datos, setDatos] = useState<Datos | null>(null);
   const [texto, setTexto] = useState('');
-  const [items, setItems] = useState<Item[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
+  const { items, agregar, quitar, subiendo, listos } = useSubidaArchivos(async (archivo) => {
+    const r = await fetch(`/api/enlace-publico/${encodeURIComponent(token)}/subida`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: archivo.name, tipo: archivo.type, tamano: archivo.size }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir');
+    return d.data.url;
+  });
 
   const cargar = useCallback(async () => {
     try {
@@ -61,37 +44,6 @@ export default function EnlacePortal({ token }: { token: string }) {
   }, [token]);
   useEffect(() => { cargar(); }, [cargar]);
 
-  const cambiar = (clave: string, c: Partial<Item>) => setItems((p) => p.map((x) => (x.clave === clave ? { ...x, ...c } : x)));
-
-  const agregar = async (lista: FileList | null) => {
-    if (!lista) return;
-    const libres = MAX_ARCHIVOS - items.length;
-    const elegidos = Array.from(lista);
-    if (elegidos.length > libres) toast.error(`Máximo ${MAX_ARCHIVOS} archivos`);
-    const nuevos: Item[] = [];
-    for (const archivo of elegidos.slice(0, Math.max(0, libres))) {
-      if (archivo.size > MAX_BYTES) { toast.error(`«${archivo.name}» pasa de 100 MB`); continue; }
-      if (archivo.size === 0) { toast.error(`«${archivo.name}» está vacío`); continue; }
-      nuevos.push({ clave: `${Date.now()}-${Math.random()}`, archivo, progreso: 0 });
-    }
-    setItems((p) => [...p, ...nuevos]);
-    // De uno en uno: diez de 100 MB a la vez saturarían la conexión del cliente.
-    for (const it of nuevos) {
-      try {
-        const r = await fetch(`/api/enlace-publico/${encodeURIComponent(token)}/subida`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nombre: it.archivo.name, tipo: it.archivo.type, tamano: it.archivo.size }),
-        });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'No se pudo subir');
-        const fileId = await subir(d.data.url, it.archivo, (p) => cambiar(it.clave, { progreso: p }));
-        cambiar(it.clave, { fileId, progreso: 100 });
-      } catch (e: any) { cambiar(it.clave, { error: e.message || 'No se pudo subir' }); }
-    }
-  };
-
-  const subiendo = items.some((x) => !x.fileId && !x.error);
-  const listos = items.filter((x) => x.fileId);
   const puedeEnviar = !enviando && !subiendo && (texto.trim().length > 0 || listos.length > 0);
 
   const enviar = async () => {
@@ -157,40 +109,7 @@ export default function EnlacePortal({ token }: { token: string }) {
             placeholder="Escribe aquí…" />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>
-            Archivos <span className="font-normal">({items.length}/{MAX_ARCHIVOS} · hasta 100 MB cada uno)</span>
-          </span>
-          {items.map((x) => (
-            <div key={x.clave} className="flex items-center gap-2 rounded-lg border border-digi-border px-3 py-2">
-              <Paperclip className="w-4 h-4 text-digi-muted shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[12.5px] text-digi-text truncate" style={mf}>{x.archivo.name}</p>
-                {x.error ? (
-                  <p className="text-[11px] text-red-600" style={mf}>{x.error}</p>
-                ) : x.fileId ? (
-                  <p className="text-[11px] text-green-600" style={mf}>{mb(x.archivo.size)} · Subido</p>
-                ) : (
-                  <div className="mt-1 h-1.5 rounded-full bg-digi-border/60 overflow-hidden">
-                    <div className="h-full bg-accent transition-all" style={{ width: `${x.progreso}%` }} />
-                  </div>
-                )}
-              </div>
-              {(x.fileId || x.error) && (
-                <BotonQuitar onClick={() => setItems((p) => p.filter((y) => y.clave !== x.clave))} etiqueta="Quitar archivo" />
-              )}
-            </div>
-          ))}
-          {items.length < MAX_ARCHIVOS && (
-            <button type="button" onClick={() => input.current?.click()}
-              className="w-full py-5 rounded-lg border-2 border-dashed border-digi-border hover:border-accent/50 hover:bg-accent-light/40 text-center transition-colors">
-              <FileUp className="w-5 h-5 text-digi-muted mx-auto mb-1" />
-              <span className="text-[12px] text-digi-text" style={mf}>Adjuntar archivos</span>
-            </button>
-          )}
-          <input ref={input} type="file" multiple className="hidden"
-            onChange={(e) => { agregar(e.target.files); e.target.value = ''; }} />
-        </div>
+        <ListaSubidas items={items} agregar={agregar} quitar={quitar} />
 
         <div className="flex justify-stretch sm:justify-end pt-1">
           <button onClick={enviar} disabled={!puedeEnviar} className={`${BTN_PRIMARY} w-full sm:w-auto h-11 sm:h-auto`}>

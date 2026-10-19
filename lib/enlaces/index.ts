@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { pool } from '@/lib/db';
 import { authDrive } from '@/lib/integrations/google-workspace';
-import { carpeta } from '@/lib/media/drive';
+import { aPapelera, carpeta } from '@/lib/media/drive';
 import { limpiarNombre } from '@/lib/media';
 
 /**
@@ -121,9 +121,10 @@ export function acceso(e: any, user: { userId: string } | null): Acceso {
  * Devuelve la URL a la que el navegador hace `PUT` con los bytes.
  */
 export async function abrirSubida(o: {
-  enlace: { id: number; titulo: string }; nombre: string; mime: string; tamano: number; origin: string;
+  /** Carpeta de destino en el Drive de la empresa (`rutaDe`, o la de una entrega). */
+  ruta: string[]; nombre: string; mime: string; tamano: number; origin: string;
 }): Promise<string> {
-  const padre = await carpeta(rutaDe(o.enlace));
+  const padre = await carpeta(o.ruta);
   const { token } = await authDrive().getAccessToken();
   if (!token) throw new Error('Drive no respondió');
   const r = await fetch(
@@ -147,12 +148,12 @@ export async function abrirSubida(o: {
 }
 
 /**
- * Comprueba en Drive que cada archivo existe, vive en la carpeta de ESTE enlace y no pasa del
+ * Comprueba en Drive que cada archivo existe, vive en la carpeta `ruta` (la de ESTE enlace) y no pasa del
  * tope. Lo que manda el navegador no se cree: un id de otro enlace o de otra carpeta se rechaza.
  */
-export async function verificarArchivos(enlace: { id: number; titulo: string }, ids: string[]): Promise<Archivo[]> {
+export async function verificarArchivos(ruta: string[], ids: string[]): Promise<Archivo[]> {
   if (ids.length === 0) return [];
-  const padre = await carpeta(rutaDe(enlace));
+  const padre = await carpeta(ruta);
   const { token } = await authDrive().getAccessToken();
   const out: Archivo[] = [];
   for (const id of ids) {
@@ -169,4 +170,14 @@ export async function verificarArchivos(enlace: { id: number; titulo: string }, 
     out.push({ id: f.id, nombre: f.name, mime: f.mimeType || 'application/octet-stream', tamano });
   }
   return out;
+}
+
+/** Manda a la papelera de Drive lo que haya en la carpeta y no esté en `quedan` (subido y quitado). */
+export async function limpiarCarpeta(ruta: string[], quedan: Set<string>) {
+  const padre = await carpeta(ruta);
+  const { token } = await authDrive().getAccessToken();
+  const q = encodeURIComponent(`'${padre}' in parents and trashed = false`);
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=100`, { headers: { Authorization: `Bearer ${token}` } });
+  const { files = [] } = await r.json();
+  for (const f of files as { id: string }[]) if (!quedan.has(f.id)) await aPapelera(f.id);
 }
