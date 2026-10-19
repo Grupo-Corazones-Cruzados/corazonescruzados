@@ -11,6 +11,7 @@ import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
 import PolicyBanner from '@/components/dashboard/PolicyBanner';
 import ChatDock from '@/components/chat/ChatDock';
 import NotificationsDock from '@/components/notifications/NotificationsDock';
+import AvisoReuniones from '@/components/calendar/AvisoReuniones';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -78,6 +79,7 @@ function Panel({ children }: { children: React.ReactNode }) {
           (y GCC Bot cuando hay cotización). La campanita es el ancla: los demás se miden
           contra ella. Dentro de `.corp` para heredar el tema. */}
       <NotificationsDock />
+      <AvisoReuniones />
       <ChatDock />
     </div>
   );

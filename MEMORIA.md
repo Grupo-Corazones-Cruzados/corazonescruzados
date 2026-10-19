@@ -352,6 +352,14 @@ Stack estándar de la casa, con particularidades de este repo:
     admin, que no ve las etapas) sale como fila «Transferencia» en Pagos con el mismo icono: si no,
     se quedaría sin nadie que la confirme.
   - El cliente ve «en revisión» en la etapa con transferencia esperando, en vez de un «Pagar» que fallaría.
+- **🔔 Mi día ▸ aviso de reuniones (Fernando, 2026-10-19).** `components/calendar/AvisoReuniones.tsx`,
+  montado en el layout del panel: avisa **1 h, 30, 15 y 5 min antes** de cada evento con hora del
+  calendario propio (toast con «Unirse» si tiene Meet, si no «Ver en Mi día»; el de 5 min no se
+  cierra solo). Entrando tarde sale solo el último umbral alcanzado (y «Ya empezó» hasta 5 min
+  después). No avisa de días completos, bloques de disponibilidad, propuestas ni cancelados, ni al
+  suplantar. Lo ya avisado se guarda en `localStorage` (no se repite al recargar). Con la pestaña
+  oculta y permiso, también notificación del sistema; el permiso se pide en el primer clic.
+  Solo funciona con el panel abierto en alguna pestaña (no hay push).
 - **⏱️ Mi día ▸ estado «Trabajando» con lista de tareas (Fernando, 2026-10-01).** Quinto estado
   de disponibilidad (`lib/calendar/availability.ts`, naranja `#f97316`): abre un bloque en el
   calendario como «Ocupado» (en el público sale como «Ocupado», igual que todos). Al elegirlo se
