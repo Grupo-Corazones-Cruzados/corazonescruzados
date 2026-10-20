@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -31,15 +32,7 @@ async function removeMemberFromProject(projectId: string, memberId: number) {
     `UPDATE gcc_world.project_bids SET status = 'rejected', updated_at = NOW() WHERE project_id = $1 AND member_id = $2`,
     [projectId, memberId]
   );
-  // Sync final cost
-  await pool.query(
-    `UPDATE gcc_world.projects SET final_cost = (
-      SELECT COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), 0)
-      FROM gcc_world.requirement_assignments ra
-      WHERE ra.project_id = $1 AND ra.status = 'accepted'
-    ), updated_at = NOW() WHERE id = $1`,
-    [projectId]
-  );
+  await sincronizarCostoProyecto(projectId);
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

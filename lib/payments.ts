@@ -206,6 +206,38 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 const STAGE_AMOUNT_SQL = `COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), r.cost, 0)`;
 
 /**
+ * ⇒ PRECIO DEL PROYECTO (`projects.final_cost`) — definición ÚNICA (2026-10-20).
+ * La suma del importe de cada requerimiento (`STAGE_AMOUNT_SQL`: lo asignado y aceptado o, si
+ * nadie lo tiene aún, su costo) más los costos adicionales; es el total de la cotización.
+ *
+ * Antes había cuatro copias que sumaban SOLO las asignaciones aceptadas: en un proyecto sin
+ * participantes, cambiar el precio de un requerimiento dejaba el proyecto en 0 $ (Portal SRI,
+ * Fernando). Un proyecto sin requerimientos no se toca: su precio se puso a mano.
+ */
+export async function sincronizarCostoProyecto(projectId: string | number): Promise<void> {
+  await pool.query(
+    `UPDATE gcc_world.projects p SET final_cost = (
+        SELECT COALESCE(SUM(x.amount), 0) FROM (
+          SELECT ${STAGE_AMOUNT_SQL} AS amount
+            FROM gcc_world.project_requirements r
+            LEFT JOIN gcc_world.requirement_assignments ra
+                   ON ra.requirement_id = r.id AND ra.status = 'accepted'
+           WHERE r.project_id = p.id
+           GROUP BY r.id, r.cost
+        ) x
+      ) + COALESCE((
+        SELECT SUM(CASE WHEN jsonb_typeof(c->'amount') = 'number' THEN (c->>'amount')::numeric
+                        WHEN (c->>'amount') ~ '^-?[0-9]+(\.[0-9]+)?$' THEN (c->>'amount')::numeric ELSE 0 END)
+          FROM jsonb_array_elements(CASE WHEN jsonb_typeof(p.additional_costs) = 'array' THEN p.additional_costs ELSE '[]'::jsonb END) c
+      ), 0),
+      updated_at = NOW()
+     WHERE p.id = ($1)::bigint
+       AND EXISTS (SELECT 1 FROM gcc_world.project_requirements r WHERE r.project_id = p.id)`,
+    [String(projectId)],
+  );
+}
+
+/**
  * Facturas vigentes del proyecto que no declaran QUÉ facturaron: ni etapas del plan ni
  * requerimientos. Son las emitidas antes de este flujo, y por eso se avisan.
  *

@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -19,6 +20,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
        WHERE id = $2 RETURNING *`,
       [bidsRes.rows[0].total, id]
     );
+    // Con requerimientos, el precio sale de ellos (lib/payments.ts); las pujas son del flujo viejo.
+    if (rows[0]) {
+      await sincronizarCostoProyecto(id);
+      const { rows: [p] } = await pool.query(`SELECT * FROM gcc_world.projects WHERE id = $1`, [id]);
+      return NextResponse.json({ data: p });
+    }
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -6540,6 +6540,7 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
       acuerda Fernando). La base es `final_cost` y, si aún no está sincronizado, la suma de los
       requerimientos. El plan se define en el detalle del proyecto → tarjeta **Pagos** → «Etapas
       de facturación» (panel lateral, `EditPanel`).
+    - **Precio del proyecto = una sola regla (2026-10-20).** `sincronizarCostoProyecto` (`lib/payments.ts`): Σ por requerimiento de lo asignado y aceptado o, sin nadie, su costo (`STAGE_AMOUNT_SQL`) + costos adicionales. La usan requerimientos, asignaciones, solicitudes, pujas, adicionales y confirmar. Antes 4 copias sumaban solo lo asignado: sin participantes, editar un precio dejaba el proyecto en 0 $ (Portal SRI, #31). El `budget_*` sigue siendo la foto de la cotización aceptada.
     - **Si el proyecto tiene plan, se factura SOLO por etapas**: ni el módulo de proyectos ni el de
       facturas ofrecen el detalle por requerimientos. Sin plan, todo sigue como antes.
     - Una etapa **ya facturada no se puede editar ni borrar** (su comprobante ya salió): primero se

@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureQuoteTables, normalizeAdditionalCosts } from '@/lib/cotizaciones/schema';
@@ -25,15 +26,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
     const items = normalizeAdditionalCosts(body.additional_costs);
 
-    const { rows: [rt] } = await pool.query(`SELECT COALESCE(SUM(cost), 0) AS s FROM gcc_world.project_requirements WHERE project_id = $1`, [id]);
-    const reqSubtotal = Number(rt.s) || 0;
-    const addTotal = items.reduce((s, c) => s + (Number(c.amount) || 0), 0);
-
     await pool.query(
-      `UPDATE gcc_world.projects SET additional_costs = $1::jsonb, final_cost = $2, updated_at = NOW() WHERE id = $3`,
-      [JSON.stringify(items), reqSubtotal + addTotal, id],
+      `UPDATE gcc_world.projects SET additional_costs = $1::jsonb, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(items), id],
     );
-    return NextResponse.json({ data: { additional_costs: items, total: reqSubtotal + addTotal } });
+    // El precio: definición única (requerimientos + adicionales) en lib/payments.ts.
+    await sincronizarCostoProyecto(id);
+    const { rows: [t] } = await pool.query(`SELECT final_cost FROM gcc_world.projects WHERE id = $1`, [id]);
+    return NextResponse.json({ data: { additional_costs: items, total: Number(t?.final_cost) || 0 } });
   } catch (err: any) {
     console.error('additional-costs error:', err.message);
     return NextResponse.json({ error: err.message || 'Error' }, { status: 500 });

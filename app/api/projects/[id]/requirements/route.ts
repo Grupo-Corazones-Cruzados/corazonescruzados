@@ -1,20 +1,13 @@
 import { pool } from '@/lib/db';
+import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureRequirementColumns, normalizeTalents, normalizeSlots } from '@/lib/projects/requirements';
 // Quién puede tocar requerimientos: definición única, compartida con subtareas y asignaciones.
 import { esGestorDelProyecto as esGestor, requerimientoDelProyecto } from '@/lib/projects/permisos';
 
-async function syncFinalCost(projectId: string) {
-  await pool.query(
-    `UPDATE gcc_world.projects SET final_cost = (
-      SELECT COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), 0)
-      FROM gcc_world.requirement_assignments ra
-      WHERE ra.project_id = $1 AND ra.status = 'accepted'
-    ), updated_at = NOW() WHERE id = $1`,
-    [projectId]
-  );
-}
+// El precio del proyecto: definición única en lib/payments.ts.
+const syncFinalCost = (projectId: string) => sincronizarCostoProyecto(projectId);
 
 async function getUserMemberId(userId: string): Promise<number | null> {
   const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [userId]);

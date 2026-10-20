@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addParticipant } from '@/lib/projects/members';
@@ -101,15 +102,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
       }
 
-      // Sync final_cost
-      await pool.query(
-        `UPDATE gcc_world.projects SET final_cost = (
-           SELECT COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), 0)
-           FROM gcc_world.requirement_assignments ra
-           WHERE ra.project_id = $1 AND ra.status = 'accepted'
-         ), updated_at = NOW() WHERE id = $1`,
-        [projectId]
-      );
+      await sincronizarCostoProyecto(projectId);
     }
 
     return NextResponse.json({ data: bid });

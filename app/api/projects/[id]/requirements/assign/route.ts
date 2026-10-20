@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 // ⚠️ Antes ninguna de estas llamadas miraba quién pedía: cualquiera con sesión podía crear
@@ -10,16 +11,8 @@ async function proyectoCerrado(projectId: string): Promise<boolean> {
   return !p || ESTADOS_CERRADOS.includes(p.status);
 }
 
-async function syncFinalCost(projectId: string) {
-  await pool.query(
-    `UPDATE gcc_world.projects SET final_cost = (
-      SELECT COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost)), 0)
-      FROM gcc_world.requirement_assignments ra
-      WHERE ra.project_id = $1 AND ra.status = 'accepted'
-    ), updated_at = NOW() WHERE id = $1`,
-    [projectId]
-  );
-}
+// El precio del proyecto: definición única en lib/payments.ts.
+const syncFinalCost = (projectId: string) => sincronizarCostoProyecto(projectId);
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
