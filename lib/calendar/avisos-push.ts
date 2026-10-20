@@ -3,6 +3,7 @@ import type { CalendarEvent } from '@/lib/calendar/recurrence';
 import { avisosPendientes, claveAviso, textoAviso, UMBRALES } from '@/lib/calendar/avisos';
 import { asegurarTablaPush, enviarPush } from '@/lib/push';
 import { avisarUsuarios } from '@/lib/push/avisos';
+import { reunionesGoogleProximas } from '@/lib/calendar/google';
 
 /**
  * ⇒ PUSH DE LAS REUNIONES DE MI DÍA (Fernando, 2026-10-19): 1 h, 30, 15 y 5 min antes, al
@@ -65,6 +66,18 @@ export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados:
 
     const porPersona = new Map<string, CalendarEvent[]>();
     for (const r of rows) porPersona.set(r.user_id, [...(porPersona.get(r.user_id) || []), r]);
+
+    // Más las reuniones de su cuenta de Google (Mi día las muestra; `lib/calendar/google.ts`).
+    const { rows: conGoogle } = await pool.query(
+      `SELECT g.user_id FROM gcc_world.google_conexiones g
+        WHERE g.estado = 'activa' AND 'https://www.googleapis.com/auth/calendar' = ANY(g.scopes)
+          AND (EXISTS (SELECT 1 FROM gcc_world.push_suscripciones s WHERE s.user_id = g.user_id)
+               OR EXISTS (SELECT 1 FROM gcc_world.push_devices d WHERE d.user_id = g.user_id AND d.kind IN ('fcm', 'apns')))`,
+    ).catch(() => ({ rows: [] as any[] }));
+    for (const { user_id } of conGoogle) {
+      const g = await reunionesGoogleProximas(String(user_id), ahora);
+      if (g.length) porPersona.set(String(user_id), [...(porPersona.get(String(user_id)) || []), ...g]);
+    }
 
     let enviados = 0, dispositivos = 0;
     for (const [userId, eventos] of porPersona) {

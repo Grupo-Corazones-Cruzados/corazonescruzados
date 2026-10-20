@@ -94,7 +94,7 @@ function dayTotals(instances: EventInstance[], day: Date): { work: number; perso
   let work = 0;
   let personal = 0;
   for (const ev of instances) {
-    if (ev.status === 'proposed' || ev.generated) continue; // las tareas de política no cuentan como horas
+    if (ev.status === 'proposed' || ev.generated || ev.origen === 'google') continue; // ni las tareas de política ni las reuniones de Google cuentan como horas
     const s = Math.max(ev.instanceStart.getTime(), ds);
     const e = Math.min(ev.instanceEnd.getTime(), de);
     if (e <= s) continue;

@@ -25,6 +25,9 @@ export interface CalendarEvent {
   /** Bloque abierto por un estado de disponibilidad (`trabajando` lleva lista de tareas). */
   availability_status?: string | null;
   availability_open?: boolean;
+  /** Reunión leída de la cuenta de Google del usuario (`lib/calendar/google.ts`): solo lectura. */
+  origen?: 'google';
+  google_url?: string | null;
 }
 
 export interface EventInstance extends CalendarEvent {

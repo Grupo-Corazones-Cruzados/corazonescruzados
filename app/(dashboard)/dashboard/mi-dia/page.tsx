@@ -45,6 +45,8 @@ interface Horario { subject: { kind: string; id: string } | null; tasks: HTask[]
  * + un rail de las tareas planificadas según el Horario de Vida para el día enfocado. Al
  * crear un evento se puede elegir una tarea para justificar el tiempo (evento = inicio→fin).
  */
+const GOOGLE_COLOR = '#4285F4';
+
 export default function MiDiaPage() {
   const [view, setView] = useState<CalendarViewMode>('month');
   // En pantallas chicas se usa siempre la vista de DÍA (la grilla de 7 días queda muy
@@ -60,6 +62,9 @@ export default function MiDiaPage() {
   useEffect(() => { if (!allowMultiView) setView('day'); }, [allowMultiView]);
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  // Reuniones de la cuenta de Google del usuario (solo lectura), del rango de la vista.
+  const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([]);
+  const [googleEstado, setGoogleEstado] = useState<{ estado: string; email: string | null } | null>(null);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [horario, setHorario] = useState<Horario>({ subject: null, tasks: [], schedule: [], auto: [], generated: [], social: [] });
@@ -132,7 +137,18 @@ export default function MiDiaPage() {
   }, [range.s, range.e]);
   useEffect(() => { loadHorario(); }, [loadHorario]);
 
-  const instances: EventInstance[] = useMemo(() => expandEvents(events, range.s, range.e), [events, range]);
+  const loadGoogle = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/members/calendar/google?desde=${range.s.toISOString()}&hasta=${range.e.toISOString()}`);
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setGoogleEstado({ estado: 'error', email: null }); return; }
+      setGoogleEvents(d.data || []);
+      setGoogleEstado({ estado: d.estado, email: d.email });
+    } catch { setGoogleEstado({ estado: 'error', email: null }); }
+  }, [range.s, range.e]);
+  useEffect(() => { loadGoogle(); }, [loadGoogle]);
+
+  const instances: EventInstance[] = useMemo(() => expandEvents([...events, ...googleEvents], range.s, range.e), [events, googleEvents, range]);
 
   // Bloques SINTÉTICOS de las tareas generadas por política, para pintarlas en la grilla del
   // calendario (además del rail). Color por estado: completada=verde, fallida=rojo, pendiente=violeta.
@@ -252,7 +268,10 @@ export default function MiDiaPage() {
     const base = new Date(`${dayStr}T09:00:00`);
     setEditingEvent(null); setInitialDate(base); setInitialType('progreso'); setInitialTaskId(alternativeId); setModalOpen(true);
   };
-  const handleEventClick = (inst: EventInstance) => { const full = events.find((e) => e.id === inst.id) || null; setEditingEvent(full); setInitialDate(null); setInitialTaskId(null); setModalOpen(true); };
+  const handleEventClick = (inst: EventInstance) => {
+    // Las de Google se editan en Google: se abren allí.
+    if (inst.origen === 'google') { const url = inst.google_url || inst.meeting_url; if (url) window.open(url, '_blank', 'noopener'); return; }
+    const full = events.find((e) => e.id === inst.id) || null; setEditingEvent(full); setInitialDate(null); setInitialTaskId(null); setModalOpen(true); };
 
   // Marca el estado (completada/fallida/pendiente) de una tarea del rail; optimista.
   // Manual → PATCH /schedule por id; automática (ticket/proyecto) → POST /auto-status por día.
@@ -480,6 +499,13 @@ export default function MiDiaPage() {
           <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted shrink-0" style={mf}>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.progreso}30`, borderLeft: `3px solid ${EVENT_COLORS.progreso}` }} /> Progreso</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${EVENT_COLORS.personal}30`, borderLeft: `3px solid ${EVENT_COLORS.personal}` }} /> Personal</span>
+            {googleEstado?.estado === 'ok' ? (
+              <span className="inline-flex items-center gap-1.5 min-w-0" title={googleEstado.email || undefined}><span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: `${GOOGLE_COLOR}30`, borderLeft: `3px solid ${GOOGLE_COLOR}` }} /> <span className="truncate">Google{googleEstado.email ? ` · ${googleEstado.email}` : ''}</span></span>
+            ) : googleEstado && googleEstado.estado !== 'error' ? (
+              <a href="/dashboard/settings?tab=conexiones" className="inline-flex items-center gap-1.5 text-accent hover:underline"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${GOOGLE_COLOR}30`, borderLeft: `3px solid ${GOOGLE_COLOR}` }} /> {googleEstado.estado === 'sin_conexion' ? 'Conectar Google Calendar' : 'Reconectar Google Calendar'}</a>
+            ) : googleEstado?.estado === 'error' ? (
+              <button onClick={loadGoogle} className="inline-flex items-center gap-1.5 text-red-600 hover:underline"><span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${GOOGLE_COLOR}30`, borderLeft: `3px solid ${GOOGLE_COLOR}` }} /> Google no respondió · Reintentar</button>
+            ) : null}
             <span className="ml-auto tabular-nums"><span className="hidden sm:inline">Zona horaria: </span>América/Guayaquil (GMT-5)</span>
           </div>
         </div>

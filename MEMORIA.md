@@ -371,6 +371,14 @@ Stack estándar de la casa, con particularidades de este repo:
   ⚠️ `instrumentation.ts` se compila también para edge: lo de Node va en `instrumentation-node.ts`.
   En iPhone (navegador) solo con la PWA instalada (iOS 16.4+). **En la app nativa no hay push web**: el
   trabajo manda también por `avisarUsuarios` (`push_devices`, APNs/FCM, abre Mi día) y el botón no sale.
+- **🗓️ Reuniones de Google Calendar en Mi día (Fernando, 2026-10-20).** Cada persona ve las de SU
+  cuenta de Google (la de Configuración → Conexiones, OAuth por usuario), ya no las de una sola cuenta
+  de la casa. `lib/calendar/google.ts` las pide EN VIVO por rango (`/api/members/calendar/google`), no se
+  copian a la BD; solo lectura (al tocarlas abren Google). Fuera canceladas, rechazadas, estados
+  (ubicación de trabajo…) y las que ya son evento de Mi día (`meeting_event_id` o mismo enlace). No
+  suman horas. Entran en los avisos (toast y push; el push cachea 5 min por persona). La leyenda dice
+  qué cuenta se lee o lleva a «Conectar/Reconectar». Crear el Meet al aceptar una propuesta sigue
+  siendo con la cuenta organizadora (`google-workspace.ts`).
 - **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
   público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
   avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por

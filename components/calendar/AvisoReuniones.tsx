@@ -39,10 +39,17 @@ export default function AvisoReuniones() {
 
   const cargar = useCallback(async () => {
     try {
-      const r = await fetch('/api/members/calendar/events');
+      // Las de Mi día y las de la cuenta de Google del usuario (próximas 2 h; si Google falla,
+      // se avisa de las de Mi día igual).
+      const ahora = Date.now();
+      const [r, g] = await Promise.all([
+        fetch('/api/members/calendar/events'),
+        fetch(`/api/members/calendar/google?desde=${new Date(ahora - 10 * 60000).toISOString()}&hasta=${new Date(ahora + 2 * 3600000).toISOString()}`)
+          .then((x) => (x.ok ? x.json() : null)).catch(() => null),
+      ]);
       if (!r.ok) return;
       const j = await r.json();
-      eventos.current = j.data || [];
+      eventos.current = [...(j.data || []), ...(g?.data || [])];
     } catch { /* el próximo intento lo recupera */ }
   }, []);
 
