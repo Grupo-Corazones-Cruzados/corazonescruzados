@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { Bell, X, FolderKanban, Crown, Ticket, ChevronRight } from 'lucide-react';
+import { Bell, X, FolderKanban, Crown, Ticket, ChevronRight, CalendarClock } from 'lucide-react';
 import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -24,6 +24,7 @@ const ICON: Record<string, { Icon: typeof Bell; tint: string; bg: string }> = {
   ticket: { Icon: Ticket, tint: 'text-sky-500', bg: 'bg-sky-50 border-sky-200' },
   project_responsible: { Icon: Crown, tint: 'text-amber-500', bg: 'bg-amber-50 border-amber-200' },
   project_participant: { Icon: FolderKanban, tint: 'text-accent', bg: 'bg-accent-light border-accent/20' },
+  calendar_proposal: { Icon: CalendarClock, tint: 'text-accent', bg: 'bg-accent-light border-accent/20' },
 };
 
 function fmtFecha(s: string | null): string {

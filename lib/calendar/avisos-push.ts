@@ -104,3 +104,38 @@ export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados:
     corriendo = false;
   }
 }
+
+/**
+ * ⇒ PROPUESTA NUEVA EN MI DÍA (Fernando, 2026-10-19): alguien reservó un horario desde el
+ * calendario público. Llega a los tres sitios a la vez: la campana del panel (`notifications`),
+ * el push web y la app nativa; el correo de siempre lo manda la ruta. Va a todas las cuentas
+ * enlazadas al miembro. Nunca lanza: la propuesta ya quedó guardada.
+ */
+export async function avisarPropuesta(
+  memberId: string,
+  p: { id: string | number; titulo: string; quien: string; inicio: string | Date; zona: string },
+): Promise<void> {
+  try {
+    const { rows } = await pool.query(`SELECT id FROM gcc_world.users WHERE member_id = $1`, [memberId]);
+    if (!rows.length) return;
+    let zona = p.zona;
+    try { new Intl.DateTimeFormat('es-ES', { timeZone: zona }); } catch { zona = 'America/Guayaquil'; }
+    const cuando = new Intl.DateTimeFormat('es-ES', {
+      timeZone: zona, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(new Date(p.inicio));
+    const titulo = 'Nueva propuesta de reunión';
+    const cuerpo = `${p.quien} propone «${p.titulo}» · ${cuando}`;
+    const { createNotification } = await import('@/lib/notifications');
+    for (const u of rows) {
+      const userId = String(u.id);
+      await createNotification(userId, { type: 'calendar_proposal', title: titulo, message: cuerpo, link: '/dashboard/mi-dia' })
+        .catch((e: any) => console.error('[propuesta] campana', e?.message));
+      // Una propuesta sigue valiendo horas después: si el teléfono está apagado, que espere un día.
+      await enviarPush(userId, { titulo, cuerpo, url: '/dashboard/mi-dia', etiqueta: `propuesta-${p.id}` }, 24 * 3600)
+        .catch((e: any) => console.error('[propuesta] push', e?.message));
+    }
+    await avisarUsuarios(rows.map((u: any) => String(u.id)), { titulo, cuerpo, ruta: '/dashboard/mi-dia', hilo: 'propuestas' });
+  } catch (e: any) {
+    console.error('[propuesta] aviso', e?.message);
+  }
+}

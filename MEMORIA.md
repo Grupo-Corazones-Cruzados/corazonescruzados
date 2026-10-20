@@ -371,6 +371,10 @@ Stack estándar de la casa, con particularidades de este repo:
   ⚠️ `instrumentation.ts` se compila también para edge: lo de Node va en `instrumentation-node.ts`.
   En iPhone (navegador) solo con la PWA instalada (iOS 16.4+). **En la app nativa no hay push web**: el
   trabajo manda también por `avisarUsuarios` (`push_devices`, APNs/FCM, abre Mi día) y el botón no sale.
+- **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
+  público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
+  avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por
+  push web (TTL 24 h: una propuesta sigue valiendo horas después) y en la app nativa; además del correo.
 - **📅 Mi día ▸ enlace iCal para otras apps (Fernando, 2026-10-19).** Portarretrato digital, Google
   Calendar (→ Alexa), Apple, Outlook. En «Compartir» de Mi día, sección «Conectar con otras apps»:
   `/api/calendario/ical/<token>.ics` (`lib/calendar/ical.ts`, token en `members.calendar_feed_token`,

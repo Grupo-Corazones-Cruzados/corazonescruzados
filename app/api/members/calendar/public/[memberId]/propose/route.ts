@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { openEndSql } from '@/lib/calendar/availability-db';
 import { findOverlappingInstances, type OverlapCandidate } from '@/lib/calendar/overlap';
 import { sendProposalReceivedToMember } from '@/lib/integrations/email';
+import { avisarPropuesta } from '@/lib/calendar/avisos-push';
 import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 import type { CalendarEvent } from '@/lib/calendar/recurrence';
 
@@ -124,6 +125,11 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
         console.error('Propose email error:', err.message);
       }
     }
+
+    await avisarPropuesta(memberId, {
+      id: created.id, titulo: body.title, quien: clientName,
+      inicio: created.start_at, zona: body.timezone || 'America/Guayaquil',
+    });
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
   } catch (err: any) {

@@ -71,8 +71,11 @@ export async function borrarSuscripcion(userId: string, endpoint: string) {
   await pool.query(`DELETE FROM gcc_world.push_suscripciones WHERE endpoint = $1 AND user_id = $2::uuid`, [endpoint, userId]);
 }
 
-/** Manda la notificación a todos los dispositivos de la persona. Devuelve cuántos la aceptaron. */
-export async function enviarPush(userId: string, carga: CargaPush): Promise<number> {
+/**
+ * Manda la notificación a todos los dispositivos de la persona. Devuelve cuántos la aceptaron.
+ * `ttl` (segundos): cuánto la guarda el servicio de push si el dispositivo está apagado.
+ */
+export async function enviarPush(userId: string, carga: CargaPush, ttl = 15 * 60): Promise<number> {
   if (!configurado()) return 0;
   preparar();
   await asegurarTablaPush();
@@ -81,11 +84,11 @@ export async function enviarPush(userId: string, carga: CargaPush): Promise<numb
   let ok = 0;
   await Promise.all(rows.map(async (r: any) => {
     try {
-      // TTL corto: un aviso de «faltan 5 min» que llega media hora tarde estorba.
+      // TTL corto por defecto: un aviso de «faltan 5 min» que llega media hora tarde estorba.
       await webpush.sendNotification(
         { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } },
         JSON.stringify(carga),
-        { TTL: 15 * 60, urgency: 'high' },
+        { TTL: ttl, urgency: 'high' },
       );
       ok++;
       await pool.query(`UPDATE gcc_world.push_suscripciones SET usado_en = NOW() WHERE id = $1`, [r.id]);
