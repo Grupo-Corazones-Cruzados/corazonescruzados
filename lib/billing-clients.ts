@@ -214,7 +214,9 @@ export type BillingData = {
  * de la cuenta de facturación elegida. Por eso una cuenta a medias no se ofrece — si no, se
  * emitiría una factura sin dirección o con una cédula mal escrita que el SRI devuelve.
  * Una sola definición para la lista y para la API que factura.
- *   · tipo 04 (RUC) con 13 dígitos · 05 (cédula) con 10 · 06 (pasaporte) con algo escrito
+ *   · tipo 04 (RUC) con 13 dígitos · 05 (cédula) con 10 · 06 (pasaporte) y 08 (identificación
+ *     del exterior) con algo escrito. El 08 faltaba y dejó fuera a los clientes de fuera del país
+ *     (IS-CR, Costa Rica: ya facturado antes); el XML lo emite con `9999999999999` + la real.
  *   · razón social, dirección y correo
  *   · consumidor final NO: se elige aparte, como opción propia.
  */
@@ -224,7 +226,7 @@ export function cuentaFacturable(bc: { id_type?: string | null; ruc?: string | n
   const tipo = String(bc.id_type || '');
   const idOk = tipo === '04' ? /^\d{13}$/.test(ruc)
     : tipo === '05' ? /^\d{10}$/.test(ruc)
-    : tipo === '06' ? ruc.length > 0
+    : tipo === '06' || tipo === '08' ? ruc.length > 0
     : false;
   return idOk && ruc !== CONSUMIDOR_FINAL_RUC
     && !!String(bc.name || '').trim()
