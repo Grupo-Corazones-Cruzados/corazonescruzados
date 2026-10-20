@@ -16,8 +16,9 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
   Repeat2, Captions, Search, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
-  Briefcase, Link2, Plus, Table2, PackageOpen,
+  Briefcase, Link2, Plus, Table2, PackageOpen, QrCode,
 } from 'lucide-react';
+import GeneradorQR from '@/components/herramientas/GeneradorQR';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -43,6 +44,7 @@ type ClienteConCuenta = { id: number; nombre: string; email: string };
 const TOOLS: Tool[] = [
   { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
   { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
+  { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
 ];
@@ -288,7 +290,7 @@ export default function ToolsPage() {
             <p className="text-[11px] text-digi-muted" style={mf}>{CATEGORY_LABEL[tool.category]}</p>
           </div>
         </div>
-        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : renderEnlace()}</div>
+        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : renderEnlace()}</div>
       </div>
     );
   };
