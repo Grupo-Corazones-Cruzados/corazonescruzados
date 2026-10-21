@@ -392,6 +392,15 @@ Stack estándar de la casa, con particularidades de este repo:
   crea GCC: borrarlo cancela el evento de la cuenta organizadora). El enlace se busca también en la
   descripción/lugar (Teams y Zoom no traen `conferenceData`); «Unirse a Microsoft Teams/Zoom…» sale de
   `nombreSala` (`lib/calendar/recurrence.ts`). Hora en la zona del calendario de la persona.
+- **🚫 Calendario público: lo ocupado en Google también es «Ocupado» (Fernando, 2026-10-21).**
+  `ocupadoGoogle(memberId)` (`lib/calendar/google.ts`): lo que Google da por ocupado
+  (`transparency` ≠ `transparent`) en las cuentas del miembro, de ayer a +62 días, caché 5 min por
+  miembro. Se pinta en `/api/members/calendar/public/[memberId]` y el `propose` lo usa para rechazar
+  solapes (409). Las reuniones importadas ya salían por ser eventos de Mi día.
+- **❎ Avisos con X (Fernando, 2026-10-21).** El `<Toaster>` del layout lleva `closeButton`, movido
+  arriba a la derecha con las variables `--toast-close-button-*` de sonner: cualquier aviso se quita al momento.
+- **💲 En borrador, el presupuesto sigue al precio (Fernando, 2026-10-21).** `sincronizarCostoProyecto`
+  copia `final_cost` a `budget_min`/`budget_max` mientras `status = 'draft'`; confirmado, queda lo aceptado.
 - **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
   público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
   avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por

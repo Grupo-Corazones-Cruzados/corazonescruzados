@@ -208,3 +208,48 @@ export async function reunionesGoogleProximas(userId: string, ahora = Date.now()
   cache.set(userId, { hasta: ahora + 5 * 60_000, eventos });
   return eventos;
 }
+
+/**
+ * ⇒ LO OCUPADO EN GOOGLE, PARA EL CALENDARIO PÚBLICO (Fernando, 2026-10-21).
+ * Las franjas que Google da por ocupadas (`transparency` ≠ `transparent`: así decide él mismo
+ * qué es libre; los días completos suelen ser «libre») en las cuentas de las personas del
+ * miembro, de ayer a +62 días. Lo que ya es evento de Mi día ya sale por su lado. Guardado 5 min
+ * por miembro: cada visita al enlace público no le pregunta a Google. Nunca lanza.
+ */
+const cacheOcupado = new Map<string, { hasta: number; eventos: CalendarEvent[] }>();
+export async function ocupadoGoogle(memberId: string | number): Promise<CalendarEvent[]> {
+  const clave = String(memberId);
+  const ahora = Date.now();
+  const c = cacheOcupado.get(clave);
+  if (c && c.hasta > ahora) return c.eventos;
+  const eventos: CalendarEvent[] = [];
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id FROM gcc_world.users u
+         JOIN gcc_world.google_conexiones g ON g.user_id = u.id
+        WHERE u.member_id = $1 AND g.estado = 'activa' AND $2 = ANY(g.scopes)`,
+      [clave, SCOPE_CALENDAR],
+    );
+    for (const { id: userId } of rows) {
+      const leido = await leerGoogle(String(userId), new Date(ahora - 86400_000), new Date(ahora + 62 * 86400_000));
+      if (leido.estado !== 'ok') continue;
+      const repetido = await yaEnMiDia(String(userId));
+      for (const g of leido.crudos) {
+        if (!esVisible(g) || g.transparency === 'transparent' || repetido(g)) continue;
+        const h = horasDe(g, leido.zona);
+        if (!h) continue;
+        eventos.push({
+          id: `google-${g.id}`, title: '', description: null, event_type: 'personal',
+          client_id: null, client_name: null,
+          start_at: h.ini.toISOString(), end_at: h.fin.toISOString(), all_day: h.todoElDia,
+          timezone: leido.zona, recurrence_type: 'none', recurrence_days: null,
+          recurrence_interval: 1, recurrence_until: null, color: null, status: 'confirmed',
+        });
+      }
+    }
+  } catch (e: any) {
+    console.error('[google-calendar] ocupado', memberId, e?.message);
+  }
+  cacheOcupado.set(clave, { hasta: ahora + 5 * 60_000, eventos });
+  return eventos;
+}

@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { openEndSql } from '@/lib/calendar/availability-db';
+import { ocupadoGoogle } from '@/lib/calendar/google';
 import { findOverlappingInstances, type OverlapCandidate } from '@/lib/calendar/overlap';
 import { sendProposalReceivedToMember } from '@/lib/integrations/email';
 import { avisarPropuesta } from '@/lib/calendar/avisos-push';
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
     );
 
     const overlap = findOverlappingInstances(
-      existingRes.rows as CalendarEvent[],
+      [...(existingRes.rows as CalendarEvent[]), ...(await ocupadoGoogle(memberId))],
       candidate,
     );
     if (overlap) {

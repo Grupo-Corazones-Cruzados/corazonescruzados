@@ -160,7 +160,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
         </AuthProvider>
-        <Toaster theme="dark" richColors position="bottom-right" />
+        {/* Con X para quitar un aviso que tapa algo (Fernando, 2026-10-21); arriba a la derecha. */}
+        <Toaster theme="dark" richColors position="bottom-right" closeButton
+          style={{ '--toast-close-button-start': 'unset', '--toast-close-button-end': '0', '--toast-close-button-transform': 'translate(35%, -35%)' } as React.CSSProperties} />
       </body>
     </html>
   );

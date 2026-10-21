@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { openEndSql } from '@/lib/calendar/availability-db';
+import { ocupadoGoogle } from '@/lib/calendar/google';
 
 type RouteCtx = { params: Promise<{ memberId: string }> };
 
@@ -40,7 +41,8 @@ export async function GET(req: NextRequest, ctx: RouteCtx) {
     // título, la descripción, el cliente ni la categoría (personal/laboral) de los
     // eventos del miembro; el visitante solo ve QUÉ franjas están ocupadas para poder
     // agendar. Se normaliza todo a un bloque neutro "Ocupado".
-    const events = rows.map((e: any) => ({
+    // Lo ocupado en la cuenta de Google de la persona también es «Ocupado» (`ocupadoGoogle`).
+    const events = [...rows, ...(await ocupadoGoogle(memberId))].map((e: any) => ({
       id: e.id,
       title: 'Ocupado',
       description: null,

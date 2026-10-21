@@ -213,6 +213,8 @@ const STAGE_AMOUNT_SQL = `COALESCE(SUM(COALESCE(ra.member_cost, ra.proposed_cost
  * Antes había cuatro copias que sumaban SOLO las asignaciones aceptadas: en un proyecto sin
  * participantes, cambiar el precio de un requerimiento dejaba el proyecto en 0 $ (Portal SRI,
  * Fernando). Un proyecto sin requerimientos no se toca: su precio se puso a mano.
+ * En BORRADOR el presupuesto (`budget_min`/`budget_max`) sigue al precio (Fernando, 2026-10-21);
+ * desde que se confirma queda como lo que el cliente aceptó.
  */
 export async function sincronizarCostoProyecto(projectId: string | number): Promise<void> {
   await pool.query(
@@ -233,6 +235,13 @@ export async function sincronizarCostoProyecto(projectId: string | number): Prom
       updated_at = NOW()
      WHERE p.id = ($1)::bigint
        AND EXISTS (SELECT 1 FROM gcc_world.project_requirements r WHERE r.project_id = p.id)`,
+    [String(projectId)],
+  );
+  await pool.query(
+    `UPDATE gcc_world.projects SET budget_min = final_cost, budget_max = final_cost
+      WHERE id = ($1)::bigint AND status = 'draft'
+        AND EXISTS (SELECT 1 FROM gcc_world.project_requirements r WHERE r.project_id = ($1)::bigint)
+        AND (budget_min IS DISTINCT FROM final_cost OR budget_max IS DISTINCT FROM final_cost)`,
     [String(projectId)],
   );
 }
