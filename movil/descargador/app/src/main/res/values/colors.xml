@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Los mismos de GCC World (app/globals.css, color-accent) -->
+    <color name="acento">#4B2D8E</color>
+    <color name="acento_claro">#EDEBFA</color>
+    <color name="acento_brillo">#7B5FBF</color>
+    <color name="fondo">#F7F7F9</color>
+    <color name="fondo_noche">#121016</color>
+</resources>

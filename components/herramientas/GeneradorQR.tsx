@@ -15,6 +15,9 @@ const COLOR = { dark: '#000000', light: '#ffffff' };
 // Corrección «M» (15 %): aguanta una impresión regular sin volver el código demasiado denso.
 const OPCIONES = { errorCorrectionLevel: 'M' as const, margin: 2, color: COLOR };
 
+/** QR como imagen (data URL) con las opciones de la casa: lo usan también otras herramientas. */
+export const qrImagen = (texto: string, ancho: number) => QRCode.toDataURL(texto, { ...OPCIONES, width: ancho });
+
 const TAMANOS = [
   { value: '512', label: '512 px' },
   { value: '1024', label: '1024 px' },
@@ -58,13 +61,13 @@ export default function GeneradorQR() {
   useEffect(() => {
     if (!url) { setVista(null); return; }
     let vivo = true;
-    QRCode.toDataURL(url, { ...OPCIONES, width: 320 })
+    qrImagen(url, 320)
       .then((d) => { if (vivo) setVista(d); })
       .catch(() => { if (vivo) setVista(null); });
     return () => { vivo = false; };
   }, [url]);
 
-  const png = () => QRCode.toDataURL(url!, { ...OPCIONES, width: Number(tamano) });
+  const png = () => qrImagen(url!, Number(tamano));
 
   const bajarPng = async () => {
     try { descargar(await png(), nombreArchivo(url!, 'png')); }

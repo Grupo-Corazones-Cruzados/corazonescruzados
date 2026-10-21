@@ -401,6 +401,32 @@ Stack estándar de la casa, con particularidades de este repo:
   arriba a la derecha con las variables `--toast-close-button-*` de sonner: cualquier aviso se quita al momento.
 - **💲 En borrador, el presupuesto sigue al precio (Fernando, 2026-10-21).** `sincronizarCostoProyecto`
   copia `final_cost` a `budget_min`/`budget_max` mientras `status = 'draft'`; confirmado, queda lo aceptado.
+- **📲 Herramientas ▸ «Apps para el teléfono» + Descargador GCC (Fernando, 2026-10-21).** Tipo nuevo
+  de herramienta: un paquete para instalar fuera de tiendas. Decidido: **solo Android**, descarga del
+  APK **con sesión**, app **independiente** (`movil/descargador/`, Kotlin, `org.grupocc.descargador`).
+  - Descarga EN EL TELÉFONO con `io.github.junkfood02.youtubedl-android` 0.18.1 (yt-dlp + Python +
+    FFmpeg + QuickJS). Nunca en el servidor: YouTube bloquea IPs de centros de datos y así GCC no
+    copia ni sirve videos. Servicio en primer plano; guarda vía MediaStore en Movies|Music/GCC Descargas.
+  - ⚠️ El yt-dlp que trae la librería se queda viejo: con el de fábrica la descarga FALLÓ; tras
+    actualizarlo funcionó. La app lo actualiza sola una vez al día al abrir (`App.actualizarSiToca`)
+    y hay botón «Actualizar motor de descarga».
+  - 1080/720/480 prefieren H.264+AAC (con el selector simple salía AV1, que algunos teléfonos no
+    reproducen); «Mejor» toma la máxima. Solo `arm64-v8a`, minSdk 29 → APK 67 MB.
+  - Aviso de «uso responsable» al primer arranque (solo contenido propio, con permiso o licencia
+    libre); sin marca de YouTube.
+  - Firma de publicación: `~/.android/gcc-herramientas.jks` (contraseña en `~/.gradle/gradle.properties`,
+    FUERA del repo; huella SHA-256 `ce7ae0e7…25b7`). ⚠️ Respaldarla: sin ella los teléfonos no
+    aceptan actualizaciones. Compilar: `cd movil/descargador && ./gradlew assembleRelease`.
+  - Publicar: subir `versionCode` y `npx tsx --tsconfig tsconfig.json scripts/publicar-app-movil.ts
+    descargador-video <apk>` (comprueba la firma, sube a Drive «Apps para el teléfono/<slug>», fila en
+    `gcc_world.apps_moviles`). La app consulta `/api/herramientas/apps/<slug>/version` (pública) y avisa
+    de la nueva; el APK sale por `…/apk` (con sesión). Ficha: `components/herramientas/AppMovil.tsx`,
+    `?herramienta=<id>` abre la herramienta (el QR apunta ahí).
+  - ⚠️ La página Herramientas sigue siendo de miembro/admin (`lib/dashboard/access.ts`); la ruta del
+    APK acepta cualquier sesión.
+  - **iPhone pendiente:** Fernando quiere el Apple Developer Enterprise Program para miembros y
+    candidatos de grupocc.org. Avisado: exige D-U-N-S y ≥100 empleados, solo para empleados (los
+    candidatos no lo son) y Apple revoca el certificado si se usa fuera de eso.
 - **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
   público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
   avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por

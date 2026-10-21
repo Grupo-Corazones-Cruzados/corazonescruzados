@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Tema" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/acento</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">@color/acento_claro</item>
+        <item name="colorOnPrimaryContainer">@color/acento</item>
+        <item name="colorSecondaryContainer">@color/acento_claro</item>
+        <item name="colorOnSecondaryContainer">@color/acento</item>
+        <item name="android:colorBackground">@color/fondo</item>
+        <item name="android:statusBarColor">@color/fondo</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

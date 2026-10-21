@@ -1,0 +1,66 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// La firma de publicación vive FUERA del repo (`~/.gradle/gradle.properties`): si esa clave se
+// pierde, los teléfonos no aceptan la actualización y hay que desinstalar. Ver MEMORIA.md.
+def firma = project.hasProperty('GCC_HERRAMIENTAS_KEYSTORE')
+
+android {
+    namespace 'org.grupocc.descargador'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'org.grupocc.descargador'
+        minSdk 29          // MediaStore sin permisos de almacenamiento; teléfonos modernos
+        targetSdk 36
+        versionCode 1
+        versionName '1.0'
+        // Solo arm64: todos los teléfonos actuales; con las demás arquitecturas el APK pesa el triple.
+        ndk { abiFilters 'arm64-v8a' }
+        buildConfigField 'String', 'SERVIDOR', '"https://app.grupocc.org"'
+        buildConfigField 'String', 'SLUG', '"descargador-video"'
+    }
+
+    signingConfigs {
+        if (firma) {
+            publicacion {
+                storeFile file(GCC_HERRAMIENTAS_KEYSTORE)
+                storePassword GCC_HERRAMIENTAS_CLAVE
+                keyAlias 'herramientas'
+                keyPassword GCC_HERRAMIENTAS_CLAVE
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (firma) signingConfig signingConfigs.publicacion
+        }
+    }
+
+    buildFeatures { buildConfig true; viewBinding true }
+
+    // yt-dlp (Python) y FFmpeg viajan como bibliotecas nativas que la librería descomprime al
+    // arrancar: tienen que quedar EXTRAÍDAS en el APK (empaquetado clásico).
+    packaging { jniLibs { useLegacyPackaging true } }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+}
+
+dependencies {
+    implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'
+    implementation 'io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1'
+    implementation 'androidx.core:core-ktx:1.17.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.activity:activity-ktx:1.11.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.9.4'
+    implementation 'com.google.android.material:material:1.13.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Descargador GCC</string>
+    <string name="canal_descargas">Descargas</string>
+    <string name="enlace">Enlace del video</string>
+    <string name="buscar">Buscar</string>
+    <string name="descargar">Descargar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="calidad">Calidad</string>
+    <string name="calidad_mejor">Mejor</string>
+    <string name="calidad_1080">1080p</string>
+    <string name="calidad_720">720p</string>
+    <string name="calidad_480">480p</string>
+    <string name="calidad_audio">Solo audio</string>
+    <string name="preparando">Preparando…</string>
+    <string name="fase_video">Video</string>
+    <string name="fase_audio">Audio</string>
+    <string name="quedan">quedan %1$s</string>
+    <string name="listo">Descarga lista</string>
+    <string name="guardado_video">Guardado en la galería, álbum «GCC Descargas».</string>
+    <string name="guardado_audio">Guardado en Música, carpeta «GCC Descargas».</string>
+    <string name="abrir">Abrir</string>
+    <string name="compartir">Compartir</string>
+    <string name="otra">Descargar otro</string>
+    <string name="actualizar_motor">Actualizar motor de descarga</string>
+    <string name="actualizando">Actualizando…</string>
+    <string name="motor_al_dia">El motor ya está al día (%1$s).</string>
+    <string name="motor_actualizado">Motor actualizado a %1$s.</string>
+    <string name="nueva_version">Hay una versión nueva de la app (%1$s).</string>
+    <string name="ver">Descargar</string>
+    <string name="no_se_pudo">No se pudo descargar</string>
+    <string name="entendido">Entendido</string>
+    <string name="aviso_titulo">Uso responsable</string>
+    <string name="aviso_texto">Descarga solo videos tuyos, de autores que te dieron permiso o con licencia libre (por ejemplo, Creative Commons). Respeta los derechos de autor y las condiciones de cada plataforma.</string>
+    <string name="error_url">Ese enlace no es de un video que se pueda descargar.</string>
+    <string name="error_buscar">No se encontró el video. Revisa el enlace; si sigue igual, actualiza el motor de descarga.</string>
+    <string name="error_privado">El video es privado.</string>
+    <string name="error_bot">YouTube pidió comprobar que no eres un robot. Espera unos minutos o cambia de red (wifi o datos) e inténtalo otra vez.</string>
+    <string name="error_red">Se cortó la conexión. Inténtalo otra vez.</string>
+    <string name="error_general">Algo falló al descargar. Actualiza el motor de descarga e inténtalo otra vez.</string>
+    <string name="error_actualizar">No se pudo actualizar el motor. Revisa la conexión.</string>
+    <string name="error_sin_archivo">La descarga terminó sin archivo.</string>
+    <string name="error_galeria">No se pudo guardar en la galería.</string>
+</resources>

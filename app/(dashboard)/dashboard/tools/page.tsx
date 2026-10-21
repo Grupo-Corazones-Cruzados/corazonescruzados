@@ -16,9 +16,10 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
   Repeat2, Captions, Search, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
-  Briefcase, Link2, Plus, Table2, PackageOpen, QrCode,
+  Briefcase, Link2, Plus, Table2, PackageOpen, QrCode, Smartphone, MonitorDown,
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
+import AppMovil from '@/components/herramientas/AppMovil';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -30,9 +31,10 @@ const CATEGORIES = [
   { value: 'all', label: 'Todas', Icon: LayoutGrid },
   { value: 'edicion', label: 'Edición', Icon: Wand2 },
   { value: 'gestion', label: 'Gestión', Icon: Briefcase },
+  { value: 'app', label: 'Apps para el teléfono', Icon: Smartphone },
 ];
 
-const CATEGORY_LABEL: Record<string, string> = { edicion: 'Herramienta de edición', gestion: 'Herramienta de gestión' };
+const CATEGORY_LABEL: Record<string, string> = { edicion: 'Herramienta de edición', gestion: 'Herramienta de gestión', app: 'App para el teléfono' };
 
 // Vigencias del enlace de un solo uso: se cierra al responder o al vencer, lo que pase antes.
 const VIGENCIAS = [
@@ -46,6 +48,7 @@ const TOOLS: Tool[] = [
   { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
   { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
+  { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
 ];
 
@@ -57,6 +60,11 @@ export default function ToolsPage() {
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('all');
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  // `?herramienta=<id>` la deja abierta (el QR de las apps para el teléfono apunta aquí).
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('herramienta');
+    if (id && TOOLS.some((t) => t.id === id)) setSelectedTool(id);
+  }, []);
 
   // Convert state
   const [convertFrom, setConvertFrom] = useState('m4a');
@@ -290,10 +298,23 @@ export default function ToolsPage() {
             <p className="text-[11px] text-digi-muted" style={mf}>{CATEGORY_LABEL[tool.category]}</p>
           </div>
         </div>
-        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : renderEnlace()}</div>
+        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace()}</div>
       </div>
     );
   };
+
+  // Descargador GCC (`movil/descargador/`): el video se descarga en el propio teléfono, nunca en el servidor.
+  const renderDescargador = () => (
+    <AppMovil
+      slug="descargador-video"
+      descripcion="Pega o comparte un enlace de video y elige la calidad o solo el audio; queda guardado en la galería del teléfono. Úsala solo con videos propios, con permiso de su autor o con licencia libre."
+      pasos={[
+        'Descarga el archivo desde el teléfono.',
+        'Ábrelo y, si Android lo pide, permite instalar apps de este origen.',
+        'Abre «Descargador GCC» y comparte con ella el enlace del video.',
+      ]}
+    />
+  );
 
   const renderConvert = () => {
     if (converting) {
