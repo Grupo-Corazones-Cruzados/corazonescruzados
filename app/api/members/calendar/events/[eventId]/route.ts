@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { notifyCalendarSubscribers } from '@/lib/calendar/notify';
 import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 import { isGoogleWorkspaceConfigured, deleteMeetEvent } from '@/lib/integrations/google-workspace';
+import { asegurarColumnasImportacion } from '@/lib/calendar/google-import';
 
 async function resolveMemberId(userId: string): Promise<string | null> {
   const { rows } = await pool.query(
@@ -127,8 +128,9 @@ export async function DELETE(_req: NextRequest, ctx: RouteCtx) {
 
     const { eventId } = await ctx.params;
     await ensureCalendarGuestColumns();
+    await asegurarColumnasImportacion();
     const existing = await pool.query(
-      `SELECT title, start_at, end_at, meeting_event_id FROM gcc_world.member_calendar_events
+      `SELECT title, start_at, end_at, meeting_event_id, google_event_id FROM gcc_world.member_calendar_events
        WHERE id = $1 AND member_id = $2`,
       [eventId, memberId],
     );
@@ -144,6 +146,15 @@ export async function DELETE(_req: NextRequest, ctx: RouteCtx) {
       } catch (err: any) {
         console.error('Meet cancel error:', err?.response?.data ? JSON.stringify(err.response.data) : err.message);
       }
+    }
+
+    // Una reunión que vino de Google: en Google sigue igual, pero aquí no vuelve a entrar.
+    if (prev.google_event_id) {
+      await pool.query(
+        `INSERT INTO gcc_world.google_eventos_descartados (member_id, google_event_id) VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [memberId, prev.google_event_id],
+      );
     }
 
     await pool.query(

@@ -1,4 +1,5 @@
 import { revisarAvisosPush } from '@/lib/calendar/avisos-push';
+import { importarTodasLasReuniones } from '@/lib/calendar/google-import';
 
 /**
  * ⇒ AVISOS DE REUNIÓN AL MÓVIL (2026-10-19): se revisan CADA MINUTO aquí, dentro del servidor
@@ -11,4 +12,9 @@ if (process.env.NODE_ENV === 'production' && process.env.AVISOS_PUSH !== 'no') {
   const correr = () => { revisarAvisosPush().catch((e) => console.error('[avisos-push]', e?.message)); };
   setTimeout(correr, 20_000);
   setInterval(correr, 60_000);
+
+  // Invitaciones de Google → reuniones registradas en Mi día (`lib/calendar/google-import.ts`).
+  // Antes que los avisos de la pasada siguiente: una reunión que llega con poco margen igual avisa.
+  setTimeout(importarTodasLasReuniones, 10_000);
+  setInterval(importarTodasLasReuniones, 10 * 60_000);
 }

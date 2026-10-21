@@ -9,7 +9,7 @@ import { WorkTasksSummary } from '@/components/calendar/WorkTasks';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import { Save, Trash2, X, AlertTriangle, Video, Copy, Check } from 'lucide-react';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
-import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES, toDateOnly } from '@/lib/calendar/recurrence';
+import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES, toDateOnly, nombreSala } from '@/lib/calendar/recurrence';
 
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -600,7 +600,7 @@ function MeetingLink({ url }: { url: string }) {
           rel="noopener noreferrer"
           className={`${BTN_PRIMARY} flex-1 !py-1.5 text-[12.5px]`}
         >
-          <Video className="w-4 h-4" /> Unirse a Google Meet
+          <Video className="w-4 h-4" /> Unirse a {nombreSala(url)}
         </a>
         <button type="button" onClick={copy} className={`${BTN_SECONDARY} !py-1.5 !px-2.5`} title="Copiar enlace">
           {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}

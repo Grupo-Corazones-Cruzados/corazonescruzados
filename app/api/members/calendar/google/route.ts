@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { reunionesGoogle } from '@/lib/calendar/google';
+import { importarReunionesGoogle } from '@/lib/calendar/google-import';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +20,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Rango demasiado largo' }, { status: 400 });
   }
   try {
+    // Primero se registran las invitaciones nuevas (`google-import.ts`); lo que no es reunión se lee en vivo.
+    let registradas = 0;
+    try {
+      const imp = await importarReunionesGoogle(user.userId);
+      registradas = imp.nuevas + imp.actualizadas + imp.quitadas;
+    } catch (e: any) { console.error('Google Calendar (registrar reuniones):', e?.message); }
     const r = await reunionesGoogle(user.userId, desde, hasta);
-    return NextResponse.json({ data: r.eventos, estado: r.estado, email: r.email || null });
+    return NextResponse.json({ data: r.eventos, estado: r.estado, email: r.email || null, registradas });
   } catch (e: any) {
     console.error('Google Calendar (Mi día):', e?.message);
     return NextResponse.json({ error: 'No se pudieron leer las reuniones de Google', estado: 'error' }, { status: 502 });

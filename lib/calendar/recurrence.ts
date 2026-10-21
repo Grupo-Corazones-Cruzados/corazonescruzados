@@ -30,6 +30,15 @@ export interface CalendarEvent {
   google_url?: string | null;
 }
 
+/** De qué servicio es un enlace de reunión (las que llegan de Google pueden ser de Teams, Zoom…). */
+export const proveedorDe = (url: string | null | undefined): string | null =>
+  !url ? null : /meet\.google\.com/.test(url) ? 'google_meet' : /zoom\.us/.test(url) ? 'zoom'
+    : /teams\.(microsoft|live)\.com/.test(url) ? 'teams' : /webex\.com/.test(url) ? 'webex' : 'otro';
+
+const NOMBRE_SALA: Record<string, string> = { google_meet: 'Google Meet', zoom: 'Zoom', teams: 'Microsoft Teams', webex: 'Webex' };
+/** «Unirse a …» */
+export const nombreSala = (url: string): string => NOMBRE_SALA[proveedorDe(url) || ''] || 'la reunión';
+
 export interface EventInstance extends CalendarEvent {
   instanceStart: Date;
   instanceEnd: Date;

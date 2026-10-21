@@ -379,6 +379,19 @@ Stack estándar de la casa, con particularidades de este repo:
   suman horas. Entran en los avisos (toast y push; el push cachea 5 min por persona). La leyenda dice
   qué cuenta se lee o lleva a «Conectar/Reconectar». Crear el Meet al aceptar una propuesta sigue
   siendo con la cuenta organizadora (`google-workspace.ts`).
+- **📥 Invitaciones de Google → reuniones registradas en Mi día (Fernando, 2026-10-20).**
+  `lib/calendar/google-import.ts`: las REUNIONES de la cuenta conectada de cada persona (con hora,
+  con videollamada o con más invitados; ni canceladas ni rechazadas) se guardan como eventos
+  `progreso` de Mi día con su enlace: así cuentan en avisos, iCal, horas y recordatorios. Lo demás de
+  Google se sigue pintando en vivo. Ventana: −7 días a +60. Corre cada 10 min en el servidor
+  (`instrumentation-node.ts`) y al abrir Mi día (mín. 2 min por persona). Columnas `google_event_id`,
+  `google_user_id` (qué cuenta la trajo), `google_updated` (solo se reescribe si cambió en Google; lo
+  editado aquí se conserva hasta entonces). Cancelada/rechazada allá y aún futura → se quita (o se
+  marca cancelada si ya tiene recordatorio); lo pasado queda. Eliminar aquí la DESCARTA
+  (`google_eventos_descartados`) y NUNCA borra en Google (`meeting_event_id` es solo para los Meet que
+  crea GCC: borrarlo cancela el evento de la cuenta organizadora). El enlace se busca también en la
+  descripción/lugar (Teams y Zoom no traen `conferenceData`); «Unirse a Microsoft Teams/Zoom…» sale de
+  `nombreSala` (`lib/calendar/recurrence.ts`). Hora en la zona del calendario de la persona.
 - **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
   público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
   avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por

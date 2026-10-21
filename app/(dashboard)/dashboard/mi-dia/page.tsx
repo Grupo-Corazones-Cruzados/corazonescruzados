@@ -144,8 +144,10 @@ export default function MiDiaPage() {
       if (!res.ok) { setGoogleEstado({ estado: 'error', email: null }); return; }
       setGoogleEvents(d.data || []);
       setGoogleEstado({ estado: d.estado, email: d.email });
+      // Llegaron, cambiaron o se quitaron reuniones registradas desde Google: se releen.
+      if (d.registradas > 0) load();
     } catch { setGoogleEstado({ estado: 'error', email: null }); }
-  }, [range.s, range.e]);
+  }, [range.s, range.e, load]);
   useEffect(() => { loadGoogle(); }, [loadGoogle]);
 
   const instances: EventInstance[] = useMemo(() => expandEvents([...events, ...googleEvents], range.s, range.e), [events, googleEvents, range]);
