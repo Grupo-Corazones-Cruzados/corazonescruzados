@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import {
   LayoutDashboard,
   Users,
@@ -25,7 +26,7 @@ import {
   CalendarX2,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
-import { useAparicion } from '@/componentes/ui';
+import { Boton, BotonIcono, useAparicion } from '@/componentes/ui';
 import { LogoNegocio } from '@/componentes/Marca';
 import { puede, ETIQUETA_ROL, type Capacidad } from '@/lib/permisos';
 import { cn } from '@/lib/utils';
@@ -294,22 +295,137 @@ export function BarraInferior(props: Props) {
   );
 }
 
+/** Una acción secundaria: botón en escritorio, opción del menú «⋯» en el teléfono. */
+export type AccionMenu = {
+  etiqueta: string;
+  icono: React.ComponentType<{ className?: string }>;
+  alPulsar?: () => void;
+  /** Enlace en vez de acción; con `descargar` se baja el archivo. */
+  href?: string;
+  descargar?: boolean;
+  peligro?: boolean;
+  deshabilitado?: boolean;
+  titulo?: string;
+};
+
+/** Donde la barra de acciones del teléfono se monta: al final del contenido, encima de la barra inferior. */
+export const ID_BARRA_ACCIONES = 'barra-acciones-movil';
+
+/**
+ * El hueco de la barra de acciones en el teléfono. Va como ÚLTIMO hijo del contenido y es
+ * `sticky`: ocupa su propio sitio en el flujo, así que al final de la página nada queda debajo
+ * de ella, y mientras se baja se queda pegada encima de la barra inferior. Vacío, no ocupa nada.
+ */
+export function HuecoBarraAcciones() {
+  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-16 z-30 empty:hidden lg:hidden print:hidden" />;
+}
+
+/*
+  Cabecera de página. En el teléfono los botones con texto no se amontonan arriba:
+  - `acciones` son las PRINCIPALES (aprobar, rechazar, nuevo…): van a una barra propia abajo,
+    centradas, encima de la barra inferior;
+  - `menu` son las SECUNDARIAS: van dentro del botón «⋯» junto al título.
+  En escritorio todo sigue en la cabecera: las secundarias primero, las principales a la derecha.
+  `extra` es información (no un botón) que se queda en la cabecera siempre.
+*/
 export function CabeceraPagina({
   titulo,
   descripcion,
   acciones,
+  menu,
+  extra,
 }: {
   titulo: string;
   descripcion?: string;
   acciones?: React.ReactNode;
+  menu?: AccionMenu[];
+  extra?: React.ReactNode;
 }) {
+  const [hueco, setHueco] = useState<HTMLElement | null>(null);
+  useEffect(() => setHueco(document.getElementById(ID_BARRA_ACCIONES)), []);
+  const hayMenu = !!menu?.length;
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 print:hidden">
+    <div className="flex items-start justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 lg:flex-wrap lg:items-center print:hidden">
       <div className="min-w-0">
         <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
         {descripcion && <p className="text-[12px] text-tenue">{descripcion}</p>}
+        {extra && <div className="mt-1.5 lg:hidden">{extra}</div>}
       </div>
-      {acciones && <div className="flex flex-wrap items-center gap-2">{acciones}</div>}
+      {hayMenu && <MenuMas acciones={menu!} />}
+      {(acciones || hayMenu || extra) && (
+        <div className="hidden flex-wrap items-center gap-2 lg:flex">
+          {extra}
+          {menu?.map((a) => <BotonAccion key={a.etiqueta} accion={a} />)}
+          {acciones}
+        </div>
+      )}
+      {acciones && hueco && createPortal(
+        <div className="border-t border-borde bg-tarjeta px-4 py-2.5 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+          <div className="mx-auto flex max-w-md items-center justify-center gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full [&_button]:justify-center">
+            {acciones}
+          </div>
+        </div>,
+        hueco,
+      )}
+    </div>
+  );
+}
+
+function BotonAccion({ accion: a }: { accion: AccionMenu }) {
+  const boton = (
+    <Boton variante={a.peligro ? 'peligro' : 'secundario'} icono={a.icono} onClick={a.alPulsar} disabled={a.deshabilitado} title={a.titulo}>
+      {a.etiqueta}
+    </Boton>
+  );
+  if (!a.href || a.deshabilitado) return boton;
+  return a.descargar ? <a href={a.href} download>{boton}</a> : <Link href={a.href}>{boton}</Link>;
+}
+
+/** El «⋯» del teléfono con las acciones secundarias; entra y sale con movimiento. */
+function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
+  const [abierto, setAbierto] = useState(false);
+  const { montado, visible } = useAparicion(abierto);
+  useEffect(() => {
+    if (!abierto) return;
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && setAbierto(false);
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, [abierto]);
+
+  const opcion = 'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] font-medium transition-colors hover:bg-realce disabled:opacity-50';
+  return (
+    <div className="relative shrink-0 lg:hidden">
+      <BotonIcono icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
+        className={cn('border border-borde', abierto && 'bg-realce text-texto')} />
+      {montado && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
+          <div role="menu"
+            className={cn(
+              'absolute right-0 top-full z-50 mt-1.5 w-60 origin-top-right overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
+              'transition duration-200 ease-out',
+              visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
+            )}>
+            {acciones.map((a) => {
+              const Icono = a.icono;
+              const contenido = <><Icono className="h-4 w-4 shrink-0" />{a.etiqueta}</>;
+              const clase = cn(opcion, a.peligro ? 'text-error' : 'text-texto');
+              const cerrar = () => setAbierto(false);
+              if (a.href && !a.deshabilitado)
+                return a.descargar
+                  ? <a key={a.etiqueta} role="menuitem" href={a.href} download className={clase} onClick={cerrar}>{contenido}</a>
+                  : <Link key={a.etiqueta} role="menuitem" href={a.href} className={clase} onClick={cerrar}>{contenido}</Link>;
+              return (
+                <button key={a.etiqueta} type="button" role="menuitem" disabled={a.deshabilitado} title={a.titulo} className={clase}
+                  onClick={() => { cerrar(); a.alPulsar?.(); }}>
+                  {contenido}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

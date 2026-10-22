@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, Filter, Search, AlertTriangle } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
 import { Boton, Campo, Entrada, Tarjeta, Tabla, Insignia } from '@/componentes/ui';
 import { Cifra } from '@/componentes/campos';
 import { ETIQUETA_ESTADO_CLIENTE, TONO_ESTADO_CLIENTE } from '@/lib/catalogo';
@@ -54,7 +54,7 @@ export default function ReportesCliente({ slug, reporte: r, mesesRetencion }: { 
   return (
     <>
       <CabeceraPagina titulo="Reportes" descripcion="Indicadores del periodo y el detalle de los servicios"
-        acciones={<a href={`/${slug}/api/reportes/excel?${consulta}`} download><Boton variante="secundario" icono={Download}>Exportar a Excel</Boton></a>} />
+        menu={[{ etiqueta: 'Exportar a Excel', icono: Download, href: `/${slug}/api/reportes/excel?${consulta}`, descargar: true }]} />
       <div className="space-y-4 p-4 sm:p-6">
         {mesesRetencion && (
           <p className="flex items-start gap-2 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">

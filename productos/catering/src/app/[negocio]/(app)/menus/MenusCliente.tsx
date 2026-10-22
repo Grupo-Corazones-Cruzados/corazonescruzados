@@ -4,7 +4,6 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ChefHat, ChevronLeft, ChevronRight, Copy, Trash2, Tag, ShieldAlert } from 'lucide-react';
-import Link from 'next/link';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, Campo, Entrada, Tarjeta, Insignia, Ventanita, Confirmar, EstadoVacio } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
@@ -43,12 +42,10 @@ export default function MenusCliente({
       <CabeceraPagina
         titulo="Menús"
         descripcion="Lo que se cocina cada día, por comida. Con el menú cargado, las etiquetas dicen quién no come qué."
-        acciones={
-          <>
-            <Boton variante="secundario" icono={Copy} onClick={() => setCopiar(true)}>Copiar de otro día</Boton>
-            <Link href={`/${slug}/etiquetas?dia=${dia}`}><Boton variante="secundario" icono={Tag}>Etiquetas del día</Boton></Link>
-          </>
-        }
+        menu={[
+          { etiqueta: 'Copiar de otro día', icono: Copy, alPulsar: () => setCopiar(true) },
+          { etiqueta: 'Etiquetas del día', icono: Tag, href: `/${slug}/etiquetas?dia=${dia}` },
+        ]}
       />
       <div className="space-y-4 p-4 sm:p-6">
         <Tarjeta className="flex flex-wrap items-center gap-3 p-3">

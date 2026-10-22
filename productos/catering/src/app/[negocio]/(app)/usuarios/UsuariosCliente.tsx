@@ -69,13 +69,12 @@ export default function UsuariosCliente({
       <CabeceraPagina
         titulo="Usuarios"
         descripcion="Quién entra al negocio y con qué permisos"
+        extra={cupo.tope !== null && (
+          <Insignia tono={sinSitio ? 'error' : cupo.quedan !== null && cupo.quedan <= 5 ? 'aviso' : 'neutro'}>
+            {cupo.usadas} de {cupo.tope} cuentas
+          </Insignia>
+        )}
         acciones={
-          <>
-            {cupo.tope !== null && (
-              <Insignia tono={sinSitio ? 'error' : cupo.quedan !== null && cupo.quedan <= 5 ? 'aviso' : 'neutro'}>
-                {cupo.usadas} de {cupo.tope} cuentas
-              </Insignia>
-            )}
             <Boton
               icono={UserPlus}
               onClick={() => setCreando(true)}
@@ -84,7 +83,6 @@ export default function UsuariosCliente({
             >
               Nueva cuenta
             </Boton>
-          </>
         }
       />
 

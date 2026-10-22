@@ -82,6 +82,9 @@
 - **C6 — Barra de filtros del día sin apilar con huecos** · ✅ Hecho en Catering (2026-10-22): día unido
   `[‹ | fecha | ›]` a ancho completo y selectores en dos columnas en el teléfono; una fila desde `sm`.
   Regla general en `/diseno` §4-ter punto 3: ningún control de ancho fijo en una barra del teléfono.
+- **C7 — Botones de la cabecera en el teléfono** · ✅ Hecho en Catering (2026-10-22): principales en una
+  barra propia abajo y centrada, con su espacio (hueco `sticky` en el flujo, no `fixed`); secundarias en
+  «⋯». La clasificación principal/secundaria la decide cada página; la colocación, el componente.
 - **P2 — ¿Se lleva también a GCC World?** ⏸ Fernando dijo que no le gusta tampoco allí; pedirle el «sí»
   antes de tocar sus módulos (es grande).
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando

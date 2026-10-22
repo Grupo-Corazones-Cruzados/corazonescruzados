@@ -1,6 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
-import { BarraLateral, BarraInferior } from '@/componentes/Navegacion';
+import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,7 @@ export default async function LayoutApp({
       <div className="pb-16 lg:ml-16 lg:pb-0 print:ml-0 print:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
+        <HuecoBarraAcciones />
       </div>
       <BarraInferior slug={negocio} negocio={inquilino.nombre} logoUrl={inquilino.logoUrl} usuario={sesion.nombre} quien={quien} />
     </AplicaMarca>

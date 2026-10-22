@@ -8,7 +8,7 @@ import {
   Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send, ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
 import {
   Boton, Tarjeta, RailFiltro, PanelLateral, Ventanita, Confirmar, Insignia, Campo, Entrada, AreaTexto, EstadoVacio, Tabla,
 } from '@/componentes/ui';
@@ -90,26 +90,24 @@ export default function FichaCliente({
       router.refresh();
     });
 
-  const acciones = (
+  // Principales: deciden el estado (en el teléfono, barra de abajo). El resto, al «⋯».
+  const acciones = cliente.estado === 'PENDIENTE' ? (
     <>
-      {cliente.estado === 'PENDIENTE' && (
-        <>
-          <Boton icono={Check} onClick={() => { setError(null); setCambio('APROBAR'); }}>Aprobar</Boton>
-          <Boton variante="secundario" icono={HelpCircle} onClick={() => { setError(null); setCambio('SOLICITAR_INFO'); }}>Pedir información</Boton>
-          <Boton variante="peligro" icono={X} onClick={() => { setError(null); setCambio('RECHAZAR'); }}>Rechazar</Boton>
-        </>
-      )}
-      {cliente.estado === 'ACTIVO' && <Boton variante="secundario" icono={Ban} onClick={() => setCambio('INACTIVAR')}>Inactivar</Boton>}
-      {(cliente.estado === 'INACTIVO' || cliente.estado === 'RECHAZADO') && <Boton icono={Check} onClick={() => setCambio('ACTIVAR')}>Activar</Boton>}
-      <Boton variante="secundario" icono={KeyRound} title="Genera una contraseña nueva para el portal"
-        onClick={() => arranca(async () => { const r = await restablecerClaveCliente(slug, cliente.id); if (!r.ok) { toast.error(r.error); return; } setClave(r.clave!); })}>
-        Nueva contraseña
-      </Boton>
-      <a href={`/${slug}/api/pdf/cliente/${cliente.id}`} download>
-        <Boton variante="secundario" icono={FileDown}>Ficha en PDF</Boton>
-      </a>
+      <Boton variante="peligro" icono={X} onClick={() => { setError(null); setCambio('RECHAZAR'); }}>Rechazar</Boton>
+      <Boton icono={Check} onClick={() => { setError(null); setCambio('APROBAR'); }}>Aprobar</Boton>
     </>
-  );
+  ) : (cliente.estado === 'INACTIVO' || cliente.estado === 'RECHAZADO') ? (
+    <Boton icono={Check} onClick={() => setCambio('ACTIVAR')}>Activar</Boton>
+  ) : null;
+  const menu: AccionMenu[] = [
+    ...(cliente.estado === 'PENDIENTE' ? [{ etiqueta: 'Pedir información', icono: HelpCircle, alPulsar: () => { setError(null); setCambio('SOLICITAR_INFO'); } }] : []),
+    {
+      etiqueta: 'Nueva contraseña', icono: KeyRound, titulo: 'Genera una contraseña nueva para el portal',
+      alPulsar: () => arranca(async () => { const r = await restablecerClaveCliente(slug, cliente.id); if (!r.ok) { toast.error(r.error); return; } setClave(r.clave!); }),
+    },
+    { etiqueta: 'Ficha en PDF', icono: FileDown, href: `/${slug}/api/pdf/cliente/${cliente.id}`, descargar: true },
+    ...(cliente.estado === 'ACTIVO' ? [{ etiqueta: 'Inactivar', icono: Ban, peligro: true, alPulsar: () => setCambio('INACTIVAR') }] : []),
+  ];
 
   return (
     <>
@@ -117,6 +115,7 @@ export default function FichaCliente({
         titulo={cliente.datos.nombre}
         descripcion={`${cliente.email} · ${cliente.datos.celular} · registrado el ${fechaCorta(new Date(cliente.creado))}`}
         acciones={acciones}
+        menu={menu}
       />
       <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
         <div className="space-y-3 lg:w-[220px] lg:shrink-0">

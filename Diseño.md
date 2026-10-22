@@ -2969,6 +2969,20 @@ estados de buen diseño»* y *«para las vistas de teléfono el diseño sea esti
 porque como tabla hay que deslizarse también a la derecha y a veces se pierden de vista datos»*.
 Le pasa *«ni en GCC World ni en esta app ni en ninguna»*: la regla general está en la skill
 `/diseno` §4-ter.
+- **Botones de la cabecera en el teléfono** (Fernando, 2026-10-22: *«no deben mostrarse con textos
+  completos y fijos en una parte superior»*). `CabeceraPagina` (`src/componentes/Navegacion.tsx`)
+  recibe `acciones` = PRINCIPALES, `menu: AccionMenu[]` = SECUNDARIAS y `extra` = información.
+  Por debajo de `lg`: las principales van a una barra propia abajo y centrada (`border-t bg-tarjeta
+  px-4 py-2.5`, botones `flex-1` en `max-w-md`, la peligrosa a la izquierda), montada con un portal
+  en `HuecoBarraAcciones`: un `div` `sticky bottom-16 empty:hidden` que es el último hijo del
+  contenido en los dos layouts, así que ocupa su sitio y no tapa el último campo. Las secundarias van
+  a un «⋯» (`BotonIcono` con borde) junto al título que abre un menú (`w-60`, icono + texto, la
+  peligrosa en `text-error`), que entra con `scale-95 → 100` y se cierra con Escape, fuera o al
+  elegir. Desde `lg`, todo en la cabecera: secundarias como `Boton secundario` y principales a la
+  derecha. Reparto: Ficha (Rechazar/Aprobar o Activar · Pedir información, Nueva contraseña, Ficha en
+  PDF, Inactivar), Feriados (Nuevo · Cargar los de Ecuador), Menús y Reportes (solo «⋯»), Usuarios
+  (la cuenta de cuentas en `extra`); las de un botón «Nuevo…»/PDF van a la barra. Regla general en
+  `/diseno` §4-quater.
 - **`SelectorEstado`** (`src/componentes/ui.tsx`) sustituye a `RailFiltro` en **Clientes, Servicios
   y Alimentos**. Desde `lg`, un control segmentado (`rounded-md border bg-realce p-0.5`, segmentos
   `h-8 px-3 text-[13px]` + cuenta) con una cápsula blanca que se desliza a la opción elegida;
@@ -4095,6 +4109,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Botones con texto amontonados arriba en el teléfono (Catering)** · **CAMBIO DE
+  ESTÁNDAR**: principales en una barra propia abajo, secundarias en «⋯» (`CabeceraPagina`). Pendiente:
+  los otros cuatro productos y GCC World.
 - **2026-10-22 · Raíl vertical para filtrar estados y tablas que se deslizan en el teléfono (Catering)** ·
   **CAMBIO DE ESTÁNDAR**: `SelectorEstado` y galería en `Tabla`. Pendiente: los otros cuatro productos y
   **GCC World** (`FilterRail` en sus módulos), que a Fernando tampoco le gusta.

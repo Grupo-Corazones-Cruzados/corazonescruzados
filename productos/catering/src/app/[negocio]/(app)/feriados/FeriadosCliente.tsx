@@ -25,7 +25,8 @@ export default function FeriadosCliente({ slug, anio, anioHoy, feriados }: { slu
   return (
     <>
       <CabeceraPagina titulo="Feriados" descripcion="Un feriado no laborable no consume día del servicio y no hay entregas. Si el negocio decide trabajarlo, se marca como laborable."
-        acciones={<><Boton variante="secundario" icono={Download} onClick={() => setCargar(true)}>Cargar los de Ecuador</Boton><Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo feriado</Boton></>} />
+        menu={[{ etiqueta: 'Cargar los de Ecuador', icono: Download, alPulsar: () => setCargar(true) }]}
+        acciones={<Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo feriado</Boton>} />
       <div className="space-y-4 p-4 sm:p-6">
         <Tarjeta className="flex items-center gap-3 p-3">
           <span className="text-[12px] font-semibold text-tenue">Año</span>
