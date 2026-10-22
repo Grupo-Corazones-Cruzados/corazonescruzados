@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { X, Search, Loader2, Inbox, ChevronDown } from 'lucide-react';
+import { X, Search, Loader2, Inbox, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sumarDias } from '@/lib/fechas';
 
 /**
  * CATÁLOGO DE CONTROLES — una sola definición por control.
@@ -441,7 +442,14 @@ export type OpcionRail = {
   pista?: string;
 };
 
-/** El ÚNICO rail de filtro. Uno nuevo se hace con esto, nunca copiando el marcado. */
+/**
+ * El ÚNICO rail de filtro. Uno nuevo se hace con esto, nunca copiando el marcado.
+ *
+ * En el teléfono NO es una tira que se desliza a la derecha (las últimas opciones
+ * quedaban fuera de la vista; Fernando, 2026-10-22): con hasta 3 opciones es un
+ * segmentado que reparte el ancho a partes iguales; con más, un `<select>` nativo
+ * a todo el ancho, como `SelectorEstado`. Desde `lg`, el raíl vertical de siempre.
+ */
 export function RailFiltro({
   opciones,
   activo,
@@ -456,41 +464,102 @@ export function RailFiltro({
   className?: string;
 }) {
   return (
-    <div className={cn('tarjeta p-1.5 lg:w-[220px] shrink-0', className)}>
-      {titulo && (
-        <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-tenue">
-          {titulo}
-        </p>
+    <>
+      {opciones.length <= 3 ? (
+        <div role="tablist" aria-label={titulo}
+          className={cn('grid gap-0.5 rounded-md border border-borde bg-realce p-0.5 lg:hidden', className)}
+          style={{ gridTemplateColumns: `repeat(${opciones.length}, minmax(0, 1fr))` }}>
+          {opciones.map((o) => {
+            const sel = o.valor === activo;
+            const Icono = o.icono;
+            return (
+              <button key={o.valor} type="button" role="tab" aria-selected={sel} onClick={() => alElegir(o.valor)}
+                className={cn(
+                  'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded px-2 text-[13px] transition-colors duration-200 foco-visible',
+                  sel ? 'bg-tarjeta font-semibold text-acento shadow-sm ring-1 ring-borde' : 'text-tenue hover:text-texto',
+                )}>
+                {Icono && <Icono className="h-4 w-4 shrink-0" />}
+                <span className="truncate">{o.etiqueta}</span>
+                {o.conteo !== undefined && <span className="text-[11px] font-normal">{o.conteo}</span>}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={cn('relative lg:hidden', className)}>
+          <select value={activo} onChange={(e) => alElegir(e.target.value)} aria-label={titulo ?? 'Sección'}
+            className="campo appearance-none pr-8 font-semibold">
+            {opciones.map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.etiqueta}{o.conteo !== undefined ? ` · ${o.conteo}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
-      <div className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-        {opciones.map((o) => {
-          const sel = o.valor === activo;
-          const Icono = o.icono;
-          return (
-            <button
-              key={o.valor}
-              onClick={() => alElegir(o.valor)}
-              className={cn(
-                'flex w-full items-center gap-2.5 whitespace-nowrap rounded px-2.5 py-2 text-left text-[13px] transition-colors foco-visible',
-                sel
-                  ? 'bg-acento-suave text-acento font-semibold border-l-2 border-acento'
-                  : 'text-texto hover:bg-realce border-l-2 border-transparent',
-              )}
-            >
-              {Icono && <Icono className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{o.etiqueta}</span>
-                {o.pista && <span className="block truncate text-[11px] text-tenue">{o.pista}</span>}
-              </span>
-              {o.conteo !== undefined && (
-                <span className={cn('rounded-full px-1.5 text-[11px]', sel ? 'text-acento' : 'text-tenue')}>
-                  {o.conteo}
+      <div className={cn('tarjeta hidden p-1.5 lg:block lg:w-[220px] shrink-0', className)}>
+        {titulo && (
+          <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-tenue">
+            {titulo}
+          </p>
+        )}
+        <div className="flex flex-col gap-1">
+          {opciones.map((o) => {
+            const sel = o.valor === activo;
+            const Icono = o.icono;
+            return (
+              <button
+                key={o.valor}
+                onClick={() => alElegir(o.valor)}
+                className={cn(
+                  'flex w-full items-center gap-2.5 whitespace-nowrap rounded px-2.5 py-2 text-left text-[13px] transition-colors foco-visible',
+                  sel
+                    ? 'bg-acento-suave text-acento font-semibold border-l-2 border-acento'
+                    : 'text-texto hover:bg-realce border-l-2 border-transparent',
+                )}
+              >
+                {Icono && <Icono className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{o.etiqueta}</span>
+                  {o.pista && <span className="block truncate text-[11px] text-tenue">{o.pista}</span>}
                 </span>
-              )}
-            </button>
-          );
-        })}
+                {o.conteo !== undefined && (
+                  <span className={cn('rounded-full px-1.5 text-[11px]', sel ? 'text-acento' : 'text-tenue')}>
+                    {o.conteo}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
+    </>
+  );
+}
+
+// ── Paso de día ─────────────────────────────────────────────────────────────
+/**
+ * El día como UN control `[‹ | fecha | ›]`: un borde, las flechas dentro. En el
+ * teléfono ocupa el ancho entero; desde `sm`, su ancho natural. Lo usan la barra de
+ * etiquetas/rutas/restricciones y la de menús.
+ */
+export function PasoDia({ dia, alCambiar, className }: { dia: string; alCambiar: (dia: string) => void; className?: string }) {
+  const flecha = 'foco-visible flex w-10 shrink-0 items-center justify-center text-tenue transition-colors hover:bg-realce hover:text-texto';
+  return (
+    <div className={cn('flex h-[34px] w-full overflow-hidden rounded border border-borde bg-tarjeta focus-within:border-acento sm:w-auto', className)}>
+      <button type="button" className={flecha} onClick={() => alCambiar(sumarDias(dia, -1))} aria-label="Día anterior">
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <input
+        type="date"
+        value={dia}
+        onChange={(e) => e.target.value && alCambiar(e.target.value)}
+        aria-label="Día"
+        className="min-w-0 flex-1 border-x border-borde bg-transparent px-2 text-center text-[13px] font-semibold text-texto outline-none sm:w-40 sm:flex-none"
+      />
+      <button type="button" className={flecha} onClick={() => alCambiar(sumarDias(dia, 1))} aria-label="Día siguiente">
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }

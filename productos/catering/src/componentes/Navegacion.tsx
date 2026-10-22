@@ -317,7 +317,7 @@ export const ID_BARRA_ACCIONES = 'barra-acciones-movil';
  * de ella, y mientras se baja se queda pegada encima de la barra inferior. Vacío, no ocupa nada.
  */
 export function HuecoBarraAcciones() {
-  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-16 z-30 empty:hidden lg:hidden print:hidden" />;
+  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-16 z-30 mt-auto empty:hidden lg:hidden print:hidden" />;
 }
 
 /*

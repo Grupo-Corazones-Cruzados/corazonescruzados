@@ -64,10 +64,10 @@ export default function ReportesCliente({ slug, reporte: r, mesesRetencion }: { 
         )}
         <Tarjeta className="p-4">
           <div className="mb-3 flex items-center gap-2"><Filter className="h-4 w-4 text-tenue" /><h2 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">Periodo (hasta 62 días)</h2></div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Campo etiqueta="Desde"><Entrada type="date" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} /></Campo>
             <Campo etiqueta="Hasta"><Entrada type="date" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} /></Campo>
-            <div className="flex items-end"><Boton icono={Search} tamano="lg" className="w-full" onClick={() => router.push(`/${slug}/reportes?${consulta}`)}>Consultar</Boton></div>
+            <div className="col-span-2 flex items-end sm:col-span-1"><Boton icono={Search} tamano="lg" className="w-full" onClick={() => router.push(`/${slug}/reportes?${consulta}`)}>Consultar</Boton></div>
           </div>
         </Tarjeta>
 

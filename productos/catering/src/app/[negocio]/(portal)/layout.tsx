@@ -20,7 +20,7 @@ export default async function LayoutPortal({
   return (
     <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema}>
       <BarraLateral slug={negocio} negocio={inquilino.nombre} logoUrl={inquilino.logoUrl} usuario={cliente.nombre} quien={quien} />
-      <div className="pb-16 lg:ml-16 lg:pb-0">
+      <div className="flex min-h-dvh flex-col pb-16 lg:ml-16 lg:block lg:min-h-0 lg:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
         <HuecoBarraAcciones />

@@ -275,6 +275,9 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Catering: el raíl de secciones en el teléfono (Fernando, 2026-10-22).** `RailFiltro` ya no se
+  desliza a la derecha: segmentado repartido con ≤3 secciones, `<select>` con más. Menús usa `PasoDia`
+  (el día unido) y Reportes reparte las fechas en dos columnas. Regla en `/diseno` §4-ter punto 4.
 - **🎨 Catering: botones de la cabecera en el teléfono (Fernando, 2026-10-22).** Las principales
   (Aprobar/Rechazar, Nuevo…, PDF) van a una barra propia abajo y centrada que no tapa nada (hueco
   `sticky` al final del contenido); las secundarias, a un «⋯» junto al título. Lo hace `CabeceraPagina`

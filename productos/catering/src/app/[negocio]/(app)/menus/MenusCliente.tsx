@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ChefHat, ChevronLeft, ChevronRight, Copy, Trash2, Tag, ShieldAlert } from 'lucide-react';
+import { ChefHat, Copy, Trash2, Tag, ShieldAlert } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Campo, Entrada, Tarjeta, Insignia, Ventanita, Confirmar, EstadoVacio } from '@/componentes/ui';
+import { Boton, Campo, Entrada, PasoDia, Tarjeta, Insignia, Ventanita, Confirmar, EstadoVacio } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { ETIQUETA_COMIDA, COLOR_COMIDA, ETIQUETA_CATEGORIA } from '@/lib/catalogo';
 import { fechaLarga, sumarDias } from '@/lib/fechas';
@@ -48,14 +48,14 @@ export default function MenusCliente({
         ]}
       />
       <div className="space-y-4 p-4 sm:p-6">
-        <Tarjeta className="flex flex-wrap items-center gap-3 p-3">
-          <Boton variante="secundario" tamano="sm" icono={ChevronLeft} onClick={() => ir(sumarDias(dia, -1))} aria-label="Día anterior" />
-          <Entrada type="date" value={dia} onChange={(e) => e.target.value && ir(e.target.value)} className="w-44" />
-          <Boton variante="secundario" tamano="sm" icono={ChevronRight} onClick={() => ir(sumarDias(dia, 1))} aria-label="Día siguiente" />
-          {dia !== hoy && <Boton variante="fantasma" tamano="sm" onClick={() => ir(hoy)}>Hoy</Boton>}
-          <p className="text-[13px] font-semibold first-letter:uppercase">{fechaLarga(dia)}</p>
-          <span className="text-[12px] text-tenue">· {entregas} entrega{entregas === 1 ? '' : 's'} ese día</span>
-          {esFeriado && <Insignia tono={esFeriado.esLaborable ? 'aviso' : 'error'}>{esFeriado.nombre}{esFeriado.esLaborable ? ' (se trabaja)' : ' · sin servicio'}</Insignia>}
+        <Tarjeta className="flex flex-col gap-2 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <PasoDia dia={dia} alCambiar={ir} />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 px-1">
+            <p className="text-[13px] font-semibold first-letter:uppercase">{fechaLarga(dia)}</p>
+            <span className="text-[12px] text-tenue">· {entregas} entrega{entregas === 1 ? '' : 's'} ese día</span>
+            {esFeriado && <Insignia tono={esFeriado.esLaborable ? 'aviso' : 'error'}>{esFeriado.nombre}{esFeriado.esLaborable ? ' (se trabaja)' : ' · sin servicio'}</Insignia>}
+            {dia !== hoy && <Boton variante="fantasma" tamano="sm" className="ml-auto" onClick={() => ir(hoy)}>Hoy</Boton>}
+          </div>
         </Tarjeta>
 
         <div className="grid gap-4 xl:grid-cols-2">

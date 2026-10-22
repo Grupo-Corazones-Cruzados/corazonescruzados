@@ -2969,6 +2969,13 @@ estados de buen diseño»* y *«para las vistas de teléfono el diseño sea esti
 porque como tabla hay que deslizarse también a la derecha y a veces se pierden de vista datos»*.
 Le pasa *«ni en GCC World ni en esta app ni en ninguna»*: la regla general está en la skill
 `/diseno` §4-ter.
+- **`RailFiltro` en el teléfono** (Fernando, 2026-10-22: los filtros con «el diseño antiguo»). Ya no
+  es una tira que se desliza: hasta 3 secciones, segmentado de ancho repartido (`grid`
+  `repeat(n,1fr)`, `rounded-md border bg-realce p-0.5`, la elegida `bg-tarjeta text-acento ring-1`);
+  más de 3 (ficha del cliente, Configuración), `<select>` nativo a todo el ancho. Desde `lg`, el raíl
+  vertical. **`PasoDia`** (`ui.tsx`) es el día unido `[‹ | fecha | ›]` que usan `FiltroDia` y Menús.
+  Reportes: «Desde/Hasta» en dos columnas y «Consultar» debajo en el teléfono. Los layouts son
+  `flex min-h-dvh flex-col` en el teléfono para que la barra de acciones (`mt-auto`) siempre quede abajo.
 - **Botones de la cabecera en el teléfono** (Fernando, 2026-10-22: *«no deben mostrarse con textos
   completos y fijos en una parte superior»*). `CabeceraPagina` (`src/componentes/Navegacion.tsx`)
   recibe `acciones` = PRINCIPALES, `menu: AccionMenu[]` = SECUNDARIAS y `extra` = información.

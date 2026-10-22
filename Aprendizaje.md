@@ -85,6 +85,9 @@
 - **C7 — Botones de la cabecera en el teléfono** · ✅ Hecho en Catering (2026-10-22): principales en una
   barra propia abajo y centrada, con su espacio (hueco `sticky` en el flujo, no `fixed`); secundarias en
   «⋯». La clasificación principal/secundaria la decide cada página; la colocación, el componente.
+- **C8 — Raíl de secciones y barras de día antiguas en el teléfono** · ✅ Hecho en Catering (2026-10-22):
+  `RailFiltro` segmentado (≤3) o `<select>` (>3) en el teléfono; `PasoDia` compartido; Reportes en dos
+  columnas. Lección: tras cada corrección, barrer TODOS los controles parecidos, no solo el de la captura.
 - **P2 — ¿Se lleva también a GCC World?** ⏸ Fernando dijo que no le gusta tampoco allí; pedirle el «sí»
   antes de tocar sus módulos (es grande).
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
