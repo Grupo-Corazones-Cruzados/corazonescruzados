@@ -3,3 +3,4 @@ app_packages/
 build/
 xcuserdata/
 *.xcuserstate
+__pycache__/
