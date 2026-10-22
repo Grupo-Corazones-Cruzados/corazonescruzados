@@ -37,6 +37,10 @@
   `ContenidoMenu` compartido por el raíl y un panel izquierdo; cierre por velo, Escape y al navegar;
   probado en 390×844 con el personal (admin) y el portal del cliente. Regla en `Diseño.md` y en la
   skill `/producto` (Fernando lo pidió expresamente para futuras apps).
+- **C3 — El círculo de la columna Cliente (lista de Clientes)** · ✅ Hecho: era el color identificador
+  (`colorIdentificador`, se elige en la ficha y se imprime en la etiqueta para reconocer el paquete).
+  Útil en etiqueta/PDF/ruta/Motorizados/ficha, inútil en la lista y descuadraba los nombres: se quita
+  de la lista (y del dato que la página mandaba al navegador). Verificado en el demo.
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
   dijo «empezaremos con Catering»; preguntar.
 

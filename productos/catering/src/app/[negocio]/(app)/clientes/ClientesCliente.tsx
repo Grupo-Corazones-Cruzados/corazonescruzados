@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Users, UserPlus, Clock, Copy } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, Buscador, Tabla, Insignia, Tarjeta, RailFiltro, PanelLateral, Campo, Entrada, EstadoVacio, Ventanita } from '@/componentes/ui';
-import { Aviso, Punto } from '@/componentes/campos';
+import { Aviso } from '@/componentes/campos';
 import { CamposCliente, CLIENTE_VACIO } from '@/componentes/FormularioCliente';
 import { ETIQUETA_ESTADO_CLIENTE, TONO_ESTADO_CLIENTE } from '@/lib/catalogo';
 import { ETIQUETA_SITUACION, TONO_SITUACION, type ResumenServicio } from '@/lib/servicios';
@@ -21,7 +21,6 @@ export type ClienteFila = {
   celular: string;
   estado: EstadoCliente;
   direccion: string;
-  colorIdentificador: string | null;
   motorizado: string | null;
   restricciones: number;
   creado: string;
@@ -92,12 +91,12 @@ export default function ClientesCliente({
                 {
                   clave: 'nombre', titulo: 'Cliente',
                   render: (c) => (
-                    <span className="flex items-center gap-2">
-                      <Punto color={c.colorIdentificador} />
-                      <span>
-                        <span className="block font-semibold text-texto">{c.nombre}</span>
-                        <span className="block text-[11px] text-tenue">{c.email} · {c.celular}</span>
-                      </span>
+                    // Sin el punto del color identificador (Fernando, 2026-10-22): solo lo tienen
+                    // algunos clientes y descuadraba los nombres. El color sirve en la etiqueta, la
+                    // ruta y la ficha, no en la lista.
+                    <span>
+                      <span className="block font-semibold text-texto">{c.nombre}</span>
+                      <span className="block text-[11px] text-tenue">{c.email} · {c.celular}</span>
                     </span>
                   ),
                 },

@@ -37,7 +37,6 @@ export default async function PaginaClientes({
       celular: c.celular,
       estado: c.estado,
       direccion: c.direccion,
-      colorIdentificador: c.colorIdentificador,
       motorizado: c.motorizado?.nombre ?? null,
       restricciones: c._count.restricciones,
       creado: c.creado.toISOString(),

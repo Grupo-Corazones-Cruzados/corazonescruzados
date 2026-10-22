@@ -284,6 +284,8 @@ Stack estándar de la casa, con particularidades de este repo:
   Segunda (2026-10-22): en el teléfono la barra inferior es **cuatro destinos + «Más»**, que abre por
   la izquierda el mismo menú del escritorio (`ContenidoMenu` en `componentes/Navegacion.tsx`), con
   «Cerrar sesión» dentro; ya no hay «Salir» en la barra. También en la skill `/producto`.
+  Tercera (2026-10-22): fuera el punto del color identificador de la lista de Clientes (descuadraba
+  los nombres); el color sigue en etiqueta, PDF, ruta, Motorizados y ficha.
 - **🔐 Incidente de seguridad de Railway (2026-10-21/22).** Railway avisó que las variables de entorno
   pudieron filtrarse y pausó los despliegues. Decisiones de Fernando: **no** cerrar el acceso público a
   las bases y **no** salir de Railway por ahora. Hecho y verificado el 2026-10-22:

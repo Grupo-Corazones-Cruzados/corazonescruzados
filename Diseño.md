@@ -2907,7 +2907,12 @@ text-[12px] font-semibold` + el color del tono (`text-exito`/`text-aviso`/`text-
 conserva. La palabra ya dice el estado, así que sigue sin depender solo del color.
 También se quitó el punto suelto activa/desactivada de Usuarios: ahora «Desactivada» en `neutro`
 junto al nombre, y nada cuando está activa. Los puntos de `Punto` (color identificador del
-cliente/motorizado) se quedan: ahí el color ES el dato.
+cliente/motorizado) se quedan donde se usan: ahí el color ES el dato.
+**Matiz del mismo día:** el punto del color identificador sale de la **lista de Clientes**
+(Fernando: «completamente innecesario»). Solo lo tienen algunos clientes, así que descuadraba
+los nombres, y en la lista no sirve para nada: se usa en la etiqueta, el PDF, la hoja de ruta, la
+lista de Motorizados y la ficha, donde sigue. **Regla: un dato visual que solo tienen algunas filas
+no va delante del nombre en una tabla.**
 ⚠️ **Sustituye** a «píldora neutra + punto semántico» y a la regla «punto e icono excluyentes»
 (más abajo, 2026-09-23). Aplicado en Catering; reservas, pedidos, planificaciones y
 automatizaciones siguen con la píldora hasta que Fernando los revise.
@@ -4036,6 +4041,8 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Punto de color en la lista de Clientes (Catering)** · **CORREGIDO**: quitado; el color
+  sigue en etiqueta, ruta, Motorizados y ficha.
 - **2026-10-22 · «Salir» en la barra inferior (Catering)** · **CAMBIO DE ESTÁNDAR** (Fernando): pasa
   a «Más», que abre el menú completo por la izquierda. Ver la sección de Catering y la skill
   `/producto`. Pendiente: los otros cuatro productos.
