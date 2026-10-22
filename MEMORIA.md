@@ -275,6 +275,9 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Catering: la barra de filtros del día no se apila con huecos (Fernando, 2026-10-22).** `FiltroDia`
+  (etiquetas, rutas, restricciones): el día es un solo control `[‹ | fecha | ›]`; en el teléfono va a ancho
+  completo y los dos selectores debajo en dos columnas; desde `sm`, una fila. Regla en `/diseno` §4-ter.
 - **🎨 Productos: el estado es TEXTO DE COLOR (Fernando, 2026-10-22).** Empieza una ronda de mejoras de
   diseño de los productos, producto por producto, empezando por **Catering**. Primera: `Insignia`
   (`productos/catering/src/componentes/ui.tsx`) deja la píldora con fondo y punto; queda solo el texto

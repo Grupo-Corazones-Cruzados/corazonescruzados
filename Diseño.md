@@ -2993,7 +2993,10 @@ Le pasa *«ni en GCC World ni en esta app ni en ninguna»*: la regla general est
   «SIN X» en rojo pleno para la cocina, despacho en naranja, dirección, motorizado con su punto.
   Componente de servidor: no tiene estado y se imprime.
 - **`FiltroDia`** — la barra «qué día · qué comida · qué motorizado» de etiquetas, rutas y
-  restricciones. Una sola, con flechas de día anterior/siguiente.
+  restricciones. Una sola. El día es UN control unido `[‹ | fecha | ›]` (un borde, flechas
+  dentro). En el teléfono: el día a ancho completo y los selectores debajo en dos columnas
+  iguales; desde `sm`, todo en una fila (2026-10-22, corrección de Fernando: antes se apilaban
+  con anchos fijos y dejaban huecos a la derecha).
 - **`CamposCliente`** (`FormularioCliente.tsx`) — los campos de la ficha del cliente UNA vez, con
   `secciones` para que alta, edición y «Mi perfil»/«Mi dirección» enseñen las suyas;
   `CamposOcultosDireccion` manda escondido lo que un formulario parcial no enseña, para que no
