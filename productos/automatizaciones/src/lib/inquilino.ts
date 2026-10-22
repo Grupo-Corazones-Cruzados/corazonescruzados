@@ -61,10 +61,13 @@ export type EstadoAcceso = 'ok' | 'suspendido' | 'sin-pago' | 'vencido';
 export function evaluarAcceso(inq: {
   estado: string;
   cortesia?: boolean;
+  /** Escaparate (demo): no es un cliente y no paga (Fernando, 2026-10-22). */
+  soloLectura: boolean;
   suscripcion: { estado: string; pagadoHasta: Date | null } | null;
 }): EstadoAcceso {
   if (inq.estado === 'SUSPENDIDO') return 'suspendido';
-  if (inq.cortesia) return 'ok';
+  // La mensualidad es solo de los clientes: ni el grupo ni un escaparate pasan por ella.
+  if (inq.cortesia || inq.soloLectura) return 'ok';
   const s = inq.suscripcion;
   if (!s || s.estado === 'CANCELADA') return 'suspendido';
   if (!s.pagadoHasta) return 'sin-pago';
@@ -124,11 +127,11 @@ async function cargarContexto(slug: string, sesion: SesionUsuario) {
  * no del estado de un cobro.
  */
 export function accesoDelContexto(ctx: {
-  inquilino: { estado: string; cortesia: boolean; suscripcion: { estado: string; pagadoHasta: Date | null } | null };
+  inquilino: { estado: string; cortesia: boolean; soloLectura: boolean; suscripcion: { estado: string; pagadoHasta: Date | null } | null };
   suscripcionGcc: EstadoSuscripcionGcc | null;
 }): EstadoAcceso {
   if (ctx.inquilino.estado === 'SUSPENDIDO') return 'suspendido';
-  if (ctx.inquilino.cortesia) return 'ok';
+  if (ctx.inquilino.cortesia || ctx.inquilino.soloLectura) return 'ok';
   if (ctx.suscripcionGcc) return accesoSegunGcc(ctx.suscripcionGcc);
   return evaluarAcceso(ctx.inquilino);
 }

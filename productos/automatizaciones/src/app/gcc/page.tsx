@@ -43,7 +43,7 @@ export default async function PaginaGcc() {
   const estados = new Map<number, ReturnType<typeof accesoSegunGcc>>();
   for (const i of inquilinos) {
     if (i.estado === 'SUSPENDIDO') { estados.set(i.id, 'suspendido'); continue; }
-    if (i.cortesia) { estados.set(i.id, 'ok'); continue; }
+    if (i.cortesia || i.soloLectura) { estados.set(i.id, 'ok'); continue; }
     if (i.gccSuscripcionId) {
       estados.set(i.id, accesoSegunGcc(await estadoSuscripcionGcc(i.gccSuscripcionId)));
     } else {

@@ -26,10 +26,13 @@ export type EstadoAcceso = 'ok' | 'suspendido' | 'sin-pago' | 'vencido';
 export function evaluarAcceso(inq: {
   estado: string;
   cortesia?: boolean;
+  /** Escaparate (demo): no es un cliente y no paga (Fernando, 2026-10-22). */
+  soloLectura: boolean;
   suscripcion: { estado: string; pagadoHasta: Date | null } | null;
 }): EstadoAcceso {
   if (inq.estado === 'SUSPENDIDO') return 'suspendido';
-  if (inq.cortesia) return 'ok';
+  // La mensualidad es solo de los clientes: ni el grupo ni un escaparate pasan por ella.
+  if (inq.cortesia || inq.soloLectura) return 'ok';
   const s = inq.suscripcion;
   if (!s || s.estado === 'CANCELADA') return 'suspendido';
   if (!s.pagadoHasta) return 'sin-pago';

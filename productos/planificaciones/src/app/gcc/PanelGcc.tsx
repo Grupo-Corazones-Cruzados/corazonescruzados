@@ -143,9 +143,9 @@ export default function PanelGcc({
     });
 
   const vencidos = inquilinos.filter((i) => i.acceso !== 'ok').length;
-  // El inquilino del grupo no paga: no suma a la mensualidad activa.
+  // Ni el inquilino del grupo ni un escaparate pagan: no suman a la mensualidad activa.
   const ingresoMensual = inquilinos
-    .filter((i) => i.acceso === 'ok' && !i.cortesia)
+    .filter((i) => i.acceso === 'ok' && !i.cortesia && !i.soloLectura)
     .reduce((a, i) => a + i.precioMensual, 0);
 
   return (
