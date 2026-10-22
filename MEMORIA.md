@@ -275,6 +275,12 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Productos: el estado es TEXTO DE COLOR (Fernando, 2026-10-22).** Empieza una ronda de mejoras de
+  diseño de los productos, producto por producto, empezando por **Catering**. Primera: `Insignia`
+  (`productos/catering/src/componentes/ui.tsx`) deja la píldora con fondo y punto; queda solo el texto
+  con el color del tono, en todas las columnas de estado. También fuera el punto activa/desactivada de
+  Usuarios. Regla escrita en `Diseño.md` (Catering) y en la skill `/producto`. Los otros cuatro
+  productos siguen con la píldora hasta que Fernando los revise.
 - **🔐 Incidente de seguridad de Railway (2026-10-21/22).** Railway avisó que las variables de entorno
   pudieron filtrarse y pausó los despliegues. Decisiones de Fernando: **no** cerrar el acceso público a
   las bases y **no** salir de Railway por ahora. Hecho y verificado el 2026-10-22:
@@ -7899,6 +7905,8 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   corregir uno, no dar por hecho que ya pasa.
 
 ## Pendientes / preguntas abiertas
+- **(2026-10-22) Catering, demo:** el raíl «Vigentes» de Servicios cuenta 5 y los cinco salen «Vencido»
+  (y «Vencidos» cuenta 1). Visto al revisar el diseño; sin investigar.
 - **(2026-10-22) Rotación tras el incidente de Railway — lo que falta (Fernando lo retomará):**
   - ⚠️ Urgente: la contraseña inicial del admin de **Procesos (Roberto)** sigue valiendo y estaba en las
     variables filtradas (cambiarla deja fuera a Roberto: esperar su «sí») · la **clave de SRI en línea de

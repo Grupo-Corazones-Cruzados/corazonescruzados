@@ -102,12 +102,11 @@ export default function UsuariosCliente({
                 titulo: 'Persona',
                 render: (u) => (
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className={`h-2 w-2 rounded-full ${u.activo ? 'bg-exito' : 'bg-tenue'}`}
-                      title={u.activo ? 'Activa' : 'Desactivada'}
-                    />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{u.nombre}</p>
+                      <p className="flex items-center gap-2 font-semibold">
+                        <span className="truncate">{u.nombre}</span>
+                        {!u.activo && <Insignia tono="neutro">Desactivada</Insignia>}
+                      </p>
                       <p className="truncate text-[11px] text-tenue">
                         {u.usuario}
                         {u.id === yoSoy && ' · tú'}

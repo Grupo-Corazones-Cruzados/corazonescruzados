@@ -1,5 +1,16 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-22) — MEJORAS DE DISEÑO DE LOS PRODUCTOS, empezando por CATERING · 🔎 en curso
+- **Rol asumido:** diseñador de producto / ingeniero de UI del sistema de diseño de los productos.
+- **Forma de trabajo:** Fernando dicta una corrección, se aplica en la definición única y se verifica
+  en pantalla antes de la siguiente.
+- **C1 — El estado ya no es una píldora con punto, solo texto de color** · ✅ Hecho: `Insignia` de
+  Catering sin fondo ni punto (afecta a todas sus columnas de estado) y punto de Usuarios sustituido
+  por «Desactivada». Verificado: tsc, build y capturas en el demo (Servicios, Clientes, Alimentos,
+  Usuarios, Reportes). Regla en `Diseño.md` y en la skill `/producto`.
+- **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
+  dijo «empezaremos con Catering»; preguntar.
+
 ## Objetivo (2026-10-21 → 22) — INCIDENTE DE RAILWAY: rotar los secretos de todos los servidores · 🔎 75 % — LO CRÍTICO HECHO; FERNANDO RETOMA EL RESTO
 - **Rol asumido:** especialista en seguridad / respuesta a incidentes.
 - **Fuentes:** avisos de Railway (2026-10-21/22), API GraphQL de Railway, código de los repos de clientes,

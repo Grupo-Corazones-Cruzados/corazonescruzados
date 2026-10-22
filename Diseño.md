@@ -2770,7 +2770,7 @@ en los dos temas.
 ### Catálogo de controles — `src/componentes/ui.tsx` (una definición por control)
 `Boton` (primario/secundario/peligro/fantasma · sm/md/lg · con icono) · `BotonIcono` (32×32,
 el mismo cuadrado que la X de cerrar) · `Campo` + `Entrada`/`AreaTexto`/`Selector` (alto 34 px,
-clase `.campo`) · `Buscador` · `Insignia` (píldora neutra + punto semántico) · `Tarjeta` ·
+clase `.campo`) · `Buscador` · `Insignia` (píldora neutra + punto semántico; en Catering, desde el 2026-10-22, solo texto de color) · `Tarjeta` ·
 `PanelLateral` (formularios) · `Ventanita` (una o dos casillas) · `Confirmar` (**nunca**
 `confirm()` del navegador) · `RailFiltro` · `BarraModulo` · `Tabla` · `EstadoVacio` ·
 `Cargando`. Navegación y cabecera de página en `src/componentes/Navegacion.tsx`.
@@ -2897,6 +2897,20 @@ la barra de filtros salía a ancho completo (se vio en una captura, no en el bui
 utilidad deba poder ajustar va dentro de `@layer components`.** ⚠️ Reservas y pedidos siguen
 con la versión sin capa: allí `pl-8` del buscador y los `w-32` de configuración tampoco se
 aplican; es el mismo arreglo de dos líneas cuando se toquen.
+
+### ⭐ EL ESTADO ES TEXTO DE COLOR, sin píldora ni punto (Fernando, 2026-10-22)
+Textual: *«el estado ya no sea un punto con fondo de relleno de color, me basta con que el
+texto tenga un color; eso aplica para todas las columnas de estado de todas las páginas»*.
+`Insignia` (`src/componentes/ui.tsx`) es ahora solo texto: `inline-flex items-center gap-1
+text-[12px] font-semibold` + el color del tono (`text-exito`/`text-aviso`/`text-error`/
+`text-acento`/`text-tenue`). Sin `rounded-full`, sin `bg-realce`, sin punto. El icono opcional se
+conserva. La palabra ya dice el estado, así que sigue sin depender solo del color.
+También se quitó el punto suelto activa/desactivada de Usuarios: ahora «Desactivada» en `neutro`
+junto al nombre, y nada cuando está activa. Los puntos de `Punto` (color identificador del
+cliente/motorizado) se quedan: ahí el color ES el dato.
+⚠️ **Sustituye** a «píldora neutra + punto semántico» y a la regla «punto e icono excluyentes»
+(más abajo, 2026-09-23). Aplicado en Catering; reservas, pedidos, planificaciones y
+automatizaciones siguen con la píldora hasta que Fernando los revise.
 
 ### Controles nuevos, todos reusables (`src/componentes/`)
 - **`Chips`** (`campos.tsx`) — fila de casillas-chip para elegir comidas o días de la semana; envía
@@ -3724,7 +3738,7 @@ lo que ocupa.
 > necesita. El ancho completo se reserva para lo que de verdad lo pide: el botón de un
 > formulario dentro de una tarjeta estrecha o de un panel lateral.
 
-**2. ⭐ EL PUNTO Y EL ICONO DE UNA `Insignia` SON EXCLUYENTES.** Textual de Fernando:
+**2. ⭐ EL PUNTO Y EL ICONO DE UNA `Insignia` SON EXCLUYENTES.** (En Catering ya no hay punto: ver «El estado es texto de color», 2026-10-22.) Textual de Fernando:
 *«se ve súper mal que pongas un icono o texto y a la izquierda del todo un punto negro
 para enumerar»*. Había metido iconos dentro de la insignia en cuatro sitios, y quedaban
 **dos marcas para una sola cosa**.
@@ -4008,6 +4022,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Estado como píldora con punto (Catering)** · **CAMBIO DE ESTÁNDAR** (Fernando): el
+  estado pasa a texto de color sin fondo ni punto, en `Insignia` (una sola definición). Ver la
+  sección de Catering. Pendiente: los otros cuatro productos.
 - **2026-10-22 · Herramientas vista por un candidato** · **CORREGIDO**: la categoría «Gestión» salía en
   el raíl con 0 herramientas (las dos de «un solo uso» son solo del equipo). Ahora el raíl oculta las
   categorías vacías; ver «Reglas clave».
