@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   UserRound, Package, ShieldAlert, MessageSquare, Check, X, HelpCircle, KeyRound, FileDown, Copy,
-  Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send,
+  Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send, Mail, Phone, CalendarDays, Clock,
 } from 'lucide-react';
 import { AccionesTarjeta, CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
 import {
@@ -112,17 +112,23 @@ export default function FichaCliente({
     <>
       <CabeceraPagina
         titulo={cliente.datos.nombre}
-        descripcion={`${cliente.email} · ${cliente.datos.celular} · registrado el ${fechaCorta(new Date(cliente.creado))}${cliente.ultimoAcceso ? ` · último acceso ${instante(cliente.ultimoAcceso, zonaHoraria)}` : ''}`}
+        detalles={[
+          { icono: Mail, etiqueta: 'Correo', valor: cliente.email, href: `mailto:${cliente.email}` },
+          { icono: Phone, etiqueta: 'Celular', valor: cliente.datos.celular, href: `tel:${cliente.datos.celular}` },
+          { icono: CalendarDays, etiqueta: 'Registrado', valor: fechaCorta(new Date(cliente.creado)) },
+          ...(cliente.ultimoAcceso ? [{ icono: Clock, etiqueta: 'Último acceso', valor: instante(cliente.ultimoAcceso, zonaHoraria) }] : []),
+        ]}
         volver={{ href: `/${slug}/clientes`, etiqueta: 'Todos los clientes' }}
         // El estado, una vez y en una línea: el detalle del servicio vive en su sección.
         extra={
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-tenue">
             <Punto color={cliente.datos.colorIdentificador} tamano={10} />
             <Insignia tono={TONO_ESTADO_CLIENTE[cliente.estado]}>{ETIQUETA_ESTADO_CLIENTE[cliente.estado]}</Insignia>
-            <span>·</span>
-            {vigente
+            {/* En la sección Servicio la situación ya está en su tarjeta: no se dice dos veces. */}
+            {seccion !== 'servicio' && <span>·</span>}
+            {seccion !== 'servicio' && (vigente
               ? <>servicio <Insignia tono={TONO_SITUACION[vigente.resumen.situacion]}>{ETIQUETA_SITUACION[vigente.resumen.situacion].toLowerCase()}</Insignia></>
-              : <span>sin servicio vigente</span>}
+              : <span>sin servicio vigente</span>)}
           </div>
         }
         acciones={acciones}

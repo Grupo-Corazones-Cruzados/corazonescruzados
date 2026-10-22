@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { X, Search, Loader2, Inbox, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Search, Loader2, Inbox, ChevronDown, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sumarDias } from '@/lib/fechas';
 
@@ -534,6 +534,93 @@ export function RailFiltro({
         </div>
       </div>
     </>
+  );
+}
+
+// ── Burbuja de detalles ─────────────────────────────────────────────────────
+/** Un dato secundario de una cabecera: correo, teléfono, fechas… */
+export type Detalle = {
+  icono: React.ComponentType<{ className?: string }>;
+  etiqueta: string;
+  valor: string;
+  /** `mailto:`/`tel:` para que en el teléfono se pueda escribir o llamar desde la burbuja. */
+  href?: string;
+};
+
+/**
+ * LO QUE IBA BAJO EL TÍTULO VA EN UNA BURBUJA (Fernando, 2026-10-22). La descripción de la
+ * página y los datos secundarios (correo, teléfono, fechas) no se escriben como líneas bajo
+ * el título: «ocupan espacio y rellenan de forma innecesaria». Van detrás de un botón (i)
+ * junto al título que abre una burbuja con el mismo contenido, con movimiento, y se cierra
+ * al tocar fuera o con Escape.
+ */
+export function BurbujaDetalles({ texto, detalles = [], titulo = 'Detalles', className }: { texto?: string; detalles?: Detalle[]; titulo?: string; className?: string }) {
+  const [abierta, setAbierta] = useState(false);
+  const { montado, visible } = useAparicion(abierta);
+  const boton = useRef<HTMLButtonElement>(null);
+  // Fija y medida al abrir: el botón puede estar pegado a cualquier borde de la pantalla, y la
+  // burbuja se encaja dentro de ella; la flecha sigue apuntando al botón.
+  const [sitio, setSitio] = useState({ top: 0, left: 0, flecha: 0, ancho: 288 });
+  useLayoutEffect(() => {
+    if (!abierta || !boton.current) return;
+    const r = boton.current.getBoundingClientRect();
+    const ancho = Math.min(288, window.innerWidth - 32);
+    const centro = r.left + r.width / 2;
+    const left = Math.max(16, Math.min(centro - ancho / 2, window.innerWidth - 16 - ancho));
+    setSitio({ top: r.bottom + 8, left, flecha: centro - left, ancho });
+  }, [abierta]);
+  useEffect(() => {
+    if (!abierta) return;
+    const cerrar = () => setAbierta(false);
+    window.addEventListener('scroll', cerrar, { passive: true });
+    window.addEventListener('resize', cerrar);
+    return () => { window.removeEventListener('scroll', cerrar); window.removeEventListener('resize', cerrar); };
+  }, [abierta]);
+  useEffect(() => {
+    if (!abierta) return;
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && setAbierta(false);
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, [abierta]);
+  return (
+    <span className={cn('relative inline-flex', className)}>
+      <button ref={boton} type="button" aria-label={titulo} title={titulo} aria-expanded={abierta} onClick={() => setAbierta((v) => !v)}
+        className={cn('foco-visible flex h-7 w-7 items-center justify-center rounded-full transition-colors',
+          abierta ? 'bg-acento-suave text-acento' : 'text-tenue hover:bg-realce hover:text-texto')}>
+        <Info className="h-4 w-4" />
+      </button>
+      {montado && (
+        <>
+          <span className="fixed inset-0 z-40" onClick={() => setAbierta(false)} />
+          <span role="dialog" aria-label={titulo}
+            style={{ top: sitio.top, left: sitio.left, width: sitio.ancho, transformOrigin: `${sitio.flecha}px 0` }}
+            className={cn(
+              'fixed z-50 block rounded-md border border-borde bg-tarjeta p-1.5 shadow-lg',
+              'transition duration-200 ease-out',
+              visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
+            )}>
+            <span aria-hidden style={{ left: sitio.flecha }} className="absolute -top-1.5 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-borde bg-tarjeta" />
+            {texto && <span className="relative block px-2.5 py-2 text-[13px] leading-snug text-texto">{texto}</span>}
+            {detalles.map((d) => {
+              const Icono = d.icono;
+              const fila = (
+                <>
+                  <Icono className="mt-0.5 h-4 w-4 shrink-0 text-tenue" />
+                  <span className="min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-tenue">{d.etiqueta}</span>
+                    <span className={cn('block break-words text-[13px]', d.href ? 'text-acento' : 'text-texto')}>{d.valor}</span>
+                  </span>
+                </>
+              );
+              const clase = 'relative flex items-start gap-2.5 rounded px-2.5 py-2';
+              return d.href
+                ? <a key={d.etiqueta} href={d.href} className={cn(clase, 'hover:bg-realce')}>{fila}</a>
+                : <span key={d.etiqueta} className={clase}>{fila}</span>;
+            })}
+          </span>
+        </>
+      )}
+    </span>
   );
 }
 

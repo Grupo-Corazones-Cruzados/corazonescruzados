@@ -2969,6 +2969,16 @@ estados de buen diseño»* y *«para las vistas de teléfono el diseño sea esti
 porque como tabla hay que deslizarse también a la derecha y a veces se pierden de vista datos»*.
 Le pasa *«ni en GCC World ni en esta app ni en ninguna»*: la regla general está en la skill
 `/diseno` §4-ter.
+- **Botón (i) con burbuja en vez de líneas bajo el título** (Fernando, 2026-10-22). `CabeceraPagina`
+  ya no escribe `descripcion` bajo el título: la mete, junto con `detalles: Detalle[]` (icono,
+  etiqueta, valor, `href` opcional), en **`BurbujaDetalles`** (`src/componentes/ui.tsx`), un botón
+  redondo `h-7 w-7` con `Info` junto al título (`bg-acento-suave text-acento` abierto) y una
+  burbuja `fixed` medida al abrir (ancho `min(288, pantalla − 32)`, encajada a 16 px de los bordes,
+  flecha que sigue al botón), `p-1.5 rounded-md border shadow-lg`, filas `icono + ETIQUETA 10 px +
+  valor 13 px`, entrada `scale-95 → 100`, cierre fuera/Escape/scroll. Todas las cabeceras, todos los
+  anchos. La ficha pasa correo (`mailto:`), celular (`tel:`), registro y último acceso como
+  `detalles`; en la sección Servicio la línea de estado omite «servicio vencido» porque lo dice su
+  tarjeta. Cabecera `items-center`.
 - **Ficha del cliente compacta** (Fernando, 2026-10-22: *«está repetida la información… estamos
   ocupando espacio alto innecesario»*). Fuera la tarjeta-resumen de la columna izquierda (estado,
   situación, «0 de 20 días · hasta…») y el enlace «Todos los clientes»: `CabeceraPagina` gana `volver`
@@ -4124,6 +4134,8 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Descripciones y datos de contacto escritos bajo el título (Catering)** · **CAMBIO DE
+  ESTÁNDAR**: botón (i) con burbuja (`BurbujaDetalles`). Pendiente: los otros cuatro productos y GCC World.
 - **2026-10-22 · Botones con texto amontonados arriba en el teléfono (Catering)** · **CAMBIO DE
   ESTÁNDAR**: principales en una barra propia abajo, secundarias en «⋯» (`CabeceraPagina`). Pendiente:
   los otros cuatro productos y GCC World.

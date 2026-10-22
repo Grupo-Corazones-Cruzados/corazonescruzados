@@ -275,6 +275,10 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Catering: nada de líneas bajo el título; botón (i) con burbuja (Fernando, 2026-10-22).** La
+  descripción de cada página y los datos del cliente (correo, celular, registro, último acceso) van en la
+  burbuja de `BurbujaDetalles`, en todas las cabeceras y anchos. En la sección Servicio no se repite
+  «vencido». Regla en `/diseno` §4-quater y `/producto`.
 - **🎨 Catering: ficha del cliente sin repetir y sin alto de sobra (Fernando, 2026-10-22).** Estado en una
   línea bajo el título, flecha de volver, acciones del servicio en «⋯» (`AccionesTarjeta`), cifras de dos
   en dos. Regla en `/diseno` §4-quater: no repetir información; las acciones de tarjeta siguen la regla.

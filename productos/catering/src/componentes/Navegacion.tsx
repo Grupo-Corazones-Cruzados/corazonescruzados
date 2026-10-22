@@ -27,7 +27,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
-import { Boton, BotonIcono, useAparicion } from '@/componentes/ui';
+import { Boton, BotonIcono, BurbujaDetalles, useAparicion, type Detalle } from '@/componentes/ui';
 import { LogoNegocio } from '@/componentes/Marca';
 import { puede, ETIQUETA_ROL, type Capacidad } from '@/lib/permisos';
 import { cn } from '@/lib/utils';
@@ -329,6 +329,8 @@ export function HuecoBarraAcciones() {
   En escritorio todo sigue en la cabecera: las secundarias primero, las principales a la derecha.
   `extra` es información (no un botón): va bajo la descripción, en todos los anchos.
   `volver` pone una flecha antes del título (en vez de un enlace «Todos los…» que gasta una fila).
+  `descripcion` y `detalles` (correo, teléfono, fechas) NO se escriben bajo el título: van en la
+  burbuja del botón (i) junto al título, en todos los anchos. Bajo el título solo queda `extra`.
 */
 export function CabeceraPagina({
   titulo,
@@ -337,6 +339,7 @@ export function CabeceraPagina({
   menu,
   extra,
   volver,
+  detalles,
 }: {
   titulo: string;
   descripcion?: string;
@@ -344,13 +347,14 @@ export function CabeceraPagina({
   menu?: AccionMenu[];
   extra?: React.ReactNode;
   volver?: { href: string; etiqueta: string };
+  detalles?: Detalle[];
 }) {
   const [hueco, setHueco] = useState<HTMLElement | null>(null);
   useEffect(() => setHueco(document.getElementById(ID_BARRA_ACCIONES)), []);
   const hayMenu = !!menu?.length;
 
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 lg:flex-wrap lg:items-center print:hidden">
+    <div className="flex items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 lg:flex-wrap print:hidden">
       <div className="flex min-w-0 items-start gap-2">
         {volver && (
           <Link href={volver.href} aria-label={volver.etiqueta} title={volver.etiqueta}
@@ -359,8 +363,12 @@ export function CabeceraPagina({
           </Link>
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
-          {descripcion && <p className="text-[12px] text-tenue">{descripcion}</p>}
+          <div className="flex min-w-0 items-center gap-1">
+            <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+            {(descripcion || !!detalles?.length) && (
+              <BurbujaDetalles texto={descripcion} detalles={detalles} titulo={detalles?.length ? `Datos de ${titulo}` : 'Ayuda'} className="shrink-0" />
+            )}
+          </div>
           {extra && <div className="mt-1.5">{extra}</div>}
         </div>
       </div>
