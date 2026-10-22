@@ -1080,6 +1080,23 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 
+## Apps sueltas de Herramientas — Descargador GCC (Android 2026-10-21, iPhone 2026-10-22)
+Apps nativas aparte, sin la web dentro: cada plataforma usa SUS controles (Material en Android,
+SwiftUI en iPhone) y lo único compartido es la marca. Mismo flujo y mismos textos en las dos.
+- **Color:** acento `#4B2D8E` (oscuro `#7B5FBF`). Android: `res/values/colors.xml`; iPhone: color
+  `Acento` de `Descargador/Assets.xcassets`, que es el acento global de la app
+  (`ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME`) y el `.tint` de la escena. No se escribe un
+  color en las vistas: `Color("Acento")` o el tinte.
+- **Icono:** flecha y barra blancas sobre el morado. Android: `ic_fondo` + `ic_frente`; iPhone:
+  `movil/descargador-ios/generar-icono.py` dibuja ese mismo trazo en 1024 px, sin transparencia.
+- **Pantalla (`Descargador/Vista.swift`):** en este orden: campo del enlace + botón de pegar
+  (`PasteButton`, sin aviso del sistema) → «Buscar» (`.bordered`) → tarjeta (miniatura 16:9, título,
+  autor · duración, calidades en `Picker` segmentado, «Descargar» `.borderedProminent`) → progreso
+  («Video · 45 % · quedan 1:20», «Cancelar») → resultado («Abrir Fotos» o «Compartir» +
+  «Descargar otro») → al pie, «Actualizar motor de descarga» y la versión de yt-dlp. Fondo
+  `systemGroupedBackground`, tarjetas `secondarySystemGroupedBackground` con radio 14, campos con
+  radio 10. Avisos con `.alert` del sistema; el de «Uso responsable» sale una sola vez.
+
 ## Dashboard — Fluent (`.corp`)
 
 ### Stack y fuente única

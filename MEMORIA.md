@@ -472,7 +472,8 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Android confirmado (2026-10-22):** Fernando lo instaló y descargó su video.
   - **📱 iPhone (2026-10-22), `movil/descargador-ios/` (Swift + Python embebido), solo para el iPhone 17 de
     Fernando** (firma de desarrollo del equipo `5H27NSRYKQ`; a futuro, miembros con cuenta de empresa de
-    GCC). Probado en el teléfono: Big Buck Bunny 480p buscado en 7 s, bajado en 53 s y guardado en Fotos.
+    GCC). Probado en el teléfono (Big Buck Bunny 480p: buscado en 7 s, bajado en 53 s, en Fotos a los 57 s) y
+    **confirmado por Fernando: «sí funcionó» (2026-10-22)**. Pendiente si lo pide: «Compartir con» desde YouTube.
     iOS no deja lanzar procesos, así que: retos de YouTube con JavaScriptCore (proveedor
     `JavaScriptCoreJCP` vía ctypes) y video+audio unidos con AVFoundation en vez de FFmpeg.
     ⚠️ Los MP4 DASH de YouTube duplican su duración en AVFoundation: `_arreglar_fragmentado` pone a cero

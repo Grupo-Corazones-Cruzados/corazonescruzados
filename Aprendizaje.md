@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (2026-10-22) — DESCARGADOR GCC EN iPHONE (instalarlo en el iPhone 17 de Fernando) · 🔎 95 % — PROBADA EN EL iPHONE (480p → Fotos en 57 s); FALTA QUE FERNANDO LA PRUEBE CON SU VIDEO
+## Objetivo (2026-10-22) — DESCARGADOR GCC EN iPHONE (instalarlo en el iPhone 17 de Fernando) · ✅ 100 % — HECHO Y CONFIRMADO POR FERNANDO («sí funcionó», 2026-10-22)
 - **Rol asumido:** ingeniero iOS (Swift, firma/aprovisionamiento, Python embebido).
 - **Punto de partida:** Android hecho y confirmado por Fernando (2026-10-22: «funcionó perfectamente»).
 - **P1 — ¿Se puede instalar en el iPhone desde esta Mac?** ✅ Sí. `devicectl` ve «iPhone - LfgonzalezM0»
@@ -27,6 +27,10 @@
   «Solo audio» va a Archivos ▸ En mi iPhone ▸ Descargador GCC. El permiso es solo de añadir, así que no se puede
   crear el álbum «GCC Descargas» (para eso haría falta acceso completo a la fototeca).
   - Antes: Fotos exige H.264 (ya preferido); Archivos acepta todo.
+- **P7 — ¿Funciona en el iPhone real?** ✅ Prueba automática (480p): encontró el video en 7 s, lo bajó en 53 s
+  y lo guardó en Fotos a los 57 s. Fernando la probó y confirmó: «sí funcionó» (2026-10-22).
+- **Pendientes que quedan (no bloquean):** «Compartir con» desde YouTube (Share Extension), que pide
+  otro destino en el proyecto; y la distribución a miembros cuando exista la cuenta de empresa de GCC.
 - **P6 — iOS corta el trabajo ~30 s después de salir de la app.** ⏸ Sin respuesta. Mientras tanto: la pantalla no
   se apaga sola durante la descarga, se pide el tiempo extra que iOS conceda y la app avisa «Deja la app abierta».
 - **Decisiones (2026-10-22), código en `movil/descargador-ios/`:**
