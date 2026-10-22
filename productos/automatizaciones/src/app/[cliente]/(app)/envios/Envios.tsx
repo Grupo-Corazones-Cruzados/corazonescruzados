@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { RefreshCw, Send, Users2, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Send, Users2, AlertTriangle, Phone } from 'lucide-react';
 import { Boton, Campo, Selector, Insignia, Tarjeta, EstadoVacio, Confirmar } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { sincronizar, lanzar } from '@/acciones/envios';
@@ -60,27 +60,27 @@ export default function Envios({
 
   return (
     <>
+      {/*
+        «Sincronizar con Meta» es SECUNDARIA: trae el estado de las plantillas, no decide nada.
+        En el teléfono va dentro del «⋯» y en escritorio como botón con borde. La principal de
+        la pantalla —«Enviar»— es el final del formulario de abajo y se queda ahí, junto a la
+        vista previa que la justifica. El número es un dato: va en la burbuja (i).
+      */}
       <CabeceraPagina
         titulo="Envíos"
-        descripcion={numero ?? undefined}
-        acciones={
-          puedeOperar && (
-            <Boton
-              variante="secundario"
-              disabled={enCurso}
-              onClick={() =>
-                arranca(async () => {
-                  const r = await sincronizar(slug);
-                  if (!r.ok) { toast.error(r.error); return; }
-                  toast.success(r.mensaje ?? 'Sincronizado.');
-                  router.refresh();
-                })
-              }
-            >
-              <RefreshCw className="h-4 w-4" /> Sincronizar con Meta
-            </Boton>
-          )
-        }
+        detalles={numero ? [{ icono: Phone, etiqueta: 'Número que envía', valor: numero, href: `tel:${numero.replace(/[^\d+]/g, '')}` }] : undefined}
+        menu={puedeOperar ? [{
+          etiqueta: 'Sincronizar con Meta',
+          icono: RefreshCw,
+          deshabilitado: enCurso,
+          alPulsar: () =>
+            arranca(async () => {
+              const r = await sincronizar(slug);
+              if (!r.ok) { toast.error(r.error); return; }
+              toast.success(r.mensaje ?? 'Sincronizado.');
+              router.refresh();
+            }),
+        }] : undefined}
       />
 
       {/*
@@ -207,7 +207,8 @@ export default function Envios({
                     </p>
                     {e.error && <p className="text-[11.5px] text-error">{e.error}</p>}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  {/* Sin píldora, dos estados juntos se leen como uno: se separan un poco más. */}
+                  <div className="flex items-center gap-3">
                     <Insignia tono="exito">{e.enviados} enviados</Insignia>
                     {e.fallidos > 0 && <Insignia tono="error">{e.fallidos} fallaron</Insignia>}
                   </div>

@@ -69,6 +69,14 @@ export default function Bandeja({
   const [texto, setTexto] = useState(busca);
   const [cambiando, arranca] = useTransition();
 
+  function alternarBot() {
+    if (!abierta) return;
+    arranca(async () => {
+      await cambiarBot(slug, abierta.id, !abierta.botActivo);
+      router.refresh();
+    });
+  }
+
   function buscar(e: React.FormEvent) {
     e.preventDefault();
     const q = texto.trim();
@@ -76,7 +84,7 @@ export default function Bandeja({
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full min-h-0">
       {/* ── La lista. En teléfono desaparece cuando hay una conversación abierta. */}
       <section
         className={cn(
@@ -180,23 +188,17 @@ export default function Bandeja({
                 un botón que se come 1.400 px para decir cinco palabras no aprovecha el
                 espacio, y encima queda lejos de la insignia que le da sentido.
 
-                ⚠️ Y la insignia NO lleva icono dentro: el punto de color es el estándar
-                compartido con Reservas, Pedidos y Catering. Meterle además un icono era
-                inventarse un estilo para este producto.
+                EN EL TELÉFONO NO CABE EN LA CABECERA (Fernando, 2026-10-22: los botones con
+                texto no se amontonan arriba). Junto a la flecha, el nombre y el estado, al
+                nombre le quedaban 30 px. Ahí la acción es la PRINCIPAL de la pantalla y va a
+                su barra propia, abajo del hilo, centrada y con su sitio: no tapa ningún
+                mensaje. Desde `lg` vuelve aquí.
+
+                La insignia es el estándar compartido con Reservas, Pedidos y Catering: texto
+                de color, sin píldora, sin punto y sin icono.
               */}
               {puedeOperar && (
-                <Boton
-                  variante={abierta.botActivo ? 'secundario' : 'primario'}
-                  disabled={cambiando}
-                  onClick={() =>
-                    arranca(async () => {
-                      await cambiarBot(slug, abierta.id, !abierta.botActivo);
-                      router.refresh();
-                    })
-                  }
-                >
-                  {cambiando ? 'Cambiando…' : abierta.botActivo ? 'Tomar la conversación' : 'Devolvérsela al agente'}
-                </Boton>
+                <BotonTomar abierta={abierta} cambiando={cambiando} alPulsar={alternarBot} className="hidden lg:inline-flex" />
               )}
               <Insignia tono={abierta.botActivo ? 'exito' : 'aviso'}>
                 {abierta.botActivo
@@ -244,9 +246,40 @@ export default function Bandeja({
               ))}
             </div>
 
+            {puedeOperar && (
+              <div className="shrink-0 border-t border-borde bg-tarjeta px-4 py-2.5 lg:hidden">
+                <div className="mx-auto flex max-w-md">
+                  <BotonTomar abierta={abierta} cambiando={cambiando} alPulsar={alternarBot} className="w-full" />
+                </div>
+              </div>
+            )}
           </>
         )}
       </section>
     </div>
+  );
+}
+
+/** «Tomar la conversación» / «Devolvérsela al agente»: el mismo botón en la cabecera (lg) y en la barra del teléfono. */
+function BotonTomar({
+  abierta,
+  cambiando,
+  alPulsar,
+  className,
+}: {
+  abierta: Abierta;
+  cambiando: boolean;
+  alPulsar: () => void;
+  className?: string;
+}) {
+  return (
+    <Boton
+      variante={abierta.botActivo ? 'secundario' : 'primario'}
+      disabled={cambiando}
+      onClick={alPulsar}
+      className={className}
+    >
+      {cambiando ? 'Cambiando…' : abierta.botActivo ? 'Tomar la conversación' : 'Devolvérsela al agente'}
+    </Boton>
   );
 }

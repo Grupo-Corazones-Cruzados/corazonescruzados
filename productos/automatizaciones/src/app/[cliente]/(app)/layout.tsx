@@ -1,6 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
-import { BarraLateral, BarraInferior } from '@/componentes/Navegacion';
+import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 
 export const dynamic = 'force-dynamic';
@@ -50,12 +50,26 @@ export default async function LayoutApp({
 
         El menú se monta ENCIMA, así que el contenido conserva el margen del raíl estrecho
         (64 px) y no salta al desplegarse. El `pb-` reserva la barra táctil y la barrita de inicio del iPhone.
+
+        `main` es `flex-col` por la barra de acciones del teléfono: su hueco va como ÚLTIMO
+        hijo y con `mt-auto` baja al fondo aunque la página sea corta. Una pantalla que pide
+        `h-full` sigue midiendo exactamente lo que queda (el alto de `main` es definido).
       */}
       <div className="flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col lg:ml-16">
         {inquilino.soloLectura && <AvisoEscaparate />}
-        <main className="desplaza min-h-0 flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">{children}</main>
+        <main className="desplaza flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+          {children}
+          <HuecoBarraAcciones />
+        </main>
       </div>
-      <BarraInferior slug={cliente} rol={sesion.rol} montados={montados} />
+      <BarraInferior
+        slug={cliente}
+        cliente={inquilino.nombre}
+        logoUrl={inquilino.logoUrl}
+        usuario={sesion.nombre}
+        rol={sesion.rol}
+        montados={montados}
+      />
     </AplicaMarca>
   );
 }

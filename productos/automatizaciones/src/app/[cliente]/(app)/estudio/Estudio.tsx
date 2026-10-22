@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  Bot, Power, PowerOff, Phone, BookOpen, MessageSquareText, Plus, Trash2, AlertTriangle, Save,
+  Bot, Power, PowerOff, Phone, BookOpen, MessageSquareText, Plus, Trash2, AlertTriangle, Save, BadgeCheck,
 } from 'lucide-react';
 import { Boton, Campo, Entrada, AreaTexto, Selector, Insignia, Tarjeta, PanelLateral, Confirmar, RailFiltro } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
@@ -101,14 +101,30 @@ export default function Estudio({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
+      {/*
+        El encendido del agente es INFORMACIÓN (una línea de estado en `extra`), no un botón.
+        El número y el nombre verificado son datos: van en la burbuja (i), no bajo el título.
+        «Añadir bloque» es la principal de «Lo que sabe» y solo existe en esa sección: en el
+        teléfono va a la barra de abajo.
+      */}
       <CabeceraPagina
         titulo="Estudio del agente"
-        descripcion={canal.numero ? `${canal.numero}${canal.nombreVerificado ? ` · ${canal.nombreVerificado}` : ''}` : undefined}
-        acciones={
+        detalles={[
+          ...(canal.numero ? [{ icono: Phone, etiqueta: 'Número', valor: canal.numero, href: `tel:${canal.numero.replace(/[^\d+]/g, '')}` }] : []),
+          ...(canal.nombreVerificado ? [{ icono: BadgeCheck, etiqueta: 'Nombre verificado', valor: canal.nombreVerificado }] : []),
+        ]}
+        extra={
           <Insignia tono={canal.botActivo ? 'exito' : 'aviso'} icono={canal.botActivo ? Power : PowerOff}>
             {canal.botActivo ? 'Agente encendido' : 'Agente apagado'}
           </Insignia>
+        }
+        acciones={
+          seccion === 'sabe' && (
+            <Boton icono={Plus} onClick={() => { setNuevo(true); setEditando(null); }}>
+              Añadir bloque
+            </Boton>
+          )
         }
       />
 
@@ -210,12 +226,7 @@ export default function Estudio({
 
           {seccion === 'sabe' && (
           <Tarjeta className="p-4 sm:p-5">
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-[14px] font-semibold text-texto">Lo que sabe del negocio</h2>
-              <Boton variante="secundario" onClick={() => { setNuevo(true); setEditando(null); }}>
-                <Plus className="h-4 w-4" /> Añadir
-              </Boton>
-            </div>
+            <h2 className="mb-1 text-[14px] font-semibold text-texto">Lo que sabe del negocio</h2>
             <p className="mb-3 text-[12px] leading-relaxed text-tenue">
               Cada bloque es un tema. Es lo que más se toca: un precio que cambia, una ruta nueva.
               Los apagados no se le cuentan al agente, pero se conservan.

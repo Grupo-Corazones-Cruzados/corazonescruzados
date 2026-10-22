@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserPlus, KeyRound, Copy, ShieldCheck, Link2 } from 'lucide-react';
+import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral } from '@/componentes/ui';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { CabeceraPagina, AccionesTarjeta } from '@/componentes/Navegacion';
 import { crearUsuario, cambiarActivo, regenerarClave } from '@/acciones/usuarios';
 
 export type UsuarioVista = {
@@ -72,17 +72,25 @@ export default function PanelUsuarios({
 
   return (
     <>
+      {/*
+        «Crear cuenta» es la PRINCIPAL de la pantalla: en el teléfono va a la barra de abajo.
+        El tope es INFORMACIÓN, no un botón: va en `extra`, bajo el título, en todos los anchos.
+      */}
       <CabeceraPagina
         titulo="Cuentas"
         /* El tope se enseña SIEMPRE, no solo cuando estorba. */
-        descripcion={tope === null ? `${activas} cuentas activas` : `${activas} de ${tope} cuentas activas`}
+        extra={
+          <Insignia tono={lleno ? 'error' : 'neutro'}>
+            {tope === null ? `${activas} cuentas activas` : `${activas} de ${tope} cuentas activas`}
+          </Insignia>
+        }
         acciones={
           <Boton
+            icono={UserPlus}
             onClick={() => setAbierto(true)}
             disabled={lleno}
             title={lleno ? `Tu plan permite ${tope} cuentas activas y ya tienes ${activas}.` : undefined}
           >
-            <UserPlus className="h-4 w-4" />
             Crear cuenta
           </Boton>
         }
@@ -113,14 +121,14 @@ export default function PanelUsuarios({
 
       <Tarjeta className="divide-y divide-borde">
         {usuarios.map((u) => (
-          <div key={u.id} className="flex flex-wrap items-center gap-2 px-3 py-3 sm:px-4">
+          <div key={u.id} className="flex items-start gap-2 px-3 py-3 sm:px-4 lg:items-center">
             <div className="min-w-0 flex-1">
               <p className="flex flex-wrap items-center gap-1.5 text-[13.5px] font-medium text-texto">
                 <span className="truncate">{u.nombre}</span>
                 {u.esYo && <span className="text-[11px] font-normal text-tenue">(tú)</span>}
               </p>
               <p className="truncate text-[11.5px] text-tenue">{u.usuario}</p>
-              <p className="mt-1 flex flex-wrap items-center gap-1.5">
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <Insignia tono={u.rol === 'ADMIN' ? 'info' : 'neutro'}>{ETIQUETA_ROL[u.rol]}</Insignia>
                 {u.origen === 'GCC' ? (
                   <Insignia tono="info" icono={Link2}>Cuenta de GCC World</Insignia>
@@ -131,45 +139,42 @@ export default function PanelUsuarios({
               </p>
             </div>
 
-            <div className="flex w-full gap-2 sm:w-auto">
-              {u.origen === 'PRODUCTO' && (
-                <Boton
-                  variante="secundario"
-                  tamano="lg"
-                  className="flex-1 sm:flex-none"
-                  disabled={enCurso}
-                  onClick={() =>
-                    arranca(async () => {
-                      const r = await regenerarClave(slug, u.id);
-                      if (!r.ok) { toast.error(r.error); return; }
-                      if (r.clave) setClaveNueva({ texto: r.clave, de: u.nombre });
-                      router.refresh();
-                    })
-                  }
-                >
-                  <KeyRound className="h-4 w-4" />
-                  Contraseña
-                </Boton>
-              )}
-              {!u.esYo && (
-                <Boton
-                  variante={u.activo ? 'peligro' : 'secundario'}
-                  tamano="lg"
-                  className="flex-1 sm:flex-none"
-                  disabled={enCurso}
-                  onClick={() =>
-                    arranca(async () => {
-                      const r = await cambiarActivo(slug, u.id, !u.activo);
-                      if (!r.ok) { toast.error(r.error); return; }
-                      toast.success(r.mensaje ?? 'Hecho.');
-                      router.refresh();
-                    })
-                  }
-                >
-                  {u.activo ? 'Desactivar' : 'Activar'}
-                </Boton>
-              )}
-            </div>
+            {/* Las acciones de cada cuenta son SECUNDARIAS: botones desde `lg` y «⋯» en el
+                teléfono, nunca una fila de botones con texto partida en dos. La que quita el
+                acceso va en rojo y al final. Tu propia cuenta de GCC World no tiene ninguna. */}
+            {(u.origen === 'PRODUCTO' || !u.esYo) && <AccionesTarjeta
+              acciones={[
+                ...(u.origen === 'PRODUCTO'
+                  ? [{
+                      etiqueta: 'Nueva contraseña',
+                      icono: KeyRound,
+                      deshabilitado: enCurso,
+                      alPulsar: () =>
+                        arranca(async () => {
+                          const r = await regenerarClave(slug, u.id);
+                          if (!r.ok) { toast.error(r.error); return; }
+                          if (r.clave) setClaveNueva({ texto: r.clave, de: u.nombre });
+                          router.refresh();
+                        }),
+                    }]
+                  : []),
+                ...(!u.esYo
+                  ? [{
+                      etiqueta: u.activo ? 'Desactivar' : 'Activar',
+                      icono: u.activo ? UserX : UserCheck,
+                      peligro: u.activo,
+                      deshabilitado: enCurso,
+                      alPulsar: () =>
+                        arranca(async () => {
+                          const r = await cambiarActivo(slug, u.id, !u.activo);
+                          if (!r.ok) { toast.error(r.error); return; }
+                          toast.success(r.mensaje ?? 'Hecho.');
+                          router.refresh();
+                        }),
+                    }]
+                  : []),
+              ]}
+            />}
           </div>
         ))}
       </Tarjeta>
