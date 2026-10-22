@@ -24,6 +24,7 @@ import {
   UserRound,
   MapPin,
   CalendarX2,
+  ArrowLeft,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
 import { Boton, BotonIcono, useAparicion } from '@/componentes/ui';
@@ -326,7 +327,8 @@ export function HuecoBarraAcciones() {
     centradas, encima de la barra inferior;
   - `menu` son las SECUNDARIAS: van dentro del botón «⋯» junto al título.
   En escritorio todo sigue en la cabecera: las secundarias primero, las principales a la derecha.
-  `extra` es información (no un botón) que se queda en la cabecera siempre.
+  `extra` es información (no un botón): va bajo la descripción, en todos los anchos.
+  `volver` pone una flecha antes del título (en vez de un enlace «Todos los…» que gasta una fila).
 */
 export function CabeceraPagina({
   titulo,
@@ -334,12 +336,14 @@ export function CabeceraPagina({
   acciones,
   menu,
   extra,
+  volver,
 }: {
   titulo: string;
   descripcion?: string;
   acciones?: React.ReactNode;
   menu?: AccionMenu[];
   extra?: React.ReactNode;
+  volver?: { href: string; etiqueta: string };
 }) {
   const [hueco, setHueco] = useState<HTMLElement | null>(null);
   useEffect(() => setHueco(document.getElementById(ID_BARRA_ACCIONES)), []);
@@ -347,15 +351,22 @@ export function CabeceraPagina({
 
   return (
     <div className="flex items-start justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 lg:flex-wrap lg:items-center print:hidden">
-      <div className="min-w-0">
-        <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
-        {descripcion && <p className="text-[12px] text-tenue">{descripcion}</p>}
-        {extra && <div className="mt-1.5 lg:hidden">{extra}</div>}
+      <div className="flex min-w-0 items-start gap-2">
+        {volver && (
+          <Link href={volver.href} aria-label={volver.etiqueta} title={volver.etiqueta}
+            className="foco-visible -ml-1 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-tenue transition-colors hover:bg-realce hover:text-texto">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        )}
+        <div className="min-w-0">
+          <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+          {descripcion && <p className="text-[12px] text-tenue">{descripcion}</p>}
+          {extra && <div className="mt-1.5">{extra}</div>}
+        </div>
       </div>
       {hayMenu && <MenuMas acciones={menu!} />}
-      {(acciones || hayMenu || extra) && (
+      {(acciones || hayMenu) && (
         <div className="hidden flex-wrap items-center gap-2 lg:flex">
-          {extra}
           {menu?.map((a) => <BotonAccion key={a.etiqueta} accion={a} />)}
           {acciones}
         </div>
@@ -372,9 +383,26 @@ export function CabeceraPagina({
   );
 }
 
-function BotonAccion({ accion: a }: { accion: AccionMenu }) {
+/**
+ * Las acciones de una TARJETA (p. ej. el servicio vigente): botones en escritorio y «⋯» en el
+ * teléfono, por la misma regla que la cabecera; va a la derecha del título de la tarjeta.
+ */
+export function AccionesTarjeta({ acciones }: { acciones: AccionMenu[] }) {
+  return (
+    <>
+      <div className="hidden flex-wrap gap-2 lg:flex">
+        {acciones.map((a) => <BotonAccion key={a.etiqueta} accion={a} tamano="sm" />)}
+      </div>
+      <MenuMas acciones={acciones} />
+    </>
+  );
+}
+
+// La destructiva sale con borde y texto rojo, no rellena: es secundaria.
+function BotonAccion({ accion: a, tamano }: { accion: AccionMenu; tamano?: 'sm' }) {
   const boton = (
-    <Boton variante={a.peligro ? 'peligro' : 'secundario'} icono={a.icono} onClick={a.alPulsar} disabled={a.deshabilitado} title={a.titulo}>
+    <Boton variante="secundario" tamano={tamano} icono={a.icono} onClick={a.alPulsar} disabled={a.deshabilitado} title={a.titulo}
+      className={a.peligro ? 'text-error hover:text-error' : undefined}>
       {a.etiqueta}
     </Boton>
   );

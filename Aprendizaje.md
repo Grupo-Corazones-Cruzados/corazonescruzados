@@ -88,6 +88,9 @@
 - **C8 — Raíl de secciones y barras de día antiguas en el teléfono** · ✅ Hecho en Catering (2026-10-22):
   `RailFiltro` segmentado (≤3) o `<select>` (>3) en el teléfono; `PasoDia` compartido; Reportes en dos
   columnas. Lección: tras cada corrección, barrer TODOS los controles parecidos, no solo el de la captura.
+- **C9 — Ficha sin información repetida y sin alto innecesario** · ✅ Hecho (2026-10-22): resumen en una
+  línea en la cabecera, `volver` como flecha, `AccionesTarjeta` para las acciones del servicio, cifras 2×2.
+  Lección: en el teléfono el alto es el recurso escaso; cada fila tiene que ganarse su sitio.
 - **P2 — ¿Se lleva también a GCC World?** ⏸ Fernando dijo que no le gusta tampoco allí; pedirle el «sí»
   antes de tocar sus módulos (es grande).
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando

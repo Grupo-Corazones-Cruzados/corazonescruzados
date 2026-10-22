@@ -275,6 +275,9 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Catering: ficha del cliente sin repetir y sin alto de sobra (Fernando, 2026-10-22).** Estado en una
+  línea bajo el título, flecha de volver, acciones del servicio en «⋯» (`AccionesTarjeta`), cifras de dos
+  en dos. Regla en `/diseno` §4-quater: no repetir información; las acciones de tarjeta siguen la regla.
 - **🎨 Catering: el raíl de secciones en el teléfono (Fernando, 2026-10-22).** `RailFiltro` ya no se
   desliza a la derecha: segmentado repartido con ≤3 secciones, `<select>` con más. Menús usa `PasoDia`
   (el día unido) y Reportes reparte las fechas en dos columnas. Regla en `/diseno` §4-ter punto 4.

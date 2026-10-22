@@ -2969,6 +2969,14 @@ estados de buen diseño»* y *«para las vistas de teléfono el diseño sea esti
 porque como tabla hay que deslizarse también a la derecha y a veces se pierden de vista datos»*.
 Le pasa *«ni en GCC World ni en esta app ni en ninguna»*: la regla general está en la skill
 `/diseno` §4-ter.
+- **Ficha del cliente compacta** (Fernando, 2026-10-22: *«está repetida la información… estamos
+  ocupando espacio alto innecesario»*). Fuera la tarjeta-resumen de la columna izquierda (estado,
+  situación, «0 de 20 días · hasta…») y el enlace «Todos los clientes»: `CabeceraPagina` gana `volver`
+  (flecha antes del título) y su `extra` va bajo la descripción en todos los anchos, con «● Activo ·
+  servicio vencido» en una línea; el último acceso pasa a la descripción. La tarjeta del servicio usa
+  **`AccionesTarjeta`** (`Navegacion.tsx`): botones `sm` desde `lg`, «⋯» en el teléfono; la
+  destructiva («Cerrar», «Inactivar») es `secundario` con texto rojo, no rellena. Cifras en
+  `grid-cols-2` en el teléfono; la línea del servicio ya no repite «hasta» (está en «Termina»).
 - **`RailFiltro` en el teléfono** (Fernando, 2026-10-22: los filtros con «el diseño antiguo»). Ya no
   es una tira que se desliza: hasta 3 secciones, segmentado de ancho repartido (`grid`
   `repeat(n,1fr)`, `rounded-md border bg-realce p-0.5`, la elegida `bg-tarjeta text-acento ring-1`);

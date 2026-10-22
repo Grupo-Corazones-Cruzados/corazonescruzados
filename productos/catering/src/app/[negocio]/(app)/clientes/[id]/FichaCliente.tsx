@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   UserRound, Package, ShieldAlert, MessageSquare, Check, X, HelpCircle, KeyRound, FileDown, Copy,
-  Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send, ArrowLeft,
+  Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send,
 } from 'lucide-react';
-import Link from 'next/link';
-import { CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
+import { AccionesTarjeta, CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
 import {
   Boton, Tarjeta, RailFiltro, PanelLateral, Ventanita, Confirmar, Insignia, Campo, Entrada, AreaTexto, EstadoVacio, Tabla,
 } from '@/componentes/ui';
@@ -113,30 +112,24 @@ export default function FichaCliente({
     <>
       <CabeceraPagina
         titulo={cliente.datos.nombre}
-        descripcion={`${cliente.email} · ${cliente.datos.celular} · registrado el ${fechaCorta(new Date(cliente.creado))}`}
+        descripcion={`${cliente.email} · ${cliente.datos.celular} · registrado el ${fechaCorta(new Date(cliente.creado))}${cliente.ultimoAcceso ? ` · último acceso ${instante(cliente.ultimoAcceso, zonaHoraria)}` : ''}`}
+        volver={{ href: `/${slug}/clientes`, etiqueta: 'Todos los clientes' }}
+        // El estado, una vez y en una línea: el detalle del servicio vive en su sección.
+        extra={
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-tenue">
+            <Punto color={cliente.datos.colorIdentificador} tamano={10} />
+            <Insignia tono={TONO_ESTADO_CLIENTE[cliente.estado]}>{ETIQUETA_ESTADO_CLIENTE[cliente.estado]}</Insignia>
+            <span>·</span>
+            {vigente
+              ? <>servicio <Insignia tono={TONO_SITUACION[vigente.resumen.situacion]}>{ETIQUETA_SITUACION[vigente.resumen.situacion].toLowerCase()}</Insignia></>
+              : <span>sin servicio vigente</span>}
+          </div>
+        }
         acciones={acciones}
         menu={menu}
       />
       <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <div className="space-y-3 lg:w-[220px] lg:shrink-0">
-          <Link href={`/${slug}/clientes`} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-tenue hover:text-texto">
-            <ArrowLeft className="h-3.5 w-3.5" /> Todos los clientes
-          </Link>
-          <Tarjeta className="p-3">
-            <div className="flex items-center gap-2">
-              <Punto color={cliente.datos.colorIdentificador} tamano={14} />
-              <Insignia tono={TONO_ESTADO_CLIENTE[cliente.estado]}>{ETIQUETA_ESTADO_CLIENTE[cliente.estado]}</Insignia>
-            </div>
-            {vigente ? (
-              <p className="mt-2 text-[12px] text-tenue">
-                <Insignia tono={TONO_SITUACION[vigente.resumen.situacion]}>{ETIQUETA_SITUACION[vigente.resumen.situacion]}</Insignia>
-                <span className="mt-1 block">{vigente.resumen.diasRestantes} de {vigente.diasTotales} días · hasta {fechaCorta(vigente.resumen.fechaFin)}</span>
-              </p>
-            ) : (
-              <p className="mt-2 text-[12px] text-tenue">Sin servicio vigente</p>
-            )}
-            {cliente.ultimoAcceso && <p className="mt-2 text-[11px] text-tenue">Último acceso {instante(cliente.ultimoAcceso, zonaHoraria)}</p>}
-          </Tarjeta>
+        <div className="lg:w-[220px] lg:shrink-0">
           <RailFiltro
             className="lg:w-full"
             activo={seccion}
@@ -274,29 +267,29 @@ function SeccionServicio({
   return (
     <div className="space-y-4">
       {vigente ? (
-        <Tarjeta className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
+        <Tarjeta className="p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2">
                 <h2 className="text-[15px] font-semibold">Servicio vigente</h2>
                 <Insignia tono={TONO_SITUACION[vigente.resumen.situacion]}>{ETIQUETA_SITUACION[vigente.resumen.situacion]}</Insignia>
                 {vigente.renovaciones > 0 && <Insignia tono="info">Renovado ×{vigente.renovaciones}</Insignia>}
               </div>
               <p className="mt-1 text-[12px] text-tenue">
-                {vigente.tiposComida.map((t) => ETIQUETA_COMIDA[t]).join(' + ')} · {vigente.diasSemana.map((d) => DIA_CORTO[d]).join(' ')} · desde {fechaCorta(vigente.fechaInicio)} hasta {fechaCorta(vigente.resumen.fechaFin)}
+                {vigente.tiposComida.map((t) => ETIQUETA_COMIDA[t]).join(' + ')} · {vigente.diasSemana.map((d) => DIA_CORTO[d]).join(' ')} · desde {fechaCorta(vigente.fechaInicio)}
               </p>
               {vigente.notas && <p className="mt-1 text-[12px] italic text-tenue">{vigente.notas}</p>}
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Boton variante="secundario" tamano="sm" icono={Pencil} onClick={() => { setError(null); setPanel({ modo: 'editar', base: plantilla(vigente), id: vigente.id }); }}>Editar</Boton>
-              {vigente.estado === 'ACTIVO'
-                ? <Boton variante="secundario" tamano="sm" icono={Pause} onClick={() => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'SUSPENDIDO'); r.ok ? hecho('Servicio suspendido') : toast.error(r.error); })}>Suspender</Boton>
-                : <Boton variante="secundario" tamano="sm" icono={Play} onClick={() => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'ACTIVO'); r.ok ? hecho('Servicio reanudado') : toast.error(r.error); })}>Reanudar</Boton>}
-              <Boton variante="secundario" tamano="sm" icono={RefreshCw} onClick={() => { setError(null); setPanel({ modo: 'renovar', base: { ...plantilla(vigente), fechaInicio: vigente.resumen.fechaFin > hoy ? vigente.resumen.fechaFin : hoy }, id: vigente.id }); }}>Renovar</Boton>
-              <Boton variante="fantasma" tamano="sm" icono={Ban} onClick={() => setConfirmar('cerrar')}>Cerrar</Boton>
-            </div>
+            <AccionesTarjeta acciones={[
+              { etiqueta: 'Editar', icono: Pencil, alPulsar: () => { setError(null); setPanel({ modo: 'editar', base: plantilla(vigente), id: vigente.id }); } },
+              vigente.estado === 'ACTIVO'
+                ? { etiqueta: 'Suspender', icono: Pause, alPulsar: () => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'SUSPENDIDO'); r.ok ? hecho('Servicio suspendido') : toast.error(r.error); }) }
+                : { etiqueta: 'Reanudar', icono: Play, alPulsar: () => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'ACTIVO'); r.ok ? hecho('Servicio reanudado') : toast.error(r.error); }) },
+              { etiqueta: 'Renovar', icono: RefreshCw, alPulsar: () => { setError(null); setPanel({ modo: 'renovar', base: { ...plantilla(vigente), fechaInicio: vigente.resumen.fechaFin > hoy ? vigente.resumen.fechaFin : hoy }, id: vigente.id }); } },
+              { etiqueta: 'Cerrar', icono: Ban, peligro: true, alPulsar: () => setConfirmar('cerrar') },
+            ]} />
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {[
               ['Consumidos', `${vigente.resumen.diasConsumidos} de ${vigente.diasTotales}`],
               ['Restantes', String(vigente.resumen.diasRestantes)],
