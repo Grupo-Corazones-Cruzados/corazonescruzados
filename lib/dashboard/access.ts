@@ -24,7 +24,8 @@ import type { User } from '@/lib/types';
  *  Centralizado    → member, admin
  *  Automatizaciones→ client, member, admin  (el cliente ve SOLO los flujos a los que se
  *                    le dio acceso; el filtro está en `lib/flows/acceso.ts`, no aquí)
- *  Herramientas    → member, admin
+ *  Herramientas    → candidate, member, admin  (2026-10-22: todos los de la organización
+ *                    tendrán correo de ella; las de «un solo uso» siguen siendo del equipo)
  *  Admin           → admin
  */
 export type AccessRole = 'candidate' | 'client' | 'member' | 'admin';
@@ -60,7 +61,8 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   // devuelve cada ruta es otra pregunta, y se responde en el servidor, por petición.
   // Automatizaciones se fue a su propio producto el 2026-09-23: la ruta deja de ser
   // navegable aunque sus archivos sigan ahí de momento.
-  { path: '/dashboard/tools', roles: ['member', 'admin'] },
+  // Candidatos sí, clientes no. Las APIs lo comprueban con `lib/herramientas/acceso.ts`.
+  { path: '/dashboard/tools', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/admin', roles: ['admin'] },
 ];
 

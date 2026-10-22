@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioDeHerramientas } from '@/lib/herramientas/acceso';
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, unlink, readFile } from 'fs/promises';
 import { execFile } from 'child_process';
@@ -26,8 +26,8 @@ const SUPPORTED_CONVERSIONS: Record<string, string[]> = {
 export async function POST(req: NextRequest) {
   const tempFiles: string[] = [];
   try {
-    const user = await getCurrentUser();
-    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const acceso = await usuarioDeHerramientas();
+    if (acceso.error) return acceso.error;
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;

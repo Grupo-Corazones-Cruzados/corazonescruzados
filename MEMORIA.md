@@ -7462,6 +7462,11 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     (`BTN_DANGER` + `PixelConfirm`). Borra la fila (el token deja de abrir) y manda su carpeta de Drive
     a la **papelera** (30 días para recuperarla), no la borra. Solo quien lo creó o el admin.
   - Probado de punta a punta el 2026-10-16 (21 comprobaciones; las filas y carpetas de prueba se borraron).
+- **Quién usa Herramientas (Fernando, 2026-10-22): miembros y candidatos, nunca clientes** — todos los de la
+  organización tendrán su correo. Menú y guard: `/dashboard/tools` en `lib/dashboard/access.ts`; APIs
+  (apps/APK, convertir, transcribir): `lib/herramientas/acceso.ts`, que lee `clients.account_type` porque
+  el token no distingue candidato de cliente. Las «de un solo uso» siguen siendo del equipo (`soloEquipo`
+  en la página, `esEquipo` en sus APIs): atan clientes de GCC y guardan en el Drive de la empresa.
 - **🔳 Enlace a código QR (Herramientas → Edición; Fernando, 2026-10-20).** `components/herramientas/GeneradorQR.tsx`: se genera en el navegador con `qrcode` (el enlace no sale del equipo); PNG 512/1024/2048 px o SVG, y «Copiar imagen». Negro sobre blanco y corrección M. Sin `https://` se le añade.
 - **Herramientas → Gestión → «Entrega de un solo uso» (Fernando, 2026-10-19).** La otra cara del enlace:
   el MIEMBRO manda un mensaje y hasta 10 archivos de 100 MB, y quien recibe los ve y descarga UNA vez.

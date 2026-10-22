@@ -20,11 +20,15 @@ import {
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
 import AppMovil from '@/components/herramientas/AppMovil';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { accessRoleOf } from '@/lib/dashboard/access';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-type Tool = { id: string; name: string; Icon: any; description: string; category: string };
+/** `soloEquipo`: miembros y admin. Los candidatos usan las demás (las de «un solo uso» atan
+ * clientes de GCC y guardan en el Drive de la empresa; sus APIs exigen `esEquipo`). */
+type Tool = { id: string; name: string; Icon: any; description: string; category: string; soloEquipo?: boolean };
 
 // Categorías (tipos de herramienta).
 const CATEGORIES = [
@@ -47,9 +51,9 @@ const TOOLS: Tool[] = [
   { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
   { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
   { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
-  { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
+  { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
-  { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
+  { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
 ];
 
 const CONVERSIONS: Record<string, string[]> = {
@@ -57,14 +61,18 @@ const CONVERSIONS: Record<string, string[]> = {
 };
 
 export default function ToolsPage() {
+  const { user } = useAuth();
+  const rol = accessRoleOf(user);
+  const esEquipo = rol === 'admin' || rol === 'member';
+  const tools = useMemo(() => TOOLS.filter((t) => !t.soloEquipo || esEquipo), [esEquipo]);
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('all');
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   // `?herramienta=<id>` la deja abierta (el QR de las apps para el teléfono apunta aquí).
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('herramienta');
-    if (id && TOOLS.some((t) => t.id === id)) setSelectedTool(id);
-  }, []);
+    if (id && tools.some((t) => t.id === id)) setSelectedTool(id);
+  }, [tools]);
 
   // Convert state
   const [convertFrom, setConvertFrom] = useState('m4a');
@@ -151,19 +159,19 @@ export default function ToolsPage() {
   const clienteEntrega = clientesConCuenta?.find((c) => String(c.id) === entregaCliente);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: TOOLS.length };
-    for (const t of TOOLS) c[t.category] = (c[t.category] || 0) + 1;
+    const c: Record<string, number> = { all: tools.length };
+    for (const t of tools) c[t.category] = (c[t.category] || 0) + 1;
     return c;
-  }, []);
+  }, [tools]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return TOOLS.filter((t) => {
+    return tools.filter((t) => {
       if (cat !== 'all' && t.category !== cat) return false;
       if (q && !t.name.toLowerCase().includes(q) && !t.description.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [cat, search]);
+  }, [cat, search, tools]);
 
   const resetConvert = () => { setConvertFrom('m4a'); setConvertTo('mp3'); setConvertFile(null); setConverting(false); setConvertProgress(0); setConvertResult(null); };
   const resetTranscribe = () => { setTranscribeFile(null); setTranscribePhase('idle'); setTranscribeProgress(0); setTranscribeResult(null); };
@@ -273,7 +281,7 @@ export default function ToolsPage() {
     </div>
   );
 
-  const tool = TOOLS.find((t) => t.id === selectedTool) || null;
+  const tool = tools.find((t) => t.id === selectedTool) || null;
 
   // Panel derecho: usar la herramienta seleccionada.
   const renderToolPanel = () => {
@@ -432,7 +440,7 @@ export default function ToolsPage() {
         {/* ── Left rail: categorías ── */}
         <FilterRail
           title="Categoría"
-          items={CATEGORIES.map((c) => ({ value: c.value, label: c.label, Icon: c.Icon, count: counts[c.value] }))}
+          items={CATEGORIES.filter((c) => c.value === 'all' || counts[c.value]).map((c) => ({ value: c.value, label: c.label, Icon: c.Icon, count: counts[c.value] }))}
           value={cat}
           onChange={setCat}
         />
