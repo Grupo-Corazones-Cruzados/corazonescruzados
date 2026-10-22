@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3002",
     "dev:https": "node server.cjs",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && NODE_OPTIONS=--max-old-space-size=6144 next build",
     "start": "next start -p $PORT",
     "migrate": "node scripts/migrate.mjs",
     "migrate:status": "node scripts/migrate.mjs --status",
