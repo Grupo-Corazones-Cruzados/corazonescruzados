@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Package, Plus, Clock } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Buscador, Tabla, Insignia, Tarjeta, RailFiltro, PanelLateral, Campo, Selector, EstadoVacio } from '@/componentes/ui';
+import { Boton, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, Campo, Selector, EstadoVacio } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { CamposServicio } from '@/componentes/FormularioServicio';
 import { ETIQUETA_COMIDA, DIA_CORTO } from '@/lib/catalogo';
@@ -75,21 +75,24 @@ export default function ServiciosCliente({
         descripcion={`${conteo('vigentes')} vigentes · ${conteo('por-vencer')} por vencer`}
         acciones={<Boton icono={Plus} onClick={() => { setError(null); setAlta(true); }} disabled={!sinServicio.length} title={sinServicio.length ? undefined : 'Todos los clientes activos ya tienen servicio'}>Nuevo servicio</Boton>}
       />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <RailFiltro
-          titulo="Ver"
-          activo={filtro}
-          alElegir={(v) => setFiltro(v as Filtro)}
-          opciones={[
-            { valor: 'vigentes', etiqueta: 'Vigentes', icono: Package, conteo: conteo('vigentes') },
-            { valor: 'por-vencer', etiqueta: 'Por vencer', icono: Clock, conteo: conteo('por-vencer'), pista: '5 días o menos' },
-            { valor: 'suspendidos', etiqueta: 'Suspendidos', conteo: conteo('suspendidos') },
-            { valor: 'vencidos', etiqueta: 'Vencidos', conteo: conteo('vencidos') },
-            { valor: 'todos', etiqueta: 'Todos', conteo: filas.length },
-          ]}
-        />
-        <div className="min-w-0 flex-1 space-y-3">
-          <Buscador valor={busca} alCambiar={setBusca} marcador="Buscar cliente…" className="max-w-md" />
+      <div className="space-y-3 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+          <SelectorEstado
+            etiqueta="Ver"
+            className="w-full lg:w-auto lg:min-w-0"
+            activo={filtro}
+            alElegir={(v) => setFiltro(v as Filtro)}
+            opciones={[
+              { valor: 'vigentes', etiqueta: 'Vigentes', icono: Package, conteo: conteo('vigentes') },
+              { valor: 'por-vencer', etiqueta: 'Por vencer', icono: Clock, conteo: conteo('por-vencer'), pista: '5 días o menos' },
+              { valor: 'suspendidos', etiqueta: 'Suspendidos', conteo: conteo('suspendidos') },
+              { valor: 'vencidos', etiqueta: 'Vencidos', conteo: conteo('vencidos') },
+              { valor: 'todos', etiqueta: 'Todos', conteo: filas.length },
+            ]}
+          />
+          <Buscador valor={busca} alCambiar={setBusca} marcador="Buscar cliente…" className="w-full lg:w-72 lg:shrink-0" />
+        </div>
+        <div className="min-w-0 space-y-3">
           <Tarjeta className="overflow-hidden">
             <Tabla
               filas={visibles}

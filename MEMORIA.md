@@ -288,6 +288,9 @@ Stack estándar de la casa, con particularidades de este repo:
   los nombres); el color sigue en etiqueta, PDF, ruta, Motorizados y ficha.
   Cuarta (2026-10-22): lo que aparece al navegar se anima (`useAparicion` en `componentes/ui.tsx`):
   menú «Más», `PanelLateral` y `Ventanita`/`Confirmar`, ~200 ms también al salir. Regla en `/diseno` §4-bis.
+  Quinta (2026-10-22): filtrar estados con UN control (`SelectorEstado`: segmentado con cápsula que se
+  desliza; `<select>` en el teléfono) en Clientes, Servicios y Alimentos; `Tabla` en el teléfono = galería
+  de tarjetas. Regla en `/diseno` §4-ter. **Pendiente: GCC World** (a Fernando tampoco le gusta su `FilterRail`).
 - **🔐 Incidente de seguridad de Railway (2026-10-21/22).** Railway avisó que las variables de entorno
   pudieron filtrarse y pausó los despliegues. Decisiones de Fernando: **no** cerrar el acceso público a
   las bases y **no** salir de Railway por ahora. Hecho y verificado el 2026-10-22:

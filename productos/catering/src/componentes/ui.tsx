@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { X, Search, Loader2, Inbox } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { X, Search, Loader2, Inbox, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -495,6 +495,108 @@ export function RailFiltro({
   );
 }
 
+// ── Selector de estado ──────────────────────────────────────────────────────
+/**
+ * EL FILTRO DE ESTADOS ES UN SOLO CONTROL (Fernando, 2026-10-22: «una forma de filtrar
+ * los estados que se vea bien como un solo control selector»). Sustituye al raíl
+ * vertical para filtrar una lista; el raíl queda para navegar entre SECCIONES.
+ *
+ * - Escritorio (lg+): control segmentado. Una cápsula blanca marca la opción elegida y
+ *   se DESLIZA hasta la nueva (regla de movimiento); cada segmento lleva su cuenta.
+ * - Teléfono: un `<select>` nativo con la misma lista («Activos · 7»): una fila, el
+ *   selector del sistema, nada escondido a la derecha.
+ * Las dos versiones se montan y el CSS enseña una: no son diálogos, no bloquean nada.
+ */
+export function SelectorEstado({
+  opciones,
+  activo,
+  alElegir,
+  etiqueta = 'Estado',
+  className,
+}: {
+  opciones: OpcionRail[];
+  activo: string;
+  alElegir: (v: string) => void;
+  /** Para lectores de pantalla y como prefijo en el teléfono. */
+  etiqueta?: string;
+  className?: string;
+}) {
+  const caja = useRef<HTMLDivElement>(null);
+  const [marca, setMarca] = useState<{ left: number; width: number } | null>(null);
+
+  // La cápsula se coloca midiendo el botón elegido; se vuelve a medir si cambia el
+  // tamaño (las cuentas cambian el ancho de los segmentos).
+  useLayoutEffect(() => {
+    const medir = () => {
+      const b = caja.current?.querySelector<HTMLElement>('[data-sel="1"]');
+      if (b) setMarca({ left: b.offsetLeft, width: b.offsetWidth });
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (caja.current) ro.observe(caja.current);
+    return () => ro.disconnect();
+  }, [activo, opciones]);
+
+  return (
+    <div className={className}>
+      <div
+        ref={caja}
+        role="radiogroup"
+        aria-label={etiqueta}
+        className="relative hidden max-w-full items-center rounded-md border border-borde bg-realce p-0.5 lg:inline-flex"
+      >
+        {marca && (
+          <span
+            aria-hidden
+            className="absolute inset-y-0.5 rounded bg-tarjeta shadow-sm ring-1 ring-borde transition-[left,width] duration-200 ease-out"
+            style={{ left: marca.left, width: marca.width }}
+          />
+        )}
+        {opciones.map((o) => {
+          const sel = o.valor === activo;
+          return (
+            <button
+              key={o.valor}
+              type="button"
+              role="radio"
+              aria-checked={sel}
+              data-sel={sel ? '1' : undefined}
+              title={o.pista}
+              onClick={() => alElegir(o.valor)}
+              className={cn(
+                'relative flex h-8 items-center gap-1.5 whitespace-nowrap rounded px-3 text-[13px] transition-colors foco-visible',
+                sel ? 'font-semibold text-texto' : 'text-tenue hover:text-texto',
+              )}
+            >
+              {o.etiqueta}
+              {o.conteo !== undefined && (
+                <span className={cn('text-[11px] tabular-nums', sel ? 'text-acento' : 'text-tenue')}>{o.conteo}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="relative lg:hidden">
+        <select
+          aria-label={etiqueta}
+          value={activo}
+          onChange={(e) => alElegir(e.target.value)}
+          className="campo appearance-none pr-8 font-semibold"
+        >
+          {opciones.map((o) => (
+            <option key={o.valor} value={o.valor}>
+              {etiqueta}: {o.etiqueta}
+              {o.conteo !== undefined ? ` · ${o.conteo}` : ''}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
+      </div>
+    </div>
+  );
+}
+
 // ── Barra de módulo: filtros a la izquierda, acciones a la derecha ───────────
 export function BarraModulo({
   izquierda,
@@ -540,8 +642,51 @@ export function Tabla<T>({
   if (!filas.length) return <>{vacio ?? <EstadoVacio titulo="No hay nada que mostrar" />}</>;
   const alinea = (a?: string) =>
     a === 'der' ? 'text-right' : a === 'centro' ? 'text-center' : 'text-left';
+  /*
+    EN EL TELÉFONO, GALERÍA Y NO TABLA (Fernando, 2026-10-22: «como tabla hay que
+    deslizarse también a la derecha y a veces se pierden de vista datos»). Cada fila es
+    una tarjeta: la primera columna es su cabecera, las columnas sin título (acciones)
+    van a su derecha y el resto es una rejilla «TÍTULO / valor» de dos columnas. Todo
+    a la vista, sin desplazamiento lateral. Lo hace la tabla, así que vale para todas.
+  */
+  const [cabeza, ...resto] = columnas;
+  const acciones = resto.filter((c) => !c.titulo);
+  const datos = resto.filter((c) => c.titulo);
   return (
-    <div className="desplaza overflow-x-auto">
+    <>
+    <div className="space-y-2 bg-fondo p-2 md:hidden">
+      {filas.map((f) => (
+        <div
+          key={claveFila(f)}
+          onClick={alPulsarFila ? () => alPulsarFila(f) : undefined}
+          className={cn(
+            'rounded-md border border-borde bg-tarjeta p-3.5 text-[13px] transition-colors',
+            alPulsarFila && 'cursor-pointer active:bg-realce',
+            filaActiva?.(f) && 'border-acento bg-acento-suave',
+          )}
+        >
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">{cabeza.render(f)}</div>
+            {acciones.map((c) => (
+              <div key={c.clave} className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                {c.render(f)}
+              </div>
+            ))}
+          </div>
+          {datos.length > 0 && (
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-borde pt-3">
+              {datos.map((c) => (
+                <div key={c.clave} className="min-w-0">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-tenue">{c.titulo}</dt>
+                  <dd className="mt-0.5 break-words">{c.render(f)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      ))}
+    </div>
+    <div className="desplaza hidden overflow-x-auto md:block">
       <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-borde bg-tarjeta">
@@ -580,5 +725,6 @@ export function Tabla<T>({
         </tbody>
       </table>
     </div>
+    </>
   );
 }

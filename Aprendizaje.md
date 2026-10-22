@@ -74,6 +74,13 @@
   desmontaje a los 200 ms) en el menú «Más», `PanelLateral` y `Ventanita`/`Confirmar`; el contenido,
   el título y el pie se congelan durante la salida. Medido en el navegador (posición y opacidad a
   0/60/120/260 ms y desmontaje). Regla general en la skill `/diseno` §4-bis y en `/producto`.
+- **C5 — Filtro de estados en un solo control + galería en el teléfono** · ✅ Hecho en Catering:
+  `SelectorEstado` (segmentado desde `lg`, `<select>` debajo) en Clientes/Servicios/Alimentos; el raíl
+  solo para secciones. `Tabla` pinta tarjetas por debajo de `md` (las 11 tablas). Verificado en
+  1440, 1024 y 390 px: la cápsula se desliza, el filtro filtra en los dos tamaños y ningún ancho se
+  desborda. Regla general en `/diseno` §4-ter.
+- **P2 — ¿Se lleva también a GCC World?** ⏸ Fernando dijo que no le gusta tampoco allí; pedirle el «sí»
+  antes de tocar sus módulos (es grande).
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
   dijo «empezaremos con Catering»; preguntar.
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Apple, Plus, Pencil, Trash2 } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Buscador, Tabla, Insignia, Tarjeta, RailFiltro, PanelLateral, Confirmar, Campo, Entrada, Selector, EstadoVacio } from '@/componentes/ui';
+import { Boton, BotonIcono, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, Confirmar, Campo, Entrada, Selector, EstadoVacio } from '@/componentes/ui';
 import { Aviso, Casilla } from '@/componentes/campos';
 import { CATEGORIAS, ETIQUETA_CATEGORIA } from '@/lib/catalogo';
 import { guardarAlimento, eliminarAlimento } from '@/acciones/cocina';
@@ -33,15 +33,18 @@ export default function AlimentosCliente({ slug, alimentos }: { slug: string; al
   return (
     <>
       <CabeceraPagina titulo="Alimentos" descripcion="El catálogo con el que se arman los menús y contra el que se declaran las restricciones" acciones={<Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo alimento</Boton>} />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <RailFiltro
-          titulo="Categoría"
-          activo={categoria}
-          alElegir={setCategoria}
-          opciones={[{ valor: 'TODAS', etiqueta: 'Todas', icono: Apple, conteo: alimentos.length }, ...CATEGORIAS.map((c) => ({ valor: c, etiqueta: ETIQUETA_CATEGORIA[c], conteo: alimentos.filter((a) => a.categoria === c).length }))]}
-        />
-        <div className="min-w-0 flex-1 space-y-3">
-          <Buscador valor={busca} alCambiar={setBusca} marcador="Buscar alimento…" className="max-w-md" />
+      <div className="space-y-3 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+          <SelectorEstado
+            etiqueta="Categoría"
+            className="w-full lg:w-auto lg:min-w-0"
+            activo={categoria}
+            alElegir={setCategoria}
+            opciones={[{ valor: 'TODAS', etiqueta: 'Todas', icono: Apple, conteo: alimentos.length }, ...CATEGORIAS.map((c) => ({ valor: c, etiqueta: ETIQUETA_CATEGORIA[c], conteo: alimentos.filter((a) => a.categoria === c).length }))]}
+          />
+          <Buscador valor={busca} alCambiar={setBusca} marcador="Buscar alimento…" className="w-full lg:w-72 lg:shrink-0" />
+        </div>
+        <div className="min-w-0 space-y-3">
           <Tarjeta className="overflow-hidden">
             <Tabla
               filas={visibles}

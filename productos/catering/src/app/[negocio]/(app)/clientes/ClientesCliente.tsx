@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Users, UserPlus, Clock, Copy } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Buscador, Tabla, Insignia, Tarjeta, RailFiltro, PanelLateral, Campo, Entrada, EstadoVacio, Ventanita } from '@/componentes/ui';
+import { Boton, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, Campo, Entrada, EstadoVacio, Ventanita } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { CamposCliente, CLIENTE_VACIO } from '@/componentes/FormularioCliente';
 import { ETIQUETA_ESTADO_CLIENTE, TONO_ESTADO_CLIENTE } from '@/lib/catalogo';
@@ -64,23 +64,26 @@ export default function ClientesCliente({
         descripcion={`${filas.length} registrados`}
         acciones={<Boton icono={UserPlus} onClick={() => { setError(null); setAlta(true); }}>Nuevo cliente</Boton>}
       />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <RailFiltro
-          titulo="Ver"
-          activo={filtro}
-          alElegir={(v) => setFiltro(v as Filtro)}
-          opciones={[
-            { valor: 'TODOS', etiqueta: 'Todos', icono: Users, conteo: filas.length },
-            { valor: 'PENDIENTE', etiqueta: 'Por aprobar', conteo: conteo('PENDIENTE') },
-            { valor: 'ACTIVO', etiqueta: 'Activos', conteo: conteo('ACTIVO') },
-            { valor: 'POR_VENCER', etiqueta: 'Por vencer', icono: Clock, conteo: conteo('POR_VENCER'), pista: '5 días o menos' },
-            { valor: 'SIN_SERVICIO', etiqueta: 'Activos sin servicio', conteo: conteo('SIN_SERVICIO') },
-            { valor: 'INACTIVO', etiqueta: 'Inactivos', conteo: conteo('INACTIVO') },
-            { valor: 'RECHAZADO', etiqueta: 'Rechazados', conteo: conteo('RECHAZADO') },
-          ]}
-        />
-        <div className="min-w-0 flex-1 space-y-3">
-          <Buscador valor={busca} alCambiar={setBusca} marcador="Nombre, correo, celular o dirección…" className="max-w-md" />
+      <div className="space-y-3 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+          <SelectorEstado
+            etiqueta="Ver"
+            className="w-full lg:w-auto lg:min-w-0"
+            activo={filtro}
+            alElegir={(v) => setFiltro(v as Filtro)}
+            opciones={[
+              { valor: 'TODOS', etiqueta: 'Todos', icono: Users, conteo: filas.length },
+              { valor: 'PENDIENTE', etiqueta: 'Por aprobar', conteo: conteo('PENDIENTE') },
+              { valor: 'ACTIVO', etiqueta: 'Activos', conteo: conteo('ACTIVO') },
+              { valor: 'POR_VENCER', etiqueta: 'Por vencer', icono: Clock, conteo: conteo('POR_VENCER'), pista: '5 días o menos' },
+              { valor: 'SIN_SERVICIO', etiqueta: 'Activos sin servicio', conteo: conteo('SIN_SERVICIO') },
+              { valor: 'INACTIVO', etiqueta: 'Inactivos', conteo: conteo('INACTIVO') },
+              { valor: 'RECHAZADO', etiqueta: 'Rechazados', conteo: conteo('RECHAZADO') },
+            ]}
+          />
+          <Buscador valor={busca} alCambiar={setBusca} marcador="Nombre, correo, celular o dirección…" className="w-full lg:w-72 lg:shrink-0" />
+        </div>
+        <div className="min-w-0 space-y-3">
           <Tarjeta className="overflow-hidden">
             <Tabla
               filas={visibles}

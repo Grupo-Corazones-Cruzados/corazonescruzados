@@ -2963,6 +2963,25 @@ estado a `null`, y lleva `pointer-events-none`. El `@media (prefers-reduced-moti
 -46 → 0 px a los 0/60/120/260 ms, y tras cerrarse ya no está en el DOM.
 La regla general vive en la skill `/diseno` §4-bis.
 
+### ⭐ FILTRO DE ESTADOS EN UN SOLO CONTROL, Y GALERÍA EN EL TELÉFONO (Fernando, 2026-10-22)
+Textual: *«una forma de filtrar los estados que se vea bien como un solo control selector de
+estados de buen diseño»* y *«para las vistas de teléfono el diseño sea estilo galería y no tabla,
+porque como tabla hay que deslizarse también a la derecha y a veces se pierden de vista datos»*.
+Le pasa *«ni en GCC World ni en esta app ni en ninguna»*: la regla general está en la skill
+`/diseno` §4-ter.
+- **`SelectorEstado`** (`src/componentes/ui.tsx`) sustituye a `RailFiltro` en **Clientes, Servicios
+  y Alimentos**. Desde `lg`, un control segmentado (`rounded-md border bg-realce p-0.5`, segmentos
+  `h-8 px-3 text-[13px]` + cuenta) con una cápsula blanca que se desliza a la opción elegida;
+  por debajo de `lg`, un `<select>` nativo a todo el ancho («Ver: Todos · 11»). Va en la misma fila
+  que el `Buscador` (`lg:w-72`), que baja si no cabe (`lg:flex-wrap`). La lista ocupa todo el ancho
+  (sin raíl a la izquierda).
+- `RailFiltro` se queda para **secciones**: Configuración, ficha del cliente, Mi perfil,
+  Cancelaciones y el panel de GCC.
+- **`Tabla`** pinta, por debajo de `md`, una **galería**: tarjetas `rounded-md border bg-tarjeta
+  p-3.5` separadas (`space-y-2 bg-fondo p-2`); cabecera = primera columna, acciones (columnas
+  sin título) a su derecha, resto en rejilla de 2 columnas `dt` 10 px mayúsculas / `dd`.
+  Vale para las 11 tablas sin tocarlas. Medido: ninguna página pasa de 390 px de ancho.
+
 ### Controles nuevos, todos reusables (`src/componentes/`)
 - **`Chips`** (`campos.tsx`) — fila de casillas-chip para elegir comidas o días de la semana; envía
   `name` repetido y se lee con `FormData.getAll`. **`Casilla`**, **`Aviso`** (error/aviso/info),
@@ -4073,6 +4092,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Raíl vertical para filtrar estados y tablas que se deslizan en el teléfono (Catering)** ·
+  **CAMBIO DE ESTÁNDAR**: `SelectorEstado` y galería en `Tabla`. Pendiente: los otros cuatro productos y
+  **GCC World** (`FilterRail` en sus módulos), que a Fernando tampoco le gusta.
 - **2026-10-22 · Paneles y ventanitas aparecían de golpe (Catering)** · **CAMBIO DE ESTÁNDAR**: entran
   y salen animados con `useAparicion`. Pendiente: los otros cuatro productos.
 - **2026-10-22 · Punto de color en la lista de Clientes (Catering)** · **CORREGIDO**: quitado; el color
