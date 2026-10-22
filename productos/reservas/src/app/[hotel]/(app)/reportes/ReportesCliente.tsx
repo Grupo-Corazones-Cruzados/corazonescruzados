@@ -69,12 +69,18 @@ export default function ReportesCliente({
       <CabeceraPagina
         titulo="Reportes"
         descripcion="Reservas del periodo, con su cuenta"
+        // El Excel es lo que se viene a buscar aquí: es la principal (en el teléfono, la
+        // barra de abajo). Sin filas no hay nada que bajar: el botón se deshabilita.
         acciones={
-          <a href={enlaceExcel} download>
-            <Boton variante="secundario" icono={Download} disabled={!filas.length}>
+          filas.length ? (
+            <a href={enlaceExcel} download>
+              <Boton icono={Download}>Exportar a Excel</Boton>
+            </a>
+          ) : (
+            <Boton icono={Download} disabled>
               Exportar a Excel
             </Boton>
-          </a>
+          )
         }
       />
 
@@ -84,7 +90,9 @@ export default function ReportesCliente({
             <Filter className="h-4 w-4 text-tenue" />
             <h2 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">Filtros</h2>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Teléfono: el periodo en dos columnas, suite y estado debajo en otras dos y
+              «Consultar» a todo el ancho. Desde lg, una fila. */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             <Campo etiqueta="Desde">
               <Entrada
                 type="date"
@@ -118,7 +126,7 @@ export default function ReportesCliente({
                 <option value="ELIMINADA">Eliminada</option>
               </Selector>
             </Campo>
-            <div className="flex items-end">
+            <div className="col-span-2 flex items-end lg:col-span-1">
               <Boton icono={Search} tamano="lg" className="w-full" onClick={consultar}>
                 Consultar
               </Boton>
@@ -126,7 +134,7 @@ export default function ReportesCliente({
           </div>
         </Tarjeta>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           {[
             { et: 'Reservas', v: numEntero(filas.length) },
             { et: 'Noches', v: numEntero(totales.noches) },

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Pencil, Trash2, DoorOpen } from 'lucide-react';
 import { Boton, Confirmar, PanelLateral } from '@/componentes/ui';
+import { CabeceraPagina } from '@/componentes/Navegacion';
 import FormularioReserva, {
   type ReservaEditable,
   type SuiteOpcion,
@@ -18,8 +19,13 @@ import { eliminarReserva, darSalida } from '@/acciones/reservas';
  * «Marcar como pagada» ya no existe (Fernando, 2026-09-20): el pago se deriva de
  * lo pagado frente al precio, así que se anota el cobro EDITANDO la reserva. Y la
  * salida se registra solo cuando la cuenta está saldada.
+ *
+ * Las acciones van en la CABECERA de la página (por eso la cabecera se pinta aquí):
+ * «Editar» y «Registrar salida» son las principales —en el teléfono, la barra de
+ * abajo—; «Eliminar» es secundaria y destructiva —en el teléfono, dentro del «⋯»—.
  */
 export default function DetalleReserva({
+  cabecera,
   slug,
   reserva,
   suites,
@@ -29,6 +35,7 @@ export default function DetalleReserva({
   yaFinalizada,
   abrirEdicion = false,
 }: {
+  cabecera: { titulo: string; volver: string; extra?: React.ReactNode };
   slug: string;
   reserva: ReservaEditable;
   suites: SuiteOpcion[];
@@ -55,51 +62,51 @@ export default function DetalleReserva({
       router.refresh();
     });
 
-  if (!puedeOperar) {
-    return (
-      <p className="tarjeta p-4 text-[12px] leading-relaxed text-tenue">
-        Tu cuenta es de solo consulta: puedes ver la reserva, pero no modificarla.
-      </p>
-    );
-  }
+  const titulo = (
+    <CabeceraPagina
+      titulo={cabecera.titulo}
+      volver={{ href: cabecera.volver, etiqueta: 'Volver' }}
+      extra={cabecera.extra}
+      menu={
+        puedeOperar
+          ? [{ etiqueta: 'Eliminar', icono: Trash2, peligro: true, deshabilitado: enCurso, alPulsar: () => setBorrando(true) }]
+          : undefined
+      }
+      acciones={
+        puedeOperar && (
+          <>
+            {/* La salida a la izquierda y «Editar» (la afirmativa) a la derecha. */}
+            <Boton
+              variante="secundario"
+              icono={DoorOpen}
+              disabled={enCurso || yaFinalizada || !pagada}
+              title={
+                yaFinalizada
+                  ? 'La estancia ya terminó'
+                  : !pagada
+                    ? 'Con saldo pendiente no se puede dar la salida: edita la reserva y anota el pago'
+                    : undefined
+              }
+              onClick={() => ejecutar(() => darSalida(slug, reserva.id), 'Salida registrada')}
+            >
+              {/* Corto: en el teléfono comparte la barra con «Editar». Que falta el pago ya lo
+                  dice la línea de estado («Pago pendiente»). */}
+              {yaFinalizada ? 'Estancia terminada' : 'Registrar salida'}
+            </Boton>
+            <Boton icono={Pencil} onClick={() => setEditando(true)} disabled={enCurso}>
+              Editar reserva
+            </Boton>
+          </>
+        )
+      }
+    />
+  );
+
+  if (!puedeOperar) return titulo;
 
   return (
     <>
-      <div className="tarjeta space-y-2 p-4">
-        <Boton
-          icono={Pencil}
-          className="w-full"
-          onClick={() => setEditando(true)}
-          disabled={enCurso}
-        >
-          Editar reserva
-        </Boton>
-        <Boton
-          variante="secundario"
-          icono={DoorOpen}
-          className="w-full"
-          disabled={enCurso || yaFinalizada || !pagada}
-          title={
-            yaFinalizada
-              ? 'La estancia ya terminó'
-              : !pagada
-                ? 'Con saldo pendiente no se puede dar la salida: edita la reserva y anota el pago'
-                : undefined
-          }
-          onClick={() => ejecutar(() => darSalida(slug, reserva.id), 'Salida registrada')}
-        >
-          {yaFinalizada ? 'Estancia terminada' : pagada ? 'Registrar salida' : 'Registrar salida (falta el pago)'}
-        </Boton>
-        <Boton
-          variante="fantasma"
-          icono={Trash2}
-          className="w-full text-error hover:bg-error-suave hover:text-error"
-          disabled={enCurso}
-          onClick={() => setBorrando(true)}
-        >
-          Eliminar
-        </Boton>
-      </div>
+      {titulo}
 
       <PanelLateral
         abierto={editando}

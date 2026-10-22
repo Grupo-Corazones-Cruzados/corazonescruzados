@@ -1,6 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
-import { BarraLateral, BarraInferior } from '@/componentes/Navegacion';
+import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 
 export const dynamic = 'force-dynamic';
@@ -30,11 +30,20 @@ export default async function LayoutApp({
         usuario={sesion.nombre}
         rol={sesion.rol}
       />
-      <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] lg:ml-16 lg:pb-0">
+      {/* En el teléfono el contenido ocupa al menos la pantalla y termina con el hueco de la
+          barra de acciones (`mt-auto`): en una página corta la barra no queda a media altura. */}
+      <div className="flex min-h-[calc(100dvh-env(safe-area-inset-top))] flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] lg:ml-16 lg:block lg:min-h-0 lg:pb-0 print:ml-0 print:pb-0">
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
+        <HuecoBarraAcciones />
       </div>
-      <BarraInferior slug={hotel} rol={sesion.rol} />
+      <BarraInferior
+        slug={hotel}
+        hotel={inquilino.nombre}
+        logoUrl={inquilino.logoUrl}
+        usuario={sesion.nombre}
+        rol={sesion.rol}
+      />
     </AplicaMarca>
   );
 }

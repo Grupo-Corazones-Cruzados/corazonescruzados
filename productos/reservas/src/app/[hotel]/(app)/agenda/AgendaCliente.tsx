@@ -8,12 +8,12 @@ import { es } from 'date-fns/locale';
 import {
   ChevronLeft,
   ChevronRight,
-  CalendarDays,
   Building2,
   Plus,
   DollarSign,
   Loader2,
   BedDouble,
+  CalendarCheck,
 } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, EstadoVacio, Insignia, PanelLateral, Tarjeta } from '@/componentes/ui';
@@ -123,7 +123,7 @@ export default function AgendaCliente({
   if (!ubicacion) {
     return (
       <>
-        <CabeceraPagina titulo="Agenda" />
+        <CabeceraPagina titulo="Agenda" volver={{ href: `/${slug}/panel`, etiqueta: 'Volver al panel' }} />
         <EstadoVacio
           icono={Building2}
           titulo="Todavía no hay ubicaciones"
@@ -142,75 +142,80 @@ export default function AgendaCliente({
 
   return (
     <>
+      {/*
+        Cabecera: «volver al panel» es la flecha del título; «Nueva reserva» es la principal
+        (en el teléfono, la barra de abajo) y «Hoy» la secundaria (en el «⋯»). La ubicación
+        que se mira es la línea de estado: sin ella no se sabe de qué agenda se trata.
+      */}
       <CabeceraPagina
         titulo={format(elDia, "EEEE d 'de' MMMM", { locale: es }).replace(/^\w/, (c) => c.toUpperCase())}
-        descripcion={`Agenda · ${ubicacion.nombre}`}
+        descripcion={
+          puedeOperar
+            ? 'Agenda de la ubicación. Pulsa un hueco para proponer una reserva a esa hora; pulsa un bloque para abrirla.'
+            : 'Agenda de la ubicación: ocupación del día por suite.'
+        }
+        volver={{ href: `/${slug}/panel`, etiqueta: 'Volver al panel' }}
+        extra={
+          <span className="flex items-center gap-1.5 text-[12px] text-tenue">
+            <Building2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{ubicacion.nombre}</span>
+          </span>
+        }
+        menu={[
+          {
+            etiqueta: 'Hoy',
+            icono: CalendarCheck,
+            alPulsar: () => irA(hoy),
+            deshabilitado: diaSel === hoy && !cargando,
+          },
+        ]}
         acciones={
-          <>
-            <Link
-              href={`/${slug}/panel`}
-              className="flex items-center gap-1 text-[13px] text-tenue hover:text-texto"
-            >
-              <ChevronLeft className="h-4 w-4" /> Panel
+          puedeOperar && (
+            <Link href={enlaceNueva}>
+              <Boton icono={Plus}>Nueva reserva</Boton>
             </Link>
-            <div className="flex items-center gap-1">
-              <BotonIcono icono={ChevronLeft} titulo="Día anterior" onClick={() => irA(sumarDias(diaSel, -1))} />
-              <Boton variante="secundario" onClick={() => irA(hoy)} disabled={diaSel === hoy && !cargando}>
-                Hoy
-              </Boton>
-              <BotonIcono icono={ChevronRight} titulo="Día siguiente" onClick={() => irA(sumarDias(diaSel, 1))} />
-              {cargando && <Loader2 className="ml-1 h-4 w-4 animate-spin text-tenue" aria-label="Cargando" />}
-            </div>
-            {puedeOperar && (
-              <Link href={enlaceNueva}>
-                <Boton icono={Plus}>Nueva reserva</Boton>
-              </Link>
-            )}
-          </>
+          )
         }
       />
 
       {/* Tira de días: la semana que empieza tres días antes del elegido, para que el
           día no quede pegado al borde. Se recalcula sobre el día PINTADO, no sobre el
-          que ya contestó el servidor. */}
-      <div className="desplaza flex gap-2 overflow-x-auto border-b border-borde bg-tarjeta px-4 py-3 sm:px-6">
-        {tira.map((d) => {
-          const sel = d === diaSel;
-          const esHoy = d === hoy;
-          const f = diaLocal(d);
-          return (
-            <button
-              key={d}
-              type="button"
-              onClick={() => irA(d)}
-              className={cn(
-                'flex w-14 shrink-0 flex-col items-center rounded-md border px-2 py-1.5 transition-colors foco-visible',
-                sel
-                  ? 'border-acento bg-acento text-acento-contraste'
-                  : 'border-borde bg-tarjeta text-texto hover:bg-realce',
-              )}
-            >
-              <span className="text-[10px] uppercase opacity-80">{format(f, 'EEE', { locale: es })}</span>
-              <span className="text-[15px] font-semibold">{format(f, 'd')}</span>
-              {esHoy && !sel && <span className="h-1 w-1 rounded-full bg-acento" />}
-            </button>
-          );
-        })}
+          que ya contestó el servidor. Las flechas van a sus lados, como UN control; en
+          el teléfono los siete días se reparten el ancho (nada se esconde a la derecha). */}
+      <div className="flex items-center gap-1 border-b border-borde bg-tarjeta px-2 py-3 sm:gap-2 sm:px-6">
+        <BotonIcono icono={ChevronLeft} titulo="Día anterior" className="shrink-0" onClick={() => irA(sumarDias(diaSel, -1))} />
+        <div className="grid min-w-0 flex-1 grid-cols-7 gap-1 sm:flex sm:flex-none sm:gap-2">
+          {tira.map((d) => {
+            const sel = d === diaSel;
+            const esHoy = d === hoy;
+            const f = diaLocal(d);
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => irA(d)}
+                className={cn(
+                  'flex min-w-0 flex-col items-center rounded-md border px-1 py-1.5 transition-colors foco-visible sm:w-14 sm:shrink-0 sm:px-2',
+                  sel
+                    ? 'border-acento bg-acento text-acento-contraste'
+                    : 'border-borde bg-tarjeta text-texto hover:bg-realce',
+                )}
+              >
+                <span className="text-[10px] uppercase opacity-80">{format(f, 'EEE', { locale: es })}</span>
+                <span className="text-[15px] font-semibold">{format(f, 'd')}</span>
+                {esHoy && !sel && <span className="h-1 w-1 rounded-full bg-acento" />}
+              </button>
+            );
+          })}
+        </div>
+        <BotonIcono icono={ChevronRight} titulo="Día siguiente" className="shrink-0" onClick={() => irA(sumarDias(diaSel, 1))} />
+        {cargando && <Loader2 className="ml-1 hidden h-4 w-4 shrink-0 animate-spin text-tenue sm:block" aria-label="Cargando" />}
       </div>
 
       <div className="flex flex-col gap-4 p-4 sm:p-6 xl:flex-row">
         {/* Barras por suite */}
         <div className="min-w-0 flex-1">
           <Tarjeta className={cn('overflow-hidden transition-opacity', cargando && 'opacity-60')}>
-            <div className="flex items-center gap-2 border-b border-borde px-4 py-2.5">
-              <CalendarDays className="h-4 w-4 text-tenue" />
-              <p className="text-[12px] text-tenue">
-                {puedeOperar
-                  ? 'Pulsa un hueco para proponer una reserva a esa hora; pulsa un bloque para abrirla.'
-                  : 'Ocupación del día por suite.'}
-              </p>
-            </div>
-
             {/* Regla de horas */}
             <div className="flex border-b border-borde bg-realce/60">
               <div className="w-20 shrink-0 sm:w-32" />

@@ -15,7 +15,7 @@ import {
   AlertCircle,
   KeyRound,
 } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
 import {
   Boton,
   BotonIcono,
@@ -89,10 +89,23 @@ export default function ConfiguracionCliente({
   haySubida: boolean;
 }) {
   const [seccion, setSeccion] = useState<Seccion>('marca');
+  // Vive aquí y no en la sección: «Nueva ubicación» es la acción principal de la página
+  // mientras se miran los lugares, y las principales van en la cabecera.
+  const [panelUbicacion, setPanelUbicacion] = useState<UbicacionVista | null | 'nueva'>(null);
 
   return (
     <>
-      <CabeceraPagina titulo="Configuración" descripcion="La marca, los lugares y tu cuenta" />
+      <CabeceraPagina
+        titulo="Configuración"
+        descripcion="La marca, los lugares y tu cuenta"
+        acciones={
+          seccion === 'lugares' && (
+            <Boton icono={Plus} onClick={() => setPanelUbicacion('nueva')}>
+              Nueva ubicación
+            </Boton>
+          )
+        }
+      />
       <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
         <RailFiltro
           opciones={[
@@ -107,7 +120,14 @@ export default function ConfiguracionCliente({
         <div className="min-w-0 flex-1">
           {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} haySubida={haySubida} />}
           {seccion === 'lugares' && (
-            <SeccionLugares slug={slug} ubicaciones={ubicaciones} haySubida={haySubida} moneda={marca.moneda} />
+            <SeccionLugares
+              slug={slug}
+              ubicaciones={ubicaciones}
+              haySubida={haySubida}
+              moneda={marca.moneda}
+              panelUbicacion={panelUbicacion}
+              setPanelUbicacion={setPanelUbicacion}
+            />
           )}
           {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} />}
           {seccion === 'cuenta' && <SeccionCuenta slug={slug} />}
@@ -329,14 +349,17 @@ function SeccionLugares({
   ubicaciones,
   haySubida,
   moneda,
+  panelUbicacion,
+  setPanelUbicacion,
 }: {
   slug: string;
   ubicaciones: UbicacionVista[];
   haySubida: boolean;
   moneda: string;
+  panelUbicacion: UbicacionVista | null | 'nueva';
+  setPanelUbicacion: (v: UbicacionVista | null | 'nueva') => void;
 }) {
   const router = useRouter();
-  const [panelUbicacion, setPanelUbicacion] = useState<UbicacionVista | null | 'nueva'>(null);
   const [panelSuite, setPanelSuite] = useState<
     { suite: SuiteVista | null; ubicacionId: number } | null
   >(null);
@@ -361,16 +384,11 @@ function SeccionLugares({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-[14px] font-semibold">Ubicaciones y suites</h2>
-          <p className="text-[12px] text-tenue">
-            Las ubicaciones agrupan las suites; la agenda y el panel se dibujan sobre ellas.
-          </p>
-        </div>
-        <Boton icono={Plus} onClick={() => setPanelUbicacion('nueva')}>
-          Nueva ubicación
-        </Boton>
+      <div>
+        <h2 className="text-[14px] font-semibold">Ubicaciones y suites</h2>
+        <p className="text-[12px] text-tenue">
+          Las ubicaciones agrupan las suites; la agenda y el panel se dibujan sobre ellas.
+        </p>
       </div>
 
       {!ubicaciones.length && (
@@ -398,20 +416,18 @@ function SeccionLugares({
               <p className="truncate text-[14px] font-semibold">{u.nombre}</p>
               <p className="text-[11px] text-tenue">{u.suites.length} suites</p>
             </div>
-            <Boton
-              variante="secundario"
-              tamano="sm"
-              icono={Plus}
-              onClick={() => setPanelSuite({ suite: null, ubicacionId: u.id })}
-            >
-              Suite
-            </Boton>
-            <BotonIcono icono={Pencil} titulo="Editar ubicación" onClick={() => setPanelUbicacion(u)} />
-            <BotonIcono
-              icono={Trash2}
-              titulo="Eliminar ubicación"
-              className="hover:bg-error-suave hover:text-error"
-              onClick={() => setBorrar({ tipo: 'ubicacion', id: u.id, nombre: u.nombre })}
+            {/* Botones en escritorio, «⋯» en el teléfono; la destructiva al final y en rojo. */}
+            <AccionesTarjeta
+              acciones={[
+                { etiqueta: 'Nueva suite', icono: Plus, alPulsar: () => setPanelSuite({ suite: null, ubicacionId: u.id }) },
+                { etiqueta: 'Editar', icono: Pencil, alPulsar: () => setPanelUbicacion(u) },
+                {
+                  etiqueta: 'Eliminar',
+                  icono: Trash2,
+                  peligro: true,
+                  alPulsar: () => setBorrar({ tipo: 'ubicacion', id: u.id, nombre: u.nombre }),
+                },
+              ]}
             />
           </div>
 
@@ -646,7 +662,7 @@ function SeccionSuscripcion({ plan }: { plan: Plan | null }) {
       <p className="mt-0.5 text-[12px] text-tenue">
         La gestiona el Grupo Corazones Cruzados. Aquí solo se consulta.
       </p>
-      <dl className="mt-5 grid gap-4 sm:grid-cols-3">
+      <dl className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
           <dt className="text-[11px] uppercase tracking-wide text-tenue">Plan</dt>
           <dd className="text-[14px] font-semibold">{plan.nombre}</dd>

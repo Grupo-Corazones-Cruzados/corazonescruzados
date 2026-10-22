@@ -1,11 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, BedDouble, Building2, Phone, IdCard, User } from 'lucide-react';
+import { BedDouble, Building2, Phone, IdCard } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
-import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Insignia } from '@/componentes/ui';
 import { ETIQUETA_ESTADO_RESERVA, TONO_ESTADO_RESERVA, nochesEn } from '@/lib/reservas';
 import { dinero } from '@/lib/formato';
@@ -48,8 +46,8 @@ export default async function PaginaReserva({
   // A dónde vuelve: a la agenda si vino de ella (lleva el día y la ubicación), y al panel si no.
   const volverA = volver && volver.startsWith(`/${hotel}/`) ? volver : `/${hotel}/panel`;
 
+  // El nombre del huésped ya es el título de la página: no se repite aquí.
   const datos = [
-    { icono: User, etiqueta: 'Huésped', valor: reserva.clienteNombre },
     { icono: Phone, etiqueta: 'Teléfono', valor: reserva.telefono || '—' },
     { icono: IdCard, etiqueta: 'Documento', valor: reserva.documento || '—' },
     { icono: BedDouble, etiqueta: 'Suite', valor: reserva.suite.nombre },
@@ -58,25 +56,47 @@ export default async function PaginaReserva({
 
   return (
     <>
-      <CabeceraPagina
-        titulo={reserva.clienteNombre}
-        descripcion={`${reserva.suite.nombre} · ${reserva.suite.ubicacion.nombre}`}
-        acciones={
-          <>
-            <Insignia tono={TONO_ESTADO_RESERVA[reserva.estado]}>
-              {ETIQUETA_ESTADO_RESERVA[reserva.estado]}
-            </Insignia>
-            <Insignia tono={reserva.estadoPago === 'PAGADO' ? 'exito' : 'aviso'}>
-              {reserva.estadoPago === 'PAGADO' ? 'Pagada' : 'Pago pendiente'}
-            </Insignia>
-            <Link
-              href={volverA}
-              className="flex items-center gap-1 text-[13px] text-tenue hover:text-texto"
-            >
-              <ChevronLeft className="h-4 w-4" /> Volver
-            </Link>
-          </>
-        }
+      <DetalleReserva
+        cabecera={{
+          titulo: reserva.clienteNombre,
+          volver: volverA,
+          // Una sola línea de estado bajo el título. La suite y la ubicación ya
+          // están en la tarjeta del huésped: no se repiten en la cabecera.
+          extra: (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Insignia tono={TONO_ESTADO_RESERVA[reserva.estado]}>
+                {ETIQUETA_ESTADO_RESERVA[reserva.estado]}
+              </Insignia>
+              <Insignia tono={reserva.estadoPago === 'PAGADO' ? 'exito' : 'aviso'}>
+                {reserva.estadoPago === 'PAGADO' ? 'Pagada' : 'Pago pendiente'}
+              </Insignia>
+            </div>
+          ),
+        }}
+        slug={hotel}
+        moneda={inquilino.moneda}
+        puedeOperar={sesion.rol !== 'CONSULTA'}
+        reserva={{
+          id: reserva.id,
+          suiteId: reserva.suiteId,
+          clienteNombre: reserva.clienteNombre,
+          telefono: reserva.telefono,
+          documento: reserva.documento,
+          entrada: aCampoFechaHoraEn(reserva.entrada, zona),
+          salida: aCampoFechaHoraEn(reserva.salida, zona),
+          precioTotal: Number(reserva.precioTotal),
+          anticipo: Number(reserva.anticipo),
+          comentarios: reserva.comentarios,
+        }}
+        suites={suites.map((s) => ({
+          id: s.id,
+          nombre: s.nombre,
+          ubicacion: s.ubicacion.nombre,
+          precioNoche: s.precioNoche ? Number(s.precioNoche) : null,
+        }))}
+        pagada={reserva.estadoPago === 'PAGADO'}
+        yaFinalizada={reserva.estado === 'FINALIZADA' || reserva.estado === 'ELIMINADA'}
+        abrirEdicion={editar === '1'}
       />
 
       <div className="grid gap-4 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -85,7 +105,7 @@ export default async function PaginaReserva({
             <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-tenue">
               Estancia
             </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-tenue">Entrada</p>
                 <p className="text-[14px] font-semibold">
@@ -111,7 +131,7 @@ export default async function PaginaReserva({
             <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-tenue">
               Huésped
             </h2>
-            <dl className="grid gap-3 sm:grid-cols-2">
+            <dl className="grid grid-cols-2 gap-3">
               {datos.map((d) => (
                 <div key={d.etiqueta} className="flex items-start gap-2.5">
                   <d.icono className="mt-0.5 h-4 w-4 shrink-0 text-tenue" />
@@ -156,32 +176,11 @@ export default async function PaginaReserva({
             </dl>
           </div>
 
-          <DetalleReserva
-            slug={hotel}
-            moneda={inquilino.moneda}
-            puedeOperar={sesion.rol !== 'CONSULTA'}
-            reserva={{
-              id: reserva.id,
-              suiteId: reserva.suiteId,
-              clienteNombre: reserva.clienteNombre,
-              telefono: reserva.telefono,
-              documento: reserva.documento,
-              entrada: aCampoFechaHoraEn(reserva.entrada, zona),
-              salida: aCampoFechaHoraEn(reserva.salida, zona),
-              precioTotal: Number(reserva.precioTotal),
-              anticipo: Number(reserva.anticipo),
-              comentarios: reserva.comentarios,
-            }}
-            suites={suites.map((s) => ({
-              id: s.id,
-              nombre: s.nombre,
-              ubicacion: s.ubicacion.nombre,
-              precioNoche: s.precioNoche ? Number(s.precioNoche) : null,
-            }))}
-            pagada={reserva.estadoPago === 'PAGADO'}
-            yaFinalizada={reserva.estado === 'FINALIZADA' || reserva.estado === 'ELIMINADA'}
-            abrirEdicion={editar === '1'}
-          />
+          {sesion.rol === 'CONSULTA' && (
+            <p className="tarjeta p-4 text-[12px] leading-relaxed text-tenue">
+              Tu cuenta es de solo consulta: puedes ver la reserva, pero no modificarla.
+            </p>
+          )}
         </div>
       </div>
     </>

@@ -198,7 +198,7 @@ export default function PanelGcc({
 
           {seccion === 'alojamientos' && (
             <>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {[
                   { et: 'Alojamientos', v: String(inquilinos.length) },
                   { et: 'Con la mensualidad al día', v: String(inquilinos.length - vencidos) },

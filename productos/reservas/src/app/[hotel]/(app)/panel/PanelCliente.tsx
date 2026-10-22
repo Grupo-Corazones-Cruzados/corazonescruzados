@@ -7,7 +7,7 @@ import { es } from 'date-fns/locale';
 import { Building2, CalendarClock, LogIn, LogOut, Plus, BedDouble } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, EstadoVacio, Insignia, Tarjeta } from '@/componentes/ui';
+import { Boton, EstadoVacio, Insignia, SelectorEstado, Tarjeta } from '@/componentes/ui';
 import {
   estadoDeSuite,
   ETIQUETA_ESTADO_SUITE,
@@ -119,37 +119,32 @@ export default function PanelCliente({
 
   return (
     <>
+      {/* Las cuentas del hotel entero son INFORMACIÓN, no botones: van en la línea de estado
+          bajo el título. Con una sola ubicación serían las mismas de su tarjeta: se omiten. */}
       <CabeceraPagina
         titulo={hotel}
         descripcion="Panel de control"
-        acciones={
-          <>
-            <div className="flex items-center gap-2">
+        extra={
+          ubicaciones.length > 1 && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Insignia tono="exito">{cuenta('libre')} libres</Insignia>
               <Insignia tono="aviso">{cuenta('por-salir')} por salir</Insignia>
               <Insignia tono="info">{cuenta('ocupada')} ocupadas</Insignia>
             </div>
-          </>
+          )
         }
       />
 
-      <div className="border-b border-borde bg-tarjeta px-4 pb-3 sm:px-6">
-        <div className="desplaza flex gap-2 overflow-x-auto">
-          {FILTROS.map((f) => (
-            <button
-              key={f.clave}
-              onClick={() => setFiltro(f.clave)}
-              className={cn(
-                'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors foco-visible',
-                filtro === f.clave
-                  ? 'bg-acento text-acento-contraste'
-                  : 'border border-borde bg-tarjeta text-tenue hover:bg-realce',
-              )}
-            >
-              {f.etiqueta}
-            </button>
-          ))}
-        </div>
+      {/* Filtrar las suites por estado es UN control: segmentado en escritorio, `<select>`
+          en el teléfono. Las cuentas ya están en la tarjeta de la ubicación elegida. */}
+      <div className="border-b border-borde bg-tarjeta px-4 pb-3 pt-3 sm:px-6">
+        <SelectorEstado
+          etiqueta="Ver"
+          className="w-full lg:w-auto"
+          opciones={FILTROS.map((f) => ({ valor: f.clave, etiqueta: f.etiqueta }))}
+          activo={filtro}
+          alElegir={(v) => setFiltro(v as Filtro)}
+        />
       </div>
 
       <div className="flex flex-col gap-4 p-4 sm:p-6 xl:flex-row">
@@ -158,9 +153,10 @@ export default function PanelCliente({
           <h2 className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-tenue">
             Ubicaciones
           </h2>
-          {/* El relleno de 2 px es para que el anillo de la seleccionada no se recorte
-              contra el borde del contenedor que se desplaza. */}
-          <div className="desplaza -m-0.5 flex gap-3 overflow-x-auto p-0.5 pb-2 xl:flex-col xl:overflow-visible xl:pb-0.5">
+          {/* Una REJILLA y no una tira que se desliza de lado (las últimas ubicaciones
+              quedaban fuera de la vista): una por fila en el teléfono, para que el nombre
+              se lea entero; desde xl, la columna. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:flex-col">
             {ubicaciones.map((u) => {
               const sel = u.id === ubicacionSel;
               // Es un <div> con rol de botón y no un <button>: dentro va el «+»,
@@ -178,7 +174,7 @@ export default function PanelCliente({
                     }
                   }}
                   className={cn(
-                    'tarjeta relative w-52 shrink-0 cursor-pointer overflow-hidden p-3 text-left transition-[box-shadow,background-color] foco-visible xl:w-full',
+                    'tarjeta relative min-w-0 cursor-pointer overflow-hidden p-3 text-left transition-[box-shadow,background-color] foco-visible',
                     // La seleccionada se RODEA con un borde del acento (Fernando,
                     // 2026-09-20): el cambio de fondo solo no se distinguía.
                     sel ? 'border-acento bg-acento-suave ring-2 ring-acento' : 'hover:bg-realce',
@@ -215,7 +211,7 @@ export default function PanelCliente({
                       <Plus className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="mt-2 flex gap-3 text-[11px]">
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
                     <span className="text-exito">{cuenta('libre', u.suites)} libres</span>
                     <span className="text-aviso">{cuenta('por-salir', u.suites)} por salir</span>
                     <span className="text-acento">{cuenta('ocupada', u.suites)} ocup.</span>

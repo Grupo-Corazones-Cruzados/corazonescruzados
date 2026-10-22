@@ -1,5 +1,3 @@
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { CabeceraPagina } from '@/componentes/Navegacion';
@@ -46,17 +44,8 @@ export default async function PaginaNuevaReserva({
 
   return (
     <>
-      <CabeceraPagina
-        titulo="Nueva reserva"
-        acciones={
-          <Link
-            href={volverA}
-            className="flex items-center gap-1 text-[13px] text-tenue hover:text-texto"
-          >
-            <ChevronLeft className="h-4 w-4" /> Volver
-          </Link>
-        }
-      />
+      {/* Volver es la flecha del título; crear la reserva es el pie del propio formulario. */}
+      <CabeceraPagina titulo="Nueva reserva" volver={{ href: volverA, etiqueta: 'Volver' }} />
       <div className="p-4 sm:p-6">
         <div className="tarjeta mx-auto max-w-2xl p-5 sm:p-6">
           <FormularioReserva
