@@ -235,7 +235,8 @@ export function BarraInferior(props: Props) {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta lg:hidden print:hidden">
+      {/* En modo app (`viewportFit: cover`) la barra de inicio del iPhone queda debajo: se le deja su sitio. */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden">
         <div className="flex h-16 items-center justify-around">
           {destinos.map((d) => {
             const href = `/${slug}/${d.ruta}`;
@@ -284,7 +285,7 @@ export function BarraInferior(props: Props) {
             // Pulsar la pantalla en la que ya se está no cambia la ruta: se cierra igual.
             onClick={(e) => (e.target as HTMLElement).closest('a') && setAbierto(false)}
             className={cn(
-              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta shadow-2xl',
+              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pb-[env(safe-area-inset-bottom)] shadow-2xl',
               'transition-transform duration-200 ease-out',
               visible ? 'translate-x-0' : '-translate-x-full',
             )}>
@@ -318,7 +319,7 @@ export const ID_BARRA_ACCIONES = 'barra-acciones-movil';
  * de ella, y mientras se baja se queda pegada encima de la barra inferior. Vacío, no ocupa nada.
  */
 export function HuecoBarraAcciones() {
-  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-16 z-30 mt-auto empty:hidden lg:hidden print:hidden" />;
+  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 mt-auto empty:hidden lg:hidden print:hidden" />;
 }
 
 /*

@@ -275,6 +275,12 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📱 Catering se instala como app en el iPhone (Fernando, 2026-10-22).** Anclada al inicio se abría con
+  los controles de Safari encima. Faltaba lo que Reservas ya tenía: `src/app/[negocio]/layout.tsx`
+  (manifest + meta de Apple + `viewportFit: cover`) y `src/app/[negocio]/manifest.webmanifest/route.ts`
+  (standalone, ámbito `/<negocio>/`). Barra inferior con `safe-area-inset-bottom`. Hay que borrar el
+  icono viejo y volver a anclarlo. **Pedidos, Planificaciones y Automatizaciones tampoco lo tienen.**
+  Quedó como paso obligatorio y trampa en `/producto`. Se descartó la app nativa de App Store.
 - **🎨 Catering: nada de líneas bajo el título; botón (i) con burbuja (Fernando, 2026-10-22).** La
   descripción de cada página y los datos del cliente (correo, celular, registro, último acceso) van en la
   burbuja de `BurbujaDetalles`, en todas las cabeceras y anchos. En la sección Servicio no se repite
