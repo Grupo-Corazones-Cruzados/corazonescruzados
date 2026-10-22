@@ -4134,6 +4134,16 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Las diez correcciones de Catering llevadas a Reservas, Pedidos, Planificaciones y
+  Automatizaciones** · **CORREGIDO**. Cada producto copió de Catering `Insignia`, `useAparicion`,
+  `PanelLateral`/`Ventanita`, `SelectorEstado`, `Tabla` (galería), `RailFiltro`, `BurbujaDetalles`,
+  `CabeceraPagina` (`acciones`/`menu`/`extra`/`volver`/`detalles`), `HuecoBarraAcciones`,
+  `AccionesTarjeta`, «Más» y `ContenidoMenu`. Diferencias que quedan por diseño:
+  Automatizaciones pone el hueco de la barra DENTRO de su `main` con scroll propio (`sticky
+  bottom-0`, porque ahí el sticky ya descuenta el padding del contenedor); Planificaciones mantiene la
+  galería de semanas deslizable (decisión anterior de Fernando) y el horario con scroll en su caja;
+  Pedidos y Reservas cambiaron su tira de 7 días (Pedidos → `PasoDia`; Reservas → rejilla de 7
+  columnas). Pendiente: GCC World.
 - **2026-10-22 · La app instalada tapaba la hora y la barrita de inicio (los cinco productos)** ·
   **CORREGIDO**: márgenes seguros (`env(safe-area-inset-*)`) en `body`, barra inferior, paneles,
   ventanitas y menú «Más»; manifiesto de app en Pedidos, Planificaciones y Automatizaciones. Regla

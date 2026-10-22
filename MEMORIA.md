@@ -275,6 +275,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Las diez correcciones de diseño, en los cinco productos (Fernando, 2026-10-22).** Reservas,
+  Pedidos, Planificaciones y Automatizaciones copiaron los componentes de Catering. Decisiones abiertas
+  para Fernando: Pedidos quitó los cuatro contadores de la cabecera de Mesas (están en el selector) y
+  la tira de 7 días de Reservas (la sustituye `PasoDia`); Reservas: «Registrar salida» ya no dice
+  «(falta el pago)»; Automatizaciones mantiene la píldora de coste de IA en el chat. Pedidos/Reservas:
+  el día de la reserva se lee de la cadena `AAAA-MM-DD`, no de `new Date()` (salía el día anterior).
+  Avisos de hidratación ya existentes, sin tocar: hora del chat de Automatizaciones y el temporizador
+  de Cocina en Pedidos. Pendiente: GCC World.
 - **📱 Catering se instala como app en el iPhone (Fernando, 2026-10-22).** Anclada al inicio se abría con
   los controles de Safari encima. Faltaba lo que Reservas ya tenía: `src/app/[negocio]/layout.tsx`
   (manifest + meta de Apple + `viewportFit: cover`) y `src/app/[negocio]/manifest.webmanifest/route.ts`

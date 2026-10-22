@@ -94,6 +94,9 @@
 - **C10 — Botón (i) con burbuja en lugar de texto bajo el título** · ✅ Hecho (2026-10-22): `BurbujaDetalles`
   en todas las cabeceras (descripción + datos); «vencido» una sola vez. Fernando pidió que fuese regla
   «para que no se comente el error dos veces»: cada corrección se escribe como regla general en `/diseno`.
+- **C11 — Instalación como app y márgenes seguros** · ✅ Los cinco productos (2026-10-22).
+- **C12 — Las diez correcciones llevadas a los otros cuatro productos** · ✅ (2026-10-22), un agente por
+  producto copiando los componentes de Catering; revisado, con verificación de tipos, y subido producto a producto.
 - **P2 — ¿Se lleva también a GCC World?** ⏸ Fernando dijo que no le gusta tampoco allí; pedirle el «sí»
   antes de tocar sus módulos (es grande).
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
