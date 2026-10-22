@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (2026-10-22) — DESCARGADOR GCC EN iPHONE (instalarlo en el iPhone 17 de Fernando) · 🔎 45 %
+## Objetivo (2026-10-22) — DESCARGADOR GCC EN iPHONE (instalarlo en el iPhone 17 de Fernando) · 🔎 95 % — PROBADA EN EL iPHONE (480p → Fotos en 57 s); FALTA QUE FERNANDO LA PRUEBE CON SU VIDEO
 - **Rol asumido:** ingeniero iOS (Swift, firma/aprovisionamiento, Python embebido).
 - **Punto de partida:** Android hecho y confirmado por Fernando (2026-10-22: «funcionó perfectamente»).
 - **P1 — ¿Se puede instalar en el iPhone desde esta Mac?** ✅ Sí. `devicectl` ve «iPhone - LfgonzalezM0»
@@ -9,7 +9,9 @@
   -allowProvisioningDeviceRegistration` + `xcrun devicectl device install app`. El perfil de desarrollo dura 1 año.
 - **P2 — ¿Hay app de iPhone?** ✅ No: `movil/descargador/` es solo Kotlin. El APK no sirve en iOS; hay que
   construirla (Swift/SwiftUI, `movil/descargador-ios/`, `org.grupocc.descargador`).
-- **P3 — ¿Corre yt-dlp dentro de una app de iOS?** 🔎 Python sí se embebe (Python-Apple-support /
+- **P3 — ¿Corre yt-dlp dentro de una app de iOS?** ✅ Sí (probado en la Mac con el mismo motor JS y luego en
+  el iPhone). Lo de abajo era el plan; lo que quedó está en «Decisiones».
+  - Antes: Python sí se embebe (Python-Apple-support /
   PythonKit; existe YoutubeDL-iOS de kewlbear, sin mantenimiento desde 2024-12). El problema es que **iOS
   prohíbe lanzar procesos**, y yt-dlp lanza dos: FFmpeg (para unir video+audio) y un motor JS (para los
   retos de YouTube; en Android es QuickJS). Plan:
@@ -17,10 +19,33 @@
     (copia sin recodificar). El audio solo (m4a) no necesita unión.
   - Retos JS dentro del proceso: plugin `ytdlp-jsc` (QuickJS embebido) compilado para iOS, o un
     proveedor propio que llame a JavaScriptCore. **Es el riesgo principal**: hay que probarlo primero.
-- **P4 — ¿Solo el iPhone de Fernando o más personas?** ⏸ Con firma de desarrollo vale para equipos
+- **P4 — ¿Solo el iPhone de Fernando o más personas?** ✅ Por ahora solo el suyo (Fernando, 2026-10-22). A futuro,
+  los miembros, cuando GCC tenga cuenta de desarrollador de empresa a nombre de Grupo Corazones Cruzados.
+  - Antes: Con firma de desarrollo vale para equipos
   registrados (hasta 100 por tipo y año). Enterprise ya descartado (ver MEMORIA.md).
-- **P5 — ¿Dónde se guarda: Fotos o Archivos?** ⏸ Fotos exige H.264 (ya preferido); Archivos acepta todo.
-- **P6 — iOS corta el trabajo ~30 s después de salir de la app.** ⏸ ¿Vale que haya que dejarla abierta?
+- **P5 — ¿Dónde se guarda: Fotos o Archivos?** ✅ En **Fotos** (Fernando, 2026-10-22). Fotos no admite audio:
+  «Solo audio» va a Archivos ▸ En mi iPhone ▸ Descargador GCC. El permiso es solo de añadir, así que no se puede
+  crear el álbum «GCC Descargas» (para eso haría falta acceso completo a la fototeca).
+  - Antes: Fotos exige H.264 (ya preferido); Archivos acepta todo.
+- **P6 — iOS corta el trabajo ~30 s después de salir de la app.** ⏸ Sin respuesta. Mientras tanto: la pantalla no
+  se apaga sola durante la descarga, se pide el tiempo extra que iOS conceda y la app avisa «Deja la app abierta».
+- **Decisiones (2026-10-22), código en `movil/descargador-ios/`:**
+  - Python 3.14 de BeeWare (`Python.xcframework`) + yt-dlp 2026.10.21 + yt-dlp-ejs 0.8.0 + certifi, que baja
+    `preparar.sh` (fuera de git: ~160 MB). El `.app` pesa 62 MB.
+  - **Retos de YouTube:** proveedor `JavaScriptCoreJCP` (en `python/gcc_descargador.py`) que hereda de
+    `EJSBaseJCP` de yt-dlp y, en vez de lanzar un proceso, llama por ctypes a una función de C de Swift
+    que ejecuta el script en `JSContext`. Medido en la Mac con `jsc --useJIT=false`: 1,3 s por video.
+  - **Sin FFmpeg:** Python baja video y audio con `ydl.dl()` por separado y Swift los une con AVFoundation
+    (`AVAssetExportPresetPassthrough`, 0,6 s para 10 min).
+  - ⚠️ **Trampa encontrada:** los MP4 fragmentados (DASH) de YouTube traen la duración en `mvhd/tkhd/mdhd`
+    Y en los fragmentos, y AVFoundation las SUMA: 634 s → 1269 s, y el video unido quedaba con la mitad
+    congelada y muda. `_arreglar_fragmentado` pone esas tres a cero (solo si hay `mvex`). Verificado con
+    ffprobe: 634,57 s, 38 074 fotogramas, audio entero; un MP4 normal queda intacto.
+  - Formatos: igual que Android pero solo MP4/M4A (AVFoundation no lee WebM).
+  - Motor: revisión diaria y botón; Swift baja el zip `yt-dlp-<versión>.zip` de GitHub y Python lo recarga
+    sin cerrar la app (un nombre por versión porque zipimport guarda en caché el índice de cada ruta).
+  - Python corre en hilos con 16 MB de pila (los de GCD traen 512 KB y JSC recorre un reproductor de MB).
+  - Firma de desarrollo del equipo `5H27NSRYKQ` (perfil comodín), `org.grupocc.descargador`, iOS 18+.
 - **Plan:** (1) prueba de concepto: Python + yt-dlp + reto JS en el iPhone; (2) unión con AVFoundation;
   (3) interfaz igual que Android (calidades 1080/720/480/Mejor/audio, aviso de uso responsable,
   actualización diaria del motor); (4) firmar e instalar; (5) Fernando prueba con su video.
@@ -41,6 +66,10 @@
   (`colorIdentificador`, se elige en la ficha y se imprime en la etiqueta para reconocer el paquete).
   Útil en etiqueta/PDF/ruta/Motorizados/ficha, inútil en la lista y descuadraba los nombres: se quita
   de la lista (y del dato que la página mandaba al navegador). Verificado en el demo.
+- **C4 — Animación de movimiento al navegar** · ✅ Hecho: `useAparicion` (montado/visible, doble rAF,
+  desmontaje a los 200 ms) en el menú «Más», `PanelLateral` y `Ventanita`/`Confirmar`; el contenido,
+  el título y el pie se congelan durante la salida. Medido en el navegador (posición y opacidad a
+  0/60/120/260 ms y desmontaje). Regla general en la skill `/diseno` §4-bis y en `/producto`.
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
   dijo «empezaremos con Catering»; preguntar.
 

@@ -25,6 +25,7 @@ import {
   CalendarX2,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
+import { useAparicion } from '@/componentes/ui';
 import { LogoNegocio } from '@/componentes/Marca';
 import { puede, ETIQUETA_ROL, type Capacidad } from '@/lib/permisos';
 import { cn } from '@/lib/utils';
@@ -213,6 +214,7 @@ export function BarraInferior(props: Props) {
   const { slug, quien } = props;
   const ruta = usePathname();
   const [abierto, setAbierto] = useState(false);
+  const { montado, visible } = useAparicion(abierto);
   // Como mucho cinco: más iconos en una fila de móvil dejan de poder pulsarse.
   const destinos = destinosDe(quien).slice(0, 4);
   const enOtro = !destinos.some((d) => {
@@ -264,17 +266,26 @@ export function BarraInferior(props: Props) {
         </div>
       </nav>
 
-      {/* El panel se MONTA solo cuando está abierto: escondido no debe existir. */}
-      {abierto && (
-        <div className="fixed inset-0 z-50 lg:hidden print:hidden">
-          <div aria-hidden onClick={() => setAbierto(false)} className="absolute inset-0 bg-black/45" />
+      {/* Se MONTA solo mientras se ve (escondido no debe existir) y entra y sale
+          deslizándose desde la izquierda, con el velo fundiéndose (`useAparicion`). */}
+      {montado && (
+        <div className={cn('fixed inset-0 z-50 lg:hidden print:hidden', !abierto && 'pointer-events-none')}>
+          <div
+            aria-hidden
+            onClick={() => setAbierto(false)}
+            className={cn('absolute inset-0 bg-black/45 transition-opacity duration-200', visible ? 'opacity-100' : 'opacity-0')}
+          />
           <aside
             role="dialog"
             aria-modal="true"
             aria-label="Menú"
             // Pulsar la pantalla en la que ya se está no cambia la ruta: se cierra igual.
             onClick={(e) => (e.target as HTMLElement).closest('a') && setAbierto(false)}
-            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta shadow-2xl">
+            className={cn(
+              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta shadow-2xl',
+              'transition-transform duration-200 ease-out',
+              visible ? 'translate-x-0' : '-translate-x-full',
+            )}>
             <ContenidoMenu {...props} />
           </aside>
         </div>

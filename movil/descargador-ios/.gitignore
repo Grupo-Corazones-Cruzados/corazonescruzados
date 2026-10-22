@@ -1,0 +1,5 @@
+Python.xcframework/
+app_packages/
+build/
+xcuserdata/
+*.xcuserstate

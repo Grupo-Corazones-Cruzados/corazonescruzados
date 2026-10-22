@@ -286,6 +286,8 @@ Stack estándar de la casa, con particularidades de este repo:
   «Cerrar sesión» dentro; ya no hay «Salir» en la barra. También en la skill `/producto`.
   Tercera (2026-10-22): fuera el punto del color identificador de la lista de Clientes (descuadraba
   los nombres); el color sigue en etiqueta, PDF, ruta, Motorizados y ficha.
+  Cuarta (2026-10-22): lo que aparece al navegar se anima (`useAparicion` en `componentes/ui.tsx`):
+  menú «Más», `PanelLateral` y `Ventanita`/`Confirmar`, ~200 ms también al salir. Regla en `/diseno` §4-bis.
 - **🔐 Incidente de seguridad de Railway (2026-10-21/22).** Railway avisó que las variables de entorno
   pudieron filtrarse y pausó los despliegues. Decisiones de Fernando: **no** cerrar el acceso público a
   las bases y **no** salir de Railway por ahora. Hecho y verificado el 2026-10-22:
@@ -467,9 +469,20 @@ Stack estándar de la casa, con particularidades de este repo:
   - **iPhone pendiente:** Fernando quiere el Apple Developer Enterprise Program para miembros y
     candidatos de grupocc.org. Avisado: exige D-U-N-S y ≥100 empleados, solo para empleados (los
     candidatos no lo son) y Apple revoca el certificado si se usa fuera de eso.
-  - **Android confirmado (2026-10-22):** Fernando lo instaló y descargó su video. **Siguiente: iPhone
-    para su propio iPhone 17**, firma de desarrollo del equipo `5H27NSRYKQ`. iOS no deja lanzar procesos:
-    sin FFmpeg (unir con AVFoundation) y reto JS dentro del proceso. Seguimiento en `Aprendizaje.md`.
+  - **Android confirmado (2026-10-22):** Fernando lo instaló y descargó su video.
+  - **📱 iPhone (2026-10-22), `movil/descargador-ios/` (Swift + Python embebido), solo para el iPhone 17 de
+    Fernando** (firma de desarrollo del equipo `5H27NSRYKQ`; a futuro, miembros con cuenta de empresa de
+    GCC). Probado en el teléfono: Big Buck Bunny 480p buscado en 7 s, bajado en 53 s y guardado en Fotos.
+    iOS no deja lanzar procesos, así que: retos de YouTube con JavaScriptCore (proveedor
+    `JavaScriptCoreJCP` vía ctypes) y video+audio unidos con AVFoundation en vez de FFmpeg.
+    ⚠️ Los MP4 DASH de YouTube duplican su duración en AVFoundation: `_arreglar_fragmentado` pone a cero
+    mvhd/tkhd/mdhd. Video → Fotos; «Solo audio» → Archivos (Fotos no guarda audio).
+    Compilar e instalar: `./preparar.sh` (una vez; baja ~160 MB fuera de git), luego `xcodebuild -project
+    Descargador.xcodeproj -scheme Descargador -configuration Release -destination 'id=<UDID>' -derivedDataPath
+    build -allowProvisioningUpdates build` y `xcrun devicectl device install app --device <UDID>
+    build/Build/Products/Release-iphoneos/Descargador.app`. El iPhone tiene que estar desbloqueado para
+    lanzarla. Prueba sin tocar el teléfono: variables `GCC_PRUEBA_URL`/`GCC_PRUEBA_CALIDAD` con
+    `devicectl device process launch --console`. Detalle en `Aprendizaje.md`.
 - **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
   público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
   avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por

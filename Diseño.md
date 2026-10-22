@@ -2931,6 +2931,21 @@ del escritorio, siempre desplegado: marca, grupos, persona y «Cerrar sesión» 
 - Igual en el portal del cliente final.
 Los otros cuatro productos siguen con «Salir» en la barra hasta que Fernando los revise.
 
+### ⭐ LO QUE APARECE AL NAVEGAR ENTRA CON MOVIMIENTO (Fernando, 2026-10-22)
+Textual: *«debemos aplicar animaciones de movimiento cuando se pueda durante la navegación»*.
+Una definición, `useAparicion(abierto)` → `{ montado, visible }` en `src/componentes/ui.tsx`
+(`DURACION_APARICION = 200`), que usan:
+- **Menú «Más» del teléfono** (`Navegacion.tsx`): `-translate-x-full` → `translate-x-0`, velo
+  `bg-black/45` fundiéndose.
+- **`PanelLateral`** (formularios): `translate-x-full` → `translate-x-0`, velo `bg-black/30` fundido.
+- **`Ventanita`** y por tanto **`Confirmar`**: `opacity-0 scale-95` → `opacity-100 scale-100`.
+Todo `duration-200 ease-out`. La salida también se anima: se desmonta al acabar. Mientras sale
+pinta su último contenido, título y pie (`useUltimoContenido`), porque el padre ya pudo poner su
+estado a `null`, y lleva `pointer-events-none`. El `@media (prefers-reduced-motion)` de
+`globals.css` deja las transiciones en ~0. Medido en el navegador: el menú pasa por -288 → -161 →
+-46 → 0 px a los 0/60/120/260 ms, y tras cerrarse ya no está en el DOM.
+La regla general vive en la skill `/diseno` §4-bis.
+
 ### Controles nuevos, todos reusables (`src/componentes/`)
 - **`Chips`** (`campos.tsx`) — fila de casillas-chip para elegir comidas o días de la semana; envía
   `name` repetido y se lee con `FormData.getAll`. **`Casilla`**, **`Aviso`** (error/aviso/info),
@@ -4041,6 +4056,8 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Paneles y ventanitas aparecían de golpe (Catering)** · **CAMBIO DE ESTÁNDAR**: entran
+  y salen animados con `useAparicion`. Pendiente: los otros cuatro productos.
 - **2026-10-22 · Punto de color en la lista de Clientes (Catering)** · **CORREGIDO**: quitado; el color
   sigue en etiqueta, ruta, Motorizados y ficha.
 - **2026-10-22 · «Salir» en la barra inferior (Catering)** · **CAMBIO DE ESTÁNDAR** (Fernando): pasa

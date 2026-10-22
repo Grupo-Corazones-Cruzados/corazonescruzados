@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X, Search, Loader2, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -244,30 +244,41 @@ export function PanelLateral({
 }) {
   const anchos = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl' }[ancho];
   useEscape(abierto, alCerrar);
-  if (!abierto) return null;
+  const { montado, visible } = useAparicion(abierto);
+  const cuerpo = useUltimoContenido(abierto, children);
+  const pieVisto = useUltimoContenido(abierto, pie);
+  const tituloVisto = useUltimoContenido(abierto, titulo);
+  const descripcionVista = useUltimoContenido(abierto, descripcion);
+  if (!montado) return null;
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={alCerrar} aria-hidden />
+    <div className={cn('fixed inset-0 z-50 flex justify-end', !abierto && 'pointer-events-none')}>
+      <div
+        className={cn('absolute inset-0 bg-black/30 transition-opacity duration-200', visible ? 'opacity-100' : 'opacity-0')}
+        onClick={alCerrar}
+        aria-hidden
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
         className={cn(
           'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde',
+          'transition-transform duration-200 ease-out',
+          visible ? 'translate-x-0' : 'translate-x-full',
           anchos,
         )}
       >
         <div className="flex items-start gap-3 border-b border-borde px-5 py-4 shrink-0">
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[15px] font-semibold text-texto">{titulo}</h2>
-            {descripcion && <p className="mt-0.5 text-[12px] text-tenue">{descripcion}</p>}
+            <h2 className="truncate text-[15px] font-semibold text-texto">{tituloVisto}</h2>
+            {descripcionVista && <p className="mt-0.5 text-[12px] text-tenue">{descripcionVista}</p>}
           </div>
           <BotonIcono icono={X} titulo="Cerrar" onClick={alCerrar} />
         </div>
-        <div className="desplaza min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {pie && (
+        <div className="desplaza min-h-0 flex-1 overflow-y-auto px-5 py-4">{cuerpo}</div>
+        {pieVisto && (
           <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3 shrink-0">
-            {pie}
+            {pieVisto}
           </div>
         )}
       </div>
@@ -290,23 +301,35 @@ export function Ventanita({
   children: ReactNode;
 }) {
   useEscape(abierto, alCerrar);
-  if (!abierto) return null;
+  const { montado, visible } = useAparicion(abierto);
+  const cuerpo = useUltimoContenido(abierto, children);
+  const pieVisto = useUltimoContenido(abierto, pie);
+  const tituloVisto = useUltimoContenido(abierto, titulo);
+  if (!montado) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30" onClick={alCerrar} aria-hidden />
+    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4', !abierto && 'pointer-events-none')}>
+      <div
+        className={cn('absolute inset-0 bg-black/30 transition-opacity duration-200', visible ? 'opacity-100' : 'opacity-0')}
+        onClick={alCerrar}
+        aria-hidden
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="relative w-full max-w-md rounded-md border border-borde bg-tarjeta shadow-2xl"
+        className={cn(
+          'relative w-full max-w-md rounded-md border border-borde bg-tarjeta shadow-2xl',
+          'transition-[opacity,transform] duration-200 ease-out',
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
+        )}
       >
         <div className="flex items-center gap-3 border-b border-borde px-5 py-3.5">
-          <h2 className="flex-1 truncate text-[15px] font-semibold">{titulo}</h2>
+          <h2 className="flex-1 truncate text-[15px] font-semibold">{tituloVisto}</h2>
           <BotonIcono icono={X} titulo="Cerrar" onClick={alCerrar} />
         </div>
-        <div className="px-5 py-4">{children}</div>
-        {pie && (
-          <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3">{pie}</div>
+        <div className="px-5 py-4">{cuerpo}</div>
+        {pieVisto && (
+          <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3">{pieVisto}</div>
         )}
       </div>
     </div>
@@ -363,6 +386,50 @@ function useEscape(activo: boolean, alCerrar: () => void) {
     document.addEventListener('keydown', f);
     return () => document.removeEventListener('keydown', f);
   }, [activo]);
+}
+
+// ── Aparición animada ───────────────────────────────────────────────────────
+/**
+ * LO QUE APARECE, ENTRA CON MOVIMIENTO (Fernando, 2026-10-22: «aplicar animaciones de
+ * movimiento cuando se pueda durante la navegación»). Paneles, menús y ventanitas no
+ * saltan: entran y salen en `DURACION_APARICION` ms.
+ *
+ * `montado` dice si se pinta; `visible`, hacia dónde va la transición. Al abrir se
+ * monta fuera de sitio y un cuadro después se marca visible (sin ese cuadro el
+ * navegador no ve el «antes» y no hay transición). Al cerrar se quita `visible` y se
+ * desmonta cuando la salida terminó, así escondido sigue sin existir.
+ * Con «reducir movimiento» del sistema, `globals.css` deja las transiciones en ~0.
+ */
+export const DURACION_APARICION = 200;
+
+export function useAparicion(abierto: boolean) {
+  const [montado, setMontado] = useState(abierto);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (abierto) {
+      setMontado(true);
+      let r2 = 0;
+      const r1 = requestAnimationFrame(() => (r2 = requestAnimationFrame(() => setVisible(true))));
+      return () => {
+        cancelAnimationFrame(r1);
+        cancelAnimationFrame(r2);
+      };
+    }
+    setVisible(false);
+    const t = setTimeout(() => setMontado(false), DURACION_APARICION);
+    return () => clearTimeout(t);
+  }, [abierto]);
+  return { montado, visible };
+}
+
+/**
+ * Lo último que se pintó mientras estaba abierto. Durante la salida el padre suele
+ * haber vaciado ya su estado (`editando = null`): sin esto el panel se iría en blanco.
+ */
+function useUltimoContenido(abierto: boolean, contenido: ReactNode) {
+  const ref = useRef(contenido);
+  if (abierto) ref.current = contenido;
+  return abierto ? contenido : ref.current;
 }
 
 // ── Rail de filtro ──────────────────────────────────────────────────────────
