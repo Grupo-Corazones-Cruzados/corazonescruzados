@@ -285,7 +285,7 @@ export function BarraInferior(props: Props) {
             // Pulsar la pantalla en la que ya se está no cambia la ruta: se cierra igual.
             onClick={(e) => (e.target as HTMLElement).closest('a') && setAbierto(false)}
             className={cn(
-              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pb-[env(safe-area-inset-bottom)] shadow-2xl',
+              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-2xl',
               'transition-transform duration-200 ease-out',
               visible ? 'translate-x-0' : '-translate-x-full',
             )}>

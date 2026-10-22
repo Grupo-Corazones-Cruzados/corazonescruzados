@@ -4134,6 +4134,10 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · La app instalada tapaba la hora y la barrita de inicio (los cinco productos)** ·
+  **CORREGIDO**: márgenes seguros (`env(safe-area-inset-*)`) en `body`, barra inferior, paneles,
+  ventanitas y menú «Más»; manifiesto de app en Pedidos, Planificaciones y Automatizaciones. Regla
+  en `/diseno` §4-quinquies. Pendiente: GCC World.
 - **2026-10-22 · Descripciones y datos de contacto escritos bajo el título (Catering)** · **CAMBIO DE
   ESTÁNDAR**: botón (i) con burbuja (`BurbujaDetalles`). Pendiente: los otros cuatro productos y GCC World.
 - **2026-10-22 · Botones con texto amontonados arriba en el teléfono (Catering)** · **CAMBIO DE

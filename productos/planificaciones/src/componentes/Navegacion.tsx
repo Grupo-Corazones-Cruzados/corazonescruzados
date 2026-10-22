@@ -149,7 +149,7 @@ export function BarraInferior({ slug, rol }: Pick<Props, 'slug' | 'rol'>) {
   const destinos = destinosDe(rol).slice(0, 4);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta lg:hidden print:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden">
       <div className="flex h-16 items-center justify-around">
         {destinos.map((d) => {
           const href = `/${slug}/${d.ruta}`;

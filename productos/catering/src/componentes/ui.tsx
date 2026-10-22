@@ -263,7 +263,7 @@ export function PanelLateral({
         aria-modal="true"
         aria-label={titulo}
         className={cn(
-          'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde',
+          'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
           'transition-transform duration-200 ease-out',
           visible ? 'translate-x-0' : 'translate-x-full',
           anchos,
@@ -308,7 +308,7 @@ export function Ventanita({
   const tituloVisto = useUltimoContenido(abierto, titulo);
   if (!montado) return null;
   return (
-    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4', !abierto && 'pointer-events-none')}>
+    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]', !abierto && 'pointer-events-none')}>
       <div
         className={cn('absolute inset-0 bg-black/30 transition-opacity duration-200', visible ? 'opacity-100' : 'opacity-0')}
         onClick={alCerrar}

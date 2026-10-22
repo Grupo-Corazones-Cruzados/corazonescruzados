@@ -279,8 +279,10 @@ Stack estándar de la casa, con particularidades de este repo:
   los controles de Safari encima. Faltaba lo que Reservas ya tenía: `src/app/[negocio]/layout.tsx`
   (manifest + meta de Apple + `viewportFit: cover`) y `src/app/[negocio]/manifest.webmanifest/route.ts`
   (standalone, ámbito `/<negocio>/`). Barra inferior con `safe-area-inset-bottom`. Hay que borrar el
-  icono viejo y volver a anclarlo. **Pedidos, Planificaciones y Automatizaciones tampoco lo tienen.**
-  Quedó como paso obligatorio y trampa en `/producto`. Se descartó la app nativa de App Store.
+  icono viejo y volver a anclarlo. El mismo día se puso en **Pedidos, Planificaciones y Automatizaciones**
+  (ya lo tienen los cinco). Y en los cinco, **márgenes seguros**: `body` con `env(safe-area-inset-top)`,
+  barra inferior, paneles y ventanitas con su margen (Fernando: la app tapaba la hora). Regla en
+  `/diseno` §4-quinquies y paso obligatorio en `/producto`. Se descartó la app nativa de App Store.
 - **🎨 Catering: nada de líneas bajo el título; botón (i) con burbuja (Fernando, 2026-10-22).** La
   descripción de cada página y los datos del cliente (correo, celular, registro, último acceso) van en la
   burbuja de `BurbujaDetalles`, en todas las cabeceras y anchos. En la sección Servicio no se repite

@@ -244,7 +244,7 @@ export function BarraInferior({ slug, rol, montados }: Pick<Props, 'slug' | 'rol
   const destinos = (rol === 'ADMIN' ? [...principales, ...ADMINISTRACION] : principales).slice(0, 4);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta pb-[env(safe-area-inset-bottom)] lg:hidden">
       <div className="flex h-16 items-center justify-around">
         {destinos.map((i) => {
           const activo = estaActivo(ruta, slug, i);

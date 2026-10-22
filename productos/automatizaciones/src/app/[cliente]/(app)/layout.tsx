@@ -49,11 +49,11 @@ export default async function LayoutApp({
         desbordamiento vuelve por la puerta de atrás.
 
         El menú se monta ENCIMA, así que el contenido conserva el margen del raíl estrecho
-        (64 px) y no salta al desplegarse. El `pb-16` reserva la barra táctil.
+        (64 px) y no salta al desplegarse. El `pb-` reserva la barra táctil y la barrita de inicio del iPhone.
       */}
-      <div className="flex h-dvh flex-col lg:ml-16">
+      <div className="flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col lg:ml-16">
         {inquilino.soloLectura && <AvisoEscaparate />}
-        <main className="desplaza min-h-0 flex-1 overflow-y-auto pb-16 lg:pb-0">{children}</main>
+        <main className="desplaza min-h-0 flex-1 overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">{children}</main>
       </div>
       <BarraInferior slug={cliente} rol={sesion.rol} montados={montados} />
     </AplicaMarca>

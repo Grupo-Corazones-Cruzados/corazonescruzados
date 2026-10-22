@@ -145,3 +145,16 @@ select.campo {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+  MÁRGENES SEGUROS DEL TELÉFONO (Fernando, 2026-10-22). Instalada como app, la pantalla
+  llega hasta los bordes del teléfono (`viewportFit: cover`): sin este margen, la cabecera
+  queda debajo de la hora y la batería, y la barra inferior bajo la barrita de inicio. Fuera
+  del modo app `env()` vale 0 y no cambia nada. Lo de abajo lo pone la barra inferior; lo
+  fijo a pantalla completa (paneles, ventanitas, menú «Más») lleva su propio margen.
+*/
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

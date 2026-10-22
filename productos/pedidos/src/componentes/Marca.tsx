@@ -26,7 +26,7 @@ export function AplicaMarca({
           desplazamiento nativas sigan el tema del inquilino. */}
       <style>{`html,body{background:${n.fondo};color:${n.texto};color-scheme:${n.esquema}}`}</style>
       <div
-        className={cn(oscuro && 'oscuro', 'min-h-screen bg-fondo text-texto', className)}
+        className={cn(oscuro && 'oscuro', 'min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}
         style={tokensDeMarca(colorAcento, oscuro) as CSSProperties}
       >
         {children}

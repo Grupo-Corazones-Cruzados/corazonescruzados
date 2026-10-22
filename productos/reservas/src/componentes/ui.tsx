@@ -270,7 +270,7 @@ export function PanelLateral({
         aria-modal="true"
         aria-label={titulo}
         className={cn(
-          'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde',
+          'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
           anchos,
         )}
       >
@@ -309,7 +309,7 @@ export function Ventanita({
   useEscape(abierto, alCerrar);
   if (!abierto) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="absolute inset-0 bg-black/30" onClick={alCerrar} aria-hidden />
       <div
         role="dialog"
