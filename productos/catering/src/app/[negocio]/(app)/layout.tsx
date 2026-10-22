@@ -29,7 +29,7 @@ export default async function LayoutApp({
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
       </div>
-      <BarraInferior slug={negocio} quien={quien} />
+      <BarraInferior slug={negocio} negocio={inquilino.nombre} logoUrl={inquilino.logoUrl} usuario={sesion.nombre} quien={quien} />
     </AplicaMarca>
   );
 }

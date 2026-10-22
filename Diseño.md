@@ -2912,6 +2912,20 @@ cliente/motorizado) se quedan: ahí el color ES el dato.
 (más abajo, 2026-09-23). Aplicado en Catering; reservas, pedidos, planificaciones y
 automatizaciones siguen con la píldora hasta que Fernando los revise.
 
+### ⭐ EN EL TELÉFONO: CUATRO DESTINOS + «MÁS» (Fernando, 2026-10-22)
+El quinto botón de la barra inferior era «Salir»: no dejaba llegar al resto del menú (el
+personal tiene hasta 13 pantallas). Ahora es **«Más»** (`Ellipsis`), que abre por la izquierda
+un panel (`w-72 max-w-[85vw]`, velo `bg-black/45`, `z-50`) con el **mismo** contenido del raíl
+del escritorio, siempre desplegado: marca, grupos, persona y «Cerrar sesión» en rojo.
+- **Una sola definición:** `ContenidoMenu` (`src/componentes/Navegacion.tsx`), con
+  `colapsado` para el raíl. `BarraLateral` y `BarraInferior` la montan; las dos reciben las
+  mismas props (`slug, negocio, logoUrl, usuario, quien`).
+- Se **monta solo abierto** (ver «Un <dialog> escondido bloquea toda la página»). Se cierra por
+  el velo, con Escape, al cambiar de ruta y al pulsar un enlace (aunque sea la pantalla actual).
+- «Más» va en `text-acento` cuando la pantalla actual no está entre los cuatro de la barra.
+- Igual en el portal del cliente final.
+Los otros cuatro productos siguen con «Salir» en la barra hasta que Fernando los revise.
+
 ### Controles nuevos, todos reusables (`src/componentes/`)
 - **`Chips`** (`campos.tsx`) — fila de casillas-chip para elegir comidas o días de la semana; envía
   `name` repetido y se lee con `FormData.getAll`. **`Casilla`**, **`Aviso`** (error/aviso/info),
@@ -4022,6 +4036,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · «Salir» en la barra inferior (Catering)** · **CAMBIO DE ESTÁNDAR** (Fernando): pasa
+  a «Más», que abre el menú completo por la izquierda. Ver la sección de Catering y la skill
+  `/producto`. Pendiente: los otros cuatro productos.
 - **2026-10-22 · Estado como píldora con punto (Catering)** · **CAMBIO DE ESTÁNDAR** (Fernando): el
   estado pasa a texto de color sin fondo ni punto, en `Insignia` (una sola definición). Ver la
   sección de Catering. Pendiente: los otros cuatro productos.

@@ -1,5 +1,30 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-22) — DESCARGADOR GCC EN iPHONE (instalarlo en el iPhone 17 de Fernando) · 🔎 45 %
+- **Rol asumido:** ingeniero iOS (Swift, firma/aprovisionamiento, Python embebido).
+- **Punto de partida:** Android hecho y confirmado por Fernando (2026-10-22: «funcionó perfectamente»).
+- **P1 — ¿Se puede instalar en el iPhone desde esta Mac?** ✅ Sí. `devicectl` ve «iPhone - LfgonzalezM0»
+  (iPhone 17, iOS 26.6.1) emparejado; hay identidad «Apple Development» y el equipo `5H27NSRYKQ` (de
+  pago: ya firmó la app GCC con APNs). Mismo camino que la app GCC: `xcodebuild -allowProvisioningUpdates
+  -allowProvisioningDeviceRegistration` + `xcrun devicectl device install app`. El perfil de desarrollo dura 1 año.
+- **P2 — ¿Hay app de iPhone?** ✅ No: `movil/descargador/` es solo Kotlin. El APK no sirve en iOS; hay que
+  construirla (Swift/SwiftUI, `movil/descargador-ios/`, `org.grupocc.descargador`).
+- **P3 — ¿Corre yt-dlp dentro de una app de iOS?** 🔎 Python sí se embebe (Python-Apple-support /
+  PythonKit; existe YoutubeDL-iOS de kewlbear, sin mantenimiento desde 2024-12). El problema es que **iOS
+  prohíbe lanzar procesos**, y yt-dlp lanza dos: FFmpeg (para unir video+audio) y un motor JS (para los
+  retos de YouTube; en Android es QuickJS). Plan:
+  - Unir sin FFmpeg: bajar video H.264 y audio AAC por separado y unirlos en Swift con AVFoundation
+    (copia sin recodificar). El audio solo (m4a) no necesita unión.
+  - Retos JS dentro del proceso: plugin `ytdlp-jsc` (QuickJS embebido) compilado para iOS, o un
+    proveedor propio que llame a JavaScriptCore. **Es el riesgo principal**: hay que probarlo primero.
+- **P4 — ¿Solo el iPhone de Fernando o más personas?** ⏸ Con firma de desarrollo vale para equipos
+  registrados (hasta 100 por tipo y año). Enterprise ya descartado (ver MEMORIA.md).
+- **P5 — ¿Dónde se guarda: Fotos o Archivos?** ⏸ Fotos exige H.264 (ya preferido); Archivos acepta todo.
+- **P6 — iOS corta el trabajo ~30 s después de salir de la app.** ⏸ ¿Vale que haya que dejarla abierta?
+- **Plan:** (1) prueba de concepto: Python + yt-dlp + reto JS en el iPhone; (2) unión con AVFoundation;
+  (3) interfaz igual que Android (calidades 1080/720/480/Mejor/audio, aviso de uso responsable,
+  actualización diaria del motor); (4) firmar e instalar; (5) Fernando prueba con su video.
+
 ## Objetivo (2026-10-22) — MEJORAS DE DISEÑO DE LOS PRODUCTOS, empezando por CATERING · 🔎 en curso
 - **Rol asumido:** diseñador de producto / ingeniero de UI del sistema de diseño de los productos.
 - **Forma de trabajo:** Fernando dicta una corrección, se aplica en la definición única y se verifica
@@ -8,6 +33,10 @@
   Catering sin fondo ni punto (afecta a todas sus columnas de estado) y punto de Usuarios sustituido
   por «Desactivada». Verificado: tsc, build y capturas en el demo (Servicios, Clientes, Alimentos,
   Usuarios, Reportes). Regla en `Diseño.md` y en la skill `/producto`.
+- **C2 — En el teléfono, «Salir» de la barra inferior pasa a «Más» con el menú lateral** · ✅ Hecho:
+  `ContenidoMenu` compartido por el raíl y un panel izquierdo; cierre por velo, Escape y al navegar;
+  probado en 390×844 con el personal (admin) y el portal del cliente. Regla en `Diseño.md` y en la
+  skill `/producto` (Fernando lo pidió expresamente para futuras apps).
 - **P1 — ¿Se aplica también a reservas, pedidos, planificaciones y automatizaciones?** ⏸ Fernando
   dijo «empezaremos con Catering»; preguntar.
 

@@ -281,6 +281,9 @@ Stack estándar de la casa, con particularidades de este repo:
   con el color del tono, en todas las columnas de estado. También fuera el punto activa/desactivada de
   Usuarios. Regla escrita en `Diseño.md` (Catering) y en la skill `/producto`. Los otros cuatro
   productos siguen con la píldora hasta que Fernando los revise.
+  Segunda (2026-10-22): en el teléfono la barra inferior es **cuatro destinos + «Más»**, que abre por
+  la izquierda el mismo menú del escritorio (`ContenidoMenu` en `componentes/Navegacion.tsx`), con
+  «Cerrar sesión» dentro; ya no hay «Salir» en la barra. También en la skill `/producto`.
 - **🔐 Incidente de seguridad de Railway (2026-10-21/22).** Railway avisó que las variables de entorno
   pudieron filtrarse y pausó los despliegues. Decisiones de Fernando: **no** cerrar el acceso público a
   las bases y **no** salir de Railway por ahora. Hecho y verificado el 2026-10-22:
@@ -462,6 +465,9 @@ Stack estándar de la casa, con particularidades de este repo:
   - **iPhone pendiente:** Fernando quiere el Apple Developer Enterprise Program para miembros y
     candidatos de grupocc.org. Avisado: exige D-U-N-S y ≥100 empleados, solo para empleados (los
     candidatos no lo son) y Apple revoca el certificado si se usa fuera de eso.
+  - **Android confirmado (2026-10-22):** Fernando lo instaló y descargó su video. **Siguiente: iPhone
+    para su propio iPhone 17**, firma de desarrollo del equipo `5H27NSRYKQ`. iOS no deja lanzar procesos:
+    sin FFmpeg (unir con AVFoundation) y reto JS dentro del proceso. Seguimiento en `Aprendizaje.md`.
 - **🔔 Aviso de propuesta nueva (Fernando, 2026-10-19).** Cuando alguien reserva desde el calendario
   público (`/api/members/calendar/public/[memberId]/propose`), `avisarPropuesta` (`lib/calendar/avisos-push.ts`)
   avisa a todas las cuentas del miembro en la campana (`notifications`, tipo `calendar_proposal`), por

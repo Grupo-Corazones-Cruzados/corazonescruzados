@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +18,7 @@ import {
   UserCog,
   Settings,
   LogOut,
+  Ellipsis,
   UtensilsCrossed,
   UserRound,
   MapPin,
@@ -89,19 +90,15 @@ type Props = {
   quien: Quien;
 };
 
-export function BarraLateral({ slug, negocio, logoUrl, usuario, quien }: Props) {
+/**
+ * LO DE DENTRO DEL MENÚ — cabecera con la marca, los grupos y el pie con la persona y
+ * «Cerrar sesión». UNA definición para los dos sitios donde se ve: el raíl del
+ * escritorio (que se contrae a iconos) y el panel que sale por la izquierda en el
+ * teléfono al pulsar «Más» (siempre desplegado).
+ */
+function ContenidoMenu({ slug, negocio, logoUrl, usuario, quien, colapsado = false }: Props & { colapsado?: boolean }) {
   const ruta = usePathname();
   const [saliendo, arranca] = useTransition();
-  /**
-   * EL MENÚ SE CONTRAE A LOS ICONOS Y SE DESPLIEGA AL PASAR EL PUNTERO (Fernando,
-   * 2026-09-16: «como ya lo hacemos en la app principal»). Mismo mecanismo que el raíl
-   * de GCC World: se monta ENCIMA del contenido —el main conserva siempre el margen
-   * del raíl estrecho— y cada fila mide lo mismo abierto o cerrado, así lo que está
-   * bajo el puntero no se escapa al desplegarse. En táctil no hay puntero: ahí manda
-   * la barra inferior, que ya existía.
-   */
-  const [sobreElMenu, setSobreElMenu] = useState(false);
-  const colapsado = !sobreElMenu;
   const grupos = agrupar(destinosDe(quien));
 
   const Enlace = ({ d }: { d: Destino }) => {
@@ -127,18 +124,7 @@ export function BarraLateral({ slug, negocio, logoUrl, usuario, quien }: Props) 
 
   return (
     <>
-      {/* Velo sobre el contenido mientras el menú está desplegado: el menú se monta
-          ENCIMA del contenido (el main conserva el margen del raíl estrecho), no lo empuja. */}
-      <div aria-hidden className={cn('hidden lg:block fixed inset-0 z-30 bg-black/45 pointer-events-none transition-opacity duration-200 print:hidden', sobreElMenu ? 'opacity-100' : 'opacity-0')} />
-      <aside
-        onMouseEnter={() => setSobreElMenu(true)}
-        onMouseLeave={() => setSobreElMenu(false)}
-        className={cn(
-          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200 print:hidden',
-          colapsado ? 'w-16' : 'w-60 shadow-2xl',
-        )}
-      >
-      <div className={cn('flex h-[68px] items-center gap-3 border-b border-borde', colapsado ? 'justify-center px-0' : 'px-4')}>
+      <div className={cn('flex h-[68px] shrink-0 items-center gap-3 border-b border-borde', colapsado ? 'justify-center px-0' : 'px-4')}>
         <LogoNegocio nombre={negocio} logoUrl={logoUrl} tamano={36} />
         {!colapsado && <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold text-texto">{negocio}</p>
@@ -160,7 +146,7 @@ export function BarraLateral({ slug, negocio, logoUrl, usuario, quien }: Props) 
         ))}
       </nav>
 
-      <div className="border-t border-borde p-3">
+      <div className="shrink-0 border-t border-borde p-3">
         <div className={cn('mb-2 flex h-8 items-center gap-2.5', colapsado ? 'justify-center' : 'px-1')}>
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acento-suave text-[12px] font-bold text-acento">
             {usuario.charAt(0).toUpperCase()}
@@ -180,7 +166,37 @@ export function BarraLateral({ slug, negocio, logoUrl, usuario, quien }: Props) 
           {!colapsado && (saliendo ? 'Saliendo…' : 'Cerrar sesión')}
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function BarraLateral(props: Props) {
+  /**
+   * EL MENÚ SE CONTRAE A LOS ICONOS Y SE DESPLIEGA AL PASAR EL PUNTERO (Fernando,
+   * 2026-09-16: «como ya lo hacemos en la app principal»). Mismo mecanismo que el raíl
+   * de GCC World: se monta ENCIMA del contenido —el main conserva siempre el margen
+   * del raíl estrecho— y cada fila mide lo mismo abierto o cerrado, así lo que está
+   * bajo el puntero no se escapa al desplegarse. En táctil no hay puntero: ahí manda
+   * la barra inferior, con su «Más».
+   */
+  const [sobreElMenu, setSobreElMenu] = useState(false);
+  const colapsado = !sobreElMenu;
+
+  return (
+    <>
+      {/* Velo sobre el contenido mientras el menú está desplegado: el menú se monta
+          ENCIMA del contenido (el main conserva el margen del raíl estrecho), no lo empuja. */}
+      <div aria-hidden className={cn('hidden lg:block fixed inset-0 z-30 bg-black/45 pointer-events-none transition-opacity duration-200 print:hidden', sobreElMenu ? 'opacity-100' : 'opacity-0')} />
+      <aside
+        onMouseEnter={() => setSobreElMenu(true)}
+        onMouseLeave={() => setSobreElMenu(false)}
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200 print:hidden',
+          colapsado ? 'w-16' : 'w-60 shadow-2xl',
+        )}
+      >
+        <ContenidoMenu {...props} colapsado={colapsado} />
+      </aside>
     </>
   );
 }
@@ -188,42 +204,82 @@ export function BarraLateral({ slug, negocio, logoUrl, usuario, quien }: Props) 
 /**
  * Barra inferior para el teléfono. Un cliente cancela su almuerzo desde el móvil
  * a las 6 de la mañana; un motorizado mira su ruta en la calle.
+ *
+ * Cuatro destinos y «Más» (Fernando, 2026-10-22: el quinto era «Salir» y no dejaba
+ * llegar al resto del menú). «Más» abre el MISMO menú del escritorio en un panel que
+ * sale por la izquierda; «Cerrar sesión» vive ahí, como en el escritorio.
  */
-export function BarraInferior({ slug, quien }: Pick<Props, 'slug' | 'quien'>) {
+export function BarraInferior(props: Props) {
+  const { slug, quien } = props;
   const ruta = usePathname();
-  const [, arranca] = useTransition();
+  const [abierto, setAbierto] = useState(false);
   // Como mucho cinco: más iconos en una fila de móvil dejan de poder pulsarse.
   const destinos = destinosDe(quien).slice(0, 4);
+  const enOtro = !destinos.some((d) => {
+    const href = `/${slug}/${d.ruta}`;
+    return ruta === href || ruta.startsWith(`${href}/`);
+  });
+
+  // Al llegar a otra pantalla el panel ya cumplió: se cierra solo.
+  useEffect(() => setAbierto(false), [ruta]);
+  useEffect(() => {
+    if (!abierto) return;
+    const alTeclear = (e: KeyboardEvent) => e.key === 'Escape' && setAbierto(false);
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [abierto]);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta lg:hidden print:hidden">
-      <div className="flex h-16 items-center justify-around">
-        {destinos.map((d) => {
-          const href = `/${slug}/${d.ruta}`;
-          const activo = ruta === href || ruta.startsWith(`${href}/`);
-          return (
-            <Link
-              key={d.ruta}
-              href={href}
-              className={cn(
-                'flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
-                activo ? 'text-acento' : 'text-tenue',
-              )}
-            >
-              <d.icono className="h-5 w-5" />
-              <span className="truncate">{d.etiqueta}</span>
-            </Link>
-          );
-        })}
-        <button
-          onClick={() => arranca(() => salir(slug) as unknown as void)}
-          className="flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] text-tenue"
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Salir</span>
-        </button>
-      </div>
-    </nav>
+    <>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-tarjeta lg:hidden print:hidden">
+        <div className="flex h-16 items-center justify-around">
+          {destinos.map((d) => {
+            const href = `/${slug}/${d.ruta}`;
+            const activo = ruta === href || ruta.startsWith(`${href}/`);
+            return (
+              <Link
+                key={d.ruta}
+                href={href}
+                className={cn(
+                  'flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
+                  activo ? 'text-acento' : 'text-tenue',
+                )}
+              >
+                <d.icono className="h-5 w-5" />
+                <span className="truncate">{d.etiqueta}</span>
+              </Link>
+            );
+          })}
+          <button
+            onClick={() => setAbierto(true)}
+            aria-expanded={abierto}
+            className={cn(
+              'flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
+              enOtro || abierto ? 'text-acento' : 'text-tenue',
+            )}
+          >
+            <Ellipsis className="h-5 w-5" />
+            <span>Más</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* El panel se MONTA solo cuando está abierto: escondido no debe existir. */}
+      {abierto && (
+        <div className="fixed inset-0 z-50 lg:hidden print:hidden">
+          <div aria-hidden onClick={() => setAbierto(false)} className="absolute inset-0 bg-black/45" />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menú"
+            // Pulsar la pantalla en la que ya se está no cambia la ruta: se cierra igual.
+            onClick={(e) => (e.target as HTMLElement).closest('a') && setAbierto(false)}
+            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta shadow-2xl">
+            <ContenidoMenu {...props} />
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
 

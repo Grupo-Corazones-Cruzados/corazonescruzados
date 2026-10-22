@@ -24,7 +24,7 @@ export default async function LayoutPortal({
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
       </div>
-      <BarraInferior slug={negocio} quien={quien} />
+      <BarraInferior slug={negocio} negocio={inquilino.nombre} logoUrl={inquilino.logoUrl} usuario={cliente.nombre} quien={quien} />
     </AplicaMarca>
   );
 }
