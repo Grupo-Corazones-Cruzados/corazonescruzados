@@ -3,8 +3,8 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { FileDown, FileUp, X } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { FileDown, FileUp, X, AtSign, ShieldCheck } from 'lucide-react';
+import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, Campo, Entrada, Tarjeta, EtiquetaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { guardarPerfil } from '@/acciones/perfil';
@@ -63,7 +63,14 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
 
   return (
     <>
-      <CabeceraPagina titulo="Mi perfil" descripcion={`${perfil.usuario} · ${ETIQUETA_ROL[perfil.rol]}`} />
+      {/* El usuario y el rol no se escriben bajo el título: van en la burbuja (i). */}
+      <CabeceraPagina
+        titulo="Mi perfil"
+        detalles={[
+          { icono: AtSign, etiqueta: 'Usuario', valor: perfil.usuario },
+          { icono: ShieldCheck, etiqueta: 'Rol', valor: ETIQUETA_ROL[perfil.rol] },
+        ]}
+      />
       <div className="flex flex-col gap-4 p-4 sm:p-6 xl:h-[calc(100vh-61px)] xl:flex-row xl:overflow-hidden">
         {/* Mis datos: estrecho y a toda la altura */}
         <Tarjeta className="flex min-h-0 flex-col xl:w-[360px] xl:shrink-0">
@@ -114,17 +121,12 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
 
         {/* Horario de clases */}
         <Tarjeta className="flex min-h-0 flex-1 flex-col">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-4 py-3">
-            <div>
+          <div className="flex items-start justify-between gap-2 border-b border-borde px-4 py-3 lg:items-center">
+            <div className="min-w-0">
               <h2 className="text-[13px] font-semibold">Horario de clases</h2>
               <p className="text-[11px] text-tenue">Pulsa un periodo y elige la materia. De aquí salen los periodos de cada planificación semanal.</p>
             </div>
             <div className="flex items-center gap-2">
-              <a href={`/${slug}/api/horario`} download>
-                <Boton variante="secundario" tamano="sm" icono={FileDown}>
-                  Exportar Excel
-                </Boton>
-              </a>
               <input
                 ref={entradaExcel}
                 type="file"
@@ -144,9 +146,11 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                   });
                 }}
               />
-              <Boton variante="secundario" tamano="sm" icono={FileUp} onClick={() => entradaExcel.current?.click()} disabled={enCurso || soloLectura}>
-                Importar Excel
-              </Boton>
+              {/* Botones en escritorio y «⋯» en el teléfono: dos botones con texto no caben junto al título. */}
+              <AccionesTarjeta acciones={[
+                { etiqueta: 'Exportar Excel', icono: FileDown, href: `/${slug}/api/horario`, descargar: true },
+                { etiqueta: 'Importar Excel', icono: FileUp, alPulsar: () => entradaExcel.current?.click(), deshabilitado: enCurso || soloLectura },
+              ]} />
             </div>
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-auto p-4">

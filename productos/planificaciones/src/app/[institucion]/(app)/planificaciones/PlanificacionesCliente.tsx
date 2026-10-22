@@ -22,11 +22,12 @@ import {
   ListChecks,
   Plus as PlusIcon,
   ImageOff,
-  Info,
+  UserRound,
+  GraduationCap,
 } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Buscador, Tarjeta, Insignia, PanelLateral, Confirmar, EstadoVacio, type Tono } from '@/componentes/ui';
-import { Aviso, Chips } from '@/componentes/campos';
+import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
+import { Boton, BotonIcono, BurbujaDetalles, Campo, Entrada, AreaTexto, Selector, Buscador, SelectorEstado, Tarjeta, Insignia, PanelLateral, Confirmar, EstadoVacio, type Tono } from '@/componentes/ui';
+import { Aviso } from '@/componentes/campos';
 import { Dictado } from '@/componentes/Dictado';
 import { Adjuntos, type AdjuntoSubido } from '@/componentes/Adjuntos';
 import { crearPlanificacion, configurarPlanificacion, eliminarPlanificacion, crearSemana, regenerarSemana, editarSemana, eliminarSemana, importarFormato, completarAjustes } from '@/acciones/planificaciones';
@@ -140,7 +141,6 @@ export default function PlanificacionesCliente(p: Props) {
   const [busqueda, setBusqueda] = useState(p.q);
   const galeria = useRef<HTMLDivElement>(null);
   const deslizar = (dir: -1 | 1) => galeria.current?.scrollBy({ left: dir * 460, behavior: 'smooth' });
-  const [ayuda, setAyuda] = useState(false);
 
   const semana = useMemo(() => p.semanas.find((s) => s.id === p.semanaId) ?? p.semanas[p.semanas.length - 1] ?? null, [p.semanas, p.semanaId]);
   const sinCupo = p.cupo.quedan !== null && p.cupo.quedan <= 0;
@@ -212,60 +212,63 @@ export default function PlanificacionesCliente(p: Props) {
 
   return (
     <>
+      {/*
+        Las PRINCIPALES —el PDF de la planificación elegida y «Nueva planificación»— van a la
+        derecha en escritorio y a la barra de abajo en el teléfono; las demás, a «⋯». El cupo de
+        la semana es información: una línea bajo el título.
+      */}
       <CabeceraPagina
         titulo="Planificaciones"
-        descripcion={p.cupo.tope === null ? `${p.cupo.usadas} planificaciones semanales generadas esta semana` : `${p.cupo.usadas} de ${p.cupo.tope} planificaciones semanales generadas esta semana en la institución`}
+        extra={
+          // Corta, para que la cabecera quepa en una fila en escritorio; el detalle, en el título.
+          <span title="Planificaciones semanales generadas esta semana en la institución">
+            <Insignia tono={sinCupo ? 'error' : p.cupo.quedan !== null && p.cupo.quedan <= 5 ? 'aviso' : 'neutro'}>
+              {p.cupo.tope === null ? `${p.cupo.usadas} generadas esta semana` : `${p.cupo.usadas} de ${p.cupo.tope} esta semana`}
+            </Insignia>
+          </span>
+        }
+        menu={[
+          ...(actual ? [{ etiqueta: 'Word', icono: FileType, href: `/${p.slug}/api/word/${actual.id}`, descargar: true }] : []),
+          // «Identificadores» (Fernando, 2026-09-17): destreza · criterio · indicador de la materia, seleccionados por el administrador; aquí solo se ven.
+          { etiqueta: `Identificadores${actual ? ` · ${p.destrezasCatalogo.length}` : ''}`, icono: ListChecks, deshabilitado: !actual, alPulsar: () => setPanel('destrezas'), titulo: !actual ? 'Elige una planificación' : 'Destrezas, criterios e indicadores de evaluación de la materia' },
+          // «Configurar» solo con una planificación elegida (Fernando, 2026-09-15).
+          { etiqueta: 'Configurar', icono: Settings, deshabilitado: !actual || !puedo, alPulsar: () => setPanel('configurar'), titulo: !actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas' },
+          { etiqueta: 'Importar', icono: FileUp, deshabilitado: p.soloLectura || sinCupo, alPulsar: () => setPanel('importar'), titulo: sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : 'Importar un formato ya hecho (PDF o Word): el agente crea sus semanas' },
+          { etiqueta: 'Eliminar planificación', icono: Trash2, peligro: true, deshabilitado: !actual || !puedo, alPulsar: () => actual && setBorrarPl(actual), titulo: !actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede eliminarla' : 'Eliminar la planificación elegida' },
+        ]}
         acciones={
           <>
             {actual && (
-              <>
-                <a href={`/${p.slug}/api/word/${actual.id}`} download>
-                  <Boton variante="secundario" icono={FileType}>
-                    Word
-                  </Boton>
-                </a>
-                <a href={`/${p.slug}/api/pdf/${actual.id}`} download>
-                  <Boton variante="secundario" icono={FileDown}>
-                    PDF
-                  </Boton>
-                </a>
-              </>
+              <a href={`/${p.slug}/api/pdf/${actual.id}`} download>
+                <Boton variante="secundario" icono={FileDown}>
+                  PDF
+                </Boton>
+              </a>
             )}
-            {/* «Destrezas» (Fernando, 2026-09-16): el conjunto propio de la planificación del que el agente elige una por semana. */}
-            {/* «Identificadores» (Fernando, 2026-09-17): destreza · criterio · indicador de la materia, seleccionados por el administrador; aquí solo se ven. */}
-            <Boton variante="secundario" icono={ListChecks} disabled={!actual} onClick={() => setPanel('destrezas')} title={!actual ? 'Elige una planificación' : 'Destrezas, criterios e indicadores de evaluación de la materia'}>
-              Identificadores{actual ? ` · ${p.destrezasCatalogo.length}` : ''}
-            </Boton>
-            {/* «Configurar» solo con una planificación elegida (Fernando, 2026-09-15). */}
-            <Boton variante="secundario" icono={Settings} disabled={!actual || !puedo} onClick={() => setPanel('configurar')} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede configurarla' : 'Plantilla, datos del formato y firmas'}>
-              Configurar
-            </Boton>
-            {/* Solo icono, para que la cabecera no se desborde (Fernando, 2026-09-17). */}
-            <BotonIcono icono={FileUp} titulo={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : 'Importar un formato ya hecho (PDF o Word): el agente crea sus semanas'} onClick={() => setPanel('importar')} disabled={p.soloLectura || sinCupo} className="h-9 w-9 rounded-md border border-borde bg-tarjeta hover:bg-realce" />
             <Boton icono={Plus} onClick={() => setPanel('nueva')} disabled={p.soloLectura}>
               Nueva planificación
-            </Boton>
-            <Boton variante="secundario" icono={Trash2} disabled={!actual || !puedo} title={!actual ? 'Elige una planificación' : !puedo ? 'Solo quien la creó (o el administrador) puede eliminarla' : 'Eliminar la planificación elegida'} onClick={() => actual && setBorrarPl(actual)}>
-              Eliminar planificación
             </Boton>
           </>
         }
       />
 
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:h-[calc(100vh-61px)] xl:flex-row xl:overflow-hidden">
+      {/* 85 px: la cabecera lleva la línea del cupo bajo el título. */}
+      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:h-[calc(100vh-85px)] xl:flex-row xl:overflow-hidden">
         {/* ── Columna 1: las planificaciones ─────────────────────────────── */}
         <Tarjeta className="flex min-h-0 flex-col xl:w-[300px] xl:shrink-0">
-          <div className="space-y-2 border-b border-borde p-3">
-            <Chips
-              opciones={['mias', 'todas'] as const}
-              etiquetas={{ mias: 'Mías', todas: 'De todos' }}
-              valor={[p.todas ? 'todas' : 'mias']}
-              alCambiar={(v) => {
-                const nuevo = v[v.length - 1];
-                if (nuevo) ir({ quien: nuevo === 'todas' ? 'todas' : null, p: null, s: null });
-              }}
+          {/* «Mías / De todos» es UN control selector, en la misma fila que el buscador; si no caben, el buscador baja. */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-borde p-3">
+            <SelectorEstado
+              etiqueta="Ver"
+              className="min-w-0 flex-1 lg:flex-none"
+              activo={p.todas ? 'todas' : 'mias'}
+              alElegir={(v) => ir({ quien: v === 'todas' ? 'todas' : null, p: null, s: null })}
+              opciones={[
+                { valor: 'mias', etiqueta: 'Mías' },
+                { valor: 'todas', etiqueta: 'De todos' },
+              ]}
             />
-            <Buscador valor={busqueda} alCambiar={setBusqueda} marcador="Materia, unidad o docente…" />
+            <Buscador valor={busqueda} alCambiar={setBusqueda} marcador="Materia, unidad o docente…" className="min-w-[10rem] flex-1" />
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
             {p.planificaciones.length === 0 && <EstadoVacio icono={BookOpenText} titulo={p.todas ? 'Nadie ha creado planificaciones' : 'Todavía no tienes planificaciones'} detalle="Crea la primera con «Nueva planificación»: materia, unidad y las fechas del PUD." />}
@@ -303,31 +306,24 @@ export default function PlanificacionesCliente(p: Props) {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
             {/* Semanas: a todo el ancho, con altura limitada y en galería horizontal (Fernando, 2026-09-16) */}
             <Tarjeta className="min-w-0 shrink-0">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-3 py-2">
-                <div className="flex min-w-0 items-center gap-2">
+              <div className="flex items-center justify-between gap-2 border-b border-borde px-3 py-2">
+                <div className="flex min-w-0 items-center gap-1">
                   <p className="truncate text-[13px] font-semibold text-texto">{actual.materia}</p>
-                  <div className="relative">
-                    <BotonIcono icono={Info} titulo="Detalles de la planificación" onClick={() => setAyuda((v) => !v)} className={cn(ayuda && 'bg-realce text-texto')} />
-                    {ayuda && (
-                      <div className="absolute left-0 top-9 z-30 w-72 rounded-md border border-borde bg-tarjeta p-3 text-[12px] shadow-xl">
-                        <p className="font-semibold text-texto">
-                          Unidad {actual.numeroUnidad} · {actual.tituloUnidad}
-                        </p>
-                        <p className="mt-1 text-tenue">
-                          {diaDeMes(actual.inicioPud)} – {diaDeMes(actual.finPud)}
-                        </p>
-                        <p className="text-tenue">{actual.docente}</p>
-                        <p className="mt-1 text-tenue">
-                          {ETIQUETA_NIVEL[actual.nivel]} · {actual.ambito}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <BurbujaDetalles
+                    titulo="Detalles de la planificación"
+                    className="shrink-0"
+                    detalles={[
+                      { icono: BookOpenText, etiqueta: 'Unidad', valor: `Unidad ${actual.numeroUnidad} · ${actual.tituloUnidad}` },
+                      { icono: CalendarDays, etiqueta: 'Fechas del PUD', valor: `${diaDeMes(actual.inicioPud)} – ${diaDeMes(actual.finPud)}` },
+                      { icono: UserRound, etiqueta: 'Docente', valor: actual.docente },
+                      { icono: GraduationCap, etiqueta: 'Nivel y ámbito', valor: `${ETIQUETA_NIVEL[actual.nivel]} · ${actual.ambito}` },
+                    ]}
+                  />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {/* Flechas para deslizar la galería, además de la barra (Fernando, 2026-09-18). */}
                   {p.semanas.length > 0 && (
-                    <div className="mr-1 flex items-center gap-0.5">
+                    <div className="mr-1 hidden items-center gap-0.5 sm:flex">
                       <BotonIcono icono={ChevronLeft} titulo="Semanas anteriores" onClick={() => deslizar(-1)} />
                       <BotonIcono icono={ChevronRight} titulo="Semanas siguientes" onClick={() => deslizar(1)} />
                     </div>
@@ -335,9 +331,10 @@ export default function PlanificacionesCliente(p: Props) {
                   <Boton tamano="sm" icono={Sparkles} onClick={() => setPanel('semana')} disabled={!puedo || sinCupo} title={sinCupo ? `Tu institución ya generó ${p.cupo.tope} esta semana` : !puedo ? 'Solo quien la creó (o el administrador) puede añadir semanas' : 'Nueva planificación semanal'}>
                     Nueva
                   </Boton>
-                  <Boton variante="secundario" tamano="sm" icono={Trash2} disabled={!semana || !puedo} title={!semana ? 'Elige una semana' : 'Eliminar la semana elegida'} onClick={() => semana && setBorrarSem(semana)}>
-                    Eliminar
-                  </Boton>
+                  {/* Borrar es secundaria: botón en escritorio, «⋯» en el teléfono. */}
+                  <AccionesTarjeta acciones={[
+                    { etiqueta: 'Eliminar semana', icono: Trash2, peligro: true, deshabilitado: !semana || !puedo, titulo: !semana ? 'Elige una semana' : 'Eliminar la semana elegida', alPulsar: () => semana && setBorrarSem(semana) },
+                  ]} />
                 </div>
               </div>
               {actual.importacionEstado === 'LEYENDO' && (
@@ -391,14 +388,10 @@ export default function PlanificacionesCliente(p: Props) {
                   ))}
                 </div>
                 {p.vista === 'campos' && semana && semana.estado === 'LISTA' && puedo && (
-                  <div className="flex items-center gap-1">
-                    <Boton variante="secundario" tamano="sm" icono={Pencil} onClick={() => setPanel('editar')}>
-                      Corregir
-                    </Boton>
-                    <Boton variante="secundario" tamano="sm" icono={RefreshCw} disabled={enCurso || sinCupo} title={sinCupo ? 'Sin cupo esta semana' : 'Volver a pedirla al agente (cuenta contra el tope)'} onClick={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a redactar la semana')}>
-                      Regenerar
-                    </Boton>
-                  </div>
+                  <AccionesTarjeta acciones={[
+                    { etiqueta: 'Corregir', icono: Pencil, alPulsar: () => setPanel('editar') },
+                    { etiqueta: 'Regenerar', icono: RefreshCw, deshabilitado: enCurso || sinCupo, titulo: sinCupo ? 'Sin cupo esta semana' : 'Volver a pedirla al agente (cuenta contra el tope)', alPulsar: () => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a redactar la semana') },
+                  ]} />
                 )}
               </div>
               <div className={cn('desplaza min-h-0 flex-1 overflow-y-auto', p.vista === 'previa' ? 'bg-realce p-4' : 'p-4')}>

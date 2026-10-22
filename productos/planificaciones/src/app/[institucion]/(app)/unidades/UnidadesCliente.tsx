@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users, FileUp, Loader2, ListChecks } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria, importarCurriculo } from '@/acciones/unidades';
@@ -176,17 +176,14 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                   <h2 className="truncate text-[15px] font-semibold text-texto">{materia.nombre}</h2>
                   {grado && <EtiquetaGrado nombre={grado.nombre} color={grado.color} />}
                 </div>
+                {/* Selección de destrezas (con su criterio e indicador), a la izquierda de Editar (Fernando, 2026-09-18).
+                    Botones en escritorio y «⋯» en el teléfono; la que borra, en rojo y al final. */}
                 {!soloLectura && (
-                  <div className="flex items-center gap-1">
-                    {/* Selección de destrezas (con su criterio e indicador), a la izquierda de Editar (Fernando, 2026-09-18). */}
-                    <Boton variante="secundario" tamano="sm" icono={ListChecks} onClick={() => setPanelDestrezas(true)}>
-                      Destrezas
-                    </Boton>
-                    <Boton variante="secundario" tamano="sm" icono={Pencil} onClick={() => abrirMateria(materia)}>
-                      Editar
-                    </Boton>
-                    <BotonIcono icono={Trash2} titulo="Eliminar la materia" className="text-error" onClick={() => setBorrarM(materia)} />
-                  </div>
+                  <AccionesTarjeta acciones={[
+                    { etiqueta: 'Destrezas', icono: ListChecks, alPulsar: () => setPanelDestrezas(true) },
+                    { etiqueta: 'Editar', icono: Pencil, alPulsar: () => abrirMateria(materia) },
+                    { etiqueta: 'Eliminar', icono: Trash2, peligro: true, titulo: 'Eliminar la materia', alPulsar: () => setBorrarM(materia) },
+                  ]} />
                 )}
               </div>
               <div className="desplaza min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
@@ -199,7 +196,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                     <Users className="h-3.5 w-3.5" /> Docentes que dan la materia
                   </h3>
                   {materia.docentes.length ? (
-                    <ul className="flex flex-wrap gap-1.5">
+                    <ul className="flex flex-wrap gap-x-3 gap-y-1">
                       {materia.docentes.map((d) => (
                         <li key={d.id}>
                           <Insignia tono="info">{d.nombre}</Insignia>

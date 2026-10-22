@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, ChevronRight, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Confirmar, Insignia, EtiquetaGrado } from '@/componentes/ui';
+import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Confirmar, Insignia } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { crearEstudiante, editarEstudiante, eliminarEstudiante } from '@/acciones/estudiantes';
 import type { EstudianteVista, GradoDelDocente } from '@/lib/estudiantes';
@@ -88,12 +88,10 @@ export default function EstudiantesCliente({ slug, grados, gradoId, estudiantes,
 
         {/* Estudiantes del grado */}
         <Tarjeta className="flex min-h-0 flex-1 flex-col">
-          <div className="flex items-center justify-between gap-2 border-b border-borde px-4 py-3">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-texto">{grado?.nombre ?? 'Estudiantes'}</p>
-              <p className="text-[11px] text-tenue">{grado ? `${estudiantes.length} estudiante${estudiantes.length === 1 ? '' : 's'} · ${especiales} con condición especial` : 'Elige un grado'}</p>
-            </div>
-            {grado && <EtiquetaGrado nombre={grado.nombre} color={grado.color} />}
+          {/* El nombre del grado una sola vez: la etiqueta de color repetía el título. */}
+          <div className="border-b border-borde px-4 py-3">
+            <p className="truncate text-[13px] font-semibold text-texto">{grado?.nombre ?? 'Estudiantes'}</p>
+            <p className="text-[11px] text-tenue">{grado ? `${estudiantes.length} estudiante${estudiantes.length === 1 ? '' : 's'} · ${especiales} con condición especial` : 'Elige un grado'}</p>
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
             {!grado && <EstadoVacio icono={Users} titulo="Elige un grado" detalle="Verás y podrás dar de alta a sus estudiantes." />}

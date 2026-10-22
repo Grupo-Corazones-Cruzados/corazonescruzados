@@ -40,7 +40,7 @@ export default function PanelCliente({ d }: { d: DatosPanel }) {
         }
       />
       <div className="space-y-4 p-4 sm:p-6">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
           <Cifra etiqueta="Planificaciones creadas" valor={d.planificaciones} destacado />
           <Cifra etiqueta="Semanas redactadas" valor={d.semanasListas} pista={d.semanasEnCurso ? `${d.semanasEnCurso} redactándose ahora` : undefined} />
           <Cifra
