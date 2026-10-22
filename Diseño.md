@@ -994,6 +994,10 @@ dentro** (la página no scrollea). El pie con la ruta (`DashboardBreadcrumb`) es
   recordatorios y clientes: **todas cierran 16 px por encima del pie** (el `BOTTOM_GAP` de aire).
 
 ## Reglas clave (do / don't)
+- **NO** mostrar a un rol lo que no puede usar, ni un filtro que le quedaría vacío (2026-10-22,
+  Herramientas): las herramientas de equipo llevan `soloEquipo` y a un candidato no le aparecen, y el
+  `FilterRail` de categorías solo pinta las que tienen al menos una herramienta
+  (`CATEGORIES.filter((c) => c.value === 'all' || counts[c.value])`).
 - **NO** escribir un control «parecido» al que ya existe en otra pantalla → **usar el
   componente**. Un rail se hace con `FilterRail`, no copiando su marcado; las listas de
   contactos con `PanelListasContactos`. Pasó el 2026-08-03 con la pantalla de plantillas:
@@ -4004,6 +4008,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-22 · Herramientas vista por un candidato** · **CORREGIDO**: la categoría «Gestión» salía en
+  el raíl con 0 herramientas (las dos de «un solo uso» son solo del equipo). Ahora el raíl oculta las
+  categorías vacías; ver «Reglas clave».
 - **2026-10-16 · Enlace de un solo uso (Herramientas → Gestión)** · **ADOPTADO**, sin controles nuevos:
   el formulario es `PanelCompartirEnlace` con los campos propios como `children` (`EditField` +
   `EDIT_INPUT`, `Interruptor`, `PixelSelect`); la lista `/dashboard/tools/enlaces` es «rail + lista +

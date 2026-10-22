@@ -275,6 +275,35 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔐 Incidente de seguridad de Railway (2026-10-21/22).** Railway avisó que las variables de entorno
+  pudieron filtrarse y pausó los despliegues. Decisiones de Fernando: **no** cerrar el acceso público a
+  las bases y **no** salir de Railway por ahora. Hecho y verificado el 2026-10-22:
+  - Contraseñas de Postgres rotadas (`ALTER USER` + `POSTGRES_PASSWORD`) en GCC, Motordesa, Diego,
+    IMADEXA, Bellaflor y Flow Data (+ rol `fd_readonly`); los `DATABASE_URL` pegados pasaron a
+    referencias `${{Postgres.*}}`. **GCC World ya va por la red privada** (`RAILWAY_PRIVATE_DOMAIN`, con
+    `?schema=gcc_world` como único parámetro).
+  - Secretos internos rotados en todos los proyectos (JWT/JWT_SECRETO, CRON_TOKEN y copias del
+    `nightly-cron`, tokens de workers, SESSION/CRON/NEXTAUTH de los clientes) → **todos los usuarios
+    vuelven a iniciar sesión**.
+  - Proveedores rotados en GCC: OpenAI, Cloudinary `denkwhhxx`, cuenta de servicio `meet-creator`
+    (también es la de FCM; en local vive en `data/google-sa.json`), secreto OAuth de Google, Meta
+    (App Secret + token del usuario del sistema) y PayPhone. Resend y `OUTLOOK_*` eliminados.
+  - **Microsoft Graph SÍ se usa** (correo de Flow Data salvo Pisercons; campañas de IMADEXA): no borrar.
+  - Respaldos: GCC solo respalda **GCC World** (en el M1); no se guardan respaldos de clientes.
+  - Lo que falta está en «Pendientes» (2026-10-22). Detalle operativo en la auto-memoria
+    `gcc-incidente-railway-2026-10`.
+- **🧰 Herramientas: miembros y candidatos, nunca clientes (Fernando, 2026-10-22).** Ver la entrada de
+  «Quién usa Herramientas» más abajo; las APIs (apps/APK, convertir, transcribir) lo comprueban en el
+  servidor con `lib/herramientas/acceso.ts`.
+- **🛍️ Productos: un escaparate (demo) no pasa por la mensualidad (Fernando, 2026-10-22).** «Solo los
+  inquilinos de clientes» se cobran. `evaluarAcceso` de los cinco productos deja pasar `soloLectura`
+  igual que `cortesia` (campo **obligatorio** en el tipo), y el ingreso mensual del panel del equipo no
+  suma escaparates. Antes los demos de Catering, Pedidos, Reservas y Planificaciones mostraban «La
+  mensualidad está vencida» porque su suscripción de prueba tenía `pagado_hasta` pasado.
+- **🧾 Facturar al cobrar, no al cerrar el proyecto (consulta de Fernando, 2026-10-22).** Un cliente pidió
+  no facturar el pago de una etapa hasta terminar el proyecto. En Ecuador el comprobante del servicio
+  se emite como tarde al recibir el pago (total o parcial): **cada etapa cobrada lleva su factura**; si el
+  cliente quiere una sola factura, que pague al final. (Orientación, no asesoría: confirmar con contador.)
 - **💸 Railway: la purga de los productos ya no los despierta cada hora (Fernando, 2026-10-05).** El
   ciclo 16 sep → 16 oct llevaba 7,97 $ en Servidor-GCC, casi todo RAM por minuto (CPU ≈ 0). Reservas,
   Pedidos y Catering duermen (`sleepApplication`) pero `scripts/frequent-cron.mjs` los llamaba cada hora
@@ -7033,6 +7062,26 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **Rotar secretos en Railway sin construir (2026-10-22).** `variableCollectionUpsert` con
+  `skipDeploys:true` y luego `deploymentRedeploy(id, usePreviousImageTag:true)`: reinicia con las
+  variables nuevas sin compilar. El despliegue vigente se busca con
+  `deployments(input:{status:{in:[SUCCESS,SLEEPING]}})`: los servicios con rutas vigiladas acumulan
+  SKIPPED y «el último» no sirve. `variableDelete` no despliega. La API exige `User-Agent` (Python sin él → 403).
+- **`next build` sin memoria en Railway (2026-10).** El constructor nuevo muere en la revisión de tipos con
+  ~2 GB: el script `build` lleva `NODE_OPTIONS=--max-old-space-size=6144`.
+- **Comprobar credenciales sin efectos.** PayPhone: `POST paymentbox…/api/confirm` con un id inexistente
+  → 404 «no existe» si el token vale, 401 si no (`Users/check` solo vale para apps tipo API). Meta:
+  `debug_token` con `appId|appSecret` valida los dos a la vez. Webhook de Meta: un aviso firmado con el
+  secreto nuevo → 200 y uno con firma falsa → 403.
+- **Lo que una rotación NO arregla.** Generar un token nuevo en Meta o PayPhone **no anula el viejo**
+  (hay que revocarlo). Si se filtran el `.p12` y su contraseña juntos, cambiar la contraseña no sirve:
+  solo la revocación del certificado. El token de PayPhone ya viaja al navegador en la Cajita por diseño.
+- **Producción de la plataforma es `app.grupocc.org`**; `grupocc.org` a secas está en otro hosting.
+- **Probar un producto en producción sin escribir:** firmar una sesión con su `JWT_SECRETO` (cookie
+  `<producto>_sesion`, `{tipo:'personal', uid, inquilinoId, slug, rol}`) y pedir solo páginas de lectura
+  con `redirect:'manual'`. Así se comprobó que el demo de Catering ya no cae en «suscripción».
+- **Candidato vs. cliente en el servidor:** comparten `role='client'` y el token no los distingue; se
+  lee `clients.account_type` (ver `lib/herramientas/acceso.ts`).
 - **Probar una pantalla del panel con sesión, en local y sin escribir nada (2026-10-04).** En local no hay
   `JWT_SECRET`: el servidor firma con el valor por defecto, así que basta firmar con `jose` un token
   `{ userId, email, role: 'admin' }` y ponerlo en la cookie `auth_token`. `npm run build` + `next start
@@ -7850,6 +7899,21 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   corregir uno, no dar por hecho que ya pasa.
 
 ## Pendientes / preguntas abiertas
+- **(2026-10-22) Rotación tras el incidente de Railway — lo que falta (Fernando lo retomará):**
+  - ⚠️ Urgente: la contraseña inicial del admin de **Procesos (Roberto)** sigue valiendo y estaba en las
+    variables filtradas (cambiarla deja fuera a Roberto: esperar su «sí») · la **clave de SRI en línea de
+    Diego** (`sri-sync`: `SRI_USUARIO`/`SRI_CLAVE`).
+  - Lo que Fernando ve más riesgoso: las **claves de IA de Flow Data y de Diego** (cuestan dinero).
+  - Por rotar: Meta de Diego · APNs (.p8) · Azure Graph (Flow Data e IMADEXA) · FAL · Diego: Maps,
+    Turnstile, Anthropic · Flow Data: Cloudinary `bgry0oyf`, OAuth Google, Power Automate · IMAP/SMTP
+    de Cercasa y Pisercons · Odoo (Motordesa) · Komet (Bellaflor).
+  - En paneles: borrar las claves de las cuentas de servicio `firebase-adminsdk` y Gemini (nada las usa) ·
+    revocar el token viejo de Meta y el de PayPhone (siguen valiendo) · Contífico (opcional, ya retirado).
+  - Firma del SRI de GCC: Security Data no deja renovar el `.p12`; pedir **revocación** cuando se pueda y,
+    mientras, revisar en SRI en línea los comprobantes emitidos.
+  - Neon (Reservas vieja de Carliza): se borra con el corte de Carliza; Fernando lo hace.
+  - Avisar a los usuarios de que vuelven a iniciar sesión (Motordesa primero, por el rastreo).
+- **(2026-10-22) Por probar:** el Descargador GCC en un Android real.
 - (2026-10-05) Preguntas abiertas a Fernando de la sesión de formularios: ¿«Todos» al final también en
   los raíles de Tickets y Proyectos? · ¿pulsar el velo con datos escritos debe pedir confirmación? ·
   ¿guardar un historial de validaciones de contradicciones por proyecto?

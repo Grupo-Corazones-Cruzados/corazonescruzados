@@ -1,5 +1,34 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-21 → 22) — INCIDENTE DE RAILWAY: rotar los secretos de todos los servidores · 🔎 75 % — LO CRÍTICO HECHO; FERNANDO RETOMA EL RESTO
+- **Rol asumido:** especialista en seguridad / respuesta a incidentes.
+- **Fuentes:** avisos de Railway (2026-10-21/22), API GraphQL de Railway, código de los repos de clientes,
+  paneles que Fernando fue usando.
+- **P1 — ¿Hay que cerrar el acceso público a las bases?** ✅ No es obligatorio; Fernando decide **no**
+  cerrarlo aún (quiere poder sacar sus datos). Se rotaron las contraseñas.
+- **P2 — ¿Microsoft ya no se usa?** ✅ Falso: Graph envía el correo de Flow Data y las campañas de IMADEXA
+  (fuente: `src/lib/email.ts` de Flow Data, `lib/integrations/microsoft-graph.ts` de IMADEXA). Solo se
+  borraron `OUTLOOK_*` de ATER GENERA.
+- **P3 — ¿Qué es Neon?** ✅ Otro proveedor de Postgres; solo lo usa la Reservas vieja de Carliza desde su
+  creación (2026-02-25). Se elimina con el corte de Carliza.
+- **P4 — ¿Se puede borrar la clave vieja de Cloudinary `denkwhhxx`?** ✅ Sí: Poker-Games y Proinamsac solo
+  se publicaron en Railway y ya no existen; el resto usa la nueva.
+- **P5 — ¿Cambiar la contraseña del `.p12` del SRI basta?** ✅ No: se filtraron archivo y contraseña; solo
+  la revocación del certificado (Security Data) lo arregla.
+- **P6 — ¿Hay que rotar PayPhone?** ✅ Hecho igualmente, aunque el token ya era visible en la Cajita.
+- **P7 — ¿Cambio la contraseña del admin de Roberto?** ⏸ Espera el «sí» de Fernando.
+- **P8 — Claves de IA de Flow Data y Diego, y la de SRI en línea de Diego.** ⏸ Dependen de ellos.
+- **Decisiones:** respaldos solo de GCC World; no se guardan respaldos de clientes. Lista completa de lo
+  pendiente en `MEMORIA.md` → Pendientes (2026-10-22).
+
+## Objetivo (2026-10-22) — HERRAMIENTAS para miembros y candidatos; DEMOS sin mensualidad · ✅ 100 % — HECHO, DESPLEGADO Y VERIFICADO
+- **P1 — ¿Quién usa Herramientas?** ✅ Miembros y candidatos (Fernando: todos tendrán correo de la
+  organización). Las de «un solo uso» siguen siendo del equipo. APIs cerradas a clientes
+  (`lib/herramientas/acceso.ts`); probado: cliente 403, sin sesión 401, candidato/miembro/admin pasan.
+- **P2 — ¿Por qué los demos decían «mensualidad vencida»?** ✅ Solo `cortesia` saltaba la puerta y su
+  suscripción de prueba había vencido. Ahora `soloLectura` también la salta en los cinco productos;
+  comprobado en producción con el demo de Catering (`/demo/suscripcion` → `/demo/panel`).
+
 ## Objetivo (2026-10-16) — TICKETS: facturar solo los registros sin facturar · ✅ 100 % — HECHO Y VERIFICADO
 
 **Rol:** ingeniero backend de facturación. **Pedido:** en el #28 «Consultoría Automatización
