@@ -3,15 +3,14 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { addDays, format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Pencil, CalendarClock, Check, X, UserX, AlertCircle } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, Insignia, PanelLateral, EstadoVacio } from '@/componentes/ui';
+import { Plus, Pencil, CalendarClock, Check, X, UserX, AlertCircle } from 'lucide-react';
+import { CabeceraPagina, AccionesTarjeta, type AccionMenu } from '@/componentes/Navegacion';
+import { Boton, Campo, Entrada, AreaTexto, Selector, Tarjeta, Insignia, PanelLateral, EstadoVacio, PasoDia } from '@/componentes/ui';
 import { guardarReservaMesa, cambiarEstadoReserva } from '@/acciones/mesas';
 import { ETIQUETA_RESERVA, TONO_RESERVA } from '@/lib/pedidos';
 import { aCampoFecha, aCampoFechaHora } from '@/lib/fechas';
-import { cn } from '@/lib/utils';
 import type { EstadoReservaMesa } from '@/generated/prisma/enums';
 
 export type ReservaVista = {
@@ -43,13 +42,16 @@ export default function ReservasCliente({
   mesas: MesaOpcion[];
 }) {
   const router = useRouter();
-  const elDia = new Date(dia);
+  // El día llega como el instante de su medianoche en el servidor; lo que importa es la
+  // FECHA (AAAA-MM-DD), que es lo que entiende el paso de día y lo que viaja en la URL.
+  const diaTexto = dia.slice(0, 10);
+  const elDia = new Date(`${diaTexto}T12:00:00`);
+  const hoy = aCampoFecha(new Date());
   const [panel, setPanel] = useState<ReservaVista | null | 'nueva'>(null);
   const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
 
-  const irA = (d: Date) => router.push(`/${slug}/reservas?dia=${aCampoFecha(d)}`);
-  const tira = Array.from({ length: 7 }, (_, i) => addDays(elDia, i - 2));
+  const irA = (d: string) => router.push(`/${slug}/reservas?dia=${d}`);
 
   const cambiar = (id: number, estado: EstadoReservaMesa, texto: string) =>
     arranca(async () => {
@@ -62,6 +64,21 @@ export default function ReservasCliente({
       router.refresh();
     });
 
+  // Las acciones de cada reserva: botones en escritorio, «⋯» en el teléfono. La que ya
+  // es su estado no se ofrece (no hace nada); cancelar es la destructiva y va al final.
+  const accionesDe = (r: ReservaVista): AccionMenu[] => [
+    ...(r.estado !== 'CUMPLIDA'
+      ? [{ etiqueta: 'Llegó', icono: Check, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'CUMPLIDA', 'Reserva cumplida') }]
+      : []),
+    ...(r.estado !== 'NO_PRESENTADO'
+      ? [{ etiqueta: 'No vino', icono: UserX, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'NO_PRESENTADO', 'Marcada como no presentada') }]
+      : []),
+    { etiqueta: 'Editar', icono: Pencil, alPulsar: () => setPanel(r) },
+    ...(r.estado !== 'CANCELADA'
+      ? [{ etiqueta: 'Cancelar', icono: X, peligro: true, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'CANCELADA', 'Reserva cancelada') }]
+      : []),
+  ];
+
   // Hora de partida razonable: hoy a las 20:00, que es cuando se reserva.
   const inicioPorDefecto = () => {
     const d = new Date(elDia);
@@ -72,98 +89,72 @@ export default function ReservasCliente({
   return (
     <>
       <CabeceraPagina
-        titulo={format(elDia, "EEEE d 'de' MMMM", { locale: es }).replace(/^\w/, (c) => c.toUpperCase())}
-        descripcion="Reservas de mesa"
+        titulo="Reservas"
+        descripcion="Las reservas de mesa del día"
         acciones={
-          <>
-            <div className="flex items-center gap-1">
-              <BotonIcono icono={ChevronLeft} titulo="Día anterior" onClick={() => irA(addDays(elDia, -1))} />
-              <Boton variante="secundario" onClick={() => irA(new Date())}>
-                Hoy
-              </Boton>
-              <BotonIcono icono={ChevronRight} titulo="Día siguiente" onClick={() => irA(addDays(elDia, 1))} />
-            </div>
-            <Boton icono={Plus} onClick={() => setPanel('nueva')} disabled={!mesas.length}>
-              Nueva reserva
-            </Boton>
-          </>
+          <Boton icono={Plus} onClick={() => setPanel('nueva')} disabled={!mesas.length}>
+            Nueva reserva
+          </Boton>
         }
       />
 
-      <div className="desplaza flex gap-2 overflow-x-auto border-b border-borde bg-tarjeta px-4 py-3 sm:px-6">
-        {tira.map((d) => {
-          const sel = isSameDay(d, elDia);
-          return (
-            <button
-              key={d.toISOString()}
-              onClick={() => irA(d)}
-              className={cn(
-                'flex w-14 shrink-0 flex-col items-center rounded-md border px-2 py-1.5 transition-colors foco-visible',
-                sel ? 'border-acento bg-acento text-acento-contraste' : 'border-borde bg-tarjeta hover:bg-realce',
-              )}
-            >
-              <span className="text-[10px] uppercase opacity-80">{format(d, 'EEE', { locale: es })}</span>
-              <span className="text-[15px] font-semibold">{format(d, 'd')}</span>
-            </button>
-          );
-        })}
-      </div>
+      <div className="space-y-4 p-4 sm:p-6">
+        {/*
+          El día es UN control [‹ | fecha | ›] (antes: flechas en la cabecera y una tira de
+          siete días que en el teléfono se deslizaba de lado; las dos decían lo mismo).
+        */}
+        <Tarjeta className="flex flex-col gap-2 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <PasoDia dia={diaTexto} alCambiar={irA} />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 px-1">
+            <p className="text-[13px] font-semibold first-letter:uppercase">
+              {format(elDia, "EEEE d 'de' MMMM", { locale: es })}
+            </p>
+            {reservas.length > 0 && (
+              <span className="text-[12px] text-tenue">
+                · {reservas.length} reserva{reservas.length === 1 ? '' : 's'}
+              </span>
+            )}
+            {diaTexto !== hoy && (
+              <Boton variante="fantasma" tamano="sm" className="ml-auto" onClick={() => irA(hoy)}>
+                Hoy
+              </Boton>
+            )}
+          </div>
+        </Tarjeta>
 
-      <div className="p-4 sm:p-6">
         {!mesas.length ? (
           <EstadoVacio titulo="No hay mesas" detalle="Crea las mesas en Configuración antes de reservar." />
         ) : !reservas.length ? (
           <EstadoVacio icono={CalendarClock} titulo="Sin reservas este día" />
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+          // Los botones de cada reserva van en su cabecera, en una fila: tarjetas anchas desde lg.
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {reservas.map((r) => (
               <Tarjeta key={r.id} className="p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold">{r.cliente}</p>
                     <p className="text-[12px] text-tenue">
                       Mesa {r.mesa} · {r.zona}
                       {r.personas ? ` · ${r.personas} personas` : ''}
                     </p>
                   </div>
+                  <div className="shrink-0">
+                    <AccionesTarjeta acciones={accionesDe(r)} />
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="text-[15px] font-semibold text-acento">
+                    {format(new Date(r.desde), 'HH:mm')} – {format(new Date(r.hasta), 'HH:mm')}
+                  </p>
                   <Insignia tono={TONO_RESERVA[r.estado]}>{ETIQUETA_RESERVA[r.estado]}</Insignia>
                 </div>
-                <p className="mt-2 text-[15px] font-semibold text-acento">
-                  {format(new Date(r.desde), 'HH:mm')} – {format(new Date(r.hasta), 'HH:mm')}
-                </p>
-                {r.telefono && <p className="text-[12px] text-tenue">{r.telefono}</p>}
+                {r.telefono && (
+                  <a href={`tel:${r.telefono}`} className="text-[12px] text-tenue hover:text-acento">
+                    {r.telefono}
+                  </a>
+                )}
                 {r.notas && <p className="mt-1 text-[12px] text-tenue">{r.notas}</p>}
-
-                <div className="mt-3 flex flex-wrap gap-1 border-t border-borde pt-3">
-                  <Boton
-                    tamano="sm"
-                    variante="secundario"
-                    icono={Check}
-                    disabled={enCurso || r.estado === 'CUMPLIDA'}
-                    onClick={() => cambiar(r.id, 'CUMPLIDA', 'Reserva cumplida')}
-                  >
-                    Llegó
-                  </Boton>
-                  <Boton
-                    tamano="sm"
-                    variante="secundario"
-                    icono={UserX}
-                    disabled={enCurso || r.estado === 'NO_PRESENTADO'}
-                    onClick={() => cambiar(r.id, 'NO_PRESENTADO', 'Marcada como no presentada')}
-                  >
-                    No vino
-                  </Boton>
-                  <Boton
-                    tamano="sm"
-                    variante="fantasma"
-                    icono={X}
-                    disabled={enCurso || r.estado === 'CANCELADA'}
-                    onClick={() => cambiar(r.id, 'CANCELADA', 'Reserva cancelada')}
-                  >
-                    Cancelar
-                  </Boton>
-                  <BotonIcono icono={Pencil} titulo="Editar" onClick={() => setPanel(r)} />
-                </div>
               </Tarjeta>
             ))}
           </div>

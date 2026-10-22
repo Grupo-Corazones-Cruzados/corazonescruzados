@@ -49,16 +49,17 @@ export default function CocinaCliente({ slug, comandas }: { slug: string; comand
     <>
       <CabeceraPagina
         titulo="Cocina"
-        descripcion={
-          pendientes.length
-            ? `${pendientes.length} ${pendientes.length === 1 ? 'comanda pendiente' : 'comandas pendientes'}`
-            : 'Todo al día'
+        descripcion="Las comandas por orden de llegada; las que ya salieron, al final"
+        extra={
+          pendientes.length ? (
+            <Insignia tono="aviso">
+              {pendientes.length} {pendientes.length === 1 ? 'comanda pendiente' : 'comandas pendientes'}
+            </Insignia>
+          ) : (
+            <Insignia tono="exito">Todo al día</Insignia>
+          )
         }
-        acciones={
-          <Boton variante="secundario" icono={RefreshCw} onClick={() => router.refresh()} disabled={enCurso}>
-            Actualizar
-          </Boton>
-        }
+        menu={[{ etiqueta: 'Actualizar', icono: RefreshCw, alPulsar: () => router.refresh(), deshabilitado: enCurso }]}
       />
 
       <div className="p-4 sm:p-6">

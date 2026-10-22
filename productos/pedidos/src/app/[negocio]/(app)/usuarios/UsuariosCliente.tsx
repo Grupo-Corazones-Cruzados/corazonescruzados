@@ -69,22 +69,20 @@ export default function UsuariosCliente({
       <CabeceraPagina
         titulo="Usuarios"
         descripcion="Quién entra al negocio y con qué permisos"
+        extra={cupo.tope !== null && (
+          <Insignia tono={sinSitio ? 'error' : cupo.quedan !== null && cupo.quedan <= 5 ? 'aviso' : 'neutro'}>
+            {cupo.usadas} de {cupo.tope} cuentas
+          </Insignia>
+        )}
         acciones={
-          <>
-            {cupo.tope !== null && (
-              <Insignia tono={sinSitio ? 'error' : cupo.quedan !== null && cupo.quedan <= 5 ? 'aviso' : 'neutro'}>
-                {cupo.usadas} de {cupo.tope} cuentas
-              </Insignia>
-            )}
-            <Boton
-              icono={UserPlus}
-              onClick={() => setCreando(true)}
-              disabled={sinSitio}
-              title={sinSitio ? `Tu plan permite ${cupo.tope} cuentas activas` : undefined}
-            >
-              Nueva cuenta
-            </Boton>
-          </>
+          <Boton
+            icono={UserPlus}
+            onClick={() => setCreando(true)}
+            disabled={sinSitio}
+            title={sinSitio ? `Tu plan permite ${cupo.tope} cuentas activas` : undefined}
+          >
+            Nueva cuenta
+          </Boton>
         }
       />
 
@@ -101,13 +99,13 @@ export default function UsuariosCliente({
                 clave: 'nombre',
                 titulo: 'Persona',
                 render: (u) => (
+                  // Sin el punto verde/gris: la cuenta desactivada lo dice con palabras.
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className={`h-2 w-2 rounded-full ${u.activo ? 'bg-exito' : 'bg-tenue'}`}
-                      title={u.activo ? 'Activa' : 'Desactivada'}
-                    />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{u.nombre}</p>
+                      <p className="flex items-center gap-2 font-semibold">
+                        <span className="truncate">{u.nombre}</span>
+                        {!u.activo && <Insignia tono="neutro">Desactivada</Insignia>}
+                      </p>
                       <p className="truncate text-[11px] text-tenue">
                         {u.usuario}
                         {u.id === yoSoy && ' · tú'}

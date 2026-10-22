@@ -6,14 +6,13 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Building2, Hand, Utensils, BellRing, Receipt, CalendarClock, Users } from 'lucide-react';
+import { Building2, Hand, CalendarClock, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, EstadoVacio, Insignia, RailFiltro, Tarjeta } from '@/componentes/ui';
+import { Boton, EstadoVacio, Insignia, RailFiltro, SelectorEstado, Tarjeta } from '@/componentes/ui';
 import { cambiarEstadoMesa } from '@/acciones/mesas';
 import { abrirPedido } from '@/acciones/pedidos';
 import { ETIQUETA_MESA, TONO_MESA, ETIQUETA_PEDIDO, TONO_PEDIDO, minutosDesde, textoEspera } from '@/lib/pedidos';
 import { dinero } from '@/lib/formato';
-import { cn } from '@/lib/utils';
 import type { EstadoMesa, EstadoPedido } from '@/generated/prisma/enums';
 
 type PedidoVista = {
@@ -52,13 +51,14 @@ function situacion(m: MesaVista): Filtro {
   return 'preparacion';
 }
 
-const FILTROS: { clave: Filtro; etiqueta: string; icono: React.ComponentType<{ className?: string }> }[] = [
-  { clave: 'todas', etiqueta: 'Todas', icono: Building2 },
-  { clave: 'esperando', etiqueta: 'Esperan atención', icono: Hand },
-  { clave: 'preparacion', etiqueta: 'En cocina', icono: Utensils },
-  { clave: 'listo', etiqueta: 'Listo para servir', icono: BellRing },
-  { clave: 'cobrar', etiqueta: 'Por cobrar', icono: Receipt },
-  { clave: 'libre', etiqueta: 'Libres', icono: Building2 },
+// Etiquetas cortas: van en un control segmentado de una fila; el nombre largo, en la pista.
+const FILTROS: { clave: Filtro; etiqueta: string; pista?: string }[] = [
+  { clave: 'todas', etiqueta: 'Todas' },
+  { clave: 'esperando', etiqueta: 'Esperan', pista: 'Esperan atención' },
+  { clave: 'preparacion', etiqueta: 'En cocina' },
+  { clave: 'listo', etiqueta: 'Listas', pista: 'Listo para servir' },
+  { clave: 'cobrar', etiqueta: 'Por cobrar' },
+  { clave: 'libre', etiqueta: 'Libres' },
 ];
 
 const TONO_SITUACION: Record<Filtro, 'exito' | 'aviso' | 'info' | 'neutro' | 'error'> = {
@@ -133,7 +133,7 @@ export default function PanelCliente({
   if (!zonas.length) {
     return (
       <>
-        <CabeceraPagina titulo={negocio} descripcion="Mesas" />
+        <CabeceraPagina titulo={negocio} descripcion="Tablero de mesas" />
         <EstadoVacio
           icono={Building2}
           titulo="Todavía no hay mesas"
@@ -150,45 +150,17 @@ export default function PanelCliente({
 
   return (
     <>
-      <CabeceraPagina
-        titulo={negocio}
-        descripcion="Tablero de mesas"
-        acciones={
-          <div className="flex flex-wrap items-center gap-2">
-            <Insignia tono="aviso">{cuenta('esperando')} esperan atención</Insignia>
-            <Insignia tono="info">{cuenta('preparacion')} en cocina</Insignia>
-            <Insignia tono="aviso">{cuenta('listo')} listo para servir</Insignia>
-            <Insignia tono="exito">{cuenta('cobrar')} por cobrar</Insignia>
-          </div>
-        }
-      />
+      {/*
+        Sin el resumen de cuentas en la cabecera: repetía las mismas cifras que el filtro
+        de situación lleva en cada opción (un dato no se dice dos veces).
+      */}
+      <CabeceraPagina titulo={negocio} descripcion="Tablero de mesas" />
 
-      <div className="border-b border-borde bg-tarjeta px-4 pb-3 sm:px-6">
-        <div className="desplaza flex gap-2 overflow-x-auto">
-          {FILTROS.map((f) => (
-            <button
-              key={f.clave}
-              onClick={() => setFiltro(f.clave)}
-              className={cn(
-                'flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors foco-visible',
-                filtro === f.clave
-                  ? 'bg-acento text-acento-contraste'
-                  : 'border border-borde bg-tarjeta text-tenue hover:bg-realce',
-              )}
-            >
-              <f.icono className="h-3.5 w-3.5" />
-              {f.etiqueta}
-              <span className="opacity-70">{cuenta(f.clave, mesasZona)}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:flex-row">
+      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row lg:items-start">
         <RailFiltro
           titulo="Zonas"
           opciones={[
-            { valor: 'todas', etiqueta: 'Todo el local', icono: Building2, conteo: todas.length },
+            { valor: 'todas', etiqueta: 'Todas', icono: Building2, conteo: todas.length },
             ...zonas.map((z) => ({
               valor: String(z.id),
               etiqueta: z.nombre,
@@ -200,137 +172,148 @@ export default function PanelCliente({
           alElegir={setZonaSel}
         />
 
-        <div className="min-w-0 flex-1">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
-            {visibles.map((m) => {
-              const s = situacion(m);
-              const espera = minutosDesde(new Date(m.desde));
-              const proxima = m.reservas[0];
-              return (
-                <Tarjeta key={m.id} className="flex flex-col overflow-hidden">
-                  <div className="flex items-start justify-between gap-2 p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold">{m.nombre}</p>
-                      {m.capacidad && (
-                        <p className="flex items-center gap-1 text-[11px] text-tenue">
-                          <Users className="h-3 w-3" /> {m.capacidad}
-                        </p>
-                      )}
-                    </div>
-                    <Insignia tono={TONO_SITUACION[s]}>{ETIQUETA_SITUACION[s]}</Insignia>
-                  </div>
-
-                  <div className="min-h-[52px] px-3 text-[12px]">
-                    {m.pedido ? (
-                      <>
-                        <p className="text-texto">
-                          Pedido #{m.pedido.numero} · {m.pedido.platos}{' '}
-                          {m.pedido.platos === 1 ? 'plato' : 'platos'}
-                          {m.pedido.pendientes > 0 && (
-                            <span className="text-aviso"> · {m.pedido.pendientes} en cocina</span>
+        <div className="min-w-0 flex-1 space-y-3">
+          <SelectorEstado
+            etiqueta="Ver"
+            className="w-full lg:w-auto"
+            activo={filtro}
+            alElegir={(v) => setFiltro(v as Filtro)}
+            opciones={FILTROS.map((f) => ({ valor: f.clave, etiqueta: f.etiqueta, pista: f.pista, conteo: cuenta(f.clave, mesasZona) }))}
+          />
+          <div className="flex flex-col gap-4 xl:flex-row">
+            <div className="min-w-0 flex-1">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
+                {visibles.map((m) => {
+                  const s = situacion(m);
+                  const espera = minutosDesde(new Date(m.desde));
+                  const proxima = m.reservas[0];
+                  return (
+                    <Tarjeta key={m.id} className="flex flex-col overflow-hidden">
+                      <div className="flex items-start justify-between gap-2 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold">{m.nombre}</p>
+                          {m.capacidad && (
+                            <p className="flex items-center gap-1 text-[11px] text-tenue">
+                              <Users className="h-3 w-3" /> {m.capacidad}
+                            </p>
                           )}
-                        </p>
-                        <p className="font-semibold text-acento">{dinero(m.pedido.total, moneda)}</p>
-                      </>
-                    ) : s === 'esperando' ? (
-                      <p className="font-semibold text-aviso">Lleva {textoEspera(espera)} esperando</p>
-                    ) : proxima ? (
-                      <p className="text-tenue">
-                        Reservada {format(new Date(proxima.desde), 'HH:mm')} · {proxima.cliente}
-                      </p>
-                    ) : (
-                      <p className="text-tenue">Libre desde hace {textoEspera(espera)}</p>
-                    )}
-                  </div>
+                        </div>
+                        <Insignia tono={TONO_SITUACION[s]}>{ETIQUETA_SITUACION[s]}</Insignia>
+                      </div>
 
-                  <div className="mt-auto flex gap-1 border-t border-borde p-2">
-                    {m.pedido ? (
-                      <Link href={`/${slug}/pedido/${m.pedido.id}`} className="flex-1">
-                        <Boton tamano="sm" className="w-full">
-                          Abrir pedido
-                        </Boton>
-                      </Link>
-                    ) : (
-                      <>
-                        {puedeTomarPedidos && (
-                          <Boton
-                            tamano="sm"
-                            className="flex-1"
-                            disabled={enCurso}
-                            onClick={() => {
-                              const d = new FormData();
-                              d.set('mesaId', String(m.id));
-                              accion(() => abrirPedido(slug, d), 'Pedido abierto', true);
-                            }}
-                          >
-                            Tomar pedido
-                          </Boton>
+                      <div className="min-h-[52px] px-3 text-[12px]">
+                        {m.pedido ? (
+                          <>
+                            <p className="text-texto">
+                              Pedido #{m.pedido.numero} · {m.pedido.platos}{' '}
+                              {m.pedido.platos === 1 ? 'plato' : 'platos'}
+                              {m.pedido.pendientes > 0 && (
+                                <span className="text-aviso"> · {m.pedido.pendientes} en cocina</span>
+                              )}
+                            </p>
+                            <p className="font-semibold text-acento">{dinero(m.pedido.total, moneda)}</p>
+                          </>
+                        ) : s === 'esperando' ? (
+                          <p className="font-semibold text-aviso">Lleva {textoEspera(espera)} esperando</p>
+                        ) : proxima ? (
+                          <p className="text-tenue">
+                            Reservada {format(new Date(proxima.desde), 'HH:mm')} · {proxima.cliente}
+                          </p>
+                        ) : (
+                          <p className="text-tenue">Libre desde hace {textoEspera(espera)}</p>
                         )}
-                        {puedeOperar && (
-                          <Boton
-                            tamano="sm"
-                            variante="secundario"
-                            title={
-                              s === 'esperando'
-                                ? 'Quitar la marca de espera'
-                                : 'Marcar que esta mesa espera atención'
-                            }
-                            disabled={enCurso}
-                            onClick={() =>
-                              accion(
-                                () =>
-                                  cambiarEstadoMesa(
-                                    slug,
-                                    m.id,
-                                    s === 'esperando' ? 'LIBRE' : 'ESPERANDO_ATENCION',
-                                  ),
-                                s === 'esperando' ? 'Marca retirada' : 'Mesa marcada: espera atención',
-                              )
-                            }
-                          >
-                            <Hand className="h-4 w-4" />
-                          </Boton>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </Tarjeta>
-              );
-            })}
-          </div>
-          {!visibles.length && <EstadoVacio titulo="Ninguna mesa en esta situación" icono={Building2} />}
-        </div>
+                      </div>
 
-        <div className="xl:w-72 xl:shrink-0">
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <CalendarClock className="h-4 w-4 text-acento" />
-            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-tenue">
-              Reservas de hoy {reservasHoy.length > 0 && `(${reservasHoy.length})`}
-            </h2>
-          </div>
-          {reservasHoy.length === 0 ? (
-            <Tarjeta className="p-6 text-center">
-              <CalendarClock className="mx-auto mb-2 h-8 w-8 text-borde" />
-              <p className="text-[12px] text-tenue">Sin reservas para hoy</p>
-            </Tarjeta>
-          ) : (
-            <div className="desplaza max-h-[calc(100vh-220px)] space-y-2 overflow-y-auto">
-              {reservasHoy.map((r) => (
-                <Tarjeta key={r.id} className="flex items-center gap-3 p-3">
-                  <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded bg-acento-suave text-[12px] font-bold text-acento">
-                    {format(new Date(r.desde), 'HH:mm')}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-semibold">{r.cliente}</p>
-                    <p className="truncate text-[11px] text-tenue">
-                      {r.mesa}
-                      {r.personas ? ` · ${r.personas} personas` : ''}
-                    </p>
-                  </div>
-                </Tarjeta>
-              ))}
+                      <div className="mt-auto flex gap-1 border-t border-borde p-2">
+                        {m.pedido ? (
+                          <Link href={`/${slug}/pedido/${m.pedido.id}`} className="flex-1">
+                            <Boton tamano="sm" className="w-full">
+                              Abrir pedido
+                            </Boton>
+                          </Link>
+                        ) : (
+                          <>
+                            {puedeTomarPedidos && (
+                              <Boton
+                                tamano="sm"
+                                className="flex-1"
+                                disabled={enCurso}
+                                onClick={() => {
+                                  const d = new FormData();
+                                  d.set('mesaId', String(m.id));
+                                  accion(() => abrirPedido(slug, d), 'Pedido abierto', true);
+                                }}
+                              >
+                                Tomar pedido
+                              </Boton>
+                            )}
+                            {puedeOperar && (
+                              <Boton
+                                tamano="sm"
+                                variante="secundario"
+                                title={
+                                  s === 'esperando'
+                                    ? 'Quitar la marca de espera'
+                                    : 'Marcar que esta mesa espera atención'
+                                }
+                                disabled={enCurso}
+                                onClick={() =>
+                                  accion(
+                                    () =>
+                                      cambiarEstadoMesa(
+                                        slug,
+                                        m.id,
+                                        s === 'esperando' ? 'LIBRE' : 'ESPERANDO_ATENCION',
+                                      ),
+                                    s === 'esperando' ? 'Marca retirada' : 'Mesa marcada: espera atención',
+                                  )
+                                }
+                              >
+                                <Hand className="h-4 w-4" />
+                              </Boton>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </Tarjeta>
+                  );
+                })}
+              </div>
+              {!visibles.length && <EstadoVacio titulo="Ninguna mesa en esta situación" icono={Building2} />}
             </div>
-          )}
+
+            <div className="xl:w-72 xl:shrink-0">
+              <div className="mb-2 flex items-center gap-2 px-1">
+                <CalendarClock className="h-4 w-4 text-acento" />
+                <h2 className="text-[10px] font-semibold uppercase tracking-wider text-tenue">
+                  Reservas de hoy {reservasHoy.length > 0 && `(${reservasHoy.length})`}
+                </h2>
+              </div>
+              {reservasHoy.length === 0 ? (
+                <Tarjeta className="p-6 text-center">
+                  <CalendarClock className="mx-auto mb-2 h-8 w-8 text-borde" />
+                  <p className="text-[12px] text-tenue">Sin reservas para hoy</p>
+                </Tarjeta>
+              ) : (
+                <div className="desplaza max-h-[calc(100vh-220px)] space-y-2 overflow-y-auto">
+                  {reservasHoy.map((r) => (
+                    <Tarjeta key={r.id} className="flex items-center gap-3 p-3">
+                      <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded bg-acento-suave text-[12px] font-bold text-acento">
+                        {format(new Date(r.desde), 'HH:mm')}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12px] font-semibold">{r.cliente}</p>
+                        <p className="truncate text-[11px] text-tenue">
+                          {r.mesa}
+                          {r.personas ? ` · ${r.personas} personas` : ''}
+                        </p>
+                      </div>
+                    </Tarjeta>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </>

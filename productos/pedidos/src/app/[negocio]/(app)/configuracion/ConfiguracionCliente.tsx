@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Palette, Building2, Receipt, CreditCard, KeyRound, Plus, Pencil, Trash2, Upload, AlertCircle, Users } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { CabeceraPagina, AccionesTarjeta } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, Campo, Entrada, Selector, Tarjeta, RailFiltro, PanelLateral, Confirmar, Insignia, EstadoVacio } from '@/componentes/ui';
 import { LogoHotel } from '@/componentes/Marca';
 import { ACENTO_GCC, tokensDeMarca } from '@/lib/marca';
@@ -331,8 +331,8 @@ function SeccionLugares({ slug, zonas }: { slug: string; zonas: ZonaVista[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="text-[14px] font-semibold">Zonas y mesas</h2>
           <p className="text-[12px] text-tenue">Las zonas agrupan las mesas; el tablero se dibuja sobre ellas.</p>
         </div>
@@ -352,9 +352,13 @@ function SeccionLugares({ slug, zonas }: { slug: string; zonas: ZonaVista[] }) {
               <p className="truncate text-[14px] font-semibold">{z.nombre}</p>
               <p className="text-[11px] text-tenue">{z.mesas.length} mesas</p>
             </div>
-            <Boton variante="secundario" tamano="sm" icono={Plus} onClick={() => setPanelMesa({ m: null, zonaId: z.id })}>Mesa</Boton>
-            <BotonIcono icono={Pencil} titulo="Editar zona" onClick={() => setPanelZona(z)} />
-            <BotonIcono icono={Trash2} titulo="Eliminar zona" className="hover:bg-error-suave hover:text-error" onClick={() => setBorrar({ tipo: 'zona', id: z.id, nombre: z.nombre })} />
+            <AccionesTarjeta
+              acciones={[
+                { etiqueta: 'Nueva mesa', icono: Plus, alPulsar: () => setPanelMesa({ m: null, zonaId: z.id }) },
+                { etiqueta: 'Editar zona', icono: Pencil, alPulsar: () => setPanelZona(z) },
+                { etiqueta: 'Eliminar zona', icono: Trash2, peligro: true, alPulsar: () => setBorrar({ tipo: 'zona', id: z.id, nombre: z.nombre }) },
+              ]}
+            />
           </div>
           {z.mesas.length === 0 ? (
             <p className="px-4 py-5 text-center text-[12px] text-tenue">Esta zona todavía no tiene mesas.</p>

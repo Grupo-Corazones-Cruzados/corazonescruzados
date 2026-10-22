@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
-import { X, Search, Loader2, Inbox } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { X, Search, Loader2, Inbox, ChevronDown, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sumarDias } from '@/lib/fechas';
 
 /**
  * CATÁLOGO DE CONTROLES — una sola definición por control.
@@ -156,37 +157,24 @@ const TONOS = {
 
 export type Tono = keyof typeof TONOS;
 
-/** Píldora neutra + punto semántico: la identidad nunca depende solo del color. */
+/**
+ * El estado es TEXTO DE COLOR, sin píldora ni punto (Fernando, 2026-10-22: «el estado ya
+ * no sea un punto con fondo de relleno de color, me basta con que el texto tenga un
+ * color»). La palabra ya dice el estado, así que no depende solo del color.
+ */
 export function Insignia({
   tono = 'neutro',
   icono: Icono,
   children,
 }: {
   tono?: Tono;
-  /** Un icono EN LUGAR del punto. Ver la nota de abajo. */
+  /** Un icono delante del texto, cuando de verdad aporta. */
   icono?: React.ComponentType<{ className?: string }>;
   children: ReactNode;
 }) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full bg-realce px-2 py-0.5 text-[11px] font-semibold',
-        TONOS[tono],
-      )}
-    >
-      {/*
-        ⚠️ EL PUNTO Y EL ICONO SON EXCLUYENTES (Fernando, 2026-09-23: «se ve súper mal que
-        pongas un icono o texto y a la izquierda del todo un punto negro»).
-
-        El punto existe para que el estado no dependa SOLO del color —quien no distingue
-        verde de rojo lo lee igual—. Pero en cuanto hay un icono, ese trabajo ya está
-        hecho: el punto pasa a ser un adorno que estorba, y dos marcas para una sola cosa
-        se leen peor que una.
-
-        Por eso la regla vive AQUÍ y no en cada llamada: así no se puede incumplir por
-        olvido.
-      */}
-      {Icono ? <Icono className="h-3 w-3 shrink-0" /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+    <span className={cn('inline-flex items-center gap-1 text-[12px] font-semibold', TONOS[tono])}>
+      {Icono && <Icono className="h-3 w-3 shrink-0" />}
       {children}
     </span>
   );
@@ -257,30 +245,41 @@ export function PanelLateral({
 }) {
   const anchos = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl' }[ancho];
   useEscape(abierto, alCerrar);
-  if (!abierto) return null;
+  const { montado, visible } = useAparicion(abierto);
+  const cuerpo = useUltimoContenido(abierto, children);
+  const pieVisto = useUltimoContenido(abierto, pie);
+  const tituloVisto = useUltimoContenido(abierto, titulo);
+  const descripcionVista = useUltimoContenido(abierto, descripcion);
+  if (!montado) return null;
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={alCerrar} aria-hidden />
+    <div className={cn('fixed inset-0 z-50 flex justify-end', !abierto && 'pointer-events-none')}>
+      <div
+        className={cn('absolute inset-0 bg-black/30 transition-opacity duration-200', visible ? 'opacity-100' : 'opacity-0')}
+        onClick={alCerrar}
+        aria-hidden
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
         className={cn(
           'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
+          'transition-transform duration-200 ease-out',
+          visible ? 'translate-x-0' : 'translate-x-full',
           anchos,
         )}
       >
         <div className="flex items-start gap-3 border-b border-borde px-5 py-4 shrink-0">
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[15px] font-semibold text-texto">{titulo}</h2>
-            {descripcion && <p className="mt-0.5 text-[12px] text-tenue">{descripcion}</p>}
+            <h2 className="truncate text-[15px] font-semibold text-texto">{tituloVisto}</h2>
+            {descripcionVista && <p className="mt-0.5 text-[12px] text-tenue">{descripcionVista}</p>}
           </div>
           <BotonIcono icono={X} titulo="Cerrar" onClick={alCerrar} />
         </div>
-        <div className="desplaza min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {pie && (
+        <div className="desplaza min-h-0 flex-1 overflow-y-auto px-5 py-4">{cuerpo}</div>
+        {pieVisto && (
           <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3 shrink-0">
-            {pie}
+            {pieVisto}
           </div>
         )}
       </div>
@@ -303,23 +302,35 @@ export function Ventanita({
   children: ReactNode;
 }) {
   useEscape(abierto, alCerrar);
-  if (!abierto) return null;
+  const { montado, visible } = useAparicion(abierto);
+  const cuerpo = useUltimoContenido(abierto, children);
+  const pieVisto = useUltimoContenido(abierto, pie);
+  const tituloVisto = useUltimoContenido(abierto, titulo);
+  if (!montado) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <div className="absolute inset-0 bg-black/30" onClick={alCerrar} aria-hidden />
+    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]', !abierto && 'pointer-events-none')}>
+      <div
+        className={cn('absolute inset-0 bg-black/30 transition-opacity duration-200', visible ? 'opacity-100' : 'opacity-0')}
+        onClick={alCerrar}
+        aria-hidden
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="relative w-full max-w-md rounded-md border border-borde bg-tarjeta shadow-2xl"
+        className={cn(
+          'relative w-full max-w-md rounded-md border border-borde bg-tarjeta shadow-2xl',
+          'transition-[opacity,transform] duration-200 ease-out',
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
+        )}
       >
         <div className="flex items-center gap-3 border-b border-borde px-5 py-3.5">
-          <h2 className="flex-1 truncate text-[15px] font-semibold">{titulo}</h2>
+          <h2 className="flex-1 truncate text-[15px] font-semibold">{tituloVisto}</h2>
           <BotonIcono icono={X} titulo="Cerrar" onClick={alCerrar} />
         </div>
-        <div className="px-5 py-4">{children}</div>
-        {pie && (
-          <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3">{pie}</div>
+        <div className="px-5 py-4">{cuerpo}</div>
+        {pieVisto && (
+          <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3">{pieVisto}</div>
         )}
       </div>
     </div>
@@ -378,6 +389,50 @@ function useEscape(activo: boolean, alCerrar: () => void) {
   }, [activo]);
 }
 
+// ── Aparición animada ───────────────────────────────────────────────────────
+/**
+ * LO QUE APARECE, ENTRA CON MOVIMIENTO (Fernando, 2026-10-22: «aplicar animaciones de
+ * movimiento cuando se pueda durante la navegación»). Paneles, menús y ventanitas no
+ * saltan: entran y salen en `DURACION_APARICION` ms.
+ *
+ * `montado` dice si se pinta; `visible`, hacia dónde va la transición. Al abrir se
+ * monta fuera de sitio y un cuadro después se marca visible (sin ese cuadro el
+ * navegador no ve el «antes» y no hay transición). Al cerrar se quita `visible` y se
+ * desmonta cuando la salida terminó, así escondido sigue sin existir.
+ * Con «reducir movimiento» del sistema, `globals.css` deja las transiciones en ~0.
+ */
+export const DURACION_APARICION = 200;
+
+export function useAparicion(abierto: boolean) {
+  const [montado, setMontado] = useState(abierto);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (abierto) {
+      setMontado(true);
+      let r2 = 0;
+      const r1 = requestAnimationFrame(() => (r2 = requestAnimationFrame(() => setVisible(true))));
+      return () => {
+        cancelAnimationFrame(r1);
+        cancelAnimationFrame(r2);
+      };
+    }
+    setVisible(false);
+    const t = setTimeout(() => setMontado(false), DURACION_APARICION);
+    return () => clearTimeout(t);
+  }, [abierto]);
+  return { montado, visible };
+}
+
+/**
+ * Lo último que se pintó mientras estaba abierto. Durante la salida el padre suele
+ * haber vaciado ya su estado (`editando = null`): sin esto el panel se iría en blanco.
+ */
+function useUltimoContenido(abierto: boolean, contenido: ReactNode) {
+  const ref = useRef(contenido);
+  if (abierto) ref.current = contenido;
+  return abierto ? contenido : ref.current;
+}
+
 // ── Rail de filtro ──────────────────────────────────────────────────────────
 export type OpcionRail = {
   valor: string;
@@ -387,7 +442,14 @@ export type OpcionRail = {
   pista?: string;
 };
 
-/** El ÚNICO rail de filtro. Uno nuevo se hace con esto, nunca copiando el marcado. */
+/**
+ * El ÚNICO rail de filtro. Uno nuevo se hace con esto, nunca copiando el marcado.
+ *
+ * En el teléfono NO es una tira que se desliza a la derecha (las últimas opciones
+ * quedaban fuera de la vista; Fernando, 2026-10-22): con hasta 3 opciones es un
+ * segmentado que reparte el ancho a partes iguales; con más, un `<select>` nativo
+ * a todo el ancho, como `SelectorEstado`. Desde `lg`, el raíl vertical de siempre.
+ */
 export function RailFiltro({
   opciones,
   activo,
@@ -402,40 +464,290 @@ export function RailFiltro({
   className?: string;
 }) {
   return (
-    <div className={cn('tarjeta p-1.5 lg:w-[220px] shrink-0', className)}>
-      {titulo && (
-        <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-tenue">
-          {titulo}
-        </p>
+    <>
+      {opciones.length <= 3 ? (
+        <div role="tablist" aria-label={titulo}
+          className={cn('grid gap-0.5 rounded-md border border-borde bg-realce p-0.5 lg:hidden', className)}
+          style={{ gridTemplateColumns: `repeat(${opciones.length}, minmax(0, 1fr))` }}>
+          {opciones.map((o) => {
+            const sel = o.valor === activo;
+            const Icono = o.icono;
+            return (
+              <button key={o.valor} type="button" role="tab" aria-selected={sel} onClick={() => alElegir(o.valor)}
+                className={cn(
+                  'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded px-2 text-[13px] transition-colors duration-200 foco-visible',
+                  sel ? 'bg-tarjeta font-semibold text-acento shadow-sm ring-1 ring-borde' : 'text-tenue hover:text-texto',
+                )}>
+                {Icono && <Icono className="h-4 w-4 shrink-0" />}
+                <span className="truncate">{o.etiqueta}</span>
+                {o.conteo !== undefined && <span className="text-[11px] font-normal">{o.conteo}</span>}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={cn('relative lg:hidden', className)}>
+          <select value={activo} onChange={(e) => alElegir(e.target.value)} aria-label={titulo ?? 'Sección'}
+            className="campo appearance-none pr-8 font-semibold">
+            {opciones.map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.etiqueta}{o.conteo !== undefined ? ` · ${o.conteo}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
-      <div className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+      <div className={cn('tarjeta hidden p-1.5 lg:block lg:w-[220px] shrink-0', className)}>
+        {titulo && (
+          <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-tenue">
+            {titulo}
+          </p>
+        )}
+        <div className="flex flex-col gap-1">
+          {opciones.map((o) => {
+            const sel = o.valor === activo;
+            const Icono = o.icono;
+            return (
+              <button
+                key={o.valor}
+                onClick={() => alElegir(o.valor)}
+                className={cn(
+                  'flex w-full items-center gap-2.5 whitespace-nowrap rounded px-2.5 py-2 text-left text-[13px] transition-colors foco-visible',
+                  sel
+                    ? 'bg-acento-suave text-acento font-semibold border-l-2 border-acento'
+                    : 'text-texto hover:bg-realce border-l-2 border-transparent',
+                )}
+              >
+                {Icono && <Icono className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{o.etiqueta}</span>
+                  {o.pista && <span className="block truncate text-[11px] text-tenue">{o.pista}</span>}
+                </span>
+                {o.conteo !== undefined && (
+                  <span className={cn('rounded-full px-1.5 text-[11px]', sel ? 'text-acento' : 'text-tenue')}>
+                    {o.conteo}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Burbuja de detalles ─────────────────────────────────────────────────────
+/** Un dato secundario de una cabecera: correo, teléfono, fechas… */
+export type Detalle = {
+  icono: React.ComponentType<{ className?: string }>;
+  etiqueta: string;
+  valor: string;
+  /** `mailto:`/`tel:` para que en el teléfono se pueda escribir o llamar desde la burbuja. */
+  href?: string;
+};
+
+/**
+ * LO QUE IBA BAJO EL TÍTULO VA EN UNA BURBUJA (Fernando, 2026-10-22). La descripción de la
+ * página y los datos secundarios (correo, teléfono, fechas) no se escriben como líneas bajo
+ * el título: «ocupan espacio y rellenan de forma innecesaria». Van detrás de un botón (i)
+ * junto al título que abre una burbuja con el mismo contenido, con movimiento, y se cierra
+ * al tocar fuera o con Escape.
+ */
+export function BurbujaDetalles({ texto, detalles = [], titulo = 'Detalles', className }: { texto?: string; detalles?: Detalle[]; titulo?: string; className?: string }) {
+  const [abierta, setAbierta] = useState(false);
+  const { montado, visible } = useAparicion(abierta);
+  const boton = useRef<HTMLButtonElement>(null);
+  // Fija y medida al abrir: el botón puede estar pegado a cualquier borde de la pantalla, y la
+  // burbuja se encaja dentro de ella; la flecha sigue apuntando al botón.
+  const [sitio, setSitio] = useState({ top: 0, left: 0, flecha: 0, ancho: 288 });
+  useLayoutEffect(() => {
+    if (!abierta || !boton.current) return;
+    const r = boton.current.getBoundingClientRect();
+    const ancho = Math.min(288, window.innerWidth - 32);
+    const centro = r.left + r.width / 2;
+    const left = Math.max(16, Math.min(centro - ancho / 2, window.innerWidth - 16 - ancho));
+    setSitio({ top: r.bottom + 8, left, flecha: centro - left, ancho });
+  }, [abierta]);
+  useEffect(() => {
+    if (!abierta) return;
+    const cerrar = () => setAbierta(false);
+    window.addEventListener('scroll', cerrar, { passive: true });
+    window.addEventListener('resize', cerrar);
+    return () => { window.removeEventListener('scroll', cerrar); window.removeEventListener('resize', cerrar); };
+  }, [abierta]);
+  useEffect(() => {
+    if (!abierta) return;
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && setAbierta(false);
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, [abierta]);
+  return (
+    <span className={cn('relative inline-flex', className)}>
+      <button ref={boton} type="button" aria-label={titulo} title={titulo} aria-expanded={abierta} onClick={() => setAbierta((v) => !v)}
+        className={cn('foco-visible flex h-7 w-7 items-center justify-center rounded-full transition-colors',
+          abierta ? 'bg-acento-suave text-acento' : 'text-tenue hover:bg-realce hover:text-texto')}>
+        <Info className="h-4 w-4" />
+      </button>
+      {montado && (
+        <>
+          <span className="fixed inset-0 z-40" onClick={() => setAbierta(false)} />
+          <span role="dialog" aria-label={titulo}
+            style={{ top: sitio.top, left: sitio.left, width: sitio.ancho, transformOrigin: `${sitio.flecha}px 0` }}
+            className={cn(
+              'fixed z-50 block rounded-md border border-borde bg-tarjeta p-1.5 shadow-lg',
+              'transition duration-200 ease-out',
+              visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
+            )}>
+            <span aria-hidden style={{ left: sitio.flecha }} className="absolute -top-1.5 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-borde bg-tarjeta" />
+            {texto && <span className="relative block px-2.5 py-2 text-[13px] leading-snug text-texto">{texto}</span>}
+            {detalles.map((d) => {
+              const Icono = d.icono;
+              const fila = (
+                <>
+                  <Icono className="mt-0.5 h-4 w-4 shrink-0 text-tenue" />
+                  <span className="min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-tenue">{d.etiqueta}</span>
+                    <span className={cn('block break-words text-[13px]', d.href ? 'text-acento' : 'text-texto')}>{d.valor}</span>
+                  </span>
+                </>
+              );
+              const clase = 'relative flex items-start gap-2.5 rounded px-2.5 py-2';
+              return d.href
+                ? <a key={d.etiqueta} href={d.href} className={cn(clase, 'hover:bg-realce')}>{fila}</a>
+                : <span key={d.etiqueta} className={clase}>{fila}</span>;
+            })}
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+
+// ── Paso de día ─────────────────────────────────────────────────────────────
+/**
+ * El día como UN control `[‹ | fecha | ›]`: un borde, las flechas dentro. En el
+ * teléfono ocupa el ancho entero; desde `sm`, su ancho natural. Lo usa la barra de
+ * Reservas.
+ */
+export function PasoDia({ dia, alCambiar, className }: { dia: string; alCambiar: (dia: string) => void; className?: string }) {
+  const flecha = 'foco-visible flex w-10 shrink-0 items-center justify-center text-tenue transition-colors hover:bg-realce hover:text-texto';
+  return (
+    <div className={cn('flex h-[34px] w-full overflow-hidden rounded border border-borde bg-tarjeta focus-within:border-acento sm:w-auto', className)}>
+      <button type="button" className={flecha} onClick={() => alCambiar(sumarDias(dia, -1))} aria-label="Día anterior">
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <input
+        type="date"
+        value={dia}
+        onChange={(e) => e.target.value && alCambiar(e.target.value)}
+        aria-label="Día"
+        className="min-w-0 flex-1 border-x border-borde bg-transparent px-2 text-center text-[13px] font-semibold text-texto outline-none sm:w-40 sm:flex-none"
+      />
+      <button type="button" className={flecha} onClick={() => alCambiar(sumarDias(dia, 1))} aria-label="Día siguiente">
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+// ── Selector de estado ──────────────────────────────────────────────────────
+/**
+ * EL FILTRO DE ESTADOS ES UN SOLO CONTROL (Fernando, 2026-10-22: «una forma de filtrar
+ * los estados que se vea bien como un solo control selector»). Sustituye al raíl
+ * vertical para filtrar una lista; el raíl queda para navegar entre SECCIONES.
+ *
+ * - Escritorio (lg+): control segmentado. Una cápsula blanca marca la opción elegida y
+ *   se DESLIZA hasta la nueva (regla de movimiento); cada segmento lleva su cuenta.
+ * - Teléfono: un `<select>` nativo con la misma lista («Activos · 7»): una fila, el
+ *   selector del sistema, nada escondido a la derecha.
+ * Las dos versiones se montan y el CSS enseña una: no son diálogos, no bloquean nada.
+ */
+export function SelectorEstado({
+  opciones,
+  activo,
+  alElegir,
+  etiqueta = 'Estado',
+  className,
+}: {
+  opciones: OpcionRail[];
+  activo: string;
+  alElegir: (v: string) => void;
+  /** Para lectores de pantalla y como prefijo en el teléfono. */
+  etiqueta?: string;
+  className?: string;
+}) {
+  const caja = useRef<HTMLDivElement>(null);
+  const [marca, setMarca] = useState<{ left: number; width: number } | null>(null);
+
+  // La cápsula se coloca midiendo el botón elegido; se vuelve a medir si cambia el
+  // tamaño (las cuentas cambian el ancho de los segmentos).
+  useLayoutEffect(() => {
+    const medir = () => {
+      const b = caja.current?.querySelector<HTMLElement>('[data-sel="1"]');
+      if (b) setMarca({ left: b.offsetLeft, width: b.offsetWidth });
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (caja.current) ro.observe(caja.current);
+    return () => ro.disconnect();
+  }, [activo, opciones]);
+
+  return (
+    <div className={className}>
+      <div
+        ref={caja}
+        role="radiogroup"
+        aria-label={etiqueta}
+        className="relative hidden max-w-full items-center rounded-md border border-borde bg-realce p-0.5 lg:inline-flex"
+      >
+        {marca && (
+          <span
+            aria-hidden
+            className="absolute inset-y-0.5 rounded bg-tarjeta shadow-sm ring-1 ring-borde transition-[left,width] duration-200 ease-out"
+            style={{ left: marca.left, width: marca.width }}
+          />
+        )}
         {opciones.map((o) => {
           const sel = o.valor === activo;
-          const Icono = o.icono;
           return (
             <button
               key={o.valor}
+              type="button"
+              role="radio"
+              aria-checked={sel}
+              data-sel={sel ? '1' : undefined}
+              title={o.pista}
               onClick={() => alElegir(o.valor)}
               className={cn(
-                'flex w-full items-center gap-2.5 whitespace-nowrap rounded px-2.5 py-2 text-left text-[13px] transition-colors foco-visible',
-                sel
-                  ? 'bg-acento-suave text-acento font-semibold border-l-2 border-acento'
-                  : 'text-texto hover:bg-realce border-l-2 border-transparent',
+                'relative flex h-8 items-center gap-1.5 whitespace-nowrap rounded px-3 text-[13px] transition-colors foco-visible',
+                sel ? 'font-semibold text-texto' : 'text-tenue hover:text-texto',
               )}
             >
-              {Icono && <Icono className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{o.etiqueta}</span>
-                {o.pista && <span className="block truncate text-[11px] text-tenue">{o.pista}</span>}
-              </span>
+              {o.etiqueta}
               {o.conteo !== undefined && (
-                <span className={cn('rounded-full px-1.5 text-[11px]', sel ? 'text-acento' : 'text-tenue')}>
-                  {o.conteo}
-                </span>
+                <span className={cn('text-[11px] tabular-nums', sel ? 'text-acento' : 'text-tenue')}>{o.conteo}</span>
               )}
             </button>
           );
         })}
+      </div>
+
+      <div className="relative lg:hidden">
+        <select
+          aria-label={etiqueta}
+          value={activo}
+          onChange={(e) => alElegir(e.target.value)}
+          className="campo appearance-none pr-8 font-semibold"
+        >
+          {opciones.map((o) => (
+            <option key={o.valor} value={o.valor}>
+              {etiqueta}: {o.etiqueta}
+              {o.conteo !== undefined ? ` · ${o.conteo}` : ''}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
       </div>
     </div>
   );
@@ -486,8 +798,51 @@ export function Tabla<T>({
   if (!filas.length) return <>{vacio ?? <EstadoVacio titulo="No hay nada que mostrar" />}</>;
   const alinea = (a?: string) =>
     a === 'der' ? 'text-right' : a === 'centro' ? 'text-center' : 'text-left';
+  /*
+    EN EL TELÉFONO, GALERÍA Y NO TABLA (Fernando, 2026-10-22: «como tabla hay que
+    deslizarse también a la derecha y a veces se pierden de vista datos»). Cada fila es
+    una tarjeta: la primera columna es su cabecera, las columnas sin título (acciones)
+    van a su derecha y el resto es una rejilla «TÍTULO / valor» de dos columnas. Todo
+    a la vista, sin desplazamiento lateral. Lo hace la tabla, así que vale para todas.
+  */
+  const [cabeza, ...resto] = columnas;
+  const acciones = resto.filter((c) => !c.titulo);
+  const datos = resto.filter((c) => c.titulo);
   return (
-    <div className="desplaza overflow-x-auto">
+    <>
+    <div className="space-y-2 bg-fondo p-2 md:hidden">
+      {filas.map((f) => (
+        <div
+          key={claveFila(f)}
+          onClick={alPulsarFila ? () => alPulsarFila(f) : undefined}
+          className={cn(
+            'rounded-md border border-borde bg-tarjeta p-3.5 text-[13px] transition-colors',
+            alPulsarFila && 'cursor-pointer active:bg-realce',
+            filaActiva?.(f) && 'border-acento bg-acento-suave',
+          )}
+        >
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">{cabeza.render(f)}</div>
+            {acciones.map((c) => (
+              <div key={c.clave} className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                {c.render(f)}
+              </div>
+            ))}
+          </div>
+          {datos.length > 0 && (
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-borde pt-3">
+              {datos.map((c) => (
+                <div key={c.clave} className="min-w-0">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-tenue">{c.titulo}</dt>
+                  <dd className="mt-0.5 break-words">{c.render(f)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      ))}
+    </div>
+    <div className="desplaza hidden overflow-x-auto md:block">
       <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-borde bg-tarjeta">
@@ -526,5 +881,6 @@ export function Tabla<T>({
         </tbody>
       </table>
     </div>
+    </>
   );
 }

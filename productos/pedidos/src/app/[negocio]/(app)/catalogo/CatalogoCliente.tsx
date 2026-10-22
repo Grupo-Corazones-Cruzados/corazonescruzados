@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, BookOpen, Upload, AlertCircle, EyeOff, Eye } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
+import { CabeceraPagina, AccionesTarjeta, MenuMas } from '@/componentes/Navegacion';
 import {
   Boton,
   BotonIcono,
@@ -74,16 +74,31 @@ export default function CatalogoCliente({
     router.refresh();
   };
 
+  const alternar = (p: ProductoVista) =>
+    arranca(async () => {
+      const r = await alternarDisponible(slug, p.id);
+      if (!r.ok) {
+        toast.error(r.error);
+        return;
+      }
+      toast.success(p.disponible ? `«${p.nombre}» agotado` : `«${p.nombre}» disponible`);
+      router.refresh();
+    });
+
   return (
     <>
       <CabeceraPagina
         titulo="Carta"
-        descripcion={
-          aplicaIva
-            ? precioConIva
-              ? 'Los precios que escribas YA INCLUYEN el IVA'
-              : 'A los precios que escribas se les SUMARÁ el IVA al cobrar'
-            : 'Este negocio no cobra IVA'
+        descripcion="Las categorías y los productos que ofrecen los meseros"
+        // Cómo se leen los precios es lo que hay que tener presente al escribirlos: una línea.
+        extra={
+          <Insignia tono={aplicaIva ? 'info' : 'neutro'}>
+            {aplicaIva
+              ? precioConIva
+                ? 'Los precios que escribas ya incluyen el IVA'
+                : 'A los precios que escribas se les sumará el IVA al cobrar'
+              : 'Este negocio no cobra IVA'}
+          </Insignia>
         }
         acciones={
           <Boton icono={Plus} onClick={() => setPanelCategoria('nueva')}>
@@ -110,20 +125,12 @@ export default function CatalogoCliente({
                 <p className="truncate text-[14px] font-semibold">{c.nombre}</p>
                 <p className="text-[11px] text-tenue">{c.productos.length} productos</p>
               </div>
-              <Boton
-                variante="secundario"
-                tamano="sm"
-                icono={Plus}
-                onClick={() => setPanelProducto({ p: null, categoriaId: c.id })}
-              >
-                Producto
-              </Boton>
-              <BotonIcono icono={Pencil} titulo="Editar categoría" onClick={() => setPanelCategoria(c)} />
-              <BotonIcono
-                icono={Trash2}
-                titulo="Eliminar categoría"
-                className="hover:bg-error-suave hover:text-error"
-                onClick={() => setBorrar({ tipo: 'categoria', id: c.id, nombre: c.nombre })}
+              <AccionesTarjeta
+                acciones={[
+                  { etiqueta: 'Nuevo producto', icono: Plus, alPulsar: () => setPanelProducto({ p: null, categoriaId: c.id }) },
+                  { etiqueta: 'Editar categoría', icono: Pencil, alPulsar: () => setPanelCategoria(c) },
+                  { etiqueta: 'Eliminar categoría', icono: Trash2, peligro: true, alPulsar: () => setBorrar({ tipo: 'categoria', id: c.id, nombre: c.nombre }) },
+                ]}
               />
             </div>
 
@@ -148,38 +155,47 @@ export default function CatalogoCliente({
                         {p.nombre}
                       </p>
                       {p.descripcion && <p className="truncate text-[11px] text-tenue">{p.descripcion}</p>}
+                      {(!p.disponible || p.vendido > 0) && (
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2">
+                          {!p.disponible && <Insignia tono="aviso">Agotado</Insignia>}
+                          {p.vendido > 0 && <Insignia tono="neutro">{p.vendido} vendidos</Insignia>}
+                        </p>
+                      )}
                     </div>
-                    {!p.disponible && <Insignia tono="aviso">Agotado</Insignia>}
-                    {p.vendido > 0 && <Insignia tono="neutro">{p.vendido} vendidos</Insignia>}
                     <span className="shrink-0 text-[13px] font-semibold text-acento">
                       {dinero(p.precio, moneda)}
                     </span>
-                    <BotonIcono
-                      icono={p.disponible ? EyeOff : Eye}
-                      titulo={p.disponible ? 'Marcar como agotado' : 'Volver a ofrecerlo'}
-                      disabled={enCurso}
-                      onClick={() =>
-                        arranca(async () => {
-                          const r = await alternarDisponible(slug, p.id);
-                          if (!r.ok) {
-                            toast.error(r.error);
-                            return;
-                          }
-                          toast.success(p.disponible ? `«${p.nombre}» agotado` : `«${p.nombre}» disponible`);
-                          router.refresh();
-                        })
-                      }
-                    />
-                    <BotonIcono
-                      icono={Pencil}
-                      titulo="Editar producto"
-                      onClick={() => setPanelProducto({ p, categoriaId: c.id })}
-                    />
-                    <BotonIcono
-                      icono={Trash2}
-                      titulo="Eliminar producto"
-                      className="hover:bg-error-suave hover:text-error"
-                      onClick={() => setBorrar({ tipo: 'producto', id: p.id, nombre: p.nombre })}
+                    {/* Los tres iconos en escritorio; en el teléfono, «⋯» para que el nombre respire. */}
+                    <div className="hidden items-center lg:flex">
+                      <BotonIcono
+                        icono={p.disponible ? EyeOff : Eye}
+                        titulo={p.disponible ? 'Marcar como agotado' : 'Volver a ofrecerlo'}
+                        disabled={enCurso}
+                        onClick={() => alternar(p)}
+                      />
+                      <BotonIcono
+                        icono={Pencil}
+                        titulo="Editar producto"
+                        onClick={() => setPanelProducto({ p, categoriaId: c.id })}
+                      />
+                      <BotonIcono
+                        icono={Trash2}
+                        titulo="Eliminar producto"
+                        className="hover:bg-error-suave hover:text-error"
+                        onClick={() => setBorrar({ tipo: 'producto', id: p.id, nombre: p.nombre })}
+                      />
+                    </div>
+                    <MenuMas
+                      acciones={[
+                        {
+                          etiqueta: p.disponible ? 'Marcar como agotado' : 'Volver a ofrecerlo',
+                          icono: p.disponible ? EyeOff : Eye,
+                          deshabilitado: enCurso,
+                          alPulsar: () => alternar(p),
+                        },
+                        { etiqueta: 'Editar producto', icono: Pencil, alPulsar: () => setPanelProducto({ p, categoriaId: c.id }) },
+                        { etiqueta: 'Eliminar producto', icono: Trash2, peligro: true, alPulsar: () => setBorrar({ tipo: 'producto', id: p.id, nombre: p.nombre }) },
+                      ]}
                     />
                   </li>
                 ))}

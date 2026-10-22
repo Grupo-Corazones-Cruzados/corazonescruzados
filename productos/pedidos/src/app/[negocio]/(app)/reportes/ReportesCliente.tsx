@@ -72,22 +72,20 @@ export default function ReportesCliente({
       <CabeceraPagina
         titulo="Reportes"
         descripcion="Pedidos del periodo y lo que se cobró"
-        acciones={
-          <a href={enlaceExcel} download>
-            <Boton variante="secundario" icono={Download} disabled={!filas.length}>
-              Exportar a Excel
-            </Boton>
-          </a>
-        }
+        menu={[
+          { etiqueta: 'Exportar a Excel', icono: Download, href: enlaceExcel, descargar: true, deshabilitado: !filas.length },
+        ]}
       />
 
       <div className="space-y-4 p-4 sm:p-6">
         {mesesRetencion && (
           <p className="flex items-start gap-2 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">
             <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
+            <span>
             Tu plan conserva {mesesRetencion === 1 ? 'un mes' : `${mesesRetencion} meses`} de histórico.
             En la última hora del último día de cada mes se borra lo anterior.{' '}
             <strong>Exporta a Excel lo que quieras guardar.</strong>
+            </span>
           </p>
         )}
 
@@ -96,7 +94,8 @@ export default function ReportesCliente({
             <Filter className="h-4 w-4 text-tenue" />
             <h2 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">Filtros</h2>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Teléfono: las fechas en dos columnas, los dos selectores en dos más y el botón debajo. */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             <Campo etiqueta="Desde">
               <Entrada type="date" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} />
             </Campo>
@@ -123,7 +122,7 @@ export default function ReportesCliente({
                 ))}
               </Selector>
             </Campo>
-            <div className="flex items-end">
+            <div className="col-span-2 flex items-end lg:col-span-1">
               <Boton icono={Search} tamano="lg" className="w-full" onClick={consultar}>
                 Consultar
               </Boton>
@@ -131,7 +130,8 @@ export default function ReportesCliente({
           </div>
         </Tarjeta>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {/* Cifras de dos en dos en el teléfono; el total, que es lo que se busca, ocupa la fila. */}
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
           {[
             { et: 'Pedidos cobrados', v: numEntero(totales.pedidos) },
             { et: 'Platos servidos', v: numEntero(totales.platos) },
@@ -139,7 +139,7 @@ export default function ReportesCliente({
             { et: 'IVA', v: dinero(totales.iva, moneda) },
             { et: 'Total cobrado', v: dinero(totales.total, moneda), destacado: true },
           ].map((c) => (
-            <Tarjeta key={c.et} className="p-4">
+            <Tarjeta key={c.et} className={c.destacado ? 'col-span-2 p-4 xl:col-span-1' : 'p-4'}>
               <p className="text-[11px] uppercase tracking-wide text-tenue">{c.et}</p>
               <p className={`mt-1 text-[20px] font-semibold ${c.destacado ? 'text-acento' : 'text-texto'}`}>
                 {c.v}

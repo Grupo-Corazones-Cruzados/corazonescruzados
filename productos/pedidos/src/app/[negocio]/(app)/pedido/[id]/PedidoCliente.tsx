@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ChevronLeft, Plus, Trash2, ChefHat, BellRing, Receipt, Ban, Minus } from 'lucide-react';
+import { Plus, Trash2, ChefHat, BellRing, Receipt, Ban, Minus, MapPin, Hash, Clock, UserRound, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Selector, Tarjeta, Insignia, Confirmar, Ventanita, EstadoVacio } from '@/componentes/ui';
+import { Boton, BotonIcono, Campo, Selector, Tarjeta, Insignia, Confirmar, Ventanita, EstadoVacio, RailFiltro, type Detalle } from '@/componentes/ui';
 import {
   agregarPlato,
   quitarPlato,
@@ -105,21 +104,68 @@ export default function PedidoCliente({
 
   const productosVisibles = carta.find((c) => c.id === categoria)?.productos ?? [];
 
+  // Lo que antes iba en una línea bajo el título va en la burbuja (i).
+  const detalles: Detalle[] = [
+    { icono: Hash, etiqueta: 'Pedido', valor: `#${pedido.numero}` },
+    { icono: MapPin, etiqueta: 'Zona', valor: pedido.zona },
+    { icono: Clock, etiqueta: 'Abierto a las', valor: format(new Date(pedido.creado), 'HH:mm') },
+    ...(pedido.mesero ? [{ icono: UserRound, etiqueta: 'Atiende', valor: pedido.mesero }] : []),
+    ...(pedido.comensales ? [{ icono: Users, etiqueta: 'Comensales', valor: String(pedido.comensales) }] : []),
+  ];
+
   return (
     <>
+      {/*
+        Las acciones del pedido viven en la cabecera: en el teléfono las principales
+        (marcar listo, servido, cobrar) van a la barra de abajo, sin tener que bajar por
+        toda la carta para cobrar, y «Anular» —destructiva— va al «⋯». Solo se enseña la
+        que hoy se puede hacer: «Servido» aparece cuando la cocina terminó.
+      */}
       <CabeceraPagina
         titulo={`Mesa ${pedido.mesa}`}
-        descripcion={`${pedido.zona} · Pedido #${pedido.numero} · ${format(new Date(pedido.creado), 'HH:mm')}${pedido.mesero ? ` · ${pedido.mesero}` : ''}`}
+        volver={{ href: `/${slug}/panel`, etiqueta: 'Volver a las mesas' }}
+        extra={<Insignia tono={TONO_PEDIDO[pedido.estado]}>{ETIQUETA_PEDIDO[pedido.estado]}</Insignia>}
+        detalles={detalles}
+        menu={
+          !cerrado && puedeCobrar
+            ? [{ etiqueta: 'Anular pedido', icono: Ban, peligro: true, deshabilitado: enCurso, alPulsar: () => setAnulando(true) }]
+            : undefined
+        }
         acciones={
-          <>
-            <Insignia tono={TONO_PEDIDO[pedido.estado]}>{ETIQUETA_PEDIDO[pedido.estado]}</Insignia>
-            <Link
-              href={`/${slug}/panel`}
-              className="flex items-center gap-1 text-[13px] text-tenue hover:text-texto"
-            >
-              <ChevronLeft className="h-4 w-4" /> Mesas
-            </Link>
-          </>
+          !cerrado && (puedeCocinar && enCocina > 0 || puedeTomar && pedido.estado === 'LISTO' || puedeCobrar) ? (
+            <>
+              {puedeCocinar && enCocina > 0 && (
+                <Boton
+                  variante="secundario"
+                  icono={ChefHat}
+                  disabled={enCurso}
+                  onClick={() => accion(() => marcarPedidoListo(slug, pedido.id), 'Pedido listo para servir')}
+                >
+                  Todo listo ({enCocina})
+                </Boton>
+              )}
+              {puedeTomar && pedido.estado === 'LISTO' && (
+                <Boton
+                  variante="secundario"
+                  icono={BellRing}
+                  disabled={enCurso}
+                  onClick={() => accion(() => marcarServido(slug, pedido.id), 'Pedido servido')}
+                >
+                  Servido
+                </Boton>
+              )}
+              {puedeCobrar && (
+                <Boton
+                  icono={Receipt}
+                  disabled={enCurso || !pedido.items.length}
+                  title={!pedido.items.length ? 'No hay nada que cobrar' : undefined}
+                  onClick={() => setCobrando(true)}
+                >
+                  Cobrar {dinero(pedido.total, moneda)}
+                </Boton>
+              )}
+            </>
+          ) : undefined
         }
       />
 
@@ -148,54 +194,47 @@ export default function PedidoCliente({
             </Tarjeta>
           ) : (
             <>
-              <div className="desplaza flex gap-2 overflow-x-auto">
-                {carta.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setCategoria(c.id)}
-                    className={cn(
-                      'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors foco-visible',
-                      categoria === c.id
-                        ? 'bg-acento text-acento-contraste'
-                        : 'border border-borde bg-tarjeta text-tenue hover:bg-realce',
-                    )}
-                  >
-                    {c.nombre}
-                  </button>
-                ))}
-              </div>
+              {/* Las categorías son SECCIONES de la carta: el raíl, que en el teléfono no se desliza. */}
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+                <RailFiltro
+                  titulo="Carta"
+                  opciones={carta.map((c) => ({ valor: String(c.id), etiqueta: c.nombre, conteo: c.productos.length }))}
+                  activo={String(categoria ?? '')}
+                  alElegir={(v) => setCategoria(Number(v))}
+                />
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                {productosVisibles.map((p) => (
-                  <Tarjeta key={p.id} className="flex items-center gap-3 p-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold">{p.nombre}</p>
-                      {p.descripcion && (
-                        <p className="truncate text-[11px] text-tenue">{p.descripcion}</p>
-                      )}
-                      <p className="text-[12px] font-semibold text-acento">{dinero(p.precio, moneda)}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <BotonIcono icono={Minus} titulo="Menos" onClick={() => cambiarCantidad(p.id, -1)} />
-                      <span className="w-5 text-center text-[13px] font-semibold">{cantidadDe(p.id)}</span>
-                      <BotonIcono icono={Plus} titulo="Más" onClick={() => cambiarCantidad(p.id, 1)} />
-                      <Boton
-                        tamano="sm"
-                        disabled={enCurso}
-                        onClick={() => {
-                          const d = new FormData();
-                          d.set('pedidoId', String(pedido.id));
-                          d.set('productoId', String(p.id));
-                          d.set('cantidad', String(cantidadDe(p.id)));
-                          accion(() => agregarPlato(slug, d), `${p.nombre} añadido`);
-                          setCantidades((c) => ({ ...c, [p.id]: 1 }));
-                        }}
-                      >
-                        Añadir
-                      </Boton>
-                    </div>
-                  </Tarjeta>
-                ))}
+                <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                  {productosVisibles.map((p) => (
+                    <Tarjeta key={p.id} className="flex items-center gap-3 p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-semibold">{p.nombre}</p>
+                        {p.descripcion && (
+                          <p className="truncate text-[11px] text-tenue">{p.descripcion}</p>
+                        )}
+                        <p className="text-[12px] font-semibold text-acento">{dinero(p.precio, moneda)}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <BotonIcono icono={Minus} titulo="Menos" onClick={() => cambiarCantidad(p.id, -1)} />
+                        <span className="w-5 text-center text-[13px] font-semibold">{cantidadDe(p.id)}</span>
+                        <BotonIcono icono={Plus} titulo="Más" onClick={() => cambiarCantidad(p.id, 1)} />
+                        <Boton
+                          tamano="sm"
+                          disabled={enCurso}
+                          onClick={() => {
+                            const d = new FormData();
+                            d.set('pedidoId', String(pedido.id));
+                            d.set('productoId', String(p.id));
+                            d.set('cantidad', String(cantidadDe(p.id)));
+                            accion(() => agregarPlato(slug, d), `${p.nombre} añadido`);
+                            setCantidades((c) => ({ ...c, [p.id]: 1 }));
+                          }}
+                        >
+                          Añadir
+                        </Boton>
+                      </div>
+                    </Tarjeta>
+                  ))}
+                </div>
               </div>
             </>
           )}
@@ -284,60 +323,6 @@ export default function PedidoCliente({
             </dl>
           </Tarjeta>
 
-          {!cerrado && (
-            <Tarjeta className="space-y-2 p-3">
-              {puedeCocinar && enCocina > 0 && (
-                <Boton
-                  icono={ChefHat}
-                  className="w-full"
-                  disabled={enCurso}
-                  onClick={() => accion(() => marcarPedidoListo(slug, pedido.id), 'Pedido listo para servir')}
-                >
-                  Marcar todo listo ({enCocina})
-                </Boton>
-              )}
-              {puedeTomar && (
-                <Boton
-                  variante="secundario"
-                  icono={BellRing}
-                  className="w-full"
-                  disabled={enCurso || pedido.estado !== 'LISTO'}
-                  title={
-                    pedido.estado === 'EN_PREPARACION'
-                      ? 'Todavía quedan platos en cocina'
-                      : pedido.estado === 'SERVIDO'
-                        ? 'Ya está servido'
-                        : undefined
-                  }
-                  onClick={() => accion(() => marcarServido(slug, pedido.id), 'Pedido servido')}
-                >
-                  {pedido.estado === 'SERVIDO' ? 'Ya está servido' : 'Marcar como servido'}
-                </Boton>
-              )}
-              {puedeCobrar && (
-                <>
-                  <Boton
-                    icono={Receipt}
-                    className="w-full"
-                    disabled={enCurso || !pedido.items.length}
-                    title={!pedido.items.length ? 'No hay nada que cobrar' : undefined}
-                    onClick={() => setCobrando(true)}
-                  >
-                    Cobrar {dinero(pedido.total, moneda)}
-                  </Boton>
-                  <Boton
-                    variante="fantasma"
-                    icono={Ban}
-                    className="w-full text-error hover:bg-error-suave hover:text-error"
-                    disabled={enCurso}
-                    onClick={() => setAnulando(true)}
-                  >
-                    Anular pedido
-                  </Boton>
-                </>
-              )}
-            </Tarjeta>
-          )}
         </div>
       </div>
 
