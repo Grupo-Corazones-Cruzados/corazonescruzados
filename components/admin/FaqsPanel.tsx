@@ -35,6 +35,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, EditField } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { ICONOS } from '@/components/sitio/piezas';
 import { ACCESOS, DESARROLLO } from '@/lib/sitio/contenido';
 
@@ -230,9 +231,17 @@ export default function FaqsPanel() {
                 style={mf}
               />
             </div>
-            <button onClick={abrirNueva} className={BTN_PRIMARY} style={mf}>
+            {/* «Nueva» es la principal: en el teléfono va a la barra de abajo y el buscador se
+                queda con todo el ancho; desde `lg`, aquí (Fernando, 2026-10-23). `max-lg:hidden`
+                porque el `inline-flex` de BTN_PRIMARY gana a `hidden`. */}
+            <button onClick={abrirNueva} className={`${BTN_PRIMARY} max-lg:hidden`} style={mf}>
               <Plus className="w-4 h-4" /> Nueva
             </button>
+            <EnBarraAcciones>
+              <button onClick={abrirNueva} className={BTN_PRIMARY} style={mf}>
+                <Plus className="w-4 h-4" /> Nueva
+              </button>
+            </EnBarraAcciones>
           </div>
 
           <div className="flex-1 min-h-0">
@@ -289,7 +298,9 @@ export default function FaqsPanel() {
         </div>
 
         {/* ── 3. LA RESPUESTA COMPLETA ───────────────────────────────────────── */}
-        <div className="bg-digi-card border border-digi-border rounded-lg p-4 overflow-y-auto">
+        {/* Sin pregunta elegida es solo «Elige una pregunta»: en el teléfono caería bajo la
+            lista sin aportar y no se pinta (Fernando, 2026-10-23). */}
+        <div className={`bg-digi-card border border-digi-border rounded-lg p-4 overflow-y-auto ${elegida ? '' : 'hidden lg:block'}`}>
           {elegida ? (
             <>
               <p className="text-[11px] uppercase tracking-[0.12em] text-digi-muted" style={mf}>

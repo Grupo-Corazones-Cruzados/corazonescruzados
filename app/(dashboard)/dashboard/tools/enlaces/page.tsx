@@ -36,9 +36,8 @@ const ESTADO: Record<string, { label: string; v: Variante }> = {
   vigente: { label: 'Vigente', v: 'info' }, usado: { label: 'Usado', v: 'success' },
   cerrado: { label: 'Cerrado', v: 'default' }, vencido: { label: 'Vencido', v: 'warning' },
 };
-const PUNTO: Record<Variante, string> = {
-  success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-accent', default: 'bg-digi-muted',
-};
+// Sin punto de color delante del título: el estado ya lo dice la palabra en color de su
+// columna (y de la tarjeta del teléfono). Dos marcas para lo mismo (Fernando, 2026-10-23).
 
 const fecha = (s: string | null) => (s ? new Date(s).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' }) : '—');
 const mb = (b: number) => `${fmt2(b / 1024 / 1024)} MB`;
@@ -192,7 +191,6 @@ export default function EnlacesPage() {
                 columns={[
                   { key: 'titulo', header: 'Título', render: (e: Enlace) => (
                     <span className="flex items-center gap-2 min-w-0">
-                      <span title={ESTADO[e.estado].label} className={`w-2 h-2 rounded-full shrink-0 ${PUNTO[ESTADO[e.estado].v]}`} />
                       <span className={`truncate text-[13px] font-medium ${selId === e.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{e.titulo}</span>
                       {e.archivos.length > 0 && (
                         <span title={`${e.archivos.length} archivo(s)`} className="inline-flex items-center gap-0.5 text-[11.5px] text-digi-muted tabular-nums shrink-0" style={mf}>
@@ -208,11 +206,10 @@ export default function EnlacesPage() {
                 tarjetaMovil={(e: Enlace) => (
                   <>
                     <div className="flex items-start gap-2">
-                      <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${PUNTO[ESTADO[e.estado].v]}`} />
                       <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{e.titulo}</span>
                       <span className="shrink-0"><PixelBadge variant={ESTADO[e.estado].v}>{ESTADO[e.estado].label}</PixelBadge></span>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 text-[12px] text-digi-muted" style={mf}>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-digi-muted" style={mf}>
                       {e.cliente_nombre && <span>{e.cliente_nombre}</span>}
                       {e.archivos.length > 0 && <span className="inline-flex items-center gap-1 tabular-nums"><Paperclip className="w-3.5 h-3.5" /> {e.archivos.length}</span>}
                       <span className="ml-auto">{fecha(e.respondido_en || e.creado_en)}</span>

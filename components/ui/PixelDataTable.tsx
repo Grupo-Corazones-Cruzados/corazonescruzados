@@ -155,6 +155,32 @@ export default function PixelDataTable<T>({
     );
   }
 
+  const paginacion = totalPages && totalPages > 1 && onPageChange ? (
+        <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-digi-card border-t-2 border-digi-border">
+          <span className="text-[9px] text-digi-muted" style={{ fontFamily: 'var(--font-display)' }}>
+            Pag {page}/{totalPages}
+          </span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => onPageChange((page || 1) - 1)}
+              disabled={page === 1}
+              className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              &lt;
+            </button>
+            <button
+              onClick={() => onPageChange((page || 1) + 1)}
+              disabled={page === totalPages}
+              className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              &gt;
+            </button>
+          </div>
+        </div>
+  ) : null;
+
   return (
     <div aria-busy={cargando || undefined}
       className={`transition-opacity duration-150 ${cargando ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -178,9 +204,19 @@ export default function PixelDataTable<T>({
         </div>
       )}
 
+      {/* ── Sin `tarjetaMovil`, la GALERÍA AUTOMÁTICA (Fernando, 2026-10-23) ──────────
+          En un teléfono una tabla obliga a deslizar de lado y se pierden datos de vista (en
+          Centralizado eran 641 px dentro de 356). Por debajo de `md` cada fila es una tarjeta
+          que sale de las MISMAS columnas: la primera es la cabecera, las que no tienen título
+          (acciones) van a su derecha y el resto en una rejilla «TÍTULO / valor». Así ninguna
+          tabla se queda fuera. Regla en `/diseno` §4-ter. */}
+      {!tarjetaMovil && <GaleriaAutomatica columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} />}
+      {/* En el teléfono la tabla está escondida, y con ella su paginación: va también aquí. */}
+      {paginacion && <div className={`${tarjetaMovil ? 'lg:hidden' : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{paginacion}</div>}
+
       <div
         ref={wrapRef}
-        className={`data-table border-2 border-digi-border overflow-hidden flex-col ${tarjetaMovil ? 'hidden lg:flex' : 'flex'}`}
+        className={`data-table border-2 border-digi-border overflow-hidden flex-col ${tarjetaMovil ? 'hidden lg:flex' : 'hidden md:flex'}`}
         style={{ height: fillH }}
       >
       <div className="flex-1 min-h-0 overflow-auto">
@@ -239,32 +275,58 @@ export default function PixelDataTable<T>({
         </table>
       </div>
 
-      {totalPages && totalPages > 1 && onPageChange && (
-        <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-digi-card border-t-2 border-digi-border">
-          <span className="text-[9px] text-digi-muted" style={{ fontFamily: 'var(--font-display)' }}>
-            Pag {page}/{totalPages}
-          </span>
-          <div className="flex gap-1">
-            <button
-              onClick={() => onPageChange((page || 1) - 1)}
-              disabled={page === 1}
-              className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              &lt;
-            </button>
-            <button
-              onClick={() => onPageChange((page || 1) + 1)}
-              disabled={page === totalPages}
-              className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              &gt;
-            </button>
-          </div>
-        </div>
-      )}
+      {paginacion}
       </div>
+    </div>
+  );
+}
+
+function GaleriaAutomatica<T>({
+  columns, data, onRowClick, rowClassName,
+}: {
+  columns: Column<T>[];
+  data: T[];
+  onRowClick?: (item: T) => void;
+  rowClassName?: (item: T) => string;
+}) {
+  const [cabecera, ...resto] = columns;
+  const acciones = resto.filter((c) => !c.header.trim());
+  const campos = resto.filter((c) => c.header.trim());
+  return (
+    <div className="md:hidden space-y-2">
+      {data.map((item, i) => (
+        <div
+          key={i}
+          onClick={onRowClick ? () => onRowClick(item) : undefined}
+          role={onRowClick ? 'button' : undefined}
+          tabIndex={onRowClick ? 0 : undefined}
+          onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(item); } } : undefined}
+          className={`bg-digi-card border border-digi-border rounded-lg p-3.5 transition-colors ${
+            onRowClick ? 'cursor-pointer active:bg-black/[0.04]' : ''
+          } ${rowClassName?.(item) ?? ''}`}
+          style={{ fontFamily: 'var(--font-body)' }}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1 text-[13.5px] font-semibold text-digi-text break-words">{cabecera?.render(item)}</div>
+            {acciones.length > 0 && (
+              // Las acciones no abren la fila: el clic se queda en el botón.
+              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                {acciones.map((c) => <span key={c.key}>{c.render(item)}</span>)}
+              </div>
+            )}
+          </div>
+          {campos.length > 0 && (
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 mt-2.5">
+              {campos.map((c) => (
+                <div key={c.key} className="min-w-0">
+                  <dt className="text-[10px] uppercase tracking-wide text-digi-muted">{c.header}</dt>
+                  <dd className="text-[12.5px] text-digi-text break-words">{c.render(item)}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

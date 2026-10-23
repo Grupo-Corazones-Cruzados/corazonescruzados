@@ -8,6 +8,8 @@ import AvailabilityPanel from '@/components/settings/AvailabilityPanel';
 import PortfolioPanel from '@/components/settings/PortfolioPanel';
 import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
 import ConexionesPanel from '@/components/settings/ConexionesPanel';
+import Segmentado from '@/components/ui/Segmentado';
+import MenuMas from '@/components/ui/MenuMas';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { FileText, CalendarClock, Briefcase, Share2, Link2, type LucideIcon } from 'lucide-react';
 
@@ -82,7 +84,28 @@ export default function SettingsPage() {
 
                 `justify-between` en vez del hueco `flex-1`: es la misma colocación con
                 un elemento menos. */}
-            <div className="flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
+            {/* ── TELÉFONO (2026-10-23, reglas del teléfono de Fernando) ──
+                Las cuatro pestañas, envueltas por `flex-wrap`, se apilaban en tres filas con
+                «Compartir CV» flotando a un lado y huecos alrededor. Aquí: con más de tres
+                pestañas, un <select> a todo el ancho; con dos o tres, el `Segmentado`; con
+                una, nada que elegir. «Compartir CV» es secundaria: entra en el «⋯». */}
+            {(tabs.length > 1 || isMember) && (
+              <div className="lg:hidden flex items-center gap-2 p-2 border-b border-digi-border shrink-0">
+                {tabs.length > 3 ? (
+                  <select aria-label="Sección" value={tabActiva} onChange={(e) => setTab(e.target.value as TabKey)}
+                    className="field-control field-select h-11 min-w-0 flex-1 px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+                    {tabs.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  </select>
+                ) : tabs.length > 1 ? (
+                  <Segmentado etiqueta="Sección" className="min-w-0 flex-1" valor={tabActiva as TabKey} onChange={setTab}
+                    opciones={tabs.map((t) => ({ valor: t.key, texto: t.label }))} />
+                ) : <span className="flex-1" />}
+                {isMember && (
+                  <MenuMas items={[{ label: 'Compartir CV', icon: Share2, onClick: () => setCompartir(true) }]} />
+                )}
+              </div>
+            )}
+            <div className="hidden lg:flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
               <div className="flex items-stretch flex-wrap">
                 {tabs.map((t) => {
                   const active = tabActiva === t.key;

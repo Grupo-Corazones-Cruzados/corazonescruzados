@@ -12,6 +12,7 @@ import PolicyBanner from '@/components/dashboard/PolicyBanner';
 import ChatDock from '@/components/chat/ChatDock';
 import NotificationsDock from '@/components/notifications/NotificationsDock';
 import AvisoReuniones from '@/components/calendar/AvisoReuniones';
+import { HuecoBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -72,6 +73,9 @@ function Panel({ children }: { children: React.ReactNode }) {
             el contenido se le habría metido debajo. */}
         <main className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto min-h-screen">
           <DashboardAccessGuard>{children}</DashboardAccessGuard>
+          {/* Las acciones principales del teléfono (ver `BarraAcciones`): último hijo, para
+              que su hueco quede DESPUÉS de todo y la barra no tape el último campo. */}
+          <HuecoBarraAcciones />
         </main>
       </div>
       <DashboardBreadcrumb collapsed />

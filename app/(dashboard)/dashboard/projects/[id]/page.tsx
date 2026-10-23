@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
+import DetailHeader from '@/components/ui/DetailHeader';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import ClientPicker from '@/components/clients/ClientPicker';
 import PropertyRail from '@/components/ui/PropertyRail';
@@ -13,7 +13,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil, Clock, BadgeDollarSign, CircleCheck } from 'lucide-react';
+import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil, Clock, BadgeDollarSign, CircleCheck, Building2, DollarSign, CalendarClock, FileText, LogOut, Store, Ban } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
@@ -1307,13 +1307,12 @@ export default function ProjectDetailPage() {
               <PixelBadge variant={STATUS_V[project.status] || 'default'}>{STATUS_LABEL[project.status] || project.status}</PixelBadge>
             </span>
           }
-          chips={
-            <>
-              {project.client_name && <HeaderChip>{project.client_name}</HeaderChip>}
-              {(project.final_cost || project.budget_max) && <HeaderChip>${fmt2(Number(project.final_cost || project.budget_max))}</HeaderChip>}
-              {project.deadline && <HeaderChip>Límite {new Date(project.deadline).toLocaleDateString()}</HeaderChip>}
-            </>
-          }
+          detalles={[
+            ...(project.client_name ? [{ icono: Building2, etiqueta: 'Cliente', valor: project.client_name }] : []),
+            ...(project.final_cost || project.budget_max ? [{ icono: DollarSign, etiqueta: project.final_cost ? 'Costo final' : 'Presupuesto', valor: `$${fmt2(Number(project.final_cost || project.budget_max))}` }] : []),
+            ...(project.deadline ? [{ icono: CalendarClock, etiqueta: 'Fecha límite', valor: new Date(project.deadline).toLocaleDateString() }] : []),
+          ]}
+          soloIconos
           actions={
             <>
               {/* ⇒ SOLO ICONOS (Fernando, 2026-09-29). El nombre va en `title` y `aria-label`. */}
@@ -1371,16 +1370,16 @@ export default function ProjectDetailPage() {
           }
           overflow={[
             // Descargar TXT del proyecto: disponible desde 'borrador' para arriba (no en cotización).
-            ...(project.status !== 'cotizacion' ? [{ label: 'Descargar TXT', onClick: downloadProjectTxt }] : []),
-            ...(isOwner && !isTerminal ? [{ label: 'Editar nombre', onClick: () => { setEditTitle(project.title); setEditingTitle(true); } }] : []),
+            ...(project.status !== 'cotizacion' ? [{ label: 'Descargar TXT', icon: FileText, onClick: downloadProjectTxt }] : []),
+            ...(isOwner && !isTerminal ? [{ label: 'Editar nombre', icon: Pencil, onClick: () => { setEditTitle(project.title); setEditingTitle(true); } }] : []),
             // Participación del miembro (antes en la tarjeta "Acciones")
             ...(isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && !projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'withdrawal' && ['pending', 'rejected'].includes(r.status))
-              ? [{ label: 'Desistir del proyecto', onClick: () => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); } }] : []),
+              ? [{ label: 'Desistir del proyecto', icon: LogOut, onClick: () => { setWithdrawType('withdrawal'); setWithdrawReason(''); setShowWithdrawModal(true); } }] : []),
             ...(isMember && !isOwner && ['open', 'in_progress'].includes(project.status) && projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'withdrawal' && r.status === 'rejected') && !projectRequests.some((r: any) => String(r.member_id) === String(memberId) && r.type === 'supervised_exit' && r.status === 'pending')
-              ? [{ label: 'Solicitar salida supervisada', onClick: () => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }, danger: true }] : []),
+              ? [{ label: 'Solicitar salida supervisada', icon: LogOut, onClick: () => { setWithdrawType('supervised_exit'); setWithdrawReason(''); setShowWithdrawModal(true); }, danger: true }] : []),
             // Marketplace (proyecto completado)
             ...(project.status === 'completed' && isOwner && !project.marketplace_source_id
-              ? [{ label: project.is_marketplace_published ? 'Despublicar del Marketplace' : 'Publicar en Marketplace', onClick: async () => {
+              ? [{ label: project.is_marketplace_published ? 'Despublicar del Marketplace' : 'Publicar en Marketplace', icon: Store, onClick: async () => {
                   try {
                     const res = await fetch(`/api/projects/${id}/publish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publish: !project.is_marketplace_published }) });
                     if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
@@ -1390,8 +1389,8 @@ export default function ProjectDetailPage() {
             // Cancelar es SOLO del administrador (Fernando, 2026-08-26) y pide motivo: un
             // proyecto cancelado es una conversación con el cliente, y de un clic sin
             // explicación no queda constancia de por qué se paró.
-            ...(isAdmin && !isTerminal ? [{ label: 'Cancelar proyecto', onClick: () => { setMotivoCancelar(''); setShowCancelar(true); }, danger: true }] : []),
-            ...(isAdmin ? [{ label: 'Eliminar proyecto', onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
+            ...(isAdmin && !isTerminal ? [{ label: 'Cancelar proyecto', icon: Ban, onClick: () => { setMotivoCancelar(''); setShowCancelar(true); }, danger: true }] : []),
+            ...(isAdmin ? [{ label: 'Eliminar proyecto', icon: Trash2, onClick: () => setConfirmDeleteProject(true), danger: true }] : []),
           ]}
           trailing={project.status === 'cotizacion' && isOwner ? (
             <button onClick={() => setShowShare(true)} className={BTN_ICONO_ACENTO} title="Compartir acceso a la cotización" aria-label="Compartir acceso a la cotización">

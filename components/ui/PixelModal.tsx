@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
 interface PixelModalProps {
@@ -14,6 +14,9 @@ interface PixelModalProps {
   busy?: boolean;
   children: React.ReactNode;
 }
+
+/** Lo que dura la salida; el mismo valor que la animación `modalSale` de globals.css. */
+const DURACION_SALIDA = 200;
 
 const SIZES = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-5xl' };
 
@@ -52,18 +55,39 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
   const pulsadoEnVelo = useRef(false);
   const esVelo = (t: EventTarget | null) => t === dialogRef.current || t === overlayRef.current;
 
+  /**
+   * ⭐ LA SALIDA TAMBIÉN SE ANIMA (Fernando, 2026-10-23: lo que aparece al navegar entra y
+   * sale con movimiento). Al pasar `open` a false el diálogo NO se cierra de golpe: se marca
+   * `data-saliendo`, el CSS lo desliza fuera (panel) o lo funde (ventanita) en
+   * `DURACION_SALIDA` y entonces se llama a `close()`. Mientras sale pinta su ÚLTIMO
+   * contenido —el padre ya pudo poner su estado a `null`— y no recibe clics.
+   */
+  const [saliendo, setSaliendo] = useState(false);
+  const ultimo = useRef({ title, children });
+  if (open) ultimo.current = { title, children };
+
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
-    if (open && !el.open) { if (sePinta(el)) el.showModal(); }
-    else if (!open && el.open) el.close();
+    if (open) {
+      setSaliendo(false);
+      if (!el.open && sePinta(el)) el.showModal();
+      return;
+    }
+    if (!el.open) return;
+    setSaliendo(true);
+    const t = window.setTimeout(() => { el.close(); setSaliendo(false); }, DURACION_SALIDA);
+    return () => window.clearTimeout(t);
   }, [open]);
 
   return (
     <dialog
       ref={dialogRef}
-      onClose={onClose}
-      onCancel={(e) => { if (busy) e.preventDefault(); }}
+      onClose={() => { if (open) onClose(); }}
+      // Escape: en vez de dejar que el navegador cierre de golpe, se pide el cierre al padre
+      // y la salida se anima como cualquier otra.
+      onCancel={(e) => { e.preventDefault(); if (!busy) onClose(); }}
+      data-saliendo={saliendo || undefined}
       // Pulsar el VELO cierra (Fernando, 2026-10-04). Antes solo se miraba el `<dialog>`, pero
       // lo tapa entero `.modal-overlay`, que era quien recibía el clic: no cerraba nunca.
       onMouseDown={(e) => { pulsadoEnVelo.current = esVelo(e.target); }}
@@ -73,7 +97,7 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
       <div ref={overlayRef} className="modal-overlay flex items-center justify-center min-h-full p-4">
         <div
           data-size={size}
-          className={`modal-surface pixel-card w-full ${SIZES[size]} animate-[pixelFadeIn_0.2s_ease-out]`}
+          className={`modal-surface pixel-card w-full ${SIZES[size]} animate-[pixelFadeIn_0.2s_ease-out] ${saliendo ? 'pointer-events-none' : ''}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -82,9 +106,9 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
                 cerrar —se vio con un recordatorio en teléfono— en vez de recortarse. */}
             <h2
               className="modal-title pixel-heading text-sm text-digi-text min-w-0 truncate"
-              title={title}
+              title={ultimo.current.title}
             >
-              {title}
+              {ultimo.current.title}
             </h2>
             {/* La X de todas las ventanas: `BotonCerrar` (2026-09-29). Antes era la letra «X»
                 con la tipografía pixel dentro de un borde. */}
@@ -93,7 +117,7 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
 
           {/* Body */}
           <div className="modal-body max-h-[70vh] overflow-y-auto">
-            {children}
+            {ultimo.current.children}
           </div>
         </div>
       </div>

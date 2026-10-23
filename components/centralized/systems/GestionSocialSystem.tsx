@@ -16,6 +16,7 @@ import {
   CalendarDays, MapPin, Clock, Users, Gem, Sparkles, PartyPopper, Square, Info,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -227,9 +228,17 @@ function EventosTab({ isAdmin }: { isAdmin?: boolean }) {
           <p className="text-[13px] font-semibold text-digi-text" style={df}>
             Eventos {loading ? '' : `(${events.length})`}
           </p>
-          <button className={`${BTN_PRIMARY} ml-auto`} onClick={() => setEventDraft({ id: null, d: emptyEvent() })} style={mf}>
+          {/* «Nuevo evento» es la principal: en el teléfono va a la barra de abajo; desde `lg`,
+              aquí (Fernando, 2026-10-23). `max-lg:hidden` y no `hidden lg:inline-flex`: el
+              `inline-flex` de BTN_PRIMARY sale después de `hidden` en el CSS y le gana. */}
+          <button className={`${BTN_PRIMARY} ml-auto max-lg:hidden`} onClick={() => setEventDraft({ id: null, d: emptyEvent() })} style={mf}>
             <Plus className="w-4 h-4" /> Nuevo evento
           </button>
+          <EnBarraAcciones>
+            <button className={BTN_PRIMARY} onClick={() => setEventDraft({ id: null, d: emptyEvent() })} style={mf}>
+              <Plus className="w-4 h-4" /> Nuevo evento
+            </button>
+          </EnBarraAcciones>
         </div>
 
         {err && (
@@ -270,8 +279,10 @@ function EventosTab({ isAdmin }: { isAdmin?: boolean }) {
         )}
       </div>
 
-      {/* Panel derecho: detalle del evento */}
-      <div className="w-full lg:w-[380px] shrink-0">
+      {/* Panel derecho: detalle del evento. Sin evento elegido es solo «Selecciona un
+          evento…»: en el teléfono caería bajo la lista sin aportar y no se pinta (Fernando,
+          2026-10-23). */}
+      <div className={`w-full lg:w-[380px] shrink-0 ${detail ? '' : 'hidden lg:block'}`}>
         {detail ? (
           <EventDetail
             event={detail}

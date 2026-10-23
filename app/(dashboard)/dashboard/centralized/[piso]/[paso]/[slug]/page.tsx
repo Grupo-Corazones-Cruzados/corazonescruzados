@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { ChevronLeft, Share2, Boxes } from 'lucide-react';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
+import MenuMas from '@/components/ui/MenuMas';
 import SolicitudesSystem from '@/components/centralized/systems/SolicitudesSystem';
 import ReclutamientoSystem from '@/components/centralized/systems/ReclutamientoSystem';
 import HorarioDeVidaSystem from '@/components/centralized/systems/HorarioDeVidaSystem';
@@ -89,21 +90,29 @@ export default function CentralizedSystemPage() {
 
   return (
     <div>
-      {/* Breadcrumb + acciones */}
+      {/* Breadcrumb + acciones. En el teléfono «Compartir acceso» (secundaria) bajaba sola a
+          su propia fila a todo el ancho: ahí va dentro del «⋯» y la celda del breadcrumb se
+          omite para que todo quepa en una línea; desde `lg`, como siempre (Fernando,
+          2026-10-23). */}
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-digi-border flex-wrap">
         {backLink}
+        <span className="hidden sm:inline text-digi-muted/50">/</span>
+        <span className="hidden sm:inline text-[12px] text-digi-muted" style={mf}>{cell}</span>
         <span className="text-digi-muted/50">/</span>
-        <span className="text-[12px] text-digi-muted" style={mf}>{cell}</span>
-        <span className="text-digi-muted/50">/</span>
-        <span className="text-[13px] font-semibold text-digi-text" style={mf}>{system.name}</span>
+        <span className="min-w-0 text-[13px] font-semibold text-digi-text" style={mf}>{system.name}</span>
         {isAdmin && (
           <button
             onClick={() => setShareOpen(true)}
-            className="ml-auto inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors"
+            className="ml-auto hidden lg:inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors"
             style={mf}
           >
             <Share2 className="w-3.5 h-3.5" /> Compartir acceso
           </button>
+        )}
+        {isAdmin && (
+          <span className="lg:hidden flex ml-auto">
+            <MenuMas items={[{ label: 'Compartir acceso', icon: Share2, onClick: () => setShareOpen(true) }]} />
+          </span>
         )}
       </div>
 

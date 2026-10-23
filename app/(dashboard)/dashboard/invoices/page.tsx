@@ -16,6 +16,7 @@ import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, Arro
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -447,8 +448,8 @@ function InvoicesPageInner() {
 <div className="p-4 space-y-2.5">
   {[
     ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(selected.total || 0))}</span>],
-    ['SRI', selected.sri_status ? <PixelBadge key="sri" punto={false} variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
-    ['Estado', <PixelBadge key="s" punto={false} variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+    ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
+    ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
     ['Fecha', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
   ].map(([k, v]) => (
     <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
@@ -500,7 +501,10 @@ function InvoicesPageInner() {
 
         {/* ── Right region: command bar + tabla ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          {/* «Facturar etapa de proyecto» es la acción principal: en el teléfono baja a la barra
+              de abajo y el buscador se queda solo, a todo el ancho; desde `lg`, a su lado
+              (2026-10-23, reglas del teléfono de los productos). */}
+          <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Buscar factura..."
@@ -508,9 +512,16 @@ function InvoicesPageInner() {
                 style={mf} />
             </div>
             {isAdmin && (
-              <button onClick={openStageModal} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> Facturar etapa de proyecto
-              </button>
+              <>
+                <button onClick={openStageModal} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
+                  <Plus className="w-4 h-4" /> Facturar etapa de proyecto
+                </button>
+                <EnBarraAcciones>
+                  <button onClick={openStageModal} className={BTN_PRIMARY}>
+                    <Plus className="w-4 h-4" /> Facturar etapa
+                  </button>
+                </EnBarraAcciones>
+              </>
             )}
           </div>
 
@@ -530,7 +541,7 @@ function InvoicesPageInner() {
           { key: 'client', header: 'Cliente', render: (i: any) => <span className="text-digi-text">{i.client_name_sri || i.client_name || '-'}</span> },
           { key: 'total', header: 'Total', width: '100px', render: (i: any) => <span className="text-accent tabular-nums">${fmt2(Number(i.total || 0))}</span> },
           { key: 'sri', header: 'SRI', width: '150px', hideOnMobile: true, render: (i: any) => i.sri_status ? (
-            <PixelBadge punto={false} variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
+            <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
           ) : <span className="text-digi-muted">-</span> },
           { key: 'date', header: 'Fecha', width: '110px', hideOnMobile: true, render: (i: any) => <span className="text-digi-muted">{i.created_at ? new Date(i.created_at).toLocaleDateString('es-EC') : '-'}</span> },
         ]}
@@ -552,7 +563,7 @@ function InvoicesPageInner() {
             <p className="mt-0.5 text-[12px] text-digi-muted leading-snug">{i.client_name_sri || i.client_name || '—'}</p>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-digi-muted">
               {i.sri_status
-                ? <PixelBadge punto={false} variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
+                ? <PixelBadge variant={SRI_STATUS_V[i.sri_status] || 'default'}>{SRI_STATUS_LABEL[i.sri_status] || i.sri_status}</PixelBadge>
                 : <span>Sin enviar al SRI</span>}
               <span className="inline-flex items-center gap-1" title={i.is_manual ? 'Factura manual' : 'Factura automática'}>
                 {i.is_manual ? <PenLine className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}

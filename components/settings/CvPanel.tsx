@@ -12,6 +12,7 @@ import { TALENTOS } from '@/lib/centralized/talentos';
 import { MAX_SKILLS } from '@/lib/members/cv-tipos';
 import { Plus, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check, Languages } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import Segmentado from '@/components/ui/Segmentado';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -214,8 +215,26 @@ export default function CvPanel() {
           const talentServices = services.filter((s) => s.talent === t.key);
           return (
             <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
-              {/* Pestañas horizontales: una por talento, con su icono de eliminar */}
-              <div className="flex items-stretch border-b border-digi-border overflow-x-auto">
+              {/* ── Teléfono: el talento se elige con un control que enseña todos ──
+                  La tira de pestañas se deslizaba de lado y a 390 px cortaba «Psicol…»
+                  (Fernando, 2026-10-23: nada se desliza escondiendo opciones). Hasta tres
+                  talentos, `Segmentado`; más, un <select>. El quitar va al lado y actúa
+                  sobre el talento elegido, como la «×» de su pestaña en escritorio. */}
+              <div className="lg:hidden flex items-center gap-2 p-2 border-b border-digi-border">
+                {talents.length > 3 ? (
+                  <select aria-label="Talento" value={activeIdx} onChange={(e) => setActiveTalent(Number(e.target.value))}
+                    className="field-control field-select h-11 min-w-0 flex-1 px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+                    {talents.map((tt, i) => <option key={tt.key} value={i}>{tt.key}</option>)}
+                  </select>
+                ) : (
+                  <Segmentado etiqueta="Talento" className="min-w-0 flex-1" valor={String(activeIdx)}
+                    onChange={(v) => setActiveTalent(Number(v))}
+                    opciones={talents.map((tt, i) => ({ valor: String(i), texto: tt.key }))} />
+                )}
+                <BotonQuitar onClick={() => setConfirmDelTalent(activeIdx)} etiqueta={`Quitar talento ${t.key}`} />
+              </div>
+              {/* Escritorio: pestañas horizontales, una por talento, con su icono de eliminar */}
+              <div className="hidden lg:flex items-stretch border-b border-digi-border overflow-x-auto">
                 {talents.map((tt, i) => {
                   const active = i === activeIdx;
                   return (

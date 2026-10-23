@@ -55,8 +55,15 @@ export default function AdminPage() {
     <div>
       <PageHeader title="Admin" description="Mundo, sprites, tus razones de lucha y las utilidades de administrador" />
 
-      {/* ── Pestañas horizontales (arriba) ── */}
-      <div className="flex items-center gap-1 bg-digi-card border border-digi-border rounded-lg p-1 mb-4 overflow-x-auto">
+      {/* ── Pestañas: en el teléfono, un <select> a todo el ancho ──
+          Siete pestañas en una tira `overflow-x-auto` dejaban ver tres a 390 px y las otras
+          cuatro había que adivinarlas deslizando (Fernando, 2026-10-23: nada se desliza de
+          lado escondiendo opciones). Desde `lg`, la tira de siempre. */}
+      <select aria-label="Sección" value={tab} onChange={(e) => setTab(e.target.value)}
+        className="lg:hidden mb-4 field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+        {TABS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+      </select>
+      <div className="hidden lg:flex items-center gap-1 bg-digi-card border border-digi-border rounded-lg p-1 mb-4">
         {TABS.map((t) => {
           const active = tab === t.value;
           return (

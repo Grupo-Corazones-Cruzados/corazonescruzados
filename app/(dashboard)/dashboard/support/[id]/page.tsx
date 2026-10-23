@@ -117,14 +117,15 @@ export default function SupportDetailPage() {
         }
         actions={
           <>
+            {/* Cambiar el estado es solo del admin: el solicitante hace seguimiento.
+                Cerrar a la izquierda y Resolver (la afirmativa) a la derecha. */}
+            {isAdmin && ticket.status !== 'closed' && (
+              <button onClick={() => updateStatus('closed')} className={`${BTN_SECONDARY} h-11 sm:h-auto`}><Lock className="w-4 h-4" /> Cerrar</button>
+            )}
             {isAdmin && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
               <button onClick={() => updateStatus('resolved')} className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors">
                 <Check className="w-4 h-4" /> Resolver
               </button>
-            )}
-            {/* Cambiar el estado es solo del admin: el solicitante hace seguimiento. */}
-            {isAdmin && ticket.status !== 'closed' && (
-              <button onClick={() => updateStatus('closed')} className={`${BTN_SECONDARY} h-11 sm:h-auto`}><Lock className="w-4 h-4" /> Cerrar</button>
             )}
           </>
         }

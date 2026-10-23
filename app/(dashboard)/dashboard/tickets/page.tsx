@@ -25,6 +25,8 @@ import {
   ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen, CloudOff,
 } from 'lucide-react';
 import ListaSinConexion, { useSinConexion } from '@/components/sin-conexion/ListaSinConexion';
+import MenuMas from '@/components/ui/MenuMas';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -364,7 +366,14 @@ export default function TicketsPage() {
 
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          {/* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
+              En el teléfono: buscador a todo el ancho; la acción principal baja a la barra de
+              abajo y «Solicitar ticket», que pasa a secundaria para quien también crea, va en el
+              «⋯». Desde `lg`, la fila de siempre con sus dos botones. */}
+          {(() => {
+            const creaTickets = accessRoleOf(user) !== 'client';
+            return (
+          <div className="flex items-center gap-2 mb-3">
             <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -375,25 +384,43 @@ export default function TicketsPage() {
                 style={mf}
               />
             </div>
-            {/* Comparten fila en teléfono: uno debajo del otro eran dos franjas de 44 px
-                antes de llegar a la lista, que es lo que se viene a ver. */}
-            <div className="flex gap-2">
+            {creaTickets && (
+              <span className="lg:hidden flex ml-auto">
+                <MenuMas items={[{ label: 'Solicitar ticket', icon: Plus, onClick: () => openCreateModal('request') }]} />
+              </span>
+            )}
+            <div className="hidden lg:flex gap-2">
               {/* Solicitar ticket: para TODOS (yo soy el cliente). */}
               <button onClick={() => openCreateModal('request')}
-                className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0"
                 style={mf}>
-                <Plus className="w-4 h-4" /> <span className="sm:hidden">Solicitar</span><span className="hidden sm:inline">Solicitar ticket</span>
+                <Plus className="w-4 h-4" /> Solicitar ticket
               </button>
               {/* Nuevo ticket: solo candidato/miembro/admin (yo soy el miembro asignado). */}
-              {accessRoleOf(user) !== 'client' && (
+              {creaTickets && (
                 <button onClick={() => openCreateModal('create')}
-                  className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
                   style={mf}>
-                  <Plus className="w-4 h-4" /> <span className="sm:hidden">Nuevo</span><span className="hidden sm:inline">Nuevo ticket</span>
+                  <Plus className="w-4 h-4" /> Nuevo ticket
                 </button>
               )}
             </div>
+            {/* En el teléfono, la principal abajo: «Nuevo ticket» para quien crea; para el
+                cliente, «Solicitar ticket», que es su única acción. */}
+            <EnBarraAcciones>
+              {creaTickets ? (
+                <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
+                  <Plus className="w-4 h-4" /> Nuevo ticket
+                </button>
+              ) : (
+                <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
+                  <Plus className="w-4 h-4" /> Solicitar ticket
+                </button>
+              )}
+            </EnBarraAcciones>
           </div>
+            );
+          })()}
 
           {tab === 'offline' ? (
             <ListaSinConexion tipo="ticket" enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />

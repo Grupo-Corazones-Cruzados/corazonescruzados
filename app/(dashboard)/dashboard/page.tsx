@@ -12,6 +12,8 @@ import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
   Download, Plus, ChevronRight, type LucideIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import { BTN_SECONDARY } from '@/components/ui/Button';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -107,9 +109,10 @@ export default function DashboardHome() {
     <div>
       {/* Saludo. En teléfono ocupa menos: el titular es la firma de la pantalla, no su
           contenido, y en 390 px cada línea que se ahorra es una cifra que entra. */}
+      {/* Sin la línea «Este es el resumen de…» debajo (Fernando, 2026-10-23: bajo el título
+          no se escriben frases descriptivas): repetía lo que ya dice la pantalla. */}
       <div className="mb-4 sm:mb-6">
         <h1 className="text-[19px] sm:text-2xl font-semibold text-digi-text leading-tight" style={mf}>{greet}{name ? `, ${name}` : ''}</h1>
-        <p className="text-[12.5px] sm:text-[13px] text-digi-muted mt-0.5" style={mf}>{isStaff ? 'Este es el resumen de GCC World.' : 'Este es el resumen de tu cuenta.'}</p>
       </div>
 
       {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
@@ -128,13 +131,20 @@ export default function DashboardHome() {
         <>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px] font-semibold text-digi-text" style={mf}>Estado financiero mensual</h2>
+            {/* «Reporte global» es la acción principal de la pantalla: en el teléfono va a la
+                barra de abajo (2026-10-23, regla de los productos) y aquí solo desde `lg`. */}
             {months.length > 0 && (
-              /* 44 px de alto en teléfono (`h-11`): es el destino táctil mínimo con el que
-                 un dedo acierta a la primera. En escritorio vuelve a la altura de siempre. */
               <button onClick={() => window.open('/api/finance/pdf', '_blank')}
-                className="inline-flex items-center gap-1.5 h-11 sm:h-auto px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors shrink-0" style={mf}>
-                <Download className="w-4 h-4" /> <span className="hidden sm:inline">Reporte global</span><span className="sm:hidden">Reporte</span>
+                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors shrink-0" style={mf}>
+                <Download className="w-4 h-4" /> Reporte global
               </button>
+            )}
+            {months.length > 0 && (
+              <EnBarraAcciones>
+                <button onClick={() => window.open('/api/finance/pdf', '_blank')} className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5`}>
+                  <Download className="w-4 h-4" /> Reporte global
+                </button>
+              </EnBarraAcciones>
             )}
           </div>
 

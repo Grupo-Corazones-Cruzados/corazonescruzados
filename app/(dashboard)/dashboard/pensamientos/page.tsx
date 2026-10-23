@@ -178,43 +178,21 @@ export default function PensamientosPage() {
           En escritorio es una columna. En TELÉFONO era la misma columna apilada arriba:
           17 fechas × 35 px = **600 px que hay que recorrer enteros antes de poder
           escribir**, y lo primero de este módulo es escribir («la captura tiene que ser
-          inmediata», dice el compositor). Aquí las mismas fechas son una tira de fichas
-          que se desliza en horizontal y ocupa una línea. */}
-      <aside className="w-full lg:w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+          inmediata», dice el compositor). Luego fue una tira de fichas que se deslizaba
+          en horizontal: ocupaba una línea, pero de 19 fechas se veían dos y el resto había
+          que adivinarlo. Ahora (Fernando, 2026-10-23: nada se desliza de lado escondiendo
+          opciones) es un <select> nativo a todo el ancho: una línea, y la lista entera a
+          un toque. */}
+      <select aria-label="Fecha" value={selectedDay ?? ''} onChange={(e) => setSelectedDay(e.target.value || null)}
+        className="lg:hidden field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+        <option value="">Recientes{totals.count > 0 ? ` · ${totals.count}` : ''}</option>
+        {days.map((d) => <option key={d.day} value={d.day}>{fmtDayCorto(d.day)} · {d.count}</option>)}
+      </select>
+      <aside className="hidden lg:block w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Fechas</p>
 
-        {/* Teléfono: fichas en una tira horizontal */}
-        <div className="lg:hidden desplaza-x flex gap-1.5 overflow-x-auto pb-1 -mx-2 px-2">
-          <button
-            onClick={() => setSelectedDay(null)}
-            className={`shrink-0 h-11 inline-flex items-center gap-1.5 px-3 rounded-full border text-[12.5px] font-medium transition-colors ${
-              selectedDay === null ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-text'
-            }`}
-            style={mf}
-          >
-            <CalendarDays className="w-4 h-4 shrink-0" /> Recientes
-            {totals.count > 0 && <span className="tabular-nums opacity-75">{totals.count}</span>}
-          </button>
-          {days.map((d) => {
-            const active = selectedDay === d.day;
-            return (
-              <button key={d.day} onClick={() => setSelectedDay(d.day)}
-                className={`shrink-0 h-11 inline-flex items-center gap-1.5 px-3 rounded-full border text-[12.5px] font-medium whitespace-nowrap transition-colors ${
-                  active ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-text'
-                }`}
-                style={mf}>
-                {fmtDayCorto(d.day)}
-                <span className="tabular-nums opacity-75">{d.count}</span>
-              </button>
-            );
-          })}
-          {days.length === 0 && !loading && (
-            <p className="px-1 py-3 text-[11.5px] text-digi-muted/60" style={mf}>Todavía no has escrito nada.</p>
-          )}
-        </div>
-
         {/* Escritorio: la columna de siempre */}
-        <div className="hidden lg:block space-y-0.5 lg:max-h-[70vh] overflow-y-auto">
+        <div className="space-y-0.5 max-h-[70vh] overflow-y-auto">
           <button
             onClick={() => setSelectedDay(null)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
@@ -273,8 +251,7 @@ export default function PensamientosPage() {
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {draft.trim().length > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-digi-muted tabular-nums" style={mf}>
-                <span className="w-2 h-2 rounded-full" style={{ background: draftIntensity.color }} />
-                {draftIntensity.label} · {nf.format(draft.trim().length)} caracteres
+                <span style={{ color: draftIntensity.color }}>{draftIntensity.label}</span> · {nf.format(draft.trim().length)} caracteres
               </span>
             )}
             <span className="text-[11px] text-digi-muted/60 hidden sm:inline" style={mf}>⌘/Ctrl + Enter para guardar</span>
@@ -370,10 +347,11 @@ function ThoughtCard({
         <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted tabular-nums" style={mf}>
           <Clock className="w-3 h-3" /> {fmtTime(t.createdAt)}
         </span>
-        <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border border-digi-border" style={{ ...mf, color: intensity.color }}>
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: intensity.color }} />
-          {intensity.label}
-        </span>
+        {/* La intensidad, en texto de color: «Breve/Media/Extensa» ya dice el dato y el
+            punto lo repetía (2026-10-23). La etiqueta de DIMENSIÓN de al lado sí conserva
+            su color de fondo: ese color identifica la dimensión en todo el módulo (es el
+            mismo de los gráficos), y lleva icono, no punto. */}
+        <span className="text-[11px] font-medium" style={{ ...mf, color: intensity.color }}>{intensity.label}</span>
         {t.category && Icon ? (
           <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border"
             style={{ ...mf, color: DIMENSION_COLOR[t.category], borderColor: `${DIMENSION_COLOR[t.category]}55`, background: `${DIMENSION_COLOR[t.category]}18` }}>

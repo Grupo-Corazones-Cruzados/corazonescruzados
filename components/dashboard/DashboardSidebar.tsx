@@ -132,8 +132,16 @@ export default function DashboardSidebar() {
   return (
     <>
 
-      {/* Backdrop del teléfono: se pulsa para cerrar. */}
-      {mobileOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={cerrarMenuMovil} />}
+      {/* Backdrop del teléfono: se pulsa para cerrar. Se pinta SIEMPRE y solo cambia la
+          opacidad, para que se funda al abrir y al cerrar (Fernando, 2026-10-23: lo que
+          aparece al navegar entra con movimiento). Cerrado no recibe clics. */}
+      <div
+        aria-hidden
+        onClick={cerrarMenuMovil}
+        className={`fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-200 ease-out ${
+          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
       {/* ── EL VELO DE ESCRITORIO ────────────────────────────────────────────────
           Al desplegarse el menú, el resto de la pantalla se atenúa. Sin él, el menú
@@ -164,14 +172,16 @@ export default function DashboardSidebar() {
         /* `rail` redefine los tokens de color SOLO aquí dentro (ver globals.css). Por eso
            ni una de las clases de abajo cambia: `bg-digi-card`, `text-digi-muted` y demás
            leen la variable del ancestro más cercano, que pasa a ser el raíl. */
-        /* `transition-[width]` y no `transition-all`: lo único que cambia al abrirse es
-           el ancho. Animar «todo» hace que el navegador vigile cada propiedad del
+        /* `transition-[width,translate]` y no `transition-all`: lo único que cambia al
+           abrirse es el ancho (escritorio) y el desplazamiento (teléfono). ⚠️ `translate` y
+           no `transform`: en Tailwind v4 `translate-x-*` escribe la propiedad `translate`,
+           y con `transform` en la lista el menú del teléfono entraba de golpe (medido). Animar «todo» hace que el navegador vigile cada propiedad del
            elemento durante la transición — más trabajo por fotograma justo en el momento
            en que se está reordenando el contenido. */
         /* ⚠️ Los niveles, de abajo arriba: pie (z-20) · velo de escritorio (z-30) ·
            menú cerrado (z-40) · velo del teléfono (z-40) · menú abierto en teléfono
            (z-50). El menú siempre por encima de su propio velo. */
-        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width] duration-200
+        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
           ${collapsed ? 'w-16' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
         `}

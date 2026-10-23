@@ -9,7 +9,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import BrandLoader from '@/components/ui/BrandLoader';
 import DetailHeader from '@/components/ui/DetailHeader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2, FileText, Plus } from 'lucide-react';
+import { Download, Mail, RefreshCw, Pencil, Copy, KeyRound, FileCheck2, FileText, Plus, RotateCcw, Ban } from 'lucide-react';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { fmt2 } from '@/lib/format';
 import { SRI_MAX } from '@/lib/integrations/sri/text';
@@ -275,36 +275,23 @@ export default function InvoiceDetailPage() {
         title={invoice.invoice_number || `Factura #${invoice.id}`}
         status={
           <span className="flex items-center gap-2">
-            {invoice.sri_status && <PixelBadge punto={false} variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
-            <PixelBadge punto={false} variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
+            {invoice.sri_status && <PixelBadge variant={SRI_V[invoice.sri_status] || 'default'}>SRI: {SRI_LABEL[invoice.sri_status] || invoice.sri_status}</PixelBadge>}
+            <PixelBadge variant={STATUS_V[invoice.status] || 'default'}>{STATUS_LABEL[invoice.status] || invoice.status}</PixelBadge>
           </span>
         }
-        actions={
-          <>
-            {invoice.sri_status === 'authorized' && (
-              <button onClick={() => window.open(`/api/invoices/${id}/pdf`, '_blank')} className={BTN_PRIMARY}><Download className="w-4 h-4" /> Descargar PDF</button>
-            )}
-            {invoice.sri_status === 'authorized' && isAdmin && (
-              <button onClick={() => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); }} className={BTN_SECONDARY}><Mail className="w-4 h-4" /> Reenviar</button>
-            )}
-            {invoice.sri_status === 'error' && isAdmin && (
-              <button onClick={handleResendToSri} disabled={resendingSri} className={BTN_SECONDARY}><RefreshCw className="w-4 h-4" /> {resendingSri ? 'Reenviando...' : 'Reenviar al SRI'}</button>
-            )}
-            {(invoice.sri_status === 'rejected' || invoice.sri_status === 'error') && isAdmin && (
-              <button onClick={openEditModal} className={BTN_SECONDARY}><Pencil className="w-4 h-4" /> Editar y reintentar</button>
-            )}
-            {invoice.sri_status === 'voided' && isAdmin && (
-              <button onClick={() => router.push(`/dashboard/invoices?refactor=${id}`)} className={BTN_SECONDARY}>Refacturar</button>
-            )}
-            {isAdmin && (
-              <button onClick={abrirDetalle} className={BTN_SECONDARY}>
-                <FileText className="w-4 h-4" /> Detalle de servicios
-              </button>
-            )}
-          </>
-        }
+        actions={invoice.sri_status === 'authorized' ? (
+          <button onClick={() => window.open(`/api/invoices/${id}/pdf`, '_blank')} className={BTN_PRIMARY}><Download className="w-4 h-4" /> Descargar PDF</button>
+        ) : undefined}
+        // Secundarias: botones en escritorio, dentro del «⋯» en el teléfono (2026-10-23).
+        secundarias={isAdmin ? [
+          ...(invoice.sri_status === 'authorized' ? [{ label: 'Reenviar', icon: Mail, onClick: () => { setResendEmails(invoice.client_email_sri || ''); setShowResend(true); } }] : []),
+          ...(invoice.sri_status === 'error' ? [{ label: resendingSri ? 'Reenviando...' : 'Reenviar al SRI', icon: RefreshCw, onClick: handleResendToSri, disabled: resendingSri }] : []),
+          ...(invoice.sri_status === 'rejected' || invoice.sri_status === 'error' ? [{ label: 'Editar y reintentar', icon: Pencil, onClick: openEditModal }] : []),
+          ...(invoice.sri_status === 'voided' ? [{ label: 'Refacturar', icon: RotateCcw, onClick: () => router.push(`/dashboard/invoices?refactor=${id}`) }] : []),
+          { label: 'Detalle de servicios', icon: FileText, onClick: abrirDetalle },
+        ] : []}
         overflow={[
-          ...(invoice.sri_status === 'authorized' && isAdmin ? [{ label: 'Anular factura', onClick: () => setShowVoid(true), danger: true }] : []),
+          ...(invoice.sri_status === 'authorized' && isAdmin ? [{ label: 'Anular factura', icon: Ban, onClick: () => setShowVoid(true), danger: true }] : []),
         ]}
       />
 

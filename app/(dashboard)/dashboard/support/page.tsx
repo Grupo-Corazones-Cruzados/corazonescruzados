@@ -13,6 +13,7 @@ import Button, { BTN_PRIMARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, Search, MessageSquare } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -146,7 +147,9 @@ export default function SupportPage() {
 
         {/* ── Right region: command bar + list · panel ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          {/* «Nuevo ticket» es la acción principal: en el teléfono baja a la barra de abajo y el
+              buscador se queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
+          <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -159,11 +162,16 @@ export default function SupportPage() {
             </div>
             <button
               onClick={() => setForm({ ...emptyForm })}
-              className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto px-3 sm:py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+              className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
               style={mf}
             >
               <Plus className="w-4 h-4" /> Nuevo ticket
             </button>
+            <EnBarraAcciones>
+              <button onClick={() => setForm({ ...emptyForm })} className={BTN_PRIMARY}>
+                <Plus className="w-4 h-4" /> Nuevo ticket
+              </button>
+            </EnBarraAcciones>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
@@ -191,14 +199,16 @@ export default function SupportPage() {
                 /* En la tabla el asunto se recorta y el tipo, las respuestas y la fecha
                    están ocultos (`hideOnMobile`) — o sea, en un teléfono la fila decía
                    media frase y nada más. Aquí cabe todo. */
+                /* Sin el punto de estado (2026-10-23): la insignia de la derecha ya dice el
+                   estado con su palabra y su color. En la tabla de escritorio el punto se queda
+                   porque ahí no hay columna de estado: el color ES el dato. */
                 tarjetaMovil={(t: any) => (
                   <>
                     <div className="flex items-start gap-2">
-                      <span title={STATUS_LABEL[t.status] || t.status} className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${STATUS_DOT[STATUS_V[t.status] || 'default']}`} />
                       <span className="flex-1 min-w-0 text-[13.5px] font-medium text-digi-text leading-snug" style={mf}>{t.subject}</span>
                       <span className="shrink-0"><PixelBadge variant={STATUS_V[t.status] || 'default'}>{STATUS_LABEL[t.status] || t.status}</PixelBadge></span>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-4 text-[12px] text-digi-muted" style={mf}>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-digi-muted" style={mf}>
                       <span className="tabular-nums">#{t.id}</span>
                       <span>{TYPE_LABELS[t.type] || t.type}</span>
                       <span className="inline-flex items-center gap-1 tabular-nums"><MessageSquare className="w-3.5 h-3.5" /> {t.reply_count || 0}</span>

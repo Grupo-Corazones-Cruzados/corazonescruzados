@@ -19,6 +19,7 @@ import {
   Trash2, CheckCircle2, ChevronDown, ExternalLink, FileText,
 } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const inputCls = 'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none';
@@ -345,7 +346,9 @@ export default function ClientsPage() {
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          {/* «Nuevo cliente» es la acción principal: en el teléfono baja a la barra de abajo y el
+              buscador se queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
+          <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={search} onChange={(e2) => setSearch(e2.target.value)}
@@ -353,9 +356,14 @@ export default function ClientsPage() {
                 className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf} />
             </div>
-            <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} shrink-0`}>
+            <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
               <Plus className="w-4 h-4" /> Nuevo cliente
             </button>
+            <EnBarraAcciones>
+              <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
+                <Plus className="w-4 h-4" /> Nuevo cliente
+              </button>
+            </EnBarraAcciones>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-4 items-start">

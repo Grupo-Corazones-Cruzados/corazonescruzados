@@ -12,6 +12,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import MenuMas from '@/components/ui/MenuMas';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import {
   Inbox, Clock, CheckCircle2, AlertTriangle, Search, Plus, X, Paperclip, Trash2,
   Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
@@ -357,7 +359,7 @@ export default function RecordatoriosPage() {
   <div className="p-4 space-y-3">
     <div className="flex items-center justify-between gap-3 text-[12px]">
       <span className="text-digi-muted" style={mf}>Estado</span>
-      <PixelBadge punto={false} variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
+      <PixelBadge variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
     </div>
     <div className="flex items-center justify-between gap-3 text-[12px]">
       <span className="text-digi-muted" style={mf}>Fecha y hora</span>
@@ -451,25 +453,34 @@ export default function RecordatoriosPage() {
 
         {/* ── Right region: command bar + table + detail ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por título..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                className="field-control w-full h-11 lg:h-auto pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
                 style={mf}
               />
             </div>
-            {/* Los dos botones comparten fila en teléfono: uno debajo del otro eran dos
-                pantallazos de 44 px antes de llegar a la lista, que es lo que se viene a ver. */}
-            <div className="flex gap-2">
-              <button onClick={openMeetings} className={`${BTN_SECONDARY} flex-1 sm:flex-none h-11 sm:h-auto shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
-                <Video className="w-4 h-4" /> <span className="sm:hidden">Reuniones</span><span className="hidden sm:inline">Buscar reuniones</span>
+            {/* ── Las acciones, según la pantalla (2026-10-23, reglas del teléfono) ──
+                Por debajo de `lg`, «Nuevo recordatorio» —la principal— va a la barra fija de
+                abajo y «Buscar reuniones» —secundaria— al «⋯» junto al buscador: la barra de
+                arriba queda en una sola línea y la lista empieza antes. Desde `lg`, los dos
+                botones en su sitio de siempre. */}
+            <span className="lg:hidden flex">
+              <MenuMas items={[{ label: 'Buscar reuniones', icon: Video, onClick: openMeetings }]} />
+            </span>
+            <EnBarraAcciones>
+              <button onClick={openCreate} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo recordatorio</button>
+            </EnBarraAcciones>
+            <div className="hidden lg:flex gap-2">
+              <button onClick={openMeetings} className={`${BTN_SECONDARY} shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
+                <Video className="w-4 h-4" /> Buscar reuniones
               </button>
-              <button onClick={openCreate} className={`${BTN_PRIMARY} flex-1 sm:flex-none h-11 sm:h-auto shrink-0`}>
-                <Plus className="w-4 h-4" /> <span className="sm:hidden">Nuevo</span><span className="hidden sm:inline">Nuevo recordatorio</span>
+              <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}>
+                <Plus className="w-4 h-4" /> Nuevo recordatorio
               </button>
             </div>
           </div>
@@ -524,7 +535,7 @@ export default function RecordatoriosPage() {
                         {tareas.length > 0 && (
                           <span className="inline-flex items-center gap-1 tabular-nums"><ListChecks className="w-3.5 h-3.5" /> {hechas}/{tareas.length}</span>
                         )}
-                        <span className="ml-auto"><PixelBadge punto={false} variant={STATUS_VARIANT[est] || 'default'}>{STATUS_LABEL[est]}</PixelBadge></span>
+                        <span className="ml-auto"><PixelBadge variant={STATUS_VARIANT[est] || 'default'}>{STATUS_LABEL[est]}</PixelBadge></span>
                       </div>
                     </>
                   );

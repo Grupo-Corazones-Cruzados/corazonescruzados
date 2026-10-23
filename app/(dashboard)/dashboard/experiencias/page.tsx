@@ -5,6 +5,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import ExperienciasPersonales from '@/components/experiencias/ExperienciasPersonales';
 import PixelTabs from '@/components/ui/PixelTabs';
+import Segmentado from '@/components/ui/Segmentado';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { VALOR_LABEL } from '@/lib/centralized/valores';
 import {
@@ -150,7 +151,17 @@ export default function ExperienciasPage() {
 
   // ── Detalle de una experiencia (drill-in) ──
   // Las mismas pestañas que Gestión Social (el otro lado de estos eventos): `PixelTabs`.
-  const barra = <div className="mb-4"><PixelTabs tabs={VISTAS} active={vista} onChange={cambiarVista} /></div>;
+  // En el teléfono (< lg) son un Segmentado a todo el ancho: debajo viene el filtro del rail
+  // (ya un `<select>`), y dos niveles de filtro apilados tienen que ocupar lo mínimo
+  // (Fernando, 2026-10-23). Las dos versiones se pintan y CSS elige: medir la ventana en el
+  // render rompe la hidratación.
+  const barra = (
+    <>
+      <div className="mb-4 hidden lg:block"><PixelTabs tabs={VISTAS} active={vista} onChange={cambiarVista} /></div>
+      <Segmentado className="mb-3 w-full lg:hidden" etiqueta="Experiencias" valor={vista} onChange={cambiarVista}
+        opciones={VISTAS.map((v) => ({ valor: v.value as Vista, texto: v.labelCorto }))} />
+    </>
+  );
 
   if (vista === 'personales') {
     return (

@@ -106,8 +106,15 @@ export default function RazonesPanel() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
-      {/* Izquierda: fechas con razones */}
-      <aside className="w-full lg:w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+      {/* Fechas. En el teléfono, un <select> a todo el ancho: el raíl vertical en tarjeta
+          empujaba el compositor una pantalla hacia abajo (Fernando, 2026-10-23: lo que elige
+          entre muchas opciones va en un selector en el teléfono). Desde `lg`, el raíl. */}
+      <select aria-label="Fecha" value={selectedDay ?? ''} onChange={(e) => setSelectedDay(e.target.value || null)}
+        className="lg:hidden field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+        <option value="">Recientes{totals.count > 0 ? ` · ${totals.count}` : ''}</option>
+        {days.map((d) => <option key={d.day} value={d.day}>{fmtDayLong(d.day)} · {d.count}</option>)}
+      </select>
+      <aside className="hidden lg:block w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Fechas</p>
         <div className="space-y-0.5 lg:max-h-[70vh] overflow-y-auto">
           <button onClick={() => setSelectedDay(null)}
@@ -144,8 +151,7 @@ export default function RazonesPanel() {
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {draft.trim().length > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-digi-muted tabular-nums" style={mf}>
-                <span className="w-2 h-2 rounded-full" style={{ background: draftIntensity.color }} />
-                {draftIntensity.label} · {nf.format(draft.trim().length)} caracteres
+                <span style={{ color: draftIntensity.color }}>{draftIntensity.label}</span> · {nf.format(draft.trim().length)} caracteres
               </span>
             )}
             <span className="text-[11px] text-digi-muted/60 hidden sm:inline" style={mf}>⌘/Ctrl + Enter para guardar</span>
@@ -207,9 +213,9 @@ function RazonCard({ t, editing, onEditChange, onStartEdit, onCancelEdit, onSave
     <div className="rounded-lg border border-digi-border bg-digi-card p-3 group">
       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
         <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted tabular-nums" style={mf}><Clock className="w-3 h-3" /> {fmtTime(t.createdAt)}</span>
-        <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border border-digi-border" style={{ ...mf, color: intensity.color }}>
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: intensity.color }} /> {intensity.label}
-        </span>
+        {/* La intensidad, en texto de color: la palabra ya dice el dato, el punto y la
+            píldora sobraban (2026-10-23, regla de los estados de los productos). */}
+        <span className="text-[11px] font-medium" style={{ ...mf, color: intensity.color }}>{intensity.label}</span>
         <span className="text-[11px] text-digi-muted/60 tabular-nums ml-auto" style={mf}>{nf.format(t.charCount)} car.</span>
         <div className="acciones-al-pasar flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
           <button onClick={onStartEdit} className="text-digi-muted hover:text-accent" aria-label="Editar razón"><Pencil className="w-3.5 h-3.5" /></button>

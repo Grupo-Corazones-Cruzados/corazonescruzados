@@ -18,6 +18,7 @@ import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -261,7 +262,7 @@ export default function SubscriptionsPage() {
       <div className="flex items-center gap-2">
         <label className="text-[11px] text-digi-muted" style={mf}>Estado</label>
         {esCliente ? (
-          <PixelBadge punto={false} variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
+          <PixelBadge variant={detail.status === 'active' ? 'success' : detail.status === 'paused' ? 'warning' : 'error'}>
             {detail.status === 'active' ? 'Activa' : detail.status === 'paused' ? 'Pausada' : 'Cancelada'}
           </PixelBadge>
         ) : (
@@ -389,7 +390,7 @@ export default function SubscriptionsPage() {
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-0">
               <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={search} onChange={(e) => setSearch(e.target.value)}
@@ -399,10 +400,19 @@ export default function SubscriptionsPage() {
             </div>
             {/* Crear suscripciones es del staff. El servidor ya lo rechaza, pero enseñarle
                 el botón a un cliente es prometerle algo que va a fallar. */}
+            {/* Es la acción principal: en el teléfono baja a la barra de abajo y el buscador se
+                queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
             {!esCliente && (
-              <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> Nueva suscripción
-              </button>
+              <>
+                <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
+                  <Plus className="w-4 h-4" /> Nueva suscripción
+                </button>
+                <EnBarraAcciones>
+                  <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
+                    <Plus className="w-4 h-4" /> Nueva suscripción
+                  </button>
+                </EnBarraAcciones>
+              </>
             )}
           </div>
 

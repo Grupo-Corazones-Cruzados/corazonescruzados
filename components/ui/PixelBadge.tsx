@@ -1,6 +1,6 @@
 // Fuera del dashboard (landing/portal/juego) el badge conserva su look pixel oscuro
-// vía estas clases; dentro de `.corp` el CSS lo reescribe al estilo Fluent "serio"
-// (píldora neutra + punto y texto semántico). Ver `.corp .pixel-badge` en globals.css.
+// vía estas clases; dentro de `.corp` el CSS lo reescribe a TEXTO DE COLOR, sin píldora ni
+// punto (2026-10-23). Ver `.corp .pixel-badge` en globals.css.
 const VARIANTS: Record<string, string> = {
   default: 'border-digi-border text-digi-muted bg-digi-card',
   success: 'border-green-700/50 text-green-400 bg-green-900/20',
@@ -13,12 +13,13 @@ export default function PixelBadge({
   children,
   variant = 'default',
   className = '',
-  punto = true,
+  punto = false,
 }: {
   children: React.ReactNode;
   variant?: keyof typeof VARIANTS;
   className?: string;
-  /** `false` quita el punto de color: para columnas donde el texto ya basta (SRI de Facturas). */
+  /** `true` vuelve a pintar el punto. Desde el 2026-10-23 no lo lleva por defecto: el estado es
+   *  texto de color (Fernando). Queda para un caso en que el punto SEA el dato. */
   punto?: boolean;
 }) {
   return (

@@ -646,7 +646,10 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               )}
             </div>
 
-            <aside className="w-full xl:w-[360px]">
+            {/* Sin elemento elegido el panel es solo «Selecciona un elemento…»: en el teléfono
+                caería bajo las tarjetas sin aportar, así que ahí no se pinta (Fernando,
+                2026-10-23). En escritorio se queda. */}
+            <aside className={`w-full xl:w-[360px] ${selected ? '' : 'hidden lg:block'}`}>
               {renderMarketplacePanel()}
             </aside>
           </div>

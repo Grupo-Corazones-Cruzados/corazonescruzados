@@ -447,7 +447,9 @@ export default function ToolsPage() {
 
         {/* ── Right region: buscador + tabla + panel de uso ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="relative w-full max-w-xs mb-3">
+          {/* En el teléfono el buscador va a todo el ancho; el `max-w-xs` dejaba una franja vacía
+              a su derecha (regla de Fernando, 2026-10-23). Desde `sm` recupera su ancho. */}
+          <div className="relative w-full sm:max-w-xs mb-3">
             <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               placeholder="Buscar herramienta..."
@@ -481,7 +483,10 @@ export default function ToolsPage() {
             </div>
 
             {/* ── Panel de uso ── */}
-            <aside className="w-full xl:w-[360px]">
+            {/* Sin herramienta elegida el panel es solo «Selecciona una herramienta…»: en el
+                teléfono caería bajo la lista sin aportar nada, así que ahí no se pinta
+                (Fernando, 2026-10-23). En escritorio se queda. */}
+            <aside className={`w-full xl:w-[360px] ${tool ? '' : 'hidden lg:block'}`}>
               {renderToolPanel()}
             </aside>
           </div>

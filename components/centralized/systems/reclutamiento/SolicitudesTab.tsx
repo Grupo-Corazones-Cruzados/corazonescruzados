@@ -153,7 +153,9 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       {/* Detalle */}
-      <aside className="w-full">
+      {/* Sin selección el panel es solo «Selecciona un una solicitud»: en el teléfono caería bajo la
+          lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
+      <aside className={`w-full ${selected ? '' : 'hidden lg:block'}`}>
         {selected ? (
           <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden lg:sticky lg:top-4">
             <div className="flex items-start gap-3 p-4 border-b border-digi-border">

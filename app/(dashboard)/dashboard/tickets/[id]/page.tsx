@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import DetailHeader, { HeaderChip } from '@/components/ui/DetailHeader';
+import DetailHeader from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelInput from '@/components/ui/PixelInput';
@@ -24,7 +24,7 @@ import { useSondeo } from '@/lib/hooks/useSondeo';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown, Building2, DollarSign, CalendarClock, Ban, Trash2 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
@@ -742,13 +742,12 @@ export default function TicketDetailPage() {
               onClick: () => setConfirmarCancelar(true) },
           ]} />
         ) : <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge>}
-        chips={(
-          <>
-            {ticket.client_name && <HeaderChip>{ticket.client_name}</HeaderChip>}
-            {ticket.estimated_cost != null && ticket.estimated_cost !== '' && <HeaderChip>${fmt2(Number(ticket.estimated_cost))}</HeaderChip>}
-            {ticket.deadline && <HeaderChip>Límite {new Date(ticket.deadline).toLocaleDateString()}</HeaderChip>}
-          </>
-        )}
+        detalles={[
+          ...(ticket.client_name ? [{ icono: Building2, etiqueta: 'Cliente', valor: ticket.client_name }] : []),
+          ...(ticket.estimated_cost != null && ticket.estimated_cost !== '' ? [{ icono: DollarSign, etiqueta: 'Costo estimado', valor: `$${fmt2(Number(ticket.estimated_cost))}` }] : []),
+          ...(ticket.deadline ? [{ icono: CalendarClock, etiqueta: 'Fecha límite', valor: new Date(ticket.deadline).toLocaleDateString() }] : []),
+        ]}
+        soloIconos
         actions={(
           <>
             {/* ⇒ SOLO ICONOS, como en el proyecto (Fernando, 2026-09-29). Nombre en title/aria-label. */}
@@ -774,8 +773,8 @@ export default function TicketDetailPage() {
         )}
         overflow={[
           // Con el selector de estado a la vista, cancelar se hace desde él.
-          ...(isAdmin && ticket.status !== 'cancelled' && !puedeElegirEstado ? [{ label: 'Cancelar ticket', onClick: () => setConfirmarCancelar(true), danger: true }] : []),
-          ...(isAdmin ? [{ label: 'Eliminar ticket', onClick: () => setDeleteModal(true), danger: true }] : []),
+          ...(isAdmin && ticket.status !== 'cancelled' && !puedeElegirEstado ? [{ label: 'Cancelar ticket', icon: Ban, onClick: () => setConfirmarCancelar(true), danger: true }] : []),
+          ...(isAdmin ? [{ label: 'Eliminar ticket', icon: Trash2, onClick: () => setDeleteModal(true), danger: true }] : []),
         ]}
       />
 

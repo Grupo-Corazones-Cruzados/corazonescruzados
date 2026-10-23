@@ -118,7 +118,9 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
       </div>
 
       {/* Detalle del candidato: criterios */}
-      <aside className="w-full">
+      {/* Sin selección el panel es solo «Selecciona un un candidato»: en el teléfono caería bajo la
+          lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
+      <aside className={`w-full ${selected ? '' : 'hidden lg:block'}`}>
         {selected ? (
           <div className="space-y-4">
             {/* Encabezado */}

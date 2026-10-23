@@ -6,6 +6,7 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import PixelModal from '@/components/ui/PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { DIMENSIONS, DIMENSION_LABEL, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import { DIMENSION_ICON } from '@/components/centralized/dimensionIcons';
 import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
@@ -108,8 +109,10 @@ export default function RecursosTab() {
         <UsersList selected={user} onSelect={setUser} className="max-h-[70vh] overflow-y-auto" />
       </div>
 
+      {/* «Elige una persona» es relleno: en el teléfono caería bajo la lista de personas sin
+          aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
       {!user ? (
-        <div className="flex-1 bg-digi-card border border-digi-border rounded-xl py-16 text-center">
+        <div className="hidden lg:block flex-1 bg-digi-card border border-digi-border rounded-xl py-16 text-center">
           <UserRound className="w-8 h-8 text-digi-muted mx-auto mb-2" />
           <p className="text-[13px] text-digi-text font-medium" style={mf}>Elige una persona</p>
           <p className="text-[12px] text-digi-muted mt-1" style={mf}>Verás sus pensamientos y podrás valorar sus talentos y valores.</p>
@@ -126,9 +129,16 @@ export default function RecursosTab() {
               <span className="text-[10.5px] px-2 py-0.5 rounded-full border border-digi-border text-digi-muted" style={mf}>
                 {user.kind === 'member' ? 'Miembro' : 'Candidato'}
               </span>
-              <button className={`${BTN_PRIMARY} ml-auto`} onClick={() => setScoreOpen(true)} style={mf}>
+              {/* «Valorar» es la principal: en el teléfono va a la barra de abajo; desde `lg`, aquí.
+                  `max-lg:hidden` porque el `inline-flex` de BTN_PRIMARY gana a `hidden`. */}
+              <button className={`${BTN_PRIMARY} ml-auto max-lg:hidden`} onClick={() => setScoreOpen(true)} style={mf}>
                 <Star className="w-4 h-4" /> Valorar
               </button>
+              <EnBarraAcciones>
+                <button className={BTN_PRIMARY} onClick={() => setScoreOpen(true)} style={mf}>
+                  <Star className="w-4 h-4" /> Valorar
+                </button>
+              </EnBarraAcciones>
             </div>
 
             {/* Resumen de la valoración vigente */}

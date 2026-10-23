@@ -156,7 +156,9 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
       </div>
 
       {/* Detalle del miembro (contenido por definir) */}
-      <aside className="w-full">
+      {/* Sin selección el panel es solo «Selecciona un un miembro»: en el teléfono caería bajo la
+          lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
+      <aside className={`w-full ${selected ? '' : 'hidden lg:block'}`}>
         {selected ? (
           <div className="space-y-4">
             <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">

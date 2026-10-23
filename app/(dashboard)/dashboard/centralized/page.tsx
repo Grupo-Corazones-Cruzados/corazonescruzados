@@ -20,6 +20,7 @@ import {
   PISOS, PASOS, PISO_LABEL, PASO_LABEL, CELL_MAP, systemPath,
 } from '@/lib/centralized/systems';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -195,18 +196,30 @@ export default function CentralizedPage() {
             <select
               value={pasoFilter}
               onChange={(e) => setPasoFilter(e.target.value)}
-              className="field-control field-select appearance-none px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
+              className="field-control field-select appearance-none w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
               style={mf}
             >
               <option value="">Todos los pasos</option>
               {PASOS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
             </select>
+            {/* «Nuevo sistema» es la acción principal: en el teléfono baja a la barra de abajo
+                en vez de ocupar su propia fila a todo el ancho; desde `lg`, aquí (Fernando,
+                2026-10-23). */}
             {isAdmin && (
               <button onClick={openNewSystem}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
                 style={mf}>
                 <Plus className="w-4 h-4" /> Nuevo sistema
               </button>
+            )}
+            {isAdmin && (
+              <EnBarraAcciones>
+                <button onClick={openNewSystem}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
+                  style={mf}>
+                  <Plus className="w-4 h-4" /> Nuevo sistema
+                </button>
+              </EnBarraAcciones>
             )}
           </div>
 
@@ -221,15 +234,20 @@ export default function CentralizedPage() {
                 columns={[
                   { key: 'name', header: 'Sistema', render: (s: any) => (
                     <div className="flex items-center gap-2.5">
-                      <div className="relative w-8 h-8 rounded-md bg-accent-light border border-accent/15 flex items-center justify-center shrink-0">
+                      {/* Sin el punto verde/gris sobre el icono: lo normal es estar activo, y un
+                          punto en cada fila no decía nada. Solo el sistema INACTIVO lo dice, en
+                          texto, junto al nombre — como en Catering (Fernando, 2026-10-23). */}
+                      <div className="w-8 h-8 rounded-md bg-accent-light border border-accent/15 flex items-center justify-center shrink-0">
                         <Boxes className="w-4 h-4 text-accent" />
-                        <span title={s.is_active ? 'Activo' : 'Inactivo'} className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-digi-card ${s.is_active ? 'bg-green-500' : 'bg-digi-muted'}`} />
                       </div>
                       <div className="min-w-0">
-                        <button onClick={(e) => { e.stopPropagation(); openSystem(s); }}
-                          className={`block text-[13px] font-medium truncate text-left hover:text-accent transition-colors ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>
-                          {s.name}
-                        </button>
+                        <span className="flex items-baseline gap-2 min-w-0">
+                          <button onClick={(e) => { e.stopPropagation(); openSystem(s); }}
+                            className={`block min-w-0 text-[13px] font-medium truncate text-left hover:text-accent transition-colors ${selected?.id === s.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>
+                            {s.name}
+                          </button>
+                          {!s.is_active && <span className="shrink-0 text-[11px] text-digi-muted" style={mf}>Inactivo</span>}
+                        </span>
                         {s.description && <span className="block text-[11px] text-digi-muted truncate max-w-[280px]" style={mf}>{s.description}</span>}
                       </div>
                     </div>
@@ -250,7 +268,9 @@ export default function CentralizedPage() {
             </div>
 
             {/* ── Detail panel ── */}
-            <aside className="w-full xl:w-[300px]">
+            {/* Sin sistema elegido el panel es solo «Selecciona un sistema…»: en el teléfono
+                caería bajo la lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
+            <aside className={`w-full xl:w-[300px] ${selected ? '' : 'hidden lg:block'}`}>
               {selected ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">

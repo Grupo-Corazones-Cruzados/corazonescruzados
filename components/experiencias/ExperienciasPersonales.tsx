@@ -8,6 +8,8 @@ import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/
 import { FilaMarcable } from '@/components/ui/ListaMarcable';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import MenuMas from '@/components/ui/MenuMas';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import EspacioDrive, { fmtBytes, type EspacioDriveDatos } from '@/components/google/EspacioDrive';
 import {
   ChevronLeft, FolderOpen, Plus, RefreshCw, Upload, FileText, Film, Image as ImageIcon,
@@ -373,6 +375,12 @@ export default function ExperienciasPersonales() {
   // ── Detalle ──
   if (abierta != null) {
     const d = detalle?.experiencia.id === abierta ? detalle : null;
+    // «Nuevo evento» se pinta dos veces (cabecera desde `lg`, barra de abajo en el teléfono).
+    const nuevoEvento = () => {
+      if (!d) return;
+      const h = hoy(), { fechaInicio: i, fechaFin: f } = d.experiencia;
+      setFormEv({ id: null, nombre: '', fecha: h < i ? i : h > f ? f : h, descripcion: '', beneficios: [] });
+    };
     const sueltos = d?.archivos.filter((a) => a.eventoId == null) ?? [];
     return (
       <div className="flex-1 min-w-0 w-full">
@@ -414,7 +422,11 @@ export default function ExperienciasPersonales() {
               )}
               <div className="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-digi-border flex-wrap">
                 {espacio && <div className="w-full sm:w-auto sm:min-w-[300px]">{conexion?.espacio && <EspacioDrive espacio={conexion.espacio} />}</div>}
-                <div className="flex items-center gap-2 flex-wrap ml-auto">
+                {/* En el teléfono: «Nuevo evento» (principal) a la barra de abajo y «Abrir en
+                    Drive» / «Sincronizar» (secundarias) dentro del «⋯»; desde `lg`, los tres
+                    aquí como siempre (Fernando, 2026-10-23). `max-lg:hidden` porque el
+                    `inline-flex` de BTN_* sale después de `hidden` en el CSS y le gana. */}
+                <div className="hidden lg:flex items-center gap-2 flex-wrap ml-auto">
                   <a href={d.experiencia.driveUrl} target="_blank" rel="noopener noreferrer" className={BTN_SECONDARY} style={mf}>
                     <FolderOpen className="w-4 h-4" /> Abrir en Drive
                   </a>
@@ -422,14 +434,21 @@ export default function ExperienciasPersonales() {
                     onClick={() => { cargarDetalle(d.experiencia.id); cargarConexion(); }}>
                     <RefreshCw className={`w-4 h-4 ${cargandoDetalle ? 'animate-spin' : ''}`} /> Sincronizar
                   </button>
-                  <button className={BTN_PRIMARY} disabled={busy} style={mf}
-                    onClick={() => {
-                      const h = hoy(), { fechaInicio: i, fechaFin: f } = d.experiencia;
-                      setFormEv({ id: null, nombre: '', fecha: h < i ? i : h > f ? f : h, descripcion: '', beneficios: [] });
-                    }}>
+                  <button className={BTN_PRIMARY} disabled={busy} style={mf} onClick={nuevoEvento}>
                     <Plus className="w-4 h-4" /> Nuevo evento
                   </button>
                 </div>
+                <span className="lg:hidden flex ml-auto">
+                  <MenuMas items={[
+                    { label: 'Abrir en Drive', icon: FolderOpen, onClick: () => window.open(d.experiencia.driveUrl, '_blank', 'noopener,noreferrer') },
+                    { label: 'Sincronizar', icon: RefreshCw, disabled: busy || cargandoDetalle, onClick: () => { cargarDetalle(d.experiencia.id); cargarConexion(); } },
+                  ]} />
+                </span>
+                <EnBarraAcciones>
+                  <button className={BTN_PRIMARY} disabled={busy} style={mf} onClick={nuevoEvento}>
+                    <Plus className="w-4 h-4" /> Nuevo evento
+                  </button>
+                </EnBarraAcciones>
               </div>
             </div>
 
@@ -519,10 +538,12 @@ export default function ExperienciasPersonales() {
     <div className="flex-1 min-w-0 w-full">
       {banner}
       {/* Una sola fila (Fernando, 2026-10-13): espacio del Drive · filtro por día · «Nueva experiencia». */}
+      {/* En el teléfono el filtro de fecha va a todo el ancho (sin franja vacía) y «Nueva
+          experiencia» baja a la barra de abajo (Fernando, 2026-10-23). */}
       <div className="flex items-center justify-end gap-2 mb-3 flex-wrap">
         {espacio && <div className="w-full sm:w-[320px]">{espacio}</div>}
-        <div className="flex items-center gap-1.5">
-          <input type="date" aria-label="Filtrar por fecha" value={diaFiltro} className={`${EDIT_INPUT} !w-auto`}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0 sm:flex-none">
+          <input type="date" aria-label="Filtrar por fecha" value={diaFiltro} className={`${EDIT_INPUT} w-full sm:!w-auto`}
             onChange={(e) => setDiaFiltro(e.target.value)} />
           {diaFiltro && (
             <button type="button" onClick={() => setDiaFiltro('')} title="Quitar filtro" aria-label="Quitar filtro"
@@ -531,10 +552,16 @@ export default function ExperienciasPersonales() {
             </button>
           )}
         </div>
-        <button className={`${BTN_PRIMARY} max-sm:ml-auto`} disabled={!conexion} style={mf}
+        <button className={`${BTN_PRIMARY} max-lg:hidden`} disabled={!conexion} style={mf}
           onClick={() => setFormExp({ id: null, nombre: '', descripcion: '', fechaInicio: hoy(), fechaFin: hoy() })}>
           <Plus className="w-4 h-4" /> Nueva experiencia
         </button>
+        <EnBarraAcciones>
+          <button className={BTN_PRIMARY} disabled={!conexion} style={mf}
+            onClick={() => setFormExp({ id: null, nombre: '', descripcion: '', fechaInicio: hoy(), fechaFin: hoy() })}>
+            <Plus className="w-4 h-4" /> Nueva experiencia
+          </button>
+        </EnBarraAcciones>
       </div>
       {lista == null ? (
         <p className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>

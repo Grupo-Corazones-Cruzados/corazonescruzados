@@ -940,16 +940,18 @@ html {
   opacity: 1;
 }
 
-/* Status badges — Fluent "serious" style: neutral pill + semantic dot & text
-   (estilo Azure/M365). El color va en el punto y el texto; el fondo es neutro. */
+/* Estados — TEXTO DE COLOR, sin píldora ni punto (Fernando, 2026-10-22, llevado a GCC
+   World el 2026-10-23): «me basta con que el texto tenga un color; eso aplica para todas
+   las columnas de estado de todas las páginas». La palabra ya dice el estado, así que no
+   depende solo del color. */
 .corp .pixel-badge {
-  background: #f3f2f1;
+  background: transparent;
   color: var(--color-digi-muted);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 0.6875rem;   /* 11px */
-  font-weight: 500;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.75rem;     /* 12px */
+  font-weight: 600;
   letter-spacing: normal;
   text-shadow: none;
 }
@@ -1229,6 +1231,23 @@ html {
   box-shadow: -8px 0 16px rgba(0, 0, 0, 0.18), -1.2px 0 3.6px rgba(0, 0, 0, 0.11);
   animation: panelSlideInRight 0.27s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
+/* ⭐ ENTRADA Y SALIDA CON MOVIMIENTO (Fernando, 2026-10-23). La ventanita `sm` entra con
+   fundido + ligero zoom; al cerrarse, `PixelModal` marca el `<dialog>` con `data-saliendo`
+   200 ms antes de `close()`: el panel se desliza a la derecha, la ventanita se funde y el
+   velo se apaga. El `prefers-reduced-motion` de más abajo deja todo en ~0. */
+@keyframes ventanitaEntra { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes ventanitaSale  { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+@keyframes panelSaleDerecha { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@keyframes veloSale { from { opacity: 1; } to { opacity: 0; } }
+.corp .modal-surface[data-size='sm'] { animation: ventanitaEntra 0.2s ease-out; }
+dialog[data-saliendo] .modal-surface[data-size='sm'] { animation: ventanitaSale 0.2s ease-out forwards; }
+dialog[data-saliendo] .modal-surface[data-size='md'],
+dialog[data-saliendo] .modal-surface[data-size='lg'],
+dialog[data-saliendo] .modal-surface[data-size='xl'] { animation: panelSaleDerecha 0.2s ease-out forwards; }
+dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .corp .modal-surface, dialog[data-saliendo] .modal-surface, dialog[data-saliendo]::backdrop { animation-duration: 1ms !important; }
+}
 /* ⭐ UN SOLO ANCHO PARA TODO PANEL DERECHO CON VELO (Fernando, 2026-10-04: «que todos los
    formularios tengan un ancho igual y estándar […] usa el de mayor ancho»). Antes había tres:
    644 (`md`), 840 (`lg`) y 1040 (`xl`), y el mismo tipo de formulario salía de un ancho u otro
@@ -1378,7 +1397,7 @@ html {
 .corp.dark ::-webkit-scrollbar-thumb:hover { background: #5a5958; }
 
 /* Serious badge — dark */
-.corp.dark .pixel-badge { background: #333231; }
+.corp.dark .pixel-badge { background: transparent; }
 .corp.dark .pixel-badge[data-variant="success"] { color: #7bc043; }
 .corp.dark .pixel-badge[data-variant="warning"] { color: #e0b34d; }
 .corp.dark .pixel-badge[data-variant="error"]   { color: #f1707b; }

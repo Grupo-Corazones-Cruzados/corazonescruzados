@@ -1,6 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
+import Segmentado from '@/components/ui/Segmentado';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -70,49 +71,20 @@ export default function FilterRail<T extends string = string>({
   const groups: FilterRailSection<T>[] = sections ?? [{ items: items ?? [] }];
 
   return (
-    <aside className={`w-full shrink-0 bg-digi-card border border-digi-border rounded-lg p-2 ${className || 'lg:w-[220px]'}`}>
+    <aside className={`w-full shrink-0 lg:bg-digi-card lg:border lg:border-digi-border lg:rounded-lg lg:p-2 ${className || 'lg:w-[220px]'}`}>
       {title && (
-        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>{title}</p>
+        <p className="hidden lg:block text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>{title}</p>
       )}
 
-      {/* ── TELÉFONO: la misma lista, como una tira de fichas ────────────────────────
-          Apilado, este rail son N filas de 35 px encima del contenido: en Recordatorios
-          eran 4 (140 px), en Centralizado o Proyectos bastantes más, y **hay que
-          recorrerlas enteras para llegar a lo que se venía a ver**. Aquí ocupan una
-          línea que se desliza con el dedo.
-          ⚠️ Se pintan las DOS y el ancho decide (`lg:hidden` / `hidden lg:block`): medir
-          la ventana al pintar da un desajuste de hidratación. */}
-      <div className="lg:hidden desplaza-x flex gap-1.5 overflow-x-auto pb-0.5">
-        {groups.flatMap((group, gi) =>
-          group.items.map((it, ii) => {
-            const active = value === it.value;
-            const showCount = it.count != null && (!hideZeroCounts || it.count > 0);
-            return (
-              <div key={`${gi}-${it.value}`} className="flex items-center gap-1 shrink-0">
-                {/* Separador entre grupos: la línea que en vertical los separa. */}
-                {gi > 0 && ii === 0 && <span className="w-px h-6 bg-digi-border/60 mx-0.5" />}
-                <button
-                  onClick={() => onChange(it.value)}
-                  title={it.hint || it.label}
-                  className={`h-11 inline-flex items-center gap-1.5 px-3 rounded-full border text-[12.5px] font-medium whitespace-nowrap transition-colors ${
-                    active ? 'bg-accent text-white border-accent' : 'border-digi-border text-digi-text'
-                  }`}
-                  style={mf}
-                >
-                  <it.Icon className="w-4 h-4 shrink-0" />
-                  {it.label}
-                  {showCount && <span className="tabular-nums opacity-75">{it.count}</span>}
-                </button>
-                {/* Las acciones del ítem solo en el ACTIVO: en una tira, repetirlas en
-                    cada ficha sería una fila de botones sin sitio. */}
-                {it.actions && active && (
-                  <span className="flex items-center gap-0.5 shrink-0">{it.actions}</span>
-                )}
-              </div>
-            );
-          }),
-        )}
-      </div>
+      {/* ── TELÉFONO: UN SOLO CONTROL, sin tarjeta (Fernando, 2026-10-23) ─────────────
+          Antes era una tira de fichas que se deslizaba de lado: en Proyectos medía 1212 px y
+          escondía la mitad de las opciones. Ahora, hasta 3 opciones, el `Segmentado` de
+          siempre a todo el ancho; con más, el `<select>` nativo del teléfono («Estado:
+          Abiertos · 5»), con los grupos como `optgroup`. Las acciones del ítem activo van a
+          su derecha. Regla en `/diseno` §4-ter.
+          ⚠️ Se pintan las DOS versiones y el ancho decide (`lg:hidden` / `hidden lg:block`):
+          medir la ventana al pintar da un desajuste de hidratación. */}
+      <FiltroTelefono groups={groups} value={value} onChange={onChange} title={title} hideZeroCounts={hideZeroCounts} />
 
       <div className="hidden lg:block">
       {groups.map((group, gi) => (
@@ -160,5 +132,62 @@ export default function FilterRail<T extends string = string>({
       ))}
       </div>
     </aside>
+  );
+}
+
+/** La versión de teléfono del rail: segmentado (≤ 3 opciones) o `<select>` nativo. */
+function FiltroTelefono<T extends string>({
+  groups, value, onChange, title, hideZeroCounts,
+}: {
+  groups: FilterRailSection<T>[];
+  value: T;
+  onChange: (next: T) => void;
+  title?: string;
+  hideZeroCounts: boolean;
+}) {
+  const todos = groups.flatMap((g) => g.items);
+  const cuenta = (it: FilterRailItem<T>) =>
+    it.count != null && (!hideZeroCounts || it.count > 0) ? it.count : undefined;
+  const activo = todos.find((it) => it.value === value);
+
+  if (todos.length <= 3) {
+    return (
+      <Segmentado
+        etiqueta={title}
+        className="lg:hidden w-full"
+        valor={value}
+        onChange={onChange}
+        opciones={todos.map((it) => {
+          const n = cuenta(it);
+          return { valor: it.value, texto: n != null ? `${it.label} · ${n}` : it.label };
+        })}
+      />
+    );
+  }
+
+  const texto = (it: FilterRailItem<T>) => {
+    const n = cuenta(it);
+    return `${title ? `${title}: ` : ''}${it.label}${n != null ? ` · ${n}` : ''}`;
+  };
+  const conGrupos = groups.length > 1;
+  return (
+    <div className="lg:hidden flex items-center gap-1.5">
+      <select
+        aria-label={title}
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="field-control field-select min-w-0 flex-1 h-11 px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer"
+        style={mf}
+      >
+        {conGrupos
+          ? groups.map((g, gi) => (
+              <optgroup key={g.title ?? gi} label={g.title ?? title ?? ''}>
+                {g.items.map((it) => <option key={it.value} value={it.value}>{texto(it)}</option>)}
+              </optgroup>
+            ))
+          : todos.map((it) => <option key={it.value} value={it.value}>{texto(it)}</option>)}
+      </select>
+      {activo?.actions && <span className="flex items-center gap-0.5 shrink-0">{activo.actions}</span>}
+    </div>
   );
 }

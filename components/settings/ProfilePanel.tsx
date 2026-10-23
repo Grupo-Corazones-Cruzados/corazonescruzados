@@ -186,7 +186,9 @@ export default function ProfilePanel() {
 
   return (
     <SettingsPanel
-      Icon={User} title="Perfil" subtitle="Tus datos personales y redes"
+      /* Sin subtítulo «Tus datos personales y redes» (Fernando, 2026-10-23: bajo el título
+         no van frases descriptivas; los campos ya lo dicen). */
+      Icon={User} title="Perfil"
       bodyClassName="p-0" className="w-full xl:w-[400px] shrink-0 h-full"
       /* ⚠️ El botón vive en el PIE, fuera del `<form>`, así que se ata a él con
          `form="perfil-form"` — atributo HTML estándar. Es lo que permite tener la

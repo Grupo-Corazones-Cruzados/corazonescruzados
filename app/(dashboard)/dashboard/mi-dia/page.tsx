@@ -13,6 +13,7 @@ import ShareDialog from '@/components/calendar/ShareDialog';
 import ProposalsPanel from '@/components/calendar/ProposalsPanel';
 import WorkTasksWindow from '@/components/calendar/WorkTasks';
 import BotonAvisosPush from '@/components/calendar/BotonAvisosPush';
+import MenuMas from '@/components/ui/MenuMas';
 import TaskStatusButtons from '@/components/centralized/TaskStatusButtons';
 import {
   type CalendarEvent, type EventInstance, type EventType,
@@ -448,43 +449,62 @@ export default function MiDiaPage() {
         <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col md:h-[calc(100dvh-4.5rem-var(--cabecera-movil))]">
           {/* Command bar */}
           {/* ── La barra del día ───────────────────────────────────────────────────
-              En teléfono es UNA fila de 44 px: ‹ · fecha · › · Nuevo. Lo secundario
-              —disponibilidad y compartir— baja a una segunda fila, que es donde va lo
+              En teléfono es UNA fila de 44 px: [‹ fecha ›] · Hoy · Nuevo · ⋯. El paso de día
+              es UN control unido —un solo borde, flechas dentro— (regla del 2026-10-22 en
+              `/diseno` §4-ter; el `-mx-1.5` le quita al texto el hueco entre las tres piezas). La vista y la
+              disponibilidad bajan a una segunda fila en dos columnas, que es donde va lo
               que se usa una vez al día y no en cada salto. */}
           <div className="flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-between gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-1.5 md:gap-2">
-              <button onClick={goPrev} aria-label="Anterior" className="order-1 md:order-2 w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-              <span className="order-2 md:order-4 flex-1 md:flex-none min-w-0 text-center md:text-left text-[14px] md:text-[15px] font-semibold text-digi-text capitalize whitespace-nowrap md:ml-1" style={mf}>
+              <button onClick={goPrev} aria-label="Anterior" className="order-1 md:order-2 w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md max-md:rounded-r-none border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="order-2 md:order-4 flex-1 md:flex-none min-w-0 max-md:-mx-1.5 max-md:h-11 max-md:flex max-md:items-center max-md:justify-center max-md:border-y max-md:border-digi-border text-center md:text-left text-[14px] md:text-[15px] font-semibold text-digi-text capitalize whitespace-nowrap md:ml-1" style={mf}>
                 <span className="md:hidden">{labelCorto}</span>
                 <span className="hidden md:inline">{label}</span>
               </span>
-              <button onClick={goNext} aria-label="Siguiente" className="order-3 w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              <button onClick={goNext} aria-label="Siguiente" className="order-3 w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md max-md:rounded-l-none border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
               <button onClick={goToday} className={`${BTN_SECONDARY} !py-1.5 order-4 md:order-1 h-11 md:h-auto shrink-0`}>Hoy</button>
               {/* «Nuevo» vive aquí en teléfono: es el botón del panel de eventos, que en
                   teléfono no se pinta. Desde `xl` vuelve a estar allí y aquí sobra. */}
               <button onClick={() => openNew('progreso')} className="order-5 xl:hidden w-11 h-11 shrink-0 inline-flex items-center justify-center rounded-md bg-accent text-white hover:bg-accent-hover transition-colors" aria-label="Nuevo evento"><Plus className="w-4 h-4" /></button>
+              {/* Teléfono: «Tareas» y «Compartir» son secundarias y van al «⋯» de esta
+                  primera fila (2026-10-23). Antes partían la barra en tres filas y
+                  «Compartir» quedaba sola con un hueco al lado. */}
+              <span className="order-6 md:hidden flex">
+                <MenuMas items={[
+                  ...(availability === 'trabajando' ? [{ label: 'Tareas', icon: ListChecks, onClick: () => setWorkOpen(true) }] : []),
+                  { label: 'Compartir', icon: Share2, onClick: () => setShareOpen(true) },
+                ]} />
+              </span>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Teléfono: rejilla de dos columnas sin anchos fijos (vista | disponibilidad,
+                y los avisos a todo el ancho debajo) — ninguna franja vacía. Desde `md`, la
+                fila de siempre. */}
+            <div className="grid grid-cols-2 gap-2 md:flex md:items-center md:flex-wrap">
               {allowMultiView && (
-                <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+                <div className="flex md:inline-flex min-w-0 rounded-md border border-digi-border overflow-hidden">
                   {VIEWS.map((v) => (
-                    <button key={v.value} onClick={() => setView(v.value)} className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`} style={mf}>{v.label}</button>
+                    <button key={v.value} onClick={() => setView(v.value)} className={`flex-1 md:flex-none h-11 md:h-auto px-2 md:px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`} style={mf}>{v.label}</button>
                   ))}
                 </div>
               )}
               {/* El marco y el anillo de foco los pone la píldora (`focus-within`), no el
                   `<select>` de dentro: ver `.field-plain` en globals.css. */}
-              <div className="inline-flex flex-1 md:flex-none items-center gap-1.5 rounded-md border border-digi-border focus-within:border-accent transition-colors pl-2.5 pr-1.5 h-11 md:h-auto md:py-1" title="Tu disponibilidad">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[availability].color }} />
-                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="field-plain flex-1 md:flex-none h-full text-[12.5px] text-digi-text cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
+              {/* Sin el punto de color delante: la palabra («Conectado», «Trabajando»…) ya
+                  dice el estado (2026-10-23, regla de los puntos innecesarios). */}
+              <div className={`flex min-w-0 md:inline-flex items-center rounded-md border border-digi-border focus-within:border-accent transition-colors pl-2.5 pr-1.5 h-11 md:h-auto md:py-1 ${allowMultiView ? '' : 'col-span-2'}`} title="Tu disponibilidad">
+                <select value={availability} disabled={savingAvail} onChange={(e) => changeAvailability(e.target.value as AvailabilityStatus)} className="field-plain min-w-0 flex-1 md:flex-none h-full text-[12.5px] text-digi-text cursor-pointer disabled:opacity-50" style={mf} aria-label="Disponibilidad">
                   {AVAILABILITY_ORDER.map((s) => <option key={s} value={s}>{AVAILABILITY[s].label}</option>)}
                 </select>
               </div>
               {availability === 'trabajando' && (
-                <button onClick={() => setWorkOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><ListChecks className="w-4 h-4" /> Tareas</button>
+                <span className="hidden md:contents">
+                  <button onClick={() => setWorkOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><ListChecks className="w-4 h-4" /> Tareas</button>
+                </span>
               )}
-              <BotonAvisosPush className="h-11 md:h-auto shrink-0" />
-              <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><Share2 className="w-4 h-4" /> Compartir</button>
+              <BotonAvisosPush className="col-span-2 h-11 md:h-auto shrink-0" />
+              <span className="hidden md:contents">
+                <button onClick={() => setShareOpen(true)} className={`${BTN_SECONDARY} h-11 md:h-auto shrink-0`}><Share2 className="w-4 h-4" /> Compartir</button>
+              </span>
             </div>
           </div>
 

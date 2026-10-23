@@ -60,6 +60,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, WideEditPanel, EditField } from '@/components/ui/EditDialog';
 import ListaMarcable, { type OpcionMarcable } from '@/components/ui/ListaMarcable';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import { ICONOS } from '@/components/sitio/piezas';
 import GaleriaIconos from './GaleriaIconos';
@@ -386,10 +387,25 @@ export default function SolucionesPanel() {
 
         {/* ── 1. LAS SOLUCIONES ───────────────────────────────────────────────── */}
         <div className="flex flex-col min-h-0 gap-2">
-          <button type="button" className={BTN_PRIMARY} style={mf}
+          {/* En el teléfono «Nueva solución» y «Añadir talentos» (las dos principales) van a la
+              barra de abajo: aquí ocupaban una fila a todo el ancho y la cabecera de la
+              solución no cabía en 390 px. Desde `lg`, en su sitio (Fernando, 2026-10-23).
+              `max-lg:hidden` porque el `inline-flex` de BTN_* gana a `hidden` en el CSS. */}
+          <button type="button" className={`${BTN_PRIMARY} max-lg:hidden`} style={mf}
             onClick={() => { setEditando('nuevo'); setNombre(''); }}>
             <Plus className="w-4 h-4" /> Nueva solución
           </button>
+          <EnBarraAcciones>
+            <button type="button" className={solucion ? BTN_SECONDARY : BTN_PRIMARY} style={mf}
+              onClick={() => { setEditando('nuevo'); setNombre(''); }}>
+              <Plus className="w-4 h-4" /> Nueva solución
+            </button>
+            {solucion && (
+              <button type="button" className={BTN_PRIMARY} style={mf} onClick={abrirPanelTalentos}>
+                <Plus className="w-4 h-4" /> Añadir talentos
+              </button>
+            )}
+          </EnBarraAcciones>
           <div className="flex-1 min-h-0">
             <FilterRail
               title="Soluciones"
@@ -440,7 +456,7 @@ export default function SolucionesPanel() {
                   onClick={() => setPorBorrar(solucion)} title="Eliminar" aria-label="Eliminar la solución">
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button type="button" className={BTN_PRIMARY} style={mf}
+                <button type="button" className={`${BTN_PRIMARY} max-lg:hidden`} style={mf}
                   onClick={abrirPanelTalentos}
                   title="Elegir los talentos de esta solución">
                   <Plus className="w-4 h-4" /> Añadir talentos
