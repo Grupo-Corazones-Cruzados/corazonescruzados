@@ -7,6 +7,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelSelect from '@/components/ui/PixelSelect';
+import PixelModal from '@/components/ui/PixelModal';
+import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { fmt2 } from '@/lib/format';
 import PanelCompartirEnlace from '@/components/ui/PanelCompartirEnlace';
 import Interruptor from '@/components/ui/Interruptor';
@@ -282,6 +284,11 @@ export default function ToolsPage() {
   );
 
   const tool = tools.find((t) => t.id === selectedTool) || null;
+  // Por debajo de `xl` la herramienta se abre ENCIMA, no bajo la lista (Fernando, 2026-10-23).
+  // Se decide qué se MONTA: un <dialog> montado y escondido deja inerte toda la página.
+  const enTelefono = !useConsultaMedia(PANTALLA_XL);
+  const cuerpoHerramienta = () => !tool ? null
+    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
 
   // Panel derecho: usar la herramienta seleccionada.
   const renderToolPanel = () => {
@@ -306,7 +313,7 @@ export default function ToolsPage() {
             <p className="text-[11px] text-digi-muted" style={mf}>{CATEGORY_LABEL[tool.category]}</p>
           </div>
         </div>
-        <div className="p-4">{tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace()}</div>
+        <div className="p-4">{cuerpoHerramienta()}</div>
       </div>
     );
   };
@@ -483,15 +490,22 @@ export default function ToolsPage() {
             </div>
 
             {/* ── Panel de uso ── */}
-            {/* Sin herramienta elegida el panel es solo «Selecciona una herramienta…»: en el
-                teléfono caería bajo la lista sin aportar nada, así que ahí no se pinta
-                (Fernando, 2026-10-23). En escritorio se queda. */}
-            <aside className={`w-full xl:w-[360px] ${tool ? '' : 'hidden lg:block'}`}>
-              {renderToolPanel()}
-            </aside>
+            {/* La columna solo en escritorio; por debajo, el panel que se abre encima (abajo). */}
+            {!enTelefono && (
+              <aside className="w-full xl:w-[360px]">
+                {renderToolPanel()}
+              </aside>
+            )}
           </div>
         </div>
       </div>
+
+      {/* La herramienta en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
+      {enTelefono && (
+        <PixelModal open={!!tool} onClose={() => setSelectedTool(null)} title={tool?.name || 'Herramienta'} size="md">
+          {cuerpoHerramienta()}
+        </PixelModal>
+      )}
 
       <PanelCompartirEnlace
         open={enlaceOpen} onClose={() => setEnlaceOpen(false)}

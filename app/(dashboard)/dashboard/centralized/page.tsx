@@ -20,6 +20,7 @@ import {
   PISOS, PASOS, PISO_LABEL, PASO_LABEL, CELL_MAP, systemPath,
 } from '@/lib/centralized/systems';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -39,6 +40,9 @@ export default function CentralizedPage() {
   const [pasoFilter, setPasoFilter] = useState<string>('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any>(null);
+  // Por debajo de `xl` el detalle se abre ENCIMA, no bajo la lista (Fernando, 2026-10-23). Se
+  // decide qué se MONTA: un <dialog> montado y escondido deja inerte toda la página.
+  const enTelefono = !useConsultaMedia(PANTALLA_XL);
 
   // System editor modal (create / edit)
   const [sysModal, setSysModal] = useState(false);
@@ -164,6 +168,61 @@ export default function CentralizedPage() {
 
   /* ── Rail item ───────────────────────────────────────────────────────── */
 
+  /** Detalle del sistema elegido, una sola vez: columna en escritorio, panel encima en teléfono
+   *  (`enVentana`: el panel ya trae su margen). */
+  const cuerpoSistema = (enVentana = false) => !selected ? null : (
+  <div className={enVentana ? 'space-y-4' : ''}>
+  <div className={`${enVentana ? '' : 'p-4 '}space-y-2.5`}>
+    {selected.description && (
+      <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{selected.description}</p>
+    )}
+    {[
+      ['Piso', PISO_LABEL[selected.piso] || selected.piso],
+      ['Paso', PASO_LABEL[selected.paso] || selected.paso],
+      ['Acceso', `${selected.access_count ?? 0} miembro(s)`],
+      ['Estado', selected.is_active ? 'Activo' : 'Inactivo'],
+      ['Creado', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
+    ].map(([k, v]) => (
+      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+        <span className="text-digi-muted" style={mf}>{k}</span>
+        <span className="text-digi-text text-right" style={mf}>{v}</span>
+      </div>
+    ))}
+    <p className="text-[10.5px] text-digi-muted/80 pt-1 break-all" style={mf}>{systemPath({ piso: selected.piso, paso: selected.paso, slug: selected.slug })}</p>
+  </div>
+
+  <div className={`${enVentana ? '' : 'p-4 pt-0 '}space-y-2`}>
+    <button
+      onClick={() => openSystem(selected)}
+      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
+      style={mf}
+    >
+      Abrir sistema <ArrowRight className="w-4 h-4" />
+    </button>
+    {isAdmin && (
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => openShare(selected)}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
+          <Share2 className="w-3.5 h-3.5" /> Compartir
+        </button>
+        <button onClick={() => openEditSystem(selected)}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
+          <Pencil className="w-3.5 h-3.5" /> Editar
+        </button>
+        <button onClick={() => handleToggleActive(selected)}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
+          {selected.is_active ? 'Desactivar' : 'Activar'}
+        </button>
+        <button onClick={() => handleDeleteSys(selected)}
+          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-red-500/30 rounded text-[12px] text-red-500 hover:bg-red-50 transition-colors" style={mf}>
+          <Trash2 className="w-3.5 h-3.5" /> Eliminar
+        </button>
+      </div>
+    )}
+  </div>
+  </div>
+  );
+
   return (
     <div>
       <PageHeader title="Proyecto Centralizado" description="Modelo 4P — sistemas fundamentales del grupo" />
@@ -268,9 +327,9 @@ export default function CentralizedPage() {
             </div>
 
             {/* ── Detail panel ── */}
-            {/* Sin sistema elegido el panel es solo «Selecciona un sistema…»: en el teléfono
-                caería bajo la lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
-            <aside className={`w-full xl:w-[300px] ${selected ? '' : 'hidden lg:block'}`}>
+            {/* La columna solo en escritorio; por debajo, el panel que se abre encima (abajo). */}
+            {!enTelefono && (
+            <aside className="w-full xl:w-[300px]">
               {selected ? (
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
@@ -284,54 +343,7 @@ export default function CentralizedPage() {
                     <BotonCerrar onClick={() => setSelected(null)} />
                   </div>
 
-                  <div className="p-4 space-y-2.5">
-                    {selected.description && (
-                      <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{selected.description}</p>
-                    )}
-                    {[
-                      ['Piso', PISO_LABEL[selected.piso] || selected.piso],
-                      ['Paso', PASO_LABEL[selected.paso] || selected.paso],
-                      ['Acceso', `${selected.access_count ?? 0} miembro(s)`],
-                      ['Estado', selected.is_active ? 'Activo' : 'Inactivo'],
-                      ['Creado', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
-                    ].map(([k, v]) => (
-                      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
-                        <span className="text-digi-muted" style={mf}>{k}</span>
-                        <span className="text-digi-text text-right" style={mf}>{v}</span>
-                      </div>
-                    ))}
-                    <p className="text-[10.5px] text-digi-muted/80 pt-1 break-all" style={mf}>{systemPath({ piso: selected.piso, paso: selected.paso, slug: selected.slug })}</p>
-                  </div>
-
-                  <div className="p-4 pt-0 space-y-2">
-                    <button
-                      onClick={() => openSystem(selected)}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
-                      style={mf}
-                    >
-                      Abrir sistema <ArrowRight className="w-4 h-4" />
-                    </button>
-                    {isAdmin && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => openShare(selected)}
-                          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-                          <Share2 className="w-3.5 h-3.5" /> Compartir
-                        </button>
-                        <button onClick={() => openEditSystem(selected)}
-                          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-                          <Pencil className="w-3.5 h-3.5" /> Editar
-                        </button>
-                        <button onClick={() => handleToggleActive(selected)}
-                          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-                          {selected.is_active ? 'Desactivar' : 'Activar'}
-                        </button>
-                        <button onClick={() => handleDeleteSys(selected)}
-                          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-red-500/30 rounded text-[12px] text-red-500 hover:bg-red-50 transition-colors" style={mf}>
-                          <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {cuerpoSistema()}
                 </div>
               ) : (
                 <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center">
@@ -342,9 +354,17 @@ export default function CentralizedPage() {
                 </div>
               )}
             </aside>
+            )}
           </div>
         </div>
       </div>
+
+      {/* El detalle en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
+      {enTelefono && (
+        <PixelModal open={!!selected} onClose={() => setSelected(null)} title={selected?.name || 'Sistema'} size="md">
+          {cuerpoSistema(true)}
+        </PixelModal>
+      )}
 
       {/* System editor modal */}
       <PixelModal open={sysModal} onClose={() => !savingSys && setSysModal(false)}

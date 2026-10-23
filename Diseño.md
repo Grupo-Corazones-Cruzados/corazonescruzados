@@ -4165,6 +4165,14 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-23 · El panel derecho de una lista, en el teléfono, se abre ENCIMA** · **CORREGIDO** (Fernando:
+  «que aparezca el panel derecho […] directamente en la pantalla y no tenga que deslizarme para abajo»).
+  Marketplace (Productos y Proyectos), Proyecto Centralizado y Herramientas dejaban caer el panel bajo la
+  lista por debajo de `xl`. Ahora siguen el estándar de Tickets/Proyectos/Suscripciones/Facturas:
+  `const enTelefono = !useConsultaMedia(PANTALLA_XL)`; en escritorio la columna `<aside>`, y por debajo
+  un `PixelModal size="md"` con el mismo cuerpo (una sola definición, con `enVentana` para no duplicar
+  el título, la X ni el margen). **Se decide qué se MONTA, nunca se esconde con clases** (un `<dialog>`
+  montado y oculto deja inerte la página). Regla: toda página «lista + panel de detalle» nueva nace así.
 - **2026-10-23 · Barrita de desplazamiento en el pie del teléfono** · **CORREGIDO** (Fernando: «se ve una
   barrita de desplazamiento»). La ruta de `DashboardBreadcrumb` era `overflow-x-auto` y, con los destinos
   táctiles de 44 px, desbordaba. Ahora `overflow-hidden self-stretch`, el último tramo con `truncate`, y en
