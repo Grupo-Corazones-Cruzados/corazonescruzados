@@ -2121,6 +2121,11 @@ Stack estándar de la casa, con particularidades de este repo:
     puede dejar el escaparate vacío para el siguiente. En Pedidos se pierde poder mover un
     pedido de cocina a cobro —lo que más engancha—; es **un botón en `/gcc`** para revertirlo si
     Fernando prefiere lo contrario.
+  - **🪤 (2026-10-22) La credencial de Reservas dejó de funcionar** porque la cuenta `admin` del
+    demo tenía el correo de Fernando en GCC World: el acceso la trataba como cliente de la
+    plataforma y pedía la contraseña de GCC World. Se le quitó el correo; comprobado en
+    producción que entran las 11 cuentas publicadas de los cinco productos (personal y el
+    cliente de Catering). **Las cuentas de un demo van sin correo real.**
   - **Las imágenes ahora son capturas REALES de cada producto** (tres por ficha). La de reservas
     era la del proyecto viejo de Power Apps: enseñar una pantalla que ya no es la que se vende
     es enseñar otra cosa.
