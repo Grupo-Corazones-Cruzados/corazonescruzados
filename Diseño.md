@@ -4165,6 +4165,11 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-23 · Etiquetas de días seleccionados ilegibles en el tema oscuro** · **CORREGIDO**
+  (Fernando: «que haga mejor contraste»). `DiasElegidos` (`components/tickets/DiasElegidos.tsx`, en
+  «Nuevo ticket» y en el detalle) pintaba `bg-accent-light` + `text-accent`: 3,3:1 en oscuro. Ahora
+  `bg-accent-dark text-white`, `h-7 rounded-md text-[12px] font-medium`, con la «×» como icono `X` en
+  un botón: 5,9:1 en oscuro y 14,8:1 en claro. Regla general en `/diseno` §4-sexies.
 - **2026-10-23 · Las correcciones de diseño de los productos, en el panel de GCC World** ·
   **CORREGIDO**. Tiras que se deslizaban (FilterRail en 18 pantallas, pestañas de Admin, fechas de
   Pensamientos, pestañas de Configuración y del CV), tablas con scroll lateral (Centralizado), «⋯»
