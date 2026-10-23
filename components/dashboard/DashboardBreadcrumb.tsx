@@ -48,15 +48,22 @@ export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?:
       }`}
       style={mf}
     >
-      <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
+      {/* ⚠️ SIN DESPLAZAMIENTO (Fernando, 2026-10-23). Era `overflow-x-auto` y en el teléfono,
+          con los destinos táctiles de 44 px, el contenido desbordaba y el navegador pintaba una
+          barrita de desplazamiento dentro del pie. Ahora no se desplaza nada: el último tramo
+          se recorta con «…» y, en el teléfono, solo quedan Inicio y la página actual: con el
+          tramo anterior, «Entregas de un solo uso» se quedaba en «Entr…» (y para volver un
+          paso ya está la flecha de la cabecera). */}
+      <div className="flex items-center gap-1 min-w-0 self-stretch overflow-hidden">
       <Home className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-digi-muted shrink-0" />
       {crumbs.map((c, i) => {
         const last = i === crumbs.length - 1;
+        const intermedio = i > 0 && !last;
         return (
-          <span key={c.href} className="flex items-center gap-1 shrink-0">
-            {i > 0 && <ChevronRight className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-digi-muted/60" />}
+          <span key={c.href} className={`items-center gap-1 ${last ? 'flex min-w-0' : intermedio ? 'hidden sm:flex shrink-0' : 'flex shrink-0'}`}>
+            {i > 0 && <ChevronRight className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-digi-muted/60 shrink-0" />}
             {last ? (
-              <span className="text-[13px] sm:text-[12px] font-medium text-digi-text">{c.label}</span>
+              <span className="text-[13px] sm:text-[12px] font-medium text-digi-text truncate">{c.label}</span>
             ) : (
               <Link href={c.href} className="destino-tactil inline-flex items-center text-[13px] sm:text-[12px] text-digi-muted hover:text-accent transition-colors">{c.label}</Link>
             )}

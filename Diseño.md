@@ -4165,6 +4165,10 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-23 · Barrita de desplazamiento en el pie del teléfono** · **CORREGIDO** (Fernando: «se ve una
+  barrita de desplazamiento»). La ruta de `DashboardBreadcrumb` era `overflow-x-auto` y, con los destinos
+  táctiles de 44 px, desbordaba. Ahora `overflow-hidden self-stretch`, el último tramo con `truncate`, y en
+  el teléfono solo «Inicio > página actual» (los intermedios `hidden sm:flex`). Escritorio, la ruta entera.
 - **2026-10-23 · Etiquetas de días seleccionados ilegibles en el tema oscuro** · **CORREGIDO**
   (Fernando: «que haga mejor contraste»). `DiasElegidos` (`components/tickets/DiasElegidos.tsx`, en
   «Nuevo ticket» y en el detalle) pintaba `bg-accent-light` + `text-accent`: 3,3:1 en oscuro. Ahora
