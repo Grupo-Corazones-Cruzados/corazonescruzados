@@ -112,24 +112,23 @@ function fmtDur(min: number): string {
 }
 
 /**
- * Horas del día: una pastilla por tipo, el número sobre su propio tinte (Fernando, 2026-10-23).
- * Antes eran un cuadrado de color + el número en 8 px del color del evento: el verde sobre
- * blanco no se leía y el cuadrado solo repetía lo que ya dice el color. Mismo tono que los
- * eventos de la leyenda (Progreso violeta, Personal verde), pero en texto oscuro sobre tinte
- * claro para que la cifra se distinga.
+ * Horas del día: solo la cifra, en el color de su tipo (Fernando, 2026-10-23). Antes eran un
+ * cuadrado de color + el número en 8 px; luego una pastilla con fondo, que en el tema oscuro no
+ * se leía y el relleno sobraba. Los colores son tokens con versión para los dos temas:
+ * `text-accent-glow` (violeta de Progreso) y `text-green-700` (`.corp.dark` lo aclara).
  */
 const TOTAL_TONO = {
-  work: { clase: 'bg-accent-light text-accent', etiqueta: 'Progreso' },
-  personal: { clase: 'bg-green-100 text-green-700', etiqueta: 'Personal' },
+  work: { clase: 'text-accent-glow', etiqueta: 'Progreso' },
+  personal: { clase: 'text-green-700', etiqueta: 'Personal' },
 } as const;
 
 function DayTotals({ totals }: { totals: { work: number; personal: number } }) {
   if (totals.work <= 0 && totals.personal <= 0) return null;
   return (
-    <div className="flex items-center gap-1 leading-none" style={mf}>
+    <div className="flex items-center gap-2 leading-none" style={mf}>
       {(['work', 'personal'] as const).filter((k) => totals[k] > 0).map((k) => (
         <span key={k} title={`${TOTAL_TONO[k].etiqueta}: ${fmtDur(totals[k])}`}
-          className={`inline-flex items-center h-[18px] px-1.5 rounded-full text-[10.5px] font-semibold tabular-nums ${TOTAL_TONO[k].clase}`}>
+          className={`text-[11.5px] font-semibold tabular-nums ${TOTAL_TONO[k].clase}`}>
           {fmtDur(totals[k])}
         </span>
       ))}

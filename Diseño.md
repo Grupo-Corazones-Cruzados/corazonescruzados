@@ -1110,6 +1110,37 @@ SwiftUI en iPhone) y lo único compartido es la marca. Mismo flujo y mismos text
   (`bg-accent`, `hover:bg-accent-hover`, `bg-accent-light`, `text-accent`, `bg-digi-card`,
   `border-digi-border`, `text-digi-muted`) — **no** hex crudos.
 
+### ⭐ LAS REGLAS DEL TELÉFONO DE LOS PRODUCTOS, EN EL PANEL (Fernando, 2026-10-23)
+Textual: *«estas correcciones me gustaría aplicarlas también en gcc world, busca todos estos tipos
+de errores y corrígelos»*. Se auditaron las 27 pantallas del panel a 390 px y se corrigió en la
+pieza compartida siempre que se pudo, para que ninguna pantalla se quede fuera:
+- **`FilterRail`**: en el teléfono ya no es una tira de fichas que se desliza (en Proyectos medía
+  1212 px). Hasta 3 opciones, el `Segmentado` de siempre a todo el ancho; con más, un `<select>`
+  nativo («Estado: Abiertos · 5», grupos como `optgroup`), sin la tarjeta alrededor. Desde `lg`, el
+  raíl vertical de siempre — **el raíl del escritorio se queda** (patrón «Explorador Azure»).
+- **`PixelDataTable`**: sin `tarjetaMovil`, por debajo de `md` pinta una **galería automática** con
+  las mismas columnas (primera = cabecera, columnas sin título = acciones a la derecha, el resto
+  «TÍTULO / valor» en dos columnas). La paginación sale también bajo las tarjetas.
+- **`PixelBadge`**: **texto de color, sin píldora ni punto** (`punto` pasa a `false` por defecto;
+  `.corp .pixel-badge` sin fondo ni relleno, 12 px, 600).
+- **Movimiento**: el menú del teléfono se desliza (`transition-[width,transform]`) y su velo se
+  funde; `PixelModal` anima también la SALIDA (`data-saliendo` 200 ms antes de `close()`, Escape
+  incluido) y la ventanita `sm` entra con `scale-95 → 100`. Hook `lib/hooks/useAparicion.ts`.
+- **`MenuMas`** (`components/ui/MenuMas.tsx`, NUEVO): el «⋯» único. `fixed`, medido al abrir y
+  encajado a 16 px de los bordes (el de `DetailHeader` se salía por la izquierda: «minar ticket»),
+  icono + texto, la destructiva en rojo, entra con `scale-95 → 100`.
+- **`BarraAcciones`** (`components/dashboard/BarraAcciones.tsx`, NUEVO): `<EnBarraAcciones>` porta
+  las principales a una barra `fixed` justo encima del pie de la ruta (`--pie-panel`), y
+  `HuecoBarraAcciones` —último hijo del `main`— reserva su alto en el flujo para que no tape el
+  último campo. ⚠️ No es `sticky` como en los productos: el `main` lleva `overflow-auto`.
+- **`DetailHeader`**: flecha «volver» antes del título (fuera la fila de la miga), UNA línea de
+  estado, los datos (cliente, importe, fecha límite) en un botón **(i)** con burbuja (`detalles`),
+  `actions` = principales (barra de abajo en el teléfono), `secundarias` = botones en escritorio y
+  «⋯» en el teléfono, `overflow` = siempre «⋯». `soloIconos` deja en la cabecera las principales de
+  solo icono (Ticket y Proyecto, decisión de Fernando del 2026-09-29: caben y no amontonan texto).
+- **Márgenes seguros**: el panel ya los tenía por elemento (`--seguro-arriba`/`--seguro-abajo`,
+  manifiesto `standalone`, `viewportFit: cover`), por la app de Capacitor.
+
 ### Componentes compartidos (una definición por control)
 | Control | Componente | Notas |
 |---|---|---|
@@ -4134,12 +4165,21 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-23 · Las correcciones de diseño de los productos, en el panel de GCC World** ·
+  **CORREGIDO**. Tiras que se deslizaban (FilterRail en 18 pantallas, pestañas de Admin, fechas de
+  Pensamientos, pestañas de Configuración y del CV), tablas con scroll lateral (Centralizado), «⋯»
+  que se salía de la pantalla, estados con punto, botones con texto amontonados y menús/ventanas sin
+  movimiento. Ver «Las reglas del teléfono de los productos, en el panel». El sitio público no se
+  tocó (su diseño se decide con Fernando).
 - **2026-10-23 · Horas del día en el calendario de Mi día** · **CORREGIDO** (Fernando: «quitar estos
   cuadrados innecesarios […] que se logren distinguir los números, más al estilo moderno»). Eran un
   cuadrado de color + la cifra en 8 px del color del evento (el verde sobre blanco no se leía). Ahora
-  `DayTotals` (`components/calendar/CalendarView.tsx`, vistas mes/semana/día) pinta una **pastilla por
-  tipo**: `h-[18px] px-1.5 rounded-full text-[10.5px] font-semibold tabular-nums`, Progreso
-  `bg-accent-light text-accent`, Personal `bg-green-100 text-green-700`; el tipo va en `title`.
+  `DayTotals` (`components/calendar/CalendarView.tsx`, vistas mes/semana/día) pinta **solo la cifra**,
+  `text-[11.5px] font-semibold tabular-nums`, sin fondo: Progreso `text-accent-glow`, Personal
+  `text-green-700`; el tipo va en `title`. Primero se probó una pastilla con fondo (`bg-green-100`):
+  en el tema oscuro ese fondo no tiene versión y la cifra no se leía; además Fernando vio el relleno
+  innecesario. ⚠️ Un color de texto en el panel debe ser un token con versión oscura (`accent-glow`,
+  `green-700`…), comprobado en los DOS temas.
 - **2026-10-23 · Raíl derecho plegable en las páginas principales** · **DESCARTADO** (Fernando: «deja
   las páginas principales así como están»). Sigue vigente la excepción: `RailDesplegable` solo en los
   detalles; el panel de resumen de las listas (rail + lista + panel) se queda como columna fija.
