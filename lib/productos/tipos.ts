@@ -3,7 +3,9 @@
  * accesos a productos, sin arrastrar `pg`: el tipo y el anfitrión de una dirección.
  */
 export type AccesoProducto = {
-  producto: 'reservas' | 'pedidos' | 'catering' | 'planificaciones';
+  producto: 'reservas' | 'pedidos' | 'catering' | 'planificaciones' | 'automatizaciones';
+  /** El nombre del producto («Gestión de Pedidos»), para el módulo Plataformas. */
+  productoNombre: string;
   slug: string;
   nombre: string;
   url: string;

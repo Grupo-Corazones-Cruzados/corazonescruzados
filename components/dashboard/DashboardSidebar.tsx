@@ -16,7 +16,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
-  LogOut, Sun, Moon, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info,
+  LogOut, Sun, Moon, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -40,7 +40,7 @@ const ROLE_LABEL_ES: Record<AccessRole, string> = {
 const ICONS: Record<string, LucideIcon> = {
   Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket, FolderKanban, FilePen,
   CalendarClock, Users, ReceiptText, Store, Workflow, Wrench, Network, Settings,
-  LifeBuoy, ShieldCheck,
+  LifeBuoy, ShieldCheck, LayoutGrid,
 };
 
 // La visibilidad por rol se decide con `canAccessModule` (lib/dashboard/access.ts),
@@ -120,10 +120,29 @@ export default function DashboardSidebar() {
     return () => { alive = false; };
   }, [user]);
 
+  /**
+   * ¿La cuenta tiene acceso a algún producto? Decide si se ve «Plataformas» (Fernando,
+   * 2026-10-23: «solo estará habilitado y visible para cuentas que hayan comprado la
+   * suscripción»). La misma regla que el botón de entrar: mensualidad pagada con hasta 30
+   * días de retraso, o acceso del grupo. Hasta saberlo, no se pinta: que aparezca un módulo
+   * y desaparezca un segundo después se ve peor que el que aparece cuando toca.
+   */
+  const [tienePlataformas, setTienePlataformas] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    let vivo = true;
+    fetch('/api/productos/accesos')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (vivo) setTienePlataformas(Object.values(j?.data ?? {}).some((l: any) => l?.length > 0)); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [user]);
+
   const accessRole = accessRoleOf(user);
   const { blockedModules } = usePolicyEffects();
   const groups = NAV_GROUPS
-    .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))) }))
+    .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))
+      && (it.href !== '/dashboard/plataformas' || tienePlataformas)) }))
     .filter((g) => g.items.length > 0);
 
   const isActive = (href: string) =>

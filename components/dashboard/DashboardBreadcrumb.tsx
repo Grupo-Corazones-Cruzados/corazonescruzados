@@ -11,7 +11,7 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const LABELS: Record<string, string> = {
   dashboard: 'Inicio',
   tickets: 'Tickets', projects: 'Proyectos', subscriptions: 'Suscripciones', clients: 'Clientes',
-  invoices: 'Facturas', marketplace: 'Marketplace', automatizaciones: 'Automatizaciones',
+  invoices: 'Facturas', marketplace: 'Marketplace', plataformas: 'Plataformas', automatizaciones: 'Automatizaciones',
   tools: 'Herramientas', enlaces: 'Enlaces de un solo uso', entregas: 'Entregas de un solo uso', centralized: 'Centralizado', settings: 'Configuración', support: 'Soporte', admin: 'Admin',
   availability: 'Disponibilidad', cv: 'Mi CV', portfolio: 'Portafolio', calendar: 'Calendario',
   incidents: 'Incidentes', world: 'Mundo', sprites: 'Sprites', 'digimundo-projects': 'Proyectos',

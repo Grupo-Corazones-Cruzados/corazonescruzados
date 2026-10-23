@@ -65,6 +65,7 @@ export async function accesosDelUsuario(email: string | null | undefined): Promi
         const retraso = r.cortesia || !pagado ? null : Math.max(0, Math.round((hoy.getTime() - pagado.getTime()) / 86_400_000));
         return {
           producto: p.clave,
+          productoNombre: p.nombre,
           slug: r.slug,
           nombre: r.nombre,
           url: `${p.url}/${r.slug}`,

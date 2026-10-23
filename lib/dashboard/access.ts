@@ -51,6 +51,9 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   { path: '/dashboard/clients', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/invoices', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/marketplace', roles: ALL },
+  // Cualquier rol con una suscripción a un producto. Qué FILAS ve lo decide el servidor por
+  // el correo de la cuenta (`lib/productos/accesos.ts`); sin ninguna, el menú no lo enseña.
+  { path: '/dashboard/plataformas', roles: ALL },
   { path: '/dashboard/settings', roles: ALL },
   { path: '/dashboard/support', roles: ALL },
   { path: '/dashboard/subscriptions', roles: ['client', 'member', 'admin'] },

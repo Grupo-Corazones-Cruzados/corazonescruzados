@@ -275,6 +275,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧩 MÓDULO «PLATAFORMAS» Y FICHA SIN «ENTRAR» (Fernando, 2026-10-23).** *«quitemos el entrar a
+  organización de aquí, y agreguemos un módulo que solo estará habilitado y visible para cuentas que
+  hayan comprado la suscripción […] y en el marketplace cuando ya estás suscrito no aparezca el botón
+  de quiero suscribirme»*. `/dashboard/plataformas` (grupo «Plataforma», icono `LayoutGrid`): una
+  tarjeta por organización con la portada de la ficha, «Acceso del grupo» / «Al día · pagado hasta…»
+  en texto de color y **«Entrar a Organización»** (`components/productos/AccesoAlProducto.tsx`,
+  extraído del catálogo). El menú lo enseña solo si `/api/productos/accesos` trae alguna (misma
+  regla: pagado con ≤ 30 días de retraso, o cortesía). En la ficha del marketplace: sin «Entrar»,
+  y quien ya tiene acceso ve **«Ver en Plataformas»** en vez de «Quiero suscribirme». Además se
+  vació `demo_nota` en las cinco fichas («Prueba también los otros puestos…»): bajo la credencial ya
+  no sale texto. `AccesoProducto` gana `productoNombre` y la clave `automatizaciones`.
 - **🎨 Las mismas correcciones, en el panel de GCC World (Fernando, 2026-10-23: «búscalos todos y
   corrígelos»).** Auditadas las 27 pantallas a 390 px. Se corrigió en las piezas compartidas
   (`FilterRail`, `PixelDataTable`, `PixelBadge`, `PixelModal`, `DetailHeader`, menú lateral) y se

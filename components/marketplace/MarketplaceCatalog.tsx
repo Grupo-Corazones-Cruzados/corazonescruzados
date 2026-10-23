@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
@@ -9,12 +10,13 @@ import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, AlertTriangle } from 'lucide-react';
+import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, LayoutGrid } from 'lucide-react';
 import { anfitrionDe, type AccesoProducto } from '@/lib/productos/tipos';
 import { fmt2 } from '@/lib/format';
 import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
 import { slugDeTitulo } from '@/lib/marketplace/slug';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -81,35 +83,6 @@ function Precio({ valor, mensual, clase }: { valor: number; mensual?: boolean; c
       ${fmt2(valor)}
       {mensual && <span className="text-[11px] font-normal text-digi-muted"> /mes</span>}
     </span>
-  );
-}
-
-/**
- * «Entrar a mi tenant» (Fernando, 2026-09-16): si la cuenta con sesión tiene un
- * inquilino en ese producto con la mensualidad pagada (hasta 30 días de retraso) o
- * con acceso del grupo, el botón de acceso va ARRIBA del de la demostración. Se
- * lee de /api/productos/accesos, que cruza el correo de la cuenta con el
- * `contacto_email` de los inquilinos de cada producto.
- */
-function AccesoAlProducto({ accesos }: { accesos: AccesoProducto[] | undefined }) {
-  if (!accesos?.length) return null;
-  return (
-    <div className="space-y-1.5">
-      {accesos.map((a) => (
-        <div key={a.url} className="space-y-1">
-          {/* El texto es el mismo para todos («Entrar a Organización», Fernando 2026-09-16);
-              el nombre del inquilino solo se añade si la cuenta tiene más de uno en el producto. */}
-          <a href={a.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className={`${BTN_PRIMARY} w-full`} title={a.nombre}>
-            <LogIn className="w-4 h-4" /> Entrar a Organización{accesos.length > 1 ? ` · ${a.nombre}` : ''} <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-          {a.diasDeRetraso ? (
-            <p className="flex items-center gap-1 text-[11px] text-amber-700" style={mf}>
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> La mensualidad venció hace {a.diasDeRetraso} día{a.diasDeRetraso === 1 ? '' : 's'}: el acceso se cierra a los 30.
-            </p>
-          ) : null}
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -203,6 +176,11 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
 
   // Right detail panel
   const [selected, setSelected] = useState<any>(null);
+  // Por debajo de `xl` el panel no cabe al lado: se abre ENCIMA, como en Tickets o Proyectos
+  // (Fernando, 2026-10-23: antes caía bajo las tarjetas y había que bajar a buscarlo). Se
+  // decide qué se MONTA, no se esconde con clases: un <dialog> montado deja inerte la página.
+  const enTelefono = !useConsultaMedia(PANTALLA_XL);
+  const cerrarPanel = () => { setSelected(null); onSeleccion?.(null, tab); };
   const [panelImages, setPanelImages] = useState<string[]>([]);
   const [panelReqs, setPanelReqs] = useState<any[]>([]);
   const [panelReqsLoading, setPanelReqsLoading] = useState(false);
@@ -479,7 +457,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     );
   };
 
-  const renderMarketplacePanel = () => {
+  /** `enVentana`: dentro del panel del teléfono, que ya trae su título y su cierre. */
+  const renderMarketplacePanel = (enVentana = false) => {
     if (!selected) {
       return (
         <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
@@ -503,15 +482,17 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const reqTotal = panelReqs.length;
     const reqPct = reqTotal ? Math.round((reqDone / reqTotal) * 100) : 0;
     return (
-      <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+      <div className={enVentana ? '' : 'bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4'}>
+        {!enVentana && (
         <div className="flex items-start gap-3 p-4 border-b border-digi-border">
           <div className="min-w-0 flex-1">
             <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
             <p className="text-[11px] text-digi-muted mt-0.5 capitalize" style={mf}>{isProject ? 'Proyecto' : tabLabel.replace(/s$/, '')}</p>
           </div>
-          <BotonCerrar onClick={() => { setSelected(null); onSeleccion?.(null, tab); }} />
+          <BotonCerrar onClick={cerrarPanel} />
         </div>
-        <div className="p-4 space-y-3">
+        )}
+        <div className={`${enVentana ? '' : 'p-4 '}space-y-3`}>
           <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} alt={t.title} onOpen={openGalleryFromPanel} />
           {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
           <dl className="space-y-2">
@@ -570,14 +551,22 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           )}
 
           <div className="space-y-2 pt-1">
-            <AccesoAlProducto accesos={accesosDe(t)} />
+            {/* «Entrar a Organización» ya no va aquí: vive en el módulo Plataformas (Fernando,
+                2026-10-23). Y a quien YA está suscrito no se le ofrece suscribirse otra vez:
+                en su lugar, el camino a Plataformas. */}
             <Demostracion item={t} />
-            <button
-              onClick={() => onPrimaryAction(t)}
-              className={`${t.demo_url || accesosDe(t)?.length ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
-            >
-              {isProject ? 'Solicitar proyecto' : t.es_suscripcion ? 'Quiero suscribirme' : 'Comprar'}
-            </button>
+            {accesosDe(t)?.length ? (
+              <Link href="/dashboard/plataformas" className={`${BTN_SECONDARY} w-full`}>
+                <LayoutGrid className="w-4 h-4" /> Ver en Plataformas
+              </Link>
+            ) : (
+              <button
+                onClick={() => onPrimaryAction(t)}
+                className={`${t.demo_url ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
+              >
+                {isProject ? 'Solicitar proyecto' : t.es_suscripcion ? 'Quiero suscribirme' : 'Comprar'}
+              </button>
+            )}
             {docsUrl && (
               <a href={docsUrl} target="_blank" rel="noreferrer" className={`${BTN_SECONDARY} w-full`}>
                 <FileText className="w-4 h-4" /> Ver documentación <ExternalLink className="w-3.5 h-3.5" />
@@ -646,15 +635,22 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               )}
             </div>
 
-            {/* Sin elemento elegido el panel es solo «Selecciona un elemento…»: en el teléfono
-                caería bajo las tarjetas sin aportar, así que ahí no se pinta (Fernando,
-                2026-10-23). En escritorio se queda. */}
-            <aside className={`w-full xl:w-[360px] ${selected ? '' : 'hidden lg:block'}`}>
-              {renderMarketplacePanel()}
-            </aside>
+            {/* La columna solo en escritorio; por debajo, el panel que se abre encima (abajo). */}
+            {!enTelefono && (
+              <aside className="w-full xl:w-[360px]">
+                {renderMarketplacePanel()}
+              </aside>
+            )}
           </div>
         )}
       </div>
+
+      {/* El detalle en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
+      {enTelefono && (
+        <PixelModal open={!!selected} onClose={cerrarPanel} title={selected?.title || 'Detalle'} size="md">
+          {selected && renderMarketplacePanel(true)}
+        </PixelModal>
+      )}
 
       {/* ========== IMAGE GALLERY MODAL ========== */}
       <PixelModal open={galleryOpen} onClose={() => setGalleryOpen(false)} title={galleryTitle || 'Galeria'} size="lg">

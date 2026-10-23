@@ -34,6 +34,10 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
   { href: '/dashboard/clients',          label: 'Clientes',         group: 'Operación',  icon: 'Users' },
   { href: '/dashboard/invoices',         label: 'Facturas',         group: 'Operación',  icon: 'ReceiptText' },
   { href: '/dashboard/marketplace',      label: 'Marketplace',      group: 'Plataforma', icon: 'Store' },
+  // Plataformas (Fernando, 2026-10-23): los productos a los que la cuenta tiene acceso, con su
+  // «Entrar a Organización». SOLO se ve si la cuenta tiene al menos uno (lo decide el menú
+  // con `/api/productos/accesos`): un módulo vacío para quien no ha comprado nada sobra.
+  { href: '/dashboard/plataformas',      label: 'Plataformas',      group: 'Plataforma', icon: 'LayoutGrid' },
   // ⚠️ «Automatizaciones» YA NO ES UN MÓDULO DE LA PLATAFORMA (Fernando, 2026-09-23:
   // «ya no debería existir el módulo de automatizaciones, solo el producto»). Desde el
   // corte del 2026-09-23 vive en `automatizaciones.grupocc.org`, se vende en el
