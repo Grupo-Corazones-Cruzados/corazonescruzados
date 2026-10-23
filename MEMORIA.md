@@ -275,6 +275,16 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 Las mismas correcciones, en el panel de GCC World (Fernando, 2026-10-23: «búscalos todos y
+  corrígelos»).** Auditadas las 27 pantallas a 390 px. Se corrigió en las piezas compartidas
+  (`FilterRail`, `PixelDataTable`, `PixelBadge`, `PixelModal`, `DetailHeader`, menú lateral) y se
+  añadieron `MenuMas`, `BarraAcciones` y `useAparicion`; detalle en Diseño.md. Decisiones tomadas
+  sin preguntar, para que Fernando las revise: **el raíl de estados del ESCRITORIO se queda** (patrón
+  «Explorador Azure»; en teléfono ya es selector); Ticket y Proyecto mantienen sus acciones de
+  solo icono en la cabecera (`soloIconos`), porque así lo pidió el 2026-09-29. **El sitio público
+  no se tocó.** Pendiente sin tocar: en Gestión Social → Recursos la lista de personas queda
+  apilada encima del contenido en el teléfono (rediseño mayor); la miga de pan del pie se recorta
+  cuando es larga.
 - **🎨 Las diez correcciones de diseño, en los cinco productos (Fernando, 2026-10-22).** Reservas,
   Pedidos, Planificaciones y Automatizaciones copiaron los componentes de Catering. Decisiones abiertas
   para Fernando: Pedidos quitó los cuatro contadores de la cabecera de Mesas (están en el selector) y
