@@ -4134,6 +4134,15 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-23 · Horas del día en el calendario de Mi día** · **CORREGIDO** (Fernando: «quitar estos
+  cuadrados innecesarios […] que se logren distinguir los números, más al estilo moderno»). Eran un
+  cuadrado de color + la cifra en 8 px del color del evento (el verde sobre blanco no se leía). Ahora
+  `DayTotals` (`components/calendar/CalendarView.tsx`, vistas mes/semana/día) pinta una **pastilla por
+  tipo**: `h-[18px] px-1.5 rounded-full text-[10.5px] font-semibold tabular-nums`, Progreso
+  `bg-accent-light text-accent`, Personal `bg-green-100 text-green-700`; el tipo va en `title`.
+- **2026-10-23 · Raíl derecho plegable en las páginas principales** · **DESCARTADO** (Fernando: «deja
+  las páginas principales así como están»). Sigue vigente la excepción: `RailDesplegable` solo en los
+  detalles; el panel de resumen de las listas (rail + lista + panel) se queda como columna fija.
 - **2026-10-22 · Las diez correcciones de Catering llevadas a Reservas, Pedidos, Planificaciones y
   Automatizaciones** · **CORREGIDO**. Cada producto copió de Catering `Insignia`, `useAparicion`,
   `PanelLateral`/`Ventanita`, `SelectorEstado`, `Tabla` (galería), `RailFiltro`, `BurbujaDetalles`,

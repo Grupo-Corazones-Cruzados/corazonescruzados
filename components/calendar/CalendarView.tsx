@@ -2,11 +2,8 @@
 
 import { useMemo, useState, useEffect, useRef } from 'react';
 import type { EventInstance } from '@/lib/calendar/recurrence';
-import { DAY_LABELS_ES_SHORT, DAY_LABELS_ES_LONG, colorForEvent, EVENT_COLORS } from '@/lib/calendar/recurrence';
+import { DAY_LABELS_ES_SHORT, DAY_LABELS_ES_LONG, colorForEvent } from '@/lib/calendar/recurrence';
 
-// Dashboard Fluent (.corp): ambas fuentes resuelven a Segoe UI. Se conserva el
-// nombre `pf` por uso interno, pero apunta al cuerpo (no al pixel display).
-const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type CalendarViewMode = 'month' | 'week' | 'day';
@@ -114,22 +111,28 @@ function fmtDur(min: number): string {
   return `${h}h${m}`;
 }
 
+/**
+ * Horas del día: una pastilla por tipo, el número sobre su propio tinte (Fernando, 2026-10-23).
+ * Antes eran un cuadrado de color + el número en 8 px del color del evento: el verde sobre
+ * blanco no se leía y el cuadrado solo repetía lo que ya dice el color. Mismo tono que los
+ * eventos de la leyenda (Progreso violeta, Personal verde), pero en texto oscuro sobre tinte
+ * claro para que la cifra se distinga.
+ */
+const TOTAL_TONO = {
+  work: { clase: 'bg-accent-light text-accent', etiqueta: 'Progreso' },
+  personal: { clase: 'bg-green-100 text-green-700', etiqueta: 'Personal' },
+} as const;
+
 function DayTotals({ totals }: { totals: { work: number; personal: number } }) {
   if (totals.work <= 0 && totals.personal <= 0) return null;
   return (
-    <div className="flex items-center gap-1.5 text-[8px] leading-none" style={pf}>
-      {totals.work > 0 && (
-        <span className="flex items-center gap-0.5" style={{ color: EVENT_COLORS.progreso }}>
-          <span className="w-1.5 h-1.5" style={{ backgroundColor: EVENT_COLORS.progreso }} />
-          {fmtDur(totals.work)}
+    <div className="flex items-center gap-1 leading-none" style={mf}>
+      {(['work', 'personal'] as const).filter((k) => totals[k] > 0).map((k) => (
+        <span key={k} title={`${TOTAL_TONO[k].etiqueta}: ${fmtDur(totals[k])}`}
+          className={`inline-flex items-center h-[18px] px-1.5 rounded-full text-[10.5px] font-semibold tabular-nums ${TOTAL_TONO[k].clase}`}>
+          {fmtDur(totals[k])}
         </span>
-      )}
-      {totals.personal > 0 && (
-        <span className="flex items-center gap-0.5" style={{ color: EVENT_COLORS.personal }}>
-          <span className="w-1.5 h-1.5" style={{ backgroundColor: EVENT_COLORS.personal }} />
-          {fmtDur(totals.personal)}
-        </span>
-      )}
+      ))}
     </div>
   );
 }
