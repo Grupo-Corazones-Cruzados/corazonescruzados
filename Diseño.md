@@ -281,6 +281,19 @@ esquinas de cámara no cambian.
   · Espacios según el alto (`clamp(… vh …)`): a 525 px de alto todo cabe sobre el pie.
   · Las versiones de cristal redondeado y placa pixel quedan descritas arriba solo como
     historia; sus clases se borraron.
+- **Cuarta iteración (2026-10-26), la VIGENTE — sustituye en lo que choque a la tercera:**
+  · **La raya NO sigue al puntero** (Fernando lo vio como un error). En reposo, al 50 %.
+  · **Cápsula de pestañas desde `md` en la portada** (antes `lg`): con zoom o en tableta la
+    ventana baja de 1024 px y salía la hamburguesa. Compacta hasta 1100 px; el nombre se
+    esconde por debajo de 1000 px (queda el logo). Hamburguesa solo en el teléfono.
+  · **Titular editorial**: línea fina «Un *Corazón* puede» (0,5 em, 500; «Corazón» en
+    Instrument Serif cursiva a 1,3 em) y «cruzar al mundo» grande en Space Grotesk 700
+    (`min(clamp(2.9rem, 8vw, 6rem), 12.5vh)`).
+  · **Botones sin icono, misma forma, distinto color**: `.boton-portada-aventura` (morado del
+    juego `#5b3aae → #3a1f7a`, borde lila, resplandor neón) y `.boton-portada-progreso`
+    (blanco → `#f1ecfc`, texto `#3a1f7a`).
+  · **Pensamiento** en Instrument Serif cursiva (`clamp(1.15rem, 2.4vh, 1.45rem)`), etiqueta y
+    fecha en Inter; la fecha sin rayas ni mayúsculas.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.

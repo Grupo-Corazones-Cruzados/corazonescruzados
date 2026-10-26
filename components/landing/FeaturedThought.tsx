@@ -74,9 +74,11 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
           ref={refBordeIzquierdo}
           className="texto-partido mb-2.5"
           style={{
-            fontFamily: "'Silkscreen', cursive",
-            fontSize: '0.55rem',
-            letterSpacing: '0.22em',
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: '0.66rem',
+            fontWeight: 600,
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
             // Antes era el morado de marca al 85 %: sobre el fondo negro quedaba apagado y
             // la etiqueta se perdía. Este lila claro ya se usa en el resto de la portada
             // para texto secundario, así que sube el contraste sin salirse de la paleta.
@@ -85,7 +87,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             opacity: 1,
           }}
         >
-          PENSAMIENTO
+          Pensamiento
         </p>
 
         {loading ? (
@@ -109,9 +111,11 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
               ref={refBordeIzquierdo}
               className="texto-partido featured-thought-text whitespace-pre-wrap"
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: '0.9rem',
-                lineHeight: 1.75,
+                // Iteración 2 (2026-10-26): la serif cursiva del titular, no la monoespaciada.
+                fontFamily: "'Instrument Serif', Georgia, serif",
+                fontStyle: 'italic',
+                fontSize: 'clamp(1.15rem, 2.4vh, 1.45rem)',
+                lineHeight: 1.45,
                 ['--tp-a' as string]: '#d4d0e6',
                 ['--tp-b' as string]: '#2b2540',
                 display: '-webkit-box',
@@ -131,14 +135,15 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
               ref={refBordeIzquierdo}
               className="texto-partido mt-2"
               style={{
-                fontFamily: "'Silkscreen', cursive",
-                fontSize: '0.5rem',
-                letterSpacing: '0.16em',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: '0.68rem',
+                fontWeight: 500,
+                letterSpacing: '0.12em',
                 ['--tp-a' as string]: '#8b84a8',
                 ['--tp-b' as string]: '#7a7394',
               }}
             >
-              — {fecha.toUpperCase()} —
+              {fecha}
             </p>
           </>
         ) : null}

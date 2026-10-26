@@ -92,17 +92,21 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
             ref={refPartido}
             className={`text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors ${
               partido ? 'texto-partido [--tp-a:#fff] [--tp-b:#1f1a2e] group-hover:[--tp-a:#c4b5fd] group-hover:[--tp-b:#4B2D8E]' : ''
-            }`}
+            } ${flotante ? 'md:max-[999px]:hidden' : ''}`}
           >
             Grupo Corazones Cruzados
           </span>
         </Link>
 
         <nav
-          className={`hidden lg:flex items-center gap-1 ${
+          // En la portada la cápsula aparece ya desde `md` (Fernando, 2026-10-26: con su
+          // ventana de ~1000 px salía la hamburguesa y «se veían perfecto» las pestañas). Entre
+          // `md` y 1100 px, compacta; y por debajo de 1000 px el nombre se esconde (queda el
+          // logo), o la cápsula centrada lo pisaría. La hamburguesa, solo en el teléfono.
+          className={`hidden items-center gap-1 ${
             flotante
-              ? 'cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1'
-              : 'ml-auto'
+              ? 'md:flex cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1'
+              : 'lg:flex ml-auto'
           }`}
           aria-label="Principal"
         >
@@ -113,7 +117,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
                 key={n.href}
                 href={n.href}
                 aria-current={activo ? 'page' : undefined}
-                className={`px-3 py-2 text-[13.5px] transition-colors ${flotante ? 'rounded-full px-4' : 'rounded-md'} ${
+                className={`py-2 transition-colors ${flotante ? 'rounded-full px-3 text-[13px] min-[1100px]:px-4 min-[1100px]:text-[13.5px]' : 'rounded-md px-3 text-[13.5px]'} ${
                   activo ? 'text-white bg-white/[0.1]' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
@@ -129,8 +133,8 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           onClick={() => setAbierto((v) => !v)}
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={abierto}
-          className={`lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center text-white/80 hover:bg-white/[0.07] ${
-            flotante ? 'cristal-portada rounded-full' : 'rounded-md'
+          className={`ml-auto w-9 h-9 inline-flex items-center justify-center text-white/80 hover:bg-white/[0.07] ${
+            flotante ? 'md:hidden cristal-portada rounded-full' : 'lg:hidden rounded-md'
           }`}
         >
           {abierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -138,7 +142,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
       </div>
 
       {abierto && (
-        <nav className="lg:hidden border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1" aria-label="Principal">
+        <nav className={`${flotante ? 'md:hidden' : 'lg:hidden'} border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1`} aria-label="Principal">
           {NAVEGACION.map((n) => (
             <Link
               key={n.href}

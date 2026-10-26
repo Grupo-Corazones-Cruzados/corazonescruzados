@@ -2458,9 +2458,25 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   font-weight: 700;
   /* También según el ALTO: en una ventana baja (~525 px) el bloque no cabía. */
-  font-size: min(clamp(2.6rem, 7vw, 5.25rem), 11vh);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-size: min(clamp(2.9rem, 8vw, 6rem), 12.5vh);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+/* «Un Corazón puede»: la línea fina, más pequeña, que prepara la grande de debajo. */
+.titular-linea-fina {
+  font-size: 0.5em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 0.08em;
+}
+.titular-serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.3em;
+  letter-spacing: 0;
+  padding-right: 0.04em;
 }
 .subtitulo-portada {
   display: inline-block;
@@ -2472,34 +2488,47 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   text-transform: uppercase;
 }
 
-/* «Aventura» y «Progreso»: el MISMO botón. Cápsula morada (la familia de la cápsula de
-   las pestañas), que se lee igual sobre el cielo y sobre el claro. */
+/* «Aventura» y «Progreso»: la MISMA forma; solo cambia el color (Fernando, 2026-10-26). */
 .boton-portada {
-  height: 48px;
-  min-width: 172px;
-  padding: 0 26px;
+  height: 50px;
+  min-width: 176px;
+  padding: 0 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
   border-radius: 9999px;
   font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: #ffffff;
-  background: linear-gradient(180deg, #8b6fdc 0%, #6a4fbf 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 12px 30px -12px rgba(107, 79, 191, 0.85);
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
-.boton-portada-icono { width: 14px; height: 14px; fill: currentColor; opacity: 0.9; }
-.boton-portada:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background: linear-gradient(180deg, #9a80e8 0%, #7556cc 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 4px rgba(167, 139, 250, 0.25), 0 18px 38px -12px rgba(107, 79, 191, 0.95);
-}
+.boton-portada:hover:not(:disabled) { transform: translateY(-2px); }
 .boton-portada:active:not(:disabled) { transform: translateY(0); }
 .boton-portada:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 4px; }
 
-.comilla-pensamiento { -webkit-text-fill-color: #d946ef; font-weight: 700; margin: 0 2px; }
+/* Aventura: el morado profundo del videojuego, con su resplandor neón. */
+.boton-portada-aventura {
+  color: #ffffff;
+  background: linear-gradient(180deg, #5b3aae 0%, #3a1f7a 100%);
+  border: 1px solid rgba(167, 139, 250, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 22px rgba(123, 95, 191, 0.45), 0 12px 30px -12px rgba(58, 31, 122, 0.9);
+}
+.boton-portada-aventura:hover:not(:disabled) {
+  background: linear-gradient(180deg, #6a47c4 0%, #46268f 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 0 4px rgba(167, 139, 250, 0.22), 0 0 32px rgba(167, 139, 250, 0.6), 0 16px 34px -12px rgba(58, 31, 122, 0.95);
+}
+
+/* Progreso: claro, como la Plataforma. */
+.boton-portada-progreso {
+  color: #3a1f7a;
+  background: linear-gradient(180deg, #ffffff 0%, #f1ecfc 100%);
+  border: 1px solid rgba(75, 45, 142, 0.16);
+  box-shadow: inset 0 -2px 0 rgba(75, 45, 142, 0.06), 0 12px 30px -12px rgba(167, 139, 250, 0.8);
+}
+.boton-portada-progreso:hover:not(:disabled) {
+  background: #ffffff;
+  box-shadow: inset 0 -2px 0 rgba(75, 45, 142, 0.06), 0 0 0 4px rgba(196, 181, 253, 0.35), 0 16px 34px -12px rgba(167, 139, 250, 0.95);
+}
+
+.comilla-pensamiento { -webkit-text-fill-color: #d946ef; font-size: 1.25em; line-height: 0; margin: 0 3px; }

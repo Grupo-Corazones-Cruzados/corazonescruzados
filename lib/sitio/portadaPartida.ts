@@ -18,9 +18,8 @@
  * ── LOS TEXTOS QUE CRUZAN LA RAYA ──────────────────────────────────────────────
  * Titular, subtítulo, pensamiento y el nombre de la cabecera: `.texto-partido` los pinta
  * con un degradado de corte duro, `--tp-a` a la izquierda de la raya y `--tp-b` a la
- * derecha, así que se leen sobre el cielo y sobre el claro y, como la raya sigue al
- * puntero, se recolorean en vivo. Necesita `--x0`, el borde izquierdo del elemento, que
- * pone `refBordeIzquierdo`. ⚠️ Cada trozo, bloque o `inline-block` (en un `inline` partido
+ * derecha, así que se leen sobre el cielo y sobre el claro. Necesita `--x0`, el borde
+ * izquierdo del elemento, que pone `refBordeIzquierdo`. ⚠️ Cada trozo, bloque o `inline-block` (en un `inline` partido
  * en dos líneas el fondo se coloca como si fuera una sola), y sin `transform` animado.
  * (Probados y descartados el 2026-10-26: un cristal redondeado y una placa pixel detrás.)
  */
@@ -36,33 +35,25 @@ function fraccionDe(modo: ModoPortada): number {
   return 0.5;
 }
 
-// Con la pantalla partida, la raya sigue al puntero (Fernando, 2026-10-26: «animarlo según
-// el puntero donde se pone»), pero sin salirse de esta franja alrededor del centro: es un
-// guiño, no una persiana. 0.4 → entre el 30 % y el 70 %.
-const SEGUIMIENTO = 0.4;
-// Constante de tiempo del suavizado: cuanto mayor, más perezosa. ~160 ms se nota viva sin
-// ir pegada al ratón; llenar la pantalla con un botón tarda así ~0,6 s.
+// Constante de tiempo del suavizado: llenar la pantalla con un botón tarda ~0,6 s.
 const TAU_MS = 160;
 
 /**
- * Lleva `--corte` hacia su objetivo cuadro a cuadro (en px). El objetivo es el del modo y,
- * en `partido`, se desplaza hacia el puntero. Persigue el objetivo con un suavizado
- * exponencial en vez de una transición fija: así un cambio a mitad (otro botón, el ratón
- * que se mueve) sale desde donde iba, sin saltos. Con «reducir movimiento» no sigue al
- * puntero y salta. Solo hay bucle mientras falta camino.
+ * Lleva `--corte` hacia el valor del modo cuadro a cuadro (en px), con un suavizado
+ * exponencial: un cambio a mitad (de un botón al otro) sale desde donde iba, sin saltos.
+ * Con «reducir movimiento», salta. Solo hay bucle mientras falta camino.
+ *
+ * ⛔ La raya NO sigue al puntero. Se probó (entre el 30 % y el 70 %) y Fernando lo vio como
+ * un error: «sigue el puntero la pantalla de fondo» (2026-10-26). En reposo, al centro.
  */
 export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPortada) {
   const actual = useRef<number | null>(null);
-  const puntero = useRef(0.5);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const objetivo = () => {
-      const base = fraccionDe(modo);
-      return modo === 'partido' && !reducir ? base + (puntero.current - 0.5) * SEGUIMIENTO : base;
-    };
+    const meta = fraccionDe(modo);
     const pintar = (f: number) => {
       actual.current = f;
       el.style.setProperty('--corte', `${f * document.documentElement.clientWidth}px`);
@@ -73,34 +64,23 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
     const paso = (t: number) => {
       const dt = antes ? Math.min(64, t - antes) : 16;
       antes = t;
-      const meta = objetivo();
       const desde = actual.current ?? meta;
       const siguiente = reducir ? meta : desde + (meta - desde) * (1 - Math.exp(-dt / TAU_MS));
       if (Math.abs(meta - siguiente) < 0.0005) {
         pintar(meta);
         raf = 0;
-        antes = 0;
         return;
       }
       pintar(siguiente);
       raf = requestAnimationFrame(paso);
     };
-    const arrancar = () => { if (!raf) raf = requestAnimationFrame(paso); };
 
-    pintar(actual.current ?? objetivo());
-    arrancar();
-
-    const alMover = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return;
-      puntero.current = e.clientX / document.documentElement.clientWidth;
-      if (modo === 'partido') arrancar();
-    };
-    const alRedimensionar = () => pintar(actual.current ?? objetivo());
-    window.addEventListener('pointermove', alMover, { passive: true });
+    pintar(actual.current ?? meta);
+    raf = requestAnimationFrame(paso);
+    const alRedimensionar = () => pintar(actual.current ?? meta);
     window.addEventListener('resize', alRedimensionar);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('pointermove', alMover);
       window.removeEventListener('resize', alRedimensionar);
     };
   }, [ref, modo]);

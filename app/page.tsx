@@ -3121,12 +3121,14 @@ export default function LandingPage() {
             className="titular-portada"
             style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.12s forwards', willChange: 'transform, opacity, filter' } : undefined}
           >
+            {/* Iteración 2 (2026-10-26): contraste editorial. Una línea fina con «Corazón» en
+                serif cursiva y, debajo, «cruzar al mundo» grande y en negrita. */}
             <span
               ref={refBordeIzquierdo}
-              className="texto-partido block"
-              style={{ ['--tp-a' as string]: '#ffffff', ['--tp-b' as string]: '#17122b' }}
+              className="titular-linea-fina texto-partido block"
+              style={{ ['--tp-a' as string]: '#e9e5f7', ['--tp-b' as string]: '#2b2540' }}
             >
-              Un Coraz&oacute;n puede
+              Un <em className="titular-serif">Coraz&oacute;n</em> puede
             </span>
             <span className="block">
               <span
@@ -3152,9 +3154,11 @@ export default function LandingPage() {
                 · «Aventura» —antes «Comenzar Aventura»— entra al videojuego.
                 · «Progreso» es el antiguo botón «Plataforma» de la barra: abre el mismo menú
                   «¿Cómo quieres ingresar?» con el panel como destino. El acceso es UNO SOLO.
-                ⚠️ LOS DOS CON EL MISMO ESTILO (`.boton-portada`). Se probó que cada uno
+                ⚠️ LA MISMA FORMA PARA LOS DOS (`.boton-portada`). Se probó que cada uno
                 imitara su mundo —pixel-art uno, plataforma clara el otro— y Fernando lo
-                descartó: «al hacerlos diferentes se ven raros». Solo cambia el icono. */}
+                descartó: «al hacerlos diferentes se ven raros». Solo cambia el COLOR:
+                Aventura, el morado profundo del videojuego; Progreso, claro. Sin iconos
+                (Fernando: «sin icono se verían mejor»). */}
             <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
               {...eventosBoton('aventura')}
@@ -3173,7 +3177,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="boton-portada"
+              className="boton-portada boton-portada-aventura"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3188,9 +3192,6 @@ export default function LandingPage() {
                   : {}),
               }}
             >
-              <svg aria-hidden="true" viewBox="0 0 16 16" className="boton-portada-icono">
-                <path d="M4 2.5v11l9-5.5z" />
-              </svg>
               Aventura
             </button>
             <button
@@ -3202,7 +3203,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="boton-portada"
+              className="boton-portada boton-portada-progreso"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3217,11 +3218,6 @@ export default function LandingPage() {
                   : {}),
               }}
             >
-              <svg aria-hidden="true" viewBox="0 0 16 16" className="boton-portada-icono">
-                <rect x="1" y="9" width="3" height="6" rx="1" />
-                <rect x="6.5" y="5" width="3" height="10" rx="1" />
-                <rect x="12" y="1" width="3" height="14" rx="1" />
-              </svg>
               Progreso
             </button>
             </div>
