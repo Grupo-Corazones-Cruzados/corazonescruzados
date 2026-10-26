@@ -31,6 +31,11 @@
  * Lo llevó del 2026-08-17 al 2026-10-26, como botón violeta a la derecha de «Contacto».
  * Volvió al héroe de la portada con el nombre «Progreso», junto a «Aventura»
  * (`app/page.tsx`). La barra queda solo con navegación.
+ *
+ * ── SOBRE LA PORTADA PARTIDA (2026-10-26) ──────────────────────────────────────
+ * Transparente sobre la portada, sus textos cruzan la raya Aventura | Progreso: blancos
+ * en el cielo, oscuros sobre la Plataforma clara (`lib/sitio/portadaPartida.ts`). En
+ * cuanto la barra se vuelve sólida, vuelven a ser blancos sin más.
  */
 
 import { useEffect, useState } from 'react';
@@ -39,6 +44,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { NAVEGACION } from '@/lib/sitio/contenido';
+import { refBordeIzquierdo } from '@/lib/sitio/portadaPartida';
 
 export default function CabeceraSitio({ flotante = false }: { flotante?: boolean }) {
   const pathname = usePathname() || '/';
@@ -54,6 +60,9 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
   }, [flotante]);
 
   const solido = !flotante || desplazado || abierto;
+  // Transparente sobre la portada partida: los textos cambian de color en la raya.
+  const partido = flotante && !solido;
+  const refPartido = partido ? refBordeIzquierdo : undefined;
 
   return (
     <header
@@ -77,7 +86,12 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
             priority
             className="shrink-0 rounded-full"
           />
-          <span className="text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors">
+          <span
+            ref={refPartido}
+            className={`text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors ${
+              partido ? 'texto-partido [--tp-a:#fff] [--tp-b:#1f1a2e] group-hover:[--tp-a:#c4b5fd] group-hover:[--tp-b:#4B2D8E]' : ''
+            }`}
+          >
             Grupo Corazones Cruzados
           </span>
         </Link>
@@ -89,9 +103,14 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
               <Link
                 key={n.href}
                 href={n.href}
+                ref={refPartido}
                 aria-current={activo ? 'page' : undefined}
                 className={`px-3 py-2 rounded-md text-[13.5px] transition-colors ${
                   activo ? 'text-white bg-white/[0.08]' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+                } ${
+                  !partido ? '' : activo
+                    ? 'texto-partido [--tp-a:#fff] [--tp-b:#1f1a2e]'
+                    : 'texto-partido [--tp-a:rgba(255,255,255,0.6)] [--tp-b:#5b5470] hover:[--tp-a:#fff] hover:[--tp-b:#1f1a2e]'
                 }`}
               >
                 {n.label}
@@ -106,7 +125,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           onClick={() => setAbierto((v) => !v)}
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={abierto}
-          className="lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center rounded-md text-white/80 hover:bg-white/[0.07]"
+          className={`lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center rounded-md text-white/80 hover:bg-white/[0.07] ${partido ? 'menu-flotante' : ''}`}
         >
           {abierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

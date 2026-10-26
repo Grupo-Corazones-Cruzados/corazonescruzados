@@ -10551,3 +10551,21 @@ Diseñador de interfaz / ingeniero frontend, con `Diseño.md`.
 
 ## Siguiente
 Fernando dirá el próximo paso de la experiencia del cliente.
+
+## Iteración 2 (2026-10-26) — la portada partida en dos
+**Pedido:** raya en la mitad; izquierda el cielo estrellado, derecha la Plataforma en claro;
+al pasar por «Aventura» o «Progreso» ese modo llena la pantalla con un diseño propio animado.
+Titular, pie y esquinas de cámara se quedan como están.
+
+### P4 — Un texto blanco sobre la mitad clara no se lee: ¿cómo «se mantiene igual»? · ✅ Resuelta
+- Mismos textos, mismo sitio, pero con el color partido justo en la raya (`.texto-partido`).
+  `mix-blend-mode` se descartó: el titular «respira» con `transform`, eso crea un grupo
+  aislado y la mezcla no ve el fondo; y además desteñía el rojo y los botones.
+### P5 — ¿Cómo se sincronizan raya, recorte y textos durante la animación? · ✅ Resuelta
+- Con una sola variable registrada (`@property --corte`) que heredan todos. Nada de JS por cuadro.
+### P6 — ¿Y el puntero propio de la portada (blanco)? · ✅ Resuelta
+- Se pinta oscuro cuando está sobre la escena clara; con un diálogo abierto se usa el del sistema.
+
+**Verificación:** `tsc` y `next build` sin errores; capturas a 1440 px (en reposo, a mitad de la
+transición, Progreso, Aventura, con el diálogo abierto) y a 390 px; `scrollWidth` = ancho; vuelve
+a partirse al quitar el puntero.

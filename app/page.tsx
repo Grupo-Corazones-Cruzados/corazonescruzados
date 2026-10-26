@@ -6,6 +6,8 @@ import PixelStars from '@/components/landing/PixelStars';
 import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
+import FondosPortada from '@/components/landing/FondosPortada';
+import { corteDe, refBordeIzquierdo, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
 // bandas. El viejo (LPC) se retira; su tipo `CharacterConfig` solo se conserva
@@ -403,6 +405,8 @@ export default function LandingPage() {
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const [memberLoginOpen, setMemberLoginOpen] = useState(false);
+  // El botón del héroe bajo el puntero (o con el foco): su lado llena la portada.
+  const [botonPortada, setBotonPortada] = useState<'aventura' | 'progreso' | null>(null);
 
   /**
    * ── ENTRAR DIRECTO A UNA PUERTA: `/?acceso=cliente` ─────────────────────────
@@ -2776,8 +2780,30 @@ export default function LandingPage() {
     !!clientPending ||
     gameAuthOverlay;
 
+  /**
+   * QUÉ LADO DE LA PORTADA SE VE (Fernando, 2026-10-26) — ver `lib/sitio/portadaPartida.ts`.
+   * Con el acceso abierto se queda el lado de su destino, para que no vuelva a partirse
+   * por haber movido el puntero al diálogo; y al entrar al juego, la Aventura.
+   */
+  const accesoAbierto = entryChoiceOpen || clientLoginOpen || memberLoginOpen || clientSignupOpen || recoveryOpen;
+  const modoPortada: ModoPortada = windAway
+    ? 'aventura'
+    : accesoAbierto
+      ? (entryDestination === 'game' ? 'aventura' : 'progreso')
+      : (botonPortada ?? 'partido');
+  const eventosBoton = (lado: 'aventura' | 'progreso') => ({
+    onPointerEnter: () => setBotonPortada(lado),
+    onPointerLeave: () => setBotonPortada(null),
+    onFocus: () => setBotonPortada(lado),
+    onBlur: () => setBotonPortada(null),
+  });
+
   return (
-    <div className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}>
+    <div
+      className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}
+      data-modo={modoPortada}
+      style={{ ['--corte' as string]: corteDe(modoPortada) }}
+    >
       {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
       <CabeceraSitio flotante />
@@ -2916,6 +2942,8 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+
+        <FondosPortada modo={modoPortada} extrasAventura={modoPortada === 'aventura' && !windAway} />
 
         {/* Camera viewfinder — corner brackets pan with the cursor */}
         <div
@@ -3060,6 +3088,7 @@ export default function LandingPage() {
         </div>
 
         <div
+          ref={refBordeIzquierdo}
           className="relative z-10 max-w-3xl mx-auto"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
@@ -3084,8 +3113,19 @@ export default function LandingPage() {
                   }
             }
           >
-            Un Coraz&oacute;n puede
-            <br />
+            {/* Blanco en el cielo y oscuro sobre la Plataforma: cambia justo en la raya.
+                La sombra va como `filter` porque `text-shadow` taparía el degradado. */}
+            <span
+              className="texto-partido block"
+              style={{
+                ['--tp-a' as string]: '#ffffff',
+                ['--tp-b' as string]: '#1f1a2e',
+                textShadow: 'none',
+                filter: 'drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(-1px -1px 0 rgba(75, 45, 142, 0.3))',
+              }}
+            >
+              Un Coraz&oacute;n puede
+            </span>
             <span
               className="pixel-glow"
               style={{
@@ -3101,12 +3141,13 @@ export default function LandingPage() {
           </h1>
 
           <p
-            className="mt-5 text-lg md:text-xl opacity-60"
+            className="texto-partido mt-5 text-lg md:text-xl opacity-60"
             style={{
               fontFamily: "'Silkscreen', cursive",
               fontSize: '0.8rem',
               letterSpacing: '0.05em',
-              color: '#94A3B8',
+              ['--tp-a' as string]: '#94A3B8',
+              ['--tp-b' as string]: '#2b2540',
               animation: windAway
                 ? 'windBlowAway 1.1s ease-in 0.26s forwards'
                 : 'breathe 5s ease-in-out infinite',
@@ -3135,6 +3176,7 @@ export default function LandingPage() {
                 la escena. */}
             <div className="corp dark corp-overlay flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
+              {...eventosBoton('aventura')}
               onClick={() => {
                 if (landingLocked || windAway) return;
 
@@ -3172,6 +3214,7 @@ export default function LandingPage() {
             </button>
             <button
               type="button"
+              {...eventosBoton('progreso')}
               onClick={() => {
                 if (landingLocked || windAway) return;
                 setEntryDestination('dashboard');

@@ -275,6 +275,12 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🌗 PORTADA PARTIDA AVENTURA | PROGRESO (Fernando, 2026-10-26).** Una raya en la mitad del
+  héroe: a la izquierda el cielo estrellado, a la derecha la Plataforma en claro con un diseño
+  propio animado. Con el puntero en «Aventura» o «Progreso» ese lado llena la pantalla, y se
+  queda así mientras está abierto el acceso. Los textos que cruzan la raya cambian de color en
+  ella (blancos → oscuros). Pie y esquinas de cámara sin cambios. Detalle: `Diseño.md`
+  § «La portada partida».
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

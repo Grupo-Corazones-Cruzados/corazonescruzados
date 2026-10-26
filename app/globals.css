@@ -2119,3 +2119,270 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   color: var(--color-digi-muted); opacity: 0.6;
 }
 .corp.dark .doc-hoja .ProseMirror mark { background: #6b5d1e; color: #f3f2f1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LA PORTADA PARTIDA EN DOS — Aventura | Progreso (Fernando, 2026-10-26)
+
+   Una variable, `--corte`, mueve la raya, el recorte de la escena clara y el color de
+   cada texto que la cruza. Registrada con `@property` para que se ANIME: sin registrar,
+   una variable cambia de golpe. La pone `app/page.tsx` en `.landing-page` según el modo
+   (`lib/sitio/portadaPartida.ts`). Explicación completa en ese archivo.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@property --corte {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
+.landing-page { transition: --corte 900ms cubic-bezier(0.65, 0, 0.35, 1); }
+
+/* Texto que cambia de color justo en la raya: `--tp-a` a la izquierda (su color de
+   siempre), `--tp-b` a la derecha. `--x0` = borde izquierdo del elemento en la ventana. */
+.texto-partido {
+  background-image: linear-gradient(
+    90deg,
+    var(--tp-a) calc(var(--corte, 100vw) - var(--x0, 0px)),
+    var(--tp-b) 0
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* El icono del menú del teléfono es un SVG: no admite el degradado. Está en el borde
+   derecho, así que va oscuro salvo cuando la Aventura llena la pantalla. */
+.landing-page .menu-flotante { transition: color 600ms ease; }
+.landing-page[data-modo='partido'] .menu-flotante,
+.landing-page[data-modo='progreso'] .menu-flotante { color: #1f1a2e; }
+
+/* ── La raya ── */
+.raya-portada {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--corte);
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, transparent 0%, rgba(123, 95, 191, 0.85) 18%,
+    rgba(161, 32, 125, 0.9) 50%, rgba(123, 95, 191, 0.85) 82%, transparent 100%);
+  box-shadow: 0 0 14px rgba(123, 95, 191, 0.55);
+  transition: opacity 450ms ease;
+  overflow: hidden;
+}
+.raya-portada::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 90px;
+  background: linear-gradient(to bottom, transparent, #ffffff, transparent);
+  animation: rayaPulso 3.6s ease-in-out infinite;
+}
+@keyframes rayaPulso {
+  from { top: -90px; }
+  to   { top: 100%; }
+}
+
+/* ── Aventura: lo que se suma al cielo ── */
+.escena-aventura { transition: opacity 900ms ease; }
+.ea-nebulosa {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  animation: eaNebulosa 9s ease-in-out infinite alternate;
+}
+.ea-nebulosa-1 { left: 8%;  top: 12%; width: 46vw; height: 46vw; background: rgba(123, 95, 191, 0.22); }
+.ea-nebulosa-2 { right: 4%; bottom: -10%; width: 40vw; height: 40vw; background: rgba(161, 32, 125, 0.16); animation-delay: -4s; }
+@keyframes eaNebulosa {
+  from { transform: translate(0, 0) scale(1); opacity: 0.75; }
+  to   { transform: translate(3vw, -2vw) scale(1.12); opacity: 1; }
+}
+.ea-fugaz {
+  position: absolute;
+  width: 140px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), #ffffff);
+  border-radius: 2px;
+  opacity: 0;
+  transform: rotate(-32deg);
+  animation: eaFugaz 4.2s ease-in infinite;
+}
+.ea-fugaz-0 { left: 20%; top: 10%; animation-delay: 0.2s; }
+.ea-fugaz-1 { left: 62%; top: 6%;  animation-delay: 1.4s; }
+.ea-fugaz-2 { left: 42%; top: 30%; animation-delay: 2.5s; }
+.ea-fugaz-3 { left: 80%; top: 24%; animation-delay: 3.3s; }
+@keyframes eaFugaz {
+  0%   { opacity: 0; transform: rotate(-32deg) translateX(0); }
+  6%   { opacity: 1; }
+  28%  { opacity: 0; transform: rotate(-32deg) translateX(-320px); }
+  100% { opacity: 0; transform: rotate(-32deg) translateX(-320px); }
+}
+
+/* ── Progreso: la Plataforma en claro ── */
+.escena-progreso {
+  clip-path: inset(0 0 0 var(--corte));
+  background: linear-gradient(160deg, #fbfaff 0%, #f3effb 55%, #e9e2f7 100%);
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+.ep-puntos {
+  background-image: radial-gradient(rgba(75, 45, 142, 0.16) 1px, transparent 1.6px);
+  background-size: 28px 28px;
+  animation: epPuntos 40s linear infinite;
+}
+@keyframes epPuntos { to { background-position: 280px 140px; } }
+.ep-mancha {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  animation: epMancha 14s ease-in-out infinite alternate;
+}
+.ep-mancha-1 { right: 6%;  top: -8%;   width: 34vw; height: 34vw; background: rgba(123, 95, 191, 0.22); }
+.ep-mancha-2 { left: 4%;   bottom: -12%; width: 30vw; height: 30vw; background: rgba(161, 32, 125, 0.12); animation-delay: -5s; }
+.ep-mancha-3 { left: 42%;  top: 34%;   width: 22vw; height: 22vw; background: rgba(75, 45, 142, 0.10); animation-delay: -9s; }
+@keyframes epMancha {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-4vw, 3vw) scale(1.15); }
+}
+.ep-burbuja {
+  position: absolute;
+  bottom: -20px;
+  border-radius: 3px;
+  border: 1.5px solid rgba(75, 45, 142, 0.28);
+  background: rgba(123, 95, 191, 0.08);
+  animation-name: epBurbuja;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes epBurbuja {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 0.8; }
+  100% { transform: translateY(-95vh) rotate(160deg); opacity: 0; }
+}
+
+.ep-tarjeta {
+  position: absolute;
+  width: 210px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #e7e2f3;
+  box-shadow: 0 14px 34px -16px rgba(75, 45, 142, 0.35);
+  backdrop-filter: blur(6px);
+}
+.ep-pastilla { width: auto; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 9999px; }
+.ep-flota { animation: epFlota 7s ease-in-out infinite alternate; }
+@keyframes epFlota {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-12px); }
+}
+.ep-titulo { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6b6585; }
+.ep-texto  { font-size: 12.5px; color: #2b2540; }
+.ep-texto b { font-weight: 700; color: #4B2D8E; }
+.ep-cifra  { font-size: 22px; font-weight: 700; color: #1f1a2e; font-variant-numeric: tabular-nums; }
+.ep-dias   { font-size: 9.5px; font-weight: 600; color: #9a94ad; padding: 0 3px; }
+
+.ep-barra {
+  flex: 1;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(to top, #4B2D8E, #9b7fe0);
+  transform-origin: bottom;
+  animation: epBarra 4.8s ease-in-out infinite;
+}
+@keyframes epBarra {
+  0%, 100% { transform: scaleY(0.18); }
+  35%, 75% { transform: scaleY(1); }
+}
+
+.ep-anillo-fondo { fill: none; stroke: #ece7f7; stroke-width: 7; }
+.ep-anillo {
+  fill: none;
+  stroke: #4B2D8E;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 163.4;
+  animation: epAnillo 6s ease-in-out infinite;
+}
+@keyframes epAnillo {
+  0%       { stroke-dashoffset: 163.4; }
+  45%, 85% { stroke-dashoffset: 45.7; }
+  100%     { stroke-dashoffset: 163.4; }
+}
+
+.ep-caja {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 5px;
+  border: 1.5px solid #cfc6e6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ep-visto {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: #107c10;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: scale(0);
+  animation: epVisto 6s ease-out infinite;
+}
+@keyframes epVisto {
+  0%, 6%   { transform: scale(0); }
+  12%, 82% { transform: scale(1); }
+  90%, 100%{ transform: scale(0); }
+}
+
+.ep-linea {
+  fill: none;
+  stroke: #4B2D8E;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 260;
+  animation: epLinea 6s ease-in-out infinite;
+}
+.ep-area { animation: epArea 6s ease-in-out infinite; }
+@keyframes epLinea {
+  0%       { stroke-dashoffset: 260; }
+  45%, 85% { stroke-dashoffset: 0; }
+  100%     { stroke-dashoffset: 260; }
+}
+@keyframes epArea {
+  0%, 25%  { opacity: 0; }
+  50%, 85% { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+.ep-llama {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #A1207D;
+  box-shadow: 0 0 0 0 rgba(161, 32, 125, 0.5);
+  animation: epLlama 2s ease-out infinite;
+}
+@keyframes epLlama { to { box-shadow: 0 0 0 9px rgba(161, 32, 125, 0); } }
+
+.ep-xp { height: 6px; border-radius: 9999px; background: #ece7f7; overflow: hidden; }
+.ep-xp > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4B2D8E, #A1207D);
+  animation: epXp 5s ease-in-out infinite;
+}
+@keyframes epXp {
+  0%       { width: 18%; }
+  50%, 85% { width: 84%; }
+  100%     { width: 18%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page { transition: none; }
+  .escena-progreso *, .escena-aventura *, .raya-portada::after { animation: none !important; }
+}
+@media (prefers-reduced-motion: reduce) { .ep-visto { transform: scale(1); } }

@@ -212,6 +212,27 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 
 `z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos (`z-[220]`).
 
+### ⭐ 2026-10-26 — La portada partida: Aventura | Progreso
+Fernando: una **raya en la mitad** del héroe. A la izquierda el cielo estrellado de siempre;
+a la derecha **la Plataforma en claro**, con un diseño propio animado. Con el puntero en
+«Aventura» el cielo llena la pantalla (más nebulosa y estrellas fugaces); con «Progreso», la
+escena clara. Con el acceso abierto se queda el lado de su destino. Los textos, el pie y las
+esquinas de cámara no cambian.
+- **Una variable**: `--corte` en `.landing-page`, registrada con `@property` (se anima,
+  900 ms `cubic-bezier(.65,0,.35,1)`). La leen el `clip-path` de `.escena-progreso`, la
+  `.raya-portada` y los textos. Código: `lib/sitio/portadaPartida.ts`,
+  `components/landing/FondosPortada.tsx`, estilos `globals.css` § «LA PORTADA PARTIDA».
+- **Texto que cruza la raya** = `.texto-partido` con `--tp-a` (su color de siempre) y
+  `--tp-b` (oscuro), y `--x0` medido con `refBordeIzquierdo`. Lo llevan el titular blanco,
+  el subtítulo, el pensamiento y la cabecera mientras es transparente. «CRUZAR AL MUNDO» no.
+  ⚠️ El texto tiene que ser bloque, `--x0` se mide en un elemento sin `transform`
+  animado, y la sombra va como `filter: drop-shadow` (`text-shadow` tapa el degradado).
+- **El puntero de la portada** (`PointerCursor`) se pinta oscuro sobre la escena clara; el
+  icono del menú del teléfono, también (`.menu-flotante`).
+- **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
+  la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
+- «Reducir movimiento» apaga la transición y las animaciones.
+
 ### ⭐ 2026-10-26 — «Plataforma» sale de la barra y vuelve al héroe como «Progreso»
 Fernando: el héroe de la portada lleva **«Aventura»** (antes «Comenzar Aventura», primario,
 destino juego) y **a su derecha «Progreso»** (secundario `pixel-btn-secondary`, destino panel:
