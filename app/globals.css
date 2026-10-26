@@ -390,6 +390,21 @@ html {
   cursor: none !important;
 }
 
+/* Sobre la escena clara de Progreso, el puntero del sistema, el de la plataforma
+   (Fernando, 2026-10-26). La clase la pone `PointerCursor` según de qué lado de la raya
+   esté el ratón. */
+.landing-page.cursor-plataforma,
+.landing-page.cursor-plataforma *,
+.landing-page.cursor-plataforma *::before,
+.landing-page.cursor-plataforma *::after {
+  cursor: auto !important;
+}
+.landing-page.cursor-plataforma a,
+.landing-page.cursor-plataforma button:not(:disabled),
+.landing-page.cursor-plataforma [role='button'] {
+  cursor: pointer !important;
+}
+
 /* Auth screens: use the normal OS cursor (no game pointer here). Higher
    specificity than `.landing-page *` so it overrides the rule above. */
 .landing-page.auth-screen,

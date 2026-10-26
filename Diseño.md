@@ -227,8 +227,10 @@ esquinas de cámara no cambian.
   el subtítulo, el pensamiento y la cabecera mientras es transparente. «CRUZAR AL MUNDO» no.
   ⚠️ El texto tiene que ser bloque, `--x0` se mide en un elemento sin `transform`
   animado, y la sombra va como `filter: drop-shadow` (`text-shadow` tapa el degradado).
-- **El puntero de la portada** (`PointerCursor`) se pinta oscuro sobre la escena clara; el
-  icono del menú del teléfono, también (`.menu-flotante`).
+- **El puntero (2026-10-26, Fernando):** sobre el cielo, el del juego (`PointerCursor`); sobre la
+  escena clara de Progreso, el **del sistema**, el de la plataforma (flecha, mano en enlaces y
+  botones): `PointerCursor` pone `.cursor-plataforma` en `.landing-page` según el lado de la raya
+  en que esté el ratón real.
 - **Corrección del 2026-10-26 (Fernando: «usa tu propia creatividad para que se vea bien»):**
   · **Las pestañas van en una cápsula de cristal oscuro centrada SOBRE la raya** (solo en la
     portada, `flotante`): se leen en los dos mundos sin partir su color y marcan la unión. El
