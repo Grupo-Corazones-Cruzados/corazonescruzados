@@ -57,29 +57,21 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
 
   return (
     <div
-      className="featured-thought-slot absolute left-1/2 -translate-x-1/2 w-[min(92vw,640px)] px-4 pointer-events-none"
+      className="featured-thought-slot max-sm:[--hueco-pensamiento:52px] absolute left-1/2 -translate-x-1/2 w-[min(92vw,640px)] px-4 pointer-events-none"
       style={{
-        top: 'calc(100% + 28px)',
+        // Deja sitio al borde inferior de la placa del titular (~40 px en `sm`, 32 en el teléfono).
+        top: 'calc(100% + var(--hueco-pensamiento, 64px))',
         animation: windAway
           ? 'windBlowAway 1.2s ease-in 0.34s forwards'
           : 'featuredThoughtIn 0.9s ease-out 0.2s both',
         willChange: 'transform, opacity, filter',
       }}
     >
-      <div className="relative px-6 py-4">
-        {/* Cristal de la portada partida (2026-10-26): el pensamiento cruza la raya
-            Aventura | Progreso y así se lee igual sobre el cielo y sobre el claro. */}
-        <span aria-hidden="true" className="cristal-portada absolute inset-0 -z-10 rounded-xl" />
-        {/* Esquinas pixel: marcan el bloque sin encerrarlo en una caja pesada */}
-        {[
-          'top-0 left-0 border-t-2 border-l-2',
-          'top-0 right-0 border-t-2 border-r-2',
-          'bottom-0 left-0 border-b-2 border-l-2',
-          'bottom-0 right-0 border-b-2 border-r-2',
-        ].map((pos) => (
-          <span key={pos} className={`absolute ${pos} w-3 h-3`} style={{ borderColor: 'var(--color-accent-glow)', opacity: 0.55 }} />
-        ))}
-
+      <div className="relative px-7 py-5">
+        {/* Placa pixel de la portada partida (2026-10-26): el pensamiento cruza la raya
+            Aventura | Progreso y así se lee igual sobre el cielo y sobre el claro. Sustituye
+            a las cuatro escuadras sueltas, que junto a la placa del titular chocaban. */}
+        <span aria-hidden="true" className="placa-pixel placa-pixel-fina cristal-portada absolute inset-0 -z-10" />
         <p
           className="mb-2.5"
           style={{
@@ -89,7 +81,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             // Antes era el morado de marca al 85 %: sobre el fondo negro quedaba apagado y
             // la etiqueta se perdía. Este lila claro ya se usa en el resto de la portada
             // para texto secundario, así que sube el contraste sin salirse de la paleta.
-            color: '#cfc9e2',
+            color: '#a78bfa',
             opacity: 1,
           }}
         >
@@ -126,10 +118,12 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
                 overflow: 'hidden',   // el nº de líneas lo pone `.featured-thought-text`
               }}
             >
+              <span className="comilla-pensamiento" aria-hidden="true">“</span>
               {data.content.slice(0, shown)}
               {escribiendo && (
                 <span style={{ color: 'var(--color-accent-glow)', animation: 'thoughtCaret 0.9s steps(1) infinite' }}>▌</span>
               )}
+              {!escribiendo && <span className="comilla-pensamiento" aria-hidden="true">”</span>}
             </p>
 
             <p
@@ -138,10 +132,10 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
                 fontFamily: "'Silkscreen', cursive",
                 fontSize: '0.5rem',
                 letterSpacing: '0.16em',
-                color: '#64748b',
+                color: '#8b84a8',
               }}
             >
-              {fecha.toUpperCase()}
+              — {fecha.toUpperCase()} —
             </p>
           </>
         ) : null}

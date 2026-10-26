@@ -3091,25 +3091,42 @@ export default function LandingPage() {
           </div>
         </div>
 
+        {/* En el teléfono el bloque sube: el pensamiento cuelga por debajo y, centrado sin
+            más, el pie lo cortaba. */}
         <div
-          className="relative z-10 max-w-3xl mx-auto"
+          className="relative z-10 max-w-3xl mx-auto max-sm:-mt-24"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
           }}
         >
-          {/* EL CRISTAL DE LA PORTADA PARTIDA (Fernando, 2026-10-26). El titular, el
-              subtítulo y los botones cruzan la raya Aventura | Progreso; sobre un panel de
-              cristal oscuro —el mismo lenguaje que la cápsula de las pestañas— se leen con
-              sus colores de siempre en los dos mundos. Al empezar el juego se desvanece con
-              ellos. */}
+          {/* LA PLACA DEL TITULAR (Fernando, 2026-10-26). El bloque cruza la raya Aventura |
+              Progreso: va sobre cristal oscuro —el lenguaje de la cápsula de las pestañas—
+              con esquinas escalonadas de pixel-art y borde degradado (`.placa-pixel`), y un
+              halo detrás. Al empezar el juego se desvanece con el texto. */}
           <div
             aria-hidden="true"
-            className="cristal-portada absolute -z-10 -inset-x-2 sm:-inset-x-12 -top-8 sm:-top-10 -bottom-2 rounded-3xl"
+            className="absolute -z-10 -inset-x-2 sm:-inset-x-14 -top-8 sm:-top-10 -bottom-8 sm:-bottom-10"
             style={{ opacity: windAway ? 0 : 1, transition: 'opacity 900ms ease 200ms' }}
-          />
+          >
+            <div className="halo-placa absolute -inset-10" />
+            <div className="placa-pixel cristal-portada absolute inset-0" />
+          </div>
           {/* Aquí había una etiqueta «Grupo Corazones Cruzados» sobre el titular. Se quitó:
               el nombre ya preside la cabecera del sitio, a treinta píxeles por encima, y
               repetirlo restaba fuerza al titular en vez de dársela. */}
+
+          {/* El subtítulo, como insignia encima del titular (2026-10-26). */}
+          <p
+            className="insignia-portada"
+            style={{
+              animation: windAway
+                ? 'windBlowAway 1.1s ease-in 0.26s forwards'
+                : 'breathe 5s ease-in-out infinite',
+              willChange: 'transform, opacity, filter',
+            }}
+          >
+            <span aria-hidden="true">◆</span> Proyecto de Desarrollo Humano <span aria-hidden="true">◆</span>
+          </p>
 
           <h1
             className="pixel-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white leading-tight"
@@ -3131,32 +3148,21 @@ export default function LandingPage() {
             <span
               className="pixel-glow"
               style={{
-                background: 'linear-gradient(135deg, #4B2D8E 0%, #A1207D 50%, #7B5FBF 100%)',
+                // ⚠️ Sin `text-shadow`: se pinta ENCIMA de un texto con `background-clip: text`
+                // y lo apagaba —«AL MUNDO» se veía hueco—. La sombra va en el `filter`.
+                textShadow: 'none',
+                // Más luminoso que el morado de marca: sobre la placa oscura aquel apenas se leía.
+                background: 'linear-gradient(135deg, #a78bfa 0%, #e879f9 55%, #c4b5fd 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                filter: 'drop-shadow(0 0 20px rgba(75, 45, 142, 0.4))',
+                filter: 'drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 18px rgba(167, 139, 250, 0.35))',
               }}
             >
               <span style={{ WebkitTextFillColor: '#ef4444', filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.5))' }}>cruzar</span> al mundo
             </span>
           </h1>
 
-          <p
-            className="mt-5 text-lg md:text-xl opacity-60"
-            style={{
-              fontFamily: "'Silkscreen', cursive",
-              fontSize: '0.8rem',
-              letterSpacing: '0.05em',
-              color: '#94A3B8',
-              animation: windAway
-                ? 'windBlowAway 1.1s ease-in 0.26s forwards'
-                : 'breathe 5s ease-in-out infinite',
-              willChange: 'transform, opacity, filter',
-            }}
-          >
-            Proyecto de Desarrollo Humano
-          </p>
 
           <div className="flex flex-col items-center gap-3 mt-10">
             {/* ── «AVENTURA» Y «PROGRESO» (Fernando, 2026-10-26) ─────────────────────
@@ -3168,14 +3174,11 @@ export default function LandingPage() {
                   que se quitó de allí: abre el mismo menú «¿Cómo quieres ingresar?» con el
                   panel como destino. El acceso sigue siendo UNO SOLO.
 
-                ⚠️ `corp dark corp-overlay` convierte esto en una ISLA con el tema del
-                panel. Es el patrón que el proyecto ya usa para los diálogos de la portada
-                (ver `Diseño.md` → «Modales de la landing en tema del dashboard»): dentro de
-                `.corp`, `globals.css` reescribe `pixel-btn` a Fluent, así que los botones se
-                ven como los del panel sin cambiarles una sola clase. Y `corp-overlay` evita
-                que `.corp` imponga su fondo de página y su `min-height`, que aquí destrozarían
-                la escena. */}
-            <div className="corp dark corp-overlay flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
+                Cada botón es una MUESTRA de su mundo (2026-10-26): «Aventura» en pixel-art de
+                videojuego (`.boton-aventura`), «Progreso» como un botón de la plataforma clara
+                (`.boton-progreso`). Antes eran los `pixel-btn` del panel dentro de una isla
+                `.corp`, y sobre la placa pixel no pegaban. */}
+            <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
               {...eventosBoton('aventura')}
               onClick={() => {
@@ -3193,7 +3196,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="pixel-btn pixel-btn-primary"
+              className="boton-aventura"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3211,6 +3214,7 @@ export default function LandingPage() {
                     }),
               }}
             >
+              <span aria-hidden="true" className="boton-aventura-icono">▶</span>
               Aventura
             </button>
             <button
@@ -3222,7 +3226,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="pixel-btn pixel-btn-secondary"
+              className="boton-progreso"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3240,6 +3244,11 @@ export default function LandingPage() {
                     }),
               }}
             >
+              <svg aria-hidden="true" viewBox="0 0 16 16" className="boton-progreso-icono">
+                <rect x="1" y="9" width="3" height="6" rx="1" />
+                <rect x="6.5" y="5" width="3" height="10" rx="1" />
+                <rect x="12" y="1" width="3" height="14" rx="1" />
+              </svg>
               Progreso
             </button>
             </div>

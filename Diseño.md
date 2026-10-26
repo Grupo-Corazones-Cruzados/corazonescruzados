@@ -251,6 +251,20 @@ esquinas de cámara no cambian.
   · El cristal va con `-z-10` dentro de un contexto con `transform`/`z-index`, o se pinta
     ENCIMA del texto que no está posicionado. El puntero de la portada sigue blanco sobre él.
   · Las tarjetas del medio, desde 1360 px: por debajo se meten bajo el cristal.
+- **El bloque central rediseñado (2026-10-26, Fernando: «cambiar por completo los estilos»):**
+  · **Placa pixel** (`.placa-pixel`): esquinas ESCALONADAS con `clip-path` (escalón `--p` 10 px,
+    6 px en `.placa-pixel-fina`), borde degradado lila → fucsia (el propio elemento) y cristal en
+    `::after` (2 px hacia dentro, mismo recorte, `blur(16px)` + líneas de barrido). Halo
+    `.halo-placa` detrás. Sustituye al rectángulo redondeado y a las escuadras del pensamiento.
+  · **El subtítulo es una insignia** (`.insignia-portada`) encima del titular.
+  · **«AL MUNDO»** en `#a78bfa → #e879f9 → #c4b5fd`, con `text-shadow: none` y la sombra en
+    `filter`: `pixel-glow` se pintaba encima del texto recortado y lo dejaba hueco.
+  · **Cada botón es una muestra de su mundo**: `.boton-aventura` (pixel-art: Silkscreen, relieve
+    `inset` de 3 px, doble borde, ▶ dorado) y `.boton-progreso` (blanco, redondeado 10 px, Segoe,
+    icono de barras). Mismo alto (46 px) y mínimo de ancho (168 px). Ya no son `pixel-btn` en
+    una isla `.corp`.
+  · **Pensamiento**: comillas en fucsia, fecha «— 19 DE AGOSTO DE 2026 —», etiqueta lila.
+  · En el teléfono el bloque sube 96 px (`max-sm:-mt-24`) o el pie cortaba el pensamiento.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.
