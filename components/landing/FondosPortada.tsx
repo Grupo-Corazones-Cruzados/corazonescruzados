@@ -64,7 +64,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
 
         <div className="hidden xl:block">
           {/* Izquierda: se ven con la pantalla partida. */}
-          <div className="ea-hud ep-flota" style={{ left: '6%', top: '13%', animationDelay: '-2s' }}>
+          <div className="ea-hud ep-flota" style={{ left: '3%', top: '13%', animationDelay: '-2s' }}>
             <p className="ea-titulo">Misión</p>
             <p className="ea-texto mt-2">Proteger el mundo</p>
             <div className="ea-segmentos mt-2.5">
@@ -89,7 +89,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
           </div>
 
           {/* Derecha: se ven al llenarse la pantalla con «Aventura». */}
-          <div className="ea-hud ep-flota" style={{ right: '6%', top: '13%', animationDelay: '-1s' }}>
+          <div className="ea-hud ep-flota" style={{ right: '3%', top: '13%', animationDelay: '-1s' }}>
             <p className="ea-titulo">Mapa</p>
             <div className="ea-mapa mt-2.5">
               <span className="ea-mapa-yo" />
@@ -130,7 +130,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
 
         <div className="hidden xl:block">
           {/* Izquierda: se ven al llenarse la pantalla con «Progreso». */}
-          <div className="ep-tarjeta ep-flota" style={{ left: '6%', top: '15%', animationDelay: '-1s' }}>
+          <div className="ep-tarjeta ep-flota" style={{ left: '3%', top: '15%', animationDelay: '-1s' }}>
             <p className="ep-titulo">Tareas de hoy</p>
             <ul className="mt-2.5 space-y-2">
               {TAREAS.map((t, i) => (
@@ -166,7 +166,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
           </div>
 
           {/* Derecha: se ven también con la pantalla partida. */}
-          <div className="ep-tarjeta ep-flota" style={{ right: '6%', top: '13%', animationDelay: '-3s' }}>
+          <div className="ep-tarjeta ep-flota" style={{ right: '3%', top: '13%', animationDelay: '-3s' }}>
             <p className="ep-titulo">Progreso semanal</p>
             <div className="mt-3 flex items-end gap-2 h-16">
               {BARRAS.map((h, i) => (

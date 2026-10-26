@@ -2469,44 +2469,55 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    Ahora: sin caja; el texto cambia de color en la raya, que sigue al puntero; y los dos
    botones son iguales.
    ═══════════════════════════════════════════════════════════════════════════════ */
-.titular-portada {
+/* «EL CRUCE»: dos columnas que son mitades exactas de la ventana; el hueco entre ellas es
+   la raya. La izquierda se alinea contra la raya; la derecha, desde ella. */
+.cruce-rejilla {
+  --hueco-raya: clamp(18px, 3.2vw, 56px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.cruce-izquierda { display: flex; flex-direction: column; align-items: flex-end; text-align: right; padding-right: var(--hueco-raya); }
+.cruce-derecha   { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding-left: var(--hueco-raya); }
+.cruce-titular {
   font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   font-weight: 700;
-  /* También según el ALTO: en una ventana baja (~525 px) el bloque no cabía. */
-  font-size: min(clamp(2.9rem, 8vw, 6rem), 12.5vh);
+  /* Según el ancho de MEDIA pantalla y según el alto (ventanas bajas ~525 px). */
+  font-size: min(clamp(1.9rem, 5vw, 5.4rem), 11vh);
   line-height: 0.98;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
 }
-/* «Un Corazón puede»: la línea fina, más pequeña, que prepara la grande de debajo. */
-.titular-linea-fina {
-  font-size: 0.5em;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin-bottom: 0.08em;
+/* La escalera: la columna derecha baja una línea, y la frase se lee cruzando la raya. */
+.cruce-escalon { padding-top: 0.98em; }
+.cruce-botones { margin-top: clamp(22px, 5vh, 44px); }
+.cruce-insignia {
+  display: table;
+  margin: 0 auto clamp(18px, 4vh, 36px);
+  padding: 7px 16px;
+  border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(233, 229, 247, 0.85);
+  white-space: nowrap;
+}
+@media (max-width: 639.98px) {
+  .cruce-insignia { font-size: 0.58rem; letter-spacing: 0.2em; padding: 6px 12px; }
 }
 .titular-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
   font-weight: 400;
-  font-size: 1.3em;
+  font-size: 1.12em;
   letter-spacing: 0;
   padding-right: 0.04em;
-}
-.subtitulo-portada {
-  display: inline-block;
-  margin-bottom: clamp(10px, 2.2vh, 18px);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
 }
 
 /* «Aventura» y «Progreso»: la MISMA forma; solo cambia el color (Fernando, 2026-10-26). */
 .boton-portada {
   height: 50px;
-  min-width: 176px;
+  min-width: min(176px, 100%);
   padding: 0 30px;
   display: inline-flex;
   align-items: center;
@@ -2547,3 +2558,4 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 
 .comilla-pensamiento { -webkit-text-fill-color: #d946ef; font-size: 1.25em; line-height: 0; margin: 0 3px; }
+@media (max-width: 639.98px) { .boton-portada { padding: 0 16px; height: 46px; } }

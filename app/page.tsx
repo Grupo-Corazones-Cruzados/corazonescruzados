@@ -3091,76 +3091,68 @@ export default function LandingPage() {
           </div>
         </div>
 
+        {/* ══ «EL CRUCE» — el bloque central (Fernando, 2026-10-26, quinta versión) ══════════
+            Cada parte vive EN SU MUNDO y la raya es el eje de la composición:
+            · el titular se parte en la raya, en escalera: «Un Corazón / puede» a la izquierda,
+              contra la raya, y «cruzar / al mundo» a la derecha, una línea más abajo — la frase
+              se lee cruzando de un mundo al otro;
+            · cada botón bajo su mundo, en la misma fila, junto a la raya;
+            · la raya ensarta tres cápsulas de cristal: las pestañas (arriba), «Proyecto de
+              Desarrollo Humano» (centro) y el pensamiento (abajo).
+            Las dos columnas son mitades EXACTAS de la ventana (la sección tiene el mismo
+            relleno a cada lado), así que el eje cae en la raya. Los textos siguen siendo
+            `.texto-partido`: en reposo cada uno está entero en su lado, y cuando un botón
+            llena la pantalla cambian de color al pasar la raya, para leerse siempre.
+            Probadas y descartadas antes: bloque centrado con color partido, cristal redondeado,
+            placa pixel, botones con estilo distinto y raya que sigue al puntero. */}
         <div
-          className="relative z-10 max-w-3xl mx-auto"
+          className="relative z-10 w-full"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
           }}
         >
-          {/* ── EL TITULAR QUE CRUZA LOS DOS MUNDOS (Fernando, 2026-10-26) ─────────────
-              Sin placa ni pixel-art: tipografía limpia (Space Grotesk) que se pinta con el
-              color de cada mundo y cambia justo en la raya (`.texto-partido`) —blanca sobre
-              las estrellas, oscura sobre la Plataforma—. La raya sigue al puntero
-              (`useCorteAnimado`), así que al mover el ratón el titular «cruza» en vivo.
-              Cada trozo de color es un bloque o `inline-block` con su `--x0` medido
-              (`refBordeIzquierdo`) y nada lleva `transform` animado, o el corte se
-              desalinearía. */}
           <p
-            ref={refBordeIzquierdo}
-            className="subtitulo-portada texto-partido"
-            style={{
-              ['--tp-a' as string]: '#a9a3c9',
-              ['--tp-b' as string]: '#6b6585',
-              ...(windAway ? { animation: 'windBlowAway 1.1s ease-in 0.26s forwards' } : {}),
-            }}
+            className="cristal-portada cruce-insignia"
+            style={windAway ? { animation: 'windBlowAway 1.1s ease-in 0.26s forwards' } : undefined}
           >
             Proyecto de Desarrollo Humano
           </p>
 
-          <h1
-            className="titular-portada"
-            style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.12s forwards', willChange: 'transform, opacity, filter' } : undefined}
-          >
-            {/* Iteración 2 (2026-10-26): contraste editorial. Una línea fina con «Corazón» en
-                serif cursiva y, debajo, «cruzar al mundo» grande y en negrita. */}
-            <span
-              ref={refBordeIzquierdo}
-              className="titular-linea-fina texto-partido block"
-              style={{ ['--tp-a' as string]: '#e9e5f7', ['--tp-b' as string]: '#2b2540' }}
+          <h1 className="sr-only">Un Corazón puede cruzar al mundo</h1>
+
+          <div className="cruce-rejilla" aria-hidden="true">
+            <p
+              className="cruce-titular cruce-izquierda"
+              style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.12s forwards', willChange: 'transform, opacity, filter' } : undefined}
             >
-              Un <em className="titular-serif">Coraz&oacute;n</em> puede
-            </span>
-            <span className="block">
-              <span
-                ref={refBordeIzquierdo}
-                className="texto-partido inline-block"
-                style={{ ['--tp-a' as string]: '#f87171', ['--tp-b' as string]: '#dc2626' }}
-              >
+              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#ffffff', ['--tp-b' as string]: '#17122b' }}>
+                Un <em className="titular-serif">Coraz&oacute;n</em>
+              </span>
+              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#ffffff', ['--tp-b' as string]: '#17122b' }}>
+                puede
+              </span>
+            </p>
+            <p
+              className="cruce-titular cruce-derecha cruce-escalon"
+              style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.2s forwards', willChange: 'transform, opacity, filter' } : undefined}
+            >
+              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#f87171', ['--tp-b' as string]: '#dc2626' }}>
                 cruzar
-              </span>{' '}
-              <span
-                ref={refBordeIzquierdo}
-                className="texto-partido inline-block"
-                style={{ ['--tp-a' as string]: '#c4b5fd', ['--tp-b' as string]: '#6d28d9' }}
-              >
+              </span>
+              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#c4b5fd', ['--tp-b' as string]: '#6d28d9' }}>
                 al mundo
               </span>
-            </span>
-          </h1>
+            </p>
+          </div>
 
-          <div className="flex flex-col items-center gap-3 mt-[clamp(20px,4.5vh,40px)]">
-            {/* ── «AVENTURA» Y «PROGRESO» (Fernando, 2026-10-26) ─────────────────────
-                Mismo ancho: en fila, dos columnas `1fr`; apilados (móvil), estirados por igual.
-                · «Aventura» —antes «Comenzar Aventura»— entra al videojuego.
-                · «Progreso» es el antiguo botón «Plataforma» de la barra: abre el mismo menú
-                  «¿Cómo quieres ingresar?» con el panel como destino. El acceso es UNO SOLO.
-                ⚠️ LA MISMA FORMA PARA LOS DOS (`.boton-portada`). Se probó que cada uno
-                imitara su mundo —pixel-art uno, plataforma clara el otro— y Fernando lo
-                descartó: «al hacerlos diferentes se ven raros». Solo cambia el COLOR:
-                Aventura, el morado profundo del videojuego; Progreso, claro. Sin iconos
-                (Fernando: «sin icono se verían mejor»). */}
-            <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
+          {/* «Aventura» y «Progreso»: la MISMA forma, cada uno con el color de su mundo y
+              debajo de él. «Progreso» es el antiguo botón «Plataforma» de la barra: abre el
+              mismo menú «¿Cómo quieres ingresar?» con el panel como destino (el acceso es UNO
+              SOLO). Sin iconos (Fernando: «sin icono se verían mejor»). */}
+          <div className="cruce-rejilla cruce-botones">
+            <div className="cruce-izquierda">
             <button
+              type="button"
               {...eventosBoton('aventura')}
               onClick={() => {
                 if (landingLocked || windAway) return;
@@ -3179,21 +3171,16 @@ export default function LandingPage() {
               disabled={landingLocked || windAway}
               className="boton-portada boton-portada-aventura"
               style={{
-                ...(landingLocked && !windAway
-                  ? { opacity: 0.45, cursor: 'not-allowed' }
-                  : {}),
+                ...(landingLocked && !windAway ? { opacity: 0.45, cursor: 'not-allowed' } : {}),
                 ...(windAway
-                  ? {
-                      animation:
-                        'windBlowAway 1.15s ease-in 0.4s forwards',
-                      willChange: 'transform, opacity, filter',
-                      cursor: 'default',
-                    }
+                  ? { animation: 'windBlowAway 1.15s ease-in 0.4s forwards', willChange: 'transform, opacity, filter', cursor: 'default' }
                   : {}),
               }}
             >
               Aventura
             </button>
+            </div>
+            <div className="cruce-derecha">
             <button
               type="button"
               {...eventosBoton('progreso')}
@@ -3205,16 +3192,9 @@ export default function LandingPage() {
               disabled={landingLocked || windAway}
               className="boton-portada boton-portada-progreso"
               style={{
-                ...(landingLocked && !windAway
-                  ? { opacity: 0.45, cursor: 'not-allowed' }
-                  : {}),
+                ...(landingLocked && !windAway ? { opacity: 0.45, cursor: 'not-allowed' } : {}),
                 ...(windAway
-                  ? {
-                      animation:
-                        'windBlowAway 1.15s ease-in 0.4s forwards',
-                      willChange: 'transform, opacity, filter',
-                      cursor: 'default',
-                    }
+                  ? { animation: 'windBlowAway 1.15s ease-in 0.4s forwards', willChange: 'transform, opacity, filter', cursor: 'default' }
                   : {}),
               }}
             >
@@ -3223,10 +3203,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Pensamiento destacado, debajo de los botones y EN EL FLUJO (2026-10-26). Antes
-              colgaba en absoluto para no mover el titular, pero en una ventana baja (~525 px)
-              el pie lo cortaba. Ahora se centra el bloque entero y, si no cabe, la sección
-              crece. */}
+          {/* El pensamiento, en una cápsula de cristal sobre la raya. EN EL FLUJO: en una
+              ventana baja (~525 px) colgado en absoluto lo cortaba el pie. */}
           <FeaturedThought windAway={windAway} />
         </div>
       </section>

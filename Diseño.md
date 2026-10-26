@@ -296,6 +296,23 @@ esquinas de cámara no cambian.
     (blanco → `#f1ecfc`, texto `#3a1f7a`).
   · **Pensamiento** en Instrument Serif cursiva (`clamp(1.15rem, 2.4vh, 1.45rem)`), etiqueta y
     fecha en Inter; la fecha sin rayas ni mayúsculas.
+- **⭐ QUINTA VERSIÓN, LA VIGENTE (2026-10-26): «EL CRUCE».** Fernando pidió cambiar por
+  completo cómo se presenta el bloque. Cada parte vive EN SU MUNDO y la raya es el eje:
+  · `.cruce-rejilla`: dos columnas que son mitades EXACTAS de la ventana (la sección tiene el
+    mismo relleno a cada lado). `.cruce-izquierda` se alinea CONTRA la raya y
+    `.cruce-derecha` DESDE ella, con `--hueco-raya: clamp(18px, 3.2vw, 56px)`.
+  · **Titular en escalera** (`.cruce-titular`, Space Grotesk 700,
+    `min(clamp(1.9rem, 5vw, 5.4rem), 11vh)`): «Un *Corazón* / puede» a la izquierda y
+    «cruzar / al mundo» a la derecha, una línea más abajo (`.cruce-escalon`). La raya separa
+    «puede | cruzar». El `h1` real va en `sr-only` con la frase entera; lo visible es `aria-hidden`.
+    ⚠️ A 5,6vw «Un Corazón» pisaba la tarjeta de arriba a la izquierda (1280-1440 px):
+    medir el TEXTO con un `Range`, no el `span`, que ocupa la columna entera.
+  · **Cada botón bajo su mundo**, en la misma fila: Aventura (morado del juego) y Progreso (claro).
+  · **La raya ensarta tres cápsulas de cristal** (`.cristal-portada`): las pestañas, la insignia
+    `.cruce-insignia` («Proyecto de Desarrollo Humano») y el pensamiento.
+  · Los textos de los lados siguen siendo `.texto-partido`: en reposo cada uno está entero en
+    su lado; al llenarse la pantalla cambian de color cuando pasa la raya.
+  · Las tarjetas de arriba (HUD y Plataforma) pasan al 3 % del borde.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.

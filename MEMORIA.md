@@ -281,6 +281,10 @@ Stack estándar de la casa, con particularidades de este repo:
   queda así mientras está abierto el acceso. Los textos que cruzan la raya cambian de color en
   ella (blancos → oscuros). Pie y esquinas de cámara sin cambios. Detalle: `Diseño.md`
   § «La portada partida».
+  **Bloque central vigente: «El cruce»** (quinta versión del mismo día): titular en escalera
+  partido por la raya, cada botón bajo su mundo y tres cápsulas de cristal sobre la raya.
+  Descartadas: color partido centrado, cristal redondeado, placa pixel, botones con estilo
+  distinto y raya que sigue al puntero. Sobre la escena clara, puntero del sistema.
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

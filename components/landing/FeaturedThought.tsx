@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { refBordeIzquierdo } from '@/lib/sitio/portadaPartida';
 
 interface Featured { content: string; createdAt: string }
 
@@ -58,21 +57,19 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
 
   return (
     <div
-      className="featured-thought-slot relative mx-auto w-[min(92vw,640px)] px-4 pointer-events-none"
+      className="featured-thought-slot relative mx-auto w-[min(92vw,620px)] pointer-events-none"
       style={{
-        marginTop: 'clamp(20px, 6vh, 64px)',
+        marginTop: 'clamp(24px, 6vh, 60px)',
         animation: windAway
           ? 'windBlowAway 1.2s ease-in 0.34s forwards'
           : 'featuredThoughtIn 0.9s ease-out 0.2s both',
         willChange: 'transform, opacity, filter',
       }}
     >
-      <div className="relative px-7 py-5">
-        {/* Sin caja (2026-10-26): cruza la raya Aventura | Progreso y, como el titular,
-            cambia de color en ella (`.texto-partido`). */}
+      {/* «El cruce» (2026-10-26): cápsula de cristal sobre la raya, como las pestañas. */}
+      <div className="cristal-portada relative rounded-2xl px-7 py-4">
         <p
-          ref={refBordeIzquierdo}
-          className="texto-partido mb-2.5"
+          className="mb-2"
           style={{
             fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: '0.66rem',
@@ -82,8 +79,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             // Antes era el morado de marca al 85 %: sobre el fondo negro quedaba apagado y
             // la etiqueta se perdía. Este lila claro ya se usa en el resto de la portada
             // para texto secundario, así que sube el contraste sin salirse de la paleta.
-            ['--tp-a' as string]: '#a78bfa',
-            ['--tp-b' as string]: '#6d28d9',
+            color: '#a78bfa',
             opacity: 1,
           }}
         >
@@ -108,16 +104,14 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
         ) : data ? (
           <>
             <p
-              ref={refBordeIzquierdo}
-              className="texto-partido featured-thought-text whitespace-pre-wrap"
+              className="featured-thought-text whitespace-pre-wrap"
               style={{
                 // Iteración 2 (2026-10-26): la serif cursiva del titular, no la monoespaciada.
                 fontFamily: "'Instrument Serif', Georgia, serif",
                 fontStyle: 'italic',
                 fontSize: 'clamp(1.15rem, 2.4vh, 1.45rem)',
                 lineHeight: 1.45,
-                ['--tp-a' as string]: '#d4d0e6',
-                ['--tp-b' as string]: '#2b2540',
+                color: '#e7e3f4',
                 display: '-webkit-box',
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',   // el nº de líneas lo pone `.featured-thought-text`
@@ -132,15 +126,13 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             </p>
 
             <p
-              ref={refBordeIzquierdo}
-              className="texto-partido mt-2"
+              className="mt-1.5"
               style={{
                 fontFamily: "'Inter', system-ui, sans-serif",
                 fontSize: '0.68rem',
                 fontWeight: 500,
                 letterSpacing: '0.12em',
-                ['--tp-a' as string]: '#8b84a8',
-                ['--tp-b' as string]: '#7a7394',
+                color: '#8b84a8',
               }}
             >
               {fecha}
