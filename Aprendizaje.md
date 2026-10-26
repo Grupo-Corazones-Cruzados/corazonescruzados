@@ -76,7 +76,11 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 - **SAS primero:** 1–2 meses hasta tener D-U-N-S y cuentas; vendedor = la empresa; sin prueba de 12
   testers en Google (solo aplica a personales).
 
-#### P4 — ¿Qué correo/Apple ID? · 🔎 Propuesto
+#### P4 — ¿Qué correo/Apple ID? · ✅ Resuelta (Fernando, 2026-10-26) — **`lfgonzalezm0@outlook.com`**
+- Es el mismo Apple ID que está en el equipo de Motordesa (Xcode → Accounts). Se queda en los dos equipos.
+- La app Apple Developer del iPhone dice *«Enrollment through the Apple Developer app is not available for
+  this Apple Account»* → la inscripción se hace por la web (developer.apple.com/programs/enroll).
+- Propuesta anterior (descartada):
 - Propuesta: `lfgonzalezm0@grupocc.org` como Apple ID y cuenta de Google del titular (es la cuenta
   que ya es dueña del producto Automatizaciones y del Firebase `grupo-corazones-cruzados`). Un mismo
   Apple ID puede estar en varios equipos (el del cliente y el propio).
