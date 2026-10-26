@@ -280,7 +280,8 @@ Stack estándar de la casa, con particularidades de este repo:
   (99 $/año, vendedor = su nombre legal; no acepta nombres comerciales) y Google como **personal** (25 $,
   nombre legal + país + correo públicos, dirección si cobra; prueba cerrada de 12 testers × 14 días).
   Para que el vendedor sea «Grupo Corazones Cruzados» hace falta persona jurídica (SAS) + D-U-N-S.
-  Pendiente su decisión. Detalle: `Aprendizaje.md` § «CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY».
+  **Decidido (2026-10-26): como PERSONA, primero Apple y luego Google**; si un día es empresa, Apple
+  convierte la membresía por soporte. Detalle: `Aprendizaje.md` § «CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY».
 - **🧩 MÓDULO «PLATAFORMAS» Y FICHA SIN «ENTRAR» (Fernando, 2026-10-23).** *«quitemos el entrar a
   organización de aquí, y agreguemos un módulo que solo estará habilitado y visible para cuentas que
   hayan comprado la suscripción […] y en el marketplace cuando ya estás suscrito no aparezca el botón

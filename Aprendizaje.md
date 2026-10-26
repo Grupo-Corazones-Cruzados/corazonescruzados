@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (declarado 2026-10-26) — CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY, A NOMBRE DE FERNANDO (persona natural), Y PUBLICAR · 🔎 45 %
+## Objetivo (declarado 2026-10-26) — CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY, A NOMBRE DE FERNANDO (persona natural), Y PUBLICAR · 🔎 55 %
 
 **Declarado por Fernando el 2026-10-26**, textual en lo esencial: *«quiero publicar este proyecto en las
 tiendas de google y apple… para mi negocio del grupo corazones cruzados, aunque no soy una empresa
@@ -16,8 +16,9 @@ está hecho y probado en la cuenta provisional del cliente (equipo `5H27NSRYKQ`,
 de Apple/Google, firma y distribución) para un titular persona natural en Ecuador.
 
 ### Progreso
-- **% de información para el objetivo:** 45 %
-- **Estado:** requisitos de las dos tiendas verificados en sus páginas oficiales (2026-10-26). La
+- **% de información para el objetivo:** 55 %
+- **Estado (2026-10-26, tarde):** P3 decidida — cuentas como PERSONA, primero Apple y luego Google. Se le dio a Fernando el paso a paso de la inscripción en Apple.
+- **Estado anterior:** requisitos de las dos tiendas verificados en sus páginas oficiales (2026-10-26). La
   decisión que lo ordena todo es de Fernando: **cuentas como persona ahora** o **constituir una SAS
   primero** para que el vendedor sea «Grupo Corazones Cruzados». Faltan además las piezas que las
   tiendas exigen y la app aún no tiene (compra en la tienda, borrar la cuenta desde la app).
@@ -56,7 +57,18 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 - Como persona, el NOMBRE DE LA APP sí puede llevar la marca («GCC World»), solo el vendedor sale con
   su nombre legal.
 
-#### P3 — ¿Persona ahora o SAS primero? · ⏸ Bloqueada (decisión de Fernando)
+#### P3 — ¿Persona ahora o SAS primero? · ✅ Resuelta (Fernando, 2026-10-26) — **PERSONA, empezando por Apple**
+- **Decisión (textual):** *«no me importa que el nombre del vendedor sea mi nombre… no estoy seguro si a
+  futuro vaya a cambiar a empresa… me interesa empezar con esto. Vamos a empezar con apple y luego google»*.
+- **Cambio a empresa después:** Apple lo hace por soporte («Switch to organization membership» o
+  formulario de Membership): pide la empresa con su sufijo legal, D-U-N-S, dirección; llamada de
+  verificación, 2–3 semanas. Las apps y el identificador se quedan. Google: apps transferidas a una
+  cuenta de organización nueva.
+- **Modelo de negocio (Fernando, 2026-10-26):** la plataforma gestiona personas que desarrollan talento y
+  VENDEN sus servicios y productos a través de la app; la operan el sistema y la IA, sin contratar
+  personal. ⇒ Apple 3.1.3(e)/3.1.5(a): bienes y servicios que se consumen FUERA de la app (servicios de
+  personas, productos físicos) se cobran con pasarela propia (PayPhone), sin compra en la tienda; lo
+  DIGITAL que se desbloquea dentro (suscripciones de productos) sí va por la tienda (P6).
 - **Persona ahora:** se empieza hoy; vendedor = nombre legal; en Google, dirección pública si se cobra.
   Pasar después a organización: Apple deja convertir la membresía de individuo a organización
   (por soporte); Google se resuelve transfiriendo las apps a una cuenta de organización nueva.
