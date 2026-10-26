@@ -15,15 +15,14 @@
  * heredada que se está animando no se repintaban cada cuadro. `useCorteAnimado` escribe el
  * valor en px cuadro a cuadro: para el navegador es un cambio de estilo normal.
  *
- * ── EL TEXTO CENTRAL VA EN CRISTAL ─────────────────────────────────────────────
- * Titular, botones y pensamiento cruzan la raya. Partirles el color en ella dejaba letras
- * mitad blancas y mitad oscuras; ahora van sobre `.cristal-portada` (cristal oscuro, el
- * lenguaje de la cápsula de las pestañas) y conservan sus colores de siempre.
- *
- * ── LO QUE SIGUE PARTIDO ───────────────────────────────────────────────────────
- * El nombre de la cabecera, sin cristal: `.texto-partido` lo pinta con un degradado de
- * corte duro, `--tp-a` a la izquierda de la raya y `--tp-b` a la derecha. Necesita `--x0`,
- * su borde izquierdo, que pone `refBordeIzquierdo`.
+ * ── LOS TEXTOS QUE CRUZAN LA RAYA ──────────────────────────────────────────────
+ * Titular, subtítulo, pensamiento y el nombre de la cabecera: `.texto-partido` los pinta
+ * con un degradado de corte duro, `--tp-a` a la izquierda de la raya y `--tp-b` a la
+ * derecha, así que se leen sobre el cielo y sobre el claro y, como la raya sigue al
+ * puntero, se recolorean en vivo. Necesita `--x0`, el borde izquierdo del elemento, que
+ * pone `refBordeIzquierdo`. ⚠️ Cada trozo, bloque o `inline-block` (en un `inline` partido
+ * en dos líneas el fondo se coloca como si fuera una sola), y sin `transform` animado.
+ * (Probados y descartados el 2026-10-26: un cristal redondeado y una placa pixel detrás.)
  */
 
 import { useEffect, useRef, type RefObject } from 'react';
@@ -37,42 +36,71 @@ function fraccionDe(modo: ModoPortada): number {
   return 0.5;
 }
 
-const DURACION_MS = 900;
-// La misma curva que tenía la transición CSS, `cubic-bezier(.65, 0, .35, 1)`, aproximada.
-const suavizar = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+// Con la pantalla partida, la raya sigue al puntero (Fernando, 2026-10-26: «animarlo según
+// el puntero donde se pone»), pero sin salirse de esta franja alrededor del centro: es un
+// guiño, no una persiana. 0.4 → entre el 30 % y el 70 %.
+const SEGUIMIENTO = 0.4;
+// Constante de tiempo del suavizado: cuanto mayor, más perezosa. ~160 ms se nota viva sin
+// ir pegada al ratón; llenar la pantalla con un botón tarda así ~0,6 s.
+const TAU_MS = 160;
 
 /**
- * Lleva `--corte` de donde esté al valor del modo, en ~900 ms, escribiéndolo en px en el
- * elemento cada cuadro. Si el modo cambia a mitad, sale desde donde iba. Con «reducir
- * movimiento», salta. Al cambiar el tamaño de la ventana se recoloca sin animar.
+ * Lleva `--corte` hacia su objetivo cuadro a cuadro (en px). El objetivo es el del modo y,
+ * en `partido`, se desplaza hacia el puntero. Persigue el objetivo con un suavizado
+ * exponencial en vez de una transición fija: así un cambio a mitad (otro botón, el ratón
+ * que se mueve) sale desde donde iba, sin saltos. Con «reducir movimiento» no sigue al
+ * puntero y salta. Solo hay bucle mientras falta camino.
  */
 export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPortada) {
   const actual = useRef<number | null>(null);
+  const puntero = useRef(0.5);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const destino = fraccionDe(modo);
-    const desde = actual.current ?? destino;
+    const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const objetivo = () => {
+      const base = fraccionDe(modo);
+      return modo === 'partido' && !reducir ? base + (puntero.current - 0.5) * SEGUIMIENTO : base;
+    };
     const pintar = (f: number) => {
       actual.current = f;
       el.style.setProperty('--corte', `${f * document.documentElement.clientWidth}px`);
     };
-    const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const t0 = performance.now();
+
     let raf = 0;
+    let antes = 0;
     const paso = (t: number) => {
-      // La marca del cuadro puede ser anterior a `t0`: sin el `max`, arrancaría hacia atrás.
-      const k = reducir ? 1 : Math.min(1, Math.max(0, (t - t0) / DURACION_MS));
-      pintar(desde + (destino - desde) * suavizar(k));
-      if (k < 1) raf = requestAnimationFrame(paso);
+      const dt = antes ? Math.min(64, t - antes) : 16;
+      antes = t;
+      const meta = objetivo();
+      const desde = actual.current ?? meta;
+      const siguiente = reducir ? meta : desde + (meta - desde) * (1 - Math.exp(-dt / TAU_MS));
+      if (Math.abs(meta - siguiente) < 0.0005) {
+        pintar(meta);
+        raf = 0;
+        antes = 0;
+        return;
+      }
+      pintar(siguiente);
+      raf = requestAnimationFrame(paso);
     };
-    pintar(desde);
-    raf = requestAnimationFrame(paso);
-    const alRedimensionar = () => pintar(actual.current ?? destino);
+    const arrancar = () => { if (!raf) raf = requestAnimationFrame(paso); };
+
+    pintar(actual.current ?? objetivo());
+    arrancar();
+
+    const alMover = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      puntero.current = e.clientX / document.documentElement.clientWidth;
+      if (modo === 'partido') arrancar();
+    };
+    const alRedimensionar = () => pintar(actual.current ?? objetivo());
+    window.addEventListener('pointermove', alMover, { passive: true });
     window.addEventListener('resize', alRedimensionar);
     return () => {
       cancelAnimationFrame(raf);
+      window.removeEventListener('pointermove', alMover);
       window.removeEventListener('resize', alRedimensionar);
     };
   }, [ref, modo]);

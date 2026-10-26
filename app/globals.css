@@ -2448,133 +2448,58 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .ep-visto { transform: scale(1); } }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   EL BLOQUE CENTRAL DE LA PORTADA (Fernando, 2026-10-26: «cambiar por completo los
-   estilos… para que se vea bien»). Una placa pixel une los dos mundos y cada botón es una
-   muestra del suyo.
+   EL BLOQUE CENTRAL DE LA PORTADA (Fernando, 2026-10-26).
+   Tercera versión. Descartadas: el cristal redondeado («no pegan bien») y la placa pixel
+   con un botón distinto por mundo («no me gusta… al hacerlos diferentes se ven raros»).
+   Ahora: sin caja; el texto cambia de color en la raya, que sigue al puntero; y los dos
+   botones son iguales.
    ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Placa con esquinas ESCALONADAS (pixel-art) y borde degradado. El borde es el propio
-   elemento, recortado; el cristal es `::after`, 2 px hacia dentro con el mismo recorte.
-   `.cristal-portada` se usa solo para que el puntero sepa que encima va blanco: su fondo y
-   su borde los anulan las reglas de aquí. */
-.placa-pixel {
-  --p: 10px;
-  --escalones: polygon(
-    0 calc(var(--p) * 2), var(--p) calc(var(--p) * 2), var(--p) var(--p), calc(var(--p) * 2) var(--p), calc(var(--p) * 2) 0,
-    calc(100% - var(--p) * 2) 0, calc(100% - var(--p) * 2) var(--p), calc(100% - var(--p)) var(--p), calc(100% - var(--p)) calc(var(--p) * 2), 100% calc(var(--p) * 2),
-    100% calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p) * 2), calc(100% - var(--p)) calc(100% - var(--p)), calc(100% - var(--p) * 2) calc(100% - var(--p)), calc(100% - var(--p) * 2) 100%,
-    calc(var(--p) * 2) 100%, calc(var(--p) * 2) calc(100% - var(--p)), var(--p) calc(100% - var(--p)), var(--p) calc(100% - var(--p) * 2), 0 calc(100% - var(--p) * 2)
-  );
-  clip-path: var(--escalones);
-  background: linear-gradient(120deg, rgba(167, 139, 250, 0.75), rgba(232, 121, 249, 0.55) 50%, rgba(123, 95, 191, 0.75)) !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+.titular-portada {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  /* También según el ALTO: en una ventana baja (~525 px) el bloque no cabía. */
+  font-size: min(clamp(2.6rem, 7vw, 5.25rem), 11vh);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
 }
-.placa-pixel::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  clip-path: var(--escalones);
-  background:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
-    linear-gradient(180deg, rgba(22, 16, 44, 0.9), rgba(11, 8, 24, 0.92));
-  -webkit-backdrop-filter: blur(16px) saturate(1.3);
-  backdrop-filter: blur(16px) saturate(1.3);
-}
-.placa-pixel-fina { --p: 6px; }
-.placa-pixel-fina { background: linear-gradient(120deg, rgba(167, 139, 250, 0.45), rgba(232, 121, 249, 0.3)) !important; }
-.placa-pixel-fina::after { inset: 1.5px; background: rgba(13, 10, 28, 0.82); }
-
-.halo-placa {
-  background: radial-gradient(closest-side, rgba(123, 95, 191, 0.35), rgba(161, 32, 125, 0.12) 60%, transparent);
-  filter: blur(30px);
-  animation: haloPlaca 6s ease-in-out infinite alternate;
-}
-@keyframes haloPlaca {
-  from { opacity: 0.7; transform: scale(0.97); }
-  to   { opacity: 1;   transform: scale(1.03); }
-}
-
-/* El subtítulo como insignia. */
-.insignia-portada {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 22px;
-  padding: 6px 14px;
-  font-family: 'Silkscreen', cursive;
-  font-size: 0.66rem;
-  letter-spacing: 0.18em;
+.subtitulo-portada {
+  display: inline-block;
+  margin-bottom: clamp(10px, 2.2vh, 18px);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: #d8cff5;
-  background: rgba(123, 95, 191, 0.16);
-  border: 1px solid rgba(167, 139, 250, 0.35);
 }
-.insignia-portada > span { color: #e879f9; font-size: 0.55rem; }
 
-/* «Aventura»: un botón de videojuego en pixel-art. */
-.boton-aventura,
-.boton-progreso {
-  height: 46px;
-  min-width: 168px;
-  padding: 0 22px;
+/* «Aventura» y «Progreso»: el MISMO botón. Cápsula morada (la familia de la cápsula de
+   las pestañas), que se lee igual sobre el cielo y sobre el claro. */
+.boton-portada {
+  height: 48px;
+  min-width: 172px;
+  padding: 0 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-}
-.boton-aventura {
-  font-family: 'Silkscreen', cursive;
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #ffffff;
-  background: linear-gradient(180deg, #9277e0, #6b4fc0);
-  box-shadow:
-    inset -3px -3px 0 rgba(0, 0, 0, 0.35),
-    inset 3px 3px 0 rgba(255, 255, 255, 0.28),
-    0 0 0 2px #120d26,
-    0 0 0 4px #a78bfa,
-    0 0 24px rgba(167, 139, 250, 0.45);
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
-}
-.boton-aventura-icono { font-size: 0.7rem; color: #fde68a; text-shadow: 0 0 8px rgba(253, 230, 138, 0.8); }
-.boton-aventura:hover:not(:disabled) {
-  background: linear-gradient(180deg, #a08af0, #7759cf);
-  box-shadow:
-    inset -3px -3px 0 rgba(0, 0, 0, 0.35),
-    inset 3px 3px 0 rgba(255, 255, 255, 0.3),
-    0 0 0 2px #120d26,
-    0 0 0 4px #c4b5fd,
-    0 0 34px rgba(196, 181, 253, 0.7);
-}
-.boton-aventura:active:not(:disabled) {
-  box-shadow:
-    inset 3px 3px 0 rgba(0, 0, 0, 0.35),
-    inset -3px -3px 0 rgba(255, 255, 255, 0.2),
-    0 0 0 2px #120d26,
-    0 0 0 4px #a78bfa;
-}
-
-/* «Progreso»: un botón de la plataforma, en claro. */
-.boton-progreso {
-  font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #2b1f52;
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(75, 45, 142, 0.18), 0 10px 26px -10px rgba(167, 139, 250, 0.75), inset 0 -2px 0 rgba(75, 45, 142, 0.08);
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  background: linear-gradient(180deg, #8b6fdc 0%, #6a4fbf 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 12px 30px -12px rgba(107, 79, 191, 0.85);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
-.boton-progreso-icono { width: 15px; height: 15px; fill: #7B5FBF; }
-.boton-progreso:hover:not(:disabled) {
-  background: #f6f3ff;
-  box-shadow: 0 0 0 1px rgba(75, 45, 142, 0.3), 0 14px 32px -10px rgba(196, 181, 253, 0.95), inset 0 -2px 0 rgba(75, 45, 142, 0.08);
+.boton-portada-icono { width: 14px; height: 14px; fill: currentColor; opacity: 0.9; }
+.boton-portada:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, #9a80e8 0%, #7556cc 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 4px rgba(167, 139, 250, 0.25), 0 18px 38px -12px rgba(107, 79, 191, 0.95);
 }
-.boton-aventura:focus-visible,
-.boton-progreso:focus-visible { outline: 2px solid #e879f9; outline-offset: 6px; }
+.boton-portada:active:not(:disabled) { transform: translateY(0); }
+.boton-portada:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 4px; }
 
-.comilla-pensamiento { color: #e879f9; font-weight: 700; margin: 0 2px; }
+.comilla-pensamiento { -webkit-text-fill-color: #d946ef; font-weight: 700; margin: 0 2px; }

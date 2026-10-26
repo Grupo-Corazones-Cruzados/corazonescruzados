@@ -7,7 +7,7 @@ import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
-import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
+import { refBordeIzquierdo, useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
 // bandas. El viejo (LPC) se retira; su tipo `CharacterConfig` solo se conserva
@@ -2844,7 +2844,7 @@ export default function LandingPage() {
       {/* ====== HERO ====== */}
       <section
         ref={heroSectionRef}
-        className="relative min-h-[90vh] flex items-center justify-center text-center px-6 overflow-hidden"
+        className="relative min-h-[90vh] flex items-center justify-center text-center px-6 py-16 overflow-hidden"
       >
         {/* Warp wrapper — scales to "fly into" the planet on click */}
         <div
@@ -3091,93 +3091,70 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* En el teléfono el bloque sube: el pensamiento cuelga por debajo y, centrado sin
-            más, el pie lo cortaba. */}
         <div
-          className="relative z-10 max-w-3xl mx-auto max-sm:-mt-24"
+          className="relative z-10 max-w-3xl mx-auto"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
           }}
         >
-          {/* LA PLACA DEL TITULAR (Fernando, 2026-10-26). El bloque cruza la raya Aventura |
-              Progreso: va sobre cristal oscuro —el lenguaje de la cápsula de las pestañas—
-              con esquinas escalonadas de pixel-art y borde degradado (`.placa-pixel`), y un
-              halo detrás. Al empezar el juego se desvanece con el texto. */}
-          <div
-            aria-hidden="true"
-            className="absolute -z-10 -inset-x-2 sm:-inset-x-14 -top-8 sm:-top-10 -bottom-8 sm:-bottom-10"
-            style={{ opacity: windAway ? 0 : 1, transition: 'opacity 900ms ease 200ms' }}
-          >
-            <div className="halo-placa absolute -inset-10" />
-            <div className="placa-pixel cristal-portada absolute inset-0" />
-          </div>
-          {/* Aquí había una etiqueta «Grupo Corazones Cruzados» sobre el titular. Se quitó:
-              el nombre ya preside la cabecera del sitio, a treinta píxeles por encima, y
-              repetirlo restaba fuerza al titular en vez de dársela. */}
-
-          {/* El subtítulo, como insignia encima del titular (2026-10-26). */}
+          {/* ── EL TITULAR QUE CRUZA LOS DOS MUNDOS (Fernando, 2026-10-26) ─────────────
+              Sin placa ni pixel-art: tipografía limpia (Space Grotesk) que se pinta con el
+              color de cada mundo y cambia justo en la raya (`.texto-partido`) —blanca sobre
+              las estrellas, oscura sobre la Plataforma—. La raya sigue al puntero
+              (`useCorteAnimado`), así que al mover el ratón el titular «cruza» en vivo.
+              Cada trozo de color es un bloque o `inline-block` con su `--x0` medido
+              (`refBordeIzquierdo`) y nada lleva `transform` animado, o el corte se
+              desalinearía. */}
           <p
-            className="insignia-portada"
+            ref={refBordeIzquierdo}
+            className="subtitulo-portada texto-partido"
             style={{
-              animation: windAway
-                ? 'windBlowAway 1.1s ease-in 0.26s forwards'
-                : 'breathe 5s ease-in-out infinite',
-              willChange: 'transform, opacity, filter',
+              ['--tp-a' as string]: '#a9a3c9',
+              ['--tp-b' as string]: '#6b6585',
+              ...(windAway ? { animation: 'windBlowAway 1.1s ease-in 0.26s forwards' } : {}),
             }}
           >
-            <span aria-hidden="true">◆</span> Proyecto de Desarrollo Humano <span aria-hidden="true">◆</span>
+            Proyecto de Desarrollo Humano
           </p>
 
           <h1
-            className="pixel-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white leading-tight"
-            style={
-              windAway
-                ? {
-                    animation: 'windBlowAway 1.05s ease-in 0.12s forwards',
-                    willChange: 'transform, opacity, filter',
-                  }
-                : {
-                    animation: 'breathe 5s ease-in-out infinite',
-                    transformOrigin: 'center',
-                    willChange: 'transform',
-                  }
-            }
+            className="titular-portada"
+            style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.12s forwards', willChange: 'transform, opacity, filter' } : undefined}
           >
-            Un Coraz&oacute;n puede
-            <br />
             <span
-              className="pixel-glow"
-              style={{
-                // ⚠️ Sin `text-shadow`: se pinta ENCIMA de un texto con `background-clip: text`
-                // y lo apagaba —«AL MUNDO» se veía hueco—. La sombra va en el `filter`.
-                textShadow: 'none',
-                // Más luminoso que el morado de marca: sobre la placa oscura aquel apenas se leía.
-                background: 'linear-gradient(135deg, #a78bfa 0%, #e879f9 55%, #c4b5fd 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                filter: 'drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 18px rgba(167, 139, 250, 0.35))',
-              }}
+              ref={refBordeIzquierdo}
+              className="texto-partido block"
+              style={{ ['--tp-a' as string]: '#ffffff', ['--tp-b' as string]: '#17122b' }}
             >
-              <span style={{ WebkitTextFillColor: '#ef4444', filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.5))' }}>cruzar</span> al mundo
+              Un Coraz&oacute;n puede
+            </span>
+            <span className="block">
+              <span
+                ref={refBordeIzquierdo}
+                className="texto-partido inline-block"
+                style={{ ['--tp-a' as string]: '#f87171', ['--tp-b' as string]: '#dc2626' }}
+              >
+                cruzar
+              </span>{' '}
+              <span
+                ref={refBordeIzquierdo}
+                className="texto-partido inline-block"
+                style={{ ['--tp-a' as string]: '#c4b5fd', ['--tp-b' as string]: '#6d28d9' }}
+              >
+                al mundo
+              </span>
             </span>
           </h1>
 
-
-          <div className="flex flex-col items-center gap-3 mt-10">
+          <div className="flex flex-col items-center gap-3 mt-[clamp(20px,4.5vh,40px)]">
             {/* ── «AVENTURA» Y «PROGRESO» (Fernando, 2026-10-26) ─────────────────────
-                Vuelven a ser dos, con el MISMO ancho, el del texto más largo: en fila son
-                dos columnas `1fr` de un grid ajustado al contenido; apilados (móvil) el
-                flex-col los estira por igual.
+                Mismo ancho: en fila, dos columnas `1fr`; apilados (móvil), estirados por igual.
                 · «Aventura» —antes «Comenzar Aventura»— entra al videojuego.
-                · «Progreso» es el antiguo botón «Plataforma» de la barra de navegación,
-                  que se quitó de allí: abre el mismo menú «¿Cómo quieres ingresar?» con el
-                  panel como destino. El acceso sigue siendo UNO SOLO.
-
-                Cada botón es una MUESTRA de su mundo (2026-10-26): «Aventura» en pixel-art de
-                videojuego (`.boton-aventura`), «Progreso» como un botón de la plataforma clara
-                (`.boton-progreso`). Antes eran los `pixel-btn` del panel dentro de una isla
-                `.corp`, y sobre la placa pixel no pegaban. */}
+                · «Progreso» es el antiguo botón «Plataforma» de la barra: abre el mismo menú
+                  «¿Cómo quieres ingresar?» con el panel como destino. El acceso es UNO SOLO.
+                ⚠️ LOS DOS CON EL MISMO ESTILO (`.boton-portada`). Se probó que cada uno
+                imitara su mundo —pixel-art uno, plataforma clara el otro— y Fernando lo
+                descartó: «al hacerlos diferentes se ven raros». Solo cambia el icono. */}
             <div className="flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
               {...eventosBoton('aventura')}
@@ -3196,7 +3173,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="boton-aventura"
+              className="boton-portada"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3208,13 +3185,12 @@ export default function LandingPage() {
                       willChange: 'transform, opacity, filter',
                       cursor: 'default',
                     }
-                  : {
-                      animation: 'breathe 5s ease-in-out infinite',
-                      willChange: 'transform',
-                    }),
+                  : {}),
               }}
             >
-              <span aria-hidden="true" className="boton-aventura-icono">▶</span>
+              <svg aria-hidden="true" viewBox="0 0 16 16" className="boton-portada-icono">
+                <path d="M4 2.5v11l9-5.5z" />
+              </svg>
               Aventura
             </button>
             <button
@@ -3226,7 +3202,7 @@ export default function LandingPage() {
                 setEntryChoiceOpen(true);
               }}
               disabled={landingLocked || windAway}
-              className="boton-progreso"
+              className="boton-portada"
               style={{
                 ...(landingLocked && !windAway
                   ? { opacity: 0.45, cursor: 'not-allowed' }
@@ -3238,13 +3214,10 @@ export default function LandingPage() {
                       willChange: 'transform, opacity, filter',
                       cursor: 'default',
                     }
-                  : {
-                      animation: 'breathe 5s ease-in-out infinite',
-                      willChange: 'transform',
-                    }),
+                  : {}),
               }}
             >
-              <svg aria-hidden="true" viewBox="0 0 16 16" className="boton-progreso-icono">
+              <svg aria-hidden="true" viewBox="0 0 16 16" className="boton-portada-icono">
                 <rect x="1" y="9" width="3" height="6" rx="1" />
                 <rect x="6.5" y="5" width="3" height="10" rx="1" />
                 <rect x="12" y="1" width="3" height="14" rx="1" />
@@ -3252,12 +3225,12 @@ export default function LandingPage() {
               Progreso
             </button>
             </div>
-
           </div>
 
-          {/* Pensamiento destacado: cuelga POR DEBAJO del bloque central, en absoluto
-              (`top: 100%`). Al no ocupar sitio en el flujo, el distintivo, el título, el
-              subtítulo y los botones se quedan centrados y quietos aparezca cuando aparezca. */}
+          {/* Pensamiento destacado, debajo de los botones y EN EL FLUJO (2026-10-26). Antes
+              colgaba en absoluto para no mover el titular, pero en una ventana baja (~525 px)
+              el pie lo cortaba. Ahora se centra el bloque entero y, si no cabe, la sección
+              crece. */}
           <FeaturedThought windAway={windAway} />
         </div>
       </section>

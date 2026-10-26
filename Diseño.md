@@ -265,6 +265,22 @@ esquinas de cámara no cambian.
     una isla `.corp`.
   · **Pensamiento**: comillas en fucsia, fecha «— 19 DE AGOSTO DE 2026 —», etiqueta lila.
   · En el teléfono el bloque sube 96 px (`max-sm:-mt-24`) o el pie cortaba el pensamiento.
+- **⭐ VERSIÓN VIGENTE del bloque central (2026-10-26, tercera).** Fernando descartó la placa
+  pixel y los botones distintos (*«no me gusta… al hacerlos diferentes se ven raros»*) y
+  pidió cambiar el titular y animar según el puntero. Queda así:
+  · **Sin caja.** Titular en **Space Grotesk 700** (`.titular-portada`, `min(clamp(2.6rem,7vw,
+    5.25rem), 11vh)`, interletraje −0,035em), en dos líneas: «Un Corazón puede» / «cruzar al
+    mundo». Subtítulo `.subtitulo-portada` (Inter 600, mayúsculas, 0,32em).
+  · **El color se parte en la raya** (`.texto-partido`): blanco | `#17122b`; «cruzar»
+    `#f87171` | `#dc2626`; «al mundo» `#c4b5fd` | `#6d28d9`. Lo mismo el pensamiento.
+  · **La raya sigue al puntero** en reposo, entre el 30 % y el 70 % (`SEGUIMIENTO 0.4`,
+    suavizado exponencial τ 160 ms en `useCorteAnimado`). Los botones siguen llenando la
+    pantalla. Solo ratón; con «reducir movimiento» no sigue.
+  · **Los dos botones IGUALES** (`.boton-portada`): cápsula morada 48 px, degradado
+    `#8b6fdc → #6a4fbf`, Inter 600, icono ▶ / barras. Nada de un estilo por mundo.
+  · Espacios según el alto (`clamp(… vh …)`): a 525 px de alto todo cabe sobre el pie.
+  · Las versiones de cristal redondeado y placa pixel quedan descritas arriba solo como
+    historia; sus clases se borraron.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.
