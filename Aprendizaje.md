@@ -10520,3 +10520,34 @@ horizontal, panel del teléfono y diálogos de renombrar/eliminar abiertos en el
 
 ## Siguiente
 Fernando dirá la próxima pantalla. ⏳ Migrar los lápices sueltos a `BotonEditar` al tocarlas.
+
+---
+
+# Objetivo (declarado 2026-10-26) — EXPERIENCIA DEL CLIENTE: botones de la portada · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+
+## Objetivo / necesidad
+Primer paso del trabajo de experiencia del cliente/usuario: en Inicio, «Comenzar Aventura» pasa a
+«Aventura» y a su derecha va «Progreso», equivalente al botón «Plataforma» de arriba a la derecha,
+que se quita.
+
+## Rol asumido
+Diseñador de interfaz / ingeniero frontend, con `Diseño.md`.
+
+## Preguntas y respuestas
+### P1 — ¿Qué hace exactamente «Plataforma»? · ✅ Resuelta
+- `abrirPlataforma()` (`lib/sitio/acceso.ts`): en la portada emite `gcc:abrir-plataforma` y la
+  portada abre `EntryChoiceModal` con destino `dashboard`; fuera de ella navega a
+  `/?acceso=plataforma`. «Progreso» hace lo primero directamente. (fuente: código)
+### P2 — ¿Cómo se ven dos botones juntos en el héroe? · ✅ Resuelta
+- Ya existió hasta el 2026-08-17 (commit `cdeb5526`): grid de columnas `1fr` iguales, primario +
+  secundario. Se recuperó ese patrón en vez de inventar otro. (fuente: git)
+### P3 — ¿Se quita también de las demás páginas del sitio? · ✅ Resuelta
+- Sí: la barra es una sola definición (`CabeceraSitio`). Consecuencia: desde `/soluciones` etc. se
+  entra volviendo a Inicio. `/auth` y `?acceso=plataforma` siguen funcionando.
+
+## Verificación
+`tsc` limpio; navegador a 1440 y 390 px: barra sin «Plataforma», «Aventura» y «Progreso» de 105 px,
+`scrollWidth` = ancho, y «Progreso» abre «¿Cómo quieres ingresar a la Plataforma?».
+
+## Siguiente
+Fernando dirá el próximo paso de la experiencia del cliente.

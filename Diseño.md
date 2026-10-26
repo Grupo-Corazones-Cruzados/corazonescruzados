@@ -212,6 +212,15 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 
 `z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos (`z-[220]`).
 
+### ⭐ 2026-10-26 — «Plataforma» sale de la barra y vuelve al héroe como «Progreso»
+Fernando: el héroe de la portada lleva **«Aventura»** (antes «Comenzar Aventura», primario,
+destino juego) y **a su derecha «Progreso»** (secundario `pixel-btn-secondary`, destino panel:
+el mismo `EntryChoiceModal` que abría «Plataforma»). Los dos con el **mismo ancho**: en fila,
+`sm:grid sm:grid-flow-col sm:auto-cols-fr`; en el teléfono, apilados y estirados (medido: 105 px
+los dos a 1440 y a 390). **La barra queda solo con navegación**: fuera `CLASES_PLATAFORMA`,
+el botón del menú móvil y `abrirPlataforma()`. Lo de abajo (2026-08-17) queda como historia;
+el titular del diálogo sigue diciendo «a la Plataforma».
+
 ### La barra: cinco pestañas de navegación + «Plataforma», que es una acción (2026-08-17)
 
 Fernando movió «Plataforma» del héroe de la portada a la barra, **a la derecha de

@@ -275,6 +275,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
+  Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
+  dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha
+  **«Progreso»** (= el antiguo «Plataforma»: menú «¿Cómo quieres ingresar a la Plataforma?» con el
+  panel como destino). Se quitó «Plataforma» de la barra y del menú del móvil, y con él
+  `abrirPlataforma()` y el evento `gcc:abrir-plataforma`. ⚠️ Desde otras páginas del sitio ya no
+  hay botón de acceso: se entra volviendo a Inicio (o por `/auth` y el guardián del panel, que
+  siguen igual). Detalle: `Diseño.md` § «La barra».
 - **🏪 TIENDAS CON CUENTA PROPIA (Fernando, 2026-10-26).** Quiere publicar en App Store y Google Play con
   cuentas SUYAS, no las de Motordesa (cliente). Es persona natural: Apple lo inscribe como **individuo**
   (99 $/año, vendedor = su nombre legal; no acepta nombres comerciales) y Google como **personal** (25 $,

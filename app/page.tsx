@@ -18,7 +18,7 @@ import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
-import { ACCESO_PLATAFORMA, ACCESO_VIDEOJUEGO, EVENTO_ABRIR_PLATAFORMA, destinoTrasAccesoValido } from '@/lib/sitio/acceso';
+import { ACCESO_PLATAFORMA, ACCESO_VIDEOJUEGO, destinoTrasAccesoValido } from '@/lib/sitio/acceso';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
 import CandidateAccountModal from '@/components/landing/CandidateAccountModal';
 import ClientSignupModal from '@/components/landing/ClientSignupModal';
@@ -1261,25 +1261,6 @@ export default function LandingPage() {
       markGameEntry();
       window.location.href = '/juego';
     }, 2200);
-  }, []);
-
-  /**
-   * EL BOTÓN «PLATAFORMA» DE LA BARRA, CUANDO YA ESTAMOS EN LA PORTADA (2026-08-17).
-   *
-   * Desde otra página se llega por `/auth` → `/?acceso=plataforma`, que lo resuelve el
-   * efecto de arriba. Pero si el usuario **ya está aquí**, navegar sería recargar la
-   * portada y volver a lanzarle la intro entera. Así que en ese caso el botón solo avisa
-   * con un evento y el diálogo se abre en el sitio.
-   *
-   * Quien lo emite: `abrirPlataforma()` en `lib/sitio/acceso.ts`.
-   */
-  useEffect(() => {
-    const alPedirPlataforma = () => {
-      setEntryDestination('dashboard');
-      setEntryChoiceOpen(true);
-    };
-    window.addEventListener(EVENTO_ABRIR_PLATAFORMA, alPedirPlataforma);
-    return () => window.removeEventListener(EVENTO_ABRIR_PLATAFORMA, alPedirPlataforma);
   }, []);
 
   // ── On mount: detect returning player by cookie / IP ─────────────
@@ -3136,24 +3117,23 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col items-center gap-3 mt-10">
-            {/* ── UN SOLO BOTÓN DESDE EL 2026-08-17 ──────────────────────────────
-                Eran dos, «Aventura» y «Plataforma», con el mismo ancho. Fernando quitó el
-                segundo del héroe y lo subió a la barra de navegación, donde se ve desde
-                cualquier página (`components/sitio/CabeceraSitio.tsx`). El que queda pasó a
-                llamarse «Comenzar Aventura», que dice lo que hace en vez de nombrar un
-                sitio.
-
-                Con uno solo ya no hace falta el `grid` de dos columnas iguales que los
-                igualaba de ancho: el botón mide lo que su texto.
+            {/* ── «AVENTURA» Y «PROGRESO» (Fernando, 2026-10-26) ─────────────────────
+                Vuelven a ser dos, con el MISMO ancho, el del texto más largo: en fila son
+                dos columnas `1fr` de un grid ajustado al contenido; apilados (móvil) el
+                flex-col los estira por igual.
+                · «Aventura» —antes «Comenzar Aventura»— entra al videojuego.
+                · «Progreso» es el antiguo botón «Plataforma» de la barra de navegación,
+                  que se quitó de allí: abre el mismo menú «¿Cómo quieres ingresar?» con el
+                  panel como destino. El acceso sigue siendo UNO SOLO.
 
                 ⚠️ `corp dark corp-overlay` convierte esto en una ISLA con el tema del
                 panel. Es el patrón que el proyecto ya usa para los diálogos de la portada
                 (ver `Diseño.md` → «Modales de la landing en tema del dashboard»): dentro de
-                `.corp`, `globals.css` reescribe `pixel-btn` a Fluent, así que el botón se ve
-                como los del panel sin cambiarle una sola clase. Y `corp-overlay` evita que
-                `.corp` imponga su fondo de página y su `min-height`, que aquí destrozarían
+                `.corp`, `globals.css` reescribe `pixel-btn` a Fluent, así que los botones se
+                ven como los del panel sin cambiarles una sola clase. Y `corp-overlay` evita
+                que `.corp` imponga su fondo de página y su `min-height`, que aquí destrozarían
                 la escena. */}
-            <div className="corp dark corp-overlay flex flex-col items-stretch gap-3 justify-center">
+            <div className="corp dark corp-overlay flex flex-col sm:grid sm:grid-flow-col sm:auto-cols-fr gap-3 justify-center">
             <button
               onClick={() => {
                 if (landingLocked || windAway) return;
@@ -3188,7 +3168,35 @@ export default function LandingPage() {
                     }),
               }}
             >
-              Comenzar Aventura
+              Aventura
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (landingLocked || windAway) return;
+                setEntryDestination('dashboard');
+                setEntryChoiceOpen(true);
+              }}
+              disabled={landingLocked || windAway}
+              className="pixel-btn pixel-btn-secondary"
+              style={{
+                ...(landingLocked && !windAway
+                  ? { opacity: 0.45, cursor: 'not-allowed' }
+                  : {}),
+                ...(windAway
+                  ? {
+                      animation:
+                        'windBlowAway 1.15s ease-in 0.4s forwards',
+                      willChange: 'transform, opacity, filter',
+                      cursor: 'default',
+                    }
+                  : {
+                      animation: 'breathe 5s ease-in-out infinite',
+                      willChange: 'transform',
+                    }),
+              }}
+            >
+              Progreso
             </button>
             </div>
 
