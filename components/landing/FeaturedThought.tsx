@@ -17,7 +17,7 @@ interface Featured { content: string; createdAt: string }
  * respuesta se muestra un cargador, para que su aparición se sienta esperada y no un
  * parpadeo. Si no hay ninguno publicado, no se pinta nada.
  */
-export default function FeaturedThought({ windAway = false }: { windAway?: boolean }) {
+export default function FeaturedThought({ windAway = false, tema = 'aventura' }: { windAway?: boolean; tema?: 'aventura' | 'progreso' }) {
   const [data, setData] = useState<Featured | null>(null);
   const [loading, setLoading] = useState(true);
   const [shown, setShown] = useState(0);   // caracteres ya "escritos"
@@ -66,8 +66,9 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
         willChange: 'transform, opacity, filter',
       }}
     >
-      {/* «El cruce» (2026-10-26): cápsula de cristal sobre la raya, como las pestañas. */}
-      <div className="cristal-portada relative rounded-2xl px-7 py-4">
+      {/* Adaptado al mundo elegido (2026-10-26): cristal oscuro en la Aventura, tarjeta clara
+          en la Progreso. Los colores salen de `.pensamiento-aventura|progreso` (globals.css). */}
+      <div className={`pensamiento-${tema} ${tema === 'aventura' ? 'cristal-portada' : ''} relative rounded-2xl px-7 py-4`}>
         <p
           className="mb-2"
           style={{
@@ -79,7 +80,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             // Antes era el morado de marca al 85 %: sobre el fondo negro quedaba apagado y
             // la etiqueta se perdía. Este lila claro ya se usa en el resto de la portada
             // para texto secundario, así que sube el contraste sin salirse de la paleta.
-            color: '#a78bfa',
+            color: 'var(--pens-etiqueta)',
             opacity: 1,
           }}
         >
@@ -111,7 +112,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
                 fontStyle: 'italic',
                 fontSize: 'clamp(1.15rem, 2.4vh, 1.45rem)',
                 lineHeight: 1.45,
-                color: '#e7e3f4',
+                color: 'var(--pens-texto)',
                 display: '-webkit-box',
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',   // el nº de líneas lo pone `.featured-thought-text`
@@ -132,7 +133,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
                 fontSize: '0.68rem',
                 fontWeight: 500,
                 letterSpacing: '0.12em',
-                color: '#8b84a8',
+                color: 'var(--pens-fecha)',
               }}
             >
               {fecha}

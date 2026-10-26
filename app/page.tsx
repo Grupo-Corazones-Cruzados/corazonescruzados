@@ -7,7 +7,7 @@ import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
-import { refBordeIzquierdo, useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
+import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
 // bandas. El viejo (LPC) se retira; su tipo `CharacterConfig` solo se conserva
@@ -406,8 +406,9 @@ export default function LandingPage() {
   const [clientSignupOpen, setClientSignupOpen] = useState(false);
   const [clientLoginOpen, setClientLoginOpen] = useState(false);
   const [memberLoginOpen, setMemberLoginOpen] = useState(false);
-  // El botón del héroe bajo el puntero (o con el foco): su lado llena la portada.
-  const [botonPortada, setBotonPortada] = useState<'aventura' | 'progreso' | null>(null);
+  // El mundo elegido con un CLIC en «Aventura» o «Progreso» (2026-10-26): llena la portada y
+  // descubre el titular y el pensamiento. `null` = aún no se ha elegido (pantalla partida).
+  const [mundoElegido, setMundoElegido] = useState<'aventura' | 'progreso' | null>(null);
 
   /**
    * ── ENTRAR DIRECTO A UNA PUERTA: `/?acceso=cliente` ─────────────────────────
@@ -2783,22 +2784,15 @@ export default function LandingPage() {
 
   /**
    * QUÉ LADO DE LA PORTADA SE VE (Fernando, 2026-10-26) — ver `lib/sitio/portadaPartida.ts`.
-   * Con el acceso abierto se queda el lado de su destino, para que no vuelva a partirse
-   * por haber movido el puntero al diálogo; y al entrar al juego, la Aventura.
+   * ⛔ YA NO con el puntero: el mundo se elige con un CLIC (`mundoElegido`). Si se abre el
+   * acceso por la URL (`?acceso=`), se ve el lado de su destino; al entrar al juego, la Aventura.
    */
   const accesoAbierto = entryChoiceOpen || clientLoginOpen || memberLoginOpen || clientSignupOpen || recoveryOpen;
   const modoPortada: ModoPortada = windAway
     ? 'aventura'
-    : accesoAbierto
-      ? (entryDestination === 'game' ? 'aventura' : 'progreso')
-      : (botonPortada ?? 'partido');
+    : mundoElegido
+      ?? (accesoAbierto ? (entryDestination === 'game' ? 'aventura' : 'progreso') : 'partido');
   useCorteAnimado(raizPortadaRef, modoPortada);
-  const eventosBoton = (lado: 'aventura' | 'progreso') => ({
-    onPointerEnter: () => setBotonPortada(lado),
-    onPointerLeave: () => setBotonPortada(null),
-    onFocus: () => setBotonPortada(lado),
-    onBlur: () => setBotonPortada(null),
-  });
 
   return (
     <div
@@ -3091,121 +3085,80 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ══ «EL CRUCE» — el bloque central (Fernando, 2026-10-26, quinta versión) ══════════
-            Cada parte vive EN SU MUNDO y la raya es el eje de la composición:
-            · el titular se parte en la raya, en escalera: «Un Corazón / puede» a la izquierda,
-              contra la raya, y «cruzar / al mundo» a la derecha, una línea más abajo — la frase
-              se lee cruzando de un mundo al otro;
-            · cada botón bajo su mundo, en la misma fila, junto a la raya;
-            · la raya ensarta tres cápsulas de cristal: las pestañas (arriba), «Proyecto de
-              Desarrollo Humano» (centro) y el pensamiento (abajo).
-            Las dos columnas son mitades EXACTAS de la ventana (la sección tiene el mismo
-            relleno a cada lado), así que el eje cae en la raya. Los textos siguen siendo
-            `.texto-partido`: en reposo cada uno está entero en su lado, y cuando un botón
-            llena la pantalla cambian de color al pasar la raya, para leerse siempre.
-            Probadas y descartadas antes: bloque centrado con color partido, cristal redondeado,
-            placa pixel, botones con estilo distinto y raya que sigue al puntero. */}
+        {/* ══ EL BLOQUE CENTRAL: ELEGIR UN MUNDO (Fernando, 2026-10-26, sexta versión) ═══════════
+            · Al llegar, SOLO los dos botones, cada uno en su mundo junto a la raya líquida.
+              Nada de titular, insignia ni pensamiento todavía.
+            · Un CLIC (no el puntero encima) elige el mundo: llena la pantalla, el botón elegido
+              desaparece y aparecen, CENTRADOS y con los colores de ese mundo, la insignia, el
+              titular y el pensamiento. Queda el otro botón, para cambiar de mundo.
+            ⚠️ Estos botones ya NO abren el acceso («¿Cómo quieres ingresar?»): Fernando dirá
+            qué viene después. El acceso sigue por `/auth` y `?acceso=`.
+            Probadas antes y descartadas el mismo día: bloque centrado con color partido,
+            cristal redondeado, placa pixel, botones con estilo distinto, raya que sigue al
+            puntero, mundo que cambia al pasar el puntero y titular en escalera («El cruce»). */}
         <div
           className="relative z-10 w-full"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
+            opacity: windAway ? 0 : 1,
+            transition: 'opacity 600ms ease',
           }}
         >
-          <p
-            className="cristal-portada cruce-insignia"
-            style={windAway ? { animation: 'windBlowAway 1.1s ease-in 0.26s forwards' } : undefined}
-          >
-            Proyecto de Desarrollo Humano
-          </p>
-
           <h1 className="sr-only">Un Corazón puede cruzar al mundo</h1>
 
-          <div className="cruce-rejilla" aria-hidden="true">
-            <p
-              className="cruce-titular cruce-izquierda"
-              style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.12s forwards', willChange: 'transform, opacity, filter' } : undefined}
-            >
-              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#ffffff', ['--tp-b' as string]: '#17122b' }}>
-                Un <em className="titular-serif">Coraz&oacute;n</em>
-              </span>
-              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#ffffff', ['--tp-b' as string]: '#17122b' }}>
-                puede
-              </span>
-            </p>
-            <p
-              className="cruce-titular cruce-derecha cruce-escalon"
-              style={windAway ? { animation: 'windBlowAway 1.05s ease-in 0.2s forwards', willChange: 'transform, opacity, filter' } : undefined}
-            >
-              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#f87171', ['--tp-b' as string]: '#dc2626' }}>
-                cruzar
-              </span>
-              <span ref={refBordeIzquierdo} className="texto-partido block" style={{ ['--tp-a' as string]: '#c4b5fd', ['--tp-b' as string]: '#6d28d9' }}>
-                al mundo
-              </span>
-            </p>
-          </div>
-
-          {/* «Aventura» y «Progreso»: la MISMA forma, cada uno con el color de su mundo y
-              debajo de él. «Progreso» es el antiguo botón «Plataforma» de la barra: abre el
-              mismo menú «¿Cómo quieres ingresar?» con el panel como destino (el acceso es UNO
-              SOLO). Sin iconos (Fernando: «sin icono se verían mejor»). */}
-          <div className="cruce-rejilla cruce-botones">
-            <div className="cruce-izquierda">
-            <button
-              type="button"
-              {...eventosBoton('aventura')}
-              onClick={() => {
-                if (landingLocked || windAway) return;
-
-                // "Entrar" SIEMPRE pide iniciar sesión, igual que "Colaborar":
-                // NUNCA se entra al juego por reconocer la cookie o la IP del
-                // visitante. Antes, si /api/character/me devolvía un personaje
-                // (match por cookie de jugador o por ip_hash) se saltaba el
-                // login y se caía directo a /juego; eso se eliminó.
-                // El menú "¿Cómo quieres ingresar?" enruta a candidato /
-                // cliente / miembro y cada camino valida credenciales (y su
-                // código de verificación) antes de ceder el control al juego.
-                setEntryDestination('game');
-                setEntryChoiceOpen(true);
-              }}
-              disabled={landingLocked || windAway}
-              className="boton-portada boton-portada-aventura"
-              style={{
-                ...(landingLocked && !windAway ? { opacity: 0.45, cursor: 'not-allowed' } : {}),
-                ...(windAway
-                  ? { animation: 'windBlowAway 1.15s ease-in 0.4s forwards', willChange: 'transform, opacity, filter', cursor: 'default' }
-                  : {}),
-              }}
-            >
-              Aventura
-            </button>
+          {!mundoElegido ? (
+            <div className="cruce-rejilla">
+              <div className="cruce-izquierda">
+                <button
+                  type="button"
+                  onClick={() => setMundoElegido('aventura')}
+                  disabled={landingLocked}
+                  className="boton-portada boton-portada-aventura"
+                >
+                  Aventura
+                </button>
+              </div>
+              <div className="cruce-derecha">
+                <button
+                  type="button"
+                  onClick={() => setMundoElegido('progreso')}
+                  disabled={landingLocked}
+                  className="boton-portada boton-portada-progreso"
+                >
+                  Progreso
+                </button>
+              </div>
             </div>
-            <div className="cruce-derecha">
-            <button
-              type="button"
-              {...eventosBoton('progreso')}
-              onClick={() => {
-                if (landingLocked || windAway) return;
-                setEntryDestination('dashboard');
-                setEntryChoiceOpen(true);
-              }}
-              disabled={landingLocked || windAway}
-              className="boton-portada boton-portada-progreso"
-              style={{
-                ...(landingLocked && !windAway ? { opacity: 0.45, cursor: 'not-allowed' } : {}),
-                ...(windAway
-                  ? { animation: 'windBlowAway 1.15s ease-in 0.4s forwards', willChange: 'transform, opacity, filter', cursor: 'default' }
-                  : {}),
-              }}
-            >
-              Progreso
-            </button>
+          ) : (
+            // `key`: al cambiar de mundo se vuelve a montar y la entrada se anima otra vez.
+            <div key={mundoElegido} className={`mundo-elegido mundo-${mundoElegido}`}>
+              <p className="mundo-insignia aparecer" style={{ ['--retraso' as string]: '420ms' }}>
+                Proyecto de Desarrollo Humano
+              </p>
+              <p className="mundo-titular aparecer" aria-hidden="true" style={{ ['--retraso' as string]: '520ms' }}>
+                <span className="block mundo-titular-fina">
+                  Un <em className="titular-serif">Coraz&oacute;n</em> puede
+                </span>
+                <span className="block">
+                  <span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al mundo</span>
+                </span>
+              </p>
+              <div className="aparecer" style={{ ['--retraso' as string]: '680ms', marginTop: 'clamp(20px, 4.5vh, 40px)' }}>
+                {mundoElegido === 'aventura' ? (
+                  <button type="button" onClick={() => setMundoElegido('progreso')} className="boton-portada boton-portada-progreso">
+                    Progreso
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setMundoElegido('aventura')} className="boton-portada boton-portada-aventura">
+                    Aventura
+                  </button>
+                )}
+              </div>
+              <div className="aparecer" style={{ ['--retraso' as string]: '820ms' }}>
+                <FeaturedThought windAway={windAway} tema={mundoElegido} />
+              </div>
             </div>
-          </div>
-
-          {/* El pensamiento, en una cápsula de cristal sobre la raya. EN EL FLUJO: en una
-              ventana baja (~525 px) colgado en absoluto lo cortaba el pie. */}
-          <FeaturedThought windAway={windAway} />
+          )}
         </div>
       </section>
 

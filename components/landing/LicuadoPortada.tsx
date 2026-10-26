@@ -8,12 +8,8 @@
  * La raya recta pasa a ser una ONDA VIVA, y los dos mundos se mezclan como dos líquidos:
  * · **La frontera**: dos senos superpuestos cuya fase, frecuencia y amplitud derivan
  *   lentamente con el tiempo, así que la forma nunca se repite igual.
- * · **Gotas**, como en una lámpara de lava: nacen abajo, SUBEN por la frontera creciendo y
- *   se disuelven arriba. Van centradas en la onda y el recorte es UN solo camino con
- *   `clip-rule: evenodd`, así que cada gota sale mitad luz y mitad noche: orbes de los dos
- *   mundos ascendiendo por el cruce.
- *   (Primero viajaban hacia los lados y se metían detrás de «Corazón» y de «cruzar»: una
- *   gota blanca bajo un texto blanco lo borra. Por eso nunca salen del hueco de la raya.)
+ * · (Hubo gotas subiendo por la frontera, mitad luz y mitad noche; Fernando no las quiso:
+ *   «los círculos en la curva no sé si me gustan». Se quitaron.)
  * · **Tinta y bruma** (Fernando: «licuar esa parte izquierda y derecha… daba a parecer que
  *   la parte izquierda se mezclaba con la derecha»): tres capas onduladas del negro del cielo
  *   que se DERRAMAN sobre la Plataforma, cada vez más difusas y transparentes, y dos de la luz
@@ -32,7 +28,7 @@
  *
  * ⚠️ La onda NO puede alcanzar los textos de los lados, que cambian de color en la raya
  * RECTA (`.texto-partido`): su amplitud es menor que el hueco que dejan (`--hueco-raya`).
- * ⚠️ Al llenar la pantalla (raya en un borde) la onda y las gotas se aplanan; si no,
+ * ⚠️ Al llenar la pantalla (raya en un borde) la onda y la tinta se aplanan; si no,
  * quedarían jirones del otro mundo en el borde.
  */
 
@@ -42,7 +38,6 @@ import type { ModoPortada } from '@/lib/sitio/portadaPartida';
 export const ID_LICUADO = 'licuado-portada';
 
 const PUNTOS = 56;
-const GOTAS = 7;
 
 // Las capas del licuado: hacia dónde se derraman (+1 Plataforma, −1 cielo), cuánto (px a
 // 1200 px de ancho), color, opacidad y difuminado. Las de tinta, dentro del hueco de los
@@ -71,13 +66,6 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
 
     const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const t0 = performance.now();
-    // Cada gota: fase del ciclo, velocidad de subida (ciclos/s) y radio máximo (px).
-    const gotas = Array.from({ length: GOTAS }, (_, i) => ({
-      fase: (i * 0.383) % 1,
-      vel: 0.045 + (i % 3) * 0.018,
-      r: 10 + ((i * 7) % 9),
-    }));
-
     let raf = 0;
     let activo = false;
     const paso = (ahora: number) => {
@@ -109,21 +97,7 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
         frontera += `${i === 0 ? 'M' : 'L'}${x(y).toFixed(1)} ${y.toFixed(1)} `;
       }
 
-      let d = `M${x(0).toFixed(1)} -2 ` + frontera.slice(frontera.indexOf('L')) + `L${x(H).toFixed(1)} ${H + 2} L${W + 2} ${H + 2} L${W + 2} -2 Z `;
-      if (k > 0.02) {
-        // La onda (±A) más la gota (r) no pueden pasar del hueco de los textos: en el
-        // teléfono la gota encoge con el ancho.
-        const escala = Math.min(1, W / 1200);
-        for (const g of gotas) {
-          const p = (t * g.vel + g.fase) % 1;
-          const r = g.r * escala * Math.sin(Math.PI * p) * k;
-          if (r < 1) continue;
-          const cy = H * (1.04 - p * 1.08);
-          const cx = x(cy) + Math.sin(t * 0.9 + g.fase * 6.28) * r * 0.5;
-          d += `M${(cx - r).toFixed(1)} ${cy.toFixed(1)} a${r.toFixed(1)} ${r.toFixed(1)} 0 1 0 ${(2 * r).toFixed(1)} 0 a${r.toFixed(1)} ${r.toFixed(1)} 0 1 0 ${(-2 * r).toFixed(1)} 0 Z `;
-        }
-      }
-
+      const d = `M${x(0).toFixed(1)} -2 ` + frontera.slice(frontera.indexOf('L')) + `L${x(H).toFixed(1)} ${H + 2} L${W + 2} ${H + 2} L${W + 2} -2 Z `;
       // Las bandas del licuado: de la frontera hacia su lado, con un grosor que respira.
       const escalaCapa = Math.min(1, W / 1200) * k;
       CAPAS.forEach((c, n) => {

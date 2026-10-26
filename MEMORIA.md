@@ -285,6 +285,11 @@ Stack estándar de la casa, con particularidades de este repo:
   partido por la raya, cada botón bajo su mundo y tres cápsulas de cristal sobre la raya.
   Descartadas: color partido centrado, cristal redondeado, placa pixel, botones con estilo
   distinto y raya que sigue al puntero. Sobre la escena clara, puntero del sistema.
+  **Después (mismo día): licuado y clic.** La raya es una frontera líquida (onda + tinta + bruma,
+  `LicuadoPortada.tsx`). Al llegar solo se ven «Aventura» y «Progreso»; un CLIC llena la pantalla
+  con ese mundo y descubre, centrados, la insignia, el titular, el otro botón y el pensamiento.
+  ⏳ **Pendiente:** esos botones ya NO abren el acceso («¿Cómo quieres ingresar?»); Fernando dirá
+  qué sigue. El acceso queda por `/auth` y `?acceso=`.
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

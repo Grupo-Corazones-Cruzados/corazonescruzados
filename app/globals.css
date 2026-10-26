@@ -2453,20 +2453,13 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 .cruce-izquierda { display: flex; flex-direction: column; align-items: flex-end; text-align: right; padding-right: var(--hueco-raya); }
 .cruce-derecha   { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding-left: var(--hueco-raya); }
-.cruce-titular {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-weight: 700;
-  /* Según el ancho de MEDIA pantalla y según el alto (ventanas bajas ~525 px). */
-  font-size: min(clamp(1.9rem, 5vw, 5.4rem), 11vh);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
-}
-/* La escalera: la columna derecha baja una línea, y la frase se lee cruzando la raya. */
-.cruce-escalon { padding-top: 0.98em; }
-.cruce-botones { margin-top: clamp(22px, 5vh, 44px); }
-.cruce-insignia {
-  display: table;
-  margin: 0 auto clamp(18px, 4vh, 36px);
+/* EL MUNDO ELEGIDO (2026-10-26): titular, otro botón y pensamiento, CENTRADOS y con los
+   colores del mundo que llena la pantalla. */
+.mundo-elegido { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.mundo-aventura { --mundo-texto: #ffffff; --mundo-cruzar: #f87171; --mundo-mundo: #c4b5fd; --mundo-insignia: rgba(233, 229, 247, 0.85); --mundo-insignia-fondo: rgba(11, 13, 20, 0.62); --mundo-insignia-borde: rgba(167, 139, 250, 0.3); }
+.mundo-progreso { --mundo-texto: #17122b; --mundo-cruzar: #dc2626; --mundo-mundo: #6d28d9; --mundo-insignia: #4b2d8e; --mundo-insignia-fondo: rgba(255, 255, 255, 0.7); --mundo-insignia-borde: rgba(75, 45, 142, 0.2); }
+.mundo-insignia {
+  margin-bottom: clamp(16px, 3.5vh, 30px);
   padding: 7px 16px;
   border-radius: 9999px;
   font-family: 'Inter', system-ui, sans-serif;
@@ -2474,12 +2467,47 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(233, 229, 247, 0.85);
   white-space: nowrap;
+  color: var(--mundo-insignia);
+  background: var(--mundo-insignia-fondo);
+  border: 1px solid var(--mundo-insignia-borde);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
+.mundo-titular {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: min(clamp(2.7rem, 8vw, 6.4rem), 12.5vh);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: var(--mundo-texto);
+}
+.mundo-titular-fina { font-size: 0.5em; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.06em; }
+.mundo-cruzar { color: var(--mundo-cruzar); }
+.mundo-mundo { color: var(--mundo-mundo); }
 @media (max-width: 639.98px) {
-  .cruce-insignia { font-size: 0.58rem; letter-spacing: 0.2em; padding: 6px 12px; }
+  .mundo-insignia { font-size: 0.58rem; letter-spacing: 0.2em; padding: 6px 12px; }
 }
+
+/* El pensamiento, en cada mundo. */
+.pensamiento-aventura { --pens-etiqueta: #a78bfa; --pens-texto: #e7e3f4; --pens-fecha: #8b84a8; }
+.pensamiento-progreso {
+  --pens-etiqueta: #6d28d9; --pens-texto: #2b2540; --pens-fecha: #7a7394;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(75, 45, 142, 0.14);
+  box-shadow: 0 18px 40px -22px rgba(75, 45, 142, 0.45);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* Entrada de lo que aparece al elegir un mundo: sube, se enfoca y se funde. Espera a que
+   el mundo haya llenado la pantalla (`--retraso`). */
+.aparecer { animation: aparecer 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--retraso, 0ms); }
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) { .aparecer { animation: none; } }
 .titular-serif {
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;

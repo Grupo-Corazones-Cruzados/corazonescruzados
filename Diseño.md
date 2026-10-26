@@ -329,6 +329,19 @@ esquinas de cámara no cambian.
   · ⚠️ Recorte, rellenos y grosores van EN LÍNEA/atributos, no en `globals.css`: con un CSS viejo
     en caché la escena quedaba con el corte recto y la onda salía como una astilla negra.
   · ⚠️ `parseFloat('0px') || W/2` daba el centro con «Progreso» (0 es falso): `Number.isFinite`.
+- **⭐ SEXTA VERSIÓN, LA VIGENTE (2026-10-26): ELEGIR UN MUNDO CON UN CLIC.** Sustituye a «El
+  cruce» y a todo lo que dependía del puntero:
+  · Al llegar, SOLO los dos botones, cada uno en su mundo junto al licuado (`.cruce-rejilla`).
+    Sin titular, insignia ni pensamiento.
+  · El fondo cambia con un **clic**, no al pasar el puntero (`mundoElegido` en `app/page.tsx`).
+    El mundo llena la pantalla, el botón elegido desaparece y aparecen CENTRADOS, con
+    `.aparecer` (sube, se enfoca y se funde, escalonado con `--retraso` 420 → 820 ms), la
+    insignia, el titular, el OTRO botón (para cambiar de mundo) y el pensamiento.
+  · Colores por mundo con variables (`.mundo-aventura` / `.mundo-progreso`): blanco, `#f87171`,
+    `#c4b5fd` en la noche; `#17122b`, `#dc2626`, `#6d28d9` en el claro. El pensamiento: cristal
+    oscuro en la Aventura, tarjeta clara en la Progreso (`.pensamiento-*`).
+  · ⚠️ Estos botones ya NO abren el acceso; pendiente de lo que diga Fernando.
+  · Fuera las gotas del licuado («los círculos en la curva no sé si me gustan»).
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.
