@@ -2943,7 +2943,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <FondosPortada modo={modoPortada} extrasAventura={modoPortada === 'aventura' && !windAway} />
+        <FondosPortada modo={modoPortada} juegoEnCurso={windAway} />
 
         {/* Camera viewfinder — corner brackets pan with the cursor */}
         <div
@@ -3114,14 +3114,16 @@ export default function LandingPage() {
             }
           >
             {/* Blanco en el cielo y oscuro sobre la Plataforma: cambia justo en la raya.
-                La sombra va como `filter` porque `text-shadow` taparía el degradado. */}
+                La sombra también se parte (`.texto-partido-sombra`): `text-shadow` taparía el degradado. */}
             <span
-              className="texto-partido block"
+              className="texto-partido texto-partido-sombra block"
+              data-texto="Un Corazón puede"
               style={{
                 ['--tp-a' as string]: '#ffffff',
                 ['--tp-b' as string]: '#1f1a2e',
+                ['--tps-a' as string]: 'rgba(0, 0, 0, 0.8)',
+                ['--tps-b' as string]: 'rgba(75, 45, 142, 0.28)',
                 textShadow: 'none',
-                filter: 'drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(-1px -1px 0 rgba(75, 45, 142, 0.3))',
               }}
             >
               Un Coraz&oacute;n puede

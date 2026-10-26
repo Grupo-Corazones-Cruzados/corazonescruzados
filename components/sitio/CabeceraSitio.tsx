@@ -33,9 +33,11 @@
  * (`app/page.tsx`). La barra queda solo con navegación.
  *
  * ── SOBRE LA PORTADA PARTIDA (2026-10-26) ──────────────────────────────────────
- * Transparente sobre la portada, sus textos cruzan la raya Aventura | Progreso: blancos
- * en el cielo, oscuros sobre la Plataforma clara (`lib/sitio/portadaPartida.ts`). En
- * cuanto la barra se vuelve sólida, vuelven a ser blancos sin más.
+ * En la portada (`flotante`) las pestañas van en una CÁPSULA de cristal oscuro centrada
+ * justo sobre la raya Aventura | Progreso: se leen igual sobre el cielo y sobre la
+ * Plataforma clara, y marcan la unión de los dos mundos. El nombre, a la izquierda, sí
+ * cambia de color en la raya (`lib/sitio/portadaPartida.ts`). El botón del menú del
+ * teléfono es de cristal por lo mismo. En las demás páginas, la barra de siempre.
  */
 
 import { useEffect, useState } from 'react';
@@ -72,7 +74,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           : 'bg-transparent border-b border-transparent'
       }`}
     >
-      <div className="mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group" onClick={() => setAbierto(false)}>
           {/* El logo REAL de la organización: los corazones cruzados.
               `public/logo-gcc.png` sale de `LogoApp.png` recortado al círculo —así se va la
@@ -96,21 +98,23 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1 ml-auto" aria-label="Principal">
+        <nav
+          className={`hidden lg:flex items-center gap-1 ${
+            flotante
+              ? 'absolute left-1/2 -translate-x-1/2 rounded-full p-1 bg-[#0b0d14]/70 backdrop-blur-md border border-white/10 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.6)]'
+              : 'ml-auto'
+          }`}
+          aria-label="Principal"
+        >
           {NAVEGACION.map((n) => {
             const activo = n.href === '/' ? pathname === '/' : pathname.startsWith(n.href);
             return (
               <Link
                 key={n.href}
                 href={n.href}
-                ref={refPartido}
                 aria-current={activo ? 'page' : undefined}
-                className={`px-3 py-2 rounded-md text-[13.5px] transition-colors ${
-                  activo ? 'text-white bg-white/[0.08]' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
-                } ${
-                  !partido ? '' : activo
-                    ? 'texto-partido [--tp-a:#fff] [--tp-b:#1f1a2e]'
-                    : 'texto-partido [--tp-a:rgba(255,255,255,0.6)] [--tp-b:#5b5470] hover:[--tp-a:#fff] hover:[--tp-b:#1f1a2e]'
+                className={`px-3 py-2 text-[13.5px] transition-colors ${flotante ? 'rounded-full px-4' : 'rounded-md'} ${
+                  activo ? 'text-white bg-white/[0.1]' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
                 {n.label}
@@ -125,7 +129,9 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           onClick={() => setAbierto((v) => !v)}
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={abierto}
-          className={`lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center rounded-md text-white/80 hover:bg-white/[0.07] ${partido ? 'menu-flotante' : ''}`}
+          className={`lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center text-white/80 hover:bg-white/[0.07] ${
+            flotante ? 'rounded-full bg-[#0b0d14]/70 backdrop-blur-md border border-white/10' : 'rounded-md'
+          }`}
         >
           {abierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

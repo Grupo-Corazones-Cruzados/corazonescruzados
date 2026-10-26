@@ -229,6 +229,17 @@ esquinas de cámara no cambian.
   animado, y la sombra va como `filter: drop-shadow` (`text-shadow` tapa el degradado).
 - **El puntero de la portada** (`PointerCursor`) se pinta oscuro sobre la escena clara; el
   icono del menú del teléfono, también (`.menu-flotante`).
+- **Corrección del 2026-10-26 (Fernando: «usa tu propia creatividad para que se vea bien»):**
+  · **Las pestañas van en una cápsula de cristal oscuro centrada SOBRE la raya** (solo en la
+    portada, `flotante`): se leen en los dos mundos sin partir su color y marcan la unión. El
+    menú del teléfono, botón redondo de cristal. El nombre sigue partido en la raya.
+  · **Los dos lados pesan igual**: la Aventura lleva un HUD pixel-art (`.ea-hud`: fondo
+    `rgba(12,10,24,.78)`, borde 2 px morado, sombra desplazada 4 px sin difuminar, Silkscreen)
+    en espejo con las tarjetas de Progreso, y una nebulosa al 50 % que sube al 100 % con
+    «Aventura». La izquierda negra y vacía frente a la derecha llena se veía rota.
+  · **La sombra del titular también se parte** (`.texto-partido-sombra`, copia `data-texto`
+    por detrás): negra en el cielo, morada suave en el claro. Sin `isolation`: dentro de su
+    propio contexto el `z-index:-1` se pintaría encima del texto recortado.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.
