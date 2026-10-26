@@ -275,6 +275,12 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏪 TIENDAS CON CUENTA PROPIA (Fernando, 2026-10-26).** Quiere publicar en App Store y Google Play con
+  cuentas SUYAS, no las de Motordesa (cliente). Es persona natural: Apple lo inscribe como **individuo**
+  (99 $/año, vendedor = su nombre legal; no acepta nombres comerciales) y Google como **personal** (25 $,
+  nombre legal + país + correo públicos, dirección si cobra; prueba cerrada de 12 testers × 14 días).
+  Para que el vendedor sea «Grupo Corazones Cruzados» hace falta persona jurídica (SAS) + D-U-N-S.
+  Pendiente su decisión. Detalle: `Aprendizaje.md` § «CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY».
 - **🧩 MÓDULO «PLATAFORMAS» Y FICHA SIN «ENTRAR» (Fernando, 2026-10-23).** *«quitemos el entrar a
   organización de aquí, y agreguemos un módulo que solo estará habilitado y visible para cuentas que
   hayan comprado la suscripción […] y en el marketplace cuando ya estás suscrito no aparezca el botón

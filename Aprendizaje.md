@@ -1,5 +1,106 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-10-26) — CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY, A NOMBRE DE FERNANDO (persona natural), Y PUBLICAR · 🔎 45 %
+
+**Declarado por Fernando el 2026-10-26**, textual en lo esencial: *«quiero publicar este proyecto en las
+tiendas de google y apple… para mi negocio del grupo corazones cruzados, aunque no soy una empresa
+registrada, yo soy una persona natural… ya tenemos accesos porque se hizo un proyecto para otro negocio
+de Motordesa pero eso es de un cliente, yo quiero tener mi propia cuenta y ser dueño de una cuenta propia»*.
+
+Retoma el objetivo del 2026-09-23 (§ «UN SOLO PROYECTO QUE ACABE EN LAS TIENDAS») después del del
+2026-10-06 (§ «SIN TIENDAS»): **las tiendas vuelven a ser la meta**, así que P2 (guía 4.2), P5 (compra en
+la tienda) y P9 (aniversarios) vuelven a aplicar. Lo nativo (push, Actividad en Vivo, sin conexión) ya
+está hecho y probado en la cuenta provisional del cliente (equipo `5H27NSRYKQ`, `…gccworld.provisional`).
+
+**Rol asumido:** responsable de publicación móvil (cuentas de desarrollador, cumplimiento de las guías
+de Apple/Google, firma y distribución) para un titular persona natural en Ecuador.
+
+### Progreso
+- **% de información para el objetivo:** 45 %
+- **Estado:** requisitos de las dos tiendas verificados en sus páginas oficiales (2026-10-26). La
+  decisión que lo ordena todo es de Fernando: **cuentas como persona ahora** o **constituir una SAS
+  primero** para que el vendedor sea «Grupo Corazones Cruzados». Faltan además las piezas que las
+  tiendas exigen y la app aún no tiene (compra en la tienda, borrar la cuenta desde la app).
+
+### Fuentes consultadas (2026-10-26)
+- developer.apple.com/programs/enroll → requisitos individuo/organización.
+- support.google.com/googleplay/android-developer/answer/13628312 → datos que pide y enseña cada tipo.
+- …/answer/14151465 → prueba cerrada obligatoria de las cuentas personales.
+- …/answer/9306917 → Ecuador admite cuenta de comerciante (USD).
+- Prensa/abogados (Primicias, nmslaw) → SAS de un solo accionista, en línea, sin capital mínimo.
+- Repo: `capacitor.config.json` (`org.grupocc.gccworld`), `app/api/auth/*` (correo+contraseña y
+  passkey, sin inicio de sesión social), `app/(sitio)/legal/page.tsx` (hay página legal).
+
+### Preguntas y respuestas
+#### P1 — ¿Puede una persona natural tener cuenta propia en las dos tiendas? · ✅ Resuelta — **sí**
+- **Apple:** inscripción **individual**, 99 $/año, sin D-U-N-S. Pide nombre legal (un nombre comercial
+  en el campo de nombre *retrasa* la aprobación), Apple ID con doble factor, dirección (no casilla).
+  **El vendedor que sale en la App Store es el nombre legal de la persona.** Apple **no acepta**
+  nombres comerciales/DBA ni personas naturales como organización: el negocio unipersonal va como
+  individuo. (fuente: developer.apple.com/programs/enroll)
+- **Google:** cuenta **personal**, 25 $ una sola vez, sin D-U-N-S. Enseña públicamente **nombre legal,
+  país y correo de desarrollador**, y **si se cobra dentro de la app, la dirección completa**. El
+  «nombre de desarrollador» visible sí puede ser «Grupo Corazones Cruzados». (fuente: answer/13628312)
+- **Google, cuenta personal nueva:** antes de producción, prueba cerrada con **≥ 12 testers durante 14
+  días seguidos**. (fuente: answer/14151465)
+- **Ecuador** admite cuenta de comerciante en Google Play, en USD. (fuente: answer/9306917)
+
+#### P2 — ¿Cómo sale «Grupo Corazones Cruzados» como dueño/vendedor? · ✅ Resuelta (investigación)
+- Solo con una **persona jurídica**: cuenta de **organización** en las dos tiendas, que pide entidad
+  legal, **D-U-N-S** (gratis, hasta 30 días), correo del dominio y sitio web público. `grupocc.org` y
+  los correos `@grupocc.org` ya cumplen lo segundo.
+- Camino en Ecuador: **SAS** de un solo accionista, en línea en la Superintendencia de Compañías, sin
+  notaría ni capital mínimo, 2–5 días según prensa (el costo actual no está confirmado en fuente
+  oficial). ⚠️ Cambia el régimen tributario (hoy RIMPE Negocio Popular como persona natural): **lo
+  decide Fernando con su contador**.
+- Como persona, el NOMBRE DE LA APP sí puede llevar la marca («GCC World»), solo el vendedor sale con
+  su nombre legal.
+
+#### P3 — ¿Persona ahora o SAS primero? · ⏸ Bloqueada (decisión de Fernando)
+- **Persona ahora:** se empieza hoy; vendedor = nombre legal; en Google, dirección pública si se cobra.
+  Pasar después a organización: Apple deja convertir la membresía de individuo a organización
+  (por soporte); Google se resuelve transfiriendo las apps a una cuenta de organización nueva.
+  (⚠️ ambos caminos a confirmar con soporte cuando toque.)
+- **SAS primero:** 1–2 meses hasta tener D-U-N-S y cuentas; vendedor = la empresa; sin prueba de 12
+  testers en Google (solo aplica a personales).
+
+#### P4 — ¿Qué correo/Apple ID? · 🔎 Propuesto
+- Propuesta: `lfgonzalezm0@grupocc.org` como Apple ID y cuenta de Google del titular (es la cuenta
+  que ya es dueña del producto Automatizaciones y del Firebase `grupo-corazones-cruzados`). Un mismo
+  Apple ID puede estar en varios equipos (el del cliente y el propio).
+
+#### P5 — ¿Qué app se publica primero? · ❓ Abierta (retoma P8/P6 del 2026-09-23)
+- GCC World (plataforma + juego) o GCC Productos. Recomendación previa: la más pequeña primero, y GCC
+  World sin el juego en su primera versión.
+
+#### P6 — Lo que las tiendas exigen y la app aún no tiene · 🔎 Investigando
+- **Compra en la tienda (StoreKit / Play Billing) para las suscripciones** — decidido el 2026-09-23,
+  sin construir; atar la compra a la cuenta con `appAccountToken` / `obfuscatedExternalAccountId`.
+  Alternativa a estudiar: si la primera app no vende nada dentro (solo entra quien ya contrató en la
+  web, sin botones de pago), no hace falta compra en la tienda.
+- **Borrar la cuenta desde la app** (Apple 5.1.1(v), Google lo pide igual): no existe en el repo.
+- **Política de privacidad** pública: hay `/legal`; revisar que cubra la app móvil.
+- **Cuenta de prueba para el revisor** (como la de Meta) y formularios de datos (Data Safety / etiqueta
+  de privacidad de Apple).
+- **Sign in with Apple:** NO hace falta (no hay inicio de sesión con Google/Facebook; solo correo y passkey).
+- **Guía 4.2:** ya hay push, Actividad en Vivo, widget y modo sin conexión: argumento sólido.
+
+### Plan de solución
+1. Fernando decide P3 (persona / SAS).
+2. Crear las cuentas (lo hace Fernando con su identidad y su tarjeta; se le guía paso a paso).
+3. Registrar `org.grupocc.gccworld` en SU equipo, clave APNs nueva, cambiar variables `APNS_*` en
+   Railway; firma de subida de Android nueva (Play App Signing) y respaldada.
+4. Construir lo de P6 (borrar cuenta; compra en tienda o app sin venta).
+5. Ficha, capturas, privacidad, prueba cerrada (Google personal: 12 testers × 14 días) y envío.
+
+### Riesgos
+| Riesgo | Mitigación |
+|---|---|
+| Publicar a nombre de la persona y querer luego la marca | Decidirlo ANTES de crear la cuenta (P3) |
+| Dirección personal pública en Google al cobrar | SAS, o una app sin cobro dentro mientras sea cuenta personal |
+| Rechazo por compra fuera de la tienda | Sin botones/enlaces de pago web dentro de la app |
+| Perder la clave de subida de Android | Play App Signing + respaldo fuera del repo |
+
 ## Objetivo (2026-10-22) — DESCARGADOR GCC EN iPHONE (instalarlo en el iPhone 17 de Fernando) · ✅ 100 % — HECHO Y CONFIRMADO POR FERNANDO («sí funcionó», 2026-10-22)
 - **Rol asumido:** ingeniero iOS (Swift, firma/aprovisionamiento, Python embebido).
 - **Punto de partida:** Android hecho y confirmado por Fernando (2026-10-22: «funcionó perfectamente»).
