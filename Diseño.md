@@ -313,6 +313,22 @@ esquinas de cámara no cambian.
   · Los textos de los lados siguen siendo `.texto-partido`: en reposo cada uno está entero en
     su lado; al llenarse la pantalla cambian de color cuando pasa la raya.
   · Las tarjetas de arriba (HUD y Plataforma) pasan al 3 % del borde.
+- **⭐ EL LICUADO (2026-10-26, Fernando: «hacer un licuado entre la pantalla de aventura y la de
+  progreso»).** La raya recta pasa a ser una frontera LÍQUIDA (`components/landing/LicuadoPortada.tsx`):
+  · Onda viva: dos senos cuya frecuencia, mezcla y fase derivan con el tiempo (nunca se repite).
+    Amplitud `min(34px, 2,2 % del ancho)`, menor que `--hueco-raya`: no toca los textos.
+  · Recorte de `.escena-progreso` con un `<clipPath>` de UN camino y `clip-rule: evenodd`; las
+    gotas suben por la frontera (lámpara de lava) centradas en la onda, y salen mitad luz y
+    mitad noche. Hacia los lados NO: una gota blanca bajo un texto blanco lo borra.
+  · **Tinta y bruma**: tres bandas del negro del cielo que se derraman sobre la Plataforma (18,
+    42 y 74 px; opacidad 0,75/0,42/0,2; difuminado 4/10/20) y dos de luz lila hacia el cielo,
+    cada una con su grosor respirando. Fernando lo pidió tras ver por un fallo la onda rellena
+    de negro: «daba a parecer que la parte izquierda se mezclaba con la derecha».
+  · La onda rosa (bruma lila de 70 px + brillo + línea) encima. Todo se aplana al llenar la
+    pantalla y se encoge con el ancho en el teléfono.
+  · ⚠️ Recorte, rellenos y grosores van EN LÍNEA/atributos, no en `globals.css`: con un CSS viejo
+    en caché la escena quedaba con el corte recto y la onda salía como una astilla negra.
+  · ⚠️ `parseFloat('0px') || W/2` daba el centro con «Progreso» (0 es falso): `Number.isFinite`.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.

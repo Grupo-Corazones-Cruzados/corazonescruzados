@@ -13,13 +13,15 @@
  *   manchas de color que flotan, cuadraditos que suben y, desde `xl`, tarjetas de panel que
  *   se animan (barras, anillo, lista, gráfica, nivel). Ocupa la pantalla entera y se RECORTA
  *   con `--corte`: en reposo se ve la mitad derecha; con «Progreso», toda.
- * · **La raya** — en `--corte`. Solo se ve con la pantalla partida.
+ * · **La frontera** — `LicuadoPortada`: una onda viva con gotas y bruma alrededor de
+ *   `--corte`. Su brillo solo se ve con la pantalla partida.
  *
  * Todo es decorativo (`aria-hidden`, sin eventos). El movimiento se apaga con «reducir
  * movimiento» (`globals.css`).
  */
 
 import type { ModoPortada } from '@/lib/sitio/portadaPartida';
+import LicuadoPortada from '@/components/landing/LicuadoPortada';
 
 const BARRAS = [38, 62, 48, 80, 56, 92, 70];
 const TAREAS = ['Revisar avances', 'Reunión del equipo', 'Cerrar el ciclo'];
@@ -200,7 +202,8 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
       </div>
 
       {/* ── La raya ── */}
-      <div className="raya-portada" style={{ opacity: modo === 'partido' ? 1 : 0 }} />
+      {/* ── La frontera: el licuado (onda viva, gotas y bruma). Sustituye a la raya recta. ── */}
+      <LicuadoPortada modo={modo} juegoEnCurso={juegoEnCurso} />
     </div>
   );
 }
