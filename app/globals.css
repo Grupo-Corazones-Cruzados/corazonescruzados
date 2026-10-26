@@ -2517,48 +2517,192 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   padding-right: 0.04em;
 }
 
-/* «Aventura» y «Progreso»: la MISMA forma; solo cambia el color (Fernando, 2026-10-26). */
-.boton-portada {
-  height: 50px;
-  min-width: min(176px, 100%);
-  padding: 0 30px;
-  display: inline-flex;
+/* ═══ LAS TARJETAS PARA ELEGIR MUNDO (`TarjetasMundo`, Fernando, 2026-10-26) ═══════════
+   Como al elegir modo en un videojuego: misma forma para las dos, color de su mundo. */
+.tarjeta-mundo {
+  --tm-ancho: clamp(150px, 23vw, 330px);
+  position: relative;
+  width: var(--tm-ancho);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(6px, 1.2vh, 10px);
+  padding: clamp(14px, 2.4vh, 24px) clamp(12px, 1.8vw, 24px) clamp(14px, 2.4vh, 22px);
+  border-radius: 22px;
+  overflow: hidden;
+  /* Las dos del MISMO alto: cada una llena su columna de la rejilla. */
+  flex: 1;
+  transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 260ms ease, opacity 300ms ease, filter 300ms ease;
+}
+.tarjeta-mundo:hover:not(:disabled),
+.tarjeta-mundo:focus-visible { transform: translateY(-8px) scale(1.02); }
+.tarjeta-mundo:focus-visible { outline: 2px solid #e879f9; outline-offset: 5px; }
+.tarjeta-mundo:disabled { opacity: 0.55; }
+
+.tarjeta-mundo-aventura {
+  color: #ffffff;
+  background: linear-gradient(180deg, rgba(30, 20, 60, 0.92), rgba(12, 9, 26, 0.94));
+  border: 1.5px solid rgba(167, 139, 250, 0.55);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 24px 50px -24px rgba(0, 0, 0, 0.8), 0 0 30px -8px rgba(123, 95, 191, 0.45);
+}
+.tarjeta-mundo-aventura:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 30px 60px -24px rgba(0, 0, 0, 0.85), 0 0 46px -4px rgba(167, 139, 250, 0.75);
+}
+.tarjeta-mundo-progreso {
+  color: #17122b;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 240, 253, 0.95));
+  border: 1.5px solid rgba(75, 45, 142, 0.16);
+  box-shadow: 0 24px 50px -24px rgba(75, 45, 142, 0.5), 0 0 30px -10px rgba(167, 139, 250, 0.5);
+}
+.tarjeta-mundo-progreso:hover:not(:disabled) {
+  box-shadow: 0 30px 60px -24px rgba(75, 45, 142, 0.6), 0 0 46px -6px rgba(167, 139, 250, 0.8);
+}
+
+/* Destello que cruza la tarjeta al pasar el puntero. */
+.tm-destello {
+  position: absolute;
+  inset: -40% auto -40% -60%;
+  width: 45%;
+  transform: rotate(18deg) translateX(-120%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+}
+.tarjeta-mundo:hover:not(:disabled) .tm-destello { animation: tmDestello 900ms ease-out; }
+@keyframes tmDestello { to { transform: rotate(18deg) translateX(520%); } }
+
+/* Al elegir: pulso de la elegida, la otra se va. */
+.tm-elegida { animation: tmElegida 340ms ease-out forwards; }
+@keyframes tmElegida {
+  0%   { transform: translateY(-8px) scale(1.02); filter: brightness(1); }
+  45%  { transform: translateY(-10px) scale(1.07); filter: brightness(1.35); }
+  100% { transform: translateY(-6px) scale(1.04); filter: brightness(1.1); }
+}
+.tm-descartada { opacity: 0; transform: scale(0.94); filter: blur(3px); }
+
+.tm-modo {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+.tarjeta-mundo-aventura .tm-modo { color: #c4b5fd; background: rgba(123, 95, 191, 0.2); border: 1px solid rgba(167, 139, 250, 0.35); }
+.tarjeta-mundo-progreso .tm-modo { color: #6d28d9; background: rgba(109, 40, 217, 0.08); border: 1px solid rgba(109, 40, 217, 0.18); }
+
+.tm-titulo {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.25rem, 2.3vw, 2rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.tm-descripcion {
+  margin-bottom: 4px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: clamp(0.72rem, 0.95vw, 0.9rem);
+  line-height: 1.5;
+  max-width: 30ch;
+}
+.tarjeta-mundo-aventura .tm-descripcion { color: #bdb6d6; }
+.tarjeta-mundo-progreso .tm-descripcion { color: #5b5470; }
+.tm-elegir {
+  margin-top: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  transition: background 200ms ease, transform 200ms ease;
+}
+.tm-elegir > span { font-size: 0.65rem; margin-right: 4px; }
+.tarjeta-mundo-aventura .tm-elegir { color: #fff; background: linear-gradient(180deg, #5b3aae, #3a1f7a); border: 1px solid rgba(167, 139, 250, 0.55); }
+.tarjeta-mundo-progreso .tm-elegir { color: #3a1f7a; background: #ffffff; border: 1px solid rgba(75, 45, 142, 0.2); box-shadow: 0 6px 16px -8px rgba(75, 45, 142, 0.5); }
+.tarjeta-mundo:hover:not(:disabled) .tm-elegir > span { display: inline-block; animation: tmFlecha 700ms ease-in-out infinite; }
+@keyframes tmFlecha { 50% { transform: translateX(3px); } }
+
+/* Iconos: un escenario pequeño en cada tarjeta. */
+.tm-icono {
+  position: relative;
+  width: 100%;
+  height: clamp(78px, 15vh, 132px);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.tm-icono-aventura {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6%;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(123, 95, 191, 0.45), transparent 60%), linear-gradient(180deg, #1a1236, #0b0818);
+  border: 1px solid rgba(167, 139, 250, 0.22);
+}
+.tm-suelo { position: absolute; left: 0; right: 0; bottom: 0; height: 18%; background: repeating-linear-gradient(90deg, #2a1d52 0 8px, #241848 8px 16px); border-top: 2px solid #3d2a78; }
+.tm-estrella { position: absolute; width: 3px; height: 3px; background: #fff; box-shadow: 0 0 6px #fff; animation: eaBrillo 2.4s ease-in-out infinite; }
+/* El personaje: la vista de frente (primer cuarto de la hoja 384×128) y un balanceo a pasos. */
+.tm-personaje {
+  --alto: clamp(60px, 11.5vh, 104px);
+  position: relative;
+  z-index: 1;
+  margin-bottom: 9%;
+  height: var(--alto);
+  width: calc(var(--alto) * 0.75);
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  animation: tmEspera 900ms steps(2) infinite;
+}
+@keyframes tmEspera { 50% { transform: translateY(-3px); } }
+
+.tm-icono-progreso {
+  display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.98rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(167, 139, 250, 0.35), transparent 60%), linear-gradient(180deg, #f3effc, #e9e2f7);
+  border: 1px solid rgba(75, 45, 142, 0.12);
 }
-.boton-portada:hover:not(:disabled) { transform: translateY(-2px); }
-.boton-portada:active:not(:disabled) { transform: translateY(0); }
-.boton-portada:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 4px; }
-
-/* Aventura: el morado profundo del videojuego, con su resplandor neón. */
-.boton-portada-aventura {
-  color: #ffffff;
-  background: linear-gradient(180deg, #5b3aae 0%, #3a1f7a 100%);
-  border: 1px solid rgba(167, 139, 250, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 22px rgba(123, 95, 191, 0.45), 0 12px 30px -12px rgba(58, 31, 122, 0.9);
-}
-.boton-portada-aventura:hover:not(:disabled) {
-  background: linear-gradient(180deg, #6a47c4 0%, #46268f 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 0 4px rgba(167, 139, 250, 0.22), 0 0 32px rgba(167, 139, 250, 0.6), 0 16px 34px -12px rgba(58, 31, 122, 0.95);
-}
-
-/* Progreso: claro, como la Plataforma. */
-.boton-portada-progreso {
-  color: #3a1f7a;
-  background: linear-gradient(180deg, #ffffff 0%, #f1ecfc 100%);
-  border: 1px solid rgba(75, 45, 142, 0.16);
-  box-shadow: inset 0 -2px 0 rgba(75, 45, 142, 0.06), 0 12px 30px -12px rgba(167, 139, 250, 0.8);
-}
-.boton-portada-progreso:hover:not(:disabled) {
+.tm-panel {
+  position: relative;
+  width: 64%;
+  height: 70%;
+  padding: 8% 9%;
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: inset 0 -2px 0 rgba(75, 45, 142, 0.06), 0 0 0 4px rgba(196, 181, 253, 0.35), 0 16px 34px -12px rgba(167, 139, 250, 0.95);
+  box-shadow: 0 10px 24px -12px rgba(75, 45, 142, 0.55);
+}
+.tm-barras { display: flex; align-items: flex-end; gap: 7%; height: 100%; }
+.tm-barras > span { flex: 1; border-radius: 3px 3px 1px 1px; background: linear-gradient(to top, #4B2D8E, #9b7fe0); transform-origin: bottom; animation: epBarra 4.8s ease-in-out infinite; }
+.tm-curva { position: absolute; inset: 14% 9%; width: 82%; height: 72%; overflow: visible; }
+.tm-curva path { fill: none; stroke: #e879f9; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 200; animation: epLinea 6s ease-in-out infinite; }
+.tm-visto {
+  position: absolute;
+  right: 14%;
+  top: 14%;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #107c10;
+  box-shadow: 0 6px 14px -6px rgba(16, 124, 16, 0.8);
+  animation: eaLatido 1.6s ease-in-out infinite;
+}
+.tm-visto svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 639.98px) {
+  .tarjeta-mundo { border-radius: 16px; gap: 6px; }
+  .tm-modo { font-size: 0.5rem; letter-spacing: 0.16em; padding: 3px 7px; }
+  .tm-elegir { font-size: 0.68rem; padding: 6px 12px; }
+  .tm-visto { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-mundo, .tarjeta-mundo * { animation: none !important; transition: none !important; }
 }
 
 .comilla-pensamiento { -webkit-text-fill-color: #d946ef; font-size: 1.25em; line-height: 0; margin: 0 3px; }
-@media (max-width: 639.98px) { .boton-portada { padding: 0 16px; height: 46px; } }

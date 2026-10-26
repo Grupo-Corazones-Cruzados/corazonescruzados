@@ -7,6 +7,7 @@ import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
+import TarjetasMundo from '@/components/landing/TarjetasMundo';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
@@ -3086,12 +3087,13 @@ export default function LandingPage() {
         </div>
 
         {/* ══ EL BLOQUE CENTRAL: ELEGIR UN MUNDO (Fernando, 2026-10-26, sexta versión) ═══════════
-            · Al llegar, SOLO los dos botones, cada uno en su mundo junto a la raya líquida.
-              Nada de titular, insignia ni pensamiento todavía.
-            · Un CLIC (no el puntero encima) elige el mundo: llena la pantalla, el botón elegido
-              desaparece y aparecen, CENTRADOS y con los colores de ese mundo, la insignia, el
-              titular y el pensamiento. Queda el otro botón, para cambiar de mundo.
-            ⚠️ Estos botones ya NO abren el acceso («¿Cómo quieres ingresar?»): Fernando dirá
+            · Al llegar, SOLO dos TARJETAS de selección (`TarjetasMundo`), cada una en su mundo
+              junto a la raya líquida, como al elegir modo en un videojuego. Nada de titular,
+              insignia ni pensamiento todavía.
+            · Un CLIC (no el puntero encima) elige el mundo: llena la pantalla, las tarjetas se
+              van y aparecen, CENTRADOS y con los colores de ese mundo, la insignia, el titular
+              y el pensamiento. SIN botón para cambiar de mundo (Fernando, 2026-10-26).
+            ⚠️ Las tarjetas NO abren el acceso («¿Cómo quieres ingresar?»): Fernando dirá
             qué viene después. El acceso sigue por `/auth` y `?acceso=`.
             Probadas antes y descartadas el mismo día: bloque centrado con color partido,
             cristal redondeado, placa pixel, botones con estilo distinto, raya que sigue al
@@ -3107,31 +3109,9 @@ export default function LandingPage() {
           <h1 className="sr-only">Un Corazón puede cruzar al mundo</h1>
 
           {!mundoElegido ? (
-            <div className="cruce-rejilla">
-              <div className="cruce-izquierda">
-                <button
-                  type="button"
-                  onClick={() => setMundoElegido('aventura')}
-                  disabled={landingLocked}
-                  className="boton-portada boton-portada-aventura"
-                >
-                  Aventura
-                </button>
-              </div>
-              <div className="cruce-derecha">
-                <button
-                  type="button"
-                  onClick={() => setMundoElegido('progreso')}
-                  disabled={landingLocked}
-                  className="boton-portada boton-portada-progreso"
-                >
-                  Progreso
-                </button>
-              </div>
-            </div>
+            <TarjetasMundo onElegir={setMundoElegido} bloqueado={landingLocked} />
           ) : (
-            // `key`: al cambiar de mundo se vuelve a montar y la entrada se anima otra vez.
-            <div key={mundoElegido} className={`mundo-elegido mundo-${mundoElegido}`}>
+            <div className={`mundo-elegido mundo-${mundoElegido}`}>
               <p className="mundo-insignia aparecer" style={{ ['--retraso' as string]: '420ms' }}>
                 Proyecto de Desarrollo Humano
               </p>
@@ -3143,18 +3123,7 @@ export default function LandingPage() {
                   <span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al mundo</span>
                 </span>
               </p>
-              <div className="aparecer" style={{ ['--retraso' as string]: '680ms', marginTop: 'clamp(20px, 4.5vh, 40px)' }}>
-                {mundoElegido === 'aventura' ? (
-                  <button type="button" onClick={() => setMundoElegido('progreso')} className="boton-portada boton-portada-progreso">
-                    Progreso
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => setMundoElegido('aventura')} className="boton-portada boton-portada-aventura">
-                    Aventura
-                  </button>
-                )}
-              </div>
-              <div className="aparecer" style={{ ['--retraso' as string]: '820ms' }}>
+              <div className="aparecer" style={{ ['--retraso' as string]: '720ms' }}>
                 <FeaturedThought windAway={windAway} tema={mundoElegido} />
               </div>
             </div>

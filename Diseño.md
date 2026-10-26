@@ -342,6 +342,19 @@ esquinas de cámara no cambian.
     oscuro en la Aventura, tarjeta clara en la Progreso (`.pensamiento-*`).
   · ⚠️ Estos botones ya NO abren el acceso; pendiente de lo que diga Fernando.
   · Fuera las gotas del licuado («los círculos en la curva no sé si me gustan»).
+- **Tarjetas de selección (2026-10-26, Fernando: «que se vea como un videojuego cuando eliges
+  entre dos tarjetas»).** Los dos botones iniciales pasan a `components/landing/TarjetasMundo.tsx`:
+  · Misma forma (22 px de radio, `--tm-ancho: clamp(150px, 23vw, 330px)`, mismo alto: `flex: 1`)
+    y el color de cada mundo (`.tarjeta-mundo-aventura` oscura con borde lila y neón;
+    `.tarjeta-mundo-progreso` blanca). Contenido: etiqueta de modo («Modo juego» / «Modo
+    plataforma»), icono animado, título, descripción y «▶ Elegir» abajo (`margin-top: auto`).
+  · **Icono de la Aventura = los personajes reales del juego** (`public/personajes/base/*.png`,
+    hojas 384×128 de 4 vistas): la vista de frente con `background-size: 400% 100%` y un
+    balanceo de espera a pasos (`steps(2)`), sobre un escenario nocturno con suelo pixel.
+    Icono de Progreso: panel con barras que crecen, curva y un visto.
+  · Puntero encima: sube 8 px, brilla y la cruza un destello. Clic: pulso de selección en la
+    elegida, la otra se desvanece, y ~320 ms después el mundo llena la pantalla.
+  · Una vez elegido, **sin botón para cambiar de mundo**. `.boton-portada` se borró.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.
