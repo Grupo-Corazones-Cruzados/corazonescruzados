@@ -36,6 +36,13 @@ export default function PointerCursor() {
         const x = curX + TIP_X;
         const y = curY + TIP_Y;
         claro = x >= corte && y >= r.top && y <= r.bottom;
+        // Sobre el cristal oscuro (pestañas, titular, pensamiento) sigue siendo blanca.
+        if (claro) {
+          for (const c of document.querySelectorAll('.cristal-portada')) {
+            const q = c.getBoundingClientRect();
+            if (x >= q.left && x <= q.right && y >= q.top && y <= q.bottom) { claro = false; break; }
+          }
+        }
       }
       if (claro !== sobreClaro && svgRef.current) {
         sobreClaro = claro;

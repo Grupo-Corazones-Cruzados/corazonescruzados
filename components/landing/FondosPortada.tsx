@@ -74,7 +74,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
             </div>
           </div>
 
-          <div className="ea-hud ep-flota" style={{ left: '9%', top: '54%', animationDelay: '-5s' }}>
+          <div className="ea-hud ep-flota max-[1359px]:hidden" style={{ left: '4%', top: '54%', animationDelay: '-5s' }}>
             <p className="ea-titulo">Vida</p>
             <div className="mt-2.5 flex gap-1.5">
               {[0, 1, 2, 3, 4].map((i) => (
@@ -97,7 +97,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
             </div>
           </div>
 
-          <div className="ea-hud ep-flota" style={{ right: '9%', top: '54%', animationDelay: '-4s' }}>
+          <div className="ea-hud ep-flota max-[1359px]:hidden" style={{ right: '4%', top: '54%', animationDelay: '-4s' }}>
             <p className="ea-titulo">Tesoros</p>
             <div className="mt-2.5 flex items-center gap-2">
               {[0, 1, 2, 3, 4].map((i) => (
@@ -146,7 +146,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
             </ul>
           </div>
 
-          <div className="ep-tarjeta ep-flota" style={{ left: '8%', top: '55%', animationDelay: '-4s' }}>
+          <div className="ep-tarjeta ep-flota max-[1359px]:hidden" style={{ left: '4%', top: '54%', animationDelay: '-4s' }}>
             <p className="ep-titulo">Crecimiento</p>
             <svg viewBox="0 0 180 64" className="mt-2 w-full h-16 overflow-visible">
               <defs>
@@ -178,7 +178,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
             </div>
           </div>
 
-          <div className="ep-tarjeta ep-flota flex items-center gap-4" style={{ right: '9%', top: '54%', animationDelay: '-5.5s' }}>
+          <div className="ep-tarjeta ep-flota flex items-center gap-4 max-[1359px]:hidden" style={{ right: '4%', top: '54%', animationDelay: '-5.5s' }}>
             <svg viewBox="0 0 64 64" className="w-16 h-16 -rotate-90">
               <circle cx="32" cy="32" r="26" className="ep-anillo-fondo" />
               <circle cx="32" cy="32" r="26" className="ep-anillo" />

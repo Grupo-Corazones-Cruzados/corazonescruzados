@@ -6,31 +6,76 @@
  * lado llene la pantalla.
  *
  * ── UNA SOLA VARIABLE MUEVE TODO ───────────────────────────────────────────────
- * `--corte` (px desde el borde izquierdo de la ventana) vive en `.landing-page` y está
- * registrada con `@property` en `globals.css`, así que se ANIMA. La leen el recorte de la
- * escena clara, la raya y cada texto que cruza la raya. Nada se sincroniza a mano.
+ * `--corte` (px desde el borde izquierdo de la ventana) vive en `.landing-page`. La leen el
+ * recorte de la escena clara, la raya y el nombre de la cabecera.
  *
- * ── LOS TEXTOS QUE CRUZAN LA RAYA ──────────────────────────────────────────────
- * Un texto blanco sobre el lado claro no se lee. `.texto-partido` pinta el texto con un
- * degradado de corte duro: `--tp-a` (su color de siempre) a la izquierda de la raya y
- * `--tp-b` (uno oscuro) a la derecha. El degradado se calcula en el sistema del propio
- * elemento, así que necesita saber dónde empieza: `--x0`, que pone `refBordeIzquierdo`.
+ * ⛔ **NO se anima con CSS (`@property` + `transition`).** Así se hizo primero y en Chrome
+ * iba bien, pero en el navegador de Fernando la raya se quedaba A MEDIAS —en reposo hacia
+ * el 37 %, con «Aventura» en el 75 %— (2026-10-26): los hijos que leen una variable
+ * heredada que se está animando no se repintaban cada cuadro. `useCorteAnimado` escribe el
+ * valor en px cuadro a cuadro: para el navegador es un cambio de estilo normal.
  *
- * ⚠️ `--x0` se mide en un elemento SIN animación de transform: el titular «respira»
- * (`scale`), así que se mide su contenedor y el valor se hereda.
- * ⚠️ El texto partido tiene que ser BLOQUE: en un `inline` partido en dos líneas el fondo
- * se coloca como si fuera una sola línea y el corte cae donde no es.
- * ⚠️ `text-shadow` se pinta ENCIMA de un texto con `background-clip: text`; la sombra va
- * como `filter: drop-shadow(...)`.
+ * ── EL TEXTO CENTRAL VA EN CRISTAL ─────────────────────────────────────────────
+ * Titular, botones y pensamiento cruzan la raya. Partirles el color en ella dejaba letras
+ * mitad blancas y mitad oscuras; ahora van sobre `.cristal-portada` (cristal oscuro, el
+ * lenguaje de la cápsula de las pestañas) y conservan sus colores de siempre.
+ *
+ * ── LO QUE SIGUE PARTIDO ───────────────────────────────────────────────────────
+ * El nombre de la cabecera, sin cristal: `.texto-partido` lo pinta con un degradado de
+ * corte duro, `--tp-a` a la izquierda de la raya y `--tp-b` a la derecha. Necesita `--x0`,
+ * su borde izquierdo, que pone `refBordeIzquierdo`.
  */
+
+import { useEffect, useRef, type RefObject } from 'react';
 
 export type ModoPortada = 'partido' | 'aventura' | 'progreso';
 
-/** El valor de `--corte` para cada modo. */
-export function corteDe(modo: ModoPortada): string {
-  if (modo === 'progreso') return '0px';
-  if (modo === 'aventura') return '100vw';
-  return '50vw';
+/** Qué fracción del ancho queda a la izquierda de la raya en cada modo. */
+function fraccionDe(modo: ModoPortada): number {
+  if (modo === 'progreso') return 0;
+  if (modo === 'aventura') return 1;
+  return 0.5;
+}
+
+const DURACION_MS = 900;
+// La misma curva que tenía la transición CSS, `cubic-bezier(.65, 0, .35, 1)`, aproximada.
+const suavizar = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+
+/**
+ * Lleva `--corte` de donde esté al valor del modo, en ~900 ms, escribiéndolo en px en el
+ * elemento cada cuadro. Si el modo cambia a mitad, sale desde donde iba. Con «reducir
+ * movimiento», salta. Al cambiar el tamaño de la ventana se recoloca sin animar.
+ */
+export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPortada) {
+  const actual = useRef<number | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const destino = fraccionDe(modo);
+    const desde = actual.current ?? destino;
+    const pintar = (f: number) => {
+      actual.current = f;
+      el.style.setProperty('--corte', `${f * document.documentElement.clientWidth}px`);
+    };
+    const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const t0 = performance.now();
+    let raf = 0;
+    const paso = (t: number) => {
+      // La marca del cuadro puede ser anterior a `t0`: sin el `max`, arrancaría hacia atrás.
+      const k = reducir ? 1 : Math.min(1, Math.max(0, (t - t0) / DURACION_MS));
+      pintar(desde + (destino - desde) * suavizar(k));
+      if (k < 1) raf = requestAnimationFrame(paso);
+    };
+    pintar(desde);
+    raf = requestAnimationFrame(paso);
+    const alRedimensionar = () => pintar(actual.current ?? destino);
+    window.addEventListener('resize', alRedimensionar);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', alRedimensionar);
+    };
+  }, [ref, modo]);
 }
 
 /**

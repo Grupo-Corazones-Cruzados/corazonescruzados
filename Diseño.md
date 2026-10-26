@@ -240,6 +240,17 @@ esquinas de cámara no cambian.
   · **La sombra del titular también se parte** (`.texto-partido-sombra`, copia `data-texto`
     por detrás): negra en el cielo, morada suave en el claro. Sin `isolation`: dentro de su
     propio contexto el `z-index:-1` se pintaría encima del texto recortado.
+- **Segunda corrección (2026-10-26):**
+  · ⛔ **`--corte` ya no se anima con `@property` + `transition`.** En el navegador de
+    Fernando la raya se quedaba a medias (37 % en reposo, 75 % con «Aventura») y en reposo no
+    se veía; en Chrome iba bien. Ahora lo anima `useCorteAnimado` (JS, cuadro a cuadro, en px).
+  · **El texto central va sobre `.cristal-portada`** (`rgba(13,10,28,.82)` + `blur(16px)`,
+    borde lila al 18 %): el mismo cristal de la cápsula de pestañas, que gustó. Titular,
+    subtítulo, botones y pensamiento conservan sus colores en los dos mundos; se retiró el
+    color partido de esos textos (solo lo conserva el nombre de la cabecera).
+  · El cristal va con `-z-10` dentro de un contexto con `transform`/`z-index`, o se pinta
+    ENCIMA del texto que no está posicionado. El puntero de la portada sigue blanco sobre él.
+  · Las tarjetas del medio, desde 1360 px: por debajo se meten bajo el cristal.
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.

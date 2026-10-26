@@ -101,7 +101,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
         <nav
           className={`hidden lg:flex items-center gap-1 ${
             flotante
-              ? 'absolute left-1/2 -translate-x-1/2 rounded-full p-1 bg-[#0b0d14]/70 backdrop-blur-md border border-white/10 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.6)]'
+              ? 'cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1'
               : 'ml-auto'
           }`}
           aria-label="Principal"
@@ -130,7 +130,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={abierto}
           className={`lg:hidden ml-auto w-9 h-9 inline-flex items-center justify-center text-white/80 hover:bg-white/[0.07] ${
-            flotante ? 'rounded-full bg-[#0b0d14]/70 backdrop-blur-md border border-white/10' : 'rounded-md'
+            flotante ? 'cristal-portada rounded-full' : 'rounded-md'
           }`}
         >
           {abierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

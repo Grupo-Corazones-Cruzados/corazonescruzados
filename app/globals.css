@@ -2128,13 +2128,18 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    una variable cambia de golpe. La pone `app/page.tsx` en `.landing-page` según el modo
    (`lib/sitio/portadaPartida.ts`). Explicación completa en ese archivo.
    ═══════════════════════════════════════════════════════════════════════════════ */
-@property --corte {
-  syntax: '<length>';
-  inherits: true;
-  initial-value: 0px;
-}
+/* ⛔ `--corte` NO se anima con `@property` + `transition`: en el navegador de Fernando los
+   hijos se quedaban con un valor a medias. Lo anima `useCorteAnimado` en JS. */
 
-.landing-page { transition: --corte 900ms cubic-bezier(0.65, 0, 0.35, 1); }
+/* El cristal oscuro de la portada: el mismo de la cápsula de las pestañas. Lo que cruza la
+   raya va encima y conserva sus colores en los dos mundos. */
+.cristal-portada {
+  background: rgba(13, 10, 28, 0.82);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
 
 /* Texto que cambia de color justo en la raya: `--tp-a` a la izquierda (su color de
    siempre), `--tp-b` a la derecha. `--x0` = borde izquierdo del elemento en la ventana. */
@@ -2148,28 +2153,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-/* La sombra de un texto partido también se parte: es una copia (`data-texto`) desplazada
-   por detrás, pintada con su propio degradado — negra en el cielo, morada suave en el claro.
-   ⚠️ Sin `isolation` en el texto: dentro de su propio contexto, el `z-index: -1` se pintaría
-   ENCIMA del fondo recortado del texto. Así cae en el del padre con `transform` (el titular
-   «respira»), por detrás. */
-.texto-partido-sombra { position: relative; }
-.texto-partido-sombra::before {
-  content: attr(data-texto);
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  transform: translate(var(--tps-dx, 2px), var(--tps-dy, 2px));
-  background-image: linear-gradient(
-    90deg,
-    var(--tps-a) calc(var(--corte, 100vw) - var(--x0, 0px)),
-    var(--tps-b) 0
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
 /* ── La raya ── */
 .raya-portada {
   position: absolute;
@@ -2460,7 +2443,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-page { transition: none; }
   .escena-progreso *, .escena-aventura *, .raya-portada::after { animation: none !important; }
 }
 @media (prefers-reduced-motion: reduce) { .ep-visto { transform: scale(1); } }

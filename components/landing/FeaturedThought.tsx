@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { refBordeIzquierdo } from '@/lib/sitio/portadaPartida';
 
 interface Featured { content: string; createdAt: string }
 
@@ -68,6 +67,9 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
       }}
     >
       <div className="relative px-6 py-4">
+        {/* Cristal de la portada partida (2026-10-26): el pensamiento cruza la raya
+            Aventura | Progreso y así se lee igual sobre el cielo y sobre el claro. */}
+        <span aria-hidden="true" className="cristal-portada absolute inset-0 -z-10 rounded-xl" />
         {/* Esquinas pixel: marcan el bloque sin encerrarlo en una caja pesada */}
         {[
           'top-0 left-0 border-t-2 border-l-2',
@@ -79,8 +81,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
         ))}
 
         <p
-          ref={refBordeIzquierdo}
-          className="texto-partido mb-2.5"
+          className="mb-2.5"
           style={{
             fontFamily: "'Silkscreen', cursive",
             fontSize: '0.55rem',
@@ -88,8 +89,7 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             // Antes era el morado de marca al 85 %: sobre el fondo negro quedaba apagado y
             // la etiqueta se perdía. Este lila claro ya se usa en el resto de la portada
             // para texto secundario, así que sube el contraste sin salirse de la paleta.
-            ['--tp-a' as string]: '#cfc9e2',
-            ['--tp-b' as string]: '#4B2D8E',
+            color: '#cfc9e2',
             opacity: 1,
           }}
         >
@@ -114,16 +114,13 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
         ) : data ? (
           <>
             <p
-              ref={refBordeIzquierdo}
-              className="texto-partido featured-thought-text whitespace-pre-wrap"
+              className="featured-thought-text whitespace-pre-wrap"
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: '0.9rem',
                 lineHeight: 1.75,
-                // Cambia de color en la raya de la portada (`lib/sitio/portadaPartida.ts`).
-                ['--tp-a' as string]: '#cbd5e1',
-                ['--tp-b' as string]: '#2b2540',
-                filter: 'drop-shadow(0 0 18px rgba(123, 95, 191, 0.18))',
+                color: '#cbd5e1',
+                textShadow: '0 0 18px rgba(123, 95, 191, 0.18)',
                 display: '-webkit-box',
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',   // el nº de líneas lo pone `.featured-thought-text`
@@ -136,14 +133,12 @@ export default function FeaturedThought({ windAway = false }: { windAway?: boole
             </p>
 
             <p
-              ref={refBordeIzquierdo}
-              className="texto-partido mt-2"
+              className="mt-2"
               style={{
                 fontFamily: "'Silkscreen', cursive",
                 fontSize: '0.5rem',
                 letterSpacing: '0.16em',
-                ['--tp-a' as string]: '#64748b',
-                ['--tp-b' as string]: '#6b6585',
+                color: '#64748b',
               }}
             >
               {fecha.toUpperCase()}

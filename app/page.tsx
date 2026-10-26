@@ -7,7 +7,7 @@ import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
-import { corteDe, refBordeIzquierdo, type ModoPortada } from '@/lib/sitio/portadaPartida';
+import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
 // bandas. El viejo (LPC) se retira; su tipo `CharacterConfig` solo se conserva
@@ -329,6 +329,7 @@ export default function LandingPage() {
   const [windAway, setWindAway] = useState(false);
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const worldRef = useRef<HTMLDivElement | null>(null);
+  const raizPortadaRef = useRef<HTMLDivElement | null>(null);
   const cameraStateRef = useRef({
     x: 0,
     y: 0,
@@ -2791,6 +2792,7 @@ export default function LandingPage() {
     : accesoAbierto
       ? (entryDestination === 'game' ? 'aventura' : 'progreso')
       : (botonPortada ?? 'partido');
+  useCorteAnimado(raizPortadaRef, modoPortada);
   const eventosBoton = (lado: 'aventura' | 'progreso') => ({
     onPointerEnter: () => setBotonPortada(lado),
     onPointerLeave: () => setBotonPortada(null),
@@ -2801,8 +2803,10 @@ export default function LandingPage() {
   return (
     <div
       className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}
+      ref={raizPortadaRef}
       data-modo={modoPortada}
-      style={{ ['--corte' as string]: corteDe(modoPortada) }}
+      // Solo el valor del primer pintado: luego lo anima `useCorteAnimado`, cuadro a cuadro.
+      style={{ ['--corte' as string]: '50vw' }}
     >
       {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
@@ -3088,12 +3092,21 @@ export default function LandingPage() {
         </div>
 
         <div
-          ref={refBordeIzquierdo}
           className="relative z-10 max-w-3xl mx-auto"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
           }}
         >
+          {/* EL CRISTAL DE LA PORTADA PARTIDA (Fernando, 2026-10-26). El titular, el
+              subtítulo y los botones cruzan la raya Aventura | Progreso; sobre un panel de
+              cristal oscuro —el mismo lenguaje que la cápsula de las pestañas— se leen con
+              sus colores de siempre en los dos mundos. Al empezar el juego se desvanece con
+              ellos. */}
+          <div
+            aria-hidden="true"
+            className="cristal-portada absolute -z-10 -inset-x-2 sm:-inset-x-12 -top-8 sm:-top-10 -bottom-2 rounded-3xl"
+            style={{ opacity: windAway ? 0 : 1, transition: 'opacity 900ms ease 200ms' }}
+          />
           {/* Aquí había una etiqueta «Grupo Corazones Cruzados» sobre el titular. Se quitó:
               el nombre ya preside la cabecera del sitio, a treinta píxeles por encima, y
               repetirlo restaba fuerza al titular en vez de dársela. */}
@@ -3113,21 +3126,8 @@ export default function LandingPage() {
                   }
             }
           >
-            {/* Blanco en el cielo y oscuro sobre la Plataforma: cambia justo en la raya.
-                La sombra también se parte (`.texto-partido-sombra`): `text-shadow` taparía el degradado. */}
-            <span
-              className="texto-partido texto-partido-sombra block"
-              data-texto="Un Corazón puede"
-              style={{
-                ['--tp-a' as string]: '#ffffff',
-                ['--tp-b' as string]: '#1f1a2e',
-                ['--tps-a' as string]: 'rgba(0, 0, 0, 0.8)',
-                ['--tps-b' as string]: 'rgba(75, 45, 142, 0.28)',
-                textShadow: 'none',
-              }}
-            >
-              Un Coraz&oacute;n puede
-            </span>
+            Un Coraz&oacute;n puede
+            <br />
             <span
               className="pixel-glow"
               style={{
@@ -3143,13 +3143,12 @@ export default function LandingPage() {
           </h1>
 
           <p
-            className="texto-partido mt-5 text-lg md:text-xl opacity-60"
+            className="mt-5 text-lg md:text-xl opacity-60"
             style={{
               fontFamily: "'Silkscreen', cursive",
               fontSize: '0.8rem',
               letterSpacing: '0.05em',
-              ['--tp-a' as string]: '#94A3B8',
-              ['--tp-b' as string]: '#2b2540',
+              color: '#94A3B8',
               animation: windAway
                 ? 'windBlowAway 1.1s ease-in 0.26s forwards'
                 : 'breathe 5s ease-in-out infinite',
