@@ -476,7 +476,6 @@ export default function LandingPage() {
   const planetTimeoutsRef = useRef<number[]>([]);
   const worldChatTimeoutRef = useRef<number | null>(null);
   const worldChatAdvanceRef = useRef<number | null>(null);
-  const windAudioRef = useRef<HTMLAudioElement | null>(null);
   const typingAudioRef = useRef<HTMLAudioElement | null>(null);
   const distortAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -753,231 +752,11 @@ export default function LandingPage() {
     }
   };
 
-  // ── Ambient audio — wind before Entrar, space (fwd↔rev) after ───
-  useEffect(() => {
-    const wind = windAudioRef.current;
-    if (!wind) return;
-
-    const WIND_VOL = 0.45;
-    const SPACE_VOL = 0.5;
-    const FADE_MS = 1200;
-    const SPACE_URL =
-      '/sounds/music/Efecto%20de%20sonido%20ambiente%20espacio%2001.mp3';
-
-    const fadeHtml = (
-      audio: HTMLAudioElement,
-      from: number,
-      to: number,
-      onDone?: () => void,
-    ) => {
-      const startTime = performance.now();
-      let rafId = 0;
-      const step = (t: number) => {
-        const k = Math.min(1, (t - startTime) / FADE_MS);
-        audio.volume = Math.max(0, Math.min(1, from + (to - from) * k));
-        if (k < 1) rafId = requestAnimationFrame(step);
-        else onDone?.();
-      };
-      rafId = requestAnimationFrame(step);
-      return () => cancelAnimationFrame(rafId);
-    };
-
-    if (windAway) {
-      const cancelWindFade = fadeHtml(wind, wind.volume, 0, () => {
-        wind.pause();
-        wind.currentTime = 0;
-      });
-
-      let stopped = false;
-      let timeoutId = 0;
-      const liveSources: AudioBufferSourceNode[] = [];
-
-      const ensureBuffers = async (): Promise<void> => {
-        if (spaceFwdBufferRef.current && spaceRevBufferRef.current) return;
-        if (spaceLoadingRef.current) return spaceLoadingRef.current;
-        const ctx = audioCtxRef.current;
-        if (!ctx) return;
-        spaceLoadingRef.current = (async () => {
-          const res = await fetch(SPACE_URL);
-          const arr = await res.arrayBuffer();
-          const buf = await ctx.decodeAudioData(arr);
-          spaceFwdBufferRef.current = buf;
-          const rev = ctx.createBuffer(
-            buf.numberOfChannels,
-            buf.length,
-            buf.sampleRate,
-          );
-          for (let ch = 0; ch < buf.numberOfChannels; ch++) {
-            const src = buf.getChannelData(ch);
-            const dst = rev.getChannelData(ch);
-            for (let i = 0; i < buf.length; i++) {
-              dst[i] = src[buf.length - 1 - i];
-            }
-          }
-          spaceRevBufferRef.current = rev;
-        })();
-        return spaceLoadingRef.current;
-      };
-
-      (async () => {
-        try {
-          if (!audioCtxRef.current) {
-            const Ctor =
-              window.AudioContext ||
-              (window as unknown as { webkitAudioContext?: typeof AudioContext })
-                .webkitAudioContext;
-            if (!Ctor) return;
-            audioCtxRef.current = new Ctor();
-          }
-          const ctx = audioCtxRef.current;
-          if (ctx.state === 'suspended') await ctx.resume();
-          await ensureBuffers();
-          if (stopped) return;
-          const fwd = spaceFwdBufferRef.current;
-          const rev = spaceRevBufferRef.current;
-          if (!fwd || !rev) return;
-
-          if (!spaceGainRef.current) {
-            spaceGainRef.current = ctx.createGain();
-            spaceGainRef.current.connect(ctx.destination);
-          }
-          const gain = spaceGainRef.current;
-          const now = ctx.currentTime;
-          gain.gain.cancelScheduledValues(now);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(SPACE_VOL, now + FADE_MS / 1000);
-
-          let isReverse = false;
-          let nextStart = ctx.currentTime + 0.05;
-
-          const queueOne = () => {
-            if (stopped) return;
-            const buf = isReverse ? rev : fwd;
-            const src = ctx.createBufferSource();
-            src.buffer = buf;
-            src.connect(gain);
-            src.start(nextStart);
-            liveSources.push(src);
-            const startedAt = nextStart;
-            const dur = buf.duration;
-            nextStart += dur;
-            isReverse = !isReverse;
-            // Queue the next chunk shortly before this one ends — gapless.
-            const lookAhead = 0.3;
-            const delayMs = Math.max(
-              0,
-              (startedAt + dur - lookAhead - ctx.currentTime) * 1000,
-            );
-            timeoutId = window.setTimeout(queueOne, delayMs);
-            src.onended = () => {
-              const idx = liveSources.indexOf(src);
-              if (idx >= 0) liveSources.splice(idx, 1);
-            };
-          };
-
-          queueOne();
-        } catch {
-          // Ignore decode/network errors — leave wind silenced quietly.
-        }
-      })();
-
-      return () => {
-        stopped = true;
-        if (timeoutId) clearTimeout(timeoutId);
-        cancelWindFade();
-        const ctx = audioCtxRef.current;
-        const gain = spaceGainRef.current;
-        if (ctx && gain) {
-          const now = ctx.currentTime;
-          const fadeOut = 0.5;
-          gain.gain.cancelScheduledValues(now);
-          gain.gain.setValueAtTime(gain.gain.value, now);
-          gain.gain.linearRampToValueAtTime(0, now + fadeOut);
-          window.setTimeout(() => {
-            for (const s of liveSources) {
-              try {
-                s.stop();
-              } catch {
-                /* noop */
-              }
-            }
-            liveSources.length = 0;
-          }, fadeOut * 1000 + 50);
-        }
-      };
-    }
-
-    wind.volume = WIND_VOL;
-    wind.loop = true;
-    wind.muted = false;
-
-    let started = false;
-    const tryStart = () => {
-      if (started) return;
-      if (!wind.paused) {
-        started = true;
-        teardown();
-        return;
-      }
-      const p = wind.play();
-      if (p && typeof p.then === 'function') {
-        p.then(
-          () => {
-            started = true;
-            teardown();
-          },
-          () => undefined,
-        );
-      }
-    };
-    const teardown = () => {
-      window.removeEventListener('pointerdown', tryStart);
-      window.removeEventListener('pointermove', tryStart);
-      window.removeEventListener('keydown', tryStart);
-      window.removeEventListener('touchstart', tryStart);
-      window.removeEventListener('wheel', tryStart);
-      window.removeEventListener('click', tryStart);
-      window.removeEventListener('scroll', tryStart);
-    };
-
-    window.addEventListener('pointerdown', tryStart);
-    window.addEventListener('pointermove', tryStart);
-    window.addEventListener('keydown', tryStart);
-    window.addEventListener('touchstart', tryStart);
-    window.addEventListener('wheel', tryStart);
-    window.addEventListener('click', tryStart);
-    window.addEventListener('scroll', tryStart);
-
-    tryStart();
-
-    return teardown;
-  }, [windAway]);
-
-  /**
-   * ── EL VIENTO CALLA MIENTRAS HAY UN DIÁLOGO DE ACCESO ABIERTO (Fernando, 2026-09-21) ──
-   * Al pulsar «Crear cuenta» el primer gesto arrancaba el viento justo cuando el visitante
-   * se pone a rellenar un formulario: el ambiente es para la portada, no para el alta.
-   * Se atenúa con un fundido corto y vuelve al cerrar el último diálogo. Solo aplica
-   * mientras suena el viento (antes de «Entrar»): el espacio y el planeta van por otro camino.
-   */
-  const dialogoDeAccesoAbierto =
-    recoveryOpen || entryChoiceOpen || onboardingOpen || !!proposalPending || !!candidateAccount ||
-    !!clientPending || clientSignupOpen || clientLoginOpen || memberLoginOpen;
-  useEffect(() => {
-    const wind = windAudioRef.current;
-    if (!wind || windAway) return;
-    const objetivo = dialogoDeAccesoAbierto ? 0 : 0.45;
-    const desde = wind.volume;
-    const inicio = performance.now();
-    let raf = 0;
-    const paso = (t: number) => {
-      const k = Math.min(1, (t - inicio) / 500);
-      wind.volume = Math.max(0, Math.min(1, desde + (objetivo - desde) * k));
-      if (k < 1) raf = requestAnimationFrame(paso);
-    };
-    raf = requestAnimationFrame(paso);
-    return () => cancelAnimationFrame(raf);
-  }, [dialogoDeAccesoAbierto, windAway]);
+  // ── SIN MÚSICA DE AMBIENTE EN LA PORTADA (Fernando, 2026-10-26: «quita la música que existe
+  // en esta página»). Aquí sonaba el viento desde el primer gesto y, tras «Entrar», el ambiente
+  // del espacio; se quitaron los dos (y el viento que callaba con los diálogos). Los sonidos de
+  // la intro del juego (escritura, planeta, peligro) siguen, porque son del juego, no de la
+  // portada. `audioCtxRef`/`spaceGainRef` quedan vacíos y lo que los usa ya lo comprueba.
 
   // ── Planet entry — crossfade space ambient → planet music ────────
   useEffect(() => {
@@ -1253,7 +1032,6 @@ export default function LandingPage() {
       audio.currentTime = 0;
     };
     window.setTimeout(() => {
-      stop(windAudioRef.current);
       stop(planetMusicRef.current);
       stop(peligroMusicRef.current);
       setBulbOff(true);
@@ -2807,12 +2585,6 @@ export default function LandingPage() {
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
       <CabeceraSitio flotante />
       {!nativeCursor && <PointerCursor />}
-      <audio
-        ref={windAudioRef}
-        src="/sounds/music/Efecto%20de%20sonido%20Viento.mp3"
-        loop
-        preload="auto"
-      />
       <audio
         ref={typingAudioRef}
         src="/sounds/music/Efectos%20de%20sonido%20escritura.mp3"

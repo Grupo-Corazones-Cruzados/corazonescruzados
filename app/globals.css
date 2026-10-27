@@ -2559,6 +2559,14 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   box-shadow: 0 30px 60px -24px rgba(75, 45, 142, 0.6), 0 0 46px -6px rgba(167, 139, 250, 0.8);
 }
 
+/* Cada tarjeta, CENTRADA en el espacio libre de su mitad: entre la raya (con su hueco) y,
+   desde `xl`, la columna de tarjetas del HUD de ese lado (3 % del borde + 210 px + aire). */
+.tarjetas-rejilla { --reserva-lado: 0px; }
+@media (min-width: 1280px) { .tarjetas-rejilla { --reserva-lado: calc(3vw + 234px); } }
+.tarjetas-lado { display: flex; flex-direction: column; align-items: center; }
+.tarjetas-lado-izquierda { padding-left: var(--reserva-lado); padding-right: var(--hueco-raya); }
+.tarjetas-lado-derecha  { padding-right: var(--reserva-lado); padding-left: var(--hueco-raya); }
+
 /* Destello que cruza la tarjeta al pasar el puntero. */
 .tm-destello {
   position: absolute;

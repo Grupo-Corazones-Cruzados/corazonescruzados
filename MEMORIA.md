@@ -290,6 +290,9 @@ Stack estándar de la casa, con particularidades de este repo:
   con ese mundo y descubre, centrados, la insignia, el titular, el otro botón y el pensamiento.
   ⏳ **Pendiente:** esos botones ya NO abren el acceso («¿Cómo quieres ingresar?»); Fernando dirá
   qué sigue. El acceso queda por `/auth` y `?acceso=`.
+  Luego: las tarjetas pasan a ser de selección de videojuego (`TarjetasMundo.tsx`, con los
+  personajes reales del juego), la pestaña «Historia» vuelve a «Inicio» y **la portada ya no
+  tiene música de ambiente** (viento y espacio fuera; los sonidos de la intro del juego siguen).
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

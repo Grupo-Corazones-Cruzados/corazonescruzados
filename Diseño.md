@@ -355,6 +355,11 @@ esquinas de cámara no cambian.
   · Puntero encima: sube 8 px, brilla y la cruza un destello. Clic: pulso de selección en la
     elegida, la otra se desvanece, y ~320 ms después el mundo llena la pantalla.
   · Una vez elegido, **sin botón para cambiar de mundo**. `.boton-portada` se borró.
+  · Etiquetas «Juego» y «Progreso», sin la palabra «modo» (2026-10-26).
+  · **Cada tarjeta centrada en el espacio libre de SU mitad**, no pegada a la raya
+    (`.tarjetas-lado`): entre `--hueco-raya` y, desde `xl`, la columna del HUD de ese lado
+    (`--reserva-lado: calc(3vw + 234px)`). Por debajo de `xl` no hay HUD: centro de la mitad.
+- **La pestaña de la portada vuelve a llamarse «Inicio»** (era «Historia»; `lib/sitio/contenido.ts`).
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
 - «Reducir movimiento» apaga la transición y las animaciones.

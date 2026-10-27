@@ -8,7 +8,7 @@
  * Sustituyen a los botones «Aventura» y «Progreso» de la portada partida. Cada tarjeta vive
  * en su mundo, junto a la raya líquida, con la MISMA forma (los botones con estilos
  * distintos «se veían raros») y el color de su lado:
- * · etiqueta de modo, icono animado, título, descripción y «▶ Elegir»;
+ * · etiqueta («Juego» / «Progreso», sin la palabra «modo»: Fernando, 2026-10-26), icono animado, título, descripción y «▶ Elegir»;
  * · al pasar el puntero se eleva, brilla y la cruza un destello;
  * · al elegir, la elegida da un pulso de selección y la otra se desvanece; ~320 ms después
  *   se avisa (`onElegir`) y el mundo llena la pantalla.
@@ -24,12 +24,12 @@ type Mundo = 'aventura' | 'progreso';
 
 const TEXTOS: Record<Mundo, { modo: string; titulo: string; descripcion: string }> = {
   aventura: {
-    modo: 'Modo juego',
+    modo: 'Juego',
     titulo: 'Aventura',
     descripcion: 'Explora el mundo de GCC con tu personaje: misiones, retos y decisiones que te hacen crecer.',
   },
   progreso: {
-    modo: 'Modo plataforma',
+    modo: 'Progreso',
     titulo: 'Progreso',
     descripcion: 'Tu espacio de trabajo y desarrollo: proyectos, tareas y el avance de tu crecimiento, en un solo lugar.',
   },
@@ -101,9 +101,11 @@ export default function TarjetasMundo({ onElegir, bloqueado }: { onElegir: (m: M
   };
 
   return (
-    <div className="cruce-rejilla">
-      <div className="cruce-izquierda">{tarjeta('aventura')}</div>
-      <div className="cruce-derecha">{tarjeta('progreso')}</div>
+    // Cada tarjeta, centrada en el espacio libre de SU mitad, no pegada a la raya (Fernando,
+    // 2026-10-26: «más centradas en el espacio de su parte y no de la página»).
+    <div className="cruce-rejilla tarjetas-rejilla">
+      <div className="tarjetas-lado tarjetas-lado-izquierda">{tarjeta('aventura')}</div>
+      <div className="tarjetas-lado tarjetas-lado-derecha">{tarjeta('progreso')}</div>
     </div>
   );
 }

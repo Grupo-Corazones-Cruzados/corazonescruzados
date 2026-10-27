@@ -101,14 +101,14 @@ export const REDES = [
 
 export const NAVEGACION = [
   /**
-   * «Inicio» → «Violeta» → «Historia» (Fernando, 2026-08-17; el segundo cambio, el mismo día).
+   * «Inicio» → «Violeta» → «Historia» (Fernando, 2026-08-17) → otra vez «Inicio» (2026-10-26).
    *
    * ⚠️ **Solo cambia la ETIQUETA. La ruta sigue siendo `/`**, decidido por él después de
    * plantearle que mover la portada dejaría el dominio sin página en la raíz y obligaría a
    * tocar el logo, el panel, `/auth`, el marketplace y el mapa del sitio. Aquí no hay
    * ninguna redirección que añadir: no se ha movido nada, ni con «Violeta» ni ahora.
    */
-  { href: '/', label: 'Historia' },
+  { href: '/', label: 'Inicio' },
   /**
    * ⚠️ ESTAS DOS PESTAÑAS **INTERCAMBIARON SUS NOMBRES** EL 2026-08-18. Que conste el
    * orden, porque leer el historial sin esto despista:
