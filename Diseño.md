@@ -261,6 +261,15 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > negro 55 % + desenfoque, FUERA del `<header>` porque su `backdrop-filter` encierra los `fixed`);
 > tocarlo cierra, y el menú entra con movimiento.
 >
+> **El teléfono en VERTICAL (2026-10-27, Fernando).** Por debajo de `sm` (`CONSULTA_VERTICAL`) la
+> frontera líquida es HORIZONTAL: Aventura arriba, Progreso abajo. `useCorteAnimado` trabaja en
+> px y en `partido` MIDE el punto medio entre las dos tarjetas (sigue midiendo 2,5 s mientras
+> entran); pone `data-orientacion` en `.landing-page`. `LicuadoPortada` dibuja la onda a lo
+> ancho (ejes intercambiados, amplitud ≤ 18 px, el degradado de la tinta gira). Las tarjetas de
+> mundo se apilan y van ANCHAS (escena a la izquierda, texto a la derecha, descripción larga; la
+> corta en teléfonos de < 760 px de alto); el titular entero sobre el cielo en colores de noche.
+> ⚠️ Esas reglas usan `.tarjeta-mundo:not(.tarjeta-rol)`: los roles comparten la clase.
+>
 > **Roles UNIFORMES (2026-10-27, Fernando: «todo debe ser estándar»).** Deroga el estirado de
 > abajo: cada pieza de la tarjeta de rol tiene alto FIJO e igual en las cuatro —etiqueta en una
 > línea con puntos suspensivos, escena `clamp(72px, 11vh, 112px)` (64 en el teléfono, 50 en uno

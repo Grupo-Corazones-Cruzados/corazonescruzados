@@ -3632,3 +3632,40 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    y obligaba a alturas distintas. La larga queda en el `aria-label` de la tarjeta. */
 .tarjeta-rol .tm-descripcion-larga { display: none !important; }
 .tarjeta-rol .tm-descripcion-corta { display: flex !important; font-size: clamp(0.76rem, 0.9vw, 0.86rem); }
+
+/* ═══ EL TELÉFONO EN VERTICAL: Aventura ARRIBA, Progreso ABAJO (Fernando, 2026-10-27) ═══
+   La frontera líquida es horizontal (`useCorteAnimado` mide su sitio entre las dos tarjetas,
+   `LicuadoPortada` dibuja la onda a lo ancho). Las tarjetas se apilan, una en cada mundo, y se
+   ven anchas: escena a la izquierda y texto a la derecha. */
+@media (max-width: 639.98px) {
+  .escena-progreso { clip-path: inset(50% 0 0 0); }
+  /* El titular queda entero sobre el cielo: la mitad derecha en sus colores de noche. */
+  .landing-page[data-modo='partido'] .inicio-titular-derecha { --mundo-cruzar: #f87171; --mundo-mundo: #c4b5fd; }
+  .tarjetas-rejilla { grid-template-columns: 1fr; row-gap: clamp(48px, 9vh, 84px); }
+  .tarjetas-lado-izquierda, .tarjetas-lado-derecha { padding: 0; align-items: center; }
+  .tarjeta-mundo:not(.tarjeta-rol) {
+    --tm-ancho: min(360px, 100%);
+    display: grid;
+    grid-template-columns: 38% 1fr;
+    grid-template-areas: 'icono modo' 'icono titulo' 'icono desc';
+    grid-template-rows: auto auto 1fr;
+    column-gap: 14px;
+    row-gap: 4px;
+    align-items: start;
+    text-align: left;
+    padding: 12px;
+  }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-icono { grid-area: icono; height: 100%; min-height: 104px; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-modo { grid-area: modo; padding-top: 2px; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-titulo { grid-area: titulo; font-size: 1.3rem; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-descripcion { grid-area: desc; max-width: none; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-descripcion-larga { display: block; font-size: 0.8rem; line-height: 1.45; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-descripcion-corta { display: none; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-personaje { --alto: 64px; }
+}
+@media (max-width: 639.98px) and (max-height: 760px) {
+  .tarjetas-rejilla { row-gap: 40px; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-descripcion-larga { display: none; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-descripcion-corta { display: block; text-align: left; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-icono { min-height: 84px; }
+}

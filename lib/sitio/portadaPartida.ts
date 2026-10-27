@@ -41,28 +41,54 @@ const TAU_MS = 160;
  * ⛔ La raya NO sigue al puntero. Se probó (entre el 30 % y el 70 %) y Fernando lo vio como
  * un error: «sigue el puntero la pantalla de fondo» (2026-10-26). En reposo, al centro.
  */
+/** En el teléfono la frontera es HORIZONTAL: Aventura arriba, Progreso abajo (2026-10-27). */
+export const CONSULTA_VERTICAL = '(max-width: 639.98px)';
+
 export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPortada) {
+  // Se guarda en PX (no en fracción): en vertical la meta del modo partido se MIDE.
   const actual = useRef<number | null>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const meta = fraccionDe(modo);
-    const pintar = (f: number) => {
-      actual.current = f;
-      el.style.setProperty('--corte', `${f * document.documentElement.clientWidth}px`);
+    const mqVertical = window.matchMedia(CONSULTA_VERTICAL);
+    const escena = () => el.querySelector<HTMLElement>('.escena-progreso');
+    /**
+     * La meta en px. Horizontal: fracción del ancho. Vertical: 0 / alto, y en `partido`, el
+     * punto medio entre la tarjeta de Aventura y la de Progreso (se mide: las tarjetas entran
+     * con movimiento, por eso se sigue midiendo un rato).
+     */
+    const meta = () => {
+      const e = escena();
+      if (!mqVertical.matches || !e) return fraccionDe(modo) * document.documentElement.clientWidth;
+      const H = e.clientHeight;
+      if (modo === 'progreso') return 0;
+      if (modo === 'aventura') return H;
+      const arriba = el.querySelector('.tarjeta-mundo-aventura')?.getBoundingClientRect();
+      const abajo = el.querySelector('.tarjeta-mundo-progreso')?.getBoundingClientRect();
+      const top = e.getBoundingClientRect().top;
+      if (arriba && abajo && abajo.top > arriba.bottom) return (arriba.bottom + abajo.top) / 2 - top;
+      return H * 0.5;
+    };
+    el.dataset.orientacion = mqVertical.matches ? 'vertical' : 'horizontal';
+    const pintar = (px: number) => {
+      actual.current = px;
+      el.style.setProperty('--corte', `${px}px`);
     };
 
     let raf = 0;
     let antes = 0;
+    const t0 = performance.now();
     const paso = (t: number) => {
       const dt = antes ? Math.min(64, t - antes) : 16;
       antes = t;
-      const desde = actual.current ?? meta;
-      const siguiente = reducir ? meta : desde + (meta - desde) * (1 - Math.exp(-dt / TAU_MS));
-      if (Math.abs(meta - siguiente) < 0.0005) {
-        pintar(meta);
+      const m = meta();
+      const desde = actual.current ?? m;
+      const siguiente = reducir ? m : desde + (m - desde) * (1 - Math.exp(-dt / TAU_MS));
+      const midiendo = mqVertical.matches && modo === 'partido' && t - t0 < 2500;
+      if (Math.abs(m - siguiente) < 0.5 && !midiendo) {
+        pintar(m);
         raf = 0;
         return;
       }
@@ -70,13 +96,18 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
       raf = requestAnimationFrame(paso);
     };
 
-    pintar(actual.current ?? meta);
+    pintar(actual.current ?? meta());
     raf = requestAnimationFrame(paso);
-    const alRedimensionar = () => pintar(actual.current ?? meta);
+    const alRedimensionar = () => {
+      el.dataset.orientacion = mqVertical.matches ? 'vertical' : 'horizontal';
+      pintar(meta());
+    };
     window.addEventListener('resize', alRedimensionar);
+    mqVertical.addEventListener('change', alRedimensionar);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', alRedimensionar);
+      mqVertical.removeEventListener('change', alRedimensionar);
     };
   }, [ref, modo]);
 }
