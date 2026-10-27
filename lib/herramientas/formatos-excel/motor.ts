@@ -15,22 +15,6 @@ const HELV_W = { R: HELV_R, B: HELV_B, I: HELV_R, BI: HELV_B };
 const MARGENES_NORMALES = { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 };
 export const FORMATS = [
   {
-    id: 'compras-4-cuentas',
-    name: 'Compras nacionales · 4 cuentas',
-    summary: 'IVA soportado 13 %, 2 %, 1 % y Gasto, una al lado de la otra.',
-    paperSize: 8, paperName: 'A3', orientation: 'landscape',
-    margins: MARGENES_NORMALES, titleRows: { from: 1, to: 4 }, pageNumbers: true, printArea: 'data',
-    detect: { sheet: /COMPRAS/i, text: /IVA\s+SOPORTADO/i },
-  },
-  {
-    id: 'ventas-iva-devengado',
-    name: 'Ventas · IVA devengado · 2 cuentas',
-    summary: 'IVA devengado 2 % y 13 %, dos tablas una al lado de la otra.',
-    paperSize: 8, paperName: 'A3', orientation: 'landscape',
-    margins: MARGENES_NORMALES, titleRows: { from: 1, to: 5 }, pageNumbers: true, printArea: 'data',
-    detect: { sheet: /IMPUESTO\s+POR\s+PAGAR|VENTAS/i, text: /IVA\s+DEVENGADO/i },
-  },
-  {
     // Libro de compras con carátula (Fernando, 2026-10-27; muestra: «Grupo Corazones Cruzados Feb 2024»).
     // CARATULA en UNA hoja A4; COMPRAS N. con sus 4 cuentas (B–H, J–P, R–X, Z–AF) en A3 horizontal.
     // Los encabezados de columna están en la fila 14: se repiten 6–14 (cuenta, totales y encabezados).

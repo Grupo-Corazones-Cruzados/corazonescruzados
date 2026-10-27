@@ -7719,8 +7719,8 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
       15.636 hojas, PDF de 98 MB en 39 s; Chrome usó 1,8 GB de memoria: con archivos así, computadora.
     - El motor ahora dibuja las imágenes ancladas de la hoja (logo de la carátula) en la vista previa y en
       el PDF (PNG/JPG vía `createImageBitmap`, con su transparencia como `SMask`).
-    - Los formatos «Compras nacionales · 4 cuentas» y «Ventas · IVA devengado» siguen para los archivos con
-      que se aprobaron (títulos en 1–4 y 1–5); con estos libros nuevos NO sirven (encabezados en 14 y 6).
+    - **Solo quedan estos dos formatos** (Fernando, 2026-10-27): se quitaron «Compras nacionales · 4
+      cuentas» y «Ventas · IVA devengado», los de la herramienta original (títulos en 1–4 y 1–5).
   - ⚠️ El token protege la PANTALLA, no el código: el motor va en el JS público de la app. Para esta
     herramienta da igual (no toca datos de GCC); una herramienta compartible que use el servidor tendría
     que comprobar el token en su API.
