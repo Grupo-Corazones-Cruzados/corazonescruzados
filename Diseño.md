@@ -355,7 +355,13 @@ esquinas de cámara no cambian.
   · Puntero encima: sube 8 px, brilla y la cruza un destello. Clic: pulso de selección en la
     elegida, la otra se desvanece, y ~320 ms después el mundo llena la pantalla.
   · Una vez elegido, **sin botón para cambiar de mundo**. `.boton-portada` se borró.
-  · Etiquetas «Juego» y «Progreso», sin la palabra «modo» (2026-10-26).
+  · Etiquetas «Juego» y «Progreso», sin la palabra «modo» y SIN relleno: solo el texto (2026-10-26).
+  · **Sin botón «Elegir»** (Fernando: «solo usa animaciones para dar a entender que se está por
+    seleccionar»). Lo dice el **selector** `.tm-selector`: cuatro esquinas que se cierran sobre la
+    tarjeta y laten, como el cursor de una pantalla de selección; además los personajes saltan,
+    las barras se aceleran y el icono crece un 3 %. Con `(hover: none)` (teléfono) el selector
+    late suave en las dos. ⚠️ Esa regla necesita `:nth-child(n)` para ganarle a la de cada
+    esquina; sin él las esquinas se quedaban fuera de la tarjeta, recortadas.
   · **Cada tarjeta centrada en el espacio libre de SU mitad**, no pegada a la raya
     (`.tarjetas-lado`): entre `--hueco-raya` y, desde `xl`, la columna del HUD de ese lado
     (`--reserva-lado: calc(3vw + 234px)`). Por debajo de `xl` no hay HUD: centro de la mitad.

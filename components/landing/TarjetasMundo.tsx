@@ -8,8 +8,11 @@
  * Sustituyen a los botones «Aventura» y «Progreso» de la portada partida. Cada tarjeta vive
  * en su mundo, junto a la raya líquida, con la MISMA forma (los botones con estilos
  * distintos «se veían raros») y el color de su lado:
- * · etiqueta («Juego» / «Progreso», sin la palabra «modo»: Fernando, 2026-10-26), icono animado, título, descripción y «▶ Elegir»;
- * · al pasar el puntero se eleva, brilla y la cruza un destello;
+ * · etiqueta («Juego» / «Progreso», sin la palabra «modo» ni relleno: Fernando, 2026-10-26), icono animado, título y descripción. SIN botón «Elegir» (Fernando: «solo usa animaciones
+ *   para dar a entender que se está por seleccionar»);
+ * · al pasar el puntero se eleva, brilla, la cruza un destello, el icono reacciona y la
+ *   rodea el SELECTOR (cuatro esquinas que laten). En el teléfono, sin puntero, el selector
+ *   late suave en las dos;
  * · al elegir, la elegida da un pulso de selección y la otra se desvanece; ~320 ms después
  *   se avisa (`onElegir`) y el mundo llena la pantalla.
  *
@@ -89,13 +92,15 @@ export default function TarjetasMundo({ onElegir, bloqueado }: { onElegir: (m: M
         aria-label={`${t.titulo}: ${t.descripcion}`}
       >
         <span className="tm-destello" aria-hidden="true" />
+        {/* El selector: cuatro esquinas que aparecen y laten al pasar el puntero, como el
+            cursor de una pantalla de selección. Sustituye al botón «Elegir». */}
+        <span className="tm-selector" aria-hidden="true">
+          <span /><span /><span /><span />
+        </span>
         <span className="tm-modo">{t.modo}</span>
         {m === 'aventura' ? <IconoAventura /> : <IconoProgreso />}
         <span className="tm-titulo">{t.titulo}</span>
         <span className="tm-descripcion">{t.descripcion}</span>
-        <span className="tm-elegir">
-          <span aria-hidden="true">▶</span> Elegir
-        </span>
       </button>
     );
   };
