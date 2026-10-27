@@ -8,6 +8,7 @@ import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
 import TarjetasMundo from '@/components/landing/TarjetasMundo';
+import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
@@ -2878,6 +2879,10 @@ export default function LandingPage() {
             transition: 'opacity 600ms ease',
           }}
         >
+          {/* PRUEBA (Fernando, 2026-10-26): en los titulares, «Corazón» y «mundo» van como
+              IMÁGENES pixel-art propias —un corazón que late y la Tierra, que gira
+              (`IconosTitular.tsx`)—. El texto completo sigue aquí para lectores
+              de pantalla y buscadores. */}
           <h1 className="sr-only">Un Corazón puede cruzar al mundo</h1>
 
           {!mundoElegido ? (
@@ -2894,10 +2899,10 @@ export default function LandingPage() {
                 {/* Un solo `<span>` por mitad: las columnas son `flex` y, sin él, cada palabra
                     sería una pieza suelta apilada. */}
                 <p className="cruce-izquierda inicio-titular-izquierda">
-                  <span>Un <em className="titular-serif">Coraz&oacute;n</em> puede</span>
+                  <span>Un <IconoCorazon /> puede</span>
                 </p>
                 <p className="cruce-derecha inicio-titular-derecha">
-                  <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al mundo</span></span>
+                  <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span> <IconoMundo /></span>
                 </p>
               </div>
               <div className="aparecer" style={{ ['--retraso' as string]: '360ms' }}>
@@ -2914,10 +2919,11 @@ export default function LandingPage() {
               </p>
               <p className="mundo-titular aparecer" aria-hidden="true" style={{ ['--retraso' as string]: '520ms' }}>
                 <span className="block mundo-titular-fina">
-                  Un <em className="titular-serif">Coraz&oacute;n</em> puede
+                  Un <IconoCorazon /> puede
                 </span>
                 <span className="block">
-                  <span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al mundo</span>
+                  <span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span>{' '}
+                  <IconoMundo />
                 </span>
               </p>
               <div className="aparecer" style={{ ['--retraso' as string]: '720ms' }}>

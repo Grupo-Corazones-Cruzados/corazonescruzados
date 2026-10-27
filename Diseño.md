@@ -376,6 +376,12 @@ esquinas de cámara no cambian.
     `.pensamiento-barra`): cápsula de cristal «● PENSAMIENTO · “…” · fecha», en una línea con
     puntos suspensivos; en el teléfono, en tres líneas.
   Tras elegir siguen apareciendo, en grande y centrados, como hasta ahora.
+- **Prueba: «Corazón» y «mundo» como imágenes en los titulares (2026-10-26).** Iconos pixel-art
+  propios en SVG (`components/landing/IconosTitular.tsx`): corazón rojo 13×12 que late y la
+  Tierra 14×14 (océano, continentes, hielo, sombra de noche) cuyo mapa de dos vueltas se
+  desplaza con `steps(16)` para girar. Miden en `em` (`.titular-icono`). Descartados antes:
+  el logo de los corazones cruzados y el planeta morado («no son un corazón tan real… el mundo
+  no parece la Tierra»). El `h1` en `sr-only` conserva la frase entera.
 - **La pestaña de la portada vuelve a llamarse «Inicio»** (era «Historia»; `lib/sitio/contenido.ts`).
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.
