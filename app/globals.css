@@ -3445,3 +3445,98 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (max-width: 639.98px) { .tr-escena { height: 72px; } .tarjeta-rol .tr-titulo { font-size: 1rem; } }
 @media (max-height: 640px) { .tr-escena { height: 58px; } .tr-icono { width: 38px; height: 38px; border-radius: 12px; } }
 @media (hover: none), (pointer: coarse) { .tr-halo { animation: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   «EL CHOQUE» Y LA BANDERA XH (Fernando, 2026-10-26). Al llenarse la pantalla con el mundo
+   elegido: embestida (0–0,42 s, acelerando) → impacto (destello, ondas, polvo, sacudida) →
+   retroceso con rebote → el emblema XH sale del humo girando y queda respirando.
+   `--junta` y `--final` las mide `app/page.tsx` con el texto real.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.inicio-titular { position: relative; }
+.titular-choque .inicio-titular-izquierda > span,
+.titular-choque .inicio-titular-derecha > span { display: inline-block; animation: 1.5s both; }
+.titular-choque .inicio-titular-izquierda > span { animation-name: choqueIzquierda; }
+.titular-choque .inicio-titular-derecha > span { animation-name: choqueDerecha; }
+@keyframes choqueIzquierda {
+  0%   { transform: translateX(0); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
+  28%  { transform: translateX(var(--junta)); animation-timing-function: ease-out; }
+  34%  { transform: translateX(calc(var(--junta) - 0.06em)) scaleX(0.96); }
+  52%  { transform: translateX(calc(var(--final) - 0.18em)); animation-timing-function: ease-in-out; }
+  68%  { transform: translateX(calc(var(--final) + 0.05em)); }
+  100% { transform: translateX(var(--final)); }
+}
+@keyframes choqueDerecha {
+  0%   { transform: translateX(0); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
+  28%  { transform: translateX(calc(var(--junta) * -1)); animation-timing-function: ease-out; }
+  34%  { transform: translateX(calc(var(--junta) * -1 + 0.06em)) scaleX(0.96); }
+  52%  { transform: translateX(calc(var(--final) * -1 + 0.18em)); animation-timing-function: ease-in-out; }
+  68%  { transform: translateX(calc(var(--final) * -1 - 0.05em)); }
+  100% { transform: translateX(calc(var(--final) * -1)); }
+}
+/* La sacudida del golpe, en las dos columnas a la vez. */
+.titular-choque .cruce-izquierda, .titular-choque .cruce-derecha { animation: choqueSacudida 0.42s 0.42s both; }
+@keyframes choqueSacudida {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-4px, 2px); }
+  30% { transform: translate(4px, -3px); }
+  45% { transform: translate(-3px, -1px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(-1px, 0); }
+}
+
+/* Efectos: todo nace en el centro (la raya) a la altura del titular. */
+.choque-efectos { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.choque-efectos > span { position: absolute; left: 0; top: 0; }
+.choque-destello {
+  width: 3.2em; height: 3.2em; margin: -1.6em 0 0 -1.6em; border-radius: 9999px;
+  background: radial-gradient(closest-side, #ffffff, rgba(244, 114, 182, 0.7) 40%, transparent 70%);
+  opacity: 0; animation: choqueDestello 0.6s 0.42s ease-out both;
+}
+@keyframes choqueDestello { 0% { opacity: 0; transform: scale(0.2); } 12% { opacity: 1; } 100% { opacity: 0; transform: scale(2.4); } }
+.choque-onda {
+  width: 1em; height: 1em; margin: -0.5em 0 0 -0.5em; border-radius: 9999px;
+  border: 0.06em solid #e879f9; box-shadow: 0 0 0.3em #e879f9;
+  opacity: 0; animation: choqueOnda 0.9s 0.42s cubic-bezier(0.1, 0.6, 0.3, 1) both;
+}
+.choque-onda-2 { border-color: #a78bfa; animation-delay: 0.52s; animation-duration: 1.1s; }
+@keyframes choqueOnda { 0% { opacity: 0.95; transform: scale(0.3); } 100% { opacity: 0; transform: scale(4.2); } }
+/* Polvo / humo: bolitas difuminadas que salen disparadas y se disipan. */
+.choque-polvo {
+  width: 0.42em; height: 0.42em; margin: -0.21em 0 0 -0.21em; border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(233, 213, 255, 0.9), rgba(196, 181, 253, 0.3) 60%, transparent);
+  filter: blur(1px); opacity: 0;
+  animation: choquePolvo 1.1s 0.44s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+}
+@keyframes choquePolvo {
+  0%   { opacity: 0.95; transform: rotate(var(--a)) translateX(0) scale(0.6); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) scale(2.2); }
+}
+.landing-page[data-modo='progreso'] .choque-polvo { background: radial-gradient(closest-side, rgba(167, 139, 250, 0.7), rgba(109, 40, 217, 0.2) 60%, transparent); }
+
+/* El emblema: sale del humo girando, crece, rebota y queda respirando. */
+.choque-emblema { width: 1.45em; height: 1.62em; margin: -0.86em 0 0 -0.725em; opacity: 0; animation: emblemaEntra 0.9s 0.72s cubic-bezier(0.2, 1.5, 0.4, 1) both, emblemaRespira 3.2s 1.7s ease-in-out infinite; }
+.emblema-xh { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 0.18em rgba(232, 121, 249, 0.7)) drop-shadow(0 0.08em 0.12em rgba(0, 0, 0, 0.35)); }
+@keyframes emblemaEntra {
+  0%   { opacity: 0; transform: scale(0.1) rotate(-200deg); filter: blur(6px); }
+  55%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes emblemaRespira { 50% { transform: scale(1.06); } }
+.emblema-xh-banderin { transform-origin: 50px 12px; animation: emblemaOndea 1.8s ease-in-out infinite; }
+@keyframes emblemaOndea { 50% { transform: skewY(-6deg) scaleX(0.92); } }
+/* Chispas al aparecer el emblema. */
+.choque-chispa {
+  width: 0.08em; height: 0.3em; margin: -0.15em 0 0 -0.04em; border-radius: 0.04em;
+  background: linear-gradient(#fde68a, #f472b6); opacity: 0;
+  animation: choqueChispa 0.7s 0.95s ease-out both;
+}
+@keyframes choqueChispa {
+  0%   { opacity: 1; transform: rotate(var(--a)) translateY(-0.5em) scaleY(0.4); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-1.35em) scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .titular-choque .inicio-titular-izquierda > span, .titular-choque .inicio-titular-derecha > span { animation: none; transform: translateX(calc(var(--final) * 1)); }
+  .titular-choque .inicio-titular-derecha > span { transform: translateX(calc(var(--final) * -1)); }
+  .titular-choque .cruce-izquierda, .titular-choque .cruce-derecha, .choque-destello, .choque-onda, .choque-polvo, .choque-chispa { animation: none; display: none; }
+  .choque-emblema { animation: none; opacity: 1; }
+}
