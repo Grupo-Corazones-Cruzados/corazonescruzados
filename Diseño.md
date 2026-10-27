@@ -385,6 +385,23 @@ esquinas de cámara no cambian.
   desplaza con `steps(16)` para girar. Miden en `em` (`.titular-icono`). Descartados antes:
   el logo de los corazones cruzados y el planeta morado («no son un corazón tan real… el mundo
   no parece la Tierra»). El `h1` en `sr-only` conserva la frase entera.
+- **Tras elegir un mundo, los ROLES como tarjetas (2026-10-26).** `components/landing/RolesMundo.tsx`
+  con el tema del mundo (`.roles-aventura` / `.roles-progreso`): icono, insignia de estado,
+  título, descripción y flecha. Las opciones y su estado salen de
+  `components/landing/opcionesAcceso.ts` (`useOpcionesAcceso`), extraído de `EntryChoiceModal`,
+  que ahora pinta la misma lista: no pueden separarse. Lo que hace cada una vive una vez en
+  `accionesAcceso` (`app/page.tsx`). Elegir el mundo fija el destino (Aventura → juego,
+  Progreso → panel). Disposición: fila de 4 desde 1500 px, en el hueco entre las tarjetas
+  decorativas; por debajo, 2×2 en horizontal (icono a la izquierda, `align-content: start`);
+  1 columna en el teléfono. El pensamiento queda como barra debajo, clara en Progreso.
+- **El formulario de candidato con el tema del mundo** (`OnboardingSlidersModal tema=`):
+  `.onboarding-portada` + `.onboarding-aventura` (noche lila, `corp dark`) /
+  `.onboarding-progreso` (Plataforma clara, `corp` sin `dark`), que reajustan los tokens
+  `digi-*`/`accent` y rehacen el contenedor (radio 22 px, resplandor, Space Grotesk en los
+  títulos). El contenido de los 8 pasos no cambió ni una clase.
+- **La cabecera lleva SIEMPRE fondo** (`bg-[#0b0d14]/85` + desenfoque), también en la portada:
+  ya no es transparente hasta desplazar. Se retiró con ello el color partido del nombre
+  (`.texto-partido`, `refBordeIzquierdo`), que ya no tenía ningún uso.
 - **La pestaña de la portada vuelve a llamarse «Inicio»** (era «Historia»; `lib/sitio/contenido.ts`).
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.

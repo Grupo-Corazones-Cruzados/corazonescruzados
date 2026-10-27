@@ -1191,7 +1191,16 @@ const SLIDES: Slide[] = [
 export default function OnboardingSlidersModal({
   onComplete,
   onClose,
+  tema = 'aventura',
 }: {
+  /**
+   * El mundo elegido en la portada (Fernando, 2026-10-26: «según el tema seleccionado quiero
+   * que se vea el formulario de candidato diferente»). Aventura = noche lila; Progreso = la
+   * Plataforma en claro. Lo resuelven `.onboarding-portada` / `.onboarding-<tema>` en
+   * globals.css reajustando los tokens `digi-*` y `accent`, así que el contenido de los 8
+   * pasos no cambia ni una clase.
+   */
+  tema?: 'aventura' | 'progreso';
   /** Se llama al enviar la postulación con los datos del candidato. */
   onComplete: (data: PostulacionData) => void;
   /** Cancela el onboarding y vuelve a la landing. */
@@ -1250,21 +1259,13 @@ export default function OnboardingSlidersModal({
       role="dialog"
       aria-modal="true"
       aria-label="Conoce el proyecto y postúlate"
-      className="corp dark corp-overlay fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-5"
-      style={{
-        background: 'rgba(6,7,12,0.72)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-        animation: 'pixelFadeIn 0.35s ease-out',
-      }}
+      className={`corp ${tema === 'aventura' ? 'dark' : ''} corp-overlay onboarding-portada onboarding-${tema} fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-5`}
+      style={{ animation: 'pixelFadeIn 0.35s ease-out' }}
     >
       <style>{KEYFRAMES}</style>
 
       <div
-        className="w-full max-w-[1080px] h-full max-h-[min(94vh,900px)] flex flex-col rounded-lg border border-digi-border bg-digi-card overflow-hidden"
-        style={{
-          boxShadow: '0 6.4px 14.4px rgba(0,0,0,0.32), 0 1.2px 3.6px rgba(0,0,0,0.28)',
-        }}
+        className="onboarding-panel w-full max-w-[1080px] h-full max-h-[min(94vh,900px)] flex flex-col border border-digi-border bg-digi-card overflow-hidden"
       >
         <div className="flex-1 min-h-0 grid lg:grid-cols-[248px_minmax(0,1fr)]">
           {/* ── Rail de pasos (patrón "Explorador Azure" del dashboard) ── */}

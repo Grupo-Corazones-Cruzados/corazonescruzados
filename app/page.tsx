@@ -8,6 +8,8 @@ import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
 import TarjetasMundo from '@/components/landing/TarjetasMundo';
+import RolesMundo from '@/components/landing/RolesMundo';
+import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
@@ -2573,6 +2575,57 @@ export default function LandingPage() {
     : mundoElegido
       ?? (accesoAbierto ? (entryDestination === 'game' ? 'aventura' : 'progreso') : 'partido');
   useCorteAnimado(raizPortadaRef, modoPortada);
+  // Elegir un mundo fija también el DESTINO del acceso: Aventura → juego; Progreso → panel.
+  const elegirMundo = (m: 'aventura' | 'progreso') => {
+    setEntryDestination(m === 'aventura' ? 'game' : 'dashboard');
+    setMundoElegido(m);
+  };
+
+  /**
+   * LO QUE HACE CADA OPCIÓN DE ACCESO — una sola vez (2026-10-26). La usan el diálogo
+   * «¿Cómo quieres ingresar?» (`EntryChoiceModal`) y las tarjetas de roles que aparecen tras
+   * elegir un mundo (`RolesMundo`). Cerrar el diálogo cuando no está abierto no hace nada.
+   */
+  const accionesAcceso: AccionesAcceso = {
+    onCandidate: () => {
+      setEntryChoiceOpen(false);
+      try {
+        window.localStorage.setItem('gcc_account_type', 'candidate');
+      } catch {
+        /* ignore */
+      }
+      // Candidato nuevo (sin postulación previa): conoce el proyecto y se postula.
+      setOnboardingOpen(true);
+    },
+    onProposalPending: (info) => {
+      setEntryChoiceOpen(false);
+      setProposalPending({ email: info.email, emailVerified: info.emailVerified });
+    },
+    onProposalApproved: (info) => {
+      setEntryChoiceOpen(false);
+      // Candidato aprobado: muestra el aviso verde con botón "Continuar".
+      setProposalPending({ email: info.email, emailVerified: true, approved: true });
+    },
+    onClientPending: (info) => {
+      setEntryChoiceOpen(false);
+      setClientPending({ email: info.email });
+    },
+    onCandidateLogin: () => {
+      setEntryChoiceOpen(false);
+      // Candidato existente: inicia sesión (credenciales + código) y entra.
+      setRecoveryOpen(true);
+    },
+    onClient: () => {
+      setEntryChoiceOpen(false);
+      // Cliente: primero inicia sesión; desde ahí puede crear cuenta.
+      setClientLoginOpen(true);
+    },
+    onMember: () => {
+      setEntryChoiceOpen(false);
+      // Miembro/admin: inicia sesión y entra al juego con su personaje.
+      setMemberLoginOpen(true);
+    },
+  };
 
   return (
     <div
@@ -2906,7 +2959,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="aparecer" style={{ ['--retraso' as string]: '360ms' }}>
-                <TarjetasMundo onElegir={setMundoElegido} bloqueado={landingLocked} />
+                <TarjetasMundo onElegir={elegirMundo} bloqueado={landingLocked} />
               </div>
               <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>
                 <FeaturedThought compacto />
@@ -2926,8 +2979,10 @@ export default function LandingPage() {
                   <IconoMundo />
                 </span>
               </p>
-              <div className="aparecer" style={{ ['--retraso' as string]: '720ms' }}>
-                <FeaturedThought windAway={windAway} tema={mundoElegido} />
+              {/* Los ROLES, como tarjetas con el tema del mundo (2026-10-26). */}
+              <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={700} />
+              <div className="aparecer" style={{ ['--retraso' as string]: '1100ms', marginTop: 'clamp(10px, 3vh, 32px)' }}>
+                <FeaturedThought compacto tema={mundoElegido} />
               </div>
             </div>
           )}
@@ -2976,49 +3031,13 @@ export default function LandingPage() {
         <EntryChoiceModal
           destination={entryDestination}
           onClose={() => setEntryChoiceOpen(false)}
-          onCandidate={() => {
-            setEntryChoiceOpen(false);
-            try {
-              window.localStorage.setItem('gcc_account_type', 'candidate');
-            } catch {
-              /* ignore */
-            }
-            // Candidato nuevo (sin postulación previa): conoce el proyecto y se postula.
-            setOnboardingOpen(true);
-          }}
-          onProposalPending={(info) => {
-            setEntryChoiceOpen(false);
-            setProposalPending({ email: info.email, emailVerified: info.emailVerified });
-          }}
-          onProposalApproved={(info) => {
-            setEntryChoiceOpen(false);
-            // Candidato aprobado: muestra el aviso verde con botón "Continuar".
-            setProposalPending({ email: info.email, emailVerified: true, approved: true });
-          }}
-          onClientPending={(info) => {
-            setEntryChoiceOpen(false);
-            setClientPending({ email: info.email });
-          }}
-          onCandidateLogin={() => {
-            setEntryChoiceOpen(false);
-            // Candidato existente: inicia sesión (credenciales + código) y entra.
-            setRecoveryOpen(true);
-          }}
-          onClient={() => {
-            setEntryChoiceOpen(false);
-            // Cliente: primero inicia sesión; desde ahí puede crear cuenta.
-            setClientLoginOpen(true);
-          }}
-          onMember={() => {
-            setEntryChoiceOpen(false);
-            // Miembro/admin: inicia sesión y entra al juego con su personaje.
-            setMemberLoginOpen(true);
-          }}
+          {...accionesAcceso}
         />
       )}
 
       {onboardingOpen && (
         <OnboardingSlidersModal
+          tema={entryDestination === 'game' ? 'aventura' : 'progreso'}
           onClose={() => setOnboardingOpen(false)}
           onComplete={async (postulacion) => {
             // Registra la propuesta (queda en espera de aprobación del admin

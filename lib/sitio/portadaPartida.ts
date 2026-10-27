@@ -7,7 +7,7 @@
  *
  * ── UNA SOLA VARIABLE MUEVE TODO ───────────────────────────────────────────────
  * `--corte` (px desde el borde izquierdo de la ventana) vive en `.landing-page`. La leen el
- * recorte de la escena clara, la raya y el nombre de la cabecera.
+ * recorte de la escena clara y la frontera líquida (`LicuadoPortada`).
  *
  * ⛔ **NO se anima con CSS (`@property` + `transition`).** Así se hizo primero y en Chrome
  * iba bien, pero en el navegador de Fernando la raya se quedaba A MEDIAS —en reposo hacia
@@ -15,13 +15,8 @@
  * heredada que se está animando no se repintaban cada cuadro. `useCorteAnimado` escribe el
  * valor en px cuadro a cuadro: para el navegador es un cambio de estilo normal.
  *
- * ── LOS TEXTOS QUE CRUZAN LA RAYA ──────────────────────────────────────────────
- * Titular, subtítulo, pensamiento y el nombre de la cabecera: `.texto-partido` los pinta
- * con un degradado de corte duro, `--tp-a` a la izquierda de la raya y `--tp-b` a la
- * derecha, así que se leen sobre el cielo y sobre el claro. Necesita `--x0`, el borde
- * izquierdo del elemento, que pone `refBordeIzquierdo`. ⚠️ Cada trozo, bloque o `inline-block` (en un `inline` partido
- * en dos líneas el fondo se coloca como si fuera una sola), y sin `transform` animado.
- * (Probados y descartados el 2026-10-26: un cristal redondeado y una placa pixel detrás.)
+ * (El color partido en la raya —`.texto-partido`/`refBordeIzquierdo`— se retiró el 2026-10-26:
+ * ya ningún texto cruza la raya con un color en cada lado.)
  */
 
 import { useEffect, useRef, type RefObject } from 'react';
@@ -84,24 +79,4 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
       window.removeEventListener('resize', alRedimensionar);
     };
   }, [ref, modo]);
-}
-
-/**
- * Ref de callback (React 19, con limpieza): escribe en el elemento `--x0`, su borde
- * izquierdo en la ventana, y lo vuelve a medir al cambiar de tamaño él o la ventana.
- */
-export function refBordeIzquierdo(el: HTMLElement | null) {
-  if (!el) return;
-  const medir = () => el.style.setProperty('--x0', `${el.getBoundingClientRect().left}px`);
-  medir();
-  const ro = new ResizeObserver(medir);
-  ro.observe(el);
-  window.addEventListener('resize', medir);
-  // Lo que entra con una animación de desplazamiento se vuelve a medir al acabar.
-  const t = window.setTimeout(medir, 1300);
-  return () => {
-    ro.disconnect();
-    window.removeEventListener('resize', medir);
-    window.clearTimeout(t);
-  };
 }

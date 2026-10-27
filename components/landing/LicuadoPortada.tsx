@@ -26,8 +26,8 @@
  * ⚠️ Relleno y grosores van como ATRIBUTOS del SVG, no solo en CSS: sin la regla, un
  * `<path>` se rellena de negro y la onda salía como una astilla negra.
  *
- * ⚠️ La onda NO puede alcanzar los textos de los lados, que cambian de color en la raya
- * RECTA (`.texto-partido`): su amplitud es menor que el hueco que dejan (`--hueco-raya`).
+ * ⚠️ La onda NO puede alcanzar los textos de los lados: su amplitud es menor que el hueco que
+ * dejan (`--hueco-raya`).
  * ⚠️ Al llenar la pantalla (raya en un borde) la onda y la tinta se aplanan; si no,
  * quedarían jirones del otro mundo en el borde.
  */

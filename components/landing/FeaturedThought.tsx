@@ -69,7 +69,7 @@ export default function FeaturedThought({
     // Si no hay pensamiento publicado, no se pinta nada (ni la cápsula vacía).
     if (!loading && !data) return null;
     return (
-      <div className="pensamiento-barra cristal-portada pointer-events-none">
+      <div className={`pensamiento-barra ${tema === 'progreso' ? 'pensamiento-barra-progreso' : 'cristal-portada'} pointer-events-none`}>
         <span className="pensamiento-barra-etiqueta">
           <span className="pensamiento-barra-punto" aria-hidden="true" />
           Pensamiento

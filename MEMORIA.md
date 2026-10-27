@@ -289,7 +289,9 @@ Stack estándar de la casa, con particularidades de este repo:
   `LicuadoPortada.tsx`). Al llegar solo se ven «Aventura» y «Progreso»; un CLIC llena la pantalla
   con ese mundo y descubre, centrados, la insignia, el titular, el otro botón y el pensamiento.
   ⏳ **Pendiente:** esos botones ya NO abren el acceso («¿Cómo quieres ingresar?»); Fernando dirá
-  qué sigue. El acceso queda por `/auth` y `?acceso=`.
+  qué sigue. El acceso queda por `/auth` y `?acceso=`. **Resuelto el mismo día:** tras elegir
+  el mundo aparecen los ROLES como tarjetas (`RolesMundo`, con la lógica de `EntryChoiceModal`
+  extraída a `opcionesAcceso.ts`) y el formulario de candidato toma el tema del mundo.
   Luego: las tarjetas pasan a ser de selección de videojuego (`TarjetasMundo.tsx`, con los
   personajes reales del juego), la pestaña «Historia» vuelve a «Inicio» y **la portada ya no
   tiene música de ambiente** (viento y espacio fuera; los sonidos de la intro del juego siguen).

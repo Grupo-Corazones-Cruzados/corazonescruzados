@@ -18,23 +18,14 @@
  * Para pasarlo a claro basta quitar la clase `dark` del overlay.
  */
 
-import { useEffect, useState } from 'react';
-import {
-  BadgeCheck,
-  Briefcase,
-  ChevronRight,
-  Loader2,
-  LogIn,
-  MailWarning,
-  ShieldCheck,
-  UserPlus,
-  X,
-} from 'lucide-react';
+import { useEffect } from 'react';
+import { ChevronRight, Loader2, LogIn } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { nombresDestino, useOpcionesAcceso, type TonoOpcion } from '@/components/landing/opcionesAcceso';
 
-type Tone = 'default' | 'success' | 'warning';
+type Tone = TonoOpcion;
 
 export default function EntryChoiceModal({
   onCandidate,
@@ -60,79 +51,13 @@ export default function EntryChoiceModal({
   /** Destino tras iniciar sesión: "game" (Entrar) o "dashboard" (Colaborar). */
   destination?: 'game' | 'dashboard';
 }) {
-  /**
-   * CÓMO SE LLAMA EL DESTINO — la fuente única de este diálogo (Fernando, 2026-08-17).
-   *
-   * El titular era «¿Cómo quieres ingresar?» a secas, y el mismo diálogo sirve para dos
-   * destinos muy distintos: la plataforma de trabajo y el videojuego. Quien lo abría desde
-   * «Plataforma» y quien lo abría desde «Comenzar Aventura» veían exactamente lo mismo.
-   *
-   * La preposición cambia con la palabra —«a la Plataforma» pero «al Videojuego»—, así que
-   * van juntas: separarlas obligaría a recordar la concordancia en cada sitio donde se
-   * pinta.
-   *
-   * ⚠️ **De aquí sale el nombre del destino en TODO el diálogo**: el titular y las tres
-   * descripciones que lo mencionan. Antes las descripciones decían «el panel» y «el juego»
-   * por su cuenta, así que el titular hablaba de «la Plataforma» y las opciones de debajo,
-   * de otra cosa. Fernando pidió unificarlo el 2026-08-17. Escribiéndolo una vez, no puede
-   * volver a separarse.
-   */
-  const destino =
-    destination === 'dashboard'
-      ? { preposicion: 'a la', palabra: 'Plataforma' }
-      : { preposicion: 'al', palabra: 'Videojuego' };
-
+  // El nombre del destino y las opciones salen de `opcionesAcceso.ts`, la definición única
+  // que comparten este diálogo y las tarjetas de roles de la portada (`RolesMundo`).
+  const { destino } = nombresDestino(destination);
   const titulo = `¿Cómo quieres ingresar ${destino.preposicion} ${destino.palabra}?`;
-
-  /** «a la Plataforma» · «al Videojuego». El destino, sin verbo, para poder conjugarlo. */
-  const aDestino = `${destino.preposicion} ${destino.palabra}`;
-
-  /**
-   * «entrar a la Plataforma» · «entrar al Videojuego» — en INFINITIVO, porque va detrás de
-   * otro infinitivo: «iniciar sesión y entrar a la Plataforma».
-   *
-   * ⚠️ No vale para las frases en imperativo («Inicia sesión … y **entra**»), que conjugan
-   * el verbo aparte y usan `aDestino`. Se coló al unificar los textos y lo cazó leer el
-   * diálogo renderizado, no el código.
-   */
-  const dest = `entrar ${aDestino}`;
-  // ¿Este visitante (por IP) ya tiene una postulación registrada?
-  const [proposal, setProposal] = useState<{
-    exists: boolean;
-    status?: string;
-    email?: string | null;
-    emailVerified?: boolean;
-    hasCandidateAccount?: boolean;
-  } | null>(null);
-  // ¿Este visitante ya tiene una cuenta de cliente (y está verificada)?
-  const [client, setClient] = useState<{
-    exists: boolean;
-    email?: string | null;
-    verified?: boolean;
-  } | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    fetch('/api/candidate/proposal', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((j) => {
-        if (alive) setProposal(j);
-      })
-      .catch(() => {
-        if (alive) setProposal({ exists: false });
-      });
-    fetch('/api/client/status', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((j) => {
-        if (alive) setClient(j);
-      })
-      .catch(() => {
-        if (alive) setClient({ exists: false });
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const opciones = useOpcionesAcceso(destination, {
+    onCandidate, onCandidateLogin, onClient, onMember, onProposalPending, onProposalApproved, onClientPending,
+  });
 
   // Cerrar con Escape (mismo comportamiento que los diálogos del dashboard).
   useEffect(() => {
@@ -190,77 +115,21 @@ export default function EntryChoiceModal({
         {/* Opciones */}
         {/* Fondo de "página" para que las tarjetas de opción se separen del diálogo */}
         <div className="px-5 py-4 flex flex-col gap-2.5 bg-digi-dark">
-          {proposal === null ? (
-            <LoadingCard />
-          ) : proposal.exists && proposal.status === 'approved' ? (
-            <Option
-              tone="success"
-              Icon={BadgeCheck}
-              badge="Aprobada"
-              title="¡Tu postulación fue aprobada!"
-              desc="Fuiste aceptado por el administrador. Continúa para crear tu cuenta (contraseña y datos) e ingresar como candidato."
-              onClick={() => onProposalApproved({ email: proposal.email })}
-            />
-          ) : proposal.exists ? (
-            <Option
-              tone="warning"
-              Icon={MailWarning}
-              badge="En revisión"
-              title="Tu postulación está en proceso de aprobación"
-              desc="Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato."
-              onClick={() =>
-                onProposalPending({ email: proposal.email, emailVerified: proposal.emailVerified })
-              }
-            />
-          ) : proposal.hasCandidateAccount ? (
-            // Ya es candidato con cuenta: no se ofrece "postularme"; usa "Soy candidato".
-            null
-          ) : (
-            <Option
-              Icon={UserPlus}
-              title="Quiero postularme como candidato"
-              desc="Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados."
-              onClick={onCandidate}
-            />
+          {opciones.map((o) =>
+            o.cargando ? (
+              <LoadingCard key={o.clave} label={o.etiqueta} />
+            ) : (
+              <Option
+                key={o.clave}
+                tone={o.tono}
+                Icon={o.Icono}
+                badge={o.insignia}
+                title={o.titulo}
+                desc={o.descripcion}
+                onClick={o.onClick}
+              />
+            ),
           )}
-
-          <Option
-            Icon={LogIn}
-            title="Soy candidato"
-            desc={`Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`}
-            onClick={onCandidateLogin}
-          />
-
-          {client === null ? (
-            <LoadingCard label="Verificando tu cuenta de cliente…" />
-          ) : client.exists && !client.verified ? (
-            <Option
-              tone="warning"
-              Icon={MailWarning}
-              badge="Verificación pendiente"
-              title="Tu cuenta de cliente requiere verificación"
-              desc="Te enviamos un enlace de verificación a tu correo. Verifícalo para poder iniciar sesión. No es necesario crear otra cuenta."
-              onClick={() => onClientPending({ email: client.email })}
-            />
-          ) : (
-            <Option
-              Icon={Briefcase}
-              title="Soy cliente"
-              desc={
-                destination === 'dashboard'
-                  ? `Accede ${aDestino} para gestionar tus productos, servicios y proyectos del grupo.`
-                  : `Inicia sesión (o crea tu cuenta) y entra ${aDestino}.`
-              }
-              onClick={onClient}
-            />
-          )}
-
-          <Option
-            Icon={ShieldCheck}
-            title="Ingresar como miembro"
-            desc={`Ya soy miembro o administrador: iniciar sesión y ${dest}.`}
-            onClick={onMember}
-          />
         </div>
 
         {/* Footer del diálogo (acción secundaria a la derecha, como en el dashboard) */}

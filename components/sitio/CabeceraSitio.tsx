@@ -35,44 +35,28 @@
  * ── SOBRE LA PORTADA PARTIDA (2026-10-26) ──────────────────────────────────────
  * En la portada (`flotante`) las pestañas van en una CÁPSULA de cristal oscuro centrada
  * justo sobre la raya Aventura | Progreso: se leen igual sobre el cielo y sobre la
- * Plataforma clara, y marcan la unión de los dos mundos. El nombre, a la izquierda, sí
- * cambia de color en la raya (`lib/sitio/portadaPartida.ts`). El botón del menú del
- * teléfono es de cristal por lo mismo. En las demás páginas, la barra de siempre.
+ * Plataforma clara, y marcan la unión de los dos mundos. El botón del menú del teléfono es
+ * de cristal por lo mismo.
+ *
+ * ── SIEMPRE CON FONDO (Fernando, 2026-10-26) ─────────────────────────────────────
+ * En la portada era transparente y se volvía sólida al desplazar. Ahora lleva SIEMPRE ese
+ * fondo oscuro con desenfoque («que mantenga ese fondo que se ve cuando se desliza»).
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { NAVEGACION } from '@/lib/sitio/contenido';
-import { refBordeIzquierdo } from '@/lib/sitio/portadaPartida';
 
 export default function CabeceraSitio({ flotante = false }: { flotante?: boolean }) {
   const pathname = usePathname() || '/';
-  const [desplazado, setDesplazado] = useState(false);
   const [abierto, setAbierto] = useState(false);
-
-  useEffect(() => {
-    if (!flotante) return;
-    const alDesplazar = () => setDesplazado(window.scrollY > 24);
-    alDesplazar();
-    window.addEventListener('scroll', alDesplazar, { passive: true });
-    return () => window.removeEventListener('scroll', alDesplazar);
-  }, [flotante]);
-
-  const solido = !flotante || desplazado || abierto;
-  // Transparente sobre la portada partida: los textos cambian de color en la raya.
-  const partido = flotante && !solido;
-  const refPartido = partido ? refBordeIzquierdo : undefined;
 
   return (
     <header
-      className={`fixed top-0 inset-x-0 z-[60] transition-all duration-300 ${
-        solido
-          ? 'bg-[#0b0d14]/85 backdrop-blur-xl border-b border-white/[0.07]'
-          : 'bg-transparent border-b border-transparent'
-      }`}
+      className="fixed top-0 inset-x-0 z-[60] bg-[#0b0d14]/85 backdrop-blur-xl border-b border-white/[0.07]"
     >
       <div className="relative mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group" onClick={() => setAbierto(false)}>
@@ -89,10 +73,9 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
             className="shrink-0 rounded-full"
           />
           <span
-            ref={refPartido}
             className={`text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors ${
-              partido ? 'texto-partido [--tp-a:#fff] [--tp-b:#1f1a2e] group-hover:[--tp-a:#c4b5fd] group-hover:[--tp-b:#4B2D8E]' : ''
-            } ${flotante ? 'md:max-[999px]:hidden' : ''}`}
+              flotante ? 'md:max-[999px]:hidden' : ''
+            }`}
           >
             Grupo Corazones Cruzados
           </span>
