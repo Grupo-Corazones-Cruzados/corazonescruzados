@@ -55,6 +55,17 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
   const [abierto, setAbierto] = useState(false);
 
   return (
+    <>
+    {/* EL VELO DEL MENÚ DEL TELÉFONO (Fernando, 2026-10-27: «debajo del menú un overlay para
+        distinguir que tenemos abierto el menú»). Va FUERA del `<header>`: con su
+        `backdrop-filter`, un `fixed` dentro quedaría encerrado en la cabecera. Tocarlo cierra. */}
+    {abierto && (
+      <div
+        aria-hidden="true"
+        onClick={() => setAbierto(false)}
+        className={`velo-menu fixed inset-0 z-[59] bg-black/55 backdrop-blur-[2px] ${flotante ? 'md:hidden' : 'lg:hidden'}`}
+      />
+    )}
     <header
       // `pt` = la zona de la hora y la batería del teléfono (app instalada / `viewport-fit: cover`):
       // sin él la cabecera quedaba debajo de ellas (Fernando, 2026-10-27). En el navegador vale 0.
@@ -127,7 +138,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
       </div>
 
       {abierto && (
-        <nav className={`${flotante ? 'md:hidden' : 'lg:hidden'} border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1`} aria-label="Principal">
+        <nav className={`menu-sitio-movil ${flotante ? 'md:hidden' : 'lg:hidden'} border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1`} aria-label="Principal">
           {NAVEGACION.map((n) => (
             <Link
               key={n.href}
@@ -141,5 +152,6 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
         </nav>
       )}
     </header>
+    </>
   );
 }

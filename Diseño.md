@@ -253,6 +253,14 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > y `--alto-pie` lo incluye; el héroe y el `main` de `(sitio)` empiezan en `4rem + --seguro-arriba`.
 > Verificado forzando 47/34 px: el logo baja a 64 px y no hay desplazamiento.
 >
+> **Teléfono (2026-10-27).** (1) `.destino-tactil` ya no fuerza `position: relative` sobre
+> `.absolute`/`.fixed`: al ir fuera de las capas de Tailwind ganaba y la X de las cinco ventanas
+> del acceso caía sobre el título. (2) Dentro de un mundo los 4 roles caben sin deslizar
+> (cabeza, escena e iconos compactos bajo `sm`; verificado 360×740, 375×667, 390×844 y 430×932,
+> también con los márgenes del iPhone). (3) El menú hamburguesa lleva velo (`.velo-menu`,
+> negro 55 % + desenfoque, FUERA del `<header>` porque su `backdrop-filter` encierra los `fixed`);
+> tocarlo cierra, y el menú entra con movimiento.
+>
 > **Modo ligero en pantallas táctiles** (Fernando, 2026-10-26: «en teléfono se ve ralentizado»):
 > `@media (hover: none), (pointer: coarse)` quita los `backdrop-filter` (cristales más opacos),
 > congela la malla de puntos, manchas, nebulosas y el halo, quita el `blur` de las entradas

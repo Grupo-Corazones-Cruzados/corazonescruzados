@@ -2728,7 +2728,7 @@ export default function LandingPage() {
         // `pt-24` en el teléfono: allí el contenido puede no caber y empieza arriba del todo;
         // con `pt-16` (lo que mide la cabecera) la insignia quedaba pegada a ella.
         // `items-stretch`: el bloque ocupa todo el alto, con la cabeza FIJA arriba (no centrada).
-        className={`relative flex items-stretch justify-center text-center px-6 pt-[calc(6rem+var(--seguro-arriba))] md:pt-[calc(4rem+var(--seguro-arriba))] pb-8 overflow-hidden ${
+        className={`relative flex items-stretch justify-center text-center px-6 pt-[calc(4.75rem+var(--seguro-arriba))] md:pt-[calc(4rem+var(--seguro-arriba))] pb-3 md:pb-8 overflow-hidden ${
           windAway ? 'min-h-[90vh]' : 'min-h-[calc(100dvh-var(--alto-pie))] md:h-[calc(100dvh-var(--alto-pie))]'
         }`}
       >

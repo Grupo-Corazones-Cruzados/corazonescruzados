@@ -1140,7 +1140,10 @@ html {
    `absolute`, encajados en una esquina). Esto amplía el ÁREA con un pseudoelemento
    invisible hasta los 44 px y deja el icono como está. Solo en táctil. */
 @media (hover: none), (pointer: coarse) {
-  .destino-tactil { position: relative; }
+  /* ⚠️ Sin pisar `absolute`/`fixed`: esta regla va fuera de las capas de Tailwind y ganaba a
+     sus utilidades. En el teléfono la X de las ventanas del acceso perdía su esquina y caía
+     encima del título (Fernando, 2026-10-27). */
+  .destino-tactil:not(.absolute):not(.fixed) { position: relative; }
   .destino-tactil::before {
     content: '';
     position: absolute;
@@ -3540,4 +3543,32 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .titular-choque .inicio-titular-derecha > span { transform: translateX(calc(var(--final) * -1)); }
   .titular-choque .cruce-izquierda, .titular-choque .cruce-derecha, .choque-destello, .choque-onda, .choque-polvo, .choque-chispa { animation: none; display: none; }
   .choque-emblema { animation: none; opacity: 1; }
+}
+
+/* El velo del menú del teléfono y el menú, con movimiento (ver `CabeceraSitio`). */
+.velo-menu { animation: veloMenu 200ms ease-out both; }
+@keyframes veloMenu { from { opacity: 0; } to { opacity: 1; } }
+.menu-sitio-movil { animation: menuSitioMovil 200ms ease-out both; }
+@keyframes menuSitioMovil { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .velo-menu, .menu-sitio-movil { animation: none; } }
+
+/* ═══ EL TELÉFONO: TODOS LOS ROLES A LA VISTA SIN DESLIZAR (Fernando, 2026-10-27) ═══
+   Antes, dentro de un mundo, la cuarta tarjeta quedaba bajo el pie (sobre todo con los
+   márgenes del iPhone). Se compacta la cabeza y las tarjetas; en teléfonos bajos, aún más. */
+@media (max-width: 639.98px) {
+  .portada-cabeza { margin-top: 6px; }
+  .portada-cabeza .inicio-insignia { margin-bottom: 10px; }
+  .portada-cabeza .inicio-titular { margin-bottom: 12px; }
+  .mundo-elegido .roles-mundo { margin-top: 0; gap: 6px; }
+  .roles-fila { gap: 8px; }
+  .tarjeta-rol { padding: 10px 8px 12px; gap: 5px; }
+  .tarjeta-rol .tr-escena { height: 54px; }
+  .tarjeta-rol .tr-icono { width: 38px; height: 38px; border-radius: 12px; }
+  .tarjeta-rol .tm-modo { font-size: 0.48rem; }
+  .tarjeta-rol .tr-titulo { font-size: 0.95rem; }
+  .tarjeta-rol .tm-descripcion-corta { font-size: 0.74rem; }
+}
+@media (max-width: 639.98px) and (max-height: 760px) {
+  .tarjeta-rol .tr-escena { height: 44px; }
+  .tarjeta-rol .tr-icono { width: 32px; height: 32px; border-radius: 10px; }
 }
