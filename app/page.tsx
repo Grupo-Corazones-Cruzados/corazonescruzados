@@ -3040,7 +3040,7 @@ export default function LandingPage() {
           <div className="portada-zona">
             {!mundoElegido ? (
               <div key="inicio" className="inicio-portada">
-                <div className="aparecer" style={{ ['--retraso' as string]: '360ms' }}>
+                <div className="inicio-tarjetas aparecer" style={{ ['--retraso' as string]: '360ms' }}>
                   <TarjetasMundo onElegir={elegirMundo} bloqueado={landingLocked} />
                 </div>
                 <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>

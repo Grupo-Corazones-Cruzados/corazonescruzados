@@ -3572,3 +3572,21 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .tarjeta-rol .tr-escena { height: 44px; }
   .tarjeta-rol .tr-icono { width: 32px; height: 32px; border-radius: 10px; }
 }
+
+/* ═══ TARJETAS CENTRADAS A LO ALTO Y PENSAMIENTO ABAJO (Fernando, 2026-10-27) ═══
+   La zona bajo el titular se reparte: las tarjetas (de mundo o de roles) en el CENTRO del
+   espacio libre y el pensamiento pegado al fondo, encima del pie. En teléfono y escritorio. */
+.portada-zona > .inicio-portada { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.inicio-tarjetas { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+.portada-zona .inicio-pensamiento { margin-top: clamp(12px, 2.5vh, 28px); padding-bottom: clamp(4px, 1.5vh, 16px); }
+.portada-zona > .mundo-elegido { justify-content: center; }
+/* Los roles APROVECHAN la altura libre (Fernando, 2026-10-27: «muy tiradas hacia arriba y no
+   aprovechan bien su altura»): la rejilla crece hasta llenar la zona (con tope) y cada tarjeta
+   estira su escena; el conjunto queda centrado. */
+.mundo-elegido .roles-mundo { flex: 1; min-height: 0; justify-content: center; }
+.roles-fila { flex: 1 1 auto; min-height: 0; grid-auto-rows: minmax(0, 1fr); max-height: 470px; }
+@media (max-width: 859.98px) { .roles-fila { max-height: 680px; } }
+.tarjeta-rol { height: 100%; justify-content: flex-start; }
+.tarjeta-rol .tr-escena { flex: 1 1 auto; height: auto; min-height: 54px; max-height: 190px; }
+@media (max-height: 640px) { .tarjeta-rol .tr-escena { min-height: 44px; } }
+.tarjeta-rol .tr-icono { width: clamp(38px, 7vh, 64px); height: clamp(38px, 7vh, 64px); border-radius: 16px; }

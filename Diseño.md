@@ -261,6 +261,12 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > negro 55 % + desenfoque, FUERA del `<header>` porque su `backdrop-filter` encierra los `fixed`);
 > tocarlo cierra, y el menú entra con movimiento.
 >
+> **Reparto vertical (2026-10-27).** Bajo el titular, la zona se reparte: las tarjetas de mundo
+> CENTRADAS a lo alto en el espacio libre (`.inicio-tarjetas`) y el pensamiento pegado al fondo
+> sobre el pie. Dentro de un mundo, la rejilla de roles CRECE hasta llenar la zona
+> (`grid-auto-rows: 1fr`, tope 470 px en fila de 4 y 680 px en 2×2) y cada tarjeta estira su
+> escena (`.tr-escena` flexible, 54–190 px), con el contenido alineado arriba. Teléfono y escritorio.
+>
 > **Modo ligero en pantallas táctiles** (Fernando, 2026-10-26: «en teléfono se ve ralentizado»):
 > `@media (hover: none), (pointer: coarse)` quita los `backdrop-filter` (cristales más opacos),
 > congela la malla de puntos, manchas, nebulosas y el halo, quita el `blur` de las entradas
