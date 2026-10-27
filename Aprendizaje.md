@@ -10523,7 +10523,7 @@ Fernando dirá la próxima pantalla. ⏳ Migrar los lápices sueltos a `BotonEdi
 
 ---
 
-# Objetivo (declarado 2026-10-26) — EXPERIENCIA DEL CLIENTE: botones de la portada · ✅ 100 % — CONSTRUIDO Y VERIFICADO
+# Objetivo (declarado 2026-10-26) — EXPERIENCIA DEL CLIENTE: la portada y el acceso · ✅ 100 % — CONSTRUIDO Y VERIFICADO
 
 ## Objetivo / necesidad
 Primer paso del trabajo de experiencia del cliente/usuario: en Inicio, «Comenzar Aventura» pasa a
@@ -10569,3 +10569,56 @@ Titular, pie y esquinas de cámara se quedan como están.
 **Verificación:** `tsc` y `next build` sin errores; capturas a 1440 px (en reposo, a mitad de la
 transición, Progreso, Aventura, con el diálogo abierto) y a 390 px; `scrollWidth` = ancho; vuelve
 a partirse al quitar el puntero.
+
+## Iteraciones 3 a 25 (2026-10-26) — de la raya al acceso por roles
+
+**Objetivo ampliado sobre la marcha:** la portada como «selección de mundo» de un videojuego y,
+dentro de cada mundo, el acceso por roles con el tema de ese mundo. Estado final: `MEMORIA.md`
+§ «LA PORTADA: DOS MUNDOS Y EL ACCESO POR ROLES»; estilos: `Diseño.md` § «La portada partida».
+
+### P7 — ¿Por qué Fernando «no veía los estilos»? · ✅ Resuelta
+- Su `next dev -p 3002` servía `layout.css` sin el bloque nuevo de `globals.css` y no lo
+  recompilaba ni con `touch`. Pasó tres veces. Arreglo: parar, `rm -rf .next/cache`, arrancar y
+  verificar con `curl` del CSS servido + `grep` de una clase nueva. (fuente: medición)
+### P8 — ¿Por qué la raya se quedaba a medias (37 % / 75 %)? · ✅ Resuelta
+- `--corte` animada con `@property` + `transition`: en su navegador los hijos que la heredan no
+  se repintaban. Se anima en JS cuadro a cuadro (`useCorteAnimado`). En Chrome iba bien: no basta
+  probar en un navegador.
+### P9 — ¿Cómo se lee un texto que cruza la raya? · ✅ Resuelta (y luego descartada)
+- Degradado de corte duro con `background-clip: text` (`--x0` medido). Funcionó, pero Fernando
+  prefirió que cada texto viva entero en su mundo; se retiró. `text-shadow` se pinta encima de un
+  texto recortado: la sombra va como `filter`.
+### P10 — ¿Hover o clic para elegir mundo? · ✅ Resuelta (Fernando)
+- Clic. Con el puntero «la pantalla de fondo sigue el puntero» se leía como un error.
+### P11 — ¿Cómo se muestran los roles sin duplicar la lógica? · ✅ Resuelta
+- Se extrajo `useOpcionesAcceso` de `EntryChoiceModal` a `opcionesAcceso.ts`; el diálogo y
+  `RolesMundo` pintan la misma lista. Las acciones, una vez, en `accionesAcceso`.
+### P12 — ¿Por qué confundía la tarjeta de candidatura? · ✅ Resuelta
+- Aparecía «Verificando…» y luego se cambiaba o desaparecía (si ya había cuenta). Ahora las 4
+  opciones están siempre, con `cargando`, y cambian su contenido, no su sitio. Verificado con la
+  respuesta del servidor retrasada 3,5 s: mismas posiciones antes y después.
+### P13 — ¿Por qué la portada se deslizaba? · ✅ Resuelta
+- `min-h-[90vh]` + contenido que lo estiraba + un `<footer>` pixel vacío de 66 px (solo sirve al
+  chat de la intro). Héroe a `100dvh − pie` desde `md` y alto de las tarjetas calculado con ese
+  espacio. Verificado `scrollHeight == innerHeight` en 9 tamaños.
+### P14 — Corazón y mundo como imágenes · ✅ Resuelta (Fernando)
+- El logo de GCC y el planeta morado no se leían como «corazón» y «Tierra». Iconos pixel-art
+  propios en SVG.
+
+## Cómo trabaja Fernando en diseño (aprendido)
+- Itera muy rápido sobre lo publicado y decide viéndolo: publicar cada paso, verificado.
+- Da libertad creativa («usa tu creatividad») pero descarta en el acto lo que no le encaja;
+  apuntar lo descartado para no volver a proponerlo.
+- Prefiere controles iguales con variación de color, a estilos distintos por elemento.
+- Usa su `next dev` del 3002 y a menudo una ventana baja (~525 px) o con zoom: medir ahí.
+
+## Verificación (método que funcionó)
+Puppeteer con Chrome del sistema contra un `next dev` propio (`NEXT_DIST_DIR`), midiendo y no a
+ojo: posiciones, `scrollWidth`/`scrollHeight`, choques texto↔tarjeta con `Range`, el estado de
+«comprobando» con la red retrasada, y capturas en 1920/1440/1280/1000/961×525/820/390/375.
+`tsc` + `next build` con `.next` propio antes de cada `push`, y reiniciar el 3002 de Fernando.
+
+## Siguiente
+⏳ Llevar el tema de cada mundo a los diálogos de inicio de sesión (candidato, cliente, miembro)
+y de creación de cuenta.
+

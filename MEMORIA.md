@@ -275,26 +275,42 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **🌗 PORTADA PARTIDA AVENTURA | PROGRESO (Fernando, 2026-10-26).** Una raya en la mitad del
-  héroe: a la izquierda el cielo estrellado, a la derecha la Plataforma en claro con un diseño
-  propio animado. Con el puntero en «Aventura» o «Progreso» ese lado llena la pantalla, y se
-  queda así mientras está abierto el acceso. Los textos que cruzan la raya cambian de color en
-  ella (blancos → oscuros). Pie y esquinas de cámara sin cambios. Detalle: `Diseño.md`
-  § «La portada partida».
-  **Bloque central vigente: «El cruce»** (quinta versión del mismo día): titular en escalera
-  partido por la raya, cada botón bajo su mundo y tres cápsulas de cristal sobre la raya.
-  Descartadas: color partido centrado, cristal redondeado, placa pixel, botones con estilo
-  distinto y raya que sigue al puntero. Sobre la escena clara, puntero del sistema.
-  **Después (mismo día): licuado y clic.** La raya es una frontera líquida (onda + tinta + bruma,
-  `LicuadoPortada.tsx`). Al llegar solo se ven «Aventura» y «Progreso»; un CLIC llena la pantalla
-  con ese mundo y descubre, centrados, la insignia, el titular, el otro botón y el pensamiento.
-  ⏳ **Pendiente:** esos botones ya NO abren el acceso («¿Cómo quieres ingresar?»); Fernando dirá
-  qué sigue. El acceso queda por `/auth` y `?acceso=`. **Resuelto el mismo día:** tras elegir
-  el mundo aparecen los ROLES como tarjetas (`RolesMundo`, con la lógica de `EntryChoiceModal`
-  extraída a `opcionesAcceso.ts`) y el formulario de candidato toma el tema del mundo.
-  Luego: las tarjetas pasan a ser de selección de videojuego (`TarjetasMundo.tsx`, con los
-  personajes reales del juego), la pestaña «Historia» vuelve a «Inicio» y **la portada ya no
-  tiene música de ambiente** (viento y espacio fuera; los sonidos de la intro del juego siguen).
+- **🌗 LA PORTADA: DOS MUNDOS Y EL ACCESO POR ROLES (Fernando, 2026-10-26) — ESTADO VIGENTE.**
+  Un día entero de iteración con Fernando sobre `/`. Lo que queda (detalle y clases: `Diseño.md`
+  § «La portada partida»):
+  1. **Pantalla de inicio**: el héroe se parte en dos mundos —cielo estrellado (Aventura) a la
+     izquierda, la Plataforma en claro (Progreso) a la derecha— separados por una **frontera
+     líquida** (`LicuadoPortada.tsx`: onda viva + tinta que se derrama + onda rosa, sin gotas).
+     Encima: insignia «Proyecto de Desarrollo Humano», el titular **«Un ❤ puede | cruzar al 🌍»**
+     partido por la raya (corazón y Tierra pixel-art propios, `IconosTitular.tsx`), dos **tarjetas
+     de selección** tipo videojuego (`TarjetasMundo.tsx`: «Juego»/«Progreso», personajes reales
+     del juego, selector de esquinas al pasar el puntero, sin botón) y el **pensamiento** como
+     barra de consejo, siempre entero.
+  2. **Un CLIC elige el mundo** (nunca el puntero encima): llena la pantalla con él y fija el
+     destino (Aventura → juego, Progreso → panel). Dentro: solo la insignia, «← Volver» (o
+     Escape) y los **roles en dos grupos** (`RolesMundo.tsx`): «Soy nuevo» (una tarjeta grande con
+     el camino de 8 pasos de la postulación) y «Ya tengo cuenta» (candidato, cliente, miembro).
+     Sin titular ni pensamiento.
+  3. **Una sola lógica de acceso**: `components/landing/opcionesAcceso.ts` (extraída de
+     `EntryChoiceModal`, que la sigue usando) y `accionesAcceso` en `app/page.tsx`. Las 4 opciones
+     están siempre; mientras consulta el estado se ven con «Comprobando…» y no cambian de sitio.
+  4. **El formulario de candidato toma el tema del mundo** (`OnboardingSlidersModal tema=`).
+  5. **Cabecera con fondo fijo** y pestañas en cápsula desde `md`; «Historia» → **«Inicio»**;
+     **sin música de ambiente** (viento y espacio fuera; la intro del juego conserva sus sonidos).
+  6. **La portada no se desliza**: el héroe mide `100dvh − pie` desde `md`; en el teléfono crece
+     si hace falta.
+  **Descartado por Fernando el mismo día** (no repetir): color de los textos partido en la raya,
+  cristal redondeado detrás del titular, placa pixel, botones de estilo distinto por mundo, la raya
+  que sigue al puntero, cambiar de mundo al pasar el puntero, titular en escalera, gotas en la
+  frontera, botón «Elegir», etiquetas «Modo …» con relleno, botón para cambiar de mundo dentro.
+  **Trampas pagadas:** (a) el `next dev -p 3002` de Fernando sirve CSS viejo de `globals.css` y
+  no lo recompila → parar, `rm -rf .next/cache`, arrancar y comprobar con `curl` del CSS servido
+  ([[gcc-next-cache-css-viejo]]); (b) una variable CSS animada con `@property` se queda a medias
+  en su navegador → animar en JS; (c) `text-shadow` tapa un texto con `background-clip: text`;
+  (d) `parseFloat('0px') || x` toma el `x`; (e) recorte/rellenos de un SVG que dependen de una
+  clase de `globals.css` fallan con CSS viejo → en línea; (f) medir choques con el TEXTO (`Range`),
+  no con su `span`. ⏳ Pendiente: llevar el tema del mundo a los diálogos de inicio de sesión y
+  creación de cuenta.
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

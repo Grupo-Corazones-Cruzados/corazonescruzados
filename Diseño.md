@@ -213,6 +213,28 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 `z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos (`z-[220]`).
 
 ### ⭐ 2026-10-26 — La portada partida: Aventura | Progreso
+
+> **ESTADO VIGENTE (cierre del 2026-10-26).** Lo que sigue en esta sección es el HISTORIAL de
+> versiones del mismo día; manda este resumen. Lo descartado está marcado en cada versión y en
+> `MEMORIA.md`: no se vuelve a proponer.
+>
+> | Pieza | Archivo | Regla |
+> |---|---|---|
+> | Dos mundos + frontera líquida | `FondosPortada.tsx`, `LicuadoPortada.tsx` | onda + tinta + onda rosa; sin gotas; `--corte` animada en JS (`useCorteAnimado`), nunca con `@property` |
+> | Titular «Un ❤ puede \| cruzar al 🌍» | `app/page.tsx` (`.inicio-titular`), `IconosTitular.tsx` | una línea partida por la raya, cada mitad entera en su mundo; iconos pixel-art propios en `em` |
+> | Tarjetas de mundo | `TarjetasMundo.tsx` (`.tarjeta-mundo-*`) | misma forma, color por mundo; selector de esquinas al pasar; sin botón; descripción corta en el teléfono |
+> | Pensamiento | `FeaturedThought compacto` (`.pensamiento-barra`) | barra de consejo, SIEMPRE entero; solo en la pantalla de inicio |
+> | Roles | `RolesMundo.tsx` + `opcionesAcceso.ts` | «Soy nuevo» grande + «Ya tengo cuenta» apiladas; las 4 opciones fijas, «Comprobando…» sin moverse |
+> | Formulario de candidato | `OnboardingSlidersModal tema=` | `.onboarding-aventura` / `.onboarding-progreso` reajustan tokens |
+> | Cabecera | `CabeceraSitio.tsx` | fondo fijo; cápsula de pestañas desde `md` en la portada |
+> | Alto | `app/page.tsx` (sección del héroe) | `100dvh − --alto-pie` desde `md`; teléfono `min-h` con `pt-24` |
+> | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema sobre la Plataforma (`.cursor-plataforma`) |
+>
+> **Reglas que salieron de aquí y valen para todo el sitio:** un control que cambia de estado no
+> cambia de sitio (se pinta ya, con «cargando»); la animación de una variable heredada va en JS;
+> `text-shadow` no va con `background-clip: text`; lo que no debe fallar con un CSS en caché (un
+> `clip-path` SVG, rellenos) va en línea; medir con `Range`, `scrollHeight` y varias ventanas,
+> incluida una baja (~525 px).
 Fernando: una **raya en la mitad** del héroe. A la izquierda el cielo estrellado de siempre;
 a la derecha **la Plataforma en claro**, con un diseño propio animado. Con el puntero en
 «Aventura» el cielo llena la pantalla (más nebulosa y estrellas fugaces); con «Progreso», la
