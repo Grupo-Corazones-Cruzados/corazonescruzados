@@ -41,6 +41,7 @@ import {
   Gavel,
   Heart,
   Layers3,
+  Lock,
   RefreshCw,
   Send,
   TrendingUp,
@@ -48,7 +49,6 @@ import {
   X,
 } from 'lucide-react';
 import LogoGirando from '@/components/ui/LogoGirando';
-import Button from '@/components/ui/Button';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelTabs from '@/components/ui/PixelTabs';
 import BotonCerrar from '@/components/ui/BotonCerrar';
@@ -1264,115 +1264,109 @@ export default function OnboardingSlidersModal({
   const HeaderIcon: IconType = isForm ? Send : current.Icon;
   const title = isForm ? '¿Por qué quieres ser candidato de este proyecto?' : current.title;
 
+  const porcentaje = Math.round(((index + (acceptedHere && !isForm ? 1 : 0)) / steps) * 100);
+  const numero = String(index + 1).padStart(2, '0');
+
+  /*
+   * «LA TRAVESÍA» — el diseño del formulario de postulación (Fernando, 2026-10-26: «actualiza
+   * por completo el diseño… según tu creatividad»). Con el lenguaje de la portada:
+   * · a la izquierda, el CAMINO: los 8 pasos como nodos unidos por una línea (hecho = visto,
+   *   actual = brilla, bloqueado = candado), con un anillo de progreso arriba;
+   * · a la derecha, el paso: número grande perfilado («01»), título en Space Grotesk, el
+   *   contenido y, abajo, una barra con «Atrás», la aceptación como interruptor y «Siguiente».
+   * La lógica (pasos, aceptación, envío) no cambió. Los colores salen de los tokens que
+   * reajusta `.onboarding-<tema>` y los estilos propios de `.onb-*` en globals.css.
+   */
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Conoce el proyecto y postúlate"
-      className={`corp ${tema === 'aventura' ? 'dark' : ''} corp-overlay onboarding-portada onboarding-${tema} fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-5`}
+      className={`corp ${tema === 'aventura' ? 'dark' : ''} corp-overlay onboarding-portada onboarding-${tema} fixed inset-0 z-[250] flex items-center justify-center p-0 sm:p-5`}
       style={{ animation: 'pixelFadeIn 0.35s ease-out' }}
     >
       <style>{KEYFRAMES}</style>
 
-      <div
-        className="onboarding-panel w-full max-w-[1080px] h-full max-h-[min(94vh,900px)] flex flex-col border border-digi-border bg-digi-card overflow-hidden"
-      >
-        <div className="flex-1 min-h-0 grid lg:grid-cols-[248px_minmax(0,1fr)]">
-          {/* ── Rail de pasos (patrón "Explorador Azure" del dashboard) ── */}
-          <aside className="hidden lg:flex flex-col border-r border-digi-border bg-digi-card min-h-0">
-            <div className="flex items-center gap-2.5 px-4 py-4 border-b border-digi-border">
-              <LogoGirando tamano={28} />
+      <div className="onboarding-panel w-full max-w-[1120px] h-full sm:max-h-[min(94vh,880px)] flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 grid lg:grid-cols-[288px_minmax(0,1fr)]">
+          {/* ── El camino ── */}
+          <aside className="onb-camino hidden lg:flex flex-col min-h-0">
+            <div className="flex items-center gap-3 px-6 pt-6">
+              <LogoGirando tamano={30} />
               <div className="min-w-0">
-                <div className="text-[12.5px] font-semibold text-digi-text leading-tight">
-                  GCC WORLD
-                </div>
-                <div className="text-[11px] text-digi-muted">Postulación de candidato</div>
+                <div className="onb-marca">GCC World</div>
+                <div className="onb-marca-sub">Postulación de candidato</div>
               </div>
             </div>
 
-            <nav className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-0.5">
-              <div style={{ ...kickerStyle, padding: '6px 10px 4px' }}>Pasos</div>
-              {PASOS_POSTULACION.map(
-                (s, i) => {
-                  const on = i === index;
-                  const done = i < total ? accepted[i] : false;
-                  const enabled = canGoTo(i);
-                  return (
-                    <button
-                      key={s.label}
-                      type="button"
-                      disabled={!enabled}
-                      onClick={() => enabled && go(i, i > index ? 1 : -1)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md border-l-2 text-left transition-colors ${
-                        on
-                          ? 'bg-accent-light border-accent text-accent'
-                          : enabled
-                            ? 'border-transparent text-digi-text hover:bg-black/[0.03]'
-                            : 'border-transparent text-digi-muted opacity-50 cursor-not-allowed'
-                      }`}
-                    >
-                      <s.Icon className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate">
-                        {s.label}
-                      </span>
-                      {done ? (
-                        <Check className="w-3.5 h-3.5 shrink-0 text-green-600" />
-                      ) : (
-                        <span className="text-[10px] tabular-nums text-digi-muted shrink-0">
-                          {i + 1}
-                        </span>
-                      )}
-                    </button>
-                  );
-                }
-              )}
-            </nav>
-
-            <div className="px-4 py-3 border-t border-digi-border">
-              <div className="h-1 rounded-full bg-digi-border overflow-hidden">
-                <div
-                  className="h-full bg-accent transition-[width] duration-300"
-                  style={{ width: `${((index + 1) / steps) * 100}%` }}
+            <div className="onb-anillo-bloque">
+              <svg viewBox="0 0 64 64" className="onb-anillo" aria-hidden="true">
+                <circle cx="32" cy="32" r="27" className="onb-anillo-fondo" />
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="27"
+                  className="onb-anillo-valor"
+                  style={{ strokeDashoffset: 169.6 * (1 - porcentaje / 100) }}
                 />
-              </div>
-              <div style={{ ...kickerStyle, marginTop: 6 }}>
-                {isForm ? `Último paso · ${steps} de ${steps}` : `Paso ${index + 1} de ${steps}`}
+              </svg>
+              <div>
+                <div className="onb-anillo-cifra">{porcentaje}%</div>
+                <div className="onb-anillo-texto">
+                  {isForm ? 'Último paso' : `Paso ${index + 1} de ${steps}`}
+                </div>
               </div>
             </div>
+
+            <nav className="onb-nodos flex-1 min-h-0 overflow-y-auto" aria-label="Pasos de la postulación">
+              {PASOS_POSTULACION.map((s, i) => {
+                const actual = i === index;
+                const hecho = i < total ? accepted[i] : false;
+                const enabled = canGoTo(i);
+                return (
+                  <button
+                    key={s.label}
+                    type="button"
+                    disabled={!enabled}
+                    aria-current={actual ? 'step' : undefined}
+                    onClick={() => enabled && go(i, i > index ? 1 : -1)}
+                    className={`onb-nodo ${actual ? 'es-actual' : ''} ${hecho ? 'es-hecho' : ''} ${!enabled ? 'es-bloqueado' : ''}`}
+                  >
+                    <span className="onb-nodo-punto">
+                      {hecho && !actual ? <Check /> : !enabled ? <Lock /> : <s.Icon />}
+                    </span>
+                    <span className="onb-nodo-texto">
+                      <span className="onb-nodo-num">Paso {i + 1}</span>
+                      <span className="onb-nodo-nombre">{s.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
           </aside>
 
-          {/* ── Contenido ── */}
-          <section className="flex flex-col min-h-0 bg-digi-dark">
-            {/* Cabecera */}
-            <header className="flex items-start gap-3 px-5 sm:px-6 py-4 border-b border-digi-border bg-digi-card">
-              <span className="w-9 h-9 shrink-0 rounded-md bg-accent-light text-accent flex items-center justify-center">
-                <HeaderIcon className="w-[18px] h-[18px]" />
-              </span>
+          {/* ── El paso ── */}
+          <section className="onb-paso flex flex-col min-h-0">
+            <header className="onb-cabecera">
+              <span className="onb-numero" aria-hidden="true">{isForm ? '✦' : numero}</span>
               <div className="min-w-0 flex-1">
-                <div style={kickerStyle}>
+                <div className="onb-kicker">
+                  <HeaderIcon />
                   {isForm ? 'Postulación' : `Paso ${index + 1} de ${steps}`}
                 </div>
-                <h2 className="text-[17px] font-semibold text-digi-text leading-snug mt-0.5">
-                  {title}
-                </h2>
-                {/* Progreso por segmentos — solo cuando el rail está oculto */}
-                <div className="flex gap-1 mt-3 lg:hidden">
-                  {Array.from({ length: steps }).map((_, i) => (
-                    <span
-                      key={i}
-                      className={`flex-1 h-1 rounded-full ${
-                        i <= index ? 'bg-accent' : 'bg-digi-border'
-                      }`}
-                    />
-                  ))}
-                </div>
+                <h2 className="onb-titulo">{title}</h2>
               </div>
               <BotonCerrar onClick={onClose} />
+              {/* Progreso por tramos — solo cuando el camino está oculto. */}
+              <div className="onb-tramos lg:hidden" aria-hidden="true">
+                {Array.from({ length: steps }).map((_, i) => (
+                  <span key={i} className={i < index ? 'es-hecho' : i === index ? 'es-actual' : ''} />
+                ))}
+              </div>
             </header>
 
-            {/* Cuerpo (scroll + animación de entrada) */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-5 sm:px-6 py-5">
-              <div key={index} style={{ animation: `${animName} 0.4s cubic-bezier(0.22,1,0.36,1)` }}>
+            <div className="onb-cuerpo flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+              <div key={index} style={{ animation: `${animName} 0.45s cubic-bezier(0.22,1,0.36,1)` }}>
                 {isForm || !SlideComponent ? (
                   <CandidateForm
                     email={email}
@@ -1391,47 +1385,43 @@ export default function OnboardingSlidersModal({
               </div>
             </div>
 
-            {/* Aceptación de términos / "Entendido" según el slider */}
-            {!isForm && (
-              <AcceptTerms
-                mode={current.consent}
-                summary={current.consentSummary}
-                checked={!!acceptedHere}
-                onToggle={toggleAccept}
-              />
-            )}
-
-            {/* Footer — secundaria a la izquierda, primaria a la derecha */}
-            <footer className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3.5 border-t border-digi-border bg-digi-card">
-              <Button
-                variant="secondary"
-                onClick={back}
-                disabled={index === 0}
-                icon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Atrás
-              </Button>
-
-              {isForm ? (
-                <Button
-                  onClick={() =>
-                    formOk && onComplete({ email: email.trim(), reason: reason.trim(), marketing })
-                  }
-                  disabled={!formOk}
-                  icon={<Send className="w-4 h-4" />}
-                >
-                  Comenzar mi aventura
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => acceptedHere && next()}
-                  disabled={!acceptedHere}
-                  className="flex-row-reverse"
-                  icon={<ArrowRight className="w-4 h-4" />}
-                >
-                  {index === total - 1 ? 'Postularme' : 'Siguiente'}
-                </Button>
+            <footer className="onb-pie">
+              {!isForm && (
+                <AcceptTerms
+                  mode={current.consent}
+                  summary={current.consentSummary}
+                  checked={!!acceptedHere}
+                  onToggle={toggleAccept}
+                />
               )}
+              <div className="onb-acciones">
+                <button type="button" onClick={back} disabled={index === 0} className="onb-boton onb-boton-atras">
+                  <ArrowLeft />
+                  Atrás
+                </button>
+                {isForm ? (
+                  <button
+                    type="button"
+                    onClick={() => formOk && onComplete({ email: email.trim(), reason: reason.trim(), marketing })}
+                    disabled={!formOk}
+                    className="onb-boton onb-boton-avanzar"
+                  >
+                    <Send />
+                    Comenzar mi aventura
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => acceptedHere && next()}
+                    disabled={!acceptedHere}
+                    title={acceptedHere ? undefined : 'Marca la casilla de este apartado para continuar'}
+                    className="onb-boton onb-boton-avanzar"
+                  >
+                    {index === total - 1 ? 'Postularme' : 'Siguiente'}
+                    <ArrowRight />
+                  </button>
+                )}
+              </div>
             </footer>
           </section>
         </div>
@@ -1469,23 +1459,12 @@ function AcceptTerms({
           onToggle();
         }
       }}
-      className={`flex items-start gap-3 cursor-pointer transition-colors ${
-        inline
-          ? `rounded-lg border p-3.5 ${
-              checked ? 'border-accent bg-accent-light' : 'border-digi-border bg-digi-card'
-            }`
-          : `px-5 sm:px-6 py-3 border-t border-digi-border ${
-              checked ? 'bg-accent-light' : 'bg-digi-card'
-            }`
-      }`}
+      // El interruptor de aceptación (2026-10-26): una pieza con borde que se enciende al
+      // marcarla, con un interruptor en vez de una casilla.
+      className={`onb-aceptar ${inline ? 'es-en-linea' : ''} ${checked ? 'es-marcado' : ''}`}
     >
-      <span
-        aria-hidden
-        className={`shrink-0 mt-px w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors ${
-          checked ? 'bg-accent border-accent text-white' : 'bg-digi-darker border-digi-border'
-        }`}
-      >
-        {checked && <Check className="w-3 h-3" />}
+      <span aria-hidden className="onb-interruptor">
+        <span>{checked && <Check />}</span>
       </span>
       <span className="text-[12.5px] leading-relaxed text-digi-muted">
         {mode === 'terms' ? (
@@ -1700,10 +1679,15 @@ const pStyle: React.CSSProperties = {
 
 const strong: React.CSSProperties = { color: 'var(--color-digi-text)', fontWeight: 600 };
 
+// «La travesía» (2026-10-26): títulos de tarjeta en Space Grotesk, números y avisos con el
+// degradado de la portada. Las piezas de los 8 pasos salen de aquí: cambiarlas aquí cambia
+// todo el contenido a la vez.
 const cardTitle: React.CSSProperties = {
   display: 'block',
-  fontSize: '0.8438rem',
-  fontWeight: 600,
+  fontFamily: 'var(--font-display)',
+  fontSize: '0.98rem',
+  fontWeight: 700,
+  letterSpacing: '-0.01em',
   color: 'var(--color-digi-text)',
 };
 
@@ -1715,36 +1699,40 @@ const cardDesc: React.CSSProperties = {
 };
 
 const stepNum: React.CSSProperties = {
-  width: 32,
-  height: 32,
+  width: 34,
+  height: 34,
   flexShrink: 0,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  color: 'var(--color-accent)',
-  background: 'var(--color-accent-light)',
-  borderRadius: 6,
+  fontFamily: 'var(--font-display)',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  color: '#ffffff',
+  background: 'linear-gradient(135deg, var(--color-accent), #c026d3)',
+  boxShadow: '0 6px 16px -6px var(--color-accent)',
+  borderRadius: 12,
 };
 
 const chip: React.CSSProperties = {
   fontSize: '0.75rem',
   fontWeight: 500,
-  color: 'var(--color-accent)',
+  color: 'var(--color-accent-glow)',
   background: 'var(--color-accent-light)',
+  border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
   borderRadius: 999,
-  padding: '4px 10px',
+  padding: '4px 11px',
 };
 
 const noteBox: React.CSSProperties = {
   fontSize: '0.875rem',
   lineHeight: 1.6,
   color: 'var(--color-digi-text)',
-  background: 'var(--color-accent-light)',
-  borderLeft: '3px solid var(--color-accent)',
-  borderRadius: 6,
-  padding: '12px 14px',
+  background: 'linear-gradient(120deg, var(--color-accent-light), transparent)',
+  border: '1px solid color-mix(in srgb, var(--color-accent) 35%, transparent)',
+  borderLeft: '3px solid #e879f9',
+  borderRadius: 14,
+  padding: '14px 16px',
 };
 
 const KEYFRAMES = `

@@ -3117,3 +3117,241 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   «LA TRAVESÍA» — el formulario de postulación (`OnboardingSlidersModal`, Fernando,
+   2026-10-26: «actualiza por completo el diseño… según tu creatividad»).
+   Camino de pasos a la izquierda; el paso a la derecha con número perfilado, título en
+   Space Grotesk y una barra inferior con la aceptación como interruptor. Todo con los
+   tokens que reajusta `.onboarding-<tema>`, así sirve en los dos mundos.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.onboarding-portada .onboarding-panel {
+  position: relative;
+  border: 1px solid var(--color-digi-border);
+  background: var(--color-digi-dark);
+}
+@media (max-width: 639.98px) { .onboarding-portada .onboarding-panel { border-radius: 0; border: 0; } }
+
+/* El camino */
+.onb-camino {
+  position: relative;
+  background:
+    radial-gradient(120% 50% at 0% 0%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 60%),
+    var(--color-digi-card);
+  border-right: 1px solid var(--color-digi-border);
+}
+.onb-marca { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; color: var(--color-digi-text); }
+.onb-marca-sub { font-size: 0.72rem; color: var(--color-digi-muted); }
+.onb-anillo-bloque {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 20px 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border: 1px solid var(--color-digi-border);
+}
+.onb-anillo { width: 56px; height: 56px; transform: rotate(-90deg); flex: none; }
+.onb-anillo-fondo { fill: none; stroke: var(--color-digi-border); stroke-width: 6; }
+.onb-anillo-valor {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 169.6;
+  transition: stroke-dashoffset 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent) 60%, transparent));
+}
+.onb-anillo-cifra { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; font-size: 1.45rem; line-height: 1; color: var(--color-digi-text); font-variant-numeric: tabular-nums; }
+.onb-anillo-texto { margin-top: 4px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-digi-muted); }
+
+.onb-nodos { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 10px 14px 20px; }
+/* La línea que une los nodos. */
+.onb-nodos::before { content: ''; position: absolute; left: 33px; top: 30px; bottom: 34px; width: 2px; border-radius: 2px; background: var(--color-digi-border); }
+.onb-nodo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  text-align: left;
+  color: var(--color-digi-text);
+  transition: background 200ms ease, opacity 200ms ease;
+}
+.onb-nodo:not(:disabled):hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.onb-nodo-punto {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-digi-card);
+  border: 2px solid var(--color-digi-border);
+  color: var(--color-digi-muted);
+  transition: all 260ms ease;
+}
+.onb-nodo-punto svg { width: 14px; height: 14px; }
+.onb-nodo-texto { display: flex; flex-direction: column; min-width: 0; }
+.onb-nodo-num { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-digi-muted); }
+.onb-nodo-nombre { font-size: 0.84rem; font-weight: 600; line-height: 1.25; }
+.onb-nodo.es-hecho .onb-nodo-punto { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.onb-nodo.es-actual { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+.onb-nodo.es-actual .onb-nodo-punto {
+  background: linear-gradient(135deg, var(--color-accent), #c026d3);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  animation: onbLatido 2.4s ease-in-out infinite;
+}
+.onb-nodo.es-actual .onb-nodo-nombre { color: var(--color-accent-glow); }
+.onb-nodo.es-bloqueado { opacity: 0.45; cursor: not-allowed; }
+@keyframes onbLatido { 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--color-accent) 10%, transparent); } }
+
+/* El paso */
+.onb-paso { position: relative; background: var(--color-digi-dark); }
+.onb-cabecera {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: clamp(18px, 3vh, 30px) clamp(18px, 3vw, 40px) clamp(14px, 2vh, 22px);
+}
+.onb-numero {
+  flex: none;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: clamp(2.6rem, 5vw, 4.2rem);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--color-accent-glow) 70%, transparent);
+}
+.onb-kicker { display: inline-flex; align-items: center; gap: 7px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-accent-glow); }
+.onb-kicker svg { width: 14px; height: 14px; }
+.onboarding-portada .onb-titulo {
+  margin-top: 6px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--color-digi-text);
+}
+.onb-tramos { flex-basis: 100%; display: flex; gap: 4px; margin-top: 12px; }
+.onb-tramos > span { flex: 1; height: 4px; border-radius: 9999px; background: var(--color-digi-border); transition: background 300ms ease; }
+.onb-tramos > .es-hecho { background: var(--color-accent); }
+.onb-tramos > .es-actual { background: linear-gradient(90deg, var(--color-accent), #e879f9); }
+
+.onb-cuerpo {
+  padding: 4px clamp(18px, 3vw, 40px) 24px;
+  /* El contenido se desvanece al llegar a la barra de abajo: se intuye que hay más. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+/* La barra de abajo */
+.onb-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px clamp(18px, 3vw, 40px) calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-digi-border);
+  background: color-mix(in srgb, var(--color-digi-card) 92%, transparent);
+}
+.onb-acciones { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.onb-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease, background 180ms ease;
+}
+.onb-boton svg { width: 17px; height: 17px; }
+.onb-boton-atras { color: var(--color-digi-muted); border: 1px solid var(--color-digi-border); }
+.onb-boton-atras:not(:disabled):hover { color: var(--color-digi-text); background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.onb-boton-atras:disabled { opacity: 0.35; }
+.onb-boton-avanzar {
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-accent), #a21caf);
+  box-shadow: 0 12px 26px -12px var(--color-accent);
+}
+.onb-boton-avanzar:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px var(--color-accent), 0 0 0 4px color-mix(in srgb, var(--color-accent) 20%, transparent); }
+.onb-boton-avanzar:not(:disabled):hover svg { transform: translateX(3px); }
+.onb-boton-avanzar svg { transition: transform 180ms ease; }
+.onb-boton-avanzar:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
+.onb-boton:focus-visible { outline: 2px solid #e879f9; outline-offset: 3px; }
+
+/* La aceptación: una pieza que se enciende, con interruptor. */
+.onb-aceptar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--color-digi-border);
+  background: var(--color-digi-dark);
+  cursor: pointer;
+  transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+}
+.onb-aceptar > span:last-child { font-size: 0.82rem; line-height: 1.5; }
+.onb-aceptar:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.onb-aceptar:focus-visible { outline: 2px solid #e879f9; outline-offset: 2px; }
+.onb-aceptar.es-marcado {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-digi-dark));
+  box-shadow: 0 0 22px -10px var(--color-accent);
+}
+.onb-interruptor {
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--color-digi-border);
+  transition: background 220ms ease;
+}
+.onb-interruptor > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 240ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.onb-interruptor svg { width: 11px; height: 11px; color: var(--color-accent); }
+.onb-aceptar.es-marcado .onb-interruptor { background: linear-gradient(135deg, var(--color-accent), #c026d3); }
+.onb-aceptar.es-marcado .onb-interruptor > span { transform: translateX(18px); }
+
+/* Las piezas del contenido, en el mismo lenguaje. */
+.onb-cuerpo .rounded-lg { border-radius: 16px; }
+.onb-cuerpo .rounded-md { border-radius: 12px; }
+.onb-cuerpo .border-digi-border { border-color: var(--color-digi-border); }
+.onb-cuerpo .bg-digi-card { background: color-mix(in srgb, var(--color-digi-card) 88%, var(--color-accent) 4%); }
+.onb-cuerpo .rounded-lg.border { box-shadow: 0 14px 30px -24px rgba(0, 0, 0, 0.6); }
+/* Las pestañas (`PixelTabs`) como control segmentado en cápsula. */
+.onb-cuerpo .pivot { display: inline-flex; gap: 4px; padding: 4px; border-radius: 9999px; background: var(--color-digi-card); border: 1px solid var(--color-digi-border); }
+.onb-cuerpo .pivot-tab { border: 0 !important; margin: 0 !important; padding: 8px 18px; border-radius: 9999px; font-size: 0.82rem !important; font-weight: 600; }
+.onb-cuerpo .pivot-tab.is-active { color: #fff !important; background: linear-gradient(135deg, var(--color-accent), #a21caf); box-shadow: 0 6px 16px -8px var(--color-accent); }
+.onb-cuerpo [role='tablist'], .onb-cuerpo .pivot + * { border-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .onb-nodo.es-actual .onb-nodo-punto { animation: none; } }
+/* Dentro del contenido (casillas del paso final): el interruptor arriba, junto a la primera línea. */
+.onb-aceptar.es-en-linea { align-items: flex-start; }
+.onb-aceptar.es-en-linea .onb-interruptor { margin-top: 1px; }

@@ -456,6 +456,19 @@ esquinas de cámara no cambian.
   · **«← Volver»** (`.roles-volver`, 2026-10-26): discreto, solo texto al 70 % de opacidad,
     sobre las tarjetas a la izquierda; vuelve a la pantalla de inicio. Escape hace lo mismo si no
     hay un diálogo abierto.
+- **⭐ «La travesía» — rediseño completo del formulario de postulación (2026-10-26, Fernando: «actualiza
+  por completo el diseño… según tu creatividad»).** `OnboardingSlidersModal`, estilos `.onb-*`:
+  · **El camino** (izquierda, `lg`): marca, **anillo de progreso** con % y los 8 pasos como NODOS
+    unidos por una línea: hecho = relleno con visto, actual = degradado que late, bloqueado =
+    candado al 45 %.
+  · **El paso**: número grande PERFILADO («01», `-webkit-text-stroke`), kicker con icono, título en
+    Space Grotesk; sin el camino (teléfono/tableta), tramos de progreso bajo el título.
+  · **Contenido**: se desvanece al llegar abajo (máscara); números en cuadrado degradado,
+    avisos con borde fucsia, tarjetas de 16 px, pestañas `PixelTabs` como cápsula segmentada.
+  · **Barra de abajo**: la aceptación como INTERRUPTOR que enciende su pieza
+    (`.onb-aceptar.es-marcado`), «Atrás» fantasma y «Siguiente» en cápsula degradada (sube y la
+    flecha avanza al pasar). El botón `Button` del panel ya no se usa aquí.
+  · La lógica (pasos, aceptación, envío) no cambió. En el teléfono, a pantalla completa.
 - **El formulario de candidato con el tema del mundo** (`OnboardingSlidersModal tema=`):
   `.onboarding-portada` + `.onboarding-aventura` (noche lila, `corp dark`) /
   `.onboarding-progreso` (Plataforma clara, `corp` sin `dark`), que reajustan los tokens
