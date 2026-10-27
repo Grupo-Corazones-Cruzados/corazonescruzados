@@ -56,7 +56,9 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
 
   return (
     <header
-      className="fixed top-0 inset-x-0 z-[60] bg-[#0b0d14]/85 backdrop-blur-xl border-b border-white/[0.07]"
+      // `pt` = la zona de la hora y la batería del teléfono (app instalada / `viewport-fit: cover`):
+      // sin él la cabecera quedaba debajo de ellas (Fernando, 2026-10-27). En el navegador vale 0.
+      className="fixed top-0 inset-x-0 z-[60] pt-[var(--seguro-arriba)] bg-[#0b0d14]/85 backdrop-blur-xl border-b border-white/[0.07]"
     >
       <div className="relative mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group" onClick={() => setAbierto(false)}>

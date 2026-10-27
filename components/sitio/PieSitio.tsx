@@ -53,7 +53,7 @@ export default function PieSitio() {
        * `z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos de
        * acceso (`z-[220]`), que deben taparlo.
        */
-      className="fixed bottom-0 inset-x-0 z-50 border-t border-white/[0.07] bg-[#080a10] py-5"
+      className="fixed bottom-0 inset-x-0 z-50 border-t border-white/[0.07] bg-[#080a10] pt-5 pb-[calc(1.25rem+var(--seguro-abajo))]"
       itemScope
       itemType="https://schema.org/Organization"
     >

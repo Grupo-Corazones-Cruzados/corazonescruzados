@@ -89,7 +89,7 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
           Sin esto, una página corta con fondo propio —`/soluciones`, que es blanco— terminaba
           antes que la página y dejaba una franja del papel `#f6f5f9` debajo. Se veía como un
           cambio de color a media pantalla; lo vio Fernando. */}
-      <main className="claro-publico flex-1 flex flex-col pt-16 pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
+      <main className="claro-publico flex-1 flex flex-col pt-[calc(4rem+var(--seguro-arriba))] pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
         <TransicionSeccion>{children}</TransicionSeccion>
       </main>
       <PieSitio />

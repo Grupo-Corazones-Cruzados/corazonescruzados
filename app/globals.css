@@ -1883,8 +1883,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    Lo usan: `app/(sitio)/layout.tsx`, la portada (`.landing-page`) y las columnas
    fijas de los documentos legales.
    ═══════════════════════════════════════════════════════════════════════════════ */
-:root { --alto-pie: 89px; }
-@media (min-width: 640px) { :root { --alto-pie: 59px; } }
+/* + la barrita de inicio del teléfono (`--seguro-abajo`): el pie crece con ella (2026-10-27). */
+:root { --alto-pie: calc(89px + var(--seguro-abajo, 0px)); }
+@media (min-width: 640px) { :root { --alto-pie: calc(59px + var(--seguro-abajo, 0px)); } }
 
 /* La portada le reserva el hueco igual que el resto: su pie de pixel art lleva el
    altavoz del chat del mundo y el copyright, y quedarían por detrás de la barra. */

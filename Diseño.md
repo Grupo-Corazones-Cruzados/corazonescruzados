@@ -248,6 +248,11 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > chispas, y queda respirando. Estilos `.titular-choque`, `.choque-*`, `.emblema-xh`. Con
 > «reducir movimiento», queda directamente el estado final.
 >
+> **Márgenes seguros en el sitio público (2026-10-27).** `CabeceraSitio` lleva
+> `pt-[var(--seguro-arriba)]` (la hora y la batería), `PieSitio` suma `--seguro-abajo` a su relleno
+> y `--alto-pie` lo incluye; el héroe y el `main` de `(sitio)` empiezan en `4rem + --seguro-arriba`.
+> Verificado forzando 47/34 px: el logo baja a 64 px y no hay desplazamiento.
+>
 > **Modo ligero en pantallas táctiles** (Fernando, 2026-10-26: «en teléfono se ve ralentizado»):
 > `@media (hover: none), (pointer: coarse)` quita los `backdrop-filter` (cristales más opacos),
 > congela la malla de puntos, manchas, nebulosas y el halo, quita el `blur` de las entradas
