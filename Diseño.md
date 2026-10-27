@@ -365,6 +365,17 @@ esquinas de cámara no cambian.
   · **Cada tarjeta centrada en el espacio libre de SU mitad**, no pegada a la raya
     (`.tarjetas-lado`): entre `--hueco-raya` y, desde `xl`, la columna del HUD de ese lado
     (`--reserva-lado: calc(3vw + 234px)`). Por debajo de `xl` no hay HUD: centro de la mitad.
+- **La pantalla de inicio, como la de título de un videojuego (2026-10-26):** vuelven la insignia,
+  el titular y el pensamiento ANTES de elegir, reformulados (`.inicio-portada`):
+  · insignia en cápsula de cristal sobre la raya (se oculta con `max-height: 640px`);
+  · **titular en UNA línea partida por la raya**: «Un *Corazón* puede» sobre el cielo y
+    «cruzar al mundo» sobre la Plataforma, cada mitad encima de la tarjeta de su mundo
+    (Space Grotesk, `min(clamp(1.45rem, 3.1vw, 3.4rem), 8vh)`; a 3,7vw rozaba el HUD);
+  · las dos tarjetas;
+  · **el pensamiento como barra de consejo** de pantalla de carga (`FeaturedThought compacto`,
+    `.pensamiento-barra`): cápsula de cristal «● PENSAMIENTO · “…” · fecha», en una línea con
+    puntos suspensivos; en el teléfono, en tres líneas.
+  Tras elegir siguen apareciendo, en grande y centrados, como hasta ahora.
 - **La pestaña de la portada vuelve a llamarse «Inicio»** (era «Historia»; `lib/sitio/contenido.ts`).
 - **Tarjetas de panel solo desde `xl`**: por debajo chocarían con el titular. Debajo de `xl`
   la escena es fondo, malla de puntos, manchas y cuadraditos que suben.

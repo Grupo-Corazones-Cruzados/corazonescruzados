@@ -17,7 +17,17 @@ interface Featured { content: string; createdAt: string }
  * respuesta se muestra un cargador, para que su aparición se sienta esperada y no un
  * parpadeo. Si no hay ninguno publicado, no se pinta nada.
  */
-export default function FeaturedThought({ windAway = false, tema = 'aventura' }: { windAway?: boolean; tema?: 'aventura' | 'progreso' }) {
+export default function FeaturedThought({
+  windAway = false,
+  tema = 'aventura',
+  compacto = false,
+}: {
+  windAway?: boolean;
+  tema?: 'aventura' | 'progreso';
+  /** La barra de consejo de la pantalla de inicio (2026-10-26): una cápsula de cristal sobre
+   *  la raya, «PENSAMIENTO · “…” · fecha», como los consejos de una pantalla de carga. */
+  compacto?: boolean;
+}) {
   const [data, setData] = useState<Featured | null>(null);
   const [loading, setLoading] = useState(true);
   const [shown, setShown] = useState(0);   // caracteres ya "escritos"
@@ -54,6 +64,39 @@ export default function FeaturedThought({ windAway = false, tema = 'aventura' }:
     ? new Date(data.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
     : '';
   const escribiendo = !!data && shown < data.content.length;
+
+  if (compacto) {
+    // Si no hay pensamiento publicado, no se pinta nada (ni la cápsula vacía).
+    if (!loading && !data) return null;
+    return (
+      <div className="pensamiento-barra cristal-portada pointer-events-none">
+        <span className="pensamiento-barra-etiqueta">
+          <span className="pensamiento-barra-punto" aria-hidden="true" />
+          Pensamiento
+        </span>
+        {loading ? (
+          <span className="flex items-center gap-1.5" role="status" aria-label="Cargando pensamiento">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                style={{ width: 5, height: 5, display: 'inline-block', background: 'var(--color-accent-glow)', animation: `thoughtDot 1.1s ease-in-out ${i * 0.16}s infinite` }}
+              />
+            ))}
+          </span>
+        ) : data ? (
+          <>
+            <span className="pensamiento-barra-texto">
+              <span className="comilla-pensamiento" aria-hidden="true">“</span>
+              {data.content.slice(0, shown)}
+              {escribiendo && <span style={{ color: 'var(--color-accent-glow)', animation: 'thoughtCaret 0.9s steps(1) infinite' }}>▌</span>}
+              {!escribiendo && <span className="comilla-pensamiento" aria-hidden="true">”</span>}
+            </span>
+            <span className="pensamiento-barra-fecha">{fecha}</span>
+          </>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div

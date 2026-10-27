@@ -2489,6 +2489,86 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .mundo-insignia { font-size: 0.58rem; letter-spacing: 0.2em; padding: 6px 12px; }
 }
 
+/* LA PANTALLA DE INICIO (2026-10-26): insignia, titular partido por la raya, tarjetas y la
+   barra de consejo del pensamiento. */
+.inicio-portada { display: flex; flex-direction: column; align-items: stretch; }
+.inicio-insignia {
+  align-self: center;
+  margin-bottom: clamp(12px, 2.6vh, 24px);
+  padding: 7px 16px;
+  border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(233, 229, 247, 0.85);
+  white-space: nowrap;
+}
+.inicio-titular {
+  margin-bottom: clamp(18px, 4vh, 40px);
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: min(clamp(1.45rem, 3.1vw, 3.4rem), 8vh);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+.inicio-titular-izquierda { color: #ffffff; }
+.inicio-titular-derecha { --mundo-cruzar: #dc2626; --mundo-mundo: #6d28d9; }
+.inicio-pensamiento { display: flex; justify-content: center; margin-top: clamp(18px, 4vh, 36px); }
+
+/* Ventanas BAJAS (~525 px, o con zoom): sin la insignia y con el escenario de las
+   tarjetas más bajo, o el bloque no cabe sobre el pie. */
+@media (max-height: 640px) {
+  .inicio-insignia { display: none; }
+  .tm-icono { height: 64px; }
+  .tarjeta-mundo { gap: 5px; padding-top: 12px; padding-bottom: 12px; }
+  .inicio-pensamiento { margin-top: 14px; }
+  .inicio-titular { margin-bottom: 14px; }
+}
+
+/* El pensamiento como barra de consejo de pantalla de carga. */
+.pensamiento-barra {
+  --pens-texto: #e7e3f4;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* 640 px: más ancha, a 1280 px rozaba las tarjetas del HUD de abajo. */
+  max-width: min(92vw, 640px);
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+.pensamiento-barra-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+.pensamiento-barra-punto { width: 7px; height: 7px; border-radius: 9999px; background: #e879f9; box-shadow: 0 0 8px #e879f9; animation: eaBrillo 1.8s ease-in-out infinite; }
+.pensamiento-barra-texto {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #e7e3f4;
+}
+.pensamiento-barra-fecha { flex: none; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.08em; color: #8b84a8; }
+@media (max-width: 639.98px) {
+  .inicio-insignia { font-size: 0.56rem; letter-spacing: 0.18em; padding: 6px 12px; }
+  .pensamiento-barra { flex-wrap: wrap; justify-content: center; border-radius: 18px; gap: 6px 10px; padding: 10px 16px; text-align: center; }
+  .pensamiento-barra-texto { white-space: normal; flex-basis: 100%; order: 2; font-size: 0.95rem; }
+  .pensamiento-barra-fecha { order: 3; }
+}
+
 /* El pensamiento, en cada mundo. */
 .pensamiento-aventura { --pens-etiqueta: #a78bfa; --pens-texto: #e7e3f4; --pens-fecha: #8b84a8; }
 .pensamiento-progreso {

@@ -2611,7 +2611,7 @@ export default function LandingPage() {
       {/* ====== HERO ====== */}
       <section
         ref={heroSectionRef}
-        className="relative min-h-[90vh] flex items-center justify-center text-center px-6 py-16 overflow-hidden"
+        className="relative min-h-[90vh] flex items-center justify-center text-center px-6 pt-16 pb-8 overflow-hidden"
       >
         {/* Warp wrapper — scales to "fly into" the planet on click */}
         <div
@@ -2881,7 +2881,32 @@ export default function LandingPage() {
           <h1 className="sr-only">Un Corazón puede cruzar al mundo</h1>
 
           {!mundoElegido ? (
-            <TarjetasMundo onElegir={setMundoElegido} bloqueado={landingLocked} />
+            // LA PANTALLA DE INICIO, COMO LA DE TÍTULO DE UN VIDEOJUEGO (2026-10-26):
+            // insignia en una cápsula sobre la raya; el titular en UNA línea partida por la
+            // raya —«Un Corazón puede» sobre el cielo, «cruzar al mundo» sobre la Plataforma,
+            // cada mitad encima de la tarjeta de su mundo—; las dos tarjetas; y el pensamiento
+            // como barra de consejo abajo, sobre la raya.
+            <div className="inicio-portada">
+              <p className="cristal-portada inicio-insignia aparecer" style={{ ['--retraso' as string]: '100ms' }}>
+                Proyecto de Desarrollo Humano
+              </p>
+              <div className="cruce-rejilla inicio-titular aparecer" aria-hidden="true" style={{ ['--retraso' as string]: '220ms' }}>
+                {/* Un solo `<span>` por mitad: las columnas son `flex` y, sin él, cada palabra
+                    sería una pieza suelta apilada. */}
+                <p className="cruce-izquierda inicio-titular-izquierda">
+                  <span>Un <em className="titular-serif">Coraz&oacute;n</em> puede</span>
+                </p>
+                <p className="cruce-derecha inicio-titular-derecha">
+                  <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al mundo</span></span>
+                </p>
+              </div>
+              <div className="aparecer" style={{ ['--retraso' as string]: '360ms' }}>
+                <TarjetasMundo onElegir={setMundoElegido} bloqueado={landingLocked} />
+              </div>
+              <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>
+                <FeaturedThought compacto />
+              </div>
+            </div>
           ) : (
             <div className={`mundo-elegido mundo-${mundoElegido}`}>
               <p className="mundo-insignia aparecer" style={{ ['--retraso' as string]: '420ms' }}>
