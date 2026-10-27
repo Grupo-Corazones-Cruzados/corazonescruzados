@@ -2674,7 +2674,13 @@ export default function LandingPage() {
       {/* ====== HERO ====== */}
       <section
         ref={heroSectionRef}
-        className="relative min-h-[90vh] flex items-center justify-center text-center px-6 pt-16 pb-8 overflow-hidden"
+        // Antes de jugar, el héroe mide EXACTAMENTE lo visible (la ventana menos el pie): la
+        // portada no se desliza (Fernando, 2026-10-26). En el teléfono, las tarjetas van una
+        // bajo otra y en uno pequeño no caben: ahí puede crecer (si no, se cortarían). Con el
+        // juego en marcha, como antes.
+        className={`relative flex items-center justify-center text-center px-6 pt-16 pb-8 overflow-hidden ${
+          windAway ? 'min-h-[90vh]' : 'min-h-[calc(100dvh-var(--alto-pie))] md:h-[calc(100dvh-var(--alto-pie))]'
+        }`}
       >
         {/* Warp wrapper — scales to "fly into" the planet on click */}
         <div
@@ -3885,7 +3891,9 @@ export default function LandingPage() {
       <SavePointIndicator trigger={savePointTrigger} />
 
       {/* ====== FOOTER ====== */}
-      <footer className="border-t-2 border-accent/20 py-8 px-6 text-center relative">
+      {/* Solo ocupa sitio mientras habla el chat del mundo (intro del juego). Antes de jugar
+          estaba vacío y sumaba 66 px: la portada se deslizaba (Fernando, 2026-10-26). */}
+      <footer className={`border-t-2 border-accent/20 py-8 px-6 text-center relative ${worldChatVisible ? '' : 'hidden'}`}>
         {/* World chat speaker — sits just above the purple top border */}
         <div
           aria-hidden={!worldChatVisible || worldChatComplete}

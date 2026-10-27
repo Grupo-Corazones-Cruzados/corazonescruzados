@@ -410,6 +410,12 @@ esquinas de cámara no cambian.
     sitio. Si ya tienes cuenta de candidato, «Soy nuevo» dice «Ya tienes cuenta de candidato»
     y lleva a iniciar sesión, en vez de desaparecer.
   · Teléfono: una columna, la grande en horizontal y sin el camino.
+  · **La portada no se desliza** (Fernando, 2026-10-26). Antes de jugar, el héroe mide
+    EXACTAMENTE `100dvh − --alto-pie` (desde `md`; en el teléfono es `min-h`, para que en uno
+    pequeño crezca en vez de cortar), y `--roles-alto` se calcula con ese espacio
+    (`100dvh − pie − 64 px − 214 px`). El `<footer>` pixel del chat del mundo solo ocupa sitio
+    mientras habla la intro (`hidden` si no): vacío sumaba 66 px. Verificado: `scrollHeight` ==
+    alto de la ventana de 1920×1080 a 961×525, en inicio y en los dos mundos.
   · **«← Volver»** (`.roles-volver`, 2026-10-26): discreto, solo texto al 70 % de opacidad,
     sobre las tarjetas a la izquierda; vuelve a la pantalla de inicio. Escape hace lo mismo si no
     hay un diálogo abierto.

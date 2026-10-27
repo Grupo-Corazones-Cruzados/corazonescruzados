@@ -2886,7 +2886,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    ocupan ~2/3 del alto de la pantalla (Fernando: «no aprovechas la altura»). Desde `xl` caben
    en el hueco entre las tarjetas decorativas de los lados (3 % + 210 px + aire). */
 .roles-mundo {
-  --roles-alto: clamp(300px, 64vh, 600px);
+  /* Lo que queda del alto visible (ventana − pie − cabecera − insignia, «Volver» y títulos):
+     así las tarjetas caben siempre y la portada no se desliza. */
+  --roles-alto: clamp(200px, calc(100dvh - var(--alto-pie) - 64px - 214px), 600px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: clamp(14px, 2vw, 26px);
@@ -3016,7 +3018,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 @media (max-height: 640px) {
   .mundo-insignia { display: none; }
-  .roles-mundo { --roles-alto: clamp(240px, 61vh, 360px); margin-top: 0; }
+  .roles-mundo { --roles-alto: clamp(200px, calc(100dvh - var(--alto-pie) - 64px - 120px), 380px); margin-top: 0; }
   .rol-fila { padding: 10px 16px; }
   .rol-fila .rol-icono { width: 36px; height: 36px; }
   .rol-fila .rol-desc { font-size: 0.74rem; }
