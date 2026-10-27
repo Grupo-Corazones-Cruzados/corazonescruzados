@@ -117,7 +117,7 @@ export default function EntryChoiceModal({
         <div className="px-5 py-4 flex flex-col gap-2.5 bg-digi-dark">
           {opciones.map((o) =>
             o.cargando ? (
-              <LoadingCard key={o.clave} label={o.etiqueta} />
+              <LoadingCard key={o.clave} label={o.descripcion} />
             ) : (
               <Option
                 key={o.clave}

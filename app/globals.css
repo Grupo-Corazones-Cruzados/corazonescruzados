@@ -2882,56 +2882,126 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 
 /* ═══ LAS TARJETAS DE ROLES (`RolesMundo`, 2026-10-26) ═══════════════════════════
    Tras elegir un mundo: las opciones de acceso como tarjetas con el tema del mundo. */
+/* Dos grupos: «Soy nuevo» (una tarjeta grande) y «Ya tengo cuenta» (tres apiladas). Juntos
+   ocupan ~2/3 del alto de la pantalla (Fernando: «no aprovechas la altura»). Desde `xl` caben
+   en el hueco entre las tarjetas decorativas de los lados (3 % + 210 px + aire). */
 .roles-mundo {
+  --roles-alto: clamp(300px, 64vh, 600px);
   display: grid;
-  grid-template-columns: repeat(var(--roles-n, 4), minmax(0, 1fr));
-  gap: clamp(10px, 1.4vw, 18px);
-  width: min(94vw, 1080px);
-  margin-top: clamp(18px, 4vh, 36px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(14px, 2vw, 26px);
+  width: min(94vw, 980px);
+  margin-top: clamp(14px, 3vh, 28px);
+  text-align: left;
 }
-/* Por debajo de 1500 px, 2×2 y en HORIZONTAL (icono a la izquierda): así caben entre las
-   tarjetas decorativas de los lados y en ventanas bajas. Desde 1500 px, fila de cuatro en
-   el hueco que dejan esas tarjetas (3 % del borde + 210 px + aire, a cada lado). */
-@media (max-width: 1499.98px) {
-  .roles-mundo { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(94vw, 700px); }
-  /* `align-content: start`: si la vecina es más alta, el hueco sobrante va abajo y no entre
-     el título y la descripción. */
-  .roles-mundo .rol-tarjeta { display: grid; grid-template-columns: auto 1fr auto; column-gap: 14px; row-gap: 4px; align-items: start; align-content: start; }
-  .roles-mundo .rol-icono { grid-row: 1 / span 3; }
-  .roles-mundo .rol-titulo, .roles-mundo .rol-desc, .roles-mundo .rol-insignia { grid-column: 2; }
-  .roles-mundo .rol-flecha { grid-column: 3; grid-row: 1 / span 3; align-self: center; margin: 0; }
+@media (min-width: 1280px) { .roles-mundo { width: min(980px, calc(100vw - 2 * (3vw + 262px))); } }
+.roles-grupo { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.roles-grupo-titulo {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  padding-left: 4px;
 }
-@media (min-width: 1500px) { .roles-mundo { width: min(1080px, calc(100vw - 2 * (3vw + 240px))); } }
-@media (max-width: 639.98px) { .roles-mundo { grid-template-columns: 1fr; } }
-@media (max-height: 640px) {
-  .mundo-insignia { display: none; }
-  .roles-mundo { margin-top: 14px; gap: 10px; }
-  .roles-mundo .rol-tarjeta { padding: 10px 14px; }
-  .roles-mundo .rol-icono { width: 32px; height: 32px; }
-  .mundo-elegido .pensamiento-barra { padding: 8px 18px 10px; }
-}
+.roles-grupo-nuevo .rol-tarjeta { height: var(--roles-alto); }
+.roles-pila { display: flex; flex-direction: column; gap: clamp(10px, 1.6vh, 14px); height: var(--roles-alto); }
+.roles-pila .rol-tarjeta { flex: 1; }
+
 .rol-tarjeta {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding: clamp(14px, 2.2vh, 20px);
-  border-radius: 18px;
+  border-radius: 20px;
   text-align: left;
   overflow: hidden;
   transition: transform 240ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 240ms ease, border-color 240ms ease;
 }
-.rol-tarjeta:hover:not(:disabled), .rol-tarjeta:focus-visible { transform: translateY(-6px); }
+.rol-tarjeta:not([aria-disabled]):hover, .rol-tarjeta:focus-visible { transform: translateY(-5px); }
 .rol-tarjeta:focus-visible { outline: 2px solid #e879f9; outline-offset: 4px; }
-.rol-icono { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-.rol-icono svg { width: 20px; height: 20px; }
-.rol-titulo { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: clamp(0.98rem, 1.15vw, 1.12rem); letter-spacing: -0.02em; line-height: 1.2; }
-.rol-desc { font-family: 'Inter', system-ui, sans-serif; font-size: 0.8rem; line-height: 1.5; }
-.rol-insignia { font-family: 'Inter', system-ui, sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
-.rol-flecha { margin-top: auto; align-self: flex-end; width: 18px; height: 18px; transition: transform 200ms ease; }
-.rol-tarjeta:hover:not(:disabled) .rol-flecha { transform: translateX(4px); }
-.rol-cargando { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 140px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.78rem; }
+.rol-tarjeta[aria-disabled] { cursor: progress; }
+.rol-cuerpo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.rol-icono { flex: none; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
+.rol-titulo { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+.rol-desc { font-family: 'Inter', system-ui, sans-serif; line-height: 1.5; }
+.rol-insignia { align-self: flex-start; font-family: 'Inter', system-ui, sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.rol-flecha { flex: none; width: 20px; height: 20px; transition: transform 200ms ease; }
+.rol-tarjeta:not([aria-disabled]):hover .rol-flecha { transform: translateX(4px); }
+
+/* La grande: icono arriba con un halo que respira, texto abajo, flecha en la esquina. */
+.rol-grande { flex-direction: column; gap: 18px; padding: clamp(20px, 3.2vh, 32px); }
+.rol-grande .rol-icono { width: clamp(64px, 11vh, 96px); height: clamp(64px, 11vh, 96px); border-radius: 26px; animation: rolHalo 2.6s ease-in-out infinite; }
+.rol-grande .rol-icono svg { width: 46%; height: 46%; }
+.rol-grande .rol-cuerpo { margin-top: auto; gap: 10px; }
+.rol-grande .rol-titulo { font-size: clamp(1.35rem, 2.2vw, 2rem); }
+.rol-grande .rol-desc { font-size: clamp(0.85rem, 1vw, 0.98rem); max-width: 40ch; }
+/* El camino: los pasos de la postulación, en UNA columna (en dos se cortaban los nombres
+   largos), entrando uno tras otro y unidos por una línea, como una ruta. */
+.rol-camino {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(4px, 0.9vh, 9px);
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+.rol-camino > span { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; animation: aparecer 500ms ease both; animation-delay: calc(900ms + var(--i) * 70ms); }
+.rol-camino::before { content: ''; position: absolute; left: 9.5px; top: 10px; bottom: 10px; width: 1px; background: currentColor; opacity: 0.2; }
+.rol-camino-num { position: relative; flex: none; width: 20px; height: 20px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.64rem; font-weight: 700; }
+.roles-aventura .rol-camino { color: #d4cdf0; }
+.roles-aventura .rol-camino-num { background: rgba(123, 95, 191, 0.3); color: #e9e3ff; }
+.roles-progreso .rol-camino { color: #3a3150; }
+.roles-progreso .rol-camino-num { background: #efe9fc; color: #5b3aae; }
+.rol-comprobando .rol-camino { opacity: 0.5; }
+@media (max-height: 760px) { .rol-camino { display: none; } }
+.rol-grande .rol-flecha { position: absolute; right: clamp(20px, 3vh, 30px); top: clamp(20px, 3.2vh, 32px); width: 24px; height: 24px; }
+@keyframes rolHalo { 50% { box-shadow: 0 0 0 10px var(--rol-halo, rgba(167, 139, 250, 0.12)); } }
+
+/* Las de la pila: fila con icono, texto y flecha. */
+.rol-fila { flex-direction: row; align-items: center; gap: 16px; padding: 14px 20px; }
+.rol-fila .rol-icono { width: 44px; height: 44px; }
+.rol-fila .rol-icono svg { width: 20px; height: 20px; }
+.rol-fila .rol-cuerpo { flex: 1; gap: 3px; }
+.rol-fila .rol-titulo { font-size: clamp(1rem, 1.2vw, 1.15rem); }
+.rol-fila .rol-desc { font-size: 0.8rem; }
+
+/* Comprobando el estado: la tarjeta YA está, con un brillo que la recorre. */
+.rol-brillo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--rol-brillo, rgba(255, 255, 255, 0.08)) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: rolBrillo 1.4s linear infinite;
+  pointer-events: none;
+}
+@keyframes rolBrillo { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.rol-comprobando .rol-desc, .rol-comprobando .rol-flecha { opacity: 0.55; }
+
+@media (max-width: 767.98px) {
+  .roles-mundo { grid-template-columns: 1fr; }
+  .roles-grupo-nuevo .rol-tarjeta, .roles-pila { height: auto; }
+  .rol-grande { flex-direction: row; align-items: center; gap: 16px; padding: 18px; }
+  .rol-grande .rol-icono { width: 56px; height: 56px; border-radius: 18px; }
+  .rol-grande .rol-cuerpo { margin-top: 0; flex: 1; gap: 5px; }
+  .rol-grande .rol-flecha { position: static; }
+  .rol-grande .rol-titulo { font-size: 1.15rem; }
+  .rol-camino { display: none; }
+}
+@media (max-height: 640px) {
+  .mundo-insignia { display: none; }
+  .roles-mundo { --roles-alto: clamp(260px, 70vh, 380px); margin-top: 6px; }
+  .rol-fila { padding: 10px 16px; }
+  .rol-fila .rol-icono { width: 36px; height: 36px; }
+  .rol-fila .rol-desc { font-size: 0.74rem; }
+  .rol-grande .rol-desc { font-size: 0.82rem; }
+}
+.roles-aventura .roles-grupo-titulo { color: #c4b5fd; }
+.roles-progreso .roles-grupo-titulo { color: #6d28d9; }
+.roles-aventura { --rol-halo: rgba(167, 139, 250, 0.16); --rol-brillo: rgba(196, 181, 253, 0.12); }
+.roles-progreso { --rol-halo: rgba(109, 40, 217, 0.1); --rol-brillo: rgba(109, 40, 217, 0.07); }
 
 .roles-aventura .rol-tarjeta {
   color: #f1edff;
@@ -2939,9 +3009,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   border: 1.5px solid rgba(167, 139, 250, 0.4);
   box-shadow: 0 20px 44px -24px rgba(0, 0, 0, 0.85);
 }
-.roles-aventura .rol-tarjeta:hover:not(:disabled) { border-color: rgba(196, 181, 253, 0.85); box-shadow: 0 26px 50px -22px rgba(0, 0, 0, 0.9), 0 0 34px -6px rgba(167, 139, 250, 0.6); }
+.roles-aventura .rol-tarjeta:not([aria-disabled]):hover { border-color: rgba(196, 181, 253, 0.85); box-shadow: 0 26px 50px -22px rgba(0, 0, 0, 0.9), 0 0 34px -6px rgba(167, 139, 250, 0.6); }
 .roles-aventura .rol-icono { background: rgba(123, 95, 191, 0.24); color: #c4b5fd; }
-.roles-aventura .rol-desc, .roles-aventura .rol-cargando { color: #aaa3c8; }
+.roles-aventura .rol-desc { color: #aaa3c8; }
 .roles-aventura .rol-flecha { color: #c4b5fd; }
 .roles-progreso .rol-tarjeta {
   color: #17122b;
@@ -2949,9 +3019,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   border: 1.5px solid rgba(75, 45, 142, 0.14);
   box-shadow: 0 20px 44px -26px rgba(75, 45, 142, 0.5);
 }
-.roles-progreso .rol-tarjeta:hover:not(:disabled) { border-color: rgba(109, 40, 217, 0.45); box-shadow: 0 26px 50px -22px rgba(75, 45, 142, 0.55), 0 0 34px -10px rgba(167, 139, 250, 0.8); }
+.roles-progreso .rol-tarjeta:not([aria-disabled]):hover { border-color: rgba(109, 40, 217, 0.45); box-shadow: 0 26px 50px -22px rgba(75, 45, 142, 0.55), 0 0 34px -10px rgba(167, 139, 250, 0.8); }
 .roles-progreso .rol-icono { background: #efe9fc; color: #5b3aae; }
-.roles-progreso .rol-desc, .roles-progreso .rol-cargando { color: #5b5470; }
+.roles-progreso .rol-desc { color: #5b5470; }
 .roles-progreso .rol-flecha { color: #6d28d9; }
 /* Estados: aprobada (verde) y a la espera (ámbar), legibles en los dos mundos. */
 .rol-tarjeta.rol-success { border-color: rgba(34, 197, 94, 0.55); }
@@ -2961,3 +3031,8 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .rol-tarjeta.rol-warning .rol-icono, .rol-tarjeta.rol-warning .rol-insignia { color: #d97706; }
 .roles-aventura .rol-tarjeta.rol-warning .rol-icono, .roles-aventura .rol-tarjeta.rol-warning .rol-insignia { color: #fbbf24; }
 @media (prefers-reduced-motion: reduce) { .rol-tarjeta, .rol-flecha { transition: none; } }
+/* La grande destaca: un resplandor de su mundo desde arriba. */
+.roles-aventura .rol-grande { background: radial-gradient(120% 70% at 30% 0%, rgba(123, 95, 191, 0.38), transparent 60%), linear-gradient(180deg, rgba(30, 20, 60, 0.92), rgba(12, 9, 26, 0.94)); }
+.roles-progreso .rol-grande { background: radial-gradient(120% 70% at 30% 0%, rgba(167, 139, 250, 0.3), transparent 60%), linear-gradient(180deg, #ffffff, #f4effd); }
+.rol-comprobando .rol-insignia { color: inherit; opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .rol-brillo, .rol-grande .rol-icono { animation: none; } }

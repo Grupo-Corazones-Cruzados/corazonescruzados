@@ -1188,6 +1188,16 @@ const SLIDES: Slide[] = [
 /* Componente principal                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Los pasos de la postulación, en orden: los sliders y el formulario final. Lo usan el raíl
+ * de este diálogo y la tarjeta «Soy nuevo» de la portada (`RolesMundo`), que enseña el camino
+ * antes de empezarlo.
+ */
+export const PASOS_POSTULACION: { label: string; Icon: IconType }[] = [
+  ...SLIDES.map((s) => ({ label: s.title, Icon: s.Icon })),
+  { label: 'Postulación', Icon: Send },
+];
+
 export default function OnboardingSlidersModal({
   onComplete,
   onClose,
@@ -1282,7 +1292,7 @@ export default function OnboardingSlidersModal({
 
             <nav className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-0.5">
               <div style={{ ...kickerStyle, padding: '6px 10px 4px' }}>Pasos</div>
-              {[...SLIDES.map((s) => ({ label: s.title, Icon: s.Icon })), { label: 'Postulación', Icon: Send }].map(
+              {PASOS_POSTULACION.map(
                 (s, i) => {
                   const on = i === index;
                   const done = i < total ? accepted[i] : false;

@@ -12,6 +12,13 @@
  * mismas opciones como TARJETAS con el tema del mundo elegido (`RolesMundo`): las dos
  * superficies pintan esta lista, así que no pueden separarse. «Un control que ya existe se
  * usa o se extrae, nunca se reescribe parecido.»
+ *
+ * ── LA LISTA NO CAMBIA DE FORMA (Fernando, 2026-10-26) ─────────────────────────
+ * Siempre salen las MISMAS cuatro opciones, en el mismo orden: mientras se consulta el
+ * estado, la opción ya está con su título y `cargando: true`; al llegar la respuesta cambia
+ * su contenido, no su sitio. Antes una tarjeta «Verificando…» aparecía y se iba, y si ya
+ * tenías cuenta de candidato la de postularse desaparecía: confundía. Ahora, en ese caso,
+ * dice «Ya tienes cuenta de candidato» y lleva a iniciar sesión.
  */
 
 import { useEffect, useState, type ComponentType } from 'react';
@@ -31,18 +38,19 @@ export interface AccionesAcceso {
   onClientPending: (info: { email?: string | null }) => void;
 }
 
-export type OpcionAcceso =
-  | { clave: string; cargando: true; etiqueta: string }
-  | {
-      clave: string;
-      cargando?: false;
-      tono: TonoOpcion;
-      Icono: ComponentType<{ className?: string }>;
-      insignia?: string;
-      titulo: string;
-      descripcion: string;
-      onClick: () => void;
-    };
+export interface OpcionAcceso {
+  clave: 'candidato' | 'soy-candidato' | 'cliente' | 'miembro';
+  /** «nuevo» = la postulación; «cuenta» = quien ya tiene cuenta. */
+  grupo: 'nuevo' | 'cuenta';
+  /** Aún se está consultando su estado: se pinta igual, sin poder pulsarse. */
+  cargando?: boolean;
+  tono: TonoOpcion;
+  Icono: ComponentType<{ className?: string }>;
+  insignia?: string;
+  titulo: string;
+  descripcion: string;
+  onClick: () => void;
+}
 
 /**
  * Nombre del destino, con su preposición — de aquí sale en TODO el acceso (Fernando,
@@ -91,11 +99,24 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
 
   const opciones: OpcionAcceso[] = [];
 
+  const sinAccion = () => undefined;
+
   if (proposal === null) {
-    opciones.push({ clave: 'candidato', cargando: true, etiqueta: 'Verificando tu estado de postulación…' });
+    opciones.push({
+      clave: 'candidato',
+      grupo: 'nuevo',
+      cargando: true,
+      tono: 'default',
+      Icono: UserPlus,
+      insignia: 'Comprobando…',
+      titulo: 'Quiero postularme como candidato',
+      descripcion: 'Comprobando si ya te postulaste desde este dispositivo…',
+      onClick: sinAccion,
+    });
   } else if (proposal.exists && proposal.status === 'approved') {
     opciones.push({
       clave: 'candidato',
+      grupo: 'nuevo',
       tono: 'success',
       Icono: BadgeCheck,
       insignia: 'Aprobada',
@@ -106,6 +127,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
   } else if (proposal.exists) {
     opciones.push({
       clave: 'candidato',
+      grupo: 'nuevo',
       tono: 'warning',
       Icono: MailWarning,
       insignia: 'En revisión',
@@ -113,10 +135,23 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       descripcion: 'Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato.',
       onClick: () => acciones.onProposalPending({ email: proposal.email, emailVerified: proposal.emailVerified }),
     });
-  } else if (!proposal.hasCandidateAccount) {
-    // Si ya es candidato con cuenta no se ofrece «postularme»: usa «Soy candidato».
+  } else if (proposal.hasCandidateAccount) {
+    // Ya es candidato con cuenta: no se ofrece «postularme», pero la tarjeta se queda y lleva
+    // a iniciar sesión (antes desaparecía).
     opciones.push({
       clave: 'candidato',
+      grupo: 'nuevo',
+      tono: 'success',
+      Icono: BadgeCheck,
+      insignia: 'Cuenta activa',
+      titulo: 'Ya tienes cuenta de candidato',
+      descripcion: 'Te postulaste y tu cuenta ya está creada. Inicia sesión como candidato para continuar.',
+      onClick: acciones.onCandidateLogin,
+    });
+  } else {
+    opciones.push({
+      clave: 'candidato',
+      grupo: 'nuevo',
       tono: 'default',
       Icono: UserPlus,
       titulo: 'Quiero postularme como candidato',
@@ -127,6 +162,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
 
   opciones.push({
     clave: 'soy-candidato',
+    grupo: 'cuenta',
     tono: 'default',
     Icono: LogIn,
     titulo: 'Soy candidato',
@@ -135,10 +171,21 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
   });
 
   if (client === null) {
-    opciones.push({ clave: 'cliente', cargando: true, etiqueta: 'Verificando tu cuenta de cliente…' });
+    opciones.push({
+      clave: 'cliente',
+      grupo: 'cuenta',
+      cargando: true,
+      tono: 'default',
+      Icono: Briefcase,
+      insignia: 'Comprobando…',
+      titulo: 'Soy cliente',
+      descripcion: 'Comprobando tu cuenta de cliente…',
+      onClick: sinAccion,
+    });
   } else if (client.exists && !client.verified) {
     opciones.push({
       clave: 'cliente',
+      grupo: 'cuenta',
       tono: 'warning',
       Icono: MailWarning,
       insignia: 'Verificación pendiente',
@@ -149,6 +196,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
   } else {
     opciones.push({
       clave: 'cliente',
+      grupo: 'cuenta',
       tono: 'default',
       Icono: Briefcase,
       titulo: 'Soy cliente',
@@ -162,6 +210,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
 
   opciones.push({
     clave: 'miembro',
+    grupo: 'cuenta',
     tono: 'default',
     Icono: ShieldCheck,
     titulo: 'Ingresar como miembro',

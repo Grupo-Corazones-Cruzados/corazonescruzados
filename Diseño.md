@@ -395,6 +395,21 @@ esquinas de cámara no cambian.
   decorativas; por debajo, 2×2 en horizontal (icono a la izquierda, `align-content: start`);
   1 columna en el teléfono. **Dentro de un mundo ya no hay titular ni pensamiento** (Fernando,
   2026-10-26): solo la insignia y las tarjetas de roles. Esos dos solo están en la pantalla de inicio.
+- **⭐ Rediseño de los roles en DOS GRUPOS (2026-10-26, Fernando: «no confunda esa tarjeta que
+  aparece y desaparece cuando valida si eres candidato… no aprovechas la altura»).** Sustituye
+  a la rejilla 2×2 / fila de 4:
+  · **«Soy nuevo»**: UNA tarjeta grande (`.rol-grande`) a toda la altura (`--roles-alto:
+    clamp(300px, 64vh, 600px)`): icono grande con halo, el CAMINO de la postulación (los 8
+    pasos reales, `PASOS_POSTULACION` exportado de `OnboardingSlidersModal`, en una columna
+    unida por una línea; se oculta con `max-height: 760px`) y título y descripción abajo.
+  · **«Ya tengo cuenta»**: candidato, cliente y miembro apiladas (`.rol-fila`), repartiéndose
+    la misma altura.
+  · **La lista no cambia de forma** (`opcionesAcceso.ts`): las 4 opciones están desde el primer
+    momento; mientras se consulta el estado llevan `cargando` (brillo que las recorre,
+    «Comprobando…», sin poder pulsarse) y al llegar la respuesta cambia su CONTENIDO, no su
+    sitio. Si ya tienes cuenta de candidato, «Soy nuevo» dice «Ya tienes cuenta de candidato»
+    y lleva a iniciar sesión, en vez de desaparecer.
+  · Teléfono: una columna, la grande en horizontal y sin el camino.
 - **El formulario de candidato con el tema del mundo** (`OnboardingSlidersModal tema=`):
   `.onboarding-portada` + `.onboarding-aventura` (noche lila, `corp dark`) /
   `.onboarding-progreso` (Plataforma clara, `corp` sin `dark`), que reajustan los tokens
