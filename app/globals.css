@@ -1532,15 +1532,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 
 
-/* Pensamiento destacado de la portada: cuelga bajo el bloque central sin ocupar flujo.
-   El espacio libre bajo los botones se encoge con la altura de la ventana, así que el
-   texto se recorta por líneas para no salirse por abajo. */
-.featured-thought-text { -webkit-line-clamp: 3; }
-@media (max-height: 820px) { .featured-thought-text { -webkit-line-clamp: 2; } }
-@media (max-height: 720px) {
-  .featured-thought-text { -webkit-line-clamp: 1; }
-  .featured-thought-date { display: none; }
-}
+/* Pensamiento destacado de la portada: SIEMPRE ENTERO (Fernando, 2026-10-26: «si es un poco
+   más largo no se logra ver completo»). Antes se recortaba a 3/2/1 líneas según el alto de la
+   ventana; ahora va en el flujo y, si no cabe, la sección crece. */
 
 /* Cargador: tres bloques pixel que laten en secuencia. */
 @keyframes thoughtDot {
@@ -2530,20 +2524,23 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* El pensamiento como barra de consejo de pantalla de carga. */
 .pensamiento-barra {
   --pens-texto: #e7e3f4;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 14px;
-  /* 640 px: más ancha, a 1280 px rozaba las tarjetas del HUD de abajo. */
+  gap: 6px 14px;
   max-width: min(92vw, 640px);
-  padding: 10px 20px;
-  border-radius: 9999px;
+  padding: 12px 22px 14px;
+  border-radius: 20px;
   font-family: 'Inter', system-ui, sans-serif;
+  text-align: center;
 }
+/* Arriba «● PENSAMIENTO» y la fecha; debajo, el texto ENTERO en las líneas que necesite. */
 .pensamiento-barra-etiqueta {
+  grid-column: 1;
+  grid-row: 1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex: none;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.26em;
@@ -2552,21 +2549,20 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 .pensamiento-barra-punto { width: 7px; height: 7px; border-radius: 9999px; background: #e879f9; box-shadow: 0 0 8px #e879f9; animation: eaBrillo 1.8s ease-in-out infinite; }
 .pensamiento-barra-texto {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  grid-column: 1 / -1;
+  grid-row: 2;
   font-family: 'Instrument Serif', Georgia, serif;
   font-style: italic;
   font-size: 1.05rem;
+  line-height: 1.4;
   color: #e7e3f4;
 }
-.pensamiento-barra-fecha { flex: none; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.08em; color: #8b84a8; }
+.pensamiento-barra-fecha { grid-column: 3; grid-row: 1; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.08em; color: #8b84a8; }
+.pensamiento-barra > [role='status'] { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
 @media (max-width: 639.98px) {
   .inicio-insignia { font-size: 0.56rem; letter-spacing: 0.18em; padding: 6px 12px; }
-  .pensamiento-barra { flex-wrap: wrap; justify-content: center; border-radius: 18px; gap: 6px 10px; padding: 10px 16px; text-align: center; }
-  .pensamiento-barra-texto { white-space: normal; flex-basis: 100%; order: 2; font-size: 0.95rem; }
-  .pensamiento-barra-fecha { order: 3; }
+  .pensamiento-barra { padding: 10px 16px 12px; border-radius: 18px; }
+  .pensamiento-barra-texto { font-size: 0.95rem; }
 }
 
 /* El pensamiento, en cada mundo. */

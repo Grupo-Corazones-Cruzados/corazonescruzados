@@ -156,9 +156,7 @@ export default function FeaturedThought({
                 fontSize: 'clamp(1.15rem, 2.4vh, 1.45rem)',
                 lineHeight: 1.45,
                 color: 'var(--pens-texto)',
-                display: '-webkit-box',
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',   // el nº de líneas lo pone `.featured-thought-text`
+                // Sin recorte de líneas: se ve ENTERO (Fernando, 2026-10-26).
               }}
             >
               <span className="comilla-pensamiento" aria-hidden="true">“</span>

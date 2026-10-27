@@ -374,7 +374,10 @@ esquinas de cámara no cambian.
   · las dos tarjetas;
   · **el pensamiento como barra de consejo** de pantalla de carga (`FeaturedThought compacto`,
     `.pensamiento-barra`): cápsula de cristal «● PENSAMIENTO · “…” · fecha», en una línea con
-    puntos suspensivos; en el teléfono, en tres líneas.
+    puntos suspensivos; en el teléfono, en tres líneas. **Corregido el mismo día**: el pensamiento
+    se ve SIEMPRE ENTERO (Fernando: «si es un poco más largo no se logra ver completo»). La barra
+    es una cápsula de dos filas (etiqueta y fecha arriba, texto completo debajo) y la versión
+    grande ya no recorta líneas por el alto de la ventana; si no cabe, la sección crece.
   Tras elegir siguen apareciendo, en grande y centrados, como hasta ahora.
 - **Prueba: «Corazón» y «mundo» como imágenes en los titulares (2026-10-26).** Iconos pixel-art
   propios en SVG (`components/landing/IconosTitular.tsx`): corazón rojo 13×12 que late y la
