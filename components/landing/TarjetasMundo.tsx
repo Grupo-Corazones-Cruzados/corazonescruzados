@@ -25,16 +25,20 @@ import { useState } from 'react';
 
 type Mundo = 'aventura' | 'progreso';
 
-const TEXTOS: Record<Mundo, { modo: string; titulo: string; descripcion: string }> = {
+// `corta`: la que se ve en el teléfono, donde la columna es estrecha y la larga alargaba la
+// tarjeta hasta 6 líneas (Fernando, 2026-10-26).
+const TEXTOS: Record<Mundo, { modo: string; titulo: string; descripcion: string; corta: string }> = {
   aventura: {
     modo: 'Juego',
     titulo: 'Aventura',
     descripcion: 'Explora el mundo de GCC con tu personaje: misiones, retos y decisiones que te hacen crecer.',
+    corta: 'Juega y crece con tu personaje.',
   },
   progreso: {
     modo: 'Progreso',
     titulo: 'Progreso',
     descripcion: 'Tu espacio de trabajo y desarrollo: proyectos, tareas y el avance de tu crecimiento, en un solo lugar.',
+    corta: 'Tus proyectos y tu avance.',
   },
 };
 
@@ -100,7 +104,8 @@ export default function TarjetasMundo({ onElegir, bloqueado }: { onElegir: (m: M
         <span className="tm-modo">{t.modo}</span>
         {m === 'aventura' ? <IconoAventura /> : <IconoProgreso />}
         <span className="tm-titulo">{t.titulo}</span>
-        <span className="tm-descripcion">{t.descripcion}</span>
+        <span className="tm-descripcion tm-descripcion-larga">{t.descripcion}</span>
+        <span className="tm-descripcion tm-descripcion-corta" aria-hidden="true">{t.corta}</span>
       </button>
     );
   };

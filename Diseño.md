@@ -356,6 +356,9 @@ esquinas de cámara no cambian.
     elegida, la otra se desvanece, y ~320 ms después el mundo llena la pantalla.
   · Una vez elegido, **sin botón para cambiar de mundo**. `.boton-portada` se borró.
   · Etiquetas «Juego» y «Progreso», sin la palabra «modo» y SIN relleno: solo el texto (2026-10-26).
+  · **En el teléfono, descripción CORTA** (`corta` en `TEXTOS`: «Juega y crece con tu personaje.» /
+    «Tus proyectos y tu avance.»), escenario de 92 px y título de 1,2 rem: la larga, en una columna
+    de ~150 px, alargaba la tarjeta hasta 6 líneas (Fernando, 2026-10-26). Medido: 150×217 px.
   · **Sin botón «Elegir»** (Fernando: «solo usa animaciones para dar a entender que se está por
     seleccionar»). Lo dice el **selector** `.tm-selector`: cuatro esquinas que se cierran sobre la
     tarjeta y laten, como el cursor de una pantalla de selección; además los personajes saltan,
