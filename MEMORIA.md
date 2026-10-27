@@ -7705,6 +7705,22 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     herramientas de `COMPARTIBLES` (las que corren enteras en el navegador). Crear/cerrar/borrar: equipo
     (`esEquipo`); lo ve quien lo creó y el admin. Página pública `/herramienta/<token>` (en
     `DESTINOS_PERMITIDOS` para volver tras iniciar sesión); lista `/dashboard/tools/accesos`.
+  - **Formatos por hoja (2026-10-27, misma tarde).** Un formato puede llevar `porHoja` (patrón del nombre
+    de la hoja → lo que cambia: papel, `fitToHeight`, filas de títulos, `colDesde`/`colHasta`, número de
+    página); `configDeHoja(fmt, nombre)` da la de cada hoja y se usa en vista previa, Excel y PDF.
+    `detect.hojas` recomienda el formato si el libro tiene una hoja que cumpla cada patrón (+4).
+    - **«Formato de compras»** (muestra «Grupo Corazones Cruzados Feb 2024»): CARATULA en UNA hoja A4
+      vertical (A1:F21, sin número de página, con su logo) y COMPRAS N. —4 cuentas B–H, J–P, R–X, Z–AF—
+      en A3 horizontal desde la columna B, repitiendo las filas 6–14 (cuenta, totales y encabezados de la
+      fila 14). Resultado: 4.266 hojas, escala 56 %, PDF de 33 MB en 15 s en Chrome.
+    - **«Formato de ventas»** (muestra «Ventas Enero 2024»): primero el libro de ventas (A–P, encabezado en
+      la fila 1, 633.750 filas) en A3 horizontal, escala 77 %; después Cuentas (2 tablas B–H y K–Q),
+      desde B, repitiendo 1–6 y hasta la última fila con datos (341.350; Excel cree 718.759 por un relleno).
+      15.636 hojas, PDF de 98 MB en 39 s; Chrome usó 1,8 GB de memoria: con archivos así, computadora.
+    - El motor ahora dibuja las imágenes ancladas de la hoja (logo de la carátula) en la vista previa y en
+      el PDF (PNG/JPG vía `createImageBitmap`, con su transparencia como `SMask`).
+    - Los formatos «Compras nacionales · 4 cuentas» y «Ventas · IVA devengado» siguen para los archivos con
+      que se aprobaron (títulos en 1–4 y 1–5); con estos libros nuevos NO sirven (encabezados en 14 y 6).
   - ⚠️ El token protege la PANTALLA, no el código: el motor va en el JS público de la app. Para esta
     herramienta da igual (no toca datos de GCC); una herramienta compartible que use el servidor tendría
     que comprobar el token en su API.

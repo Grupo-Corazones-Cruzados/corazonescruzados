@@ -7,7 +7,8 @@ import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_SECUNDARIO } from '@/components/u
 import { FilaMarcable } from '@/components/ui/ListaMarcable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import { fmtNum, fmtInt } from '@/lib/format';
-import { FORMATS, XlsxPdf, abrirLibro, excelCorregido, pdfDe } from '@/lib/herramientas/formatos-excel/motor';
+import Segmentado from '@/components/ui/Segmentado';
+import { FORMATS, XlsxPdf, abrirLibro, configDeHoja, excelCorregido, pdfDe } from '@/lib/herramientas/formatos-excel/motor';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -17,10 +18,11 @@ type Formato = (typeof FORMATS)[number];
 type Libro = {
   files: Record<string, Uint8Array>; fileName: string; wbPath: string; book: any;
   sheets: { name: string; index: number; path: string | null; isWorksheet: boolean }[];
-  recomendado: string | null; planes: Record<string, any>;
+  /** Por formato, un plan por hoja de cálculo (en el orden del libro). */
+  recomendado: string | null; planes: Record<string, any[]>;
 };
 
-const orientacion = (f: Formato) => (f.orientation === 'landscape' ? 'horizontal' : 'vertical');
+const orientacion = (f: { orientation: string }) => (f.orientation === 'landscape' ? 'horizontal' : 'vertical');
 const tamano = (b: number) => (b > 1048576 ? `${fmtNum(b / 1048576, 1)} MB` : `${fmtInt(b / 1024)} KB`);
 
 /** Descarga un Blob con el nombre dado (sin pasar por el servidor). */
@@ -59,6 +61,8 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [fmtId, setFmtId] = useState<string>(FORMATS[0].id);
   const [pagina, setPagina] = useState(0);
+  /** Qué hoja del libro se ve en la vista previa (índice entre las hojas de cálculo). */
+  const [hojaVista, setHojaVista] = useState(0);
   const [cerca, setCerca] = useState(false);
   const [hojas, setHojas] = useState<Set<number>>(new Set());
   const [progreso, setProgreso] = useState<{ texto: string; valor: number } | null>(null);
@@ -76,15 +80,16 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
   }, [libro]);
 
   const formato = FORMATS.find((f) => f.id === fmtId)!;
-  const plan = libro?.planes[fmtId];
+  const plan = libro?.planes[fmtId]?.[hojaVista];
   const hojasLibro = libro?.sheets.filter((s: any) => s.isWorksheet) || [];
+  const cfgVista = plan ? configDeHoja(formato, plan.sheet.name) : formato;
   const elegidas = hojasLibro.filter((s: any) => hojas.has(s.index));
   const ocupado = !!cargando || !!progreso;
 
   const cargar = useCallback(async (f: File | undefined) => {
     if (!f || ocupado) return;
     if (!/\.xls[xm]$/i.test(f.name)) { setError('El archivo debe ser .xlsx o .xlsm. Si es .xls, guárdalo primero como .xlsx en Excel.'); return; }
-    setError(null); setLibro(null); setArchivo(f); setPagina(0); setCargando('Leyendo el archivo…');
+    setError(null); setLibro(null); setArchivo(f); setPagina(0); setHojaVista(0); setCargando('Leyendo el archivo…');
     try {
       const l = (await abrirLibro(f, (t: string) => setCargando(t))) as Libro;
       setLibro(l);
@@ -182,7 +187,10 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
           {titulo(2, 'Formato')}
           <div role="radiogroup" aria-label="Formatos disponibles" className="space-y-2">
             {FORMATS.map((f) => {
-              const p = libro?.planes[f.id];
+              // La hoja principal (la de más páginas) da la escala; las páginas son las de todo el libro.
+              const ps = libro?.planes[f.id];
+              const p = ps?.length ? ps.reduce((a, b) => (b.pages.length > a.pages.length ? b : a)) : null;
+              const paginas = ps ? ps.reduce((n, x) => n + x.pages.length, 0) : 0;
               const elegido = f.id === fmtId;
               return (
                 <button key={f.id} type="button" role="radio" aria-checked={elegido}
@@ -201,8 +209,8 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
                       </span>
                       <span className="block text-[12px] text-digi-muted mt-0.5" style={mf}>{f.summary}</span>
                       <span className="block text-[11.5px] text-digi-muted mt-1 tabular-nums" style={mf}>
-                        {f.paperName} {orientacion(f)} · 1 página de ancho · filas {f.titleRows.from}–{f.titleRows.to} en cada hoja
-                        {p && ` · escala ${fmtInt(p.scale * 100)} % · ${fmtInt(p.pages.length)} ${p.pages.length === 1 ? 'hoja' : 'hojas'}`}
+                        {f.paperName} {orientacion(f)} · 1 página de ancho · {f.titleRows.from === f.titleRows.to ? `fila ${f.titleRows.from}` : `filas ${f.titleRows.from}–${f.titleRows.to}`} en cada hoja
+                        {p && ` · escala ${fmtInt(p.scale * 100)} % · ${fmtInt(paginas)} ${paginas === 1 ? 'hoja' : 'hojas'}`}
                       </span>
                     </span>
                   </div>
@@ -232,9 +240,8 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
             <p className="text-[13px] font-semibold text-digi-text truncate" style={df}>Vista previa</p>
             {plan && (
               <p className="text-[11.5px] text-digi-muted tabular-nums truncate" style={mf}>
-                {formato.paperName} {orientacion(formato)} · escala {fmtInt(plan.scale * 100)} % · letra ≈ {fmtNum(plan.fontPt, 1)} pt
+                {cfgVista.paperName} {orientacion(cfgVista)} · escala {fmtInt(plan.scale * 100)} % · letra ≈ {fmtNum(plan.fontPt, 1)} pt
                 {filas?.length ? ` · filas ${fmtInt(filas[0].r)}–${fmtInt(filas[filas.length - 1].r)}` : ''}
-                {hojasLibro.length > 1 ? ` · ${plan.sheet.name}` : ''}
               </p>
             )}
           </div>
@@ -252,6 +259,21 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
             </div>
           )}
         </div>
+
+        {libro && hojasLibro.length > 1 && (
+          <div className="px-4 py-2.5 border-b border-digi-border">
+            {hojasLibro.length <= 3 ? (
+              <Segmentado etiqueta="Hoja de la vista previa" className="max-w-md"
+                opciones={hojasLibro.map((h, i) => ({ valor: String(i), texto: h.name }))}
+                valor={String(hojaVista)} onChange={(v) => { setHojaVista(Number(v)); setPagina(0); }} />
+            ) : (
+              <select value={hojaVista} onChange={(e) => { setHojaVista(Number(e.target.value)); setPagina(0); }} aria-label="Hoja de la vista previa"
+                className="field-control w-full sm:max-w-xs px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:outline-none" style={mf}>
+                {hojasLibro.map((h, i) => <option key={h.index} value={i}>{h.name}</option>)}
+              </select>
+            )}
+          </div>
+        )}
 
         <div ref={escenario} className="bg-black/[0.04] overflow-auto max-h-[78vh] min-h-[320px] p-4 grid justify-items-center items-start">
           {libro && plan ? (

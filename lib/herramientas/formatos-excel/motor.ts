@@ -30,7 +30,51 @@ export const FORMATS = [
     margins: MARGENES_NORMALES, titleRows: { from: 1, to: 5 }, pageNumbers: true, printArea: 'data',
     detect: { sheet: /IMPUESTO\s+POR\s+PAGAR|VENTAS/i, text: /IVA\s+DEVENGADO/i },
   },
+  {
+    // Libro de compras con carátula (Fernando, 2026-10-27; muestra: «Grupo Corazones Cruzados Feb 2024»).
+    // CARATULA en UNA hoja A4; COMPRAS N. con sus 4 cuentas (B–H, J–P, R–X, Z–AF) en A3 horizontal.
+    // Los encabezados de columna están en la fila 14: se repiten 6–14 (cuenta, totales y encabezados).
+    id: 'compras',
+    name: 'Formato de compras',
+    summary: 'Carátula en una hoja A4 y Compras N. con sus 4 cuentas en A3 horizontal.',
+    paperSize: 8, paperName: 'A3', orientation: 'landscape',
+    margins: MARGENES_NORMALES, titleRows: { from: 6, to: 14 }, pageNumbers: true, printArea: 'data', colDesde: 'B',
+    porHoja: [
+      { hoja: /^CAR[AÁ]TULA$/i, paperSize: 9, paperName: 'A4', orientation: 'portrait', fitToHeight: 1,
+        titleRows: null, pageNumbers: false, colDesde: 'A', colHasta: 'F' },
+    ],
+    detect: { hojas: [/^CAR[AÁ]TULA$/i, /COMPRAS/i] },
+  },
+  {
+    // Libro de ventas + Cuentas (Fernando, 2026-10-27; muestra: «Ventas Enero 2024»). Primero el libro
+    // (A–P, encabezado en la fila 1) en las hojas que haga falta; después Cuentas, con sus 2 tablas
+    // (B–H y K–Q): títulos en 1–3, totales en 5 y encabezados en 6, que se repiten en cada hoja.
+    id: 'ventas',
+    name: 'Formato de ventas',
+    summary: 'El libro de ventas completo y después Cuentas con sus 2 tablas, en A3 horizontal.',
+    paperSize: 8, paperName: 'A3', orientation: 'landscape',
+    margins: MARGENES_NORMALES, titleRows: { from: 1, to: 1 }, pageNumbers: true, printArea: 'data',
+    porHoja: [
+      { hoja: /^CUENTAS$/i, titleRows: { from: 1, to: 6 }, colDesde: 'B' },
+    ],
+    detect: { hojas: [/LIBRO\s+DE\s+VENTAS/i, /^CUENTAS$/i] },
+  },
 ];
+
+/**
+ * La configuración que se aplica a UNA hoja: la del formato, con lo que cambie su entrada de
+ * `porHoja` si la hay (añadido el 2026-10-27; los dos formatos primeros no la usan).
+ * Opciones por hoja además de las del formato: `fitToHeight` (0 = alto automático, 1 = una
+ * sola página), `colDesde`/`colHasta` (letras del área de impresión; por omisión A y la última
+ * columna de la hoja).
+ */
+export function configDeHoja(fmt, nombre) {
+  const ov = (fmt.porHoja || []).find(o => o.hoja.test(nombre));
+  const { porHoja, detect, ...base } = fmt;
+  if (!ov) return base;
+  const { hoja, ...cambios } = ov;
+  return { ...base, ...cambios };
+}
 
 // ===== Núcleo: corrige la configuración de impresión de un .xlsx sin tocar datos ni formato =====
 export const PrintFix = (() => {
@@ -93,7 +137,7 @@ export const PrintFix = (() => {
     if (o.pageNumbers) t = removeEl(t, p, 'headerFooter');
     const m = o.margins;
     let ins = `<${p}pageMargins left="${num(m.left)}" right="${num(m.right)}" top="${num(m.top)}" bottom="${num(m.bottom)}" header="${num(m.header)}" footer="${num(m.footer)}"/>` +
-      `<${p}pageSetup paperSize="${o.paperSize}" orientation="${o.orientation}" fitToWidth="1" fitToHeight="0"/>`;
+      `<${p}pageSetup paperSize="${o.paperSize}" orientation="${o.orientation}" fitToWidth="1" fitToHeight="${o.fitToHeight || 0}"/>`;
     if (o.pageNumbers) ins += `<${p}headerFooter><${p}oddFooter>&amp;CPágina &amp;P de &amp;N</${p}oddFooter></${p}headerFooter>`;
     const after = (o.pageNumbers ? [] : ['headerFooter']).concat(['rowBreaks', 'colBreaks', 'customProperties', 'cellWatches',
       'ignoredErrors', 'smartTags', 'drawing', 'legacyDrawing', 'legacyDrawingHF', 'drawingHF', 'picture', 'oleObjects',
@@ -153,7 +197,7 @@ export const PrintFix = (() => {
     if (o.printArea === 'data') {
       for (const s of sheetsToFix) if (s.lastRow) {
         const q = "'" + s.name.replace(/'/g, "''") + "'";
-        names.push({ idx: s.index, xml: `<${p}definedName name="_xlnm.Print_Area" localSheetId="${s.index}">${xmlEsc(q)}!$A$1:$${s.lastCol}$${s.lastRow}</${p}definedName>` });
+        names.push({ idx: s.index, xml: `<${p}definedName name="_xlnm.Print_Area" localSheetId="${s.index}">${xmlEsc(q)}!$${o.colDesde || 'A'}$1:$${o.colHasta || s.lastCol}$${s.lastRow}</${p}definedName>` });
       }
     }
     // quitar Print_Titles / Print_Area previos de las hojas tratadas
@@ -554,6 +598,7 @@ export const XlsxPdf = (() => {
     push(latin('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
     return {
       obj(id, body) { offsets[id] = off; push(latin(`${id} 0 obj\n${body}\nendobj\n`)); },
+      raw(id, dict, bytes) { offsets[id] = off; push(latin(`${id} 0 obj\n${dict}\nstream\n`)); push(bytes); push(latin('\nendstream\nendobj\n')); },
       stream(id, content) {
         const raw = latin(content); const z = fflate.zlibSync(raw, { level: 6 });
         offsets[id] = off; push(latin(`${id} 0 obj\n<< /Length ${z.length} /Filter /FlateDecode >>\nstream\n`)); push(z); push(latin('\nendstream\nendobj\n'));
@@ -577,8 +622,53 @@ export const XlsxPdf = (() => {
   }
   function getSheet(book, files, path) {
     let sh = book.sheetCache.get(path);
-    if (!sh) { sh = readSheet(files[path]); book.sheetCache.set(path, sh); }
+    if (!sh) { sh = readSheet(files[path]); sh.images = readImages(files, path); book.sheetCache.set(path, sh); }
     return sh;
+  }
+  // ---------- imágenes de la hoja (añadido 2026-10-27: el logo de la carátula del formato de compras) ----------
+  // Solo la esquina de anclaje y el tamaño (`ext`, en EMU); se ignoran recortes y giros.
+  function readImages(files, path) {
+    const relsPath = path.replace(/[^/]+$/, m => '_rels/' + m + '.rels');
+    if (!files[relsPath]) return [];
+    const out = [];
+    for (const r of dec.decode(files[relsPath]).match(/<Relationship\b[^>]*>/g) || []) {
+      if (!/\/drawing$/.test(attr(r, 'Type') || '')) continue;
+      const dPath = resolve(path, attr(r, 'Target'));
+      if (!files[dPath]) continue;
+      const dxml = dec.decode(files[dPath]);
+      const dRelsPath = dPath.replace(/[^/]+$/, m => '_rels/' + m + '.rels');
+      const dRels = {};
+      if (files[dRelsPath]) for (const q of dec.decode(files[dRelsPath]).match(/<Relationship\b[^>]*>/g) || []) dRels[attr(q, 'Id')] = resolve(dPath, attr(q, 'Target'));
+      for (const m of dxml.matchAll(/<(?:\w+:)?(twoCellAnchor|oneCellAnchor)\b[\s\S]*?<\/(?:\w+:)?\1>/g)) {
+        const a = m[0];
+        const from = a.match(/<(?:\w+:)?from>([\s\S]*?)<\/(?:\w+:)?from>/); if (!from) continue;
+        const v = t => +((from[1].match(new RegExp(`<(?:\\w+:)?${t}>(-?\\d+)<`)) || [])[1] || 0);
+        const emb = (a.match(/r:embed="([^"]+)"/) || [])[1]; const media = emb && dRels[emb];
+        const ext = a.match(/<(?:\w+:)?ext\s+cx="(\d+)"\s+cy="(\d+)"/);
+        if (!media || !files[media] || !ext || !/\.(png|jpe?g|gif|bmp|webp)$/i.test(media)) continue;
+        out.push({ c: v('col') + 1, r: v('row') + 1, dx: v('colOff') / 12700, dy: v('rowOff') / 12700, w: +ext[1] / 12700, h: +ext[2] / 12700, path: media });
+      }
+    }
+    return out;
+  }
+  // Decodifica las imágenes una vez (en el navegador; sin `createImageBitmap` simplemente no se dibujan).
+  async function prepareImages(book, files) {
+    book.images = book.images || new Map();
+    if (typeof createImageBitmap !== 'function') return;
+    for (const sh of book.sheetCache.values()) for (const im of sh.images || []) {
+      if (book.images.has(im.path)) continue;
+      try { book.images.set(im.path, await createImageBitmap(new Blob([files[im.path]]))); } catch (e) { book.images.set(im.path, null); }
+    }
+  }
+  // Píxeles RGB + alfa comprimidos para el PDF.
+  function imagePdfData(bitmap) {
+    const w = bitmap.width, h = bitmap.height;
+    const cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h });
+    const g = cv.getContext('2d'); g.drawImage(bitmap, 0, 0);
+    const px = g.getImageData(0, 0, w, h).data;
+    const rgb = new Uint8Array(w * h * 3), alpha = new Uint8Array(w * h);
+    for (let i = 0, j = 0, k = 0; i < px.length; i += 4) { rgb[j++] = px[i]; rgb[j++] = px[i + 1]; rgb[j++] = px[i + 2]; alpha[k++] = px[i + 3]; }
+    return { w, h, rgb: fflate.zlibSync(rgb, { level: 6 }), alpha: fflate.zlibSync(alpha, { level: 6 }) };
   }
   // última fila con algún valor (ignora filas solo con formato)
   function lastValueRow(sh) {
@@ -600,11 +690,11 @@ export const XlsxPdf = (() => {
     let S, area, titles = null;
     const nm = book.names.filter(n => n.sheet === String(sheet.index));
     if (fmt) {
-      S = { paper: +fmt.paperSize, landscape: fmt.orientation === 'landscape', scale: 100, fitToPage: true, fitW: 1, fitH: 0, overThenDown: false,
+      S = { paper: +fmt.paperSize, landscape: fmt.orientation === 'landscape', scale: 100, fitToPage: true, fitW: 1, fitH: fmt.fitToHeight || 0, overThenDown: false,
         m: { l: fmt.margins.left, r: fmt.margins.right, t: fmt.margins.top, b: fmt.margins.bottom, h: fmt.margins.header, f: fmt.margins.footer },
         header: fmt.pageNumbers ? '' : sh.setup.header, footer: fmt.pageNumbers ? '&CPágina &P de &N' : sh.setup.footer, hfScale: true, hCenter: false };
       titles = fmt.titleRows || null;
-      area = { c1: 1, r1: 1, c2: lastColOf(sh), r2: lastValueRow(sh) };
+      area = { c1: fmt.colDesde ? colIdx(fmt.colDesde) : 1, r1: 1, c2: fmt.colHasta ? colIdx(fmt.colHasta) : lastColOf(sh), r2: lastValueRow(sh) };
     } else {
       S = sh.setup;
       const pa = nm.find(n => n.name === '_xlnm.Print_Area'), pt = nm.find(n => n.name === '_xlnm.Print_Titles');
@@ -672,9 +762,10 @@ export const XlsxPdf = (() => {
     const pageW = cp.reduce((a, c) => a + cw[c] * scale, 0);
     const xs = {}; let x = ox + (S.hCenter ? Math.max(0, (P.W - pageW) / 2) : 0); for (const c of cp) { xs[c] = x; x += cw[c] * scale; } const xEnd = x;
     const rows = rp.withTitles ? P.titleRows.concat(rp) : rp;
-    let y = oy; const cpSet = new Set(cp); const borders = [];
+    let y = oy; const cpSet = new Set(cp); const borders = []; const rowTop = {};
     for (const rw of rows) {
       const h = rw.h * scale; const top = y, bot = y + h; y = bot;
+      if (rowTop[rw.r] == null) rowTop[rw.r] = top;
       if (rw.k == null) continue;
       const cells = rowCells(sh, rw.k, book, book.fmt);
       const filled = new Set(); for (const c of cells) if (c.val) filled.add(c.c);
@@ -727,6 +818,9 @@ export const XlsxPdf = (() => {
       }
     }
     for (const bo of borders) dev.line(...bo);
+    if (dev.image) for (const im of sh.images || []) {
+      if (cpSet.has(im.c) && rowTop[im.r] != null) dev.image(im, xs[im.c] + im.dx * scale, rowTop[im.r] + im.dy * scale, im.w * scale, im.h * scale);
+    }
     // encabezado y pie
     const pageNo = pi + 1, pageTot = P.pages.length;
     const sub = t => t.replace(/&&/g, '\u0001').replace(/&P/g, pageNo.toLocaleString('es-EC')).replace(/&N/g, pageTot.toLocaleString('es-EC')).replace(/&A/g, P.sheet.name).replace(/&F/g, ctx.fileName || '')
@@ -751,7 +845,7 @@ export const XlsxPdf = (() => {
     const plans = [];
     for (const s of sheets) {
       onProgress && onProgress(`Preparando la hoja ${s.name}…`, 0); await new Promise(r => setTimeout(r, 0));
-      plans.push(planSheet(book, getSheet(book, files, s.path), s, fmt));
+      plans.push(planSheet(book, getSheet(book, files, s.path), s, typeof fmt === 'function' ? fmt(s) : fmt));
     }
     const total = plans.reduce((a, p) => a + p.pages.length, 0);
     const pdf = PdfWriter();
@@ -759,6 +853,17 @@ export const XlsxPdf = (() => {
     const FID = { R: 'F1', B: 'F2', I: 'F3', BI: 'F4' };
     FONT_KEYS.forEach((k, i) => pdf.obj(3 + i, `<< /Type /Font /Subtype /Type1 /BaseFont /${FONTS[k]} /Encoding /WinAnsiEncoding >>`));
     let nextId = 8; const kids = []; let done = 0;
+    // Imágenes: una XObject por archivo (con su máscara de transparencia), compartida por todas las páginas.
+    const imgIds = new Map();
+    for (const P of plans) for (const im of P.sh.images || []) {
+      const bm = book.images && book.images.get(im.path);
+      if (!bm || imgIds.has(im.path)) continue;
+      const d = imagePdfData(bm); const mid = nextId++, iid = nextId++;
+      pdf.raw(mid, `<< /Type /XObject /Subtype /Image /Width ${d.w} /Height ${d.h} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${d.alpha.length} >>`, d.alpha);
+      pdf.raw(iid, `<< /Type /XObject /Subtype /Image /Width ${d.w} /Height ${d.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /SMask ${mid} 0 R /Filter /FlateDecode /Length ${d.rgb.length} >>`, d.rgb);
+      imgIds.set(im.path, { id: iid, name: 'Im' + (imgIds.size + 1) });
+    }
+    const xobj = imgIds.size ? ` /XObject << ${[...imgIds.values()].map(v => `/${v.name} ${v.id} 0 R`).join(' ')} >>` : '';
     for (const P of plans) {
       const ph = P.ph;
       for (let pi = 0; pi < P.pages.length; pi++) {
@@ -772,11 +877,12 @@ export const XlsxPdf = (() => {
             ops.push(s);
           },
           line: (w, x1, y1, x2, y2) => { if (w !== lw) { ops.push(`${f2(w)} w`); lw = w; } ops.push(`${f2(x1)} ${f2(ph - y1)} m ${f2(x2)} ${f2(ph - y2)} l S`); },
+          image: (im, x, y, w, h) => { const o = imgIds.get(im.path); if (o) ops.push(`q ${f2(w)} 0 0 ${f2(h)} ${f2(x)} ${f2(ph - y - h)} cm /${o.name} Do Q`); },
         };
         drawPage(P, pi, dev, book, { fileName });
         const cid = nextId++, pid = nextId++;
         pdf.stream(cid, ops.join('\n'));
-        pdf.obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${f2(P.pw)} ${f2(P.ph)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R >> >> /Contents ${cid} 0 R >>`);
+        pdf.obj(pid, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${f2(P.pw)} ${f2(P.ph)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R >>${xobj} >> /Contents ${cid} 0 R >>`);
         kids.push(pid); done++;
         if (done % 15 === 0) { onProgress && onProgress(`Generando PDF… página ${done.toLocaleString('es-EC')} de ${total.toLocaleString('es-EC')}`, done / total); await new Promise(r => setTimeout(r, 0)); }
       }
@@ -811,12 +917,13 @@ export const XlsxPdf = (() => {
         g.restore();
       },
       line: (w, x1, y1, x2, y2) => { g.strokeStyle = '#000'; g.lineWidth = w; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); },
+      image: (im, x, y, w, h) => { const bm = book.images && book.images.get(im.path); if (bm) g.drawImage(bm, x, y, w, h); },
     };
     drawPage(P, pi, dev, book, ctx2 || {});
   }
 
   function rowText(sh, k, book) { return rowCells(sh, k, book, book.fmt).map(c => c.val ? (c.val.left || '') + (c.val.text || '') : '').join(' '); }
-  return { openBook, getSheet, planSheet, renderPdf, drawCanvas, lastValueRow, lastColOf, _rowText: rowText };
+  return { openBook, getSheet, prepareImages, planSheet, renderPdf, drawCanvas, lastValueRow, lastColOf, _rowText: rowText };
 })();
 
 // ===== Operaciones de la pantalla (lo que hacía el tercer <script>, sin tocar el DOM) =====
@@ -841,23 +948,35 @@ export async function abrirLibro(file, onPaso) {
   const sh = XlsxPdf.getSheet(book, files, first.path);
   let text = '';
   try { for (let k = 0; k < Math.min(6, sh.rIdx.length); k++) text += ' ' + XlsxPdf._rowText(sh, k, book); } catch (e) {}
+  // `detect.hojas`: el libro tiene una hoja que cumple cada patrón (pesa más que el texto).
   let recomendado = null, score = 0;
-  for (const f of FORMATS) { let sc = 0; if (f.detect.sheet && f.detect.sheet.test(first.name)) sc += 1; if (f.detect.text && f.detect.text.test(text)) sc += 2; if (sc > score) { score = sc; recomendado = f.id; } }
+  for (const f of FORMATS) {
+    let sc = 0;
+    if (f.detect.sheet && f.detect.sheet.test(first.name)) sc += 1;
+    if (f.detect.text && f.detect.text.test(text)) sc += 2;
+    if (f.detect.hojas && f.detect.hojas.every(re => ws.some(s => re.test(s.name)))) sc += 4;
+    if (sc > score) { score = sc; recomendado = f.id; }
+  }
+  await XlsxPdf.prepareImages(book, files);
   onPaso && onPaso('Calculando las páginas de cada formato…'); await tick();
+  // Un plan por formato y por hoja (cada hoja con su configuración: `configDeHoja`).
   const planes = {};
-  for (const fm of FORMATS) planes[fm.id] = XlsxPdf.planSheet(book, sh, first, fm);
+  for (const fm of FORMATS) planes[fm.id] = ws.map(s => XlsxPdf.planSheet(book, XlsxPdf.getSheet(book, files, s.path), s, configDeHoja(fm, s.name)));
   return { files, fileName: file.name, wbPath: info.wbPath, sheets: info.sheets, book, recomendado, planes };
 }
 
 /** El Excel con la impresión corregida: solo cambia la configuración de página. */
 export async function excelCorregido(libro, fmt, sheets) {
   const out = { ...libro.files }; const info = [];
-  for (const s of sheets) { const r = PrintFix.fixSheet(libro.files[s.path], fmt); out[s.path] = r.data; info.push({ ...s, lastRow: r.lastRow, lastCol: r.lastCol }); }
-  out[libro.wbPath] = new TextEncoder().encode(PrintFix.fixWorkbook(new TextDecoder().decode(libro.files[libro.wbPath]), info, fmt));
+  for (const s of sheets) { const cfg = configDeHoja(fmt, s.name); const r = PrintFix.fixSheet(libro.files[s.path], cfg); out[s.path] = r.data; info.push({ ...s, cfg, lastRow: r.lastRow, lastCol: r.lastCol }); }
+  // Una hoja cada vez: cada una lleva sus filas de títulos y su área (la carátula no repite filas).
+  let wb = new TextDecoder().decode(libro.files[libro.wbPath]);
+  for (const s of info) wb = PrintFix.fixWorkbook(wb, [s], s.cfg);
+  out[libro.wbPath] = new TextEncoder().encode(wb);
   let z; try { z = await zipP(out); } catch { z = fflate.zipSync(out, { level: 6 }); }
   return new Blob([z], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 
 export function pdfDe(libro, fmt, sheets, onProgress) {
-  return XlsxPdf.renderPdf(libro.files, { wbPath: libro.wbPath, sheets, fmt, fileName: libro.fileName, loc: LOC, book: libro.book, onProgress });
+  return XlsxPdf.renderPdf(libro.files, { wbPath: libro.wbPath, sheets, fmt: s => configDeHoja(fmt, s.name), fileName: libro.fileName, loc: LOC, book: libro.book, onProgress });
 }
