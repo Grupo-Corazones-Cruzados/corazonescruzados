@@ -2456,16 +2456,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
-.mundo-titular {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-weight: 700;
-  /* Más contenido que antes: con las tarjetas de roles debajo, cabe también en ventanas bajas. */
-  font-size: min(clamp(2.2rem, 5.6vw, 4.6rem), 9.5vh);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
-  color: var(--mundo-texto);
-}
-.mundo-titular-fina { font-size: 0.5em; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.06em; }
 .mundo-cruzar { color: var(--mundo-cruzar); }
 .mundo-mundo { color: var(--mundo-mundo); }
 @media (max-width: 639.98px) {

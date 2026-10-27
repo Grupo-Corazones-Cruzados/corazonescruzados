@@ -2917,8 +2917,8 @@ export default function LandingPage() {
               junto a la raya líquida, como al elegir modo en un videojuego. Nada de titular,
               insignia ni pensamiento todavía.
             · Un CLIC (no el puntero encima) elige el mundo: llena la pantalla, las tarjetas se
-              van y aparecen, CENTRADOS y con los colores de ese mundo, la insignia, el titular
-              y el pensamiento. SIN botón para cambiar de mundo (Fernando, 2026-10-26).
+              van y aparecen, CENTRADOS y con los colores de ese mundo, la insignia y los ROLES
+              en tarjetas. Sin titular ni pensamiento, y SIN botón para cambiar de mundo.
             ⚠️ Las tarjetas NO abren el acceso («¿Cómo quieres ingresar?»): Fernando dirá
             qué viene después. El acceso sigue por `/auth` y `?acceso=`.
             Probadas antes y descartadas el mismo día: bloque centrado con color partido,
@@ -2970,20 +2970,10 @@ export default function LandingPage() {
               <p className="mundo-insignia aparecer" style={{ ['--retraso' as string]: '420ms' }}>
                 Proyecto de Desarrollo Humano
               </p>
-              <p className="mundo-titular aparecer" aria-hidden="true" style={{ ['--retraso' as string]: '520ms' }}>
-                <span className="block mundo-titular-fina">
-                  Un <IconoCorazon /> puede
-                </span>
-                <span className="block">
-                  <span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span>{' '}
-                  <IconoMundo />
-                </span>
-              </p>
               {/* Los ROLES, como tarjetas con el tema del mundo (2026-10-26). */}
-              <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={700} />
-              <div className="aparecer" style={{ ['--retraso' as string]: '1100ms', marginTop: 'clamp(10px, 3vh, 32px)' }}>
-                <FeaturedThought compacto tema={mundoElegido} />
-              </div>
+              {/* Sin titular ni pensamiento (Fernando, 2026-10-26: «cuando ya se ingresa a un
+                  tema quita el pensamiento y el título»): solo la insignia y los roles. */}
+              <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={520} />
             </div>
           )}
         </div>

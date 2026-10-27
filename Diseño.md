@@ -393,7 +393,8 @@ esquinas de cámara no cambian.
   `accionesAcceso` (`app/page.tsx`). Elegir el mundo fija el destino (Aventura → juego,
   Progreso → panel). Disposición: fila de 4 desde 1500 px, en el hueco entre las tarjetas
   decorativas; por debajo, 2×2 en horizontal (icono a la izquierda, `align-content: start`);
-  1 columna en el teléfono. El pensamiento queda como barra debajo, clara en Progreso.
+  1 columna en el teléfono. **Dentro de un mundo ya no hay titular ni pensamiento** (Fernando,
+  2026-10-26): solo la insignia y las tarjetas de roles. Esos dos solo están en la pantalla de inicio.
 - **El formulario de candidato con el tema del mundo** (`OnboardingSlidersModal tema=`):
   `.onboarding-portada` + `.onboarding-aventura` (noche lila, `corp dark`) /
   `.onboarding-progreso` (Plataforma clara, `corp` sin `dark`), que reajustan los tokens
