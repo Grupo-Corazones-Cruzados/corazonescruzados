@@ -3015,7 +3015,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .rol-comprobando .rol-desc, .rol-comprobando .rol-flecha { opacity: 0.55; }
 
 @media (max-width: 767.98px) {
-  .roles-mundo { grid-template-columns: 1fr; }
+  /* La insignia y «Volver» juntos: se sumaban dos márgenes (~55 px). */
+  .mundo-insignia { margin-bottom: 10px; }
+  .roles-mundo { grid-template-columns: 1fr; margin-top: 0; }
   .roles-grupo-nuevo .rol-tarjeta, .roles-pila { height: auto; }
   .rol-grande { flex-direction: row; align-items: center; gap: 16px; padding: 18px; }
   .rol-grande .rol-icono { width: 56px; height: 56px; border-radius: 18px; }

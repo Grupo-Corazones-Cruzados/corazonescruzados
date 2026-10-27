@@ -419,6 +419,9 @@ esquinas de cámara no cambian.
     (`100dvh − pie − 64 px − 214 px`). El `<footer>` pixel del chat del mundo solo ocupa sitio
     mientras habla la intro (`hidden` si no): vacío sumaba 66 px. Verificado: `scrollHeight` ==
     alto de la ventana de 1920×1080 a 961×525, en inicio y en los dos mundos.
+  · En el teléfono el héroe lleva `pt-24` (no `pt-16`, que es justo lo que mide la cabecera): si
+    el contenido no cabe empieza arriba y la insignia quedaba pegada a la cabecera. Allí la
+    insignia y «Volver» van juntos (10 px): se sumaban dos márgenes (~55 px).
   · **«← Volver»** (`.roles-volver`, 2026-10-26): discreto, solo texto al 70 % de opacidad,
     sobre las tarjetas a la izquierda; vuelve a la pantalla de inicio. Escape hace lo mismo si no
     hay un diálogo abierto.
