@@ -17,7 +17,7 @@
  * Tema del mundo: `.roles-aventura` / `.roles-progreso` (globals.css).
  */
 
-import { ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOpcionesAcceso, type AccionesAcceso, type OpcionAcceso } from '@/components/landing/opcionesAcceso';
 import { PASOS_POSTULACION } from '@/components/landing/OnboardingSlidersModal';
 
@@ -62,9 +62,13 @@ export default function RolesMundo({
   tema,
   acciones,
   retrasoBase = 0,
+  onVolver,
 }: {
   tema: 'aventura' | 'progreso';
   acciones: AccionesAcceso;
+  /** Vuelve a la pantalla de inicio, antes de elegir mundo (Fernando, 2026-10-26: «algo
+   *  discreto para poder retroceder»). */
+  onVolver?: () => void;
   /** ms antes de que empiece a entrar la primera tarjeta. */
   retrasoBase?: number;
 }) {
@@ -74,6 +78,12 @@ export default function RolesMundo({
 
   return (
     <div className={`roles-mundo roles-${tema}`}>
+      {onVolver && (
+        <button type="button" onClick={onVolver} className="roles-volver aparecer" style={{ ['--retraso' as string]: `${retrasoBase}ms` }}>
+          <ArrowLeft aria-hidden="true" />
+          Volver
+        </button>
+      )}
       <section className="roles-grupo roles-grupo-nuevo">
         <p className="roles-grupo-titulo aparecer" style={{ ['--retraso' as string]: `${retrasoBase}ms` }}>Soy nuevo</p>
         {nuevo && <Tarjeta o={nuevo} grande retraso={retrasoBase + 80} />}

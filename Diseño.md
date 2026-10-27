@@ -410,6 +410,9 @@ esquinas de cámara no cambian.
     sitio. Si ya tienes cuenta de candidato, «Soy nuevo» dice «Ya tienes cuenta de candidato»
     y lleva a iniciar sesión, en vez de desaparecer.
   · Teléfono: una columna, la grande en horizontal y sin el camino.
+  · **«← Volver»** (`.roles-volver`, 2026-10-26): discreto, solo texto al 70 % de opacidad,
+    sobre las tarjetas a la izquierda; vuelve a la pantalla de inicio. Escape hace lo mismo si no
+    hay un diálogo abierto.
 - **El formulario de candidato con el tema del mundo** (`OnboardingSlidersModal tema=`):
   `.onboarding-portada` + `.onboarding-aventura` (noche lila, `corp dark`) /
   `.onboarding-progreso` (Plataforma clara, `corp` sin `dark`), que reajustan los tokens

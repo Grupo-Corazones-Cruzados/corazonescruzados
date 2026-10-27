@@ -2895,6 +2895,30 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   text-align: left;
 }
 @media (min-width: 1280px) { .roles-mundo { width: min(980px, calc(100vw - 2 * (3vw + 262px))); } }
+/* «← Volver»: discreto, solo texto, sobre las tarjetas y a su izquierda. */
+.roles-volver {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -4px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.7;
+  transition: opacity 180ms ease, background 180ms ease;
+}
+.roles-volver svg { width: 15px; height: 15px; transition: transform 180ms ease; }
+.roles-volver:hover, .roles-volver:focus-visible { opacity: 1; }
+.roles-volver:hover svg { transform: translateX(-3px); }
+.roles-volver:focus-visible { outline: 2px solid #e879f9; outline-offset: 2px; }
+.roles-aventura .roles-volver { color: #c4b5fd; }
+.roles-aventura .roles-volver:hover { background: rgba(123, 95, 191, 0.16); }
+.roles-progreso .roles-volver { color: #5b3aae; }
+.roles-progreso .roles-volver:hover { background: rgba(109, 40, 217, 0.08); }
 .roles-grupo { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .roles-grupo-titulo {
   font-family: 'Inter', system-ui, sans-serif;
@@ -2992,7 +3016,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 @media (max-height: 640px) {
   .mundo-insignia { display: none; }
-  .roles-mundo { --roles-alto: clamp(260px, 70vh, 380px); margin-top: 6px; }
+  .roles-mundo { --roles-alto: clamp(240px, 61vh, 360px); margin-top: 0; }
   .rol-fila { padding: 10px 16px; }
   .rol-fila .rol-icono { width: 36px; height: 36px; }
   .rol-fila .rol-desc { font-size: 0.74rem; }

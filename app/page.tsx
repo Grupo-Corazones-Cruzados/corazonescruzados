@@ -2575,6 +2575,15 @@ export default function LandingPage() {
     : mundoElegido
       ?? (accesoAbierto ? (entryDestination === 'game' ? 'aventura' : 'progreso') : 'partido');
   useCorteAnimado(raizPortadaRef, modoPortada);
+  // Escape también vuelve a la pantalla de inicio, si no hay un diálogo abierto encima.
+  useEffect(() => {
+    if (!mundoElegido) return;
+    const alPulsar = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) setMundoElegido(null);
+    };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [mundoElegido]);
   // Elegir un mundo fija también el DESTINO del acceso: Aventura → juego; Progreso → panel.
   const elegirMundo = (m: 'aventura' | 'progreso') => {
     setEntryDestination(m === 'aventura' ? 'game' : 'dashboard');
@@ -2973,7 +2982,7 @@ export default function LandingPage() {
               {/* Los ROLES, como tarjetas con el tema del mundo (2026-10-26). */}
               {/* Sin titular ni pensamiento (Fernando, 2026-10-26: «cuando ya se ingresa a un
                   tema quita el pensamiento y el título»): solo la insignia y los roles. */}
-              <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={520} />
+              <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={520} onVolver={() => setMundoElegido(null)} />
             </div>
           )}
         </div>
