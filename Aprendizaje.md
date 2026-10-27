@@ -10631,3 +10631,34 @@ ojo: posiciones, `scrollWidth`/`scrollHeight`, choques texto↔tarjeta con `Rang
 ⏳ Llevar el tema de cada mundo a los diálogos de inicio de sesión (candidato, cliente, miembro)
 y de creación de cuenta.
 
+
+
+---
+
+# Aprendizaje — Herramienta «Formatos de impresión para Excel» con acceso público por token (2026-10-27)
+
+**Objetivo:** añadir a Herramientas la herramienta que entregó Fernando (HTML suelto) y poder compartirla
+con un enlace público con token, por tiempo y opcionalmente atado a un cliente, con la misma interfaz que
+el «Enlace de un solo uso». Fernando, a mitad: adaptar el diseño al de la app; las funciones, tal cual.
+
+**Rol asumido:** ingeniero full-stack del panel (Next.js + Postgres) con el sistema de diseño `.corp`.
+
+**Progreso:** 100 % — implementado y verificado el mismo día.
+
+## Preguntas y respuestas
+### P1 — ¿Qué es «el enlace para subir archivos»? · ✅ Resuelta
+- **Respuesta:** «Enlace de un solo uso» (`lib/enlaces`, `PanelCompartirEnlace`, `/enlace/<token>`). Fuente: MEMORIA.md + código.
+### P2 — ¿El acceso se gasta como el enlace? · ✅ Resuelta (decisión razonada)
+- **Respuesta:** no. «Por tiempo» = sirve hasta que vence o se cierra. Se cuentan los usos. Si Fernando
+  quiere un tope de usos, es una columna más.
+### P3 — ¿Quién comparte? · ✅ Resuelta
+- **Respuesta:** el equipo (miembros y admin), como los otros enlaces: atan clientes de GCC. Los
+  candidatos pueden USAR la herramienta en el panel, no compartirla.
+### P4 — ¿Dónde corre? · ✅ Resuelta
+- **Respuesta:** en el navegador (motor portado, `fflate` por npm). El servidor solo guarda el acceso.
+### P5 — ¿Qué se adapta del diseño? · ✅ Resuelta (Fernando)
+- **Respuesta:** toda la piel; ver `Diseño.md` → «Herramienta traída de fuera».
+
+## Riesgos y cómo se mitigan
+- El token protege la pantalla, no el código (el motor está en el JS público). Aceptable aquí; anotado en
+  MEMORIA para herramientas compartibles que usen el servidor.

@@ -7680,6 +7680,38 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     con `ruta` (`lib/enlaces`), `descargaDeDrive` (`lib/media/descarga-privada.ts`).
   - Probado de punta a punta el 2026-10-19 (21 comprobaciones + regresión del enlace; filas y
     carpetas de prueba borradas).
+- **🖨️ Herramientas → Edición → «Formatos de impresión para Excel» + ACCESO PÚBLICO COMPARTIDO (Fernando,
+  2026-10-27).** Fernando entregó la herramienta como un HTML suelto y pidió: (1) añadirla a Herramientas,
+  (2) poder compartir un enlace público con token, «como cuando se comparte un enlace para subir archivos»,
+  por tiempo y opcionalmente atado a un cliente, con la misma interfaz, y (3) *«adaptar el diseño al de la
+  app […] pero las funciones sí implementarlas a nuestra manera»*.
+  - **Motor intacto:** `lib/herramientas/formatos-excel/motor.ts` es el JS del HTML portado tal cual
+    (`// @ts-nocheck`, `fflate` como dependencia npm en vez del CDN). Lee el .xlsx en el NAVEGADOR (nada va
+    al servidor), recomienda el formato por el nombre de la hoja y el texto de sus 6 primeras filas,
+    corrige SOLO la configuración de página (papel, orientación, márgenes, ajuste a 1 de ancho, área de
+    impresión hasta la última fila con valores, filas de títulos, «Página &P de &N») y genera el PDF a mano
+    (Helvetica). Formatos fijos en `FORMATS`: «Compras nacionales · 4 cuentas» y «Ventas · IVA devengado ·
+    2 cuentas» (A3 horizontal). Para añadir un formato: una entrada más en `FORMATS`.
+  - **Pantalla rehecha con piezas del panel:** `components/herramientas/FormatosExcel.tsx` (archivo,
+    formato, hojas con `FilaMarcable`, vista previa en canvas —el papel es blanco en los dos temas— y
+    «Descargar PDF» / «Descargar Excel corregido» abajo a la derecha). Va a página completa
+    (`/dashboard/tools/formatos-excel`): en la columna de 360 px la vista previa no cabe; el panel de la
+    herramienta solo trae «Abrir herramienta», «Compartir acceso» y «Ver accesos compartidos».
+  - **Acceso compartido = tabla `gcc_world.herramienta_accesos`, `lib/herramientas/accesos.ts`.** Mismo
+    formulario `PanelCompartirEnlace` (Para quién · Pedir la cuenta del cliente · vigencia hasta 1 año ·
+    correo). Reusa `acceso()`/`nuevoToken()`/`estadoDe()` de `lib/enlaces`. **NO se gasta**: sirve hasta
+    que vence o se cierra (estados vigente · cerrado · vencido). Cuenta `usos` al abrir un libro (POST
+    `/uso`), no al abrir la página (las vistas previas de WhatsApp/Gmail la abren). Solo se comparten las
+    herramientas de `COMPARTIBLES` (las que corren enteras en el navegador). Crear/cerrar/borrar: equipo
+    (`esEquipo`); lo ve quien lo creó y el admin. Página pública `/herramienta/<token>` (en
+    `DESTINOS_PERMITIDOS` para volver tras iniciar sesión); lista `/dashboard/tools/accesos`.
+  - ⚠️ El token protege la PANTALLA, no el código: el motor va en el JS público de la app. Para esta
+    herramienta da igual (no toca datos de GCC); una herramienta compartible que use el servidor tendría
+    que comprobar el token en su API.
+  - Probado el 2026-10-27: motor con un libro de 300 filas (formato recomendado, Excel corregido que vuelve
+    a abrir con los datos y los `definedNames`, PDF de 8 páginas), panel y página pública en claro, oscuro
+    y 390 px (sin desbordar), y la API de punta a punta (crear, abrir sin cuenta, uso, cerrar, rechazos,
+    borrar; la fila de prueba se borró por su id).
 - **Transcripción de audio: TOPE DURO de ~300 s por petición (Railway/Cloudflare) (2026-07-24).**
   `/api/tools/transcribe` (Whisper) trocea el audio en segmentos de 10 min, los transcribe y une en un `.txt`.
   Con un audio de **~1.5 h** (10 segmentos) empezó a fallar con **HTTP 499 a los ~300 s exactos** → **502** en

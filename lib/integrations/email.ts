@@ -576,6 +576,24 @@ export async function sendEnlaceUnicoEmail(params: {
   return deliver({ to: params.email, subject: params.titulo, html });
 }
 
+/** Acceso a una herramienta: el enlace para usarla hasta que venza (ver `lib/herramientas/accesos`). */
+export async function sendAccesoHerramientaEmail(params: {
+  email: string; herramienta: string; titulo?: string; url: string; vence: Date; remitente?: string; exigeCuenta: boolean;
+}) {
+  const vence = params.vence.toLocaleDateString('es-EC', { timeZone: MEMBER_TZ, day: 'numeric', month: 'long', year: 'numeric' });
+  const html = emailShell(
+    emailBadge('HERRAMIENTA', CORP.accent) +
+    emailHeading(escapeHtml(params.herramienta), params.remitente ? `Te la comparte ${escapeHtml(params.remitente)}` : 'GCC World') +
+    (params.titulo ? emailParagraph(escapeHtml(params.titulo)) : '') +
+    emailParagraph(params.exigeCuenta
+      ? `Abre el enlace e ${accentStrong('inicia sesión con tu cuenta de GCC World')} para usarla.`
+      : 'Abre el enlace para usarla.') +
+    emailButton(params.url, 'Abrir la herramienta') +
+    emailNote(`Puedes usarla las veces que necesites hasta el ${escapeHtml(vence)}.`),
+  );
+  return deliver({ to: params.email, subject: params.herramienta, html });
+}
+
 /** Entrega de un solo uso: el enlace para ver y descargar lo que le mandan (ver `lib/entregas`). */
 export async function sendEntregaUnicaEmail(params: {
   email: string; titulo: string; url: string; remitente?: string; exigeCuenta: boolean;

@@ -1479,6 +1479,25 @@ pieza compartida siempre que se pudo, para que ninguna pantalla se quede fuera:
 - **Márgenes seguros**: el panel ya los tenía por elemento (`--seguro-arriba`/`--seguro-abajo`,
   manifiesto `standalone`, `viewportFit: cover`), por la app de Capacitor.
 
+### Herramienta traída de fuera: se queda la función, se cambia la piel (Fernando, 2026-10-27)
+Cuando Fernando entrega una herramienta hecha aparte (HTML con su propia paleta, fuentes y tema), su
+lógica se porta tal cual y la pantalla se rehace con las piezas del panel: *«adaptar el diseño al de la
+app […] pero las funciones sí implementarlas a nuestra manera»*. Caso: «Formatos de impresión para
+Excel» (`components/herramientas/FormatosExcel.tsx`):
+- Fuera sus tokens (`--accent` verde, Instrument Sans, `--desk`): tarjetas `bg-digi-card border-digi-border`,
+  botones `BTN_PRIMARY`/`BTN_SECONDARY`/`BTN_ICONO_SECUNDARIO`, casillas con `FilaMarcable`, «Recomendado»
+  con `PixelBadge`, la tarjeta elegida con `border-accent ring-1 ring-accent` (nada de tinte de fondo: no
+  se lee en oscuro).
+- Fuera sus párrafos de ayuda bajo los controles (regla «sin notas de ayuda»). Los datos (escala, letra,
+  hojas) van en una línea `text-digi-muted` dentro de la tarjeta, no en chips con relleno.
+- Lo que representa PAPEL (la vista previa de la hoja impresa) sigue blanco en los dos temas: es la hoja,
+  no la interfaz. Su fondo es `bg-black/[0.04]`.
+- Si la vista previa no cabe en la columna de 360 px del panel de Herramientas, la herramienta va a
+  página completa y el panel solo enlaza («Abrir herramienta»).
+- Página pública de una herramienta (`/herramienta/<token>`): el armazón de `/enlace` (`corp page-dark` +
+  `PublicHeader`); el título va DENTRO de una tarjeta, porque sobre el fondo oscuro el texto de la tarjeta
+  clara no se lee.
+
 ### Componentes compartidos (una definición por control)
 | Control | Componente | Notas |
 |---|---|---|

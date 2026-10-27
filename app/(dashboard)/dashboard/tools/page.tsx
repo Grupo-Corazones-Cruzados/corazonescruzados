@@ -18,7 +18,7 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
   Repeat2, Captions, Search, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
-  Briefcase, Link2, Plus, Table2, PackageOpen, QrCode, Smartphone, MonitorDown,
+  Briefcase, Link2, Plus, Table2, PackageOpen, QrCode, Smartphone, MonitorDown, Printer, Share2, ExternalLink,
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
 import AppMovil from '@/components/herramientas/AppMovil';
@@ -28,9 +28,10 @@ import { accessRoleOf } from '@/lib/dashboard/access';
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-/** `soloEquipo`: miembros y admin. Los candidatos usan las demás (las de «un solo uso» atan
+/** `compartible`: el equipo puede compartirla por enlace con token (`lib/herramientas/accesos`).
+ * `soloEquipo`: miembros y admin. Los candidatos usan las demás (las de «un solo uso» atan
  * clientes de GCC y guardan en el Drive de la empresa; sus APIs exigen `esEquipo`). */
-type Tool = { id: string; name: string; Icon: any; description: string; category: string; soloEquipo?: boolean };
+type Tool = { id: string; name: string; Icon: any; description: string; category: string; soloEquipo?: boolean; compartible?: boolean };
 
 // Categorías (tipos de herramienta).
 const CATEGORIES = [
@@ -46,12 +47,15 @@ const CATEGORY_LABEL: Record<string, string> = { edicion: 'Herramienta de edici�
 const VIGENCIAS = [
   { v: 24, l: '1 día' }, { v: 72, l: '3 días' }, { v: 168, l: '1 semana' }, { v: 720, l: '1 mes' },
 ];
+// Un acceso a una herramienta no se gasta: sirve hasta que vence, así que admite plazos largos.
+const VIGENCIAS_ACCESO = [...VIGENCIAS, { v: 2160, l: '3 meses' }, { v: 8760, l: '1 año' }];
 
 type ClienteConCuenta = { id: number; nombre: string; email: string };
 
 const TOOLS: Tool[] = [
   { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
   { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
+  { id: 'formatos-excel', name: 'Formatos de impresión para Excel', Icon: Printer, category: 'edicion', compartible: true, description: 'Corrige la impresión de un libro de Excel (papel, márgenes, títulos y número de página) y lo descarga en Excel o PDF.' },
   { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
@@ -110,6 +114,22 @@ export default function ToolsPage() {
     setEnlaceOpen(true);
   };
   const clienteElegido = clientesConCuenta?.find((c) => String(c.id) === enlaceCliente);
+
+  // Compartir el acceso a una herramienta (Fernando, 2026-10-27): el mismo formulario del enlace,
+  // con «para quién» en vez de título y sin texto que pedir. Ver `lib/herramientas/accesos`.
+  const [accesoOpen, setAccesoOpen] = useState(false);
+  const [accesoTitulo, setAccesoTitulo] = useState('');
+  const [accesoExigeCuenta, setAccesoExigeCuenta] = useState(false);
+  const [accesoCliente, setAccesoCliente] = useState('');
+  useEffect(() => {
+    if (!accesoOpen || clientesConCuenta) return;
+    fetch('/api/enlaces/clientes').then((r) => r.json()).then((d) => setClientesConCuenta(d.data || [])).catch(() => setClientesConCuenta([]));
+  }, [accesoOpen, clientesConCuenta]);
+  const abrirAcceso = () => {
+    setAccesoTitulo(''); setAccesoExigeCuenta(false); setAccesoCliente('');
+    setAccesoOpen(true);
+  };
+  const clienteAcceso = clientesConCuenta?.find((c) => String(c.id) === accesoCliente);
 
   // Entrega de un solo uso (Fernando, 2026-10-19): misma forma que el enlace, pero los archivos
   // los sube el miembro. Se suben al elegirlos, a un BORRADOR que nace con el primero; si el
@@ -288,7 +308,7 @@ export default function ToolsPage() {
   // Se decide qué se MONTA: un <dialog> montado y escondido deja inerte toda la página.
   const enTelefono = !useConsultaMedia(PANTALLA_XL);
   const cuerpoHerramienta = () => !tool ? null
-    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
+    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
 
   // Panel derecho: usar la herramienta seleccionada.
   const renderToolPanel = () => {
@@ -431,6 +451,20 @@ export default function ToolsPage() {
     </div>
   );
 
+  // Corre a página completa: la vista previa de la hoja impresa no cabe en esta columna.
+  const renderFormatosExcel = () => (
+    <div className="space-y-3">
+      <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
+      <Link href="/dashboard/tools/formatos-excel" className={`${BTN_PRIMARY} w-full`}><ExternalLink className="w-4 h-4" /> Abrir herramienta</Link>
+      {esEquipo && (
+        <>
+          <button onClick={abrirAcceso} className={`${BTN_SECONDARY} w-full`}><Share2 className="w-4 h-4" /> Compartir acceso</button>
+          <Link href="/dashboard/tools/accesos" className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Ver accesos compartidos</Link>
+        </>
+      )}
+    </div>
+  );
+
   const renderEntrega = () => (
     <div className="space-y-3">
       <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
@@ -546,6 +580,46 @@ export default function ToolsPage() {
         </div>
         {enlaceExigeCuenta && (
           <PixelSelect label="Cliente" value={enlaceCliente} onChange={(e) => setEnlaceCliente(e.target.value)}
+            placeholder={clientesConCuenta === null ? 'Cargando…' : clientesConCuenta.length ? 'Elige el cliente' : 'Ningún cliente tiene cuenta'}
+            options={(clientesConCuenta || []).map((c) => ({ value: String(c.id), label: `${c.nombre} · ${c.email}` }))} />
+        )}
+      </PanelCompartirEnlace>
+
+      <PanelCompartirEnlace
+        open={accesoOpen} onClose={() => setAccesoOpen(false)}
+        title="Compartir acceso a la herramienta"
+        intro={<>Quien abra el enlace podrá usar <strong>{tool?.name}</strong> las veces que necesite, sin cuenta, hasta que venza o lo cierres.</>}
+        duraciones={VIGENCIAS_ACCESO} duracionInicial={720}
+        correoInicial={clienteAcceso?.email || ''}
+        etiquetaCorreo="Correo de quien la usará (para enviarlo)"
+        aviso={accesoExigeCuenta
+          ? <>Solo podrá usarla quien inicie sesión con la cuenta de <strong>{clienteAcceso?.nombre}</strong>.</>
+          : 'Cualquiera con este enlace puede usarla mientras esté vigente.'}
+        puedeGenerar={!!tool?.compartible && (!accesoExigeCuenta || !!accesoCliente)}
+        generar={async ({ horas, email, enviar }) => {
+          const r = await fetch('/api/herramientas/accesos', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              herramienta: tool?.id, titulo: accesoTitulo, horas, email: enviar ? email : undefined,
+              exige_cuenta: accesoExigeCuenta, client_id: accesoExigeCuenta ? Number(accesoCliente) : null,
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'Error');
+          if (enviar && !d.data.enviado) return { url: d.data.url, mensaje: 'Acceso generado, pero el correo no salió: cópialo y envíalo tú', ok: false };
+          return { url: d.data.url, mensaje: enviar ? 'Acceso enviado por correo' : 'Acceso generado' };
+        }}
+      >
+        <EditField label="Para quién">
+          <input value={accesoTitulo} onChange={(e) => setAccesoTitulo(e.target.value)} maxLength={200}
+            placeholder="Ej.: Contabilidad de la empresa" className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <div className="flex items-center justify-between gap-3 py-1">
+          <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>Pedir la cuenta del cliente</span>
+          <Interruptor activo={accesoExigeCuenta} onChange={setAccesoExigeCuenta} etiqueta="Pedir la cuenta del cliente" />
+        </div>
+        {accesoExigeCuenta && (
+          <PixelSelect label="Cliente" value={accesoCliente} onChange={(e) => setAccesoCliente(e.target.value)}
             placeholder={clientesConCuenta === null ? 'Cargando…' : clientesConCuenta.length ? 'Elige el cliente' : 'Ningún cliente tiene cuenta'}
             options={(clientesConCuenta || []).map((c) => ({ value: String(c.id), label: `${c.nombre} · ${c.email}` }))} />
         )}
