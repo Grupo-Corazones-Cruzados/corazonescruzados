@@ -2691,7 +2691,8 @@ export default function LandingPage() {
         // juego en marcha, como antes.
         // `pt-24` en el teléfono: allí el contenido puede no caber y empieza arriba del todo;
         // con `pt-16` (lo que mide la cabecera) la insignia quedaba pegada a ella.
-        className={`relative flex items-center justify-center text-center px-6 pt-24 md:pt-16 pb-8 overflow-hidden ${
+        // `items-stretch`: el bloque ocupa todo el alto, con la cabeza FIJA arriba (no centrada).
+        className={`relative flex items-stretch justify-center text-center px-6 pt-24 md:pt-16 pb-8 overflow-hidden ${
           windAway ? 'min-h-[90vh]' : 'min-h-[calc(100dvh-var(--alto-pie))] md:h-[calc(100dvh-var(--alto-pie))]'
         }`}
       >
@@ -2940,70 +2941,62 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ══ EL BLOQUE CENTRAL: ELEGIR UN MUNDO (Fernando, 2026-10-26, sexta versión) ═══════════
-            · Al llegar, SOLO dos TARJETAS de selección (`TarjetasMundo`), cada una en su mundo
-              junto a la raya líquida, como al elegir modo en un videojuego. Nada de titular,
-              insignia ni pensamiento todavía.
-            · Un CLIC (no el puntero encima) elige el mundo: llena la pantalla, las tarjetas se
-              van y aparecen, CENTRADOS y con los colores de ese mundo, la insignia y los ROLES
-              en tarjetas. Sin titular ni pensamiento, y SIN botón para cambiar de mundo.
-            ⚠️ Las tarjetas NO abren el acceso («¿Cómo quieres ingresar?»): Fernando dirá
-            qué viene después. El acceso sigue por `/auth` y `?acceso=`.
-            Probadas antes y descartadas el mismo día: bloque centrado con color partido,
-            cristal redondeado, placa pixel, botones con estilo distinto, raya que sigue al
-            puntero, mundo que cambia al pasar el puntero y titular en escalera («El cruce»). */}
+        {/* ══ EL BLOQUE CENTRAL (Fernando, 2026-10-26) ═════════════════════════════════════
+            · La insignia y el titular «Un ❤ puede | cruzar al 🌍» están SIEMPRE y NO se mueven
+              (Fernando: «se mantengan en la misma posición… y al seleccionar una opción no
+              desaparezcan»). Van FIJOS bajo la cabecera (`.portada-cabeza`), no centrados: si se
+              centraran, cambiar lo de debajo los desplazaría.
+            · Debajo, la ZONA (`.portada-zona`), que ocupa el resto del alto: antes de elegir, las
+              dos tarjetas de mundo y el pensamiento; tras elegir con un CLIC, «Volver» y los
+              ROLES, justo debajo del titular.
+            · Al elegir, la mitad del titular que cubre el mundo elegido cambia de color para
+              leerse en él (`[data-modo]` en globals.css); el resto no se toca.
+            ⚠️ Las tarjetas de mundo NO abren el acceso: lo hacen los roles. Probadas y
+            descartadas el mismo día: ver `MEMORIA.md` § «LA PORTADA: DOS MUNDOS». */}
         <div
-          className="relative z-10 w-full"
+          className="portada-bloque relative z-10 w-full"
           style={{
             pointerEvents: windAway ? 'none' : 'auto',
             opacity: windAway ? 0 : 1,
             transition: 'opacity 600ms ease',
           }}
         >
-          {/* PRUEBA (Fernando, 2026-10-26): en los titulares, «Corazón» y «mundo» van como
-              IMÁGENES pixel-art propias —un corazón que late y la Tierra, que gira
-              (`IconosTitular.tsx`)—. El texto completo sigue aquí para lectores
-              de pantalla y buscadores. */}
+          {/* «Corazón» y «mundo» van como IMÁGENES pixel-art (`IconosTitular.tsx`); el texto
+              completo sigue aquí para lectores de pantalla y buscadores. */}
           <h1 className="sr-only">Un Corazón puede cruzar al mundo</h1>
 
-          {!mundoElegido ? (
-            // LA PANTALLA DE INICIO, COMO LA DE TÍTULO DE UN VIDEOJUEGO (2026-10-26):
-            // insignia en una cápsula sobre la raya; el titular en UNA línea partida por la
-            // raya —«Un Corazón puede» sobre el cielo, «cruzar al mundo» sobre la Plataforma,
-            // cada mitad encima de la tarjeta de su mundo—; las dos tarjetas; y el pensamiento
-            // como barra de consejo abajo, sobre la raya.
-            <div className="inicio-portada">
-              <p className="cristal-portada inicio-insignia aparecer" style={{ ['--retraso' as string]: '100ms' }}>
-                Proyecto de Desarrollo Humano
+          <div className="portada-cabeza">
+            <p className="cristal-portada inicio-insignia aparecer" style={{ ['--retraso' as string]: '100ms' }}>
+              Proyecto de Desarrollo Humano
+            </p>
+            <div className="cruce-rejilla inicio-titular aparecer" aria-hidden="true" style={{ ['--retraso' as string]: '220ms' }}>
+              {/* Un solo `<span>` por mitad: las columnas son `flex` y, sin él, cada palabra
+                  sería una pieza suelta apilada. */}
+              <p className="cruce-izquierda inicio-titular-izquierda">
+                <span>Un <IconoCorazon /> puede</span>
               </p>
-              <div className="cruce-rejilla inicio-titular aparecer" aria-hidden="true" style={{ ['--retraso' as string]: '220ms' }}>
-                {/* Un solo `<span>` por mitad: las columnas son `flex` y, sin él, cada palabra
-                    sería una pieza suelta apilada. */}
-                <p className="cruce-izquierda inicio-titular-izquierda">
-                  <span>Un <IconoCorazon /> puede</span>
-                </p>
-                <p className="cruce-derecha inicio-titular-derecha">
-                  <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span> <IconoMundo /></span>
-                </p>
-              </div>
-              <div className="aparecer" style={{ ['--retraso' as string]: '360ms' }}>
-                <TarjetasMundo onElegir={elegirMundo} bloqueado={landingLocked} />
-              </div>
-              <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>
-                <FeaturedThought compacto />
-              </div>
-            </div>
-          ) : (
-            <div className={`mundo-elegido mundo-${mundoElegido}`}>
-              <p className="mundo-insignia aparecer" style={{ ['--retraso' as string]: '420ms' }}>
-                Proyecto de Desarrollo Humano
+              <p className="cruce-derecha inicio-titular-derecha">
+                <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span> <IconoMundo /></span>
               </p>
-              {/* Los ROLES, como tarjetas con el tema del mundo (2026-10-26). */}
-              {/* Sin titular ni pensamiento (Fernando, 2026-10-26: «cuando ya se ingresa a un
-                  tema quita el pensamiento y el título»): solo la insignia y los roles. */}
-              <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={520} onVolver={() => setMundoElegido(null)} />
             </div>
-          )}
+          </div>
+
+          <div className="portada-zona">
+            {!mundoElegido ? (
+              <div key="inicio" className="inicio-portada">
+                <div className="aparecer" style={{ ['--retraso' as string]: '360ms' }}>
+                  <TarjetasMundo onElegir={elegirMundo} bloqueado={landingLocked} />
+                </div>
+                <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>
+                  <FeaturedThought compacto />
+                </div>
+              </div>
+            ) : (
+              <div key="mundo" className={`mundo-elegido mundo-${mundoElegido}`}>
+                <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={420} onVolver={() => setMundoElegido(null)} />
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

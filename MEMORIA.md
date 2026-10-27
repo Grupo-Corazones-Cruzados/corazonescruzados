@@ -288,13 +288,14 @@ Stack estándar de la casa, con particularidades de este repo:
      barra de consejo, siempre entero.
   2. **Un CLIC elige el mundo** (nunca el puntero encima): llena la pantalla con él y fija el
      destino (Aventura → juego, Progreso → panel). Dentro: solo la insignia, «← Volver» (o
-     Escape) y los **roles en dos grupos** (`RolesMundo.tsx`): «Soy nuevo» (una tarjeta grande con
-     el camino de 8 pasos de la postulación) y «Ya tengo cuenta» (candidato, cliente, miembro).
-     Sin titular ni pensamiento.
+     Escape) y los **roles** (`RolesMundo.tsx`) como 4 tarjetas con el MISMO estilo que las de
+     mundo. La insignia y el titular NO se mueven ni desaparecen al elegir: solo se recolorea la
+     mitad que cubre el mundo. Sin pensamiento dentro.
   3. **Una sola lógica de acceso**: `components/landing/opcionesAcceso.ts` (extraída de
      `EntryChoiceModal`, que la sigue usando) y `accionesAcceso` en `app/page.tsx`. Las 4 opciones
      están siempre; mientras consulta el estado se ven con «Comprobando…» y no cambian de sitio.
-  4. **El formulario de candidato toma el tema del mundo** (`OnboardingSlidersModal tema=`).
+  4. **El formulario de candidato** («La travesía»: camino de nodos, anillo de progreso, número
+     perfilado, interruptor de aceptación) toma el tema del mundo (`OnboardingSlidersModal tema=`).
   5. **Cabecera con fondo fijo** y pestañas en cápsula desde `md`; «Historia» → **«Inicio»**;
      **sin música de ambiente** (viento y espacio fuera; la intro del juego conserva sus sonidos).
   6. **La portada no se desliza**: el héroe mide `100dvh − pie` desde `md`; en el teléfono crece

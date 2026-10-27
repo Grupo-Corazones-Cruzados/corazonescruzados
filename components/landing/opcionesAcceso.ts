@@ -49,6 +49,8 @@ export interface OpcionAcceso {
   insignia?: string;
   titulo: string;
   descripcion: string;
+  /** Versión corta para el teléfono (tarjetas estrechas). */
+  corta?: string;
   onClick: () => void;
 }
 
@@ -110,6 +112,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: UserPlus,
       insignia: 'Comprobando…',
       titulo: 'Quiero postularme como candidato',
+      corta: 'Conoce el proyecto y postúlate.',
       descripcion: 'Comprobando si ya te postulaste desde este dispositivo…',
       onClick: sinAccion,
     });
@@ -121,6 +124,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: BadgeCheck,
       insignia: 'Aprobada',
       titulo: '¡Tu postulación fue aprobada!',
+corta: 'Crea tu cuenta y entra.',
       descripcion: 'Fuiste aceptado por el administrador. Continúa para crear tu cuenta (contraseña y datos) e ingresar como candidato.',
       onClick: () => acciones.onProposalApproved({ email: proposal.email }),
     });
@@ -132,6 +136,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: MailWarning,
       insignia: 'En revisión',
       titulo: 'Tu postulación está en proceso de aprobación',
+corta: 'Verifica tu correo mientras tanto.',
       descripcion: 'Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato.',
       onClick: () => acciones.onProposalPending({ email: proposal.email, emailVerified: proposal.emailVerified }),
     });
@@ -145,6 +150,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: BadgeCheck,
       insignia: 'Cuenta activa',
       titulo: 'Ya tienes cuenta de candidato',
+corta: 'Inicia sesión para continuar.',
       descripcion: 'Te postulaste y tu cuenta ya está creada. Inicia sesión como candidato para continuar.',
       onClick: acciones.onCandidateLogin,
     });
@@ -155,6 +161,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       tono: 'default',
       Icono: UserPlus,
       titulo: 'Quiero postularme como candidato',
+      corta: 'Conoce el proyecto y postúlate.',
       descripcion: 'Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados.',
       onClick: acciones.onCandidate,
     });
@@ -166,6 +173,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
     tono: 'default',
     Icono: LogIn,
     titulo: 'Soy candidato',
+        corta: 'Inicia sesión con tu cuenta.',
     descripcion: `Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`,
     onClick: acciones.onCandidateLogin,
   });
@@ -179,6 +187,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: Briefcase,
       insignia: 'Comprobando…',
       titulo: 'Soy cliente',
+      corta: 'Tus productos y servicios.',
       descripcion: 'Comprobando tu cuenta de cliente…',
       onClick: sinAccion,
     });
@@ -190,6 +199,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: MailWarning,
       insignia: 'Verificación pendiente',
       titulo: 'Tu cuenta de cliente requiere verificación',
+            corta: 'Verifica tu correo para entrar.',
       descripcion: 'Te enviamos un enlace de verificación a tu correo. Verifícalo para poder iniciar sesión. No es necesario crear otra cuenta.',
       onClick: () => acciones.onClientPending({ email: client.email }),
     });
@@ -200,6 +210,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       tono: 'default',
       Icono: Briefcase,
       titulo: 'Soy cliente',
+      corta: 'Tus productos y servicios.',
       descripcion:
         destination === 'dashboard'
           ? `Accede ${aDestino} para gestionar tus productos, servicios y proyectos del grupo.`
@@ -214,6 +225,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
     tono: 'default',
     Icono: ShieldCheck,
     titulo: 'Ingresar como miembro',
+        corta: 'Miembros y administradores.',
     descripcion: `Ya soy miembro o administrador: iniciar sesión y ${dest}.`,
     onClick: acciones.onMember,
   });

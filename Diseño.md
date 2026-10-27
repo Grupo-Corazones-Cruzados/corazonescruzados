@@ -230,6 +230,16 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > | Alto | `app/page.tsx` (sección del héroe) | `100dvh − --alto-pie` desde `md`; teléfono `min-h` con `pt-24` |
 > | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema sobre la Plataforma (`.cursor-plataforma`) |
 >
+> **Cambio posterior (2026-10-26): cabeza fija y roles como tarjetas de mundo.**
+> · La insignia y el titular están SIEMPRE y en la MISMA posición antes y después de elegir
+>   (`.portada-cabeza`, a distancia fija de la cabecera; verificado en 7 tamaños). Al elegir,
+>   solo cambia de color la mitad del titular que cubre el mundo (`[data-modo]`).
+> · Los roles reutilizan las clases de `TarjetasMundo` (`.tarjeta-mundo-*`, `.tm-*`, selector
+>   de esquinas): etiqueta («Soy nuevo»/«Ya tengo cuenta» o el estado), escena con el icono en
+>   un cuadrado degradado (`.tr-escena`, `.tr-icono`), título y descripción (corta en el
+>   teléfono y en ventanas de menos de 700 px de alto). 4 en fila desde 860 px; 2×2 debajo.
+>   Sustituye a «Soy nuevo» grande + pila (y su camino de 8 pasos).
+>
 > **Modo ligero en pantallas táctiles** (Fernando, 2026-10-26: «en teléfono se ve ralentizado»):
 > `@media (hover: none), (pointer: coarse)` quita los `backdrop-filter` (cristales más opacos),
 > congela la malla de puntos, manchas, nebulosas y el halo, quita el `blur` de las entradas
