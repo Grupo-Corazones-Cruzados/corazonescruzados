@@ -261,6 +261,13 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > negro 55 % + desenfoque, FUERA del `<header>` porque su `backdrop-filter` encierra los `fixed`);
 > tocarlo cierra, y el menú entra con movimiento.
 >
+> **Roles UNIFORMES (2026-10-27, Fernando: «todo debe ser estándar»).** Deroga el estirado de
+> abajo: cada pieza de la tarjeta de rol tiene alto FIJO e igual en las cuatro —etiqueta en una
+> línea con puntos suspensivos, escena `clamp(72px, 11vh, 112px)` (64 en el teléfono, 50 en uno
+> bajo), título con DOS líneas reservadas (2,3 em) y descripción CORTA con dos líneas (2,8 em) y
+> aire inferior—, ambos centrados en su hueco. La larga solo va en el `aria-label`. El conjunto
+> se centra a lo alto. Verificado: un único alto por pieza en 4 tamaños.
+>
 > **Reparto vertical (2026-10-27).** Bajo el titular, la zona se reparte: las tarjetas de mundo
 > CENTRADAS a lo alto en el espacio libre (`.inicio-tarjetas`) y el pensamiento pegado al fondo
 > sobre el pie. Dentro de un mundo, la rejilla de roles CRECE hasta llenar la zona
