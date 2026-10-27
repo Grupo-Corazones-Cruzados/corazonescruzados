@@ -334,6 +334,15 @@ export default function LandingPage() {
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const worldRef = useRef<HTMLDivElement | null>(null);
   const raizPortadaRef = useRef<HTMLDivElement | null>(null);
+  // ¿Pantalla táctil sin puntero fino? Ahí la portada va en modo ligero (2026-10-26).
+  const [esTactil, setEsTactil] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: none), (pointer: coarse)');
+    const leer = () => setEsTactil(mq.matches);
+    leer();
+    mq.addEventListener('change', leer);
+    return () => mq.removeEventListener('change', leer);
+  }, []);
   const cameraStateRef = useRef({
     x: 0,
     y: 0,
@@ -2647,7 +2656,9 @@ export default function LandingPage() {
       {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
       <CabeceraSitio flotante />
-      {!nativeCursor && <PointerCursor />}
+      {/* Sin ratón (teléfono, tableta) no hay puntero que dibujar: su bucle por cuadro solo
+          restaba rendimiento. */}
+      {!nativeCursor && !esTactil && <PointerCursor />}
       <audio
         ref={typingAudioRef}
         src="/sounds/music/Efectos%20de%20sonido%20escritura.mp3"
@@ -2785,7 +2796,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <FondosPortada modo={modoPortada} juegoEnCurso={windAway} />
+        <FondosPortada modo={modoPortada} juegoEnCurso={windAway} ligero={esTactil} />
 
         {/* Camera viewfinder — corner brackets pan with the cursor */}
         <div

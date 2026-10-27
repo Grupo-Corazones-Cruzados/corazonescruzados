@@ -2138,7 +2138,15 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    (`lib/sitio/portadaPartida.ts`). Explicación completa en ese archivo.
    ═══════════════════════════════════════════════════════════════════════════════ */
 /* ⛔ `--corte` NO se anima con `@property` + `transition`: en el navegador de Fernando los
-   hijos se quedaban con un valor a medias. Lo anima `useCorteAnimado` en JS. */
+   hijos se quedaban con un valor a medias. Lo anima `useCorteAnimado` en JS.
+   ⚡ Y NO se hereda (2026-10-26, rendimiento en el teléfono): heredable, cada cambio en
+   `.landing-page` hacía recalcular los estilos de TODA la página, 60 veces por segundo al
+   elegir un mundo. Solo la leen en línea `LicuadoPortada` y `PointerCursor`. */
+@property --corte {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
 
 /* El cristal oscuro de la portada: el mismo de la cápsula de las pestañas. Lo que cruza la
    raya va encima y conserva sus colores en los dos mundos. */
@@ -2252,7 +2260,8 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 
 /* ── Progreso: la Plataforma en claro ── */
 .escena-progreso {
-  clip-path: inset(0 0 0 var(--corte));
+  /* Hasta que `LicuadoPortada` pone su recorte líquido (primer cuadro): la mitad derecha. */
+  clip-path: inset(0 0 0 50%);
   background: linear-gradient(160deg, #fbfaff 0%, #f3effb 55%, #e9e2f7 100%);
   overflow: hidden;
   font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
@@ -3072,3 +3081,39 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .roles-progreso .rol-grande { background: radial-gradient(120% 70% at 30% 0%, rgba(167, 139, 250, 0.3), transparent 60%), linear-gradient(180deg, #ffffff, #f4effd); }
 .rol-comprobando .rol-insignia { color: inherit; opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) { .rol-brillo, .rol-grande .rol-icono { animation: none; } }
+
+/* ═══ PORTADA EN MODO LIGERO — pantallas táctiles (Fernando, 2026-10-26: «en teléfono se ve
+   un poco ralentizado… en computadora sí se ve bien»). En un móvil lo que más pesa es PINTAR:
+   desenfoques de fondo sobre una escena que se mueve, fondos que se desplazan con
+   `background-position` (se repintan enteros cada cuadro) y entradas con `filter: blur`.
+   Aquí se quitan o se congelan; el diseño se ve igual a simple vista. ═══ */
+@media (hover: none), (pointer: coarse) {
+  /* Cristales: sin desenfoque de lo de detrás, un poco más opacos para que se lean igual. */
+  .landing-page .cristal-portada,
+  .landing-page header,
+  .landing-page .tarjeta-mundo,
+  .landing-page .mundo-insignia,
+  .landing-page .pensamiento-barra,
+  .landing-page .ep-tarjeta {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .landing-page .cristal-portada { background: rgba(13, 10, 28, 0.92); }
+  .landing-page header { background: rgba(11, 13, 20, 0.97) !important; }
+  .landing-page .pensamiento-barra-progreso { background: rgba(255, 255, 255, 0.94); }
+  .landing-page .ep-tarjeta { background: rgba(255, 255, 255, 0.96); }
+  /* Fondos que se repintaban enteros: quietos. */
+  .ep-puntos, .ep-mancha, .ea-nebulosa, .ea-fugaz, .tm-destello { animation: none !important; }
+  /* El halo de la tarjeta grande anima `box-shadow`: se repinta cada cuadro. Quieto. */
+  .rol-grande .rol-icono { animation: none; box-shadow: 0 0 0 6px var(--rol-halo, rgba(167, 139, 250, 0.12)); }
+  .ea-fugaz { display: none; }
+  /* Las entradas, sin desenfoque (solo suben y se funden). */
+  .aparecer { animation-name: aparecerLigero; }
+  .rol-camino > span { animation-name: aparecerLigero; }
+  /* Menos estrellas animadas a la vez: cada una es una capa más que componer. */
+  .pixel-star:nth-child(n + 91) { display: none; }
+}
+@keyframes aparecerLigero {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}

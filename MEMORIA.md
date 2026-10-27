@@ -309,8 +309,10 @@ Stack estándar de la casa, con particularidades de este repo:
   en su navegador → animar en JS; (c) `text-shadow` tapa un texto con `background-clip: text`;
   (d) `parseFloat('0px') || x` toma el `x`; (e) recorte/rellenos de un SVG que dependen de una
   clase de `globals.css` fallan con CSS viejo → en línea; (f) medir choques con el TEXTO (`Range`),
-  no con su `span`. ⏳ Pendiente: llevar el tema del mundo a los diálogos de inicio de sesión y
-  creación de cuenta.
+  no con su `span`; (g) en el teléfono iba con lag: `--corte` heredable en la raíz recalculaba toda
+  la página cada cuadro, y los desenfoques de fondo sobre una escena en movimiento pesaban → modo
+  ligero en táctil (`Diseño.md`), estilos al elegir 116 → 29 ms/s. ⏳ Pendiente: llevar el tema
+  del mundo a los diálogos de inicio de sesión y creación de cuenta.
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

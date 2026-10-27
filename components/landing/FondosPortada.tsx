@@ -48,7 +48,7 @@ function CorazonPixel({ lleno, className }: { lleno: boolean; className?: string
   );
 }
 
-export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortada; juegoEnCurso: boolean }) {
+export default function FondosPortada({ modo, juegoEnCurso, ligero = false }: { modo: ModoPortada; juegoEnCurso: boolean; ligero?: boolean }) {
   const aventura = modo === 'aventura' && !juegoEnCurso;
   return (
     <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
@@ -203,7 +203,7 @@ export default function FondosPortada({ modo, juegoEnCurso }: { modo: ModoPortad
 
       {/* ── La raya ── */}
       {/* ── La frontera: el licuado (onda viva, gotas y bruma). Sustituye a la raya recta. ── */}
-      <LicuadoPortada modo={modo} juegoEnCurso={juegoEnCurso} />
+      <LicuadoPortada modo={modo} juegoEnCurso={juegoEnCurso} ligero={ligero} />
     </div>
   );
 }

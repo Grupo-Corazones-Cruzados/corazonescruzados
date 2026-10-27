@@ -26,6 +26,12 @@
  * ⚠️ Relleno y grosores van como ATRIBUTOS del SVG, no solo en CSS: sin la regla, un
  * `<path>` se rellena de negro y la onda salía como una astilla negra.
  *
+ * ⚡ RENDIMIENTO (Fernando, 2026-10-26: «en teléfono se ve un poco ralentizado»):
+ * · Con la pantalla llena de un mundo (onda plana) NO se recalcula nada: el bucle solo mira si
+ *   `--corte` se movió.
+ * · `ligero` (pantallas táctiles): la mitad de puntos, ~30 cuadros/s, una banda de tinta por
+ *   lado (no tres + dos) y desenfoques más cortos. Cada desenfoque se vuelve a pintar entero en
+ *   cada cuadro porque la curva cambia, y en un móvil eso es lo que más pesa.
  * ⚠️ La onda NO puede alcanzar los textos de los lados: su amplitud es menor que el hueco que
  * dejan (`--hueco-raya`).
  * ⚠️ Al llenar la pantalla (raya en un borde) la onda y la tinta se aplanan; si no,
@@ -50,7 +56,10 @@ const CAPAS = [
   { lado: -1, largo: 38, color: '#d9cdf7', opacidad: 0.18, difumina: 14 },
 ] as const;
 
-export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPortada; juegoEnCurso: boolean }) {
+// En modo ligero solo la banda más marcada de cada lado.
+const CAPAS_LIGERO = [0, 3];
+
+export default function LicuadoPortada({ modo, juegoEnCurso, ligero = false }: { modo: ModoPortada; juegoEnCurso: boolean; ligero?: boolean }) {
   const recorteRef = useRef<SVGPathElement | null>(null);
   const brumaRef = useRef<SVGPathElement | null>(null);
   const brilloRef = useRef<SVGPathElement | null>(null);
@@ -66,9 +75,18 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
 
     const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const t0 = performance.now();
+    const puntos = ligero ? 28 : PUNTOS;
+    const intervalo = ligero ? 32 : 0;
     let raf = 0;
     let activo = false;
+    let ultimo = 0;
+    let plano = false;
+    let corteAnterior = NaN;
     const paso = (ahora: number) => {
+      raf = requestAnimationFrame(paso);
+      if (juegoEnCurso) return;
+      if (intervalo && ahora - ultimo < intervalo) return;
+      ultimo = ahora;
       const t = (ahora - t0) / 1000;
       const W = escena.clientWidth;
       const H = escena.clientHeight;
@@ -76,11 +94,15 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
       // se quedaba a media pantalla.
       const leido = parseFloat(raiz.style.getPropertyValue('--corte'));
       const corte = Number.isFinite(leido) ? leido : W / 2;
+      // Onda plana y quieta (un mundo llena la pantalla): ya está pintada, no hay nada que hacer.
+      if (plano && Math.abs(corte - corteAnterior) < 0.5) return;
+      corteAnterior = corte;
       // Menor que el hueco que dejan los textos (`--hueco-raya`: 18 → 56 px).
       const ampBase = Math.min(34, W * 0.022);
       const alBorde = Math.min(corte, W - corte);
       const k = reducir ? 0 : Math.max(0, Math.min(1, alBorde / (ampBase * 4)));
       const A = ampBase * k;
+      plano = activo && (k < 0.02 || reducir);
 
       // Dos ondas que derivan: la forma cambia sin repetirse.
       const f1 = 1.2 + 0.35 * Math.sin(t * 0.11);
@@ -92,8 +114,8 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
       };
 
       let frontera = '';
-      for (let i = 0; i <= PUNTOS; i++) {
-        const y = (i / PUNTOS) * H;
+      for (let i = 0; i <= puntos; i++) {
+        const y = (i / puntos) * H;
         frontera += `${i === 0 ? 'M' : 'L'}${x(y).toFixed(1)} ${y.toFixed(1)} `;
       }
 
@@ -103,11 +125,11 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
       CAPAS.forEach((c, n) => {
         const el = capasRef.current[n];
         if (!el) return;
-        if (escalaCapa < 0.02) { el.setAttribute('d', ''); return; }
+        if (escalaCapa < 0.02 || (ligero && !CAPAS_LIGERO.includes(n))) { el.setAttribute('d', ''); return; }
         let ida = '';
         let vuelta = '';
-        for (let i = 0; i <= PUNTOS; i++) {
-          const y = (i / PUNTOS) * H;
+        for (let i = 0; i <= puntos; i++) {
+          const y = (i / puntos) * H;
           const u = (y / H) * Math.PI * 2;
           const base = x(y);
           const grosor = c.largo * escalaCapa * (0.6 + 0.4 * Math.sin(u * (1.7 + n * 0.45) + t * (0.6 + n * 0.17) + n * 1.9));
@@ -128,7 +150,6 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
         escena.style.setProperty('-webkit-clip-path', `url(#${ID_LICUADO})`);
         escena.style.setProperty('clip-path', `url(#${ID_LICUADO})`);
       }
-      raf = requestAnimationFrame(paso);
     };
     raf = requestAnimationFrame(paso);
     return () => {
@@ -136,7 +157,7 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
       escena.style.removeProperty('-webkit-clip-path');
       escena.style.removeProperty('clip-path');
     };
-  }, []);
+  }, [ligero, juegoEnCurso]);
 
   const visible = modo === 'partido' && !juegoEnCurso;
 
@@ -169,7 +190,7 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
             <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
           </linearGradient>
           <filter id="licuado-difuso" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
-            <feGaussianBlur stdDeviation="18" />
+            <feGaussianBlur stdDeviation={ligero ? 9 : 18} />
           </filter>
           <filter id="licuado-brillo" filterUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
             <feGaussianBlur stdDeviation="4" />
@@ -177,7 +198,7 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
         </defs>
         {CAPAS.map((c, n) => (
           <filter key={`f${n}`} id={`licuado-capa-${n}`} x="-2" y="-0.1" width="5" height="1.2">
-            <feGaussianBlur stdDeviation={c.difumina} />
+            <feGaussianBlur stdDeviation={ligero ? Math.min(c.difumina, 5) : c.difumina} />
           </filter>
         ))}
         {CAPAS.map((c, n) => (
@@ -189,7 +210,7 @@ export default function LicuadoPortada({ modo, juegoEnCurso }: { modo: ModoPorta
             filter={`url(#licuado-capa-${n})`}
           />
         ))}
-        <path ref={brumaRef} fill="none" strokeWidth={70} opacity={0.32} stroke="url(#licuado-tinta)" filter="url(#licuado-difuso)" />
+        <path ref={brumaRef} fill="none" strokeWidth={ligero ? 40 : 70} opacity={0.32} stroke="url(#licuado-tinta)" filter="url(#licuado-difuso)" />
         <path ref={brilloRef} fill="none" strokeWidth={10} opacity={0.6} stroke="url(#licuado-tinta)" filter="url(#licuado-brillo)" />
         <path ref={lineaRef} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" stroke="url(#licuado-tinta)" />
       </svg>

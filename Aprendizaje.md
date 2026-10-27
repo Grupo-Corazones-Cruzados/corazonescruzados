@@ -10605,6 +10605,15 @@ dentro de cada mundo, el acceso por roles con el tema de ese mundo. Estado final
 - El logo de GCC y el planeta morado no se leían como «corazón» y «Tierra». Iconos pixel-art
   propios en SVG.
 
+### P15 — ¿Por qué en el teléfono iba con lag y en el ordenador no? · ✅ Resuelta
+- Medido con trazas en un iPhone 13 simulado: al elegir mundo, 116 ms/s solo en recalcular
+  estilos porque `--corte` (heredable) cambiaba en la raíz cada cuadro; en reposo, el puntero del
+  juego hacía `getComputedStyle` cada cuadro aunque no hubiera ratón. Lo que pinta (desenfoques)
+  no lo mide bien la simulación, pero en un móvil es lo más caro. Arreglo: `@property --corte
+  { inherits: false }`, sin puntero en táctil, frontera quieta con un mundo lleno y modo ligero
+  (sin `backdrop-filter`, sin fondos animados por repintado, frontera a ~30 cuadros/s).
+  Resultado: estilos al elegir 116 → 29 ms/s; hilo principal en reposo ~133 → ~63 ms/s.
+
 ## Cómo trabaja Fernando en diseño (aprendido)
 - Itera muy rápido sobre lo publicado y decide viéndolo: publicar cada paso, verificado.
 - Da libertad creativa («usa tu creatividad») pero descarta en el acto lo que no le encaja;

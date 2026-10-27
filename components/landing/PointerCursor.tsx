@@ -41,7 +41,10 @@ export default function PointerCursor() {
       let si = false;
       if (escena && targetX > -1000) {
         const r = escena.getBoundingClientRect();
-        const corte = parseFloat(getComputedStyle(escena).getPropertyValue('--corte')) || 0;
+        // En línea, del elemento que la tiene: `getComputedStyle` cada cuadro obliga a recalcular
+        // estilos, y `--corte` ya no se hereda.
+        const leido = parseFloat(raiz()?.style.getPropertyValue('--corte') ?? '');
+        const corte = Number.isFinite(leido) ? leido : escena.getBoundingClientRect().width / 2;
         const x = targetX + TIP_X;
         const y = targetY + TIP_Y;
         si = x >= corte && y >= r.top && y <= r.bottom;

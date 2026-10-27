@@ -220,7 +220,7 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 >
 > | Pieza | Archivo | Regla |
 > |---|---|---|
-> | Dos mundos + frontera líquida | `FondosPortada.tsx`, `LicuadoPortada.tsx` | onda + tinta + onda rosa; sin gotas; `--corte` animada en JS (`useCorteAnimado`), nunca con `@property` |
+> | Dos mundos + frontera líquida | `FondosPortada.tsx`, `LicuadoPortada.tsx` | onda + tinta + onda rosa; sin gotas; `--corte` animada en JS (`useCorteAnimado`), registrada SIN herencia y sin `transition`; la frontera no trabaja con un mundo lleno |
 > | Titular «Un ❤ puede \| cruzar al 🌍» | `app/page.tsx` (`.inicio-titular`), `IconosTitular.tsx` | una línea partida por la raya, cada mitad entera en su mundo; iconos pixel-art propios en `em` |
 > | Tarjetas de mundo | `TarjetasMundo.tsx` (`.tarjeta-mundo-*`) | misma forma, color por mundo; selector de esquinas al pasar; sin botón; descripción corta en el teléfono |
 > | Pensamiento | `FeaturedThought compacto` (`.pensamiento-barra`) | barra de consejo, SIEMPRE entero; solo en la pantalla de inicio |
@@ -230,8 +230,17 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > | Alto | `app/page.tsx` (sección del héroe) | `100dvh − --alto-pie` desde `md`; teléfono `min-h` con `pt-24` |
 > | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema sobre la Plataforma (`.cursor-plataforma`) |
 >
+> **Modo ligero en pantallas táctiles** (Fernando, 2026-10-26: «en teléfono se ve ralentizado»):
+> `@media (hover: none), (pointer: coarse)` quita los `backdrop-filter` (cristales más opacos),
+> congela la malla de puntos, manchas, nebulosas y el halo, quita el `blur` de las entradas
+> (`aparecerLigero`) y deja 90 estrellas; `LicuadoPortada ligero` va con la mitad de puntos, a
+> ~30 cuadros/s, una banda de tinta por lado y desenfoques cortos; sin ratón no se monta
+> `PointerCursor`. `--corte` es `@property … inherits: false`. Medido con un iPhone 13 simulado:
+> recálculo de estilos al elegir 116 → 29 ms/s; reposo ~133 → ~63 ms/s de hilo principal.
+>
 > **Reglas que salieron de aquí y valen para todo el sitio:** un control que cambia de estado no
-> cambia de sitio (se pinta ya, con «cargando»); la animación de una variable heredada va en JS;
+> cambia de sitio (se pinta ya, con «cargando»); la animación de una variable va en JS y la
+> variable NO se hereda (heredada en la raíz recalcula toda la página cada cuadro);
 > `text-shadow` no va con `background-clip: text`; lo que no debe fallar con un CSS en caché (un
 > `clip-path` SVG, rellenos) va en línea; medir con `Range`, `scrollHeight` y varias ventanas,
 > incluida una baja (~525 px).
