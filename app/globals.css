@@ -3669,3 +3669,20 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .tarjeta-mundo:not(.tarjeta-rol) .tm-descripcion-corta { display: block; text-align: left; }
   .tarjeta-mundo:not(.tarjeta-rol) .tm-icono { min-height: 84px; }
 }
+
+/* El pensamiento con ALTO FIJO de dos líneas (Fernando, 2026-10-27): no empuja a las tarjetas
+   ni al titular al cargar ni al escribirse. Más de dos líneas → puntos suspensivos. */
+.pensamiento-barra { grid-template-rows: auto auto; width: min(92vw, 640px); }
+.pensamiento-barra-texto {
+  height: calc(2 * 1.4em); line-height: 1.4;
+  overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
+.pensamiento-barra > [role='status'] { height: calc(2 * 1.4em); display: flex; align-items: center; }
+.pensamiento-barra-vacia { visibility: hidden; height: calc(2 * 1.4em + 44px); }
+@media (max-width: 639.98px) { .pensamiento-barra-texto { font-size: 0.95rem; } }
+/* El ALTO de la cápsula, fijo y el mismo cargando, con texto o vacía (fila de la etiqueta de
+   18 px + dos líneas de texto + rellenos). */
+.pensamiento-barra { box-sizing: border-box; height: 98px; grid-template-rows: 18px 1fr; overflow: hidden; align-content: start; }
+.pensamiento-barra-etiqueta, .pensamiento-barra-fecha { height: 18px; line-height: 18px; }
+.pensamiento-barra-vacia { height: 98px; }
+@media (max-width: 639.98px) { .pensamiento-barra, .pensamiento-barra-vacia { height: 92px; } }

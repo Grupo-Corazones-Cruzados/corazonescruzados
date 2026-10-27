@@ -66,8 +66,11 @@ export default function FeaturedThought({
   const escribiendo = !!data && shown < data.content.length;
 
   if (compacto) {
-    // Si no hay pensamiento publicado, no se pinta nada (ni la cápsula vacía).
-    if (!loading && !data) return null;
+    // ALTO FIJO (Fernando, 2026-10-27): la cápsula ocupa SIEMPRE lo mismo —etiqueta y dos
+    // líneas de texto— antes, durante y después de cargar, así no se mueve nada al llegar el
+    // pensamiento ni mientras se escribe. Si no hay ninguno publicado, el hueco queda vacío
+    // (invisible) para que la pantalla no cambie de forma.
+    if (!loading && !data) return <div className="pensamiento-barra pensamiento-barra-vacia" aria-hidden="true" />;
     return (
       <div className={`pensamiento-barra ${tema === 'progreso' ? 'pensamiento-barra-progreso' : 'cristal-portada'} pointer-events-none`}>
         <span className="pensamiento-barra-etiqueta">

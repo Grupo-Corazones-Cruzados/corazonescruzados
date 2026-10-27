@@ -261,6 +261,12 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > negro 55 % + desenfoque, FUERA del `<header>` porque su `backdrop-filter` encierra los `fixed`);
 > tocarlo cierra, y el menú entra con movimiento.
 >
+> **El pensamiento con ALTO FIJO (2026-10-27, Fernando).** Deroga «siempre entero»: la barra mide
+> siempre lo mismo (98 px; 92 en el teléfono) —etiqueta de 18 px y DOS líneas de texto, con «…»
+> si es más largo— cargando, con texto o sin pensamiento (hueco invisible
+> `.pensamiento-barra-vacia`). Verificado con la respuesta retrasada 3 s: titular, tarjetas y
+> pensamiento en el MISMO píxel antes y después, en 3 tamaños.
+>
 > **El teléfono en VERTICAL (2026-10-27, Fernando).** Por debajo de `sm` (`CONSULTA_VERTICAL`) la
 > frontera líquida es HORIZONTAL: Aventura arriba, Progreso abajo. `useCorteAnimado` trabaja en
 > px y en `partido` MIDE el punto medio entre las dos tarjetas (sigue midiendo 2,5 s mientras
