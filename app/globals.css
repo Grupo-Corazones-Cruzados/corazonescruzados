@@ -3457,10 +3457,13 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    `--junta` y `--final` las mide `app/page.tsx` con el texto real.
    ═══════════════════════════════════════════════════════════════════════════════ */
 .inicio-titular { position: relative; }
+/* ⚠️ Cada animación COMPLETA en una sola declaración: con `animation: 1.5s both` + un
+   `animation-name` aparte, el minificador de producción dejó `animation: none` y el texto no
+   chocaba (en local sí, porque ahí el CSS no se minifica — 2026-10-28). */
 .titular-choque .inicio-titular-izquierda > span,
-.titular-choque .inicio-titular-derecha > span { display: inline-block; animation: 1.5s both; }
-.titular-choque .inicio-titular-izquierda > span { animation-name: choqueIzquierda; }
-.titular-choque .inicio-titular-derecha > span { animation-name: choqueDerecha; }
+.titular-choque .inicio-titular-derecha > span { display: inline-block; }
+.titular-choque .inicio-titular-izquierda > span { animation: choqueIzquierda 1.5s both; }
+.titular-choque .inicio-titular-derecha > span { animation: choqueDerecha 1.5s both; }
 @keyframes choqueIzquierda {
   0%   { transform: translateX(0); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
   28%  { transform: translateX(var(--junta)); animation-timing-function: ease-out; }
@@ -3519,9 +3522,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 
 /* VOLVER: las dos mitades, que estaban unidas, se separan hasta su sitio (Fernando, 2026-10-28). */
 .titular-separa .inicio-titular-izquierda > span,
-.titular-separa .inicio-titular-derecha > span { display: inline-block; animation: 0.7s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
-.titular-separa .inicio-titular-izquierda > span { animation-name: separaIzquierda; }
-.titular-separa .inicio-titular-derecha > span { animation-name: separaDerecha; }
+.titular-separa .inicio-titular-derecha > span { display: inline-block; }
+.titular-separa .inicio-titular-izquierda > span { animation: separaIzquierda 0.7s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
+.titular-separa .inicio-titular-derecha > span { animation: separaDerecha 0.7s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
 @keyframes separaIzquierda { from { transform: translateX(var(--final)); } to { transform: translateX(0); } }
 @keyframes separaDerecha { from { transform: translateX(calc(var(--final) * -1)); } to { transform: translateX(0); } }
 
