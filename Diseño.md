@@ -259,6 +259,13 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > con un halo. Al volver se separan. Distancias medidas: `--dx-corazon`, `--dx-mundo`. La frase
 > sigue en el `h1` `sr-only`. Sustituye al choque de palabras.
 >
+> **Ajuste del cruce y ESLOGAN (2026-10-28, Fernando).** Fuera la línea de luz y las ondas/destello
+> del centro: solo corazón y Tierra (los corazoncitos, invisibles hasta el contacto; con
+> `both` mostraban un punto antes). Tras la unión aparece debajo el eslogan «Un corazón puede
+> cruzar al mundo» (`.eslogan-portada`): palabras que suben desde el desenfoque una a una,
+> «cruzar al mundo» con degradado rosa→lila (más oscuro en la Plataforma) y una línea de luz que
+> crece debajo. Su hueco está siempre reservado: nada se mueve al aparecer.
+>
 > **Sin «Soy nuevo» / «Ya tengo cuenta» (2026-10-28, Fernando).** Las tarjetas de rol ya no
 > llevan esa etiqueta. El ESTADO (Comprobando…, Aprobada, Verificación pendiente) va como píldora
 > dentro de la escena (`.tr-estado`, absoluta): no ocupa alto, la tarjeta no cambia al aparecer.

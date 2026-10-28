@@ -3027,22 +3027,29 @@ export default function LandingPage() {
                   <IconoCorazon />
                 </span>
               </p>
-              <span className="grafico-separador" />
               <p className="cruce-derecha inicio-titular-derecha">
                 <span className="grafico-mundo"><IconoMundo /></span>
               </p>
               {/* Los efectos del choque, en el centro exacto (la raya). */}
               {choque && (
                 <span className="choque-efectos">
-                  <span className="choque-destello" />
-                  <span className="choque-onda" />
-                  <span className="choque-onda choque-onda-2" />
                   {Array.from({ length: 12 }, (_, i) => (
                     <span key={i} className="choque-polvo choque-corazoncito" style={{ ['--a' as string]: `${(i / 12) * 360 + (i % 2) * 14}deg`, ['--d' as string]: `${0.9 + (i % 3) * 0.35}em` }} />
                   ))}
                 </span>
               )}
             </div>
+            {/* EL ESLOGAN (Fernando, 2026-10-28): aparece debajo de los iconos cuando el corazón
+                termina de unirse a la Tierra, palabra a palabra. Su hueco está SIEMPRE reservado
+                (invisible antes de elegir), así no mueve nada al aparecer. */}
+            <p className={`eslogan-portada ${choque ? 'es-visible' : ''}`} aria-hidden="true">
+              {['Un', 'corazón', 'puede', 'cruzar', 'al', 'mundo'].map((p, i) => (
+                <span key={p} className={i >= 3 ? 'eslogan-acento' : ''} style={{ ['--i' as string]: i }}>
+                  {p}
+                </span>
+              ))}
+              <span className="eslogan-linea" />
+            </p>
           </div>
 
           <div className="portada-zona">
