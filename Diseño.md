@@ -266,6 +266,9 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > «cruzar al mundo» con degradado rosa→lila (más oscuro en la Plataforma) y una línea de luz que
 > crece debajo. Su hueco está siempre reservado: nada se mueve al aparecer.
 >
+> **Orden de entrada (2026-10-28, Fernando):** «Volver» y los roles entran DESPUÉS del eslogan
+> (`retrasoBase` 3400 ms; 0 con «reducir movimiento»). Secuencia: mundo llena → cruce → eslogan → roles.
+>
 > **Sin «Soy nuevo» / «Ya tengo cuenta» (2026-10-28, Fernando).** Las tarjetas de rol ya no
 > llevan esa etiqueta. El ESTADO (Comprobando…, Aprobada, Verificación pendiente) va como píldora
 > dentro de la escena (`.tr-estado`, absoluta): no ocupa alto, la tarjeta no cambia al aparecer.

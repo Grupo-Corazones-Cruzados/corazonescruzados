@@ -336,6 +336,8 @@ export default function LandingPage() {
   const raizPortadaRef = useRef<HTMLDivElement | null>(null);
   // ¿Pantalla táctil sin puntero fino? Ahí la portada va en modo ligero (2026-10-26).
   const [esTactil, setEsTactil] = useState(false);
+  const [reducirMovimiento, setReducirMovimiento] = useState(false);
+  useEffect(() => { setReducirMovimiento(window.matchMedia('(prefers-reduced-motion: reduce)').matches); }, []);
   useEffect(() => {
     const mq = window.matchMedia('(hover: none), (pointer: coarse)');
     const leer = () => setEsTactil(mq.matches);
@@ -3064,7 +3066,14 @@ export default function LandingPage() {
               </div>
             ) : (
               <div key="mundo" className={`mundo-elegido mundo-${mundoElegido}`}>
-                <RolesMundo tema={mundoElegido} acciones={accionesAcceso} retrasoBase={420} onVolver={() => setMundoElegido(null)} />
+                {/* Entran cuando TERMINA el eslogan (Fernando, 2026-10-28): cruce 0,65 s + 1,9 s y las
+                    palabras del eslogan, ≈ 3,4 s. Con «reducir movimiento», enseguida. */}
+                <RolesMundo
+                  tema={mundoElegido}
+                  acciones={accionesAcceso}
+                  retrasoBase={reducirMovimiento ? 0 : 3400}
+                  onVolver={() => setMundoElegido(null)}
+                />
               </div>
             )}
           </div>
