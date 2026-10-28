@@ -251,6 +251,10 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > (pointer: coarse)` las tarjetas de rol no muestran el selector en reposo ni el realce de `:hover`
 > (en el teléfono se queda pegado tras tocar); el selector solo sale al elegir.
 >
+> **Sin «Soy nuevo» / «Ya tengo cuenta» (2026-10-28, Fernando).** Las tarjetas de rol ya no
+> llevan esa etiqueta. El ESTADO (Comprobando…, Aprobada, Verificación pendiente) va como píldora
+> dentro de la escena (`.tr-estado`, absoluta): no ocupa alto, la tarjeta no cambia al aparecer.
+>
 > **⚠️ Minificador (2026-10-28):** `animation: 1.5s both` con el nombre en otra regla salía en
 > producción como `animation: none` (el texto no chocaba; en `next dev` sí). Cada animación va
 > COMPLETA en una sola declaración, y lo animado se prueba con `next build` + `next start`.

@@ -32,7 +32,6 @@ function Tarjeta({
   onElegir: () => void;
 }) {
   const Icono = o.Icono;
-  const etiqueta = o.insignia ?? (o.grupo === 'nuevo' ? 'Soy nuevo' : 'Ya tengo cuenta');
   return (
     <button
       type="button"
@@ -49,8 +48,10 @@ function Tarjeta({
         <span /><span /><span /><span />
       </span>
       {o.cargando && <span className="rol-brillo" aria-hidden="true" />}
-      <span className="tm-modo">{etiqueta}</span>
+      {/* Sin «Soy nuevo» / «Ya tengo cuenta» (Fernando, 2026-10-28). Solo el ESTADO, cuando lo
+          hay, como etiqueta dentro de la escena: no ocupa alto, así la tarjeta no cambia. */}
       <span className={`tm-icono tr-escena tr-escena-${tema}`} aria-hidden="true">
+        {o.insignia && <span className="tr-estado">{o.insignia}</span>}
         <span className="tr-halo" />
         <span className="tr-icono"><Icono /></span>
       </span>

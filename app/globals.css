@@ -3729,3 +3729,17 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* «Volver» mide lo que su texto: en `.roles-mundo` (flex en columna, `stretch`) ocupaba todo el
    ancho y el fondo del `:hover` cubría la línea entera (Fernando, 2026-10-28). */
 .roles-volver { align-self: flex-start; width: auto; }
+/* El estado de un rol (Comprobando…, Aprobada, Verificación pendiente), dentro de la escena. */
+.tr-estado {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 1;
+  max-width: calc(100% - 12px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 2px 8px; border-radius: 9999px;
+  font-family: 'Inter', system-ui, sans-serif; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.tr-escena-aventura .tr-estado { color: #c4b5fd; background: rgba(12, 9, 26, 0.75); }
+.tr-escena-progreso .tr-estado { color: #6d28d9; background: rgba(255, 255, 255, 0.85); }
+.tarjeta-rol.rol-success .tr-estado { color: #16a34a; }
+.tarjeta-mundo-aventura.tarjeta-rol.rol-success .tr-estado { color: #4ade80; }
+.tarjeta-rol.rol-warning .tr-estado { color: #d97706; }
+.tarjeta-mundo-aventura.tarjeta-rol.rol-warning .tr-estado { color: #fbbf24; }
+.tarjeta-rol .tr-escena { position: relative; }
