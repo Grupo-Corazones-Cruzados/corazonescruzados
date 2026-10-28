@@ -247,6 +247,10 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > Al elegir: la tarjeta da un pulso (sube, crece y brilla), el icono rebota, sale una onda de luz y
 > las demás se apagan al 35 %; a los 450 ms se abre su ventana.
 >
+> **Roles en táctil sin aspecto «con el puntero encima» (2026-10-28).** En `(hover: none),
+> (pointer: coarse)` las tarjetas de rol no muestran el selector en reposo ni el realce de `:hover`
+> (en el teléfono se queda pegado tras tocar); el selector solo sale al elegir.
+>
 > **⚠️ Minificador (2026-10-28):** `animation: 1.5s both` con el nombre en otra regla salía en
 > producción como `animation: none` (el texto no chocaba; en `next dev` sí). Cada animación va
 > COMPLETA en una sola declaración, y lo animado se prueba con `next build` + `next start`.

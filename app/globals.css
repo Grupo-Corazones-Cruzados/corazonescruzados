@@ -3708,3 +3708,21 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) {
   .tarjeta-rol.rol-elegida, .tarjeta-rol.rol-elegida .tr-icono, .rol-onda { animation: none; }
 }
+
+/* En pantallas táctiles los ROLES no parecen «con el puntero encima» (Fernando, 2026-10-28):
+   sin las esquinas del selector en reposo y sin el realce de `:hover`, que en el teléfono se
+   queda pegado tras tocar. El selector solo aparece al elegir (`.rol-elegida`). */
+@media (hover: none), (pointer: coarse) {
+  .tarjeta-rol .tm-selector { opacity: 0; animation: none; }
+  .tarjeta-rol .tm-selector > span:nth-child(1) { transform: translate(-10px, -10px); }
+  .tarjeta-rol .tm-selector > span:nth-child(2) { transform: translate(10px, -10px); }
+  .tarjeta-rol .tm-selector > span:nth-child(3) { transform: translate(-10px, 10px); }
+  .tarjeta-rol .tm-selector > span:nth-child(4) { transform: translate(10px, 10px); }
+  .tarjeta-rol:hover:not(.rol-elegida) { transform: none; }
+  .tarjeta-rol:hover .tr-icono { transform: none; }
+  .tarjeta-mundo-aventura.tarjeta-rol:hover { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 24px 50px -24px rgba(0, 0, 0, 0.8), 0 0 30px -8px rgba(123, 95, 191, 0.45); }
+  .tarjeta-mundo-progreso.tarjeta-rol:hover { box-shadow: 0 24px 50px -24px rgba(75, 45, 142, 0.5), 0 0 30px -10px rgba(167, 139, 250, 0.5); }
+  .tarjeta-rol:hover .tm-destello { animation: none; }
+  .tarjeta-rol.rol-elegida .tm-selector { opacity: 1; }
+  .tarjeta-rol.rol-elegida .tm-selector > span:nth-child(n) { transform: translate(0, 0); }
+}
