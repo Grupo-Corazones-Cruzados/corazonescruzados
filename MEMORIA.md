@@ -291,6 +291,8 @@ Stack estándar de la casa, con particularidades de este repo:
      Escape) y los **roles** (`RolesMundo.tsx`) como 4 tarjetas con el MISMO estilo que las de
      mundo. La insignia y el titular NO se mueven ni desaparecen al elegir: solo se recolorea la
      mitad que cubre el mundo. Sin pensamiento dentro.
+     **Desde el 2026-10-28 el titular es GRÁFICO** (corazón | línea | Tierra, sin texto): al elegir,
+     el corazón cruza en arco y se posa latiendo sobre la Tierra; al volver se separan. Antes:
      Al terminar de llenarse el mundo, **«el choque»**: las dos mitades se embisten, rebotan y
      quedan UNIDAS; al «Volver» se separan. (El emblema XH en medio se probó y Fernando lo quitó
      el 2026-10-28.)

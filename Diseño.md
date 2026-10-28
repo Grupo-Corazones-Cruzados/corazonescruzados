@@ -251,6 +251,14 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > (pointer: coarse)` las tarjetas de rol no muestran el selector en reposo ni el realce de `:hover`
 > (en el teléfono se queda pegado tras tocar); el selector solo sale al elegir.
 >
+> **⭐ «El cruce del corazón» (2026-10-28, Fernando: «quitarle el texto y hacer una animación que
+> represente eso»).** El titular ya no tiene palabras: corazón | línea de luz | Tierra
+> (`.grafico-corazon`, `.grafico-separador`, `.grafico-mundo`). Al elegir mundo (1,9 s) la línea se
+> apaga, el corazón salta en arco girando con estela rosa, la Tierra avanza al centro, se tocan
+> (destello, ondas, corazoncitos) y el corazón queda latiendo sobre la Tierra, encendida de rosa
+> con un halo. Al volver se separan. Distancias medidas: `--dx-corazon`, `--dx-mundo`. La frase
+> sigue en el `h1` `sr-only`. Sustituye al choque de palabras.
+>
 > **Sin «Soy nuevo» / «Ya tengo cuenta» (2026-10-28, Fernando).** Las tarjetas de rol ya no
 > llevan esa etiqueta. El ESTADO (Comprobando…, Aprobada, Verificación pendiente) va como píldora
 > dentro de la escena (`.tr-estado`, absoluta): no ocupa alto, la tarjeta no cambia al aparecer.

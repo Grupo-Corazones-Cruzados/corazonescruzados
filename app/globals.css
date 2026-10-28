@@ -3460,10 +3460,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* ⚠️ Cada animación COMPLETA en una sola declaración: con `animation: 1.5s both` + un
    `animation-name` aparte, el minificador de producción dejó `animation: none` y el texto no
    chocaba (en local sí, porque ahí el CSS no se minifica — 2026-10-28). */
-.titular-choque .inicio-titular-izquierda > span,
-.titular-choque .inicio-titular-derecha > span { display: inline-block; }
-.titular-choque .inicio-titular-izquierda > span { animation: choqueIzquierda 1.5s both; }
-.titular-choque .inicio-titular-derecha > span { animation: choqueDerecha 1.5s both; }
 @keyframes choqueIzquierda {
   0%   { transform: translateX(0); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
   28%  { transform: translateX(var(--junta)); animation-timing-function: ease-out; }
@@ -3521,18 +3517,11 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .landing-page[data-modo='progreso'] .choque-polvo { background: radial-gradient(closest-side, rgba(167, 139, 250, 0.7), rgba(109, 40, 217, 0.2) 60%, transparent); }
 
 /* VOLVER: las dos mitades, que estaban unidas, se separan hasta su sitio (Fernando, 2026-10-28). */
-.titular-separa .inicio-titular-izquierda > span,
-.titular-separa .inicio-titular-derecha > span { display: inline-block; }
-.titular-separa .inicio-titular-izquierda > span { animation: separaIzquierda 0.7s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
-.titular-separa .inicio-titular-derecha > span { animation: separaDerecha 0.7s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
 @keyframes separaIzquierda { from { transform: translateX(var(--final)); } to { transform: translateX(0); } }
 @keyframes separaDerecha { from { transform: translateX(calc(var(--final) * -1)); } to { transform: translateX(0); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .titular-choque .inicio-titular-izquierda > span, .titular-choque .inicio-titular-derecha > span { animation: none; transform: translateX(calc(var(--final) * 1)); }
-  .titular-choque .inicio-titular-derecha > span { transform: translateX(calc(var(--final) * -1)); }
   .titular-choque .cruce-izquierda, .titular-choque .cruce-derecha, .choque-destello, .choque-onda, .choque-polvo { animation: none; display: none; }
-  .titular-separa .inicio-titular-izquierda > span, .titular-separa .inicio-titular-derecha > span { animation: none; }
 }
 
 /* El velo del menú del teléfono y el menú, con movimiento (ver `CabeceraSitio`). */
@@ -3743,3 +3732,97 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .tarjeta-rol.rol-warning .tr-estado { color: #d97706; }
 .tarjeta-mundo-aventura.tarjeta-rol.rol-warning .tr-estado { color: #fbbf24; }
 .tarjeta-rol .tr-escena { position: relative; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   «EL CRUCE DEL CORAZÓN» (Fernando, 2026-10-28). Sustituye al titular con texto y al choque
+   de palabras. Reposo: corazón | línea de luz | Tierra. Al elegir (1,9 s): la línea se apaga, el
+   corazón SALTA EN ARCO con estela, la Tierra avanza al centro, se tocan (destello, ondas,
+   corazoncitos) y el corazón queda latiendo sobre la Tierra, que se enciende de rosa.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.inicio-titular .titular-icono { vertical-align: middle; margin: 0; }
+.grafico-corazon, .grafico-mundo { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.grafico-corazon .titular-icono-corazon { height: 1.55em; }
+.grafico-mundo .titular-icono-mundo { height: 1.65em; transition: filter 600ms ease; }
+.inicio-titular .grafico-corazon { z-index: 2; }
+
+/* La línea de luz que los separa, en el centro (la raya). */
+.grafico-separador {
+  position: absolute; left: 50%; top: 50%; width: 2px; height: 1.9em; margin: -0.95em 0 0 -1px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, transparent, #e879f9 30%, #a78bfa 70%, transparent);
+  box-shadow: 0 0 10px #e879f9;
+  transition: opacity 400ms ease, transform 400ms ease;
+  animation: separadorRespira 2.4s ease-in-out infinite;
+}
+@keyframes separadorRespira { 50% { opacity: 0.55; } }
+.titular-choque .grafico-separador { opacity: 0; transform: scaleY(0.2); animation: none; }
+
+/* El viaje del corazón: arco con giro, luego se posa sobre la Tierra (más pequeño). */
+.titular-choque .grafico-corazon { animation: corazonCruza 1.9s cubic-bezier(0.45, 0, 0.3, 1) both; }
+@keyframes corazonCruza {
+  0%   { transform: translate(0, 0) rotate(0) scale(1); }
+  12%  { transform: translate(calc(var(--dx-corazon) * -0.06), 0.12em) rotate(8deg) scale(0.92, 1.08); }
+  45%  { transform: translate(calc(var(--dx-corazon) * 0.55), -1.1em) rotate(-200deg) scale(1.15); }
+  62%  { transform: translate(var(--dx-corazon), 0) rotate(-360deg) scale(1.05); }
+  70%  { transform: translate(var(--dx-corazon), 0) rotate(-360deg) scale(1.3, 0.8); }
+  82%  { transform: translate(var(--dx-corazon), -0.05em) rotate(-360deg) scale(0.5); }
+  100% { transform: translate(var(--dx-corazon), -0.04em) rotate(-360deg) scale(0.58); }
+}
+/* La estela: un rastro rosa que sigue al corazón mientras vuela. */
+.grafico-estela {
+  position: absolute; inset: 15%; border-radius: 9999px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(244, 114, 182, 0.9), transparent);
+  filter: blur(4px); opacity: 0;
+}
+.titular-choque .grafico-estela { animation: estelaVuela 1.2s ease-out 0.15s both; }
+@keyframes estelaVuela {
+  0%   { opacity: 0; transform: scale(0.6); box-shadow: none; }
+  30%  { opacity: 1; transform: scale(1.6); box-shadow: -0.5em 0.2em 0.6em rgba(244, 114, 182, 0.6), -1em 0.45em 0.8em rgba(167, 139, 250, 0.4); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+
+/* La Tierra: se prepara, avanza al centro, encaja el golpe y se enciende. */
+.titular-choque .grafico-mundo { animation: mundoRecibe 1.9s cubic-bezier(0.45, 0, 0.3, 1) both; }
+@keyframes mundoRecibe {
+  0%   { transform: translateX(0) scale(1); }
+  20%  { transform: translateX(0.1em) scale(0.95); }
+  62%  { transform: translateX(calc(var(--dx-mundo) * -1)) scale(1); }
+  72%  { transform: translateX(calc(var(--dx-mundo) * -1)) scale(1.18); }
+  86%  { transform: translateX(calc(var(--dx-mundo) * -1)) scale(0.97); }
+  100% { transform: translateX(calc(var(--dx-mundo) * -1)) scale(1.06); }
+}
+.titular-choque .grafico-mundo .titular-icono-mundo {
+  filter: drop-shadow(0 0 0.18em rgba(244, 114, 182, 0.9)) drop-shadow(0 0 0.5em rgba(232, 121, 249, 0.55));
+  transition-delay: 1.25s;
+}
+/* Tras unirse, un halo rosa que respira alrededor de los dos. */
+.titular-choque .grafico-mundo::after {
+  content: ''; position: absolute; inset: -0.35em; border-radius: 9999px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(244, 114, 182, 0.35), transparent 70%);
+  opacity: 0; animation: haloUnion 3s ease-in-out 1.45s infinite;
+}
+@keyframes haloUnion { 0%, 100% { opacity: 0.45; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
+
+/* Los efectos del encuentro, en el momento del contacto (~1,2 s). */
+.inicio-titular .choque-destello { animation-delay: 1.2s; }
+.inicio-titular .choque-onda { animation-delay: 1.22s; border-color: #f472b6; box-shadow: 0 0 0.3em #f472b6; }
+.inicio-titular .choque-onda-2 { animation-delay: 1.34s; border-color: #a78bfa; }
+.choque-corazoncito {
+  width: 0.26em; height: 0.24em; margin: -0.12em 0 0 -0.13em; border-radius: 0; filter: none;
+  background: #f472b6;
+  clip-path: polygon(50% 100%, 0 40%, 0 15%, 20% 0, 50% 22%, 80% 0, 100% 15%, 100% 40%);
+  animation-delay: 1.24s !important;
+}
+.titular-choque .cruce-izquierda, .titular-choque .cruce-derecha { animation: none; }
+
+/* VOLVER: se separan hasta su sitio y vuelve la línea. */
+.titular-separa .grafico-corazon { animation: corazonVuelve 0.8s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
+.titular-separa .grafico-mundo { animation: mundoVuelve 0.8s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
+@keyframes corazonVuelve { from { transform: translate(var(--dx-corazon), 0) scale(0.58); } to { transform: none; } }
+@keyframes mundoVuelve { from { transform: translateX(calc(var(--dx-mundo) * -1)) scale(1.06); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .titular-choque .grafico-corazon { animation: none; transform: translate(var(--dx-corazon), 0) scale(0.58); }
+  .titular-choque .grafico-mundo { animation: none; transform: translateX(calc(var(--dx-mundo) * -1)); }
+  .titular-separa .grafico-corazon, .titular-separa .grafico-mundo, .grafico-separador, .titular-choque .grafico-estela, .titular-choque .grafico-mundo::after { animation: none; }
+}

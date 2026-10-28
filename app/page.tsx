@@ -2586,11 +2586,9 @@ export default function LandingPage() {
   useCorteAnimado(raizPortadaRef, modoPortada);
   /**
    * «EL CHOQUE» (Fernando, 2026-10-26): cuando el mundo elegido termina de llenar la pantalla,
-   * las dos mitades del titular se lanzan una contra otra, chocan (destello, onda, polvo,
-   * sacudida), rebotan y se quedan UNIDAS como una sola frase (Fernando, 2026-10-28: sin el
-   * emblema XH, que se quitó). Al volver a elegir mundo se SEPARAN con movimiento
-   * (`.titular-separa`). Las distancias se MIDEN con el texto real (`Range`): `--junta` = lo que
-   * recorre cada mitad hasta tocarse; `--final` = hasta quedar a un espacio de distancia.
+   * el corazón cruza hasta la Tierra y se unen en el centro (ver `.grafico-*` en globals.css).
+   * Al volver se SEPARAN (`.titular-separa`). Las distancias se MIDEN (`--dx-corazon`,
+   * `--dx-mundo`).
    */
   const titularRef = useRef<HTMLDivElement | null>(null);
   const [choque, setChoque] = useState(false);
@@ -2612,21 +2610,15 @@ export default function LandingPage() {
     const id = window.setTimeout(() => {
       const t = titularRef.current;
       if (!t) return;
-      const borde = (sel: string) => {
-        const e = t.querySelector(sel);
-        if (!e) return null;
-        const r = document.createRange();
-        r.selectNodeContents(e);
-        return r.getBoundingClientRect();
-      };
-      const izq = borde('.inicio-titular-izquierda > span');
-      const der = borde('.inicio-titular-derecha > span');
-      if (!izq || !der) return;
-      const hueco = der.left - izq.right;
-      const tam = parseFloat(getComputedStyle(t).fontSize) || 40;
-      const espacio = tam * 0.28;
-      t.style.setProperty('--junta', `${hueco / 2}px`);
-      t.style.setProperty('--final', `${(hueco - espacio) / 2}px`);
+      // «El cruce del corazón» (2026-10-28): el corazón salta hasta el CENTRO y la Tierra
+      // avanza a su encuentro. Se mide lo que recorre cada uno hasta el centro del titular.
+      const corazon = t.querySelector('.grafico-corazon')?.getBoundingClientRect();
+      const mundo = t.querySelector('.grafico-mundo')?.getBoundingClientRect();
+      if (!corazon || !mundo) return;
+      const caja = t.getBoundingClientRect();
+      const centro = caja.left + caja.width / 2;
+      t.style.setProperty('--dx-corazon', `${centro - (corazon.left + corazon.width / 2)}px`);
+      t.style.setProperty('--dx-mundo', `${(mundo.left + mundo.width / 2) - centro}px`);
       choqueRef.current = true;
       setChoque(true);
     }, 650);
@@ -3024,13 +3016,20 @@ export default function LandingPage() {
               aria-hidden="true"
               style={{ ['--retraso' as string]: '220ms' }}
             >
-              {/* Un solo `<span>` por mitad: las columnas son `flex` y, sin él, cada palabra
-                  sería una pieza suelta apilada. */}
+              {/* «EL CRUCE DEL CORAZÓN» (Fernando, 2026-10-28: «quitarle el texto y hacer una animación
+                  que represente eso»). Sin palabras: el corazón a un lado, la Tierra al otro y una
+                  línea de luz entre ellos. Al elegir mundo, el corazón salta en arco dejando una
+                  estela, la Tierra le sale al encuentro y se unen en el centro; queda latiendo
+                  sobre ella. El `h1` en `sr-only` conserva la frase. */}
               <p className="cruce-izquierda inicio-titular-izquierda">
-                <span>Un <IconoCorazon /> puede</span>
+                <span className="grafico-corazon">
+                  <span className="grafico-estela" />
+                  <IconoCorazon />
+                </span>
               </p>
+              <span className="grafico-separador" />
               <p className="cruce-derecha inicio-titular-derecha">
-                <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span> <IconoMundo /></span>
+                <span className="grafico-mundo"><IconoMundo /></span>
               </p>
               {/* Los efectos del choque, en el centro exacto (la raya). */}
               {choque && (
@@ -3038,8 +3037,8 @@ export default function LandingPage() {
                   <span className="choque-destello" />
                   <span className="choque-onda" />
                   <span className="choque-onda choque-onda-2" />
-                  {Array.from({ length: 10 }, (_, i) => (
-                    <span key={i} className="choque-polvo" style={{ ['--a' as string]: `${(i / 10) * 360 + (i % 2) * 14}deg`, ['--d' as string]: `${1.2 + (i % 3) * 0.45}em` }} />
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <span key={i} className="choque-polvo choque-corazoncito" style={{ ['--a' as string]: `${(i / 12) * 360 + (i % 2) * 14}deg`, ['--d' as string]: `${0.9 + (i % 3) * 0.35}em` }} />
                   ))}
                 </span>
               )}
