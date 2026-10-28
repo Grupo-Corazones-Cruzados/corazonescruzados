@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOpcionesAcceso, type AccionesAcceso, type OpcionAcceso } from '@/components/landing/opcionesAcceso';
 
 function Tarjeta({
@@ -55,9 +55,12 @@ function Tarjeta({
         <span className="tr-halo" />
         <span className="tr-icono"><Icono /></span>
       </span>
+      <span className="tr-texto">
       <span className="tm-titulo tr-titulo">{o.titulo}</span>
       <span className="tm-descripcion tm-descripcion-larga">{o.descripcion}</span>
       <span className="tm-descripcion tm-descripcion-corta" aria-hidden="true">{o.corta ?? o.descripcion}</span>
+      </span>
+      <ArrowRight className="tr-flecha" aria-hidden="true" />
     </button>
   );
 }

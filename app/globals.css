@@ -3874,3 +3874,104 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .eslogan-portada.es-visible > span:not(.eslogan-linea) { animation: none; opacity: 1; }
   .eslogan-portada.es-visible .eslogan-linea { animation: none; transform: translateX(-50%) scaleX(1); }
 }
+
+/* ═══ ROLES MINIMALISTAS (Fernando, 2026-10-28: «más minimalistas») ═══════════════════
+   Sin recuadro de escena, sin resplandor, sin esquinas en reposo: icono pequeño, título y una
+   línea. Escritorio: 4 columnas, todo alineado a la izquierda. Teléfono: filas de lista con
+   flecha. Prevalece sobre las reglas anteriores de `.tarjeta-rol`. */
+.tarjeta-rol {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'icono texto flecha';
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 0;
+  height: auto !important;
+  padding: 16px 16px !important;
+  text-align: left;
+  border-radius: 16px;
+}
+.tarjeta-mundo-aventura.tarjeta-rol { background: rgba(20, 14, 40, 0.72); border: 1px solid rgba(167, 139, 250, 0.22); box-shadow: none; }
+.tarjeta-mundo-progreso.tarjeta-rol { background: rgba(255, 255, 255, 0.82); border: 1px solid rgba(75, 45, 142, 0.12); box-shadow: 0 8px 24px -18px rgba(75, 45, 142, 0.45); }
+.tarjeta-rol .tm-selector, .tarjeta-rol .tm-destello, .tarjeta-rol .tr-halo { display: none; }
+.tarjeta-rol .tr-escena {
+  grid-area: icono; position: relative;
+  height: auto !important; min-height: 0 !important; max-height: none !important;
+  width: auto; padding: 0; border: 0 !important; background: none !important; overflow: visible;
+}
+.tarjeta-rol .tr-icono {
+  width: 40px !important; height: 40px !important; border-radius: 12px !important;
+  box-shadow: none;
+}
+.tarjeta-rol .tr-icono svg { width: 19px; height: 19px; }
+.tarjeta-rol .tr-texto { grid-area: texto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tarjeta-rol .tr-titulo, .tarjeta-rol .tm-descripcion {
+  display: block !important; height: auto !important; min-height: 0 !important;
+  -webkit-line-clamp: unset; text-align: left !important; justify-content: flex-start;
+}
+.tarjeta-rol .tr-titulo { font-size: 1.02rem !important; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tarjeta-rol .tm-descripcion-corta { font-size: 0.8rem !important; line-height: 1.35; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tarjeta-mundo-aventura.tarjeta-rol .tm-descripcion { color: #a49dc2; }
+.tarjeta-mundo-progreso.tarjeta-rol .tm-descripcion { color: #6b6585; }
+.tarjeta-rol .tr-flecha { grid-area: flecha; width: 17px; height: 17px; opacity: 0.45; transition: transform 200ms ease, opacity 200ms ease; }
+.tarjeta-mundo-aventura.tarjeta-rol .tr-flecha { color: #c4b5fd; }
+.tarjeta-mundo-progreso.tarjeta-rol .tr-flecha { color: #6d28d9; }
+/* El estado, pequeño junto al icono. */
+.tarjeta-rol .tr-estado { top: -8px; left: 50%; font-size: 0.48rem; padding: 1px 6px; }
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta-rol:not([aria-disabled]):hover { transform: translateY(-2px); }
+  .tarjeta-mundo-aventura.tarjeta-rol:not([aria-disabled]):hover { border-color: rgba(196, 181, 253, 0.6); box-shadow: none; }
+  .tarjeta-mundo-progreso.tarjeta-rol:not([aria-disabled]):hover { border-color: rgba(109, 40, 217, 0.35); }
+  .tarjeta-rol:not([aria-disabled]):hover .tr-flecha { opacity: 1; transform: translateX(3px); }
+  .tarjeta-rol:not([aria-disabled]):hover .tr-icono { transform: none; }
+}
+/* Al elegir: sin pulso grande, un realce sobrio. */
+.tarjeta-rol.rol-elegida { animation: rolElegidaSobria 0.35s ease-out both; }
+@keyframes rolElegidaSobria { 50% { transform: scale(0.97); } 100% { transform: scale(1); } }
+.tarjeta-mundo-aventura.tarjeta-rol.rol-elegida { border-color: #c4b5fd; }
+.tarjeta-mundo-progreso.tarjeta-rol.rol-elegida { border-color: #7c3aed; }
+.tarjeta-rol.rol-elegida .tr-flecha { opacity: 1; transform: translateX(4px); }
+.tarjeta-rol .rol-onda { display: none; }
+/* Disposición: 4 columnas en escritorio (3 si no hay postulación); lista en el teléfono. */
+.roles-fila { grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)) !important; max-width: 980px; width: 100%; margin-inline: auto; gap: 12px !important; }
+@media (max-width: 1023.98px) { .roles-fila { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width: 639.98px) {
+  .roles-fila { grid-template-columns: 1fr !important; gap: 10px !important; max-width: 440px; }
+  .roles-fila[data-n='3'] > :last-child { grid-column: auto; width: auto; justify-self: stretch; }
+  .tarjeta-rol { padding: 14px !important; }
+}
+
+/* Teléfono: las tarjetas de MUNDO no deben parecer seleccionadas (Fernando, 2026-10-28):
+   sin las esquinas del selector en reposo ni el realce pegado de `:hover`. */
+@media (hover: none), (pointer: coarse) {
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-selector { opacity: 0; animation: none; }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-selector > span:nth-child(1) { transform: translate(-10px, -10px); }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-selector > span:nth-child(2) { transform: translate(10px, -10px); }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-selector > span:nth-child(3) { transform: translate(-10px, 10px); }
+  .tarjeta-mundo:not(.tarjeta-rol) .tm-selector > span:nth-child(4) { transform: translate(10px, 10px); }
+  .tarjeta-mundo:not(.tarjeta-rol):hover:not(.tm-elegida) { transform: none; }
+  .tarjeta-mundo:not(.tarjeta-rol):hover .tm-destello { animation: none; }
+  .tarjeta-mundo:not(.tarjeta-rol).tm-elegida .tm-selector { opacity: 1; }
+  .tarjeta-mundo:not(.tarjeta-rol).tm-elegida .tm-selector > span:nth-child(n) { transform: translate(0, 0); }
+}
+.tarjeta-rol .tm-descripcion-larga { display: none !important; }
+/* Escritorio/tableta: icono arriba a la izquierda y flecha arriba a la derecha; debajo título y
+   una línea. Teléfono: fila (icono · texto · flecha). */
+@media (min-width: 640px) {
+  .tarjeta-rol {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'icono flecha' 'texto texto';
+    align-items: start;
+    row-gap: 14px;
+    padding: 18px !important;
+  }
+  .tarjeta-rol .tr-escena { justify-self: start; }
+  .tarjeta-rol .tr-estado { left: 0; transform: none; top: -10px; }
+}
+@media (min-width: 640px) {
+  .tarjeta-rol .tm-descripcion-corta {
+    white-space: normal; text-overflow: clip;
+    display: -webkit-box !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    height: 2.7em !important;
+  }
+}

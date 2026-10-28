@@ -266,6 +266,13 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > «cruzar al mundo» con degradado rosa→lila (más oscuro en la Plataforma) y una línea de luz que
 > crece debajo. Su hueco está siempre reservado: nada se mueve al aparecer.
 >
+> **⭐ Roles MINIMALISTAS (2026-10-28, Fernando).** Deroga el estilo «tarjeta de mundo» de los roles:
+> sin escena, resplandor ni esquinas; icono de 40 px, título, una línea de texto y flecha tenue.
+> Escritorio: 4 (o 3) columnas, icono arriba-izquierda y flecha arriba-derecha, descripción en 2
+> líneas fijas. Teléfono: filas de lista (icono · texto · flecha), 70 px. Al elegir: realce sobrio
+> (borde y flecha), sin pulso grande. Y en táctil las tarjetas de MUNDO ya no muestran el selector
+> en reposo (parecían seleccionadas).
+>
 > **Orden de entrada (2026-10-28, Fernando):** «Volver» y los roles entran DESPUÉS del eslogan
 > (`retrasoBase` 3400 ms; 0 con «reducir movimiento»). Secuencia: mundo llena → cruce → eslogan → roles.
 >
