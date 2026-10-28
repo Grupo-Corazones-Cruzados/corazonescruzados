@@ -3726,3 +3726,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .tarjeta-rol.rol-elegida .tm-selector { opacity: 1; }
   .tarjeta-rol.rol-elegida .tm-selector > span:nth-child(n) { transform: translate(0, 0); }
 }
+/* «Volver» mide lo que su texto: en `.roles-mundo` (flex en columna, `stretch`) ocupaba todo el
+   ancho y el fondo del `:hover` cubría la línea entera (Fernando, 2026-10-28). */
+.roles-volver { align-self: flex-start; width: auto; }
