@@ -240,6 +240,11 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 >   teléfono y en ventanas de menos de 700 px de alto). 4 en fila desde 860 px; 2×2 debajo.
 >   Sustituye a «Soy nuevo» grande + pila (y su camino de 8 pasos).
 >
+> **⭐ 2026-10-28: SIN EL EMBLEMA XH** (Fernando). El choque sigue (embestida, destello, ondas,
+> polvo, sacudida, rebote) y después las dos mitades quedan UNIDAS a un espacio (`--final` =
+> (hueco − 0,28 em)/2). Al pulsar «Volver» se separan con un rebote (`.titular-separa`, 0,7 s).
+> `EmblemaXH.tsx` se borró. Lo de abajo queda como historia.
+>
 > **«El choque» y la bandera XH (2026-10-26).** Al terminar de llenarse el mundo (650 ms tras el
 > clic), las dos mitades del titular se embisten (`--junta`, medida con `Range`), chocan
 > (destello, dos ondas, 10 bolitas de polvo, sacudida), retroceden con rebote (`--final`) y en el

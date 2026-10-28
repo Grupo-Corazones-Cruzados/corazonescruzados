@@ -3451,9 +3451,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (hover: none), (pointer: coarse) { .tr-halo { animation: none; } }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   «EL CHOQUE» Y LA BANDERA XH (Fernando, 2026-10-26). Al llenarse la pantalla con el mundo
-   elegido: embestida (0–0,42 s, acelerando) → impacto (destello, ondas, polvo, sacudida) →
-   retroceso con rebote → el emblema XH sale del humo girando y queda respirando.
+   «EL CHOQUE» (Fernando, 2026-10-26; sin el emblema XH desde el 2026-10-28). Al llenarse la
+   pantalla con el mundo elegido: embestida (0–0,42 s, acelerando) → impacto (destello, ondas,
+   polvo, sacudida) → rebote → las dos mitades quedan UNIDAS a un espacio de distancia.
    `--junta` y `--final` las mide `app/page.tsx` con el texto real.
    ═══════════════════════════════════════════════════════════════════════════════ */
 .inicio-titular { position: relative; }
@@ -3517,32 +3517,19 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 .landing-page[data-modo='progreso'] .choque-polvo { background: radial-gradient(closest-side, rgba(167, 139, 250, 0.7), rgba(109, 40, 217, 0.2) 60%, transparent); }
 
-/* El emblema: sale del humo girando, crece, rebota y queda respirando. */
-.choque-emblema { width: 1.45em; height: 1.62em; margin: -0.86em 0 0 -0.725em; opacity: 0; animation: emblemaEntra 0.9s 0.72s cubic-bezier(0.2, 1.5, 0.4, 1) both, emblemaRespira 3.2s 1.7s ease-in-out infinite; }
-.emblema-xh { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 0.18em rgba(232, 121, 249, 0.7)) drop-shadow(0 0.08em 0.12em rgba(0, 0, 0, 0.35)); }
-@keyframes emblemaEntra {
-  0%   { opacity: 0; transform: scale(0.1) rotate(-200deg); filter: blur(6px); }
-  55%  { opacity: 1; filter: blur(0); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); }
-}
-@keyframes emblemaRespira { 50% { transform: scale(1.06); } }
-.emblema-xh-banderin { transform-origin: 50px 12px; animation: emblemaOndea 1.8s ease-in-out infinite; }
-@keyframes emblemaOndea { 50% { transform: skewY(-6deg) scaleX(0.92); } }
-/* Chispas al aparecer el emblema. */
-.choque-chispa {
-  width: 0.08em; height: 0.3em; margin: -0.15em 0 0 -0.04em; border-radius: 0.04em;
-  background: linear-gradient(#fde68a, #f472b6); opacity: 0;
-  animation: choqueChispa 0.7s 0.95s ease-out both;
-}
-@keyframes choqueChispa {
-  0%   { opacity: 1; transform: rotate(var(--a)) translateY(-0.5em) scaleY(0.4); }
-  100% { opacity: 0; transform: rotate(var(--a)) translateY(-1.35em) scaleY(1); }
-}
+/* VOLVER: las dos mitades, que estaban unidas, se separan hasta su sitio (Fernando, 2026-10-28). */
+.titular-separa .inicio-titular-izquierda > span,
+.titular-separa .inicio-titular-derecha > span { display: inline-block; animation: 0.7s cubic-bezier(0.3, 1.25, 0.5, 1) both; }
+.titular-separa .inicio-titular-izquierda > span { animation-name: separaIzquierda; }
+.titular-separa .inicio-titular-derecha > span { animation-name: separaDerecha; }
+@keyframes separaIzquierda { from { transform: translateX(var(--final)); } to { transform: translateX(0); } }
+@keyframes separaDerecha { from { transform: translateX(calc(var(--final) * -1)); } to { transform: translateX(0); } }
+
 @media (prefers-reduced-motion: reduce) {
   .titular-choque .inicio-titular-izquierda > span, .titular-choque .inicio-titular-derecha > span { animation: none; transform: translateX(calc(var(--final) * 1)); }
   .titular-choque .inicio-titular-derecha > span { transform: translateX(calc(var(--final) * -1)); }
-  .titular-choque .cruce-izquierda, .titular-choque .cruce-derecha, .choque-destello, .choque-onda, .choque-polvo, .choque-chispa { animation: none; display: none; }
-  .choque-emblema { animation: none; opacity: 1; }
+  .titular-choque .cruce-izquierda, .titular-choque .cruce-derecha, .choque-destello, .choque-onda, .choque-polvo { animation: none; display: none; }
+  .titular-separa .inicio-titular-izquierda > span, .titular-separa .inicio-titular-derecha > span { animation: none; }
 }
 
 /* El velo del menú del teléfono y el menú, con movimiento (ver `CabeceraSitio`). */

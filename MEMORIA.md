@@ -291,8 +291,9 @@ Stack estándar de la casa, con particularidades de este repo:
      Escape) y los **roles** (`RolesMundo.tsx`) como 4 tarjetas con el MISMO estilo que las de
      mundo. La insignia y el titular NO se mueven ni desaparecen al elegir: solo se recolorea la
      mitad que cubre el mundo. Sin pensamiento dentro.
-     Al terminar de llenarse el mundo, **«el choque»**: las dos mitades se embisten, rebotan y en
-     el hueco aparece el **emblema XH** (`EmblemaXH.tsx`), la bandera del proyecto.
+     Al terminar de llenarse el mundo, **«el choque»**: las dos mitades se embisten, rebotan y
+     quedan UNIDAS; al «Volver» se separan. (El emblema XH en medio se probó y Fernando lo quitó
+     el 2026-10-28.)
   3. **Una sola lógica de acceso**: `components/landing/opcionesAcceso.ts` (extraída de
      `EntryChoiceModal`, que la sigue usando) y `accionesAcceso` en `app/page.tsx`. Las 4 opciones
      están siempre; mientras consulta el estado se ven con «Comprobando…» y no cambian de sitio.

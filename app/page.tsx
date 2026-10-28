@@ -11,7 +11,6 @@ import TarjetasMundo from '@/components/landing/TarjetasMundo';
 import RolesMundo from '@/components/landing/RolesMundo';
 import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
-import EmblemaXH from '@/components/landing/EmblemaXH';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
@@ -2588,15 +2587,28 @@ export default function LandingPage() {
   /**
    * «EL CHOQUE» (Fernando, 2026-10-26): cuando el mundo elegido termina de llenar la pantalla,
    * las dos mitades del titular se lanzan una contra otra, chocan (destello, onda, polvo,
-   * sacudida), retroceden y en el hueco aparece el emblema XH. Las distancias se MIDEN con el
-   * texto real (`Range`): `--junta` = lo que recorre cada mitad hasta tocarse; `--final` = lo
-   * que queda movida tras el retroceso, dejando sitio al emblema.
+   * sacudida), rebotan y se quedan UNIDAS como una sola frase (Fernando, 2026-10-28: sin el
+   * emblema XH, que se quitó). Al volver a elegir mundo se SEPARAN con movimiento
+   * (`.titular-separa`). Las distancias se MIDEN con el texto real (`Range`): `--junta` = lo que
+   * recorre cada mitad hasta tocarse; `--final` = hasta quedar a un espacio de distancia.
    */
   const titularRef = useRef<HTMLDivElement | null>(null);
   const [choque, setChoque] = useState(false);
+  const [separa, setSepara] = useState(false);
+  const choqueRef = useRef(false);
   useEffect(() => {
-    setChoque(false);
-    if (!mundoElegido) return;
+    if (!mundoElegido) {
+      // Volver: si estaban unidas, se separan (y la clase se quita al terminar).
+      if (choqueRef.current) {
+        choqueRef.current = false;
+        setChoque(false);
+        setSepara(true);
+        const id = window.setTimeout(() => setSepara(false), 750);
+        return () => window.clearTimeout(id);
+      }
+      return;
+    }
+    setSepara(false);
     const id = window.setTimeout(() => {
       const t = titularRef.current;
       if (!t) return;
@@ -2612,9 +2624,10 @@ export default function LandingPage() {
       if (!izq || !der) return;
       const hueco = der.left - izq.right;
       const tam = parseFloat(getComputedStyle(t).fontSize) || 40;
-      const emblema = tam * 1.45 + tam * 0.45;
+      const espacio = tam * 0.28;
       t.style.setProperty('--junta', `${hueco / 2}px`);
-      t.style.setProperty('--final', `${(hueco - emblema) / 2}px`);
+      t.style.setProperty('--final', `${(hueco - espacio) / 2}px`);
+      choqueRef.current = true;
       setChoque(true);
     }, 650);
     return () => window.clearTimeout(id);
@@ -3007,7 +3020,7 @@ export default function LandingPage() {
             </p>
             <div
               ref={titularRef}
-              className={`cruce-rejilla inicio-titular aparecer ${choque ? 'titular-choque' : ''}`}
+              className={`cruce-rejilla inicio-titular aparecer ${choque ? 'titular-choque' : ''} ${separa ? 'titular-separa' : ''}`}
               aria-hidden="true"
               style={{ ['--retraso' as string]: '220ms' }}
             >
@@ -3019,7 +3032,7 @@ export default function LandingPage() {
               <p className="cruce-derecha inicio-titular-derecha">
                 <span><span className="mundo-cruzar">cruzar</span> <span className="mundo-mundo">al</span> <IconoMundo /></span>
               </p>
-              {/* Los efectos del choque y el emblema, en el centro exacto (la raya). */}
+              {/* Los efectos del choque, en el centro exacto (la raya). */}
               {choque && (
                 <span className="choque-efectos">
                   <span className="choque-destello" />
@@ -3028,10 +3041,6 @@ export default function LandingPage() {
                   {Array.from({ length: 10 }, (_, i) => (
                     <span key={i} className="choque-polvo" style={{ ['--a' as string]: `${(i / 10) * 360 + (i % 2) * 14}deg`, ['--d' as string]: `${1.2 + (i % 3) * 0.45}em` }} />
                   ))}
-                  {Array.from({ length: 8 }, (_, i) => (
-                    <span key={`c${i}`} className="choque-chispa" style={{ ['--a' as string]: `${i * 45 + 20}deg` }} />
-                  ))}
-                  <span className="choque-emblema"><EmblemaXH /></span>
                 </span>
               )}
             </div>
