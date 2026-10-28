@@ -16,9 +16,8 @@
  * ── LA LISTA NO CAMBIA DE FORMA (Fernando, 2026-10-26) ─────────────────────────
  * Siempre salen las MISMAS cuatro opciones, en el mismo orden: mientras se consulta el
  * estado, la opción ya está con su título y `cargando: true`; al llegar la respuesta cambia
- * su contenido, no su sitio. Antes una tarjeta «Verificando…» aparecía y se iba, y si ya
- * tenías cuenta de candidato la de postularse desaparecía: confundía. Ahora, en ese caso,
- * dice «Ya tienes cuenta de candidato» y lleva a iniciar sesión.
+ * su contenido, no su sitio. (Desde el 2026-10-28, si ya te postulaste o ya tienes cuenta de
+ * candidato, la tarjeta de postulación se quita: Fernando.)
  */
 
 import { useEffect, useState, type ComponentType } from 'react';
@@ -111,7 +110,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       tono: 'default',
       Icono: UserPlus,
       insignia: 'Comprobando…',
-      titulo: 'Quiero postularme como candidato',
+      titulo: 'Postulación',
       corta: 'Conoce el proyecto y postúlate.',
       descripcion: 'Comprobando si ya te postulaste desde este dispositivo…',
       onClick: sinAccion,
@@ -123,44 +122,22 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       tono: 'success',
       Icono: BadgeCheck,
       insignia: 'Aprobada',
-      titulo: '¡Tu postulación fue aprobada!',
+      titulo: 'Postulación',
 corta: 'Crea tu cuenta y entra.',
       descripcion: 'Fuiste aceptado por el administrador. Continúa para crear tu cuenta (contraseña y datos) e ingresar como candidato.',
       onClick: () => acciones.onProposalApproved({ email: proposal.email }),
     });
-  } else if (proposal.exists) {
-    opciones.push({
-      clave: 'candidato',
-      grupo: 'nuevo',
-      tono: 'warning',
-      Icono: MailWarning,
-      insignia: 'En revisión',
-      titulo: 'Tu postulación está en proceso de aprobación',
-corta: 'Verifica tu correo mientras tanto.',
-      descripcion: 'Para avanzar más rápido, verifica tu correo con el enlace enviado a tu bandeja de entrada. Una vez seas aprobado podrás ingresar como candidato.',
-      onClick: () => acciones.onProposalPending({ email: proposal.email, emailVerified: proposal.emailVerified }),
-    });
-  } else if (proposal.hasCandidateAccount) {
-    // Ya es candidato con cuenta: no se ofrece «postularme», pero la tarjeta se queda y lleva
-    // a iniciar sesión (antes desaparecía).
-    opciones.push({
-      clave: 'candidato',
-      grupo: 'nuevo',
-      tono: 'success',
-      Icono: BadgeCheck,
-      insignia: 'Cuenta activa',
-      titulo: 'Ya tienes cuenta de candidato',
-corta: 'Inicia sesión para continuar.',
-      descripcion: 'Te postulaste y tu cuenta ya está creada. Inicia sesión como candidato para continuar.',
-      onClick: acciones.onCandidateLogin,
-    });
+  } else if (proposal.exists || proposal.hasCandidateAccount) {
+    // Ya se postuló (en revisión) o ya tiene cuenta de candidato: la tarjeta de postulación NO
+    // se muestra (Fernando, 2026-10-28); entra por «Candidato». Solo queda la de «Aprobada»
+    // (arriba), que lleva a crear la cuenta: sin ella no habría por dónde terminar el alta.
   } else {
     opciones.push({
       clave: 'candidato',
       grupo: 'nuevo',
       tono: 'default',
       Icono: UserPlus,
-      titulo: 'Quiero postularme como candidato',
+      titulo: 'Postulación',
       corta: 'Conoce el proyecto y postúlate.',
       descripcion: 'Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados.',
       onClick: acciones.onCandidate,
@@ -172,7 +149,7 @@ corta: 'Inicia sesión para continuar.',
     grupo: 'cuenta',
     tono: 'default',
     Icono: LogIn,
-    titulo: 'Soy candidato',
+    titulo: 'Candidato',
         corta: 'Inicia sesión con tu cuenta.',
     descripcion: `Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`,
     onClick: acciones.onCandidateLogin,
@@ -186,7 +163,7 @@ corta: 'Inicia sesión para continuar.',
       tono: 'default',
       Icono: Briefcase,
       insignia: 'Comprobando…',
-      titulo: 'Soy cliente',
+      titulo: 'Cliente',
       corta: 'Tus productos y servicios.',
       descripcion: 'Comprobando tu cuenta de cliente…',
       onClick: sinAccion,
@@ -198,7 +175,7 @@ corta: 'Inicia sesión para continuar.',
       tono: 'warning',
       Icono: MailWarning,
       insignia: 'Verificación pendiente',
-      titulo: 'Tu cuenta de cliente requiere verificación',
+      titulo: 'Cliente',
             corta: 'Verifica tu correo para entrar.',
       descripcion: 'Te enviamos un enlace de verificación a tu correo. Verifícalo para poder iniciar sesión. No es necesario crear otra cuenta.',
       onClick: () => acciones.onClientPending({ email: client.email }),
@@ -209,7 +186,7 @@ corta: 'Inicia sesión para continuar.',
       grupo: 'cuenta',
       tono: 'default',
       Icono: Briefcase,
-      titulo: 'Soy cliente',
+      titulo: 'Cliente',
       corta: 'Tus productos y servicios.',
       descripcion:
         destination === 'dashboard'
@@ -224,7 +201,7 @@ corta: 'Inicia sesión para continuar.',
     grupo: 'cuenta',
     tono: 'default',
     Icono: ShieldCheck,
-    titulo: 'Ingresar como miembro',
+    titulo: 'Miembro',
         corta: 'Miembros y administradores.',
     descripcion: `Ya soy miembro o administrador: iniciar sesión y ${dest}.`,
     onClick: acciones.onMember,

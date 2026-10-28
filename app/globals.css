@@ -3676,3 +3676,35 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .pensamiento-barra-etiqueta, .pensamiento-barra-fecha { height: 18px; line-height: 18px; }
 .pensamiento-barra-vacia { height: 98px; }
 @media (max-width: 639.98px) { .pensamiento-barra, .pensamiento-barra-vacia { height: 92px; } }
+
+/* ═══ ROLES: tres o cuatro tarjetas y la animación al elegir (Fernando, 2026-10-28) ═══ */
+.roles-fila { grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); }
+.roles-fila[data-n='3'] { max-width: 760px; margin-inline: auto; width: 100%; }
+@media (max-width: 859.98px) {
+  .roles-fila { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Con tres en 2×2, la tercera centrada sola en su fila. */
+  .roles-fila[data-n='3'] > :last-child { grid-column: 1 / -1; justify-self: center; width: calc(50% - 4px); }
+}
+/* La elegida: pulso con brillo y una onda de luz que sale de ella; las demás se apagan. */
+.tarjeta-rol.rol-elegida { animation: rolElegida 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) both; z-index: 2; }
+@keyframes rolElegida {
+  0%   { transform: scale(1); filter: brightness(1); }
+  40%  { transform: scale(1.07) translateY(-6px); filter: brightness(1.25); }
+  100% { transform: scale(1.04) translateY(-4px); filter: brightness(1.1); }
+}
+.tarjeta-rol.rol-elegida .tm-selector { opacity: 1; }
+.tarjeta-rol.rol-elegida .tm-selector > span:nth-child(n) { transform: translate(0, 0); }
+.tarjeta-rol.rol-elegida .tr-icono { animation: rolIconoElegido 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes rolIconoElegido { 50% { transform: scale(1.22) rotate(-6deg); } 100% { transform: scale(1.1); } }
+.rol-onda {
+  position: absolute; left: 50%; top: 40%; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border-radius: 9999px; border: 2px solid #e879f9; box-shadow: 0 0 18px #e879f9;
+  pointer-events: none; animation: rolOnda 0.7s ease-out both;
+}
+@keyframes rolOnda { from { opacity: 0.95; transform: scale(0.4); } to { opacity: 0; transform: scale(7); } }
+/* `animation: none`: la entrada (`.aparecer`, con `both`) fijaba opacidad y transformación y
+   pisaba estas. */
+.tarjeta-rol.rol-descartada { animation: none; opacity: 0.35; transform: scale(0.96); filter: saturate(0.6); transition: opacity 300ms ease, transform 300ms ease, filter 300ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-rol.rol-elegida, .tarjeta-rol.rol-elegida .tr-icono, .rol-onda { animation: none; }
+}

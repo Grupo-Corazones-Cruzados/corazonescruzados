@@ -240,6 +240,13 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 >   teléfono y en ventanas de menos de 700 px de alto). 4 en fila desde 860 px; 2×2 debajo.
 >   Sustituye a «Soy nuevo» grande + pila (y su camino de 8 pasos).
 >
+> **Roles: nombres cortos, postulación condicional y animación al elegir (2026-10-28, Fernando).**
+> Títulos «Postulación», «Candidato», «Cliente», «Miembro» (los estados siguen en la etiqueta).
+> Si ya te postulaste (en revisión) o ya tienes cuenta de candidato, NO hay tarjeta de postulación
+> (quedan 3; en 2×2 la tercera centrada); la «Aprobada» sí sigue, porque lleva a crear la cuenta.
+> Al elegir: la tarjeta da un pulso (sube, crece y brilla), el icono rebota, sale una onda de luz y
+> las demás se apagan al 35 %; a los 450 ms se abre su ventana.
+>
 > **⚠️ Minificador (2026-10-28):** `animation: 1.5s both` con el nombre en otra regla salía en
 > producción como `animation: none` (el texto no chocaba; en `next dev` sí). Cada animación va
 > COMPLETA en una sola declaración, y lo animado se prueba con `next build` + `next start`.

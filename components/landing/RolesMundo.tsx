@@ -14,23 +14,37 @@
  * y «Comprobando…», y al llegar la respuesta cambia su contenido, no su sitio.
  */
 
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useOpcionesAcceso, type AccionesAcceso, type OpcionAcceso } from '@/components/landing/opcionesAcceso';
 
-function Tarjeta({ o, tema, retraso }: { o: OpcionAcceso; tema: 'aventura' | 'progreso'; retraso: number }) {
+function Tarjeta({
+  o,
+  tema,
+  retraso,
+  estado,
+  onElegir,
+}: {
+  o: OpcionAcceso;
+  tema: 'aventura' | 'progreso';
+  retraso: number;
+  estado: '' | 'elegida' | 'descartada';
+  onElegir: () => void;
+}) {
   const Icono = o.Icono;
   const etiqueta = o.insignia ?? (o.grupo === 'nuevo' ? 'Soy nuevo' : 'Ya tengo cuenta');
   return (
     <button
       type="button"
-      onClick={o.cargando ? undefined : o.onClick}
+      onClick={o.cargando ? undefined : onElegir}
       aria-disabled={o.cargando || undefined}
       aria-busy={o.cargando || undefined}
       aria-label={`${o.titulo}: ${o.descripcion}`}
-      className={`tarjeta-mundo tarjeta-mundo-${tema} tarjeta-rol rol-${o.tono} ${o.cargando ? 'rol-comprobando' : ''} aparecer`}
+      className={`tarjeta-mundo tarjeta-mundo-${tema} tarjeta-rol rol-${o.tono} ${o.cargando ? 'rol-comprobando' : ''} ${estado ? `rol-${estado}` : ''} aparecer`}
       style={{ ['--retraso' as string]: `${retraso}ms` }}
     >
       <span className="tm-destello" aria-hidden="true" />
+      {estado === 'elegida' && <span className="rol-onda" aria-hidden="true" />}
       <span className="tm-selector" aria-hidden="true">
         <span /><span /><span /><span />
       </span>
@@ -62,6 +76,23 @@ export default function RolesMundo({
 }) {
   const opciones = useOpcionesAcceso(tema === 'aventura' ? 'game' : 'dashboard', acciones);
 
+  /**
+   * AL ELEGIR UN ROL (Fernando, 2026-10-28: «una animación para cuando se selecciona»): la
+   * tarjeta elegida da un pulso con una onda de luz y las demás se apagan; ~450 ms después se
+   * abre su ventana. Al cerrarse la ventana las tarjetas vuelven solas a su estado.
+   */
+  const [elegida, setElegida] = useState<string | null>(null);
+  useEffect(() => {
+    if (!elegida) return;
+    const id = window.setTimeout(() => setElegida(null), 1200);
+    return () => window.clearTimeout(id);
+  }, [elegida]);
+  const elegir = (o: OpcionAcceso) => {
+    if (elegida) return;
+    setElegida(o.clave);
+    window.setTimeout(o.onClick, 450);
+  };
+
   return (
     <div className={`roles-mundo roles-${tema}`}>
       {onVolver && (
@@ -70,9 +101,16 @@ export default function RolesMundo({
           Volver
         </button>
       )}
-      <div className="roles-fila">
+      <div className="roles-fila" data-n={opciones.length} style={{ ['--n' as string]: opciones.length }}>
         {opciones.map((o, i) => (
-          <Tarjeta key={o.clave} o={o} tema={tema} retraso={retrasoBase + 80 + i * 90} />
+          <Tarjeta
+            key={o.clave}
+            o={o}
+            tema={tema}
+            retraso={retrasoBase + 80 + i * 90}
+            estado={!elegida ? '' : elegida === o.clave ? 'elegida' : 'descartada'}
+            onElegir={() => elegir(o)}
+          />
         ))}
       </div>
     </div>
