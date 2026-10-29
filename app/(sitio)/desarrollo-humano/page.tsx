@@ -77,7 +77,7 @@ export default async function DesarrolloHumanoPage() {
 
   return (
     <>
-      <section className="flex-1 overflow-x-clip bg-[var(--tarjeta)] pt-10 sm:pt-14 pb-40 sm:pb-56">
+      <section className="flex-1 overflow-x-clip pt-10 sm:pt-14 pb-40 sm:pb-56">
         <Contenedor ancho="amplio">
           <ExploradorSecciones
             secciones={DESARROLLO}

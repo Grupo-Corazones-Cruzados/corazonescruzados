@@ -283,6 +283,11 @@ Stack estándar de la casa, con particularidades de este repo:
   tomada por mí y a revisar con él: el oscuro como Aventura, y llevarlo a TODO el panel (pidió «por
   completo en el tema»). Para compilar en local con otra sesión corriendo `next dev`, usar
   `NEXT_DIST_DIR=.next-mio`: compartir `.next` rompió su servidor y mi build.
+- **💜 EL SITIO PÚBLICO VISTE EL MUNDO «PROGRESO» (Fernando, 2026-10-29).** Soluciones, Clientes,
+  Desarrollo Humano (y los legales, que comparten marco) toman el estilo del panel Progreso de la
+  portada: fondo lavanda con puntos y manchas, títulos Space Grotesk, rótulos violeta y tarjetas
+  con sombra violeta. Vive en el layout de `app/(sitio)` y en `.mundo-progreso`; detalle en
+  `Diseño.md` § «El mundo Progreso en Soluciones…».
 - **🧭 CABECERA COMÚN Y TRANSICIÓN ANIMADA ENTRE PESTAÑAS (Fernando, 2026-10-29).** Inicio,
   Soluciones, Clientes y Desarrollo Humano comparten la misma cabecera (la cápsula centrada de la
   portada, `CabeceraSitio` sin modos). Al cambiar de pestaña la píldora activa se desliza desde la

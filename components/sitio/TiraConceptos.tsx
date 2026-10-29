@@ -117,7 +117,7 @@ export default function TiraConceptos({
           El `aria-label` del <aside> se queda en las dos: quien navega a ciegas necesita
           saber qué es esta región aunque no haya título a la vista. */}
       {esVertical && (
-        <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-3">
           Lo que sabemos hacer
         </p>
       )}

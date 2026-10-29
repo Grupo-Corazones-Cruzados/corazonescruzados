@@ -663,6 +663,25 @@ los dos a 1440 y a 390). **La barra queda solo con navegación**: fuera `CLASES_
 el botón del menú móvil y `abrirPlataforma()`. Lo de abajo (2026-08-17) queda como historia;
 el titular del diálogo sigue diciendo «a la Plataforma».
 
+### ⭐ El mundo «Progreso» en Soluciones, Clientes y Desarrollo Humano (Fernando, 2026-10-29) — VIGENTE
+
+> *«aprendamos de la página de inicio el estilo de la sección de Plataforma / Progreso para las
+> páginas de soluciones, clientes y desarrollo humano»*.
+
+Lo que se tomó del panel Progreso de la portada, aplicado en el MARCO (`app/(sitio)/layout.tsx` +
+`.mundo-progreso` en `globals.css`), no página por página; vale también para los legales:
+- **Fondo**: degradado lavanda `#fbfaff → #f3effb → #e9e2f7`, rejilla de puntos de 28 px y tres
+  manchas violetas difuminadas, FIJO detrás del contenido y QUIETO (páginas de leer). En línea en
+  el layout. Las secciones de las páginas ya no pintan blanco (`bg-[var(--tarjeta)]` fuera).
+- **Tokens** (sobre `.claro-publico`): `--violeta-txt #6d28d9` (la etiqueta «PLATAFORMA»),
+  `--texto #17122b`, `--suave #5b5470`, `--linea #e7e2f3`, `--violeta #5b3aae`.
+- **Títulos** `h1`/`h2` en Space Grotesk 700, `-0.035em`, como «Progreso».
+- **Rótulos** de las columnas («SOLUCIONES», «CLIENTES», «LO QUE SABEMOS HACER»…) en violeta,
+  negrita y `0.22em`, como la etiqueta del panel.
+- **Tarjetas** (`.claro-tarjeta`, `.tarjeta-portafolio`) blancas con la sombra violeta de
+  `.ep-tarjeta`; al pasar, borde violeta y más sombra.
+- Verificado (build de producción) a 1440 y 390 px; `scrollWidth` = 390 en las tres y en `/legal`.
+
 ### ⭐ La cabecera común y la transición entre pestañas (Fernando, 2026-10-29) — VIGENTE
 
 > *«que la experiencia de transición sea animada al cambiar a las pestañas de soluciones, clientes y

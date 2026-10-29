@@ -66,7 +66,7 @@ function Seccion({ ruta, children }: { ruta: string; children: ReactNode }) {
   return (
     // `flex-1 flex flex-col`: este envoltorio está entre el `<main>` y la página, así que
     // si no dejara pasar el alto, ninguna página podría estirarse hasta el pie.
-    <div data-dir={dir} className="transicion-seccion flex-1 flex flex-col">
+    <div data-dir={dir} className="transicion-seccion relative z-[1] flex-1 flex flex-col">
       {children}
     </div>
   );

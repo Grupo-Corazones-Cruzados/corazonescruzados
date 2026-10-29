@@ -198,7 +198,7 @@ function ContenedorDoc({ children, className = '' }: { children: ReactNode; clas
 function ListaDocumentos({ activo }: { activo: string }) {
   return (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-2.5">
+      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-2.5">
         Documentos
       </p>
       <ul className="space-y-1">
@@ -240,7 +240,7 @@ function ListaDocumentos({ activo }: { activo: string }) {
 function IndiceSecciones({ grupos }: { grupos: GrupoIndice[] }) {
   return (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-2.5">
+      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-2.5">
         En este documento
       </p>
       <div className="space-y-5">

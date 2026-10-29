@@ -4173,3 +4173,37 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 /* El cuerpo entra de lado: que no asome una barra de desplazamiento horizontal mientras tanto. */
 .claro-publico { overflow-x: clip; }
+
+/* ═══ EL MUNDO «PROGRESO» EN SOLUCIONES, CLIENTES Y DESARROLLO HUMANO (Fernando, 2026-10-29) ═══
+   Lo aprendido del panel «Progreso» de la portada (`.panel-mundo-progreso`, `.escena-progreso`,
+   `.ep-tarjeta`), aplicado al marco de `app/(sitio)`: el fondo lavanda con puntos (en el
+   layout), los TOKENS de su paleta, los títulos en Space Grotesk apretados y las tarjetas de
+   cristal blanco con sombra violeta. Se hace sobre los tokens de `.claro-publico` y sus clases
+   compartidas, no página por página: así cambia todo el sitio a la vez. */
+.mundo-progreso {
+  --violeta: #5b3aae;        /* el degradado del botón de Progreso empieza aquí */
+  --violeta-vivo: #7c3aed;
+  --violeta-txt: #6d28d9;    /* la etiqueta «PLATAFORMA»; 7:1 sobre blanco */
+  --texto: #17122b;          /* el título «Progreso» */
+  --suave: #5b5470;          /* su descripción */
+  --tenue: #7a7391;
+  --linea: #e7e2f3;          /* el borde de `.ep-tarjeta` */
+  --linea-fuerte: #d6cdeb;
+}
+.mundo-progreso h1,
+.mundo-progreso h2 {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+.mundo-progreso .claro-tarjeta,
+.mundo-progreso .tarjeta-portafolio {
+  border-color: var(--linea);
+  box-shadow: 0 14px 34px -18px rgba(75, 45, 142, 0.32);
+}
+.mundo-progreso .claro-tarjeta:hover,
+.mundo-progreso .tarjeta-portafolio:hover,
+.mundo-progreso .tarjeta-portafolio:focus-within {
+  border-color: rgba(124, 58, 237, 0.45);
+  box-shadow: 0 18px 40px -16px rgba(75, 45, 142, 0.42);
+}

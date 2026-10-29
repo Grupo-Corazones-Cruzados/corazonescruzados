@@ -95,7 +95,7 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           —medido— porque el navegador ya no tenía a dónde bajar, y el título se acercaba
           demasiado a la cabecera. Es el mismo motivo por el que los sitios de documentación
           llevan un hueco al final. */}
-      <section className="flex-1 overflow-x-clip bg-[var(--tarjeta)] pt-10 sm:pt-14 pb-40 sm:pb-56">
+      <section className="flex-1 overflow-x-clip pt-10 sm:pt-14 pb-40 sm:pb-56">
         <Contenedor ancho="amplio">
           <ExploradorSecciones
             secciones={SECCIONES}

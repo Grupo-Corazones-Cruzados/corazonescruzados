@@ -71,7 +71,7 @@ export default async function SeccionDesarrolloPage({ params }: Props) {
       {/* `pb-40 sm:pb-56` no es aire decorativo: es sitio para desplazarse, para que la
           ÚLTIMA pregunta pueda colocarse a 96 px del borde cuando se llega por su ancla. Ver
           el aviso completo en `/clientes/[necesidad]`. */}
-      <section className="flex-1 overflow-x-clip bg-[var(--tarjeta)] pt-10 sm:pt-14 pb-40 sm:pb-56">
+      <section className="flex-1 overflow-x-clip pt-10 sm:pt-14 pb-40 sm:pb-56">
         <Contenedor ancho="amplio">
           <ExploradorSecciones
             secciones={DESARROLLO}

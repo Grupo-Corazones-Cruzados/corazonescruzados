@@ -93,7 +93,7 @@ export default async function TalentoPage({ params }: Props) {
   if (!existe) notFound();
 
   return (
-    <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
+    <section className="flex-1 py-10 sm:py-14">
       <Contenedor ancho="amplio">
         <SolucionesExplorador soluciones={soluciones} slugActivo={slug} />
       </Contenedor>

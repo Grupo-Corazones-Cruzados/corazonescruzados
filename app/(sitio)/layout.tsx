@@ -89,7 +89,27 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
           Sin esto, una página corta con fondo propio —`/soluciones`, que es blanco— terminaba
           antes que la página y dejaba una franja del papel `#f6f5f9` debajo. Se veía como un
           cambio de color a media pantalla; lo vio Fernando. */}
-      <main className="claro-publico flex-1 flex flex-col pt-[calc(4rem+var(--seguro-arriba))] pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
+      {/* EL MUNDO «PROGRESO» (Fernando, 2026-10-29: «aprendamos de la página de inicio el estilo
+          de la sección de Plataforma / Progreso para Soluciones, Clientes y Desarrollo Humano»).
+          El fondo es el de la Plataforma de la portada —degradado lavanda, rejilla de puntos y
+          manchas violetas difuminadas—, fijo detrás del contenido y QUIETO (son páginas de leer:
+          sin la deriva animada de la portada). Las secciones ya no pintan blanco encima. Los
+          tokens y la tipografía del mundo los pone `.mundo-progreso` en globals.css; el fondo va
+          en línea para no depender de que ese CSS esté al día. */}
+      <main className="claro-publico mundo-progreso relative flex-1 flex flex-col pt-[calc(4rem+var(--seguro-arriba))] pb-[var(--alto-pie)] bg-[var(--papel)] text-[var(--suave)]">
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+          style={{ background: 'linear-gradient(160deg, #fbfaff 0%, #f3effb 55%, #e9e2f7 100%)' }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{ backgroundImage: 'radial-gradient(rgba(75, 45, 142, 0.14) 1px, transparent 1.6px)', backgroundSize: '28px 28px' }}
+          />
+          <div className="absolute rounded-full" style={{ right: '4%', top: '-10%', width: '34vw', height: '34vw', background: 'rgba(123, 95, 191, 0.20)', filter: 'blur(70px)' }} />
+          <div className="absolute rounded-full" style={{ left: '2%', bottom: '-14%', width: '30vw', height: '30vw', background: 'rgba(161, 32, 125, 0.10)', filter: 'blur(70px)' }} />
+          <div className="absolute rounded-full" style={{ left: '40%', top: '36%', width: '22vw', height: '22vw', background: 'rgba(75, 45, 142, 0.08)', filter: 'blur(70px)' }} />
+        </div>
         <TransicionSeccion>{children}</TransicionSeccion>
       </main>
       <PieSitio />

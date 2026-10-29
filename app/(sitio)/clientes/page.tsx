@@ -87,7 +87,7 @@ export default async function ClientesPage() {
           blanco terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`
           de la página — un cambio de color a media pantalla. Un solo color, como pidió
           Fernando (2026-08-18). */}
-      <section className="flex-1 bg-[var(--tarjeta)] py-10 sm:py-14">
+      <section className="flex-1 py-10 sm:py-14">
         <Contenedor ancho="amplio">
           <ExploradorSecciones
             secciones={ACCESOS}

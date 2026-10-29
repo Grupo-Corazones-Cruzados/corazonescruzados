@@ -58,7 +58,7 @@ function GaleriaSecciones({
 }) {
   return (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
+      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-3">
         {rotulo}
       </p>
       <ul className="space-y-2">
@@ -155,7 +155,7 @@ function GaleriaSecciones({
 function IndicePreguntas({ temas }: { temas: NonNullable<Acceso['temas']> }) {
   return (
     <aside aria-label="Preguntas de esta sección">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[var(--tenue)] mb-3">
+      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-3">
         En esta página
       </p>
       <ul className="space-y-1">
