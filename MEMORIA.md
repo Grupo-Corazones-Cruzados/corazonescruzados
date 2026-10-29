@@ -294,6 +294,13 @@ Stack estándar de la casa, con particularidades de este repo:
   tomada por mí y a revisar con él: el oscuro como Aventura, y llevarlo a TODO el panel (pidió «por
   completo en el tema»). Para compilar en local con otra sesión corriendo `next dev`, usar
   `NEXT_DIST_DIR=.next-mio`: compartir `.next` rompió su servidor y mi build.
+- **🌐 PROPUESTA: SOLUCIONES, CLIENTES Y DESARROLLO HUMANO COMO SITIO WEB (Fernando, 2026-10-29) —
+  PENDIENTE DE SU VISTO BUENO.** Con libertad creativa total («esta versión la podemos recuperar»):
+  presentación de página con titular grande y botones de Progreso, una pieza propia por página
+  (cifras / pasos de un ticket / corazón sobre la Tierra), y en Clientes y Desarrollo Humano las
+  secciones como fila de puertas arriba. **Para volver a la versión anterior: commit `e09e1dc0`.**
+  Le gustan controles concretos de las páginas viejas: si pide recuperar alguno, preguntar cuál.
+  Detalle: `Diseño.md` § «PROPUESTA (2026-10-29): las páginas públicas como SITIO WEB».
 - **💜 EL SITIO PÚBLICO VISTE EL MUNDO «PROGRESO» (Fernando, 2026-10-29).** Soluciones, Clientes,
   Desarrollo Humano (y los legales, que comparten marco) toman el estilo del panel Progreso de la
   portada: fondo lavanda con puntos y manchas, títulos Space Grotesk, rótulos violeta y tarjetas

@@ -48,6 +48,7 @@
 import type { Metadata } from 'next';
 import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { Contenedor } from '@/components/sitio/piezas';
+import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from './faqs-build';
 
@@ -87,14 +88,15 @@ export default async function ClientesPage() {
           blanco terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`
           de la página — un cambio de color a media pantalla. Un solo color, como pidió
           Fernando (2026-08-18). */}
-      <section className="flex-1 py-10 sm:py-14">
-        <Contenedor ancho="amplio">
+      <section className="flex-1 pt-6 sm:pt-10 pb-16">
+        <Contenedor ancho="sitio">
           <ExploradorSecciones
             secciones={ACCESOS}
             activa={primera.id}
             faqs={faqs}
             base="/clientes"
             rotulo="Clientes"
+            presentacion={PRESENTACION_CLIENTES}
             etiquetaNav="Secciones para clientes"
           />
         </Contenedor>

@@ -416,7 +416,7 @@ export const ACCESOS: Acceso[] = [
     id: 'plataforma', icono: 'ticket',
     titulo: 'Plataforma',
     // La puerta de clientes: abre el acceso de cliente y, al entrar, va al panel.
-    accion: { href: '/auth/cliente', etiqueta: 'Ir' },
+    accion: { href: '/auth/cliente', etiqueta: 'Ir a la Plataforma' },
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
     /**
      * ⚠️ **ESCRITA POR MÍ** (2026-08-19), a petición de Fernando —«una descripción más larga y
@@ -573,7 +573,7 @@ export const ACCESOS: Acceso[] = [
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
     // ⚠️ La ÚNICA que no manda al panel: al entrar se va a la aventura. Ver `ACCESO_VIDEOJUEGO`.
-    accion: { href: '/?acceso=videojuego', etiqueta: 'Ir' },
+    accion: { href: '/?acceso=videojuego', etiqueta: 'Ir al Videojuego' },
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
     descripcion:
       'GCC World es un videojuego que cuenta la historia de un mundo que sufrió las peores consecuencias después de olvidar sus raíces. Tres niños que perdieron a sus padres durante una persecución en este mundo perdido, se lanzaron hacia un hoyo ancestral, el cual sin saberlo, fue el lugar de unión y prosperidad de sus antepasados. ¿Qué existirá en el fondo del hoyo?',
@@ -694,7 +694,7 @@ export const ACCESOS: Acceso[] = [
      * Es además coherente con lo que dice la propia sección: «el catálogo está abierto, se
      * recorre entero sin cuenta». El acceso sigue estando a un clic, dentro de esa página.
      */
-    accion: { href: '/marketplace-publico', etiqueta: 'Ir' },
+    accion: { href: '/marketplace-publico', etiqueta: 'Ir al Marketplace' },
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
     descripcion:
       'El marketplace es el espacio donde los miembros publican sus soluciones, y los clientes negocian sus recursos. Ahí puedes adquirir, intercambiar, o alquilar productos, proyectos, recursos, u automatizaciones para tu organización.',

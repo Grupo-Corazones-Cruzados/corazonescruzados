@@ -28,6 +28,7 @@ import { notFound } from 'next/navigation';
 import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId } from '@/lib/sitio/contenido';
 import { Contenedor } from '@/components/sitio/piezas';
 import { ACCESOS as SECCIONES } from '@/lib/sitio/contenido';
+import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from '../faqs-build';
 
@@ -95,14 +96,15 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           —medido— porque el navegador ya no tenía a dónde bajar, y el título se acercaba
           demasiado a la cabecera. Es el mismo motivo por el que los sitios de documentación
           llevan un hueco al final. */}
-      <section className="flex-1 overflow-x-clip pt-10 sm:pt-14 pb-40 sm:pb-56">
-        <Contenedor ancho="amplio">
+      <section className="flex-1 overflow-x-clip pt-6 sm:pt-10 pb-40 sm:pb-56">
+        <Contenedor ancho="sitio">
           <ExploradorSecciones
             secciones={SECCIONES}
             activa={acceso.id}
             faqs={faqs}
             base="/clientes"
             rotulo="Clientes"
+            presentacion={PRESENTACION_CLIENTES}
             etiquetaNav="Secciones para clientes"
           />
         </Contenedor>

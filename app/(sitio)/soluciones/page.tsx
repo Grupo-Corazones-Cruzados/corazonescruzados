@@ -32,7 +32,8 @@
  */
 
 import type { Metadata } from 'next';
-import { Contenedor } from '@/components/sitio/piezas';
+import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
+import { presentacionSoluciones } from '@/components/sitio/presentaciones';
 import SolucionesExplorador from '@/components/sitio/SolucionesExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { cargarSolucionesConContenido } from './datos';
@@ -76,8 +77,9 @@ export default async function SolucionesPage() {
           blanco terminaba donde terminaba el contenido y debajo asomaba el papel `#f6f5f9`
           de la página — un cambio de color a media pantalla. Un solo color, como pidió
           Fernando (2026-08-18). Sin `border-b`: no hay nada después de ella. */}
-      <section className="flex-1 py-10 sm:py-14">
-        <Contenedor ancho="amplio">
+      <section className="flex-1 pt-6 sm:pt-10 pb-16">
+        <Contenedor ancho="sitio">
+          <PresentacionPagina {...presentacionSoluciones(soluciones)} />
           {soluciones.length === 0 ? (
             // Ni recuadro gris ni «próximamente»: la misma regla del resto del sitio.
             <p className="text-[15px] text-[var(--tenue)]">

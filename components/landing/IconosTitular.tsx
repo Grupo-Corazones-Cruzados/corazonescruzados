@@ -53,15 +53,20 @@ const MAPA = [
   '00000002222220000000000222222000',
 ];
 
-export function IconoMundo() {
+/**
+ * `idRecorte`: el `id` del círculo que recorta el mapa. Debe ser ÚNICO en la página: con dos
+ * Tierras y el mismo `id`, la segunda usa el recorte de la primera, y si esa está oculta
+ * (`display:none`) no recorta nada y la Tierra sale cuadrada (Desarrollo Humano, 2026-10-29).
+ */
+export function IconoMundo({ idRecorte = 'icono-mundo-disco' }: { idRecorte?: string } = {}) {
   return (
     <svg viewBox="0 0 14 14" shapeRendering="crispEdges" className="titular-icono titular-icono-mundo" role="img" aria-label="mundo">
       <defs>
-        <clipPath id="icono-mundo-disco">
+        <clipPath id={idRecorte}>
           <circle cx="7" cy="7" r="6.5" />
         </clipPath>
       </defs>
-      <g clipPath="url(#icono-mundo-disco)">
+      <g clipPath={`url(#${idRecorte})`}>
         <rect x="0" y="0" width="14" height="14" fill="#2563eb" />
         <g className="titular-mundo-mapa">
           {MAPA.flatMap((fila, y) =>

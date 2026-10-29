@@ -33,115 +33,58 @@
  * Por eso el índice son `<a href="#…">` de toda la vida y no botones: el salto lo hace el
  * navegador, funciona con el teclado, y cada pregunta tiene una dirección que se puede
  * mandar por WhatsApp.
+ *
+ * ── ⭐ COMO SITIO WEB (Fernando, 2026-10-29: «más estilo sitio web… reformula por completo») ──
+ * Antes eran tres paneles a todo el ancho: secciones en una columna a la izquierda, contenido y
+ * el índice. Ahora la página abre con su PRESENTACIÓN (`PresentacionPagina`), las secciones son
+ * una FILA DE PUERTAS arriba (`PuertasSecciones`, la abierta rellena de violeta como la píldora
+ * de la cabecera) y debajo el contenido a ancho de lectura con el índice pegado a la derecha.
+ * El botón «Ir» de cada tarjeta pasa a la cabecera de la sección, con el botón de Progreso.
+ * Todo sigue sin `use client` y en el HTML. Para volver a la versión anterior:
+ *     git show e09e1dc0:components/sitio/ExploradorSecciones.tsx
  */
 
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
-import { BloqueTema, ExploradorTresPaneles, ICONOS } from './piezas';
+import { BloqueTema, BotonMundo, ICONOS, PresentacionPagina } from './piezas';
+import type { ComponentProps } from 'react';
 import GaleriaTarjetas from './GaleriaTarjetas';
 import VideoYouTube from './VideoYouTube';
 import FaqsClientes from './FaqsClientes';
 
 /**
- * LA GALERÍA VERTICAL — las cuatro secciones, una debajo de otra.
+ * LAS PUERTAS — las secciones como una fila de tarjetas bajo la presentación (2026-10-29).
  *
- * Son las mismas cuatro tarjetas de antes (icono, nombre y su frase), puestas en columna
- * porque ahora hacen de navegación y no de portada. La abierta se marca con el borde y el
- * fondo violetas, y con `aria-current`: el color solo se lo dice a quien lo ve.
+ * Cuatro en fila desde `lg`, 2×2 por debajo (en el teléfono solo icono y nombre: la frase ya la
+ * dice el contenido). La abierta va RELLENA de violeta con el texto en blanco —lo elegido, como la
+ * píldora de la cabecera— y con `aria-current`. Cada tarjeta es un enlace de verdad a su URL.
  */
-function GaleriaSecciones({
-  secciones, activa, base, rotulo,
+function PuertasSecciones({
+  secciones, activa, base, etiquetaNav,
 }: {
-  secciones: Acceso[]; activa: string; base: string; rotulo: string;
+  secciones: Acceso[]; activa: string; base: string; etiquetaNav: string;
 }) {
   return (
-    <>
-      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-3">
-        {rotulo}
-      </p>
-      <ul className="space-y-2">
-        {secciones.map((a) => {
-          const abierta = a.id === activa;
-          const Icono = ICONOS[a.icono] ?? ICONOS.capas;
-          return (
-            <li
-              key={a.id}
-              /**
-               * ⚠️ `relative` Y LA TARJETA YA NO ES UN `<Link>`, Y ES OBLIGADO.
-               *
-               * Lo era: un enlace envolvía toda la tarjeta. Al pedir Fernando un botón «Ir»
-               * dentro (2026-08-19) eso dejó de valer — **un `<a>` dentro de otro `<a>` es
-               * marcado inválido**: el navegador lo desarma y uno de los dos deja de
-               * funcionar. Es el mismo motivo por el que el botón grande vivía en el
-               * contenido y no en la tarjeta, hasta que dejó de haber ninguno (2026-08-20).
-               *
-               * La solución es el enlace estirado: el `<Link>` envuelve **solo el título** —de
-               * ahí saca su nombre accesible— y su `::after` se extiende sobre toda la
-               * tarjeta, así que pulsar en cualquier parte sigue navegando a la sección. El
-               * botón «Ir» se pone por encima con `relative z-10` y recibe sus propios clics.
-               */
-              className={`relative rounded-xl border p-3.5 transition-colors
-                ${abierta
-                  ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.08]'
-                  : 'border-[var(--linea)] bg-[var(--tarjeta)] hover:border-[var(--linea-fuerte)]'}`}
-            >
-              <span className="flex items-center gap-2.5">
-                <span
-                  aria-hidden
-                  className={`inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg border
-                    ${abierta
-                      ? 'border-[#7b5fbf]/35 bg-[#7b5fbf]/[0.12]'
-                      : 'border-[var(--linea)] bg-[#7b5fbf]/[0.05]'}`}
-                >
-                  <Icono className="w-4 h-4 text-[var(--violeta-txt)]" />
-                </span>
-                <Link
-                  href={`${base}/${a.id}`}
-                  aria-current={abierta ? 'page' : undefined}
-                  className={`text-[14.5px] font-semibold leading-snug rounded-sm
-                              after:absolute after:inset-0 after:rounded-xl
-                              focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
-                    ${abierta ? 'text-[var(--violeta-txt)]' : 'text-[var(--texto)]'}`}
-                >
-                  {a.titulo}
-                </Link>
-              </span>
-
-              {/* La frase, más apagada: en la abierta ya la repite el centro, pero quitarla
-                  solo de esa haría que la tarjeta cambiara de alto al elegirla y la lista
-                  entera daría un salto. */}
-              <span className="mt-2 block text-[12.5px] leading-relaxed text-[var(--tenue)]">
-                {a.texto}
-              </span>
-
-              {/* ── EL BOTÓN DE ACCIÓN ──────────────────────────────────────────────
-                  Solo si la sección tiene a dónde mandar: Democracia no lo pinta, y no deja
-                  hueco. `relative z-10` lo levanta por encima del enlace estirado de arriba;
-                  sin eso, pulsarlo navegaría a la sección en vez de abrir el acceso.
-
-                  Es un `<a>` de toda la vida —no un botón con JavaScript— y por eso este
-                  componente sigue sin `use client`: lleva a una «puerta con nombre» que
-                  redirige al único formulario de acceso, el de la portada. */}
-              {a.accion && (
-                <Link
-                  href={a.accion.href}
-                  className="relative z-10 mt-3 inline-flex items-center gap-1 rounded-md
-                             border border-[#7b5fbf]/40 bg-[#7b5fbf]/[0.06] px-2.5 py-1
-                             text-[12px] font-medium text-[var(--violeta-txt)] transition-colors
-                             hover:border-[#7b5fbf]/70 hover:bg-[#7b5fbf]/[0.12]
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50"
-                >
-                  {a.accion.etiqueta}
-                  <ArrowRight className="w-3 h-3" aria-hidden />
-                </Link>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </>
+    <nav aria-label={etiquetaNav} className="puertas-seccion" style={{ ['--n' as string]: secciones.length }}>
+      {secciones.map((a) => {
+        const abierta = a.id === activa;
+        const Icono = ICONOS[a.icono] ?? ICONOS.capas;
+        return (
+          <Link
+            key={a.id}
+            href={`${base}/${a.id}`}
+            aria-current={abierta ? 'page' : undefined}
+            className={`puerta-seccion ${abierta ? 'es-abierta' : ''}`}
+          >
+            <span className="puerta-icono" aria-hidden><Icono /></span>
+            <span className="puerta-titulo">{a.titulo}</span>
+            <span className="puerta-texto">{a.texto}</span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -199,7 +142,7 @@ function IndicePreguntas({ temas }: { temas: NonNullable<Acceso['temas']> }) {
  */
 function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
   return (
-    <nav aria-label="Preguntas de esta sección" className="alternativa-estrecha mt-6 min-w-0">
+    <nav aria-label="Preguntas de esta sección" className="indice-en-fila mt-6 min-w-0">
       <ul className="flex gap-2 overflow-x-auto pb-1">
         {temas.map((t) => (
           <li key={t.id} className="shrink-0">
@@ -220,9 +163,9 @@ function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
 }
 
 export default function ExploradorSecciones({
-  secciones, activa, faqs, base, rotulo, etiquetaNav,
+  secciones, activa, faqs, base, rotulo, etiquetaNav, presentacion,
 }: {
-  /** Las secciones del panel izquierdo. `ACCESOS` en `/clientes`, `DESARROLLO` en la otra. */
+  /** Las secciones de las puertas. `ACCESOS` en `/clientes`, `DESARROLLO` en la otra. */
   secciones: Acceso[];
   /** El `id` de la sección abierta. En la portada de cada rama es la primera. */
   activa: string;
@@ -230,44 +173,44 @@ export default function ExploradorSecciones({
   faqs: Faq[];
   /** La ruta de la que cuelgan las secciones: `/clientes` o `/desarrollo-humano`. */
   base: string;
-  /** El rótulo en versalitas sobre la galería. */
+  /** El rótulo en versalitas sobre el nombre de la sección. */
   rotulo: string;
-  /** El `aria-label` del `<nav>` izquierdo. */
+  /** El `aria-label` del `<nav>` de las puertas. */
   etiquetaNav: string;
+  /** La presentación de la página (la misma en todas sus secciones). */
+  presentacion: ComponentProps<typeof PresentacionPagina>;
 }) {
   const acceso = secciones.find((a) => a.id === activa);
   if (!acceso) return null;
   const temas = acceso.temas ?? [];
 
   return (
-    <ExploradorTresPaneles
-      etiquetaIzquierda={etiquetaNav}
-      /* `ancho`: el tercer panel espera a los 1536 px. Antes aparecía a 1024 y dejaba las
-         tarjetas de pregunta en 520 px, con los pasos a 116 px de ancho. Ver el porqué
-         completo en `.paneles-explorador` (`app/globals.css`). */
-      corte="ancho"
-      anchoIzquierda="280px"
-      anchoDerecha="260px"
-      izquierda={<GaleriaSecciones secciones={secciones} activa={acceso.id} base={base} rotulo={rotulo} />}
-      /* Sin preguntas no se pasa nada: la rejilla vuelve a dos columnas sola. */
-      derecha={temas.length > 0 ? <IndicePreguntas temas={temas} /> : undefined}
-      centro={
-        <>
-          {/* El `<h1>` de la página es el nombre de la sección. La página ya no tiene
-              titular propio —Fernando quitó «Clientes» y su párrafo el 2026-08-18— y un
-              documento sin `<h1>` es un documento sin título para un buscador y para un
-              lector de pantalla. */}
-          <h1 className="text-[30px] sm:text-[40px] font-semibold tracking-tight text-[var(--texto)] leading-tight">
-            {acceso.titulo}
-          </h1>
-          {/* La descripción LARGA si la sección la tiene; si no, su frase corta. Son dos
-              campos distintos a propósito: `texto` va también en la tarjeta del panel
-              izquierdo y en la descripción de la pestaña, donde un párrafo de cinco frases
-              haría daño. Ver el aviso en `Acceso` (`lib/sitio/contenido.ts`). */}
-          <p className="mt-3 text-[15.5px] leading-relaxed text-[var(--suave)] max-w-3xl whitespace-pre-line">
+    <>
+      <PresentacionPagina {...presentacion} />
+      <PuertasSecciones secciones={secciones} activa={acceso.id} base={base} etiquetaNav={etiquetaNav} />
+
+      <div className="explorador-sitio" data-indice={temas.length > 0 ? 'sí' : undefined}>
+        <div className="min-w-0">
+          <div className="cabecera-seccion">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)]">
+                {rotulo}
+              </p>
+              {/* El `<h1>` de la página es el nombre de la sección: cada URL, su título. */}
+              <h1 className="mt-2 text-[32px] sm:text-[44px] tracking-tight text-[var(--texto)] leading-[1.05]">
+                {acceso.titulo}
+              </h1>
+            </div>
+            {/* La acción de la sección (antes, el «Ir» de su tarjeta), con el botón de Progreso.
+                Democracia no tiene: no se pinta nada. */}
+            {acceso.accion && (
+              <BotonMundo href={acceso.accion.href} etiqueta={acceso.accion.etiqueta} />
+            )}
+          </div>
+          {/* La descripción LARGA si la sección la tiene; si no, su frase corta. */}
+          <p className="mt-4 text-[16px] leading-relaxed text-[var(--suave)] max-w-3xl whitespace-pre-line">
             {acceso.descripcion ?? acceso.texto}
           </p>
-
 
           {temas.length > 0 && <IndiceEnFila temas={temas} />}
 
@@ -278,8 +221,7 @@ export default function ExploradorSecciones({
             </div>
           )}
 
-          {/* Las preguntas, enteras y una debajo de otra. Cada una con su ancla: el índice
-              de la derecha salta aquí, y el título es enlace a sí mismo. */}
+          {/* Las preguntas, enteras y una debajo de otra. Cada una con su ancla. */}
           {temas.map((t) => (
             <div key={t.id} className="mt-10">
               <BloqueTema {...t} />
@@ -293,13 +235,10 @@ export default function ExploradorSecciones({
             </div>
           )}
 
-          {/* Preguntas FRECUENTES — otra cosa que los temas, y por eso van aparte y no
-              entran en el índice de la derecha: aquellas explican cómo funciona algo, estas
-              resuelven dudas sueltas y se editan desde Admin → FAQs sin tocar código.
-              Si no hay ninguna, la sección entera desaparece. */}
+          {/* Preguntas FRECUENTES (Admin → FAQs). Sin ninguna, la sección desaparece. */}
           {faqs.length > 0 && (
             <div className="mt-14">
-              <h2 className="text-[24px] sm:text-[30px] font-semibold text-[var(--texto)] tracking-tight">
+              <h2 className="text-[26px] sm:text-[32px] text-[var(--texto)] tracking-tight">
                 Preguntas frecuentes
               </h2>
               <div className="mt-6">
@@ -307,8 +246,14 @@ export default function ExploradorSecciones({
               </div>
             </div>
           )}
-        </>
-      }
-    />
+        </div>
+
+        {temas.length > 0 && (
+          <div className="indice-sitio">
+            <IndicePreguntas temas={temas} />
+          </div>
+        )}
+      </div>
+    </>
   );
 }

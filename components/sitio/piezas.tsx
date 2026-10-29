@@ -121,9 +121,11 @@ export function Contenedor({
 }: {
   children: ReactNode;
   className?: string;
-  ancho?: 'lectura' | 'amplio';
+  ancho?: 'lectura' | 'amplio' | 'sitio';
 }) {
-  const max = ancho === 'amplio' ? 'max-w-[1560px]' : 'max-w-6xl';
+  // `sitio` (1280 px, Fernando 2026-10-29): las páginas públicas como SITIO WEB, centradas y con
+  // aire a los lados, en vez de los paneles pegados a los bordes de `amplio`.
+  const max = ancho === 'amplio' ? 'max-w-[1560px]' : ancho === 'sitio' ? 'max-w-7xl' : 'max-w-6xl';
   return <div className={`mx-auto ${max} px-5 sm:px-6 ${className}`}>{children}</div>;
 }
 
@@ -501,5 +503,77 @@ export function BotonSecundario({ href, children }: { href: string; children: Re
     >
       {children}
     </a>
+  );
+}
+
+
+/* ── La presentación de página y los botones del mundo «Progreso» ──────────────────────────
+   Fernando, 2026-10-29: *«queremos hacerlas más estilo sitio web… pon tu toque a cada
+   página»*. Cada página pública abre con una PRESENTACIÓN como la del panel Progreso de la
+   portada: etiqueta violeta espaciada, titular grande en Space Grotesk, entradilla y sus
+   acciones con el botón de Progreso (píldora con degradado y flecha que avanza). */
+
+export interface AccionSitio {
+  href: string;
+  etiqueta: string;
+  /** La secundaria va de contorno; la primera, con degradado. */
+  secundaria?: boolean;
+}
+
+export function BotonMundo({ href, etiqueta, secundaria }: AccionSitio) {
+  return (
+    <Link href={href} className={`boton-mundo ${secundaria ? 'boton-mundo-contorno' : ''}`}>
+      {etiqueta}
+      <ArrowRight className="boton-mundo-flecha" aria-hidden />
+    </Link>
+  );
+}
+
+/**
+ * LA PRESENTACIÓN DE PÁGINA. ⚠️ El titular es un `<p>`, no el `<h1>`: el `<h1>` sigue siendo el
+ * nombre de la sección o del talento abierto (decisión de SEO documentada en los exploradores:
+ * cada URL tiene su propio título). Esto es el rótulo de la PÁGINA, que no cambia entre secciones.
+ */
+export function PresentacionPagina({
+  etiqueta, titulo, texto, acciones, cifras, sello, visual,
+}: {
+  etiqueta: string;
+  titulo: string;
+  texto: string;
+  acciones?: readonly AccionSitio[];
+  /** Cifras reales. Desde `lg` van en una tarjeta a la derecha; debajo, bajo el texto. */
+  cifras?: readonly { valor: number; etiqueta: string }[];
+  /** Un adorno pequeño junto a la etiqueta (p. ej. el corazón sobre la Tierra). */
+  sello?: ReactNode;
+  /** La pieza de la derecha, desde `lg` (el «toque» de cada página). */
+  visual?: ReactNode;
+}) {
+  const derecha = visual ?? (cifras && cifras.length > 0 ? (
+    <dl className="presentacion-cifras">
+      {cifras.map((c) => (
+        <div key={c.etiqueta}>
+          <dt>{c.etiqueta}</dt>
+          <dd>{c.valor.toLocaleString('es-ES')}</dd>
+        </div>
+      ))}
+    </dl>
+  ) : null);
+  return (
+    <header className={`presentacion-pagina ${derecha ? 'con-visual' : ''}`}>
+      <div className="presentacion-cuerpo">
+        <p className="presentacion-etiqueta">
+          {sello}
+          {etiqueta}
+        </p>
+        <p className="presentacion-titulo">{titulo}</p>
+        <p className="presentacion-texto">{texto}</p>
+        {acciones && acciones.length > 0 && (
+          <div className="presentacion-acciones">
+            {acciones.map((a) => <BotonMundo key={a.href} {...a} />)}
+          </div>
+        )}
+      </div>
+      {derecha && <div className="presentacion-visual">{derecha}</div>}
+    </header>
   );
 }

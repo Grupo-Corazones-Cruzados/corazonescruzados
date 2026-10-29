@@ -34,7 +34,8 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Contenedor } from '@/components/sitio/piezas';
+import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
+import { presentacionSoluciones } from '@/components/sitio/presentaciones';
 import SolucionesExplorador from '@/components/sitio/SolucionesExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { listarSoluciones, talentoPorSlug } from '@/lib/soluciones';
@@ -93,8 +94,9 @@ export default async function TalentoPage({ params }: Props) {
   if (!existe) notFound();
 
   return (
-    <section className="flex-1 py-10 sm:py-14">
-      <Contenedor ancho="amplio">
+    <section className="flex-1 pt-6 sm:pt-10 pb-16">
+      <Contenedor ancho="sitio">
+          <PresentacionPagina {...presentacionSoluciones(soluciones)} />
         <SolucionesExplorador soluciones={soluciones} slugActivo={slug} />
       </Contenedor>
     </section>

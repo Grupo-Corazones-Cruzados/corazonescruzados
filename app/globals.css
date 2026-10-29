@@ -4207,3 +4207,168 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   border-color: rgba(124, 58, 237, 0.45);
   box-shadow: 0 18px 40px -16px rgba(75, 45, 142, 0.42);
 }
+
+/* ═══ LAS PÁGINAS PÚBLICAS COMO SITIO WEB (Fernando, 2026-10-29) ═══
+   «más estilo sitio web… pon tu toque a cada página». La presentación de página, el botón de
+   Progreso, las puertas de sección y la rejilla contenido + índice. Ver `PresentacionPagina`,
+   `BotonMundo` (piezas.tsx) y `ExploradorSecciones`. Cada animación, COMPLETA en una línea. */
+
+/* ── La presentación ── */
+.presentacion-pagina { position: relative; padding: clamp(12px, 3vw, 40px) 0 clamp(28px, 4vw, 52px); display: grid; gap: 36px; align-items: center; }
+.presentacion-cuerpo { max-width: 860px; min-width: 0; }
+@media (min-width: 1024px) {
+  .presentacion-pagina.con-visual { grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); gap: 56px; }
+}
+.presentacion-etiqueta {
+  display: inline-flex; align-items: center; gap: 12px;
+  font: 700 0.72rem/1 'Inter', system-ui, sans-serif; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--violeta-txt);
+  animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.presentacion-titulo {
+  margin-top: 18px;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700;
+  font-size: clamp(2.3rem, 5.2vw, 4.4rem); line-height: 1.02; letter-spacing: -0.045em;
+  color: var(--texto);
+  animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 80ms both;
+}
+.presentacion-texto {
+  margin-top: 20px; max-width: 62ch;
+  font-size: clamp(1rem, 1.25vw, 1.15rem); line-height: 1.6; color: var(--suave);
+  animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 160ms both;
+}
+.presentacion-acciones {
+  margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px;
+  animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 240ms both;
+}
+.presentacion-cifras {
+  margin: 0; display: flex; flex-wrap: wrap; gap: 12px 40px;
+  animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 320ms both;
+}
+.presentacion-cifras > div { display: flex; flex-direction: column-reverse; gap: 4px; padding-left: 16px; border-left: 2px solid rgba(124, 58, 237, 0.35); }
+.presentacion-cifras dt { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tenue); }
+.presentacion-cifras dd { margin: 0; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: clamp(1.8rem, 2.6vw, 2.4rem); line-height: 1; letter-spacing: -0.03em; color: var(--texto); font-variant-numeric: tabular-nums; }
+@keyframes presentacionEntra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* El sello de Desarrollo Humano: la Tierra con el corazón posado encima, latiendo. */
+.sello-cruce { position: relative; display: inline-flex; width: 30px; height: 30px; }
+.sello-cruce .titular-icono { width: 100%; height: 100%; }
+.sello-mundo { position: absolute; inset: 0; }
+.sello-corazon { position: absolute; width: 58%; height: 58%; right: -14%; top: -18%; filter: drop-shadow(0 2px 3px rgba(185, 28, 28, 0.35)); animation: selloLate 1.6s ease-in-out infinite; }
+@keyframes selloLate { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+
+/* ── El botón de Progreso, para el sitio ── */
+.boton-mundo {
+  display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 22px;
+  border-radius: 9999px; font-size: 0.95rem; font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, #5b3aae, #7c3aed);
+  box-shadow: 0 14px 30px -14px rgba(91, 58, 174, 0.8);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  white-space: nowrap;
+}
+.boton-mundo:hover { transform: translateY(-2px); box-shadow: 0 18px 34px -14px rgba(91, 58, 174, 0.9); }
+.boton-mundo:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
+.boton-mundo-flecha { width: 17px; height: 17px; transition: transform 200ms ease; }
+.boton-mundo:hover .boton-mundo-flecha { transform: translateX(4px); }
+.boton-mundo-contorno { color: #3b1d7a; background: rgba(255, 255, 255, 0.7); box-shadow: inset 0 0 0 1px rgba(109, 40, 217, 0.3); }
+.boton-mundo-contorno:hover { box-shadow: inset 0 0 0 1px rgba(109, 40, 217, 0.55), 0 10px 24px -14px rgba(91, 58, 174, 0.6); }
+@media (hover: none), (pointer: coarse) {
+  .boton-mundo:hover { transform: none; }
+  .boton-mundo:active { transform: scale(0.97); }
+}
+
+/* ── Las puertas de sección ── */
+.puertas-seccion {
+  display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr));
+  animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms both;
+}
+@media (min-width: 1024px) { .puertas-seccion { grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); } }
+.puerta-seccion {
+  position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; column-gap: 12px; row-gap: 8px;
+  align-items: center; padding: 16px 18px; border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82); border: 1px solid var(--linea);
+  box-shadow: 0 14px 34px -22px rgba(75, 45, 142, 0.35);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+.puerta-seccion:hover { transform: translateY(-3px); border-color: rgba(124, 58, 237, 0.4); box-shadow: 0 20px 40px -20px rgba(75, 45, 142, 0.45); }
+.puerta-seccion:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
+.puerta-icono { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 11px; background: rgba(124, 58, 237, 0.09); color: var(--violeta-txt); }
+.puerta-icono svg { width: 19px; height: 19px; }
+.puerta-titulo { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 1.05rem; letter-spacing: -0.02em; color: var(--texto); }
+.puerta-texto {
+  grid-column: 1 / -1; align-self: start; font-size: 0.82rem; line-height: 1.5; color: var(--tenue);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.puerta-seccion.es-abierta { background: linear-gradient(135deg, #5b3aae, #7c3aed); border-color: transparent; box-shadow: 0 18px 38px -16px rgba(91, 58, 174, 0.75); }
+.puerta-seccion.es-abierta .puerta-icono { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.puerta-seccion.es-abierta .puerta-titulo { color: #fff; }
+.puerta-seccion.es-abierta .puerta-texto { color: rgba(255, 255, 255, 0.82); }
+@media (max-width: 639.98px) {
+  .puerta-seccion { padding: 12px 14px; row-gap: 0; grid-template-rows: auto; }
+  .puerta-texto { display: none; }
+  .puerta-titulo { font-size: 0.95rem; }
+  .puerta-icono { width: 32px; height: 32px; border-radius: 9px; }
+}
+@media (hover: none), (pointer: coarse) { .puerta-seccion:hover { transform: none; } }
+
+/* ── Contenido + índice ── */
+.explorador-sitio { margin-top: clamp(36px, 5vw, 64px); display: grid; gap: 40px; }
+.indice-sitio { display: none; }
+@media (min-width: 1024px) {
+  .explorador-sitio[data-indice='sí'] { grid-template-columns: minmax(0, 1fr) 260px; }
+  .indice-sitio { display: block; position: sticky; top: 6rem; align-self: start; }
+  .indice-en-fila { display: none; }
+}
+.cabecera-seccion { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .presentacion-etiqueta, .presentacion-titulo, .presentacion-texto, .presentacion-acciones,
+  .presentacion-cifras, .puertas-seccion, .sello-corazon { animation: none; }
+}
+
+/* ── La pieza de la derecha de cada presentación ── */
+.presentacion-visual { min-width: 0; animation: presentacionEntra 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 260ms both; }
+/* Las cifras de Soluciones: desde `lg`, una tarjeta de la Plataforma en 2×2. */
+@media (min-width: 1024px) {
+  .presentacion-visual .presentacion-cifras {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 28px 24px; padding: 30px 30px 32px;
+    border-radius: 22px; background: rgba(255, 255, 255, 0.8); border: 1px solid var(--linea);
+    box-shadow: 0 30px 60px -34px rgba(75, 45, 142, 0.5); backdrop-filter: blur(6px);
+  }
+}
+.visual-tarjeta {
+  padding: 26px 26px 22px; border-radius: 22px; background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--linea); box-shadow: 0 30px 60px -34px rgba(75, 45, 142, 0.5); backdrop-filter: blur(6px);
+}
+.visual-rotulo { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--violeta-txt); }
+.visual-pasos { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 16px; }
+.visual-pasos li { display: grid; grid-template-columns: 38px 1fr; gap: 14px; align-items: start; animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(420ms + var(--i, 0) * 140ms); }
+.visual-paso-num {
+  display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 11px;
+  background: linear-gradient(135deg, #5b3aae, #7c3aed); color: #fff;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 0.9rem;
+}
+.visual-paso-num svg { width: 18px; height: 18px; }
+.visual-paso-titulo { display: block; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: -0.02em; color: var(--texto); }
+.visual-paso-texto { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; font-size: 0.84rem; line-height: 1.5; color: var(--tenue); }
+/* Desarrollo Humano: el corazón posado sobre la Tierra, en grande, con un halo que respira. */
+.visual-cruce { position: relative; display: flex; align-items: center; justify-content: center; height: 300px; }
+.visual-cruce .sello-cruce { width: 170px; height: 170px; animation: cruceFlota 6s ease-in-out infinite alternate; }
+.visual-cruce-halo { position: absolute; width: 280px; height: 280px; border-radius: 9999px; background: radial-gradient(circle, rgba(236, 72, 153, 0.22), rgba(124, 58, 237, 0.12) 45%, transparent 70%); animation: cruceHalo 4s ease-in-out infinite alternate; }
+@keyframes cruceFlota { from { transform: translateY(-6px); } to { transform: translateY(8px); } }
+@keyframes cruceHalo { from { transform: scale(0.92); opacity: 0.8; } to { transform: scale(1.06); opacity: 1; } }
+/* En pantallas sin la columna derecha, la pieza decorativa no se enseña (las cifras sí). */
+@media (max-width: 1023.98px) {
+  .presentacion-visual:has(.visual-tarjeta), .presentacion-visual:has(.visual-cruce) { display: none; }
+}
+@media (min-width: 1024px) {
+  .presentacion-pagina.con-visual .presentacion-etiqueta .sello-cruce { display: none; }
+}
+/* Teléfono: los botones, uno bajo otro y del mismo ancho. */
+@media (max-width: 639.98px) {
+  .presentacion-acciones { display: grid; grid-template-columns: 1fr; }
+  .presentacion-acciones .boton-mundo { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .presentacion-visual, .visual-pasos li, .visual-cruce .sello-cruce, .visual-cruce-halo { animation: none; }
+}

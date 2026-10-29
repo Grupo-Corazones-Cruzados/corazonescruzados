@@ -663,6 +663,36 @@ los dos a 1440 y a 390). **La barra queda solo con navegación**: fuera `CLASES_
 el botón del menú móvil y `abrirPlataforma()`. Lo de abajo (2026-08-17) queda como historia;
 el titular del diálogo sigue diciendo «a la Plataforma».
 
+### ⭐ PROPUESTA (2026-10-29): las páginas públicas como SITIO WEB — pendiente de su visto bueno
+
+> *«queremos hacerlas más estilo sitio web, y que pongas tu toque a cada página… puedes hacer tu
+> reformulación de diseño por completo… esta versión la podemos recuperar»*. Versión anterior,
+> para volver: **`e09e1dc0`** (`git show e09e1dc0:<archivo>`).
+
+- **Ancho de sitio**: `Contenedor ancho="sitio"` (1280 px, centrado) en vez de `amplio` (1560 px
+  pegado a los bordes).
+- **`PresentacionPagina`** (piezas.tsx) abre cada página: etiqueta violeta espaciada, titular
+  grande en Space Grotesk (es un `<p>`: el `<h1>` sigue siendo la sección/el talento, por SEO),
+  entradilla y dos acciones con **`BotonMundo`** (el botón de Progreso: píldora con degradado
+  `#5b3aae→#7c3aed` y flecha; la secundaria, de contorno). Entra por escalones. A la derecha, desde
+  `lg`, la pieza de cada página (`components/sitio/presentaciones.tsx`):
+  · **Soluciones** — cifras REALES (proyectos, tickets, productos, talentos; contados por id) en
+    una tarjeta 2×2; en el teléfono, bajo el texto.
+  · **Clientes** — «Así funciona un ticket»: los 3 pasos reales de Plataforma en una tarjeta.
+  · **Desarrollo Humano** — titular «Un corazón puede cruzar al mundo» y el corazón posado sobre
+    la Tierra en grande, flotando con halo (y como sello junto a la etiqueta en el teléfono).
+- **Clientes y Desarrollo Humano** (`ExploradorSecciones`): las secciones dejan la columna izquierda
+  y pasan a una **fila de puertas** (`.puertas-seccion`, 4 en fila desde `lg`, 2×2 debajo, solo
+  icono y nombre en el teléfono); la abierta RELLENA de violeta con texto blanco. Debajo, el contenido
+  con su cabecera (rótulo, `<h1>` y el antiguo «Ir» como `BotonMundo`: «Ir a la Plataforma», «Ir al
+  Videojuego», «Ir al Marketplace») y el índice «En esta página» pegado a la derecha desde `lg`
+  (antes, desde 1536 px). Ya no usa `ExploradorTresPaneles`.
+- **Soluciones** conserva sus controles (carpetas, buscador, 4 pestañas, tira de conceptos) dentro
+  del ancho de sitio.
+- ⚠️ `IconoMundo` acepta `idRecorte`: con dos Tierras en una página y el mismo `id` de recorte,
+  la visible usaba el de la oculta y salía CUADRADA.
+- Verificado (producción) a 1440, 1100 y 390 px: `scrollWidth` igual al ancho.
+
 ### ⭐ El mundo «Progreso» en Soluciones, Clientes y Desarrollo Humano (Fernando, 2026-10-29) — VIGENTE
 
 > *«aprendamos de la página de inicio el estilo de la sección de Plataforma / Progreso para las
@@ -1634,7 +1664,7 @@ porque la portada se edita allí a la vez.
 - **Piezas reutilizables**: `.insignia-progreso` (la píldora «PROYECTO DE DESARROLLO HUMANO»),
   `.acento-progreso` (el degradado de «cruzar al mundo»), y `Cifra` con `cifra`/`cifra-icono`/
   `cifra-etiqueta`/`cifra-valor`: icono en cuadrado con degradado (verde/rojo según el tono) y la cifra
-  en Space Grotesk 24 px. El CV público también usa `Cifra` y no cambia (no tiene la clase del tema).
+  en Space Grotesk 24 px. (El CV público tiene su propia `Cifra`; esta es solo del panel.)
 - **Inicio (`/dashboard`)**: insignia «Tu progreso», saludo `titulo-progreso` 40 px con el nombre en
   `acento-progreso`, y a la derecha la barra del pensamiento de la portada (`FeaturedThought compacto`,
   `tema` Progreso en claro y Aventura en oscuro).
@@ -4734,6 +4764,17 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · «PDF» con borde y color, estados en píldora tintada, verde sin contraste y títulos de tabla
+  montados** · **CORREGIDO + REGLA** (Fernando: «tiene un estilo muy de IA»). Inicio: el PDF de cada mes es
+  un icono fantasma (`FileDown`); ingresos/egresos en `text-green-400`/`text-red-400` (tonos del tema, 6,3:1
+  en claro; antes `green-600`, 3,3:1); fuera la insignia «Tu progreso». Cabecera de tabla del tema opaca
+  (`--cabecera-tabla`): transparente, las filas pasaban por debajo de los títulos. Además: talentos en
+  Experiencias y «Gestión Social» en Mi día como texto de color; «Aprobar/Rechazar» de una solicitud del
+  proyecto como iconos ✓/✕. Regla general: `/diseno` §4-septies.
+- **2026-10-29 · Filtros en el estado financiero mensual** · **NUEVO** (Fernando). Año (`<select>`) y
+  resultado (`Segmentado` Todos · Ahorro · Pérdida), en `grid-cols-2` en el teléfono. Solo filtran la tabla;
+  el reporte descarga lo mismo (`/api/finance/pdf?anio=&resultado=`, título «Reporte Financiero · 2026 ·
+  meses con pérdida») y el botón dice «Reporte filtrado» cuando hay filtros.
 - **2026-10-29 · El panel no se parecía a la Plataforma de la portada** · **CAMBIO DE ESTÁNDAR**
   (Fernando). Del Fluent gris plano al tema «Progreso» (`app/tema-progreso.css`); ver su sección.
 - **2026-10-29 · Buscador de Proyectos reducido a una cajita en escritorio** · **CORREGIDO**. Buscador +
