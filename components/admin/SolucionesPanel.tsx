@@ -478,6 +478,7 @@ export default function SolucionesPanel() {
               )}
 
               <PixelDataTable<FilaTalento>
+            unidad={['talento', 'talentos']}
                 data={filas}
                 emptyTitle={cargando ? 'Cargando…' : 'Sin talentos'}
                 emptyDesc={cargando ? '' : 'Pulsa «Añadir talentos» para elegirlos del catálogo.'}
@@ -580,6 +581,7 @@ export default function SolucionesPanel() {
           </div>
 
           <PixelDataTable<Concepto>
+            unidad={['concepto', 'conceptos']}
             data={conceptosAbiertos}
             emptyTitle="Sin conceptos"
             emptyDesc="Añade el primero: en la web se pintan como una tira vertical junto a este talento. Sin ninguno, la tira no aparece."

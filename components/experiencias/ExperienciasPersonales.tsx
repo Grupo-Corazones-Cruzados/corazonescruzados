@@ -580,6 +580,7 @@ export default function ExperienciasPersonales() {
         </PanelHastaElPie>
       ) : (
         <PixelDataTable
+            unidad={['experiencia', 'experiencias']}
           singleLine
           data={ordenadas}
           onRowClick={(e: Experiencia) => setAbierta(e.id)}

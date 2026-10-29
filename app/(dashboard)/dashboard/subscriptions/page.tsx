@@ -424,6 +424,7 @@ export default function SubscriptionsPage() {
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={subs.length === 0}>
               <PixelDataTable
+            unidad={['suscripción', 'suscripciones']}
                 singleLine
                 data={subs}
                 onRowClick={(s: any) => openDetail(s)}

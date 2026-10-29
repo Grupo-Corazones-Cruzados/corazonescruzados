@@ -31,7 +31,7 @@ import { fmt2 } from '@/lib/format';
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Plus, Send, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle, CloudOff,
+  Plus, Send, FileText, X, ArrowRight, Check, Calculator, XCircle, CloudOff,
 } from 'lucide-react';
 import ListaSinConexion, { useSinConexion } from '@/components/sin-conexion/ListaSinConexion';
 import BotonCerrar from '@/components/ui/BotonCerrar';
@@ -488,6 +488,8 @@ export default function ProjectsPage() {
           {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
           <TablaVaciaHastaElPie vacia={projects.length === 0}>
           <PixelDataTable
+            page={page} totalPages={totalPages} onPageChange={(p: number) => setPage(Math.min(Math.max(1, p), totalPages))}
+            recuento={`${total} ${total === 1 ? 'proyecto' : 'proyectos'}`}
             cargando={cargando}
             singleLine
             columns={[
@@ -536,21 +538,6 @@ export default function ProjectsPage() {
           />
           </TablaVaciaHastaElPie>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-3">
-              <span className="text-[12px] text-digi-muted" style={mf}>Página {page} de {totalPages} · {total} proyectos</span>
-              <div className="flex gap-1.5">
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                  className="inline-flex items-center gap-1 h-11 sm:h-auto px-3 sm:px-2.5 sm:py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
-                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
-                </button>
-                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                  className="inline-flex items-center gap-1 h-11 sm:h-auto px-3 sm:px-2.5 sm:py-1.5 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors" style={mf}>
-                  Siguiente <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
             </div>
 
             {/* ── Resumen ─────────────────────────────────────────────────────────

@@ -174,6 +174,7 @@ export default function SupportPage() {
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={tickets.length === 0}>
               <PixelDataTable
+            unidad={['ticket', 'tickets']}
                 singleLine
                 data={tickets}
                 onRowClick={(t: any) => setSelected(t)}

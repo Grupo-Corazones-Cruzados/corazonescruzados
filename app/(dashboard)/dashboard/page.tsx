@@ -230,6 +230,7 @@ export default function DashboardHome() {
           )}
 
           <PixelDataTable
+            unidad={['mes', 'meses']}
             data={mesesFiltrados}
             // Columnas de ANCHO FIJO (Fernando, 2026-10-29): con el reparto automático el ancho
             // salía del contenido y, al cambiar de año, las columnas se movían de sitio.

@@ -380,12 +380,11 @@ export default function ClientsPage() {
                 ]}
               />
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
-              <TablaVaciaHastaElPie vacia={sortedClients.length === 0} reserva={39}>
+              <TablaVaciaHastaElPie vacia={sortedClients.length === 0}>
               <PixelDataTable
                 singleLine
-                /* Alto de la fila de totales que va justo debajo (29 px + su margen). El pie
-                   de la ruta NO se cuenta aquí: lo descuenta la propia tabla. */
-                bottomReserve={39}
+                recuento={`${sortedClients.length} cliente${sortedClients.length === 1 ? '' : 's'} · ${sortedClients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas`}
+                resumen={<>Total facturado: <span className="text-accent font-semibold tabular-nums">${fmt2(sortedClients.reduce((s, c) => s + Number(c.total || 0), 0))}</span></>}
                 sortBy={sortBy} sortDir={sortDir} onSort={onSort}
                 data={sortedClients}
                 onRowClick={(c: any) => openDetail(c)}
@@ -427,10 +426,6 @@ export default function ClientsPage() {
                 )}
               />
               </TablaVaciaHastaElPie>
-              <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-digi-border text-[12px]" style={mf}>
-                <span className="text-digi-muted">{sortedClients.length} cliente{sortedClients.length === 1 ? '' : 's'} · {sortedClients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas</span>
-                <span className="text-digi-text">Total facturado: <span className="text-accent font-semibold tabular-nums">${fmt2(sortedClients.reduce((s, c) => s + Number(c.total || 0), 0))}</span></span>
-              </div>
             </div>
 
             {/* ── Ficha del cliente ───────────────────────────────────────────────

@@ -150,6 +150,7 @@ export default function SelectorFuentes({
           <div className="py-16 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div>
         ) : (
           <PixelDataTable
+            unidad={['fuente', 'fuentes']}
             columns={columnas}
             data={filas}
             onRowClick={(f: Fila) => alternar(tab, f)}

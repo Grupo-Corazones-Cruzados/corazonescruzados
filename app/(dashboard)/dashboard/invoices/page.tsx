@@ -528,6 +528,7 @@ function InvoicesPageInner() {
       {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
       <TablaVaciaHastaElPie vacia={invoices.length === 0}>
       <PixelDataTable
+            unidad={['factura', 'facturas']}
         singleLine
         columns={[
           { key: 'number', header: 'No. Factura', width: '190px', render: (i: any) => (

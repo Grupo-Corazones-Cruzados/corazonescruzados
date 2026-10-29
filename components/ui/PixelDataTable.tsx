@@ -1,7 +1,7 @@
 'use client';
 
-import { Fragment, useRef, useState, useEffect, type CSSProperties } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Fragment, useRef, useState, useEffect, type CSSProperties, type ReactNode } from 'react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Column<T> {
   key: string;
@@ -58,6 +58,17 @@ interface PixelDataTableProps<T> {
    * se quedaba igual un segundo largo y parecía que el clic no había hecho nada.
    */
   cargando?: boolean;
+  /**
+   * ⭐ EL RECUENTO (Fernando, 2026-10-29: «todas las tablas tengan recuento»). Es la última
+   * franja DE LA PROPIA TARJETA, con su fondo, no una línea suelta debajo: la tabla llega al
+   * pie como los paneles de los lados y el recuento se distingue por ser parte de ella.
+   * Por defecto dice «N registros»; `unidad` cambia la palabra, `recuento` el texto entero
+   * («28 clientes · 74 facturas») y `resumen` va a la derecha (un total).
+   */
+  unidad?: [singular: string, plural: string];
+  recuento?: ReactNode;
+  resumen?: ReactNode;
+  sinRecuento?: boolean;
 }
 
 const BOTTOM_GAP = 16; // breathing room below the table
@@ -106,6 +117,10 @@ export default function PixelDataTable<T>({
   rowClassName,
   tarjetaMovil,
   cargando = false,
+  unidad = ['registro', 'registros'],
+  recuento,
+  resumen,
+  sinRecuento = false,
 }: PixelDataTableProps<T>) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
@@ -166,30 +181,23 @@ export default function PixelDataTable<T>({
     );
   }
 
-  const paginacion = totalPages && totalPages > 1 && onPageChange ? (
-        <div className="shrink-0 flex items-center justify-between px-3 py-2 bg-digi-card border-t-2 border-digi-border">
-          <span className="text-[9px] text-digi-muted" style={{ fontFamily: 'var(--font-display)' }}>
-            Pag {page}/{totalPages}
-          </span>
-          <div className="flex gap-1">
-            <button
-              onClick={() => onPageChange((page || 1) - 1)}
-              disabled={page === 1}
-              className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              &lt;
-            </button>
-            <button
-              onClick={() => onPageChange((page || 1) + 1)}
-              disabled={page === totalPages}
-              className="px-2 py-1 text-[10px] border border-digi-border text-digi-muted hover:border-accent hover:text-accent-glow disabled:opacity-30 transition-colors"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              &gt;
-            </button>
+  const conPaginas = !!(totalPages && totalPages > 1 && onPageChange);
+  const textoRecuento = recuento ?? `${data.length} ${data.length === 1 ? unidad[0] : unidad[1]}`;
+  const botonPagina = 'inline-flex items-center justify-center w-11 h-11 sm:w-7 sm:h-7 border border-digi-border rounded text-digi-text hover:border-accent hover:text-accent disabled:opacity-40 disabled:pointer-events-none transition-colors';
+  const pie = !sinRecuento || conPaginas ? (
+    <div className="shrink-0 flex items-center justify-between gap-3 px-3 py-2 bg-digi-card border-t border-digi-border text-[12px]" style={{ fontFamily: 'var(--font-body)' }}>
+      <span className="min-w-0 truncate text-digi-muted">{!sinRecuento && textoRecuento}</span>
+      <div className="flex items-center gap-3 shrink-0">
+        {!sinRecuento && resumen && <span className="text-digi-text">{resumen}</span>}
+        {conPaginas && (
+          <div className="flex items-center gap-1">
+            <span className="text-digi-muted mr-1 tabular-nums">Página {page} de {totalPages}</span>
+            <button onClick={() => onPageChange!((page || 1) - 1)} disabled={page === 1} className={botonPagina} aria-label="Página anterior" title="Página anterior"><ChevronLeft className="w-3.5 h-3.5" /></button>
+            <button onClick={() => onPageChange!((page || 1) + 1)} disabled={page === totalPages} className={botonPagina} aria-label="Página siguiente" title="Página siguiente"><ChevronRight className="w-3.5 h-3.5" /></button>
           </div>
-        </div>
+        )}
+      </div>
+    </div>
   ) : null;
 
   return (
@@ -225,8 +233,8 @@ export default function PixelDataTable<T>({
           (acciones) van a su derecha y el resto en una rejilla «TÍTULO / valor». Así ninguna
           tabla se queda fuera. Regla en `/diseno` §4-ter. */}
       {!tarjetaMovil && <GaleriaTabla columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} />}
-      {/* En el teléfono la tabla está escondida, y con ella su paginación: va también aquí. */}
-      {paginacion && <div className={`${tarjetaMovil ? 'lg:hidden' : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{paginacion}</div>}
+      {/* En el teléfono la tabla está escondida, y con ella su pie: va también aquí. */}
+      {pie && <div className={`${tarjetaMovil ? 'lg:hidden' : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{pie}</div>}
 
       <div
         ref={wrapRef}
@@ -294,7 +302,7 @@ export default function PixelDataTable<T>({
         </table>
       </div>
 
-      {paginacion}
+      {pie}
       </div>
     </div>
   );

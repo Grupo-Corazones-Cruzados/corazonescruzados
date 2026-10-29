@@ -182,6 +182,7 @@ export default function EntregasPage() {
             <div className="min-w-0">
               <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar por título, cliente o mensaje..." />
               <PixelDataTable
+            unidad={['entrega', 'entregas']}
                 singleLine
                 data={filtrados}
                 onRowClick={(e: Entrega) => setSelId(e.id)}

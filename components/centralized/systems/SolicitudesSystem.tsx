@@ -71,6 +71,7 @@ export default function SolicitudesSystem({ isAdmin }: { isAdmin: boolean }) {
       {subTab === 'requests' ? (
         <TablaVaciaHastaElPie vacia={requests.length === 0}>
         <PixelDataTable
+            unidad={['solicitud', 'solicitudes']}
           columns={[
             { key: 'id', header: 'ID', render: (r: any) => `#${r.id}`, width: '60px' },
             ...(isAdmin ? [{ key: 'member', header: 'Miembro', width: '160px', render: (r: any) => (

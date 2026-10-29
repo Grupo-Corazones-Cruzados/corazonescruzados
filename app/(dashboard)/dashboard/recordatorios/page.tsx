@@ -485,6 +485,7 @@ export default function RecordatoriosPage() {
                 <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando…" /></div>
               ) : (
               <PixelDataTable
+            unidad={['recordatorio', 'recordatorios']}
                 singleLine
                 columns={[
                   { key: 'title', header: 'Recordatorio', render: (r: Reminder) => (

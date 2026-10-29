@@ -117,6 +117,7 @@ export default function MarketplacePage() {
 
   const renderOrders = () => (
     <PixelDataTable
+            unidad={['pedido', 'pedidos']}
       singleLine
       columns={[
         { key: 'id', header: 'ID', width: '60px', render: (o: any) => <span className="tabular-nums text-digi-muted">#{o.id}</span> },

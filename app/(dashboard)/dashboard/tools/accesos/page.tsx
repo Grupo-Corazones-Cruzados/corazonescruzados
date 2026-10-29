@@ -149,6 +149,7 @@ export default function AccesosPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
               <PixelDataTable
+            unidad={['acceso', 'accesos']}
                 singleLine
                 data={filtrados}
                 onRowClick={(a: Acceso) => setSelId(a.id)}

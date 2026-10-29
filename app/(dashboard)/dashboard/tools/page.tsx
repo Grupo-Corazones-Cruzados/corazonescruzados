@@ -497,6 +497,7 @@ export default function ToolsPage() {
             <div className="min-w-0">
               <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar herramienta..." />
               <PixelDataTable
+            unidad={['herramienta', 'herramientas']}
                 singleLine
                 columns={[
                   { key: 'name', header: 'Herramienta', render: (t: Tool) => (

@@ -230,6 +230,7 @@ export default function FaqsPanel() {
 
           <div className="flex-1 min-h-0">
             <PixelDataTable
+            unidad={['pregunta', 'preguntas']}
               columns={[
                 {
                   key: 'orden', header: '#', width: '52px',

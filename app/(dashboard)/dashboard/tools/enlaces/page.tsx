@@ -181,6 +181,7 @@ export default function EnlacesPage() {
             <div className="min-w-0">
               <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar por título, cliente o respuesta..." />
               <PixelDataTable
+            unidad={['enlace', 'enlaces']}
                 singleLine
                 data={filtrados}
                 onRowClick={(e: Enlace) => setSelId(e.id)}

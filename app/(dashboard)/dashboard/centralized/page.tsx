@@ -274,6 +274,7 @@ export default function CentralizedPage() {
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={visibleSystems.length === 0}>
               <PixelDataTable
+            unidad={['sistema', 'sistemas']}
                 data={visibleSystems}
                 onRowClick={(s: any) => setSelected(s)}
                 emptyTitle="Sin sistemas"
