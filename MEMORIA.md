@@ -287,7 +287,13 @@ Stack estándar de la casa, con particularidades de este repo:
   · Los ingresos `sri_emitida` pasaron a su relación (suscripción/ticket/proyecto/factura).
   · **Pendiente de Fernando:** Expoflor 001-014/015 («abono 20 %») y Entheus 001-018/019 ($91,22) sin proyecto
     aún; la 001-001-000000001 del 29/03/2026 a su nombre (¿prueba?); revisar en el portal abr–oct 2026 (falta
-    su clave); el ingreso de Mármoles está DOS veces en marzo (711,67 a mano + 655 de la factura).
+    su clave).
+  · **Cuadre de importes con lo facturado (Fernando, mismo día: «actualiza los valores para que coincidan»):**
+    ticket 7 80→82,50; proyecto 18 126→127,17; proyectos por etapas P25 679,50→0 y P38 870→0 (cuentan sus
+    etapas); Mármoles: una sola fila (la suya) en 655; añadidos los ingresos de 001-024 ($425, P7, marzo),
+    001-096 ($296,25, T28, octubre) y 001-098 ($300, etapa 1 de P37, octubre); la etapa 1 de P37 apunta a la
+    vigente 001-098. Resultado: «Solo facturado» = facturas vigentes del año al céntimo (2025: 7955;
+    2026: 14.983,72). Copias previas en el scratchpad de la sesión (`respaldo-*.json`).
 - **🧾 «SOLO FACTURADO» EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Un ingreso cuenta como facturado si
   hay una factura AUTORIZADA por el SRI y no anulada enlazada a él (`invoice` por id, `ticket`, `project`,
   `subscription` por `<sub>-<AAAA-MM>`) o si es un comprobante leído del SRI (`sri_emitida`); los escritos a
