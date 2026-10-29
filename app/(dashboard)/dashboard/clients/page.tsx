@@ -12,6 +12,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { PAISES } from '@/lib/countries';
@@ -20,7 +21,6 @@ import {
   Users, Building2, Contact, BookUser, UserRound, Globe, Search, Plus, X,
   Trash2, CheckCircle2, ChevronDown, ExternalLink, FileText,
 } from 'lucide-react';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -236,11 +236,10 @@ export default function ClientsPage() {
   };
 
 
-  /** El cuerpo de la ficha, una sola vez: columna en escritorio, panel en teléfono. */
-  const cuerpoFicha = !selected || loadingDetail || !detail ? null : (
-    <>
-  {/* Segmented toggle */}
-  <div className="px-4 pt-3">
+  /** Las piezas de la ficha, una sola vez: panel de la derecha en escritorio (`PanelDetalle`,
+   *  con las acciones fijas abajo) y ventana en teléfono (todo seguido, como antes). */
+  const fichaLista = !!selected && !loadingDetail && !!detail;
+  const toggleFicha = !fichaLista ? null : (
     <div className="inline-flex gap-1 p-0.5 bg-black/[0.04] rounded-md">
       {(['datos', 'consumos'] as const).map(t => (
         <button key={t} onClick={() => setDetailTab(t)}
@@ -249,11 +248,9 @@ export default function ClientsPage() {
         </button>
       ))}
     </div>
-  </div>
-
-  <div className="p-4 space-y-3 max-h-[62vh] xl:max-h-none xl:flex-1 xl:min-h-0 overflow-y-auto">
-    {detailTab === 'datos' ? (
-      <>
+  );
+  const datosFicha = !fichaLista ? null : (
+    <>
         {detail.is_consumidor_final && <p className="text-[11px] text-digi-muted" style={mf}>Registro especial: agrupa todas las facturas a consumidor final.</p>}
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -281,23 +278,31 @@ export default function ClientsPage() {
         {detail.aliases?.length > 0 && (
           <div className="text-[11px] text-digi-muted" style={mf}><span className="text-accent font-medium">Identificaciones fusionadas: </span>{detail.aliases.join(', ')}</div>
         )}
+    </>
+  );
+  const guardarFicha = !fichaLista ? null : (
+    <>
         <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
           {saving ? '...' : savedOk ? '✓ Guardado' : 'Guardar cambios'}
         </button>
         {savedOk && <p className="text-[12px] text-green-600 text-center flex items-center justify-center gap-1" style={mf}><CheckCircle2 className="w-3.5 h-3.5" /> Cambios guardados</p>}
-      </>
-    ) : (
-      <>
+    </>
+  );
+  /** `enPanel`: en la columna de escritorio la lista de facturas se queda con el alto que sobra
+   *  y se desplaza sola (ver `PanelDetalle`); en el teléfono va seguida, como antes. */
+  const consumosFicha = (enPanel: boolean) => !fichaLista ? null : (
+    <>
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Facturas</div><div className="text-[16px] font-semibold text-digi-text" style={mf}>{detail.summary.count}</div></div>
           <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Total</div><div className="text-[16px] font-semibold text-digi-text tabular-nums" style={mf}>${fmt2(detail.summary.total_facturado)}</div></div>
           <div className="bg-digi-darker border border-digi-border rounded-lg px-2.5 py-2"><div className="text-[10px] text-digi-muted uppercase tracking-wide" style={mf}>Autorizado</div><div className="text-[16px] font-semibold text-green-600 tabular-nums" style={mf}>${fmt2(detail.summary.total_autorizado)}</div></div>
         </div>
-        <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={mf}>Facturas ({detail.invoices.length})</h4>
+        <div className={enPanel ? 'flex-1 min-h-32 flex flex-col gap-3' : 'space-y-3'}>
+        <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5 shrink-0" style={mf}>Facturas ({detail.invoices.length})</h4>
         {detail.invoices.length === 0 ? (
           <p className="text-[12px] text-digi-muted py-3 text-center" style={mf}>Sin facturas registradas para este cliente.</p>
         ) : (
-          <div className="space-y-2">
+          <div className={`space-y-2 ${enPanel ? 'min-h-0 overflow-y-auto' : ''}`}>
             {detail.invoices.map((inv: any) => (
               <div key={inv.id} className="flex items-center justify-between gap-2 px-3 py-2 border border-digi-border rounded-lg bg-digi-darker">
                 <div className="min-w-0">
@@ -319,14 +324,29 @@ export default function ClientsPage() {
             ))}
           </div>
         )}
-      </>
-    )}
-
-    {user?.role === 'admin' && !detail.is_consumidor_final && (
-      <div className="pt-2 border-t border-digi-border">
+        </div>
+    </>
+  );
+  const eliminarFicha = !fichaLista || user?.role !== 'admin' || detail.is_consumidor_final ? null : (
         <button onClick={deleteClient} className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 w-full sm:w-auto text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
           <Trash2 className="w-3.5 h-3.5" /> Eliminar cliente
         </button>
+  );
+
+  /** El cuerpo de la ficha en la ventana del teléfono. */
+  const cuerpoFicha = !fichaLista ? null : (
+    <>
+  {/* Segmented toggle */}
+  <div className="px-4 pt-3">
+    {toggleFicha}
+  </div>
+
+  <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
+    {detailTab === 'datos' ? <>{datosFicha}{guardarFicha}</> : consumosFicha(false)}
+
+    {eliminarFicha && (
+      <div className="pt-2 border-t border-digi-border">
+        {eliminarFicha}
       </div>
     )}
   </div>
@@ -348,28 +368,29 @@ export default function ClientsPage() {
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">
-          {/* «Nuevo cliente» es la acción principal: en el teléfono baja a la barra de abajo y el
-              buscador se queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={search} onChange={(e2) => setSearch(e2.target.value)}
-                placeholder="Nombre, identificación o email…"
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf} />
-            </div>
-            <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
-              <Plus className="w-4 h-4" /> Nuevo cliente
-            </button>
-            <EnBarraAcciones>
-              <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
-                <Plus className="w-4 h-4" /> Nuevo cliente
-              </button>
-            </EnBarraAcciones>
-          </div>
-
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-4 items-start">
             <div className="min-w-0">
+              {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
+                  la columna de la lista. «Nuevo cliente» es la acción principal: en el teléfono baja a
+                  la barra de abajo y el buscador se queda solo, a todo el ancho; desde `lg`, a su lado
+                  (2026-10-23). */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input value={search} onChange={(e2) => setSearch(e2.target.value)}
+                    placeholder="Nombre, identificación o email…"
+                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                    style={mf} />
+                </div>
+                <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
+                  <Plus className="w-4 h-4" /> Nuevo cliente
+                </button>
+                <EnBarraAcciones>
+                  <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
+                    <Plus className="w-4 h-4" /> Nuevo cliente
+                  </button>
+                </EnBarraAcciones>
+              </div>
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={sortedClients.length === 0} reserva={39}>
               <PixelDataTable
@@ -439,22 +460,23 @@ export default function ClientsPage() {
               ) : loadingDetail || !detail ? (
                 <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-10 text-center text-[12px] text-digi-muted flex flex-col justify-center"><span style={mf}>Cargando…</span></PanelHastaElPie>
               ) : (
-                /* La ficha llega al pie (Fernando, 2026-10-29): cabecera y pestañas quietas, y lo
-                   de abajo se desplaza dentro (`cuerpoFicha`, `xl:flex-1`). */
-                <PanelHastaElPie desdeAncho={1280} desplazar={false} className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden flex flex-col">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight flex items-center gap-2" style={mf}>
-                        <span className="truncate">{detail.name}</span>
-                        {detail.is_consumidor_final && <PixelBadge variant="info">CF</PixelBadge>}
-                      </h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{ID_TYPE_LABEL[detail.id_type] || detail.id_type} · {detail.ruc}</p>
-                    </div>
-                    <BotonCerrar onClick={() => { setSelected(null); setDetail(null); }} />
-                  </div>
-
-                  {cuerpoFicha}
-                </PanelHastaElPie>
+                /* La ficha en tres franjas (Fernando, 2026-10-29): cabecera y acciones fijas, y lo
+                   que se desplaza es el cuerpo; en «Consumos», la lista de facturas se queda con el
+                   alto que sobra y se desplaza sola. Ver `PanelDetalle`. */
+                <PanelDetalle
+                  titulo={
+                    <span className="flex items-center gap-2">
+                      <span className="truncate">{detail.name}</span>
+                      {detail.is_consumidor_final && <PixelBadge variant="info">CF</PixelBadge>}
+                    </span>
+                  }
+                  subtitulo={[ID_TYPE_LABEL[detail.id_type] || detail.id_type, detail.ruc].filter(Boolean).join(' · ') || undefined}
+                  onCerrar={() => { setSelected(null); setDetail(null); }}
+                  pie={detailTab === 'datos' || eliminarFicha ? <>{detailTab === 'datos' && guardarFicha}{eliminarFicha}</> : undefined}
+                >
+                  <div>{toggleFicha}</div>
+                  {detailTab === 'datos' ? datosFicha : consumosFicha(true)}
+                </PanelDetalle>
               )}
             </aside>
           </div>

@@ -20,6 +20,7 @@ import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
@@ -264,28 +265,11 @@ export default function TicketsPage() {
     .filter((s) => !['open', 'offline', 'draft'].includes(s.value) || accessRoleOf(user) !== 'client')
     .map((s) => ({ value: s.value, label: s.label, Icon: s.Icon, count: s.value === 'offline' ? enDispositivo : (counts[s.value] ?? 0) }));
 
-  /**
-   * EL CUERPO DEL RESUMEN, UNA SOLA VEZ: se pinta en la columna de escritorio y en el
-   * panel a pantalla completa del teléfono. Dos copias acabarían siendo dos resúmenes
-   * distintos.
-   */
-  const cuerpoResumen = !selected ? null : (
-  <div className="p-4 space-y-2.5">
-    {[
-      ['Estado', <PixelBadge key="s" variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
-      ['Cliente', selected.client_name || '—'],
-      ['Costo', (() => { const v = selected.invoice_total ?? selected.estimated_cost; return v != null && v !== '' ? `$${fmt2(Number(v))}` : '—'; })()],
-      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
-    ].map(([k, v]) => (
-      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
-        <span className="text-digi-muted" style={mf}>{k}</span>
-        <span className="text-digi-text text-right" style={mf}>{v}</span>
-      </div>
-    ))}
-
-    {/* Los botones van JUSTO BAJO «Límite» (Fernando, 2026-09-30): lo que sigue —presupuesto,
-        días, acciones— cambia de alto de un ticket a otro y los movía de sitio. */}
-    <div className="space-y-2 pt-1">
+  /** Las acciones del resumen, fijas al pie del panel (`PanelDetalle`, Fernando, 2026-10-29).
+   *  Antes iban JUSTO BAJO «Límite» (2026-09-30) para que no se movieran; ahora el pie fijo
+   *  resuelve lo mismo. */
+  const accionesResumen = !selected ? null : (
+    <>
       <button onClick={() => router.push(`/dashboard/tickets/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
         Ver detalle <ArrowRight className="w-4 h-4" />
       </button>
@@ -304,7 +288,27 @@ export default function TicketsPage() {
           <FileText className="w-4 h-4" /> Ver factura
         </button>
       )}
-    </div>
+    </>
+  );
+
+  /**
+   * EL CUERPO DEL RESUMEN, UNA SOLA VEZ: se pinta en la columna de escritorio y en el
+   * panel a pantalla completa del teléfono. Dos copias acabarían siendo dos resúmenes
+   * distintos.
+   */
+  const cuerpoResumen = !selected ? null : (
+  <>
+    {[
+      ['Estado', <PixelBadge key="s" variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+      ['Cliente', selected.client_name || '—'],
+      ['Costo', (() => { const v = selected.invoice_total ?? selected.estimated_cost; return v != null && v !== '' ? `$${fmt2(Number(v))}` : '—'; })()],
+      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
+    ].map(([k, v]) => (
+      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+        <span className="text-digi-muted" style={mf}>{k}</span>
+        <span className="text-digi-text text-right" style={mf}>{v}</span>
+      </div>
+    ))}
 
     {/* Presupuesto / avance */}
     {(() => {
@@ -341,9 +345,11 @@ export default function TicketsPage() {
 
     {/* Acciones */}
     {selDetail?.actions?.length > 0 && (
-      <div className="pt-2 border-t border-digi-border">
-        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Acciones ({selDetail.actions.length})</p>
-        <div className="space-y-1">
+      /* La lista de acciones se queda con el sitio que sobra y se desplaza sola. `shrink!`
+         porque el cuerpo de `PanelDetalle` fija `shrink-0` a sus hijos y ganaría a `flex-1`. */
+      <div className="pt-2 border-t border-digi-border flex-1 shrink! min-h-32 flex flex-col">
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5 shrink-0" style={mf}>Acciones ({selDetail.actions.length})</p>
+        <div className="space-y-1 min-h-0 overflow-y-auto">
           {selDetail.actions.map((a: any) => (
             <div key={a.id} className="flex items-center gap-2 text-[12px]">
               <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
@@ -355,8 +361,64 @@ export default function TicketsPage() {
       </div>
     )}
 
-  </div>
+  </>
   );
+
+  /* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
+      En el teléfono: buscador a todo el ancho; la acción principal baja a la barra de
+      abajo y «Solicitar ticket», que pasa a secundaria para quien también crea, va en el
+      «⋯». Desde `lg`, la fila de siempre con sus dos botones. */
+  const barraLista = (() => {
+    const creaTickets = accessRoleOf(user) !== 'client';
+    return (
+  <div className="flex items-center gap-2 mb-3">
+    <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
+      <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar por título..."
+        className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+        style={mf}
+      />
+    </div>
+    {creaTickets && (
+      <span className="lg:hidden flex ml-auto">
+        <MenuMas items={[{ label: 'Solicitar ticket', icon: Plus, onClick: () => openCreateModal('request') }]} />
+      </span>
+    )}
+    <div className="hidden lg:flex gap-2">
+      {/* Solicitar ticket: para TODOS (yo soy el cliente). */}
+      <button onClick={() => openCreateModal('request')}
+        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0"
+        style={mf}>
+        <Plus className="w-4 h-4" /> Solicitar ticket
+      </button>
+      {/* Nuevo ticket: solo candidato/miembro/admin (yo soy el miembro asignado). */}
+      {creaTickets && (
+        <button onClick={() => openCreateModal('create')}
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+          style={mf}>
+          <Plus className="w-4 h-4" /> Nuevo ticket
+        </button>
+      )}
+    </div>
+    {/* En el teléfono, la principal abajo: «Nuevo ticket» para quien crea; para el
+        cliente, «Solicitar ticket», que es su única acción. */}
+    <EnBarraAcciones>
+      {creaTickets ? (
+        <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
+          <Plus className="w-4 h-4" /> Nuevo ticket
+        </button>
+      ) : (
+        <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
+          <Plus className="w-4 h-4" /> Solicitar ticket
+        </button>
+      )}
+    </EnBarraAcciones>
+  </div>
+    );
+  })();
 
   return (
     <div>
@@ -368,70 +430,21 @@ export default function TicketsPage() {
 
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">
-          {/* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
-              En el teléfono: buscador a todo el ancho; la acción principal baja a la barra de
-              abajo y «Solicitar ticket», que pasa a secundaria para quien también crea, va en el
-              «⋯». Desde `lg`, la fila de siempre con sus dos botones. */}
-          {(() => {
-            const creaTickets = accessRoleOf(user) !== 'client';
-            return (
-          <div className="flex items-center gap-2 mb-3">
-            <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por título..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-            </div>
-            {creaTickets && (
-              <span className="lg:hidden flex ml-auto">
-                <MenuMas items={[{ label: 'Solicitar ticket', icon: Plus, onClick: () => openCreateModal('request') }]} />
-              </span>
-            )}
-            <div className="hidden lg:flex gap-2">
-              {/* Solicitar ticket: para TODOS (yo soy el cliente). */}
-              <button onClick={() => openCreateModal('request')}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0"
-                style={mf}>
-                <Plus className="w-4 h-4" /> Solicitar ticket
-              </button>
-              {/* Nuevo ticket: solo candidato/miembro/admin (yo soy el miembro asignado). */}
-              {creaTickets && (
-                <button onClick={() => openCreateModal('create')}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-                  style={mf}>
-                  <Plus className="w-4 h-4" /> Nuevo ticket
-                </button>
-              )}
-            </div>
-            {/* En el teléfono, la principal abajo: «Nuevo ticket» para quien crea; para el
-                cliente, «Solicitar ticket», que es su única acción. */}
-            <EnBarraAcciones>
-              {creaTickets ? (
-                <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
-                  <Plus className="w-4 h-4" /> Nuevo ticket
-                </button>
-              ) : (
-                <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
-                  <Plus className="w-4 h-4" /> Solicitar ticket
-                </button>
-              )}
-            </EnBarraAcciones>
-          </div>
-            );
-          })()}
-
+          {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de la
+              columna de la tabla, así el resumen de la derecha aprovecha el alto desde la misma
+              línea que el raíl de la izquierda. */}
           {tab === 'offline' ? (
-            /* Hasta el pie y con desplazamiento propio en escritorio (Fernando, 2026-10-29). */
+            <>
+            {barraLista}
+            {/* Hasta el pie y con desplazamiento propio en escritorio (Fernando, 2026-10-29). */}
             <PanelHastaElPie>
               <ListaSinConexion tipo="ticket" enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />
             </PanelHastaElPie>
+            </>
           ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
+          {barraLista}
           {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
           <TablaVaciaHastaElPie vacia={tickets.length === 0}>
           <PixelDataTable
@@ -517,18 +530,12 @@ export default function TicketsPage() {
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un ticket para ver un resumen.</p>
                 </PanelHastaElPie>
               ) : (
-                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Ticket #{selected.id}</p>
-                    </div>
-                    {/* Sin botón de cerrar (Fernando, 2026-09-28): el panel siempre enseña la
-                        fila elegida, y se cambia eligiendo otra. En el teléfono sí hay X,
-                        porque ahí el resumen tapa la lista. */}
-                  </div>
+                /* Sin botón de cerrar (Fernando, 2026-09-28): el panel siempre enseña la
+                   fila elegida, y se cambia eligiendo otra. En el teléfono sí hay X,
+                   porque ahí el resumen tapa la lista. */
+                <PanelDetalle titulo={selected.title} subtitulo={`Ticket #${selected.id}`} pie={accionesResumen}>
                   {cuerpoResumen}
-                </PanelHastaElPie>
+                </PanelDetalle>
               )}
             </aside>
           </div>

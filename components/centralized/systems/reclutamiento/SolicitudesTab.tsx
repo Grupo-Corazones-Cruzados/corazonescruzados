@@ -7,10 +7,10 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import {
-  Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, UserPlus, Search, AtSign,
+  Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, Search, AtSign, UserPlus,
 } from 'lucide-react';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -161,20 +161,29 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
           lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
       <aside className={`w-full ${selected ? '' : 'hidden lg:block'}`}>
         {selected ? (
-          <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-xl shadow-sm lg:sticky lg:top-4">
-            <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-              <div className="w-11 h-11 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0"><UserPlus className="w-5 h-5 text-accent" /></div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[15px] font-semibold text-digi-text leading-tight truncate" style={df}>{selected.email}</h3>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <PixelBadge variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>
-                  <span className="text-[11.5px] text-digi-muted" style={mf}>Postuló el {fmtDate(selected.created_at)}</span>
-                </div>
+          /* Tres franjas (Fernando, 2026-10-29): cabecera y «Aprobar / Rechazar» fijos; se
+             desplaza el cuerpo. Ver `PanelDetalle`. */
+          <PanelDetalle
+            icono={UserPlus}
+            titulo={<span className="block truncate">{selected.email}</span>}
+            subtitulo={
+              <span className="flex items-center gap-1.5">
+                <PixelBadge variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>
+                <span>Postuló el {fmtDate(selected.created_at)}</span>
+              </span>
+            }
+            onCerrar={() => setSelectedId(null)}
+            pie={isAdmin && selected.status !== 'approved' ? (
+              <div className="flex gap-2">
+                <button onClick={() => openApprove(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+                  <Check className="w-4 h-4" /> {busyId === String(selected.id) ? '...' : 'Aprobar'}
+                </button>
+                <button onClick={() => reject(selected)} disabled={busyId === String(selected.id)} className={`${BTN_DANGER} flex-1 disabled:opacity-50`}>
+                  <X className="w-4 h-4" /> Rechazar
+                </button>
               </div>
-              <BotonCerrar onClick={() => setSelectedId(null)} />
-            </div>
-
-            <div className="p-4 space-y-4">
+            ) : undefined}
+          >
               <div className="flex items-center gap-2 text-[13px]">
                 <Mail className="w-4 h-4 text-digi-muted shrink-0" />
                 <a href={`mailto:${selected.email}`} className="text-accent hover:underline break-all" style={mf}>{selected.email}</a>
@@ -197,18 +206,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                 </dl>
               </div>
 
-              {isAdmin && selected.status !== 'approved' && (
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => openApprove(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
-                    <Check className="w-4 h-4" /> {busyId === String(selected.id) ? '...' : 'Aprobar'}
-                  </button>
-                  <button onClick={() => reject(selected)} disabled={busyId === String(selected.id)} className={`${BTN_DANGER} flex-1 disabled:opacity-50`}>
-                    <X className="w-4 h-4" /> Rechazar
-                  </button>
-                </div>
-              )}
-            </div>
-          </PanelHastaElPie>
+          </PanelDetalle>
         ) : (
           <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-xl p-10 text-center lg:sticky lg:top-4 flex flex-col justify-center">
             <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><Inbox className="w-6 h-6 text-digi-muted" /></div>

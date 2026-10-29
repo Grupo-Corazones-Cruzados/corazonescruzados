@@ -11,13 +11,13 @@ import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -445,9 +445,10 @@ function InvoicesPageInner() {
     !(mIdType === '04' && mClientRuc.length !== 13) && !(mIdType === '05' && mClientRuc.length !== 10) &&
     !consumidorFinalOver50;
 
-  /** El cuerpo del resumen, una sola vez: columna en escritorio, panel en teléfono. */
-  const cuerpoResumen = !selected ? null : (
-<div className="p-4 space-y-2.5">
+  /** El resumen, una sola vez: columna en escritorio, panel en teléfono. En escritorio las
+   *  acciones van fijas al pie (`PanelDetalle`, Fernando, 2026-10-29). */
+  const filasResumen = !selected ? null : (
+<div className="space-y-2.5">
   {[
     ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(selected.total || 0))}</span>],
     ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
@@ -459,7 +460,10 @@ function InvoicesPageInner() {
       <span className="text-digi-text text-right" style={mf}>{v}</span>
     </div>
   ))}
-  <div className="space-y-2 pt-1">
+</div>
+  );
+  const accionesResumen = !selected ? null : (
+  <>
     {selected.sri_status === 'authorized' && (
       <button onClick={() => window.open(`/api/invoices/${selected.id}/pdf`, '_blank')} className={`${BTN_SECONDARY} w-full`}>
         <Download className="w-4 h-4" /> Descargar PDF
@@ -484,7 +488,13 @@ function InvoicesPageInner() {
     <button onClick={() => router.push(`/dashboard/invoices/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
       Ver factura <ArrowRight className="w-4 h-4" />
     </button>
-  </div>
+  </>
+  );
+  /** En el teléfono, todo seguido. */
+  const cuerpoResumen = !selected ? null : (
+<div className="p-4 space-y-2.5">
+  {filasResumen}
+  <div className="space-y-2 pt-1">{accionesResumen}</div>
 </div>
   );
 
@@ -503,6 +513,11 @@ function InvoicesPageInner() {
 
         {/* ── Right region: command bar + tabla ── */}
         <div className="flex-1 min-w-0 w-full">
+      {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de la
+          columna de la tabla, así el resumen de la derecha aprovecha el alto desde la misma
+          línea que el raíl de la izquierda. */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
+        <div className="min-w-0">
           {/* «Facturar etapa de proyecto» es la acción principal: en el teléfono baja a la barra
               de abajo y el buscador se queda solo, a todo el ancho; desde `lg`, a su lado
               (2026-10-23, reglas del teléfono de los productos). */}
@@ -526,9 +541,6 @@ function InvoicesPageInner() {
               </>
             )}
           </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
-        <div className="min-w-0">
       {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
       <TablaVaciaHastaElPie vacia={invoices.length === 0}>
       <PixelDataTable
@@ -598,16 +610,14 @@ function InvoicesPageInner() {
               <p className="text-[12px] text-digi-muted" style={mf}>Selecciona una factura para ver un resumen.</p>
             </PanelHastaElPie>
           ) : (
-            <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
-              <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.invoice_number || `Factura #${selected.id}`}</h3>
-                  <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selected.client_name_sri || selected.client_name || '—'}</p>
-                </div>
-                <BotonCerrar onClick={() => setSelected(null)} />
-              </div>
-              {cuerpoResumen}
-            </PanelHastaElPie>
+            <PanelDetalle
+              titulo={selected.invoice_number || `Factura #${selected.id}`}
+              subtitulo={selected.client_name_sri || selected.client_name || '—'}
+              onCerrar={() => setSelected(null)}
+              pie={accionesResumen}
+            >
+              {filasResumen}
+            </PanelDetalle>
           )}
         </aside>
       </div>

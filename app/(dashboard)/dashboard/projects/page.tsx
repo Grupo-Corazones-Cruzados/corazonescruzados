@@ -13,6 +13,7 @@ import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
@@ -319,25 +320,9 @@ export default function ProjectsPage() {
   const totalPages = Math.ceil(total / PER_PAGE);
 
 
-  /** El cuerpo del resumen, una sola vez: columna en escritorio, panel en teléfono. */
-  const cuerpoResumen = !selected ? null : (
-  <div className="p-4 space-y-2.5">
-    {[
-      ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
-      ['Cliente', selected.client_name || '—'],
-      ['Presupuesto', selected.budget_min ? `$${selected.budget_min}${selected.budget_max ? `–${selected.budget_max}` : ''}` : '—'],
-      ['Costo final', selected.final_cost ? `$${fmt2(Number(selected.final_cost))}` : '—'],
-      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
-    ].map(([k, v]) => (
-      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
-        <span className="text-digi-muted" style={mf}>{k}</span>
-        <span className="text-digi-text text-right" style={mf}>{v}</span>
-      </div>
-    ))}
-
-    {/* Botones JUSTO BAJO «Límite», como en Tickets (Fernando, 2026-09-30): los requerimientos
-        cambian de alto de un proyecto a otro y los movían de sitio. */}
-    <div className="space-y-2 pt-1">
+  /** Las acciones del resumen: en escritorio, fijas al pie del panel; en el teléfono, bajo «Límite». */
+  const accionesResumen = !selected ? null : (
+    <>
       <button onClick={() => router.push(`/dashboard/projects/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
         Ver detalle <ArrowRight className="w-4 h-4" />
       </button>
@@ -356,7 +341,32 @@ export default function ProjectsPage() {
           <FileText className="w-4 h-4" /> Ver factura
         </button>
       )}
-    </div>
+    </>
+  );
+
+  /** El cuerpo del resumen, una sola vez: columna en escritorio, panel en teléfono.
+   *  ⇒ EN ESCRITORIO, EN TRES FRANJAS (Fernando, 2026-10-29): los botones van fijos al pie
+   *  (`PanelDetalle`) y la lista de requerimientos se queda con el sitio que sobra y se
+   *  desplaza sola. En el teléfono, todo seguido como siempre. */
+  const cuerpoResumen = (enVentana: boolean) => !selected ? null : (
+  // En escritorio, `contents`: los hijos son las piezas del cuerpo de `PanelDetalle`.
+  <div className={enVentana ? 'p-4 space-y-2.5' : 'contents'}>
+    {[
+      ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+      ['Cliente', selected.client_name || '—'],
+      ['Presupuesto', selected.budget_min ? `$${selected.budget_min}${selected.budget_max ? `–${selected.budget_max}` : ''}` : '—'],
+      ['Costo final', selected.final_cost ? `$${fmt2(Number(selected.final_cost))}` : '—'],
+      ['Límite', selected.deadline ? new Date(selected.deadline).toLocaleDateString('es-EC') : '—'],
+    ].map(([k, v]) => (
+      <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">
+        <span className="text-digi-muted" style={mf}>{k}</span>
+        <span className="text-digi-text text-right" style={mf}>{v}</span>
+      </div>
+    ))}
+
+    {/* Botones JUSTO BAJO «Límite», como en Tickets (Fernando, 2026-09-30): los requerimientos
+        cambian de alto de un proyecto a otro y los movían de sitio. En escritorio van al pie fijo. */}
+    {enVentana && <div className="space-y-2 pt-1">{accionesResumen}</div>}
 
     {/* Requerimientos (compacto) */}
     {(() => {
@@ -365,13 +375,13 @@ export default function ProjectsPage() {
       if (reqs.length === 0) return null;
       const done = reqs.filter((r: any) => r.is_completed).length;
       return (
-        <div className="pt-2 border-t border-digi-border">
-          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Requerimientos ({done}/{reqs.length})</p>
-          <div className="flex items-center gap-2 mb-2">
+        <div className={`pt-2 border-t border-digi-border ${enVentana ? '' : 'flex-1 min-h-32 flex flex-col'}`}>
+          <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5 shrink-0" style={mf}>Requerimientos ({done}/{reqs.length})</p>
+          <div className="flex items-center gap-2 mb-2 shrink-0">
             <div className="flex-1 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqs.length ? Math.round((done / reqs.length) * 100) : 0}%` }} /></div>
             <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqs.length ? Math.round((done / reqs.length) * 100) : 0}%</span>
           </div>
-          <div className="space-y-1">
+          <div className={`space-y-1 ${enVentana ? '' : 'min-h-0 overflow-y-auto'}`}>
             {reqs.map((r: any) => {
               const acc = (r.assignments || []).find((a: any) => a.status === 'accepted');
               return (
@@ -399,6 +409,113 @@ export default function ProjectsPage() {
   </div>
   );
 
+  /** La barra de la lista: va dentro de la columna de la tabla (ver abajo). */
+  const barraLista = (
+  <>
+  {/* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
+      Antes, en el teléfono: buscador, talento y cliente apilados —tres franjas— y debajo
+      tres botones con texto. Ahora el buscador va a todo el ancho con el «⋯» a su lado,
+      los dos filtros comparten fila en `grid-cols-2`, la acción principal baja a la barra
+      de abajo y las secundarias (solicitar, cotizar) van en el «⋯». Desde `lg`, la fila
+      de siempre con sus tres botones. */}
+  {/* ⚠️ `sm:flex-wrap` y el buscador con 220 px de mínimo (2026-10-29): en una fila
+      buscador + 2 filtros de 260 + 3 botones no caben en 1440 px con el raíl, y el
+      buscador se quedaba en una cajita con solo el icono. Ahora, si no cabe, la fila se
+      parte; los filtros miden 200 hasta `2xl`. */}
+  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-3">
+    <div className="flex items-center gap-2 flex-1 min-w-0 sm:min-w-[220px]">
+      <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
+        <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por título..."
+          className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+          style={mf}
+        />
+      </div>
+      {/* Las secundarias, en el teléfono. Para quien no crea, «Solicitar» es la única
+          acción y por eso es la principal: no hay «⋯». */}
+      {canCreateOwn && (
+        <span className="lg:hidden flex ml-auto">
+          <MenuMas items={[
+            { label: 'Solicitar proyecto', icon: Plus, onClick: () => openCreateModal('request') },
+            { label: 'Nueva cotización', icon: Calculator, onClick: openQuotePanel },
+          ]} />
+        </span>
+      )}
+    </div>
+    {/* Filtro por talento y por cliente: en el teléfono comparten fila (uno solo, a todo
+        el ancho); desde `sm` vuelven a sus 260 px. El de talento solo se ofrece si hay
+        talentos que filtrar. El de cliente, solo a quien ve proyectos de varios
+        clientes, y solo si hay más de uno: con uno solo el desplegable no filtra nada
+        — enseñaría la lista entera con un paso más. */}
+    {(() => {
+      const conTalento = talentOptions.length > 0;
+      const conCliente = veVariosClientes && clientOptions.length > 1;
+      if (!conTalento && !conCliente) return null;
+      const solo = conTalento !== conCliente ? 'col-span-2' : '';
+      return (
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+          {conTalento && (
+            <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
+              <MultiSelectSearch
+                options={talentOptions.map((t) => ({ value: t, label: t }))}
+                selected={talentFilter}
+                onChange={setTalentFilter}
+                placeholder="Filtrar por talento…"
+              />
+            </div>
+          )}
+          {conCliente && (
+            <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
+              <MultiSelectSearch
+                options={clientOptions.map((c) => ({ value: c.id, label: c.name }))}
+                selected={clientFilter}
+                onChange={setClientFilter}
+                placeholder="Filtrar por cliente…"
+              />
+            </div>
+          )}
+        </div>
+      );
+    })()}
+    {/* Desde `lg`, los tres botones de siempre. */}
+    <div className="hidden lg:flex gap-2">
+    {/* Solicitar proyecto: para TODOS (yo soy el cliente). */}
+    <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
+      <Plus className="w-4 h-4" /> Solicitar proyecto
+    </button>
+    {/* Nueva cotización (agente IA): solo candidato/miembro. */}
+    {canCreateOwn && (
+      <button onClick={openQuotePanel} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0" style={mf}>
+        <Calculator className="w-4 h-4" /> Nueva cotización
+      </button>
+    )}
+    {/* Nuevo proyecto: solo candidato/miembro/admin (yo soy el responsable). */}
+    {canCreateOwn && (
+      <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} shrink-0`}>
+        <Plus className="w-4 h-4" /> Nuevo proyecto
+      </button>
+    )}
+    </div>
+    {/* En el teléfono, la principal abajo: «Nuevo proyecto» para quien crea; para el
+        cliente, «Solicitar proyecto». */}
+    <EnBarraAcciones>
+      {canCreateOwn ? (
+        <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
+          <Plus className="w-4 h-4" /> Nuevo proyecto
+        </button>
+      ) : (
+        <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
+          <Plus className="w-4 h-4" /> Solicitar proyecto
+        </button>
+      )}
+    </EnBarraAcciones>
+  </div>
+  </>
+  );
+
   return (
     <div>
       <PageHeader title="Proyectos" description="Proyectos, propuestas y su facturación" />
@@ -421,116 +538,21 @@ export default function ProjectsPage() {
 
         {/* ── Right region: command bar + table ── */}
         <div className="flex-1 min-w-0 w-full">
-          {/* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
-              Antes, en el teléfono: buscador, talento y cliente apilados —tres franjas— y debajo
-              tres botones con texto. Ahora el buscador va a todo el ancho con el «⋯» a su lado,
-              los dos filtros comparten fila en `grid-cols-2`, la acción principal baja a la barra
-              de abajo y las secundarias (solicitar, cotizar) van en el «⋯». Desde `lg`, la fila
-              de siempre con sus tres botones. */}
-          {/* ⚠️ `sm:flex-wrap` y el buscador con 220 px de mínimo (2026-10-29): en una fila
-              buscador + 2 filtros de 260 + 3 botones no caben en 1440 px con el raíl, y el
-              buscador se quedaba en una cajita con solo el icono. Ahora, si no cabe, la fila se
-              parte; los filtros miden 200 hasta `2xl`. */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-3">
-            <div className="flex items-center gap-2 flex-1 min-w-0 sm:min-w-[220px]">
-              <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
-                <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por título..."
-                  className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                  style={mf}
-                />
-              </div>
-              {/* Las secundarias, en el teléfono. Para quien no crea, «Solicitar» es la única
-                  acción y por eso es la principal: no hay «⋯». */}
-              {canCreateOwn && (
-                <span className="lg:hidden flex ml-auto">
-                  <MenuMas items={[
-                    { label: 'Solicitar proyecto', icon: Plus, onClick: () => openCreateModal('request') },
-                    { label: 'Nueva cotización', icon: Calculator, onClick: openQuotePanel },
-                  ]} />
-                </span>
-              )}
-            </div>
-            {/* Filtro por talento y por cliente: en el teléfono comparten fila (uno solo, a todo
-                el ancho); desde `sm` vuelven a sus 260 px. El de talento solo se ofrece si hay
-                talentos que filtrar. El de cliente, solo a quien ve proyectos de varios
-                clientes, y solo si hay más de uno: con uno solo el desplegable no filtra nada
-                — enseñaría la lista entera con un paso más. */}
-            {(() => {
-              const conTalento = talentOptions.length > 0;
-              const conCliente = veVariosClientes && clientOptions.length > 1;
-              if (!conTalento && !conCliente) return null;
-              const solo = conTalento !== conCliente ? 'col-span-2' : '';
-              return (
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-                  {conTalento && (
-                    <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
-                      <MultiSelectSearch
-                        options={talentOptions.map((t) => ({ value: t, label: t }))}
-                        selected={talentFilter}
-                        onChange={setTalentFilter}
-                        placeholder="Filtrar por talento…"
-                      />
-                    </div>
-                  )}
-                  {conCliente && (
-                    <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
-                      <MultiSelectSearch
-                        options={clientOptions.map((c) => ({ value: c.id, label: c.name }))}
-                        selected={clientFilter}
-                        onChange={setClientFilter}
-                        placeholder="Filtrar por cliente…"
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            {/* Desde `lg`, los tres botones de siempre. */}
-            <div className="hidden lg:flex gap-2">
-            {/* Solicitar proyecto: para TODOS (yo soy el cliente). */}
-            <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
-              <Plus className="w-4 h-4" /> Solicitar proyecto
-            </button>
-            {/* Nueva cotización (agente IA): solo candidato/miembro. */}
-            {canCreateOwn && (
-              <button onClick={openQuotePanel} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0" style={mf}>
-                <Calculator className="w-4 h-4" /> Nueva cotización
-              </button>
-            )}
-            {/* Nuevo proyecto: solo candidato/miembro/admin (yo soy el responsable). */}
-            {canCreateOwn && (
-              <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> Nuevo proyecto
-              </button>
-            )}
-            </div>
-            {/* En el teléfono, la principal abajo: «Nuevo proyecto» para quien crea; para el
-                cliente, «Solicitar proyecto». */}
-            <EnBarraAcciones>
-              {canCreateOwn ? (
-                <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
-                  <Plus className="w-4 h-4" /> Nuevo proyecto
-                </button>
-              ) : (
-                <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
-                  <Plus className="w-4 h-4" /> Solicitar proyecto
-                </button>
-              )}
-            </EnBarraAcciones>
-          </div>
-
+          {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de la
+              columna de la tabla, así el resumen de la derecha aprovecha el alto desde la misma
+              línea que el raíl de la izquierda. */}
           {tab === 'offline' ? (
-            /* Hasta el pie y con desplazamiento propio en escritorio (Fernando, 2026-10-29). */
+            <>
+            {barraLista}
+            {/* Hasta el pie y con desplazamiento propio en escritorio (Fernando, 2026-10-29). */}
             <PanelHastaElPie>
               <ListaSinConexion tipo="proyecto" enLinea={enLinea} soloPorAtender onCambio={fetchData} />
             </PanelHastaElPie>
+            </>
           ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
+          {barraLista}
           {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
           <TablaVaciaHastaElPie vacia={projects.length === 0}>
           <PixelDataTable
@@ -612,18 +634,12 @@ export default function ProjectsPage() {
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un proyecto para ver un resumen.</p>
                 </PanelHastaElPie>
               ) : (
-                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Proyecto #{selected.id}</p>
-                    </div>
-                    {/* Sin botón de cerrar (Fernando, 2026-09-28): el panel siempre enseña la
-                        fila elegida, y se cambia eligiendo otra. En el teléfono sí hay X,
-                        porque ahí el resumen tapa la lista. */}
-                  </div>
-                  {cuerpoResumen}
-                </PanelHastaElPie>
+                /* Sin botón de cerrar (Fernando, 2026-09-28): el panel siempre enseña la
+                   fila elegida, y se cambia eligiendo otra. En el teléfono sí hay X,
+                   porque ahí el resumen tapa la lista. */
+                <PanelDetalle titulo={selected.title} subtitulo={`Proyecto #${selected.id}`} pie={accionesResumen}>
+                  {cuerpoResumen(false)}
+                </PanelDetalle>
               )}
             </aside>
           </div>
@@ -640,7 +656,7 @@ export default function ProjectsPage() {
           title={selected ? `#${selected.id} · ${selected.title}` : 'Proyecto'}
           size="md"
         >
-          {cuerpoResumen}
+          {cuerpoResumen(true)}
         </PixelModal>
       )}
 

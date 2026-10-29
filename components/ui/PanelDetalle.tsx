@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -28,9 +29,11 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
  *   </PanelDetalle>
  */
 export default function PanelDetalle({
-  titulo, subtitulo, onCerrar, pie, children, desdeAncho = 1280, className = '',
+  titulo, subtitulo, icono: Icono, onCerrar, pie, children, desdeAncho = 1280, className = '',
 }: {
   titulo: ReactNode;
+  /** El icono del tipo de registro, en su cuadro de acento, a la izquierda del título. */
+  icono?: LucideIcon;
   subtitulo?: ReactNode;
   onCerrar?: () => void;
   /** Las acciones, fijas abajo. */
@@ -46,6 +49,11 @@ export default function PanelDetalle({
       className={`bg-digi-card border border-digi-border rounded-lg shadow-sm flex flex-col overflow-hidden lg:sticky lg:top-4 ${className}`}
     >
       <div className="shrink-0 flex items-start gap-3 p-4 border-b border-digi-border">
+        {Icono && (
+          <div className="w-10 h-10 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
+            <Icono className="w-5 h-5 text-accent" />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{titulo}</h3>
           {subtitulo && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{subtitulo}</p>}

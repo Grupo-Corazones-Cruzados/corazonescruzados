@@ -10,11 +10,11 @@ import PageHeader from '@/components/ui/PageHeader';
 import PixelModal from '@/components/ui/PixelModal';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import Button, { BTN_PRIMARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, Search, MessageSquare } from 'lucide-react';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -115,9 +115,10 @@ export default function SupportPage() {
     finally { setSaving(false); }
   };
 
-  /** El cuerpo del resumen, una sola vez: columna en escritorio, panel en teléfono. */
-  const cuerpoResumen = !selected ? null : (
-  <div className="p-4 space-y-2.5">
+  /** El resumen, una sola vez: columna en escritorio, panel en teléfono. En escritorio el
+   *  botón va fijo al pie (`PanelDetalle`, Fernando, 2026-10-29). */
+  const filasResumen = !selected ? null : (
+  <div className="space-y-2.5">
     {[
       ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
       ['Tipo', TYPE_LABELS[selected.type] || selected.type],
@@ -130,9 +131,18 @@ export default function SupportPage() {
       </div>
     ))}
     {selected.message && <p className="text-[12px] text-digi-text leading-relaxed line-clamp-3" style={mf}>{selected.message}</p>}
-    <button onClick={() => router.push(`/dashboard/support/${selected.id}`)} className={`${BTN_PRIMARY} w-full mt-1`}>
+  </div>
+  );
+  const verTicket = !selected ? null : (
+    <button onClick={() => router.push(`/dashboard/support/${selected.id}`)} className={`${BTN_PRIMARY} w-full`}>
       Ver ticket <ArrowRight className="w-4 h-4" />
     </button>
+  );
+  /** En el teléfono, todo seguido. */
+  const cuerpoResumen = !selected ? null : (
+  <div className="p-4 space-y-2.5">
+    {filasResumen}
+    <div className="mt-1">{verTicket}</div>
   </div>
   );
 
@@ -149,35 +159,37 @@ export default function SupportPage() {
 
         {/* ── Right region: command bar + list · panel ── */}
         <div className="flex-1 min-w-0 w-full">
-          {/* «Nuevo ticket» es la acción principal: en el teléfono baja a la barra de abajo y el
-              buscador se queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por asunto..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-            </div>
-            <button
-              onClick={() => setForm({ ...emptyForm })}
-              className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-              style={mf}
-            >
-              <Plus className="w-4 h-4" /> Nuevo ticket
-            </button>
-            <EnBarraAcciones>
-              <button onClick={() => setForm({ ...emptyForm })} className={BTN_PRIMARY}>
-                <Plus className="w-4 h-4" /> Nuevo ticket
-              </button>
-            </EnBarraAcciones>
-          </div>
-
+          {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de la
+              columna de la tabla, así el resumen de la derecha aprovecha el alto desde la misma
+              línea que el raíl de la izquierda. */}
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
+            {/* «Nuevo ticket» es la acción principal: en el teléfono baja a la barra de abajo y el
+                buscador se queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="relative flex-1 min-w-0">
+                <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por asunto..."
+                  className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                  style={mf}
+                />
+              </div>
+              <button
+                onClick={() => setForm({ ...emptyForm })}
+                className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                style={mf}
+              >
+                <Plus className="w-4 h-4" /> Nuevo ticket
+              </button>
+              <EnBarraAcciones>
+                <button onClick={() => setForm({ ...emptyForm })} className={BTN_PRIMARY}>
+                  <Plus className="w-4 h-4" /> Nuevo ticket
+                </button>
+              </EnBarraAcciones>
+            </div>
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={tickets.length === 0}>
               <PixelDataTable
@@ -236,16 +248,9 @@ export default function SupportPage() {
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un ticket para ver un resumen.</p>
                 </PanelHastaElPie>
               ) : (
-                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.subject}</h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Ticket #{selected.id}</p>
-                    </div>
-                    <BotonCerrar onClick={() => setSelected(null)} />
-                  </div>
-                  {cuerpoResumen}
-                </PanelHastaElPie>
+                <PanelDetalle titulo={selected.subject} subtitulo={`Ticket #${selected.id}`} onCerrar={() => setSelected(null)} pie={verTicket}>
+                  {filasResumen}
+                </PanelDetalle>
               )}
             </aside>
           </div>

@@ -9,6 +9,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
@@ -21,7 +22,6 @@ import {
 import {
   PISOS, PASOS, PISO_LABEL, PASO_LABEL, CELL_MAP, systemPath,
 } from '@/lib/centralized/systems';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
@@ -170,11 +170,10 @@ export default function CentralizedPage() {
 
   /* ── Rail item ───────────────────────────────────────────────────────── */
 
-  /** Detalle del sistema elegido, una sola vez: columna en escritorio, panel encima en teléfono
-   *  (`enVentana`: el panel ya trae su margen). */
-  const cuerpoSistema = (enVentana = false) => !selected ? null : (
-  <div className={enVentana ? 'space-y-4' : ''}>
-  <div className={`${enVentana ? '' : 'p-4 '}space-y-2.5`}>
+  /** Detalle del sistema elegido, una sola vez: columna en escritorio (`PanelDetalle`, con las
+   *  acciones en su pie fijo) y panel encima en teléfono (`cuerpoSistema`, todo seguido). */
+  const datosSistema = !selected ? null : (
+  <div className="space-y-2.5">
     {selected.description && (
       <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{selected.description}</p>
     )}
@@ -192,8 +191,9 @@ export default function CentralizedPage() {
     ))}
     <p className="text-[10.5px] text-digi-muted/80 pt-1 break-all" style={mf}>{systemPath({ piso: selected.piso, paso: selected.paso, slug: selected.slug })}</p>
   </div>
-
-  <div className={`${enVentana ? '' : 'p-4 pt-0 '}space-y-2`}>
+  );
+  const accionesSistema = !selected ? null : (
+  <>
     <button
       onClick={() => openSystem(selected)}
       className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
@@ -221,7 +221,12 @@ export default function CentralizedPage() {
         </button>
       </div>
     )}
-  </div>
+  </>
+  );
+  const cuerpoSistema = !selected ? null : (
+  <div className="space-y-4">
+    {datosSistema}
+    <div className="space-y-2">{accionesSistema}</div>
   </div>
   );
 
@@ -243,50 +248,51 @@ export default function CentralizedPage() {
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar sistema..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-            </div>
-            <select
-              value={pasoFilter}
-              onChange={(e) => setPasoFilter(e.target.value)}
-              className="field-control field-select appearance-none w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
-              style={mf}
-            >
-              <option value="">Todos los pasos</option>
-              {PASOS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-            </select>
-            {/* «Nuevo sistema» es la acción principal: en el teléfono baja a la barra de abajo
-                en vez de ocupar su propia fila a todo el ancho; desde `lg`, aquí (Fernando,
-                2026-10-23). */}
-            {isAdmin && (
-              <button onClick={openNewSystem}
-                className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-                style={mf}>
-                <Plus className="w-4 h-4" /> Nuevo sistema
-              </button>
-            )}
-            {isAdmin && (
-              <EnBarraAcciones>
-                <button onClick={openNewSystem}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
-                  style={mf}>
-                  <Plus className="w-4 h-4" /> Nuevo sistema
-                </button>
-              </EnBarraAcciones>
-            )}
-          </div>
-
           {/* list · detail */}
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
             <div className="min-w-0">
+              {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
+                  la columna de la lista. */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar sistema..."
+                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                    style={mf}
+                  />
+                </div>
+                <select
+                  value={pasoFilter}
+                  onChange={(e) => setPasoFilter(e.target.value)}
+                  className="field-control field-select appearance-none w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
+                  style={mf}
+                >
+                  <option value="">Todos los pasos</option>
+                  {PASOS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                </select>
+                {/* «Nuevo sistema» es la acción principal: en el teléfono baja a la barra de abajo
+                    en vez de ocupar su propia fila a todo el ancho; desde `lg`, aquí (Fernando,
+                    2026-10-23). */}
+                {isAdmin && (
+                  <button onClick={openNewSystem}
+                    className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
+                    style={mf}>
+                    <Plus className="w-4 h-4" /> Nuevo sistema
+                  </button>
+                )}
+                {isAdmin && (
+                  <EnBarraAcciones>
+                    <button onClick={openNewSystem}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
+                      style={mf}>
+                      <Plus className="w-4 h-4" /> Nuevo sistema
+                    </button>
+                  </EnBarraAcciones>
+                )}
+              </div>
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={visibleSystems.length === 0}>
               <PixelDataTable
@@ -336,20 +342,10 @@ export default function CentralizedPage() {
             {!enTelefono && (
             <aside className="w-full xl:w-[300px]">
               {selected ? (
-                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="w-10 h-10 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
-                      <Boxes className="w-5 h-5 text-accent" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.name}</h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{selected.cell_name}</p>
-                    </div>
-                    <BotonCerrar onClick={() => setSelected(null)} />
-                  </div>
-
-                  {cuerpoSistema()}
-                </PanelHastaElPie>
+                /* Tres franjas (Fernando, 2026-10-29): cabecera y acciones fijas. Ver `PanelDetalle`. */
+                <PanelDetalle icono={Boxes} titulo={selected.name} subtitulo={selected.cell_name} onCerrar={() => setSelected(null)} pie={accionesSistema}>
+                  {datosSistema}
+                </PanelDetalle>
               ) : (
                 <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
@@ -367,7 +363,7 @@ export default function CentralizedPage() {
       {/* El detalle en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
       {enTelefono && (
         <PixelModal open={!!selected} onClose={() => setSelected(null)} title={selected?.name || 'Sistema'} size="md">
-          {cuerpoSistema(true)}
+          {cuerpoSistema}
         </PixelModal>
       )}
 

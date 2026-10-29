@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
@@ -16,7 +17,6 @@ import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
 import { DIMENSION_COLOR, DIMENSION_LABEL } from '@/lib/centralized/apoyo';
 import { DIMENSION_ICON as DIM_ICON } from '@/components/centralized/dimensionIcons';
 import { TALENTOS } from '@/lib/centralized/talentos';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -485,125 +485,126 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
             const entry = panel.entry;
             const st = entry?.status;
             const link = t?.link || null;
+            // ⇒ Tres franjas (Fernando, 2026-10-29): cabecera y «Quitar del día» fijos; se
+            // desplaza el cuerpo. Ver `PanelDetalle`. En el teléfono, el tope de alto de siempre.
             return (
-              <PanelHastaElPie desplazar={false} className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
-                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
-                  <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
-                  <BotonCerrar onClick={() => setPanel(null)} />
+              <PanelDetalle
+                titulo="Detalle de la tarea"
+                onCerrar={() => setPanel(null)}
+                desdeAncho={1024}
+                className="w-full lg:w-[300px] shrink-0 max-lg:max-h-[calc(100dvh-200px-var(--cabecera-movil))]"
+                pie={entry ? (
+                  <button onClick={() => unassign(entry)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md text-[12px] font-medium text-red-400 transition-colors" style={mf}>
+                    <Trash2 className="w-3.5 h-3.5" /> Quitar del día
+                  </button>
+                ) : undefined}
+              >
+                <div>
+                  <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{t?.title || 'Tarea'}</h4>
+                  {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
                 </div>
-                <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto">
-                  <div>
-                    <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{t?.title || 'Tarea'}</h4>
-                    {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
-                  </div>
 
-                  {/* Estado (asignación manual o entrada automática) */}
-                  {(() => {
-                    const cur = entry ? entry.status : panel.auto?.status;
-                    if (!entry && !panel.auto) return null;
-                    const set = (s: Status) => (entry ? setEntryStatus(entry, s) : setAutoStatusFor(panel.alternativeId, panel.auto!.day, s));
-                    return (
-                      <div>
-                        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado{panel.auto ? ` · ${fmtDay(panel.auto.day)}` : ''}</p>
-                        <TaskStatusButtons value={cur ?? 'pending'} onChange={set} />
-                        <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
-                          Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
-                        </p>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Ticket/proyecto asociado */}
-                  {link && (
-                    <div className="rounded-lg border border-sky-400/30 bg-sky-500/[0.06] p-2.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-400 mb-1 inline-flex items-center gap-1" style={df}>
-                        {link.source === 'ticket' ? <Ticket className="w-3 h-3" /> : <FolderKanban className="w-3 h-3" />} {link.source === 'ticket' ? 'Ticket asociado' : 'Proyecto asociado'}
+                {/* Estado (asignación manual o entrada automática) */}
+                {(() => {
+                  const cur = entry ? entry.status : panel.auto?.status;
+                  if (!entry && !panel.auto) return null;
+                  const set = (s: Status) => (entry ? setEntryStatus(entry, s) : setAutoStatusFor(panel.alternativeId, panel.auto!.day, s));
+                  return (
+                    <div>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado{panel.auto ? ` · ${fmtDay(panel.auto.day)}` : ''}</p>
+                      <TaskStatusButtons value={cur ?? 'pending'} onChange={set} />
+                      <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>
+                        Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.
                       </p>
-                      <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{link.title}</p>
-                      {link.status && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Estado: {link.status}</p>}
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Del {fmtDay(link.start)} al {fmtDay(link.end)}</p>
-                      {link.description && <p className="text-[11px] text-digi-muted/90 mt-1 leading-snug" style={mf}>{link.description}</p>}
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <button onClick={() => goToWeekOf(link.start)} disabled={!link.start} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
-                        <button onClick={() => goToWeekOf(link.end)} disabled={!link.end} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40" style={mf}><Flag className="w-3 h-3" /> Fin</button>
-                      </div>
                     </div>
-                  )}
+                  );
+                })()}
 
-                  {/* Etiquetas */}
-                  {t && (t.values.length > 0 || t.talents.length > 0) && (
-                    <div className="flex flex-wrap gap-1">
-                      {t.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
-                      {t.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
+                {/* Ticket/proyecto asociado */}
+                {link && (
+                  <div className="rounded-lg border border-sky-400/30 bg-sky-500/[0.06] p-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-400 mb-1 inline-flex items-center gap-1" style={df}>
+                      {link.source === 'ticket' ? <Ticket className="w-3 h-3" /> : <FolderKanban className="w-3 h-3" />} {link.source === 'ticket' ? 'Ticket asociado' : 'Proyecto asociado'}
+                    </p>
+                    <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{link.title}</p>
+                    {link.status && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Estado: {link.status}</p>}
+                    <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Del {fmtDay(link.start)} al {fmtDay(link.end)}</p>
+                    {link.description && <p className="text-[11px] text-digi-muted/90 mt-1 leading-snug" style={mf}>{link.description}</p>}
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <button onClick={() => goToWeekOf(link.start)} disabled={!link.start} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40" style={mf}><CalendarClock className="w-3 h-3" /> Inicio</button>
+                      <button onClick={() => goToWeekOf(link.end)} disabled={!link.end} className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-digi-border text-[11px] text-digi-text hover:border-accent hover:text-accent transition-colors disabled:opacity-40" style={mf}><Flag className="w-3 h-3" /> Fin</button>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* Contexto de Apoyo */}
-                  {panelLoading ? (
-                    <p className="text-[12px] text-digi-muted" style={mf}>Cargando contexto…</p>
-                  ) : panelCtx && (
-                    <div className="space-y-2.5 pt-1 border-t border-digi-border/60">
-                      <CtxList title="Problema" items={panelCtx.problems.map((p) => p.title)} />
-                      <CtxList title="Situaciones" items={panelCtx.situations} />
-                      <CtxList title="Causas" items={panelCtx.causes} />
-                    </div>
-                  )}
+                {/* Etiquetas */}
+                {t && (t.values.length > 0 || t.talents.length > 0) && (
+                  <div className="flex flex-wrap gap-1">
+                    {t.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
+                    {t.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
+                  </div>
+                )}
 
-                  {entry ? (
-                    <button onClick={() => unassign(entry)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 mt-1 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md text-[12px] font-medium text-red-400 transition-colors" style={mf}>
-                      <Trash2 className="w-3.5 h-3.5" /> Quitar del día
-                    </button>
-                  ) : (
-                    <p className="text-[10.5px] text-sky-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada automáticamente por su {link?.source === 'ticket' ? 'ticket' : 'proyecto'}; no se mueve ni se quita, pero puedes marcar su estado.</p>
-                  )}
-                </div>
-              </PanelHastaElPie>
+                {/* Contexto de Apoyo */}
+                {panelLoading ? (
+                  <p className="text-[12px] text-digi-muted" style={mf}>Cargando contexto…</p>
+                ) : panelCtx && (
+                  <div className="space-y-2.5 pt-1 border-t border-digi-border/60">
+                    <CtxList title="Problema" items={panelCtx.problems.map((p) => p.title)} />
+                    <CtxList title="Situaciones" items={panelCtx.situations} />
+                    <CtxList title="Causas" items={panelCtx.causes} />
+                  </div>
+                )}
+
+                {!entry && (
+                  <p className="text-[10.5px] text-sky-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada automáticamente por su {link?.source === 'ticket' ? 'ticket' : 'proyecto'}; no se mueve ni se quita, pero puedes marcar su estado.</p>
+                )}
+              </PanelDetalle>
             );
           })()}
 
           {/* Panel de detalle de una tarea GENERADA por política */}
           {genPanel && (
-            <PanelHastaElPie desplazar={false} className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
-              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
-                <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
-                <BotonCerrar onClick={() => setGenPanel(null)} />
+            <PanelDetalle
+              titulo="Detalle de la tarea"
+              onCerrar={() => setGenPanel(null)}
+              desdeAncho={1024}
+              className="w-full lg:w-[300px] shrink-0 max-lg:max-h-[calc(100dvh-200px-var(--cabecera-movil))]"
+            >
+              <div>
+                <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{genPanel.title}</h4>
+                {genPanel.detail && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{genPanel.detail}</p>}
               </div>
-              <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto">
-                <div>
-                  <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{genPanel.title}</h4>
-                  {genPanel.detail && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{genPanel.detail}</p>}
-                </div>
 
-                {/* Estado del día */}
-                <div>
-                  <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado · {fmtDay(genPanel.day)}</p>
-                  <TaskStatusButtons value={genPanel.status} onChange={(s) => setGeneratedStatusFor(genPanel, s)} />
-                  <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.</p>
-                </div>
-
-                {/* Política de origen + horario */}
-                <div className="rounded-lg border border-violet-400/30 bg-violet-500/[0.06] p-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-400 mb-1 inline-flex items-center gap-1" style={df}><ShieldCheck className="w-3 h-3" /> Política</p>
-                  <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{genPanel.policyName || '—'}</p>
-                  <p className="text-[11px] text-digi-muted mt-0.5 inline-flex items-center gap-1" style={mf}><Clock className="w-3 h-3" /> {genPanel.allDay ? 'Todo el día' : (genPanel.startTime && genPanel.endTime ? `${genPanel.startTime}–${genPanel.endTime}` : 'Sin horario')}</p>
-                </div>
-
-                {/* Etiquetas + editar */}
-                <div>
-                  {(genPanel.values.length > 0 || genPanel.talents.length > 0) ? (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {genPanel.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
-                      {genPanel.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
-                    </div>
-                  ) : (
-                    <p className="text-[10.5px] text-digi-muted/70 mb-2" style={mf}>Sin etiquetas. Agrégalas para que su cumplimiento sume o reste al perfil.</p>
-                  )}
-                  <button onClick={() => openGenEditor(genPanel)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}><Tag className="w-3 h-3" /> Editar etiquetas</button>
-                </div>
-
-                <p className="text-[10.5px] text-violet-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada por su política; no se mueve ni se quita, pero puedes marcar su estado y editar sus etiquetas.</p>
+              {/* Estado del día */}
+              <div>
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-digi-muted mb-1.5" style={df}>Estado · {fmtDay(genPanel.day)}</p>
+                <TaskStatusButtons value={genPanel.status} onChange={(s) => setGeneratedStatusFor(genPanel, s)} />
+                <p className="text-[10.5px] text-digi-muted/80 mt-1.5 leading-relaxed" style={mf}>Completada suma a sus valores/talentos; fallida resta; pendiente no afecta el perfil.</p>
               </div>
-            </PanelHastaElPie>
+
+              {/* Política de origen + horario */}
+              <div className="rounded-lg border border-violet-400/30 bg-violet-500/[0.06] p-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-400 mb-1 inline-flex items-center gap-1" style={df}><ShieldCheck className="w-3 h-3" /> Política</p>
+                <p className="text-[12.5px] font-medium text-digi-text leading-snug" style={mf}>{genPanel.policyName || '—'}</p>
+                <p className="text-[11px] text-digi-muted mt-0.5 inline-flex items-center gap-1" style={mf}><Clock className="w-3 h-3" /> {genPanel.allDay ? 'Todo el día' : (genPanel.startTime && genPanel.endTime ? `${genPanel.startTime}–${genPanel.endTime}` : 'Sin horario')}</p>
+              </div>
+
+              {/* Etiquetas + editar */}
+              <div>
+                {(genPanel.values.length > 0 || genPanel.talents.length > 0) ? (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {genPanel.values.map((v) => <span key={`v-${v}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-violet-500/15 border border-violet-400/30 text-[10px] text-violet-300" style={mf}><Gem className="w-2.5 h-2.5" />{VALOR_LABEL[v] || v}</span>)}
+                    {genPanel.talents.map((tal) => <span key={`t-${tal}`} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] text-sky-300" style={mf}><Sparkles className="w-2.5 h-2.5" />{tal}</span>)}
+                  </div>
+                ) : (
+                  <p className="text-[10.5px] text-digi-muted/70 mb-2" style={mf}>Sin etiquetas. Agrégalas para que su cumplimiento sume o reste al perfil.</p>
+                )}
+                <button onClick={() => openGenEditor(genPanel)} className="inline-flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover transition-colors" style={mf}><Tag className="w-3 h-3" /> Editar etiquetas</button>
+              </div>
+
+              <p className="text-[10.5px] text-violet-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada por su política; no se mueve ni se quita, pero puedes marcar su estado y editar sus etiquetas.</p>
+            </PanelDetalle>
           )}
         </>
       )}

@@ -15,6 +15,7 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
@@ -249,9 +250,11 @@ export default function SubscriptionsPage() {
   const totalPages = Math.ceil(total / PER_PAGE);
 
 
-  /** El cuerpo del panel de meses, una sola vez: columna en escritorio, panel en teléfono. */
-  const cuerpoMeses = !selected || loadingDetail || !detail ? null : (
-  <div className="p-4 space-y-3">
+  /** El cuerpo del panel de meses, una sola vez: columna en escritorio (`PanelDetalle`) y
+   *  ventana en teléfono. `enPanel`: en la columna, la lista de meses se queda con el alto que
+   *  sobra y se desplaza sola, y «Eliminar» va al pie fijo. */
+  const mesesFicha = (enPanel: boolean) => !selected || loadingDetail || !detail ? null : (
+  <>
     <div className="grid grid-cols-2 gap-2 text-[12px]" style={mf}>
       <div><span className="text-digi-muted">Costo:</span> <span className="text-digi-text">${fmt2(Number(detail.monthly_cost))}</span></div>
       <div><span className="text-digi-muted">Día corte:</span> <span className="text-digi-text">{detail.cut_day}</span></div>
@@ -290,7 +293,7 @@ export default function SubscriptionsPage() {
       <CobrosEnEspera tipo="subscription" id={String(detail.id)} alConfirmar={() => openDetail(detail)} />
     )}
 
-    <div className="space-y-2 max-h-[46vh] overflow-y-auto -mx-1 px-1">
+    <div className={`space-y-2 overflow-y-auto -mx-1 px-1 ${enPanel ? 'flex-1 min-h-32' : 'max-h-[46vh]'}`}>
       {detail.periods.slice().reverse().map((p: any) => {
         const busy = busyPeriod === p.period;
         return (
@@ -365,13 +368,22 @@ export default function SubscriptionsPage() {
         ? 'Al pagar un mes se emite tu factura electrónica y te llega al correo.'
         : 'Al marcar un mes como pagado se genera la factura electrónica (SRI), se envía por correo al cliente y se registra el ingreso. Un mes con factura emitida no puede desmarcarse (requiere nota de crédito).'}
     </p>
-
-    {user?.role === 'admin' && (
-      <div className="pt-2 border-t border-digi-border">
+  </>
+  );
+  const eliminarSuscripcion = !selected || loadingDetail || !detail || user?.role !== 'admin' ? null : (
         <button onClick={requestDelete}
           className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 w-full sm:w-auto text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
           <Trash2 className="w-3.5 h-3.5" /> Eliminar suscripción
         </button>
+  );
+  /** En la ventana del teléfono, todo seguido, como antes. */
+  const cuerpoMeses = !selected || loadingDetail || !detail ? null : (
+  <div className="p-4 space-y-3">
+    {mesesFicha(false)}
+
+    {eliminarSuscripcion && (
+      <div className="pt-2 border-t border-digi-border">
+        {eliminarSuscripcion}
       </div>
     )}
   </div>
@@ -392,34 +404,35 @@ export default function SubscriptionsPage() {
 
         {/* ── Right region: command bar + (list · detail) ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por título o cliente..."
-                className="field-control w-full min-h-11 sm:min-h-0 pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf} />
-            </div>
-            {/* Crear suscripciones es del staff. El servidor ya lo rechaza, pero enseñarle
-                el botón a un cliente es prometerle algo que va a fallar. */}
-            {/* Es la acción principal: en el teléfono baja a la barra de abajo y el buscador se
-                queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
-            {!esCliente && (
-              <>
-                <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
-                  <Plus className="w-4 h-4" /> Nueva suscripción
-                </button>
-                <EnBarraAcciones>
-                  <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
-                    <Plus className="w-4 h-4" /> Nueva suscripción
-                  </button>
-                </EnBarraAcciones>
-              </>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
+              {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
+                  la columna de la lista. */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar por título o cliente..."
+                    className="field-control w-full min-h-11 sm:min-h-0 pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                    style={mf} />
+                </div>
+                {/* Crear suscripciones es del staff. El servidor ya lo rechaza, pero enseñarle
+                    el botón a un cliente es prometerle algo que va a fallar. */}
+                {/* Es la acción principal: en el teléfono baja a la barra de abajo y el buscador se
+                    queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
+                {!esCliente && (
+                  <>
+                    <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
+                      <Plus className="w-4 h-4" /> Nueva suscripción
+                    </button>
+                    <EnBarraAcciones>
+                      <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
+                        <Plus className="w-4 h-4" /> Nueva suscripción
+                      </button>
+                    </EnBarraAcciones>
+                  </>
+                )}
+              </div>
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={subs.length === 0}>
               <PixelDataTable
@@ -516,20 +529,17 @@ export default function SubscriptionsPage() {
               ) : loadingDetail || !detail ? (
                 <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-10 text-center text-[12px] text-digi-muted flex flex-col justify-center"><span style={mf}>Cargando…</span></PanelHastaElPie>
               ) : (
-                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="w-10 h-10 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
-                      <CreditCard className="w-5 h-5 text-accent" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{detail.title}</h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{detail.client_name || '—'}</p>
-                    </div>
-                    <BotonCerrar onClick={() => { setSelected(null); setDetail(null); }} />
-                  </div>
-
-                  {cuerpoMeses}
-                </PanelHastaElPie>
+                /* El panel en tres franjas (Fernando, 2026-10-29): cabecera y acciones fijas, y la
+                   lista de meses se desplaza sola. Ver `PanelDetalle`. */
+                <PanelDetalle
+                  icono={CreditCard}
+                  titulo={detail.title}
+                  subtitulo={detail.client_name || '—'}
+                  onCerrar={() => { setSelected(null); setDetail(null); }}
+                  pie={eliminarSuscripcion || undefined}
+                >
+                  {mesesFicha(true)}
+                </PanelDetalle>
               )}
             </aside>
           </div>

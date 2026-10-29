@@ -20,8 +20,8 @@ import {
   RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
-import BotonCerrar from '@/components/ui/BotonCerrar';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -355,9 +355,12 @@ export default function RecordatoriosPage() {
    * EL CUERPO DEL DETALLE, UNA SOLA VEZ. Se pinta en dos envoltorios —la columna de
    * escritorio y el panel a pantalla completa del teléfono— y por eso vive aquí: dos
    * copias del mismo bloque acabarían siendo dos detalles distintos.
+   *
+   * `enPanel`: en la columna de escritorio (`PanelDetalle`) la lista de tareas se queda con el
+   * alto que sobra y se desplaza sola, y las acciones van al pie fijo (Fernando, 2026-10-29).
    */
-  const cuerpoDetalle = !detail ? null : (
-  <div className="p-4 space-y-3">
+  const contenidoDetalle = (enPanel: boolean) => !detail ? null : (
+  <>
     <div className="flex items-center justify-between gap-3 text-[12px]">
       <span className="text-digi-muted" style={mf}>Estado</span>
       <PixelBadge variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
@@ -381,11 +384,11 @@ export default function RecordatoriosPage() {
     {selLoading ? (
       <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando…</p>
     ) : (detail.tasks?.length ?? 0) > 0 && (
-      <div className="pt-2 border-t border-digi-border">
-        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>
+      <div className={`pt-2 border-t border-digi-border ${enPanel ? 'flex-1 min-h-32 flex flex-col' : ''}`}>
+        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5 shrink-0" style={mf}>
           Tareas ({(detail.tasks || []).filter(t => t.done).length}/{detail.tasks!.length})
         </p>
-        <div className="space-y-1.5">
+        <div className={`space-y-1.5 ${enPanel ? 'min-h-0 overflow-y-auto' : ''}`}>
           {detail.tasks!.map((t) => (
             <div key={t.id} className="flex items-start gap-2 text-[12.5px]">
               <button type="button" onClick={() => toggleDetailTask(t.id)}
@@ -416,8 +419,10 @@ export default function RecordatoriosPage() {
       </div>
     )}
 
-    {/* Acciones */}
-    <div className="space-y-2 pt-2 border-t border-digi-border">
+  </>
+  );
+  const accionesDetalle = !detail ? null : (
+    <>
       {detailStatus === 'done' ? (
         <button onClick={() => setStatus(detail.id, 'active')} className={`${BTN_SECONDARY} w-full`}>
           <RotateCcw className="w-4 h-4" /> Reactivar recordatorio
@@ -435,6 +440,16 @@ export default function RecordatoriosPage() {
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
+    </>
+  );
+  /** En el panel del teléfono, todo seguido, como antes. */
+  const cuerpoDetalle = !detail ? null : (
+  <div className="p-4 space-y-3">
+    {contenidoDetalle(false)}
+
+    {/* Acciones */}
+    <div className="space-y-2 pt-2 border-t border-digi-border">
+      {accionesDetalle}
     </div>
   </div>
   );
@@ -454,40 +469,41 @@ export default function RecordatoriosPage() {
 
         {/* ── Right region: command bar + table + detail ── */}
         <div className="flex-1 min-w-0 w-full">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por título..."
-                className="field-control w-full h-11 lg:h-auto pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf}
-              />
-            </div>
-            {/* ── Las acciones, según la pantalla (2026-10-23, reglas del teléfono) ──
-                Por debajo de `lg`, «Nuevo recordatorio» —la principal— va a la barra fija de
-                abajo y «Buscar reuniones» —secundaria— al «⋯» junto al buscador: la barra de
-                arriba queda en una sola línea y la lista empieza antes. Desde `lg`, los dos
-                botones en su sitio de siempre. */}
-            <span className="lg:hidden flex">
-              <MenuMas items={[{ label: 'Buscar reuniones', icon: Video, onClick: openMeetings }]} />
-            </span>
-            <EnBarraAcciones>
-              <button onClick={openCreate} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo recordatorio</button>
-            </EnBarraAcciones>
-            <div className="hidden lg:flex gap-2">
-              <button onClick={openMeetings} className={`${BTN_SECONDARY} shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
-                <Video className="w-4 h-4" /> Buscar reuniones
-              </button>
-              <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}>
-                <Plus className="w-4 h-4" /> Nuevo recordatorio
-              </button>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
+              {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
+                  la columna de la lista. */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar por título..."
+                    className="field-control w-full h-11 lg:h-auto pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                    style={mf}
+                  />
+                </div>
+                {/* ── Las acciones, según la pantalla (2026-10-23, reglas del teléfono) ──
+                    Por debajo de `lg`, «Nuevo recordatorio» —la principal— va a la barra fija de
+                    abajo y «Buscar reuniones» —secundaria— al «⋯» junto al buscador: la barra de
+                    arriba queda en una sola línea y la lista empieza antes. Desde `lg`, los dos
+                    botones en su sitio de siempre. */}
+                <span className="lg:hidden flex">
+                  <MenuMas items={[{ label: 'Buscar reuniones', icon: Video, onClick: openMeetings }]} />
+                </span>
+                <EnBarraAcciones>
+                  <button onClick={openCreate} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo recordatorio</button>
+                </EnBarraAcciones>
+                <div className="hidden lg:flex gap-2">
+                  <button onClick={openMeetings} className={`${BTN_SECONDARY} shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
+                    <Video className="w-4 h-4" /> Buscar reuniones
+                  </button>
+                  <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}>
+                    <Plus className="w-4 h-4" /> Nuevo recordatorio
+                  </button>
+                </div>
+              </div>
               {loading ? (
                 <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando…" /></div>
               ) : (
@@ -561,19 +577,20 @@ export default function RecordatoriosPage() {
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un recordatorio para ver su detalle.</p>
                 </PanelHastaElPie>
               ) : (
-                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
-                  <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[14px] font-semibold text-digi-text leading-tight flex items-center gap-1.5" style={mf}>
-                        {detail.source === 'meeting' && <Video className="w-4 h-4 text-accent shrink-0" />}
-                        <span className={detailStatus === 'done' ? 'line-through text-digi-muted' : ''}>{detail.title}</span>
-                      </h3>
-                      <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{detail.source === 'meeting' ? 'Generado de una reunión' : 'Recordatorio manual'}</p>
-                    </div>
-                    <BotonCerrar onClick={() => { setSelected(null); setSelDetail(null); }} />
-                  </div>
-                  {cuerpoDetalle}
-                </PanelHastaElPie>
+                /* Tres franjas: cabecera y acciones fijas; la lista de tareas se desplaza sola. */
+                <PanelDetalle
+                  titulo={
+                    <span className="flex items-center gap-1.5">
+                      {detail.source === 'meeting' && <Video className="w-4 h-4 text-accent shrink-0" />}
+                      <span className={detailStatus === 'done' ? 'line-through text-digi-muted' : ''}>{detail.title}</span>
+                    </span>
+                  }
+                  subtitulo={detail.source === 'meeting' ? 'Generado de una reunión' : 'Recordatorio manual'}
+                  onCerrar={() => { setSelected(null); setSelDetail(null); }}
+                  pie={accionesDetalle}
+                >
+                  {contenidoDetalle(true)}
+                </PanelDetalle>
               )}
             </aside>
           </div>
