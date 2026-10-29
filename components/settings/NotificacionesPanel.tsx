@@ -70,7 +70,8 @@ export default function NotificacionesPanel() {
         </div>
       )}
 
-      <div className="max-w-[720px] space-y-3">
+      {/* A todo el ancho: los interruptores y «Avisos activos» quedan en el borde derecho (Fernando, 2026-10-29). */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between gap-3 bg-digi-card border border-digi-border rounded-lg px-4 py-3 [&:not(:has(button))]:hidden">
           <p className="text-[13.5px] font-semibold text-digi-text" style={df}>Este navegador</p>
           <BotonAvisosPush />
