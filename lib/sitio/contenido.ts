@@ -71,7 +71,10 @@ export const SITIO = {
  * Por eso las tres la nombran con esta constante — una sola definición, no tres rutas
  * escritas a mano.
  */
-export const OG_IMAGEN = '/opengraph-image';
+/* `?v=`: WhatsApp, Teams y compañía guardan la miniatura POR DIRECCIÓN. Al cambiar la imagen
+   (2026-10-29: de la portada vieja al logo) hay que cambiar la versión, o seguirían enseñando la
+   anterior. Las rutas que no la nombran ya llevan el `?hash` que pone Next solo. */
+export const OG_IMAGEN = '/opengraph-image?v=logo-2026-10-29';
 
 /* ═══════════════════════ PERFILES OFICIALES ═══════════════════════ */
 

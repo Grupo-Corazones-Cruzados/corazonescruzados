@@ -85,6 +85,9 @@ export const metadata: Metadata = {
   // Instalable en el teléfono: ver `app/manifest.ts`.
   manifest: '/manifest.webmanifest',
   openGraph: { siteName: SITIO.nombre, locale: 'es_EC', type: 'website' },
+  // Tarjeta grande también en X/Twitter y en los que leen sus etiquetas: usan la misma imagen de
+  // `app/opengraph-image.tsx` (el logo), que ya va en `og:image`.
+  twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
 
   /**

@@ -323,6 +323,15 @@ Stack estándar de la casa, con particularidades de este repo:
   tomada por mí y a revisar con él: el oscuro como Aventura, y llevarlo a TODO el panel (pidió «por
   completo en el tema»). Para compilar en local con otra sesión corriendo `next dev`, usar
   `NEXT_DIST_DIR=.next-mio`: compartir `.next` rompió su servidor y mi build.
+- **🖼️ LA MINIATURA AL COMPARTIR ES EL LOGO (Fernando, 2026-10-29).** *«aparece una miniatura… como una
+  réplica de la página de inicio antigua; que utilice el logo… en todos los enlaces»*. `app/opengraph-image.tsx`
+  dibuja el logo de los corazones cruzados en grande (`public/logo-gcc-512.png`, recortado de
+  `LogoApp.png` SIN la marca de agua «miro»), el nombre y «grupocc.org» sobre el fondo oscuro con
+  resplandor violeta. Vale para TODAS las rutas (las que declaran `openGraph` la nombran con
+  `OG_IMAGEN`), y `twitter: summary_large_image` en el layout raíz. ⚠️ Al cambiar la imagen hay que
+  subir la versión de `OG_IMAGEN` (`?v=`): WhatsApp/Teams guardan la miniatura por dirección. Los
+  enlaces ya compartidos y Google se actualizan solos con el tiempo (al volver a rastrear).
+  Excepción a propósito: `/docs/[token]` usa la primera imagen del documento compartido.
 - **🌐 PROPUESTA: SOLUCIONES, CLIENTES Y DESARROLLO HUMANO COMO SITIO WEB (Fernando, 2026-10-29) —
   PENDIENTE DE SU VISTO BUENO.** Con libertad creativa total («esta versión la podemos recuperar»):
   presentación de página con titular grande y botones de Progreso, una pieza propia por página

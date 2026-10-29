@@ -1,63 +1,39 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { SITIO } from '@/lib/sitio/contenido';
 
 /**
- * LA IMAGEN QUE SALE AL COMPARTIR UN ENLACE DEL SITIO.
+ * LA IMAGEN QUE SALE AL COMPARTIR UN ENLACE DEL SITIO (WhatsApp, Teams, Google, redes…).
  *
- * ── QUÉ CAMBIÓ (2026-09-06) ────────────────────────────────────────────────────
- * Dibujaba una tarjeta con el nombre de la empresa y «Un proyecto de desarrollo humano».
- * Era correcta y no decía nada: quien recibe el enlace ve un rótulo corporativo, no el
- * sitio. Fernando pidió que se vea **la portada** — «Un Corazón puede cruzar al mundo»—,
- * que es la frase con la que la gente reconoce el proyecto.
+ * ── ⭐ 2026-10-29: EL LOGO, NO LA PORTADA ──────────────────────────────────────────────
+ * Fernando: *«aparece una miniatura de mi página siendo como una réplica de la página de inicio
+ * antigua; me gustaría que utilice el logo del Grupo Corazones Cruzados en todos los enlaces»*.
+ * Del 2026-09-06 al 2026-10-29 dibujaba el titular de la portada vieja («Un Corazón puede
+ * cruzar al mundo» en letra pixel), que la portada ya no tiene. Ahora es la MARCA: el logo de los
+ * corazones cruzados en grande, con el nombre y el dominio debajo, sobre el fondo oscuro con el
+ * resplandor violeta. No depende del diseño de ninguna página, así que no vuelve a quedarse vieja.
  *
- * Así que esta imagen **reproduce el héroe de la portada**: el mismo titular, con
- * «cruzar» en rojo, sobre el mismo fondo oscuro con el resplandor violeta de la marca.
- * Quien pega el enlace enseña la puerta de entrada, no una ficha.
+ * La aplica Next a TODAS las rutas que no declaran su propio `openGraph`, y las que sí lo declaran
+ * (`/clientes`, `/desarrollo-humano`, `/soluciones`…) la nombran con `OG_IMAGEN`: una sola imagen.
  *
- * ── POR QUÉ SE DIBUJA Y NO ES UN `.png` ────────────────────────────────────────
- * Un archivo estático habría que rehacerlo a mano cada vez que cambie el eslogan. Esto se
- * genera con `next/og`, así que sigue al sitio.
+ * El logo sale de `public/logo-gcc-512.png`: el círculo de `LogoApp.png` (1080 px) recortado a
+ * 512 px y SIN la marca de agua «miro» de la esquina. El de la cabecera (`logo-gcc.png`, 256 px)
+ * se vería borroso a este tamaño.
  *
- * ⚠️ Se dibuja con Satori, que **no es un navegador**: solo entiende flexbox y un
- * subconjunto de CSS. Todo `div` con más de un hijo necesita `display: flex` explícito, no
- * hay `gap` fiable —de ahí los márgenes a mano— y **no existe `background-clip: text`**,
- * así que el degradado del titular de la portada se aproxima con colores planos: blanco,
- * el rojo de «cruzar» y el violeta de la marca. Es lo más cerca que se puede estar sin
- * mentir sobre lo que se ve al entrar.
+ * ⚠️ Satori (lo que dibuja esto) no es un navegador: cada `div` con más de un hijo necesita
+ * `display: flex`, y una imagen local va como `data:` URL.
+ * ⚠️ WhatsApp, Teams y Google GUARDAN la miniatura de cada enlace: un enlace ya compartido puede
+ * seguir enseñando la vieja un tiempo. Los enlaces nuevos salen con esta.
  */
 
-export const alt = 'Un Corazón puede cruzar al mundo — Grupo Corazones Cruzados';
+export const alt = `${SITIO.nombre} — logo`;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-/**
- * La tipografía de la portada (Silkscreen, de Google Fonts) en binario, que es lo único
- * que Satori entiende.
- *
- * ⚠️ EL `User-Agent` VIEJO NO ES UN DESCUIDO. A un navegador moderno, Google devuelve
- * **woff2**, y Satori no sabe leerlo: la imagen saldría con la fuente por defecto y sin
- * avisar. Con un agente antiguo devuelve **TTF**, que sí entiende.
- *
- * Si algo falla —sin red, Google caído— se devuelve `null` y la imagen se dibuja con la
- * fuente por defecto: **una miniatura con otra letra es mucho mejor que ninguna
- * miniatura**, que es lo que pasaría si esto lanzara.
- */
-async function fuenteDeLaPortada(): Promise<ArrayBuffer | null> {
-  try {
-    const css = await fetch('https://fonts.googleapis.com/css2?family=Silkscreen:wght@700', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1)' },
-    }).then((r) => r.text());
-
-    const url = css.match(/src:\s*url\((https:[^)]+)\)/)?.[1];
-    if (!url) return null;
-    return await fetch(url).then((r) => r.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
 export default async function Image() {
-  const pixel = await fuenteDeLaPortada();
+  const logo = await readFile(join(process.cwd(), 'public', 'logo-gcc-512.png'));
+  const logoUrl = `data:image/png;base64,${logo.toString('base64')}`;
 
   return new ImageResponse(
     (
@@ -69,79 +45,52 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '0 80px',
-          textAlign: 'center',
           backgroundColor: '#0b0d14',
-          // El mismo resplandor violeta del fondo de la portada.
           backgroundImage:
-            'radial-gradient(circle at 50% 38%, rgba(123,95,191,0.34) 0%, rgba(75,45,142,0.14) 38%, rgba(11,13,20,0) 68%)',
-          fontFamily: pixel ? 'Silkscreen' : undefined,
+            'radial-gradient(circle at 50% 40%, rgba(124,58,237,0.42) 0%, rgba(91,58,174,0.16) 34%, rgba(11,13,20,0) 64%)',
         }}
       >
+        {/* El logo, protagonista, con un halo violeta como el de la marca en la portada. */}
         <div
           style={{
             display: 'flex',
-            fontSize: 66,
+            width: 300,
+            height: 300,
+            borderRadius: 9999,
+            boxShadow: '0 0 0 10px rgba(167,139,250,0.18), 0 30px 80px rgba(124,58,237,0.45)',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoUrl} width={300} height={300} alt="" style={{ borderRadius: 9999 }} />
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            marginTop: 52,
+            fontSize: 54,
             fontWeight: 700,
             color: '#ffffff',
-            lineHeight: 1.25,
-          }}
-        >
-          Un Corazón puede
-        </div>
-
-        {/* La segunda línea, con «cruzar» en rojo como en la portada. En Satori cada trozo
-            de color es su propio nodo: no hay `<span>` con degradado que valga. */}
-        <div style={{ display: 'flex', marginTop: 14, fontSize: 66, fontWeight: 700, lineHeight: 1.25 }}>
-          <span style={{ color: '#ef4444' }}>cruzar</span>
-          <span style={{ color: '#A78BFA', marginLeft: 18 }}>al mundo</span>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            marginTop: 46,
-            fontSize: 22,
-            letterSpacing: '0.08em',
-            color: '#94A3B8',
-          }}
-        >
-          PROYECTO DE DESARROLLO HUMANO
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            marginTop: 56,
-            fontSize: 20,
-            color: 'rgba(255,255,255,0.34)',
-          }}
-        >
-          {/* Solo el dominio: Fernando pidió el 2026-08-20 que el sitio dejara de decir la
-              ciudad después de ver esta imagen en un resultado de Google junto a su
-              dirección. */}
-          grupocc.org
-        </div>
-
-        {/* El nombre de la empresa, discreto abajo: el titular es el gancho, esto es la
-            firma. Antes presidía la imagen y le quitaba el sitio a la frase. */}
-        <div
-          style={{
-            display: 'flex',
-            marginTop: 10,
-            fontSize: 18,
-            color: 'rgba(255,255,255,0.22)',
+            letterSpacing: '-0.02em',
           }}
         >
           {SITIO.nombre}
         </div>
+
+        {/* Solo el dominio: sin ciudad (Fernando, 2026-08-20). */}
+        <div
+          style={{
+            display: 'flex',
+            marginTop: 14,
+            fontSize: 24,
+            letterSpacing: '0.12em',
+            color: '#a78bfa',
+          }}
+        >
+          grupocc.org
+        </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: pixel
-        ? [{ name: 'Silkscreen', data: pixel, style: 'normal' as const, weight: 700 as const }]
-        : undefined,
-    },
+    { ...size },
   );
 }
