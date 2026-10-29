@@ -4094,3 +4094,21 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .panel-mundo-etiqueta { font-size: 0.6rem; }
   .panel-mundo-boton { height: 42px; font-size: 0.88rem; }
 }
+
+/* ═══ DIRECCIÓN DE CADA MUNDO (Fernando, 2026-10-28) ═══
+   Progreso, en escritorio, alineado a la DERECHA y con la flecha a la izquierda apuntando ←
+   (hacia donde se expande). En el teléfono: Aventura ↓ y Progreso ↑. Al pasar el puntero, la
+   flecha avanza en ese sentido. */
+.panel-mundo-flecha { --dir: 0deg; --empuje: translateX(4px); transform: rotate(var(--dir)); }
+.panel-mundo-boton:hover:not(:disabled) .panel-mundo-flecha { transform: var(--empuje) rotate(var(--dir)); }
+@media (min-width: 640px) {
+  .panel-mundo-progreso .panel-mundo-texto { align-items: flex-end; text-align: right; }
+  .panel-mundo-progreso .panel-mundo-ventajas li { flex-direction: row-reverse; }
+  .panel-mundo-progreso .panel-mundo-boton { flex-direction: row-reverse; }
+  .panel-mundo-progreso .panel-mundo-flecha { --dir: 180deg; --empuje: translateX(-4px); }
+  .panel-mundo-progreso .panel-mundo-desc { margin-left: auto; }
+}
+@media (max-width: 639.98px) {
+  .panel-mundo-aventura .panel-mundo-flecha { --dir: 90deg; --empuje: translateY(3px); }
+  .panel-mundo-progreso .panel-mundo-flecha { --dir: -90deg; --empuje: translateY(-3px); }
+}

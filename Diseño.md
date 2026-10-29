@@ -266,6 +266,11 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > «cruzar al mundo» con degradado rosa→lila (más oscuro en la Plataforma) y una línea de luz que
 > crece debajo. Su hueco está siempre reservado: nada se mueve al aparecer.
 >
+> **Espejo y dirección (2026-10-28, Fernando).** En escritorio, Progreso alineado a la DERECHA
+> (ventajas con el icono a la derecha) y su botón con la flecha ← delante; Aventura →. En el
+> teléfono, Aventura ↓ y Progreso ↑: cada flecha apunta hacia donde se expande su mundo, y al
+> pasar el puntero avanza en ese sentido (`--dir`, `--empuje` en `.panel-mundo-flecha`).
+>
 > **⭐ VIGENTE (2026-10-28): los paneles de mundo, SIN IMÁGENES y en TODA la app.** Fernando: le
 > gustó el panel de texto y no las vistas previas («reformula por completo para una app completa»).
 > `PanelesMundo` sustituye a `TarjetasMundo` (borrada) en teléfono y escritorio: etiqueta, título

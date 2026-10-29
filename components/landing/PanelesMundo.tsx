@@ -70,8 +70,10 @@ export default function PanelesMundo({ onElegir, bloqueado }: { onElegir: (m: Mu
             ))}
           </ul>
           <button type="button" onClick={() => elegir(m)} disabled={bloqueado} className="panel-mundo-boton">
-            {d.boton}
-            <ArrowRight aria-hidden="true" />
+            {/* La flecha apunta hacia donde se EXPANDE el mundo al elegirlo (Fernando,
+                2026-10-28): escritorio → / ←; teléfono ↓ / ↑. La gira el CSS. */}
+            <span className="panel-mundo-texto-boton">{d.boton}</span>
+            <ArrowRight aria-hidden="true" className="panel-mundo-flecha" />
           </button>
         </div>
       </section>
