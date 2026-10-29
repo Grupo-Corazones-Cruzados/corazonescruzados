@@ -7929,6 +7929,12 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     a abrir con los datos y los `definedNames`, PDF de 8 páginas), panel y página pública en claro, oscuro
     y 390 px (sin desbordar), y la API de punta a punta (crear, abrir sin cuenta, uso, cerrar, rechazos,
     borrar; la fila de prueba se borró por su id).
+  - ⚠️ **TOPE: una hoja de más de ~537 MB descomprimida NO se puede leer (2026-10-29).** `readSheet` hace
+    `dec.decode(u8)` de la hoja entera y V8 (Chrome y Node) no crea textos de más de 536.870.888 caracteres:
+    `Cannot create a string longer than 0x1fffffe8 characters`. Enero (hoja de 454 MB) entra; Febrero (634 MB),
+    Marzo (700 MB) y Junio (791 MB en «Libro de Ventas junio 24_B», 1,37 GB todo el libro) no. Mismo formato,
+    no es corrupción: es tamaño. Arreglo pendiente: leer la hoja por trozos (filas) sin un único texto.
+    Además «Libro ventas Febrero 24» (sin «de») no casa con `/LIBRO\s+DE\s+VENTAS/` y no recomienda el formato.
 - **🎨 Muestrario de marca publicado (Fernando, 2026-10-27).** «Colores de Corazones Cruzados»:
   https://claude.ai/artifact/B2T7YWjtoxxsq7JiTriUmd — colores (familia del morado #4B2D8E, sitio público,
   panel, estados), equivalencias claro↔oscuro, las 6 tipografías, tamaños del panel, logo, iconos y

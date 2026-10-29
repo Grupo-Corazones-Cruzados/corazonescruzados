@@ -10909,3 +10909,9 @@ el «Enlace de un solo uso». Fernando, a mitad: adaptar el diseño al de la app
 - **Decisión:** se reutilizaron los datos del muestrario viejo en vez de rehacerlos, quitando la sección del
   editor del mundo (`editorUi.tsx` ya no existe) y sumando sitio público, raíl y portada.
 - **Resultado:** https://claude.ai/artifact/B2T7YWjtoxxsq7JiTriUmd
+
+### P-2026-10-29 — ¿Por qué «Ventas Febrero 24», «Ventas Marzo 2024» y «Ventas Junio 24» fallan? · ✅ Resuelta
+- **Respuesta:** mismo formato que Enero (dos/tres hojas, `.xlsx` normal, sin zip64 ni contraseña). Falla por
+  tamaño: la hoja más grande descomprimida (634 / 700 / 791 MB) supera el máximo de texto de V8 (536,9 M
+  caracteres) y `readSheet` la decodifica entera. Enero (454 MB) queda por debajo. Fuente: inspección del zip +
+  prueba con `TextDecoder` en Node. Solución: leer la hoja por trozos.
