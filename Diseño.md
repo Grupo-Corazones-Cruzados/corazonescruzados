@@ -266,6 +266,14 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > «cruzar al mundo» con degradado rosa→lila (más oscuro en la Plataforma) y una línea de luz que
 > crece debajo. Su hueco está siempre reservado: nada se mueve al aparecer.
 >
+> **⭐ PROPUESTA (2026-10-28): el escritorio como SITIO, el teléfono como APP.** Fernando: en
+> computadora «no parece un sitio web profesional», en teléfono sí le gusta. Desde `lg` la pantalla
+> de inicio usa `PanelesMundo.tsx` en vez de las tarjetas: cada mitad, una sección de producto
+> (etiqueta, título grande, descripción, tres ventajas con icono, botón «Entrar a la Aventura →» /
+> «Ir a mi Progreso →» y la vista previa —escena del juego / panel— hacia la raya; la vista se
+> oculta por debajo de 1280 px y las ventajas en ventanas bajas). Las tarjetas flotantes
+> decorativas se ocultan mientras se elige. El teléfono no cambia. PENDIENTE DE SU VISTO BUENO.
+>
 > **⭐ Roles MINIMALISTAS (2026-10-28, Fernando).** Deroga el estilo «tarjeta de mundo» de los roles:
 > sin escena, resplandor ni esquinas; icono de 40 px, título, una línea de texto y flecha tenue.
 > Escritorio: 4 (o 3) columnas, icono arriba-izquierda y flecha arriba-derecha, descripción en 2

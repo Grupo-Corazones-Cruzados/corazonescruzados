@@ -42,7 +42,7 @@ const TEXTOS: Record<Mundo, { modo: string; titulo: string; descripcion: string;
   },
 };
 
-function IconoAventura() {
+export function IconoAventura() {
   return (
     <div className="tm-icono tm-icono-aventura" aria-hidden="true">
       <span className="tm-estrella" style={{ left: '14%', top: '18%' }} />
@@ -55,7 +55,7 @@ function IconoAventura() {
   );
 }
 
-function IconoProgreso() {
+export function IconoProgreso() {
   return (
     <div className="tm-icono tm-icono-progreso" aria-hidden="true">
       <div className="tm-panel">

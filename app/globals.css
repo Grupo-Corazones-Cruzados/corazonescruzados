@@ -3975,3 +3975,86 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
     height: 2.7em !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LA PANTALLA DE INICIO EN ESCRITORIO COMO SITIO (Fernando, 2026-10-28). `PanelesMundo`:
+   cada mitad, una sección de producto (texto hacia fuera, vista previa hacia la raya). Sin las
+   tarjetas flotantes decorativas mientras se elige (daban aire de demo). El teléfono, igual.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.contents-movil { display: contents; }
+@media (min-width: 1024px) {
+  .contents-movil { display: none; }
+  .landing-page[data-modo='partido'] .ea-hud,
+  .landing-page[data-modo='partido'] .ep-tarjeta { opacity: 0; transition: opacity 400ms ease; }
+  .ea-hud, .ep-tarjeta { transition: opacity 500ms ease 600ms; }
+  .portada-zona .inicio-portada { width: 100vw; margin-inline: calc(50% - 50vw); }
+}
+.paneles-mundo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  text-align: left;
+}
+.panel-mundo {
+  display: grid;
+  align-items: center;
+  gap: clamp(20px, 3vw, 48px);
+  padding: 0 clamp(28px, 5vw, 88px);
+}
+/* Aventura (izquierda): texto a la izquierda, vista hacia la raya. Progreso (derecha): vista
+   hacia la raya, texto a la derecha. Así las dos vistas previas flanquean el centro. */
+.panel-mundo-aventura { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.panel-mundo-progreso { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+.panel-mundo-progreso .panel-mundo-vista { order: -1; }
+.panel-mundo-texto { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.panel-mundo-etiqueta {
+  font-family: 'Inter', system-ui, sans-serif; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.28em; text-transform: uppercase;
+}
+.panel-mundo-titulo {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700;
+  font-size: clamp(2.2rem, 3.4vw, 3.4rem); line-height: 1; letter-spacing: -0.04em; margin: 0;
+}
+.panel-mundo-desc { font-family: 'Inter', system-ui, sans-serif; font-size: clamp(0.92rem, 1.05vw, 1.05rem); line-height: 1.55; max-width: 34ch; margin: 0; }
+.panel-mundo-ventajas { list-style: none; margin: 4px 0 6px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.panel-mundo-ventajas li { display: flex; align-items: center; gap: 10px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.9rem; }
+.panel-mundo-ventajas svg { width: 17px; height: 17px; flex: none; }
+.panel-mundo-boton {
+  display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 24px;
+  border-radius: 9999px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.95rem; font-weight: 600;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.panel-mundo-boton svg { width: 18px; height: 18px; transition: transform 200ms ease; }
+.panel-mundo-boton:hover:not(:disabled) { transform: translateY(-2px); }
+.panel-mundo-boton:hover:not(:disabled) svg { transform: translateX(4px); }
+.panel-mundo-boton:focus-visible { outline: 2px solid #e879f9; outline-offset: 3px; }
+.panel-mundo.es-elegido .panel-mundo-boton { transform: scale(0.96); }
+.panel-mundo-vista .tm-icono { height: clamp(170px, 26vh, 260px); border-radius: 22px; }
+.panel-mundo-vista .tm-personaje { --alto: clamp(96px, 15vh, 150px); }
+.panel-mundo-vista .tm-panel { width: 70%; height: 66%; }
+.panel-mundo-vista .tm-visto { width: 34px; height: 34px; }
+/* Colores de cada mundo. */
+.panel-mundo-aventura { color: #f5f3ff; }
+.panel-mundo-aventura .panel-mundo-etiqueta { color: #c4b5fd; }
+.panel-mundo-aventura .panel-mundo-desc { color: #bdb6d6; }
+.panel-mundo-aventura .panel-mundo-ventajas li { color: #dcd6f2; }
+.panel-mundo-aventura .panel-mundo-ventajas svg { color: #a78bfa; }
+.panel-mundo-aventura .panel-mundo-boton { color: #fff; background: linear-gradient(135deg, #7c5ce0, #a21caf); box-shadow: 0 14px 30px -14px rgba(124, 92, 224, 0.9); }
+.panel-mundo-aventura .panel-mundo-vista .tm-icono { box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(167, 139, 250, 0.25); }
+.panel-mundo-progreso { color: #17122b; }
+.panel-mundo-progreso .panel-mundo-etiqueta { color: #6d28d9; }
+.panel-mundo-progreso .panel-mundo-desc { color: #5b5470; }
+.panel-mundo-progreso .panel-mundo-ventajas li { color: #2b2540; }
+.panel-mundo-progreso .panel-mundo-ventajas svg { color: #7c3aed; }
+.panel-mundo-progreso .panel-mundo-boton { color: #fff; background: linear-gradient(135deg, #5b3aae, #7c3aed); box-shadow: 0 14px 30px -14px rgba(91, 58, 174, 0.8); }
+.panel-mundo-progreso .panel-mundo-vista .tm-icono { box-shadow: 0 30px 60px -30px rgba(75, 45, 142, 0.55), 0 0 0 1px rgba(75, 45, 142, 0.1); }
+@media (max-width: 1279.98px) {
+  .panel-mundo { grid-template-columns: 1fr !important; padding: 0 clamp(24px, 4vw, 48px); }
+  .panel-mundo-vista { display: none; }
+}
+@media (max-height: 720px) {
+  .panel-mundo-ventajas { display: none; }
+  .panel-mundo-vista .tm-icono { height: 150px; }
+}

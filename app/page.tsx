@@ -8,6 +8,7 @@ import PieSitio from '@/components/sitio/PieSitio';
 import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
 import TarjetasMundo from '@/components/landing/TarjetasMundo';
+import PanelesMundo from '@/components/landing/PanelesMundo';
 import RolesMundo from '@/components/landing/RolesMundo';
 import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
@@ -3058,7 +3059,10 @@ export default function LandingPage() {
             {!mundoElegido ? (
               <div key="inicio" className="inicio-portada">
                 <div className="inicio-tarjetas aparecer" style={{ ['--retraso' as string]: '360ms' }}>
-                  <TarjetasMundo onElegir={elegirMundo} bloqueado={landingLocked} />
+                  {/* Teléfono y tableta: las tarjetas. Escritorio (`lg`): cada mitad como sección
+                      de producto (Fernando, 2026-10-28). Se esconden con CSS: no hay diálogos. */}
+                  <div className="lg:hidden contents-movil"><TarjetasMundo onElegir={elegirMundo} bloqueado={landingLocked} /></div>
+                  <div className="hidden lg:block"><PanelesMundo onElegir={elegirMundo} bloqueado={landingLocked} /></div>
                 </div>
                 <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>
                   <FeaturedThought compacto />
