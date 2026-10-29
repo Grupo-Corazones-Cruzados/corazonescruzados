@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOpcionesAcceso, type AccionesAcceso, type OpcionAcceso } from '@/components/landing/opcionesAcceso';
+import { sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 
 function Tarjeta({
   o,
@@ -113,7 +114,7 @@ export default function RolesMundo({
   return (
     <div className={`roles-mundo roles-${tema}`}>
       {onVolver && (
-        <button type="button" onClick={onVolver} className="roles-volver aparecer" style={{ ['--retraso' as string]: `${retrasoBase}ms` }}>
+        <button type="button" onClick={() => { sonarVolver(); onVolver(); }} className="roles-volver aparecer" style={{ ['--retraso' as string]: `${retrasoBase}ms` }}>
           <ArrowLeft aria-hidden="true" />
           Volver
         </button>

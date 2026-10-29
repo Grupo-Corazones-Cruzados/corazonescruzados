@@ -81,3 +81,115 @@ export function sonarSeleccion() {
     // Sin audio no se rompe nada: el clic sigue funcionando en silencio.
   }
 }
+
+/**
+ * EL SONIDO DE LA UNIÓN — cuando el corazón se posa sobre la Tierra en «el cruce del corazón»
+ * (Fernando, 2026-10-29: «cuando el corazón da ese golpe… suene un sonido»).
+ *
+ * Un golpe grave como un latido (seno que cae de 150 a 50 Hz) y, encima, una campanita cálida
+ * que brilla y se apaga (sol–si–re, dos octavas arriba, en seno, con un leve trémolo), más un eco.
+ * Se PROGRAMA con el reloj de audio para que caiga justo en el contacto: `enSegundos` después de
+ * llamarla (el contacto es el 62 % de `corazonCruza`, 1,9 s → ~1,2 s). Devuelve con qué cancelarlo
+ * (si se pulsa «Volver» antes). Usa el contexto que abrió el clic del mundo (gesto válido en iOS).
+ */
+export function sonarUnion(enSegundos: number): () => void {
+  const nodos: AudioScheduledSourceNode[] = [];
+  try {
+    const ctx = obtenerContexto();
+    if (!ctx) return () => undefined;
+    const t0 = ctx.currentTime + Math.max(0, enSegundos);
+
+    const salida = ctx.createGain();
+    salida.gain.value = 0.42;
+    salida.connect(ctx.destination);
+    const eco = ctx.createDelay();
+    eco.delayTime.value = 0.14;
+    const ecoGanancia = ctx.createGain();
+    ecoGanancia.gain.value = 0.25;
+    salida.connect(eco);
+    eco.connect(ecoGanancia);
+    ecoGanancia.connect(ctx.destination);
+
+    // 1. El golpe: un latido grave.
+    const golpe = ctx.createOscillator();
+    const golpeVol = ctx.createGain();
+    golpe.type = 'sine';
+    golpe.frequency.setValueAtTime(150, t0);
+    golpe.frequency.exponentialRampToValueAtTime(50, t0 + 0.22);
+    golpeVol.gain.setValueAtTime(0.0001, t0);
+    golpeVol.gain.exponentialRampToValueAtTime(1, t0 + 0.008);
+    golpeVol.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+    golpe.connect(golpeVol).connect(salida);
+    golpe.start(t0);
+    golpe.stop(t0 + 0.35);
+    nodos.push(golpe);
+
+    // 2. La campanita: tres notas casi a la vez (un acorde que se abre), largas y suaves.
+    [1568.0, 1975.5, 2349.3].forEach((f, i) => {
+      const inicio = t0 + 0.02 + i * 0.045;
+      const osc = ctx.createOscillator();
+      const vol = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, inicio);
+      // Un trémolo leve: la campana «vibra».
+      const lfo = ctx.createOscillator();
+      const lfoVol = ctx.createGain();
+      lfo.frequency.value = 6;
+      lfoVol.gain.value = f * 0.004;
+      lfo.connect(lfoVol).connect(osc.frequency);
+      vol.gain.setValueAtTime(0.0001, inicio);
+      vol.gain.exponentialRampToValueAtTime(0.28, inicio + 0.012);
+      vol.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.9);
+      osc.connect(vol).connect(salida);
+      osc.start(inicio);
+      lfo.start(inicio);
+      osc.stop(inicio + 0.95);
+      lfo.stop(inicio + 0.95);
+      nodos.push(osc, lfo);
+    });
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+  return () => {
+    nodos.forEach((n) => { try { n.stop(); } catch { /* ya parado */ } });
+  };
+}
+
+/**
+ * EL «VOLVER» — el cancelar de un menú de videojuego (Fernando, 2026-10-29: «y al darle al botón
+ * de volver también un sonido»). La pareja del «confirmar»: el mismo timbre de 8 bits, pero dos
+ * notas que BAJAN (sol6 → do6) y más suave. Suena con el botón «Volver» y con Escape.
+ */
+export function sonarVolver() {
+  try {
+    const ctx = obtenerContexto();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + 0.005;
+    const salida = ctx.createGain();
+    salida.gain.value = VOLUMEN * 0.8;
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = 'lowpass';
+    filtro.frequency.value = 3200;
+    salida.connect(filtro);
+    filtro.connect(ctx.destination);
+
+    [1568.0, 1046.5].forEach((f, i) => {
+      const inicio = t0 + i * 0.075;
+      const largo = i === 0 ? 0.07 : 0.16;
+      const osc = ctx.createOscillator();
+      const vol = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(f, inicio);
+      // La segunda nota cae un poco al final: suena a «de vuelta».
+      if (i === 1) osc.frequency.exponentialRampToValueAtTime(f * 0.94, inicio + largo);
+      vol.gain.setValueAtTime(0.0001, inicio);
+      vol.gain.exponentialRampToValueAtTime(0.45, inicio + 0.006);
+      vol.gain.exponentialRampToValueAtTime(0.0001, inicio + largo);
+      osc.connect(vol).connect(salida);
+      osc.start(inicio);
+      osc.stop(inicio + largo + 0.02);
+    });
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+}

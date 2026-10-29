@@ -395,6 +395,10 @@ Stack estándar de la casa, con particularidades de este repo:
      un «confirmar» de videojuego SINTETIZADO con Web Audio (`lib/sitio/sonidoSeleccion.ts`: golpe
      grave + arpegio do–mi–sol en onda cuadrada filtrada + eco; ~0,45 s; volumen 0,32). Sin
      archivo ni licencia; se llama dentro del clic (iOS).
+     **La unión y Volver (2026-10-29):** `sonarUnion` (latido grave 150→50 Hz + campanita sol–si–re
+     con trémolo y eco) PROGRAMADO con el reloj de audio en el contacto del corazón con la Tierra
+     (62 % de `corazonCruza` = 1,18 s tras `setChoque`; ~2,1 s tras el clic) y cancelado si se vuelve
+     antes; `sonarVolver` (dos notas que bajan, sol6→do6) en «Volver» y en Escape.
   6. **Sin desplazamiento** en ningún tamaño; márgenes seguros del teléfono (`--seguro-arriba/abajo`).
   **Descartado por Fernando** (no repetir; lista completa en `Diseño.md`): elegir al pasar el
   puntero, raya que sigue al puntero, texto partido de color, cristal/placa detrás del titular,

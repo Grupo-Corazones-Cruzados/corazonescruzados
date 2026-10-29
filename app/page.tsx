@@ -9,6 +9,7 @@ import FeaturedThought from '@/components/landing/FeaturedThought';
 import FondosPortada from '@/components/landing/FondosPortada';
 import PanelesMundo from '@/components/landing/PanelesMundo';
 import RolesMundo from '@/components/landing/RolesMundo';
+import { sonarUnion, sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
@@ -2684,15 +2685,25 @@ export default function LandingPage() {
       t.style.setProperty('--dx-mundo', `${(mundo.left + mundo.width / 2) - centro}px`);
       choqueRef.current = true;
       setChoque(true);
+      // El sonido de la unión, en el instante en que el corazón toca la Tierra: el 62 % de
+      // `corazonCruza` (1,9 s) → 1,18 s; con «reducir movimiento» ya están unidos, suena al momento.
+      cancelarUnion = sonarUnion(reducirMovimiento ? 0 : 1.18);
     }, 650);
-    return () => window.clearTimeout(id);
+    let cancelarUnion: () => void = () => undefined;
+    return () => {
+      window.clearTimeout(id);
+      cancelarUnion();
+    };
   }, [mundoElegido]);
 
   // Escape también vuelve a la pantalla de inicio, si no hay un diálogo abierto encima.
   useEffect(() => {
     if (!mundoElegido) return;
     const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) setMundoElegido(null);
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) {
+        sonarVolver();
+        setMundoElegido(null);
+      }
     };
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
