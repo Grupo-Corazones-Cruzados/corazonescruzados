@@ -114,10 +114,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
       } else if (inv.source_type === 'ticket' && inv.source_id) {
         // Voiding a ticket invoice → ticket goes back to billable + drop its income.
+        // Si fue el cobro el que lo completó, vuelve al estado que tenía (`origen_estado_previo`).
         try {
           await pool.query(
-            `UPDATE gcc_world.tickets SET status = 'confirmed', updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
-            [inv.source_id]
+            `UPDATE gcc_world.tickets SET status = $2, completed_at = NULL, updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
+            [inv.source_id, inv.origen_estado_previo || 'confirmed']
           );
           await removeIncomeFromFinance('ticket', String(inv.source_id));
         } catch (e: any) {
@@ -139,8 +140,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         for (const pid of projectIds) {
           try {
             await pool.query(
-              `UPDATE gcc_world.projects SET status = 'review', updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
-              [pid]
+              `UPDATE gcc_world.projects SET status = $2, updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
+              [pid, inv.origen_estado_previo || 'review']
             );
             await removeIncomeFromFinance('project', pid);
           } catch (e: any) {

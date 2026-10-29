@@ -24,6 +24,7 @@ import { getProjectBilling, getTicketBilling } from '@/lib/payments';
 import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
+import { completarOrigenCobrado } from '@/lib/pagos/completar-origen';
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
@@ -1041,6 +1042,11 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
       `UPDATE gcc_world.invoices SET status = 'paid', updated_at = NOW() WHERE id = $1 AND status <> 'cancelled'`,
       [invoiceId],
     );
+    // Pagado y sin nada más por cobrar ⇒ el ticket o el proyecto queda completado.
+    if (!esSuscripcion) {
+      try { await completarOrigenCobrado(sourceType, sourceId, invoiceId); }
+      catch (e: any) { console.error('[pagos] cobro', intento.id, 'no pudo completar el origen:', e.message); }
+    }
   }
 
   // ⚠️ UNA SUSCRIPCIÓN TIENE QUE QUEDAR MARCADA COMO PAGADA EN SU PROPIA TABLA.
