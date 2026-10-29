@@ -15,6 +15,8 @@ agregarlas al estado financiero mensual»*.
   `source_id` = clave de acceso, también en `finance_source_log`): 2025 = 12 facturas, **7.955 $**
   (meses 1-9, 11 y 12; octubre sin facturas); 2026-02 = 5, 447,44 $; 2026-03 = 020 (100 $) y 021 (655 $),
   sin renglón manual de marzo que las cubriera. Total 9.157,44 $. Archivo de la clave borrado.
+- **2024 revisado (Fernando, 2026-10-29: «mi ruc creo que lo cree desde el año 2024»):** los 366 días
+  recorridos, **ninguna factura emitida**. Cuadra con que la 001-001-000000001 sea del 31/01/2025.
 - **Regla de Fernando (2026-10-29): «hay que omitir siempre lo rechazado».** Solo AUTORIZADAS. Las 002, 017,
   022 y 025 no salen autorizadas y no se cargan. Fuera también las de la plataforma del 29/03/2026
   (001 a su nombre con la numeración reiniciada y 023 a Karina, anulada en la plataforma pero AUTORIZADA en el SRI).
