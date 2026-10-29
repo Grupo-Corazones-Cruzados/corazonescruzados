@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { avisarInvitacionProyecto } from '@/lib/projects/members';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,14 +30,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'No hay requerimientos sin asignar. Crea requerimientos primero.' }, { status: 400 });
     }
 
+    const nuevos: (number | string)[] = [];
     for (const memberId of member_ids) {
-      await pool.query(
+      const { rowCount } = await pool.query(
         `INSERT INTO gcc_world.project_bids (project_id, member_id, status)
          VALUES ($1, $2, 'invited')
          ON CONFLICT (project_id, member_id) DO NOTHING`,
         [id, memberId]
       );
+      if (rowCount) nuevos.push(memberId);
     }
+    after(() => avisarInvitacionProyecto(id, nuevos, 'participant'));
     return NextResponse.json({ message: 'Invited' });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

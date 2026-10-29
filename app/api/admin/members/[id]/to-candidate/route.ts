@@ -2,6 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { randomBytes } from 'crypto';
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 
 /**
  * Convierte un MIEMBRO en CANDIDATO (solo admin). El usuario pasa a rol 'client' con
@@ -72,6 +74,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     await client.query(`UPDATE gcc_world.members SET is_active = false WHERE id = $1`, [id]);
 
     await client.query('COMMIT');
+    const nombre = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+    after(() => avisarReclutamiento('miembro_a_candidato', {
+      titulo: 'Miembro vuelve a candidato',
+      mensaje: `${nombre} pasó de miembro a candidato.`,
+      consulta: 'tab=candidatos',
+      excluirUserId: admin.userId,
+    }));
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     await client.query('ROLLBACK').catch(() => {});

@@ -4796,6 +4796,16 @@ mientras se escribe.
   marca, único color no tokenizado, es el logotipo), chips de permisos (acento = concedido) y acciones
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
+## Configuración → Notificaciones — una TABLA DE INTERRUPTORES por módulo (2026-10-29)
+`components/settings/NotificacionesPanel.tsx`. Cada módulo es una tarjeta (`bg-digi-card border
+rounded-lg`) con su cabecera en rejilla `[1fr_88px_88px]` (teléfono `[1fr_76px_64px]`, `px-3`): nombre del
+grupo y los títulos de columna en `text-[10.5px] uppercase text-digi-muted` centrados («Notificación»,
+«Campanita»). Cada fila: nombre a la izquierda y un `Interruptor` por canal centrado en su columna, con
+`destino-tactil`; si el aviso no tiene ese canal, la celda queda vacía (no un interruptor apagado). Se
+guarda al tocar, sin botón «Guardar», y si falla vuelve atrás con un toast. Arriba, la tarjeta «Este
+navegador» con el `BotonAvisosPush` de Mi día; se esconde sola cuando el botón no se pinta (app nativa).
+Verificado a 1440 y 390 px, claro y oscuro (`scrollWidth` = ancho).
+
 ## Desviaciones detectadas y resolución
 - **2026-10-29 · Filtro «Solo facturado» en el estado financiero** · **NUEVO** (Fernando). Un `Interruptor` con
   su texto en la fila de filtros (es un sí/no, no un segmentado). Cambia la columna a «Facturado», las cifras

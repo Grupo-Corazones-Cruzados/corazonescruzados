@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import type { CalendarEvent } from '@/lib/calendar/recurrence';
 import { avisosPendientes, claveAviso, textoAviso, UMBRALES } from '@/lib/calendar/avisos';
-import { asegurarTablaPush, enviarPush } from '@/lib/push';
+import { asegurarTablaPush } from '@/lib/push';
 import { avisarUsuarios } from '@/lib/push/avisos';
 import { reunionesGoogleProximas } from '@/lib/calendar/google';
 
@@ -39,8 +39,8 @@ function asegurarTablaAvisos(): Promise<void> {
 
 let corriendo = false;
 
-export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados: number; dispositivos: number }> {
-  if (corriendo) return { enviados: 0, dispositivos: 0 };
+export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados: number }> {
+  if (corriendo) return { enviados: 0 };
   corriendo = true;
   try {
     await Promise.all([asegurarTablaPush(), asegurarTablaAvisos()]);
@@ -79,7 +79,7 @@ export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados:
       if (g.length) porPersona.set(String(user_id), [...(porPersona.get(String(user_id)) || []), ...g]);
     }
 
-    let enviados = 0, dispositivos = 0;
+    let enviados = 0;
     for (const [userId, eventos] of porPersona) {
       for (const a of avisosPendientes(eventos, ahora)) {
         const clave = claveAviso(a.ev, a.inicio, a.umbral);
@@ -96,23 +96,25 @@ export async function revisarAvisosPush(ahora = Date.now()): Promise<{ enviados:
           );
         }
         const { titulo, detalle } = textoAviso(a.ev, a.faltan, a.ev.timezone || 'America/Guayaquil');
-        dispositivos += await enviarPush(userId, {
+        // Una sola puerta para la app nativa y el navegador. El navegador abre el Meet; la app
+        // nativa, Mi día (solo sabe abrir rutas de la plataforma).
+        await avisarUsuarios([userId], {
+          clase: 'reunion',
           titulo,
           cuerpo: detalle,
+          ruta: '/dashboard/mi-dia',
           url: a.ev.meeting_url || '/dashboard/mi-dia',
+          hilo: 'reuniones',
           // Misma etiqueta para la misma reunión: el aviso nuevo reemplaza al anterior.
           etiqueta: `reunion-${a.ev.id}-${a.inicio}`,
           insistir: a.umbral <= 5,
         });
-        // La app nativa (Android/iPhone) no tiene push web: va por su canal de siempre, el de los
-        // recordatorios. Abre Mi día: el aviso nativo solo sabe abrir rutas de la plataforma.
-        await avisarUsuarios([userId], { titulo, cuerpo: detalle, ruta: '/dashboard/mi-dia', hilo: 'reuniones' });
         enviados++;
       }
     }
     // Lo de hace más de 2 días ya no puede repetirse.
     await pool.query(`DELETE FROM gcc_world.avisos_reunion WHERE enviado_en < NOW() - INTERVAL '2 days'`);
-    return { enviados, dispositivos };
+    return { enviados };
   } finally {
     corriendo = false;
   }
@@ -140,14 +142,12 @@ export async function avisarPropuesta(
     const cuerpo = `${p.quien} propone «${p.titulo}» · ${cuando}`;
     const { createNotification } = await import('@/lib/notifications');
     for (const u of rows) {
-      const userId = String(u.id);
-      await createNotification(userId, { type: 'calendar_proposal', title: titulo, message: cuerpo, link: '/dashboard/mi-dia' })
+      // Campanita + teléfono/Mac/navegador. Una propuesta sigue valiendo horas después: si el
+      // equipo está apagado, que espere un día.
+      await createNotification(String(u.id), { type: 'calendar_proposal', title: titulo, message: cuerpo, link: '/dashboard/mi-dia' },
+        { push: { hilo: 'propuestas', etiqueta: `propuesta-${p.id}`, ttl: 24 * 3600 } })
         .catch((e: any) => console.error('[propuesta] campana', e?.message));
-      // Una propuesta sigue valiendo horas después: si el teléfono está apagado, que espere un día.
-      await enviarPush(userId, { titulo, cuerpo, url: '/dashboard/mi-dia', etiqueta: `propuesta-${p.id}` }, 24 * 3600)
-        .catch((e: any) => console.error('[propuesta] push', e?.message));
     }
-    await avisarUsuarios(rows.map((u: any) => String(u.id)), { titulo, cuerpo, ruta: '/dashboard/mi-dia', hilo: 'propuestas' });
   } catch (e: any) {
     console.error('[propuesta] aviso', e?.message);
   }

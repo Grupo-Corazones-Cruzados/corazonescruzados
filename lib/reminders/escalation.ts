@@ -23,7 +23,7 @@ function avisoAlTelefono(r: { user_id: string; title: string; remind_at: string 
     const h = Math.floor(restanteMs / HOUR); const m = Math.round((restanteMs % HOUR) / MIN);
     cuando = `En ${h} h${m ? ` ${m} min` : ''} · a las ${hora}`;
   }
-  return avisarUsuarios([r.user_id], { titulo: r.title || 'Recordatorio', cuerpo: cuando, ruta: '/dashboard/recordatorios' });
+  return avisarUsuarios([r.user_id], { clase: 'reminder', titulo: r.title || 'Recordatorio', cuerpo: cuando, ruta: '/dashboard/recordatorios' });
 }
 
 /**

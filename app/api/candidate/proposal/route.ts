@@ -1,5 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { getClientIp, hashIp, CLIENT_COOKIE } from '@/lib/world/session';
@@ -76,12 +78,17 @@ export async function POST(req: Request) {
     const deviceToken =
       cookieStore.get(PROPOSAL_COOKIE)?.value || randomBytes(24).toString('hex');
 
-    await pool.query(
+    const { rows: [nueva] } = await pool.query(
       `INSERT INTO gcc_world.candidate_proposals
          (email, reason, marketing, ip_hash, status, verification_token, device_token)
-       VALUES ($1, $2, $3, $4, 'pending', $5, $6)`,
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6) RETURNING id`,
       [cleanEmail, cleanReason, marketing === true, ipHash, token, deviceToken],
     );
+    after(() => avisarReclutamiento('postulacion_nueva', {
+      titulo: 'Nueva postulación',
+      mensaje: `${cleanEmail}: ${cleanReason.length > 140 ? cleanReason.slice(0, 137) + '…' : cleanReason}`,
+      consulta: `solicitud=${nueva.id}`,
+    }));
 
     // Cookie de dispositivo (1 año): reconoce al postulante aunque cambie su IP.
     cookieStore.set(PROPOSAL_COOKIE, deviceToken, {

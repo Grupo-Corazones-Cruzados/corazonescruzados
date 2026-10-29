@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { avisarUsuarios } from '@/lib/push/avisos';
 
 /**
  * MIEMBROS DE UN PROYECTO — responsable + participantes (concepto pedido por el usuario).
@@ -66,9 +67,40 @@ export async function setResponsible(
        DO UPDATE SET role='responsible', status=$3, updated_at=now()`,
     [projectId, memberId, status],
   );
+  if (opts.invited) void avisarInvitacionProyecto(projectId, [memberId], 'responsible');
   // Si queda como responsable ACTIVO, es también el miembro asignado del proyecto.
   if (!opts.invited) {
     await pool.query(`UPDATE gcc_world.projects SET assigned_member_id=$1, updated_at=now() WHERE id=$2`, [memberId, projectId]);
+  }
+}
+
+/**
+ * Notificación al teléfono/Mac de una invitación a un proyecto (Fernando, 2026-10-29). En la
+ * campanita ya sale sola: allí se DERIVA en vivo de `project_bids`/`project_members`. Nunca lanza.
+ */
+export async function avisarInvitacionProyecto(
+  projectId: number | string,
+  memberIds: (number | string)[],
+  rol: 'responsible' | 'participant',
+): Promise<void> {
+  try {
+    if (!memberIds.length) return;
+    const { rows } = await pool.query(
+      `SELECT u.id::text AS id, p.title
+         FROM gcc_world.users u JOIN gcc_world.projects p ON p.id = $1
+        WHERE u.member_id::bigint = ANY($2::bigint[])`,
+      [projectId, memberIds.map(Number)],
+    );
+    if (!rows.length) return;
+    await avisarUsuarios(rows.map((r: any) => r.id), {
+      clase: 'project_invitation',
+      titulo: rows[0].title || `Proyecto #${projectId}`,
+      cuerpo: rol === 'responsible' ? 'Te invitaron a liderar el proyecto.' : 'Te invitaron a participar en el proyecto.',
+      ruta: `/dashboard/projects/${projectId}`,
+      hilo: `proyecto-${projectId}`,
+    });
+  } catch (e: any) {
+    console.error('Aviso de invitación a proyecto:', e?.message);
   }
 }
 

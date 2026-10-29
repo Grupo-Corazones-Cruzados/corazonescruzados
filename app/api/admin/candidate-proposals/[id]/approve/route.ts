@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 import { generateClientToken } from '@/lib/world/session';
 import { sendCandidateApprovalEmail } from '@/lib/integrations/email';
 import { splitBaseCounter, isValidUsername } from '@/lib/workspace/username';
@@ -114,6 +116,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         WHERE id = $2`,
       [user.email ?? 'admin', proposal.id],
     );
+    after(() => avisarReclutamiento('postulacion_decidida', {
+      titulo: 'Postulación aprobada',
+      mensaje: `${cleanEmail} · la aprobó ${user.email}.`,
+      consulta: 'tab=solicitudes',
+      excluirUserId: user.userId,
+    }));
 
     // Correo de aprobación (sin contraseña: el candidato la define al continuar).
     try {

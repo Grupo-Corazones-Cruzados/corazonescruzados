@@ -1,5 +1,90 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-10-29) — NOTIFICACIONES DE LA APP MÓVIL + LA APP INSTALADA EN EL MACBOOK, CON NOTIFICACIONES · 🔎 80 % — SERVIDOR HECHO; MAC BLOQUEADO POR APPLE
+
+**Declarado por Fernando el 2026-10-29:** *«vamos a trabajar en las notificaciones que se recibe en la
+app movil, y ademas que la app se pueda instalar en mi macbook para incluso recibir notificaciones»*.
+
+**Rol asumido:** ingeniero de notificaciones multiplataforma (APNs / FCM / Web Push + PWA de escritorio).
+
+### Progreso
+- **% de información para el objetivo:** 80 %
+- **Resumen (2026-10-29):** las tres tuberías quedan en UNA puerta con preferencias (ver MEMORIA.md
+  § «UNA SOLA PUERTA DE AVISOS»), Reclutamiento avisa, Configuración → Notificaciones existe. El Mac
+  como app nativa está **bloqueado por Apple** (P6).
+
+### Fuentes consultadas (2026-10-29)
+- `lib/notifications.ts`, `lib/push/{index,avisos,fcm,apns}.ts`, `public/sw.js`, `app/manifest.ts`,
+  `components/calendar/BotonAvisosPush.tsx`, MEMORIA.md (§ app nativa, § avisos de Mi día).
+
+### Preguntas y respuestas
+#### P1 — ¿Qué tuberías de aviso existen hoy y qué llega a cada sitio? · ✅ Resuelta (código)
+- **Por qué importa:** antes de «arreglar las notificaciones» hay que saber por qué algo no llega.
+- **Respuesta:**
+  1. **Campanita** (`createNotification` → `gcc_world.notifications`): 13 llamadas (pujas y toma de
+     tickets/proyectos, decisión y presupuesto de cotizaciones, recordatorios, alta de ticket,
+     propuestas de calendario, suscripciones). **Casi ninguna sale al teléfono**: solo suscripciones
+     y propuestas de calendario llaman además al push.
+  2. **Push nativo** (`avisarUsuarios` → `push_devices`, FCM/APNs): suscripciones, recordatorios,
+     reuniones, propuestas y chats. Solo app nativa.
+  3. **Web Push** (`enviarPush` → `push_suscripciones`, VAPID, `public/sw.js`): SOLO los avisos de
+     reuniones, y solo si se pulsó «Activar avisos» en Mi día (único sitio con el botón).
+  → Pujas, tickets tomados, cotizaciones aceptadas, etc. quedan en la campanita y no avisan a nadie.
+#### P2 — ¿Qué le falla o qué quiere Fernando de las notificaciones del móvil? · ✅ Resuelta (Fernando, 2026-10-29)
+- **Respuesta:** (1) **todo lo de la campanita** llega también al teléfono (y al Mac); (2) **cada uno
+  elige qué recibe**: *«en el módulo de proyecto centralizado hay que dar opciones para que los
+  miembros y administradores puedan configurar las notificaciones que desea recibir»*; (3) **en
+  especial RECLUTAMIENTO Y SELECCIÓN**: *«notificaciones de postulaciones, de cambios de candidatos a
+  miembros también»*.
+- **Eventos de reclutamiento encontrados en el código (2026-10-29), hoy SIN aviso a nadie del equipo:**
+  postulación nueva (`POST /api/candidate/proposal`), correo de la postulación verificado
+  (`/api/candidate/verify`), postulación aprobada / rechazada (`/api/admin/candidate-proposals/[id]/…`),
+  candidato completa su perfil (`/api/character/auth/complete-profile`), candidato → miembro
+  (`/api/admin/candidates/[id]/convert`), miembro → candidato (`/api/admin/members/[id]/to-candidate`).
+#### P5 — ¿Dónde viven las preferencias y quién recibe los avisos de reclutamiento? · ✅ Resuelta (Fernando, 2026-10-29)
+- **Respuesta:** pestaña **«Notificaciones» en Configuración**; los de Reclutamiento, **quien accede al
+  sistema** (admin + miembros por piso/paso o acceso compartido); **todo encendido por defecto**.
+#### P6 — ¿Con qué equipo de Apple se firma la app para el Mac? · ⏸ Espera a Fernando
+- **Hallazgo (2026-10-29, `xcodebuild` para «My Mac (Designed for iPad)»):** el equipo provisional
+  `5H27NSRYKQ` rechaza todo: *«PLA Update available… your team's Account Holder [titular de la cuenta
+  del cliente] must agree to the latest Program License Agreement»*. Hasta que acepte, ni el Mac ni una
+  reinstalación del iPhone/iPad se pueden firmar. Además hay que añadir la Mac (Provisioning UDID
+  `00006040-000429E134A0801C`) a los perfiles (lo hace `-allowProvisioningDeviceRegistration` ya con el
+  acuerdo aceptado).
+- **Opciones:** (a) que el titular acepte el acuerdo en developer.apple.com; (b) firmar con la cuenta
+  PROPIA de Fernando (objetivo «CUENTAS PROPIAS», P4: `lfgonzalezm0@outlook.com`) si ya está aprobada:
+  cambia el equipo, el identificador a `org.grupocc.gccworld` y la clave APNs (variables de Railway).
+#### P3 — ¿Cómo se instala en el MacBook y recibe avisos? · ✅ Resuelta (investigación)
+- **Respuesta:** la plataforma ya es PWA (manifiesto + SW con `push`). En macOS: Safari → Archivo →
+  «Añadir al Dock» (macOS 14+) o Chrome → «Instalar GCC World»: ventana propia, icono en el Dock y
+  notificaciones del sistema por Web Push (Safari lo usa vía APNs; Chrome vía FCM), con la app
+  cerrada (Safari) o con Chrome abierto en segundo plano (Chrome). Sin tienda ni compilación.
+  Alternativa: la app nativa del iPhone corre en Mac Apple Silicon («Diseñada para iPad»), pero va
+  firmada con el equipo provisional del cliente y sin Actividad en Vivo: más frágil.
+- **Lo que falta:** que el botón para activar avisos no esté escondido en Mi día y que TODO aviso
+  (no solo reuniones) salga también por Web Push.
+#### P4 — ¿Mac por PWA (Safari/Chrome) o por la app nativa? · ✅ Resuelta (Fernando, 2026-10-29) — **la app nativa del iPhone en el Mac**
+- **Cómo:** la Mac es Apple Silicon (arm64, macOS 27.0.1, Xcode 27): la app de `movil/ios/` corre como
+  «Mac (Designed for iPad)» sin otro proyecto. Hay que registrar la Mac en el equipo provisional
+  (`-allowProvisioningDeviceRegistration`), compilar para `platform=macOS,variant=Designed for iPad`
+  y comprobar: WebView + cookie, token APNs (`kind apns`, entorno sandbox), banners del sistema,
+  «Responder» de chat. Sin Actividad en Vivo (como en el iPad: el plugin ya lo detecta).
+
+### Plan de solución (borrador)
+1. **Una sola puerta de aviso**: `avisar(userIds, aviso)` = campanita + push nativo + Web Push. Las 13
+   llamadas de `createNotification` y las de `avisarUsuarios` pasan por ella (o `createNotification`
+   empuja sola), con `ruta` para abrir lo correcto al tocar.
+2. **Activar avisos desde cualquier sitio**: el botón sale de Mi día a la campanita / Configuración,
+   y en Mac/escritorio invita a instalar.
+3. Revisar el `sw.js` (icono, agrupación por `etiqueta`, abrir la ruta) y el manifiesto en escritorio
+   (`orientation: portrait` no afecta, pero revisar ventana).
+4. Probar: Mac (Safari «Añadir al Dock»), Android APK, iPhone nativo.
+
+### Riesgos
+- Duplicados: quien tenga app nativa Y Web Push en el mismo teléfono recibiría dos (la nativa no
+  registra Web Push: el botón no sale ahí — se conserva).
+- Avisos ya cubiertos por correo: decidir qué tipos merecen push para no saturar (P2).
+
 ## Objetivo (declarado 2026-10-29) — FACTURAS EMITIDAS EN 2025 AL «ESTADO FINANCIERO MENSUAL» · ✅ 100 % — CARGADAS Y VERIFICADAS
 
 **Declarado por Fernando el 2026-10-29:** *«actualizar el estado financiero mensual de la cuenta de

@@ -8,20 +8,23 @@ import AvailabilityPanel from '@/components/settings/AvailabilityPanel';
 import PortfolioPanel from '@/components/settings/PortfolioPanel';
 import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
 import ConexionesPanel from '@/components/settings/ConexionesPanel';
+import NotificacionesPanel from '@/components/settings/NotificacionesPanel';
 import Segmentado from '@/components/ui/Segmentado';
 import MenuMas from '@/components/ui/MenuMas';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
-import { FileText, CalendarClock, Briefcase, Share2, Link2, type LucideIcon } from 'lucide-react';
+import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones';
+type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones' | 'notificaciones';
 const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean }[] = [
   { key: 'cv', label: 'Mi CV', Icon: FileText, soloMiembro: true },
   { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock, soloMiembro: true },
   { key: 'portfolio', label: 'Portafolio', Icon: Briefcase, soloMiembro: true },
   // Conexiones (Google) es de miembros Y candidatos: la usan las Experiencias personales.
   { key: 'conexiones', label: 'Conexiones', Icon: Link2, soloMiembro: false },
+  // Qué avisos recibe cada uno y por dónde (Fernando, 2026-10-29: miembros y administradores).
+  { key: 'notificaciones', label: 'Notificaciones', Icon: Bell, soloMiembro: true },
 ];
 
 /**
@@ -134,6 +137,7 @@ export default function SettingsPage() {
               {tabActiva === 'availability' && <AvailabilityPanel />}
               {tabActiva === 'portfolio' && <PortfolioPanel />}
               {tabActiva === 'conexiones' && <ConexionesPanel />}
+              {tabActiva === 'notificaciones' && <NotificacionesPanel />}
             </div>
           </div>
         )}

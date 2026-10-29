@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 
 // POST — rechaza (elimina) una postulación de candidato (solo admin). Libera el
 // correo para una futura postulación.
@@ -12,12 +14,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
     const { id } = await params;
     const r = await pool.query(
-      `DELETE FROM gcc_world.candidate_proposals WHERE id = $1 RETURNING id`,
+      `DELETE FROM gcc_world.candidate_proposals WHERE id = $1 RETURNING id, email`,
       [id],
     );
     if (r.rowCount === 0) {
       return NextResponse.json({ error: 'Postulación no encontrada' }, { status: 404 });
     }
+    after(() => avisarReclutamiento('postulacion_decidida', {
+      titulo: 'Postulación rechazada',
+      mensaje: `${r.rows[0].email} · la rechazó ${user.email}.`,
+      consulta: 'tab=solicitudes',
+      excluirUserId: user.userId,
+    }));
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'unknown error';

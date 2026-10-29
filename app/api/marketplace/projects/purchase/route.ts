@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { avisarInvitacionProyecto } from '@/lib/projects/members';
 
 export async function POST(req: NextRequest) {
   const client = await pool.connect();
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
     }
 
     await client.query('COMMIT');
+    after(() => avisarInvitacionProyecto(newProjectId, acceptedBids.map((b: any) => b.member_id), 'participant'));
 
     return NextResponse.json({ data: { project_id: newProjectId } }, { status: 201 });
   } catch (err: any) {

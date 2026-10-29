@@ -1,7 +1,6 @@
 import { pool } from '@/lib/db';
 import { ensureSubscriptionTables, toYMD } from '@/lib/subscriptions';
 import { createNotification } from '@/lib/notifications';
-import { avisarUsuarios } from '@/lib/push/avisos';
 
 /**
  * SUSCRIPCIONES POR VENCER → AVISO (Fernando, 2026-10-07).
@@ -110,12 +109,11 @@ export async function avisarSuscripcionesPorVencer(simular = false): Promise<{ r
       const ruta = '/dashboard/subscriptions';
       const alCliente = { titulo: 'Tu suscripción ' + cuando, cuerpo: `«${s.title}» · ${fecha}. Págala para no perder el servicio.`, ruta };
       const alResponsable = { titulo: `Suscripción por cobrar: ${cuando}`, cuerpo: `«${s.title}» · ${fecha}.`, ruta };
+      // `createNotification` deja el aviso en la campanita y lo manda al teléfono/Mac. Un fallo no
+      // puede tumbar el resto: la fila de `subscription_alerts` ya está puesta.
       await Promise.all([
-        avisarUsuarios(destinatarios.clientes, alCliente),
-        avisarUsuarios(destinatarios.responsables, alResponsable),
-        // La campanita no puede tumbar el resto: la fila de `subscription_alerts` ya está puesta.
-        ...destinatarios.clientes.map((u) => createNotification(u, { type: 'subscription', title: alCliente.titulo, message: alCliente.cuerpo, link: ruta }).catch((e) => console.error('Campanita (suscripción):', e?.message))),
-        ...destinatarios.responsables.map((u) => createNotification(u, { type: 'subscription', title: alResponsable.titulo, message: alResponsable.cuerpo, link: ruta }).catch((e) => console.error('Campanita (suscripción):', e?.message))),
+        ...destinatarios.clientes.map((u) => createNotification(u, { type: 'subscription', title: alCliente.titulo, message: alCliente.cuerpo, link: ruta }).catch((e) => console.error('Aviso (suscripción):', e?.message))),
+        ...destinatarios.responsables.map((u) => createNotification(u, { type: 'subscription', title: alResponsable.titulo, message: alResponsable.cuerpo, link: ruta }).catch((e) => console.error('Aviso (suscripción):', e?.message))),
       ]);
       enviados++;
     }

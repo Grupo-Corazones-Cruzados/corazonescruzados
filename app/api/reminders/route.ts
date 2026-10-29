@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
         title: `Recordatorio: ${title}`,
         message: body.remind_at ? `Programado para ${new Date(body.remind_at).toLocaleString('es-EC')}` : 'Sin fecha',
         link: '/dashboard/recordatorios',
-      });
+        // Lo acaba de crear la propia persona: a la campanita sí, al teléfono no (le sonará al vencer).
+      }, { push: false });
     } catch { /* la notificación no debe bloquear */ }
 
     return NextResponse.json({ data: { id: r.id } }, { status: 201 });

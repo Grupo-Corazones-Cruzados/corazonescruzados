@@ -1,5 +1,7 @@
 import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { hashPassword } from '@/lib/auth/password';
@@ -32,17 +34,17 @@ export async function POST(req: Request) {
     const token = cookieStore.get(CLIENT_COOKIE)?.value || null;
     const ipHash = hashIp(await getClientIp());
 
-    let row: { id: number; email_verified: boolean; email: string | null } | null = null;
+    let row: { id: number; email_verified: boolean; email: string | null; account_type?: string | null; profile_completed?: boolean | null } | null = null;
     if (token) {
       const r = await pool.query(
-        `SELECT id, email_verified, email FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
+        `SELECT id, email_verified, email, account_type, profile_completed FROM gcc_world.clients WHERE client_token = $1 LIMIT 1`,
         [token],
       );
       row = r.rows[0] ?? null;
     }
     if (!row) {
       const r = await pool.query(
-        `SELECT id, email_verified, email FROM gcc_world.clients
+        `SELECT id, email_verified, email, account_type, profile_completed FROM gcc_world.clients
           WHERE ip_hash = $1
             AND (character_data IS NOT NULL
                  OR (account_type = 'candidate' AND approved = true AND COALESCE(profile_completed, false) = false))
@@ -131,6 +133,18 @@ export async function POST(req: Request) {
         `DELETE FROM gcc_world.candidate_proposals WHERE LOWER(email) = LOWER($1)`,
         [row.email],
       ).catch(() => undefined);
+    }
+
+    // Solo un CANDIDATO que termina su cuenta por primera vez (la ruta también la usan
+    // jugadores que no son candidatos).
+    if (row.account_type === 'candidate' && !row.profile_completed) {
+      const quien = (typeof fullName === 'string' && fullName.trim()) || row.email || 'Un candidato';
+      const candidatoId = row.id;
+      after(() => avisarReclutamiento('candidato_perfil', {
+        titulo: 'Candidato completó su perfil',
+        mensaje: `${quien} creó su cuenta y ya está en Candidatos.`,
+        consulta: `candidato=${candidatoId}`,
+      }));
     }
 
     cookieStore.set(AUTH_COOKIE, authToken, {

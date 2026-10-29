@@ -29,6 +29,8 @@ async function registro(): Promise<ServiceWorkerRegistration> {
  * se activa por separado. En iPhone el push solo existe con la app instalada en la pantalla de
  * inicio; sin instalar, el botón explica cómo. En la app nativa (Capacitor) no sale: allí los
  * avisos llegan solos por el push de la app.
+ * Desde 2026-10-29 trae TODOS los avisos (los que la persona deja encendidos en Configuración →
+ * Notificaciones, donde también está este botón), no solo los de reuniones.
  */
 export default function BotonAvisosPush({ className = '' }: { className?: string }) {
   const [estado, setEstado] = useState<Estado>('cargando');
@@ -113,7 +115,7 @@ export default function BotonAvisosPush({ className = '' }: { className?: string
   const Icono = estado === 'activo' ? BellRing : estado === 'bloqueado' ? BellOff : Bell;
   return (
     <button onClick={pulsar} disabled={ocupado} aria-pressed={estado === 'activo'}
-      title={estado === 'activo' ? 'Desactivar los avisos de reunión en este dispositivo' : 'Recibir avisos de reunión en este dispositivo'}
+      title={estado === 'activo' ? 'Desactivar las notificaciones en este dispositivo' : 'Recibir notificaciones en este dispositivo'}
       className={`${BTN_SECONDARY} ${estado === 'activo' ? '!text-accent !border-accent/40' : ''} ${className}`}>
       <Icono className="w-4 h-4" /> {estado === 'activo' ? 'Avisos activos' : 'Activar avisos'}
     </button>

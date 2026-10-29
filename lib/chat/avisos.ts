@@ -45,6 +45,7 @@ export async function avisarMensajeDeChat(o: {
 
     const texto = o.cuerpo.length > 180 ? `${o.cuerpo.slice(0, 177)}…` : o.cuerpo;
     await avisarUsuarios(destinatarios, {
+      clase: 'chat',
       tipo: 'chat',
       titulo,
       cuerpo: `${o.remitenteNombre}: ${texto}`,

@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
+import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 
 /**
  * Convierte un CANDIDATO en MIEMBRO (solo admin).
@@ -91,6 +93,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     await client.query(`UPDATE gcc_world.clients SET user_id = $1 WHERE id = $2`, [userId, cand.id]);
 
     await client.query('COMMIT');
+    after(() => avisarReclutamiento('candidato_a_miembro', {
+      titulo: 'Candidato pasa a miembro',
+      mensaje: `${name} ya es miembro del grupo.`,
+      consulta: `miembro=${memberId}`,
+      excluirUserId: admin.userId,
+    }));
     return NextResponse.json({ ok: true, member_id: memberId, user_id: userId });
   } catch (err: unknown) {
     await client.query('ROLLBACK').catch(() => {});

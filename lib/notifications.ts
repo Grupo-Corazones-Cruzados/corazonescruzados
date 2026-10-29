@@ -4,6 +4,9 @@
 // Las invitaciones de PROYECTO NO se guardan aquí: se derivan en vivo de
 // project_bids/project_members (ver app/api/notifications/route.ts).
 import { pool } from '@/lib/db';
+import { avisarUsuarios, type Aviso } from '@/lib/push/avisos';
+import { conAvisoEncendido } from '@/lib/avisos/preferencias';
+import { definicionDe } from '@/lib/avisos/catalogo';
 
 let ready = false;
 
@@ -26,15 +29,46 @@ export async function ensureNotificationsTable(): Promise<void> {
   ready = true;
 }
 
+/**
+ * Aviso de la CAMPANITA y, desde 2026-10-29 (Fernando: *«todo lo de la campanita»*), también
+ * notificación al teléfono y al Mac por `avisarUsuarios`. Cada canal respeta lo que la persona
+ * eligió en Configuración → Notificaciones (`type` es la clase del catálogo, `lib/avisos/catalogo.ts`).
+ *
+ * `push: false` cuando el aviso no merece sonar (lo acaba de hacer la propia persona); `push`
+ * con campos para afinar la notificación (hilo, etiqueta, ttl…). La notificación sale en
+ * segundo plano: quien llama solo espera a la fila de la campanita.
+ */
 export async function createNotification(
   userId: string,
   n: { type: string; title: string; message?: string; link?: string },
+  opciones: { push?: false | Partial<Omit<Aviso, 'clase' | 'titulo' | 'cuerpo'>> } = {},
 ): Promise<void> {
-  await ensureNotificationsTable();
-  await pool.query(
-    `INSERT INTO gcc_world.notifications (user_id, type, title, message, link) VALUES ($1::uuid, $2, $3, $4, $5)`,
-    [String(userId), n.type, n.title, n.message || null, n.link || null],
-  );
+  const def = definicionDe(n.type);
+  if (!def || def.canales.includes('campana')) {
+    const [quiere] = await conAvisoEncendido([String(userId)], n.type, 'campana');
+    if (quiere) {
+      await ensureNotificationsTable();
+      await pool.query(
+        `INSERT INTO gcc_world.notifications (user_id, type, title, message, link) VALUES ($1::uuid, $2, $3, $4, $5)`,
+        [String(userId), n.type, n.title, n.message || null, n.link || null],
+      );
+    }
+  }
+  if (opciones.push === false || !def?.canales.includes('push')) return;
+  void avisarUsuarios([String(userId)], {
+    clase: def.clase,
+    titulo: n.title,
+    cuerpo: n.message || '',
+    ruta: rutaRelativa(n.link),
+    ...(opciones.push || {}),
+  });
+}
+
+/** Algunas llamadas guardan el enlace con el dominio; el teléfono solo abre rutas de la plataforma. */
+function rutaRelativa(link?: string): string | undefined {
+  if (!link) return undefined;
+  if (link.startsWith('/')) return link;
+  try { const u = new URL(link); return u.pathname + u.search; } catch { return undefined; }
 }
 
 export async function listUserNotifications(userId: string) {
