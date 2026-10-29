@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { Fragment, useRef, useState, useEffect, type CSSProperties } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 export interface Column<T> {
@@ -77,6 +77,17 @@ function appFooterHeight(): number {
   return el ? Math.round(el.getBoundingClientRect().height) : 0;
 }
 const MIN_HEIGHT = 220;
+
+/**
+ * Qué está enseñando la tabla: cuántas filas y cuáles son las primeras. Cuando cambia (otro
+ * filtro, otra búsqueda, otra página) las filas se vuelven a montar y entran escalonadas
+ * (`.fila-entra`, `app/movimiento.css`). Recargar los MISMOS datos no la cambia, así que un
+ * refresco no hace bailar la tabla.
+ */
+function firmaDatos(data: unknown[]): string {
+  return data.length + ':' + data.slice(0, 8).map((d: any) => String(d?.id ?? JSON.stringify(d)?.slice(0, 60))).join('|');
+}
+const posicion = (i: number) => ({ '--i': i } as CSSProperties);
 
 export default function PixelDataTable<T>({
   columns,
@@ -187,20 +198,23 @@ export default function PixelDataTable<T>({
       {/* ── El mismo contenido, contado para un teléfono ── */}
       {tarjetaMovil && (
         <div className="lg:hidden space-y-2">
+          <Fragment key={firmaDatos(data)}>
           {data.map((item, i) => (
             <div
               key={i}
+              style={posicion(i)}
               onClick={onRowClick ? () => onRowClick(item) : undefined}
               role={onRowClick ? 'button' : undefined}
               tabIndex={onRowClick ? 0 : undefined}
               onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(item); } } : undefined}
-              className={`bg-digi-card border border-digi-border rounded-lg p-3 transition-colors ${
+              className={`fila-entra bg-digi-card border border-digi-border rounded-lg p-3 transition-colors ${
                 onRowClick ? 'cursor-pointer active:bg-black/[0.04]' : ''
               } ${rowClassName?.(item) ?? ''}`}
             >
               {tarjetaMovil(item)}
             </div>
           ))}
+          </Fragment>
         </div>
       )}
 
@@ -252,11 +266,13 @@ export default function PixelDataTable<T>({
             </tr>
           </thead>
           <tbody>
+            <Fragment key={firmaDatos(data)}>
             {data.map((item, i) => (
               <tr
                 key={i}
+                style={posicion(i)}
                 onClick={() => onRowClick?.(item)}
-                className={`dt-row border-b border-digi-border/50 transition-colors ${
+                className={`fila-entra dt-row border-b border-digi-border/50 transition-colors ${
                   onRowClick ? 'cursor-pointer hover:bg-accent/5' : ''
                 } ${rowClassName ? rowClassName(item) : ''}`}
               >
@@ -273,6 +289,7 @@ export default function PixelDataTable<T>({
                 ))}
               </tr>
             ))}
+            </Fragment>
           </tbody>
         </table>
       </div>
@@ -310,6 +327,7 @@ export function GaleriaTabla<T>({
   const campos = resto.filter((c) => c.header.trim());
   return (
     <div className={`${className} space-y-2`}>
+      <Fragment key={firmaDatos(data)}>
       {data.map((item, i) => (
         <div
           key={i}
@@ -317,10 +335,10 @@ export function GaleriaTabla<T>({
           role={onRowClick ? 'button' : undefined}
           tabIndex={onRowClick ? 0 : undefined}
           onKeyDown={onRowClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(item); } } : undefined}
-          className={`bg-digi-card border border-digi-border rounded-lg p-3.5 transition-colors ${
+          className={`fila-entra bg-digi-card border border-digi-border rounded-lg p-3.5 transition-colors ${
             onRowClick ? 'cursor-pointer active:bg-black/[0.04]' : ''
           } ${rowClassName?.(item) ?? ''}`}
-          style={{ fontFamily: 'var(--font-body)' }}
+          style={{ fontFamily: 'var(--font-body)', ...posicion(i) }}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 text-[13.5px] font-semibold text-digi-text break-words">{cabecera?.render(item)}</div>
@@ -345,6 +363,7 @@ export function GaleriaTabla<T>({
           )}
         </div>
       ))}
+      </Fragment>
     </div>
   );
 }

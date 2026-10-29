@@ -1,0 +1,42 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════
+   MOVIMIENTO AL NAVEGAR (Fernando, 2026-10-29: «agregar animaciones al cambiar de módulos o
+   cambiar filtros o abrir formulario o ingresar a pantallas de detalles»).
+   ───────────────────────────────────────────────────────────────────────────────────────
+   · PÁGINA: lo que se monta en el `main` entra con fundido + un desplazamiento corto. La
+     dirección la pone el layout en `main[data-entrada]` comparando la profundidad de la ruta:
+       adentro  (lista → detalle)  se acerca (de 98,5 % a 100 %, desde arriba);
+       afuera   (detalle → lista)  desde la izquierda;
+       lado     (otro módulo)      desde abajo.
+     Solo corre al MONTARSE el elemento: cambiar un filtro de la misma página no la repite.
+   · FILAS: al cambiar lo que enseña una tabla (filtro, búsqueda, página), las filas nuevas
+     entran escalonadas (`.fila-entra`, con `--i` = posición; tope de 12 para que una tabla
+     larga no tarde).
+   · Los formularios (panel derecho y ventanitas) ya se animan en `globals.css`.
+
+   ⚠️ Sin `animation-fill-mode` que deje un `transform` puesto al terminar: un `transform` en
+   el contenedor convierte a sus hijos `fixed` en relativos a él. Solo dura lo que dura la
+   entrada. La barra de acciones del teléfono (`#barra-acciones-movil`) no se anima.
+   ⚠️ Nada entra DESDE LA DERECHA: lo desplazado a la derecha ensancha el área de
+   desplazamiento del `main` y en Windows parpadea la barra horizontal. Por eso el detalle se
+   acerca en vez de deslizarse; lo que va a la izquierda o abajo no ensancha nada.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes paginaDesdeAbajo { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes paginaHaciaDentro { from { opacity: 0; transform: scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes paginaDesdeIzquierda { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+@keyframes filaEntra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.corp main[data-entrada] > :not(#barra-acciones-movil) {
+  animation: paginaDesdeAbajo 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.corp main[data-entrada='adentro'] > :not(#barra-acciones-movil) { animation-name: paginaHaciaDentro; transform-origin: 50% 0; }
+.corp main[data-entrada='afuera'] > :not(#barra-acciones-movil) { animation-name: paginaDesdeIzquierda; }
+
+.corp .fila-entra {
+  animation: filaEntra 260ms ease-out backwards;
+  animation-delay: calc(min(var(--i, 0), 12) * 22ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corp main[data-entrada] > *, .corp .fila-entra { animation: none; }
+}

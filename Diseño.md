@@ -4845,6 +4845,22 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
 - Contraste medido (WCAG) en los cinco: texto y secundario ≥ 5,4:1; blanco sobre acento ≥ 4,7:1 salvo
   el morado del Oscuro/Mixto (4,3:1, el de siempre). Verificado a 1440 y 390 px (`scrollWidth` = ancho).
 
+## ⭐ MOVIMIENTO AL NAVEGAR — páginas, detalles y filtros (2026-10-29)
+Fernando: *«agregar animaciones al cambiar de módulos o cambiar filtros o abrir formulario o ingresar a
+pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos en `app/(dashboard)/layout.tsx`.
+- **Página** (`main[data-entrada] > *`, 240 ms): el layout compara la profundidad de la ruta. Otro módulo →
+  sube 10 px; lista → detalle (`adentro`) → se acerca de 98,5 % a 100 %; detalle → lista (`afuera`) →
+  desde la izquierda 18 px. **Nada entra desde la derecha**: ensancharía el área de desplazamiento del
+  `main` (barra horizontal en Windows).
+- **Tras «Cargando…»**: si desaparece un `BrandLoader` a ≤ 2 niveles del `main`, el contenido entra con
+  el mismo movimiento (Web Animations, sin `fill`). Un cargador dentro de una tarjeta no mueve la página.
+- **Filas** (`.fila-entra`, `PixelDataTable` y `GaleriaTabla`): al cambiar lo que se enseña (filtro,
+  búsqueda, página) las filas entran escalonadas, 22 ms entre una y otra, tope 12. Se decide con una firma
+  de los datos (cantidad + ids de las primeras): recargar los mismos datos no las repite.
+- Formularios y ventanitas ya se animaban (`globals.css`). Todo respeta «reducir movimiento».
+- ⚠️ Ninguna animación deja un `transform` puesto al acabar: convertiría los `fixed` de dentro en relativos.
+  Medido: a 390 px el desborde es 0 durante y después.
+
 ## Desviaciones detectadas y resolución
 - **2026-10-29 · Paneles cuya altura dependía del contenido** · **CAMBIO DE ESTÁNDAR** (Fernando: «el panel izquierdo,
   su altura siempre sin excepción […] se base en el espacio disponible; lo mismo con el panel derecho y el central»).

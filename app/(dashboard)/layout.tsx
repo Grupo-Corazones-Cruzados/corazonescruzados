@@ -2,6 +2,10 @@
 
 import '../tema-progreso.css';
 import '../temas.css';
+import '../movimiento.css';
+
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 import AuthGuard from '@/components/providers/AuthGuard';
 import PolicyEffectsProvider from '@/components/providers/PolicyEffectsProvider';
@@ -37,6 +41,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  */
 function Panel({ children }: { children: React.ReactNode }) {
   const { tema, oscuro } = useTemaPanel();
+  const entrada = useEntrada();
+  const mainRef = useRef<HTMLElement>(null);
+  useEntradaTrasCarga(mainRef);
 
   /**
    * ⇒ EL MENÚ YA NO SE COLAPSA A MANO: se abre al pasar el puntero (ver
@@ -77,7 +84,7 @@ function Panel({ children }: { children: React.ReactNode }) {
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}
-        <main className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto min-h-screen">
+        <main ref={mainRef} data-entrada={entrada} className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto min-h-screen">
           <DashboardAccessGuard>{children}</DashboardAccessGuard>
           {/* Las acciones principales del teléfono (ver `BarraAcciones`): último hijo, para
               que su hueco quede DESPUÉS de todo y la barra no tape el último campo. */}
@@ -93,4 +100,61 @@ function Panel({ children }: { children: React.ReactNode }) {
       <ChatDock />
     </div>
   );
+}
+
+/**
+ * Hacia dónde se navegó, para la entrada de la página (`app/movimiento.css`): a una ruta MÁS
+ * profunda es entrar a un detalle (se acerca), a una menos profunda es volver (desde la
+ * izquierda), y a la misma profundidad es cambiar de módulo (desde abajo).
+ *
+ * Se calcula DURANTE el render con una ref, no en un efecto: el atributo tiene que estar puesto
+ * en el mismo pintado en que se monta la página nueva, o la animación ya habría arrancado con la
+ * dirección anterior.
+ */
+function useEntrada(): 'adentro' | 'afuera' | 'lado' {
+  const ruta = usePathname() ?? '';
+  const prev = useRef<{ ruta: string; dir: 'adentro' | 'afuera' | 'lado' }>({ ruta, dir: 'lado' });
+  if (prev.current.ruta !== ruta) {
+    const hondo = (r: string) => r.split('/').filter(Boolean).length;
+    const a = hondo(prev.current.ruta);
+    const b = hondo(ruta);
+    prev.current = { ruta, dir: b > a ? 'adentro' : b < a ? 'afuera' : 'lado' };
+  }
+  return prev.current.dir;
+}
+
+/**
+ * La página que primero enseña «Cargando…» y después su contenido suele REUTILIZAR el mismo
+ * elemento (un `<div>` con el cargador y luego un `<div>` con todo): la animación de entrada ya
+ * corrió con el cargador y el contenido aparecería de golpe. Cuando desaparece un cargador
+ * (`BrandLoader`: `role=status` con un `.animate-spin`) que estaba a nivel de página —a dos
+ * niveles del `main` como mucho, para que el cargador de una tarjeta no mueva la página entera—,
+ * el contenido entra con el mismo movimiento. Web Animations sin `fill`: al terminar no queda
+ * ningún `transform` puesto (ver `app/movimiento.css`).
+ */
+function useEntradaTrasCarga(mainRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main || typeof MutationObserver === 'undefined') return;
+    const quieto = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const esCargador = (n: Node) =>
+      n instanceof Element && (n.matches('[role=status]') || !!n.querySelector('[role=status]')) && !!n.querySelector('.animate-spin');
+    const obs = new MutationObserver((cambios) => {
+      if (quieto.matches) return;
+      for (const c of cambios) {
+        let nivel = 0;
+        for (let el: Node | null = c.target; el && el !== main; el = el.parentNode) nivel++;
+        if (nivel > 2 || ![...c.removedNodes].some(esCargador)) continue;
+        if (main.querySelector('[role=status] .animate-spin')) continue;
+        const pagina = main.firstElementChild;
+        pagina?.animate(
+          [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+          { duration: 240, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' },
+        );
+        return;
+      }
+    });
+    obs.observe(main, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, [mainRef]);
 }
