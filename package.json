@@ -44,6 +44,8 @@
     "@types/qrcode": "1.5.5",
     "@xmldom/xmldom": "^0.8.12",
     "@xyflow/react": "^12.11.2",
+    "altcha": "3.3.0",
+    "altcha-lib": "2.6.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.0",

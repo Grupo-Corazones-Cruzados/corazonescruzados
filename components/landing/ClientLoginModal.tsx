@@ -49,6 +49,32 @@ export default function ClientLoginModal({
   const [tienePasskey, setTienePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * CUENTA SIN VERIFICAR (Fernando, 2026-10-29): en vez de un error seco, se dice que falta
+   * verificar, a qué correo se envió el enlace (enmascarado) y se ofrece reenviarlo. Es aquí donde
+   * se avisa ahora; la tarjeta de Cliente ya no reconoce el equipo.
+   */
+  const [porVerificar, setPorVerificar] = useState<string | null>(null);
+  const [reenvio, setReenvio] = useState<{ ok: boolean; texto: string } | null>(null);
+  const reenviar = async () => {
+    setReenvio(null);
+    setBusy(true);
+    try {
+      const r = await fetch('/api/auth/verify/reenviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password: pwd }),
+      });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.yaVerificada) setReenvio({ ok: true, texto: 'Tu correo ya está verificado: pulsa «Continuar».' });
+      else if (r.ok) setReenvio({ ok: true, texto: `Listo: te enviamos un enlace nuevo a ${porVerificar ?? 'tu correo'}.` });
+      else setReenvio({ ok: false, texto: j?.error ?? 'No pudimos reenviar el correo.' });
+    } catch {
+      setReenvio({ ok: false, texto: 'Error de red' });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Paso 1: valida credenciales (sin enviar código) → muestra opciones.
   const submitCreds = async (e: React.FormEvent) => {
@@ -68,9 +94,15 @@ export default function ClientLoginModal({
       });
       const j = await r.json();
       if (!r.ok) {
+        if (j?.verificar) {
+          setPorVerificar(j?.correo ?? null);
+          setReenvio(null);
+          return;
+        }
         setError(j?.error ?? 'Credenciales incorrectas');
         return;
       }
+      setPorVerificar(null);
       // Cuenta exenta del segundo factor (ver la migración 029): el servidor ya dejó la
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
       if (j?.sinCodigo) { onLoggedIn(); return; }
@@ -318,6 +350,48 @@ export default function ClientLoginModal({
                 style={input}
               />
               {error && <ErrorMsg>{error}</ErrorMsg>}
+              {porVerificar !== null && (
+                <div
+                  role="status"
+                  style={{
+                    border: '1px solid rgba(251,191,36,0.45)',
+                    background: 'rgba(251,191,36,0.10)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontFamily: BODY,
+                    fontSize: '0.82rem',
+                    lineHeight: 1.5,
+                    color: '#fde68a',
+                  }}
+                >
+                  <strong style={{ color: '#fef3c7' }}>Falta verificar tu correo.</strong> Te enviamos un enlace
+                  {porVerificar ? <> a <strong style={{ color: '#fef3c7' }}>{porVerificar}</strong></> : null}: ábrelo para
+                  activar tu cuenta y vuelve a pulsar «Continuar». Revisa también el correo no deseado.
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={reenviar}
+                      disabled={busy}
+                      style={{
+                        background: 'transparent',
+                        border: 0,
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontFamily: BODY,
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        color: '#fcd34d',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      ¿No te llegó? Reenviar el correo
+                    </button>
+                  </div>
+                  {reenvio && (
+                    <div style={{ marginTop: 6, color: reenvio.ok ? '#bbf7d0' : '#fecaca' }}>{reenvio.texto}</div>
+                  )}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={busy}

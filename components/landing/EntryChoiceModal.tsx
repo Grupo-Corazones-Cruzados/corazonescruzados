@@ -115,21 +115,17 @@ export default function EntryChoiceModal({
         {/* Opciones */}
         {/* Fondo de "página" para que las tarjetas de opción se separen del diálogo */}
         <div className="px-5 py-4 flex flex-col gap-2.5 bg-digi-dark">
-          {opciones.map((o) =>
-            o.cargando ? (
-              <LoadingCard key={o.clave} label={o.descripcion} />
-            ) : (
-              <Option
-                key={o.clave}
-                tone={o.tono}
-                Icon={o.Icono}
-                badge={o.insignia}
-                title={o.titulo}
-                desc={o.descripcion}
-                onClick={o.onClick}
-              />
-            ),
-          )}
+          {opciones.map((o) => (
+            <Option
+              key={o.clave}
+              tone={o.tono}
+              Icon={o.Icono}
+              badge={o.insignia}
+              title={o.titulo}
+              desc={o.descripcion}
+              onClick={o.onClick}
+            />
+          ))}
         </div>
 
         {/* Footer del diálogo (acción secundaria a la derecha, como en el dashboard) */}
@@ -143,17 +139,6 @@ export default function EntryChoiceModal({
   );
 }
 
-function LoadingCard({ label = 'Verificando tu estado de postulación…' }: { label?: string }) {
-  return (
-    <div
-      aria-busy="true"
-      className="flex items-center gap-3 rounded-md border border-digi-border bg-digi-card px-4 py-4"
-    >
-      <Loader2 className="w-4 h-4 shrink-0 text-accent animate-spin" />
-      <span className="text-[12.5px] text-digi-muted">{label}</span>
-    </div>
-  );
-}
 
 /** Fila de opción del diálogo: icono + título + descripción + chevron. */
 function Option({

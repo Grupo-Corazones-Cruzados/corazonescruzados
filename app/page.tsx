@@ -472,6 +472,13 @@ export default function LandingPage() {
     // Videojuego en `/clientes`: es el mismo diálogo de acceso de cliente, pero al terminar
     // se entra a la aventura. Sin esto, quien pulsaba «IR» en Videojuego acababa en el panel.
     else if (acceso === ACCESO_VIDEOJUEGO) { setEntryDestination('game'); setClientLoginOpen(true); }
+    // El enlace del correo de APROBACIÓN (`/api/candidate/continuar`): abre la creación de la
+    // cuenta del candidato. Sustituye a la tarjeta «Aprobada», que dependía de reconocer su equipo
+    // (Fernando, 2026-10-29).
+    else if (acceso === 'candidato-aprobado') {
+      const correoAprobado = q.get('correo');
+      setCandidateAccount({ email: correoAprobado && correoAprobado.includes('@') ? correoAprobado.trim() : null });
+    }
     // Se limpia la URL: dejar `?acceso=` haría que el diálogo reapareciera al volver atrás.
     const limpia = new URL(window.location.href);
     limpia.searchParams.delete('acceso');
@@ -3204,28 +3211,26 @@ export default function LandingPage() {
           tema={entryDestination === 'game' ? 'aventura' : 'progreso'}
           onClose={() => setOnboardingOpen(false)}
           onComplete={async (postulacion) => {
-            // Registra la propuesta (queda en espera de aprobación del admin
-            // global). El candidato NO entra al juego hasta ser aprobado.
-            const pendingInfo: { email?: string | null; emailVerified?: boolean } = {
-              email: postulacion.email,
-              emailVerified: false,
-            };
+            // Registra la propuesta (queda en espera de aprobación del admin global). El candidato
+            // NO entra al juego hasta ser aprobado. Desde el 2026-10-29 lleva el captcha y puede
+            // rechazarse (captcha caducado, un registro cada 24 h): el error vuelve al formulario,
+            // que lo enseña sin cerrarse. 409 = ese correo ya se postuló → igualmente en espera.
             try {
               const r = await fetch('/api/candidate/proposal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(postulacion),
               });
-              // 200 (creada) o 409 (ya existía) → igualmente queda en espera.
               if (!r.ok && r.status !== 409) {
                 const j = await r.json().catch(() => null);
-                console.error('Proposal submit failed:', j?.error);
+                return (j?.error as string) || 'No pudimos enviar tu postulación. Inténtalo de nuevo.';
               }
-            } catch (err) {
-              console.error('Proposal submit error:', err);
+            } catch {
+              return 'No pudimos enviar tu postulación. Revisa tu conexión e inténtalo de nuevo.';
             }
             setOnboardingOpen(false);
-            setProposalPending(pendingInfo);
+            setProposalPending({ email: postulacion.email, emailVerified: false });
+            return null;
           }}
         />
       )}

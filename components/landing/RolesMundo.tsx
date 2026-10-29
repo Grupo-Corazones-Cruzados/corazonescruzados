@@ -54,14 +54,13 @@ function Tarjeta({
       // ⚠️ Mientras espera su entrada (tras el eslogan) la tarjeta YA está en la página, invisible:
       // el puntero la «tocaba» y sonaba el tic antes de verse, y un clic abría su formulario
       // (Fernando, 2026-10-29). Ni sonido ni clic hasta que se vea (`seVe`).
-      onClick={o.cargando ? undefined : (e) => { if (seVe(e.currentTarget)) onElegir(); }}
+      onClick={o.pausada ? undefined : (e) => { if (seVe(e.currentTarget)) onElegir(); }}
       // El «tic» al pasar el puntero (Fernando, 2026-10-29). Solo con ratón: en táctil el
       // `pointerenter` llega al tocar y se sumaría al sonido de elegir.
-      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !o.cargando && !estado && seVe(e.currentTarget)) sonarPasar(); }}
-      aria-disabled={o.cargando || undefined}
-      aria-busy={o.cargando || undefined}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !o.pausada && !estado && seVe(e.currentTarget)) sonarPasar(); }}
+      aria-disabled={o.pausada || undefined}
       aria-label={`${o.titulo}: ${o.descripcion}`}
-      className={`tarjeta-mundo tarjeta-mundo-${tema} tarjeta-rol rol-${o.tono} ${o.cargando ? 'rol-comprobando' : ''} ${estado ? `rol-${estado}` : ''} ${entro || estado ? '' : 'aparecer'}`}
+      className={`tarjeta-mundo tarjeta-mundo-${tema} tarjeta-rol rol-${o.tono} ${o.pausada ? 'rol-pausada' : ''} ${estado ? `rol-${estado}` : ''} ${entro || estado ? '' : 'aparecer'}`}
       style={{ ['--retraso' as string]: `${retraso}ms` }}
       onAnimationEnd={(e) => {
         if (e.target === e.currentTarget && e.animationName.startsWith('aparecer')) setEntro(true);
@@ -72,7 +71,6 @@ function Tarjeta({
       <span className="tm-selector" aria-hidden="true">
         <span /><span /><span /><span />
       </span>
-      {o.cargando && <span className="rol-brillo" aria-hidden="true" />}
       {/* Sin «Soy nuevo» / «Ya tengo cuenta» (Fernando, 2026-10-28). Solo el ESTADO, cuando lo
           hay, como etiqueta dentro de la escena: no ocupa alto, así la tarjeta no cambia. */}
       <span className={`tm-icono tr-escena tr-escena-${tema}`} aria-hidden="true">

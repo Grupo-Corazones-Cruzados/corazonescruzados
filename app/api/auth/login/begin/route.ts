@@ -66,8 +66,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
     if (!user.is_verified) {
+      // La ventana de inicio de sesión dice que falta verificar, a qué correo se envió el enlace
+      // y ofrece reenviarlo (`/api/auth/verify/reenviar`) — Fernando, 2026-10-29. Antes la tarjeta
+      // de Cliente reconocía el equipo y bloqueaba crear otra cuenta; ahora es aquí donde se avisa.
       return NextResponse.json(
-        { error: 'Debes verificar tu correo electrónico antes de iniciar sesión.' },
+        {
+          error: 'Falta verificar tu correo.',
+          verificar: true,
+          correo: maskEmail(cleanEmail),
+        },
         { status: 403 },
       );
     }

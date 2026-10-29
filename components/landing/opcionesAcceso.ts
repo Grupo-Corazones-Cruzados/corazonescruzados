@@ -15,13 +15,13 @@
  *
  * ── LA LISTA NO CAMBIA DE FORMA (Fernando, 2026-10-26) ─────────────────────────
  * Siempre salen las MISMAS cuatro opciones, en el mismo orden: mientras se consulta el
- * estado, la opción ya está con su título y `cargando: true`; al llegar la respuesta cambia
+ * estado, la opción ya está con su título; al llegar la respuesta cambia
  * su contenido, no su sitio. (Desde el 2026-10-28, si ya te postulaste o ya tienes cuenta de
  * candidato, la tarjeta de postulación se quita: Fernando.)
  */
 
 import { useEffect, useState, type ComponentType } from 'react';
-import { BadgeCheck, Briefcase, LogIn, MailWarning, ShieldCheck, UserPlus } from 'lucide-react';
+import { Briefcase, Clock, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
 
 export type TonoOpcion = 'default' | 'success' | 'warning';
 
@@ -41,8 +41,8 @@ export interface OpcionAcceso {
   clave: 'candidato' | 'soy-candidato' | 'cliente' | 'miembro';
   /** «nuevo» = la postulación; «cuenta» = quien ya tiene cuenta. */
   grupo: 'nuevo' | 'cuenta';
-  /** Aún se está consultando su estado: se pinta igual, sin poder pulsarse. */
-  cargando?: boolean;
+  /** En pausa (un registro desde este equipo en las últimas 24 h): se pinta, sin poder pulsarse. */
+  pausada?: boolean;
   tono: TonoOpcion;
   Icono: ComponentType<{ className?: string }>;
   insignia?: string;
@@ -67,145 +67,98 @@ export function nombresDestino(destination: 'game' | 'dashboard') {
   return { destino, aDestino, dest: `entrar ${aDestino}` };
 }
 
+/** «30 oct, 14:05» en hora de Ecuador. */
+function horaDe(iso: string | null): string {
+  if (!iso) return 'mañana';
+  return new Date(iso).toLocaleString('es-EC', { timeZone: 'America/Guayaquil', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+/**
+ * ⭐ 2026-10-29 (Fernando): LAS TARJETAS YA NO RECONOCEN EL EQUIPO.
+ *
+ * Antes, por la IP o una cookie, la tarjeta de Postulación desaparecía o decía «en revisión» /
+ * «aprobada», y la de Cliente «verificación pendiente»: a quien compartía equipo o red le cerraba
+ * el paso. Ahora las cuatro tarjetas son siempre las mismas y sin estados de cuenta:
+ * · que falta verificar el correo lo dice la ventana de INICIO DE SESIÓN, con «reenviar»;
+ * · el candidato aprobado entra por el enlace de su correo de aprobación;
+ * · lo único que se consulta es si este equipo creó un registro en las últimas 24 horas
+ *   (`/api/registro/estado`): entonces Postulación queda en pausa y Cliente avisa de que crear
+ *   cuenta está en pausa (iniciar sesión sigue igual).
+ * `AccionesAcceso` conserva los manejadores de estados por si otra pantalla los usa.
+ */
 export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: AccionesAcceso): OpcionAcceso[] {
-  const { aDestino, dest } = nombresDestino(destination);
+  const { dest } = nombresDestino(destination);
 
-  // ¿Este visitante (por IP) ya tiene una postulación registrada?
-  const [proposal, setProposal] = useState<{
-    exists: boolean;
-    status?: string;
-    email?: string | null;
-    emailVerified?: boolean;
-    hasCandidateAccount?: boolean;
-  } | null>(null);
-  // ¿Este visitante ya tiene una cuenta de cliente (y está verificada)?
-  const [client, setClient] = useState<{
-    exists: boolean;
-    email?: string | null;
-    verified?: boolean;
-  } | null>(null);
-
+  const [registro, setRegistro] = useState<{ bloqueado: boolean; hasta: string | null } | null>(null);
   useEffect(() => {
     let alive = true;
-    fetch('/api/candidate/proposal', { cache: 'no-store' })
+    fetch('/api/registro/estado', { cache: 'no-store' })
       .then((r) => r.json())
-      .then((j) => { if (alive) setProposal(j); })
-      .catch(() => { if (alive) setProposal({ exists: false }); });
-    fetch('/api/client/status', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((j) => { if (alive) setClient(j); })
-      .catch(() => { if (alive) setClient({ exists: false }); });
+      .then((j) => { if (alive) setRegistro({ bloqueado: !!j?.bloqueado, hasta: j?.hasta ?? null }); })
+      .catch(() => { if (alive) setRegistro({ bloqueado: false, hasta: null }); });
     return () => { alive = false; };
   }, []);
-
-  const opciones: OpcionAcceso[] = [];
-
+  const pausa = !!registro?.bloqueado;
   const sinAccion = () => undefined;
 
-  if (proposal === null) {
-    opciones.push({
-      clave: 'candidato',
-      grupo: 'nuevo',
-      cargando: true,
+  return [
+    pausa
+      ? {
+          clave: 'candidato',
+          grupo: 'nuevo',
+          pausada: true,
+          tono: 'warning',
+          Icono: Clock,
+          insignia: 'En pausa',
+          titulo: 'Postulación',
+          corta: `Disponible desde el ${horaDe(registro?.hasta ?? null)}.`,
+          descripcion: `Desde este equipo ya se creó un registro en las últimas 24 horas. Podrás postularte a partir del ${horaDe(registro?.hasta ?? null)}.`,
+          onClick: sinAccion,
+        }
+      : {
+          clave: 'candidato',
+          grupo: 'nuevo',
+          tono: 'default',
+          Icono: UserPlus,
+          titulo: 'Postulación',
+          corta: 'Conoce el proyecto y postúlate.',
+          descripcion: 'Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados.',
+          onClick: acciones.onCandidate,
+        },
+    {
+      clave: 'soy-candidato',
+      grupo: 'cuenta',
       tono: 'default',
-      Icono: UserPlus,
-      insignia: 'Comprobando…',
-      titulo: 'Postulación',
-      corta: 'Conoce el proyecto y postúlate.',
-      descripcion: 'Comprobando si ya te postulaste desde este dispositivo…',
-      onClick: sinAccion,
-    });
-  } else if (proposal.exists && proposal.status === 'approved') {
-    opciones.push({
-      clave: 'candidato',
-      grupo: 'nuevo',
-      tono: 'success',
-      Icono: BadgeCheck,
-      insignia: 'Aprobada',
-      titulo: 'Postulación',
-corta: 'Crea tu cuenta y entra.',
-      descripcion: 'Fuiste aceptado por el administrador. Continúa para crear tu cuenta (contraseña y datos) e ingresar como candidato.',
-      onClick: () => acciones.onProposalApproved({ email: proposal.email }),
-    });
-  } else if (proposal.exists || proposal.hasCandidateAccount) {
-    // Ya se postuló (en revisión) o ya tiene cuenta de candidato: la tarjeta de postulación NO
-    // se muestra (Fernando, 2026-10-28); entra por «Candidato». Solo queda la de «Aprobada»
-    // (arriba), que lleva a crear la cuenta: sin ella no habría por dónde terminar el alta.
-  } else {
-    opciones.push({
-      clave: 'candidato',
-      grupo: 'nuevo',
-      tono: 'default',
-      Icono: UserPlus,
-      titulo: 'Postulación',
-      corta: 'Conoce el proyecto y postúlate.',
-      descripcion: 'Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados.',
-      onClick: acciones.onCandidate,
-    });
-  }
-
-  opciones.push({
-    clave: 'soy-candidato',
-    grupo: 'cuenta',
-    tono: 'default',
-    Icono: LogIn,
-    titulo: 'Candidato',
-        corta: 'Inicia sesión con tu cuenta.',
-    descripcion: `Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`,
-    onClick: acciones.onCandidateLogin,
-  });
-
-  if (client === null) {
-    opciones.push({
+      Icono: LogIn,
+      titulo: 'Candidato',
+      corta: 'Inicia sesión con tu cuenta.',
+      descripcion: `Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`,
+      onClick: acciones.onCandidateLogin,
+    },
+    {
       clave: 'cliente',
       grupo: 'cuenta',
-      cargando: true,
-      tono: 'default',
+      tono: pausa ? 'warning' : 'default',
       Icono: Briefcase,
-      insignia: 'Comprobando…',
+      insignia: pausa ? 'Alta en pausa' : undefined,
       titulo: 'Cliente',
-      corta: 'Tus productos y servicios.',
-      descripcion: 'Comprobando tu cuenta de cliente…',
-      onClick: sinAccion,
-    });
-  } else if (client.exists && !client.verified) {
-    opciones.push({
-      clave: 'cliente',
-      grupo: 'cuenta',
-      tono: 'warning',
-      Icono: MailWarning,
-      insignia: 'Verificación pendiente',
-      titulo: 'Cliente',
-            corta: 'Verifica tu correo para entrar.',
-      descripcion: 'Te enviamos un enlace de verificación a tu correo. Verifícalo para poder iniciar sesión. No es necesario crear otra cuenta.',
-      onClick: () => acciones.onClientPending({ email: client.email }),
-    });
-  } else {
-    opciones.push({
-      clave: 'cliente',
-      grupo: 'cuenta',
-      tono: 'default',
-      Icono: Briefcase,
-      titulo: 'Cliente',
-      corta: 'Tus productos y servicios.',
-      descripcion:
-        destination === 'dashboard'
-          ? `Accede ${aDestino} para gestionar tus productos, servicios y proyectos del grupo.`
-          : `Inicia sesión (o crea tu cuenta) y entra ${aDestino}.`,
+      corta: pausa ? 'Inicia sesión; crear cuenta, en pausa.' : 'Tus productos y servicios.',
+      descripcion: pausa
+        ? `Puedes iniciar sesión con tu cuenta. Crear una cuenta nueva desde este equipo estará disponible a partir del ${horaDe(registro?.hasta ?? null)}.`
+        : destination === 'dashboard'
+          ? 'Accede a la Plataforma para gestionar tus productos, servicios y proyectos del grupo.'
+          : 'Inicia sesión (o crea tu cuenta) y entra al Videojuego.',
       onClick: acciones.onClient,
-    });
-  }
-
-  opciones.push({
-    clave: 'miembro',
-    grupo: 'cuenta',
-    tono: 'default',
-    Icono: ShieldCheck,
-    titulo: 'Miembro',
-        corta: 'Miembros y administradores.',
-    descripcion: `Ya soy miembro o administrador: iniciar sesión y ${dest}.`,
-    onClick: acciones.onMember,
-  });
-
-  return opciones;
+    },
+    {
+      clave: 'miembro',
+      grupo: 'cuenta',
+      tono: 'default',
+      Icono: ShieldCheck,
+      titulo: 'Miembro',
+      corta: 'Miembros y administradores.',
+      descripcion: `Ya soy miembro o administrador: iniciar sesión y ${dest}.`,
+      onClick: acciones.onMember,
+    },
+  ];
 }

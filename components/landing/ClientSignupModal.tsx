@@ -12,9 +12,13 @@
  * compartidos con los demás diálogos de acceso.
  *
  * Crea un usuario con rol `client` y **exige verificar el correo** antes de poder entrar.
+ *
+ * Desde el 2026-10-29 (Fernando) lleva la casilla «No soy un robot» (ALTCHA, `Captcha`) y puede
+ * rechazarse por el límite de un registro cada 24 h por equipo: el aviso sale arriba del formulario.
  */
 
 import { useState } from 'react';
+import Captcha from './Captcha';
 import { UserPlus, MailCheck } from 'lucide-react';
 import {
   AuthDialog, Campo, Casilla, ErrorAuth, BotonAuth, EnlaceAuth, INPUT,
@@ -41,6 +45,8 @@ export default function ClientSignupModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const ok =
@@ -51,7 +57,8 @@ export default function ClientSignupModal({
     phone.trim().length >= 7 &&
     pwd.length >= 8 &&
     pwd === pwd2 &&
-    terms;
+    terms &&
+    !!captcha;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,11 +80,14 @@ export default function ClientSignupModal({
           phone: phone.trim(),
           country: country.trim(),
           address: address.trim(),
+          altcha: captcha,
         }),
       });
       const j = await r.json();
       if (!r.ok) {
         setError(j?.error ?? 'No se pudo crear la cuenta');
+        // La solución del captcha ya se gastó: hay que volver a marcar la casilla.
+        setReinicioCaptcha((n) => n + 1);
         return;
       }
       setSent(true);
@@ -176,6 +186,8 @@ export default function ClientSignupModal({
             <span className="text-digi-muted">(opcional)</span>
           </Casilla>
         </div>
+
+        <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="oscuro" />
 
         <BotonAuth tipo="submit" cargando={busy} deshabilitado={!ok}>
           {busy ? 'Creando la cuenta…' : 'Crear cuenta'}

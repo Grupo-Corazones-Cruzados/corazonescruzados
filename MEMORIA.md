@@ -334,6 +334,32 @@ Stack estándar de la casa, con particularidades de este repo:
   tomada por mí y a revisar con él: el oscuro como Aventura, y llevarlo a TODO el panel (pidió «por
   completo en el tema»). Para compilar en local con otra sesión corriendo `next dev`, usar
   `NEXT_DIST_DIR=.next-mio`: compartir `.next` rompió su servidor y mi build.
+- **🔐 REGISTROS SIN RECONOCER EL EQUIPO, CON CAPTCHA Y UN REGISTRO CADA 24 H (Fernando, 2026-10-29).**
+  Antes la portada reconocía el equipo (IP en hash o cookie) PARA SIEMPRE: escondía la tarjeta de
+  Postulación, decía «en revisión» / «aprobada» / «verificación pendiente» y `/api/auth/register`
+  rechazaba «ya tienes una cuenta de cliente en este dispositivo». Bloqueaba registros legítimos.
+  Ahora:
+  1. **Las 4 tarjetas siempre iguales**, sin estados de cuenta (`opcionesAcceso.ts` ya no consulta
+     `/api/candidate/proposal` ni `/api/client/status`; el GET de proposal responde siempre «no existe»).
+  2. **Captcha ALTCHA** (código abierto, alojado aquí, sin cuenta de terceros) en la postulación y en
+     el alta de cliente: `lib/registro/captcha.ts` (firma derivada de `JWT_SECRET` o
+     `ALTCHA_HMAC_SECRET`, reto de 10 min, de un solo uso), `/api/registro/desafio`,
+     `components/landing/Captcha.tsx`. Paquetes fijados: `altcha@3.3.0`, `altcha-lib@2.6.0`.
+  3. **Un registro cada 24 h por equipo** (misma IP en hash O mismo navegador, cookie
+     `gcc_dispositivo`): `lib/registro/limite.ts`, tabla `gcc_world.registros_recientes`,
+     `/api/registro/estado`. En pausa: Postulación no se puede pulsar («En pausa», «disponible
+     desde…») y Cliente avisa «Alta en pausa» (iniciar sesión sigue). ⚠️ Por IP compartida (oficina,
+     operadora móvil) un registro pausa a otros 24 h: es lo pedido.
+  4. **Sin límite solo para Fernando**: IPs en `REGISTRO_SIN_LIMITE_IPS` (comas) o un navegador
+     marcado por un admin abriendo `/api/admin/registro-libre` (`?quitar=1` lo desmarca). Pendiente
+     que él diga cuáles.
+  5. **Cliente sin verificar**: lo dice la ventana de inicio de sesión (correo enmascarado +
+     «Reenviar el correo», `/api/auth/verify/reenviar`, con contraseña, uno por minuto).
+  6. **Candidato aprobado**: el correo de aprobación lleva un ENLACE PERSONAL
+     (`/api/candidate/continuar?t=<client_token>` → `/?acceso=candidato-aprobado`) que abre la
+     creación de la cuenta en cualquier equipo. ⚠️ Los 10 aprobados sin cuenta completada a
+     2026-10-29 recibieron el correo VIEJO («vuelve y pulsa Entrar»), que ya no les lleva a nada:
+     reenviárselo requiere el permiso de Fernando.
 - **🖼️ LA MINIATURA AL COMPARTIR ES EL LOGO (Fernando, 2026-10-29).** *«aparece una miniatura… como una
   réplica de la página de inicio antigua; que utilice el logo… en todos los enlaces»*. `app/opengraph-image.tsx`
   dibuja el logo de los corazones cruzados en grande (`public/logo-gcc-512.png`, recortado de

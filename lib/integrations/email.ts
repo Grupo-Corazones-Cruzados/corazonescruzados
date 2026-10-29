@@ -216,12 +216,18 @@ export async function sendCandidateProposalVerificationEmail(
   });
 }
 
-export async function sendCandidateApprovalEmail(email: string) {
-  const url = `${APP_URL}/`;
+/**
+ * ⚠️ 2026-10-29: el botón lleva un ENLACE PERSONAL (`/api/candidate/continuar?t=…`) que abre la
+ * creación de la cuenta en cualquier dispositivo. Antes decía «vuelve al sitio y pulsa Entrar», y
+ * eso funcionaba solo porque la portada reconocía el equipo desde el que se postuló; ese
+ * reconocimiento se quitó (Fernando), así que el enlace es ahora el camino.
+ */
+export async function sendCandidateApprovalEmail(email: string, clientToken: string) {
+  const url = `${APP_URL}/api/candidate/continuar?t=${encodeURIComponent(clientToken)}`;
   const html = emailShell(
     emailHeading('¡Tu postulación fue aprobada!', 'Bienvenido al Grupo Corazones Cruzados') +
-    emailParagraph(`Felicidades, fuiste aprobado como candidato. Para completar tu ingreso, vuelve al sitio, pulsa ${accentStrong('"Entrar"')} y continúa con tu postulación aprobada: ahí ${accentStrong('crearás tu cuenta')} definiendo tu contraseña y tus datos.`) +
-    emailButton(url, 'Ir al sitio y continuar') +
+    emailParagraph(`Felicidades, fuiste aprobado como candidato. Para completar tu ingreso pulsa el botón: se abrirá el sitio para que ${accentStrong('crees tu cuenta')} definiendo tu contraseña y tus datos.`) +
+    emailButton(url, 'Crear mi cuenta') +
     emailNote('Hasta que completes tu cuenta, tu postulación queda como una solicitud aprobada; no necesitas ninguna contraseña temporal.'),
   );
   return deliver({

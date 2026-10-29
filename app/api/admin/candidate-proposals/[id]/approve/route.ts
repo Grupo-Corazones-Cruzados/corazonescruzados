@@ -125,7 +125,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Correo de aprobación (sin contraseña: el candidato la define al continuar).
     try {
-      await sendCandidateApprovalEmail(cleanEmail);
+      await sendCandidateApprovalEmail(cleanEmail, clientToken);
     } catch (e) {
       console.error('Approval email failed:', e);
       return NextResponse.json(

@@ -6,6 +6,8 @@ import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { getClientIp, hashIp, CLIENT_COOKIE } from '@/lib/world/session';
 import { sendCandidateProposalVerificationEmail } from '@/lib/integrations/email';
+import { verificarCaptcha } from '@/lib/registro/captcha';
+import { anotarRegistro, estadoRegistro, mensajeBloqueo } from '@/lib/registro/limite';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Cookie de dispositivo para reconocer al postulante aunque cambie su IP.
@@ -40,7 +42,14 @@ async function ensureProposalsTable() {
 // POST — registra una nueva propuesta (bloquea reutilización del correo).
 export async function POST(req: Request) {
   try {
-    const { email, reason, marketing } = await req.json();
+    const { email, reason, marketing, altcha } = await req.json();
+    // «No soy un robot» (ALTCHA) y un registro cada 24 h por equipo (Fernando, 2026-10-29).
+    const fallo = await verificarCaptcha(altcha);
+    if (fallo) return NextResponse.json({ error: fallo, captcha: true }, { status: 400 });
+    const estado = await estadoRegistro();
+    if (estado.bloqueado) {
+      return NextResponse.json({ error: mensajeBloqueo(estado.hasta), bloqueado: true, hasta: estado.hasta }, { status: 429 });
+    }
     const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     const cleanReason = typeof reason === 'string' ? reason.trim() : '';
 
@@ -84,6 +93,7 @@ export async function POST(req: Request) {
        VALUES ($1, $2, $3, $4, 'pending', $5, $6) RETURNING id`,
       [cleanEmail, cleanReason, marketing === true, ipHash, token, deviceToken],
     );
+    await anotarRegistro('postulacion');
     after(() => avisarReclutamiento('postulacion_nueva', {
       titulo: 'Nueva postulación',
       mensaje: `${cleanEmail}: ${cleanReason.length > 140 ? cleanReason.slice(0, 137) + '…' : cleanReason}`,
@@ -115,72 +125,14 @@ export async function POST(req: Request) {
 }
 
 // GET — estado de la propuesta del visitante (por cookie de dispositivo o IP).
+/**
+ * ⛔ YA NO RECONOCE EL EQUIPO (Fernando, 2026-10-29). Decía si «este dispositivo» (IP o cookie) ya
+ * tenía una postulación, para que la tarjeta mostrara «en revisión» / «aprobada» y escondiera la
+ * de postulación; eso impedía postularse a quien compartía equipo o red. La tarjeta ya no lo usa:
+ * se responde siempre «no existe» por si queda alguna versión vieja de la página en caché. El
+ * límite ahora es un registro cada 24 h (`/api/registro/estado`) y el candidato aprobado entra por
+ * el enlace de su correo (`/api/candidate/continuar`).
+ */
 export async function GET() {
-  try {
-    await ensureProposalsTable();
-    const ipHash = hashIp(await getClientIp());
-    const cookieStore = await cookies();
-    const deviceToken = cookieStore.get(PROPOSAL_COOKIE)?.value || null;
-    const r = await pool.query(
-      `SELECT email, status, email_verified
-         FROM gcc_world.candidate_proposals
-        WHERE ($1::text IS NOT NULL AND device_token = $1) OR ip_hash = $2
-        ORDER BY created_at DESC
-        LIMIT 1`,
-      [deviceToken, ipHash],
-    );
-    // ¿Este dispositivo ya tiene una CUENTA de candidato en `clients` (por cookie de
-    // cliente o IP)? Se usa para NO ofrecer "quiero postularme" a quien ya es candidato.
-    let hasCandidateAccount = false;
-    try {
-      const clientToken = cookieStore.get(CLIENT_COOKIE)?.value || null;
-      const ca = await pool.query(
-        `SELECT 1 FROM gcc_world.clients
-          WHERE account_type = 'candidate'
-            AND (($1::text IS NOT NULL AND client_token = $1) OR ip_hash = $2)
-          LIMIT 1`,
-        [clientToken, ipHash],
-      );
-      hasCandidateAccount = ca.rows.length > 0;
-    } catch { /* best-effort */ }
-
-    const row = r.rows[0];
-    if (!row) return NextResponse.json({ exists: false, hasCandidateAccount });
-
-    // Si ya fue APROBADA, "activa" la sesión de cliente del candidato en ESTE dispositivo
-    // (setea el CLIENT_COOKIE con su client_token) para que luego pueda completar su perfil
-    // (contraseña + datos) sin necesitar el cookie que se generó en el navegador del admin.
-    if (row.status === 'approved') {
-      try {
-        const c = await pool.query(
-          `SELECT client_token FROM gcc_world.clients
-            WHERE LOWER(email) = LOWER($1) AND account_type = 'candidate' AND approved = true
-            LIMIT 1`,
-          [row.email],
-        );
-        const clientToken = c.rows[0]?.client_token;
-        if (clientToken && cookieStore.get(CLIENT_COOKIE)?.value !== clientToken) {
-          cookieStore.set(CLIENT_COOKIE, clientToken, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            maxAge: 60 * 60 * 24 * 365,
-          });
-        }
-      } catch { /* best-effort */ }
-    }
-
-    return NextResponse.json({
-      exists: true,
-      status: row.status,
-      emailVerified: !!row.email_verified,
-      email: row.email,
-      hasCandidateAccount,
-    });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'unknown error';
-    console.error('Candidate proposal status error:', msg);
-    return NextResponse.json({ exists: false, error: msg }, { status: 500 });
-  }
+  return NextResponse.json({ exists: false, hasCandidateAccount: false });
 }

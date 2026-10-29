@@ -29,6 +29,7 @@
  * funciona igual en claro y oscuro. NO usar hex crudos en los sliders.
  */
 
+import Captcha from '@/components/landing/Captcha';
 import { useState } from 'react';
 import {
   AlertTriangle,
@@ -58,6 +59,8 @@ export type PostulacionData = {
   reason: string;
   /** Consentimiento OPCIONAL para recibir publicidad/novedades del proyecto. */
   marketing: boolean;
+  /** La solución del captcha «No soy un robot» (ALTCHA, 2026-10-29). */
+  altcha: string;
 };
 
 type IconType = React.ComponentType<{ className?: string }>;
@@ -1211,8 +1214,11 @@ export default function OnboardingSlidersModal({
    * pasos no cambia ni una clase.
    */
   tema?: 'aventura' | 'progreso';
-  /** Se llama al enviar la postulación con los datos del candidato. */
-  onComplete: (data: PostulacionData) => void;
+  /**
+   * Se llama al enviar la postulación. Devuelve el MENSAJE DE ERROR si el servidor la rechazó
+   * (captcha caducado, pausa de 24 h…), que se enseña aquí mismo sin cerrar; `null` si salió bien.
+   */
+  onComplete: (data: PostulacionData) => Promise<string | null>;
   /** Cancela el onboarding y vuelve a la landing. */
   onClose: () => void;
 }) {
@@ -1234,7 +1240,24 @@ export default function OnboardingSlidersModal({
   const isForm = index === total;
   const current = SLIDES[index];
   const steps = total + 1; // sliders + postulación
-  const formOk = emailOk && reason.trim().length >= 10 && finalAccepted;
+  // «No soy un robot» (Fernando, 2026-10-29): sin la casilla resuelta no se envía.
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const formOk = emailOk && reason.trim().length >= 10 && finalAccepted && !!captcha && !enviando;
+  const enviar = async () => {
+    if (!formOk || !captcha) return;
+    setEnviando(true);
+    setErrorEnvio(null);
+    const error = await onComplete({ email: email.trim(), reason: reason.trim(), marketing, altcha: captcha });
+    setEnviando(false);
+    if (error) {
+      setErrorEnvio(error);
+      // La solución ya se gastó en el servidor: hay que marcar la casilla otra vez.
+      setReinicioCaptcha((n) => n + 1);
+    }
+  };
   const acceptedHere = isForm ? true : accepted[index];
 
   const toggleAccept = () =>
@@ -1382,6 +1405,16 @@ export default function OnboardingSlidersModal({
                 ) : (
                   <SlideComponent />
                 )}
+                {(isForm || !SlideComponent) && (
+                  <div className="mt-5">
+                    <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema={tema === 'progreso' ? 'claro' : 'oscuro'} />
+                    {errorEnvio && (
+                      <p role="alert" className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-[13px] leading-relaxed text-red-300 onb-error">
+                        {errorEnvio}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1402,7 +1435,7 @@ export default function OnboardingSlidersModal({
                 {isForm ? (
                   <button
                     type="button"
-                    onClick={() => formOk && onComplete({ email: email.trim(), reason: reason.trim(), marketing })}
+                    onClick={enviar}
                     disabled={!formOk}
                     className="onb-boton onb-boton-avanzar"
                   >

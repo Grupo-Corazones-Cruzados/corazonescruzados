@@ -4250,3 +4250,24 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* 2. El nombre de una puerta no puede salirse de su tarjeta («Automatización de procesos» en
       media columna del teléfono): se parte por sílabas y, si aun así no cabe, por donde haga falta. */
 .puerta-titulo { min-width: 0; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
+
+/* ═══ REGISTROS: CAPTCHA Y PAUSA DE 24 H (Fernando, 2026-10-29) ═══
+   La casilla «No soy un robot» (ALTCHA, `components/landing/Captcha.tsx`) con los colores del
+   tema donde aparece, y la tarjeta de rol «en pausa» (un registro desde este equipo en 24 h). */
+.captcha-registro altcha-widget {
+  --altcha-max-width: 100%;
+  --altcha-border-radius: 10px;
+  --altcha-color-primary: #7c3aed;
+  --altcha-color-success: #16a34a;
+  --altcha-color-error: #dc2626;
+  display: block;
+}
+.captcha-claro altcha-widget { --altcha-color-base: #ffffff; --altcha-color-base-content: #17122b; --altcha-border-color: #ddd6f3; --altcha-color-neutral: #b8aee0; }
+.captcha-oscuro altcha-widget { --altcha-color-base: rgba(255, 255, 255, 0.04); --altcha-color-base-content: #ece9f7; --altcha-border-color: rgba(167, 139, 250, 0.3); --altcha-color-neutral: rgba(167, 139, 250, 0.55); }
+.tarjeta-rol.rol-pausada { cursor: not-allowed; }
+.tarjeta-rol.rol-pausada .tr-flecha { opacity: 0.25; }
+.tarjeta-rol.rol-pausada .tr-icono { filter: saturate(0.4); opacity: 0.75; }
+/* La etiqueta de estado en las tarjetas de rol minimalistas: el icono mide 40 px y el texto se
+   cortaba («E…»). Sale hacia la derecha desde el borde del icono, entera (2026-10-29). */
+.tarjeta-rol .tr-escena { overflow: visible; }
+.tarjeta-rol .tr-estado { left: 0; transform: none; max-width: none; top: -11px; }

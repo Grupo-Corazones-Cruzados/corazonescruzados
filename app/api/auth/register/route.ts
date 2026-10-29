@@ -5,13 +5,23 @@ import { pool } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { sendVerificationEmail } from "@/lib/integrations/email";
 import { getClientIp, hashIp } from "@/lib/world/session";
+import { verificarCaptcha } from "@/lib/registro/captcha";
+import { anotarRegistro, estadoRegistro, mensajeBloqueo } from "@/lib/registro/limite";
 
 const CLIENT_REF_COOKIE = "gcc_client_ref";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, first_name, last_name, phone, country, address } =
+    const { email, password, first_name, last_name, phone, country, address, altcha } =
       await req.json();
+
+    // «No soy un robot» (ALTCHA) y un registro cada 24 h por equipo (Fernando, 2026-10-29).
+    const fallo = await verificarCaptcha(altcha);
+    if (fallo) return NextResponse.json({ error: fallo, captcha: true }, { status: 400 });
+    const estado = await estadoRegistro();
+    if (estado.bloqueado) {
+      return NextResponse.json({ error: mensajeBloqueo(estado.hasta), bloqueado: true, hasta: estado.hasta }, { status: 429 });
+    }
 
     if (!email || !password) {
       return NextResponse.json(
@@ -56,24 +66,9 @@ export async function POST(req: NextRequest) {
 
     // Una sola cuenta de cliente por dispositivo: si ya hay una (por cookie o IP),
     // no se permite crear otra (verificada o no).
-    const deviceClient = await pool.query(
-      `SELECT 1 FROM gcc_world.users
-        WHERE role = 'client' AND (($1::text IS NOT NULL AND ref_token = $1) OR ip_hash = $2)
-        LIMIT 1`,
-      [existingRef, ipHash],
-    );
-    if (deviceClient.rows.length > 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Ya tienes una cuenta de cliente en este dispositivo. Verifica tu correo o inicia sesión.",
-        },
-        { status: 409 }
-      );
-    }
+    // ⛔ Aquí se rechazaba a quien ya tenía «una cuenta de cliente en este dispositivo» (IP o
+    // cookie), para siempre. Quitado el 2026-10-29 (Fernando): ahora manda el límite de 24 h.
 
-    // Reutiliza la cookie de dispositivo si ya existe (igual que la postulación
-    // de candidato), o genera una nueva.
     const refToken = existingRef || randomBytes(24).toString("hex");
 
     const result = await pool.query(
@@ -93,6 +88,7 @@ export async function POST(req: NextRequest) {
       ]
     );
     const user = result.rows[0];
+    await anotarRegistro('cliente');
 
     // Cookie de reconocimiento (1 año): reconoce al cliente aunque cambie la IP.
     cookieStore.set(CLIENT_REF_COOKIE, refToken, {
