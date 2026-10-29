@@ -9,7 +9,7 @@
  * `muestra` son los colores de la miniatura del selector (fondo, tarjeta, acento): un dato
  * para pintar el botón, no estilos del tema.
  */
-export type TemaId = 'claro' | 'oscuro' | 'mixto' | 'corazon' | 'orquidea';
+export type TemaId = 'claro' | 'oscuro' | 'mixto' | 'corazon' | 'orquidea' | 'electrico' | 'navidad' | 'videojuego';
 
 export interface DefinicionTema {
   id: TemaId;
@@ -27,6 +27,12 @@ export const TEMAS: DefinicionTema[] = [
   { id: 'corazon', nombre: 'Corazón', base: 'oscuro', muestra: { fondo: '#12060a', tarjeta: '#26262b', acento: '#e11d48' } },
   // #C71585 (Fernando) sobre un rosa casi blanco.
   { id: 'orquidea', nombre: 'Orquídea', base: 'claro', muestra: { fondo: '#fbeef6', tarjeta: '#ffffff', acento: '#C71585' } },
+  // Azul eléctrico sobre la noche de una ciudad, paneles en grafito.
+  { id: 'electrico', nombre: 'Eléctrico', base: 'oscuro', muestra: { fondo: '#040a1c', tarjeta: '#1f2229', acento: '#1f5bff' } },
+  // Nieve y pino, con los botones en rojo de Navidad.
+  { id: 'navidad', nombre: 'Navidad', base: 'claro', muestra: { fondo: '#eef3ef', tarjeta: '#ffffff', acento: '#c1121f', ventana: '#0f2a1d' } },
+  // Máquina recreativa: letra pixel, esquinas rectas, verde neón y magenta.
+  { id: 'videojuego', nombre: 'Videojuego', base: 'oscuro', muestra: { fondo: '#07061a', tarjeta: '#1f1e31', acento: '#4ade80' } },
 ];
 
 export const TEMA_POR_DEFECTO: TemaId = 'claro';

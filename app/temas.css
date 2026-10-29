@@ -9,6 +9,10 @@
                    ventanitas, burbujas, menús, chats) en el oscuro de Aventura.
      · CORAZÓN   — rojo sangre sobre una noche granate. Base oscura.
      · ORQUÍDEA  — el #C71585 de Fernando sobre un rosa casi blanco. Base clara.
+     · ELÉCTRICO — azul eléctrico sobre la noche de una ciudad. Base oscura.
+     · NAVIDAD   — nieve, pino y rojo de Navidad, con el menú en verde abeto. Base clara.
+     · VIDEOJUEGO— máquina recreativa: pantalla de tubo, letra pixel de la casa, esquinas
+                   rectas, sombras de bloque, verde neón y botones magenta. Base oscura.
 
    ⚠️ Un tema SOLO redefine tokens (`--color-*`, `--tarjeta-*`, `--degradado-*`, el fondo) y
    el raíl. Las piezas (tarjetas, botones, cifras) ya los leen; un tema que necesite reglas
@@ -117,6 +121,7 @@
   --tarjeta-borde: rgba(255, 255, 255, 0.08);
   --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.9);
   --etiqueta: #b4b4bb;
+  --texto-acento: #fb7185;
   --fila-hover: rgba(255, 255, 255, 0.05);
   --sombra-boton: rgba(200, 16, 46, 0.75);
   --degradado-boton: linear-gradient(135deg, #e11d48, #9f1239);
@@ -130,7 +135,9 @@
     linear-gradient(180deg, #0e0407 0%, #17070c 100%);
   background-attachment: fixed;
 }
-.corp.tema-progreso.tema-corazon.dark .text-accent:not(.rail .text-accent) { color: #fb7185; }
+/* El acento como TEXTO sobre el grafito: el tono de relleno no llega a 4,5:1, así que los
+   temas oscuros con paneles neutros declaran `--texto-acento`, más claro. */
+.corp.tema-progreso:is(.tema-corazon, .tema-electrico, .tema-videojuego).dark .text-accent:not(.rail .text-accent) { color: var(--texto-acento); }
 .corp.tema-progreso.tema-corazon .rail {
   --color-digi-card: #1b080d;
   --color-digi-darker: #150609;
@@ -182,4 +189,152 @@
   --color-accent: #ff9ad5;
   --color-accent-light: #561a43;
   --color-accent-glow: #ff9ad5;
+}
+
+/* ── ELÉCTRICO — azul eléctrico sobre la noche de una ciudad ───────────────────────────
+   Lo aprendido con Corazón: paneles en grafito neutro frío (1,24:1 contra el fondo), el azul
+   en el fondo, el menú, lo elegido y los botones. Blanco sobre el botón ≥ 5,2:1; el azul
+   como texto pasa a `#4d9bff` (5,6:1 sobre el panel). */
+.corp.tema-progreso.tema-electrico.dark {
+  --color-digi-dark: #040a1c;
+  --color-digi-darker: #131519;
+  --color-digi-card: #1f2229;
+  --color-digi-border: #353a45;
+  --color-digi-text: #f4f6fa;
+  --color-digi-muted: #a3a9b6;
+  --color-accent: #1f5bff;
+  --color-accent-hover: #4d7dff;
+  --color-accent-light: #14295e;
+  --color-accent-dark: #0038d6;
+  --color-accent-glow: #4d9bff;
+  --texto-acento: #4d9bff;
+  --tarjeta-fondo: rgba(31, 34, 41, 0.98);
+  --cabecera-tabla: #1f2229;
+  --tarjeta-borde: rgba(255, 255, 255, 0.08);
+  --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.9);
+  --etiqueta: #b1b7c4;
+  --fila-hover: rgba(255, 255, 255, 0.05);
+  --sombra-boton: rgba(31, 91, 255, 0.8);
+  --degradado-boton: linear-gradient(135deg, #1f5bff, #0038d6);
+  --degradado-icono: linear-gradient(135deg, #3b82f6, #0038d6);
+  --degradado-acento: linear-gradient(90deg, #7dd3fc, #4d9bff 45%, #1f5bff);
+
+  background:
+    radial-gradient(rgba(190, 215, 255, 0.08) 1px, transparent 1.6px) 0 0 / 34px 34px,
+    radial-gradient(36vw 36vw at 88% -6%, rgba(31, 91, 255, 0.32), transparent 70%),
+    radial-gradient(30vw 30vw at 4% 106%, rgba(0, 200, 255, 0.13), transparent 70%),
+    linear-gradient(180deg, #02060f 0%, #050d24 100%);
+  background-attachment: fixed;
+}
+.corp.tema-progreso.tema-electrico .rail {
+  --color-digi-card: #061233;
+  --color-digi-darker: #040d27;
+  --color-digi-border: #12275c;
+  --color-digi-text: #eef4ff;
+  --color-digi-muted: #9fb3dc;
+  --color-accent: #7ab8ff;
+  --color-accent-light: #123072;
+  --color-accent-glow: #7ab8ff;
+}
+
+/* ── NAVIDAD — nieve, pino y rojo ──────────────────────────────────────────────────────
+   Fondo de nieve con copos (puntos gris azulado) y resplandores verde y rojo; tarjetas
+   blancas; el acento es verde pino (blanco encima 6,5:1) y los botones, rojo de Navidad
+   (≥ 6,2:1). El menú es un abeto oscuro con detalles dorados. */
+.corp.tema-progreso.tema-navidad:not(.dark) {
+  --color-digi-dark: #f3f6f2;
+  --color-digi-card: #ffffff;
+  --color-digi-border: #dfe7e0;
+  --color-digi-text: #13261c;
+  --color-digi-muted: #5b6b62;
+  --color-accent: #146c3a;
+  --color-accent-hover: #0f5a30;
+  --color-accent-light: #e5f3ea;
+  --color-accent-dark: #166534;
+  --color-accent-glow: #146c3a;
+  --tarjeta-fondo: rgba(255, 255, 255, 0.9);
+  --cabecera-tabla: #fbfdfb;
+  --tarjeta-borde: #dfe7e0;
+  --tarjeta-sombra: 0 14px 34px -16px rgba(20, 108, 58, 0.28);
+  --etiqueta: #5b6b62;
+  --fila-hover: rgba(20, 108, 58, 0.05);
+  --sombra-boton: rgba(193, 18, 31, 0.6);
+  --degradado-boton: linear-gradient(135deg, #c1121f, #8e0f19);
+  --degradado-icono: linear-gradient(135deg, #1f8a4c, #146c3a);
+  --degradado-acento: linear-gradient(90deg, #c1121f, #d4a017 50%, #146c3a);
+
+  background:
+    radial-gradient(rgba(120, 150, 170, 0.30) 1.4px, transparent 2px) 0 0 / 46px 46px,
+    radial-gradient(rgba(120, 150, 170, 0.20) 1px, transparent 1.6px) 23px 23px / 46px 46px,
+    radial-gradient(34vw 34vw at 92% -4%, rgba(193, 18, 31, 0.10), transparent 70%),
+    radial-gradient(30vw 30vw at 6% 104%, rgba(20, 108, 58, 0.14), transparent 70%),
+    linear-gradient(170deg, #fdfefd 0%, #f3f6f2 55%, #e8efe9 100%);
+  background-attachment: fixed;
+}
+.corp.tema-progreso.tema-navidad .rail {
+  --color-digi-card: #0f2a1d;
+  --color-digi-darker: #0b2116;
+  --color-digi-border: #1f4632;
+  --color-digi-text: #eef6f0;
+  --color-digi-muted: #a9c4b3;
+  --color-accent: #f2c14e;
+  --color-accent-light: #1e4a33;
+  --color-accent-glow: #f2c14e;
+}
+
+/* ── VIDEOJUEGO — máquina recreativa ───────────────────────────────────────────────────
+   Pantalla de tubo (líneas de barrido y rejilla de píxel tenues), títulos en Silkscreen
+   (la letra pixel de la casa; el texto corrido sigue en Inter para leerse), esquinas rectas
+   y sombras de bloque sin desenfoque. Paneles índigo neutro; verde neón para lo elegido y el
+   texto de acento (9,8:1), botones magenta (blanco encima ≥ 4,7:1). */
+.corp.tema-progreso.tema-videojuego.dark {
+  --font-titulo: 'Silkscreen', 'Space Grotesk', system-ui, sans-serif;
+  --radio-tarjeta: 4px;
+  --radio-control: 2px;
+  --color-digi-dark: #07061a;
+  --color-digi-darker: #100f1d;
+  --color-digi-card: #1f1e31;
+  --color-digi-border: #3a3858;
+  --color-digi-text: #f5f3ff;
+  --color-digi-muted: #a5a3c2;
+  --color-accent: #15803d;
+  --color-accent-hover: #16a34a;
+  --color-accent-light: #123d24;
+  --color-accent-dark: #15803d;
+  --color-accent-glow: #4ade80;
+  --texto-acento: #4ade80;
+  --tarjeta-fondo: #1f1e31;
+  --cabecera-tabla: #1f1e31;
+  --tarjeta-borde: #3a3858;
+  --tarjeta-sombra: 4px 4px 0 0 rgba(0, 0, 0, 0.55);
+  --etiqueta: #b4b2d4;
+  --fila-hover: rgba(74, 222, 128, 0.06);
+  --sombra-boton: rgba(192, 38, 211, 0.7);
+  --degradado-boton: linear-gradient(135deg, #c026d3, #7e22ce);
+  --degradado-icono: linear-gradient(135deg, #15803d, #0e7490);
+  --degradado-acento: linear-gradient(90deg, #39ff14, #22d3ee 50%, #f0abfc);
+
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 3px),
+    linear-gradient(rgba(124, 92, 224, 0.07) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(124, 92, 224, 0.07) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(36vw 36vw at 88% -6%, rgba(192, 38, 211, 0.24), transparent 70%),
+    radial-gradient(30vw 30vw at 4% 106%, rgba(57, 255, 20, 0.10), transparent 70%),
+    linear-gradient(180deg, #05040f 0%, #0b0920 100%);
+  background-attachment: fixed;
+}
+/* Silkscreen es ~1,5 veces más ancha que Space Grotesk: el título de la página a 1,5 rem
+   partía un título largo en seis líneas en el teléfono. A 18/16 px queda en la rejilla del
+   píxel y cabe. */
+.corp.tema-progreso.tema-videojuego .page-title { font-size: 1.125rem; letter-spacing: 0; }
+@media (max-width: 639px) { .corp.tema-progreso.tema-videojuego .page-title { font-size: 1rem; } }
+.corp.tema-progreso.tema-videojuego .rail {
+  --color-digi-card: #0d0b22;
+  --color-digi-darker: #09081a;
+  --color-digi-border: #2a2650;
+  --color-digi-text: #f5f3ff;
+  --color-digi-muted: #a5a3c2;
+  --color-accent: #4ade80;
+  --color-accent-light: #173d27;
+  --color-accent-glow: #4ade80;
 }

@@ -4856,6 +4856,17 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
   `#e11d48 → #9f1239`. Raíl `#1b080d`. El rojo es para lo que actúa o está elegido, nunca para el panel.
 - **Orquídea** (base clara): rosa casi blanco `#fffafd → #f6e1ee` con puntos magenta; acento `#C71585`
   (blanco encima 5,4:1), `accent-light #fce7f3`; botón `#db2799 → #a5106d`. Raíl ciruela `#2a0d20`.
+- **Eléctrico** (base oscura, 2026-10-29): noche azul `#02060f → #050d24` con resplandor `#1f5bff`; paneles
+  grafito frío `#1f2229`; acento `#1f5bff` (blanco 5,2:1), texto de acento `#4d9bff`; botón
+  `#1f5bff → #0038d6`. Raíl azul noche `#061233`.
+- **Navidad** (base clara): nieve `#fdfefd → #e8efe9` con copos gris azulado; acento verde pino `#146c3a`
+  (6,5:1); botones rojo `#c1121f → #8e0f19`; raíl abeto `#0f2a1d` con acento dorado `#f2c14e`.
+- **Videojuego** (base oscura): pantalla de tubo (barrido + rejilla de 24 px); `--font-titulo` Silkscreen
+  (el título de página a 18/16 px: a 1,5 rem un título largo ocupaba 6 líneas en el teléfono);
+  `--radio-tarjeta 4px`, `--radio-control 2px`, sombra de bloque `4px 4px 0`; paneles `#1f1e31`; lo
+  elegido en verde (`#15803d`, texto `#4ade80`), botones magenta `#c026d3 → #7e22ce`.
+- **`--texto-acento`**: los temas oscuros de paneles neutros (Corazón, Eléctrico, Videojuego) pintan
+  `text-accent` con este tono más claro; el de relleno no llega a 4,5:1 sobre el grafito.
 - **Paneles en los temas oscuros** (Fernando, 2026-10-29: *«los paneles deben tener color para contrastar»*):
   la tarjeta NO es el color del fondo: grafito neutro (Corazón `#26262b`, 1,3:1) o grafito violáceo
   (Oscuro `#22202f`), casi opaca, y los campos un pozo más oscuro (`#141416` / `#12101b`). El tinte del
