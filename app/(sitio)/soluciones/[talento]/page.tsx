@@ -39,7 +39,7 @@ import { presentacionSoluciones } from '@/components/sitio/presentaciones';
 import SolucionesExplorador from '@/components/sitio/SolucionesExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { listarSoluciones, talentoPorSlug } from '@/lib/soluciones';
-import { cargarSolucionesConContenido } from '../datos';
+import { cargarSolucionesCacheadas } from '../datos';
 
 export const revalidate = 300;
 
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TalentoPage({ params }: Props) {
   const { talento: slug } = await params;
-  const soluciones = await cargarSolucionesConContenido();
+  const soluciones = await cargarSolucionesCacheadas();
 
   // Se comprueba contra lo cargado y no con otra consulta: si el talento no está aquí,
   // tampoco habría nada que enseñar.

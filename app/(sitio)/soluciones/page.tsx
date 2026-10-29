@@ -36,9 +36,11 @@ import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
 import { presentacionSoluciones } from '@/components/sitio/presentaciones';
 import SolucionesExplorador from '@/components/sitio/SolucionesExplorador';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { cargarSolucionesConContenido } from './datos';
+import { cargarSolucionesCacheadas } from './datos';
 
-export const revalidate = 300;
+/* Sin prerender en el build (se generaba VACÍA y la veía el primer visitante de cada despliegue):
+   se pinta en cada visita y los datos salen de la caché de 5 minutos. Ver `datos.ts`. */
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   /** Solo el nombre: la plantilla de `app/layout.tsx` añade « · Grupo Corazones Cruzados». */
@@ -57,7 +59,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SolucionesPage() {
-  const soluciones = await cargarSolucionesConContenido();
+  const soluciones = await cargarSolucionesCacheadas();
   const totalTrabajos = soluciones.reduce(
     (n, a) => n + Object.values(a.contenido).reduce(
       (m, c) => m + c.proyectos.length + c.tickets.length + c.productos.length, 0), 0,

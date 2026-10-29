@@ -244,6 +244,12 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > QUITA cuando termina: si después otra clase cambia la `animation` y luego se va, la entrada se
 > reinicia con su retraso y el elemento desaparece. En `RolesMundo` se quita con `onAnimationEnd`.
 >
+> **⚠️ iPhone instalado como app (2026-10-29).** Con los márgenes seguros (62/34 px en el iPhone 17)
+> la portada medía 30 px de más y el pensamiento quedaba bajo el pie. En el teléfono, mientras no
+> hay mundo elegido (`data-modo='partido'`), el hueco del eslogan NO se reserva y la separación entre
+> mundos es `clamp(28px, 4.5vh, 48px)`. Probar SIEMPRE simulando `--seguro-arriba/abajo`
+> (402×874 con 62/34), no solo 390×844 sin márgenes.
+>
 > **Principios que salieron de estas iteraciones (aplican a cualquier pantalla de selección):**
 > 1. **Elegir es un CLIC**, nunca pasar el puntero; y en táctil nada debe parecer «ya seleccionado»
 >    (reglas `(hover: none), (pointer: coarse)` sin realce en reposo).
@@ -706,6 +712,8 @@ el titular del diálogo sigue diciendo «a la Plataforma».
     ⚠️ **Sin burbujas**: se quedaban abiertas todas a la vez porque `.acciones-al-pasar` fuerza
     `opacity:1` fuera de un `.group` y tapaban las tarjetas vecinas.
   · Borrados por quedarse sin uso: `TiraConceptos.tsx`, `ExploradorTresPaneles` y su CSS.
+  · Teléfono (2026-10-29): el nombre de la puerta se parte por sílabas (`hyphens:auto`,
+    `overflow-wrap:anywhere`): «Automatización de procesos» se salía de media columna.
   · Verificado (producción) a 1440 y 390: ninguna tarjeta se sale, cápsula alineada con su
     botón en las 4 pestañas, «Leer más» abre (523 → 636 px), el buscador filtra.
 - ⭐ **SIN BOTONES DE ACCESO fuera de Inicio** (2026-10-29, Fernando: *«quita esos botones… solo la

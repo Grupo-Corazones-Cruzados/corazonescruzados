@@ -4236,3 +4236,17 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 .contacto-redondo svg { width: 15px; height: 15px; }
 .contacto-redondo:hover { color: #fff; background: #6d28d9; }
+
+/* ═══ AJUSTES DE TELÉFONO (Fernando, 2026-10-29) ═══
+   1. En su iPhone 17 instalado como app (márgenes de 62 px arriba y 34 abajo) la portada medía
+      30 px más que la pantalla y el pensamiento quedaba bajo el pie. En la pantalla de INICIO
+      el hueco del eslogan (que solo aparece tras elegir mundo) no se reserva en el teléfono, y
+      la separación entre los dos mundos se acorta. Al elegir, el hueco vuelve mientras la zona
+      de abajo cambia de contenido, así que no se ve ningún salto. */
+@media (max-width: 639.98px) {
+  .landing-page[data-modo='partido'] .eslogan-portada { display: none; }
+  .landing-page[data-modo='partido'] .paneles-mundo { row-gap: clamp(28px, 4.5vh, 48px); }
+}
+/* 2. El nombre de una puerta no puede salirse de su tarjeta («Automatización de procesos» en
+      media columna del teléfono): se parte por sílabas y, si aun así no cabe, por donde haga falta. */
+.puerta-titulo { min-width: 0; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }

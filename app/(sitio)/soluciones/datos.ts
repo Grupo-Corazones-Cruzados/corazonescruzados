@@ -13,6 +13,7 @@ import {
   listarSoluciones, contenidoDeTalento, conceptosPorTalento,
   type ContenidoDeTalento,
 } from '@/lib/soluciones';
+import { unstable_cache } from 'next/cache';
 import type { SolucionConContenido } from '@/components/sitio/SolucionesExplorador';
 
 const VACIO: ContenidoDeTalento = { miembros: [], productos: [], proyectos: [], tickets: [] };
@@ -61,3 +62,18 @@ export async function cargarSolucionesConContenido(): Promise<SolucionConConteni
     return [];
   }
 }
+
+/**
+ * ⭐ LA MISMA CARGA, GUARDADA 5 MINUTOS EN LA CACHÉ DE DATOS (2026-10-29).
+ *
+ * La usa `/soluciones`, que ya NO se prerenderiza en el build: se generaba vacía (en el build de
+ * Railway no hay base), y el PRIMER visitante de cada despliegue veía «Todavía no hay soluciones
+ * publicados» hasta la revalidación — le pasó a Fernando en su iPhone. Ahora la página se pinta en
+ * cada visita (`dynamic = 'force-dynamic'`) pero la base se consulta como mucho una vez cada 5
+ * minutos. Si la consulta falla, el error NO se guarda: la siguiente visita lo vuelve a intentar.
+ */
+export const cargarSolucionesCacheadas = unstable_cache(
+  () => cargarSolucionesConContenido(),
+  ['soluciones-con-contenido'],
+  { revalidate: 300 },
+);

@@ -364,7 +364,11 @@ Stack estándar de la casa, con particularidades de este repo:
   COMPLETA en una declaración y probar con `next build` + `next start`; (d) `text-shadow` tapa
   `background-clip: text`; (e) `parseFloat('0px') || x` toma `x`; (f) recortes SVG en línea, no por
   clase; (g) relleno `both` deja visibles en su estado inicial cosas que debían nacer en el contacto;
-  (h) en táctil el `:hover` se queda pegado → `(hover: none), (pointer: coarse)`; (i) una regla
+  (k) **una página con `revalidate` se PRERENDERIZA en el build de Railway, donde no hay base**: salía
+  vacía y el primer visitante de cada despliegue veía «Todavía no hay soluciones» (Fernando en su
+  iPhone, 2026-10-29) → `/soluciones` es `force-dynamic` con los datos en `unstable_cache` 5 min
+  (`cargarSolucionesCacheadas`); (l) probar el teléfono con los márgenes seguros simulados;
+    (h) en táctil el `:hover` se queda pegado → `(hover: none), (pointer: coarse)`; (i) una regla
   vieja más específica pisaba la animación nueva → borrar lo derogado, no solo añadir.
   (j) **cambiar la `animation` de un elemento que tenía una de entrada la REINICIA**: al elegir un
   rol, `.rol-elegida`/`.rol-descartada` sustituían a `.aparecer`; al quitarlas, la entrada volvía a
