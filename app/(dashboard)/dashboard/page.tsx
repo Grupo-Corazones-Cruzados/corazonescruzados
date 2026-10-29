@@ -301,7 +301,8 @@ export default function DashboardHome() {
           // ⚠️ SIN caja de desplazamiento propia (Fernando, 2026-10-29: «hay que desplazarse hacia
           // abajo para ver el formulario y su botón de guardar»). Era `max-h-[75vh] overflow-y-auto`
           // DENTRO del panel lateral, que ya se desplaza: el formulario se cortaba a media altura y
-          // «Guardar» quedaba escondido en esa caja. Ahora se desplaza el panel y el pie va fijo.
+          // «Guardar» quedaba escondido en esa caja. Ahora el formulario es UNO y ocupa el panel, que
+          // se desplaza entero, con sus botones al final.
           <div className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <BloqueImportes
@@ -340,8 +341,10 @@ export default function DashboardHome() {
             {/* Acciones. En teléfono se apilan y ocupan el ancho: dos botones de 90 px
                 compitiendo en una fila es donde el pulgar se equivoca, y «Guardar» —la
                 acción de verdad— queda al alcance, abajo del todo. */}
-            {/* El pie, PEGADO abajo del panel: Guardar siempre a la vista, por largo que sea el mes. */}
-            <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 border-t border-digi-border bg-digi-card">
+            {/* El pie es el FINAL del formulario, en su sitio: se llega desplazando, como a todo lo
+                demás (Fernando, 2026-10-29: «no debería verla flotando… el formulario debe ser dueño
+                del espacio y uno solo»). Un pie pegado al borde dejaba pasar el contenido por detrás. */}
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4 border-t border-digi-border">
               <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf${soloFacturado ? '?facturado=1' : ''}`, '_blank')}
                 className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
                 <Download className="w-4 h-4" /> PDF
