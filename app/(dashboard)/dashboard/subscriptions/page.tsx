@@ -319,11 +319,15 @@ export default function SubscriptionsPage() {
             />
             <div className="min-w-0">
               <div className="text-[12px] font-medium text-digi-text" style={mf}>{p.label}</div>
-              <div className="text-[11px] text-digi-muted" style={mf}>
-                Vence {p.dueDate}
+              {/* El vencimiento y el estado van en DOS líneas (Fernando, 2026-10-29): en una sola,
+                  «Pagado el …» se partía a media frase junto a la fecha. */}
+              <div className="text-[11px] text-digi-muted" style={mf}>Vence {p.dueDate}</div>
+              <div className="text-[11px]" style={mf}>
                 {p.paid
-                  ? <> · <span className="text-green-600">Pagado{p.paidAt ? ` el ${String(p.paidAt).split('T')[0]}` : ''}</span></>
-                  : <> · {p.status === 'overdue' ? <span className="text-red-600">{dueText(p.daysUntilDue)}</span> : p.status === 'due_soon' ? <span className="text-amber-700">{dueText(p.daysUntilDue)}</span> : <span>{dueText(p.daysUntilDue)}</span>}</>}
+                  ? <span className="text-green-600">Pagado{p.paidAt ? ` el ${String(p.paidAt).split('T')[0]}` : ''}</span>
+                  : p.status === 'overdue' ? <span className="text-red-600">{dueText(p.daysUntilDue)}</span>
+                  : p.status === 'due_soon' ? <span className="text-amber-700">{dueText(p.daysUntilDue)}</span>
+                  : <span className="text-digi-muted">{dueText(p.daysUntilDue)}</span>}
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
