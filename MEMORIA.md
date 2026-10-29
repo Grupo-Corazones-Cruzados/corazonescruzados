@@ -399,6 +399,10 @@ Stack estándar de la casa, con particularidades de este repo:
      con trémolo y eco) PROGRAMADO con el reloj de audio en el contacto del corazón con la Tierra
      (62 % de `corazonCruza` = 1,18 s tras `setChoque`; ~2,1 s tras el clic) y cancelado si se vuelve
      antes; `sonarVolver` (dos notas que bajan, sol6→do6) en «Volver» y en Escape.
+     **Tarjetas de rol (2026-10-29):** `sonarTarjeta` al elegir (mi6→la6 triangular + brillo) y
+     `sonarPasar` al pasar el ratón (tic suave de 50 ms; solo `pointerType === 'mouse'`, solo si el
+     contexto de audio YA suena —pasar el puntero no autoriza audio—, máx. uno cada 70 ms).
+     Todos en `lib/sitio/sonidoSeleccion.ts`: un sonido distinto por gesto, mismo timbre de juego.
   6. **Sin desplazamiento** en ningún tamaño; márgenes seguros del teléfono (`--seguro-arriba/abajo`).
   **Descartado por Fernando** (no repetir; lista completa en `Diseño.md`): elegir al pasar el
   puntero, raya que sigue al puntero, texto partido de color, cristal/placa detrás del titular,

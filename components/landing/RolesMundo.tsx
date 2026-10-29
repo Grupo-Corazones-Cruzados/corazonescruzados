@@ -17,7 +17,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOpcionesAcceso, type AccionesAcceso, type OpcionAcceso } from '@/components/landing/opcionesAcceso';
-import { sonarVolver } from '@/lib/sitio/sonidoSeleccion';
+import { sonarPasar, sonarTarjeta, sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 
 function Tarjeta({
   o,
@@ -47,6 +47,9 @@ function Tarjeta({
     <button
       type="button"
       onClick={o.cargando ? undefined : onElegir}
+      // El «tic» al pasar el puntero (Fernando, 2026-10-29). Solo con ratón: en táctil el
+      // `pointerenter` llega al tocar y se sumaría al sonido de elegir.
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !o.cargando && !estado) sonarPasar(); }}
       aria-disabled={o.cargando || undefined}
       aria-busy={o.cargando || undefined}
       aria-label={`${o.titulo}: ${o.descripcion}`}
@@ -107,6 +110,8 @@ export default function RolesMundo({
   }, [elegida]);
   const elegir = (o: OpcionAcceso) => {
     if (elegida) return;
+    // El sonido de elegir una tarjeta (Fernando, 2026-10-29), dentro del clic (iOS).
+    sonarTarjeta();
     setElegida(o.clave);
     window.setTimeout(o.onClick, 450);
   };

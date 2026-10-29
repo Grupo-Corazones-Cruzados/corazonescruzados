@@ -193,3 +193,78 @@ export function sonarVolver() {
     // Sin audio no se rompe nada.
   }
 }
+
+/**
+ * ELEGIR UNA TARJETA DE ROL — Postulación, Candidato, Cliente o Miembro (Fernando, 2026-10-29).
+ * Un «elegir objeto» de menú: dos notas rápidas que SUBEN una cuarta (mi6 → la6) con onda
+ * triangular (más redonda que la cuadrada del «confirmar» de mundo) y un brillo corto encima.
+ * Más ligero que entrar a un mundo, para que cada gesto tenga su sonido.
+ */
+export function sonarTarjeta() {
+  try {
+    const ctx = obtenerContexto();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + 0.005;
+    const salida = ctx.createGain();
+    salida.gain.value = VOLUMEN;
+    salida.connect(ctx.destination);
+    const eco = ctx.createDelay();
+    eco.delayTime.value = 0.08;
+    const ecoGanancia = ctx.createGain();
+    ecoGanancia.gain.value = 0.18;
+    salida.connect(eco);
+    eco.connect(ecoGanancia);
+    ecoGanancia.connect(ctx.destination);
+
+    const voz = (tipo: OscillatorType, f: number, inicio: number, largo: number, pico: number) => {
+      const osc = ctx.createOscillator();
+      const vol = ctx.createGain();
+      osc.type = tipo;
+      osc.frequency.setValueAtTime(f, inicio);
+      vol.gain.setValueAtTime(0.0001, inicio);
+      vol.gain.exponentialRampToValueAtTime(pico, inicio + 0.006);
+      vol.gain.exponentialRampToValueAtTime(0.0001, inicio + largo);
+      osc.connect(vol).connect(salida);
+      osc.start(inicio);
+      osc.stop(inicio + largo + 0.02);
+    };
+    voz('triangle', 1318.5, t0, 0.07, 0.7);
+    voz('triangle', 1760.0, t0 + 0.06, 0.18, 0.7);
+    voz('sine', 3520.0, t0 + 0.06, 0.12, 0.18); // el brillo
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+}
+
+/**
+ * PASAR EL PUNTERO POR UNA TARJETA DE ROL — un «tic» de cursor de menú, muy suave (Fernando,
+ * 2026-10-29: «un sonidito suave»). Una nota aguda cortísima en seno, bajita.
+ *
+ * ⚠️ Pasar el puntero NO es un gesto que autorice audio: solo suena si el contexto YA está
+ * sonando (lo abrió el clic en el mundo). Nunca lo crea. Y no se repite más de una vez cada
+ * 70 ms, para que barrer las tarjetas no haga ráfaga.
+ */
+let ultimoTic = 0;
+export function sonarPasar() {
+  try {
+    if (!contexto || contexto.state !== 'running') return;
+    const ahora = performance.now();
+    if (ahora - ultimoTic < 70) return;
+    ultimoTic = ahora;
+    const ctx = contexto;
+    const t0 = ctx.currentTime + 0.002;
+    const osc = ctx.createOscillator();
+    const vol = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2093, t0);
+    osc.frequency.exponentialRampToValueAtTime(2349, t0 + 0.03);
+    vol.gain.setValueAtTime(0.0001, t0);
+    vol.gain.exponentialRampToValueAtTime(0.07, t0 + 0.004);
+    vol.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+    osc.connect(vol).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.06);
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+}
