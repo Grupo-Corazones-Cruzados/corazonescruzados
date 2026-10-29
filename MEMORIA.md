@@ -8332,6 +8332,11 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     (`/grupo`) tiene su token **invalidado** («the user changed their password», subcode 460):
     tampoco envía; (3) avisar en el panel ANTES de que venza un token (`debug_token.expires_at`)
     y no solo cuando ya falla — el agente estuvo mudo 2 días sin que nadie se enterara.
+  - **Desde 2026-10-29 `error_envio` guarda la respuesta de Meta** (`[Meta: HTTP · código · subcódigo ·
+    mensaje · fbtrace]`) y la bandeja la enseña al pasar sobre «no salió». 🪤 Al contar envíos del canal,
+    `herramienta = 'equipo'` son los mensajes que el equipo escribe desde el teléfono y SIEMPRE salen: mezclados
+    con los del agente hacen parecer «fallos sueltos del 3 %» lo que era un 100 % (otra sesión se lo creyó y
+    subió un reintento inútil, ya quitado). Contar solo `responder`/`escalar_a_humano`.
 
 - **Guardar un mes del estado financiero desvincula sus orígenes** (2026-10-29): `PUT
   app/api/finance/[id]/route.ts` borra y reinserta los renglones sin `source_type`/`source_id`. No duplica
