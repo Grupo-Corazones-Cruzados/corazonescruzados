@@ -23,7 +23,7 @@ const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','A
 
 interface Stats { open_tickets: number; active_projects: number; users?: number; active_members?: number; clients?: number; }
 interface FinanceMonth { id: number; year: number; month: number; total_income: string; total_expense: string; total_savings: string; facturado_income?: string; }
-interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; }
+interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; facturado?: boolean; }
 
 export default function DashboardHome() {
   const { user } = useAuth();
@@ -129,11 +129,16 @@ export default function DashboardHome() {
     finally { setSaving(false); }
   };
 
-  const detailIncome = incomeItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  // Con «Solo facturado», la ventana del mes esconde los ingresos que el servidor marcó SIN factura
+  // (Fernando, 2026-10-29: «si le doy a solo facturado sí aparecen las filas»). Solo se ESCONDEN: el
+  // guardado reescribe el mes entero, así que siguen en el estado y se guardan con los demás. Los
+  // que se añaden a mano (aún sin marca) se ven.
+  const ocultoPorFiltro = (it: FinanceItem) => soloFacturado && it.type === 'income' && it.facturado === false;
+  const detailIncome = incomeItems.filter((i) => !ocultoPorFiltro(i)).reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const detailExpense = expenseItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const detailSavings = detailIncome - detailExpense;
   const priorSavings = detailMonth
-    ? months.filter(m => m.year < detailMonth.year || (m.year === detailMonth.year && m.month < detailMonth.month)).reduce((s, m) => s + Number(m.total_savings || 0), 0)
+    ? months.filter(m => m.year < detailMonth.year || (m.year === detailMonth.year && m.month < detailMonth.month)).reduce((s, m) => s + ahorroDe(m), 0)
     : 0;
   const cumulativeSavings = priorSavings + detailSavings;
 
@@ -241,7 +246,7 @@ export default function DashboardHome() {
                 // ⭐ UN ICONO, no una etiqueta «PDF» con borde y color (Fernando, 2026-10-29: «tiene
                 // un estilo muy de IA»). Botón fantasma: sin borde ni relleno en reposo; el nombre
                 // en `title`/`aria-label`.
-                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
+                <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf${soloFacturado ? '?facturado=1' : ''}`, '_blank'); }}
                   title="Descargar el PDF del mes" aria-label="Descargar el PDF del mes"
                   className="destino-tactil -my-1 w-7 h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
                   <FileDown className="w-4 h-4" />
@@ -296,8 +301,8 @@ export default function DashboardHome() {
           <div className="max-h-[75vh] overflow-y-auto pr-1 space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <BloqueImportes
-                titulo="Ingresos" Icon={TrendingUp} colorIcono="text-green-400" colorTotal="text-green-400"
-                total={money(detailIncome)} items={incomeItems} setItems={setIncomeItems}
+                titulo={soloFacturado ? 'Ingresos facturados' : 'Ingresos'} Icon={TrendingUp} colorIcono="text-green-400" colorTotal="text-green-400"
+                total={money(detailIncome)} items={incomeItems} setItems={setIncomeItems} oculto={ocultoPorFiltro}
                 editable={isAdmin} tipo="income" vacio="Sin ingresos registrados." textoAgregar="Agregar ingreso"
               />
               <BloqueImportes
@@ -332,7 +337,7 @@ export default function DashboardHome() {
                 compitiendo en una fila es donde el pulgar se equivoca, y «Guardar» —la
                 acción de verdad— queda al alcance, abajo del todo. */}
             <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-3 border-t border-digi-border">
-              <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf`, '_blank')}
+              <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf${soloFacturado ? '?facturado=1' : ''}`, '_blank')}
                 className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
                 <Download className="w-4 h-4" /> PDF
               </button>
@@ -363,7 +368,7 @@ export default function DashboardHome() {
  * el sitio que hay.
  */
 function BloqueImportes({
-  titulo, Icon, colorIcono, colorTotal, total, items, setItems, editable, tipo, vacio, textoAgregar,
+  titulo, Icon, colorIcono, colorTotal, total, items, setItems, editable, tipo, vacio, textoAgregar, oculto,
 }: {
   titulo: string;
   Icon: LucideIcon;
@@ -376,7 +381,10 @@ function BloqueImportes({
   tipo: 'income' | 'expense';
   vacio: string;
   textoAgregar: string;
+  /** Filas que no se dibujan (el filtro «Solo facturado») pero que se conservan y se guardan. */
+  oculto?: (it: FinanceItem) => boolean;
 }) {
+  const ocultos = oculto ? items.filter(oculto).length : 0;
   const cambiar = (i: number, campo: 'description' | 'amount', valor: string) => {
     if (!editable) return;
     setItems((prev) => prev.map((it, k) => (k === i ? { ...it, [campo]: valor } : it)));
@@ -393,7 +401,12 @@ function BloqueImportes({
       </div>
       <div className="p-3 space-y-2.5 sm:space-y-2">
         {items.length === 0 && !editable && <p className="text-[12px] text-digi-muted text-center py-2" style={mf}>{vacio}</p>}
-        {items.map((item, i) => (
+        {ocultos > 0 && (
+          <p className="text-[11.5px] text-digi-muted" style={mf}>
+            {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'} por «Solo facturado». Se conservan al guardar.
+          </p>
+        )}
+        {items.map((item, i) => oculto?.(item) ? null : (
           <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
             <input
               value={item.description} onChange={(e) => cambiar(i, 'description', e.target.value)}
