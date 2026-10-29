@@ -308,8 +308,8 @@ const TOOLS: AccordionItem[] = [
         </p>
         <p style={cardDesc}>
           Lo que propone este sistema es llevar la seguridad física y la aplicación de la ley a un
-          nivel <strong style={strong}>«ipso facto»</strong>, es decir que el acto delictivo tiene
-          consecuencias en el acto sin requerir tiempo de procesos, intermediarios, y roles que solo
+          nivel <strong style={strong}>«ipso facto»</strong>, es decir que el acto delictivo tenga
+          consecuencias en el momento sin requerir tiempo de procesos, intermediarios, o roles que solo
           alargan o incluso disminuyen la carga real de una condena.
         </p>
         <p style={cardDesc}>
@@ -321,21 +321,28 @@ const TOOLS: AccordionItem[] = [
   },
   {
     name: 'Proyecto Centralizado',
-    summary: 'Cada proyecto suma a una estrategia común más grande que la suma de sus partes.',
+    summary: 'Un servicio para negocios que necesitan recuperar o mejorar su flujo de trabajo.',
+    // Texto de Fernando (2026-10-29), literal.
     body: () => (
       <>
         <p style={cardDesc}>
-          Trabajamos bajo una idea central: todo proyecto que nace en la organización es, además,
-          un <strong style={strong}>recurso del Grupo Corazones Cruzados</strong>. Aunque cada
-          proyecto tenga su propio dueño legal —que conserva plenamente su beneficio—, también
-          forma parte de una estrategia compartida, pensada para que el éxito de uno impulse al
-          resto.
+          El <strong style={strong}>Proyecto Centralizado</strong> del Grupo Corazones Cruzados es un
+          servicio exclusivo que se ofrece a clientes, candidatos, y miembros de la organización, el
+          cual busca ser una solución para negocios que tienen condiciones de necesidad/problemáticas
+          internas/crisis que requieren alguna intervención para recuperar el correcto funcionamiento
+          del flujo de trabajo, o descubrir mejores formas de seguir haciendo.
         </p>
         <p style={cardDesc}>
-          Esta visión común exige coordinación y confianza: las decisiones estratégicas se siguen
-          con disciplina, porque la dirección la marca un solo liderazgo, el de{' '}
-          <strong style={strong}>Luis Fernando González Muyulema</strong>. Así evitamos esfuerzos
-          dispersos y avanzamos todos en la misma dirección.
+          Para ofrecer este servicio se requiere llegar a un{' '}
+          <strong style={strong}>previo acuerdo con el dueño del negocio</strong>, que incluye
+          condiciones de acceso y control temporal en los departamentos afectados para poder
+          implementar todos los sistemas de gobernanza del Grupo Corazones Cruzados.
+        </p>
+        <p style={cardDesc}>
+          Existen otros beneficios adicionales por conectarse al Proyecto Centralizado debido a que
+          los negocios afiliados serían parte de la{' '}
+          <strong style={strong}>Estrategia Organizacional</strong>, la cual conecta otros negocios
+          y talentos para adoptar las mejores soluciones y crear oportunidades.
         </p>
       </>
     ),
