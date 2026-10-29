@@ -237,7 +237,7 @@ export default function DashboardHome() {
               { key: 'income', header: soloFacturado ? 'Facturado' : 'Ingresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(ingresoDe(m))}</span> },
               { key: 'expense', header: 'Egresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
               { key: 'savings', header: 'Ahorro', width: '22%', render: (m: any) => { const s = ahorroDe(m); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
-              { key: 'pdf', header: '', width: '52px', render: (m: any) => (
+              { key: 'pdf', header: '', width: '60px', render: (m: any) => (
                 // ⭐ UN ICONO, no una etiqueta «PDF» con borde y color (Fernando, 2026-10-29: «tiene
                 // un estilo muy de IA»). Botón fantasma: sin borde ni relleno en reposo; el nombre
                 // en `title`/`aria-label`.

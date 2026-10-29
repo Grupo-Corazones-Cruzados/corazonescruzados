@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO } from '@/lib/finance';
+import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO, nombrarIngresosFacturados } from '@/lib/finance';
 
 /**
  * Backfill: register completed/invoiced projects and completed tickets.
@@ -91,6 +91,8 @@ export async function GET() {
     if (Date.now() - lastBackfill > BACKFILL_INTERVAL_MS) {
       lastBackfill = Date.now();
       try { await backfillIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
+      // Y cada ingreso facturado, con el nombre de su factura (ver `nombrarIngresosFacturados`).
+      try { await nombrarIngresosFacturados(); } catch (e: any) { console.error('Nombrar ingresos:', e.message); }
     }
 
     // `facturado_income`: lo que de los ingresos del mes tiene factura (ver SQL_INGRESO_FACTURADO).

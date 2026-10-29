@@ -179,3 +179,66 @@ export const SQL_INGRESO_FACTURADO = `(fi.type = 'income' AND CASE fi.source_typ
 
 /** Los orígenes que se pueden guardar desde el formulario del mes (los que escribe el sistema). */
 export const ORIGENES_INGRESO = new Set(['invoice', 'ticket', 'project', 'subscription', 'sri_emitida']);
+
+/**
+ * QUÉ FACTURA ES LA DE ESTE INGRESO — condición SQL entre `fi` (finance_items) e `i` (invoices). La
+ * misma relación que usa `SQL_INGRESO_FACTURADO`, pero devolviendo la factura concreta. Un comprobante
+ * leído del SRI se reconoce por su clave de acceso.
+ */
+export const SQL_ENLACE_FACTURA = `(
+  (fi.source_type = 'invoice' AND fi.source_id = i.id::text)
+  OR (fi.source_type = 'sri_emitida' AND fi.source_id = i.access_key)
+  OR (fi.source_type = 'ticket' AND (i.ticket_id::text = fi.source_id OR (i.source_type = 'ticket' AND i.source_id = fi.source_id)))
+  OR (fi.source_type = 'subscription' AND i.source_type = 'subscription' AND i.source_id = fi.source_id)
+  OR (fi.source_type = 'project'
+      AND (i.project_id::text = fi.source_id
+           OR EXISTS (SELECT 1 FROM gcc_world.invoice_projects ip WHERE ip.invoice_id = i.id AND ip.project_id::text = fi.source_id))
+      AND NOT EXISTS (SELECT 1 FROM gcc_world.project_stages ps WHERE ps.invoice_id = i.id)))`;
+
+// Siglas societarias que se quedan en mayúsculas al pasar el nombre del SRI a nombre propio.
+const SIGLAS = /^(S\.?A\.?S?\.?|S\.?L\.?|C\.?A\.?|CIA\.?|LTDA\.?|INC\.?)$/i;
+/** «MENDEZ DE LA TORRE RAFAEL ENRIQUE» → «Mendez De La Torre Rafael Enrique». Un nombre ya escrito
+ *  con mayúsculas y minúsculas se respeta tal cual. */
+function nombrePropio(n: string): string {
+  const t = (n || '').trim();
+  if (t !== t.toUpperCase()) return t;
+  return t.toLowerCase().split(/\s+/).map((w) => (SIGLAS.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+}
+
+/** Cómo se llama un ingreso facturado (Fernando, 2026-10-29: «al guardar los ingresos debería estar
+ *  escrito el nombre de la factura así: Factura 001-001-000000020 — Mendez De La Torre Rafael Enrique»). */
+export function nombreIngresoFacturado(numero: string, cliente: string | null | undefined): string {
+  return `Factura ${numero}${cliente ? ` — ${nombrePropio(cliente)}` : ''}`;
+}
+
+/**
+ * NOMBRA CADA INGRESO POR SU FACTURA. Se llama desde el GET de `/api/finance` (el mismo paso,
+ * con freno de 1 min, que el relleno de ingresos), así que vale para lo que ya existe y para lo que
+ * entre por cualquier flujo —factura de ticket, de proyecto, de etapa, de suscripción, del SRI—
+ * sin tocar cada uno.
+ *
+ * Solo se renombran las parejas UNO A UNO entre ingreso y factura vigente: si una factura cubre
+ * dos ingresos (Cercasa y Pisercons van en la 001-026) se quedarían con el mismo nombre y se
+ * perdería cuál es cuál, así que esos conservan el suyo. Devuelve cuántos cambió.
+ */
+export async function nombrarIngresosFacturados(): Promise<number> {
+  const { rows } = await pool.query(`
+    WITH pares AS (
+      SELECT fi.id AS item_id, fi.description, i.id AS invoice_id, i.invoice_number, i.client_name_sri
+        FROM gcc_world.finance_items fi
+        JOIN gcc_world.invoices i
+          ON i.sri_status = 'authorized' AND i.status <> 'cancelled' AND i.invoice_number IS NOT NULL
+         AND ${SQL_ENLACE_FACTURA}
+       WHERE fi.type = 'income' AND fi.amount > 0)
+    SELECT p.* FROM pares p
+     WHERE (SELECT count(*) FROM pares x WHERE x.item_id = p.item_id) = 1
+       AND (SELECT count(*) FROM pares x WHERE x.invoice_id = p.invoice_id) = 1`);
+  let cambiados = 0;
+  for (const r of rows) {
+    const nombre = nombreIngresoFacturado(r.invoice_number, r.client_name_sri);
+    if (r.description === nombre) continue;
+    await pool.query(`UPDATE gcc_world.finance_items SET description = $2 WHERE id = $1`, [r.item_id, nombre]);
+    cambiados++;
+  }
+  return cambiados;
+}

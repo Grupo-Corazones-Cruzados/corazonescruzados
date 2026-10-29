@@ -4815,6 +4815,8 @@ navegador» con el `BotonAvisosPush` de Mi día; se esconde sola cuando el botó
 Verificado a 1440 y 390 px, claro y oscuro (`scrollWidth` = ancho).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · «…» junto al icono del PDF en el estado financiero** · **CORREGIDO**. `PixelDataTable singleLine`
+  recortaba también la columna de acciones; una columna SIN título (acciones/iconos) ya no lleva `text-ellipsis`.
 - **2026-10-29 · Nombre de reunión largo desbordaba el panel de Eventos de Mi día** · **CORREGIDO**. El título era
   `inline-flex` + `truncate` (no recorta): ahora `flex min-w-0` + `truncate min-w-0`, `title` con el nombre entero y la
   lista `overflow-x-hidden`.

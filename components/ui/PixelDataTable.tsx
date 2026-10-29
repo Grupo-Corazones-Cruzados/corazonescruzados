@@ -263,7 +263,9 @@ export default function PixelDataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`dt-td px-3 py-2.5 text-xs text-digi-text ${singleLine ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''} ${col.hideOnMobile ? 'hidden sm:table-cell' : ''}`}
+                    // Una columna SIN título es de acciones (iconos): nunca se recorta con «…»
+                    // (Fernando, 2026-10-29: salían tres puntos junto al icono del PDF).
+                    className={`dt-td px-3 py-2.5 text-xs text-digi-text ${singleLine && col.header.trim() ? 'whitespace-nowrap overflow-hidden text-ellipsis' : ''} ${col.hideOnMobile ? 'hidden sm:table-cell' : ''}`}
                     style={{ fontFamily: 'var(--font-body)', width: singleLine ? col.width : undefined }}
                   >
                     {col.render(item)}

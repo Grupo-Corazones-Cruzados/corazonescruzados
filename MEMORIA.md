@@ -275,6 +275,11 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🏷️ CADA INGRESO FACTURADO SE LLAMA POR SU FACTURA (Fernando, 2026-10-29):** «Factura 001-001-000000020 —
+  Mendez De La Torre Rafael Enrique». `nombrarIngresosFacturados()` (`lib/finance.ts`) corre con el relleno del
+  GET de `/api/finance`; solo parejas 1 a 1 ingreso↔factura vigente (Cercasa/Pisercons comparten la 001-026 y
+  conservan su nombre). Nombre del SRI a nombre propio, siglas (S.A., CIA., LTDA., SL…) en mayúsculas. Efecto
+  aceptado: las de Consumidor Final pierden el concepto en el nombre (sigue en la factura).
 - **🧾 FACTURAS DEL SRI REGISTRADAS EN EL SISTEMA (Fernando, 2026-10-29).** La otra sesión había leído del portal
   los emitidos de ene-2024 a mar-2026 (23). Se registraron las 19 que faltaban en `invoices` (+ `invoice_items_sri`),
   PENDIENTES (decisión de Fernando), `is_manual`, con su clave de acceso: 12 de 2025 y 7 de feb–mar 2026.
