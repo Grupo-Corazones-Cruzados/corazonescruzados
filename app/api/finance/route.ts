@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance } from '@/lib/finance';
+import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO } from '@/lib/finance';
 
 /**
  * Backfill: register completed/invoiced projects and completed tickets.
@@ -93,8 +93,13 @@ export async function GET() {
       try { await backfillIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
     }
 
+    // `facturado_income`: lo que de los ingresos del mes tiene factura (ver SQL_INGRESO_FACTURADO).
     const { rows } = await pool.query(
-      `SELECT * FROM gcc_world.finance_months ORDER BY year DESC, month DESC`
+      `SELECT fm.*,
+              COALESCE((SELECT SUM(fi.amount) FROM gcc_world.finance_items fi
+                         WHERE fi.month_id = fm.id AND ${SQL_INGRESO_FACTURADO}), 0) AS facturado_income
+         FROM gcc_world.finance_months fm
+        ORDER BY fm.year DESC, fm.month DESC`
     );
 
     return NextResponse.json({ data: rows });

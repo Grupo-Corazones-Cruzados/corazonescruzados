@@ -144,3 +144,30 @@ export async function removeIncomeFromFinance(sourceType: string, sourceId: stri
 }
 
 export { ensureFinanceTables, ensureMonth, recalcMonth };
+
+/**
+ * ¿ESTE INGRESO ESTÁ FACTURADO? — definición ÚNICA, en SQL sobre `finance_items` con alias `fi`
+ * (Fernando, 2026-10-29: «un filtro de solo facturado, para que de mis reportes cuente solo lo
+ * facturado en ingresos»). Lo usan la lista de meses, el detalle y el reporte en PDF.
+ *
+ * Cuenta si existe una factura AUTORIZADA por el SRI y no anulada enlazada a él, o si el ingreso
+ * es un comprobante emitido leído del SRI (su origen es la clave de acceso):
+ *   · `invoice`      → la factura por su id (abonos y etapas);
+ *   · `ticket`       → una factura del ticket (`ticket_id` o `source_type='ticket'`);
+ *   · `project`      → una factura del proyecto (`project_id`);
+ *   · `subscription` → la factura de ese periodo (`source_id` = `<suscripción>-<AAAA-MM>`);
+ *   · `sri_emitida`  → siempre;
+ *   · sin origen (escrito a mano) → nunca.
+ * ⚠️ El origen por sí solo NO basta: tickets y proyectos se anotan también al completarse sin
+ * factura (medido el 2026-10-29: 4 de 8 ingresos de proyecto no tienen factura).
+ */
+export const SQL_INGRESO_FACTURADO = `(fi.type = 'income' AND CASE fi.source_type
+  WHEN 'sri_emitida' THEN TRUE
+  WHEN 'invoice' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.id::text = fi.source_id AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
+  WHEN 'ticket' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE (i.ticket_id::text = fi.source_id OR (i.source_type = 'ticket' AND i.source_id = fi.source_id)) AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
+  WHEN 'project' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.project_id::text = fi.source_id AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
+  WHEN 'subscription' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.source_type = 'subscription' AND i.source_id = fi.source_id AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
+  ELSE FALSE END)`;
+
+/** Los orígenes que se pueden guardar desde el formulario del mes (los que escribe el sistema). */
+export const ORIGENES_INGRESO = new Set(['invoice', 'ticket', 'project', 'subscription', 'sri_emitida']);

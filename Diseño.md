@@ -4797,6 +4797,9 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · Filtro «Solo facturado» en el estado financiero** · **NUEVO** (Fernando). Un `Interruptor` con
+  su texto en la fila de filtros (es un sí/no, no un segmentado). Cambia la columna a «Facturado», las cifras
+  («Facturado 2026»), el ahorro, el filtro Ahorro/Pérdida y el reporte (`?facturado=1`, «2026 · Solo facturado»).
 - **2026-10-29 · Las columnas del estado financiero cambiaban de sitio al filtrar por año** · **CORREGIDO**.
   `singleLine` (tabla `fixed`) y anchos 28/22/22/22 % + 52 px; medido: mismas posiciones con todos, 2026 y 2025.
 - **2026-10-29 · El reporte financiero en PDF era texto plano y montaba las descripciones** · **REDISEÑADO**

@@ -275,6 +275,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧾 «SOLO FACTURADO» EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Un ingreso cuenta como facturado si
+  hay una factura AUTORIZADA por el SRI y no anulada enlazada a él (`invoice` por id, `ticket`, `project`,
+  `subscription` por `<sub>-<AAAA-MM>`) o si es un comprobante leído del SRI (`sri_emitida`); los escritos a
+  mano, nunca. Definición única: `SQL_INGRESO_FACTURADO` en `lib/finance.ts`. ⚠️ El origen solo NO basta:
+  tickets y proyectos se anotan al completarse aunque no se facture (4 de 8 proyectos sin factura). Medido:
+  2025 todo facturado (7955); 2026, 4996,01 de 19.631,11. **Arreglado de paso:** el PUT del mes borraba y
+  reinsertaba los conceptos SIN su origen: editar un mes los volvía «a mano». Ahora conserva
+  `source_type`/`source_id` (solo los orígenes del sistema). Los meses editados antes ya perdieron el suyo.
 - **📒 FACTURAS DEL FACTURADOR DEL SRI EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Antes de la
   plataforma (primera factura propia: 001-001-000000023, 29/03/2026) emitía con el **facturador gratuito
   del SRI**. Se recorrió el portal día a día con su RUC (2024 → 31/03/2026) y se cargaron **19 facturas

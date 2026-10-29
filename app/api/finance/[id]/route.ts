@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { SQL_INGRESO_FACTURADO, ORIGENES_INGRESO } from '@/lib/finance';
 
 // GET: fetch month detail with items (admin and member only)
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!month) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const { rows: items } = await pool.query(
-      `SELECT * FROM gcc_world.finance_items WHERE month_id = $1 ORDER BY type, sort_order, id`, [id]
+      `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [id]
     );
 
     return NextResponse.json({ data: { ...month, items } });
@@ -43,9 +44,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const item = items[i];
       if (!item.description?.trim() && !item.amount) continue;
       const amount = Number(item.amount) || 0;
+      // ⚠️ SE CONSERVA EL ORIGEN (2026-10-29). Esta ruta borra y vuelve a insertar el mes entero;
+      // antes lo hacía sin `source_type`/`source_id`, así que editar un mes convertía sus ingresos
+      // de facturas en «escritos a mano» y desaparecían del filtro «Solo facturado».
+      const origen = ORIGENES_INGRESO.has(item.source_type) && item.source_id ? item : null;
       await pool.query(
-        `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order) VALUES ($1, $2, $3, $4, $5)`,
-        [id, item.type, item.description || '', amount, i]
+        `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, item.type, item.description || '', amount, i, origen?.source_type ?? null, origen ? String(origen.source_id) : null]
       );
       if (item.type === 'income') totalIncome += amount;
       else totalExpense += amount;

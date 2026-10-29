@@ -15,13 +15,14 @@ import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
+import Interruptor from '@/components/ui/Interruptor';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 interface Stats { open_tickets: number; active_projects: number; users?: number; active_members?: number; clients?: number; }
-interface FinanceMonth { id: number; year: number; month: number; total_income: string; total_expense: string; total_savings: string; }
+interface FinanceMonth { id: number; year: number; month: number; total_income: string; total_expense: string; total_savings: string; facturado_income?: string; }
 interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; }
 
 export default function DashboardHome() {
@@ -64,15 +65,25 @@ export default function DashboardHome() {
    */
   const [anio, setAnio] = useState<string>('todos');
   const [resultado, setResultado] = useState<'todos' | 'ahorro' | 'perdida'>('todos');
+  /**
+   * «SOLO FACTURADO» (Fernando, 2026-10-29: «que de mis reportes cuente solo lo facturado en
+   * ingresos»). Los ingresos pasan a ser los que tienen factura autorizada (lo calcula el
+   * servidor: `facturado_income`, ver `SQL_INGRESO_FACTURADO` en `lib/finance.ts`); los egresos
+   * no cambian. El ahorro, las cifras, el filtro de resultado y el reporte usan ese ingreso.
+   */
+  const [soloFacturado, setSoloFacturado] = useState(false);
+  const ingresoDe = (m: FinanceMonth) => Number((soloFacturado ? m.facturado_income : m.total_income) || 0);
+  const ahorroDe = (m: FinanceMonth) => ingresoDe(m) - Number(m.total_expense || 0);
   const anios = [...new Set(months.map((m) => String(m.year)))].sort((a, b) => Number(b) - Number(a));
   // El reporte descarga lo MISMO que enseña la tabla (Fernando, 2026-10-29).
   const urlReporte = `/api/finance/pdf?${new URLSearchParams({
     ...(anio !== 'todos' ? { anio } : {}),
     ...(resultado !== 'todos' ? { resultado } : {}),
+    ...(soloFacturado ? { facturado: '1' } : {}),
   }).toString()}`;
   const mesesFiltrados = months.filter((m) => {
     if (anio !== 'todos' && String(m.year) !== anio) return false;
-    const ahorro = Number(m.total_savings || 0);
+    const ahorro = ahorroDe(m);
     if (resultado === 'ahorro') return ahorro >= 0;
     if (resultado === 'perdida') return ahorro < 0;
     return true;
@@ -82,9 +93,9 @@ export default function DashboardHome() {
   // de año también que se actualicen los indicadores»). El de resultado no: ingresos de «los
   // meses con pérdida» no es un total que nadie busque.
   const mesesDelAnio = anio === 'todos' ? months : months.filter((m) => String(m.year) === anio);
-  const globalIncome = mesesDelAnio.reduce((s, m) => s + Number(m.total_income || 0), 0);
+  const globalIncome = mesesDelAnio.reduce((s, m) => s + ingresoDe(m), 0);
   const globalExpense = mesesDelAnio.reduce((s, m) => s + Number(m.total_expense || 0), 0);
-  const globalSavings = mesesDelAnio.reduce((s, m) => s + Number(m.total_savings || 0), 0);
+  const globalSavings = globalIncome - globalExpense;
   const delAnio = anio === 'todos' ? '' : ` ${anio}`;
 
   const openDetail = async (m: FinanceMonth) => {
@@ -153,9 +164,9 @@ export default function DashboardHome() {
         <Cifra Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} />
         <Cifra Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} />
         {isAdmin && <Cifra Icon={Users} label="Clientes" value={stats?.clients} />}
-        {isStaff && <Cifra Icon={TrendingUp} label={delAnio ? `Ingresos${delAnio}` : 'Total ingresos'} value={money(globalIncome)} tone="green" />}
+        {isStaff && <Cifra Icon={TrendingUp} label={`${soloFacturado ? 'Facturado' : delAnio ? 'Ingresos' : 'Total ingresos'}${delAnio}`} value={money(globalIncome)} tone="green" />}
         {isStaff && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
-        {isStaff && <Cifra Icon={PiggyBank} label={delAnio ? `Ahorro${delAnio}` : 'Total ahorro'} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
+        {isStaff && <Cifra Icon={PiggyBank} label={`${delAnio || soloFacturado ? 'Ahorro' : 'Total ahorro'}${delAnio}`} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
       </RejillaCifras>
 
       {/* Estado financiero mensual — SOLO staff (datos de toda la organización). */}
@@ -166,7 +177,7 @@ export default function DashboardHome() {
             {mesesFiltrados.length > 0 && (
               <EnBarraAcciones>
                 <button onClick={() => window.open(urlReporte, '_blank')} className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5`}>
-                  <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' ? 'Reporte global' : 'Reporte filtrado'}
+                  <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' && !soloFacturado ? 'Reporte global' : 'Reporte filtrado'}
                 </button>
               </EnBarraAcciones>
             )}
@@ -193,6 +204,11 @@ export default function DashboardHome() {
                   { valor: 'perdida', texto: 'Pérdida' },
                 ]}
               />
+              {/* El interruptor con su texto: es un sí/no, no una de varias opciones. */}
+              <label className="inline-flex items-center gap-2.5 h-11 sm:h-[38px] px-1 cursor-pointer select-none text-[13px] text-digi-text" style={mf}>
+                <Interruptor activo={soloFacturado} onChange={setSoloFacturado} />
+                Solo facturado
+              </label>
               {/* «Reporte global», a la altura de los filtros y a la derecha (Fernando,
                   2026-10-29): descarga lo que dicen los filtros, así que va con ellos. En el
                   teléfono es la acción principal y va a la barra de abajo. */}
@@ -201,7 +217,7 @@ export default function DashboardHome() {
               {mesesFiltrados.length > 0 && (
                 <div className="hidden lg:block ml-auto shrink-0">
                   <button onClick={() => window.open(urlReporte, '_blank')} className={BTN_SECONDARY}>
-                    <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' ? 'Reporte global' : 'Reporte filtrado'}
+                    <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' && !soloFacturado ? 'Reporte global' : 'Reporte filtrado'}
                   </button>
                 </div>
               )}
@@ -218,9 +234,9 @@ export default function DashboardHome() {
             emptyDesc={months.length ? 'Ningún mes cumple los filtros.' : 'No hay estados financieros aún.'}
             columns={[
               { key: 'period', header: 'Periodo', width: '28%', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
-              { key: 'income', header: 'Ingresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
+              { key: 'income', header: soloFacturado ? 'Facturado' : 'Ingresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(ingresoDe(m))}</span> },
               { key: 'expense', header: 'Egresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
-              { key: 'savings', header: 'Ahorro', width: '22%', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
+              { key: 'savings', header: 'Ahorro', width: '22%', render: (m: any) => { const s = ahorroDe(m); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
               { key: 'pdf', header: '', width: '52px', render: (m: any) => (
                 // ⭐ UN ICONO, no una etiqueta «PDF» con borde y color (Fernando, 2026-10-29: «tiene
                 // un estilo muy de IA»). Botón fantasma: sin borde ni relleno en reposo; el nombre
@@ -243,7 +259,7 @@ export default function DashboardHome() {
                con el pulgar eso es una moneda al aire. El PDF del mes sigue estando —
                dentro del propio mes, que es donde se va a buscarlo— y el global, arriba. */
             tarjetaMovil={(m: any) => {
-              const ahorro = Number(m.total_savings || 0);
+              const ahorro = ahorroDe(m);
               return (
                 <>
                   <div className="flex items-center justify-between gap-2">
@@ -254,7 +270,7 @@ export default function DashboardHome() {
                   </div>
                   <dl className="mt-2 grid grid-cols-3 gap-1.5 text-center">
                     {([
-                      ['Ingresos', Number(m.total_income || 0), 'text-green-400'],
+                      [soloFacturado ? 'Facturado' : 'Ingresos', ingresoDe(m), 'text-green-400'],
                       ['Egresos', Number(m.total_expense || 0), 'text-red-400'],
                       ['Ahorro', ahorro, ahorro >= 0 ? 'text-accent' : 'text-red-400'],
                     ] as [string, number, string][]).map(([etiqueta, valor, color]) => (

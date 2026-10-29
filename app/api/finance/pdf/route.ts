@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { generateFinancePdf } from '@/lib/finance-pdf';
-import { ensureFinanceTables } from '@/lib/finance';
+import { ensureFinanceTables, SQL_INGRESO_FACTURADO } from '@/lib/finance';
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -11,6 +11,7 @@ const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','A
  * Inicio (Fernando: «que el botón de descargar reporte se base en los filtros aplicados»):
  *   · `anio`      — un año (`2026`); sin él, todos.
  *   · `resultado` — `ahorro` (ahorro ≥ 0) o `perdida` (< 0); sin él, todos.
+ *   · `facturado` — `1`: los ingresos, solo los facturados.
  * El título y el nombre del archivo dicen qué se filtró, para que el PDF se explique solo.
  */
 export async function GET(req: Request) {
@@ -24,12 +25,14 @@ export async function GET(req: Request) {
     const q = new URL(req.url).searchParams;
     const anio = /^\d{4}$/.test(q.get('anio') ?? '') ? Number(q.get('anio')) : null;
     const resultado = q.get('resultado') === 'ahorro' || q.get('resultado') === 'perdida' ? q.get('resultado') : null;
+    // `facturado=1`: los ingresos cuentan solo lo facturado (ver SQL_INGRESO_FACTURADO); los
+    // egresos, todos. El ahorro y el filtro de resultado se calculan con ese ingreso.
+    const soloFacturado = q.get('facturado') === '1';
 
     const condiciones: string[] = [];
     const params: unknown[] = [];
     if (anio) { params.push(anio); condiciones.push(`year = $${params.length}`); }
-    if (resultado === 'ahorro') condiciones.push('total_savings >= 0');
-    if (resultado === 'perdida') condiciones.push('total_savings < 0');
+    // El resultado del mes se decide DESPUÉS, con el ingreso que toque (todo o solo facturado).
     const { rows: monthRows } = await pool.query(
       `SELECT * FROM gcc_world.finance_months ${condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : ''} ORDER BY year DESC, month DESC`,
       params,
@@ -38,21 +41,27 @@ export async function GET(req: Request) {
     const months = [];
     for (const m of monthRows) {
       const { rows: items } = await pool.query(
-        `SELECT * FROM gcc_world.finance_items WHERE month_id = $1 ORDER BY type, sort_order, id`, [m.id]
+        `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [m.id]
       );
+      const ingresos = items.filter((i: any) => i.type === 'income' && (!soloFacturado || i.facturado));
+      const totalIncome = soloFacturado ? ingresos.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0) : Number(m.total_income) || 0;
+      const totalExpense = Number(m.total_expense) || 0;
+      const totalSavings = totalIncome - totalExpense;
+      if (resultado === 'ahorro' && totalSavings < 0) continue;
+      if (resultado === 'perdida' && totalSavings >= 0) continue;
       months.push({
         year: m.year,
         month: m.month,
         monthName: MONTH_NAMES[m.month - 1],
-        totalIncome: Number(m.total_income) || 0,
-        totalExpense: Number(m.total_expense) || 0,
-        totalSavings: Number(m.total_savings) || 0,
-        incomeItems: items.filter((i: any) => i.type === 'income').map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
+        totalIncome,
+        totalExpense,
+        totalSavings,
+        incomeItems: ingresos.map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
         expenseItems: items.filter((i: any) => i.type === 'expense').map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
       });
     }
 
-    const partes = [anio ? String(anio) : null, resultado === 'ahorro' ? 'meses con ahorro' : resultado === 'perdida' ? 'meses con pérdida' : null].filter(Boolean);
+    const partes = [anio ? String(anio) : null, soloFacturado ? 'solo facturado' : null, resultado === 'ahorro' ? 'meses con ahorro' : resultado === 'perdida' ? 'meses con pérdida' : null].filter(Boolean);
     const subtitulo = partes.length ? partes.map((p) => String(p).charAt(0).toUpperCase() + String(p).slice(1)).join(' · ') : 'Global · todos los meses';
     const archivo = ['Reporte-Financiero', ...(partes.length ? partes : ['Global'])].join('-').replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const pdfBuffer = await generateFinancePdf(months, 'Reporte financiero', { subtitulo });
