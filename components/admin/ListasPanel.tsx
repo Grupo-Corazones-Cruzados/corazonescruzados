@@ -22,6 +22,8 @@ export default function ListasPanel() {
     const compute = () => {
       const el = boxRef.current;
       if (!el) return;
+      // En el teléfono el alto lo pone el contenido: la página se desplaza entera.
+      if (!window.matchMedia('(min-width: 64rem)').matches) { setHeight(undefined); return; }
       const bar = document.querySelector('nav[aria-label="Ruta"]');
       const barH = bar ? bar.getBoundingClientRect().height : 0;
       const h = Math.max(window.innerHeight - el.getBoundingClientRect().top - barH - 12, 320);

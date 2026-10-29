@@ -34,7 +34,7 @@ import PestanasRail from '@/components/ui/PestanasRail';
 import NombreArchivo, { renombrarEnPlataforma } from '@/components/media/NombreArchivo';
 import { fileIdDe } from '@/lib/media/ref';
 import RailDesplegable, { useRailDesplegable, RAIL_HUECO } from '@/components/ui/RailDesplegable';
-import { PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
+import { PANTALLA_LG, useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -227,6 +227,8 @@ export default function ProjectDetailPage() {
   const altoColumnas = useAltoHastaElPie({ minimo: 520 });
   // Propiedades / Incidentes plegado a la derecha en escritorio con puntero (RailDesplegable).
   const railPlegado = useRailDesplegable(PANTALLA_LG);
+  // Teléfono: el detalle del requerimiento se abre ENCIMA (ventana), no al final de la lista.
+  const enTelefono = !useConsultaMedia(PANTALLA_LG);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [newParticipantId, setNewParticipantId] = useState('');
   // Modales "Ver más" del panel izquierdo (equipo / propuestas completas).
@@ -1530,7 +1532,8 @@ export default function ProjectDetailPage() {
                 {reqs.map((r: any) => {
                   const canEditThis = canMemberEditReq(r.id) && trabajoAbierto;
                   const canManageThis = isOwner && (isAdmin || project.confirmed_at || isMemberCreator);
-                  const elegido = reqActivo?.id === r.id;
+                  // En el teléfono nada sale marcado hasta que se toca (allí no hay detalle al lado).
+                  const elegido = enTelefono ? reqSeleccionado === r.id : reqActivo?.id === r.id;
                   return (
                     <div key={r.id}
                       role="button" tabIndex={0} aria-pressed={elegido}
@@ -1572,15 +1575,18 @@ export default function ProjectDetailPage() {
                 })}
                 </div>
 
-                {/* ── Detalle del requerimiento seleccionado ─────────────────────────── */}
-                {reqActivo && (() => {
+                {/* ── Detalle del requerimiento seleccionado ─────────────────────────── *
+                    Escritorio: a la derecha de la lista. Teléfono: en una ventana encima al tocar
+                    uno; antes salía debajo de TODA la lista (22 filas) y había que ir a buscarlo. */}
+                {(() => {
+                  const detalle = reqActivo && (() => {
                   const r = reqActivo;
                   const items = r.items || [];
                   const acceptedAssignments = (r.assignments || []).filter((a: any) => a.status === 'accepted');
                   const pendingAssignments = (r.assignments || []).filter((a: any) => a.status !== 'accepted');
                   const tituloSeccion = 'text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5';
                   return (
-                    <div className="flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto rounded-lg border border-digi-border bg-white p-3.5 space-y-3.5">
+                    <div className={enTelefono ? 'space-y-3.5' : 'flex-1 min-w-0 lg:min-h-0 lg:overflow-y-auto rounded-lg border border-digi-border bg-white p-3.5 space-y-3.5'}>
                       <div>
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-[13.5px] font-semibold text-digi-text leading-snug" style={mf}>{r.title}</p>
@@ -1673,6 +1679,14 @@ export default function ProjectDetailPage() {
                         )}
                       </div>
                     </div>
+                  );
+                  })();
+                  if (!enTelefono) return detalle;
+                  return (
+                    <PixelModal open={reqSeleccionado !== null && reqActivo?.id === reqSeleccionado}
+                      onClose={() => setReqSeleccionado(null)} title="Requerimiento" size="md">
+                      {detalle}
+                    </PixelModal>
                   );
                 })()}
               </div>
@@ -2147,7 +2161,7 @@ export default function ProjectDetailPage() {
                   <span className={`text-digi-text ${isOwner && !isTerminal ? 'cursor-pointer hover:text-accent' : ''}`} onClick={() => { if (isOwner && !isTerminal) { setEditBudgetMin(project.budget_min || ''); setEditBudgetMax(project.budget_max || ''); setEditingBudget(true); } }}>{project.budget_min ? `$${project.budget_min}${project.budget_max ? ` - $${project.budget_max}` : ''}` : '-'}</span>
                 </dd>
               </div>
-              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Costo final</dt><dd className="text-digi-text text-right">{totalAcceptedCost > 0 ? `$${fmt2(totalAcceptedCost)}` : '$0.00'}</dd></div>
+              <div className="flex items-start justify-between gap-3"><dt className="text-digi-muted shrink-0">Costo final</dt><dd className="text-digi-text text-right">{totalAcceptedCost > 0 ? `$${fmt2(totalAcceptedCost)}` : '$0,00'}</dd></div>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-digi-muted shrink-0">Límite</dt>
                 <dd className="text-right min-w-0">

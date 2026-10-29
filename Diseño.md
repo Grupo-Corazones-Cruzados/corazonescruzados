@@ -5750,3 +5750,18 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   Corregido de paso: en Disponibilidad la hora de salida y las horas del día quedaban cortadas a 390 px (la
   franja baja a su propia línea); en Skills «Agregar» se salía de la tarjeta (campo con `min-w-0`, botón solo
   «+» en el teléfono). Redes sociales del Perfil con el icono de cada red.
+- **2026-10-29 · Repaso del teléfono en todos los módulos** · **ESTÁNDAR EXTENDIDO** (Fernando: *«buscar más
+  mejoras de interfaz para el teléfono… bajo un diseño estándar»*). Recorridas las 23 pantallas y sus
+  detalles a 390 px: ninguna se desliza de lado. Corregido:
+  - **`PortadaSecciones`** (`components/ui/PortadaSecciones.tsx`) es ya LA portada de cualquier página
+    con varias secciones en el teléfono: Configuración y **Admin** (antes un `<select>` de 7 secciones)
+    la usan. Grupos con título pequeño, fila = baldosa con icono + nombre + `›`, sección en su pantalla
+    con `DetailHeader` y `?tab=` en la URL.
+  - **El detalle se abre encima también dentro de una ficha**: el requerimiento de un proyecto (salía
+    debajo de las 22 filas) y la opción de Admin ▸ Listas abren `PixelModal` en el teléfono. En Listas,
+    el raíl de listas pasa a `<select>` y el alto lo pone el contenido.
+  - **Galería**: un campo que queda solo en su fila ocupa las dos columnas (`col-span-2`); la
+    descripción de Herramientas se cortaba a media tarjeta.
+  - **Cifras en es-ES** que se habían escapado: «14.00h» y «$0.00» en ticket y proyecto, y la ficha
+    pública del ticket.
+  - Buscadores con un texto de ejemplo que no cabía a 390 px (Clientes, Accesos), acortados.

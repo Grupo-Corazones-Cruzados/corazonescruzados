@@ -142,7 +142,7 @@ export default function AccesosPage() {
         <div className="flex-1 min-w-0 w-full">
           <div className="relative w-full mb-3">
             <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por herramienta, persona o cliente..."
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Herramienta, persona o cliente…"
               className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
           </div>
 

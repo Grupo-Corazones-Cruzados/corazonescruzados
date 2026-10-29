@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { fmt2 } from '@/lib/format';
 
 const pf = { fontFamily: "'Silkscreen', cursive" } as const;
 const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
@@ -99,7 +100,7 @@ export default function PublicTicketPage() {
                 <h3 className="text-[10px] text-accent-glow" style={pf}>Acciones Realizadas</h3>
                 {Number(ticket.estimated_cost) > 0 && (
                   <span className="text-[9px] text-digi-muted" style={mf}>
-                    Total ${Number(ticket.actions_total).toFixed(2)} / ${Number(ticket.estimated_cost).toFixed(2)}
+                    Total ${fmt2(Number(ticket.actions_total))} / ${fmt2(Number(ticket.estimated_cost))}
                   </span>
                 )}
               </div>
@@ -109,7 +110,7 @@ export default function PublicTicketPage() {
                     <div key={a.id} className="px-2 py-1.5 border border-digi-border/50">
                       <p className="text-xs text-digi-text break-words" style={mf}>{a.description}</p>
                       <p className="text-[9px] text-digi-muted" style={mf}>
-                        {fmtDate(a.created_at)} - ${Number(a.cost).toFixed(2)}
+                        {fmtDate(a.created_at)} - ${fmt2(Number(a.cost))}
                       </p>
                     </div>
                   ))}
@@ -129,7 +130,7 @@ export default function PublicTicketPage() {
                 <Row label="Servicio" value={ticket.service_name || '-'} />
                 <Row label="Limite" value={ticket.deadline ? fmtDate(ticket.deadline) : '-'} />
                 <Row label="Horas est." value={ticket.estimated_hours ? `${ticket.estimated_hours}h` : '-'} />
-                <Row label="Costo est." value={ticket.estimated_cost ? `$${Number(ticket.estimated_cost).toFixed(2)}` : '-'} />
+                <Row label="Costo est." value={ticket.estimated_cost ? `$${fmt2(Number(ticket.estimated_cost))}` : '-'} />
                 <Row label="Creado" value={fmtDate(ticket.created_at)} />
               </div>
             </div>

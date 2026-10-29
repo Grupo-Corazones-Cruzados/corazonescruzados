@@ -333,8 +333,10 @@ export function GaleriaTabla<T>({
           </div>
           {campos.length > 0 && (
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 mt-2.5">
-              {campos.map((c) => (
-                <div key={c.key} className="min-w-0">
+              {/* Un campo que queda solo en su fila ocupa las dos columnas: si no, una descripción
+                  se cortaba a media tarjeta con la otra mitad vacía (Herramientas, 2026-10-29). */}
+              {campos.map((c, j) => (
+                <div key={c.key} className={`min-w-0 ${j === campos.length - 1 && campos.length % 2 === 1 ? 'col-span-2' : ''}`}>
                   <dt className="text-[10px] uppercase tracking-wide text-digi-muted">{c.header}</dt>
                   <dd className="text-[12.5px] text-digi-text break-words">{c.render(item)}</dd>
                 </div>

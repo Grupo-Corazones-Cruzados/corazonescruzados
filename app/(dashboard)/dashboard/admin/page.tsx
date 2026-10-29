@@ -1,7 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import DetailHeader from '@/components/ui/DetailHeader';
+import PortadaSecciones from '@/components/ui/PortadaSecciones';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import PageHeader from '@/components/ui/PageHeader';
 import RazonesPanel from '@/components/razones/RazonesPanel';
 import FuentesPanel from '@/components/admin/FuentesPanel';
@@ -20,26 +24,41 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 // que se ven desde el botón ⓘ de cada módulo) y "Listas" (las listas globales del
 // proyecto: talentos, valores, materias… las mismas de Encuadre Condiciológico).
 const TABS = [
-  { value: 'razones', label: 'Razones', Icon: Flame },
-  { value: 'fuentes', label: 'Fuentes', Icon: Database },
-  { value: 'tutoriales', label: 'Tutoriales', Icon: Video },
-  { value: 'listas', label: 'Listas', Icon: ListChecks },
+  { value: 'razones', label: 'Razones', Icon: Flame, grupo: 'Personal' },
+  { value: 'fuentes', label: 'Fuentes', Icon: Database, grupo: 'Datos' },
+  { value: 'tutoriales', label: 'Tutoriales', Icon: Video, grupo: 'Contenido público' },
+  { value: 'listas', label: 'Listas', Icon: ListChecks, grupo: 'Datos' },
   // Las preguntas frecuentes que se PUBLICAN en /clientes/<seccion>. Es la única pestaña
   // del admin cuyo contenido sale de cara al mundo, y de la que salen los datos
   // estructurados `FAQPage` que Google convierte en respuestas dentro de sus resultados.
-  { value: 'faqs', label: 'FAQs', Icon: HelpCircle },
+  { value: 'faqs', label: 'FAQs', Icon: HelpCircle, grupo: 'Contenido público' },
   // Los ÁMBITOS que se publican en /soluciones: los tipos de proyecto que maneja el grupo y
   // los talentos de cada uno. Segunda pestaña cuyo contenido sale de cara al mundo.
-  { value: 'soluciones', label: 'Soluciones', Icon: Layers },
+  { value: 'soluciones', label: 'Soluciones', Icon: Layers, grupo: 'Contenido público' },
   // La documentación de cada proyecto, escrita como en Word y exportable como prompt
   // (Markdown) para dársela a una IA (Fernando, 2026-10-01).
-  { value: 'prompts', label: 'Prompts', Icon: NotebookPen },
+  { value: 'prompts', label: 'Prompts', Icon: NotebookPen, grupo: 'Personal' },
 ];
 
 
+const sinSuscripcion = () => () => {};
+
 export default function AdminPage() {
+  // `useSearchParams` pide un Suspense por encima para poder compilar la página.
+  return <Suspense fallback={null}><Admin /></Suspense>;
+}
+
+function Admin() {
   const { user } = useAuth();
+  const router = useRouter();
   const [tab, setTab] = useState('razones');
+  const tabUrl = useSearchParams().get('tab');
+  const enTelefono = !useConsultaMedia(PANTALLA_LG);
+  const hidratado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
+
+  useEffect(() => {
+    if (tabUrl && TABS.some((t) => t.value === tabUrl)) setTab(tabUrl);
+  }, [tabUrl]);
 
   if (user?.role !== 'admin') {
     return (
@@ -51,19 +70,32 @@ export default function AdminPage() {
     );
   }
 
+  if (!hidratado) return null;
+
+  /* Teléfono: la portada de secciones estándar (`PortadaSecciones`) en vez de un <select>; cada
+     sección se abre en su pantalla con la flecha de volver, y vive en `?tab=`. */
+  if (enTelefono) {
+    const abierta = TABS.find((t) => t.value === tabUrl);
+    if (!abierta) {
+      return (
+        <PortadaSecciones titulo="Admin"
+          secciones={TABS.map((t) => ({ key: t.value, label: t.label, Icon: t.Icon, grupo: t.grupo }))}
+          onAbrir={(key) => router.push(`/dashboard/admin?tab=${key}`, { scroll: false })} />
+      );
+    }
+    return (
+      <div>
+        <DetailHeader breadcrumb={{ label: 'Admin', href: '/dashboard/admin' }} title={abierta.label} />
+        <Contenido tab={abierta.value} />
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader title="Admin" description="Mundo, sprites, tus razones de lucha y las utilidades de administrador" />
 
-      {/* ── Pestañas: en el teléfono, un <select> a todo el ancho ──
-          Siete pestañas en una tira `overflow-x-auto` dejaban ver tres a 390 px y las otras
-          cuatro había que adivinarlas deslizando (Fernando, 2026-10-23: nada se desliza de
-          lado escondiendo opciones). Desde `lg`, la tira de siempre. */}
-      <select aria-label="Sección" value={tab} onChange={(e) => setTab(e.target.value)}
-        className="lg:hidden mb-4 field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
-        {TABS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-      </select>
-      <div className="hidden lg:flex items-center gap-1 bg-digi-card border border-digi-border rounded-lg p-1 mb-4">
+      <div className="flex items-center gap-1 bg-digi-card border border-digi-border rounded-lg p-1 mb-4">
         {TABS.map((t) => {
           const active = tab === t.value;
           return (
@@ -79,15 +111,21 @@ export default function AdminPage() {
       </div>
 
       {/* ── Contenido ── */}
-      <div className="w-full">
-                {tab === 'razones' && <RazonesPanel />}
-        {tab === 'fuentes' && <FuentesPanel />}
-        {tab === 'tutoriales' && <TutorialesPanel />}
-        {tab === 'listas' && <ListasPanel />}
-        {tab === 'faqs' && <FaqsPanel />}
-        {tab === 'soluciones' && <SolucionesPanel />}
-        {tab === 'prompts' && <PromptsPanel />}
-      </div>
+      <Contenido tab={tab} />
+    </div>
+  );
+}
+
+function Contenido({ tab }: { tab: string }) {
+  return (
+    <div className="w-full">
+      {tab === 'razones' && <RazonesPanel />}
+      {tab === 'fuentes' && <FuentesPanel />}
+      {tab === 'tutoriales' && <TutorialesPanel />}
+      {tab === 'listas' && <ListasPanel />}
+      {tab === 'faqs' && <FaqsPanel />}
+      {tab === 'soluciones' && <SolucionesPanel />}
+      {tab === 'prompts' && <PromptsPanel />}
     </div>
   );
 }

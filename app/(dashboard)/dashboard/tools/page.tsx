@@ -513,7 +513,7 @@ export default function ToolsPage() {
                     </span>
                   ) },
                   { key: 'description', header: 'Descripción', hideOnMobile: true, render: (t: Tool) => (
-                    <span className="text-[12px] text-digi-muted line-clamp-1" style={mf}>{t.description}</span>
+                    <span className="text-[12px] text-digi-muted line-clamp-2 md:line-clamp-1" style={mf}>{t.description}</span>
                   ) },
                 ]}
                 data={filtered}

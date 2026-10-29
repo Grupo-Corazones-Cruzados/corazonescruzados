@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
+import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import {
   Layers, Plus, Trash2, Search, Sparkles, Gem, MapPin, BookOpen, Zap, Target, Gauge,
@@ -57,6 +59,7 @@ export default function EncuadreCondiciologicoSystem({
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const enTelefono = !useConsultaMedia(PANTALLA_LG);
 
   const selLista = useMemo(() => listas.find((l) => l.key === sel) || null, [listas, sel]);
 
@@ -122,10 +125,76 @@ export default function EncuadreCondiciologicoSystem({
     return s ? opciones.filter((o) => o.label.toLowerCase().includes(s)) : opciones;
   }, [opciones, q]);
 
+  // El cuerpo del detalle: en escritorio, en la columna derecha; en el teléfono, en una ventana
+  // encima al tocar una opción (antes salía debajo de toda la lista).
+  const cuerpoDetalle = (selOpt: Opcion) => (
+    <>
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-semibold text-digi-text" style={mf} htmlFor="opt-nombre">Nombre</label>
+                <input
+                  id="opt-nombre"
+                  className={INPUT}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') save(); }}
+                />
+              </div>
+
+              <dl className="space-y-2 pt-1 border-t border-digi-border">
+                <div className="flex items-start justify-between gap-3 text-[11.5px] pt-2">
+                  <dt className="text-digi-muted" style={mf}>Lista</dt>
+                  <dd className="text-digi-text text-right" style={mf}>{selLista?.label}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3 text-[11.5px]">
+                  <dt className="text-digi-muted" style={mf}>Id</dt>
+                  <dd className="text-digi-text text-right tabular-nums" style={mf}>{selOpt.id}</dd>
+                </div>
+                {selOpt.key !== undefined && (
+                  <div className="flex items-start justify-between gap-3 text-[11.5px]">
+                    <dt className="text-digi-muted shrink-0" style={mf}>Clave</dt>
+                    <dd className="text-digi-text text-right break-all min-w-0" style={mf}>{selOpt.key}</dd>
+                  </div>
+                )}
+              </dl>
+
+              {selOpt.key !== undefined && (
+                <p className="text-[10.5px] text-digi-muted leading-snug" style={mf}>
+                  La clave no cambia al renombrar: es lo que referencian los otros sistemas.
+                </p>
+              )}
+            </div>
+
+            <div className="p-2.5 border-t border-digi-border flex items-center justify-between gap-2">
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+                style={mf}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Eliminar
+              </button>
+              <button
+                onClick={save}
+                disabled={saving || !draft.trim() || draft.trim() === selOpt.label}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 disabled:opacity-40 rounded-md"
+                style={mf}
+              >
+                {saving ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+    </>
+  );
+
   return (
     <div className={`flex flex-col lg:flex-row gap-4 ${fill ? 'h-full' : 'lg:h-[calc(100dvh-130px)]'}`}>
       {/* ── Rail de listas ── */}
-      <aside className="w-full lg:w-[240px] shrink-0 max-h-[45vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
+      {/* Teléfono: la lista se elige con un <select> a todo el ancho (regla del raíl de secciones);
+          el raíl apilado ocupaba media pantalla antes de llegar a las opciones. */}
+      <select aria-label="Lista" value={sel ?? ''} onChange={(e) => setSel(e.target.value)}
+        className="lg:hidden field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+        {listas.map((l) => <option key={l.key} value={l.key}>{l.label} · {l.count}</option>)}
+      </select>
+      <aside className="hidden lg:flex w-[240px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-1.5">
           <Layers className="w-4 h-4 text-accent" />
           <span className="text-[12px] font-semibold text-digi-text" style={df}>Listas globales</span>
@@ -206,6 +275,11 @@ export default function EncuadreCondiciologicoSystem({
       </div>
 
       {/* ── Panel de detalle: editar la opción elegida ── */}
+      {enTelefono ? (
+        <PixelModal open={!!selOpt} onClose={() => setSelOpt(null)} title={selOpt?.label || 'Opción'} size="md">
+          {selOpt && <div className="flex flex-col -m-1">{cuerpoDetalle(selOpt)}</div>}
+        </PixelModal>
+      ) : (
       <aside className="w-full lg:w-[320px] shrink-0 bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         {!selOpt ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-5 py-10">
@@ -224,62 +298,11 @@ export default function EncuadreCondiciologicoSystem({
               <BotonCerrar onClick={() => setSelOpt(null)} tamano="sm" />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-semibold text-digi-text" style={mf} htmlFor="opt-nombre">Nombre</label>
-                <input
-                  id="opt-nombre"
-                  className={INPUT}
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') save(); }}
-                />
-              </div>
-
-              <dl className="space-y-2 pt-1 border-t border-digi-border">
-                <div className="flex items-start justify-between gap-3 text-[11.5px] pt-2">
-                  <dt className="text-digi-muted" style={mf}>Lista</dt>
-                  <dd className="text-digi-text text-right" style={mf}>{selLista?.label}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3 text-[11.5px]">
-                  <dt className="text-digi-muted" style={mf}>Id</dt>
-                  <dd className="text-digi-text text-right tabular-nums" style={mf}>{selOpt.id}</dd>
-                </div>
-                {selOpt.key !== undefined && (
-                  <div className="flex items-start justify-between gap-3 text-[11.5px]">
-                    <dt className="text-digi-muted shrink-0" style={mf}>Clave</dt>
-                    <dd className="text-digi-text text-right break-all min-w-0" style={mf}>{selOpt.key}</dd>
-                  </div>
-                )}
-              </dl>
-
-              {selOpt.key !== undefined && (
-                <p className="text-[10.5px] text-digi-muted leading-snug" style={mf}>
-                  La clave no cambia al renombrar: es lo que referencian los otros sistemas.
-                </p>
-              )}
-            </div>
-
-            <div className="p-2.5 border-t border-digi-border flex items-center justify-between gap-2">
-              <button
-                onClick={() => setConfirmDel(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
-                style={mf}
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Eliminar
-              </button>
-              <button
-                onClick={save}
-                disabled={saving || !draft.trim() || draft.trim() === selOpt.label}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 disabled:opacity-40 rounded-md"
-                style={mf}
-              >
-                {saving ? 'Guardando…' : 'Guardar'}
-              </button>
-            </div>
+            {selOpt && cuerpoDetalle(selOpt)}
           </>
         )}
       </aside>
+      )}
 
       <PixelConfirm
         open={confirmDel}

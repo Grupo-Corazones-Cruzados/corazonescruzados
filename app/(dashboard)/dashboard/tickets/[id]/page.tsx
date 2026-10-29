@@ -29,7 +29,7 @@ import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, B
 import ClientPicker from '@/components/clients/ClientPicker';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
-import { fmt2 } from '@/lib/format';
+import { fmt2, fmtNum } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelEtapas from '@/components/facturacion/PanelEtapas';
 import PestanasRail from '@/components/ui/PestanasRail';
@@ -1013,7 +1013,7 @@ export default function TicketDetailPage() {
               { label: 'Miembro', value: ticket.member_name || '-' },
               { label: 'Servicio', value: ticket.service_name || '-' },
               { label: 'Límite', value: ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : '-' },
-              { label: 'Horas est.', value: ticket.estimated_hours ? `${ticket.estimated_hours}h` : '-' },
+              { label: 'Horas est.', value: ticket.estimated_hours ? `${fmtNum(Number(ticket.estimated_hours), 1)} h` : '-' },
               { label: 'Costo est.', value: ticket.estimated_cost ? `$${fmt2(Number(ticket.estimated_cost))}` : '-' },
               // ⇒ CONSUMIDO, con ⚠ amarillo si pasa del costo estimado (Fernando, 2026-09-30). El
               // estimado ya no pone tope al registro: solo se avisa aquí.

@@ -11,6 +11,7 @@ import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
 import ConexionesPanel from '@/components/settings/ConexionesPanel';
 import NotificacionesPanel from '@/components/settings/NotificacionesPanel';
 import DetailHeader from '@/components/ui/DetailHeader';
+import PortadaSecciones from '@/components/ui/PortadaSecciones';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, type LucideIcon } from 'lucide-react';
@@ -193,51 +194,32 @@ function ConfiguracionMovil({ tabs, seccion, isMember, onCompartir }: {
   }
 
   const nombre = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || '';
-  const grupos = (['Profesional', 'Cuenta'] as const)
-    .map((g) => ({ g, filas: tabs.filter((t) => t.grupo === g) }))
-    .filter((x) => x.filas.length > 0);
-
   return (
-    <div className="space-y-5" style={mf}>
-      <h1 className="page-title pixel-heading text-digi-text">Configuración</h1>
-
-      {/* Quién eres: al tocarla se abre el Perfil. */}
-      <button type="button" onClick={() => abrir('perfil')}
-        className="w-full flex items-center gap-3.5 p-3.5 text-left bg-digi-card border border-digi-border rounded-xl shadow-sm active:bg-accent-light/40 transition-colors">
-        {user?.avatar_url ? (
-          <img src={user.avatar_url} alt="" className="w-14 h-14 rounded-xl border border-digi-border object-cover shrink-0" />
-        ) : (
-          <span className="w-14 h-14 rounded-xl flex items-center justify-center bg-accent-light text-accent text-xl font-semibold shrink-0">
-            {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+    <PortadaSecciones
+      titulo="Configuración"
+      onAbrir={(key) => abrir(key as Seccion['key'])}
+      secciones={[
+        ...tabs.map((t) => ({ key: t.key, label: t.label, Icon: t.Icon, grupo: t.grupo })),
+        ...(isMember ? [{ key: 'compartir', label: 'Compartir CV', Icon: Share2, grupo: 'Profesional', onClick: onCompartir }] : []),
+      ].sort((a, b) => (a.grupo === b.grupo ? 0 : a.grupo === 'Profesional' ? -1 : 1))}
+      cabecera={(
+        /* Quién eres: al tocarla se abre el Perfil. */
+        <button type="button" onClick={() => abrir('perfil')}
+          className="w-full flex items-center gap-3.5 p-3.5 text-left bg-digi-card border border-digi-border rounded-xl shadow-sm active:bg-accent-light/40 transition-colors">
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt="" className="w-14 h-14 rounded-xl border border-digi-border object-cover shrink-0" />
+          ) : (
+            <span className="w-14 h-14 rounded-xl flex items-center justify-center bg-accent-light text-accent text-xl font-semibold shrink-0">
+              {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block text-[16px] font-semibold text-digi-text truncate">{nombre}</span>
+            <span className="block text-[12.5px] text-digi-muted truncate">{user?.email}</span>
           </span>
-        )}
-        <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-semibold text-digi-text truncate">{nombre}</span>
-          <span className="block text-[12.5px] text-digi-muted truncate">{user?.email}</span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-digi-muted shrink-0" />
-      </button>
-
-      {grupos.map(({ g, filas }) => (
-        <section key={g}>
-          <h2 className="px-1 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-digi-muted">{g}</h2>
-          <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden divide-y divide-digi-border">
-            {filas.map((t) => <FilaSeccion key={t.key} Icon={t.Icon} label={t.label} onClick={() => abrir(t.key)} />)}
-            {g === 'Profesional' && isMember && <FilaSeccion Icon={Share2} label="Compartir CV" onClick={onCompartir} />}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function FilaSeccion({ Icon, label, onClick }: { Icon: LucideIcon; label: string; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick}
-      className="w-full min-h-[56px] flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-accent-light/40 transition-colors">
-      <span className="w-9 h-9 rounded-lg bg-accent-light flex items-center justify-center shrink-0"><Icon className="w-[18px] h-[18px] text-accent" /></span>
-      <span className="flex-1 min-w-0 text-[14.5px] font-medium text-digi-text truncate">{label}</span>
-      <ChevronRight className="w-[18px] h-[18px] text-digi-muted shrink-0" />
-    </button>
+          <ChevronRight className="w-5 h-5 text-digi-muted shrink-0" />
+        </button>
+      )}
+    />
   );
 }
