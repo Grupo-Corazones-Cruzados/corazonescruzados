@@ -26,7 +26,8 @@ import org.grupocc.gccworld.R;
  *  · Con la app en primer plano no se avisa: el chat ya se ve en pantalla.
  */
 public final class Chats {
-    static final String CANAL = "chats";
+    /** Con el tono de GCC desde 2026-10-29: id nuevo (el sonido de un canal no se puede cambiar). */
+    static final String CANAL = "chats-gcc";
     static final String CLAVE_TEXTO = "texto";
     static final String ACCION_RESPONDER = "org.grupocc.gccworld.RESPONDER";
     private static final int MORADO = 0xFF4B2D8E;
@@ -39,7 +40,9 @@ public final class Chats {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationChannel canal = new NotificationChannel(CANAL, "Chats", NotificationManager.IMPORTANCE_HIGH);
         canal.setDescription("Mensajes nuevos de tus chats.");
+        canal.setSound(Relojes.tonoGcc(c), Relojes.atributosAviso());
         c.getSystemService(NotificationManager.class).createNotificationChannel(canal);
+        c.getSystemService(NotificationManager.class).deleteNotificationChannel("chats");
     }
 
     /** El estilo de mensajes que ya tenía la notificación de esa conversación, o uno nuevo. */

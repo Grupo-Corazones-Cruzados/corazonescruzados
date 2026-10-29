@@ -652,6 +652,12 @@ Stack estándar de la casa, con particularidades de este repo:
     vez), aprobada/rechazada, candidato completa perfil, candidato → miembro, miembro → candidato. Los
     reciben quienes ACCEDEN al sistema `reclutamiento-y-seleccion` (`canAccessSystem`), menos quien hizo
     el cambio; el enlace abre el sistema con `?solicitud=`/`?candidato=`/`?miembro=`.
+  - **🔊 Tono propio de GCC (2026-10-29, «ponlo tú»):** `movil/sonidos/generar-tono.py` genera
+    `gcc_aviso.wav`/`.caf` (arpegio Mi–Sol♯–Si, 1,25 s). Android: `res/raw/gcc_aviso.wav` en canales
+    NUEVOS `avisos-gcc` (importancia ALTA, sale arriba un momento) y `chats-gcc`; los viejos `avisos`/`chats`
+    se borran (Android no deja cambiar el sonido de un canal ya creado). iPhone/iPad: `App/gcc_aviso.caf`
+    en el paquete y APNs con `sound: 'gcc_aviso.caf'` (sin el archivo, iOS usa el suyo). **La app web del
+    Mac NO puede llevar sonido propio**: solo el de alerta del sistema, activable en Ajustes → Notificaciones.
   - **Invitaciones a proyectos**: la campanita las deriva en vivo; ahora además suenan
     (`avisarInvitacionProyecto` en `lib/projects/members.ts`: invitar, responsable invitado, compra en marketplace).
 - **🗓️ Reuniones de Google Calendar en Mi día (Fernando, 2026-10-20).** Cada persona ve las de SU

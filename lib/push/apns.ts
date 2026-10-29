@@ -114,7 +114,9 @@ export async function enviarAvisoApns(
     // avisos de una misma conversación, como WhatsApp.
     const cuerpo = JSON.stringify({
       aps: {
-        alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: 'default',
+        // El tono de GCC va dentro de la app (`App/gcc_aviso.caf`, 2026-10-29); una app instalada
+        // antes de llevarlo suena con el de siempre: iOS cae al sonido por defecto si no lo encuentra.
+        alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: 'gcc_aviso.caf',
         ...(aviso.categoria ? { category: aviso.categoria } : {}),
         ...(aviso.hilo ? { 'thread-id': aviso.hilo } : {}),
       },

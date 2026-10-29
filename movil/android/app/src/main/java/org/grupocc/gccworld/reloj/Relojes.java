@@ -40,7 +40,13 @@ import org.json.JSONObject;
 public final class Relojes {
     public static final String BASE = "https://app.grupocc.org";
     static final String CANAL = "reloj-ticket";
-    static final String CANAL_AVISOS = "avisos";
+    /**
+     * Canal de avisos CON EL TONO DE GCC (`res/raw/gcc_aviso.wav`, 2026-10-29). Android no deja
+     * cambiar el sonido de un canal ya creado: por eso es un id nuevo y se borra el viejo `avisos`.
+     * Importancia ALTA para que aparezca un momento arriba de la pantalla (Fernando: «que yo sienta
+     * la alerta»).
+     */
+    static final String CANAL_AVISOS = "avisos-gcc";
     static final String PREFS = "relojes";
     static final String K_MOSTRADOS = "mostrados";
     static final String K_PENDIENTES = "pendientes";
@@ -69,9 +75,23 @@ public final class Relojes {
         canal.setSound(null, null);
         canal.enableVibration(false);
         c.getSystemService(NotificationManager.class).createNotificationChannel(canal);
-        NotificationChannel avisos = new NotificationChannel(CANAL_AVISOS, "Avisos", NotificationManager.IMPORTANCE_DEFAULT);
-        avisos.setDescription("Recordatorios, suscripciones por vencer y demás avisos de la plataforma.");
+        NotificationChannel avisos = new NotificationChannel(CANAL_AVISOS, "Avisos", NotificationManager.IMPORTANCE_HIGH);
+        avisos.setDescription("Recordatorios, postulaciones, tickets, suscripciones y demás avisos de la plataforma.");
+        avisos.setSound(tonoGcc(c), atributosAviso());
         c.getSystemService(NotificationManager.class).createNotificationChannel(avisos);
+        c.getSystemService(NotificationManager.class).deleteNotificationChannel("avisos");
+    }
+
+    /** El tono de GCC, el mismo en avisos y chats. */
+    static android.net.Uri tonoGcc(Context c) {
+        return android.net.Uri.parse("android.resource://" + c.getPackageName() + "/" + R.raw.gcc_aviso);
+    }
+
+    static android.media.AudioAttributes atributosAviso() {
+        return new android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build();
     }
 
     /** Aviso normal de la plataforma (recordatorio, suscripción…): al tocarlo abre `ruta`. */
