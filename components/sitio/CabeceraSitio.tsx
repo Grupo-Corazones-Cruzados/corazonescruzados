@@ -41,18 +41,83 @@
  * ── SIEMPRE CON FONDO (Fernando, 2026-10-26) ─────────────────────────────────────
  * En la portada era transparente y se volvía sólida al desplazar. Ahora lleva SIEMPRE ese
  * fondo oscuro con desenfoque («que mantenga ese fondo que se ve cuando se desliza»).
+ *
+ * ── LA MISMA CABECERA EN LAS CUATRO PESTAÑAS, Y UNA CÁPSULA QUE SE DESLIZA (Fernando, 2026-10-29) ──
+ * «que la experiencia de transición sea animada al cambiar a las pestañas… que estas páginas
+ * compartan el mismo estilo de header». Hasta aquí la portada llevaba la cápsula centrada y las
+ * demás páginas las pestañas sueltas a la derecha, sobre un fondo que el papel claro volvía gris.
+ * Ahora es UNA sola forma: la cápsula centrada desde `md` (hamburguesa por debajo) y el fondo casi
+ * opaco, igual sobre el cielo, la Plataforma o el papel. La pestaña activa la marca una píldora
+ * (`.pestana-indicador`) que, al cambiar de página, sale de la pestaña ANTERIOR y se desliza hasta
+ * la nueva —también entre la portada y el resto, aunque la cabecera se remonte: de dónde se viene
+ * lo guarda `lib/sitio/pestanaAnterior.ts`—. El cuerpo entra desde ese lado (`TransicionSeccion`).
+ * Se deroga el modo «normal» (pestañas a la derecha, menú del teléfono hasta `lg`).
  */
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { NAVEGACION } from '@/lib/sitio/contenido';
+import { pestanaDe, recordarRuta, rutaAnterior } from '@/lib/sitio/pestanaAnterior';
 
-export default function CabeceraSitio({ flotante = false }: { flotante?: boolean }) {
+export default function CabeceraSitio() {
   const pathname = usePathname() || '/';
   const [abierto, setAbierto] = useState(false);
+
+  /**
+   * LA PÍLDORA DE LA PESTAÑA ACTIVA. Se coloca midiendo el enlace (estilo directo, sin estado: así
+   * el primer cuadro ya la pinta donde va). Si se viene de otra pestaña, primero se pone en la
+   * de antes sin transición y en el cuadro siguiente se desliza a la nueva. Hasta que se coloca
+   * por primera vez (HTML del servidor), el enlace activo lleva su propio fondo de respaldo.
+   */
+  const navRef = useRef<HTMLElement>(null);
+  const indicadorRef = useRef<HTMLSpanElement>(null);
+  const [indicadorListo, setIndicadorListo] = useState(false);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    const ind = indicadorRef.current;
+    if (!nav || !ind) return;
+    const enlace = (href: string | null) =>
+      href ? nav.querySelector<HTMLElement>(`a[data-pestana="${CSS.escape(href)}"]`) : null;
+    const poner = (el: HTMLElement, animar: boolean) => {
+      ind.style.transition = animar ? '' : 'none';
+      ind.style.opacity = '1';
+      ind.style.transform = `translateX(${el.offsetLeft}px)`;
+      ind.style.width = `${el.offsetWidth}px`;
+    };
+    const destino = enlace(pestanaDe(pathname));
+    const origen = enlace(pestanaDe(rutaAnterior()));
+    recordarRuta(pathname);
+    if (!destino) {
+      ind.style.opacity = '0';
+      return;
+    }
+    const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let cuadro = 0;
+    if (origen && origen !== destino && !quieto) {
+      poner(origen, false);
+      void ind.offsetWidth; // fija la posición de partida antes de animar
+      cuadro = requestAnimationFrame(() => poner(destino, true));
+    } else {
+      poner(destino, false);
+    }
+    setIndicadorListo(true);
+    // Si cambia el ancho (fuentes que cargan, ventana), se recoloca sin animar. ⚠️ El observador
+    // avisa una vez nada más empezar: sin comparar el ancho, ese aviso cortaba el deslizamiento.
+    let ancho = nav.offsetWidth;
+    const ro = new ResizeObserver(() => {
+      if (nav.offsetWidth === ancho) return;
+      ancho = nav.offsetWidth;
+      poner(destino, false);
+    });
+    ro.observe(nav);
+    return () => {
+      cancelAnimationFrame(cuadro);
+      ro.disconnect();
+    };
+  }, [pathname]);
 
   return (
     <>
@@ -63,13 +128,15 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
       <div
         aria-hidden="true"
         onClick={() => setAbierto(false)}
-        className={`velo-menu fixed inset-0 z-[59] bg-black/55 backdrop-blur-[2px] ${flotante ? 'md:hidden' : 'lg:hidden'}`}
+        className="velo-menu fixed inset-0 z-[59] bg-black/55 backdrop-blur-[2px] md:hidden"
       />
     )}
     <header
       // `pt` = la zona de la hora y la batería del teléfono (app instalada / `viewport-fit: cover`):
       // sin él la cabecera quedaba debajo de ellas (Fernando, 2026-10-27). En el navegador vale 0.
-      className="fixed top-0 inset-x-0 z-[60] pt-[var(--seguro-arriba)] bg-[#0b0d14]/85 backdrop-blur-xl border-b border-white/[0.07]"
+      // Fondo casi opaco: con el 85 % de antes, el papel claro de debajo lo volvía gris en las
+      // páginas de contenido y la mitad de la Plataforma en la portada (2026-10-29).
+      className="fixed top-0 inset-x-0 z-[60] pt-[var(--seguro-arriba)] bg-[#0b0d14]/[0.96] backdrop-blur-xl border-b border-white/[0.07]"
     >
       <div className="relative mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group" onClick={() => setAbierto(false)}>
@@ -86,9 +153,7 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
             className="shrink-0 rounded-full"
           />
           <span
-            className={`text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors ${
-              flotante ? 'md:max-[999px]:hidden' : ''
-            }`}
+            className="text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors md:max-[999px]:hidden"
           >
             Grupo Corazones Cruzados
           </span>
@@ -99,22 +164,23 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           // ventana de ~1000 px salía la hamburguesa y «se veían perfecto» las pestañas). Entre
           // `md` y 1100 px, compacta; y por debajo de 1000 px el nombre se esconde (queda el
           // logo), o la cápsula centrada lo pisaría. La hamburguesa, solo en el teléfono.
-          className={`hidden items-center gap-1 ${
-            flotante
-              ? 'md:flex cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1'
-              : 'lg:flex ml-auto'
-          }`}
+          ref={navRef}
+          className="hidden md:flex items-center gap-1 cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1"
           aria-label="Principal"
         >
+          <span ref={indicadorRef} className="pestana-indicador" aria-hidden="true" />
           {NAVEGACION.map((n) => {
             const activo = n.href === '/' ? pathname === '/' : pathname.startsWith(n.href);
             return (
               <Link
                 key={n.href}
                 href={n.href}
+                data-pestana={n.href}
                 aria-current={activo ? 'page' : undefined}
-                className={`py-2 transition-colors ${flotante ? 'rounded-full px-3 text-[13px] min-[1100px]:px-4 min-[1100px]:text-[13.5px]' : 'rounded-md px-3 text-[13.5px]'} ${
-                  activo ? 'text-white bg-white/[0.1]' : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                className={`relative z-[1] py-2 transition-colors duration-300 rounded-full px-3 text-[13px] min-[1100px]:px-4 min-[1100px]:text-[13.5px] ${
+                  activo
+                    ? `text-white ${indicadorListo ? '' : 'bg-white/[0.1]'}`
+                    : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
                 {n.label}
@@ -129,16 +195,14 @@ export default function CabeceraSitio({ flotante = false }: { flotante?: boolean
           onClick={() => setAbierto((v) => !v)}
           aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={abierto}
-          className={`ml-auto w-9 h-9 inline-flex items-center justify-center text-white/80 hover:bg-white/[0.07] ${
-            flotante ? 'md:hidden cristal-portada rounded-full' : 'lg:hidden rounded-md'
-          }`}
+          className="ml-auto w-9 h-9 inline-flex items-center justify-center text-white/80 hover:bg-white/[0.07] md:hidden cristal-portada rounded-full"
         >
           {abierto ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {abierto && (
-        <nav className={`menu-sitio-movil ${flotante ? 'md:hidden' : 'lg:hidden'} border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1`} aria-label="Principal">
+        <nav className={`menu-sitio-movil md:hidden border-t border-white/[0.07] px-5 py-3 flex flex-col gap-1`} aria-label="Principal">
           {NAVEGACION.map((n) => (
             <Link
               key={n.href}

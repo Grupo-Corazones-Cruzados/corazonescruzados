@@ -663,6 +663,31 @@ los dos a 1440 y a 390). **La barra queda solo con navegación**: fuera `CLASES_
 el botón del menú móvil y `abrirPlataforma()`. Lo de abajo (2026-08-17) queda como historia;
 el titular del diálogo sigue diciendo «a la Plataforma».
 
+### ⭐ La cabecera común y la transición entre pestañas (Fernando, 2026-10-29) — VIGENTE
+
+> *«que la experiencia de transición sea animada al cambiar a las pestañas de soluciones, clientes y
+> desarrollo humano… que estas páginas compartan el mismo estilo de header»*.
+
+- **Una sola forma de cabecera** (`components/sitio/CabeceraSitio.tsx`, sin el prop `flotante`): en
+  Inicio, Soluciones, Clientes y Desarrollo Humano, la CÁPSULA de cristal centrada desde `md`
+  (`cristal-portada`), el nombre oculto entre `md` y 999 px y la hamburguesa por debajo de `md`.
+  Fondo `#0b0d14` al 96 % (al 85 % el papel claro lo volvía gris). Se deroga el modo con las
+  pestañas sueltas a la derecha y el menú del teléfono hasta `lg`.
+- **La píldora activa se desliza** (`.pestana-indicador`, degradado violeta→fucsia con borde lila):
+  se coloca midiendo el enlace (`data-pestana`) y, al cambiar de página, parte de la pestaña
+  ANTERIOR y llega a la nueva en 420 ms. Funciona también entre la portada y el resto aunque la
+  cabecera se remonte: de dónde se viene lo guarda `lib/sitio/pestanaAnterior.ts` (estado del
+  módulo, que sobrevive a la navegación de cliente; incluye atrás/adelante).
+- **El cuerpo entra desde ese lado** (`TransicionSeccion`, `data-dir="derecha|izquierda|sube"`,
+  36 px + fundido, 480 ms). La dirección se calcula UNA vez al montar (`useState`): si cambiara
+  en un render posterior, la animación de entrada se reiniciaría. `.claro-publico` con
+  `overflow-x: clip` para que no asome barra horizontal.
+- ⚠️ **Un `ResizeObserver` avisa nada más empezar a observar**: si en ese aviso se recoloca sin
+  transición, corta el deslizamiento. Se compara el ancho antes de recolocar.
+- Verificado con el build de producción: posición real a 0/120/250/600 ms en los cinco cambios
+  (incluidos Inicio → Clientes y Desarrollo Humano → Inicio), sin `scrollWidth` de más, y la
+  cabecera idéntica en Inicio y Clientes a 1440, 1050, 800 y 390 px.
+
 ### La barra: cinco pestañas de navegación + «Plataforma», que es una acción (2026-08-17)
 
 Fernando movió «Plataforma» del héroe de la portada a la barra, **a la derecha de

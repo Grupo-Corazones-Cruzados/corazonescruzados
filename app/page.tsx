@@ -2698,7 +2698,7 @@ export default function LandingPage() {
     >
       {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
-      <CabeceraSitio flotante />
+      <CabeceraSitio />
       {/* Sin ratón (teléfono, tableta) no hay puntero que dibujar: su bucle por cuadro solo
           restaba rendimiento. */}
       {!nativeCursor && !esTactil && <PointerCursor />}

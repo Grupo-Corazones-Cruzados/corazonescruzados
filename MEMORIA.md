@@ -275,6 +275,11 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧭 CABECERA COMÚN Y TRANSICIÓN ANIMADA ENTRE PESTAÑAS (Fernando, 2026-10-29).** Inicio,
+  Soluciones, Clientes y Desarrollo Humano comparten la misma cabecera (la cápsula centrada de la
+  portada, `CabeceraSitio` sin modos). Al cambiar de pestaña la píldora activa se desliza desde la
+  anterior (también entre la portada y el resto, con `lib/sitio/pestanaAnterior.ts`) y el cuerpo
+  entra desde ese lado (`TransicionSeccion`). Detalle y trampas: `Diseño.md` § «La cabecera común».
 - **🌗 LA PORTADA: DOS MUNDOS Y EL ACCESO POR ROLES (Fernando, 2026-10-26 → 28) — ESTADO VIGENTE,
   APROBADO («vamos súper bien, me gusta», 2026-10-29).** Tres días de iteración con Fernando sobre `/`.
   Detalle, clases y principios: `Diseño.md` § «La portada partida» (tabla «ESTADO VIGENTE»).

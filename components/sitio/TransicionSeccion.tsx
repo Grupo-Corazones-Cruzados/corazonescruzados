@@ -41,8 +41,36 @@
  * se quedaría oculto. Aquí no puede pasar.
  */
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { indicePestana, rutaAnterior } from '@/lib/sitio/pestanaAnterior';
+
+/**
+ * ── CON DIRECCIÓN (Fernando, 2026-10-29) ───────────────────────────────────────
+ * El cuerpo entra desde el LADO hacia el que se avanzó en el menú: si la pestaña nueva está a la
+ * derecha de la anterior, llega desde la derecha; si está a la izquierda, desde la izquierda. Así
+ * acompaña a la píldora de la cabecera, que se desliza en el mismo sentido. Sin pestaña anterior
+ * (primera carga, legales) sube como antes.
+ *
+ * La dirección se calcula UNA vez al montar la sección (`useState`), no en cada render: la
+ * cabecera actualiza «de dónde se viene» justo después, y si el atributo cambiara, la animación
+ * de entrada se reiniciaría (la misma trampa que vació las tarjetas de rol el 2026-10-29).
+ */
+function Seccion({ ruta, children }: { ruta: string; children: ReactNode }) {
+  const [dir] = useState(() => {
+    const desde = indicePestana(rutaAnterior());
+    const hasta = indicePestana(ruta);
+    if (desde < 0 || hasta < 0 || desde === hasta) return 'sube';
+    return hasta > desde ? 'derecha' : 'izquierda';
+  });
+  return (
+    // `flex-1 flex flex-col`: este envoltorio está entre el `<main>` y la página, así que
+    // si no dejara pasar el alto, ninguna página podría estirarse hasta el pie.
+    <div data-dir={dir} className="transicion-seccion flex-1 flex flex-col">
+      {children}
+    </div>
+  );
+}
 
 export default function TransicionSeccion({ children }: { children: ReactNode }) {
   const pathname = usePathname() || '/';
@@ -51,10 +79,8 @@ export default function TransicionSeccion({ children }: { children: ReactNode })
   const seccion = pathname.split('/')[1] || 'inicio';
 
   return (
-    // `flex-1 flex flex-col`: este envoltorio está entre el `<main>` y la página, así que
-    // si no dejara pasar el alto, ninguna página podría estirarse hasta el pie.
-    <div key={seccion} className="transicion-seccion flex-1 flex flex-col">
+    <Seccion key={seccion} ruta={pathname}>
       {children}
-    </div>
+    </Seccion>
   );
 }
