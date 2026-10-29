@@ -297,7 +297,8 @@ Stack estándar de la casa, con particularidades de este repo:
 - **🌐 PROPUESTA: SOLUCIONES, CLIENTES Y DESARROLLO HUMANO COMO SITIO WEB (Fernando, 2026-10-29) —
   PENDIENTE DE SU VISTO BUENO.** Con libertad creativa total («esta versión la podemos recuperar»):
   presentación de página con titular grande y botones de Progreso, una pieza propia por página
-  (cifras / pasos de un ticket / corazón sobre la Tierra), y en Clientes y Desarrollo Humano las
+  (cifras en Soluciones, corazón sobre la Tierra en Desarrollo Humano; la tarjeta «Así funciona un
+  ticket» de Clientes la quitó Fernando: «este contenido no me gusta»), y en Clientes y Desarrollo Humano las
   secciones como fila de puertas arriba. **Para volver a la versión anterior: commit `e09e1dc0`.**
   Le gustan controles concretos de las páginas viejas: si pide recuperar alguno, preguntar cuál.
   **Sin botones de acceso en esas páginas (2026-10-29): «solo la pestaña de Inicio debe tener el

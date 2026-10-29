@@ -11,42 +11,14 @@
 
 import type { ComponentProps } from 'react';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
-import { ICONOS, type PresentacionPagina } from './piezas';
-import { ACCESOS } from '@/lib/sitio/contenido';
+import type { PresentacionPagina } from './piezas';
 import type { SolucionConContenido } from './SolucionesExplorador';
 
 type Presentacion = ComponentProps<typeof PresentacionPagina>;
 
-/**
- * La pieza de Clientes: «así funciona un ticket», con los tres pasos REALES de la primera pregunta
- * de Plataforma (los mismos que se leen más abajo), como una tarjeta de la Plataforma.
- */
-function VisualClientes() {
-  const tema = ACCESOS[0]?.temas?.[0];
-  if (!tema?.pasos?.length) return null;
-  return (
-    <div className="visual-tarjeta">
-      <p className="visual-rotulo">Así funciona un {tema.etiqueta.toLowerCase().replace(/s$/, '')}</p>
-      <ol className="visual-pasos">
-        {tema.pasos.slice(0, 3).map((p, i) => {
-          const Icono = p.icono ? ICONOS[p.icono] : null;
-          return (
-            <li key={p.titulo} style={{ ['--i' as string]: i }}>
-              <span className="visual-paso-num">{Icono ? <Icono aria-hidden /> : String(i + 1).padStart(2, '0')}</span>
-              <span>
-                <span className="visual-paso-titulo">{p.titulo}</span>
-                <span className="visual-paso-texto">{p.texto}</span>
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
-}
-
+/* Clientes no lleva pieza a la derecha: la tarjeta «Así funciona un ticket» se quitó el 2026-10-29
+   (Fernando: «este contenido no me gusta»). Para verla: `git show 054f6e22:components/sitio/presentaciones.tsx`. */
 export const PRESENTACION_CLIENTES: Presentacion = {
-  visual: <VisualClientes />,
   etiqueta: 'Clientes',
   titulo: 'Lo que tu organización puede hacer con nosotros',
   texto:

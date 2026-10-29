@@ -678,7 +678,8 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   `lg`, la pieza de cada página (`components/sitio/presentaciones.tsx`):
   · **Soluciones** — cifras REALES (proyectos, tickets, productos, talentos; contados por id) en
     una tarjeta 2×2; en el teléfono, bajo el texto.
-  · **Clientes** — «Así funciona un ticket»: los 3 pasos reales de Plataforma en una tarjeta.
+  · **Clientes** — SIN pieza (la tarjeta «Así funciona un ticket» se quitó el 2026-10-29: Fernando,
+    «este contenido no me gusta»; no reproponer).
   · **Desarrollo Humano** — titular «Un corazón puede cruzar al mundo» y el corazón posado sobre
     la Tierra en grande, flotando con halo (y como sello junto a la etiqueta en el teléfono).
 - **Clientes y Desarrollo Humano** (`ExploradorSecciones`): las secciones dejan la columna izquierda
