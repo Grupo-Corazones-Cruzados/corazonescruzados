@@ -7725,6 +7725,13 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     a abrir con los datos y los `definedNames`, PDF de 8 páginas), panel y página pública en claro, oscuro
     y 390 px (sin desbordar), y la API de punta a punta (crear, abrir sin cuenta, uso, cerrar, rechazos,
     borrar; la fila de prueba se borró por su id).
+- **🎨 Muestrario de marca publicado (Fernando, 2026-10-27).** «Colores de Corazones Cruzados»:
+  https://claude.ai/artifact/B2T7YWjtoxxsq7JiTriUmd — colores (familia del morado #4B2D8E, sitio público,
+  panel, estados), equivalencias claro↔oscuro, las 6 tipografías, tamaños del panel, logo, iconos y
+  redondeos; todo sacado del código y comprobado contra él ese día. Está compartido «cualquiera con el
+  enlace». Su HTML NO está en el repo (scratchpad de la sesión): se actualiza publicando en esa URL.
+  Detalle de la tipografía en `Diseño.md` → «Tipografía de la marca». `PALETA.html` (muestrario viejo,
+  2026-07-25) figura borrado en la copia de trabajo sin commit: no lo restauré ni lo borré yo.
 - **Transcripción de audio: TOPE DURO de ~300 s por petición (Railway/Cloudflare) (2026-07-24).**
   `/api/tools/transcribe` (Whisper) trocea el audio en segmentos de 10 min, los transcribe y une en un `.txt`.
   Con un audio de **~1.5 h** (10 segmentos) empezó a fallar con **HTTP 499 a los ~300 s exactos** → **502** en
@@ -8201,6 +8208,7 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   `components/razones/RazonesPanel.tsx`, montada como 3ª pestaña del panel admin (Mundo · Sprites · Razones).
   La "intensidad" (Breve/Media/Extensa) es solo por longitud del texto, no clasificación.
 
+- *(2026-10-27: sustituido en la práctica por el muestrario publicado; ver «🎨 Muestrario de marca».)*
 - **`PALETA.html` — muestrario de color de la organización (2026-07-25):** archivo en la raíz (abrir en el
   navegador) con TODOS los colores agrupados por lenguaje visual: marca, dashboard claro/oscuro, landing
   pixelart, editor del mundo, correos y la paleta semántica remapeada. Cada muestra lleva su **token**, para

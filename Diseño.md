@@ -4,6 +4,12 @@
 > vivo. El diseño está VINCULADO: cambiar la fuente única propaga a toda la sección.
 > Contexto de proyecto → `MEMORIA.md`.
 >
+> **Muestrario de marca vigente (2026-10-27):** https://claude.ai/artifact/B2T7YWjtoxxsq7JiTriUmd
+> («Colores de Corazones Cruzados»: colores por familia con contraste calculado, equivalencias claro↔oscuro,
+> las 6 tipografías con muestra, tamaños del panel, logo, iconos y redondeos). Su fuente está en el
+> scratchpad de la sesión, NO en el repo: para cambiarlo, publicar en esa URL. ⚠️ `PALETA.html` aparece
+> borrado en la copia de trabajo (sin confirmar quién ni si es intencional); el de abajo era su descripción.
+>
 > **Paleta visual:** `PALETA.html` (raíz, abrir en el navegador) — muestrario de TODOS los
 > colores de la organización agrupados por lenguaje visual (marca, dashboard claro/oscuro,
 > landing pixelart, editor del mundo, correos, paleta semántica remapeada), con token,
@@ -1582,6 +1588,22 @@ pieza compartida siempre que se pudo, para que ninguna pantalla se quede fuera:
 - **Márgenes seguros**: el panel ya los tenía por elemento (`--seguro-arriba`/`--seguro-abajo`,
   manifiesto `standalone`, `viewportFit: cover`), por la app de Capacitor.
 
+### Tipografía de la marca — seis familias, cada una en su sitio (auditado 2026-10-27)
+Cargadas desde Google Fonts en `app/layout.tsx` (salvo Segoe UI, del sistema). No se mezclan fuera de su lugar.
+
+| Familia | Dónde | Pesos | Declaración |
+|---|---|---|---|
+| **Segoe UI** | Panel `.corp` (títulos y cuerpo), correos, PDF | 400 · 600 · 700 | `'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif` (`--font-display`/`--font-body` en `.corp`) |
+| **Inter** | Sitio público (`app/(sitio)/layout.tsx`, CV) y cuerpo del formulario con tema de portada | 400–700 | `'Inter', system-ui, -apple-system, sans-serif` |
+| **Space Grotesk** | Títulos de la portada, `EmblemaXH`, pasos y tarjetas de `.onboarding-portada` | 500–700 | `'Space Grotesk', 'Inter', system-ui, sans-serif` |
+| **Instrument Serif** (itálica) | Pensamiento de la portada (`.pensamiento-barra-texto`), `.titular-serif` | 400 itál. | `'Instrument Serif', Georgia, serif` |
+| **Silkscreen** | Mundo pixel-art: títulos, `pixel-btn`, pantalla de carga (`--font-display` del `@theme`) | 400 · 700 | `'Silkscreen', cursive` |
+| **JetBrains Mono** | Cuerpo del mundo pixel-art (`--font-body` del `@theme`), códigos y contraseñas | 400–700 | `'JetBrains Mono', monospace` |
+
+Tamaños más repetidos del panel: 18/600 título de página pública · 14/600 título de panel o tarjeta ·
+13/500 nombre en fila · 12/400 secundario · 11/600 mayúsculas encabezado de sección. Redondeos: panel 4–6 px,
+botones del sitio 8 px, tarjetas del sitio y correos 12 px, ventanas con tema de portada 22 px, avatares círculo.
+
 ### Herramienta traída de fuera: se queda la función, se cambia la piel (Fernando, 2026-10-27)
 Cuando Fernando entrega una herramienta hecha aparte (HTML con su propia paleta, fuentes y tema), su
 lógica se porta tal cual y la pantalla se rehace con las piezas del panel: *«adaptar el diseño al de la
@@ -1597,6 +1619,10 @@ Excel» (`components/herramientas/FormatosExcel.tsx`):
   no la interfaz. Su fondo es `bg-black/[0.04]`.
 - Si la vista previa no cabe en la columna de 360 px del panel de Herramientas, la herramienta va a
   página completa y el panel solo enlaza («Abrir herramienta»).
+- Un libro con varias hojas: la vista previa lleva arriba un `Segmentado` con las hojas (≤ 3; con más,
+  `<select>` nativo) y cada tarjeta de formato resume la hoja principal (la de más páginas) y el total
+  de páginas del libro. Lo que no es la interfaz —el logo de una carátula— se dibuja también en la vista
+  previa, porque es parte de la hoja impresa.
 - Página pública de una herramienta (`/herramienta/<token>`): el armazón de `/enlace` (`corp page-dark` +
   `PublicHeader`); el título va DENTRO de una tarjeta, porque sobre el fondo oscuro el texto de la tarjeta
   clara no se lee.

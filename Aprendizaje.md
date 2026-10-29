@@ -10706,3 +10706,30 @@ el «Enlace de un solo uso». Fernando, a mitad: adaptar el diseño al de la app
 ## Riesgos y cómo se mitigan
 - El token protege la pantalla, no el código (el motor está en el JS público). Aceptable aquí; anotado en
   MEMORIA para herramientas compartibles que usen el servidor.
+
+
+### P6 — Formatos de compras y de ventas por hoja (2026-10-27) · ✅ Resuelta
+- **Por qué importa:** los libros reales traen VARIAS hojas con montajes distintos (carátula + 4 cuentas;
+  libro de ventas + Cuentas) y los encabezados en filas distintas (14 y 6), así que un formato único por
+  libro no sirve.
+- **Respuesta:** `porHoja` + `configDeHoja` en el motor; detección por nombres de hojas (`detect.hojas`);
+  vista previa con pestañas por hoja; logo de la carátula en vista previa y PDF. Medido con los archivos
+  reales de Fernando: compras 4.266 hojas / 33 MB / 15 s; ventas 15.636 hojas / 98 MB / 39 s y 1,8 GB de
+  memoria en Chrome. Fernando quitó los dos formatos originales: solo quedan «compras» y «ventas».
+- **Pendiente de Fernando:** en compras, ¿repetir 6–14 (con totales) o solo la 14?
+
+### Lecciones de esta tanda
+- Antes de definir un formato, **leer el XML de cada hoja** (dimensión, `cols`, filas de títulos, totales,
+  dibujos): el `dimension` miente cuando hay relleno (718.759 frente a 341.350 filas con datos).
+- **Probar en el navegador con el archivo real**, no solo en Node: el límite es la memoria de la pestaña
+  (un XML de 454 MB cabe en una cadena de V8, pero la pestaña llegó a 1,8 GB).
+- Lo que el motor no dibujaba (imágenes) se notó solo al mirar la carátula real: mirar cada hoja impresa.
+
+# Aprendizaje — Muestrario de la marca (2026-10-27) · 100 %
+- **Objetivo:** ver en una página todos los colores de la marca y después la tipografía y demás piezas.
+- **Fuentes:** `app/globals.css` (`@theme`, `.corp`, `.corp.dark`, `.rail`, `.claro-publico`, remapeo
+  semántico), `components/sitio/{CabeceraSitio,PieSitio}.tsx`, `lib/integrations/email.ts`, `app/layout.tsx`
+  (Google Fonts), `app/(sitio)/layout.tsx`, `PALETA.html` de git (valores re-verificados uno a uno).
+- **Decisión:** se reutilizaron los datos del muestrario viejo en vez de rehacerlos, quitando la sección del
+  editor del mundo (`editorUi.tsx` ya no existe) y sumando sitio público, raíl y portada.
+- **Resultado:** https://claude.ai/artifact/B2T7YWjtoxxsq7JiTriUmd
