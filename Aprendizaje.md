@@ -44,7 +44,11 @@ app movil, y ademas que la app se pueda instalar en mi macbook para incluso reci
 #### P5 — ¿Dónde viven las preferencias y quién recibe los avisos de reclutamiento? · ✅ Resuelta (Fernando, 2026-10-29)
 - **Respuesta:** pestaña **«Notificaciones» en Configuración**; los de Reclutamiento, **quien accede al
   sistema** (admin + miembros por piso/paso o acceso compartido); **todo encendido por defecto**.
-#### P6 — ¿Con qué equipo de Apple se firma la app para el Mac? · ⏸ Espera a Fernando
+#### P6 — ¿Con qué equipo de Apple se firma la app para el Mac? · ✅ Decidido por ahora (Fernando, 2026-10-29)
+- **Decisión:** *«mientras tanto PWA»* (Safari → «Añadir al Dock», con Web Push, que ya recibe TODOS
+  los avisos). Más adelante quiere **su propia cuenta de Apple** para no depender de la del cliente;
+  aún decide la compra (le preocupa el costo, 99 $/año). Cuando la tenga: equipo nuevo, identificador
+  `org.grupocc.gccworld`, clave APNs propia en Railway y compilar para «My Mac (Designed for iPad)».
 - **Hallazgo (2026-10-29, `xcodebuild` para «My Mac (Designed for iPad)»):** el equipo provisional
   `5H27NSRYKQ` rechaza todo: *«PLA Update available… your team's Account Holder [titular de la cuenta
   del cliente] must agree to the latest Program License Agreement»*. Hasta que acepte, ni el Mac ni una
