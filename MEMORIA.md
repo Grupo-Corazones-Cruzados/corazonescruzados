@@ -283,6 +283,14 @@ Stack estándar de la casa, con particularidades de este repo:
   2025 todo facturado (7955); 2026, 4996,01 de 19.631,11. **Arreglado de paso:** el PUT del mes borraba y
   reinsertaba los conceptos SIN su origen: editar un mes los volvía «a mano». Ahora conserva
   `source_type`/`source_id` (solo los orígenes del sistema). Los meses editados antes ya perdieron el suyo.
+  **Conciliación del mismo día (Fernando: «no estás tomando las facturas pendientes… relaciona cada ingreso»):**
+  el fallo no era el estado de pago sino que 28 ingresos habían PERDIDO su origen por ese PUT (todos estaban en
+  `finance_source_log`). Se les devolvió (ticket/proyecto/suscripción, o la factura directa si el proyecto ya no
+  existe), con copia previa y en una transacción. Se añadió `invoice_projects` para dos facturas reemitidas
+  tras anularse (001-060→P18, 001-098→P37). Regla de proyecto: `invoice_projects` cuenta y las facturas de
+  ETAPA no (cada etapa tiene su ingreso). 2026: facturado 13.958,80 de 19.631,11. **Pendiente de Fernando:**
+  ingresos que faltan (001-024 $425 P7, 001-096 $296,25 T28, 001-098 $300 P37 etapa 1), ingresos de proyecto
+  que duplican sus etapas (P25 $679,50, P38 $870) y la etapa 1 de P37 apuntando a la factura anulada 001-097.
 - **📒 FACTURAS DEL FACTURADOR DEL SRI EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Antes de la
   plataforma (primera factura propia: 001-001-000000023, 29/03/2026) emitía con el **facturador gratuito
   del SRI**. Se recorrió el portal día a día con su RUC (2024 → 31/03/2026) y se cargaron **19 facturas
