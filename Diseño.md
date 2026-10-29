@@ -682,6 +682,10 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   36 px + fundido, 480 ms). La dirección se calcula UNA vez al montar (`useState`): si cambiara
   en un render posterior, la animación de entrada se reiniciaría. `.claro-publico` con
   `overflow-x: clip` para que no asome barra horizontal.
+- ⚠️ **El fondo oscuro y la forma de la píldora van EN LÍNEA** (2026-10-29): en el servidor de
+  desarrollo de Fernando, con el CSS viejo, la barra salió CLARA y el `<span>` de la píldora, sin
+  `position:absolute`, empujaba las pestañas a la derecha. Lo crítico de la cabecera no depende
+  de `globals.css`.
 - ⚠️ **Un `ResizeObserver` avisa nada más empezar a observar**: si en ese aviso se recoloca sin
   transición, corta el deslizamiento. Se compara el ancho antes de recolocar.
 - Verificado con el build de producción: posición real a 0/120/250/600 ms en los cinco cambios

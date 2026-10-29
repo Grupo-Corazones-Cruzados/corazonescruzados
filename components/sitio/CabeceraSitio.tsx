@@ -54,13 +54,26 @@
  * Se deroga el modo «normal» (pestañas a la derecha, menú del teléfono hasta `lg`).
  */
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { NAVEGACION } from '@/lib/sitio/contenido';
 import { pestanaDe, recordarRuta, rutaAnterior } from '@/lib/sitio/pestanaAnterior';
+
+const ESTILO_INDICADOR: CSSProperties = {
+  position: 'absolute',
+  top: 4,
+  bottom: 4,
+  left: 0,
+  width: 0,
+  opacity: 0,
+  borderRadius: 9999,
+  pointerEvents: 'none',
+  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.38), rgba(192, 38, 211, 0.26))',
+  boxShadow: 'inset 0 0 0 1px rgba(196, 181, 253, 0.28), 0 6px 18px -8px rgba(139, 92, 246, 0.8)',
+};
 
 export default function CabeceraSitio() {
   const pathname = usePathname() || '/';
@@ -82,7 +95,9 @@ export default function CabeceraSitio() {
     const enlace = (href: string | null) =>
       href ? nav.querySelector<HTMLElement>(`a[data-pestana="${CSS.escape(href)}"]`) : null;
     const poner = (el: HTMLElement, animar: boolean) => {
-      ind.style.transition = animar ? '' : 'none';
+      ind.style.transition = animar
+        ? 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), width 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease'
+        : 'none';
       ind.style.opacity = '1';
       ind.style.transform = `translateX(${el.offsetLeft}px)`;
       ind.style.width = `${el.offsetWidth}px`;
@@ -134,9 +149,11 @@ export default function CabeceraSitio() {
     <header
       // `pt` = la zona de la hora y la batería del teléfono (app instalada / `viewport-fit: cover`):
       // sin él la cabecera quedaba debajo de ellas (Fernando, 2026-10-27). En el navegador vale 0.
-      // Fondo casi opaco: con el 85 % de antes, el papel claro de debajo lo volvía gris en las
-      // páginas de contenido y la mitad de la Plataforma en la portada (2026-10-29).
-      className="fixed top-0 inset-x-0 z-[60] pt-[var(--seguro-arriba)] bg-[#0b0d14]/[0.96] backdrop-blur-xl border-b border-white/[0.07]"
+      // Fondo OSCURO casi opaco: con el 85 % de antes, el papel claro de debajo lo volvía gris en
+      // las páginas de contenido (2026-10-29). Va EN LÍNEA, no como clase: el servidor de
+      // desarrollo de Fernando sirve a veces un CSS viejo, y sin la clase la barra salía clara.
+      className="fixed top-0 inset-x-0 z-[60] pt-[var(--seguro-arriba)] backdrop-blur-xl border-b border-white/[0.07]"
+      style={{ backgroundColor: 'rgba(11, 13, 20, 0.96)' }}
     >
       <div className="relative mx-auto max-w-6xl px-5 sm:px-6 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0 group" onClick={() => setAbierto(false)}>
@@ -168,7 +185,9 @@ export default function CabeceraSitio() {
           className="hidden md:flex items-center gap-1 cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1"
           aria-label="Principal"
         >
-          <span ref={indicadorRef} className="pestana-indicador" aria-hidden="true" />
+          {/* Su forma va EN LÍNEA (no solo en `.pestana-indicador`): sin el CSS al día, el
+              `<span>` quedaba en el flujo y empujaba las pestañas a la derecha. */}
+          <span ref={indicadorRef} className="pestana-indicador" aria-hidden="true" style={ESTILO_INDICADOR} />
           {NAVEGACION.map((n) => {
             const activo = n.href === '/' ? pathname === '/' : pathname.startsWith(n.href);
             return (
