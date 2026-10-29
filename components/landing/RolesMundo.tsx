@@ -19,6 +19,11 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useOpcionesAcceso, type AccionesAcceso, type OpcionAcceso } from '@/components/landing/opcionesAcceso';
 import { sonarPasar, sonarTarjeta, sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 
+/** ¿La tarjeta se ve ya? Durante su entrada (`.aparecer`) empieza con opacidad 0. */
+function seVe(el: HTMLElement) {
+  return parseFloat(getComputedStyle(el).opacity) > 0.6;
+}
+
 function Tarjeta({
   o,
   tema,
@@ -46,10 +51,13 @@ function Tarjeta({
   return (
     <button
       type="button"
-      onClick={o.cargando ? undefined : onElegir}
+      // ⚠️ Mientras espera su entrada (tras el eslogan) la tarjeta YA está en la página, invisible:
+      // el puntero la «tocaba» y sonaba el tic antes de verse, y un clic abría su formulario
+      // (Fernando, 2026-10-29). Ni sonido ni clic hasta que se vea (`seVe`).
+      onClick={o.cargando ? undefined : (e) => { if (seVe(e.currentTarget)) onElegir(); }}
       // El «tic» al pasar el puntero (Fernando, 2026-10-29). Solo con ratón: en táctil el
       // `pointerenter` llega al tocar y se sumaría al sonido de elegir.
-      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !o.cargando && !estado) sonarPasar(); }}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse' && !o.cargando && !estado && seVe(e.currentTarget)) sonarPasar(); }}
       aria-disabled={o.cargando || undefined}
       aria-busy={o.cargando || undefined}
       aria-label={`${o.titulo}: ${o.descripcion}`}

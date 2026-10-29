@@ -403,6 +403,9 @@ Stack estándar de la casa, con particularidades de este repo:
      `sonarPasar` al pasar el ratón (tic suave de 50 ms; solo `pointerType === 'mouse'`, solo si el
      contexto de audio YA suena —pasar el puntero no autoriza audio—, máx. uno cada 70 ms).
      Todos en `lib/sitio/sonidoSeleccion.ts`: un sonido distinto por gesto, mismo timbre de juego.
+     ⚠️ Las tarjetas de rol están en la página INVISIBLES mientras esperan su entrada (3,4 s): el
+     puntero las «tocaba» (tic) y un clic abría su formulario sin verlas. `seVe()` (opacidad > 0,6)
+     filtra el tic y el clic (Fernando, 2026-10-29).
   6. **Sin desplazamiento** en ningún tamaño; márgenes seguros del teléfono (`--seguro-arriba/abajo`).
   **Descartado por Fernando** (no repetir; lista completa en `Diseño.md`): elegir al pasar el
   puntero, raya que sigue al puntero, texto partido de color, cristal/placa detrás del titular,
