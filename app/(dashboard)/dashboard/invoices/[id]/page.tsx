@@ -17,6 +17,7 @@ import BotonQuitar from '@/components/ui/BotonQuitar';
 import { GaleriaTabla } from '@/components/ui/PixelDataTable';
 import RailDesplegable, { RAIL_HUECO, useRailDesplegable } from '@/components/ui/RailDesplegable';
 import { PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -42,6 +43,8 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth();
   const [invoice, setInvoice] = useState<any>(null);
   const railPlegado = useRailDesplegable(PANTALLA_LG);
+  // Las columnas miden hasta el pie de la ruta, como en ticket y proyecto (Fernando, 2026-10-29).
+  const altoColumnas = useAltoHastaElPie({ minimo: 420 });
   const [sriItems, setSriItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showResend, setShowResend] = useState(false);
@@ -296,9 +299,13 @@ export default function InvoiceDetailPage() {
         ]}
       />
 
-      <div className={`grid grid-cols-1 gap-4 items-start ${railPlegado ? `relative min-h-[calc(100dvh-12rem)] ${RAIL_HUECO}` : 'lg:grid-cols-[minmax(0,1fr)_340px]'}`}>
+      {/* Desde `lg`, la rejilla mide hasta el pie (alto medido, por variable para que solo actúe
+          con `lg:`); la tabla de ítems y el raíl derecho se desplazan por dentro. */}
+      <div ref={altoColumnas.ref}
+        style={altoColumnas.style ? ({ '--alto-columnas': `${altoColumnas.style.height}px` } as React.CSSProperties) : undefined}
+        className={`grid grid-cols-1 gap-4 items-start lg:items-stretch lg:grid-rows-[minmax(0,1fr)] lg:h-[var(--alto-columnas)] ${railPlegado ? `relative ${altoColumnas.style ? '' : 'min-h-[calc(100dvh-12rem)]'} ${RAIL_HUECO}` : 'lg:grid-cols-[minmax(0,1fr)_340px]'}`}>
         {/* ─── Items table ─── */}
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4 lg:min-h-0 lg:flex lg:flex-col">
           {/* En el teléfono, una tarjeta por ítem y los totales debajo (Fernando, 2026-10-29: las
               tablas del teléfono son galería). La tabla queda para el escritorio. */}
           <div className="md:hidden space-y-2">
@@ -319,7 +326,7 @@ export default function InvoiceDetailPage() {
               <div className="flex justify-between border-t border-digi-border pt-1.5 font-semibold"><dt className="text-digi-text">Total</dt><dd className="tabular-nums text-accent">${fmt2(total)}</dd></div>
             </dl>
           </div>
-          <div className="hidden md:block bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+          <div className="hidden md:block lg:flex-1 lg:min-h-0 lg:overflow-y-auto bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-digi-border">
@@ -364,7 +371,7 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* ─── Right rail ─── */}
-        <RailDesplegable desde={PANTALLA_LG} etiqueta="Detalles · SRI · Comprobante" className="space-y-4 lg:sticky lg:top-4">
+        <RailDesplegable desde={PANTALLA_LG} etiqueta="Detalles · SRI · Comprobante" className="space-y-4 lg:min-h-0 lg:overflow-y-auto">
           <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
             <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-3" style={pf}>Detalles</h3>
             <div className="space-y-2 text-[12px]" style={mf}>

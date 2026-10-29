@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { toast } from 'sonner';
 import {
   FolderPlus, Pencil, Trash2, Plus, Database, GitCompareArrows, Hexagon,
@@ -287,8 +288,11 @@ export default function GestionDeDatosSystem({ isAdmin }: { system?: any; isAdmi
     return n.subtitle || '';
   };
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024 });
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+    <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col lg:flex-row gap-4">
       {/* ── Panel izquierdo: Problemáticas ── */}
       <aside className="w-full lg:w-[248px] shrink-0 max-h-[40vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center justify-between">

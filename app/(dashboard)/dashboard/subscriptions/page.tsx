@@ -14,6 +14,8 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
@@ -418,6 +420,8 @@ export default function SubscriptionsPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
+              {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+              <TablaVaciaHastaElPie vacia={subs.length === 0}>
               <PixelDataTable
                 singleLine
                 data={subs}
@@ -478,6 +482,7 @@ export default function SubscriptionsPage() {
                   );
                 }}
               />
+              </TablaVaciaHastaElPie>
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-3">
@@ -502,16 +507,16 @@ export default function SubscriptionsPage() {
                 completa. */}
             <aside className="hidden xl:block w-full xl:w-[360px]">
               {!selected ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <CreditCard className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona una suscripción para ver sus meses y cobrar.</p>
-                </div>
+                </PanelHastaElPie>
               ) : loadingDetail || !detail ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-10 text-center text-[12px] text-digi-muted" style={mf}>Cargando…</div>
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-10 text-center text-[12px] text-digi-muted flex flex-col justify-center"><span style={mf}>Cargando…</span></PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="w-10 h-10 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
                       <CreditCard className="w-5 h-5 text-accent" />
@@ -524,7 +529,7 @@ export default function SubscriptionsPage() {
                   </div>
 
                   {cuerpoMeses}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>

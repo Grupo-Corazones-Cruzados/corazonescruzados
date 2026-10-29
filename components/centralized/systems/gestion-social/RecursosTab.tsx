@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import PixelModal from '@/components/ui/PixelModal';
@@ -106,17 +107,18 @@ export default function RecursosTab() {
       {/* 1) Personas */}
       <div className="w-full lg:w-[210px] shrink-0">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-1 pb-1.5" style={df}>Personas</p>
-        <UsersList selected={user} onSelect={setUser} className="max-h-[70vh] overflow-y-auto" />
+        {/* Personas, relleno y pensamientos llegan al pie de la ruta (Fernando, 2026-10-29). */}
+        <UsersList hastaElPie selected={user} onSelect={setUser} className="max-h-[70vh] lg:max-h-none" />
       </div>
 
       {/* «Elige una persona» es relleno: en el teléfono caería bajo la lista de personas sin
           aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
       {!user ? (
-        <div className="hidden lg:block flex-1 bg-digi-card border border-digi-border rounded-xl py-16 text-center">
+        <PanelHastaElPie className="hidden lg:flex lg:flex-col lg:justify-center flex-1 bg-digi-card border border-digi-border rounded-xl py-16 text-center">
           <UserRound className="w-8 h-8 text-digi-muted mx-auto mb-2" />
           <p className="text-[13px] text-digi-text font-medium" style={mf}>Elige una persona</p>
           <p className="text-[12px] text-digi-muted mt-1" style={mf}>Verás sus pensamientos y podrás valorar sus talentos y valores.</p>
-        </div>
+        </PanelHastaElPie>
       ) : (
         <>
           {/* 2) Tipo de pensamiento */}
@@ -173,10 +175,12 @@ export default function RecursosTab() {
               </div>
             )}
 
+            {/* En escritorio la lista se desplaza dentro y no hace crecer la página. */}
+            <PanelHastaElPie className="flex flex-col">
             {loading ? (
               <p className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
             ) : shown.length === 0 ? (
-              <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
+              <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center lg:flex-1 lg:flex lg:flex-col lg:justify-center">
                 <BrainCircuit className="w-8 h-8 text-digi-muted mx-auto mb-2" />
                 <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin pensamientos {cat !== '_todas' ? 'de este tipo' : ''}</p>
               </div>
@@ -199,6 +203,7 @@ export default function RecursosTab() {
                 ))}
               </div>
             )}
+            </PanelHastaElPie>
           </div>
         </>
       )}

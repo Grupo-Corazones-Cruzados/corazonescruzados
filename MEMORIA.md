@@ -275,6 +275,12 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🔒 INGRESOS FACTURADOS BLOQUEADOS (Fernando, 2026-10-29).** En el formulario del mes, un ingreso enlazado a una
+  factura vigente no se edita ni se borra (candado, sin papelera) y el PUT de `/api/finance/[id]` lo hace cumplir:
+  conserva esas filas tal cual lleguen como lleguen (probado: intento de borrar una y cambiar otra → mes idéntico).
+  Solo se van al ANULAR su factura: `quitarIngresosDeFacturaAnulada()` (paso final de `/api/invoices/[id]/void`)
+  quita todo ingreso enlazado a esa factura —también los del SRI, por clave de acceso— sin otra vigente; conserva
+  `finance_source_log` para que el relleno no lo recree. `sqlEnlaceFactura(alias)` = la misma relación con otro alias.
 - **🏷️ CADA INGRESO FACTURADO SE LLAMA POR SU FACTURA (Fernando, 2026-10-29):** «Factura 001-001-000000020 —
   Mendez De La Torre Rafael Enrique». `nombrarIngresosFacturados()` (`lib/finance.ts`) corre con el relleno del
   GET de `/api/finance`; solo parejas 1 a 1 ingreso↔factura vigente (Cercasa/Pisercons comparten la 001-026 y

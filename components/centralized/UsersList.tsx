@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Users, UserRound, ChevronDown } from 'lucide-react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -16,11 +17,15 @@ export default function UsersList({
   selected,
   onSelect,
   className = '',
+  hastaElPie = false,
 }: {
   selected: SelectedUser | null;
   onSelect: (u: SelectedUser | null) => void;
   className?: string;
+  /** Desde `lg`, la lista llega al pie de la ruta y se desplaza dentro (Fernando, 2026-10-29). */
+  hastaElPie?: boolean;
 }) {
+  const altoPie = useAltoHastaElPie<HTMLElement>({ desdeAncho: 1024, minimo: 320 });
   const [candidates, setCandidates] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [candOpen, setCandOpen] = useState(true);
@@ -72,7 +77,9 @@ export default function UsersList({
   );
 
   return (
-    <aside className={`bg-digi-card border border-digi-border rounded-lg overflow-hidden ${className}`}>
+    // `overflow-y-auto` y no `hidden`: con un alto puesto (columna o pie), lo que no cabe se desplaza.
+    <aside ref={hastaElPie ? altoPie.ref : undefined} style={hastaElPie ? altoPie.style : undefined}
+      className={`bg-digi-card border border-digi-border rounded-lg overflow-y-auto ${className}`}>
       <Header label="Candidatos" Icon={UserRound} count={candidates.length} open={candOpen} onToggle={() => setCandOpen((o) => !o)} />
       {candOpen && (
         <div className="divide-y divide-digi-border/50">

@@ -10,6 +10,7 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
 import { Trash2, PackageOpen, CircleDot, CheckCircle2, Lock, Clock, Search, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
@@ -222,21 +223,22 @@ export default function EntregasPage() {
 
             {/* Sin botón de cerrar, como en Tickets: el panel enseña la fila elegida. */}
             <aside className="hidden xl:block w-full xl:w-[360px]">
+              {/* Fernando, 2026-10-29: la tarjeta del panel derecho llega hasta el pie aunque tenga poco; lo que no quepa se desplaza dentro. */}
               {!sel ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col items-center justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <PackageOpen className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona una entrega para ver su detalle.</p>
-                </div>
+                </PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
                   <div className="p-4 border-b border-digi-border">
                     <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{sel.titulo}</h3>
                     <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>Entrega #{sel.id}</p>
                   </div>
                   {detalle}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>

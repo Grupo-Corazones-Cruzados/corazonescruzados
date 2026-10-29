@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { toast } from 'sonner';
 import {
   Plus, Settings, Sparkles, Pencil, Trash2, RefreshCw, Image as ImageIcon,
@@ -513,8 +514,11 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
     );
   };
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1280 });
+
   return (
-    <div className="flex flex-col xl:flex-row gap-4 xl:h-[calc(100dvh-150px)]">
+    <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col xl:flex-row gap-4">
       {/* ── IZQUIERDA: lo generado ── */}
       <aside className="w-full xl:w-[250px] shrink-0 flex flex-col gap-3 min-h-0">
         <div className="flex items-center gap-2">

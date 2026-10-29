@@ -10,7 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, Plus, ChevronRight, FileDown, type LucideIcon } from 'lucide-react';
+  Download, Plus, ChevronRight, FileDown, Lock, type LucideIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
@@ -397,7 +397,7 @@ function BloqueImportes({
     if (!editable) return;
     setItems((prev) => prev.map((it, k) => (k === i ? { ...it, [campo]: valor } : it)));
   };
-  const CAMPO = 'field-control px-2.5 py-2 sm:py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none';
+  const CAMPO = 'field-control px-2.5 py-2 sm:py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none read-only:bg-transparent read-only:border-transparent read-only:cursor-default';
 
   return (
     <div className="rounded-lg border border-digi-border overflow-hidden">
@@ -414,26 +414,39 @@ function BloqueImportes({
             {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'} por «Solo facturado». Se conservan al guardar.
           </p>
         )}
-        {items.map((item, i) => oculto?.(item) ? null : (
-          <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+        {items.map((item, i) => {
+          if (oculto?.(item)) return null;
+          // ⭐ BLOQUEADO si está vinculado a una factura vigente (Fernando, 2026-10-29): no se edita
+          // ni se borra aquí; se quita solo al ANULAR su factura. El servidor lo hace cumplir igual.
+          const bloqueado = item.type === 'income' && item.facturado === true;
+          const editableFila = editable && !bloqueado;
+          return (
+          <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2"
+            title={bloqueado ? 'Vinculado a una factura: no se edita ni se elimina aquí; se quita al anular la factura.' : undefined}>
             <input
               value={item.description} onChange={(e) => cambiar(i, 'description', e.target.value)}
-              placeholder="Descripción" readOnly={!editable}
+              placeholder="Descripción" readOnly={!editableFila}
               className={`${CAMPO} w-full sm:flex-1 sm:min-w-0`} style={mf}
             />
             <div className="flex items-center gap-2">
               <input
                 value={item.amount} onChange={(e) => cambiar(i, 'amount', e.target.value)}
-                type="number" min="0" step="0.01" placeholder="0.00" readOnly={!editable}
+                type="number" min="0" step="0.01" placeholder="0.00" readOnly={!editableFila}
                 inputMode="decimal"
                 className={`${CAMPO} flex-1 sm:flex-none sm:w-28 sm:shrink-0 text-right`} style={mf}
               />
-              {editable && (
+              {editableFila && (
                 <BotonQuitar onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))} etiqueta="Quitar" />
+              )}
+              {editable && bloqueado && (
+                <span className="destino-tactil w-8 h-8 shrink-0 inline-flex items-center justify-center text-digi-muted" aria-label="Vinculado a una factura">
+                  <Lock className="w-3.5 h-3.5" />
+                </span>
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
         {editable && (
           <button
             onClick={() => setItems((prev) => [...prev, { type: tipo, description: '', amount: '' }])}

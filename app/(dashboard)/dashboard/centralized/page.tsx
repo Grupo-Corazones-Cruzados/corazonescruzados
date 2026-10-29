@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
@@ -285,6 +287,8 @@ export default function CentralizedPage() {
           {/* list · detail */}
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
             <div className="min-w-0">
+              {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+              <TablaVaciaHastaElPie vacia={visibleSystems.length === 0}>
               <PixelDataTable
                 data={visibleSystems}
                 onRowClick={(s: any) => setSelected(s)}
@@ -324,6 +328,7 @@ export default function CentralizedPage() {
                   ) },
                 ]}
               />
+              </TablaVaciaHastaElPie>
             </div>
 
             {/* ── Detail panel ── */}
@@ -331,7 +336,7 @@ export default function CentralizedPage() {
             {!enTelefono && (
             <aside className="w-full xl:w-[300px]">
               {selected ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="w-10 h-10 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
                       <Boxes className="w-5 h-5 text-accent" />
@@ -344,14 +349,14 @@ export default function CentralizedPage() {
                   </div>
 
                   {cuerpoSistema()}
-                </div>
+                </PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <Boxes className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un sistema para ver sus detalles y acciones.</p>
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
             )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { toast } from 'sonner';
 import UsersList, { type SelectedUser } from '@/components/centralized/UsersList';
 import KnowledgeGraph from '@/components/centralized/apoyo/KnowledgeGraph';
@@ -217,8 +218,11 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
     return groups;
   }, [selectedNode, graph]);
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024 });
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+    <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col lg:flex-row gap-4">
       <UsersList selected={user} onSelect={setUser} className="w-full lg:w-[240px] shrink-0 max-h-[40vh] lg:max-h-none lg:h-full" />
 
       {!user ? (

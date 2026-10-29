@@ -10,6 +10,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
@@ -527,6 +529,8 @@ function InvoicesPageInner() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
         <div className="min-w-0">
+      {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+      <TablaVaciaHastaElPie vacia={invoices.length === 0}>
       <PixelDataTable
         singleLine
         columns={[
@@ -578,6 +582,7 @@ function InvoicesPageInner() {
         emptyTitle="Sin facturas"
         emptyDesc="No hay facturas registradas aun."
       />
+      </TablaVaciaHastaElPie>
         </div>
 
         {/* ── Detail preview panel ── */}
@@ -586,14 +591,14 @@ function InvoicesPageInner() {
             ningún cambio visible. Ahí se abre a pantalla completa. */}
         <aside className="hidden xl:block w-full xl:w-[340px]">
           {!selected ? (
-            <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+            <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4 flex flex-col justify-center">
               <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                 <Receipt className="w-5 h-5 text-digi-muted" />
               </div>
               <p className="text-[12px] text-digi-muted" style={mf}>Selecciona una factura para ver un resumen.</p>
-            </div>
+            </PanelHastaElPie>
           ) : (
-            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+            <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
               <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.invoice_number || `Factura #${selected.id}`}</h3>
@@ -602,7 +607,7 @@ function InvoicesPageInner() {
                 <BotonCerrar onClick={() => setSelected(null)} />
               </div>
               {cuerpoResumen}
-            </div>
+            </PanelHastaElPie>
           )}
         </aside>
       </div>

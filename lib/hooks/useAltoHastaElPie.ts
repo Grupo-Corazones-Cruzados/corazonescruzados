@@ -60,7 +60,13 @@ function contenedorDesplazable(el: HTMLElement): HTMLElement | null {
 }
 
 export function useAltoHastaElPie<T extends HTMLElement = HTMLDivElement>(
-  { minimo = 420, respiro = 12 }: { minimo?: number; respiro?: number } = {},
+  { minimo = 420, respiro = 12, desdeAncho = 0 }: {
+    minimo?: number;
+    respiro?: number;
+    /** Por debajo de este ancho de ventana no se impone alto (los paneles van apilados en el
+     *  teléfono y cada uno mide lo que su contenido). `1024` = desde `lg`. */
+    desdeAncho?: number;
+  } = {},
 ) {
   const [nodo, setNodo] = useState<T | null>(null);
   const [alto, setAlto] = useState<number>();
@@ -73,6 +79,7 @@ export function useAltoHastaElPie<T extends HTMLElement = HTMLDivElement>(
     if (!nodo) return;
 
     const medir = () => {
+      if (window.innerWidth < desdeAncho) { setAlto(undefined); return; }
       const arriba = nodo.getBoundingClientRect().top;
 
       let fondo = window.innerHeight - altoDelPie() - respiro;
@@ -96,14 +103,22 @@ export function useAltoHastaElPie<T extends HTMLElement = HTMLDivElement>(
     // El PADRE, no el `body`: dentro de un contenedor con desplazamiento propio el `body`
     // no cambia de tamaño nunca. Vigilar el propio nodo haría un bucle: le cambiamos el alto.
     const observador = new ResizeObserver(() => requestAnimationFrame(medir));
-    if (nodo.parentElement) observador.observe(nodo.parentElement);
+    // ⚠️ Toda la cadena de ANCESTROS hasta el contenedor que se desplaza, no solo el padre
+    // (2026-10-29): en Proyectos algo de encima cargó tarde y BAJÓ la fila 47 px sin cambiarle el
+    // tamaño; el padre no avisó y el panel quedó 35 px por debajo del pie. Lo que crece encima
+    // agranda algún ancestro, y eso sí avisa.
+    const tope = contenedorDesplazable(nodo);
+    for (let p = nodo.parentElement; p; p = p.parentElement) {
+      observador.observe(p);
+      if (p === tope) break;
+    }
 
     return () => {
       cancelAnimationFrame(cuadro);
       window.removeEventListener('resize', medir);
       observador.disconnect();
     };
-  }, [nodo, minimo, respiro]);
+  }, [nodo, minimo, respiro, desdeAncho]);
 
   // Antes de la primera medida no se impone alto: el bloque mide por su contenido y no pega
   // un salto visible al ajustarse.

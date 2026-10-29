@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import PixelModal from '@/components/ui/PixelModal';
+import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import {
   Layers, Plus, Trash2, Search, Sparkles, Gem, MapPin, BookOpen, Zap, Target, Gauge,
@@ -185,8 +186,11 @@ export default function EncuadreCondiciologicoSystem({
     </>
   );
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024 });
+
   return (
-    <div className={`flex flex-col lg:flex-row gap-4 ${fill ? 'h-full' : 'lg:h-[calc(100dvh-130px)]'}`}>
+    <div ref={altoPie.ref} style={fill ? undefined : altoPie.style} className={`flex flex-col lg:flex-row gap-4 ${fill ? 'h-full' : ''}`}>
       {/* ── Rail de listas ── */}
       {/* Teléfono: la lista se elige con un <select> a todo el ancho (regla del raíl de secciones);
           el raíl apilado ocupaba media pantalla antes de llegar a las opciones. */}

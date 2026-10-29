@@ -11,6 +11,7 @@ import {
   Video, Plus, Trash2, Youtube, EyeOff, GripVertical, Info, ExternalLink,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -75,6 +76,10 @@ export default function TutorialesPanel() {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState<{ text: string; onOk: () => void } | null>(null);
+  // Fernando, 2026-10-29: en escritorio el raíl de módulos y la lista de videos llegan
+  // hasta el pie aunque haya poco; lo que no quepa se desplaza dentro de cada uno.
+  const railModulos = useAltoHastaElPie<HTMLElement>({ desdeAncho: 1024, minimo: 320 });
+  const centro = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024, minimo: 320 });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,13 +172,13 @@ export default function TutorialesPanel() {
   return (
     <div className="grid lg:grid-cols-[240px_minmax(0,1fr)] gap-4">
       {/* ── Rail: módulos ──────────────────────────────────────────────── */}
-      <aside className="bg-digi-card border border-digi-border rounded-lg overflow-hidden self-start">
-        <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2">
+      <aside ref={railModulos.ref} style={railModulos.style} className="bg-digi-card border border-digi-border rounded-lg overflow-hidden self-start flex flex-col">
+        <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2 shrink-0">
           <Video className="w-4 h-4 text-accent" />
           <span className="text-[12px] font-semibold text-digi-text" style={mf}>Módulos</span>
           <span className="ml-auto text-[11px] text-digi-muted" style={mf}>{items.length} videos</span>
         </div>
-        <div className="max-h-[62vh] overflow-y-auto p-1.5">
+        <div className={`overflow-y-auto p-1.5 ${railModulos.style ? 'flex-1 min-h-0' : 'max-h-[62vh]'}`}>
           {DASHBOARD_MODULES.map((m) => {
             const active = selected === m.href;
             const n = (byModule[m.href] || []).length;
@@ -198,8 +203,8 @@ export default function TutorialesPanel() {
       </aside>
 
       {/* ── Centro: videos del módulo ──────────────────────────────────── */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div ref={centro.ref} style={centro.style} className={`min-w-0 ${centro.style ? 'flex flex-col overflow-y-auto' : ''}`}>
+        <div className="flex items-center gap-2 mb-3 flex-wrap shrink-0">
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold text-digi-text truncate" style={mf}>{moduleLabel(selected)}</p>
             <p className="text-[12px] text-digi-muted" style={mf}>
@@ -211,7 +216,7 @@ export default function TutorialesPanel() {
           </Button>
         </div>
 
-        <div className="flex items-start gap-2 mb-3 px-3 py-2 rounded-md bg-accent-light border border-digi-border">
+        <div className="flex items-start gap-2 mb-3 px-3 py-2 rounded-md bg-accent-light border border-digi-border shrink-0">
           <Info className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
           <p className="text-[12px] text-digi-text" style={mf}>
             En YouTube el video debe estar como <b>No listado</b> (solo accesible con el enlace).
@@ -222,7 +227,7 @@ export default function TutorialesPanel() {
         {loading ? (
           <div className="py-16 flex justify-center"><BrandLoader size="md" label="Cargando tutoriales..." /></div>
         ) : !list.length ? (
-          <div className="bg-digi-card border border-digi-border rounded-lg text-center py-16">
+          <div className={`bg-digi-card border border-digi-border rounded-lg text-center py-16 ${centro.style ? 'flex-1 min-h-[200px] flex flex-col items-center justify-center' : ''}`}>
             <div className="w-11 h-11 rounded-lg bg-accent-light flex items-center justify-center mx-auto mb-3">
               <Youtube className="w-5 h-5 text-accent" />
             </div>
@@ -232,7 +237,7 @@ export default function TutorialesPanel() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={`space-y-2 ${centro.style ? 'flex-1 min-h-[200px] overflow-y-auto pr-1' : ''}`}>
             {list.map((t) => (
               <div
                 key={t.id}

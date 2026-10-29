@@ -185,15 +185,19 @@ export const ORIGENES_INGRESO = new Set(['invoice', 'ticket', 'project', 'subscr
  * misma relación que usa `SQL_INGRESO_FACTURADO`, pero devolviendo la factura concreta. Un comprobante
  * leído del SRI se reconoce por su clave de acceso.
  */
-export const SQL_ENLACE_FACTURA = `(
-  (fi.source_type = 'invoice' AND fi.source_id = i.id::text)
-  OR (fi.source_type = 'sri_emitida' AND fi.source_id = i.access_key)
-  OR (fi.source_type = 'ticket' AND (i.ticket_id::text = fi.source_id OR (i.source_type = 'ticket' AND i.source_id = fi.source_id)))
-  OR (fi.source_type = 'subscription' AND i.source_type = 'subscription' AND i.source_id = fi.source_id)
+/** La misma condición con otro alias para la factura (p. ej. `i2`). */
+export function sqlEnlaceFactura(f: string = 'i'): string {
+  return `(
+  (fi.source_type = 'invoice' AND fi.source_id = ${f}.id::text)
+  OR (fi.source_type = 'sri_emitida' AND fi.source_id = ${f}.access_key)
+  OR (fi.source_type = 'ticket' AND (${f}.ticket_id::text = fi.source_id OR (${f}.source_type = 'ticket' AND ${f}.source_id = fi.source_id)))
+  OR (fi.source_type = 'subscription' AND ${f}.source_type = 'subscription' AND ${f}.source_id = fi.source_id)
   OR (fi.source_type = 'project'
-      AND (i.project_id::text = fi.source_id
-           OR EXISTS (SELECT 1 FROM gcc_world.invoice_projects ip WHERE ip.invoice_id = i.id AND ip.project_id::text = fi.source_id))
-      AND NOT EXISTS (SELECT 1 FROM gcc_world.project_stages ps WHERE ps.invoice_id = i.id)))`;
+      AND (${f}.project_id::text = fi.source_id
+           OR EXISTS (SELECT 1 FROM gcc_world.invoice_projects ip WHERE ip.invoice_id = ${f}.id AND ip.project_id::text = fi.source_id))
+      AND NOT EXISTS (SELECT 1 FROM gcc_world.project_stages ps WHERE ps.invoice_id = ${f}.id)))`;
+}
+export const SQL_ENLACE_FACTURA = sqlEnlaceFactura('i');
 
 // Siglas societarias que se quedan en mayúsculas al pasar el nombre del SRI a nombre propio.
 const SIGLAS = /^(S\.?A\.?S?\.?|S\.?L\.?|C\.?A\.?|CIA\.?|LTDA\.?|INC\.?)$/i;
@@ -250,4 +254,31 @@ export async function nombrarIngresosFacturados(): Promise<number> {
     cambiados++;
   }
   return cambiados;
+}
+
+/**
+ * AL ANULAR UNA FACTURA, SU INGRESO SE VA (Fernando, 2026-10-29: «al momento de anular una
+ * factura ese registro se elimine también de las filas de ingresos»). Paso final y general de
+ * `/api/invoices/[id]/void`, después de lo que ya hace por tipo (abono, ticket, proyecto,
+ * suscripción): quita cualquier ingreso todavía enlazado a ESA factura —también los de una
+ * factura importada del SRI, enlazados por su clave de acceso— que no tenga OTRA factura vigente.
+ * El registro de orígenes se conserva: así el relleno automático no lo vuelve a anotar.
+ * Devuelve cuántos quitó.
+ */
+export async function quitarIngresosDeFacturaAnulada(invoiceId: number | string): Promise<number> {
+  const { rows } = await pool.query(
+    `SELECT fi.id, fi.month_id
+       FROM gcc_world.finance_items fi
+       JOIN gcc_world.invoices i ON i.id = $1
+      WHERE fi.type = 'income' AND ${sqlEnlaceFactura('i')}
+        AND NOT EXISTS (
+          SELECT 1 FROM gcc_world.invoices i2
+           WHERE i2.id <> $1 AND i2.sri_status = 'authorized' AND i2.status <> 'cancelled'
+             AND ${sqlEnlaceFactura('i2')})`,
+    [invoiceId],
+  );
+  if (!rows.length) return 0;
+  await pool.query(`DELETE FROM gcc_world.finance_items WHERE id = ANY($1)`, [rows.map((r: any) => r.id)]);
+  for (const m of new Set(rows.map((r: any) => r.month_id))) await recalcMonth(m as number);
+  return rows.length;
 }

@@ -7,6 +7,7 @@ import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { FilaMarcable } from '@/components/ui/ListaMarcable';
 import PixelDataTable from '@/components/ui/PixelDataTable';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
@@ -566,16 +567,17 @@ export default function ExperienciasPersonales() {
       {lista == null ? (
         <p className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
       ) : visibles.length === 0 && diaFiltro ? (
-        <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
+        // Vacía, la tarjeta llega al pie como lo haría la tabla (Fernando, 2026-10-29).
+        <PanelHastaElPie className="bg-digi-card border border-digi-border rounded-xl py-14 text-center flex flex-col items-center justify-center">
           <CalendarDays className="w-8 h-8 text-digi-muted mx-auto mb-2" />
           <p className="text-[13px] text-digi-text font-medium" style={mf}>Ninguna experiencia incluye el {fmtFecha(diaFiltro)}</p>
-        </div>
+        </PanelHastaElPie>
       ) : lista.length === 0 ? (
-        <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
+        <PanelHastaElPie className="bg-digi-card border border-digi-border rounded-xl py-14 text-center flex flex-col items-center justify-center">
           <BookHeart className="w-8 h-8 text-digi-muted mx-auto mb-2" />
           <p className="text-[13px] text-digi-text font-medium" style={mf}>Aún no tienes experiencias personales</p>
           <p className="text-[12px] text-digi-muted mt-1" style={mf}>Guarda aquí tus eventos con sus fotos, videos y documentos.</p>
-        </div>
+        </PanelHastaElPie>
       ) : (
         <PixelDataTable
           singleLine

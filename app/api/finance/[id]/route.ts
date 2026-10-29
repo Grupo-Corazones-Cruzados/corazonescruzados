@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { SQL_INGRESO_FACTURADO, ORIGENES_INGRESO } from '@/lib/finance';
+import { SQL_INGRESO_FACTURADO, ORIGENES_INGRESO, recalcMonth } from '@/lib/finance';
 
 // GET: fetch month detail with items (admin and member only)
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,14 +34,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (!Array.isArray(items)) return NextResponse.json({ error: 'items requerido' }, { status: 400 });
 
-    // Delete existing items and re-insert
-    await pool.query(`DELETE FROM gcc_world.finance_items WHERE month_id = $1`, [id]);
+    // ⭐ LOS INGRESOS FACTURADOS NO SE EDITAN NI SE BORRAN DESDE AQUÍ (Fernando, 2026-10-29).
+    // Los vinculados a una factura vigente se quedan tal cual en la base, lleguen como lleguen
+    // (o no lleguen) en `items`: solo se van al ANULAR su factura. El resto del mes se reescribe
+    // como siempre.
+    const { rows: bloqueados } = await pool.query(
+      `SELECT fi.id FROM gcc_world.finance_items fi WHERE fi.month_id = $1 AND ${SQL_INGRESO_FACTURADO}`, [id]
+    );
+    const idsBloqueados = new Set(bloqueados.map((r: any) => String(r.id)));
+    await pool.query(
+      `DELETE FROM gcc_world.finance_items WHERE month_id = $1 AND NOT (id::text = ANY($2::text[]))`,
+      [id, [...idsBloqueados]]
+    );
 
     let totalIncome = 0;
     let totalExpense = 0;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      if (item.id != null && idsBloqueados.has(String(item.id))) continue;
       if (!item.description?.trim() && !item.amount) continue;
       const amount = Number(item.amount) || 0;
       // ⚠️ SE CONSERVA EL ORIGEN (2026-10-29). Esta ruta borra y vuelve a insertar el mes entero;
@@ -56,12 +67,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       else totalExpense += amount;
     }
 
-    const totalSavings = totalIncome - totalExpense;
-
-    await pool.query(
-      `UPDATE gcc_world.finance_months SET total_income = $1, total_expense = $2, total_savings = $3, updated_at = NOW() WHERE id = $4`,
-      [totalIncome.toFixed(2), totalExpense.toFixed(2), totalSavings.toFixed(2), id]
-    );
+    // Los totales salen de la BASE (incluyen los ingresos facturados, que no pasaron por el bucle).
+    void totalIncome; void totalExpense;
+    await recalcMonth(Number(id));
 
     // Return updated month with items
     const { rows: [month] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [id]);

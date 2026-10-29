@@ -13,6 +13,7 @@ import { intensityOf } from '@/lib/centralized/pensamientos';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { BrainCircuit, Plus, LineChart, CalendarDays, Pencil, X, Check, Clock, Megaphone, Globe } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -64,6 +65,10 @@ export default function PensamientosPage() {
   const [chartsOpen, setChartsOpen] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  // Fernando, 2026-10-29: en escritorio el raíl de fechas y el centro llegan hasta el pie
+  // aunque haya poco; lo que no quepa se desplaza dentro de cada uno, no la página.
+  const railFechas = useAltoHastaElPie<HTMLElement>({ desdeAncho: 1024, minimo: 320 });
+  const centro = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024, minimo: 320 });
 
   const load = useCallback(async (day?: string | null) => {
     setLoading(true);
@@ -188,11 +193,11 @@ export default function PensamientosPage() {
         <option value="">Recientes{totals.count > 0 ? ` · ${totals.count}` : ''}</option>
         {days.map((d) => <option key={d.day} value={d.day}>{fmtDayCorto(d.day)} · {d.count}</option>)}
       </select>
-      <aside className="hidden lg:block w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+      <aside ref={railFechas.ref} style={railFechas.style} className="hidden lg:flex lg:flex-col w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Fechas</p>
 
         {/* Escritorio: la columna de siempre */}
-        <div className="space-y-0.5 max-h-[70vh] overflow-y-auto">
+        <div className={`space-y-0.5 overflow-y-auto ${railFechas.style ? 'flex-1 min-h-0' : 'max-h-[70vh]'}`}>
           <button
             onClick={() => setSelectedDay(null)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
@@ -225,8 +230,10 @@ export default function PensamientosPage() {
       </aside>
 
       {/* Centro: compositor + pensamientos del día */}
-      <div className="flex-1 min-w-0 w-full">
-        <div className="flex items-center gap-2 mb-3">
+      {/* Desde lg mide hasta el pie: arriba fijos el título y el compositor, y la lista de
+          pensamientos se desplaza dentro (Fernando, 2026-10-29). */}
+      <div ref={centro.ref} style={centro.style} className={`flex-1 min-w-0 w-full ${centro.style ? 'flex flex-col overflow-y-auto' : ''}`}>
+        <div className="flex items-center gap-2 mb-3 shrink-0">
           <BrainCircuit className="w-4 h-4 text-accent shrink-0" />
           <p className="text-[13px] font-semibold text-digi-text" style={df}>
             {selectedDay ? fmtDayLong(selectedDay) : 'Pensamientos recientes'}
@@ -237,7 +244,7 @@ export default function PensamientosPage() {
         </div>
 
         {/* Compositor: siempre visible, la captura tiene que ser inmediata */}
-        <div className="bg-digi-card border border-digi-border rounded-lg p-3 mb-3">
+        <div className="bg-digi-card border border-digi-border rounded-lg p-3 mb-3 shrink-0">
           <AutoGrowTextarea
             ref={taRef}
             value={draft}
@@ -264,13 +271,13 @@ export default function PensamientosPage() {
         {loading ? (
           <p className="py-10 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
         ) : thoughts.length === 0 ? (
-          <div className="bg-digi-card border border-digi-border rounded-xl py-12 text-center">
+          <div className={`bg-digi-card border border-digi-border rounded-xl py-12 text-center ${centro.style ? 'flex-1 min-h-[200px] flex flex-col items-center justify-center' : ''}`}>
             <BrainCircuit className="w-8 h-8 text-digi-muted mx-auto mb-2" />
             <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin pensamientos {selectedDay ? 'este día' : 'todavía'}</p>
             <p className="text-[12px] text-digi-muted mt-1" style={mf}>Escribe arriba para empezar.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={`space-y-2 ${centro.style ? 'flex-1 min-h-[200px] overflow-y-auto pr-1' : ''}`}>
             {thoughts.map((t) => (
               <ThoughtCard
                 key={t.id}

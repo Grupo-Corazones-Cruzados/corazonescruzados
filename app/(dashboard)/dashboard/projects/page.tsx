@@ -12,6 +12,8 @@ import PixelInput from '@/components/ui/PixelInput';
 import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { TALENTOS } from '@/lib/centralized/talentos';
@@ -522,10 +524,15 @@ export default function ProjectsPage() {
           </div>
 
           {tab === 'offline' ? (
-            <ListaSinConexion tipo="proyecto" enLinea={enLinea} soloPorAtender onCambio={fetchData} />
+            /* Hasta el pie y con desplazamiento propio en escritorio (Fernando, 2026-10-29). */
+            <PanelHastaElPie>
+              <ListaSinConexion tipo="proyecto" enLinea={enLinea} soloPorAtender onCambio={fetchData} />
+            </PanelHastaElPie>
           ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
+          {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+          <TablaVaciaHastaElPie vacia={projects.length === 0}>
           <PixelDataTable
             cargando={cargando}
             singleLine
@@ -573,6 +580,7 @@ export default function ProjectsPage() {
               </>
             )}
           />
+          </TablaVaciaHastaElPie>
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-3">
@@ -597,14 +605,14 @@ export default function ProjectsPage() {
                 completa. */}
             <aside className="hidden xl:block w-full xl:w-[340px]">
               {!selected ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4 flex flex-col justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <FolderKanban className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un proyecto para ver un resumen.</p>
-                </div>
+                </PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
@@ -615,7 +623,7 @@ export default function ProjectsPage() {
                         porque ahí el resumen tapa la lista. */}
                   </div>
                   {cuerpoResumen}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>

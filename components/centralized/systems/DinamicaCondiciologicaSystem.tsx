@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { toast } from 'sonner';
 import { Atom, Plus, Trash2, Check, Wrench } from 'lucide-react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -48,8 +49,11 @@ export default function DinamicaCondiciologicaSystem({ isAdmin }: { system?: any
     catch (e: any) { toast.error(e.message); }
   };
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024 });
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+    <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col lg:flex-row gap-4">
       {/* ── Panel de factores ── */}
       <aside className="w-full lg:w-[200px] shrink-0 max-h-[40vh] lg:max-h-none bg-digi-card border border-digi-border rounded-xl flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-1.5">

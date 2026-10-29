@@ -19,6 +19,8 @@ import DiasElegidos from '@/components/tickets/DiasElegidos';
 import { CampoClienteOCorreo } from '@/components/clients/CamposResponsable';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
@@ -423,10 +425,15 @@ export default function TicketsPage() {
           })()}
 
           {tab === 'offline' ? (
-            <ListaSinConexion tipo="ticket" enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />
+            /* Hasta el pie y con desplazamiento propio en escritorio (Fernando, 2026-10-29). */
+            <PanelHastaElPie>
+              <ListaSinConexion tipo="ticket" enLinea={enLinea} soloPorAtender onCambio={fetchTickets} />
+            </PanelHastaElPie>
           ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
+          {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+          <TablaVaciaHastaElPie vacia={tickets.length === 0}>
           <PixelDataTable
             cargando={cargando}
             singleLine
@@ -473,6 +480,7 @@ export default function TicketsPage() {
               );
             }}
           />
+          </TablaVaciaHastaElPie>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -499,14 +507,15 @@ export default function TicketsPage() {
                 panel a pantalla completa. */}
             <aside className="hidden xl:block w-full xl:w-[340px]">
               {!selected ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+                /* El panel llega al pie aunque esté vacío (Fernando, 2026-10-29). */
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col justify-center lg:sticky lg:top-4">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <TicketIcon className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un ticket para ver un resumen.</p>
-                </div>
+                </PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.title}</h3>
@@ -517,7 +526,7 @@ export default function TicketsPage() {
                         porque ahí el resumen tapa la lista. */}
                   </div>
                   {cuerpoResumen}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>

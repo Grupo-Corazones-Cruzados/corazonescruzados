@@ -5,7 +5,7 @@ import { signCreditNoteXml } from 'ec-sri-invoice-signer';
 import { buildCreditNoteXml } from '@/lib/integrations/sri/credit-note-builder';
 import { enviarComprobante, consultarAutorizacion } from '@/lib/integrations/sri/soap-client';
 import { revertSubscriptionPaymentForVoidedInvoice } from '@/lib/subscriptions';
-import { removeIncomeFromFinance } from '@/lib/finance';
+import { removeIncomeFromFinance, quitarIngresosDeFacturaAnulada } from '@/lib/finance';
 import fs from 'fs';
 
 function loadP12(): Buffer {
@@ -148,6 +148,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           }
         }
       }
+
+      // Paso final y general: cualquier ingreso que siga enlazado a esta factura sin otra vigente
+      // se quita del estado financiero (Fernando, 2026-10-29). Ver `quitarIngresosDeFacturaAnulada`.
+      try { await quitarIngresosDeFacturaAnulada(Number(id)); } catch (e: any) { console.error('[void] quitar ingreso:', e.message); }
 
       return NextResponse.json({ ok: true, creditNote: `NC-${numero}`, autorizacion: auth.numeroAutorizacion, subscriptionReverted });
     } else {

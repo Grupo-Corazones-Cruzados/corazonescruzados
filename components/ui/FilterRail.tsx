@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import Segmentado from '@/components/ui/Segmentado';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -69,9 +70,12 @@ export default function FilterRail<T extends string = string>({
   wrapLabels?: boolean;
 }) {
   const groups: FilterRailSection<T>[] = sections ?? [{ items: items ?? [] }];
+  const alto = useAltoHastaElPie<HTMLElement>({ desdeAncho: 1024, minimo: 240 });
 
   return (
-    <aside className={`w-full shrink-0 lg:bg-digi-card lg:border lg:border-digi-border lg:rounded-lg lg:p-2 ${className || 'lg:w-[220px]'}`}>
+    // En escritorio el raíl llega SIEMPRE hasta el pie, tenga las opciones que tenga, y su lista
+    // se desplaza por dentro (Fernando, 2026-10-29: «su altura no debe depender del contenido»).
+    <aside ref={alto.ref} style={alto.style} className={`w-full shrink-0 lg:flex lg:flex-col lg:bg-digi-card lg:border lg:border-digi-border lg:rounded-lg lg:p-2 ${className || 'lg:w-[220px]'}`}>
       {title && (
         <p className="hidden lg:block text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>{title}</p>
       )}
@@ -86,7 +90,7 @@ export default function FilterRail<T extends string = string>({
           medir la ventana al pintar da un desajuste de hidratación. */}
       <FiltroTelefono groups={groups} value={value} onChange={onChange} title={title} hideZeroCounts={hideZeroCounts} />
 
-      <div className="hidden lg:block">
+      <div className="hidden lg:block lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
       {groups.map((group, gi) => (
         <div key={group.title ?? gi}>
           {gi > 0 && <div className="h-px bg-digi-border/60 my-1.5 mx-2" />}

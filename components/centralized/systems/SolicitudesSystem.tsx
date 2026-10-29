@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import PixelTabs from '@/components/ui/PixelTabs';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
@@ -65,7 +67,9 @@ export default function SolicitudesSystem({ isAdmin }: { isAdmin: boolean }) {
         onChange={setSubTab}
       />
 
+      {/* Tabla vacía y «Próximamente» también llegan al pie (Fernando, 2026-10-29). */}
       {subTab === 'requests' ? (
+        <TablaVaciaHastaElPie vacia={requests.length === 0}>
         <PixelDataTable
           columns={[
             { key: 'id', header: 'ID', render: (r: any) => `#${r.id}`, width: '60px' },
@@ -112,11 +116,12 @@ export default function SolicitudesSystem({ isAdmin }: { isAdmin: boolean }) {
           emptyTitle="Sin solicitudes"
           emptyDesc="No hay solicitudes registradas."
         />
+        </TablaVaciaHastaElPie>
       ) : (
-        <div className="bg-digi-card border border-digi-border rounded-xl py-12 text-center">
+        <PanelHastaElPie className="bg-digi-card border border-digi-border rounded-xl py-12 text-center flex flex-col justify-center">
           <p className="text-sm text-digi-text font-semibold" style={mf}>Próximamente</p>
           <p className="text-[12px] text-digi-muted mt-1" style={mf}>El módulo de denuncias estará disponible pronto.</p>
-        </div>
+        </PanelHastaElPie>
       )}
 
       {/* Review (Solicitudes) */}

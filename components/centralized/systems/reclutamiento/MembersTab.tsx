@@ -14,6 +14,7 @@ import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBa
 import { fmt2 } from '@/lib/format';
 import { PISOS, PASOS, PISO_LABEL, PASO_LABEL, pisosAtOrBelow } from '@/lib/centralized/systems';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -118,16 +119,18 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
             className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
         </div>
 
+        {/* Lista y detalle llegan al pie desde `xl`, donde van lado a lado (Fernando, 2026-10-29). */}
+        <PanelHastaElPie desdeAncho={1280} desplazar={false} className="flex flex-col">
         {loading ? (
-          <div className="bg-digi-card border border-digi-border rounded-lg py-10 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div>
+          <div className="bg-digi-card border border-digi-border rounded-lg py-10 text-center text-[13px] text-digi-muted xl:flex-1 xl:flex xl:items-center xl:justify-center" style={mf}>Cargando…</div>
         ) : filtered.length === 0 ? (
-          <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center">
+          <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center xl:flex-1 xl:flex xl:flex-col xl:justify-center">
             <div className="w-11 h-11 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><UserRound className="w-5 h-5 text-digi-muted" /></div>
             <p className="text-[13px] font-medium text-digi-text" style={mf}>Sin miembros</p>
             <p className="text-[12px] text-digi-muted mt-0.5" style={mf}>{isAdmin ? 'Aún no hay miembros registrados.' : 'No tienes acceso a los miembros.'}</p>
           </div>
         ) : (
-          <ul className="bg-digi-card border border-digi-border rounded-lg divide-y divide-digi-border/60 overflow-hidden">
+          <ul className="bg-digi-card border border-digi-border rounded-lg divide-y divide-digi-border/60 overflow-hidden xl:flex-1 xl:min-h-0 xl:overflow-y-auto">
             {filtered.map((m) => {
               const active = String(m.id) === selectedId;
               return (
@@ -153,6 +156,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
             })}
           </ul>
         )}
+        </PanelHastaElPie>
       </div>
 
       {/* Detalle del miembro (contenido por definir) */}
@@ -160,7 +164,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
           lista sin aportar, así que ahí no se pinta (Fernando, 2026-10-23). */}
       <aside className={`w-full ${selected ? '' : 'hidden lg:block'}`}>
         {selected ? (
-          <div className="space-y-4">
+          <PanelHastaElPie desdeAncho={1280} className="space-y-4">
             <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-4">
               <div className="flex items-start gap-3">
                 {selected.avatar_url ? (
@@ -204,13 +208,13 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
                 <ProspeccionBar criteria={selected.criteria || null} />
               </div>
             </div>
-          </div>
+          </PanelHastaElPie>
         ) : (
-          <div className="bg-digi-card border border-digi-border rounded-xl p-10 text-center lg:sticky lg:top-4">
+          <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-xl p-10 text-center lg:sticky lg:top-4 flex flex-col justify-center">
             <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><UserRound className="w-6 h-6 text-digi-muted" /></div>
             <p className="text-[13px] font-medium text-digi-text" style={mf}>Selecciona un miembro</p>
             <p className="text-[12px] text-digi-muted mt-1" style={mf}>Elige un miembro de la lista para ver su información.</p>
-          </div>
+          </PanelHastaElPie>
         )}
       </aside>
 

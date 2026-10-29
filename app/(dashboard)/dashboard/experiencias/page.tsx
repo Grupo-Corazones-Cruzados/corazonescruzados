@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import ExperienciasPersonales from '@/components/experiencias/ExperienciasPersonales';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import PixelTabs from '@/components/ui/PixelTabs';
 import Segmentado from '@/components/ui/Segmentado';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
@@ -83,6 +84,9 @@ export default function ExperienciasPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Fernando, 2026-10-29: en escritorio la lista de experiencias llega hasta el pie aunque
+  // haya pocas, y si hay muchas se desplaza dentro de su panel, no la página.
+  const centro = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024, minimo: 320 });
   const [confirm, setConfirm] = useState<{ text: string; onOk: () => void } | null>(null);
 
   const load = useCallback(async () => {
@@ -209,18 +213,18 @@ export default function ExperienciasPage() {
     <div className="flex flex-col lg:flex-row gap-4 items-start">
       <FilterRail title="Experiencias" items={railItems} value={filter} onChange={setFilter} />
 
-      <div className="flex-1 min-w-0 w-full">
+      <div ref={centro.ref} style={centro.style} className={`flex-1 min-w-0 w-full ${centro.style ? 'flex flex-col overflow-y-auto' : ''}`}>
         {err && <ErrorBanner text={err} />}
         {loading ? (
           <p className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
         ) : visible.length === 0 ? (
-          <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
+          <div className={`bg-digi-card border border-digi-border rounded-xl py-14 text-center ${centro.style ? 'flex-1 flex flex-col items-center justify-center' : ''}`}>
             <PartyPopper className="w-8 h-8 text-digi-muted mx-auto mb-2" />
             <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin experiencias por ahora</p>
             <p className="text-[12px] text-digi-muted mt-1" style={mf}>Cuando se publique un evento, aparecerá aquí para que puedas participar.</p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 content-start">
             {visible.map((e) => (
               <button
                 key={e.id}

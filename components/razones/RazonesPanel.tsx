@@ -7,6 +7,7 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Flame, Plus, CalendarDays, Pencil, X, Check, Clock } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -38,6 +39,10 @@ export default function RazonesPanel() {
   const [editing, setEditing] = useState<{ id: number; content: string } | null>(null);
   const [confirm, setConfirm] = useState<{ text: string; onOk: () => void } | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  // Fernando, 2026-10-29: en escritorio el raíl de fechas y el centro llegan hasta el pie
+  // aunque haya poco; lo que no quepa se desplaza dentro de cada uno, no la página.
+  const railFechas = useAltoHastaElPie<HTMLElement>({ desdeAncho: 1024, minimo: 320 });
+  const centro = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024, minimo: 320 });
 
   const load = useCallback(async (day?: string | null) => {
     setLoading(true);
@@ -114,9 +119,9 @@ export default function RazonesPanel() {
         <option value="">Recientes{totals.count > 0 ? ` · ${totals.count}` : ''}</option>
         {days.map((d) => <option key={d.day} value={d.day}>{fmtDayLong(d.day)} · {d.count}</option>)}
       </select>
-      <aside className="hidden lg:block w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+      <aside ref={railFechas.ref} style={railFechas.style} className="hidden lg:flex lg:flex-col w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Fechas</p>
-        <div className="space-y-0.5 lg:max-h-[70vh] overflow-y-auto">
+        <div className={`space-y-0.5 overflow-y-auto ${railFechas.style ? 'flex-1 min-h-0' : 'lg:max-h-[70vh]'}`}>
           <button onClick={() => setSelectedDay(null)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${selectedDay === null ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'}`}>
             <CalendarDays className={`w-4 h-4 shrink-0 ${selectedDay === null ? 'text-accent' : 'text-digi-muted'}`} />
@@ -138,13 +143,15 @@ export default function RazonesPanel() {
       </aside>
 
       {/* Centro: compositor + razones del día */}
-      <div className="flex-1 min-w-0 w-full">
-        <div className="flex items-center gap-2 mb-3">
+      {/* Desde lg mide hasta el pie: arriba fijos el título y el compositor, y la lista de
+          razones se desplaza dentro (Fernando, 2026-10-29). */}
+      <div ref={centro.ref} style={centro.style} className={`flex-1 min-w-0 w-full ${centro.style ? 'flex flex-col overflow-y-auto' : ''}`}>
+        <div className="flex items-center gap-2 mb-3 shrink-0">
           <Flame className="w-4 h-4 text-accent shrink-0" />
           <p className="text-[13px] font-semibold text-digi-text" style={df}>{selectedDay ? fmtDayLong(selectedDay) : 'Razones recientes'}</p>
         </div>
 
-        <div className="bg-digi-card border border-digi-border rounded-lg p-3 mb-3">
+        <div className="bg-digi-card border border-digi-border rounded-lg p-3 mb-3 shrink-0">
           <AutoGrowTextarea ref={taRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} minRows={4}
             placeholder="¿Por qué luchas en este proyecto? Un suceso, un motivo, algo que quieras recordar…"
             className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
@@ -162,13 +169,13 @@ export default function RazonesPanel() {
         {loading ? (
           <p className="py-10 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
         ) : razones.length === 0 ? (
-          <div className="bg-digi-card border border-digi-border rounded-xl py-12 text-center">
+          <div className={`bg-digi-card border border-digi-border rounded-xl py-12 text-center ${centro.style ? 'flex-1 min-h-[200px] flex flex-col items-center justify-center' : ''}`}>
             <Flame className="w-8 h-8 text-digi-muted mx-auto mb-2" />
             <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin razones {selectedDay ? 'este día' : 'todavía'}</p>
             <p className="text-[12px] text-digi-muted mt-1" style={mf}>Escribe arriba para empezar.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={`space-y-2 ${centro.style ? 'flex-1 min-h-[200px] overflow-y-auto pr-1' : ''}`}>
             {razones.map((t) => (
               <RazonCard key={t.id} t={t}
                 editing={editing?.id === t.id ? editing.content : null}

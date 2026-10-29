@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
@@ -461,12 +462,13 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const renderMarketplacePanel = (enVentana = false) => {
     if (!selected) {
       return (
-        <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+        // Hasta el pie aunque esté vacío (Fernando, 2026-10-29). Solo se pinta en la columna de escritorio.
+        <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4 flex flex-col justify-center">
           <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
             <FolderKanban className="w-5 h-5 text-digi-muted" />
           </div>
           <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un elemento para ver sus detalles e imágenes.</p>
-        </div>
+        </PanelHastaElPie>
       );
     }
     const t = selected;
@@ -481,8 +483,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const reqDone = panelReqs.filter((r: any) => r.is_completed).length;
     const reqTotal = panelReqs.length;
     const reqPct = reqTotal ? Math.round((reqDone / reqTotal) * 100) : 0;
-    return (
-      <div className={enVentana ? '' : 'bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4'}>
+    const cuerpo = (
+      <>
         {!enVentana && (
         <div className="flex items-start gap-3 p-4 border-b border-digi-border">
           <div className="min-w-0 flex-1">
@@ -574,7 +576,14 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
             )}
           </div>
         </div>
-      </div>
+      </>
+    );
+    // En la columna de escritorio, el panel llega al pie y se desplaza dentro (Fernando, 2026-10-29).
+    if (enVentana) return <div>{cuerpo}</div>;
+    return (
+      <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
+        {cuerpo}
+      </PanelHastaElPie>
     );
   };
 
@@ -620,11 +629,13 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           renderExtra?.(tab)
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
-            <div className="min-w-0">
+            {/* Las tarjetas se desplazan dentro de su columna, que llega al pie; vacía, la tarjeta
+                ocupa todo el alto (Fernando, 2026-10-29). */}
+            <PanelHastaElPie className="min-w-0 flex flex-col">
               {!cards.length ? (() => {
                 const EmptyIcon = tab === 'projects' ? FolderKanban : tab === 'automations' ? Workflow : Package;
                 return (
-                  <div className="bg-digi-card border border-digi-border rounded-xl py-16 text-center">
+                  <div className="bg-digi-card border border-digi-border rounded-xl py-16 text-center lg:flex-1 lg:flex lg:flex-col lg:justify-center">
                     <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><EmptyIcon className="w-6 h-6 text-digi-muted" /></div>
                     <p className="text-sm font-medium text-digi-text" style={mf}>Sin {tabLabel}</p>
                     <p className="text-[13px] text-digi-muted mt-1" style={mf}>No hay {tabLabel} publicados por ahora.</p>
@@ -633,7 +644,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               })() : (
                 <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">{cards.map(renderCard)}</div>
               )}
-            </div>
+            </PanelHastaElPie>
 
             {/* La columna solo en escritorio; por debajo, el panel que se abre encima (abajo). */}
             {!enTelefono && (

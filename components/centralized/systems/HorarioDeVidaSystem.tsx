@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, CalendarClock, ListTodo, GripVertical, MousePointerClick, Tag, X,
@@ -265,18 +266,19 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
-      <UsersList selected={selected} onSelect={setSelected} className="w-full lg:w-[260px] shrink-0" />
+      {/* Cada columna llega al pie de la ruta y se desplaza dentro (Fernando, 2026-10-29). */}
+      <UsersList hastaElPie selected={selected} onSelect={setSelected} className="w-full lg:w-[260px] shrink-0" />
 
       {!enabled ? (
-        <div className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-xl py-20 text-center">
+        <PanelHastaElPie className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-xl py-20 text-center lg:flex lg:flex-col lg:justify-center">
           <div className="w-12 h-12 rounded-xl bg-black/[0.03] flex items-center justify-center mx-auto mb-3"><MousePointerClick className="w-6 h-6 text-digi-muted" /></div>
           <p className="text-[13px] font-medium text-digi-text" style={mf}>Selecciona un candidato o miembro</p>
           <p className="text-[12px] text-digi-muted mt-1 max-w-sm mx-auto" style={mf}>El horario de vida se habilita al elegir un usuario. Sus tareas provienen de las alternativas del sistema de Apoyo.</p>
-        </div>
+        </PanelHastaElPie>
       ) : (
         <>
           {/* Panel de tareas */}
-          <div className="w-full lg:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden">
+          <PanelHastaElPie desplazar={false} className="w-full lg:w-[260px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
             <div className="flex items-center gap-2 px-3 py-2 bg-digi-dark border-b border-digi-border">
               <ListTodo className="w-4 h-4 text-digi-muted" />
               <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Tareas</span>
@@ -289,7 +291,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
               </button>
               <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{visibleTasks.length}</span>
             </div>
-            <div className="p-2.5 space-y-2 max-h-[calc(100dvh-220px-var(--cabecera-movil))] overflow-y-auto">
+            <div className="p-2.5 space-y-2 max-h-[calc(100dvh-220px-var(--cabecera-movil))] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto">
               {loading ? (
                 <p className="text-[12px] text-digi-muted text-center py-6" style={mf}>Cargando…</p>
               ) : visibleTasks.length === 0 ? (
@@ -370,10 +372,10 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                 })
               )}
             </div>
-          </div>
+          </PanelHastaElPie>
 
           {/* Calendario horizontal por semana */}
-          <div className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-lg overflow-hidden">
+          <PanelHastaElPie desplazar={false} className="flex-1 min-w-0 w-full bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
             <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">
               <div className="flex items-center gap-2 min-w-0">
                 <CalendarClock className="w-4 h-4 text-accent shrink-0" />
@@ -388,7 +390,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
             {/* En el teléfono los siete días van uno bajo otro a todo el ancho: en fila medían
                 1.064 px y había que deslizar de lado (`/diseno` §4-octies, 2026-10-29). */}
-            <div className="p-3 sm:overflow-x-auto">
+            <div className="p-3 sm:overflow-x-auto lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
               <div className="flex flex-col sm:flex-row gap-2 sm:min-w-max">
                 {days.map((d, i) => {
                   const isToday = sameDay(d, today);
@@ -475,7 +477,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                 })}
               </div>
             </div>
-          </div>
+          </PanelHastaElPie>
 
           {/* Panel de detalle de la tarea (a la derecha del calendario) */}
           {panel && (() => {
@@ -484,12 +486,12 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
             const st = entry?.status;
             const link = t?.link || null;
             return (
-              <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
+              <PanelHastaElPie desplazar={false} className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
                 <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
                   <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
                   <BotonCerrar onClick={() => setPanel(null)} />
                 </div>
-                <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] overflow-y-auto">
+                <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto">
                   <div>
                     <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{t?.title || 'Tarea'}</h4>
                     {t?.description && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{t.description}</p>}
@@ -555,18 +557,18 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                     <p className="text-[10.5px] text-sky-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada automáticamente por su {link?.source === 'ticket' ? 'ticket' : 'proyecto'}; no se mueve ni se quita, pero puedes marcar su estado.</p>
                   )}
                 </div>
-              </div>
+              </PanelHastaElPie>
             );
           })()}
 
           {/* Panel de detalle de una tarea GENERADA por política */}
           {genPanel && (
-            <div className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden self-stretch">
+            <PanelHastaElPie desplazar={false} className="w-full lg:w-[300px] shrink-0 bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
               <div className="flex items-center gap-2 px-3 py-2.5 border-b border-digi-border">
                 <span className="text-[12.5px] font-semibold text-digi-text truncate flex-1" style={df}>Detalle de la tarea</span>
                 <BotonCerrar onClick={() => setGenPanel(null)} />
               </div>
-              <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] overflow-y-auto">
+              <div className="p-3 space-y-3 max-h-[calc(100dvh-200px-var(--cabecera-movil))] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto">
                 <div>
                   <h4 className="text-[14px] font-semibold text-digi-text leading-snug" style={mf}>{genPanel.title}</h4>
                   {genPanel.detail && <p className="text-[12px] text-digi-muted mt-1 leading-relaxed" style={mf}>{genPanel.detail}</p>}
@@ -601,7 +603,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
 
                 <p className="text-[10.5px] text-violet-300/90 inline-flex items-start gap-1 pt-1" style={mf}><Lock className="w-3 h-3 mt-0.5 shrink-0" /> Fijada por su política; no se mueve ni se quita, pero puedes marcar su estado y editar sus etiquetas.</p>
               </div>
-            </div>
+            </PanelHastaElPie>
           )}
         </>
       )}

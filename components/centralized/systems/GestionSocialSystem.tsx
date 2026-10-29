@@ -6,6 +6,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import RecursosTab from '@/components/centralized/systems/gestion-social/RecursosTab';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
@@ -247,10 +248,13 @@ function EventosTab({ isAdmin }: { isAdmin?: boolean }) {
           </div>
         )}
 
+        {/* La lista llega al pie y se desplaza dentro; vacía, su tarjeta ocupa todo el alto
+            (Fernando, 2026-10-29). */}
+        <PanelHastaElPie className="flex flex-col">
         {loading ? (
           <p className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
         ) : events.length === 0 ? (
-          <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center">
+          <div className="bg-digi-card border border-digi-border rounded-xl py-14 text-center lg:flex-1 lg:flex lg:flex-col lg:justify-center">
             <PartyPopper className="w-8 h-8 text-digi-muted mx-auto mb-2" />
             <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin eventos</p>
             <p className="text-[12px] text-digi-muted mt-1" style={mf}>Crea el primero para que los miembros puedan participar.</p>
@@ -277,6 +281,7 @@ function EventosTab({ isAdmin }: { isAdmin?: boolean }) {
             ))}
           </div>
         )}
+        </PanelHastaElPie>
       </div>
 
       {/* Panel derecho: detalle del evento. Sin evento elegido es solo «Selecciona un
@@ -328,9 +333,9 @@ function EventosTab({ isAdmin }: { isAdmin?: boolean }) {
             })}
           />
         ) : (
-          <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center">
+          <PanelHastaElPie className="bg-digi-card border border-digi-border rounded-lg py-12 text-center flex flex-col justify-center">
             <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un evento para ver su detalle.</p>
-          </div>
+          </PanelHastaElPie>
         )}
       </div>
 
@@ -460,7 +465,8 @@ function EventDetail({
 }) {
   const editable = event.status === 'draft' || event.status === 'published';
   return (
-    <div className="bg-digi-card border border-digi-border rounded-lg p-3 lg:sticky lg:top-4">
+    // Hasta el pie de la ruta, con desplazamiento propio (Fernando, 2026-10-29).
+    <PanelHastaElPie className="bg-digi-card border border-digi-border rounded-lg p-3 lg:sticky lg:top-4">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-[13.5px] font-semibold text-digi-text truncate" style={df}>{event.name}</p>
@@ -530,7 +536,7 @@ function EventDetail({
           </div>
         )}
       </div>
-    </div>
+    </PanelHastaElPie>
   );
 }
 

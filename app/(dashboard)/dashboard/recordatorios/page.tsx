@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -551,15 +552,16 @@ export default function RecordatoriosPage() {
                 pantalla. Aquí el mismo contenido se abre como panel a pantalla
                 completa, que es el estándar del proyecto para lo que no cabe al lado. */}
             <aside className="hidden xl:block w-full xl:w-[360px]">
+              {/* Fernando, 2026-10-29: la tarjeta del panel derecho llega hasta el pie aunque tenga poco; lo que no quepa se desplaza dentro. */}
               {!detail ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col items-center justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <AlarmClock className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un recordatorio para ver su detalle.</p>
-                </div>
+                </PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight flex items-center gap-1.5" style={mf}>
@@ -571,7 +573,7 @@ export default function RecordatoriosPage() {
                     <BotonCerrar onClick={() => { setSelected(null); setSelDetail(null); }} />
                   </div>
                   {cuerpoDetalle}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>

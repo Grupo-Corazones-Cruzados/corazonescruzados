@@ -11,6 +11,8 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { PAISES } from '@/lib/countries';
 import { fmt2 } from '@/lib/format';
@@ -249,7 +251,7 @@ export default function ClientsPage() {
     </div>
   </div>
 
-  <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
+  <div className="p-4 space-y-3 max-h-[62vh] xl:max-h-none xl:flex-1 xl:min-h-0 overflow-y-auto">
     {detailTab === 'datos' ? (
       <>
         {detail.is_consumidor_final && <p className="text-[11px] text-digi-muted" style={mf}>Registro especial: agrupa todas las facturas a consumidor final.</p>}
@@ -368,6 +370,8 @@ export default function ClientsPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-4 items-start">
             <div className="min-w-0">
+              {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+              <TablaVaciaHastaElPie vacia={sortedClients.length === 0} reserva={39}>
               <PixelDataTable
                 singleLine
                 /* Alto de la fila de totales que va justo debajo (29 px + su margen). El pie
@@ -413,6 +417,7 @@ export default function ClientsPage() {
                   </>
                 )}
               />
+              </TablaVaciaHastaElPie>
               <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-digi-border text-[12px]" style={mf}>
                 <span className="text-digi-muted">{sortedClients.length} cliente{sortedClients.length === 1 ? '' : 's'} · {sortedClients.reduce((s, c) => s + Number(c.facturas || 0), 0)} facturas</span>
                 <span className="text-digi-text">Total facturado: <span className="text-accent font-semibold tabular-nums">${fmt2(sortedClients.reduce((s, c) => s + Number(c.total || 0), 0))}</span></span>
@@ -425,16 +430,18 @@ export default function ClientsPage() {
                 visible. Ahí se abre a pantalla completa. */}
             <aside className="hidden xl:block w-full xl:w-[400px]">
               {!selected ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <Users className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un cliente para ver y editar sus datos.</p>
-                </div>
+                </PanelHastaElPie>
               ) : loadingDetail || !detail ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-10 text-center text-[12px] text-digi-muted" style={mf}>Cargando…</div>
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-10 text-center text-[12px] text-digi-muted flex flex-col justify-center"><span style={mf}>Cargando…</span></PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+                /* La ficha llega al pie (Fernando, 2026-10-29): cabecera y pestañas quietas, y lo
+                   de abajo se desplaza dentro (`cuerpoFicha`, `xl:flex-1`). */
+                <PanelHastaElPie desdeAncho={1280} desplazar={false} className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden flex flex-col">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight flex items-center gap-2" style={mf}>
@@ -447,7 +454,7 @@ export default function ClientsPage() {
                   </div>
 
                   {cuerpoFicha}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>

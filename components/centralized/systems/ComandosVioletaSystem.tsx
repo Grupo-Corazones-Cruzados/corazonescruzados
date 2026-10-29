@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PolicyGraph from '@/components/centralized/comandos/PolicyGraph';
@@ -246,8 +247,11 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
     return graph.nodes.filter((n) => keys.includes(n.key));
   }, [selectedNode, graph]);
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024 });
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+    <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col lg:flex-row gap-4">
       {/* ── Categorías ── */}
       <aside className="w-full lg:w-[240px] shrink-0 max-h-[40vh] lg:max-h-none lg:h-full bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col">
         <div className="flex items-center gap-2 px-3 py-2.5 bg-digi-dark border-b border-digi-border shrink-0">

@@ -4842,6 +4842,15 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
   el morado del Oscuro/Mixto (4,3:1, el de siempre). Verificado a 1440 y 390 px (`scrollWidth` = ancho).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · Paneles cuya altura dependía del contenido** · **CAMBIO DE ESTÁNDAR** (Fernando: «el panel izquierdo,
+  su altura siempre sin excepción […] se base en el espacio disponible; lo mismo con el panel derecho y el central»).
+  En escritorio (desde `lg`) TODA columna-panel llega al pie de la ruta y lo que sobra se desplaza dentro:
+  `FilterRail` (solo), `PixelDataTable` (ya lo hacía), `PanelHastaElPie` (`components/ui/PanelHastaElPie.tsx`, nuevo,
+  para paneles derechos y centrales; `desdeAncho` 1280 si la columna solo existe desde `xl`) y
+  `TablaVaciaHastaElPie` (la tabla vacía o «Cargando…» también llega). `useAltoHastaElPie` gana `desdeAncho` y
+  vigila TODA la cadena de ancestros (algo que carga encima y baja la fila sin cambiarle el tamaño dejaba el panel
+  35 px por debajo del pie en Proyectos). Medido a 1440×900 en 20 pantallas: todos los paneles acaban a 852 (pie 864).
+  Pendiente: el detalle de proyecto (su columna izquierda) tenía cambios de otra sesión y no se tocó.
 - **2026-10-29 · Tablas propias que en el teléfono se deslizaban de lado** · **CORREGIDO** (Fernando: «al
   pasar a la versión móvil los datos no se ven bien y deberían convertirse a galería»). `PixelDataTable` ya
   era galería bajo `md`, pero seis pantallas pintaban su `<table>` a mano y se quedaban fuera. Ahora la

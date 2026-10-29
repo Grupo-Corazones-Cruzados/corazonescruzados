@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { toast } from 'sonner';
 import { Camera, MapPin, RefreshCw, Loader2, X, Check,
   Package, PawPrint, User, ExternalLink, ScanEye, Images, ImageOff, CircleDot } from 'lucide-react';
@@ -140,8 +141,11 @@ export default function PercepcionSocialSystem({ isAdmin }: { system?: any; isAd
     } catch (e: any) { toast.error(e.message); }
   };
 
+  // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
+  const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024 });
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100dvh-130px)]">
+    <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col lg:flex-row gap-4">
       {/* ── Rail: acción + filtros ── */}
       <aside className="w-full lg:w-[210px] shrink-0 flex flex-col gap-3">
         <button

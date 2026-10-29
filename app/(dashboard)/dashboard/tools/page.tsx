@@ -12,6 +12,7 @@ import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { fmt2 } from '@/lib/format';
 import PanelCompartirEnlace from '@/components/ui/PanelCompartirEnlace';
 import Interruptor from '@/components/ui/Interruptor';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
@@ -314,16 +315,18 @@ export default function ToolsPage() {
   const renderToolPanel = () => {
     if (!tool) {
       return (
-        <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+        <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col items-center justify-center">
           <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
             <Wrench className="w-5 h-5 text-digi-muted" />
           </div>
           <p className="text-[12px] text-digi-muted" style={mf}>Selecciona una herramienta para usarla.</p>
-        </div>
+        </PanelHastaElPie>
       );
     }
+    // Fernando, 2026-10-29: la tarjeta del panel derecho llega hasta el pie aunque tenga poco;
+    // lo que no quepa se desplaza dentro.
     return (
-      <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+      <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm">
         <div className="flex items-center gap-2.5 p-4 border-b border-digi-border">
           <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/15 flex items-center justify-center shrink-0">
             <tool.Icon className="w-5 h-5 text-accent" />
@@ -334,7 +337,7 @@ export default function ToolsPage() {
           </div>
         </div>
         <div className="p-4">{cuerpoHerramienta()}</div>
-      </div>
+      </PanelHastaElPie>
     );
   };
 

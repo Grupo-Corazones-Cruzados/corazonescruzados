@@ -9,6 +9,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PageHeader from '@/components/ui/PageHeader';
 import PixelModal from '@/components/ui/PixelModal';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import Button, { BTN_PRIMARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, Search, MessageSquare } from 'lucide-react';
@@ -176,6 +178,8 @@ export default function SupportPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
+              {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
+              <TablaVaciaHastaElPie vacia={tickets.length === 0}>
               <PixelDataTable
                 singleLine
                 data={tickets}
@@ -217,6 +221,7 @@ export default function SupportPage() {
                   </>
                 )}
               />
+              </TablaVaciaHastaElPie>
             </div>
 
             {/* ── Resumen ──────────────────────────────────────────────────────────
@@ -224,14 +229,14 @@ export default function SupportPage() {
                 producía ningún cambio visible. Ahí se abre a pantalla completa. */}
             <aside className="hidden xl:block w-full xl:w-[340px]">
               {!selected ? (
-                <div className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center lg:sticky lg:top-4 flex flex-col justify-center">
                   <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2">
                     <LifeBuoy className="w-5 h-5 text-digi-muted" />
                   </div>
                   <p className="text-[12px] text-digi-muted" style={mf}>Selecciona un ticket para ver un resumen.</p>
-                </div>
+                </PanelHastaElPie>
               ) : (
-                <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden lg:sticky lg:top-4">
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
                   <div className="flex items-start gap-3 p-4 border-b border-digi-border">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{selected.subject}</h3>
@@ -240,7 +245,7 @@ export default function SupportPage() {
                     <BotonCerrar onClick={() => setSelected(null)} />
                   </div>
                   {cuerpoResumen}
-                </div>
+                </PanelHastaElPie>
               )}
             </aside>
           </div>
