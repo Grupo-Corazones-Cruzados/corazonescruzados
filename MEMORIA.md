@@ -8311,6 +8311,28 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   corregir uno, no dar por hecho que ya pasa.
 
 ## Pendientes / preguntas abiertas
+- **🔑 2026-10-29 — El agente de Peter Tours respondía en la bandeja pero NADA llegaba al WhatsApp
+  del cliente (Automatizaciones, canal 11).** Las respuestas salían marcadas «no salió» con
+  «El token de WhatsApp de este cliente caducó o fue revocado» (código 190). `debug_token`: *«The
+  token has expired on Tuesday, 27-Oct-26 11:17:48 PDT»*. Era el token de **60 días** de la config
+  de Embedded Signup (alta del 2026-08-28 → +60 d = 27-oct). Último envío bueno: 2026-10-27 14:03
+  UTC; **42 respuestas del agente perdidas** hasta el arreglo (no se reenviaron: ya fuera de
+  contexto/ventana). Los mensajes «equipo» sí llegaban (los escribe la gente desde el teléfono).
+  - **Arreglo (sin tocar al cliente):** el `WHATSAPP_TOKEN` del **usuario del sistema de GCC**
+    (servicio `corazonescruzados`, tipo SYSTEM_USER, `expires_at: 0`) **sí ve el WABA
+    `1063082532714506` de Peter Tours** y su número `1222818670923073` (el alta lo comparte con
+    el negocio de GCC). Se cifró con `AGENTE_CLAVE_MAESTRA` y contexto `agente_canales:11:wa_token`
+    y se puso en `canales.wa_token_cifrado` del canal 11 (+ `ultimo_error` a NULL).
+    `debug_token` → válido, sin vencimiento.
+  - 🪤 Para escribir en `automatizaciones.canales` desde un script: **`SET search_path TO
+    automatizaciones`** antes; el trigger `impedir_escritura_escaparate()` consulta `inquilinos`
+    sin esquema y falla con «relation "inquilinos" does not exist».
+  - **Pendiente:** (1) en Meta, config de Embedded Signup `1070995845869940` → caducidad del
+    token **«Nunca»**, para que las altas nuevas no venzan a los 60 días; (2) el canal 33
+    (`/grupo`) tiene su token **invalidado** («the user changed their password», subcode 460):
+    tampoco envía; (3) avisar en el panel ANTES de que venza un token (`debug_token.expires_at`)
+    y no solo cuando ya falla — el agente estuvo mudo 2 días sin que nadie se enterara.
+
 - **Guardar un mes del estado financiero desvincula sus orígenes** (2026-10-29): `PUT
   app/api/finance/[id]/route.ts` borra y reinserta los renglones sin `source_type`/`source_id`. No duplica
   (queda `finance_source_log`), pero una anulación posterior ya no quita el ingreso. Fernando decide si se corrige.
