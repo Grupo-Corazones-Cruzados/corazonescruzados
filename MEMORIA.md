@@ -409,6 +409,11 @@ Stack estándar de la casa, con particularidades de este repo:
   vacía y el primer visitante de cada despliegue veía «Todavía no hay soluciones» (Fernando en su
   iPhone, 2026-10-29) → `/soluciones` es `force-dynamic` con los datos en `unstable_cache` 5 min
   (`cargarSolucionesCacheadas`); (l) probar el teléfono con los márgenes seguros simulados;
+  (m) **iOS puede pausar `requestAnimationFrame`** (app instalada que vuelve del segundo plano,
+  ahorro de batería): en el iPhone de Fernando la frontera se quedó a medias al elegir Progreso
+  (2026-10-29) → `pedirCuadro` (rAF + `setTimeout` de respaldo, sin respaldo con la página oculta),
+  una garantía que coloca `--corte` a los 1,8 s y repintado al volver (`visibilitychange`/`pageshow`);
+  probado con rAF anulado: llena igual;
     (h) en táctil el `:hover` se queda pegado → `(hover: none), (pointer: coarse)`; (i) una regla
   vieja más específica pisaba la animación nueva → borrar lo derogado, no solo añadir.
   (j) **cambiar la `animation` de un elemento que tenía una de entrada la REINICIA**: al elegir un

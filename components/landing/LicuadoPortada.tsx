@@ -39,6 +39,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { pedirCuadro } from '@/lib/sitio/portadaPartida';
 import type { ModoPortada } from '@/lib/sitio/portadaPartida';
 
 export const ID_LICUADO = 'licuado-portada';
@@ -77,14 +78,17 @@ export default function LicuadoPortada({ modo, juegoEnCurso, ligero = false }: {
     const t0 = performance.now();
     const puntos = ligero ? 28 : PUNTOS;
     const intervalo = ligero ? 32 : 0;
-    let raf = 0;
+    let cancelar: () => void = () => undefined;
     let activo = false;
     let ultimo = 0;
     let plano = false;
     let corteAnterior = NaN;
     let eraVertical = false;
+    // `pedirCuadro`: el cuadro, con un `setTimeout` de respaldo por si iOS pausa
+    // `requestAnimationFrame` (ver `lib/sitio/portadaPartida.ts`). Sin él, la onda se quedaba
+    // pintada donde iba aunque `--corte` llegara a su sitio.
     const paso = (ahora: number) => {
-      raf = requestAnimationFrame(paso);
+      cancelar = pedirCuadro(paso, 120);
       if (juegoEnCurso) return;
       if (intervalo && ahora - ultimo < intervalo) return;
       ultimo = ahora;
@@ -167,9 +171,21 @@ export default function LicuadoPortada({ modo, juegoEnCurso, ligero = false }: {
         escena.style.setProperty('clip-path', `url(#${ID_LICUADO})`);
       }
     };
-    raf = requestAnimationFrame(paso);
+    cancelar = pedirCuadro(paso, 120);
+    // Al volver a la app, se repinta aunque `--corte` no haya cambiado (la onda pudo quedarse vieja).
+    const alVolver = () => {
+      if (document.hidden) return;
+      corteAnterior = NaN;
+      ultimo = 0;
+      cancelar();
+      cancelar = pedirCuadro(paso, 120);
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('pageshow', alVolver);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelar();
+      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('pageshow', alVolver);
       escena.style.removeProperty('-webkit-clip-path');
       escena.style.removeProperty('clip-path');
     };

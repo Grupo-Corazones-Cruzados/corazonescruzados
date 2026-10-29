@@ -44,6 +44,27 @@ const TAU_MS = 160;
 /** En el teléfono la frontera es HORIZONTAL: Aventura arriba, Progreso abajo (2026-10-27). */
 export const CONSULTA_VERTICAL = '(max-width: 639.98px)';
 
+/**
+ * UN CUADRO DE ANIMACIÓN QUE LLEGA SIEMPRE (2026-10-29).
+ *
+ * En el iPhone de Fernando (app instalada) la frontera se quedó A MEDIAS al elegir Progreso: el
+ * corazón cruzó y el eslogan salió (animaciones CSS), pero `--corte` no llegó a 0. Al cerrar y
+ * reabrir la app, iba bien. iOS puede PAUSAR o retrasar `requestAnimationFrame` (al volver del
+ * segundo plano, con ahorro de batería): si el siguiente cuadro no llega, el bucle se queda donde
+ * iba. Esto pide el cuadro y, por si no llega, un `setTimeout` de respaldo; el primero que llegue
+ * gana y el otro se anula. Devuelve con qué cancelarlo.
+ */
+export function pedirCuadro(cb: (t: number) => void, respaldoMs = 100): () => void {
+  let hecho = false;
+  const raf = requestAnimationFrame((t) => { if (!hecho) { hecho = true; clearTimeout(tm); cb(t); } });
+  // Con la página oculta NO hay respaldo: el bucle espera (no gasta batería en segundo plano) y
+  // quien lo usa lo reanuda al volver (`visibilitychange`/`pageshow`).
+  const tm = document.hidden
+    ? undefined
+    : setTimeout(() => { if (!hecho) { hecho = true; cancelAnimationFrame(raf); cb(performance.now()); } }, respaldoMs);
+  return () => { hecho = true; cancelAnimationFrame(raf); clearTimeout(tm); };
+}
+
 export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPortada) {
   // Se guarda en PX (no en fracción): en vertical la meta del modo partido se MIDE.
   const actual = useRef<number | null>(null);
@@ -77,7 +98,7 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
       el.style.setProperty('--corte', `${px}px`);
     };
 
-    let raf = 0;
+    let cancelar: () => void = () => undefined;
     let antes = 0;
     const t0 = performance.now();
     const paso = (t: number) => {
@@ -89,25 +110,38 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
       const midiendo = mqVertical.matches && modo === 'partido' && t - t0 < 2500;
       if (Math.abs(m - siguiente) < 0.5 && !midiendo) {
         pintar(m);
-        raf = 0;
         return;
       }
       pintar(siguiente);
-      raf = requestAnimationFrame(paso);
+      cancelar = pedirCuadro(paso);
     };
 
     pintar(actual.current ?? meta());
-    raf = requestAnimationFrame(paso);
+    cancelar = pedirCuadro(paso);
+    // Red de seguridad: pase lo que pase con los cuadros, a los 1,8 s (tras la deriva de medir,
+    // en `partido` vertical, a los 2,8 s) la frontera está en su sitio.
+    const garantia = window.setTimeout(() => {
+      cancelar();
+      pintar(meta());
+    }, mqVertical.matches && modo === 'partido' ? 2800 : 1800);
     const alRedimensionar = () => {
       el.dataset.orientacion = mqVertical.matches ? 'vertical' : 'horizontal';
       pintar(meta());
     };
+    // Al volver a la app (segundo plano, o la página restaurada de la caché del navegador), la
+    // frontera salta a donde debe estar: no se fía de un bucle que pudo quedarse a medias.
+    const alVolver = () => { if (!document.hidden) alRedimensionar(); };
     window.addEventListener('resize', alRedimensionar);
     mqVertical.addEventListener('change', alRedimensionar);
+    document.addEventListener('visibilitychange', alVolver);
+    window.addEventListener('pageshow', alVolver);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelar();
+      window.clearTimeout(garantia);
       window.removeEventListener('resize', alRedimensionar);
       mqVertical.removeEventListener('change', alRedimensionar);
+      document.removeEventListener('visibilitychange', alVolver);
+      window.removeEventListener('pageshow', alVolver);
     };
   }, [ref, modo]);
 }
