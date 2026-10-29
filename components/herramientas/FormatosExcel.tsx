@@ -82,7 +82,7 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
   const formato = FORMATS.find((f) => f.id === fmtId)!;
   const plan = libro?.planes[fmtId]?.[hojaVista];
   const hojasLibro = libro?.sheets.filter((s: any) => s.isWorksheet) || [];
-  const cfgVista = plan ? configDeHoja(formato, plan.sheet.name) : formato;
+  const cfgVista = plan ? configDeHoja(formato, plan.sheet.name, plan.sh, libro?.book) : formato;
   const elegidas = hojasLibro.filter((s: any) => hojas.has(s.index));
   const ocupado = !!cargando || !!progreso;
 
@@ -209,7 +209,7 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
                       </span>
                       <span className="block text-[12px] text-digi-muted mt-0.5" style={mf}>{f.summary}</span>
                       <span className="block text-[11.5px] text-digi-muted mt-1 tabular-nums" style={mf}>
-                        {f.paperName} {orientacion(f)} · 1 página de ancho · {f.titleRows.from === f.titleRows.to ? `fila ${f.titleRows.from}` : `filas ${f.titleRows.from}–${f.titleRows.to}`} en cada hoja
+                        {f.paperName} {orientacion(f)} · 1 página de ancho · {f.encabezado ? 'los encabezados' : f.titleRows.from === f.titleRows.to ? `fila ${f.titleRows.from}` : `filas ${f.titleRows.from}–${f.titleRows.to}`} en cada hoja
                         {p && ` · escala ${fmtInt(p.scale * 100)} % · ${fmtInt(paginas)} ${paginas === 1 ? 'hoja' : 'hojas'}`}
                       </span>
                     </span>

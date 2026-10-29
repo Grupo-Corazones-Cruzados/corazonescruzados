@@ -38,10 +38,14 @@ export const FORMATS = [
     summary: 'El libro de ventas completo y después Cuentas con sus 2 tablas, en A3 horizontal.',
     paperSize: 8, paperName: 'A3', orientation: 'landscape',
     margins: MARGENES_NORMALES, titleRows: { from: 1, to: 1 }, pageNumbers: true, printArea: 'data',
+    // La fila de encabezados cambia de un mes a otro (2026-10-29): el libro de junio la tiene en la 4
+    // (encima, totales) y Cuentas va de la 6 (enero) a la 9 (junio); en marzo sus dos tablas están
+    // desfasadas (8 y 9). Se busca en las primeras filas y `titleRows` queda solo por si no aparece.
+    encabezado: { patron: /\bNUMOPER\b/i },
     porHoja: [
-      { hoja: /^CUENTAS$/i, titleRows: { from: 1, to: 6 }, colDesde: 'B' },
+      { hoja: /^CUENTAS$/i, titleRows: { from: 1, to: 6 }, colDesde: 'B', encabezado: { patron: /^\s*Fecha\s+Comprobante\b/i, desdeArriba: true } },
     ],
-    detect: { hojas: [/LIBRO\s+DE\s+VENTAS/i, /^CUENTAS$/i] },
+    detect: { hojas: [/LIBRO\s+(DE\s+)?VENTAS/i, /^CUENTAS$/i] },  // «Libro ventas Febrero 24» va sin «de»
   },
 ];
 
@@ -52,12 +56,31 @@ export const FORMATS = [
  * sola página), `colDesde`/`colHasta` (letras del área de impresión; por omisión A y la última
  * columna de la hoja).
  */
-export function configDeHoja(fmt, nombre) {
+export function configDeHoja(fmt, nombre, sh, book) {
   const ov = (fmt.porHoja || []).find(o => o.hoja.test(nombre));
   const { porHoja, detect, ...base } = fmt;
-  if (!ov) return base;
-  const { hoja, ...cambios } = ov;
-  return { ...base, ...cambios };
+  let cfg = base;
+  if (ov) { const { hoja, ...cambios } = ov; cfg = { ...base, ...cambios }; }
+  const enc = cfg.encabezado && sh && book ? filaEncabezado(sh, book, cfg.encabezado) : 0;
+  return enc ? { ...cfg, titleRows: { from: cfg.encabezado.desdeArriba ? 1 : enc, to: enc } } : cfg;
+}
+
+/**
+ * `encabezado`: la fila de encabezados se busca entre las 20 primeras con `patron`; si hay varias
+ * tablas lado a lado desfasadas, vale la ÚLTIMA que lo cumpla, así se repiten las dos. Con
+ * `desdeArriba` se repiten también las filas de encima (títulos y totales de Cuentas). 0 = no está.
+ */
+function filaEncabezado(sh, book, { patron }) {
+  const cache = sh.encabezados || (sh.encabezados = new Map());
+  if (cache.has(patron.source)) return cache.get(patron.source);
+  let fila = 0;
+  for (let k = 0; k < Math.min(20, sh.rIdx.length); k++) {
+    if (sh.rIdx[k] > 20) break;
+    let t = ''; try { t = XlsxPdf._rowText(sh, k, book).replace(/\s+/g, ' ').trim(); } catch (e) {}
+    if (patron.test(t)) fila = sh.rIdx[k];
+  }
+  cache.set(patron.source, fila);
+  return fila;
 }
 
 // ===== Núcleo: corrige la configuración de impresión de un .xlsx sin tocar datos ni formato =====
@@ -235,7 +258,7 @@ export const PrintFix = (() => {
     return { wbPath, sheets };
   }
 
-  return { fixSheet, fixWorkbook, listSheets };
+  return { fixSheet, fixWorkbook, listSheets, indexOfBytes, lastIndexOfBytes };
 })();
 
 
@@ -477,11 +500,17 @@ export const XlsxPdf = (() => {
   }
 
   // ---------- lectura de una hoja (índice de filas, sin cargar todas las celdas) ----------
+  // La hoja se queda en BYTES y cada fila se decodifica al leerla: V8 no crea textos de más de
+  // 536.870.888 caracteres y hay hojas de 634–791 MB (ventas de febrero, marzo y junio de 2024).
+  const encS = new TextEncoder();
+  const B_SD = encS.encode('sheetData'), B_SDC = encS.encode('sheetData>'), B_ROWC = encS.encode('row>');
+  const esNombre = b => (b >= 0x61 && b <= 0x7A) || (b >= 0x41 && b <= 0x5A) || (b >= 0x30 && b <= 0x39) || b === 0x5F;
+  const esFinNombre = b => b === 0x20 || b === 0x3E || b === 0x2F || b === 0x09 || b === 0x0A || b === 0x0D;
   function readSheet(u8) {
-    const s = dec.decode(u8);
-    const sdOpen = s.search(/<(?:\w+:)?sheetData[\s>/]/);
-    let sdClose = s.lastIndexOf('sheetData>'); if (sdClose < sdOpen) sdClose = sdOpen + 10;
-    const head = s.slice(0, sdOpen), tail = s.slice(Math.max(sdClose, sdOpen));
+    let sdOpen = PrintFix.indexOfBytes(u8, B_SD);
+    sdOpen = sdOpen === -1 ? -1 : u8.lastIndexOf(0x3C, sdOpen);
+    let sdClose = PrintFix.lastIndexOfBytes(u8, B_SDC); if (sdClose < sdOpen) sdClose = sdOpen + 10;
+    const head = dec.decode(u8.subarray(0, Math.max(sdOpen, 0))), tail = dec.decode(u8.subarray(Math.max(sdClose, sdOpen, 0)));
     const sfp = (head.match(/<(?:\w+:)?sheetFormatPr\b[^>]*>/) || [''])[0];
     const defW = attr(sfp, 'defaultColWidth') ? parseFloat(attr(sfp, 'defaultColWidth')) : (parseFloat(attr(sfp, 'baseColWidth') || '8') + 5 / MDW);
     const defH = parseFloat(attr(sfp, 'defaultRowHeight') || '15');
@@ -508,24 +537,30 @@ export const XlsxPdf = (() => {
     };
     // índice de filas
     const rIdx = [], rStart = [], rEnd = [], rH = [];
-    const re = /<(?:\w+:)?row\b([^>]*?)(\/?)>/g; re.lastIndex = sdOpen; let m, prev = 0;
-    while ((m = re.exec(s))) {
-      if (m.index > sdClose) break;
-      const a = m[1]; const r = attr(' ' + a, 'r'); const rr = r ? +r : prev + 1; prev = rr;
+    // `<row …>` o `<x:row …>`; tras una fila con celdas se salta a su cierre
+    let i = sdOpen, prev = 0;
+    while (sdOpen !== -1 && (i = u8.indexOf(0x3C, i + 1)) !== -1 && i <= sdClose) {
+      let j = i + 1; while (j < i + 12 && esNombre(u8[j])) j++;
+      const n = u8[j] === 0x3A ? j + 1 : i + 1;
+      if (u8[n] !== 0x72 || u8[n + 1] !== 0x6F || u8[n + 2] !== 0x77 || !esFinNombre(u8[n + 3])) continue;
+      const gt = u8.indexOf(0x3E, n + 3); if (gt === -1) break;
+      const vacia = u8[gt - 1] === 0x2F;
+      const a = dec.decode(u8.subarray(n + 3, vacia ? gt - 1 : gt));
+      const r = attr(' ' + a, 'r'); const rr = r ? +r : prev + 1; prev = rr;
       const hid = / hidden="(1|true)"/.test(' ' + a);
       const ht = / ht="([^"]*)"/.exec(' ' + a);
-      let st = re.lastIndex, en = st;
-      if (!m[2]) { const close = s.indexOf('row>', st); en = s.lastIndexOf('<', close); re.lastIndex = close + 4; }
+      let st = gt + 1, en = st; i = gt;
+      if (!vacia) { const close = PrintFix.indexOfBytes(u8, B_ROWC, st); if (close === -1) break; en = u8.lastIndexOf(0x3C, close); i = close + 3; }
       rIdx.push(rr); rStart.push(st); rEnd.push(en); rH.push(hid ? 0 : (ht ? parseFloat(ht[1]) : defH));
     }
-    return { s, cols, defW, defH, dim, setup, rowBreaks, colBreaks, merges, rIdx, rStart, rEnd, rH };
+    return { u8, cols, defW, defH, dim, setup, rowBreaks, colBreaks, merges, rIdx, rStart, rEnd, rH };
   }
 
   function rowCells(sh, k, book, fmt) {
-    const s = sh.s, st = sh.rStart[k], en = sh.rEnd[k];
+    const st = sh.rStart[k], en = sh.rEnd[k];
     const cells = [];
     if (en <= st) return cells;
-    const seg = s.slice(st, en);
+    const seg = dec.decode(sh.u8.subarray(st, en));
     const re = /<(?:\w+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:\w+:)?c>)/g; let m, prevC = 0;
     while ((m = re.exec(seg))) {
       const a = ' ' + m[1]; const r = / r="([A-Z]+)/.exec(a); const c = r ? colIdx(r[1]) : prevC + 1; prevC = c;
@@ -658,7 +693,7 @@ export const XlsxPdf = (() => {
   function lastValueRow(sh) {
     for (let k = sh.rIdx.length - 1; k >= 0; k--) {
       if (sh.rEnd[k] <= sh.rStart[k]) continue;
-      const seg = sh.s.slice(sh.rStart[k], sh.rEnd[k]);
+      const seg = dec.decode(sh.u8.subarray(sh.rStart[k], sh.rEnd[k]));
       if (/<(?:\w+:)?v>|<(?:\w+:)?is>/.test(seg)) return sh.rIdx[k];
     }
     return 1;
@@ -945,14 +980,14 @@ export async function abrirLibro(file, onPaso) {
   onPaso && onPaso('Calculando las páginas de cada formato…'); await tick();
   // Un plan por formato y por hoja (cada hoja con su configuración: `configDeHoja`).
   const planes = {};
-  for (const fm of FORMATS) planes[fm.id] = ws.map(s => XlsxPdf.planSheet(book, XlsxPdf.getSheet(book, files, s.path), s, configDeHoja(fm, s.name)));
+  for (const fm of FORMATS) planes[fm.id] = ws.map(s => { const sh = XlsxPdf.getSheet(book, files, s.path); return XlsxPdf.planSheet(book, sh, s, configDeHoja(fm, s.name, sh, book)); });
   return { files, fileName: file.name, wbPath: info.wbPath, sheets: info.sheets, book, recomendado, planes };
 }
 
 /** El Excel con la impresión corregida: solo cambia la configuración de página. */
 export async function excelCorregido(libro, fmt, sheets) {
   const out = { ...libro.files }; const info = [];
-  for (const s of sheets) { const cfg = configDeHoja(fmt, s.name); const r = PrintFix.fixSheet(libro.files[s.path], cfg); out[s.path] = r.data; info.push({ ...s, cfg, lastRow: r.lastRow, lastCol: r.lastCol }); }
+  for (const s of sheets) { const cfg = configDeHoja(fmt, s.name, XlsxPdf.getSheet(libro.book, libro.files, s.path), libro.book); const r = PrintFix.fixSheet(libro.files[s.path], cfg); out[s.path] = r.data; info.push({ ...s, cfg, lastRow: r.lastRow, lastCol: r.lastCol }); }
   // Una hoja cada vez: cada una lleva sus filas de títulos y su área (la carátula no repite filas).
   let wb = new TextDecoder().decode(libro.files[libro.wbPath]);
   for (const s of info) wb = PrintFix.fixWorkbook(wb, [s], s.cfg);
@@ -962,5 +997,5 @@ export async function excelCorregido(libro, fmt, sheets) {
 }
 
 export function pdfDe(libro, fmt, sheets, onProgress) {
-  return XlsxPdf.renderPdf(libro.files, { wbPath: libro.wbPath, sheets, fmt: s => configDeHoja(fmt, s.name), fileName: libro.fileName, loc: LOC, book: libro.book, onProgress });
+  return XlsxPdf.renderPdf(libro.files, { wbPath: libro.wbPath, sheets, fmt: s => configDeHoja(fmt, s.name, XlsxPdf.getSheet(libro.book, libro.files, s.path), libro.book), fileName: libro.fileName, loc: LOC, book: libro.book, onProgress });
 }

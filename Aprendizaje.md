@@ -10915,3 +10915,7 @@ el «Enlace de un solo uso». Fernando, a mitad: adaptar el diseño al de la app
   tamaño: la hoja más grande descomprimida (634 / 700 / 791 MB) supera el máximo de texto de V8 (536,9 M
   caracteres) y `readSheet` la decodifica entera. Enero (454 MB) queda por debajo. Fuente: inspección del zip +
   prueba con `TextDecoder` en Node. Solución: leer la hoja por trozos.
+- **Resuelto el mismo día:** la hoja se lee por bytes (cada fila al leerla) y la fila de encabezados se
+  busca en cada hoja (`encabezado` del formato), porque cambia de un mes a otro (libro de junio en la 4,
+  Cuentas de la 6 a la 9). Probado en Node (Enero idéntico al motor viejo) y en Chrome con los tres libros:
+  abren, hacen vista previa y sacan el PDF entero.

@@ -7929,12 +7929,16 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     a abrir con los datos y los `definedNames`, PDF de 8 páginas), panel y página pública en claro, oscuro
     y 390 px (sin desbordar), y la API de punta a punta (crear, abrir sin cuenta, uso, cerrar, rechazos,
     borrar; la fila de prueba se borró por su id).
-  - ⚠️ **TOPE: una hoja de más de ~537 MB descomprimida NO se puede leer (2026-10-29).** `readSheet` hace
-    `dec.decode(u8)` de la hoja entera y V8 (Chrome y Node) no crea textos de más de 536.870.888 caracteres:
-    `Cannot create a string longer than 0x1fffffe8 characters`. Enero (hoja de 454 MB) entra; Febrero (634 MB),
-    Marzo (700 MB) y Junio (791 MB en «Libro de Ventas junio 24_B», 1,37 GB todo el libro) no. Mismo formato,
-    no es corrupción: es tamaño. Arreglo pendiente: leer la hoja por trozos (filas) sin un único texto.
-    Además «Libro ventas Febrero 24» (sin «de») no casa con `/LIBRO\s+DE\s+VENTAS/` y no recomienda el formato.
+  - **Hojas de más de ~537 MB y encabezados que cambian de fila (2026-10-29, arreglado).** Febrero, Marzo y
+    Junio 2024 fallaban (Junio, en blanco): `readSheet` hacía `dec.decode(u8)` de la hoja entera y V8 no crea
+    textos de más de 536.870.888 caracteres (`Cannot create a string longer than 0x1fffffe8`); sus hojas son de
+    634, 700 y 791 MB (Enero, 454). Ahora la hoja se queda en BYTES: el índice de filas son posiciones de
+    bytes y cada fila se decodifica al leerla (`rowCells`, `lastValueRow`). Mismo resultado que antes con Enero
+    (comparado fila a fila). Además, la fila de encabezados NO está siempre en el mismo sitio: libro en la 1
+    salvo junio (4, con totales encima; «_B» en la 1) y Cuentas en 6/7/9/9 (marzo con sus dos tablas en 8 y 9).
+    El formato lleva `encabezado: { patron, desdeArriba }` y `configDeHoja(fmt, nombre, sh, book)` busca esa
+    fila en las 20 primeras (vale la última que cumpla). En Chrome: abrir 4-6 s; PDF de Febrero 144 MB/47 s,
+    Marzo 156 MB/53 s, Junio 191 MB/29.068 hojas/70 s con ~3,1 GB de memoria: con libros así, computadora.
 - **🎨 Muestrario de marca publicado (Fernando, 2026-10-27).** «Colores de Corazones Cruzados»:
   https://claude.ai/artifact/B2T7YWjtoxxsq7JiTriUmd — colores (familia del morado #4B2D8E, sitio público,
   panel, estados), equivalencias claro↔oscuro, las 6 tipografías, tamaños del panel, logo, iconos y
