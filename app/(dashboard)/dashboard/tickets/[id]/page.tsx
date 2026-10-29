@@ -948,9 +948,11 @@ export default function TicketDetailPage() {
           <div className="min-w-0 flex flex-col gap-4 max-md:contents md:col-start-1 md:row-start-1 lg:min-h-0 lg:overflow-y-auto xl:contents">
           {/* ── Días de trabajo: a la izquierda (arriba, en la columna lateral de tableta) ── */}
           {/* En el teléfono va PRIMERO: el día que se elige aquí decide qué registro se ve. */}
-          <aside className="min-w-0 max-md:order-first xl:col-start-1 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
-            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
-              <div className="flex items-center justify-between gap-2 mb-3">
+          {/* ⇒ EL TÍTULO NO SE VA (Fernando, 2026-10-29): en escritorio la tarjeta llega al pie y lo
+              que se desplaza es SOLO la lista de días; la cabecera se queda arriba. */}
+          <aside className="min-w-0 max-md:order-first xl:col-start-1 xl:row-start-1 xl:min-h-0 xl:flex xl:flex-col">
+            <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 xl:flex-1 xl:min-h-0 xl:flex xl:flex-col">
+              <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
                 <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
                   <CalendarDays className="w-4 h-4 text-accent" /> Días de trabajo
                   {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
@@ -960,7 +962,7 @@ export default function TicketDetailPage() {
                 )}
               </div>
               {timeSlots.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 xl:min-h-0 xl:overflow-y-auto xl:-m-1 xl:p-1">
                   {/* ⇒ LOS DÍAS SE ELIGEN (Fernando, 2026-09-30): al pulsar uno, el registro del
                       centro muestra el de ese día. Cada día dice cuántos registros tiene y cuánto
                       tiempo suman, y un punto rojo si hay un reloj en marcha. */}
