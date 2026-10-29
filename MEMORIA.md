@@ -275,6 +275,17 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **📒 FACTURAS DEL FACTURADOR DEL SRI EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Antes de la
+  plataforma (primera factura propia: 001-001-000000023, 29/03/2026) emitía con el **facturador gratuito
+  del SRI**. Se recorrió el portal día a día con su RUC (2024 → 31/03/2026) y se cargaron **19 facturas
+  autorizadas** como ingresos del «Estado financiero mensual» (es UNO para toda la organización, no por
+  cuenta): 2025 = 12 (7.955 $; sin facturas en octubre), 2026-02 = 5 (447,44 $), 2026-03 = 020 y 021
+  (755 $). Marca: `finance_items.source_type='sri_emitida'`, `source_id` = clave de acceso (+
+  `finance_source_log`), así una recarga no duplica. **2024: ninguna factura** (el RUC empieza a facturar
+  el 31/01/2025). **Regla: «hay que omitir siempre lo rechazado»** — solo AUTORIZADAS (fuera 002, 017,
+  022, 025). Fuera también las pruebas de la plataforma del 29/03/2026 (001 a su nombre con la
+  numeración reiniciada; 023 a Karina, anulada en la plataforma pero AUTORIZADA en el SRI — pendiente
+  de anular allí). Detalle: `Aprendizaje.md` § «FACTURAS EMITIDAS EN 2025».
 - **🎨 TEMA «PROGRESO» EN TODO EL PANEL (Fernando, 2026-10-29).** El panel toma el estilo de la
   sección Plataforma de la portada —fondo lavanda con puntos y manchas, Inter + Space Grotesk,
   tarjetas translúcidas de 16 px con sombra lila, botón con degradado— y en oscuro la noche de
@@ -7227,6 +7238,19 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   `clients` (sin tocar portal/joins).
 
 ## Lecciones técnicas
+- **SRI en Línea — leer los EMITIDOS de un RUC (probado 2026-10-29).** El salto directo a
+  `comprobantesEmitidos.jsf` (`app-tuportal-internet` → `GeneraToken.jsp`) cierra la sesión aunque la clave
+  sea buena, con HTTP puro y con Chrome. Funciona entrar por `/sri-en-linea/contribuyente/perfil`, ir a
+  `tuportal-internet/accederAplicacion.jspa?redireccion=60&idGrupo=58` y pulsar «Comprobantes electrónicos
+  emitidos» en `menu.jsf`; sin captcha. Se consulta UN día por vez y por FECHA DE EMISIÓN (~10 s/día con
+  puppeteer-core + Chrome del sistema); la ficha de cada fila trae comprador y detalle. ⚠️ El WS
+  `AutorizacionComprobantesOffline` ya no devuelve comprobantes de hace meses («fecha de emision esta
+  fuera del rango permitido»): para lo antiguo, la ficha del portal es la única fuente. La clave del
+  titular se pide con `! read -s` a un archivo 600 del scratchpad y se borra al terminar; nunca al repo
+  ni a la memoria. Más en `SRI-CONSULTA-COMPROBANTES.md`.
+- **La BD desde local tras la rotación de Railway:** `.env.local` ya no trae `DATABASE_URL`; para leer
+  producción se toma `DATABASE_PUBLIC_URL` del servicio `Postgres` con `railway variables --service
+  Postgres --kv` y se consulta en `BEGIN READ ONLY`.
 - **Rotar secretos en Railway sin construir (2026-10-22).** `variableCollectionUpsert` con
   `skipDeploys:true` y luego `deploymentRedeploy(id, usePreviousImageTag:true)`: reinicia con las
   variables nuevas sin compilar. El despliegue vigente se busca con
@@ -8119,6 +8143,10 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   corregir uno, no dar por hecho que ya pasa.
 
 ## Pendientes / preguntas abiertas
+- **Guardar un mes del estado financiero desvincula sus orígenes** (2026-10-29): `PUT
+  app/api/finance/[id]/route.ts` borra y reinserta los renglones sin `source_type`/`source_id`. No duplica
+  (queda `finance_source_log`), pero una anulación posterior ya no quita el ingreso. Fernando decide si se corrige.
+- **Factura 023 (Karina, 29/03/2026):** anulada en la plataforma, AUTORIZADA en el SRI → anularla allí.
 - **(2026-10-22) Catering, demo:** el raíl «Vigentes» de Servicios cuenta 5 y los cinco salen «Vencido»
   (y «Vencidos» cuenta 1). Visto al revisar el diseño; sin investigar.
 - **(2026-10-22) Rotación tras el incidente de Railway — lo que falta (Fernando lo retomará):**

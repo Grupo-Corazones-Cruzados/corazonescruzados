@@ -17,6 +17,9 @@ agregarlas al estado financiero mensual»*.
   sin renglón manual de marzo que las cubriera. Total 9.157,44 $. Archivo de la clave borrado.
 - **2024 revisado (Fernando, 2026-10-29: «mi ruc creo que lo cree desde el año 2024»):** los 366 días
   recorridos, **ninguna factura emitida**. Cuadra con que la 001-001-000000001 sea del 31/01/2025.
+- **Pendientes que deja (2026-10-29), para Fernando:** (1) corregir el guardado del mes para que no
+  desvincule los orígenes (ver arriba); (2) anular en el SRI la 023 a Karina. Lecciones en `MEMORIA.md`
+  § «Lecciones técnicas» (SRI en Línea — leer los EMITIDOS).
 - **Regla de Fernando (2026-10-29): «hay que omitir siempre lo rechazado».** Solo AUTORIZADAS. Las 002, 017,
   022 y 025 no salen autorizadas y no se cargan. Fuera también las de la plataforma del 29/03/2026
   (001 a su nombre con la numeración reiniciada y 023 a Karina, anulada en la plataforma pero AUTORIZADA en el SRI).
