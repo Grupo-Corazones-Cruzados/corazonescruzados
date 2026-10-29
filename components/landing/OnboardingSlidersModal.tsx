@@ -241,6 +241,26 @@ const REGLAS_4P = [
 
 const COND_STEPS = ['Reconocer', 'Controlar', 'Predecir', 'Experimentar', 'Convertir', 'Cambiar'];
 
+/**
+ * LOS SEIS PASOS DE LA METODOLOGÍA como un RECORRIDO (Fernando, 2026-10-29): una línea con un
+ * nodo por paso y, debajo, el número y el nombre SOLO con color de texto — nada de etiquetas con
+ * relleno ni borde (*«ese estilo ya he dicho antes que no me gusta»*). Seis en fila desde `sm`;
+ * en el teléfono, dos filas de tres. Estilos `.cond-*` en globals.css.
+ */
+function PasosCondiciologia() {
+  return (
+    <ol className="cond-pasos" aria-label="Los seis pasos de la Metodología Condiciológica">
+      {COND_STEPS.map((s, i) => (
+        <li key={s} className="cond-paso">
+          <span className="cond-nodo" aria-hidden="true" />
+          <span className="cond-num">{String(i + 1).padStart(2, '0')}</span>
+          <span className="cond-nombre">{s}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const TOOLS: AccordionItem[] = [
   {
     name: 'Metodología Condiciológica',
@@ -254,13 +274,7 @@ const TOOLS: AccordionItem[] = [
           través de <strong style={strong}>seis pasos</strong>, los cuales son aplicables en
           cualquier ámbito de investigación.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0' }}>
-          {COND_STEPS.map((s, i) => (
-            <span key={s} style={chip}>
-              <span style={{ opacity: 0.6 }}>{i + 1}.</span> {s}
-            </span>
-          ))}
-        </div>
+        <PasosCondiciologia />
         <p style={cardDesc}>
           Cada paso espera un conjunto de parámetros que están siendo determinados por la{' '}
           <strong style={strong}>Condiciología</strong>, la cual es una ciencia en desarrollo que se
@@ -1089,8 +1103,6 @@ function SlideAfiliacion() {
                 <span
                   style={{
                     ...chip,
-                    background: 'var(--color-digi-card)',
-                    border: '1px solid var(--color-digi-border)',
                     color: 'var(--color-digi-text)',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -1760,14 +1772,12 @@ const stepNum: React.CSSProperties = {
   borderRadius: 6,
 };
 
+// Solo color de texto: sin relleno ni borde (Fernando, 2026-10-29: las etiquetas con fondo y
+// borde «no me gustan y no las quiero ver en otras partes»).
 const chip: React.CSSProperties = {
-  fontSize: '0.75rem',
-  fontWeight: 500,
+  fontSize: '0.8rem',
+  fontWeight: 600,
   color: 'var(--color-accent-glow)',
-  background: 'var(--color-accent-light)',
-  border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
-  borderRadius: 999,
-  padding: '4px 11px',
 };
 
 const noteBox: React.CSSProperties = {

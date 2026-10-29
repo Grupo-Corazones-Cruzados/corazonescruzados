@@ -677,6 +677,14 @@ esquinas de cámara no cambian.
   resaltada en recuadro con filete `accent`.
   Fernando reescribió a mano el texto de introducción y quitó las notas «Cuatro roles…», «Del
   piso 1…» y el recuadro final: no reponerlos.
+- **🚫 NADA de etiquetas con relleno + borde alrededor de un texto (Fernando, 2026-10-29: «ese
+  estilo ya he dicho antes que no me gusta y no lo quiero ver en otras partes»).** Un texto se
+  marca, como mucho, con COLOR DE TEXTO. Si hay que presentar una secuencia, se diseña (recorrido,
+  tabla), no una fila de cápsulas. En el formulario de postulación el estilo `chip` es solo texto
+  (`accent-glow`, 600) y los grados de la pulsera son texto con «›».
+- **Los seis pasos de la Metodología Condiciológica como RECORRIDO** (`PasosCondiciologia`,
+  2026-10-29): línea fina con un nodo `accent` por paso y debajo «01» en `accent-glow` + el
+  nombre en `digi-text`; seis en fila, dos filas de tres en el teléfono. Estilos `.cond-*`.
 - **La cabecera lleva SIEMPRE fondo** (`bg-[#0b0d14]/85` + desenfoque), también en la portada:
   ya no es transparente hasta desplazar. Se retiró con ello el color partido del nombre
   (`.texto-partido`, `refBordeIzquierdo`), que ya no tenía ningún uso.
