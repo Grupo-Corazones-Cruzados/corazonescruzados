@@ -1288,19 +1288,17 @@ export default function OnboardingSlidersModal({
 
   const animName = dir === 1 ? 'onbInRight' : 'onbInLeft';
   const SlideComponent = isForm ? null : current.Component;
-  const HeaderIcon: IconType = isForm ? Send : current.Icon;
   const title = isForm ? '¿Por qué quieres ser candidato de este proyecto?' : current.title;
 
   const porcentaje = Math.round(((index + (acceptedHere && !isForm ? 1 : 0)) / steps) * 100);
-  const numero = String(index + 1).padStart(2, '0');
 
   /*
    * «LA TRAVESÍA» — el diseño del formulario de postulación (Fernando, 2026-10-26: «actualiza
    * por completo el diseño… según tu creatividad»). Con el lenguaje de la portada:
    * · a la izquierda, el CAMINO: los 8 pasos como nodos unidos por una línea (hecho = visto,
    *   actual = brilla, bloqueado = candado), con un anillo de progreso arriba;
-   * · a la derecha, el paso: número grande perfilado («01»), título en Space Grotesk, el
-   *   contenido y, abajo, una barra con «Atrás», la aceptación como interruptor y «Siguiente».
+   * · a la derecha, en su propia tarjeta separada del camino (2026-10-29), el contenido del paso
+   *   y, abajo, una barra con «Atrás», la aceptación como interruptor y «Siguiente».
    * La lógica (pasos, aceptación, envío) no cambió. Los colores salen de los tokens que
    * reajusta `.onboarding-<tema>` y los estilos propios de `.onb-*` en globals.css.
    */
@@ -1395,22 +1393,12 @@ export default function OnboardingSlidersModal({
 
           {/* ── El paso ── */}
           <section className="onb-paso flex flex-col min-h-0">
-            <header className="onb-cabecera">
-              <span className="onb-numero" aria-hidden="true">{isForm ? '✦' : numero}</span>
-              <div className="min-w-0 flex-1">
-                <div className="onb-kicker">
-                  <HeaderIcon />
-                  {isForm ? 'Postulación' : `Paso ${index + 1} de ${steps}`}
-                </div>
-                <h2 className="onb-titulo">{title}</h2>
-              </div>
+            {/* Sin «01», sin «Paso 1 de 8» y sin barras (Fernando, 2026-10-29): el camino de la
+                izquierda ya dice en qué paso se está. El nombre del paso solo se escribe aquí
+                cuando el camino no se ve (teléfono); la pregunta del último paso, siempre. */}
+            <header className={`onb-cabecera ${isForm ? '' : 'es-sin-titulo'}`}>
+              <h2 className={`onb-titulo min-w-0 flex-1 ${isForm ? '' : 'lg:hidden'}`}>{title}</h2>
               <BotonCerrar onClick={onClose} />
-              {/* Progreso por tramos — solo cuando el camino está oculto. */}
-              <div className="onb-tramos lg:hidden" aria-hidden="true">
-                {Array.from({ length: steps }).map((_, i) => (
-                  <span key={i} className={i < index ? 'es-hecho' : i === index ? 'es-actual' : ''} />
-                ))}
-              </div>
             </header>
 
             <div className="onb-cuerpo flex-1 min-h-0 overflow-y-auto overflow-x-hidden">

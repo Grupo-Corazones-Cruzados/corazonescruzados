@@ -640,8 +640,12 @@ esquinas de cámara no cambian.
   · **El camino** (izquierda, `lg`): marca, **anillo de progreso** con % y los 8 pasos como NODOS
     unidos por una línea: hecho = relleno con visto, actual = degradado que late, bloqueado =
     candado al 45 %.
-  · **El paso**: número grande PERFILADO («01», `-webkit-text-stroke`), kicker con icono, título en
-    Space Grotesk; sin el camino (teléfono/tableta), tramos de progreso bajo el título.
+  · **El paso**: ~~número perfilado «01», kicker «Paso 1 de 8» y tramos de progreso~~ — QUITADOS
+    (Fernando, 2026-10-29: el camino ya dice en qué paso se está; no reponerlos). En escritorio la
+    cabecera es solo la «×»; el título del paso solo se escribe sin el camino (bajo `lg`) y la
+    pregunta del último paso, siempre.
+  · **Camino y paso separados** (2026-10-29): desde `lg` el panel exterior es transparente y son
+    DOS tarjetas (radio 22 px, borde y sombra del mundo) con 16 px de aire entre ellas.
   · **Contenido**: se desvanece al llegar abajo (máscara); números en cuadrado degradado,
     avisos con borde fucsia, tarjetas de 16 px, pestañas `PixelTabs` como cápsula segmentada.
   · **Barra de abajo**: la aceptación como INTERRUPTOR que enciende su pieza
