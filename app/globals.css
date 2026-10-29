@@ -4372,3 +4372,16 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) {
   .presentacion-visual, .visual-pasos li, .visual-cruce .sello-cruce, .visual-cruce-halo { animation: none; }
 }
+
+/* ── El índice «En esta página» por debajo de `lg`, en vertical (Fernando, 2026-10-29: «no me
+   gusta tener que deslizarse horizontalmente»). Una fila por pregunta, sin nada oculto a la
+   derecha. ── */
+.indice-movil { padding: 8px; border-radius: 18px; background: rgba(255, 255, 255, 0.78); border: 1px solid var(--linea); box-shadow: 0 18px 40px -28px rgba(75, 45, 142, 0.45); }
+.indice-movil-rotulo { padding: 10px 12px 6px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--violeta-txt); }
+.indice-movil ul { list-style: none; margin: 0; padding: 0; }
+.indice-movil li + li { border-top: 1px solid var(--linea); }
+.indice-movil-enlace { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-radius: 12px; transition: background-color 160ms ease; }
+.indice-movil-enlace:active, .indice-movil-enlace:hover { background: rgba(124, 58, 237, 0.06); }
+.indice-movil-etiqueta { display: block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--violeta-txt); }
+.indice-movil-pregunta { display: block; margin-top: 3px; font-size: 0.95rem; line-height: 1.4; color: var(--texto); }
+.indice-movil-flecha { flex: none; width: 30px; height: 30px; padding: 7px; border-radius: 9999px; color: #fff; background: #6d28d9; }

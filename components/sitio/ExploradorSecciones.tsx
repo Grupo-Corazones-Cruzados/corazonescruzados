@@ -44,7 +44,7 @@
  *     git show e09e1dc0:components/sitio/ExploradorSecciones.tsx
  */
 
-import { ArrowRight } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
@@ -124,36 +124,27 @@ function IndicePreguntas({ temas }: { temas: NonNullable<Acceso['temas']> }) {
 }
 
 /**
- * EL MISMO ÍNDICE, PARA PANTALLAS ESTRECHAS.
+ * EL MISMO ÍNDICE, PARA PANTALLAS ESTRECHAS — en VERTICAL (Fernando, 2026-10-29).
  *
- * Cuando no hay ancho para la tercera columna, el índice baja al centro convertido en una
- * fila de enlaces que se desliza a lo ancho — «como aparece en teléfono», pidió Fernando
- * (2026-08-19). No es adorno: las preguntas son largas, y sin él hay que recorrer la primera
- * entera para descubrir que hay una segunda.
- *
- * ⚠️ Quién decide ese «cuando» es `.alternativa-estrecha`, que gobierna el propio armazón: el
- * umbral que oculta el panel derecho es **el mismo** que enseña esta fila. Escribirlo aquí con
- * un `lg:hidden` propio es lo que hacía que los dos se pudieran separar.
- *
- * ⚠️ `min-w-0` en el contenedor de la fila y `overflow-x-auto` en ella: sin lo primero, una
- * fila más ancha que la pantalla estira la columna y con ella la página, que es la trampa
- * de `min-width:auto` de las rejillas —ya costó una barra horizontal en todo el sitio el
- * 2026-08-18—.
+ * Era una fila de píldoras que se deslizaba a lo ancho, y en el teléfono la segunda pregunta
+ * quedaba cortada con una barra de desplazamiento debajo: *«no me gusta tener que deslizarse
+ * horizontalmente en este tipo de opciones»*. Ahora es una tarjeta «En esta página» con una fila
+ * por pregunta (su etiqueta, la pregunta entera y una flecha hacia abajo, porque salta más abajo
+ * en la misma página). Nada se esconde a la derecha. Desde `lg` manda el índice de la derecha.
  */
 function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
   return (
-    <nav aria-label="Preguntas de esta sección" className="indice-en-fila mt-6 min-w-0">
-      <ul className="flex gap-2 overflow-x-auto pb-1">
+    <nav aria-label="Preguntas de esta sección" className="indice-en-fila indice-movil mt-6 min-w-0">
+      <p className="indice-movil-rotulo">En esta página</p>
+      <ul>
         {temas.map((t) => (
-          <li key={t.id} className="shrink-0">
-            <a
-              href={`#${t.id}`}
-              className="inline-flex items-center rounded-full border border-[var(--linea)] px-3.5 py-1.5
-                         text-[13px] text-[var(--suave)] transition-colors
-                         hover:border-[#7b5fbf]/55 hover:text-[var(--violeta-txt)]
-                         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50"
-            >
-              {t.pregunta}
+          <li key={t.id}>
+            <a href={`#${t.id}`} className="indice-movil-enlace">
+              <span className="min-w-0">
+                <span className="indice-movil-etiqueta">{t.etiqueta}</span>
+                <span className="indice-movil-pregunta">{t.pregunta}</span>
+              </span>
+              <ArrowDown className="indice-movil-flecha" aria-hidden />
             </a>
           </li>
         ))}

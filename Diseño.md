@@ -690,6 +690,12 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   (antes, desde 1536 px). Ya no usa `ExploradorTresPaneles`.
 - **Soluciones** conserva sus controles (carpetas, buscador, 4 pestañas, tira de conceptos) dentro
   del ancho de sitio.
+- **Índice en el teléfono, en VERTICAL** (2026-10-29, Fernando: *«no me gusta tener que deslizarse
+  horizontalmente en este tipo de opciones»*): por debajo de `lg`, «En esta página» es una tarjeta
+  con una fila por pregunta (etiqueta, pregunta entera y flecha ↓ en ficha violeta), no una fila
+  de píldoras con `overflow-x-auto`. Regla general (ya en `/diseno` §4-ter): en el teléfono
+  ninguna lista de opciones se desliza de lado. Verificado: ningún elemento con desplazamiento
+  horizontal en las páginas públicas a 390 px.
 - ⚠️ `IconoMundo` acepta `idRecorte`: con dos Tierras en una página y el mismo `id` de recorte,
   la visible usaba el de la oculta y salía CUADRADA.
 - Verificado (producción) a 1440, 1100 y 390 px: `scrollWidth` igual al ancho.
