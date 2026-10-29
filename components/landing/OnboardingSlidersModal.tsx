@@ -54,7 +54,6 @@ import {
 } from 'lucide-react';
 import LogoGirando from '@/components/ui/LogoGirando';
 import PixelInput from '@/components/ui/PixelInput';
-import PixelTabs from '@/components/ui/PixelTabs';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
 export type PostulacionData = {
@@ -130,79 +129,76 @@ const PASOS: { n: string; name: string; desc: string }[] = [
   },
 ];
 
-/** Los 4 Pisos como un edificio: una fila por piso, de la gobernanza a la ejecución. */
-function PisosBuilding() {
+/**
+ * EL MODELO 4P COMO TABLA (Fernando, 2026-10-29: «quitemos las pestañas… en formato tabla, los
+ * 4 pisos con su nombre y número, y los 4 pasos uno a la derecha del otro, porque es la forma
+ * correcta de representar el modelo organizacional 4P»).
+ *
+ * Filas = los 4 PISOS (del gobierno, arriba, a la ejecución, abajo); columnas = los 4 PASOS (de
+ * izquierda a derecha, en el orden en que se recorren). Cada cruce es un punto: en toda etapa
+ * participan los cuatro roles. Al pasar por un piso, un paso o un cruce, se iluminan su fila y su
+ * columna; la descripción de cada uno queda en su `title`.
+ */
+function Modelo4P() {
+  const [foco, setFoco] = useState<{ piso: number | null; paso: number | null }>({ piso: null, paso: null });
+  const soltar = () => setFoco({ piso: null, paso: null });
   return (
-    <>
-      <p style={{ ...cardDesc, marginBottom: 10 }}>
-        Cuatro roles, cada uno experto en su área, que se complementan en toda iniciativa.
-      </p>
-      <div className="rounded-lg border border-digi-border bg-digi-card overflow-hidden">
-        {PISOS.map((p, i) => (
-          <div
-            key={p.name}
-            className={`flex items-start gap-3 p-3.5 ${i > 0 ? 'border-t border-digi-border' : ''}`}
-          >
-            <span style={stepNum}>{i + 1}</span>
-            <div className="min-w-0 flex-1">
-              <div style={cardTitle}>{p.name}</div>
-              <p style={{ ...cardDesc, marginTop: 3 }}>{p.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ ...kickerStyle, marginTop: 8 }}>
-        Del piso 1 (gobierno) al piso 4 (ejecución)
-      </div>
-    </>
-  );
-}
-
-/** Los 4 Pasos como línea de tiempo numerada (se recorren en orden). */
-function PasosTimeline() {
-  return (
-    <>
-      <p style={{ ...cardDesc, marginBottom: 10 }}>
-        Se recorren en orden; cada etapa resuelve una necesidad y prepara la siguiente.
-      </p>
-      <ol className="flex flex-col">
-        {PASOS.map((s, i) => (
-          <li key={s.name} className="relative flex gap-3 pb-3 last:pb-0">
-            {i < PASOS.length - 1 && (
-              <span
-                aria-hidden
-                className="absolute left-4 top-9 bottom-0 w-px bg-digi-border"
-              />
-            )}
-            <span className="relative z-10 w-8 h-8 shrink-0 rounded-full bg-accent text-white text-[11px] font-semibold flex items-center justify-center">
-              {s.n}
-            </span>
-            <div className="min-w-0 flex-1 rounded-lg border border-digi-border bg-digi-card p-3.5">
-              <div style={cardTitle}>{s.name}</div>
-              <p style={{ ...cardDesc, marginTop: 3 }}>{s.desc}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </>
-  );
-}
-
-function ModeloTabs() {
-  const [tab, setTab] = useState<'pisos' | 'pasos'>('pisos');
-  return (
-    <div>
-      <PixelTabs
-        tabs={[
-          { value: 'pisos', label: 'Los 4 Pisos' },
-          { value: 'pasos', label: 'Los 4 Pasos' },
-        ]}
-        active={tab}
-        onChange={(v) => setTab(v as 'pisos' | 'pasos')}
-      />
-      <div key={tab} style={{ animation: 'onbFadeUp 0.3s ease-out' }}>
-        {tab === 'pisos' ? <PisosBuilding /> : <PasosTimeline />}
-      </div>
+    <div className="modelo-4p" onMouseLeave={soltar}>
+      <table>
+        <caption className="sr-only">Modelo Organizacional 4P: los 4 pisos (filas) por los 4 pasos (columnas)</caption>
+        <thead>
+          <tr>
+            <th scope="col" className="m4p-esquina">
+              <span className="m4p-esquina-pasos">Pasos →</span>
+              <span className="m4p-esquina-pisos">Pisos ↓</span>
+            </th>
+            {PASOS.map((s, j) => (
+              <th
+                key={s.name}
+                scope="col"
+                title={s.desc}
+                className={`m4p-paso ${foco.paso === j ? 'es-foco' : ''}`}
+                onMouseEnter={() => setFoco({ piso: null, paso: j })}
+                onClick={() => setFoco({ piso: null, paso: j })}
+              >
+                <span className="m4p-num">{j + 1}</span>
+                <span className="m4p-nombre">{s.name}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {PISOS.map((p, i) => (
+            <tr key={p.name}>
+              <th
+                scope="row"
+                title={p.desc}
+                className={`m4p-piso ${foco.piso === i ? 'es-foco' : ''}`}
+                onMouseEnter={() => setFoco({ piso: i, paso: null })}
+                onClick={() => setFoco({ piso: i, paso: null })}
+              >
+                <span className="m4p-num">{i + 1}</span>
+                <span className="m4p-nombre">{p.name}</span>
+              </th>
+              {PASOS.map((s, j) => {
+                const enFila = foco.piso === i;
+                const enColumna = foco.paso === j;
+                return (
+                  <td
+                    key={s.name}
+                    className={`m4p-cruce ${enFila || enColumna ? 'es-foco' : ''} ${enFila && enColumna ? 'es-cruce' : ''}`}
+                    onMouseEnter={() => setFoco({ piso: i, paso: j })}
+                onClick={() => setFoco({ piso: i, paso: j })}
+                    aria-label={`${p.name} en ${s.name}`}
+                  >
+                    <span className="m4p-punto" aria-hidden="true" />
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -211,21 +207,11 @@ function SlideModelo() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={pStyle}>
-        Somos un <strong style={strong}>proyecto de desarrollo humano</strong>, y creemos que las
-        grandes ideas necesitan una estructura que las sostenga. Por eso trabajamos con el{' '}
-        <strong style={strong}>Modelo 4P</strong>: un marco que organiza a las personas en{' '}
-        <strong style={strong}>4 Pisos</strong> (roles) y guía cada iniciativa a través de{' '}
-        <strong style={strong}>4 Pasos</strong> (etapas). Juntos, convierten una idea en un
-        proyecto real.
+        Este es el <strong style={strong}>proyecto de desarrollo humano</strong> del <strong style={strong}>Grupo Corazones Cruzados</strong>. Estamos aquí para luchar por un sueño, que es transformar el mundo, y construir un futuro mejor. Lo que queremos impulsar es el reconocimiento y aprovechamiento de las condiciones de los sujetos, para lograr estrategias organizacionales que logren resolver nuestras problemáticas sociales. Para alcanzar un objetivo tan grande como éste, trabajaremos usando como base el{' '}
+        <strong style={strong}>Modelo Organizacional 4P</strong>: el cual consiste en descubrir el talento de cada sujeto para posicionarlo en determinado rol y función de cualquier proyecto. Dicho esto, el modelo se distribuye de la siguiente manera:
       </p>
 
-      <ModeloTabs />
-
-      <div style={noteBox}>
-        Cada uno de los cuatro pasos se apoya en los cuatro pisos: en toda etapa, los roles
-        trabajan juntos —cada uno experto en lo suyo— para resolver lo que el proyecto necesita y
-        dar el siguiente paso con seguridad.
-      </div>
+      <Modelo4P />
     </div>
   );
 }

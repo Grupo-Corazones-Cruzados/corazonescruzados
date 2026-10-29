@@ -665,6 +665,15 @@ esquinas de cámara no cambian.
   sin latido; pestañas segmentadas de radio 6/4 px; números en cuadrado `accent` plano; notas en
   `digi-darker` con filete `accent`. **Sin degradados, brillos ni Space Grotesk.** La prop `tema`
   sigue existiendo pero ya no cambia el aspecto. Estilos: bloque `.onb-*` en globals.css.
+- **El Modelo 4P como TABLA, no pestañas (Fernando, 2026-10-29: «es la forma correcta de
+  representar el modelo organizacional 4P»).** `Modelo4P` en el paso 1: filas = los 4 PISOS
+  (Global → Colaborador, número + nombre), columnas = los 4 PASOS de izquierda a derecha
+  (Fundamentación → Gestión). Esquina partida en diagonal «Pasos → / Pisos ↓»; cada cruce es un
+  punto; al pasar (o tocar) una cabecera o un cruce se tiñen su fila y su columna y el cruce se
+  enciende. Las descripciones van en `title`, no escritas. En el teléfono los nombres de los
+  pasos van en VERTICAL para que quepan las 4 columnas sin desplazar de lado. Estilos `.m4p-*`.
+  Fernando reescribió a mano el texto de introducción y quitó las notas «Cuatro roles…», «Del
+  piso 1…» y el recuadro final: no reponerlos.
 - **La cabecera lleva SIEMPRE fondo** (`bg-[#0b0d14]/85` + desenfoque), también en la portada:
   ya no es transparente hasta desplazar. Se retiró con ello el color partido del nombre
   (`.texto-partido`, `refBordeIzquierdo`), que ya no tenía ningún uso.

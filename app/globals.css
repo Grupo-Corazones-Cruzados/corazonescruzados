@@ -2918,11 +2918,61 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .onb-cuerpo .rounded-md { border-radius: 6px; }
 .onb-cuerpo .border-digi-border { border-color: var(--color-digi-border); }
 .onb-cuerpo .bg-digi-card { background: var(--color-digi-darker); }
-/* Las pestañas (`PixelTabs`) como control segmentado, la elegida en morado plano. */
-.onb-cuerpo .pivot { display: inline-flex; gap: 2px; padding: 3px; border-radius: 6px; background: var(--color-digi-darker); border: 1px solid var(--color-digi-border); }
-.onb-cuerpo .pivot-tab { border: 0 !important; margin: 0 !important; padding: 6px 14px; border-radius: 4px; font-size: 0.82rem !important; font-weight: 600; }
-.onb-cuerpo .pivot-tab.is-active { color: #fff !important; background: var(--color-accent); }
-.onb-cuerpo [role='tablist'], .onb-cuerpo .pivot + * { border-bottom: 0; }
+/* EL MODELO 4P COMO TABLA (`Modelo4P`, 2026-10-29): pisos en filas, pasos en columnas.
+   Cabeceras con número en cuadrado `accent`; cada cruce, un punto; la fila y la columna con el
+   foco se tiñen de `accent-light` y su cruce enciende el punto. */
+.modelo-4p { border: 1px solid var(--color-digi-border); border-radius: 8px; overflow: hidden; background: var(--color-digi-darker); }
+.modelo-4p table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.modelo-4p th, .modelo-4p td { border: 1px solid var(--color-digi-border); padding: 0; transition: background 160ms ease; }
+.modelo-4p tr > :first-child { border-left: 0; width: 30%; }
+.modelo-4p tr > :last-child { border-right: 0; }
+.modelo-4p thead th { border-top: 0; }
+.modelo-4p tbody tr:last-child > * { border-bottom: 0; }
+.m4p-esquina { position: relative; height: 64px; background: var(--color-digi-card); }
+/* La esquina partida en diagonal: «Pasos →» arriba a la derecha, «Pisos ↓» abajo a la izquierda. */
+.m4p-esquina::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top right, transparent calc(50% - 0.5px), var(--color-digi-border) 50%, transparent calc(50% + 0.5px)); }
+.m4p-esquina > span { position: absolute; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-digi-muted); }
+.m4p-esquina-pasos { top: 8px; right: 10px; }
+.m4p-esquina-pisos { bottom: 8px; left: 12px; }
+.m4p-paso, .m4p-piso { background: var(--color-digi-card); color: var(--color-digi-text); font-weight: 600; cursor: default; }
+.modelo-4p .m4p-paso { padding: 12px 6px; text-align: center; vertical-align: middle; }
+.m4p-paso .m4p-num { margin: 0 auto 6px; }
+.modelo-4p .m4p-piso { padding: 12px 14px; text-align: left; }
+.m4p-piso > span { vertical-align: middle; }
+.m4p-piso .m4p-num { display: inline-flex; margin-right: 10px; }
+.m4p-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.m4p-nombre { font-size: 0.84rem; line-height: 1.25; }
+.m4p-paso .m4p-nombre { display: block; font-size: 0.8rem; overflow-wrap: anywhere; }
+.m4p-cruce { height: 52px; text-align: center; vertical-align: middle; }
+.m4p-punto { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: var(--color-digi-border); transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.modelo-4p .es-foco { background: var(--color-accent-light); }
+.m4p-cruce.es-foco .m4p-punto { background: var(--color-accent-glow); }
+.m4p-cruce.es-cruce .m4p-punto { background: var(--color-accent); transform: scale(1.6); box-shadow: 0 0 0 4px var(--color-accent-light); }
+/* Teléfono: los nombres de los pasos se leen en vertical para que quepan las cuatro columnas. */
+@media (max-width: 639.98px) {
+  .modelo-4p tr > :first-child { width: 37%; }
+  .m4p-esquina { height: auto; }
+  .m4p-esquina-pasos { top: 6px; right: 6px; }
+  .m4p-esquina-pisos { bottom: 6px; left: 8px; }
+  .modelo-4p .m4p-paso { padding: 8px 2px 10px; vertical-align: top; }
+  .m4p-paso .m4p-nombre { writing-mode: vertical-rl; transform: rotate(180deg); margin: 0 auto; font-size: 0.75rem; white-space: nowrap; }
+  .modelo-4p .m4p-piso { padding: 10px 6px 10px 8px; white-space: nowrap; }
+  .m4p-piso .m4p-num { margin-right: 6px; width: 22px; height: 22px; }
+  .m4p-piso .m4p-nombre { font-size: 0.76rem; }
+  .m4p-cruce { height: 46px; }
+}
 /* Dentro del contenido (casillas del paso final): el interruptor arriba, junto a la primera línea. */
 .onb-aceptar.es-en-linea { align-items: flex-start; }
 .onb-aceptar.es-en-linea .onb-interruptor { margin-top: 1px; }
