@@ -10951,3 +10951,10 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
 
 ## Riesgos y cómo se mitigan
 - Contar envíos sin separar `equipo` del agente falsea el diagnóstico → contar solo `responder`/`escalar_a_humano`.
+
+- 2026-10-29 · Formulario de postulación, paso 2: el **Proyecto Centralizado** (texto de Fernando) es un
+  servicio exclusivo para clientes, candidatos y miembros con negocios en necesidad/problemática/crisis;
+  exige un previo acuerdo con el dueño (acceso y control temporal de los departamentos afectados para
+  implementar los sistemas de gobernanza de GCC). Los negocios afiliados entran en la **Estrategia
+  Organizacional**, que conecta negocios y talentos. Sustituye la idea anterior («todo proyecto es recurso
+  de GCC», un solo liderazgo).
