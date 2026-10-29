@@ -384,7 +384,7 @@ export default function MiDiaPage() {
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Eventos · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : dayHeader(ymd(currentDate))}</span>
           <button onClick={() => openNew('progreso')} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-accent text-white text-[11.5px] font-medium hover:bg-accent-hover transition-colors" style={mf}><Plus className="w-3 h-3" /> Nuevo</button>
         </div>
-        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto max-h-[calc(100dvh-220px-var(--cabecera-movil))] xl:max-h-none">
+        <div className="p-2.5 space-y-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden max-h-[calc(100dvh-220px-var(--cabecera-movil))] xl:max-h-none">
           {(() => {
             // En vista de MES el panel muestra solo el día seleccionado (currentDate);
             // en semana/día conserva el agrupado por día del rango de la vista.
@@ -405,11 +405,14 @@ export default function MiDiaPage() {
                         className="w-full text-left rounded-lg border border-digi-border bg-digi-darker/40 hover:border-accent/50 transition-colors p-2 flex items-stretch gap-2">
                         <span className="w-1 rounded-full shrink-0" style={{ background: color }} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] font-medium text-digi-text truncate leading-snug inline-flex items-center gap-1" style={mf}>
+                          {/* `flex` + `min-w-0` y no `inline-flex`: un `inline-flex` no se ciñe al
+                              ancho, el `truncate` no recortaba nunca y un nombre largo abría un
+                              desplazamiento lateral (Fernando, 2026-10-29). El nombre entero, en `title`. */}
+                          <p className="text-[12.5px] font-medium text-digi-text leading-snug flex items-center gap-1 min-w-0" style={mf} title={ev.title}>
                             {ev.generated && (ev.taskKind === 'social'
                               ? <PartyPopper className="w-3 h-3 shrink-0 text-amber-400" />
                               : <ShieldCheck className="w-3 h-3 shrink-0 text-accent" />)}
-                            <span className="truncate">{ev.title}</span>
+                            <span className="truncate min-w-0">{ev.title}</span>
                           </p>
                           <p className="text-[10.5px] text-digi-muted mt-0.5" style={mf}>{ev.all_day ? 'Todo el día' : `${fmtTime(ev.instanceStart)}–${fmtTime(ev.instanceEnd)}`}{ev.client_name ? ` · ${ev.client_name}` : ''}{ev.generated ? (ev.taskKind === 'social' ? ' · evento' : ' · política') : ''}</p>
                         </div>

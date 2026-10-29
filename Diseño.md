@@ -4815,6 +4815,9 @@ navegador» con el `BotonAvisosPush` de Mi día; se esconde sola cuando el botó
 Verificado a 1440 y 390 px, claro y oscuro (`scrollWidth` = ancho).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · Nombre de reunión largo desbordaba el panel de Eventos de Mi día** · **CORREGIDO**. El título era
+  `inline-flex` + `truncate` (no recorta): ahora `flex min-w-0` + `truncate min-w-0`, `title` con el nombre entero y la
+  lista `overflow-x-hidden`.
 - **2026-10-29 · Filtro «Solo facturado» en el estado financiero** · **NUEVO** (Fernando). Un `Interruptor` con
   su texto en la fila de filtros (es un sí/no, no un segmentado). Cambia la columna a «Facturado», las cifras
   («Facturado 2026»), el ahorro, el filtro Ahorro/Pérdida y el reporte (`?facturado=1`, «2026 · Solo facturado»).
