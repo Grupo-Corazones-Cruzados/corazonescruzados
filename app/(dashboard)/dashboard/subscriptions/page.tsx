@@ -17,11 +17,10 @@ import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
-import { BTN_PRIMARY } from '@/components/ui/Button';
+import BarraLista from '@/components/ui/BarraLista';
 import { fmt2 } from '@/lib/format';
-import { Layers, CheckCircle2, PauseCircle, XCircle, Search, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
+import { Layers, CheckCircle2, PauseCircle, XCircle, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -412,31 +411,16 @@ export default function SubscriptionsPage() {
             <div className="min-w-0">
               {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
                   la columna de la lista. */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por título o cliente..."
-                    className="field-control w-full min-h-11 sm:min-h-0 pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                    style={mf} />
-                </div>
-                {/* Crear suscripciones es del staff. El servidor ya lo rechaza, pero enseñarle
-                    el botón a un cliente es prometerle algo que va a fallar. */}
-                {/* Es la acción principal: en el teléfono baja a la barra de abajo y el buscador se
-                    queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
-                {!esCliente && (
-                  <>
-                    <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
-                      <Plus className="w-4 h-4" /> Nueva suscripción
-                    </button>
-                    <EnBarraAcciones>
-                      <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
-                        <Plus className="w-4 h-4" /> Nueva suscripción
-                      </button>
-                    </EnBarraAcciones>
-                  </>
-                )}
-              </div>
+              {/* Crear suscripciones es del staff: enseñarle el botón a un cliente es prometerle
+                  algo que va a fallar. */}
+              <BarraLista
+                busqueda={search}
+                onBusqueda={setSearch}
+                placeholder="Buscar por título o cliente..."
+                acciones={esCliente ? [] : [
+                  { label: 'Nueva suscripción', icon: Plus, onClick: () => { resetCreate(); setShowCreate(true); }, tipo: 'primaria' },
+                ]}
+              />
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={subs.length === 0}>
               <PixelDataTable

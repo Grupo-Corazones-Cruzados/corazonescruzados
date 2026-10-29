@@ -12,12 +12,13 @@ import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { FolderKanban, Package, Workflow, Search, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, LayoutGrid } from 'lucide-react';
+import { FolderKanban, Package, Workflow, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, LayoutGrid } from 'lucide-react';
 import { anfitrionDe, type AccesoProducto } from '@/lib/productos/tipos';
 import { fmt2 } from '@/lib/format';
 import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
 import { slugDeTitulo } from '@/lib/marketplace/slug';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import BarraLista from '@/components/ui/BarraLista';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -606,25 +607,22 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                <div className="relative w-full sm:max-w-xs">
-                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                    style={mf} />
-                </div>
-                {/* Filtro por TALENTO (solo en la pestaña de proyectos, que es la que los tiene). */}
-                {tab === 'projects' && talentOptions.length > 0 && (
-                  <div className="w-full sm:w-[280px]">
+              <BarraLista
+                busqueda={search}
+                onBusqueda={setSearch}
+                placeholder="Buscar..."
+                filtros={
+                  // Filtro por TALENTO (solo en la pestaña de proyectos, que es la que los tiene).
+                  tab === 'projects' && talentOptions.length > 0 && (
                     <MultiSelectSearch
                       options={talentOptions.map((t) => ({ value: t, label: t }))}
                       selected={talentFilter}
                       onChange={setTalentFilter}
                       placeholder="Filtrar por talento…"
                     />
-                  </div>
-                )}
-              </div>
+                  )
+                }
+              />
             {/* Las tarjetas se desplazan dentro de su columna, que llega al pie; vacía, la tarjeta
                 ocupa todo el alto (Fernando, 2026-10-29). */}
             <PanelHastaElPie className="min-w-0 flex flex-col">

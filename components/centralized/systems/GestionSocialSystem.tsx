@@ -17,7 +17,7 @@ import {
   CalendarDays, MapPin, Clock, Users, Gem, Sparkles, PartyPopper, Square, Info,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -225,22 +225,10 @@ function EventosTab({ isAdmin }: { isAdmin?: boolean }) {
 
       {/* Centro: command bar + lista de eventos */}
       <div className="flex-1 min-w-0 w-full">
-        <div className="flex items-center gap-2 mb-3">
-          <p className="text-[13px] font-semibold text-digi-text" style={df}>
-            Eventos {loading ? '' : `(${events.length})`}
-          </p>
-          {/* «Nuevo evento» es la principal: en el teléfono va a la barra de abajo; desde `lg`,
-              aquí (Fernando, 2026-10-23). `max-lg:hidden` y no `hidden lg:inline-flex`: el
-              `inline-flex` de BTN_PRIMARY sale después de `hidden` en el CSS y le gana. */}
-          <button className={`${BTN_PRIMARY} ml-auto max-lg:hidden`} onClick={() => setEventDraft({ id: null, d: emptyEvent() })} style={mf}>
-            <Plus className="w-4 h-4" /> Nuevo evento
-          </button>
-          <EnBarraAcciones>
-            <button className={BTN_PRIMARY} onClick={() => setEventDraft({ id: null, d: emptyEvent() })} style={mf}>
-              <Plus className="w-4 h-4" /> Nuevo evento
-            </button>
-          </EnBarraAcciones>
-        </div>
+        {/* Sin buscador: solo «Nuevo evento»; el raíl ya da el conteo por estado. */}
+        <BarraLista
+          acciones={[{ label: 'Nuevo evento', icon: Plus, onClick: () => setEventDraft({ id: null, d: emptyEvent() }), tipo: 'primaria' }]}
+        />
 
         {err && (
           <div className="mb-3 px-3 py-2 rounded-md border border-red-400/40 bg-red-500/10 text-[12px] text-red-600 flex items-center gap-2" style={mf}>

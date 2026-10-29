@@ -31,12 +31,11 @@ import { fmt2 } from '@/lib/format';
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_VARIANT } from '@/lib/projects/estados';
 import {
   FolderKanban, UserRound, Mail, FileEdit, DoorOpen, Loader, Eye, CheckCircle2,
-  Search, Plus, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle, CloudOff,
+  Plus, Send, FileText, ChevronLeft, ChevronRight, X, ArrowRight, Check, Calculator, XCircle, CloudOff,
 } from 'lucide-react';
 import ListaSinConexion, { useSinConexion } from '@/components/sin-conexion/ListaSinConexion';
 import BotonCerrar from '@/components/ui/BotonCerrar';
-import MenuMas from '@/components/ui/MenuMas';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -409,111 +408,44 @@ export default function ProjectsPage() {
   </div>
   );
 
-  /** La barra de la lista: va dentro de la columna de la tabla (ver abajo). */
+  /** La barra de la lista: va dentro de la columna de la tabla (ver abajo). El de talento
+   *  solo se ofrece si hay talentos que filtrar; el de cliente, a quien ve proyectos de varios
+   *  clientes y solo si hay más de uno (con uno solo no filtra nada). */
+  const conTalento = talentOptions.length > 0;
+  const conCliente = veVariosClientes && clientOptions.length > 1;
   const barraLista = (
-  <>
-  {/* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
-      Antes, en el teléfono: buscador, talento y cliente apilados —tres franjas— y debajo
-      tres botones con texto. Ahora el buscador va a todo el ancho con el «⋯» a su lado,
-      los dos filtros comparten fila en `grid-cols-2`, la acción principal baja a la barra
-      de abajo y las secundarias (solicitar, cotizar) van en el «⋯». Desde `lg`, la fila
-      de siempre con sus tres botones. */}
-  {/* ⚠️ `sm:flex-wrap` y el buscador con 220 px de mínimo (2026-10-29): en una fila
-      buscador + 2 filtros de 260 + 3 botones no caben en 1440 px con el raíl, y el
-      buscador se quedaba en una cajita con solo el icono. Ahora, si no cabe, la fila se
-      parte; los filtros miden 200 hasta `2xl`. */}
-  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-3">
-    <div className="flex items-center gap-2 flex-1 min-w-0 sm:min-w-[220px]">
-      <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
-        <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por título..."
-          className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-          style={mf}
-        />
-      </div>
-      {/* Las secundarias, en el teléfono. Para quien no crea, «Solicitar» es la única
-          acción y por eso es la principal: no hay «⋯». */}
-      {canCreateOwn && (
-        <span className="lg:hidden flex ml-auto">
-          <MenuMas items={[
-            { label: 'Solicitar proyecto', icon: Plus, onClick: () => openCreateModal('request') },
-            { label: 'Nueva cotización', icon: Calculator, onClick: openQuotePanel },
-          ]} />
-        </span>
-      )}
-    </div>
-    {/* Filtro por talento y por cliente: en el teléfono comparten fila (uno solo, a todo
-        el ancho); desde `sm` vuelven a sus 260 px. El de talento solo se ofrece si hay
-        talentos que filtrar. El de cliente, solo a quien ve proyectos de varios
-        clientes, y solo si hay más de uno: con uno solo el desplegable no filtra nada
-        — enseñaría la lista entera con un paso más. */}
-    {(() => {
-      const conTalento = talentOptions.length > 0;
-      const conCliente = veVariosClientes && clientOptions.length > 1;
-      if (!conTalento && !conCliente) return null;
-      const solo = conTalento !== conCliente ? 'col-span-2' : '';
-      return (
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-          {conTalento && (
-            <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
-              <MultiSelectSearch
-                options={talentOptions.map((t) => ({ value: t, label: t }))}
-                selected={talentFilter}
-                onChange={setTalentFilter}
-                placeholder="Filtrar por talento…"
-              />
-            </div>
-          )}
-          {conCliente && (
-            <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
-              <MultiSelectSearch
-                options={clientOptions.map((c) => ({ value: c.id, label: c.name }))}
-                selected={clientFilter}
-                onChange={setClientFilter}
-                placeholder="Filtrar por cliente…"
-              />
-            </div>
-          )}
-        </div>
-      );
-    })()}
-    {/* Desde `lg`, los tres botones de siempre. */}
-    <div className="hidden lg:flex gap-2">
-    {/* Solicitar proyecto: para TODOS (yo soy el cliente). */}
-    <button onClick={() => openCreateModal('request')} className={`${BTN_SECONDARY} shrink-0`}>
-      <Plus className="w-4 h-4" /> Solicitar proyecto
-    </button>
-    {/* Nueva cotización (agente IA): solo candidato/miembro. */}
-    {canCreateOwn && (
-      <button onClick={openQuotePanel} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0" style={mf}>
-        <Calculator className="w-4 h-4" /> Nueva cotización
-      </button>
-    )}
-    {/* Nuevo proyecto: solo candidato/miembro/admin (yo soy el responsable). */}
-    {canCreateOwn && (
-      <button onClick={() => openCreateModal('create')} className={`${BTN_PRIMARY} shrink-0`}>
-        <Plus className="w-4 h-4" /> Nuevo proyecto
-      </button>
-    )}
-    </div>
-    {/* En el teléfono, la principal abajo: «Nuevo proyecto» para quien crea; para el
-        cliente, «Solicitar proyecto». */}
-    <EnBarraAcciones>
-      {canCreateOwn ? (
-        <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
-          <Plus className="w-4 h-4" /> Nuevo proyecto
-        </button>
-      ) : (
-        <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
-          <Plus className="w-4 h-4" /> Solicitar proyecto
-        </button>
-      )}
-    </EnBarraAcciones>
-  </div>
-  </>
+    <BarraLista
+      busqueda={search}
+      onBusqueda={setSearch}
+      placeholder="Buscar por título..."
+      sinBuscador={tab === 'offline'}
+      acciones={[
+        // Para quien no crea, «Solicitar» es la única acción y por eso es la principal.
+        { label: 'Solicitar proyecto', icon: Send, onClick: () => openCreateModal('request'), tipo: canCreateOwn ? 'secundaria' : 'primaria' },
+        ...(canCreateOwn ? [
+          { label: 'Nueva cotización', icon: Calculator, onClick: openQuotePanel, tipo: 'acento' as const },
+          { label: 'Nuevo proyecto', icon: Plus, onClick: () => openCreateModal('create'), tipo: 'primaria' as const },
+        ] : []),
+      ]}
+      filtros={<>
+        {conTalento && (
+          <MultiSelectSearch
+            options={talentOptions.map((t) => ({ value: t, label: t }))}
+            selected={talentFilter}
+            onChange={setTalentFilter}
+            placeholder="Filtrar por talento…"
+          />
+        )}
+        {conCliente && (
+          <MultiSelectSearch
+            options={clientOptions.map((c) => ({ value: c.id, label: c.name }))}
+            selected={clientFilter}
+            onChange={setClientFilter}
+            placeholder="Filtrar por cliente…"
+          />
+        )}
+      </>}
+    />
   );
 
   return (

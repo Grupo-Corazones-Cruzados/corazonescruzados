@@ -14,14 +14,13 @@ import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
-import { BTN_PRIMARY } from '@/components/ui/Button';
+import BarraLista from '@/components/ui/BarraLista';
 import { PAISES } from '@/lib/countries';
 import { fmt2 } from '@/lib/format';
 import {
-  Users, Building2, Contact, BookUser, UserRound, Globe, Search, Plus, X,
+  Users, Building2, Contact, BookUser, UserRound, Globe, Plus, X,
   Trash2, CheckCircle2, ChevronDown, ExternalLink, FileText,
 } from 'lucide-react';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const inputCls = 'field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none';
@@ -371,26 +370,15 @@ export default function ClientsPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-4 items-start">
             <div className="min-w-0">
               {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
-                  la columna de la lista. «Nuevo cliente» es la acción principal: en el teléfono baja a
-                  la barra de abajo y el buscador se queda solo, a todo el ancho; desde `lg`, a su lado
-                  (2026-10-23). */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input value={search} onChange={(e2) => setSearch(e2.target.value)}
-                    placeholder="Nombre, identificación o email…"
-                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                    style={mf} />
-                </div>
-                <button onClick={() => { resetCreate(); setShowCreate(true); }} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
-                  <Plus className="w-4 h-4" /> Nuevo cliente
-                </button>
-                <EnBarraAcciones>
-                  <button onClick={() => { resetCreate(); setShowCreate(true); }} className={BTN_PRIMARY}>
-                    <Plus className="w-4 h-4" /> Nuevo cliente
-                  </button>
-                </EnBarraAcciones>
-              </div>
+                  la columna de la lista. «Nuevo cliente» es la acción principal. */}
+              <BarraLista
+                busqueda={search}
+                onBusqueda={setSearch}
+                placeholder="Nombre, identificación o email…"
+                acciones={[
+                  { label: 'Nuevo cliente', icon: Plus, onClick: () => { resetCreate(); setShowCreate(true); }, tipo: 'primaria' },
+                ]}
+              />
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={sortedClients.length === 0} reserva={39}>
               <PixelDataTable

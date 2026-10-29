@@ -28,14 +28,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HelpCircle, Plus, Search, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { HelpCircle, Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import { EditPanel, EditField } from '@/components/ui/EditDialog';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import { BTN_SECONDARY } from '@/components/ui/Button';
+import BarraLista from '@/components/ui/BarraLista';
 import { ICONOS } from '@/components/sitio/piezas';
 import { ACCESOS, DESARROLLO } from '@/lib/sitio/contenido';
 
@@ -220,29 +220,13 @@ export default function FaqsPanel() {
 
         {/* ── 2. LAS PREGUNTAS, SIN RESPUESTA ────────────────────────────────── */}
         <div className="flex flex-col min-h-0">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-digi-muted pointer-events-none" />
-              <input
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar en preguntas y respuestas"
-                className={`${CAMPO} pl-9`}
-                style={mf}
-              />
-            </div>
-            {/* «Nueva» es la principal: en el teléfono va a la barra de abajo y el buscador se
-                queda con todo el ancho; desde `lg`, aquí (Fernando, 2026-10-23). `max-lg:hidden`
-                porque el `inline-flex` de BTN_PRIMARY gana a `hidden`. */}
-            <button onClick={abrirNueva} className={`${BTN_PRIMARY} max-lg:hidden`} style={mf}>
-              <Plus className="w-4 h-4" /> Nueva
-            </button>
-            <EnBarraAcciones>
-              <button onClick={abrirNueva} className={BTN_PRIMARY} style={mf}>
-                <Plus className="w-4 h-4" /> Nueva
-              </button>
-            </EnBarraAcciones>
-          </div>
+          {/* «Nueva» es la principal: en el teléfono baja a la barra de abajo (Fernando, 2026-10-23). */}
+          <BarraLista
+            busqueda={busqueda}
+            onBusqueda={setBusqueda}
+            placeholder="Buscar en preguntas y respuestas"
+            acciones={[{ label: 'Nueva', icon: Plus, onClick: abrirNueva, tipo: 'primaria' }]}
+          />
 
           <div className="flex-1 min-h-0">
             <PixelDataTable

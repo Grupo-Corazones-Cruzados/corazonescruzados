@@ -13,12 +13,13 @@ import { fmt2 } from '@/lib/format';
 import PanelCompartirEnlace from '@/components/ui/PanelCompartirEnlace';
 import Interruptor from '@/components/ui/Interruptor';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import BarraLista from '@/components/ui/BarraLista';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
-  Repeat2, Captions, Search, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
+  Repeat2, Captions, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
   Briefcase, Link2, Plus, Table2, PackageOpen, QrCode, Smartphone, MonitorDown, Printer, Share2, ExternalLink,
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
@@ -491,21 +492,10 @@ export default function ToolsPage() {
 
         {/* ── Right region: buscador + tabla + panel de uso ── */}
         <div className="flex-1 min-w-0 w-full">
-          {/* En el teléfono el buscador va a todo el ancho; el `max-w-xs` dejaba una franja vacía
-              a su derecha (regla de Fernando, 2026-10-23). Desde `sm` recupera su ancho. */}
-          <div className="relative w-full sm:max-w-xs mb-3">
-            <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              placeholder="Buscar herramienta..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-              style={mf}
-            />
-          </div>
-
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+            {/* La barra va en la columna de la tabla: así el panel de uso empieza arriba. */}
             <div className="min-w-0">
+              <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar herramienta..." />
               <PixelDataTable
                 singleLine
                 columns={[

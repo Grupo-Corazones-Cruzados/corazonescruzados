@@ -7,10 +7,11 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import {
-  Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, Search, AtSign, UserPlus,
+  Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, AtSign, UserPlus,
 } from 'lucide-react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -112,11 +113,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)] gap-4 items-start">
       {/* Lista */}
       <div className="min-w-0">
-        <div className="relative mb-3">
-          <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por correo o motivo..."
-            className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-        </div>
+        <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar por correo o motivo..." />
 
         {/* Lista y detalle llegan al pie desde `xl`, donde van lado a lado (Fernando, 2026-10-29). */}
         <PanelHastaElPie desdeAncho={1280} desplazar={false} className="flex flex-col">

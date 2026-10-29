@@ -12,10 +12,9 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import MenuMas from '@/components/ui/MenuMas';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BarraLista from '@/components/ui/BarraLista';
 import {
-  Inbox, Clock, CheckCircle2, AlertTriangle, Search, Plus, X, Paperclip, Trash2,
+  Inbox, Clock, CheckCircle2, AlertTriangle, Plus, X, Paperclip, Trash2,
   Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
   RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
@@ -473,37 +472,15 @@ export default function RecordatoriosPage() {
             <div className="min-w-0">
               {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
                   la columna de la lista. */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por título..."
-                    className="field-control w-full h-11 lg:h-auto pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                    style={mf}
-                  />
-                </div>
-                {/* ── Las acciones, según la pantalla (2026-10-23, reglas del teléfono) ──
-                    Por debajo de `lg`, «Nuevo recordatorio» —la principal— va a la barra fija de
-                    abajo y «Buscar reuniones» —secundaria— al «⋯» junto al buscador: la barra de
-                    arriba queda en una sola línea y la lista empieza antes. Desde `lg`, los dos
-                    botones en su sitio de siempre. */}
-                <span className="lg:hidden flex">
-                  <MenuMas items={[{ label: 'Buscar reuniones', icon: Video, onClick: openMeetings }]} />
-                </span>
-                <EnBarraAcciones>
-                  <button onClick={openCreate} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo recordatorio</button>
-                </EnBarraAcciones>
-                <div className="hidden lg:flex gap-2">
-                  <button onClick={openMeetings} className={`${BTN_SECONDARY} shrink-0`} title="Buscar reuniones de Meet y generar su recordatorio">
-                    <Video className="w-4 h-4" /> Buscar reuniones
-                  </button>
-                  <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}>
-                    <Plus className="w-4 h-4" /> Nuevo recordatorio
-                  </button>
-                </div>
-              </div>
+              <BarraLista
+                busqueda={search}
+                onBusqueda={setSearch}
+                placeholder="Buscar por título..."
+                acciones={[
+                  { label: 'Buscar reuniones', icon: Video, onClick: openMeetings, tipo: 'secundaria', hint: 'Buscar reuniones de Meet y generar su recordatorio' },
+                  { label: 'Nuevo recordatorio', icon: Plus, onClick: openCreate, tipo: 'primaria' },
+                ]}
+              />
               {loading ? (
                 <div className="flex justify-center py-20"><BrandLoader size="lg" label="Cargando…" /></div>
               ) : (

@@ -6,6 +6,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import BrandLoader from '@/components/ui/BrandLoader';
 import Button from '@/components/ui/Button';
+import BarraLista from '@/components/ui/BarraLista';
 import {
   buildFuentesTree, filterTree, allNodeIds, type TreeNode, type NodeKind,
 } from '@/lib/admin/fuentes-tree';
@@ -380,29 +381,20 @@ export default function FuentesPanel() {
 
       {/* ── Centro: registros de la tabla ──────────────────────────────── */}
       <div className={`min-w-0 flex flex-col ${selected ? '' : 'max-lg:hidden'}`} style={{ height: railH }}>
-        {/* Command bar */}
+        {/* Barra de la lista; en el teléfono, con la flecha para volver a las tablas. */}
         {selected && (
-          <div className="flex items-center gap-2 mb-3 flex-wrap shrink-0">
+          <div className="flex items-start gap-2 shrink-0">
             <button onClick={() => { setSelected(null); setForm(null); }} title="Volver a las tablas" aria-label="Volver a las tablas"
-              className="lg:hidden destino-tactil w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
+              className="lg:hidden destino-tactil w-8 h-8 mt-0.5 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
-              <input
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                placeholder={`Buscar en ${selected}...`}
-                className={`${inputCls} pl-8`}
-                style={mf}
-              />
-            </div>
-            <span className="text-[12px] text-digi-muted" style={mf}>
-              {nf.format(total)} {total === 1 ? 'registro' : 'registros'}
-            </span>
-            <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />} disabled={!columns.length}>
-              Nuevo registro
-            </Button>
+            <BarraLista
+              className="flex-1 min-w-0"
+              busqueda={search}
+              onBusqueda={(v) => { setSearch(v); setPage(1); }}
+              placeholder={`Buscar en ${selected}...`}
+              acciones={[{ label: 'Nuevo registro', icon: Plus, onClick: openCreate, tipo: 'primaria', disabled: !columns.length }]}
+            />
           </div>
         )}
 
@@ -497,9 +489,12 @@ export default function FuentesPanel() {
               </div>
             </div>
 
-            {/* Paginación */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-end gap-2 mt-3 shrink-0">
+            {/* Cuántos registros (antes en la barra) y la paginación */}
+            <div className="flex items-center justify-end gap-2 mt-3 shrink-0">
+              <span className="text-[12px] text-digi-muted mr-auto" style={mf}>
+                {nf.format(total)} {total === 1 ? 'registro' : 'registros'}
+              </span>
+              {totalPages > 1 && (<>
                 <span className="text-[12px] text-digi-muted" style={mf}>Página {page} de {totalPages}</span>
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -517,8 +512,8 @@ export default function FuentesPanel() {
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
-              </div>
-            )}
+              </>)}
+            </div>
           </>
         )}
       </div>

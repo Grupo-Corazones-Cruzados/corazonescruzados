@@ -11,9 +11,10 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import BarraLista from '@/components/ui/BarraLista';
 import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { fmt2 } from '@/lib/format';
-import { Trash2, PackageOpen, CircleDot, CheckCircle2, Lock, Clock, Search, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
+import { Trash2, PackageOpen, CircleDot, CheckCircle2, Lock, Clock, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -176,14 +177,10 @@ export default function EntregasPage() {
         <FilterRail title="Estado" items={railItems} value={tab} onChange={setTab} />
 
         <div className="flex-1 min-w-0 w-full">
-          <div className="relative w-full mb-3">
-            <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por título, cliente o mensaje..."
-              className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-          </div>
-
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+            {/* La barra va en la columna de la tabla: así el panel derecho empieza arriba. */}
             <div className="min-w-0">
+              <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar por título, cliente o mensaje..." />
               <PixelDataTable
                 singleLine
                 data={filtrados}

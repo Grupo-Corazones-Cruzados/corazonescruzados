@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserRound, Mail, X, Search, BadgeCheck, DollarSign, Briefcase, UserMinus, Network, SlidersHorizontal, Radar } from 'lucide-react';
+import { UserRound, Mail, X, BadgeCheck, DollarSign, Briefcase, UserMinus, Network, SlidersHorizontal, Radar } from 'lucide-react';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelSelect from '@/components/ui/PixelSelect';
+import BarraLista from '@/components/ui/BarraLista';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
 import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSections';
 import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBar';
@@ -113,11 +114,7 @@ export default function MembersTab({ isAdmin, onChanged }: { isAdmin: boolean; o
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-4 items-start">
       {/* Lista de miembros */}
       <div className="min-w-0">
-        <div className="relative mb-3">
-          <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar miembro..."
-            className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-        </div>
+        <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar miembro..." />
 
         {/* Lista y detalle llegan al pie desde `xl`, donde van lado a lado (Fernando, 2026-10-29). */}
         <PanelHastaElPie desdeAncho={1280} desplazar={false} className="flex flex-col">

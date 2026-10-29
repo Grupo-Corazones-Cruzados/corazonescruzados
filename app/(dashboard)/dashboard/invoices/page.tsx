@@ -18,7 +18,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Receipt, Clock, Send, CheckCircle2, XCircle, Ban, Search, Plus, X, ArrowRight, PenLine, Zap, Download, KeyRound, FileCheck2 } from 'lucide-react';
 import { fmt2 } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BarraLista from '@/components/ui/BarraLista';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
 const pf = { fontFamily: 'var(--font-body)' } as const;
@@ -518,29 +518,13 @@ function InvoicesPageInner() {
           línea que el raíl de la izquierda. */}
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
         <div className="min-w-0">
-          {/* «Facturar etapa de proyecto» es la acción principal: en el teléfono baja a la barra
-              de abajo y el buscador se queda solo, a todo el ancho; desde `lg`, a su lado
-              (2026-10-23, reglas del teléfono de los productos). */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={search} onChange={(ev) => setSearch(ev.target.value)} placeholder="Buscar factura..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf} />
-            </div>
-            {isAdmin && (
-              <>
-                <button onClick={openStageModal} className={`${BTN_PRIMARY} max-lg:hidden shrink-0`}>
-                  <Plus className="w-4 h-4" /> Facturar etapa de proyecto
-                </button>
-                <EnBarraAcciones>
-                  <button onClick={openStageModal} className={BTN_PRIMARY}>
-                    <Plus className="w-4 h-4" /> Facturar etapa
-                  </button>
-                </EnBarraAcciones>
-              </>
-            )}
-          </div>
+          {/* «Facturar etapa de proyecto» es la acción principal, solo admin (BarraLista, 2026-10-29). */}
+          <BarraLista
+            busqueda={search}
+            onBusqueda={setSearch}
+            placeholder="Buscar factura..."
+            acciones={isAdmin ? [{ label: 'Facturar etapa de proyecto', icon: Plus, onClick: openStageModal, tipo: 'primaria' }] : []}
+          />
       {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
       <TablaVaciaHastaElPie vacia={invoices.length === 0}>
       <PixelDataTable

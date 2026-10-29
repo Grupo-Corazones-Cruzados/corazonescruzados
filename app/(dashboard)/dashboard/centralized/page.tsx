@@ -17,13 +17,13 @@ import PixelSelect from '@/components/ui/PixelSelect';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
 import {
   Layers, Globe, Landmark, ClipboardList, Wrench, Boxes, Users, Plus,
-  Share2, Pencil, Trash2, Search, ArrowRight, X,
+  Share2, Pencil, Trash2, ArrowRight, X,
 } from 'lucide-react';
 import {
   PISOS, PASOS, PISO_LABEL, PASO_LABEL, CELL_MAP, systemPath,
 } from '@/lib/centralized/systems';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -253,46 +253,24 @@ export default function CentralizedPage() {
             <div className="min-w-0">
               {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
                   la columna de la lista. */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                <div className="relative flex-1 min-w-0">
-                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar sistema..."
-                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+              {/* Buscador y «Nuevo sistema» arriba; el filtro de paso, debajo (BarraLista). */}
+              <BarraLista
+                busqueda={search}
+                onBusqueda={setSearch}
+                placeholder="Buscar sistema..."
+                acciones={isAdmin ? [{ label: 'Nuevo sistema', icon: Plus, onClick: openNewSystem, tipo: 'primaria' }] : []}
+                filtros={
+                  <select
+                    value={pasoFilter}
+                    onChange={(e) => setPasoFilter(e.target.value)}
+                    className="field-control field-select appearance-none w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none"
                     style={mf}
-                  />
-                </div>
-                <select
-                  value={pasoFilter}
-                  onChange={(e) => setPasoFilter(e.target.value)}
-                  className="field-control field-select appearance-none w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none sm:w-48"
-                  style={mf}
-                >
-                  <option value="">Todos los pasos</option>
-                  {PASOS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-                </select>
-                {/* «Nuevo sistema» es la acción principal: en el teléfono baja a la barra de abajo
-                    en vez de ocupar su propia fila a todo el ancho; desde `lg`, aquí (Fernando,
-                    2026-10-23). */}
-                {isAdmin && (
-                  <button onClick={openNewSystem}
-                    className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-                    style={mf}>
-                    <Plus className="w-4 h-4" /> Nuevo sistema
-                  </button>
-                )}
-                {isAdmin && (
-                  <EnBarraAcciones>
-                    <button onClick={openNewSystem}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
-                      style={mf}>
-                      <Plus className="w-4 h-4" /> Nuevo sistema
-                    </button>
-                  </EnBarraAcciones>
-                )}
-              </div>
+                  >
+                    <option value="">Todos los pasos</option>
+                    {PASOS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                  </select>
+                }
+              />
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={visibleSystems.length === 0}>
               <PixelDataTable

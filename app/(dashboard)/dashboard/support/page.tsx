@@ -14,8 +14,8 @@ import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import Button, { BTN_PRIMARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, Search, MessageSquare } from 'lucide-react';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import { LifeBuoy, DoorOpen, Loader, CheckCircle2, Archive, X, ArrowRight, Plus, MessageSquare } from 'lucide-react';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -164,32 +164,13 @@ export default function SupportPage() {
               línea que el raíl de la izquierda. */}
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
             <div className="min-w-0">
-            {/* «Nuevo ticket» es la acción principal: en el teléfono baja a la barra de abajo y el
-                buscador se queda solo, a todo el ancho; desde `lg`, a su lado (2026-10-23). */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="relative flex-1 min-w-0">
-                <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por asunto..."
-                  className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                  style={mf}
-                />
-              </div>
-              <button
-                onClick={() => setForm({ ...emptyForm })}
-                className="hidden lg:inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-                style={mf}
-              >
-                <Plus className="w-4 h-4" /> Nuevo ticket
-              </button>
-              <EnBarraAcciones>
-                <button onClick={() => setForm({ ...emptyForm })} className={BTN_PRIMARY}>
-                  <Plus className="w-4 h-4" /> Nuevo ticket
-                </button>
-              </EnBarraAcciones>
-            </div>
+            {/* «Nuevo ticket» es la acción principal (BarraLista, 2026-10-29). */}
+            <BarraLista
+              busqueda={search}
+              onBusqueda={setSearch}
+              placeholder="Buscar por asunto..."
+              acciones={[{ label: 'Nuevo ticket', icon: Plus, onClick: () => setForm({ ...emptyForm }), tipo: 'primaria' }]}
+            />
               {/* Vacía o cargando, también hasta el pie (Fernando, 2026-10-29). */}
               <TablaVaciaHastaElPie vacia={tickets.length === 0}>
               <PixelDataTable

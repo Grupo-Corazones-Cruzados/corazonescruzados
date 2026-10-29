@@ -24,12 +24,11 @@ import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
-  Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Search, Plus, FileText, ChevronLeft, ChevronRight,
+  Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Send, Plus, FileText, ChevronLeft, ChevronRight,
   ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen, CloudOff,
 } from 'lucide-react';
 import ListaSinConexion, { useSinConexion } from '@/components/sin-conexion/ListaSinConexion';
-import MenuMas from '@/components/ui/MenuMas';
-import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -364,61 +363,25 @@ export default function TicketsPage() {
   </>
   );
 
-  /* ── La barra de la lista (2026-10-23, reglas del teléfono de los productos) ──────
-      En el teléfono: buscador a todo el ancho; la acción principal baja a la barra de
-      abajo y «Solicitar ticket», que pasa a secundaria para quien también crea, va en el
-      «⋯». Desde `lg`, la fila de siempre con sus dos botones. */
-  const barraLista = (() => {
-    const creaTickets = accessRoleOf(user) !== 'client';
-    return (
-  <div className="flex items-center gap-2 mb-3">
-    <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
-      <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar por título..."
-        className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-        style={mf}
-      />
-    </div>
-    {creaTickets && (
-      <span className="lg:hidden flex ml-auto">
-        <MenuMas items={[{ label: 'Solicitar ticket', icon: Plus, onClick: () => openCreateModal('request') }]} />
-      </span>
-    )}
-    <div className="hidden lg:flex gap-2">
-      {/* Solicitar ticket: para TODOS (yo soy el cliente). */}
-      <button onClick={() => openCreateModal('request')}
-        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-accent text-accent text-sm font-medium rounded hover:bg-accent-light transition-colors shrink-0"
-        style={mf}>
-        <Plus className="w-4 h-4" /> Solicitar ticket
-      </button>
-      {/* Nuevo ticket: solo candidato/miembro/admin (yo soy el miembro asignado). */}
-      {creaTickets && (
-        <button onClick={() => openCreateModal('create')}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors shrink-0"
-          style={mf}>
-          <Plus className="w-4 h-4" /> Nuevo ticket
-        </button>
-      )}
-    </div>
-    {/* En el teléfono, la principal abajo: «Nuevo ticket» para quien crea; para el
-        cliente, «Solicitar ticket», que es su única acción. */}
-    <EnBarraAcciones>
-      {creaTickets ? (
-        <button onClick={() => openCreateModal('create')} className={BTN_PRIMARY}>
-          <Plus className="w-4 h-4" /> Nuevo ticket
-        </button>
-      ) : (
-        <button onClick={() => openCreateModal('request')} className={BTN_PRIMARY}>
-          <Plus className="w-4 h-4" /> Solicitar ticket
-        </button>
-      )}
-    </EnBarraAcciones>
-  </div>
-    );
-  })();
+  /* ── La barra de la lista (BarraLista, 2026-10-29) ──────
+      «Solicitar ticket» es para TODOS (yo soy el cliente); «Nuevo ticket», solo para
+      candidato/miembro/admin (yo soy el miembro asignado). Para el cliente, «Solicitar» es su
+      única acción y por eso es la principal. */
+  const creaTickets = accessRoleOf(user) !== 'client';
+  const barraLista = (
+    <BarraLista
+      busqueda={search}
+      onBusqueda={setSearch}
+      placeholder="Buscar por título..."
+      sinBuscador={tab === 'offline'}
+      acciones={[
+        { label: 'Solicitar ticket', icon: Send, onClick: () => openCreateModal('request'), tipo: creaTickets ? 'secundaria' : 'primaria' },
+        ...(creaTickets ? [
+          { label: 'Nuevo ticket', icon: Plus, onClick: () => openCreateModal('create'), tipo: 'primaria' as const },
+        ] : []),
+      ]}
+    />
+  );
 
   return (
     <div>

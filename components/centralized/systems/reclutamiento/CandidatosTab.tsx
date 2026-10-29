@@ -7,10 +7,11 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
 import CriteriaSections from '@/components/centralized/reclutamiento/CriteriaSections';
 import ProspeccionBar from '@/components/centralized/reclutamiento/ProspeccionBar';
-import { Users, Mail, X, Search, Phone, Building2, Globe, UserCheck } from 'lucide-react';
+import { Users, Mail, X, Phone, Building2, Globe, UserCheck } from 'lucide-react';
 import { type CandidateCriteria } from '@/lib/centralized/reclutamiento';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -81,11 +82,7 @@ export default function CandidatosTab({ isAdmin, onChanged }: { isAdmin: boolean
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-4 items-start">
       {/* Lista de candidatos */}
       <div className="min-w-0">
-        <div className="relative mb-3">
-          <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar candidato..."
-            className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-        </div>
+        <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar candidato..." />
 
         {/* Lista y detalle llegan al pie desde `xl`, donde van lado a lado (Fernando, 2026-10-29). */}
         <PanelHastaElPie desdeAncho={1280} desplazar={false} className="flex flex-col">
