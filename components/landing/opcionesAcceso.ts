@@ -20,7 +20,8 @@
  * candidato, la tarjeta de postulación se quita: Fernando.)
  */
 
-import { useEffect, useState, type ComponentType } from 'react';
+import type { ComponentType } from 'react';
+import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import { Briefcase, Clock, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
 
 export type TonoOpcion = 'default' | 'success' | 'warning';
@@ -67,12 +68,6 @@ export function nombresDestino(destination: 'game' | 'dashboard') {
   return { destino, aDestino, dest: `entrar ${aDestino}` };
 }
 
-/** «30 oct, 14:05» en hora de Ecuador. */
-function horaDe(iso: string | null): string {
-  if (!iso) return 'mañana';
-  return new Date(iso).toLocaleString('es-EC', { timeZone: 'America/Guayaquil', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
 /**
  * ⭐ 2026-10-29 (Fernando): LAS TARJETAS YA NO RECONOCEN EL EQUIPO.
  *
@@ -89,15 +84,7 @@ function horaDe(iso: string | null): string {
 export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: AccionesAcceso): OpcionAcceso[] {
   const { dest } = nombresDestino(destination);
 
-  const [registro, setRegistro] = useState<{ bloqueado: boolean; hasta: string | null } | null>(null);
-  useEffect(() => {
-    let alive = true;
-    fetch('/api/registro/estado', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((j) => { if (alive) setRegistro({ bloqueado: !!j?.bloqueado, hasta: j?.hasta ?? null }); })
-      .catch(() => { if (alive) setRegistro({ bloqueado: false, hasta: null }); });
-    return () => { alive = false; };
-  }, []);
+  const registro = useEstadoRegistro();
   const pausa = !!registro?.bloqueado;
   const sinAccion = () => undefined;
 
@@ -111,8 +98,8 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
           Icono: Clock,
           insignia: 'En pausa',
           titulo: 'Postulación',
-          corta: `Disponible desde el ${horaDe(registro?.hasta ?? null)}.`,
-          descripcion: `Desde este equipo ya se creó un registro en las últimas 24 horas. Podrás postularte a partir del ${horaDe(registro?.hasta ?? null)}.`,
+          corta: `Disponible desde el ${horaDeReanudacion(registro?.hasta ?? null)}.`,
+          descripcion: `Desde este equipo ya se creó un registro en las últimas 24 horas. Podrás postularte a partir del ${horaDeReanudacion(registro?.hasta ?? null)}.`,
           onClick: sinAccion,
         }
       : {
@@ -144,7 +131,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       titulo: 'Cliente',
       corta: pausa ? 'Inicia sesión; crear cuenta, en pausa.' : 'Tus productos y servicios.',
       descripcion: pausa
-        ? `Puedes iniciar sesión con tu cuenta. Crear una cuenta nueva desde este equipo estará disponible a partir del ${horaDe(registro?.hasta ?? null)}.`
+        ? `Puedes iniciar sesión con tu cuenta. Crear una cuenta nueva desde este equipo estará disponible a partir del ${horaDeReanudacion(registro?.hasta ?? null)}.`
         : destination === 'dashboard'
           ? 'Accede a la Plataforma para gestionar tus productos, servicios y proyectos del grupo.'
           : 'Inicia sesión (o crea tu cuenta) y entra al Videojuego.',

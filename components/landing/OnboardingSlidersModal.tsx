@@ -30,9 +30,12 @@
  */
 
 import Captcha from '@/components/landing/Captcha';
+import { horaDeReanudacion, useEstadoRegistro } from '@/components/landing/estadoRegistro';
+import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
 import { useState } from 'react';
 import {
   AlertTriangle,
+  Clock,
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
@@ -1245,6 +1248,7 @@ export default function OnboardingSlidersModal({
   const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const registro = useEstadoRegistro();
   const formOk = emailOk && reason.trim().length >= 10 && finalAccepted && !!captcha && !enviando;
   const enviar = async () => {
     if (!formOk || !captcha) return;
@@ -1300,6 +1304,27 @@ export default function OnboardingSlidersModal({
    * La lógica (pasos, aceptación, envío) no cambió. Los colores salen de los tokens que
    * reajusta `.onboarding-<tema>` y los estilos propios de `.onb-*` en globals.css.
    */
+  // La pausa de 24 h se mira AL ABRIR (Fernando, 2026-10-29): si desde este equipo ya se creó un
+  // registro, no se recorre la postulación para acabar rechazada al enviar.
+  if (registro?.bloqueado) {
+    return (
+      <AuthDialog
+        Icon={Clock}
+        titulo="Postulación: en pausa"
+        subtitulo="Desde este equipo ya se creó un registro hace poco."
+        onClose={onClose}
+        ancho="sm"
+        pie={<BotonAuth onClick={onClose}>Entendido</BotonAuth>}
+      >
+        <p className="text-[13.5px] leading-relaxed text-digi-text">
+          Para evitar registros en cadena, cada equipo puede crear un registro cada 24 horas. Podrás
+          postularte a partir del{' '}
+          <strong className="font-semibold text-digi-text">{horaDeReanudacion(registro.hasta)}</strong>.
+        </p>
+      </AuthDialog>
+    );
+  }
+
   return (
     <div
       role="dialog"

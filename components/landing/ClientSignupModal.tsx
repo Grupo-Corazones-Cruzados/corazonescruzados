@@ -19,7 +19,8 @@
 
 import { useState } from 'react';
 import Captcha from './Captcha';
-import { UserPlus, MailCheck } from 'lucide-react';
+import { UserPlus, MailCheck, Clock } from 'lucide-react';
+import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import {
   AuthDialog, Campo, Casilla, ErrorAuth, BotonAuth, EnlaceAuth, INPUT,
 } from './AuthSurface';
@@ -47,6 +48,9 @@ export default function ClientSignupModal({
   const [sent, setSent] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
+  // La pausa de 24 h se mira AL ABRIR (Fernando, 2026-10-29): se llegue por el enlace del inicio de
+  // sesión o por cualquier otro camino, si hay pausa no se enseña el formulario.
+  const registro = useEstadoRegistro();
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const ok =
@@ -58,7 +62,8 @@ export default function ClientSignupModal({
     pwd.length >= 8 &&
     pwd === pwd2 &&
     terms &&
-    !!captcha;
+    !!captcha &&
+    registro?.bloqueado === false;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +102,29 @@ export default function ClientSignupModal({
       setBusy(false);
     }
   };
+
+  /* ── En pausa: un registro desde este equipo en las últimas 24 h ─────────────── */
+  if (registro?.bloqueado) {
+    return (
+      <AuthDialog
+        Icon={Clock}
+        titulo="Crear cuenta: en pausa"
+        subtitulo="Desde este equipo ya se creó un registro hace poco."
+        onClose={onClose}
+        ancho="sm"
+        pie={<BotonAuth onClick={onLogin}>Iniciar sesión</BotonAuth>}
+      >
+        <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
+          Para evitar registros en cadena, cada equipo puede crear una cuenta cada 24 horas. Podrás
+          crear otra a partir del{' '}
+          <strong className="font-semibold text-digi-text">{horaDeReanudacion(registro.hasta)}</strong>.
+        </p>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-digi-muted" style={mf}>
+          Si ya tienes una cuenta, puedes iniciar sesión ahora mismo.
+        </p>
+      </AuthDialog>
+    );
+  }
 
   /* ── Confirmación ─────────────────────────────────────────────────────────── */
   if (sent) {

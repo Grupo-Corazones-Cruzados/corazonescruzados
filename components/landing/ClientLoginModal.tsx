@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
@@ -54,6 +55,9 @@ export default function ClientLoginModal({
    * verificar, a qué correo se envió el enlace (enmascarado) y se ofrece reenviarlo. Es aquí donde
    * se avisa ahora; la tarjeta de Cliente ya no reconoce el equipo.
    */
+  // El enlace «Crear cuenta de cliente» dice si el alta está en pausa (Fernando, 2026-10-29). Pulsarlo
+  // abre igual el alta, que enseña el aviso de bloqueo en vez del formulario.
+  const registro = useEstadoRegistro();
   const [porVerificar, setPorVerificar] = useState<string | null>(null);
   const [reenvio, setReenvio] = useState<{ ok: boolean; texto: string } | null>(null);
   const reenviar = async () => {
@@ -415,7 +419,9 @@ export default function ClientLoginModal({
                   marginTop: 2,
                 }}
               >
-                ¿No tienes cuenta? Crear cuenta de cliente
+                {registro?.bloqueado
+                  ? `Crear cuenta: en pausa hasta el ${horaDeReanudacion(registro.hasta)}`
+                  : '¿No tienes cuenta? Crear cuenta de cliente'}
               </button>
             </form>
           ) : step === 'factor' ? (

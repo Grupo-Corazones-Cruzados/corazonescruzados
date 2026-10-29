@@ -350,6 +350,11 @@ Stack estándar de la casa, con particularidades de este repo:
      `/api/registro/estado`. En pausa: Postulación no se puede pulsar («En pausa», «disponible
      desde…») y Cliente avisa «Alta en pausa» (iniciar sesión sigue). ⚠️ Por IP compartida (oficina,
      operadora móvil) un registro pausa a otros 24 h: es lo pedido.
+     **Bloqueo al abrir (2026-10-29):** la tarjeta Cliente se abre para iniciar sesión, pero el alta
+     (`ClientSignupModal`) y la postulación (`OnboardingSlidersModal`) miran la pausa AL ABRIRSE
+     (`components/landing/estadoRegistro.ts`) y enseñan el aviso en vez del formulario, lleguen por
+     botón o por enlace; el enlace «Crear cuenta de cliente» dice «en pausa hasta…». Las vías viejas
+     `/api/client/signup` y `/api/character/auth/signup` (sin uso, sin captcha) responden 410.
   4. **Sin límite solo para Fernando**: IPs en `REGISTRO_SIN_LIMITE_IPS` (comas) o un navegador
      marcado por un admin abriendo `/api/admin/registro-libre` (`?quitar=1` lo desmarca). Pendiente
      que él diga cuáles.
