@@ -25,6 +25,7 @@ export type MensajeVista = {
   tipo: string;
   herramienta: string | null;
   enviadoOk: boolean | null;
+  errorEnvio: string | null;
   creado: string;
 };
 
@@ -236,7 +237,7 @@ export default function Bandeja({
                     <p className="mt-1 text-[10px] opacity-70">
                       {new Date(m.creado).toLocaleString('es-EC')}
                       {m.enviadoOk === false && (
-                        <span className="ml-1 inline-flex items-center gap-0.5">
+                        <span className="ml-1 inline-flex items-center gap-0.5" title={m.errorEnvio ?? undefined}>
                           <AlertCircle className="h-3 w-3" /> no salió
                         </span>
                       )}

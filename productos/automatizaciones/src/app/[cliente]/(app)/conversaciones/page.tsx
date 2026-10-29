@@ -97,6 +97,7 @@ export default async function PaginaConversaciones({
       tipo: m.tipo,
       herramienta: m.herramienta,
       enviadoOk: m.enviadoOk,
+      errorEnvio: m.errorEnvio,
       creado: m.creado.toISOString(),
     })) ?? [];
 

@@ -24,6 +24,27 @@ export async function enviarTexto(opciones: {
   if (!opciones.token) return { ok: false, error: 'El canal no tiene token de WhatsApp' };
   if (!opciones.phoneNumberId) return { ok: false, error: 'El canal no tiene número conectado' };
 
+  /**
+   * ⇒ UN REINTENTO cuando Meta dice que el token no vale (401 / código 190). En Peter Tours
+   * (2026-10-27 a 29) pasó en 47 de ~1.600 respuestas, sueltas a lo largo del día, mientras el
+   * mismo token mandaba bien las de antes y las de después: un token caducado de verdad las
+   * tumbaría todas. Un 401 es que Meta NO lo aceptó, así que repetir no duplica el mensaje.
+   */
+  let r = await intentarEnvio(opciones);
+  if (!r.ok && r.authError) {
+    await new Promise((res) => setTimeout(res, 1500));
+    r = await intentarEnvio(opciones);
+    if (r.ok) console.log(`[whatsapp] salió al reintentar tras un rechazo de token`);
+  }
+  return { ok: r.ok, waMessageId: r.waMessageId, error: r.error };
+}
+
+async function intentarEnvio(opciones: {
+  phoneNumberId: string;
+  token: string;
+  para: string;
+  texto: string;
+}): Promise<ResultadoEnvio & { authError?: boolean }> {
   try {
     const res = await fetch(`https://graph.facebook.com/${VERSION}/${opciones.phoneNumberId}/messages`, {
       method: 'POST',
@@ -43,7 +64,8 @@ export async function enviarTexto(opciones: {
 
     const cuerpo = await res.json().catch(() => ({}));
     if (!res.ok) {
-      return { ok: false, error: explicarError(res.status, cuerpo) };
+      const e = cuerpo?.error ?? {};
+      return { ok: false, error: explicarError(res.status, cuerpo), authError: res.status === 401 || e.code === 190 };
     }
     return { ok: true, waMessageId: cuerpo?.messages?.[0]?.id };
   } catch (err: any) {
@@ -63,7 +85,21 @@ function explicarError(estado: number, cuerpo: any): string {
   const e = cuerpo?.error ?? {};
   const codigo = e.code ?? e.error_subcode;
   const detalle = e.message ?? `HTTP ${estado}`;
+  return `${traducirError(estado, codigo, detalle)} ${loQueDijoMeta(estado, e)}`;
+}
 
+/**
+ * Lo que respondió Meta tal cual, al final del texto. Sin esto, el 2026-10-29 no hubo forma de
+ * saber por qué fallaban envíos sueltos de Peter Tours: todo 401 o 190 salía como «el token
+ * caducó» y la respuesta original no quedaba en ningún sitio.
+ */
+function loQueDijoMeta(estado: number, e: any): string {
+  const partes = [`HTTP ${estado}`, e.code != null && `código ${e.code}`, e.error_subcode != null && `subcódigo ${e.error_subcode}`,
+    e.type, e.message, e.error_data?.details, e.fbtrace_id && `fbtrace ${e.fbtrace_id}`].filter(Boolean);
+  return `[Meta: ${partes.join(' · ')}]`.slice(0, 600);
+}
+
+function traducirError(estado: number, codigo: any, detalle: string): string {
   if (codigo === 131047) {
     return 'Pasaron más de 24 horas desde el último mensaje del contacto: fuera de esa ventana solo se puede escribir con una plantilla aprobada.';
   }
