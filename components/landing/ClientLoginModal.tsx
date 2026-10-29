@@ -8,7 +8,8 @@
 
 import { useState } from 'react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
-import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
+import { startRegistration } from '@simplewebauthn/browser';
+import { usePasskeyPreparada } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 import { PANEL_AUTH, TITULO_AUTH, CAMPO_AUTH } from './authEstilos';
@@ -145,32 +146,36 @@ export default function ClientLoginModal({
   };
 
   // Passkey de usuario: si hay una en este dispositivo, entra DIRECTO (sin código).
+  const { autenticar: autenticarPasskey, preparar: prepararPasskey } = usePasskeyPreparada(
+    step === 'factor' && tienePasskey,
+    () => fetch('/api/auth/passkey/begin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim() }),
+    }),
+  );
   const loginWithPasskey = async () => {
     setError(null);
     setBusy(true);
     try {
-      const begin = await fetch('/api/auth/passkey/begin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const opts = await begin.json();
-      if (!begin.ok) {
+      // Primero la passkey, sin esperar nada antes: Safari exige que salga del toque.
+      const res = await autenticarPasskey();
+      if (!res.ok) {
         // No debería llegarse aquí —el botón solo se pinta si hay passkey—, pero si la
         // borraron entre el paso 1 y este clic, se explica sin alarmar.
         setTienePasskey(false);
         setError('Esa passkey ya no está disponible. Entra con el código y podrás configurar una nueva.');
         return;
       }
-      const credential = await startAuthentication({ optionsJSON: opts });
       const finish = await fetch('/api/auth/passkey/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential, email: email.trim() }),
+        body: JSON.stringify({ credential: res.credential, email: email.trim() }),
       });
       const fj = await finish.json();
       if (!finish.ok) {
         setError(fj?.error ?? 'Passkey rechazada');
+        void prepararPasskey();
         return;
       }
       onLoggedIn();

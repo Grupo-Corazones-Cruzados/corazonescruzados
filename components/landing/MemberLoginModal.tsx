@@ -6,7 +6,8 @@
  */
 
 import { useState } from 'react';
-import { startAuthentication, startRegistration } from '@simplewebauthn/browser';
+import { startRegistration } from '@simplewebauthn/browser';
+import { usePasskeyPreparada } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 import BotonCerrar from '@/components/ui/BotonCerrar';
@@ -86,20 +87,24 @@ export default function MemberLoginModal({
   };
 
   // Passkey: si hay una registrada en este dispositivo, entra DIRECTO (sin código).
+  const { autenticar: autenticarPasskey, preparar: prepararPasskey } = usePasskeyPreparada(
+    step === 'factor' && tienePasskey,
+    () => fetch('/api/character/auth/passkey/login/begin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expect: 'member', email: email.trim() }),
+    }),
+  );
   const loginWithPasskey = async () => {
     setError(null);
     setBusy(true);
     try {
-      const begin = await fetch('/api/character/auth/passkey/login/begin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expect: 'member', email: email.trim() }),
-      });
-      const opts = await begin.json();
-      if (!begin.ok) {
+      // Primero la passkey, sin esperar nada antes: Safari exige que salga del toque.
+      const res = await autenticarPasskey();
+      if (!res.ok) {
         // 403 = la cuenta de este dispositivo no es miembro/admin.
-        if (begin.status === 403) {
-          setError(opts?.error ?? 'Esta cuenta no es de miembro.');
+        if (res.status === 403) {
+          setError(res.error ?? 'Esta cuenta no es de miembro.');
           return;
         }
         setError(
@@ -107,15 +112,15 @@ export default function MemberLoginModal({
         );
         return;
       }
-      const credential = await startAuthentication({ optionsJSON: opts });
       const finish = await fetch('/api/character/auth/passkey/login/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...credential, email: email.trim() }),
+        body: JSON.stringify({ ...res.credential, email: email.trim() }),
       });
       const fj = await finish.json();
       if (!finish.ok) {
         setError(fj?.error ?? 'Passkey rechazada');
+        void prepararPasskey();
         return;
       }
       onLoggedIn(true);
