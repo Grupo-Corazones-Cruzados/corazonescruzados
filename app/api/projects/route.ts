@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
     // admin sees everything
     if (search) {
       accessParams.push(`%${search}%`);
-      accessWhere += ` AND p.title ILIKE $${accessParams.length}`;
+      accessWhere += ` AND (p.title ILIKE $${accessParams.length} OR p.titulo_original ILIKE $${accessParams.length})`;
     }
 
     // Scope/status filter extends the access base.

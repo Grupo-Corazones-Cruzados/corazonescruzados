@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         WHERE id = $3`,
       [buffer, file.type, id]
     );
+    // Pagada ⇒ el ticket o proyecto que cobra toma su nombre estándar (ver `nombre-estandar`).
+    await nombrarTrasPago(id);
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

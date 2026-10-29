@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO, nombrarIngresosFacturados } from '@/lib/finance';
+import { nombrarPendientes } from '@/lib/pagos/nombre-estandar';
 
 /**
  * Backfill: register completed/invoiced projects and completed tickets.
@@ -93,6 +94,9 @@ export async function GET() {
       try { await backfillIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
       // Y cada ingreso facturado, con el nombre de su factura (ver `nombrarIngresosFacturados`).
       try { await nombrarIngresosFacturados(); } catch (e: any) { console.error('Nombrar ingresos:', e.message); }
+      // Los tickets/proyectos pagados que se quedaron sin su nombre estándar (el proceso murió a
+      // mitad de la llamada a la IA). Sin esperar: no frena la carga del panel.
+      void nombrarPendientes().catch((e) => console.error('Nombre estándar:', e.message));
     }
 
     // `facturado_income`: lo que de los ingresos del mes tiene factura (ver SQL_INGRESO_FACTURADO).

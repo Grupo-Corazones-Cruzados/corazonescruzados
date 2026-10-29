@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const baseParams: any[] = [];
     if (search) {
       baseParams.push(`%${search}%`);
-      baseWhere += ` AND t.title ILIKE $${baseParams.length}`;
+      baseWhere += ` AND (t.title ILIKE $${baseParams.length} OR t.titulo_original ILIKE $${baseParams.length})`;
     }
     // En la pestaña "Abiertos" el scoping por cliente NO aplica (candidatos/miembros ven todos).
     if (user.role === 'client' && !openMode) {

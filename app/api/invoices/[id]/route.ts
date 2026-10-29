@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -80,6 +81,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
 
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (rows[0].status === 'paid') await nombrarTrasPago(id);
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
     console.error('Invoice PATCH error:', err.message);

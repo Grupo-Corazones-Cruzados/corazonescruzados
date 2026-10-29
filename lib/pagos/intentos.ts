@@ -25,6 +25,7 @@ import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
 import { completarOrigenCobrado } from '@/lib/pagos/completar-origen';
+import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
@@ -1046,6 +1047,8 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     if (!esSuscripcion) {
       try { await completarOrigenCobrado(sourceType, sourceId, invoiceId); }
       catch (e: any) { console.error('[pagos] cobro', intento.id, 'no pudo completar el origen:', e.message); }
+      // Y con la factura pagada, el ticket o proyecto toma su nombre estándar.
+      await nombrarTrasPago(invoiceId);
     }
   }
 
