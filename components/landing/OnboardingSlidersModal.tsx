@@ -283,7 +283,7 @@ const TOOLS: AccordionItem[] = [
         <p style={cardDesc}>
           Para obtener los datos que esperan los parámetros de los pasos de la metodología, se
           utilizan diferentes fuentes de datos que vienen de herramientas que se ofrecerán solo a
-          candidatos y miembros de la organización para según las condiciones del servicio, acepte,
+          candidatos y miembros de la organización para según las condiciones del servicio, acepte
           consumir, o no hacer uso de las herramientas que disponemos para ellos.
         </p>
       </>
@@ -291,28 +291,30 @@ const TOOLS: AccordionItem[] = [
   },
   {
     name: 'Sistema de Control Psicosocial',
-    summary: 'Tecnología al servicio de espacios más seguros, para las personas y la comunidad.',
+    summary: 'Una arquitectura tecnológica contra la inseguridad física, basada en las señales de todos.',
+    // Texto de Fernando (2026-10-29), literal.
     body: () => (
       <>
         <p style={cardDesc}>
-          Nace de una convicción: la seguridad es la base sobre la que crecen las personas y los
-          proyectos. Este sistema aprovecha la tecnología y los datos para anticipar y atender, a
-          tiempo, situaciones que hoy son difíciles de controlar.
+          El <strong style={strong}>Sistema de Control Psicosocial</strong> es una arquitectura con
+          enfoque tecnológico que busca resolver principalmente la problemática de{' '}
+          <strong style={strong}>inseguridad física</strong>, siendo un sistema que está basado en
+          señales indicadas por la gran masa de clientes, candidatos, y miembros de la organización.
         </p>
         <p style={cardDesc}>
-          Tomemos un ejemplo cotidiano. Ante un robo, la respuesta habitual —llamar y esperar—
-          muchas veces llega tarde. Imaginemos en cambio un entorno donde una cámara reconoce el
-          incidente por voz o sonido, despliega al instante un dispositivo táctico que verifica lo
-          que ocurre y, al confirmarlo, activa una respuesta coordinada en segundos, sin trámites
-          que den ventaja a quien comete el delito.
+          Este sistema pretende dibujar la realidad a través de señales recibidas por parte de todos
+          los dispositivos asociados que están siendo utilizados por usuarios del sistema,
+          incluyendo usuarios de tipo agente con Inteligencia Artificial.
         </p>
         <p style={cardDesc}>
-          La meta no es vigilar por vigilar, sino <strong style={strong}>hacer que las reglas que
-          ya existen se cumplan de verdad</strong>. Los miembros aceptan, de forma voluntaria y
-          consciente, un mayor nivel de control —como compartir su ubicación—, siempre respetando
-          la intimidad de su vida privada y de su hogar. Apoyándonos en la condiciología para
-          anticipar movimientos e intenciones, buscamos actuar en el momento justo y evitar que un
-          delito quede impune.
+          Lo que propone este sistema es llevar la seguridad física y la aplicación de la ley a un
+          nivel <strong style={strong}>«ipso facto»</strong>, es decir que el acto delictivo tiene
+          consecuencias en el acto sin requerir tiempo de procesos, intermediarios, y roles que solo
+          alargan o incluso disminuyen la carga real de una condena.
+        </p>
+        <p style={cardDesc}>
+          Su función principal es <strong style={strong}>organizar a las masas</strong> a través de
+          un sistema que castiga el delito, y recompensa de muchas maneras a los denunciantes.
         </p>
       </>
     ),
