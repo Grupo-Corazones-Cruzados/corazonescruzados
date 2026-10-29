@@ -386,8 +386,10 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
               </div>
             </div>
 
-            <div className="p-3 overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
+            {/* En el teléfono los siete días van uno bajo otro a todo el ancho: en fila medían
+                1.064 px y había que deslizar de lado (`/diseno` §4-octies, 2026-10-29). */}
+            <div className="p-3 sm:overflow-x-auto">
+              <div className="flex flex-col sm:flex-row gap-2 sm:min-w-max">
                 {days.map((d, i) => {
                   const isToday = sameDay(d, today);
                   const dayStr = ymd(d);
@@ -396,7 +398,7 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                   const genEntries = generatedByDay.get(dayStr) || [];
                   const over = dragOverDay === dayStr;
                   return (
-                    <div key={i} className={`w-[150px] shrink-0 border rounded-lg overflow-hidden bg-digi-card transition-colors ${over ? 'border-accent ring-1 ring-accent' : 'border-digi-border'}`}
+                    <div key={i} className={`w-full sm:w-[150px] shrink-0 border rounded-lg overflow-hidden bg-digi-card transition-colors ${over ? 'border-accent ring-1 ring-accent' : 'border-digi-border'}`}
                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverDay(dayStr); }}
                       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverDay((c) => (c === dayStr ? null : c)); }}
                       onDrop={(e) => { e.preventDefault(); onDropDay(d); }}>
@@ -405,10 +407,13 @@ export default function HorarioDeVidaSystem({ isAdmin: _isAdmin }: { system?: an
                         <div className={`text-[16px] tabular-nums leading-tight ${isToday ? 'text-accent font-bold' : 'text-digi-text'}`} style={mf}>{d.getDate()}</div>
                         <div className="text-[10px] text-digi-muted" style={mf}>{MONTH_ABBR[d.getMonth()]}</div>
                       </div>
-                      <div className={`min-h-[240px] p-2 space-y-1.5 ${over ? 'bg-accent-light/40' : ''}`}>
+                      <div className={`sm:min-h-[240px] p-2 space-y-1.5 ${over ? 'bg-accent-light/40' : ''}`}>
                         {entries.length === 0 && autoEntries.length === 0 && genEntries.length === 0 ? (
-                          <div className="h-full min-h-[220px] flex items-center justify-center text-center">
-                            <span className="text-[10.5px] text-digi-muted/50" style={mf}>{over ? 'Suelta para programar' : 'Arrastra tareas aquí'}</span>
+                          <div className="h-full py-3 sm:py-0 sm:min-h-[220px] flex items-center justify-center text-center">
+                            <span className="text-[10.5px] text-digi-muted/50" style={mf}>
+                              {/* En el teléfono no se arrastra: decir «arrastra» sería prometer algo que no pasa. */}
+                              {over ? 'Suelta para programar' : <><span className="sm:hidden">Sin tareas</span><span className="hidden sm:inline">Arrastra tareas aquí</span></>}
+                            </span>
                           </div>
                         ) : (
                           <>

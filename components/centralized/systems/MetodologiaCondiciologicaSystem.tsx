@@ -161,7 +161,13 @@ export default function MetodologiaCondiciologicaSystem({ isAdmin }: { system?: 
                 <FlaskConical className="w-4 h-4 text-accent" />
                 <span className="text-[13px] font-semibold text-digi-text truncate" style={df}>{proy.name}</span>
               </div>
-              <div className="flex items-center gap-1 overflow-x-auto">
+              {/* Seis pasos: en el teléfono un <select> a todo el ancho, no una tira que se desliza
+                  y esconde los últimos (`/diseno` §4-ter, 2026-10-29). */}
+              <select aria-label="Paso" value={tab} onChange={(e) => setTab(e.target.value as typeof tab)}
+                className="lg:hidden field-control field-select w-full h-11 px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+                {METODOLOGIA_PASOS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+              <div className="hidden lg:flex items-center gap-1">
                 {METODOLOGIA_PASOS.map((p) => (
                   <button key={p.key} onClick={() => setTab(p.key)} className={`px-3 py-1.5 text-[12px] font-medium rounded-t-md whitespace-nowrap transition-colors border-b-2 ${tab === p.key ? 'border-accent text-accent' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
                     {p.label}

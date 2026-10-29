@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
-interface Column<T> {
+export interface Column<T> {
   key: string;
   header: string;
   render: (item: T) => React.ReactNode;
@@ -210,7 +210,7 @@ export default function PixelDataTable<T>({
           que sale de las MISMAS columnas: la primera es la cabecera, las que no tienen título
           (acciones) van a su derecha y el resto en una rejilla «TÍTULO / valor». Así ninguna
           tabla se queda fuera. Regla en `/diseno` §4-ter. */}
-      {!tarjetaMovil && <GaleriaAutomatica columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} />}
+      {!tarjetaMovil && <GaleriaTabla columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} />}
       {/* En el teléfono la tabla está escondida, y con ella su paginación: va también aquí. */}
       {paginacion && <div className={`${tarjetaMovil ? 'lg:hidden' : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{paginacion}</div>}
 
@@ -283,19 +283,33 @@ export default function PixelDataTable<T>({
   );
 }
 
-function GaleriaAutomatica<T>({
-  columns, data, onRowClick, rowClassName,
+/**
+ * ⭐ LA TABLA CONTADA PARA UN TELÉFONO — una tarjeta por fila (Fernando, 2026-10-23 y 2026-10-29).
+ *
+ * La usa `PixelDataTable` sola, y la exportan las tablas que no pueden ser `PixelDataTable`
+ * (la tabla de la factura, la del portafolio, la mensual de Pensamientos…): se pinta esto con
+ * `md:hidden` y su `<table>` con `hidden md:block`. Así hay UNA galería en todo el panel.
+ *
+ * - La primera columna es la cabecera de la tarjeta; las columnas SIN título (acciones) van a su
+ *   derecha y no abren la fila; el resto, rejilla «TÍTULO / valor» en dos columnas.
+ * - `onRowClick` abre el detalle completo: con muchas columnas se pasan solo las que caben en
+ *   una tarjeta y el resto se ve al tocarla.
+ */
+export function GaleriaTabla<T>({
+  columns, data, onRowClick, rowClassName, className = 'md:hidden',
 }: {
   columns: Column<T>[];
   data: T[];
   onRowClick?: (item: T) => void;
   rowClassName?: (item: T) => string;
+  /** Desde qué ancho desaparece (por defecto `md:hidden`, el corte de la tabla). */
+  className?: string;
 }) {
   const [cabecera, ...resto] = columns;
   const acciones = resto.filter((c) => !c.header.trim());
   const campos = resto.filter((c) => c.header.trim());
   return (
-    <div className="md:hidden space-y-2">
+    <div className={`${className} space-y-2`}>
       {data.map((item, i) => (
         <div
           key={i}

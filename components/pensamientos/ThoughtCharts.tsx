@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { DIMENSIONS, DIMENSION_LABEL, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
+import { GaleriaTabla } from '@/components/ui/PixelDataTable';
 import { DIMENSION_ICON, DIMENSION_SHAPE, type MarkShape } from '@/components/centralized/dimensionIcons';
 import { BarChart3, Table2 } from 'lucide-react';
 
@@ -245,7 +246,17 @@ export function IntensityChart({ months }: { months: MonthBucket[] }) {
 function MonthTable({ months }: { months: MonthBucket[] }) {
   const data = [...months].slice(-12).reverse();
   return (
-    <div className="overflow-x-auto">
+    <>
+    {/* En el teléfono, una tarjeta por mes (Fernando, 2026-10-29: las tablas del teléfono son galería). */}
+    <GaleriaTabla data={data} columns={[
+      { key: 'mes', header: 'Mes', render: (m) => fmtMonth(m.month) },
+      ...DIMENSIONS.map((d) => ({ key: d.key, header: DIMENSION_LABEL[d.key], render: (m: MonthBucket) => (
+        <span className="tabular-nums">{m.byCategory[d.key] || <span className="text-digi-muted/50">—</span>}</span>
+      ) })),
+      { key: 'total', header: 'Total', render: (m) => <span className="tabular-nums font-medium">{m.count}</span> },
+      { key: 'chars', header: 'Caracteres', render: (m) => <span className="tabular-nums text-digi-muted">{nf.format(m.chars)}</span> },
+    ]} />
+    <div className="hidden md:block overflow-x-auto">
       <table className="w-full text-[12px]" style={mf}>
         <thead>
           <tr className="text-digi-muted border-b border-digi-border">
@@ -271,6 +282,7 @@ function MonthTable({ months }: { months: MonthBucket[] }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

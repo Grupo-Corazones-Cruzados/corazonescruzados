@@ -3,6 +3,7 @@
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { fmt2 } from '@/lib/format';
 import { Plus } from 'lucide-react';
+import { GaleriaTabla, type Column } from '@/components/ui/PixelDataTable';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -17,6 +18,8 @@ export function totalFactura(items: ItemFactura[]): number {
 }
 
 const CELDA = 'w-full h-8 px-2 bg-transparent border border-transparent rounded text-[12.5px] text-digi-text hover:border-digi-border focus:outline-none tabular-nums';
+/** En el teléfono no hay «al pasar el ratón»: el campo tiene que verse como campo desde el principio. */
+const CELDA_MOVIL = 'field-control w-full h-10 px-2.5 bg-digi-darker border border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none tabular-nums';
 
 /**
  * EL DETALLE DE LA FACTURA EN TABLA — una línea por ítem (Fernando, 2026-09-29).
@@ -36,9 +39,44 @@ export default function DetalleFactura({ items, onChange }: { items: ItemFactura
   const descuento = items.reduce((s, it) => s + (Number(it.discount) || 0), 0);
   const iva = items.reduce((s, it) => s + base(it) * ((Number(it.ivaRate) || 0) / 100), 0);
 
+  /** El mismo ítem contado para un teléfono (Fernando, 2026-10-29): la tabla medía 560 px y
+   *  obligaba a deslizar de lado. Una tarjeta por ítem: la descripción arriba y sus cifras debajo. */
+  const fila = (it: ItemFactura) => items.indexOf(it);
+  const columnasMovil: Column<ItemFactura>[] = [
+    { key: 'description', header: 'Descripción', render: (it) => (
+      <input value={it.description} onChange={(e) => cambiar(fila(it), 'description', e.target.value)}
+        placeholder="Descripción" aria-label="Descripción" className={CELDA_MOVIL} style={mf} />
+    ) },
+    { key: 'quitar', header: '', render: (it) => (
+      <BotonQuitar onClick={() => onChange(items.filter((_, j) => j !== fila(it)))} etiqueta="Quitar ítem" />
+    ) },
+    { key: 'quantity', header: 'Cant.', render: (it) => (
+      <input value={it.quantity} onChange={(e) => cambiar(fila(it), 'quantity', e.target.value)} type="number" inputMode="decimal" min="0.01" step="0.01"
+        aria-label="Cantidad" className={`${CELDA_MOVIL} text-right`} style={mf} />
+    ) },
+    { key: 'unitPrice', header: 'P. unit.', render: (it) => (
+      <input value={it.unitPrice} onChange={(e) => cambiar(fila(it), 'unitPrice', e.target.value)} type="number" inputMode="decimal" min="0" step="0.01"
+        aria-label="Precio unitario" className={`${CELDA_MOVIL} text-right`} style={mf} />
+    ) },
+    { key: 'ivaRate', header: 'IVA', render: (it) => (
+      <select value={it.ivaRate} onChange={(e) => cambiar(fila(it), 'ivaRate', e.target.value)} aria-label="IVA" className={`${CELDA_MOVIL} field-select`} style={mf}>
+        <option value="0">0%</option><option value="5">5%</option><option value="15">15%</option>
+      </select>
+    ) },
+    { key: 'discount', header: 'Desc.', render: (it) => (
+      <input value={it.discount} onChange={(e) => cambiar(fila(it), 'discount', e.target.value)} type="number" inputMode="decimal" min="0" step="0.01"
+        aria-label="Descuento" className={`${CELDA_MOVIL} text-right`} style={mf} />
+    ) },
+    { key: 'subtotal', header: 'Subtotal', render: (it) => <span className="font-semibold tabular-nums">${fmt2(base(it))}</span> },
+  ];
+
   return (
     <div className="space-y-2">
-      <div className="overflow-x-auto rounded-lg border border-digi-border">
+      <GaleriaTabla columns={columnasMovil} data={items} />
+      {items.length === 0 && (
+        <p className="md:hidden rounded-lg border border-digi-border px-3 py-3 text-center text-[12px] text-digi-muted" style={mf}>Sin ítems. Agrega al menos uno para facturar.</p>
+      )}
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-digi-border">
         <table className="w-full text-[12.5px]" style={{ ...mf, tableLayout: 'fixed', minWidth: 560 }}>
           <colgroup>
             <col /><col style={{ width: 64 }} /><col style={{ width: 92 }} /><col style={{ width: 72 }} />

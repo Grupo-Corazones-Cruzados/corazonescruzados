@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { GaleriaTabla } from '@/components/ui/PixelDataTable';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const nf = new Intl.NumberFormat('es-ES');
@@ -48,6 +49,13 @@ const isLong = (c: ColumnInfo) =>
   c.udt.startsWith('_') || c.udt === 'json' || c.udt === 'jsonb' || (c.udt === 'text' && !c.isPrimaryKey);
 
 /** Valor de una celda, listo para mostrar. */
+/** Una celda en la galería del teléfono: lo mismo que la tabla (oculta lo sensible, corta lo largo). */
+function celdaFuente(row: Record<string, unknown>, col: string) {
+  if (SENSITIVE.test(col) && row[col] != null) return '••••••••';
+  const text = cellText(row[col]);
+  return <span className={`block truncate ${row[col] === null ? 'text-digi-muted/60' : ''}`} title={text}>{text.length > 90 ? `${text.slice(0, 90)}…` : text}</span>;
+}
+
 function cellText(value: unknown): string {
   if (value === null || value === undefined) return '—';
   if (typeof value === 'boolean') return value ? 'Sí' : 'No';
@@ -301,9 +309,12 @@ export default function FuentesPanel() {
   return (
     <div className="grid lg:grid-cols-[240px_minmax(0,1fr)] gap-4">
       {/* ── Rail: tablas ───────────────────────────────────────────────── */}
+      {/* En el teléfono es LISTA → DETALLE (Fernando, 2026-10-29): con una tabla elegida el árbol se
+          oculta y sus registros ocupan la pantalla; la flecha «‹» vuelve al árbol. Antes los
+          registros caían debajo de las 195 tablas y había que bajar a buscarlos. */}
       <aside
         ref={railRef}
-        className="bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col"
+        className={`bg-digi-card border border-digi-border rounded-lg overflow-hidden flex flex-col ${selected ? 'max-lg:hidden' : ''}`}
         style={{ height: railH }}
       >
         <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-2 shrink-0">
@@ -368,10 +379,14 @@ export default function FuentesPanel() {
       </aside>
 
       {/* ── Centro: registros de la tabla ──────────────────────────────── */}
-      <div className="min-w-0 flex flex-col" style={{ height: railH }}>
+      <div className={`min-w-0 flex flex-col ${selected ? '' : 'max-lg:hidden'}`} style={{ height: railH }}>
         {/* Command bar */}
         {selected && (
           <div className="flex items-center gap-2 mb-3 flex-wrap shrink-0">
+            <button onClick={() => { setSelected(null); setForm(null); }} title="Volver a las tablas" aria-label="Volver a las tablas"
+              className="lg:hidden destino-tactil w-8 h-8 shrink-0 flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
             <div className="relative flex-1 min-w-[200px]">
               <Search className="w-3.5 h-3.5 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
@@ -425,7 +440,18 @@ export default function FuentesPanel() {
                     </p>
                   </div>
                 ) : (
-                  <table className="w-full border-collapse">
+                  <>
+                  {/* En el teléfono, una tarjeta por registro con sus primeras columnas (Fernando,
+                      2026-10-29: las tablas del teléfono son galería). Tocarla abre el registro
+                      entero en el panel derecho, como el clic en la fila. */}
+                  <GaleriaTabla className="md:hidden p-2" data={rows} onRowClick={openEdit} columns={[
+                    ...columns.slice(0, 1).map((c) => ({ key: c.name, header: c.name, render: (row: any) => celdaFuente(row, c.name) })),
+                    { key: '__quitar', header: '', render: (row: any) => editable
+                      ? <BotonQuitar onClick={() => remove(row)} etiqueta="Eliminar registro" />
+                      : null },
+                    ...columns.slice(1, 7).map((c) => ({ key: c.name, header: c.name, render: (row: any) => celdaFuente(row, c.name) })),
+                  ]} />
+                  <table className="hidden md:table w-full border-collapse">
                     <thead className="sticky top-0 z-10 bg-digi-card">
                       <tr className="border-b border-digi-border">
                         {columns.map((c) => (
@@ -466,6 +492,7 @@ export default function FuentesPanel() {
                       ))}
                     </tbody>
                   </table>
+                  </>
                 )}
               </div>
             </div>

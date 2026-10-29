@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
-import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import ImageGallery from '@/components/ui/ImageGallery';
-import { BTN_PRIMARY } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_ICONO_FILA } from '@/components/ui/Button';
+import Segmentado from '@/components/ui/Segmentado';
+import BotonEditar from '@/components/ui/BotonEditar';
+import { GaleriaTabla, type Column } from '@/components/ui/PixelDataTable';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { fmt2 } from '@/lib/format';
-import { Briefcase, FolderKanban, Package, Plus, Pencil, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
+import { FolderKanban, Package, Plus, UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 
 // Sin «Automatizaciones» (Fernando, 2026-09-30): pasó a ser un producto el 2026-09-23 y ya
@@ -222,6 +225,53 @@ export default function PortfolioPanel() {
     </div>
   );
 
+  const abrir = (item: any) => (item.__team ? openTeamEdit(item) : openEdit(item));
+
+  /** Las columnas, UNA vez: las pinta la tabla del escritorio y la galería del teléfono. El
+   *  título va primero (es la cabecera de la tarjeta) y las acciones sin título (van a su lado). */
+  const columnas: Column<any>[] = [
+    { key: 'titulo', header: 'Título', render: (item) => (
+      // Sin la etiqueta «Equipo»: la columna Talento ya dice de qué va cada fila.
+      <span className="text-[13px] font-medium text-digi-text">{item.title}</span>
+    ) },
+    { key: 'talento', header: 'Talento', render: (item) => {
+      // En un proyecto del equipo sale de sus requerimientos; en un ítem propio, de su campo.
+      const lista: string[] = item.__team ? (item.__talentos || []) : item.talent ? [item.talent] : [];
+      if (!lista.length) return <span className="text-[11.5px] text-amber-600">sin talento</span>;
+      return <div className="flex flex-wrap gap-x-2 gap-y-0.5">{lista.map((t) => <ChipTalento key={t}>{t}</ChipTalento>)}</div>;
+    } },
+    { key: 'tags', header: 'Tags', render: (item) => (
+      (item.tags || []).length
+        ? <span className="text-[12px] text-digi-muted">{(item.tags || []).slice(0, 3).join(' · ')}</span>
+        : <span className="text-digi-muted/50 text-[12px]">—</span>
+    ) },
+    { key: 'precio', header: 'Precio', width: '110px', render: (item) => (
+      <span className="text-accent font-semibold tabular-nums text-[13px]">${fmt2(Number(item.price || 0))}</span>
+    ) },
+    { key: 'acciones', header: '', width: '130px', render: (item) => {
+      const count = item.__team ? (item.image_count || 0) : imageCount(item);
+      return (
+        <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+          {count > 0 && (
+            <button onClick={() => openRowGallery(item)} title={`Ver ${count} foto(s)`} aria-label={`Ver ${count} foto(s)`} className={BTN_ICONO_FILA}>
+              <ImageIcon className="w-3.5 h-3.5" /> {count}
+            </button>
+          )}
+          <BotonEditar onClick={() => abrir(item)} />
+          {/* Siempre a la vista, deshabilitado cuando no procede (el `title` explica por qué). */}
+          <BotonQuitar
+            onClick={() => handleDelete(item.id)}
+            disabled={item.__team}
+            etiqueta="Eliminar"
+            title={item.__team
+              ? 'Un proyecto del equipo no se elimina desde el portafolio: se gestiona en el módulo de Proyectos'
+              : 'Eliminar'}
+          />
+        </div>
+      );
+    } },
+  ];
+
   if (!user?.member_id) {
     return <p className="text-[12px] text-digi-muted text-center py-8" style={mf}>Solo disponible para miembros.</p>;
   }
@@ -229,105 +279,50 @@ export default function PortfolioPanel() {
   return (
     /* El contenido rueda por dentro: el alto lo pone el panel, no la tabla. */
     <div className="h-full min-h-0 overflow-y-auto p-4 space-y-3">
-      {/* Pestañas (catálogo) + buscador + Nuevo en una fila */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {TABS.map((t) => {
-            const active = tab === t.value;
-            return (
-              <button key={t.value} onClick={() => setTab(t.value)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${active ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text'}`} style={mf}>
-                <t.Icon className="w-3.5 h-3.5" /> {t.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* Catálogo (segmentado) + buscador + Nuevo. En el teléfono el segmentado va a todo el
+          ancho, el buscador debajo y «Nuevo» a la barra de abajo (`/diseno` §4-quater). */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <Segmentado etiqueta="Catálogo" className="sm:w-60 shrink-0" valor={tab} onChange={setTab}
+          opciones={TABS.map((t) => ({ valor: t.value, texto: t.label }))} />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-          className="field-control flex-1 min-w-[160px] px-3 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none rounded-md" style={mf} />
-        <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
+          className="field-control flex-1 min-w-0 h-11 sm:h-auto px-3 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none rounded-md" style={mf} />
+        <button onClick={openCreate} className={`${BTN_PRIMARY} shrink-0 max-lg:hidden`}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
+        <EnBarraAcciones>
+          <button onClick={openCreate} className={BTN_PRIMARY}><Plus className="w-4 h-4" /> Nuevo {tabLabel.toLowerCase()}</button>
+        </EnBarraAcciones>
       </div>
 
-      {/* Formato TABLA: llena el ancho; scroll horizontal solo si es muy angosto */}
       {rows.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-10 h-10 rounded-lg bg-black/[0.03] flex items-center justify-center mx-auto mb-2"><tabMeta.Icon className="w-5 h-5 text-digi-muted" /></div>
           <p className="text-[12px] text-digi-muted" style={mf}>Sin {tabMeta.label.toLowerCase()}. Agrega tu primer registro con “Nuevo”.</p>
         </div>
       ) : (
-        <div className="border border-digi-border rounded-lg overflow-x-auto">
-          <table className="w-full text-left border-collapse" style={mf}>
-            <thead>
-              <tr className="border-b border-digi-border bg-digi-dark">
-                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[80px]">Fotos</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Título</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Talento</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide">Tags</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[110px]">Precio</th>
-                <th className="px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide w-[150px] text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-digi-border/60">
-              {rows.map((item: any) => {
-                const count = item.__team ? (item.image_count || 0) : imageCount(item);
-                const key = item.__team ? `t-${item.id}` : `o-${item.id}`;
-                return (
-                  <tr key={key} className="hover:bg-black/[0.02] transition-colors">
-                    <td className="px-3 py-2.5 align-middle">
-                      {count > 0 ? (
-                        <button onClick={() => openRowGallery(item)} title={`Ver ${count} foto(s)`}
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-accent/40 text-accent text-[11px] hover:bg-accent-light transition-colors"><ImageIcon className="w-3.5 h-3.5" /> {count}</button>
-                      ) : <span className="text-digi-muted/50 text-[12px]">—</span>}
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      {/* Sin la etiqueta «Equipo»: la columna Talento ya dice de qué
-                          va cada fila, y el rótulo repetido en doce filas era ruido. */}
-                      <span className="text-[13px] font-medium text-digi-text">{item.title}</span>
-                    </td>
-                    {/* El talento de la fila. En un proyecto del equipo sale de sus
-                        requerimientos; en un ítem propio, de su campo. */}
-                    <td className="px-3 py-2.5 align-middle">
-                      {(() => {
-                        const lista: string[] = item.__team
-                          ? (item.__talentos || [])
-                          : item.talent ? [item.talent] : [];
-                        if (!lista.length) {
-                          return <span className="text-[11.5px] text-amber-600">sin talento</span>;
-                        }
-                        return (
-                          <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                            {lista.map((t: string) => <ChipTalento key={t}>{t}</ChipTalento>)}
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-3 py-2.5 align-middle">
-                      <div className="flex flex-wrap gap-1">{(item.tags || []).slice(0, 3).map((t: string) => <PixelBadge key={t}>{t}</PixelBadge>)}</div>
-                    </td>
-                    <td className="px-3 py-2.5 align-middle text-accent font-semibold tabular-nums text-[13px]">${fmt2(Number(item.price || 0))}</td>
-                    <td className="px-3 py-2.5 align-middle">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => (item.__team ? openTeamEdit(item) : openEdit(item))}
-                          className="inline-flex items-center gap-1 text-[12px] font-medium text-digi-text border border-digi-border rounded px-2.5 py-1 hover:border-accent hover:text-accent transition-colors"><Pencil className="w-3.5 h-3.5" /> Editar</button>
-                        {/* Siempre a la vista, deshabilitado cuando no procede: un botón
-                            que aparece y desaparece según la fila descoloca la columna y
-                            deja al usuario adivinando por qué unas filas sí y otras no.
-                            Deshabilitado, el `title` lo explica. */}
-                        <BotonQuitar
-                          onClick={() => handleDelete(item.id)}
-                          disabled={item.__team}
-                          etiqueta="Eliminar"
-                          title={item.__team
-                            ? 'Un proyecto del equipo no se elimina desde el portafolio: se gestiona en el módulo de Proyectos'
-                            : 'Eliminar'}
-                        />
-                      </div>
-                    </td>
+        <>
+          {/* ⭐ En el teléfono, GALERÍA (Fernando, 2026-10-29: la tabla obligaba a deslizar de
+              lado y partía el título en cinco líneas). Las mismas columnas que la tabla; tocar
+              la tarjeta abre el registro completo para editarlo. */}
+          <GaleriaTabla columns={columnas} data={rows} onRowClick={abrir} />
+          <div className="hidden md:block border border-digi-border rounded-lg overflow-hidden">
+            <table className="w-full text-left border-collapse" style={mf}>
+              <thead>
+                <tr className="border-b border-digi-border bg-digi-dark">
+                  {columnas.map((c) => (
+                    <th key={c.key} style={{ width: c.width }}
+                      className={`px-3 py-2.5 text-[11px] font-semibold text-digi-muted uppercase tracking-wide ${c.key === 'acciones' ? 'text-right' : ''}`}>{c.header}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-digi-border/60">
+                {rows.map((item: any) => (
+                  <tr key={item.__team ? `t-${item.id}` : `o-${item.id}`} className="hover:bg-black/[0.02] transition-colors">
+                    {columnas.map((c) => <td key={c.key} className="px-3 py-2.5 align-middle">{c.render(item)}</td>)}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* ── Create / Edit modal ── */}

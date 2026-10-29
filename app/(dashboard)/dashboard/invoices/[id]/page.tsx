@@ -14,6 +14,7 @@ import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { fmt2 } from '@/lib/format';
 import { SRI_MAX } from '@/lib/integrations/sri/text';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import { GaleriaTabla } from '@/components/ui/PixelDataTable';
 import RailDesplegable, { RAIL_HUECO, useRailDesplegable } from '@/components/ui/RailDesplegable';
 import { PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 
@@ -298,7 +299,27 @@ export default function InvoiceDetailPage() {
       <div className={`grid grid-cols-1 gap-4 items-start ${railPlegado ? `relative min-h-[calc(100dvh-12rem)] ${RAIL_HUECO}` : 'lg:grid-cols-[minmax(0,1fr)_340px]'}`}>
         {/* ─── Items table ─── */}
         <div className="min-w-0 space-y-4">
-          <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
+          {/* En el teléfono, una tarjeta por ítem y los totales debajo (Fernando, 2026-10-29: las
+              tablas del teléfono son galería). La tabla queda para el escritorio. */}
+          <div className="md:hidden space-y-2">
+            {items.length === 0 ? (
+              <p className="bg-digi-card border border-digi-border rounded-lg px-3 py-4 text-center text-[12px] text-digi-muted" style={mf}>Sin items</p>
+            ) : (
+              <GaleriaTabla data={items} columns={[
+                { key: 'desc', header: 'Descripción', render: (item: any) => item.description },
+                { key: 'cant', header: 'Cant.', render: (item: any) => <span className="tabular-nums">{fmt2(Number(item.quantity))}</span> },
+                { key: 'unit', header: 'P. unit.', render: (item: any) => <span className="tabular-nums">${fmt2(Number(item.unit_price))}</span> },
+                { key: 'iva', header: 'IVA', render: (item: any) => `${Number(item.iva_rate || 0)}%` },
+                { key: 'sub', header: 'Subtotal', render: (item: any) => <span className="font-semibold tabular-nums">${fmt2(Number(item.subtotal || (Number(item.quantity) * Number(item.unit_price))))}</span> },
+              ]} />
+            )}
+            <dl className="bg-digi-card border border-digi-border rounded-lg px-3.5 py-3 space-y-1 text-[12.5px]" style={mf}>
+              <div className="flex justify-between"><dt className="text-digi-muted">Subtotal</dt><dd className="tabular-nums text-digi-text">${fmt2(subtotal)}</dd></div>
+              {totalIva > 0 && <div className="flex justify-between"><dt className="text-digi-muted">IVA</dt><dd className="tabular-nums text-digi-muted">${fmt2(totalIva)}</dd></div>}
+              <div className="flex justify-between border-t border-digi-border pt-1.5 font-semibold"><dt className="text-digi-text">Total</dt><dd className="tabular-nums text-accent">${fmt2(total)}</dd></div>
+            </dl>
+          </div>
+          <div className="hidden md:block bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-digi-border">

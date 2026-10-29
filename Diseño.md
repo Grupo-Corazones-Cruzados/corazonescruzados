@@ -4815,6 +4815,21 @@ navegador» con el `BotonAvisosPush` de Mi día; se esconde sola cuando el botó
 Verificado a 1440 y 390 px, claro y oscuro (`scrollWidth` = ancho).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · Tablas propias que en el teléfono se deslizaban de lado** · **CORREGIDO** (Fernando: «al
+  pasar a la versión móvil los datos no se ven bien y deberían convertirse a galería»). `PixelDataTable` ya
+  era galería bajo `md`, pero seis pantallas pintaban su `<table>` a mano y se quedaban fuera. Ahora la
+  galería es UNA pieza exportada, **`GaleriaTabla`** (`components/ui/PixelDataTable.tsx`), que esas tablas
+  pintan con `md:hidden` junto a su `<table>` `hidden md:block`: Configuración ▸ Portafolio (columnas
+  definidas una vez para tabla y galería; tocar la tarjeta abre el registro; pestañas → `Segmentado`;
+  «Nuevo» a la barra de abajo; tags como texto, sin `PixelBadge`; acciones como iconos), el detalle
+  editable de la factura (`DetalleFactura`, campos con borde visible en el teléfono: no hay «al pasar»),
+  la factura emitida (`invoices/[id]`, totales en su tarjeta), la tabla mensual de Pensamientos y el
+  visor de Admin ▸ Fuentes (primeras 7 columnas; tocar abre el registro entero; en el teléfono es lista →
+  detalle con «‹» para volver al árbol). También: los 6 pasos de Metodología Condiciológica (tira que se
+  deslizaba → `<select>` bajo `lg`) y la semana de Horario de Vida (7 columnas de 150 px → días uno bajo
+  otro, sin alto mínimo y «Sin tareas» en vez de «Arrastra»). Nueva constante **`BTN_ICONO_FILA`**
+  (`components/ui/Button.tsx`): acción fantasma de fila con icono y, si hace falta, una cifra («🖼 5»).
+  **Regla: ninguna `<table>` nueva sin su `GaleriaTabla`** (o usar `PixelDataTable`).
 - **2026-10-29 · «…» junto al icono del PDF en el estado financiero** · **CORREGIDO**. `PixelDataTable singleLine`
   recortaba también la columna de acciones; una columna SIN título (acciones/iconos) ya no lleva `text-ellipsis`.
 - **2026-10-29 · Nombre de reunión largo desbordaba el panel de Eventos de Mi día** · **CORREGIDO**. El título era

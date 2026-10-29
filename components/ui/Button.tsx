@@ -42,6 +42,14 @@ export const BTN_ICONO_PRIMARIO = `btn-primario ${BTN_ICONO_BASE} bg-accent text
 export const BTN_ICONO_SECUNDARIO = `${BTN_ICONO_BASE} border border-digi-border text-digi-text hover:border-accent hover:text-accent`;
 export const BTN_ICONO_ACENTO = `${BTN_ICONO_BASE} border border-accent text-accent hover:bg-accent-light`;
 
+/**
+ * ACCIÓN DENTRO DE UNA FILA O TARJETA (PDF, editar, fotos…) — icono FANTASMA (Fernando,
+ * 2026-10-29: una etiqueta con borde de color «tiene un estilo muy de IA»). Sin borde ni relleno
+ * en reposo; el nombre en `title` + `aria-label`. Quitar/eliminar es `BotonQuitar`.
+ */
+export const BTN_ICONO_FILA =
+  'destino-tactil shrink-0 min-w-7 h-7 px-1 inline-flex items-center justify-center gap-1 rounded-md text-[12px] tabular-nums text-digi-muted hover:text-accent hover:bg-accent-light transition-colors disabled:opacity-35 disabled:cursor-not-allowed';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
 const VARIANT: Record<ButtonVariant, string> = {
