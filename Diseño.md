@@ -271,6 +271,12 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > teléfono, Aventura ↓ y Progreso ↑: cada flecha apunta hacia donde se expande su mundo, y al
 > pasar el puntero avanza en ese sentido (`--dir`, `--empuje` en `.panel-mundo-flecha`).
 >
+> **⭐ Botón de mundo en el TELÉFONO (2026-10-28, Fernando: «más simples… estilo reformulado
+> especial»).** Bajo 640 px la píldora rellena con degradado y sombra pasa a un botón de CONTORNO
+> fino (44 px; 40 px en pantallas bajas), sin relleno ni sombra, con la flecha dentro de una ficha
+> redonda maciza del color del mundo (Aventura `#8b5cf6`, Progreso `#6d28d9`). Misma forma en los
+> dos; al tocar, la ficha se hunde hacia su dirección. El escritorio no cambia.
+>
 > **⭐ VIGENTE (2026-10-28): los paneles de mundo, SIN IMÁGENES y en TODA la app.** Fernando: le
 > gustó el panel de texto y no las vistas previas («reformula por completo para una app completa»).
 > `PanelesMundo` sustituye a `TarjetasMundo` (borrada) en teléfono y escritorio: etiqueta, título

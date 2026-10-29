@@ -4112,3 +4112,42 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .panel-mundo-aventura .panel-mundo-flecha { --dir: 90deg; --empuje: translateY(3px); }
   .panel-mundo-progreso .panel-mundo-flecha { --dir: -90deg; --empuje: translateY(-3px); }
 }
+
+/* ═══ EL BOTÓN DE CADA MUNDO EN EL TELÉFONO (Fernando, 2026-10-28) ═══
+   La píldora rellena con degradado y sombra pesaba demasiado en una pantalla estrecha («los
+   botones deberían ser más simples»). En el teléfono pasa a un botón de CONTORNO fino, sin
+   relleno ni sombra, con la flecha dentro de una ficha redonda maciza del color del mundo:
+   la ficha es lo único con peso y apunta hacia donde se expande el mundo (↓ / ↑). Misma
+   forma en los dos mundos; solo cambia el color. Al tocarlo, la ficha se hunde un poco. */
+@media (max-width: 639.98px) {
+  .panel-mundo-boton,
+  .panel-mundo-aventura .panel-mundo-boton,
+  .panel-mundo-progreso .panel-mundo-boton {
+    height: 44px; gap: 12px; padding: 0 6px 0 18px; margin-top: 6px;
+    background: transparent; box-shadow: none;
+    font-size: 0.88rem; font-weight: 600; letter-spacing: 0.01em;
+    transition: transform 160ms ease, background-color 160ms ease;
+  }
+  .panel-mundo-boton .panel-mundo-flecha {
+    width: 32px; height: 32px; padding: 8px; border-radius: 9999px; color: #fff;
+    transition: transform 160ms ease;
+  }
+  .panel-mundo-boton:hover:not(:disabled) { transform: none; }
+  .panel-mundo-boton:hover:not(:disabled) .panel-mundo-flecha { transform: rotate(var(--dir)); }
+  .panel-mundo-boton:active:not(:disabled) .panel-mundo-flecha,
+  .panel-mundo.es-elegido .panel-mundo-flecha { transform: var(--empuje) rotate(var(--dir)) scale(0.92); }
+  .panel-mundo.es-elegido .panel-mundo-boton { transform: none; }
+
+  .panel-mundo-aventura .panel-mundo-boton { color: #ede9fe; border: 1px solid rgba(196, 181, 253, 0.38); }
+  .panel-mundo-aventura .panel-mundo-boton:active:not(:disabled) { background-color: rgba(167, 139, 250, 0.12); }
+  .panel-mundo-aventura .panel-mundo-flecha { background: #8b5cf6; }
+  .panel-mundo-progreso .panel-mundo-boton { color: #3b1d7a; border: 1px solid rgba(109, 40, 217, 0.3); }
+  .panel-mundo-progreso .panel-mundo-boton:active:not(:disabled) { background-color: rgba(109, 40, 217, 0.08); }
+  .panel-mundo-progreso .panel-mundo-flecha { background: #6d28d9; }
+}
+@media (max-width: 639.98px) and (max-height: 760px) {
+  .panel-mundo-boton,
+  .panel-mundo-aventura .panel-mundo-boton,
+  .panel-mundo-progreso .panel-mundo-boton { height: 40px; font-size: 0.84rem; }
+  .panel-mundo-boton .panel-mundo-flecha { width: 28px; height: 28px; padding: 7px; }
+}
