@@ -238,7 +238,9 @@ export default function AvailabilityPanel() {
       {/* ── Editor de días ── */}
       <div className="rounded-xl border border-digi-border overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">
-          <span className="text-[12.5px] font-semibold text-digi-text" style={mf}>Horario semanal</span>
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}>
+            <Clock3 className="w-4 h-4 text-accent" /> Horario semanal
+          </span>
           <div className="flex flex-wrap items-center gap-1.5">
             <button onClick={() => applyPreset((i) => i < 5)} className={presetBtn} style={mf}>Lun–Vie</button>
             <button onClick={() => applyPreset(() => true)} className={presetBtn} style={mf}>Todos</button>
@@ -250,17 +252,19 @@ export default function AvailabilityPanel() {
           {DAY_KEYS.map((key, i) => {
             const on = schedule[key].active;
             return (
-              <div key={key} className={`flex items-center gap-3 px-4 py-3 transition-colors ${on ? '' : 'bg-black/[0.015]'}`}>
+              <div key={key} className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors ${on ? '' : 'bg-black/[0.015]'}`}>
                 <Interruptor activo={on} onChange={(v) => update(key, 'active', v)} etiqueta={`${DAYS[i]}: ${on ? 'activo' : 'descanso'}`} />
                 <span className={`w-24 text-[13px] font-medium shrink-0 ${on ? 'text-digi-text' : 'text-digi-muted'}`} style={mf}>{DAYS[i]}</span>
 
                 {on ? (
-                  <div className="flex items-center gap-2 ml-auto">
+                  /* Teléfono: la franja baja a su propia línea a todo el ancho. En una sola fila,
+                     la hora de salida y las horas del día quedaban cortadas fuera de la tarjeta. */
+                  <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2">
                     <input type="time" value={schedule[key].start} onChange={(e) => update(key, 'start', e.target.value)}
-                      className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      className="field-control flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <span className="text-[12px] text-digi-muted" style={mf}>a</span>
                     <input type="time" value={schedule[key].end} onChange={(e) => update(key, 'end', e.target.value)}
-                      className="field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                      className="field-control flex-1 sm:flex-none min-w-0 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
                     <span className="w-14 text-right text-[11px] text-digi-muted tabular-nums" style={mf}>{fmtNum(dayHours(schedule[key]), 1)} h</span>
                   </div>
                 ) : (

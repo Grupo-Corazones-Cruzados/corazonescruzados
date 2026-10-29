@@ -1,6 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -40,7 +41,8 @@ export default function SettingsPanel({
 }) {
   return (
     <section className={`flex flex-col min-h-0 bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden ${className}`}>
-      <header className="flex items-center gap-2.5 px-4 py-3 border-b border-digi-border shrink-0">
+      {/* En el teléfono el título ya lo pone la pantalla de la sección (flecha + nombre). */}
+      <header className="max-lg:hidden flex items-center gap-2.5 px-4 py-3 border-b border-digi-border shrink-0">
         <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-accent" /></div>
         <div className="min-w-0 flex-1">
           <h3 className="text-[14px] font-semibold text-digi-text leading-tight truncate" style={mf}>{title}</h3>
@@ -51,8 +53,12 @@ export default function SettingsPanel({
 
       <div className={`flex-1 min-h-0 overflow-y-auto ${bodyClassName}`}>{children}</div>
 
+      {/* En el teléfono el pie baja a la barra de acciones de abajo (regla de las principales). */}
       {pie && (
-        <div className="shrink-0 border-t border-digi-border px-4 py-3 flex justify-end">{pie}</div>
+        <>
+          <div className="max-lg:hidden shrink-0 border-t border-digi-border px-4 py-3 flex justify-end">{pie}</div>
+          <EnBarraAcciones>{pie}</EnBarraAcciones>
+        </>
       )}
     </section>
   );

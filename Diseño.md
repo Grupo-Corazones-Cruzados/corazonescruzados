@@ -5712,3 +5712,14 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
 `display:none`. Es la red, no la solución — la solución es no montarlo.
 - **2026-10-05 · Facturas sin puntos de estado (Fernando).** La columna «No. Factura» llevaba un punto con el estado de la factura y la etiqueta SRI su punto de `PixelBadge`: *«no es necesario»*. Se quitan los dos (tabla y tarjeta móvil). El punto de la insignia se quita con la variante nombrada `punto={false}`, no editando la insignia global; el resto de la app la conserva. **Adoptado** como variante.
   - Mismo día, ampliado: también el detalle de la factura (panel y `/invoices/[id]`) y Suscripciones (punto de «Cliente» en tabla y tarjeta, insignia del detalle). Se perdió la señal de color de vencido/por vencer en la tabla de escritorio de Suscripciones; el texto de «Próximo cobro» la sigue diciendo.
+- **2026-10-29 · Configuración en el teléfono: portada de ajustes → sección** · **NUEVO ESTÁNDAR** (Fernando:
+  *«crear una versión móvil… agregar iconos donde corresponda»*). Por debajo de `lg` la página ya no apila
+  el Perfil entero (≈ 3 pantallas) con un selector debajo: la portada es la tarjeta de quién eres (foto,
+  nombre, correo) + la lista de secciones agrupada («Profesional», «Cuenta»), cada fila con su icono en
+  baldosa `bg-accent-light` y `›`. Cada sección se abre en su pantalla con `DetailHeader` (flecha antes del
+  título); la sección vive en `?tab=` para que el «atrás» del teléfono vuelva a la portada. El pie de
+  `SettingsPanel` y «Guardar CV» bajan a la barra de acciones. Vale para cualquier página de ajustes con
+  varias secciones. Referencia: `ConfiguracionMovil` en `app/(dashboard)/dashboard/settings/page.tsx`.
+  Corregido de paso: en Disponibilidad la hora de salida y las horas del día quedaban cortadas a 390 px (la
+  franja baja a su propia línea); en Skills «Agregar» se salía de la tarjeta (campo con `min-w-0`, botón solo
+  «+» en el teléfono). Redes sociales del Perfil con el icono de cada red.

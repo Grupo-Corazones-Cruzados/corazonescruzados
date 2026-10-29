@@ -13,6 +13,7 @@ import { MAX_SKILLS } from '@/lib/members/cv-tipos';
 import { Plus, Pencil, GraduationCap, Briefcase, Save, Sparkles, Wrench, Tag, X, Search, Loader2, Check, Languages } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import Segmentado from '@/components/ui/Segmentado';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -301,11 +302,17 @@ export default function CvPanel() {
 
       </div>
 
-      <div className="shrink-0 border-t border-digi-border px-4 py-3 flex justify-end">
-        <button onClick={save} disabled={saving} className={`${BTN_PRIMARY} w-full sm:w-auto`}>
+      {/* En el teléfono «Guardar CV» va a la barra de acciones de abajo. */}
+      <div className="max-lg:hidden shrink-0 border-t border-digi-border px-4 py-3 flex justify-end">
+        <button onClick={save} disabled={saving} className={BTN_PRIMARY}>
           <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar CV'}
         </button>
       </div>
+      <EnBarraAcciones>
+        <button onClick={save} disabled={saving} className={BTN_PRIMARY}>
+          <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar CV'}
+        </button>
+      </EnBarraAcciones>
 
       {/* Confirmación de eliminación de talento. */}
       <PixelConfirm
@@ -555,9 +562,11 @@ function SkillsDelTalento({ valores, onChange }: { valores: string[]; onChange: 
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregar(); } }}
           disabled={lleno}
           placeholder={lleno ? 'Quita una para añadir otra' : 'Ej. Power Platform — cuanto más general, mejor'}
-          className="field-control flex-1 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
-        <button type="button" onClick={agregar} disabled={!nueva.trim() || lleno} className={`${BTN_PRIMARY} disabled:opacity-50`}>
-          <Plus className="w-4 h-4" /> Agregar
+          className="field-control flex-1 min-w-0 px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none disabled:opacity-50" style={mf} />
+        {/* Sin `min-w-0` el campo no encogía y «Agregar» se salía de la tarjeta en el teléfono;
+            allí el botón es solo el «+». */}
+        <button type="button" onClick={agregar} disabled={!nueva.trim() || lleno} aria-label="Agregar skill" className={`${BTN_PRIMARY} shrink-0 disabled:opacity-50`}>
+          <Plus className="w-4 h-4" /> <span className="max-sm:hidden">Agregar</span>
         </button>
       </div>
 

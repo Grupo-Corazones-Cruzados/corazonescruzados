@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import ProfilePanel from '@/components/settings/ProfilePanel';
 import CvPanel from '@/components/settings/CvPanel';
@@ -9,22 +10,22 @@ import PortfolioPanel from '@/components/settings/PortfolioPanel';
 import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
 import ConexionesPanel from '@/components/settings/ConexionesPanel';
 import NotificacionesPanel from '@/components/settings/NotificacionesPanel';
-import Segmentado from '@/components/ui/Segmentado';
-import MenuMas from '@/components/ui/MenuMas';
+import DetailHeader from '@/components/ui/DetailHeader';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
-import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, type LucideIcon } from 'lucide-react';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
+import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones' | 'notificaciones';
-const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean }[] = [
-  { key: 'cv', label: 'Mi CV', Icon: FileText, soloMiembro: true },
-  { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock, soloMiembro: true },
-  { key: 'portfolio', label: 'Portafolio', Icon: Briefcase, soloMiembro: true },
+const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean; grupo: 'Profesional' | 'Cuenta' }[] = [
+  { key: 'cv', label: 'Mi CV', Icon: FileText, soloMiembro: true, grupo: 'Profesional' },
+  { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock, soloMiembro: true, grupo: 'Profesional' },
+  { key: 'portfolio', label: 'Portafolio', Icon: Briefcase, soloMiembro: true, grupo: 'Profesional' },
   // Conexiones (Google) es de miembros Y candidatos: la usan las Experiencias personales.
-  { key: 'conexiones', label: 'Conexiones', Icon: Link2, soloMiembro: false },
+  { key: 'conexiones', label: 'Conexiones', Icon: Link2, soloMiembro: false, grupo: 'Cuenta' },
   // Qué avisos recibe cada uno y por dónde (Fernando, 2026-10-29: miembros y administradores).
-  { key: 'notificaciones', label: 'Notificaciones', Icon: Bell, soloMiembro: true },
+  { key: 'notificaciones', label: 'Notificaciones', Icon: Bell, soloMiembro: true, grupo: 'Cuenta' },
 ];
 
 /**
@@ -36,6 +37,13 @@ const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean
  * donde vuelve la conexión con Google).
  */
 export default function SettingsPage() {
+  // `useSearchParams` pide un Suspense por encima para poder compilar la página.
+  return <Suspense fallback={null}><Configuracion /></Suspense>;
+}
+
+const sinSuscripcion = () => () => {};
+
+function Configuracion() {
   const { user } = useAuth();
   const isMember = !!user?.member_id;
   const [tab, setTab] = useState<TabKey>('cv');
@@ -43,11 +51,15 @@ export default function SettingsPage() {
   const esCandidato = user?.account_type === 'candidate';
   const tabs = TABS.filter((t) => isMember || (!t.soloMiembro && esCandidato));
   const tabActiva = tabs.some((t) => t.key === tab) ? tab : tabs[0]?.key;
+  const enTelefono = !useConsultaMedia(PANTALLA_LG);
+  // Hasta hidratar no se sabe el ancho (el servidor no tiene ventana): sin esto el escritorio
+  // pintaría un instante la portada del teléfono.
+  const hidratado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
+  const tabUrl = useSearchParams().get('tab');
 
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get('tab');
-    if (t && TABS.some((x) => x.key === t)) setTab(t as TabKey);
-  }, []);
+    if (tabUrl && TABS.some((x) => x.key === tabUrl)) setTab(tabUrl as TabKey);
+  }, [tabUrl]);
 
   /* ── EL ALTO LO PONE EL PIE DE LA APP, NO EL CONTENIDO (Fernando, 2026-08-15) ──
    * Antes la fila crecía con los campos y la página se desplazaba entera, así que
@@ -60,6 +72,16 @@ export default function SettingsPage() {
    * PADRE, porque dentro de un contenedor con desplazamiento propio el `body` no
    * cambia de tamaño nunca. */
   const alto = useAltoHastaElPie({ minimo: 480 });
+
+  if (!hidratado) return null;
+  if (enTelefono) {
+    return (
+      <>
+        <ConfiguracionMovil tabs={tabs} seccion={tabUrl} isMember={isMember} onCompartir={() => setCompartir(true)} />
+        <PanelCompartirCv open={compartir} onClose={() => setCompartir(false)} />
+      </>
+    );
+  }
 
   return (
     <div>
@@ -87,28 +109,7 @@ export default function SettingsPage() {
 
                 `justify-between` en vez del hueco `flex-1`: es la misma colocación con
                 un elemento menos. */}
-            {/* ── TELÉFONO (2026-10-23, reglas del teléfono de Fernando) ──
-                Las cuatro pestañas, envueltas por `flex-wrap`, se apilaban en tres filas con
-                «Compartir CV» flotando a un lado y huecos alrededor. Aquí: con más de tres
-                pestañas, un <select> a todo el ancho; con dos o tres, el `Segmentado`; con
-                una, nada que elegir. «Compartir CV» es secundaria: entra en el «⋯». */}
-            {(tabs.length > 1 || isMember) && (
-              <div className="lg:hidden flex items-center gap-2 p-2 border-b border-digi-border shrink-0">
-                {tabs.length > 3 ? (
-                  <select aria-label="Sección" value={tabActiva} onChange={(e) => setTab(e.target.value as TabKey)}
-                    className="field-control field-select h-11 min-w-0 flex-1 px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
-                    {tabs.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-                  </select>
-                ) : tabs.length > 1 ? (
-                  <Segmentado etiqueta="Sección" className="min-w-0 flex-1" valor={tabActiva as TabKey} onChange={setTab}
-                    opciones={tabs.map((t) => ({ valor: t.key, texto: t.label }))} />
-                ) : <span className="flex-1" />}
-                {isMember && (
-                  <MenuMas items={[{ label: 'Compartir CV', icon: Share2, onClick: () => setCompartir(true) }]} />
-                )}
-              </div>
-            )}
-            <div className="hidden lg:flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
+            <div className="flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
               <div className="flex items-stretch flex-wrap">
                 {tabs.map((t) => {
                   const active = tabActiva === t.key;
@@ -147,5 +148,96 @@ export default function SettingsPage() {
           de una cotización. */}
       <PanelCompartirCv open={compartir} onClose={() => setCompartir(false)} />
     </div>
+  );
+}
+
+/* ── TELÉFONO: portada de ajustes → sección (Fernando, 2026-10-29) ──────────────────────
+ * Antes el teléfono apilaba el Perfil entero (≈ 3 pantallas) y debajo un selector con las
+ * demás secciones: para llegar a Notificaciones había que bajar por todo el perfil. Ahora la
+ * portada es la tarjeta de quién eres + la lista de secciones con su icono, y cada sección
+ * se abre en su propia pantalla con la flecha de volver (`DetailHeader`).
+ *
+ * La sección abierta vive en la URL (`?tab=`), no en un estado: así el «atrás» del teléfono
+ * vuelve a la portada, y `?tab=conexiones` (la vuelta de Google) abre esa sección directa.
+ * Desde `lg` se usa la disposición de escritorio de siempre: Perfil a la izquierda + pestañas. */
+type Seccion = { key: 'perfil' | TabKey; label: string; Icon: LucideIcon };
+
+function ConfiguracionMovil({ tabs, seccion, isMember, onCompartir }: {
+  tabs: typeof TABS; seccion: string | null; isMember: boolean; onCompartir: () => void;
+}) {
+  const router = useRouter();
+  const { user } = useAuth();
+  const secciones: Seccion[] = [{ key: 'perfil', label: 'Perfil', Icon: User }, ...tabs];
+  const abierta = secciones.find((x) => x.key === seccion);
+  const abrir = (key: Seccion['key']) => router.push(`/dashboard/settings?tab=${key}`, { scroll: false });
+
+  // Sin más secciones que el Perfil (un cliente) no hay nada que elegir: el Perfil directo.
+  if (abierta || secciones.length === 1) {
+    const s = abierta ?? secciones[0];
+    return (
+      <div>
+        {secciones.length > 1 ? (
+          <DetailHeader breadcrumb={{ label: 'Configuración', href: '/dashboard/settings' }} title={s.label} />
+        ) : <h1 className="page-title pixel-heading text-digi-text mb-4">Perfil</h1>}
+        {s.key === 'perfil' ? <ProfilePanel /> : (
+          <div className="flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+            {s.key === 'cv' && <CvPanel />}
+            {s.key === 'availability' && <AvailabilityPanel />}
+            {s.key === 'portfolio' && <PortfolioPanel />}
+            {s.key === 'conexiones' && <ConexionesPanel />}
+            {s.key === 'notificaciones' && <NotificacionesPanel />}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const nombre = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email || '';
+  const grupos = (['Profesional', 'Cuenta'] as const)
+    .map((g) => ({ g, filas: tabs.filter((t) => t.grupo === g) }))
+    .filter((x) => x.filas.length > 0);
+
+  return (
+    <div className="space-y-5" style={mf}>
+      <h1 className="page-title pixel-heading text-digi-text">Configuración</h1>
+
+      {/* Quién eres: al tocarla se abre el Perfil. */}
+      <button type="button" onClick={() => abrir('perfil')}
+        className="w-full flex items-center gap-3.5 p-3.5 text-left bg-digi-card border border-digi-border rounded-xl shadow-sm active:bg-accent-light/40 transition-colors">
+        {user?.avatar_url ? (
+          <img src={user.avatar_url} alt="" className="w-14 h-14 rounded-xl border border-digi-border object-cover shrink-0" />
+        ) : (
+          <span className="w-14 h-14 rounded-xl flex items-center justify-center bg-accent-light text-accent text-xl font-semibold shrink-0">
+            {(user?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase()}
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-semibold text-digi-text truncate">{nombre}</span>
+          <span className="block text-[12.5px] text-digi-muted truncate">{user?.email}</span>
+        </span>
+        <ChevronRight className="w-5 h-5 text-digi-muted shrink-0" />
+      </button>
+
+      {grupos.map(({ g, filas }) => (
+        <section key={g}>
+          <h2 className="px-1 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-digi-muted">{g}</h2>
+          <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden divide-y divide-digi-border">
+            {filas.map((t) => <FilaSeccion key={t.key} Icon={t.Icon} label={t.label} onClick={() => abrir(t.key)} />)}
+            {g === 'Profesional' && isMember && <FilaSeccion Icon={Share2} label="Compartir CV" onClick={onCompartir} />}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function FilaSeccion({ Icon, label, onClick }: { Icon: LucideIcon; label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick}
+      className="w-full min-h-[56px] flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-accent-light/40 transition-colors">
+      <span className="w-9 h-9 rounded-lg bg-accent-light flex items-center justify-center shrink-0"><Icon className="w-[18px] h-[18px] text-accent" /></span>
+      <span className="flex-1 min-w-0 text-[14.5px] font-medium text-digi-text truncate">{label}</span>
+      <ChevronRight className="w-[18px] h-[18px] text-digi-muted shrink-0" />
+    </button>
   );
 }

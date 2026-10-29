@@ -15,7 +15,12 @@ import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 'Alemán', 'Chino (Mandarín)', 'Japonés', 'Coreano', 'Ruso', 'Árabe', 'Kichwa', 'Catalán', 'Neerlandés', 'Hindi']
   .map((l) => ({ value: l, label: l }));
 import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
-import { User, Camera, RefreshCw, ExternalLink, Save } from 'lucide-react';
+import { User, Camera, RefreshCw, ExternalLink, Save, AtSign, Linkedin, Globe, Youtube, Music2, Instagram, Facebook, type LucideIcon } from 'lucide-react';
+
+/** Icono de cada red junto a su nombre (TikTok no tiene marca en lucide: una nota musical). */
+const ICONO_RED: Record<Red, LucideIcon> = {
+  linkedin: Linkedin, web: Globe, youtube: Youtube, tiktok: Music2, instagram: Instagram, facebook: Facebook,
+};
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -269,7 +274,9 @@ export default function ProfilePanel() {
         <div className="pt-3 border-t border-digi-border space-y-3">
           {/* Regla de formularios: solo el título del campo y el campo. La
               explicación va dentro del botón de ayuda, no como párrafo fijo. */}
-          <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Redes sociales</h4>
+          <h4 className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}>
+            <AtSign className="w-4 h-4 text-accent" /> Redes sociales
+          </h4>
           {/* LinkedIn y el sitio web viven aquí desde 2026-08-14: son enlaces, y
               tenerlos en «Mi CV» los separaba de los otros cuatro sin motivo. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -303,6 +310,7 @@ export default function ProfilePanel() {
  * «Guardar» que un campo de arriba está mal obliga a volver a buscarlo.        */
 function CampoRed({ red, valor, onChange }: { red: Red; valor: string; onChange: (v: string) => void }) {
   const def = REDES[red];
+  const Icono = ICONO_RED[red];
   const { url, error } = normalizarRed(red, valor);
   // Nada de gritar sobre un campo que aún se está escribiendo: solo se avisa
   // cuando ya parece una dirección terminada.
@@ -311,7 +319,9 @@ function CampoRed({ red, valor, onChange }: { red: Red; valor: string; onChange:
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-[12px] font-medium text-digi-text" style={mf}>{def.etiqueta}</label>
+        <label className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text" style={mf}>
+          <Icono className="w-3.5 h-3.5 text-digi-muted" /> {def.etiqueta}
+        </label>
         {url && (
           <a href={url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[11px] text-digi-muted hover:text-accent transition-colors" style={mf}
