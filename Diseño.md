@@ -1674,9 +1674,10 @@ porque la portada se edita allí a la vez.
   espacio […] me interesa más espacio para la tabla»): una línea de ~54 px, icono de 30 px con degradado
   (verde/rojo según el tono), etiqueta 10 px y cifra en Space Grotesk 17 px; `RejillaCifras` 2 columnas en
   el teléfono, 3 desde `md` y las 6 en una fila desde `xl`. (El CV público tiene su propia `Cifra`; esta es solo del panel.)
-- **Inicio (`/dashboard`)**: sin insignia (Fernando la quitó el mismo día), saludo `titulo-progreso` 34 px con el nombre en
-  `acento-progreso`, y a la derecha la barra del pensamiento de la portada (`FeaturedThought compacto`,
-  `tema` Progreso en claro y Aventura en oscuro).
+- **Inicio (`/dashboard`)**: solo el saludo `titulo-progreso` 34 px con el nombre en `acento-progreso`. Sin
+  insignia ni barra del pensamiento (Fernando, 2026-10-29: ocupaban el espacio de arriba; manda la tabla).
+  «Reporte global» va en la fila de los filtros, a la derecha (envuelto en un `div ml-auto`: en un `button`
+  del panel el margen lo pisa el estilo base).
 - Pie de la ruta y barra de acciones del teléfono: cristal (`rgba(255,255,255,.72)` / noche).
 
 ### ⭐ LAS REGLAS DEL TELÉFONO DE LOS PRODUCTOS, EN EL PANEL (Fernando, 2026-10-23)

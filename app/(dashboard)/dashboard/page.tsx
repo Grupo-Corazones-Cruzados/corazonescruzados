@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useTemaPanel } from '@/components/providers/TemaPanel';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -15,7 +14,6 @@ import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
-import FeaturedThought from '@/components/landing/FeaturedThought';
 import Segmentado from '@/components/ui/Segmentado';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -28,8 +26,6 @@ interface FinanceItem { id?: number; type: 'income' | 'expense'; description: st
 
 export default function DashboardHome() {
   const { user } = useAuth();
-  // En oscuro el panel es la noche de Aventura: el pensamiento, con su cristal oscuro.
-  const { oscuro } = useTemaPanel();
   const router = useRouter();
   // Rol EFECTIVO (candidate/client/member/admin). El candidato tiene role='client' en el
   // JWT pero account_type='candidate' → aquí se distingue para no tratarlo como cliente.
@@ -137,22 +133,14 @@ export default function DashboardHome() {
           contenido, y en 390 px cada línea que se ahorra es una cifra que entra. */}
       {/* Sin la línea «Este es el resumen de…» debajo (Fernando, 2026-10-23: bajo el título
           no se escriben frases descriptivas): repetía lo que ya dice la pantalla. */}
-      {/* ⭐ LA CABECERA DE LA PORTADA (Fernando, 2026-10-29: el estilo de la sección
-          Plataforma de la página de inicio, «para hacer fiel la pantalla de inicio con la
-          plataforma»). Sin la insignia «Tu progreso» (Fernando, 2026-10-29: quitarla). El
-          saludo con el titular de Space Grotesk y
-          el nombre con el degradado de «cruzar al mundo», y a la derecha la misma barra del
-          pensamiento de la portada (`FeaturedThought compacto`, tema Progreso). */}
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-4 sm:mb-5">
-        <div className="min-w-0">
-          <h1 className="titulo-progreso text-[26px] sm:text-[34px] text-digi-text leading-[1.05]">
-            {greet}{name ? <>, <span className="acento-progreso">{name}</span></> : ''}
-          </h1>
-        </div>
-        <div className="hidden md:flex xl:justify-end min-w-0 [&_.pensamiento-barra]:text-left">
-          <FeaturedThought compacto tema={oscuro ? 'aventura' : 'progreso'} />
-        </div>
-      </div>
+      {/* ⭐ LA CABECERA DE LA PORTADA (Fernando, 2026-10-29: el estilo de la sección Plataforma
+          de la página de inicio): el saludo con el titular de Space Grotesk y el nombre con el
+          degradado de «cruzar al mundo». Sin la insignia «Tu progreso» y SIN EL PENSAMIENTO
+          (Fernando, el mismo día: ocupaba mucho del espacio de arriba; aquí lo que importa
+          es la tabla). */}
+      <h1 className="titulo-progreso text-[26px] sm:text-[34px] text-digi-text leading-[1.05] mb-4 sm:mb-5">
+        {greet}{name ? <>, <span className="acento-progreso">{name}</span></> : ''}
+      </h1>
 
       {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
           las finanzas globales y el conteo de clientes son solo para staff/admin. */}
@@ -168,16 +156,8 @@ export default function DashboardHome() {
       {/* Estado financiero mensual — SOLO staff (datos de toda la organización). */}
       {isStaff && (
         <>
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3">
             <h2 className="titulo-progreso text-[18px] text-digi-text">Estado financiero mensual</h2>
-            {/* «Reporte global» es la acción principal de la pantalla: en el teléfono va a la
-                barra de abajo (2026-10-23, regla de los productos) y aquí solo desde `lg`. */}
-            {mesesFiltrados.length > 0 && (
-              <button onClick={() => window.open(urlReporte, '_blank')}
-                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors shrink-0" style={mf}>
-                <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' ? 'Reporte global' : 'Reporte filtrado'}
-              </button>
-            )}
             {mesesFiltrados.length > 0 && (
               <EnBarraAcciones>
                 <button onClick={() => window.open(urlReporte, '_blank')} className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5`}>
@@ -208,6 +188,18 @@ export default function DashboardHome() {
                   { valor: 'perdida', texto: 'Pérdida' },
                 ]}
               />
+              {/* «Reporte global», a la altura de los filtros y a la derecha (Fernando,
+                  2026-10-29): descarga lo que dicen los filtros, así que va con ellos. En el
+                  teléfono es la acción principal y va a la barra de abajo. */}
+              {/* El margen va en un envoltorio: en un `button` del panel, `ml-auto` lo pisa el
+                  estilo base y el botón se quedaba pegado a los filtros. */}
+              {mesesFiltrados.length > 0 && (
+                <div className="hidden lg:block ml-auto shrink-0">
+                  <button onClick={() => window.open(urlReporte, '_blank')} className={BTN_SECONDARY}>
+                    <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' ? 'Reporte global' : 'Reporte filtrado'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
