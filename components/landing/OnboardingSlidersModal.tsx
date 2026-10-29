@@ -212,9 +212,28 @@ function SlideModelo() {
       </p>
 
       <Modelo4P />
+
+      {/* Cómo se lee la tabla (Fernando, 2026-10-29, texto literal). La última es la conclusión. */}
+      <ol className="m4p-reglas">
+        {REGLAS_4P.map((r, i) => (
+          <li key={i} className={i === REGLAS_4P.length - 1 ? 'es-conclusion' : ''}>
+            <span className="m4p-regla-num" aria-hidden="true">{i + 1}</span>
+            <span>{r}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
+
+const REGLAS_4P = [
+  'Cada piso representa un rol en la organización que cumple con una necesidad en la gestión de un proyecto.',
+  'Cada paso representa una función en el levantamiento y progreso de cualquier proyecto.',
+  'Cada miembro de la organización se le asigna un piso y paso de acuerdo a su talento.',
+  'Según el piso y paso que tenga asignado el miembro, se tiene acceso a un conjunto de sistemas.',
+  'Cada sistema se activa según la necesidad del proyecto en el que participe el miembro.',
+  'La necesidad determina todo lo que hacemos.',
+];
 
 /* ------------------------------------------------------------------ */
 /* Slider 2 — Herramientas                                            */

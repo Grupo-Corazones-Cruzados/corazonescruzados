@@ -2832,7 +2832,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 
 .onb-cuerpo {
-  padding: 4px clamp(18px, 3vw, 32px) 24px;
+  padding: 4px clamp(18px, 3vw, 32px) 36px;
   /* El contenido se desvanece al llegar a la barra de abajo: se intuye que hay más. */
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
@@ -2960,6 +2960,34 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .modelo-4p .es-foco { background: var(--color-accent-light); }
 .m4p-cruce.es-foco .m4p-punto { background: var(--color-accent-glow); }
 .m4p-cruce.es-cruce .m4p-punto { background: var(--color-accent); transform: scale(1.6); box-shadow: 0 0 0 4px var(--color-accent-light); }
+/* Las reglas bajo la tabla: lista numerada sobria; la última, la conclusión, resaltada. */
+.m4p-reglas { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.m4p-reglas > li { display: flex; align-items: flex-start; gap: 12px; font-size: 0.875rem; line-height: 1.55; color: var(--color-digi-text); }
+.m4p-regla-num {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-glow);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.m4p-reglas > li.es-conclusion {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-digi-border);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-digi-darker);
+  font-weight: 600;
+}
+.m4p-reglas > li.es-conclusion .m4p-regla-num { background: var(--color-accent); color: #fff; }
 /* Teléfono: los nombres de los pasos se leen en vertical para que quepan las cuatro columnas. */
 @media (max-width: 639.98px) {
   .modelo-4p tr > :first-child { width: 37%; }

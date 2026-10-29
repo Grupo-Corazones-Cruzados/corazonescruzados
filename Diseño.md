@@ -672,6 +672,9 @@ esquinas de cámara no cambian.
   punto; al pasar (o tocar) una cabecera o un cruce se tiñen su fila y su columna y el cruce se
   enciende. Las descripciones van en `title`, no escritas. En el teléfono los nombres de los
   pasos van en VERTICAL para que quepan las 4 columnas sin desplazar de lado. Estilos `.m4p-*`.
+  Bajo la tabla, las 6 reglas de Fernando (texto literal, `REGLAS_4P`) como lista numerada con
+  círculo perfilado; la 6.ª («La necesidad determina todo lo que hacemos») es la conclusión,
+  resaltada en recuadro con filete `accent`.
   Fernando reescribió a mano el texto de introducción y quitó las notas «Cuatro roles…», «Del
   piso 1…» y el recuadro final: no reponerlos.
 - **La cabecera lleva SIEMPRE fondo** (`bg-[#0b0d14]/85` + desenfoque), también en la portada:
