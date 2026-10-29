@@ -40,6 +40,7 @@
   --color-accent-hover: #3A1F7A;
   --color-accent-light: #efe9fc;
   --tarjeta-fondo: rgba(255, 255, 255, 0.86);
+  --cabecera-tabla: #fcfbff;
   --tarjeta-borde: #e7e2f3;
   --tarjeta-sombra: 0 14px 34px -16px rgba(75, 45, 142, 0.35);
   --etiqueta: #6b6585;
@@ -68,6 +69,7 @@
   --color-digi-muted: #a99fc7;
   --color-accent-light: #2a2050;
   --tarjeta-fondo: rgba(23, 18, 43, 0.82);
+  --cabecera-tabla: #160f2a;
   --tarjeta-borde: rgba(167, 139, 250, 0.18);
   --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.8), 0 0 30px -18px rgba(123, 95, 191, 0.45);
   --etiqueta: #b3a9d4;
@@ -97,7 +99,10 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--etiqueta);
-  background: transparent;
+  /* ⚠️ OPACA: la cabecera es `sticky` y, transparente, las filas se veían pasar por debajo y
+     se montaban sobre los títulos (Fernando, 2026-10-29). El tono es el de la tarjeta
+     translúcida ya mezclado con el fondo, para que no se note el corte. */
+  background: var(--cabecera-tabla);
 }
 
 /* ── Tarjetas (`.ep-tarjeta`) ───────────────────────────────────────────────────────── */
@@ -185,24 +190,22 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* ── La cifra (`Cifra`) como las tarjetas de la portada ─────────────────────────────── */
-.corp.tema-progreso .cifra { padding: 16px 18px; gap: 14px; }
+/* ── La cifra (`Cifra`), COMPACTA y con el aire de la portada ───────────────────────── */
+/* Una línea de alto (Fernando, 2026-10-29: más espacio para la tabla): radio de tarjeta más
+   corto, icono de 30 px con su degradado y la cifra en Space Grotesk 17 px. */
+.corp.tema-progreso .cifra { border-radius: 12px; padding: 9px 12px; gap: 10px; }
 .corp.tema-progreso .cifra-icono {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   color: #fff;
   background: var(--degradado-icono);
-  box-shadow: 0 10px 24px -10px rgba(124, 92, 224, 0.9);
+  box-shadow: 0 6px 14px -8px rgba(124, 92, 224, 0.9);
 }
-.corp.tema-progreso .cifra-icono[data-tono='green'] { background: linear-gradient(135deg, #16a34a, #0d9488); box-shadow: 0 10px 24px -10px rgba(22, 163, 74, 0.8); }
-.corp.tema-progreso .cifra-icono[data-tono='red'] { background: linear-gradient(135deg, #e11d48, #db2777); box-shadow: 0 10px 24px -10px rgba(225, 29, 72, 0.7); }
-.corp.tema-progreso .cifra-etiqueta { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--etiqueta); }
-.corp.tema-progreso .cifra-valor { font-family: var(--font-titulo); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-@media (max-width: 639.98px) {
-  .corp.tema-progreso .cifra { padding: 12px 14px; }
-  .corp.tema-progreso .cifra-valor { font-size: 20px; }
-}
+.corp.tema-progreso .cifra-icono[data-tono='green'] { background: linear-gradient(135deg, #16a34a, #0d9488); box-shadow: 0 6px 14px -8px rgba(22, 163, 74, 0.8); }
+.corp.tema-progreso .cifra-icono[data-tono='red'] { background: linear-gradient(135deg, #e11d48, #db2777); box-shadow: 0 6px 14px -8px rgba(225, 29, 72, 0.7); }
+.corp.tema-progreso .cifra-etiqueta { font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: var(--etiqueta); }
+.corp.tema-progreso .cifra-valor { font-family: var(--font-titulo); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 
 @media (prefers-reduced-motion: reduce) {
   .corp.tema-progreso .btn-primario { transition: none; }

@@ -1663,9 +1663,11 @@ porque la portada se edita allí a la vez.
   Secundario (`btn-secundario`): fondo translúcido, borde lila, radio 10. Campos: radio 10.
 - **Piezas reutilizables**: `.insignia-progreso` (la píldora «PROYECTO DE DESARROLLO HUMANO»),
   `.acento-progreso` (el degradado de «cruzar al mundo»), y `Cifra` con `cifra`/`cifra-icono`/
-  `cifra-etiqueta`/`cifra-valor`: icono en cuadrado con degradado (verde/rojo según el tono) y la cifra
-  en Space Grotesk 24 px. (El CV público tiene su propia `Cifra`; esta es solo del panel.)
-- **Inicio (`/dashboard`)**: insignia «Tu progreso», saludo `titulo-progreso` 40 px con el nombre en
+  `cifra-etiqueta`/`cifra-valor`: COMPACTA desde el 2026-10-29 (Fernando: «los indicadores ocupan muchísimo
+  espacio […] me interesa más espacio para la tabla»): una línea de ~54 px, icono de 30 px con degradado
+  (verde/rojo según el tono), etiqueta 10 px y cifra en Space Grotesk 17 px; `RejillaCifras` 2 columnas en
+  el teléfono, 3 desde `md` y las 6 en una fila desde `xl`. (El CV público tiene su propia `Cifra`; esta es solo del panel.)
+- **Inicio (`/dashboard`)**: sin insignia (Fernando la quitó el mismo día), saludo `titulo-progreso` 34 px con el nombre en
   `acento-progreso`, y a la derecha la barra del pensamiento de la portada (`FeaturedThought compacto`,
   `tema` Progreso en claro y Aventura en oscuro).
 - Pie de la ruta y barra de acciones del teléfono: cristal (`rgba(255,255,255,.72)` / noche).

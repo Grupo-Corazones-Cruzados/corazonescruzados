@@ -11,11 +11,12 @@ import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, Plus, ChevronRight, type LucideIcon } from 'lucide-react';
+  Download, Plus, ChevronRight, FileDown, type LucideIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import FeaturedThought from '@/components/landing/FeaturedThought';
+import Segmentado from '@/components/ui/Segmentado';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -59,6 +60,27 @@ export default function DashboardHome() {
   }, []);
 
   useEffect(() => { if (isStaff) fetchMonths(); }, [isStaff, fetchMonths]);
+
+  /**
+   * FILTROS DEL ESTADO FINANCIERO (Fernando, 2026-10-29: «en la tabla de estados financieros
+   * necesito filtros»). Por AÑO —hay meses de varios— y por RESULTADO del mes (con ahorro o
+   * con pérdida). Solo filtran la tabla: las cifras de arriba siguen siendo los totales.
+   */
+  const [anio, setAnio] = useState<string>('todos');
+  const [resultado, setResultado] = useState<'todos' | 'ahorro' | 'perdida'>('todos');
+  const anios = [...new Set(months.map((m) => String(m.year)))].sort((a, b) => Number(b) - Number(a));
+  // El reporte descarga lo MISMO que enseña la tabla (Fernando, 2026-10-29).
+  const urlReporte = `/api/finance/pdf?${new URLSearchParams({
+    ...(anio !== 'todos' ? { anio } : {}),
+    ...(resultado !== 'todos' ? { resultado } : {}),
+  }).toString()}`;
+  const mesesFiltrados = months.filter((m) => {
+    if (anio !== 'todos' && String(m.year) !== anio) return false;
+    const ahorro = Number(m.total_savings || 0);
+    if (resultado === 'ahorro') return ahorro >= 0;
+    if (resultado === 'perdida') return ahorro < 0;
+    return true;
+  });
 
   const globalIncome = months.reduce((s, m) => s + Number(m.total_income || 0), 0);
   const globalExpense = months.reduce((s, m) => s + Number(m.total_expense || 0), 0);
@@ -117,13 +139,13 @@ export default function DashboardHome() {
           no se escriben frases descriptivas): repetía lo que ya dice la pantalla. */}
       {/* ⭐ LA CABECERA DE LA PORTADA (Fernando, 2026-10-29: el estilo de la sección
           Plataforma de la página de inicio, «para hacer fiel la pantalla de inicio con la
-          plataforma»). La insignia en píldora, el saludo con el titular de Space Grotesk y
+          plataforma»). Sin la insignia «Tu progreso» (Fernando, 2026-10-29: quitarla). El
+          saludo con el titular de Space Grotesk y
           el nombre con el degradado de «cruzar al mundo», y a la derecha la misma barra del
           pensamiento de la portada (`FeaturedThought compacto`, tema Progreso). */}
-      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 mb-5 sm:mb-8">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-4 sm:mb-5">
         <div className="min-w-0">
-          <span className="insignia-progreso mb-3 sm:mb-4" style={mf}>Tu progreso</span>
-          <h1 className="titulo-progreso text-[28px] sm:text-[40px] text-digi-text leading-[1.05]">
+          <h1 className="titulo-progreso text-[26px] sm:text-[34px] text-digi-text leading-[1.05]">
             {greet}{name ? <>, <span className="acento-progreso">{name}</span></> : ''}
           </h1>
         </div>
@@ -134,7 +156,7 @@ export default function DashboardHome() {
 
       {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
           las finanzas globales y el conteo de clientes son solo para staff/admin. */}
-      <RejillaCifras className="mb-6 sm:mb-8">
+      <RejillaCifras className="mb-5">
         <Cifra Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} />
         <Cifra Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} />
         {isAdmin && <Cifra Icon={Users} label="Clientes" value={stats?.clients} />}
@@ -150,34 +172,64 @@ export default function DashboardHome() {
             <h2 className="titulo-progreso text-[18px] text-digi-text">Estado financiero mensual</h2>
             {/* «Reporte global» es la acción principal de la pantalla: en el teléfono va a la
                 barra de abajo (2026-10-23, regla de los productos) y aquí solo desde `lg`. */}
-            {months.length > 0 && (
-              <button onClick={() => window.open('/api/finance/pdf', '_blank')}
+            {mesesFiltrados.length > 0 && (
+              <button onClick={() => window.open(urlReporte, '_blank')}
                 className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors shrink-0" style={mf}>
-                <Download className="w-4 h-4" /> Reporte global
+                <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' ? 'Reporte global' : 'Reporte filtrado'}
               </button>
             )}
-            {months.length > 0 && (
+            {mesesFiltrados.length > 0 && (
               <EnBarraAcciones>
-                <button onClick={() => window.open('/api/finance/pdf', '_blank')} className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5`}>
-                  <Download className="w-4 h-4" /> Reporte global
+                <button onClick={() => window.open(urlReporte, '_blank')} className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5`}>
+                  <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' ? 'Reporte global' : 'Reporte filtrado'}
                 </button>
               </EnBarraAcciones>
             )}
           </div>
 
+          {/* Los filtros: en el teléfono, cada uno a todo el ancho (en media columna el
+              segmentado de tres no cabía y «Pérdida» se cortaba); desde `sm`, juntos a la
+              izquierda con su ancho. Resultado es el `Segmentado` de siempre; el año, un `<select>`. */}
+          {months.length > 0 && (
+            <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 mb-3">
+              <select value={anio} onChange={(e) => setAnio(e.target.value)} aria-label="Año"
+                className="field-control field-select min-w-0 h-11 sm:h-[38px] sm:w-40 px-3 bg-digi-card border border-digi-border rounded-md text-[13px] text-digi-text appearance-none cursor-pointer" style={mf}>
+                <option value="todos">Todos los años</option>
+                {anios.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <Segmentado
+                etiqueta="Resultado del mes"
+                className="min-w-0 sm:w-72"
+                valor={resultado}
+                onChange={setResultado}
+                opciones={[
+                  { valor: 'todos', texto: 'Todos' },
+                  { valor: 'ahorro', texto: 'Ahorro' },
+                  { valor: 'perdida', texto: 'Pérdida' },
+                ]}
+              />
+            </div>
+          )}
+
           <PixelDataTable
-            data={months}
+            data={mesesFiltrados}
             onRowClick={(m: any) => openDetail(m)}
             emptyTitle="Sin registros"
-            emptyDesc="No hay estados financieros aún."
+            emptyDesc={months.length ? 'Ningún mes cumple los filtros.' : 'No hay estados financieros aún.'}
             columns={[
               { key: 'period', header: 'Periodo', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
-              { key: 'income', header: 'Ingresos', render: (m: any) => <span className="text-[12px] text-green-600 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
-              { key: 'expense', header: 'Egresos', render: (m: any) => <span className="text-[12px] text-red-600 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
-              { key: 'savings', header: 'Ahorro', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-600'}`} style={mf}>{money(s)}</span>; } },
-              { key: 'pdf', header: '', width: '60px', render: (m: any) => (
+              { key: 'income', header: 'Ingresos', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
+              { key: 'expense', header: 'Egresos', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
+              { key: 'savings', header: 'Ahorro', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
+              { key: 'pdf', header: '', width: '52px', render: (m: any) => (
+                // ⭐ UN ICONO, no una etiqueta «PDF» con borde y color (Fernando, 2026-10-29: «tiene
+                // un estilo muy de IA»). Botón fantasma: sin borde ni relleno en reposo; el nombre
+                // en `title`/`aria-label`.
                 <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
-                  className="px-1.5 py-0.5 text-[11px] border border-green-500/40 rounded text-green-700 hover:bg-green-50 transition-colors" style={mf}>PDF</button>
+                  title="Descargar el PDF del mes" aria-label="Descargar el PDF del mes"
+                  className="destino-tactil w-8 h-8 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
+                  <FileDown className="w-4 h-4" />
+                </button>
               ) },
             ]}
             /* ── El mes, contado para un teléfono ──────────────────────────────────────
@@ -202,9 +254,9 @@ export default function DashboardHome() {
                   </div>
                   <dl className="mt-2 grid grid-cols-3 gap-1.5 text-center">
                     {([
-                      ['Ingresos', Number(m.total_income || 0), 'text-green-600'],
-                      ['Egresos', Number(m.total_expense || 0), 'text-red-600'],
-                      ['Ahorro', ahorro, ahorro >= 0 ? 'text-accent' : 'text-red-600'],
+                      ['Ingresos', Number(m.total_income || 0), 'text-green-400'],
+                      ['Egresos', Number(m.total_expense || 0), 'text-red-400'],
+                      ['Ahorro', ahorro, ahorro >= 0 ? 'text-accent' : 'text-red-400'],
                     ] as [string, number, string][]).map(([etiqueta, valor, color]) => (
                       <div key={etiqueta} className="rounded-md bg-black/[0.02] py-1">
                         <dt className="text-[10px] uppercase tracking-wide text-digi-muted" style={mf}>{etiqueta}</dt>
@@ -228,12 +280,12 @@ export default function DashboardHome() {
           <div className="max-h-[75vh] overflow-y-auto pr-1 space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <BloqueImportes
-                titulo="Ingresos" Icon={TrendingUp} colorIcono="text-green-600" colorTotal="text-green-700"
+                titulo="Ingresos" Icon={TrendingUp} colorIcono="text-green-400" colorTotal="text-green-400"
                 total={money(detailIncome)} items={incomeItems} setItems={setIncomeItems}
                 editable={isAdmin} tipo="income" vacio="Sin ingresos registrados." textoAgregar="Agregar ingreso"
               />
               <BloqueImportes
-                titulo="Egresos" Icon={TrendingDown} colorIcono="text-red-600" colorTotal="text-red-600"
+                titulo="Egresos" Icon={TrendingDown} colorIcono="text-red-400" colorTotal="text-red-400"
                 total={money(detailExpense)} items={expenseItems} setItems={setExpenseItems}
                 editable={isAdmin} tipo="expense" vacio="Sin egresos registrados." textoAgregar="Agregar egreso"
               />
@@ -246,12 +298,12 @@ export default function DashboardHome() {
                   <p className="text-[13px] font-semibold text-digi-text" style={mf}>Ahorro del mes</p>
                   <p className="text-[11px] text-digi-muted" style={mf}>Ingresos − egresos de {detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : 'el mes'}</p>
                 </div>
-                <span className={`text-2xl font-bold tabular-nums shrink-0 ${detailSavings >= 0 ? 'text-accent' : 'text-red-600'}`} style={mf}>{money(detailSavings)}</span>
+                <span className={`text-2xl font-bold tabular-nums shrink-0 ${detailSavings >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(detailSavings)}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-digi-darker border border-digi-border text-[12px]" style={mf}>
                   <span className="text-digi-muted">A la fecha (mes anterior)</span>
-                  <span className={`font-medium tabular-nums ${priorSavings >= 0 ? 'text-digi-text' : 'text-red-600'}`}>{money(priorSavings)}</span>
+                  <span className={`font-medium tabular-nums ${priorSavings >= 0 ? 'text-digi-text' : 'text-red-400'}`}>{money(priorSavings)}</span>
                 </div>
                 <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent-light border border-accent/30 text-[12px]" style={mf}>
                   <span className="text-accent">Ahorro global (a la fecha)</span>

@@ -2038,8 +2038,11 @@ export default function ProjectDetailPage() {
                     <p className="text-[11px] text-digi-muted" style={mf}>{r.reason}</p>
                     {r.status === 'pending' && r.type === 'withdrawal' && isOwner && (
                       <div className="flex gap-1 mt-1.5">
-                        <button onClick={() => reviewRequest(r.id, 'approved')} className="text-[11px] text-green-600 border border-green-300 px-2 py-0.5 hover:bg-green-50 transition-colors" style={pf}>Aprobar</button>
-                        <button onClick={() => reviewRequest(r.id, 'rejected')} className="text-[11px] text-red-600 border border-red-300 px-2 py-0.5 hover:bg-red-50 transition-colors" style={pf}>Rechazar</button>
+                        {/* Iconos fantasma, no textos con borde de color (regla del 2026-10-29). */}
+                        <button onClick={() => reviewRequest(r.id, 'approved')} title="Aprobar" aria-label="Aprobar"
+                          className="destino-tactil w-7 h-7 inline-flex items-center justify-center rounded-md text-green-400 hover:bg-accent-light transition-colors"><Check className="w-4 h-4" /></button>
+                        <button onClick={() => reviewRequest(r.id, 'rejected')} title="Rechazar" aria-label="Rechazar"
+                          className="destino-tactil w-7 h-7 inline-flex items-center justify-center rounded-md text-red-400 hover:bg-accent-light transition-colors"><X className="w-4 h-4" /></button>
                       </div>
                     )}
                   </div>

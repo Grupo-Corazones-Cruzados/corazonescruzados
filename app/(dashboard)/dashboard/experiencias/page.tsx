@@ -318,7 +318,7 @@ function EventDetail({ event, busy, onTake, onRelease }: {
                   </span>
                 ))}
                 {t.talents.map((tal) => (
-                  <span key={tal} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-400/15 border border-blue-400/30 text-[10.5px] text-blue-400" style={mf}>
+                  <span key={tal} className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400" style={mf}>
                     <Sparkles className="w-3 h-3" /> {tal}
                   </span>
                 ))}

@@ -579,7 +579,7 @@ export default function MiDiaPage() {
                         {it.social && (
                           <>
                             <p className="text-[10.5px] mt-1 flex items-center gap-1.5 flex-wrap" style={mf}>
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-600">
+                              <span className="inline-flex items-center gap-1 font-medium text-amber-400">
                                 <PartyPopper className="w-2.5 h-2.5" /> Gestión Social
                               </span>
                               <span className="text-amber-600 truncate">{it.eventName}</span>

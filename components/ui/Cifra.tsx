@@ -24,8 +24,8 @@ import type { LucideIcon } from 'lucide-react';
  * `RejillaCifras` es su contenedor: 2 columnas en teléfono, 3 desde `lg`. Se usan juntos.
  *
  * Las clases `cifra`, `cifra-icono`, `cifra-etiqueta` y `cifra-valor` le dan, dentro del
- * panel, el aspecto de las tarjetas de la portada (`app/tema-progreso.css`, 2026-10-29); el
- * CV público, que también la usa, no las estiliza y se queda como estaba.
+ * panel, el aspecto de las tarjetas de la portada (`app/tema-progreso.css`, 2026-10-29). Solo
+ * la usa el panel (el CV público tiene su propia `Cifra` en `components/cv/CvCuerpo.tsx`).
  */
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -38,9 +38,13 @@ const CHIP: Record<TonoCifra, string> = {
   red: 'bg-red-50 text-red-600',
 };
 
-/** Rejilla de cifras: dos columnas en teléfono, tres desde `lg`. */
+/**
+ * Rejilla de cifras COMPACTA (Fernando, 2026-10-29: «los indicadores ocupan muchísimo espacio de
+ * altura […] me interesa más espacio para la tabla»). Dos columnas en el teléfono, tres desde
+ * `md` y, desde `xl`, las seis en UNA fila. Antes eran tarjetas de ~90 px en dos filas.
+ */
 export function RejillaCifras({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 ${className}`}>{children}</div>;
+  return <div className={`grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 ${className}`}>{children}</div>;
 }
 
 export function Cifra({
@@ -56,25 +60,21 @@ export function Cifra({
   tone?: TonoCifra;
 }) {
   return (
-    <div className="cifra bg-digi-card border border-digi-border rounded-lg shadow-sm p-3 sm:p-4 flex items-center gap-3">
-      {/* El chip del icono solo desde `sm`: en un teléfono son 44 px que no dicen nada que
-          no diga ya la etiqueta, y se los quitan a la cifra. */}
-      <div data-tono={tone} className={`cifra-icono hidden sm:flex w-11 h-11 rounded-lg items-center justify-center shrink-0 ${CHIP[tone]}`}>
-        <Icon className="w-5 h-5" />
+    // Una línea de alto: icono pequeño a la izquierda y, a su lado, etiqueta y cifra. ~58 px.
+    <div className="cifra bg-digi-card border border-digi-border rounded-lg shadow-sm px-3 py-2.5 flex items-center gap-2.5 min-w-0">
+      <div data-tono={tone} className={`cifra-icono flex w-7 h-7 rounded-md items-center justify-center shrink-0 ${CHIP[tone]}`}>
+        <Icon className="w-3.5 h-3.5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="cifra-etiqueta flex items-center gap-1.5 text-[10.5px] sm:text-[11px] uppercase tracking-wide text-digi-muted" style={mf}>
-          {/* En teléfono el icono acompaña a la etiqueta, en línea y pequeño: mantiene la
-              lectura de un vistazo (verde sube, rojo baja) sin ocupar una columna. */}
-          <Icon className={`sm:hidden w-3.5 h-3.5 shrink-0 ${tone === 'green' ? 'text-green-600' : tone === 'red' ? 'text-red-600' : 'text-accent'}`} />
-          <span className="truncate">{label}</span>
+        <p className="cifra-etiqueta text-[10px] uppercase tracking-wide text-digi-muted truncate leading-tight" style={mf} title={label}>
+          {label}
         </p>
         {value !== undefined ? (
-          <p className="cifra-valor text-[19px] sm:text-xl font-semibold text-digi-text leading-tight tabular-nums truncate" style={mf}>
+          <p className="cifra-valor text-[16px] font-semibold text-digi-text leading-tight tabular-nums truncate" style={mf} title={String(value)}>
             {value}
           </p>
         ) : (
-          <div className="h-6 w-16 bg-digi-border/40 animate-pulse rounded mt-1" />
+          <div className="h-4 w-14 bg-digi-border/40 animate-pulse rounded mt-1" />
         )}
       </div>
     </div>
