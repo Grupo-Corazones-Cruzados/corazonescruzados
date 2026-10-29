@@ -30,15 +30,14 @@
  * para el buscador**. Sin esto, de treinta trabajos Google vería los de una pestaña.
  */
 
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Folder, FolderOpen, Mail, Phone, Search } from 'lucide-react';
+import { FolderOpen, Mail, Phone, Search } from 'lucide-react';
 import type {
   Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo, Concepto,
 } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
-import TiraConceptos from './TiraConceptos';
-import { ExploradorTresPaneles } from './piezas';
+import { ICONOS } from './piezas';
 
 export interface SolucionConContenido extends Solucion {
   /** El contenido de cada talento, ya consultado en el servidor. */
@@ -62,6 +61,9 @@ const PESTANAS: { id: Pestana; label: string }[] = [
   { id: 'tickets', label: 'Tickets' },
   { id: 'proyectos', label: 'Proyectos' },
 ];
+
+/** El orden en pantalla: lo terminado primero, las personas al final. */
+const ORDEN_PESTANAS: Pestana[] = ['proyectos', 'tickets', 'productos', 'talentos'];
 
 const VACIO_TOTAL: ContenidoDeTalento = { miembros: [], productos: [], proyectos: [], tickets: [] };
 
@@ -181,20 +183,8 @@ export default function SolucionesExplorador({
 
   const elegido = activo?.talento ?? null;
 
-  // La carpeta del talento abierto empieza desplegada; las demás, cerradas. Sigue siendo
-  // estado porque desplegar y plegar es del visitante, no de la dirección.
-  const [abiertos, setAbiertos] = useState<Set<number>>(
-    new Set(activo ? [activo.solucionId] : []),
-  );
   const [pestana, setPestana] = useState<Pestana>('proyectos');
   const [busca, setBusca] = useState('');
-
-  const alternar = (id: number) =>
-    setAbiertos((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
 
   /**
    * La descripción del talento abierto.
@@ -251,188 +241,126 @@ export default function SolucionesExplorador({
     <p className="text-[14px] text-[var(--tenue)] py-6">{texto}</p>
   );
 
+  // Todos los talentos, con su solución, para el selector de arriba.
+  const todosLosTalentos = soluciones.flatMap((a) =>
+    a.talentos.map((t) => ({ ...t, solucion: a.nombre, total: totalDe(a.contenido[t.talento] ?? VACIO_TOTAL) })),
+  );
+  const solucionDelElegido = soluciones.find((a) => a.talentos.some((t) => t.talento === elegido))?.nombre;
+
   return (
-    /* Tres paneles: carpetas · contenido · conceptos. La rejilla, el `min-w-0` de las
-       columnas y el pegado de los laterales los pone `ExploradorTresPaneles`, que es la
-       MISMA pieza que usa `/clientes` — se extrajo el 2026-08-18, al pedir Fernando esa
-       forma para las dos páginas.
+    <div className="soluciones-sitio">
+      {/* ── LOS TALENTOS, COMO PUERTAS (Fernando, 2026-10-29: «el diseño está muy mal para mostrar
+          el contenido… usa tu reformulación») ──────────────────────────────────────────────
+          Sustituye a las carpetas del panel izquierdo: la misma fila de tarjetas que las
+          secciones de Clientes y Desarrollo Humano, con la solución como rótulo y la cuenta de
+          trabajos. Cada talento sigue siendo una URL. Para la versión con carpetas y tres
+          paneles: `git show 8d23d58e:components/sitio/SolucionesExplorador.tsx`. */}
+      <nav aria-label="Talentos" className="puertas-seccion" style={{ ['--n' as string]: 4 }}>
+        {todosLosTalentos.map((t) => {
+          const abierta = t.talento === elegido;
+          return (
+            <Link
+              key={t.talento}
+              href={`/soluciones/${t.slug}`}
+              aria-current={abierta ? 'page' : undefined}
+              className={`puerta-seccion ${abierta ? 'es-abierta' : ''}`}
+            >
+              <span className="puerta-icono" aria-hidden><FolderOpen /></span>
+              <span className="puerta-titulo">{t.talento}</span>
+              <span className="puerta-texto">{t.solucion} · {t.total} {t.total === 1 ? 'trabajo' : 'trabajos'}</span>
+            </Link>
+          );
+        })}
+      </nav>
 
-       La tercera columna **solo se reserva si la solución abierta tiene conceptos**: pasar
-       `derecha` a `undefined` devuelve la rejilla a dos columnas en vez de dejar un hueco. */
-    <ExploradorTresPaneles
-      etiquetaIzquierda="Soluciones"
-      anchoIzquierda="240px"
-      anchoDerecha="280px"
-      /* ── LA TIRA DE CONCEPTOS, VERSIÓN ANCHA ─────────────────────────────────
-         Se pinta sola solo si hay conceptos: el propio componente devuelve `null` con la
-         lista vacía. Su gemela horizontal vive en el centro, bajo la descripción; el corte
-         de `lg` que oculta esta es el mismo que enseña aquella, así que nunca se ven las
-         dos ni se queda la pantalla sin ninguna. */
-      derecha={conceptosActivos.length > 0
-        ? <TiraConceptos conceptos={conceptosActivos} />
-        : undefined}
-      izquierda={<>
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-3">
-          Soluciones
-        </p>
-        <ul className="space-y-0.5">
-          {soluciones.map((a) => {
-            const abierto = abiertos.has(a.id);
-            return (
-              <li key={a.id} id={a.slug} className="scroll-mt-24">
-                <button
-                  type="button"
-                  onClick={() => alternar(a.id)}
-                  aria-expanded={abierto}
-                  className="w-full flex items-center gap-2 rounded-md px-2 py-2 text-left transition-colors
-                             hover:bg-[#7b5fbf]/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50"
-                >
-                  <ChevronRight
-                    className={`w-3.5 h-3.5 shrink-0 text-[var(--tenue)] transition-transform ${abierto ? 'rotate-90' : ''}`}
-                    aria-hidden
-                  />
-                  {abierto
-                    ? <FolderOpen className="w-4 h-4 shrink-0 text-[var(--violeta-txt)]" aria-hidden />
-                    : <Folder className="w-4 h-4 shrink-0 text-[var(--tenue)]" aria-hidden />}
-                  <span className="text-[14px] font-medium text-[var(--texto)] leading-snug">{a.nombre}</span>
-                </button>
-
-                {abierto && (
-                  <ul className="ml-[26px] border-l border-[var(--linea)] pl-2.5 py-0.5 space-y-0.5">
-                    {a.talentos.map((t) => {
-                      const esteActivo = t.talento === elegido;
-                      return (
-                        <li key={t.talento}>
-                          <Link
-                            href={`/soluciones/${t.slug}`}
-                            aria-current={esteActivo ? 'true' : undefined}
-                            className={`w-full flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left transition-colors
-                                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
-                              ${esteActivo
-                                ? 'bg-[#7b5fbf]/[0.09] text-[var(--violeta-txt)] font-medium'
-                                : 'text-[var(--suave)] hover:bg-[#7b5fbf]/[0.05] hover:text-[var(--texto)]'}`}
-                          >
-                            <span className="text-[13px] leading-snug flex-1">{t.talento}</span>
-                            <span className="text-[11px] text-[var(--apagado)] tabular-nums">
-                              {totalDe(a.contenido[t.talento] ?? VACIO_TOTAL)}
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                    {a.talentos.length === 0 && (
-                      <li className="px-2 py-1.5 text-[12.5px] text-[var(--apagado)]">Sin talentos todavía.</li>
-                    )}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </>}
-      centro={<>
+      <div className="mt-[clamp(36px,5vw,64px)]">
+        {solucionDelElegido && (
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)]">
+            {solucionDelElegido}
+          </p>
+        )}
         {elegido && (
-          <h1 className="text-[30px] sm:text-[40px] font-semibold tracking-tight text-[var(--texto)] leading-tight">
+          <h1 className="mt-2 text-[32px] sm:text-[44px] tracking-tight text-[var(--texto)] leading-[1.05]">
             {elegido}
           </h1>
         )}
         {/* La descripción, si la hay. Sin ella no se pinta nada: ni recuadro ni relleno. */}
         {descripcion && (
-          <p className="mt-3 text-[15.5px] leading-relaxed text-[var(--suave)] max-w-3xl">{descripcion}</p>
+          <p className="mt-4 text-[16px] leading-relaxed text-[var(--suave)] max-w-3xl">{descripcion}</p>
         )}
+      </div>
 
-        {/* ── LA TIRA DE CONCEPTOS, VERSIÓN ESTRECHA ────────────────────────────
-            Bajo el ancho de `lg` no hay sitio para la tercera columna, así que la tira baja
-            aquí —debajo de la descripción—, en horizontal y sin rótulo (Fernando, 2026-08-18).
-            Es la MISMA instancia lógica, solo que girada: las dos se pintan siempre y es el
-            CSS quien enseña una u otra. Se puede porque la oculta mide 0 y su propia regla
-            («solo se mueve si no cabe») decide entonces que no cabe nada que mover: no anima
-            de fondo ni gasta cuadros. */}
-        <div className="alternativa-estrecha mt-5 min-w-0">
-          <TiraConceptos conceptos={conceptosActivos} orientacion="horizontal" />
-        </div>
+      {/* ── LO QUE SABEMOS HACER, EN REJILLA ──────────────────────────────────────────────
+          Era una tira que se movía sola en una columna a la derecha y robaba ancho a los
+          trabajos. Ahora es una rejilla quieta (4/3/2/1 columnas), entera y sin deslizar. */}
+      {conceptosActivos.length > 0 && (
+        <section aria-label="Lo que sabemos hacer" className="mt-10">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)]">
+            Lo que sabemos hacer
+          </p>
+          <ul className="conceptos-rejilla mt-4">
+            {conceptosActivos.map((c) => {
+              const Icono = ICONOS[c.icono] ?? ICONOS.capas;
+              return (
+                <li key={c.id} className="concepto-celda">
+                  <span className="puerta-icono" aria-hidden><Icono /></span>
+                  <span className="min-w-0">
+                    <span className="concepto-titulo">{c.titulo}</span>
+                    {c.descripcion && <span className="concepto-texto">{c.descripcion}</span>}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
-        {/* El buscador, ENCIMA de las pestañas: busca dentro de la que esté abierta, y por
-            eso su texto de ayuda dice cuál es — si no, no se sabe dónde está buscando. */}
-        <div className="relative mt-6 max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
-          <input
-            type="search"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder={`Buscar en ${PESTANAS.find((p) => p.id === pestana)?.label.toLowerCase()}…`}
-            aria-label={`Buscar en ${PESTANAS.find((p) => p.id === pestana)?.label}`}
-            className="w-full h-11 pl-10 pr-4 rounded-lg border border-[var(--linea-fuerte)] bg-[var(--tarjeta)]
-                       text-[14.5px] text-[var(--texto)] placeholder:text-[var(--apagado)]
-                       focus:border-[#7b5fbf]/60 focus:outline-none transition-colors"
-          />
-        </div>
-
-        {/* Las cuatro pestañas. Siempre las cuatro. */}
-        <div role="tablist" aria-label="Contenido del talento" className="mt-5 flex flex-wrap gap-1.5 border-b border-[var(--linea)] pb-3">
-          {PESTANAS.map((p) => {
-            const activa = p.id === pestana;
-            return (
-              <button
-                key={p.id}
-                role="tab"
-                aria-selected={activa}
-                type="button"
-                onClick={() => setPestana(p.id)}
-                className={`inline-flex items-baseline gap-1.5 rounded-full border px-3.5 py-1.5 text-[13.5px] transition-colors
-                            focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50
-                  ${activa
-                    ? 'border-[#7b5fbf]/55 bg-[#7b5fbf]/[0.1] text-[var(--violeta-txt)] font-medium'
-                    : 'border-[var(--linea)] text-[var(--suave)] hover:border-[var(--linea-fuerte)] hover:text-[var(--texto)]'}`}
-              >
-                {p.label}
-                <span className="text-[11px] text-[var(--apagado)] tabular-nums">{cuantos[p.id]}</span>
-              </button>
-            );
-          })}
+      {/* ── LO HECHO: SELECTOR SEGMENTADO + BUSCADOR ─────────────────────────────────────
+          Las cuatro pestañas siguen siendo siempre cuatro (es la navegación), ahora como un
+          control segmentado con cápsula que se desliza y la cuenta al lado; en el teléfono, un
+          selector nativo a todo el ancho (regla de `/diseno` §4-ter). El buscador, en la misma
+          fila, busca dentro de la pestaña abierta. */}
+      <section aria-label="Trabajo terminado" className="mt-12">
+        <div className="barra-trabajos">
+          <SelectorPestanas pestana={pestana} cuantos={cuantos} onCambiar={setPestana} />
+          <div className="relative w-full sm:w-[320px] sm:shrink-0">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder={`Buscar en ${PESTANAS.find((p) => p.id === pestana)?.label.toLowerCase()}…`}
+              aria-label={`Buscar en ${PESTANAS.find((p) => p.id === pestana)?.label}`}
+              className="w-full h-11 pl-10 pr-4 rounded-full border border-[var(--linea-fuerte)] bg-white/85
+                         text-[14.5px] text-[var(--texto)] placeholder:text-[var(--apagado)]
+                         focus:border-[#7b5fbf]/60 focus:outline-none transition-colors"
+            />
+          </div>
         </div>
 
         <div role="tabpanel" className="mt-6">
           {pestana === 'talentos' && (
             miembros.length === 0
               ? vacio(q ? 'Ningún miembro coincide con la búsqueda.' : 'Todavía no hay miembros con este talento.')
-              : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {miembros.map((m) => <TarjetaMiembro key={m.memberId} miembro={m} />)}
-                </div>
-              )
+              : <div className="rejilla-trabajos">{miembros.map((m) => <TarjetaMiembro key={m.memberId} miembro={m} />)}</div>
           )}
-
           {pestana === 'productos' && (
             productos.length === 0
               ? vacio(q ? 'Ningún producto coincide con la búsqueda.' : 'Todavía no hay productos en este talento.')
-              : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {productos.map((p) => <TarjetaProducto key={p.id} producto={p} />)}
-                </div>
-              )
+              : <div className="rejilla-trabajos">{productos.map((p) => <TarjetaProducto key={p.id} producto={p} />)}</div>
           )}
-
           {pestana === 'tickets' && (
             tickets.length === 0
               ? vacio(q ? 'Ningún ticket coincide con la búsqueda.' : 'Todavía no hay tickets terminados con este talento.')
-              : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {tickets.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}
-                </div>
-              )
+              : <div className="rejilla-trabajos">{tickets.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}</div>
           )}
-
           {pestana === 'proyectos' && (
             proyectos.length === 0
               ? vacio(q ? 'Ningún proyecto coincide con la búsqueda.' : 'Todavía no hay proyectos terminados con este talento.')
-              : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
-                  {proyectos.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}
-                </div>
-              )
+              : <div className="rejilla-trabajos">{proyectos.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}</div>
           )}
         </div>
+      </section>
 
         {/* ⭐ TODO LO DEMÁS, PARA QUIEN NO PULSA NADA — un buscador, sobre todo.
             Se pinta como nodos de verdad y se oculta con `hidden`, que NO lo saca del HTML.
@@ -463,7 +391,75 @@ export default function SolucionesExplorador({
             }),
           )}
         </div>
-      </>}
-    />
+    </div>
   );
 }
+
+/**
+ * EL SELECTOR DE PESTAÑAS — control segmentado con cápsula que se desliza (escritorio) y
+ * `<select>` nativo (teléfono). Orden: lo que más se busca primero.
+ */
+function SelectorPestanas({
+  pestana, cuantos, onCambiar,
+}: {
+  pestana: Pestana;
+  cuantos: Record<Pestana, number>;
+  onCambiar: (p: Pestana) => void;
+}) {
+  const marcoRef = useRef<HTMLDivElement>(null);
+  const capsulaRef = useRef<HTMLSpanElement>(null);
+  const [lista, setLista] = useState(false);
+  useLayoutEffect(() => {
+    const marco = marcoRef.current;
+    const capsula = capsulaRef.current;
+    if (!marco || !capsula) return;
+    const colocar = () => {
+      const b = marco.querySelector<HTMLElement>(`[data-pestana="${pestana}"]`);
+      if (!b) return;
+      capsula.style.transform = `translateX(${b.offsetLeft}px)`;
+      capsula.style.width = `${b.offsetWidth}px`;
+    };
+    colocar();
+    setLista(true);
+    const ro = new ResizeObserver(colocar);
+    ro.observe(marco);
+    return () => ro.disconnect();
+  }, [pestana]);
+
+  return (
+    <>
+      <div ref={marcoRef} role="tablist" aria-label="Contenido del talento" className="segmentado-trabajos">
+        <span ref={capsulaRef} className={`segmentado-capsula ${lista ? 'es-lista' : ''}`} aria-hidden />
+        {ORDEN_PESTANAS.map((id) => {
+          const p = PESTANAS.find((x) => x.id === id)!;
+          const activa = id === pestana;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              data-pestana={id}
+              aria-selected={activa}
+              onClick={() => onCambiar(id)}
+              className={`segmentado-opcion ${activa ? 'es-activa' : ''}`}
+            >
+              {p.label}
+              <span className="segmentado-cuenta">{cuantos[id]}</span>
+            </button>
+          );
+        })}
+      </div>
+      <label className="segmentado-movil">
+        <span className="sr-only">Ver</span>
+        <select value={pestana} onChange={(e) => onCambiar(e.target.value as Pestana)}>
+          {ORDEN_PESTANAS.map((id) => (
+            <option key={id} value={id}>
+              Ver: {PESTANAS.find((x) => x.id === id)!.label} · {cuantos[id]}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
+}
+

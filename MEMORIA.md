@@ -301,6 +301,9 @@ Stack estándar de la casa, con particularidades de este repo:
   ticket» de Clientes la quitó Fernando: «este contenido no me gusta»), y en Clientes y Desarrollo Humano las
   secciones como fila de puertas arriba. **Para volver a la versión anterior: commit `e09e1dc0`.**
   Le gustan controles concretos de las páginas viejas: si pide recuperar alguno, preguntar cuál.
+  **Soluciones reformulada (2026-10-29):** talentos como puertas, conceptos en rejilla, pestañas
+  como control segmentado (select en el teléfono), trabajos en mosaico y contacto al pie de cada
+  tarjeta, sin burbujas. Anterior: `8d23d58e`.
   **Sin botones de acceso en esas páginas (2026-10-29): «solo la pestaña de Inicio debe tener el
   acceso».** No volver a poner «Ir a…», «Publicar…» ni similares fuera de la portada.
   Detalle: `Diseño.md` § «PROPUESTA (2026-10-29): las páginas públicas como SITIO WEB».
@@ -570,6 +573,25 @@ Stack estándar de la casa, con particularidades de este repo:
   ⚠️ `instrumentation.ts` se compila también para edge: lo de Node va en `instrumentation-node.ts`.
   En iPhone (navegador) solo con la PWA instalada (iOS 16.4+). **En la app nativa no hay push web**: el
   trabajo manda también por `avisarUsuarios` (`push_devices`, APNs/FCM, abre Mi día) y el botón no sale.
+- **🔔 UNA SOLA PUERTA DE AVISOS + PREFERENCIAS POR PERSONA (Fernando, 2026-10-29).** *«todo lo de
+  la campanita»* llega también al teléfono y al Mac, y *«que yo elija qué recibo»*.
+  - **Catálogo único** `lib/avisos/catalogo.ts` (`AVISOS`: clase, grupo, nombre, canales `push`/`campana`,
+    alcance `todos`/`equipo`/`reclutamiento`). Una clase nueva de aviso se AÑADE AHÍ o no se puede apagar.
+  - `createNotification(userId, {type,…}, {push})` = campanita + `avisarUsuarios` (push en segundo
+    plano); `type` es la clase. `push: false` cuando lo hizo la propia persona (recordatorio recién creado).
+  - `avisarUsuarios` (`lib/push/avisos.ts`) es la ÚNICA puerta de notificaciones del sistema: exige
+    `clase`, filtra por preferencias y manda a FCM, APNs **y Web Push** (antes el Web Push solo lo usaban
+    las reuniones). Nada llama ya a `enviarPush` directamente.
+  - Preferencias en `gcc_world.aviso_preferencias` (`user_id, clase, canal, activo`); sin fila =
+    ENCENDIDO (decisión de Fernando). API `/api/avisos/preferencias`; pantalla **Configuración →
+    Notificaciones** (`components/settings/NotificacionesPanel.tsx`, miembros y admin; incluye el botón
+    «Activar avisos» de este navegador).
+  - **Reclutamiento** (`lib/avisos/reclutamiento.ts`): postulación nueva, correo verificado (solo la 1.ª
+    vez), aprobada/rechazada, candidato completa perfil, candidato → miembro, miembro → candidato. Los
+    reciben quienes ACCEDEN al sistema `reclutamiento-y-seleccion` (`canAccessSystem`), menos quien hizo
+    el cambio; el enlace abre el sistema con `?solicitud=`/`?candidato=`/`?miembro=`.
+  - **Invitaciones a proyectos**: la campanita las deriva en vivo; ahora además suenan
+    (`avisarInvitacionProyecto` en `lib/projects/members.ts`: invitar, responsable invitado, compra en marketplace).
 - **🗓️ Reuniones de Google Calendar en Mi día (Fernando, 2026-10-20).** Cada persona ve las de SU
   cuenta de Google (la de Configuración → Conexiones, OAuth por usuario), ya no las de una sola cuenta
   de la casa. `lib/calendar/google.ts` las pide EN VIVO por rango (`/api/members/calendar/google`), no se

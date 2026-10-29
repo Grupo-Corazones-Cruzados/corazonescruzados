@@ -688,8 +688,26 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   con su cabecera (rótulo, `<h1>` y el antiguo «Ir» como `BotonMundo`: «Ir a la Plataforma», «Ir al
   Videojuego», «Ir al Marketplace») y el índice «En esta página» pegado a la derecha desde `lg`
   (antes, desde 1536 px). Ya no usa `ExploradorTresPaneles`.
-- **Soluciones** conserva sus controles (carpetas, buscador, 4 pestañas, tira de conceptos) dentro
-  del ancho de sitio.
+- ⭐ **Soluciones REFORMULADA** (2026-10-29, Fernando: *«el diseño está muy mal para mostrar el
+  contenido de los proyectos… usa tu reformulación, incluso actualizar esas pestañas»*). Versión
+  anterior: `8d23d58e`.
+  · **Talentos como puertas** (la misma `.puertas-seccion` de Clientes; rótulo = solución y
+    número de trabajos), en vez de las carpetas a la izquierda. Cada talento sigue siendo una URL.
+  · **«Lo que sabemos hacer» en rejilla quieta** (`.conceptos-rejilla`, `auto-fill` de 270 px):
+    adiós a la tira que se movía sola en una columna derecha y robaba ancho.
+  · **Pestañas → control segmentado** con cápsula violeta que se desliza y cuenta al lado
+    (`SelectorPestanas`), orden Proyectos · Tickets · Productos · Talentos; buscador redondo en la
+    misma fila a la derecha. **Teléfono: `<select>` nativo** «Ver: Proyectos · 13» a todo el ancho.
+  · **Trabajos a todo el ancho en MOSAICO** (columnas CSS 3/2/1, `.rejilla-trabajos`): en rejilla
+    cada fila se estiraba a la tarjeta con captura y las demás quedaban con un hueco blanco.
+  · **`TarjetaTrabajo`**: descripción a 4 líneas con «Leer más / Leer menos» (entera en el HTML),
+    etiquetas en píldoras violetas (3 + «+N»), y al pie quién lo hizo —círculos apilados, nombre
+    del responsable, «y N más»— con correo y teléfono como botones redondos (`mailto:`/`tel:`).
+    ⚠️ **Sin burbujas**: se quedaban abiertas todas a la vez porque `.acciones-al-pasar` fuerza
+    `opacity:1` fuera de un `.group` y tapaban las tarjetas vecinas.
+  · Borrados por quedarse sin uso: `TiraConceptos.tsx`, `ExploradorTresPaneles` y su CSS.
+  · Verificado (producción) a 1440 y 390: ninguna tarjeta se sale, cápsula alineada con su
+    botón en las 4 pestañas, «Leer más» abre (523 → 636 px), el buscador filtra.
 - ⭐ **SIN BOTONES DE ACCESO fuera de Inicio** (2026-10-29, Fernando: *«quita esos botones… solo la
   pestaña de Inicio debe tener el acceso»*). Fuera los dos botones de cada presentación y el «Ir a
   la Plataforma / al Videojuego / al Marketplace» de las secciones (y el campo `accion` de

@@ -26,6 +26,15 @@
  * Se abre con `group-hover` **y** con `group-focus-within`, y el avatar es un `<button>`: así
  * sale al pasar el puntero, al llegar con el tabulador y al tocarla en un móvil, sin un solo
  * `useState`. Y su contenido está en el HTML crudo, que es lo que lee un buscador.
+ *
+ * ── ⭐ 2026-10-29: SIN BURBUJAS, CONTACTO AL PIE Y DESCRIPCIÓN RECORTADA ──────────────
+ * Fernando: *«el diseño está muy mal para mostrar el contenido de los proyectos»*. Las burbujas
+ * se quedaban ABIERTAS a la vez (la clase `acciones-al-pasar` las forzaba a `opacity:1` fuera
+ * de un `.group`) y tapaban las tarjetas de al lado. Ahora el pie dice quién lo hizo: los
+ * círculos apilados, el nombre del responsable (+N) y su correo y teléfono como botones
+ * redondos (`mailto:`/`tel:`). La descripción se recorta a 4 líneas con «Leer más» (entera en el
+ * HTML: el recorte es solo visual) y las etiquetas, a una fila. Versión anterior:
+ * `git show 8d23d58e:components/sitio/TarjetaTrabajo.tsx`.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -42,61 +51,29 @@ function iniciales(nombre: string): string {
   return nombre.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 }
 
-function Circulo({ persona }: { persona: Persona }) {
-  const esResponsable = persona.rol === 'responsible';
+function Avatar({ persona }: { persona: Persona }) {
   return (
-    <div className="group/p relative">
-      <button
-        type="button"
-        // `-ml-2` en todos menos el primero: los círculos se solapan como en un reparto.
-        className={`relative block w-9 h-9 rounded-full overflow-hidden border-2 transition-transform
-                    hover:z-10 hover:scale-110 focus:outline-none focus-visible:ring-2
-                    focus-visible:ring-[#7b5fbf]/60 focus-visible:z-10
-                    ${esResponsable ? 'border-[var(--violeta)]' : 'border-[var(--tarjeta)]'}`}
-        aria-label={`Datos de contacto de ${persona.nombre}`}
-      >
-        {persona.foto ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={persona.foto} alt="" loading="lazy" className="w-full h-full object-cover" />
-        ) : (
-          <span className="w-full h-full flex items-center justify-center bg-[#7b5fbf]/[0.12] text-[11px] font-semibold text-[var(--violeta-txt)]">
-            {iniciales(persona.nombre)}
-          </span>
-        )}
-      </button>
-
-      {/* La burbuja. `pointer-events-none` mientras está oculta para que no atrape clics de
-          la tarjeta que hay debajo. */}
-      <div
-        role="tooltip"
-        /* `left-0` y no centrada: los círculos viven en el borde IZQUIERDO de la tarjeta, y
-           una burbuja centrada sobre el primero se sale por la izquierda de la pantalla.
-           Anclada a la izquierda, crece hacia dentro, que es donde hay sitio. */
-        className="pointer-events-none absolute left-0 bottom-full z-30 mb-2 w-max max-w-[260px]
-                   rounded-lg border border-[var(--linea)] bg-[var(--tarjeta)]
-                   px-3 py-2.5 opacity-0 shadow-[0_8px_24px_rgba(28,27,34,0.14)] transition-opacity
-                   group-hover/p:opacity-100 group-focus-within/p:opacity-100 acciones-al-pasar"
-      >
-        <p className="text-[13px] font-semibold leading-snug text-[var(--texto)]">{persona.nombre}</p>
-        {persona.correo && (
-          <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-[var(--suave)] break-all">
-            <Mail className="w-3.5 h-3.5 shrink-0 text-[var(--violeta-txt)]" />
-            {persona.correo}
-          </p>
-        )}
-        {persona.telefono && (
-          <p className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--suave)]">
-            <Phone className="w-3.5 h-3.5 shrink-0 text-[var(--violeta-txt)]" />
-            {persona.telefono}
-          </p>
-        )}
-      </div>
-    </div>
+    <span
+      title={persona.nombre}
+      className={`relative block w-8 h-8 rounded-full overflow-hidden border-2
+                  ${persona.rol === 'responsible' ? 'border-[#7c3aed]' : 'border-white'}`}
+    >
+      {persona.foto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={persona.foto} alt="" loading="lazy" className="w-full h-full object-cover" />
+      ) : (
+        <span className="w-full h-full flex items-center justify-center bg-[#7b5fbf]/[0.12] text-[10.5px] font-semibold text-[var(--violeta-txt)]">
+          {iniciales(persona.nombre)}
+        </span>
+      )}
+    </span>
   );
 }
 
 export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
   const [abierta, setAbierta] = useState<number | null>(null);
+  const [entera, setEntera] = useState(false);
+  const responsable = trabajo.personas.find((p) => p.rol === 'responsible') ?? trabajo.personas[0];
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -185,27 +162,60 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
         </div>
         <h3 className="text-[17px] font-semibold text-[var(--texto)] leading-snug">{trabajo.titulo}</h3>
         {trabajo.descripcion && (
-          <p className="text-[13.5px] text-[var(--suave)] leading-relaxed">{trabajo.descripcion}</p>
+          <div>
+            <p className={`text-[14px] text-[var(--suave)] leading-relaxed ${entera ? '' : 'line-clamp-4'}`}>
+              {trabajo.descripcion}
+            </p>
+            {trabajo.descripcion.length > 180 && (
+              <button
+                type="button"
+                onClick={() => setEntera((v) => !v)}
+                aria-expanded={entera}
+                className="mt-1.5 text-[13px] font-semibold text-[var(--violeta-txt)] hover:underline underline-offset-4"
+              >
+                {entera ? 'Leer menos' : 'Leer más'}
+              </button>
+            )}
+          </div>
         )}
         {trabajo.etiquetas.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {trabajo.etiquetas.map((t) => (
-              <span key={t} className="rounded-full border border-[var(--linea)] px-2.5 py-0.5 text-[11px] text-[var(--tenue)]">
+            {(entera ? trabajo.etiquetas : trabajo.etiquetas.slice(0, 3)).map((t) => (
+              <span key={t} className="rounded-full bg-[#7c3aed]/[0.07] px-2.5 py-0.5 text-[11.5px] text-[var(--violeta-txt)]">
                 {t}
               </span>
             ))}
+            {!entera && trabajo.etiquetas.length > 3 && (
+              <span className="rounded-full px-1.5 py-0.5 text-[11.5px] text-[var(--tenue)]">+{trabajo.etiquetas.length - 3}</span>
+            )}
           </div>
         )}
 
-        {/* Los círculos, al pie. `mt-auto` los alinea abajo aunque las descripciones midan
-            distinto: sin esto, cada fila de la rejilla queda descuadrada. */}
-        {trabajo.personas.length > 0 && (
-          <div className="mt-auto pt-4 flex items-center">
-            {trabajo.personas.map((p, i) => (
-              <div key={p.memberId} className={i === 0 ? '' : '-ml-2'}>
-                <Circulo persona={p} />
-              </div>
-            ))}
+        {/* El pie: quién lo hizo y cómo contactarle, a la vista (sin burbujas). `mt-auto` lo
+            alinea abajo aunque las descripciones midan distinto. */}
+        {responsable && (
+          <div className="mt-auto pt-4 border-t border-[var(--linea)] flex items-center gap-3">
+            <span className="flex shrink-0">
+              {trabajo.personas.slice(0, 3).map((p, i) => (
+                <span key={p.memberId} className={i === 0 ? '' : '-ml-2.5'}><Avatar persona={p} /></span>
+              ))}
+            </span>
+            <span className="min-w-0 flex-1 text-[13px] leading-tight">
+              <span className="block truncate font-semibold text-[var(--texto)]">{responsable.nombre}</span>
+              {trabajo.personas.length > 1 && (
+                <span className="text-[12px] text-[var(--tenue)]">y {trabajo.personas.length - 1} más</span>
+              )}
+            </span>
+            {responsable.correo && (
+              <a href={`mailto:${responsable.correo}`} title={responsable.correo} aria-label={`Escribir a ${responsable.nombre}`} className="contacto-redondo">
+                <Mail aria-hidden />
+              </a>
+            )}
+            {responsable.telefono && (
+              <a href={`tel:${responsable.telefono.replace(/\s+/g, '')}`} title={responsable.telefono} aria-label={`Llamar a ${responsable.nombre}`} className="contacto-redondo">
+                <Phone aria-hidden />
+              </a>
+            )}
           </div>
         )}
       </div>

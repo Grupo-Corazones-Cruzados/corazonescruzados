@@ -1894,169 +1894,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    altavoz del chat del mundo y el copyright, y quedarían por detrás de la barra. */
 .landing-page { padding-bottom: var(--alto-pie); }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LA TIRA VERTICAL DE CONCEPTOS — el carrusel de `/soluciones`, girado (2026-08-18)
-
-   Es el mismo mecanismo que `.tira-desliza` de la galería horizontal: la lista se
-   pinta DOS VECES y se desplaza exactamente la mitad. Al terminar, la segunda copia
-   está justo donde estaba la primera y el salto de vuelta no se ve. Es la única
-   forma de que un bucle infinito no dé un tirón cada vuelta.
-
-   ⚠️ **La animación NO se aplica sola.** La pone `TiraConceptos` con la clase
-   `tira-anima`, y solo cuando ha MEDIDO que los conceptos no caben en el alto
-   disponible. Fernando fue explícito: *«en caso de que la cantidad de conceptos no
-   supere el tamaño disponible en pantalla que no se ejecute la animación»*. Una
-   lista corta moviéndose sin necesidad es ruido, y encima obliga a perseguir con la
-   vista algo que cabía entero.
-
-   La duración se calcula en el componente a partir del alto real —píxeles por
-   segundo constantes—, no con un número fijo: con un número fijo, tres conceptos
-   irían despacísimo y treinta, disparados.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-@keyframes tira-conceptos {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-50%); }
-}
-
-.tira-conceptos-anima {
-  animation-name: tira-conceptos;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  /* Mueve la tira al compositor: sin esto, animar una columna alta obliga al
-     navegador a repintar en cada cuadro y se nota en portátiles modestos. */
-  will-change: transform;
-}
-
-/* Se para al acercar el puntero y al llegar con el teclado: si alguien quiere leer un
-   concepto, lo peor que puede hacer la página es escapárselo. */
-.tira-conceptos-marco:hover .tira-conceptos-anima,
-.tira-conceptos-marco:focus-within .tira-conceptos-anima { animation-play-state: paused; }
-
-/* Quien pide que no le muevan las cosas no ve ningún movimiento; entonces la tira se
-   puede recorrer a mano, porque si no los últimos conceptos serían inalcanzables. */
-@media (prefers-reduced-motion: reduce) {
-  .tira-conceptos-anima { animation: none; }
-  .tira-conceptos-marco { overflow-y: auto; }
-}
-
-/* Los bordes se desvanecen para que los conceptos aparezcan y desaparezcan en vez de
-   cortarse en seco contra el borde del marco. Solo cuando hay animación: sin ella la
-   lista cabe entera y difuminar sus extremos escondería contenido sin motivo. */
-.tira-conceptos-marco--anima {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 6%, #000 94%, transparent 100%);
-}
-
-/* ═══════════ EL ARMAZÓN DE TRES PANELES — definición ÚNICA ═══════════════════
-   Lo usan `/soluciones` (carpetas · contenido · conceptos) y `/clientes` (secciones ·
-   contenido · preguntas). Nació en `/soluciones` el 2026-08-18 y se extrajo aquí el mismo
-   día, al pedir Fernando la misma forma para `/clientes`: dos rejillas que se parecen se
-   separan a la primera corrección que solo se aplica a una.
-
-   ── POR QUÉ EN CSS Y NO EN CLASES DE TAILWIND ───────────────────────────────
-   Los anchos de los paneles los decide cada página. Una clase `lg:grid-cols-[${x}px_…]`
-   armada con una variable NO existe: Tailwind genera sus clases leyendo el código fuente,
-   y ahí solo ve una plantilla. Y un `style` en línea tampoco vale, porque esto **solo
-   aplica a partir de `lg`** y una regla en línea no entiende de anchuras de pantalla.
-   Con variables CSS se resuelven las dos cosas: la página pasa los anchos por `style`, y
-   el `@media` de aquí decide cuándo se usan.
-
-   Por debajo de `lg` es una sola columna: los tres paneles se apilan.
-
-   ── ⭐ EL TERCER PANEL NO APARECE A LA MISMA ANCHURA EN LAS DOS PÁGINAS ──────
-   `corte` decide desde cuándo cabe, y **no es un capricho: depende de qué haya en el
-   centro**. La tira de conceptos de `/soluciones` acompaña a unas tarjetas que se reparten
-   solas, así que a 1024 px ya cabe todo. El índice de `/clientes` acompaña a las tarjetas de
-   pregunta, que llevan dentro tres columnas de pasos: a 1170 px las tres columnas dejaban el
-   centro en 520 px y cada paso en 116 px — una palabra por línea. Lo vio Fernando
-   (2026-08-19) y pidió que ahí el panel derecho se quite y el índice baje, como en el móvil.
-
-   · `data-corte="lg"`    → tres paneles desde 1024 px  (`/soluciones`)
-   · `data-corte="ancho"` → dos paneles desde 1024 px y el tercero desde **1536 px**
-                            (`/clientes`)
-
-   1536 no es redondo por azar: es donde el centro llega a 884 px, que es justo lo que los
-   pasos necesitan para seguir en tres columnas al aparecer el tercer panel. Con un corte más
-   bajo, cruzar el umbral hacia arriba **empeoraría** la página: ganarías el índice y perderías
-   una columna de pasos.                                                                     */
-.paneles-explorador {
-  display: grid;
-  gap: 2rem;
-}
-
-/* Fuera del corte, el panel derecho no existe y manda su sustituto. Se hace aquí y no con
-   `hidden lg:block` en el componente para que **no puedan desincronizarse**: el umbral que
-   esconde uno es, por construcción, el mismo que enseña el otro. */
-.paneles-explorador .panel-derecho-explorador { display: none; }
-.paneles-explorador .alternativa-estrecha { display: block; }
-
-@media (min-width: 1024px) {
-  .paneles-explorador {
-    grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr);
-  }
-  /* La tercera columna **solo se reserva si hay algo que poner en ella**. Sin este
-     interruptor, una sección sin conceptos ni preguntas dejaría 280 px de hueco blanco a
-     la derecha, y el contenido apretado sin motivo. */
-  .paneles-explorador[data-derecha='sí'][data-corte='lg'] {
-    grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr) var(--panel-der, 280px);
-  }
-  .paneles-explorador[data-corte='lg'] .panel-derecho-explorador { display: block; }
-  .paneles-explorador[data-corte='lg'] .alternativa-estrecha { display: none; }
-}
-
-@media (min-width: 1536px) {
-  .paneles-explorador[data-derecha='sí'][data-corte='ancho'] {
-    grid-template-columns: var(--panel-izq, 240px) minmax(0, 1fr) var(--panel-der, 280px);
-  }
-  .paneles-explorador[data-corte='ancho'] .panel-derecho-explorador { display: block; }
-  .paneles-explorador[data-corte='ancho'] .alternativa-estrecha { display: none; }
-}
-
-/* ⚠️ `sticky` Y `self-start` VAN JUNTOS, SIEMPRE.
-   Un elemento pegajoso se desplaza dentro de su bloque contenedor —aquí, la casilla de la
-   rejilla, tan alta como la fila entera— pero solo si le sobra sitio. Sin `self-start` la
-   casilla se estira hasta llenar la fila, no queda holgura y baja con la página como si
-   `sticky` no estuviera. Es lo que se rompió el 2026-08-18 al envolver la tira de conceptos
-   para poder ocultarla por ancho, y por eso el pegado vive **en el envoltorio** y no dentro. */
-@media (min-width: 1024px) {
-  .panel-explorador-fijo {
-    position: sticky;
-    top: 6rem;
-    align-self: start;
-  }
-}
-
-/* ── LA MISMA TIRA, EN HORIZONTAL ─────────────────────────────────────────────
-   Cuando no hay ancho para la columna derecha, la tira baja bajo la descripción y
-   avanza de izquierda a derecha (Fernando, 2026-08-18). Mismo mecanismo —lista
-   duplicada, desplazamiento de la mitad— girado noventa grados.
-
-   Se mide el ANCHO en vez del alto, y la regla no cambia: si los conceptos caben,
-   no se mueven.                                                                  */
-@keyframes tira-conceptos-h {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
-.tira-conceptos-anima-h {
-  animation-name: tira-conceptos-h;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  will-change: transform;
-}
-
-.tira-conceptos-marco:hover .tira-conceptos-anima-h,
-.tira-conceptos-marco:focus-within .tira-conceptos-anima-h { animation-play-state: paused; }
-
-@media (prefers-reduced-motion: reduce) {
-  .tira-conceptos-anima-h { animation: none; }
-  .tira-conceptos-marco--h { overflow-x: auto; }
-}
-
-.tira-conceptos-marco--anima-h {
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
-}
+/* La tira de conceptos y el armazón de tres paneles de `/soluciones`, `/clientes` y
+   `/desarrollo-humano` se borraron el 2026-10-29 al rehacer esas páginas como sitio web.
+   Para recuperarlos: `git show 8d23d58e:app/globals.css`. */
 
 /* =====================================================
    LA HOJA DE «PROMPTS» (Admin ▸ Prompts, 2026-10-01)
@@ -4341,3 +4181,58 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .indice-movil-etiqueta { display: block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--violeta-txt); }
 .indice-movil-pregunta { display: block; margin-top: 3px; font-size: 0.95rem; line-height: 1.4; color: var(--texto); }
 .indice-movil-flecha { flex: none; width: 30px; height: 30px; padding: 7px; border-radius: 9999px; color: #fff; background: #6d28d9; }
+
+/* ═══ SOLUCIONES COMO SITIO WEB (Fernando, 2026-10-29: «el diseño está muy mal para mostrar el
+   contenido de los proyectos… usa tu reformulación») ═══
+   Talentos como puertas (`.puertas-seccion`), conceptos en rejilla quieta, selector segmentado
+   + buscador en una fila, y los trabajos a todo el ancho en 3/2/1 columnas. */
+.conceptos-rejilla { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); }
+.concepto-celda {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72); border: 1px solid var(--linea);
+}
+.concepto-celda .puerta-icono { width: 34px; height: 34px; border-radius: 10px; flex: none; }
+.concepto-celda .puerta-icono svg { width: 17px; height: 17px; }
+.concepto-titulo { display: block; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.015em; color: var(--texto); }
+.concepto-texto { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; font-size: 0.82rem; line-height: 1.5; color: var(--tenue); }
+
+.barra-trabajos { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; padding-bottom: 18px; border-bottom: 1px solid var(--linea); }
+.segmentado-trabajos {
+  position: relative; display: none; align-items: center; gap: 2px; padding: 4px; border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.75); border: 1px solid var(--linea); box-shadow: 0 10px 26px -20px rgba(75, 45, 142, 0.5);
+}
+@media (min-width: 640px) { .segmentado-trabajos { display: inline-flex; } }
+.segmentado-capsula {
+  position: absolute; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 9999px;
+  background: linear-gradient(135deg, #5b3aae, #7c3aed); box-shadow: 0 8px 18px -10px rgba(91, 58, 174, 0.9);
+}
+.segmentado-capsula.es-lista { transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+.segmentado-opcion {
+  position: relative; z-index: 1; display: inline-flex; align-items: baseline; gap: 6px; height: 38px; padding: 0 16px;
+  align-items: center; border-radius: 9999px; font-size: 0.9rem; font-weight: 500; color: var(--suave); transition: color 200ms ease;
+}
+.segmentado-opcion:hover { color: var(--texto); }
+.segmentado-opcion.es-activa { color: #fff; font-weight: 600; }
+.segmentado-opcion:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+.segmentado-cuenta { font-size: 0.72rem; font-variant-numeric: tabular-nums; color: var(--apagado); }
+.segmentado-opcion.es-activa .segmentado-cuenta { color: rgba(255, 255, 255, 0.8); }
+.segmentado-movil { display: block; width: 100%; }
+.segmentado-movil select {
+  width: 100%; height: 44px; padding: 0 14px; border-radius: 9999px; border: 1px solid var(--linea-fuerte);
+  background: rgba(255, 255, 255, 0.85); font-size: 0.95rem; color: var(--texto);
+}
+@media (min-width: 640px) { .segmentado-movil { display: none; } }
+
+/* MOSAICO (columnas CSS), no rejilla: en una rejilla cada fila se estira a la tarjeta más alta
+   —la que tiene captura— y las demás quedan con un hueco blanco. Aquí cada una mide lo suyo. */
+.rejilla-trabajos { columns: 1; column-gap: 18px; }
+.rejilla-trabajos > * { break-inside: avoid; margin-bottom: 18px; width: 100%; min-width: 0; }
+@media (min-width: 720px) { .rejilla-trabajos { columns: 2; } }
+@media (min-width: 1100px) { .rejilla-trabajos { columns: 3; } }
+
+.contacto-redondo {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9999px;
+  color: var(--violeta-txt); background: rgba(124, 58, 237, 0.08); transition: background-color 160ms ease, color 160ms ease;
+}
+.contacto-redondo svg { width: 15px; height: 15px; }
+.contacto-redondo:hover { color: #fff; background: #6d28d9; }
