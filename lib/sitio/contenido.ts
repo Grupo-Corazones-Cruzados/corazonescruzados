@@ -215,23 +215,10 @@ export interface Acceso {
          git show 4c44581:components/sitio/ExploradorSecciones.tsx
 
      ⚠️ Si vuelve, que vuelva DENTRO del contenido y no en la tarjeta: la tarjeta ya es un
-     enlace, y un `<a>` dentro de otro `<a>` es marcado inválido. Ver `accion`, más abajo. */
-  /**
-   * EL BOTÓN DE LA TARJETA DEL PANEL IZQUIERDO (Fernando, 2026-08-19).
-   *
-   * Distinto de `enlaceExterno`, y conviene no confundirlos: aquel es un botón grande dentro
-   * del contenido —«Postularme»—; este es la acción de la **tarjeta de navegación**, pequeña
-   * y en la esquina: «IR».
-   *
-   * ⚠️ **Es un enlace, no un botón con JavaScript**, y eso mantiene el explorador como Server
-   * Component. Se apoya en las «puertas con nombre» que ya existen (`/auth/cliente`,
-   * `/?acceso=videojuego`), que redirigen al **único** formulario de acceso, el de la portada.
-   * Ver `lib/sitio/acceso.ts`: aquí no se escribe un segundo acceso.
-   *
-   * Sin `accion` la tarjeta no pinta botón — es el caso de Democracia, que no tiene a dónde
-   * mandar a nadie todavía.
-   */
-  accion?: { href: string; etiqueta: string };
+     enlace, y un `<a>` dentro de otro `<a>` es marcado inválido. (`accion` también se borró el 2026-10-29). */
+  /* ⚠️ AQUÍ ESTABA `accion`, el botón «Ir» de cada sección (Plataforma, Videojuego, Marketplace),
+     borrado el 2026-10-29 por Fernando: *«quita esos botones… solo la pestaña de Inicio debe tener
+     el acceso»*. Para recuperarlo: `git show 5592298c:lib/sitio/contenido.ts`. */
   /**
    * ⏳ PENDIENTE — el vídeo de YouTube de esta página.
    *
@@ -416,7 +403,6 @@ export const ACCESOS: Acceso[] = [
     id: 'plataforma', icono: 'ticket',
     titulo: 'Plataforma',
     // La puerta de clientes: abre el acceso de cliente y, al entrar, va al panel.
-    accion: { href: '/auth/cliente', etiqueta: 'Ir a la Plataforma' },
     texto: 'Gestiona tus requerimientos publicando tickets, o proyectos que necesitan en tu organización.',
     /**
      * ⚠️ **ESCRITA POR MÍ** (2026-08-19), a petición de Fernando —«una descripción más larga y
@@ -573,7 +559,6 @@ export const ACCESOS: Acceso[] = [
     id: 'videojuego', icono: 'juego',
     titulo: 'Videojuego',
     // ⚠️ La ÚNICA que no manda al panel: al entrar se va a la aventura. Ver `ACCESO_VIDEOJUEGO`.
-    accion: { href: '/?acceso=videojuego', etiqueta: 'Ir al Videojuego' },
     texto: 'Adéntrate en una aventura a través del videojuego GCC World.',
     descripcion:
       'GCC World es un videojuego que cuenta la historia de un mundo que sufrió las peores consecuencias después de olvidar sus raíces. Tres niños que perdieron a sus padres durante una persecución en este mundo perdido, se lanzaron hacia un hoyo ancestral, el cual sin saberlo, fue el lugar de unión y prosperidad de sus antepasados. ¿Qué existirá en el fondo del hoyo?',
@@ -694,7 +679,6 @@ export const ACCESOS: Acceso[] = [
      * Es además coherente con lo que dice la propia sección: «el catálogo está abierto, se
      * recorre entero sin cuenta». El acceso sigue estando a un clic, dentro de esa página.
      */
-    accion: { href: '/marketplace-publico', etiqueta: 'Ir al Marketplace' },
     texto: 'Accede al marketplace y compra productos, automatizaciones y proyectos de los miembros y candidatos de la organización.',
     descripcion:
       'El marketplace es el espacio donde los miembros publican sus soluciones, y los clientes negocian sus recursos. Ahí puedes adquirir, intercambiar, o alquilar productos, proyectos, recursos, u automatizaciones para tu organización.',

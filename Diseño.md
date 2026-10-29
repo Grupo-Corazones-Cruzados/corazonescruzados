@@ -674,8 +674,7 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   pegado a los bordes).
 - **`PresentacionPagina`** (piezas.tsx) abre cada página: etiqueta violeta espaciada, titular
   grande en Space Grotesk (es un `<p>`: el `<h1>` sigue siendo la sección/el talento, por SEO),
-  entradilla y dos acciones con **`BotonMundo`** (el botón de Progreso: píldora con degradado
-  `#5b3aae→#7c3aed` y flecha; la secundaria, de contorno). Entra por escalones. A la derecha, desde
+  entradilla (los botones se quitaron: ver abajo). Entra por escalones. A la derecha, desde
   `lg`, la pieza de cada página (`components/sitio/presentaciones.tsx`):
   · **Soluciones** — cifras REALES (proyectos, tickets, productos, talentos; contados por id) en
     una tarjeta 2×2; en el teléfono, bajo el texto.
@@ -690,6 +689,11 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   (antes, desde 1536 px). Ya no usa `ExploradorTresPaneles`.
 - **Soluciones** conserva sus controles (carpetas, buscador, 4 pestañas, tira de conceptos) dentro
   del ancho de sitio.
+- ⭐ **SIN BOTONES DE ACCESO fuera de Inicio** (2026-10-29, Fernando: *«quita esos botones… solo la
+  pestaña de Inicio debe tener el acceso»*). Fuera los dos botones de cada presentación y el «Ir a
+  la Plataforma / al Videojuego / al Marketplace» de las secciones (y el campo `accion` de
+  `Acceso`, y `BotonMundo`). Regla: Soluciones, Clientes y Desarrollo Humano INFORMAN; se entra
+  solo desde la portada. Para recuperarlos: `git show 5592298c:<archivo>`.
 - **Índice en el teléfono, en VERTICAL** (2026-10-29, Fernando: *«no me gusta tener que deslizarse
   horizontalmente en este tipo de opciones»*): por debajo de `lg`, «En esta página» es una tarjeta
   con una fila por pregunta (etiqueta, pregunta entera y flecha ↓ en ficha violeta), no una fila

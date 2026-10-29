@@ -510,24 +510,9 @@ export function BotonSecundario({ href, children }: { href: string; children: Re
 /* ── La presentación de página y los botones del mundo «Progreso» ──────────────────────────
    Fernando, 2026-10-29: *«queremos hacerlas más estilo sitio web… pon tu toque a cada
    página»*. Cada página pública abre con una PRESENTACIÓN como la del panel Progreso de la
-   portada: etiqueta violeta espaciada, titular grande en Space Grotesk, entradilla y sus
-   acciones con el botón de Progreso (píldora con degradado y flecha que avanza). */
-
-export interface AccionSitio {
-  href: string;
-  etiqueta: string;
-  /** La secundaria va de contorno; la primera, con degradado. */
-  secundaria?: boolean;
-}
-
-export function BotonMundo({ href, etiqueta, secundaria }: AccionSitio) {
-  return (
-    <Link href={href} className={`boton-mundo ${secundaria ? 'boton-mundo-contorno' : ''}`}>
-      {etiqueta}
-      <ArrowRight className="boton-mundo-flecha" aria-hidden />
-    </Link>
-  );
-}
+   portada: etiqueta violeta espaciada, titular grande en Space Grotesk y entradilla. SIN botones:
+   el acceso solo está en la portada (Fernando, 2026-10-29); el botón que llevaba se recupera con
+   `git show 5592298c:components/sitio/piezas.tsx`. */
 
 /**
  * LA PRESENTACIÓN DE PÁGINA. ⚠️ El titular es un `<p>`, no el `<h1>`: el `<h1>` sigue siendo el
@@ -535,12 +520,11 @@ export function BotonMundo({ href, etiqueta, secundaria }: AccionSitio) {
  * cada URL tiene su propio título). Esto es el rótulo de la PÁGINA, que no cambia entre secciones.
  */
 export function PresentacionPagina({
-  etiqueta, titulo, texto, acciones, cifras, sello, visual,
+  etiqueta, titulo, texto, cifras, sello, visual,
 }: {
   etiqueta: string;
   titulo: string;
   texto: string;
-  acciones?: readonly AccionSitio[];
   /** Cifras reales. Desde `lg` van en una tarjeta a la derecha; debajo, bajo el texto. */
   cifras?: readonly { valor: number; etiqueta: string }[];
   /** Un adorno pequeño junto a la etiqueta (p. ej. el corazón sobre la Tierra). */
@@ -567,11 +551,6 @@ export function PresentacionPagina({
         </p>
         <p className="presentacion-titulo">{titulo}</p>
         <p className="presentacion-texto">{texto}</p>
-        {acciones && acciones.length > 0 && (
-          <div className="presentacion-acciones">
-            {acciones.map((a) => <BotonMundo key={a.href} {...a} />)}
-          </div>
-        )}
       </div>
       {derecha && <div className="presentacion-visual">{derecha}</div>}
     </header>

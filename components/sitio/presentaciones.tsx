@@ -2,6 +2,8 @@
  * LAS PRESENTACIONES DE LAS PÁGINAS PÚBLICAS — una por página, compartida por todas sus secciones
  * (Fernando, 2026-10-29: «más estilo sitio web… pon tu toque a cada página»).
  *
+ * SIN BOTONES (Fernando, 2026-10-29: «solo la pestaña de Inicio debe tener el acceso»).
+ *
  * Los textos salen de lo que ya dice el sitio (las secciones de `lib/sitio/contenido.ts`): nada
  * que no sea verificable, la regla de siempre. Van en `.tsx` y no en `contenido.ts` porque
  * Desarrollo Humano lleva un sello con los iconos de la portada.
@@ -49,10 +51,6 @@ export const PRESENTACION_CLIENTES: Presentacion = {
   titulo: 'Lo que tu organización puede hacer con nosotros',
   texto:
     'Publica tickets y proyectos para que los resuelva quien tiene el talento, pon a prueba a tus colaboradores en el videojuego, compra en el marketplace y vota sobre las mejoras de la organización.',
-  acciones: [
-    { href: '/auth/cliente', etiqueta: 'Ir a la Plataforma' },
-    { href: '/soluciones', etiqueta: 'Ver soluciones', secundaria: true },
-  ],
 };
 
 /**
@@ -64,10 +62,6 @@ export const PRESENTACION_DESARROLLO: Presentacion = {
   titulo: 'Un corazón puede cruzar al mundo',
   texto:
     'Un proyecto que usa tus condiciones como ancla para tu progreso mental, laboral, social y corporal, con logros individuales y colectivos. No hace falta un título ni experiencia: tu talento lo descubrimos juntos.',
-  acciones: [
-    { href: '/desarrollo-humano/como-se-entra', etiqueta: 'Cómo se entra' },
-    { href: '/desarrollo-humano/tu-progreso', etiqueta: 'Tu progreso', secundaria: true },
-  ],
   // La pieza de Desarrollo Humano: el cruce del corazón en grande, ya posado sobre la Tierra.
   visual: (
     <span className="visual-cruce" aria-hidden>
@@ -108,10 +102,6 @@ export function presentacionSoluciones(soluciones: SolucionConContenido[]): Pres
     titulo: 'Lo que sabemos hacer, con trabajo terminado',
     texto:
       'Cada solución reúne los talentos del grupo y lo que ya entregaron con ellos: proyectos, tickets y productos. Elige un talento y mira lo hecho.',
-    acciones: [
-      { href: '/auth/cliente', etiqueta: 'Publicar un requerimiento' },
-      { href: '/clientes', etiqueta: 'Cómo funciona', secundaria: true },
-    ],
     cifras: [
       { valor: proyectos, etiqueta: 'Proyectos' },
       { valor: tickets, etiqueta: 'Tickets' },

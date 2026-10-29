@@ -39,7 +39,7 @@
  * el índice. Ahora la página abre con su PRESENTACIÓN (`PresentacionPagina`), las secciones son
  * una FILA DE PUERTAS arriba (`PuertasSecciones`, la abierta rellena de violeta como la píldora
  * de la cabecera) y debajo el contenido a ancho de lectura con el índice pegado a la derecha.
- * El botón «Ir» de cada tarjeta pasa a la cabecera de la sección, con el botón de Progreso.
+ * Sin botones de acceso: el acceso solo está en la portada (Fernando, 2026-10-29).
  * Todo sigue sin `use client` y en el HTML. Para volver a la versión anterior:
  *     git show e09e1dc0:components/sitio/ExploradorSecciones.tsx
  */
@@ -48,7 +48,7 @@ import { ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
-import { BloqueTema, BotonMundo, ICONOS, PresentacionPagina } from './piezas';
+import { BloqueTema, ICONOS, PresentacionPagina } from './piezas';
 import type { ComponentProps } from 'react';
 import GaleriaTarjetas from './GaleriaTarjetas';
 import VideoYouTube from './VideoYouTube';
@@ -192,11 +192,6 @@ export default function ExploradorSecciones({
                 {acceso.titulo}
               </h1>
             </div>
-            {/* La acción de la sección (antes, el «Ir» de su tarjeta), con el botón de Progreso.
-                Democracia no tiene: no se pinta nada. */}
-            {acceso.accion && (
-              <BotonMundo href={acceso.accion.href} etiqueta={acceso.accion.etiqueta} />
-            )}
           </div>
           {/* La descripción LARGA si la sección la tiene; si no, su frase corta. */}
           <p className="mt-4 text-[16px] leading-relaxed text-[var(--suave)] max-w-3xl whitespace-pre-line">
