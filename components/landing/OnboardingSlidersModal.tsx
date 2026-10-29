@@ -377,9 +377,13 @@ function SlideHerramientas() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={pStyle}>
-        Más allá de la estructura, cada miembro del grupo trabaja con un conjunto común de
-        herramientas. Son <strong style={strong}>cuatro</strong> y acompañan el día a día de todos
-        por igual. Toca cada una para conocerla.
+        El <strong style={strong}>Modelo Organizacional 4P</strong> funciona como un motor que para
+        operar necesita tener en buenas condiciones sus requisitos. Lo que requerimos para este motor
+        es un <strong style={strong}>talento correctamente clasificado</strong> que se pueda tratar y
+        posicionar en función de la estrategia organizacional. Para hacer esta correcta
+        clasificación nos apoyaremos de las <strong style={strong}>herramientas del Modelo</strong>,
+        las cuales van a ser las fuentes de información que justificarán el posicionamiento de cada
+        miembro. Las herramientas que usaremos son las siguientes:
       </p>
       <Accordion items={TOOLS} />
     </div>
