@@ -10919,3 +10919,35 @@ el «Enlace de un solo uso». Fernando, a mitad: adaptar el diseño al de la app
   busca en cada hoja (`encabezado` del formato), porque cambia de un mes a otro (libro de junio en la 4,
   Cuentas de la 6 a la 9). Probado en Node (Enero idéntico al motor viejo) y en Chrome con los tres libros:
   abren, hacen vista previa y sacan el PDF entero.
+
+
+# Aprendizaje — El agente de Peter Tours responde en la bandeja pero no llega al WhatsApp (2026-10-29)
+
+## Rol asumido
+Integrador de WhatsApp Cloud API (Automatizaciones).
+
+## Progreso
+- **% de información para el objetivo:** 100%
+- **Resumen:** token de 60 días del alta (Embedded Signup, 2026-08-28) vencido el 2026-10-27 13:17 EC; otra
+  sesión lo cambió hoy a las 11:37 por el del usuario del sistema de GCC (no vence). Confirmado a las 12:19.
+
+## Preguntas y respuestas
+### P1 — ¿Por qué no llegan las respuestas del agente? · ✅ Resuelta
+- **Respuesta:** Meta devolvía 401/190 a TODAS las respuestas del agente (42 + 5 avisos de escalar) desde el
+  vencimiento. Fuente: `mensajes.error_envio` + `debug_token` (sesión paralela, ver MEMORIA.md › Pendientes).
+### P2 — ¿Eran fallos sueltos (3 %)? · ✅ Resuelta — NO
+- **Respuesta:** error de conteo mío: mezclé `herramienta = 'equipo'` (lo que escribe el equipo desde el
+  teléfono, que siempre sale) con lo del agente. Separados: 100 % de fallo con el token vencido. Por esa
+  lectura subí un reintento que se quitó al rato (commit 02f76ae1).
+### P3 — ¿El cliente tiene que hacer algo? · ✅ Resuelta — NO
+- **Respuesta:** el agente y el teléfono envían con normalidad (12:19, 83 mensajes del equipo sin fallo).
+### P4 — ¿Cómo evitar que se repita? · ⏸ Bloqueada (espera al usuario)
+- **Respuesta:** (1) en Meta, la config de Embedded Signup `1070995845869940` con caducidad «Nunca» (lo hace
+  Fernando); (2) aviso en el panel antes de que venza un token (`debug_token.expires_at`), propuesto, sin OK aún.
+
+## Decisiones de diseño / arquitectura
+- `error_envio` guarda la respuesta cruda de Meta (`[Meta: HTTP · código · subcódigo · mensaje · fbtrace]`)
+  y la bandeja la enseña en el `title` de «no salió».
+
+## Riesgos y cómo se mitigan
+- Contar envíos sin separar `equipo` del agente falsea el diagnóstico → contar solo `responder`/`escalar_a_humano`.

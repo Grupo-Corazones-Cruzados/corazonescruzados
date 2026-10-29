@@ -8337,6 +8337,11 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     `herramienta = 'equipo'` son los mensajes que el equipo escribe desde el teléfono y SIEMPRE salen: mezclados
     con los del agente hacen parecer «fallos sueltos del 3 %» lo que era un 100 % (otra sesión se lo creyó y
     subió un reintento inútil, ya quitado). Contar solo `responder`/`escalar_a_humano`.
+  - **Confirmado 2026-10-29 12:19 (EC):** primera respuesta del agente con el token nuevo, aceptada por Meta; el
+    equipo siguió enviando desde el teléfono sin un fallo (83 mensajes). El cliente NO tiene que hacer nada; las
+    47 respuestas perdidas (27→29 oct) no se reenvían. 🪤 Que el agente «no conteste» tras un arreglo puede ser
+    lo previsto: si el equipo escribe desde el teléfono la conversación queda `bot_activo = false` («La tiene una
+    persona») — mirarlo antes de buscar otro fallo.
 
 - **Guardar un mes del estado financiero desvincula sus orígenes** (2026-10-29): `PUT
   app/api/finance/[id]/route.ts` borra y reinserta los renglones sin `source_type`/`source_id`. No duplica

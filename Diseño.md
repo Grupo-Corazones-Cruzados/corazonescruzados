@@ -4877,6 +4877,14 @@ pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos 
   Medido: a 390 px el desborde es 0 durante y después.
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · Automatizaciones › Bandeja: «no salió» sin motivo** · **CORREGIDO**. El aviso de envío fallido
+  no decía por qué; ahora el motivo (con la respuesta de Meta) va en el `title` del aviso, sin frase debajo
+  (regla «sin notas de ayuda»). Archivo: `productos/automatizaciones/src/app/[cliente]/(app)/conversaciones/Bandeja.tsx`.
+- **2026-10-29 · Automatizaciones › Bandeja: la decisión «no_responder» se pinta como un mensaje enviado** ·
+  **PENDIENTE DE DECISIÓN DE FERNANDO**. Sale un globo oscuro de saliente con la herramienta y «[text]» (no se
+  mandó nada): confunde con un mensaje real. Propuesta: una nota pequeña y tenue centrada, no un globo.
+- **2026-10-29 · Formatos de impresión para Excel: la tarjeta del formato decía «fila 1 en cada hoja»** ·
+  **CORREGIDO**. Con la fila de encabezados buscada por hoja (`encabezado`), dice «los encabezados en cada hoja».
 - **2026-10-29 · Paneles cuya altura dependía del contenido** · **CAMBIO DE ESTÁNDAR** (Fernando: «el panel izquierdo,
   su altura siempre sin excepción […] se base en el espacio disponible; lo mismo con el panel derecho y el central»).
   En escritorio (desde `lg`) TODA columna-panel llega al pie de la ruta y lo que sobra se desplaza dentro:
