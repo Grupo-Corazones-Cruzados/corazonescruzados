@@ -275,6 +275,19 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧾 FACTURAS DEL SRI REGISTRADAS EN EL SISTEMA (Fernando, 2026-10-29).** La otra sesión había leído del portal
+  los emitidos de ene-2024 a mar-2026 (23). Se registraron las 19 que faltaban en `invoices` (+ `invoice_items_sri`),
+  PENDIENTES (decisión de Fernando), `is_manual`, con su clave de acceso: 12 de 2025 y 7 de feb–mar 2026.
+  · **Grow Up** (11 facturas 2025): cliente de facturación nuevo + **suscripción vencida** «Asistencia en
+    automatización de procesos» (id 5) con un consumo por factura. Fernando: los clientes son datos de
+    facturación; la cuenta de cliente se crea solo cuando entra a la app.
+  · Erazo (001-012) y Méndez (001-016, 001-020): tickets completados nuevos. **Mármoles el Diamante** = 001-021
+    ($655; Fernando lo anotó como 711,67 porque cargaba al cliente extranjero el costo del pago del exterior):
+    proyecto nuevo (id 46). Cercasa y Pisercons = 001-026 ($1800, P5 + P11).
+  · Los ingresos `sri_emitida` pasaron a su relación (suscripción/ticket/proyecto/factura).
+  · **Pendiente de Fernando:** Expoflor 001-014/015 («abono 20 %») y Entheus 001-018/019 ($91,22) sin proyecto
+    aún; la 001-001-000000001 del 29/03/2026 a su nombre (¿prueba?); revisar en el portal abr–oct 2026 (falta
+    su clave); el ingreso de Mármoles está DOS veces en marzo (711,67 a mano + 655 de la factura).
 - **🧾 «SOLO FACTURADO» EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Un ingreso cuenta como facturado si
   hay una factura AUTORIZADA por el SRI y no anulada enlazada a él (`invoice` por id, `ticket`, `project`,
   `subscription` por `<sub>-<AAAA-MM>`) o si es un comprobante leído del SRI (`sri_emitida`); los escritos a
