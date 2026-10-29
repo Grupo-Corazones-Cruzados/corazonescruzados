@@ -4779,6 +4779,8 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · Las columnas del estado financiero cambiaban de sitio al filtrar por año** · **CORREGIDO**.
+  `singleLine` (tabla `fixed`) y anchos 28/22/22/22 % + 52 px; medido: mismas posiciones con todos, 2026 y 2025.
 - **2026-10-29 · El reporte financiero en PDF era texto plano y montaba las descripciones** · **REDISEÑADO**
   (Fernando: «más moderno y profesional»). `lib/finance-pdf.ts`: cabecera de marca (degradado
   `#17122B → #4B2D8E`, logo, «Reporte financiero» + lo filtrado, periodo y fecha), tres indicadores con

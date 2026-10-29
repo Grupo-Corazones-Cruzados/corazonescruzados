@@ -210,14 +210,17 @@ export default function DashboardHome() {
 
           <PixelDataTable
             data={mesesFiltrados}
+            // Columnas de ANCHO FIJO (Fernando, 2026-10-29): con el reparto automático el ancho
+            // salía del contenido y, al cambiar de año, las columnas se movían de sitio.
+            singleLine
             onRowClick={(m: any) => openDetail(m)}
             emptyTitle="Sin registros"
             emptyDesc={months.length ? 'Ningún mes cumple los filtros.' : 'No hay estados financieros aún.'}
             columns={[
-              { key: 'period', header: 'Periodo', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
-              { key: 'income', header: 'Ingresos', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
-              { key: 'expense', header: 'Egresos', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
-              { key: 'savings', header: 'Ahorro', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
+              { key: 'period', header: 'Periodo', width: '28%', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
+              { key: 'income', header: 'Ingresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(Number(m.total_income || 0))}</span> },
+              { key: 'expense', header: 'Egresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
+              { key: 'savings', header: 'Ahorro', width: '22%', render: (m: any) => { const s = Number(m.total_savings || 0); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
               { key: 'pdf', header: '', width: '52px', render: (m: any) => (
                 // ⭐ UN ICONO, no una etiqueta «PDF» con borde y color (Fernando, 2026-10-29: «tiene
                 // un estilo muy de IA»). Botón fantasma: sin borde ni relleno en reposo; el nombre
