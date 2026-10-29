@@ -2699,58 +2699,233 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .comilla-pensamiento { color: #d946ef; font-size: 1.25em; line-height: 0; margin: 0 3px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   EL FORMULARIO DE CANDIDATO CON EL TEMA DEL MUNDO (Fernando, 2026-10-26)
-   `OnboardingSlidersModal tema=…`. No toca el contenido: reajusta los tokens del panel
-   (`digi-*`, `accent`) a la paleta de la portada y rehace el contenedor con su lenguaje
-   (cristal, radio 22 px, Space Grotesk en los títulos, borde con resplandor).
+   EL FORMULARIO DE POSTULACIÓN (`OnboardingSlidersModal`) CON EL ESTILO DEL INICIO DE SESIÓN
+   (Fernando, 2026-10-29: «usar el mismo estilo de formulario que tenemos al iniciar sesión»).
+   Sustituye a «La travesía» (2026-10-26: cristal lila, radio 22 px, Space Grotesk, degradados
+   y resplandores) y al tema por mundo: ahora es la isla `.corp dark` de los diálogos de acceso
+   (`AccountRecoveryModal`, `AuthDialog`) con sus tokens tal cual — tarjeta gris `digi-card`,
+   borde `digi-border`, radio 8 px, Inter, botón morado plano de radio 4 px. Sin degradados,
+   sin brillos, sin latidos. La disposición (camino a la izquierda, paso a la derecha, barra
+   abajo) no cambia.
    ═══════════════════════════════════════════════════════════════════════════════ */
 .onboarding-portada {
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
-.onboarding-portada .onboarding-panel { border-radius: 22px; }
-.onboarding-portada h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: 1.3rem; }
+/* El velo del inicio de sesión (`.corp.corp-overlay` lo deja transparente). */
+.corp.corp-overlay.onboarding-portada { background: rgba(6, 7, 12, 0.72); }
+.onboarding-portada h2 { font-family: var(--font-body); font-weight: 600; letter-spacing: -0.01em; font-size: 1.06rem; }
+.onboarding-portada .onboarding-panel {
+  position: relative;
+  border-radius: 8px;
+  border: 1px solid var(--color-digi-border);
+  background: var(--color-digi-card);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+@media (max-width: 639.98px) { .onboarding-portada .onboarding-panel { border-radius: 0; border: 0; } }
 
-/* Aventura: la noche lila del cielo. */
-.corp.dark.onboarding-aventura {
-  background: rgba(5, 3, 14, 0.78);
-  --color-digi-dark: #0d0a1c;
-  --color-digi-darker: #090616;
-  --color-digi-card: #150f2b;
-  --color-digi-border: rgba(167, 139, 250, 0.22);
-  --color-digi-text: #f1edff;
-  --color-digi-muted: #aaa3c8;
-  --color-accent: #7c5ce0;
-  --color-accent-hover: #8e72ea;
-  --color-accent-light: rgba(123, 95, 191, 0.22);
-  --color-accent-dark: #5b3aae;
-  --color-accent-glow: #c4b5fd;
+/* El camino */
+.onb-camino { position: relative; background: var(--color-digi-card); border-right: 1px solid var(--color-digi-border); }
+.onb-marca { font-weight: 600; font-size: 0.95rem; color: var(--color-digi-text); }
+.onb-marca-sub { font-size: 0.75rem; color: var(--color-digi-muted); }
+.onb-anillo-bloque {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 20px 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--color-digi-darker);
+  border: 1px solid var(--color-digi-border);
 }
-.onboarding-aventura .onboarding-panel {
-  border-color: rgba(167, 139, 250, 0.45);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 30px 80px -30px rgba(0, 0, 0, 0.9), 0 0 60px -14px rgba(123, 95, 191, 0.55);
+.onb-anillo { width: 52px; height: 52px; transform: rotate(-90deg); flex: none; }
+.onb-anillo-fondo { fill: none; stroke: var(--color-digi-border); stroke-width: 6; }
+.onb-anillo-valor {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 169.6;
+  transition: stroke-dashoffset 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.onb-anillo-cifra { font-weight: 600; font-size: 1.3rem; line-height: 1; color: var(--color-digi-text); font-variant-numeric: tabular-nums; }
+.onb-anillo-texto { margin-top: 4px; font-size: 0.75rem; color: var(--color-digi-muted); }
+
+.onb-nodos { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 10px 14px 20px; }
+/* La línea que une los nodos. */
+.onb-nodos::before { content: ''; position: absolute; left: 32px; top: 30px; bottom: 34px; width: 1px; background: var(--color-digi-border); }
+.onb-nodo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  text-align: left;
+  color: var(--color-digi-text);
+  transition: background 200ms ease, opacity 200ms ease;
+}
+.onb-nodo:not(:disabled):hover { background: var(--color-digi-darker); }
+.onb-nodo-punto {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-digi-card);
+  border: 1px solid var(--color-digi-border);
+  color: var(--color-digi-muted);
+  transition: background 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+.onb-nodo-punto svg { width: 14px; height: 14px; }
+.onb-nodo-texto { display: flex; flex-direction: column; min-width: 0; }
+.onb-nodo-num { font-size: 0.7rem; color: var(--color-digi-muted); }
+.onb-nodo-nombre { font-size: 0.84rem; font-weight: 500; line-height: 1.25; }
+.onb-nodo.es-hecho .onb-nodo-punto { background: var(--color-accent-light); border-color: var(--color-accent); color: var(--color-accent-glow); }
+.onb-nodo.es-actual { background: var(--color-accent-light); }
+.onb-nodo.es-actual .onb-nodo-punto { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.onb-nodo.es-actual .onb-nodo-nombre { font-weight: 600; }
+.onb-nodo.es-bloqueado { opacity: 0.45; cursor: not-allowed; }
+
+/* El paso */
+.onb-paso { position: relative; background: var(--color-digi-card); }
+.onb-cabecera {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: 22px clamp(18px, 3vw, 32px) 14px;
+}
+.onboarding-portada .onb-titulo {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-digi-text);
+}
+/* Sin título (2026-10-29): en escritorio la cabecera es solo la «×», en una franja corta. */
+@media (min-width: 1024px) {
+  .onb-cabecera.es-sin-titulo { justify-content: flex-end; padding-top: 12px; padding-bottom: 2px; }
 }
 
-/* Progreso: la Plataforma en claro. */
-.corp.onboarding-progreso:not(.dark) {
-  background: rgba(233, 226, 247, 0.72);
-  --color-digi-dark: #f6f3fd;
-  --color-digi-darker: #ffffff;
-  --color-digi-card: #ffffff;
-  --color-digi-border: rgba(75, 45, 142, 0.14);
-  --color-digi-text: #17122b;
-  --color-digi-muted: #5b5470;
-  --color-accent: #5b3aae;
-  --color-accent-hover: #4b2d8e;
-  --color-accent-light: #efe9fc;
-  --color-accent-dark: #3a1f7a;
-  --color-accent-glow: #6d28d9;
+/* CAMINO Y PASO SEPARADOS (Fernando, 2026-10-29): desde `lg` el panel deja de ser una caja y
+   el camino y el paso son dos tarjetas con aire entre ellas, cada una como la del inicio de
+   sesión. */
+@media (min-width: 1024px) {
+  .onboarding-portada .onboarding-panel { background: transparent; border: 0; box-shadow: none; border-radius: 0; overflow: visible; }
+  .onboarding-portada .onboarding-panel > .grid { gap: 16px; }
+  .onboarding-portada .onb-camino,
+  .onboarding-portada .onb-paso {
+    border: 1px solid var(--color-digi-border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
 }
-.onboarding-progreso .onboarding-panel {
-  box-shadow: 0 30px 80px -30px rgba(75, 45, 142, 0.55), 0 0 60px -18px rgba(167, 139, 250, 0.7);
+
+.onb-cuerpo {
+  padding: 4px clamp(18px, 3vw, 32px) 24px;
+  /* El contenido se desvanece al llegar a la barra de abajo: se intuye que hay más. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
 }
+
+/* La barra de abajo */
+.onb-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px clamp(18px, 3vw, 32px) calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-digi-border);
+  background: var(--color-digi-card);
+}
+.onb-acciones { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Los botones del inicio de sesión: alto 40 px, radio 4 px, morado plano. */
+.onb-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+.onb-boton svg { width: 16px; height: 16px; }
+.onb-boton-atras { color: var(--color-digi-text); background: var(--color-digi-darker); border: 1px solid var(--color-digi-border); }
+.onb-boton-atras:not(:disabled):hover { border-color: var(--color-digi-muted); }
+.onb-boton-atras:disabled { opacity: 0.4; }
+.onb-boton-avanzar { color: #fff; background: var(--color-accent); }
+.onb-boton-avanzar:not(:disabled):hover { background: var(--color-accent-hover); }
+.onb-boton-avanzar:disabled { opacity: 0.45; cursor: not-allowed; }
+.onb-boton:focus-visible { outline: 2px solid var(--color-accent-glow); outline-offset: 2px; }
+
+/* La aceptación, con interruptor. */
+.onb-aceptar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-digi-border);
+  background: var(--color-digi-darker);
+  cursor: pointer;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.onb-aceptar > span:last-child { font-size: 0.82rem; line-height: 1.5; }
+.onb-aceptar:hover { border-color: var(--color-digi-muted); }
+.onb-aceptar:focus-visible { outline: 2px solid var(--color-accent-glow); outline-offset: 2px; }
+.onb-aceptar.es-marcado { border-color: var(--color-accent); background: var(--color-accent-light); }
+.onb-interruptor {
+  flex: none;
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--color-digi-border);
+  transition: background 200ms ease;
+}
+.onb-interruptor > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease;
+}
+.onb-interruptor svg { width: 11px; height: 11px; color: var(--color-accent); }
+.onb-aceptar.es-marcado .onb-interruptor { background: var(--color-accent); }
+.onb-aceptar.es-marcado .onb-interruptor > span { transform: translateX(16px); }
+
+/* Las piezas del contenido, en el mismo lenguaje: radios cortos, sin tinte ni sombra. */
+.onb-cuerpo .rounded-lg { border-radius: 8px; }
+.onb-cuerpo .rounded-md { border-radius: 6px; }
+.onb-cuerpo .border-digi-border { border-color: var(--color-digi-border); }
+.onb-cuerpo .bg-digi-card { background: var(--color-digi-darker); }
+/* Las pestañas (`PixelTabs`) como control segmentado, la elegida en morado plano. */
+.onb-cuerpo .pivot { display: inline-flex; gap: 2px; padding: 3px; border-radius: 6px; background: var(--color-digi-darker); border: 1px solid var(--color-digi-border); }
+.onb-cuerpo .pivot-tab { border: 0 !important; margin: 0 !important; padding: 6px 14px; border-radius: 4px; font-size: 0.82rem !important; font-weight: 600; }
+.onb-cuerpo .pivot-tab.is-active { color: #fff !important; background: var(--color-accent); }
+.onb-cuerpo [role='tablist'], .onb-cuerpo .pivot + * { border-bottom: 0; }
+/* Dentro del contenido (casillas del paso final): el interruptor arriba, junto a la primera línea. */
+.onb-aceptar.es-en-linea { align-items: flex-start; }
+.onb-aceptar.es-en-linea .onb-interruptor { margin-top: 1px; }
 
 /* ═══ LAS TARJETAS DE ROLES (`RolesMundo`, 2026-10-26) ═══════════════════════════
    Tras elegir un mundo: las opciones de acceso como tarjetas con el tema del mundo. */
@@ -2970,253 +3145,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   to   { opacity: 1; transform: none; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   «LA TRAVESÍA» — el formulario de postulación (`OnboardingSlidersModal`, Fernando,
-   2026-10-26: «actualiza por completo el diseño… según tu creatividad»).
-   Camino de pasos a la izquierda; el paso a la derecha con número perfilado, título en
-   Space Grotesk y una barra inferior con la aceptación como interruptor. Todo con los
-   tokens que reajusta `.onboarding-<tema>`, así sirve en los dos mundos.
-   ═══════════════════════════════════════════════════════════════════════════════ */
-.onboarding-portada .onboarding-panel {
-  position: relative;
-  border: 1px solid var(--color-digi-border);
-  background: var(--color-digi-dark);
-}
-@media (max-width: 639.98px) { .onboarding-portada .onboarding-panel { border-radius: 0; border: 0; } }
-
-/* El camino */
-.onb-camino {
-  position: relative;
-  background:
-    radial-gradient(120% 50% at 0% 0%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 60%),
-    var(--color-digi-card);
-  border-right: 1px solid var(--color-digi-border);
-}
-.onb-marca { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; color: var(--color-digi-text); }
-.onb-marca-sub { font-size: 0.72rem; color: var(--color-digi-muted); }
-.onb-anillo-bloque {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 22px 20px 10px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  border: 1px solid var(--color-digi-border);
-}
-.onb-anillo { width: 56px; height: 56px; transform: rotate(-90deg); flex: none; }
-.onb-anillo-fondo { fill: none; stroke: var(--color-digi-border); stroke-width: 6; }
-.onb-anillo-valor {
-  fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 6;
-  stroke-linecap: round;
-  stroke-dasharray: 169.6;
-  transition: stroke-dashoffset 500ms cubic-bezier(0.22, 1, 0.36, 1);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent) 60%, transparent));
-}
-.onb-anillo-cifra { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; font-size: 1.45rem; line-height: 1; color: var(--color-digi-text); font-variant-numeric: tabular-nums; }
-.onb-anillo-texto { margin-top: 4px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-digi-muted); }
-
-.onb-nodos { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 10px 14px 20px; }
-/* La línea que une los nodos. */
-.onb-nodos::before { content: ''; position: absolute; left: 33px; top: 30px; bottom: 34px; width: 2px; border-radius: 2px; background: var(--color-digi-border); }
-.onb-nodo {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  text-align: left;
-  color: var(--color-digi-text);
-  transition: background 200ms ease, opacity 200ms ease;
-}
-.onb-nodo:not(:disabled):hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
-.onb-nodo-punto {
-  position: relative;
-  z-index: 1;
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-digi-card);
-  border: 2px solid var(--color-digi-border);
-  color: var(--color-digi-muted);
-  transition: all 260ms ease;
-}
-.onb-nodo-punto svg { width: 14px; height: 14px; }
-.onb-nodo-texto { display: flex; flex-direction: column; min-width: 0; }
-.onb-nodo-num { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-digi-muted); }
-.onb-nodo-nombre { font-size: 0.84rem; font-weight: 600; line-height: 1.25; }
-.onb-nodo.es-hecho .onb-nodo-punto { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
-.onb-nodo.es-actual { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
-.onb-nodo.es-actual .onb-nodo-punto {
-  background: linear-gradient(135deg, var(--color-accent), #c026d3);
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-accent) 22%, transparent);
-  animation: onbLatido 2.4s ease-in-out infinite;
-}
-.onb-nodo.es-actual .onb-nodo-nombre { color: var(--color-accent-glow); }
-.onb-nodo.es-bloqueado { opacity: 0.45; cursor: not-allowed; }
-@keyframes onbLatido { 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--color-accent) 10%, transparent); } }
-
-/* El paso */
-.onb-paso { position: relative; background: var(--color-digi-dark); }
-.onb-cabecera {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 4px 18px;
-  padding: clamp(18px, 3vh, 30px) clamp(18px, 3vw, 40px) clamp(14px, 2vh, 22px);
-}
-.onboarding-portada .onb-titulo {
-  margin-top: 6px;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
-  font-weight: 700;
-  font-size: clamp(1.35rem, 2.4vw, 2rem);
-  line-height: 1.12;
-  letter-spacing: -0.03em;
-  color: var(--color-digi-text);
-}
-/* Sin título (2026-10-29): en escritorio la cabecera es solo la «×», en una franja corta. */
-@media (min-width: 1024px) {
-  .onb-cabecera.es-sin-titulo { justify-content: flex-end; padding-top: 16px; padding-bottom: 4px; }
-}
-
-/* CAMINO Y PASO SEPARADOS (Fernando, 2026-10-29): desde `lg` el panel deja de ser una caja y
-   el camino y el paso son dos tarjetas con aire entre ellas. */
-@media (min-width: 1024px) {
-  .onboarding-portada .onboarding-panel { background: transparent; border: 0; box-shadow: none; border-radius: 0; overflow: visible; }
-  .onboarding-portada .onboarding-panel > .grid { gap: 16px; }
-  .onboarding-portada .onb-camino,
-  .onboarding-portada .onb-paso {
-    border: 1px solid var(--color-digi-border);
-    border-radius: 22px;
-    overflow: hidden;
-  }
-  .onboarding-aventura .onb-camino,
-  .onboarding-aventura .onb-paso {
-    border-color: rgba(167, 139, 250, 0.45);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 30px 80px -30px rgba(0, 0, 0, 0.9), 0 0 60px -14px rgba(123, 95, 191, 0.55);
-  }
-  .onboarding-progreso .onb-camino,
-  .onboarding-progreso .onb-paso {
-    box-shadow: 0 30px 80px -30px rgba(75, 45, 142, 0.55), 0 0 60px -18px rgba(167, 139, 250, 0.7);
-  }
-}
-
-.onb-cuerpo {
-  padding: 4px clamp(18px, 3vw, 40px) 24px;
-  /* El contenido se desvanece al llegar a la barra de abajo: se intuye que hay más. */
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-}
-
-/* La barra de abajo */
-.onb-pie {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px clamp(18px, 3vw, 40px) calc(16px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--color-digi-border);
-  background: color-mix(in srgb, var(--color-digi-card) 92%, transparent);
-}
-.onb-acciones { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.onb-boton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 9999px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.92rem;
-  font-weight: 600;
-  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease, background 180ms ease;
-}
-.onb-boton svg { width: 17px; height: 17px; }
-.onb-boton-atras { color: var(--color-digi-muted); border: 1px solid var(--color-digi-border); }
-.onb-boton-atras:not(:disabled):hover { color: var(--color-digi-text); background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
-.onb-boton-atras:disabled { opacity: 0.35; }
-.onb-boton-avanzar {
-  color: #fff;
-  background: linear-gradient(135deg, var(--color-accent), #a21caf);
-  box-shadow: 0 12px 26px -12px var(--color-accent);
-}
-.onb-boton-avanzar:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px var(--color-accent), 0 0 0 4px color-mix(in srgb, var(--color-accent) 20%, transparent); }
-.onb-boton-avanzar:not(:disabled):hover svg { transform: translateX(3px); }
-.onb-boton-avanzar svg { transition: transform 180ms ease; }
-.onb-boton-avanzar:disabled { opacity: 0.4; box-shadow: none; cursor: not-allowed; }
-.onb-boton:focus-visible { outline: 2px solid #e879f9; outline-offset: 3px; }
-
-/* La aceptación: una pieza que se enciende, con interruptor. */
-.onb-aceptar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--color-digi-border);
-  background: var(--color-digi-dark);
-  cursor: pointer;
-  transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
-}
-.onb-aceptar > span:last-child { font-size: 0.82rem; line-height: 1.5; }
-.onb-aceptar:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
-.onb-aceptar:focus-visible { outline: 2px solid #e879f9; outline-offset: 2px; }
-.onb-aceptar.es-marcado {
-  border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-digi-dark));
-  box-shadow: 0 0 22px -10px var(--color-accent);
-}
-.onb-interruptor {
-  flex: none;
-  position: relative;
-  width: 40px;
-  height: 22px;
-  border-radius: 9999px;
-  background: var(--color-digi-border);
-  transition: background 220ms ease;
-}
-.onb-interruptor > span {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 240ms cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-.onb-interruptor svg { width: 11px; height: 11px; color: var(--color-accent); }
-.onb-aceptar.es-marcado .onb-interruptor { background: linear-gradient(135deg, var(--color-accent), #c026d3); }
-.onb-aceptar.es-marcado .onb-interruptor > span { transform: translateX(18px); }
-
-/* Las piezas del contenido, en el mismo lenguaje. */
-.onb-cuerpo .rounded-lg { border-radius: 16px; }
-.onb-cuerpo .rounded-md { border-radius: 12px; }
-.onb-cuerpo .border-digi-border { border-color: var(--color-digi-border); }
-.onb-cuerpo .bg-digi-card { background: color-mix(in srgb, var(--color-digi-card) 88%, var(--color-accent) 4%); }
-.onb-cuerpo .rounded-lg.border { box-shadow: 0 14px 30px -24px rgba(0, 0, 0, 0.6); }
-/* Las pestañas (`PixelTabs`) como control segmentado en cápsula. */
-.onb-cuerpo .pivot { display: inline-flex; gap: 4px; padding: 4px; border-radius: 9999px; background: var(--color-digi-card); border: 1px solid var(--color-digi-border); }
-.onb-cuerpo .pivot-tab { border: 0 !important; margin: 0 !important; padding: 8px 18px; border-radius: 9999px; font-size: 0.82rem !important; font-weight: 600; }
-.onb-cuerpo .pivot-tab.is-active { color: #fff !important; background: linear-gradient(135deg, var(--color-accent), #a21caf); box-shadow: 0 6px 16px -8px var(--color-accent); }
-.onb-cuerpo [role='tablist'], .onb-cuerpo .pivot + * { border-bottom: 0; }
-@media (prefers-reduced-motion: reduce) { .onb-nodo.es-actual .onb-nodo-punto { animation: none; } }
-/* Dentro del contenido (casillas del paso final): el interruptor arriba, junto a la primera línea. */
-.onb-aceptar.es-en-linea { align-items: flex-start; }
-.onb-aceptar.es-en-linea .onb-interruptor { margin-top: 1px; }
 
 
 /* ═══ LA CABEZA FIJA Y LA ZONA (Fernando, 2026-10-26: «que el título… se mantenga en la misma

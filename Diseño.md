@@ -235,7 +235,7 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > | Pensamiento | `FeaturedThought compacto` | barra de alto fijo (2 líneas), solo en la pantalla de inicio; nada se mueve |
 > | Roles | `RolesMundo.tsx` + `opcionesAcceso.ts` | minimalistas: icono, título (Postulación/Candidato/Cliente/Miembro), 1 línea, flecha; estado como píldora absoluta; postulación oculta si ya te postulaste (salvo «Aprobada»); al elegir realce sobrio y 450 ms después su ventana; entran tras el eslogan (3400 ms) |
 > | Volver | `.roles-volver` | discreto, arriba a la izquierda, `align-self:flex-start` (el hover solo cubre el botón); también Escape |
-> | Formulario de candidato | `OnboardingSlidersModal tema=` | «La travesía», tema del mundo elegido |
+> | Formulario de candidato | `OnboardingSlidersModal` | Estilo del inicio de sesión (`.corp dark`), igual en los dos mundos (2026-10-29) |
 > | Cabecera | `CabeceraSitio.tsx` | fondo fijo; cápsula de pestañas desde `md`; en el teléfono menú con velo; «Inicio» (antes «Historia»); sin música |
 > | Alto | sección del héroe | sin desplazamiento: `100dvh − --alto-pie`; márgenes seguros `--seguro-arriba/abajo` |
 > | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema en la Plataforma |
@@ -635,7 +635,7 @@ esquinas de cámara no cambian.
   · **«← Volver»** (`.roles-volver`, 2026-10-26): discreto, solo texto al 70 % de opacidad,
     sobre las tarjetas a la izquierda; vuelve a la pantalla de inicio. Escape hace lo mismo si no
     hay un diálogo abierto.
-- **⭐ «La travesía» — rediseño completo del formulario de postulación (2026-10-26, Fernando: «actualiza
+- **~~«La travesía»~~ (su piel se sustituyó el 2026-10-29 por el estilo del inicio de sesión; queda la disposición) — rediseño completo del formulario de postulación (2026-10-26, Fernando: «actualiza
   por completo el diseño… según tu creatividad»).** `OnboardingSlidersModal`, estilos `.onb-*`:
   · **El camino** (izquierda, `lg`): marca, **anillo de progreso** con % y los 8 pasos como NODOS
     unidos por una línea: hecho = relleno con visto, actual = degradado que late, bloqueado =
@@ -652,11 +652,19 @@ esquinas de cámara no cambian.
     (`.onb-aceptar.es-marcado`), «Atrás» fantasma y «Siguiente» en cápsula degradada (sube y la
     flecha avanza al pasar). El botón `Button` del panel ya no se usa aquí.
   · La lógica (pasos, aceptación, envío) no cambió. En el teléfono, a pantalla completa.
-- **El formulario de candidato con el tema del mundo** (`OnboardingSlidersModal tema=`):
-  `.onboarding-portada` + `.onboarding-aventura` (noche lila, `corp dark`) /
-  `.onboarding-progreso` (Plataforma clara, `corp` sin `dark`), que reajustan los tokens
-  `digi-*`/`accent` y rehacen el contenedor (radio 22 px, resplandor, Space Grotesk en los
-  títulos). El contenido de los 8 pasos no cambió ni una clase.
+- ~~**El formulario de candidato con el tema del mundo**~~ (noche lila / Plataforma clara,
+  radio 22 px, resplandor, Space Grotesk) — RETIRADO el 2026-10-29, ver abajo.
+- **⭐ El formulario de postulación con el ESTILO DEL INICIO DE SESIÓN (Fernando, 2026-10-29:
+  «usar el mismo estilo de formulario que tenemos al iniciar sesión»).** Siempre la isla
+  `.corp dark` de `AccountRecoveryModal`/`AuthDialog`, con sus tokens sin reajustar, en los dos
+  mundos: velo `rgba(6,7,12,.72)` + desenfoque 6 px; tarjetas `digi-card` con borde
+  `digi-border`, radio 8 px y sombra `0 20px 60px rgba(0,0,0,.5)`; Inter en todo (títulos 600);
+  botones de 40 px, radio 4 px, «Siguiente» en `accent` plano (hover `accent-hover`) y «Atrás»
+  en `digi-darker` con borde; aceptación e interruptor planos (`accent-light` + borde `accent`
+  al marcar); nodos del camino planos (actual = punto `accent`, hecho = visto en `accent-light`),
+  sin latido; pestañas segmentadas de radio 6/4 px; números en cuadrado `accent` plano; notas en
+  `digi-darker` con filete `accent`. **Sin degradados, brillos ni Space Grotesk.** La prop `tema`
+  sigue existiendo pero ya no cambia el aspecto. Estilos: bloque `.onb-*` en globals.css.
 - **La cabecera lleva SIEMPRE fondo** (`bg-[#0b0d14]/85` + desenfoque), también en la portada:
   ya no es transparente hasta desplazar. Se retiró con ello el color partido del nombre
   (`.texto-partido`, `refBordeIzquierdo`), que ya no tenía ningún uso.

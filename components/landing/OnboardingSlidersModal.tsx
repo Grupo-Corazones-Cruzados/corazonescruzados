@@ -1207,14 +1207,11 @@ export const PASOS_POSTULACION: { label: string; Icon: IconType }[] = [
 export default function OnboardingSlidersModal({
   onComplete,
   onClose,
-  tema = 'aventura',
 }: {
   /**
-   * El mundo elegido en la portada (Fernando, 2026-10-26: «según el tema seleccionado quiero
-   * que se vea el formulario de candidato diferente»). Aventura = noche lila; Progreso = la
-   * Plataforma en claro. Lo resuelven `.onboarding-portada` / `.onboarding-<tema>` en
-   * globals.css reajustando los tokens `digi-*` y `accent`, así que el contenido de los 8
-   * pasos no cambia ni una clase.
+   * El mundo elegido en la portada. YA NO CAMBIA EL ASPECTO (Fernando, 2026-10-29: «el mismo
+   * estilo de formulario que al iniciar sesión»): el formulario es siempre la isla `.corp dark`
+   * de los diálogos de acceso. Se conserva la prop para no tocar a quien la pasa.
    */
   tema?: 'aventura' | 'progreso';
   /**
@@ -1299,8 +1296,8 @@ export default function OnboardingSlidersModal({
    *   actual = brilla, bloqueado = candado), con un anillo de progreso arriba;
    * · a la derecha, en su propia tarjeta separada del camino (2026-10-29), el contenido del paso
    *   y, abajo, una barra con «Atrás», la aceptación como interruptor y «Siguiente».
-   * La lógica (pasos, aceptación, envío) no cambió. Los colores salen de los tokens que
-   * reajusta `.onboarding-<tema>` y los estilos propios de `.onb-*` en globals.css.
+   * La lógica (pasos, aceptación, envío) no cambió. Desde 2026-10-29 con el estilo del inicio de
+   * sesión (`.corp dark`, tarjeta gris, radio 8 px, botón plano): `.onb-*` en globals.css.
    */
   // La pausa de 24 h se mira AL ABRIR (Fernando, 2026-10-29): si desde este equipo ya se creó un
   // registro, no se recorre la postulación para acabar rechazada al enviar.
@@ -1328,7 +1325,7 @@ export default function OnboardingSlidersModal({
       role="dialog"
       aria-modal="true"
       aria-label="Conoce el proyecto y postúlate"
-      className={`corp ${tema === 'aventura' ? 'dark' : ''} corp-overlay onboarding-portada onboarding-${tema} fixed inset-0 z-[250] flex items-center justify-center p-0 sm:p-5`}
+      className={`corp dark corp-overlay onboarding-portada fixed inset-0 z-[250] flex items-center justify-center p-0 sm:p-5`}
       style={{ animation: 'pixelFadeIn 0.35s ease-out' }}
     >
       <style>{KEYFRAMES}</style>
@@ -1420,7 +1417,7 @@ export default function OnboardingSlidersModal({
                 )}
                 {(isForm || !SlideComponent) && (
                   <div className="mt-5">
-                    <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema={tema === 'progreso' ? 'claro' : 'oscuro'} />
+                    <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="oscuro" />
                     {errorEnvio && (
                       <p role="alert" className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-[13px] leading-relaxed text-red-300 onb-error">
                         {errorEnvio}
@@ -1751,13 +1748,12 @@ const stepNum: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontFamily: 'var(--font-display)',
+  fontFamily: 'var(--font-body)',
   fontSize: '0.85rem',
-  fontWeight: 700,
+  fontWeight: 600,
   color: '#ffffff',
-  background: 'linear-gradient(135deg, var(--color-accent), #c026d3)',
-  boxShadow: '0 6px 16px -6px var(--color-accent)',
-  borderRadius: 12,
+  background: 'var(--color-accent)',
+  borderRadius: 6,
 };
 
 const chip: React.CSSProperties = {
@@ -1774,10 +1770,10 @@ const noteBox: React.CSSProperties = {
   fontSize: '0.875rem',
   lineHeight: 1.6,
   color: 'var(--color-digi-text)',
-  background: 'linear-gradient(120deg, var(--color-accent-light), transparent)',
-  border: '1px solid color-mix(in srgb, var(--color-accent) 35%, transparent)',
-  borderLeft: '3px solid #e879f9',
-  borderRadius: 14,
+  background: 'var(--color-digi-darker)',
+  border: '1px solid var(--color-digi-border)',
+  borderLeft: '3px solid var(--color-accent)',
+  borderRadius: 6,
   padding: '14px 16px',
 };
 
