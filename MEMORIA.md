@@ -275,50 +275,44 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
-- **🌗 LA PORTADA: DOS MUNDOS Y EL ACCESO POR ROLES (Fernando, 2026-10-26) — ESTADO VIGENTE.**
-  Un día entero de iteración con Fernando sobre `/`. Lo que queda (detalle y clases: `Diseño.md`
-  § «La portada partida»):
-  1. **Pantalla de inicio**: el héroe se parte en dos mundos —cielo estrellado (Aventura) a la
-     izquierda, la Plataforma en claro (Progreso) a la derecha— separados por una **frontera
-     líquida** (`LicuadoPortada.tsx`: onda viva + tinta que se derrama + onda rosa, sin gotas).
-     Encima: insignia «Proyecto de Desarrollo Humano», el titular **«Un ❤ puede | cruzar al 🌍»**
-     partido por la raya (corazón y Tierra pixel-art propios, `IconosTitular.tsx`), dos **tarjetas
-     de selección** tipo videojuego (`TarjetasMundo.tsx`: «Juego»/«Progreso», personajes reales
-     del juego, selector de esquinas al pasar el puntero, sin botón) y el **pensamiento** como
-     barra de consejo, siempre entero.
-  2. **Un CLIC elige el mundo** (nunca el puntero encima): llena la pantalla con él y fija el
-     destino (Aventura → juego, Progreso → panel). Dentro: solo la insignia, «← Volver» (o
-     Escape) y los **roles** (`RolesMundo.tsx`) como 4 tarjetas con el MISMO estilo que las de
-     mundo. La insignia y el titular NO se mueven ni desaparecen al elegir: solo se recolorea la
-     mitad que cubre el mundo. Sin pensamiento dentro.
-     **Desde el 2026-10-28 el titular es GRÁFICO** (corazón | línea | Tierra, sin texto): al elegir,
-     el corazón cruza en arco y se posa latiendo sobre la Tierra; al volver se separan. Antes:
-     Al terminar de llenarse el mundo, **«el choque»**: las dos mitades se embisten, rebotan y
-     quedan UNIDAS; al «Volver» se separan. (El emblema XH en medio se probó y Fernando lo quitó
-     el 2026-10-28.)
-  3. **Una sola lógica de acceso**: `components/landing/opcionesAcceso.ts` (extraída de
-     `EntryChoiceModal`, que la sigue usando) y `accionesAcceso` en `app/page.tsx`. Las 4 opciones
-     están siempre; mientras consulta el estado se ven con «Comprobando…» y no cambian de sitio.
-  4. **El formulario de candidato** («La travesía»: camino de nodos, anillo de progreso, número
-     perfilado, interruptor de aceptación) toma el tema del mundo (`OnboardingSlidersModal tema=`).
-  5. **Cabecera con fondo fijo** y pestañas en cápsula desde `md`; «Historia» → **«Inicio»**;
-     **sin música de ambiente** (viento y espacio fuera; la intro del juego conserva sus sonidos).
-  6. **La portada no se desliza**: el héroe mide `100dvh − pie` desde `md`; en el teléfono crece
-     si hace falta.
-  **Descartado por Fernando el mismo día** (no repetir): color de los textos partido en la raya,
-  cristal redondeado detrás del titular, placa pixel, botones de estilo distinto por mundo, la raya
-  que sigue al puntero, cambiar de mundo al pasar el puntero, titular en escalera, gotas en la
-  frontera, botón «Elegir», etiquetas «Modo …» con relleno, botón para cambiar de mundo dentro.
-  **Trampas pagadas:** (a) el `next dev -p 3002` de Fernando sirve CSS viejo de `globals.css` y
-  no lo recompila → parar, `rm -rf .next/cache`, arrancar y comprobar con `curl` del CSS servido
-  ([[gcc-next-cache-css-viejo]]); (b) una variable CSS animada con `@property` se queda a medias
-  en su navegador → animar en JS; (c) `text-shadow` tapa un texto con `background-clip: text`;
-  (d) `parseFloat('0px') || x` toma el `x`; (e) recorte/rellenos de un SVG que dependen de una
-  clase de `globals.css` fallan con CSS viejo → en línea; (f) medir choques con el TEXTO (`Range`),
-  no con su `span`; (g) en el teléfono iba con lag: `--corte` heredable en la raíz recalculaba toda
-  la página cada cuadro, y los desenfoques de fondo sobre una escena en movimiento pesaban → modo
-  ligero en táctil (`Diseño.md`), estilos al elegir 116 → 29 ms/s. ⏳ Pendiente: llevar el tema
-  del mundo a los diálogos de inicio de sesión y creación de cuenta.
+- **🌗 LA PORTADA: DOS MUNDOS Y EL ACCESO POR ROLES (Fernando, 2026-10-26 → 28) — ESTADO VIGENTE,
+  APROBADO («vamos súper bien, me gusta», 2026-10-29).** Tres días de iteración con Fernando sobre `/`.
+  Detalle, clases y principios: `Diseño.md` § «La portada partida» (tabla «ESTADO VIGENTE»).
+  1. **Pantalla de inicio**: dos mundos —cielo estrellado (Aventura, juego) y Plataforma clara
+     (Progreso, panel)— separados por una **frontera líquida** (`LicuadoPortada.tsx`). Escritorio:
+     izquierda | derecha; teléfono (< 640 px): arriba | abajo, frontera horizontal. Arriba, la
+     insignia y el **titular gráfico** (corazón y Tierra pixel-art, `IconosTitular.tsx`). Cada mundo
+     es un **panel de texto** (`PanelesMundo.tsx`: etiqueta, título, descripción, ventajas, botón),
+     sin imágenes; Progreso en espejo (alineado a la derecha) en escritorio. El botón lleva la
+     flecha hacia donde se expande su mundo (→/← escritorio, ↓/↑ teléfono); en el teléfono es de
+     contorno con la flecha en una ficha redonda. Debajo, el **pensamiento** en barra de alto fijo.
+  2. **Un CLIC elige el mundo**: lo llena, fija el destino (Aventura → juego, Progreso → panel) y
+     empieza la secuencia **mundo → «el cruce del corazón»** (el corazón salta en arco y se posa
+     sobre la Tierra) **→ eslogan «Un corazón puede cruzar al mundo» → «Volver» y los roles**
+     (3,4 s; 0 con «reducir movimiento»). «Volver» o Escape deshacen: corazón y Tierra se separan.
+  3. **Roles** (`RolesMundo.tsx`) minimalistas: Postulación, Candidato, Cliente, Miembro. La
+     postulación desaparece si ya te postulaste o tienes cuenta de candidato (salvo «Aprobada»).
+     **Una sola lógica de acceso**: `components/landing/opcionesAcceso.ts` (la usa también
+     `EntryChoiceModal`) y `accionesAcceso` en `app/page.tsx`.
+  4. **Formulario de candidato** «La travesía» con el tema del mundo (`OnboardingSlidersModal tema=`).
+  5. **Cabecera** con fondo fijo y cápsula de pestañas desde `md`; «Historia» → «Inicio»; sin música.
+  6. **Sin desplazamiento** en ningún tamaño; márgenes seguros del teléfono (`--seguro-arriba/abajo`).
+  **Descartado por Fernando** (no repetir; lista completa en `Diseño.md`): elegir al pasar el
+  puntero, raya que sigue al puntero, texto partido de color, cristal/placa detrás del titular,
+  botones distintos por mundo, gotas, botón «Elegir», titular de texto, emblema XH, ondas y
+  destellos, tarjetas con personajes, imágenes/vistas previas, «Soy nuevo»/«Ya tengo cuenta»,
+  música de ambiente, píldora rellena en el teléfono.
+  **Trampas pagadas:** (a) el `next dev -p 3002` de Fernando sirve CSS viejo → matar por puerto,
+  `rm -rf .next/cache`, arrancar y comprobar ([[gcc-next-cache-css-viejo]]); (b) una variable
+  animada con `@property` + `transition` se quedaba a medias → animar en JS; heredable recalculaba
+  toda la página (lag en el teléfono) → `inherits:false`; (c) **el minificador de producción
+  convierte `animation` partida en dos declaraciones en `animation: none`** → cada animación
+  COMPLETA en una declaración y probar con `next build` + `next start`; (d) `text-shadow` tapa
+  `background-clip: text`; (e) `parseFloat('0px') || x` toma `x`; (f) recortes SVG en línea, no por
+  clase; (g) relleno `both` deja visibles en su estado inicial cosas que debían nacer en el contacto;
+  (h) en táctil el `:hover` se queda pegado → `(hover: none), (pointer: coarse)`; (i) una regla
+  vieja más específica pisaba la animación nueva → borrar lo derogado, no solo añadir.
+  ⏳ Pendiente (ofrecido, sin pedir): el tema del mundo en los diálogos de inicio de sesión y alta.
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener
   dos botones del mismo ancho: «Comenzar Aventura» → **«Aventura»** (juego) y a su derecha

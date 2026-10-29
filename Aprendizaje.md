@@ -1,5 +1,49 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (2026-10-26 → 29) — LA PORTADA: EXPERIENCIA DEL CLIENTE AL ENTRAR (Aventura | Progreso) · ✅ 95 % — APROBADA POR FERNANDO
+
+**Declarado por Fernando el 2026-10-26:** renombrar «Comenzar Aventura» a «Aventura», poner a su
+derecha «Progreso» (= el antiguo botón «Plataforma» de arriba a la derecha) y quitar ese botón. Creció
+en unas 40 iteraciones hasta rehacer la portada entera. **Rol asumido:** diseñador de producto / UX
+de interfaces de juego y sitios, con verificación medida en navegador.
+
+### Progreso
+- **% de información para el objetivo:** 95 % — Fernando: «vamos súper bien, me gusta» (2026-10-29).
+- **Falta:** decidir si el tema del mundo pasa a los diálogos de inicio de sesión y creación de cuenta.
+- Estado vigente y principios: `Diseño.md` § «La portada partida» (tabla); resumen: `MEMORIA.md`.
+
+### Preguntas y respuestas
+#### P1 — ¿Cómo decide Fernando un diseño? · ✅ Resuelta
+- **Respuesta:** viendo, no leyendo. Mira su servidor 3002 o el teléfono, manda captura y corrige en el
+  acto; da libertad creativa («usa tu creatividad», «reformula por completo») y descarta sin rodeos.
+  Por eso cada paso se publica verificado y lo descartado se anota con su frase. (Fuente: la sesión.)
+#### P2 — ¿Elegir al pasar el puntero o con un clic? · ✅ Resuelta — clic
+- **Respuesta:** clic. El cambio de fondo al pasar el puntero y la raya que lo sigue se descartaron.
+#### P3 — ¿Qué estilo quiere para controles hermanos? · ✅ Resuelta
+- **Respuesta:** misma forma y distinto color; al hacerlos diferentes «se ven raros».
+#### P4 — ¿Imágenes o texto para presentar cada mundo? · ✅ Resuelta — texto
+- **Respuesta:** paneles de texto como secciones de producto; las vistas previas y los personajes no.
+  En computadora debe «parecer un sitio web profesional»; en el teléfono, una app.
+#### P5 — ¿Cómo se representa «Un corazón puede cruzar al mundo»? · ✅ Resuelta
+- **Respuesta:** sin texto en el titular: el corazón cruza y se posa sobre la Tierra; después aparece
+  el eslogan y solo entonces los roles. El emblema XH y los efectos decorativos sobraban.
+#### P6 — ¿Qué ve quien ya se postuló? · ✅ Resuelta
+- **Respuesta:** no ve la tarjeta de Postulación (salvo «Aprobada», que lleva a crear la cuenta).
+#### P7 — ¿Por qué iba lento en el teléfono? · ✅ Resuelta
+- **Respuesta:** `--corte` heredable recalculaba la página cada cuadro y los desenfoques pesaban →
+  `@property` sin herencia y modo ligero en táctil (estilos al elegir 116 → 29 ms/s).
+#### P8 — ¿Por qué el choque no se veía en producción y sí en desarrollo? · ✅ Resuelta
+- **Respuesta:** el minificador convertía `animation` + `animation-name` separados en `animation: none`.
+  Animación completa en una declaración y prueba con `next build` + `next start`.
+#### P9 — ¿El tema del mundo llega a los diálogos de acceso? · ⏸ Espera a Fernando
+- **Por qué importa:** hoy el formulario de candidato sí toma el tema; los de inicio de sesión no.
+
+### Método que funcionó
+1. Implementar → medir con puppeteer en 1440×900, 1100×700, 390×844, 375×667 (`scrollHeight`,
+   `scrollWidth`, posiciones) → capturas → `tsc` + build de producción → commit + push → reiniciar su
+   3002 sin caché. 2. Si su captura no coincide con la mía, sospechar primero del CSS viejo.
+3. Cada derogación borra la regla vieja. 4. Anotar descartes con su frase.
+
 ## Objetivo (declarado 2026-10-26) — CUENTAS PROPIAS EN APP STORE Y GOOGLE PLAY, A NOMBRE DE FERNANDO (persona natural), Y PUBLICAR · 🔎 55 %
 
 **Declarado por Fernando el 2026-10-26**, textual en lo esencial: *«quiero publicar este proyecto en las

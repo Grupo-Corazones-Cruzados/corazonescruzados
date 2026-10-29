@@ -214,21 +214,49 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 
 ### ⭐ 2026-10-26 — La portada partida: Aventura | Progreso
 
-> **ESTADO VIGENTE (cierre del 2026-10-26).** Lo que sigue en esta sección es el HISTORIAL de
-> versiones del mismo día; manda este resumen. Lo descartado está marcado en cada versión y en
-> `MEMORIA.md`: no se vuelve a proponer.
+> **⭐ ESTADO VIGENTE (cierre del 2026-10-28, aprobado por Fernando: «vamos súper bien, me
+> gusta»).** Todo lo que sigue en esta sección es HISTORIAL (manda esta tabla). Lo descartado está
+> en la lista de abajo y en `MEMORIA.md`: no se vuelve a proponer.
 >
-> | Pieza | Archivo | Regla |
+> | Pieza | Archivo | Regla vigente |
 > |---|---|---|
-> | Dos mundos + frontera líquida | `FondosPortada.tsx`, `LicuadoPortada.tsx` | onda + tinta + onda rosa; sin gotas; `--corte` animada en JS (`useCorteAnimado`), registrada SIN herencia y sin `transition`; la frontera no trabaja con un mundo lleno |
-> | Titular «Un ❤ puede \| cruzar al 🌍» | `app/page.tsx` (`.inicio-titular`), `IconosTitular.tsx` | una línea partida por la raya, cada mitad entera en su mundo; iconos pixel-art propios en `em` |
-> | Tarjetas de mundo | `TarjetasMundo.tsx` (`.tarjeta-mundo-*`) | misma forma, color por mundo; selector de esquinas al pasar; sin botón; descripción corta en el teléfono |
-> | Pensamiento | `FeaturedThought compacto` (`.pensamiento-barra`) | barra de consejo, SIEMPRE entero; solo en la pantalla de inicio |
-> | Roles | `RolesMundo.tsx` + `opcionesAcceso.ts` | «Soy nuevo» grande + «Ya tengo cuenta» apiladas; las 4 opciones fijas, «Comprobando…» sin moverse |
-> | Formulario de candidato | `OnboardingSlidersModal tema=` | `.onboarding-aventura` / `.onboarding-progreso` reajustan tokens |
-> | Cabecera | `CabeceraSitio.tsx` | fondo fijo; cápsula de pestañas desde `md` en la portada |
-> | Alto | `app/page.tsx` (sección del héroe) | `100dvh − --alto-pie` desde `md`; teléfono `min-h` con `pt-24` |
-> | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema sobre la Plataforma (`.cursor-plataforma`) |
+> | Dos mundos + frontera líquida | `FondosPortada.tsx`, `LicuadoPortada.tsx` | cielo estrellado (Aventura) izquierda/arriba, Plataforma clara (Progreso) derecha/abajo; onda + tinta; `--corte` en px animada en JS (`useCorteAnimado`, suavizado exponencial ~160 ms), registrada SIN herencia y sin `transition`; teléfono (< 640 px): frontera HORIZONTAL medida entre los dos paneles; modo `ligero` en táctil; quieta con un mundo lleno |
+> | Cabeza | `app/page.tsx` (`.portada-cabeza`) | insignia «Proyecto de Desarrollo Humano» + titular GRÁFICO (corazón pixel \| Tierra pixel, `IconosTitular.tsx`), misma posición antes y después de elegir |
+> | Cruce del corazón | `.grafico-corazon`, `.grafico-mundo`, `.choque-corazoncito` | al elegir: el corazón cruza en arco con estela y se posa latiendo sobre la Tierra (distancias medidas `--dx-corazon`/`--dx-mundo`, 650 ms tras el clic); al «Volver» se separan |
+> | Eslogan | `.eslogan-portada` | «Un corazón puede cruzar al mundo» tras el cruce, palabra a palabra; «cruzar al mundo» en degradado; hueco SIEMPRE reservado |
+> | Paneles de mundo | `PanelesMundo.tsx` (`.panel-mundo-*`) | solo texto, sin imágenes: etiqueta (Juego/Plataforma), título, descripción, 3 ventajas (escritorio alto), botón. Escritorio: cada uno centrado en su mitad, Aventura a la izquierda y **Progreso alineado a la derecha** (espejo) |
+> | Botón de mundo | `.panel-mundo-boton`, `.panel-mundo-flecha` | la flecha apunta hacia donde SE EXPANDE el mundo (escritorio →/←, teléfono ↓/↑; `--dir`, `--empuje`). Escritorio: píldora con degradado. **Teléfono: contorno fino + flecha en ficha redonda maciza** del color del mundo; se hunde al tocar |
+> | Pensamiento | `FeaturedThought compacto` | barra de alto fijo (2 líneas), solo en la pantalla de inicio; nada se mueve |
+> | Roles | `RolesMundo.tsx` + `opcionesAcceso.ts` | minimalistas: icono, título (Postulación/Candidato/Cliente/Miembro), 1 línea, flecha; estado como píldora absoluta; postulación oculta si ya te postulaste (salvo «Aprobada»); al elegir realce sobrio y 450 ms después su ventana; entran tras el eslogan (3400 ms) |
+> | Volver | `.roles-volver` | discreto, arriba a la izquierda, `align-self:flex-start` (el hover solo cubre el botón); también Escape |
+> | Formulario de candidato | `OnboardingSlidersModal tema=` | «La travesía», tema del mundo elegido |
+> | Cabecera | `CabeceraSitio.tsx` | fondo fijo; cápsula de pestañas desde `md`; en el teléfono menú con velo; «Inicio» (antes «Historia»); sin música |
+> | Alto | sección del héroe | sin desplazamiento: `100dvh − --alto-pie`; márgenes seguros `--seguro-arriba/abajo` |
+> | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema en la Plataforma |
+>
+> **Principios que salieron de estas iteraciones (aplican a cualquier pantalla de selección):**
+> 1. **Elegir es un CLIC**, nunca pasar el puntero; y en táctil nada debe parecer «ya seleccionado»
+>    (reglas `(hover: none), (pointer: coarse)` sin realce en reposo).
+> 2. **Controles hermanos: misma forma, distinto color.** Estilos distintos por mundo «se ven raros».
+> 3. **Nada aparece ni desaparece moviendo lo demás**: huecos reservados, alturas fijas, estados
+>    («Comprobando…») que cambian de contenido, no de sitio.
+> 4. **La animación cuenta la idea** (el corazón cruza al mundo) y marca el ORDEN: mundo → cruce →
+>    eslogan → opciones. Sin decoración que no signifique nada (ondas, destellos, emblemas).
+> 5. **Escritorio como SITIO, teléfono como APP**: el mismo contenido, con soluciones propias por
+>    tamaño (espejo y píldora en escritorio; botón de contorno y flechas ↓/↑ en el teléfono).
+> 6. **La dirección se lee en los detalles**: flechas hacia donde se expande cada mundo.
+> 7. **Menos es más**: sin imágenes ni vistas previas, sin botones redundantes («Elegir»), sin
+>    etiquetas que repiten («Soy nuevo»/«Ya tengo cuenta»).
+> 8. **Usar el alto disponible y no desplazar**: verificar `scrollHeight == innerHeight` y
+>    `scrollWidth == ancho` en 1440×900, 1100×700, 390×844 y 375×667.
+>
+> **Descartado (no reproponer):** cambiar de mundo al pasar el puntero; raya que sigue al puntero;
+> texto partido de color en la raya; cristal o placa pixel detrás del titular; botones de estilo
+> distinto por mundo; titular en escalera; gotas en la frontera; botón «Elegir»; etiquetas «Modo…»
+> con relleno; botón para cambiar de mundo dentro; titular de texto (sustituido por el gráfico);
+> emblema XH; línea de luz, ondas y destello del cruce; tarjetas de mundo con personajes;
+> vistas previas con imágenes en escritorio; roles como tarjetas de escena; «Soy nuevo»/«Ya tengo
+> cuenta»; música de ambiente; píldora rellena en el botón del teléfono.
 >
 > **Cambio posterior (2026-10-26): cabeza fija y roles como tarjetas de mundo.**
 > · La insignia y el titular están SIEMPRE y en la MISMA posición antes y después de elegir
