@@ -22,6 +22,10 @@ import type { LucideIcon } from 'lucide-react';
  * escribe dos diseños, escribe `<Cifra>`.
  *
  * `RejillaCifras` es su contenedor: 2 columnas en teléfono, 3 desde `lg`. Se usan juntos.
+ *
+ * Las clases `cifra`, `cifra-icono`, `cifra-etiqueta` y `cifra-valor` le dan, dentro del
+ * panel, el aspecto de las tarjetas de la portada (`app/tema-progreso.css`, 2026-10-29); el
+ * CV público, que también la usa, no las estiliza y se queda como estaba.
  */
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -52,21 +56,21 @@ export function Cifra({
   tone?: TonoCifra;
 }) {
   return (
-    <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-3 sm:p-4 flex items-center gap-3">
+    <div className="cifra bg-digi-card border border-digi-border rounded-lg shadow-sm p-3 sm:p-4 flex items-center gap-3">
       {/* El chip del icono solo desde `sm`: en un teléfono son 44 px que no dicen nada que
           no diga ya la etiqueta, y se los quitan a la cifra. */}
-      <div className={`hidden sm:flex w-11 h-11 rounded-lg items-center justify-center shrink-0 ${CHIP[tone]}`}>
+      <div data-tono={tone} className={`cifra-icono hidden sm:flex w-11 h-11 rounded-lg items-center justify-center shrink-0 ${CHIP[tone]}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-[10.5px] sm:text-[11px] uppercase tracking-wide text-digi-muted" style={mf}>
+        <p className="cifra-etiqueta flex items-center gap-1.5 text-[10.5px] sm:text-[11px] uppercase tracking-wide text-digi-muted" style={mf}>
           {/* En teléfono el icono acompaña a la etiqueta, en línea y pequeño: mantiene la
               lectura de un vistazo (verde sube, rojo baja) sin ocupar una columna. */}
           <Icon className={`sm:hidden w-3.5 h-3.5 shrink-0 ${tone === 'green' ? 'text-green-600' : tone === 'red' ? 'text-red-600' : 'text-accent'}`} />
           <span className="truncate">{label}</span>
         </p>
         {value !== undefined ? (
-          <p className="text-[19px] sm:text-xl font-semibold text-digi-text leading-tight tabular-nums truncate" style={mf}>
+          <p className="cifra-valor text-[19px] sm:text-xl font-semibold text-digi-text leading-tight tabular-nums truncate" style={mf}>
             {value}
           </p>
         ) : (

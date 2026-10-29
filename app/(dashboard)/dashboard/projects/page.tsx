@@ -425,8 +425,12 @@ export default function ProjectsPage() {
               los dos filtros comparten fila en `grid-cols-2`, la acción principal baja a la barra
               de abajo y las secundarias (solicitar, cotizar) van en el «⋯». Desde `lg`, la fila
               de siempre con sus tres botones. */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* ⚠️ `sm:flex-wrap` y el buscador con 220 px de mínimo (2026-10-29): en una fila
+              buscador + 2 filtros de 260 + 3 botones no caben en 1440 px con el raíl, y el
+              buscador se quedaba en una cajita con solo el icono. Ahora, si no cabe, la fila se
+              parte; los filtros miden 200 hasta `2xl`. */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0 sm:min-w-[220px]">
               <div className={`relative flex-1 min-w-0 ${tab === 'offline' ? 'hidden sm:block sm:invisible' : ''}`}>
                 <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
@@ -461,7 +465,7 @@ export default function ProjectsPage() {
               return (
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
                   {conTalento && (
-                    <div className={`min-w-0 sm:w-[260px] ${solo}`}>
+                    <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
                       <MultiSelectSearch
                         options={talentOptions.map((t) => ({ value: t, label: t }))}
                         selected={talentFilter}
@@ -471,7 +475,7 @@ export default function ProjectsPage() {
                     </div>
                   )}
                   {conCliente && (
-                    <div className={`min-w-0 sm:w-[260px] ${solo}`}>
+                    <div className={`min-w-0 sm:w-[200px] 2xl:w-[260px] ${solo}`}>
                       <MultiSelectSearch
                         options={clientOptions.map((c) => ({ value: c.id, label: c.name }))}
                         selected={clientFilter}

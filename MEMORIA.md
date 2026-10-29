@@ -275,6 +275,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🎨 TEMA «PROGRESO» EN TODO EL PANEL (Fernando, 2026-10-29).** El panel toma el estilo de la
+  sección Plataforma de la portada —fondo lavanda con puntos y manchas, Inter + Space Grotesk,
+  tarjetas translúcidas de 16 px con sombra lila, botón con degradado— y en oscuro la noche de
+  Aventura. Fuente única `app/tema-progreso.css` (no `globals.css`, que edita la portada a la vez).
+  Inicio rediseñado con la insignia, el saludo con degradado y la barra del pensamiento. Decisión
+  tomada por mí y a revisar con él: el oscuro como Aventura, y llevarlo a TODO el panel (pidió «por
+  completo en el tema»). Para compilar en local con otra sesión corriendo `next dev`, usar
+  `NEXT_DIST_DIR=.next-mio`: compartir `.next` rompió su servidor y mi build.
 - **🧭 CABECERA COMÚN Y TRANSICIÓN ANIMADA ENTRE PESTAÑAS (Fernando, 2026-10-29).** Inicio,
   Soluciones, Clientes y Desarrollo Humano comparten la misma cabecera (la cápsula centrada de la
   portada, `CabeceraSitio` sin modos). Al cambiar de pestaña la píldora activa se desliza desde la

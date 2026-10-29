@@ -1,5 +1,7 @@
 node_modules/
 .next/
+# Compilaciones locales en otra carpeta (NEXT_DIST_DIR), para no pisar el `next dev` de otra sesión.
+.next-mio/
 .env
 .env.local
 data/uploads/

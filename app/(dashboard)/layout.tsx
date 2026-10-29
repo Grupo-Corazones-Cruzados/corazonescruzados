@@ -1,5 +1,7 @@
 'use client';
 
+import '../tema-progreso.css';
+
 import AuthGuard from '@/components/providers/AuthGuard';
 import PolicyEffectsProvider from '@/components/providers/PolicyEffectsProvider';
 import { ProveedorTemaPanel, useTemaPanel } from '@/components/providers/TemaPanel';
@@ -45,7 +47,9 @@ function Panel({ children }: { children: React.ReactNode }) {
    * leyendo.
    */
   return (
-    <div className={`corp ${oscuro ? 'dark' : ''} flex min-h-screen`}>
+    // `tema-progreso`: el estilo de la sección Plataforma de la portada en todo el panel
+    // (Fernando, 2026-10-29). Ver `app/tema-progreso.css`.
+    <div className={`corp tema-progreso ${oscuro ? 'dark' : ''} flex min-h-screen`}>
       <PolicyBanner collapsed />
       <DashboardSidebar />
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.

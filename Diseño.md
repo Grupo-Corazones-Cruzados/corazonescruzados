@@ -1590,6 +1590,37 @@ SwiftUI en iPhone) y lo único compartido es la marca. Mismo flujo y mismos text
   (`bg-accent`, `hover:bg-accent-hover`, `bg-accent-light`, `text-accent`, `bg-digi-card`,
   `border-digi-border`, `text-digi-muted`) — **no** hex crudos.
 
+### ⭐ EL TEMA «PROGRESO»: EL PANEL CON EL ESTILO DE LA PORTADA (Fernando, 2026-10-29)
+Textual: *«el estilo que se está usando [en la sección de plataforma de la página de inicio] es el
+que me gustaría implementar por completo en el tema de la plataforma, considerando incluso ese
+fondo […] para hacer fiel la pantalla de inicio con la plataforma»*. Fuente única:
+**`app/tema-progreso.css`**, importado por `app/(dashboard)/layout.tsx`, que pone la clase
+`tema-progreso` junto a `.corp`. Todo cuelga de `.corp.tema-progreso` (especificidad 0,3,0: gana a
+las reglas `.corp …` sin `!important`); el claro va con `:not(.dark)`. Vive aparte de `globals.css`
+porque la portada se edita allí a la vez.
+- **Claro = Progreso**: fondo `linear-gradient(160deg,#fbfaff,#f3effb 55%,#e9e2f7)` + trama de
+  puntos 28 px + tres manchas de luz (las de `.ep-mancha`), quieto y `fixed`. Tokens: borde
+  `#e7e2f3`, texto `#17122b`, secundario `#6b6585`.
+- **Oscuro = Aventura**: `#0b0818 → #120d26`, nebulosas violeta/fucsia y estrellas tenues; tarjetas
+  `rgba(23,18,43,.82)` con borde lila.
+- **Tipografía**: Inter (texto) y **Space Grotesk** (`.page-title`, `.pixel-heading`, `.modal-title`,
+  `.titulo-progreso`). Cabeceras de tabla como `.ep-titulo` (10,5 px, 600, `0.08em`, mayúsculas).
+- **Tarjetas** (`.pixel-card`, `.bg-digi-card.border.rounded-lg/xl`, el raíl de filtros, `.data-table`):
+  `--tarjeta-fondo` translúcido, radio 16 px, sombra `0 14px 34px -16px rgba(75,45,142,.35)`,
+  `backdrop-filter: blur(6px)`; una tarjeta dentro de otra no vuelve a flotar.
+- **Botón principal**: degradado `#7c5ce0 → #6d28d9` con sombra violeta, radio 10. Lo llevan
+  `BTN_PRIMARY`/`BTN_ICONO_PRIMARIO` (clase `btn-primario`), `.pixel-btn-primary` y los escritos a mano
+  con `bg-accent text-white rounded` (sin `.border`, para no teñir los días de los calendarios).
+  Secundario (`btn-secundario`): fondo translúcido, borde lila, radio 10. Campos: radio 10.
+- **Piezas reutilizables**: `.insignia-progreso` (la píldora «PROYECTO DE DESARROLLO HUMANO»),
+  `.acento-progreso` (el degradado de «cruzar al mundo»), y `Cifra` con `cifra`/`cifra-icono`/
+  `cifra-etiqueta`/`cifra-valor`: icono en cuadrado con degradado (verde/rojo según el tono) y la cifra
+  en Space Grotesk 24 px. El CV público también usa `Cifra` y no cambia (no tiene la clase del tema).
+- **Inicio (`/dashboard`)**: insignia «Tu progreso», saludo `titulo-progreso` 40 px con el nombre en
+  `acento-progreso`, y a la derecha la barra del pensamiento de la portada (`FeaturedThought compacto`,
+  `tema` Progreso en claro y Aventura en oscuro).
+- Pie de la ruta y barra de acciones del teléfono: cristal (`rgba(255,255,255,.72)` / noche).
+
 ### ⭐ LAS REGLAS DEL TELÉFONO DE LOS PRODUCTOS, EN EL PANEL (Fernando, 2026-10-23)
 Textual: *«estas correcciones me gustaría aplicarlas también en gcc world, busca todos estos tipos
 de errores y corrígelos»*. Se auditaron las 27 pantallas del panel a 390 px y se corrigió en la
@@ -4684,6 +4715,11 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · El panel no se parecía a la Plataforma de la portada** · **CAMBIO DE ESTÁNDAR**
+  (Fernando). Del Fluent gris plano al tema «Progreso» (`app/tema-progreso.css`); ver su sección.
+- **2026-10-29 · Buscador de Proyectos reducido a una cajita en escritorio** · **CORREGIDO**. Buscador +
+  2 filtros de 260 + 3 botones no cabían; la fila es `sm:flex-wrap`, el buscador `sm:min-w-[220px]` y los
+  filtros 200 px hasta `2xl`.
 - **2026-10-23 · El panel derecho de una lista, en el teléfono, se abre ENCIMA** · **CORREGIDO** (Fernando:
   «que aparezca el panel derecho […] directamente en la pantalla y no tenga que deslizarme para abajo»).
   Marketplace (Productos y Proyectos), Proyecto Centralizado y Herramientas dejaban caer el panel bajo la

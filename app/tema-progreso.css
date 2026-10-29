@@ -1,0 +1,209 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════
+   EL TEMA «PROGRESO» DEL PANEL — la Plataforma con el estilo de la portada
+   (Fernando, 2026-10-29: «el estilo que se está usando [en la sección de plataforma de la
+   página de inicio] es el que me gustaría implementar por completo en el tema de la
+   plataforma, considerando incluso ese fondo […] para hacer fiel la pantalla de inicio con
+   la plataforma»).
+   ───────────────────────────────────────────────────────────────────────────────────────
+   La portada partida tiene dos mundos: «Aventura» (el juego, cielo nocturno) y «Progreso»
+   (la Plataforma, lavanda claro). Aquí el panel ENTERO toma el de Progreso en claro y el de
+   Aventura en oscuro, con las mismas piezas de `app/globals.css` (`.escena-progreso`,
+   `.ep-puntos`, `.ep-mancha`, `.ep-tarjeta`, `.ep-titulo`, `.tr-icono`, `.tm-titulo`):
+     · fondo: degradado lavanda + trama de puntos + manchas de luz difuminadas;
+     · tipografía: Inter para el texto y Space Grotesk para los títulos;
+     · tarjetas: blancas translúcidas, 14–16 px de radio, sombra lila;
+     · botón principal con degradado violeta; iconos en un cuadrado con degradado.
+
+   ⚠️ VIVE EN SU PROPIO ARCHIVO y todo cuelga de `.corp.tema-progreso` (la clase la pone el
+   layout del panel). Dos razones: `globals.css` lo editan a la vez otras sesiones (la
+   portada), y así la especificidad (0,3,0) gana a las reglas `.corp …` (0,2,0) sin
+   `!important`. El claro va con `:not(.dark)` para no pisar los tokens de `.corp.dark`.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ─────────────────────────────────────────────────────────────────────────── */
+.corp.tema-progreso {
+  --font-body: 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-titulo: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --radio-tarjeta: 16px;
+  --radio-control: 10px;
+  font-family: var(--font-body);
+}
+.corp.tema-progreso:not(.dark) {
+  --color-digi-dark: #f3effb;
+  --color-digi-darker: #ffffff;
+  --color-digi-card: #ffffff;
+  --color-digi-border: #e7e2f3;
+  --color-digi-text: #17122b;
+  --color-digi-muted: #6b6585;
+  --color-accent: #4B2D8E;
+  --color-accent-hover: #3A1F7A;
+  --color-accent-light: #efe9fc;
+  --tarjeta-fondo: rgba(255, 255, 255, 0.86);
+  --tarjeta-borde: #e7e2f3;
+  --tarjeta-sombra: 0 14px 34px -16px rgba(75, 45, 142, 0.35);
+  --etiqueta: #6b6585;
+  --degradado-boton: linear-gradient(135deg, #7c5ce0, #6d28d9);
+  --degradado-icono: linear-gradient(135deg, #7c5ce0, #a21caf);
+  --degradado-acento: linear-gradient(90deg, #db2777, #a21caf 45%, #6d28d9);
+
+  /* EL FONDO DE PROGRESO (`.escena-progreso` + `.ep-puntos` + `.ep-mancha-1/2/3`), quieto:
+     las manchas de la portada se mueven, pero detrás de un formulario distraerían. */
+  background:
+    radial-gradient(rgba(75, 45, 142, 0.13) 1px, transparent 1.6px) 0 0 / 28px 28px,
+    radial-gradient(34vw 34vw at 92% -4%, rgba(123, 95, 191, 0.22), transparent 70%),
+    radial-gradient(30vw 30vw at 6% 104%, rgba(161, 32, 125, 0.12), transparent 70%),
+    radial-gradient(24vw 24vw at 52% 45%, rgba(75, 45, 142, 0.07), transparent 70%),
+    linear-gradient(160deg, #fbfaff 0%, #f3effb 55%, #e9e2f7 100%);
+  background-attachment: fixed;
+}
+
+/* En oscuro, la noche de AVENTURA: violeta casi negro con nebulosas y estrellas tenues. */
+.corp.tema-progreso.dark {
+  --color-digi-dark: #0d0a1a;
+  --color-digi-darker: #110d22;
+  --color-digi-card: #17122b;
+  --color-digi-border: #2c2449;
+  --color-digi-text: #f1eefb;
+  --color-digi-muted: #a99fc7;
+  --color-accent-light: #2a2050;
+  --tarjeta-fondo: rgba(23, 18, 43, 0.82);
+  --tarjeta-borde: rgba(167, 139, 250, 0.18);
+  --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.8), 0 0 30px -18px rgba(123, 95, 191, 0.45);
+  --etiqueta: #b3a9d4;
+  --degradado-boton: linear-gradient(135deg, #8b5cf6, #a21caf);
+  --degradado-icono: linear-gradient(135deg, #7c5ce0, #a21caf);
+  --degradado-acento: linear-gradient(90deg, #f472b6, #e879f9 45%, #a78bfa);
+
+  background:
+    radial-gradient(rgba(233, 229, 247, 0.10) 1px, transparent 1.6px) 0 0 / 34px 34px,
+    radial-gradient(36vw 36vw at 88% -6%, rgba(123, 95, 191, 0.30), transparent 70%),
+    radial-gradient(30vw 30vw at 4% 106%, rgba(162, 28, 175, 0.16), transparent 70%),
+    linear-gradient(180deg, #0b0818 0%, #120d26 100%);
+  background-attachment: fixed;
+}
+
+/* ── Títulos ────────────────────────────────────────────────────────────────────────── */
+.corp.tema-progreso :is(.page-title, .pixel-heading, .modal-title, .titulo-progreso) {
+  font-family: var(--font-titulo);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* La etiqueta pequeña en mayúsculas de la portada (`.ep-titulo`): cabeceras de tabla. */
+.corp.tema-progreso .dt-th {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--etiqueta);
+  background: transparent;
+}
+
+/* ── Tarjetas (`.ep-tarjeta`) ───────────────────────────────────────────────────────── */
+.corp.tema-progreso :is(
+  .pixel-card:not(.modal-surface),
+  .bg-digi-card.border.rounded-lg,
+  .bg-digi-card.border.rounded-xl,
+  .lg\:bg-digi-card.lg\:border.lg\:rounded-lg,
+  .data-table
+) {
+  background-color: var(--tarjeta-fondo);
+  border-color: var(--tarjeta-borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--tarjeta-sombra);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+/* La tabla dibujaba un borde de 2 px: en una tarjeta de la portada es de 1. */
+.corp.tema-progreso .data-table { border-width: 1px; overflow: hidden; }
+.corp.tema-progreso .data-table .dt-row:hover { background: rgba(123, 95, 191, 0.06); }
+/* Dentro de una tarjeta, otra tarjeta no vuelve a flotar: solo su borde. */
+.corp.tema-progreso :is(.pixel-card, .bg-digi-card.border.rounded-lg, .bg-digi-card.border.rounded-xl) :is(.bg-digi-card.border.rounded-lg, .bg-digi-card.border.rounded-xl) {
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: 12px;
+}
+
+/* Los paneles y ventanitas: el mismo radio y la sombra de la portada (el lateral derecho
+   sigue recto, pegado al borde). */
+.corp.tema-progreso .modal-surface[data-size='sm'] { border-radius: var(--radio-tarjeta); }
+
+/* ── Controles ──────────────────────────────────────────────────────────────────────── */
+.corp.tema-progreso .field-control { border-radius: var(--radio-control); border-color: var(--tarjeta-borde); }
+
+/* El botón principal: el degradado violeta y la sombra de `.panel-mundo-boton`. Además de
+   `BTN_PRIMARY`/`BTN_ICONO_PRIMARIO` (`btn-primario`), reconoce los que se escribieron a mano
+   con las mismas clases (`bg-accent text-white rounded`, 37 archivos) y `.pixel-btn-primary`.
+   `:not(.border)` deja fuera los días marcados de los calendarios, que llevan borde. */
+.corp.tema-progreso :is(.btn-primario, .pixel-btn-primary, button.bg-accent.text-white.rounded:not(.border), a.bg-accent.text-white.rounded:not(.border)) {
+  background-image: var(--degradado-boton);
+  border-radius: var(--radio-control);
+  box-shadow: 0 10px 24px -12px rgba(109, 40, 217, 0.75);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+/* hover */
+.corp.tema-progreso :is(.btn-primario, .pixel-btn-primary, button.bg-accent.text-white.rounded:not(.border), a.bg-accent.text-white.rounded:not(.border)):hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 14px 28px -12px rgba(109, 40, 217, 0.85); }
+.corp.tema-progreso .btn-secundario {
+  background-color: var(--tarjeta-fondo);
+  border-color: var(--tarjeta-borde);
+  border-radius: var(--radio-control);
+}
+
+/* ── El pie de la ruta: cristal, como la barra del pensamiento ─────────────────────── */
+.corp.tema-progreso:not(.dark) [data-app-footer] { background-color: rgba(255, 255, 255, 0.72); border-top-color: var(--tarjeta-borde); }
+.corp.tema-progreso.dark [data-app-footer] { background-color: rgba(13, 10, 26, 0.78); }
+.corp.tema-progreso #barra-acciones-movil > div { background-color: var(--tarjeta-fondo); border-top-color: var(--tarjeta-borde); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+/* ── Piezas de la portada, reutilizables en cualquier pantalla del panel ────────────── */
+
+/* La insignia en píldora (`.mundo-insignia` de Progreso). */
+.corp.tema-progreso .insignia-progreso {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #4b2d8e;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(75, 45, 142, 0.2);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.corp.tema-progreso.dark .insignia-progreso { color: rgba(233, 229, 247, 0.85); background: rgba(11, 13, 20, 0.62); border-color: rgba(167, 139, 250, 0.3); }
+
+/* El texto con el degradado de «cruzar al mundo» (`.eslogan-acento`). */
+.corp.tema-progreso .acento-progreso {
+  background-image: var(--degradado-acento);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── La cifra (`Cifra`) como las tarjetas de la portada ─────────────────────────────── */
+.corp.tema-progreso .cifra { padding: 16px 18px; gap: 14px; }
+.corp.tema-progreso .cifra-icono {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--degradado-icono);
+  box-shadow: 0 10px 24px -10px rgba(124, 92, 224, 0.9);
+}
+.corp.tema-progreso .cifra-icono[data-tono='green'] { background: linear-gradient(135deg, #16a34a, #0d9488); box-shadow: 0 10px 24px -10px rgba(22, 163, 74, 0.8); }
+.corp.tema-progreso .cifra-icono[data-tono='red'] { background: linear-gradient(135deg, #e11d48, #db2777); box-shadow: 0 10px 24px -10px rgba(225, 29, 72, 0.7); }
+.corp.tema-progreso .cifra-etiqueta { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; color: var(--etiqueta); }
+.corp.tema-progreso .cifra-valor { font-family: var(--font-titulo); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+@media (max-width: 639.98px) {
+  .corp.tema-progreso .cifra { padding: 12px 14px; }
+  .corp.tema-progreso .cifra-valor { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corp.tema-progreso .btn-primario { transition: none; }
+}

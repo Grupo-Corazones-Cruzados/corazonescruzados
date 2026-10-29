@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useTemaPanel } from '@/components/providers/TemaPanel';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -14,6 +15,7 @@ import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
+import FeaturedThought from '@/components/landing/FeaturedThought';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -25,6 +27,8 @@ interface FinanceItem { id?: number; type: 'income' | 'expense'; description: st
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  // En oscuro el panel es la noche de Aventura: el pensamiento, con su cristal oscuro.
+  const { oscuro } = useTemaPanel();
   const router = useRouter();
   // Rol EFECTIVO (candidate/client/member/admin). El candidato tiene role='client' en el
   // JWT pero account_type='candidate' → aquí se distingue para no tratarlo como cliente.
@@ -111,8 +115,21 @@ export default function DashboardHome() {
           contenido, y en 390 px cada línea que se ahorra es una cifra que entra. */}
       {/* Sin la línea «Este es el resumen de…» debajo (Fernando, 2026-10-23: bajo el título
           no se escriben frases descriptivas): repetía lo que ya dice la pantalla. */}
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-[19px] sm:text-2xl font-semibold text-digi-text leading-tight" style={mf}>{greet}{name ? `, ${name}` : ''}</h1>
+      {/* ⭐ LA CABECERA DE LA PORTADA (Fernando, 2026-10-29: el estilo de la sección
+          Plataforma de la página de inicio, «para hacer fiel la pantalla de inicio con la
+          plataforma»). La insignia en píldora, el saludo con el titular de Space Grotesk y
+          el nombre con el degradado de «cruzar al mundo», y a la derecha la misma barra del
+          pensamiento de la portada (`FeaturedThought compacto`, tema Progreso). */}
+      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 mb-5 sm:mb-8">
+        <div className="min-w-0">
+          <span className="insignia-progreso mb-3 sm:mb-4" style={mf}>Tu progreso</span>
+          <h1 className="titulo-progreso text-[28px] sm:text-[40px] text-digi-text leading-[1.05]">
+            {greet}{name ? <>, <span className="acento-progreso">{name}</span></> : ''}
+          </h1>
+        </div>
+        <div className="hidden md:flex xl:justify-end min-w-0 [&_.pensamiento-barra]:text-left">
+          <FeaturedThought compacto tema={oscuro ? 'aventura' : 'progreso'} />
+        </div>
       </div>
 
       {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
@@ -130,7 +147,7 @@ export default function DashboardHome() {
       {isStaff && (
         <>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[15px] font-semibold text-digi-text" style={mf}>Estado financiero mensual</h2>
+            <h2 className="titulo-progreso text-[18px] text-digi-text">Estado financiero mensual</h2>
             {/* «Reporte global» es la acción principal de la pantalla: en el teléfono va a la
                 barra de abajo (2026-10-23, regla de los productos) y aquí solo desde `lg`. */}
             {months.length > 0 && (
