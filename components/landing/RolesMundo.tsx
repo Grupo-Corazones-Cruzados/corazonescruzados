@@ -32,6 +32,16 @@ function Tarjeta({
   onElegir: () => void;
 }) {
   const Icono = o.Icono;
+  /**
+   * La entrada (`.aparecer`) se quita en cuanto termina, o en cuanto la tarjeta se elige (Fernando,
+   * 2026-10-29: al abrir el formulario las tarjetas desaparecían y volvían a los segundos). Al
+   * elegir, `.rol-elegida`/`.rol-descartada` cambian la `animation`; al quitarlas, la de entrada
+   * EMPEZABA DE NUEVO con su retraso de 3,4 s y su relleno `both` la dejaba invisible todo ese rato.
+   */
+  const [entro, setEntro] = useState(false);
+  useEffect(() => {
+    if (estado) setEntro(true);
+  }, [estado]);
   return (
     <button
       type="button"
@@ -39,8 +49,11 @@ function Tarjeta({
       aria-disabled={o.cargando || undefined}
       aria-busy={o.cargando || undefined}
       aria-label={`${o.titulo}: ${o.descripcion}`}
-      className={`tarjeta-mundo tarjeta-mundo-${tema} tarjeta-rol rol-${o.tono} ${o.cargando ? 'rol-comprobando' : ''} ${estado ? `rol-${estado}` : ''} aparecer`}
+      className={`tarjeta-mundo tarjeta-mundo-${tema} tarjeta-rol rol-${o.tono} ${o.cargando ? 'rol-comprobando' : ''} ${estado ? `rol-${estado}` : ''} ${entro || estado ? '' : 'aparecer'}`}
       style={{ ['--retraso' as string]: `${retraso}ms` }}
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget && e.animationName.startsWith('aparecer')) setEntro(true);
+      }}
     >
       <span className="tm-destello" aria-hidden="true" />
       {estado === 'elegida' && <span className="rol-onda" aria-hidden="true" />}

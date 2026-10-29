@@ -312,6 +312,10 @@ Stack estándar de la casa, con particularidades de este repo:
   clase; (g) relleno `both` deja visibles en su estado inicial cosas que debían nacer en el contacto;
   (h) en táctil el `:hover` se queda pegado → `(hover: none), (pointer: coarse)`; (i) una regla
   vieja más específica pisaba la animación nueva → borrar lo derogado, no solo añadir.
+  (j) **cambiar la `animation` de un elemento que tenía una de entrada la REINICIA**: al elegir un
+  rol, `.rol-elegida`/`.rol-descartada` sustituían a `.aparecer`; al quitarlas, la entrada volvía a
+  empezar con su retraso de 3,4 s y `both` dejaba las tarjetas invisibles con el formulario abierto
+  y al cerrarlo (Fernando, 2026-10-29) → la clase de entrada se quita al terminar (`onAnimationEnd`).
   ⏳ Pendiente (ofrecido, sin pedir): el tema del mundo en los diálogos de inicio de sesión y alta.
 - **🧭 PORTADA: «AVENTURA» + «PROGRESO», Y LA BARRA SIN «PLATAFORMA» (Fernando, 2026-10-26).**
   Fernando empieza a trabajar la experiencia del cliente en la plataforma. El héroe vuelve a tener

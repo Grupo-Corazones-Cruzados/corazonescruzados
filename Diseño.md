@@ -240,6 +240,10 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > | Alto | sección del héroe | sin desplazamiento: `100dvh − --alto-pie`; márgenes seguros `--seguro-arriba/abajo` |
 > | Puntero | `PointerCursor.tsx` | el del juego en el cielo; el del sistema en la Plataforma |
 >
+> **⚠️ Animación de entrada de un solo uso (2026-10-29).** Una clase de entrada (`.aparecer`) se
+> QUITA cuando termina: si después otra clase cambia la `animation` y luego se va, la entrada se
+> reinicia con su retraso y el elemento desaparece. En `RolesMundo` se quita con `onAnimationEnd`.
+>
 > **Principios que salieron de estas iteraciones (aplican a cualquier pantalla de selección):**
 > 1. **Elegir es un CLIC**, nunca pasar el puntero; y en táctil nada debe parecer «ya seleccionado»
 >    (reglas `(hover: none), (pointer: coarse)` sin realce en reposo).
