@@ -244,12 +244,15 @@ const COND_STEPS = ['Reconocer', 'Controlar', 'Predecir', 'Experimentar', 'Conve
 const TOOLS: AccordionItem[] = [
   {
     name: 'Metodología Condiciológica',
-    summary: 'Un método para entender y transformar las condiciones que dan forma a la realidad.',
+    summary: 'Una metodología científica de seis pasos, aplicable a cualquier ámbito de investigación.',
+    // Texto de Fernando (2026-10-29), literal.
     body: () => (
       <>
         <p style={cardDesc}>
-          Es una metodología de seis pasos que nos lleva, de forma ordenada, desde observar una
-          situación hasta transformarla:
+          La <strong style={strong}>Metodología Condiciológica</strong> es una metodología con
+          enfoque científico que fue creada para desarrollar la investigación de la Condiciología a
+          través de <strong style={strong}>seis pasos</strong>, los cuales son aplicables en
+          cualquier ámbito de investigación.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '10px 0' }}>
           {COND_STEPS.map((s, i) => (
@@ -259,25 +262,17 @@ const TOOLS: AccordionItem[] = [
           ))}
         </div>
         <p style={cardDesc}>
-          Detrás está la <strong style={strong}>Condiciología</strong>, una investigación
-          desarrollada por <strong style={strong}>Luis Fernando González Muyulema</strong>{' '}
-          (Guayaquil, Ecuador) dedicada al estudio de las <strong style={strong}>condiciones</strong>:
-          el conjunto de factores que se reúnen para que algo ocurra en un instante de la realidad.
+          Cada paso espera un conjunto de parámetros que están siendo determinados por la{' '}
+          <strong style={strong}>Condiciología</strong>, la cual es una ciencia en desarrollo que se
+          basa en evidenciar el estudio de las <strong style={strong}>condiciones</strong> como un
+          conjunto de factores que conforman la generación de un comportamiento dentro de un
+          instante de la realidad.
         </p>
         <p style={cardDesc}>
-          Pensemos en un gesto tan simple como mover la mano. En ese instante intervienen factores{' '}
-          <em>corporales</em>, <em>ambientales</em> y <em>cognitivos</em> que, combinados, lo hacen
-          posible. Mientras no los estudiamos, es apenas un hecho que pasa desapercibido; cuando
-          comprendemos <em>por qué</em> sucedió, se convierte en una <strong style={strong}>condición</strong>{' '}
-          que podemos reconocer y aprovechar.
-        </p>
-        <p style={cardDesc}>
-          Las condiciones no son exclusivas de las personas: también las tienen los objetos y las
-          ideas. Un proyecto, por ejemplo, vive rodeado de condiciones, y según qué tan bien las
-          aprovechemos tomamos mejores decisiones estratégicas. Por eso la condiciología se aplica
-          a todo lo que hacemos y se integra en la lógica de nuestros sistemas y en las
-          herramientas de desarrollo personal de cada miembro, que registran y evalúan sus
-          condiciones día a día.
+          Para obtener los datos que esperan los parámetros de los pasos de la metodología, se
+          utilizan diferentes fuentes de datos que vienen de herramientas que se ofrecerán solo a
+          candidatos y miembros de la organización para según las condiciones del servicio, acepte,
+          consumir, o no hacer uso de las herramientas que disponemos para ellos.
         </p>
       </>
     ),
