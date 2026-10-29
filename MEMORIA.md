@@ -391,6 +391,10 @@ Stack estándar de la casa, con particularidades de este repo:
      22 s) que calla con fundido mientras hay CUALQUIER formulario o ventana de acceso abierta,
      al irse al juego y con la pestaña oculta; arranca con el primer gesto si el navegador bloquea
      el autoarranque (`formularioAbierto` en `app/page.tsx`). Sustituye al «sin música» del 26.
+     **Clic de selección (2026-10-29):** al pulsar «Entrar a la Aventura» / «Ir a mi Progreso» suena
+     un «confirmar» de videojuego SINTETIZADO con Web Audio (`lib/sitio/sonidoSeleccion.ts`: golpe
+     grave + arpegio do–mi–sol en onda cuadrada filtrada + eco; ~0,45 s; volumen 0,32). Sin
+     archivo ni licencia; se llama dentro del clic (iOS).
   6. **Sin desplazamiento** en ningún tamaño; márgenes seguros del teléfono (`--seguro-arriba/abajo`).
   **Descartado por Fernando** (no repetir; lista completa en `Diseño.md`): elegir al pasar el
   puntero, raya que sigue al puntero, texto partido de color, cristal/placa detrás del titular,

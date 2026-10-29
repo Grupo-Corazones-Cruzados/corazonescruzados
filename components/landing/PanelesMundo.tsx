@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react';
+import { sonarSeleccion } from '@/lib/sitio/sonidoSeleccion';
 import { ArrowRight, BarChart3, CheckCircle2, Compass, FolderKanban, Swords, Users } from 'lucide-react';
 
 type Mundo = 'aventura' | 'progreso';
@@ -49,6 +50,9 @@ export default function PanelesMundo({ onElegir, bloqueado }: { onElegir: (m: Mu
   const [eligiendo, setEligiendo] = useState<Mundo | null>(null);
   const elegir = (m: Mundo) => {
     if (bloqueado || eligiendo) return;
+    // El «clic de selección» de videojuego (Fernando, 2026-10-29). Dentro del clic: iOS solo deja
+    // sonar audio que nace de un gesto.
+    sonarSeleccion();
     setEligiendo(m);
     window.setTimeout(() => { onElegir(m); setEligiendo(null); }, 260);
   };
