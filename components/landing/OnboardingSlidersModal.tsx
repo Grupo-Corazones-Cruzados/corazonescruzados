@@ -52,6 +52,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import { sonarInterruptor } from '@/lib/sitio/sonidoSeleccion';
 import LogoGirando from '@/components/ui/LogoGirando';
 import PixelInput from '@/components/ui/PixelInput';
 import BotonCerrar from '@/components/ui/BotonCerrar';
@@ -76,11 +77,8 @@ type Slide = {
   // Componente (no función llamada en render) para que sus hooks corran al nivel
   // superior del propio slider, no anidados dentro del padre.
   Component: React.FC;
-  // 'terms' = el slider gestiona permisos/accesos/condiciones → aceptación de términos.
-  // 'ack'   = slider solo informativo, sin términos → confirmación "Entendido".
-  consent: 'terms' | 'ack';
-  // Resumen muy breve de lo que se acepta (solo para sliders 'terms').
-  consentSummary?: string;
+  // Todos los pasos se aceptan igual: «Entendido. He leído y comprendido la información de este
+  // apartado.» (Fernando, 2026-10-29). Ya no hay pasos con «Acepto lo indicado…: <resumen>».
 };
 
 /* ------------------------------------------------------------------ */
@@ -1147,7 +1145,6 @@ const SLIDES: Slide[] = [
     title: 'Modelo de Grupo',
     Icon: Layers3,
     Component: SlideModelo,
-    consent: 'ack',
   },
   {
     id: 'herramientas',
@@ -1155,9 +1152,6 @@ const SLIDES: Slide[] = [
     title: 'Herramientas',
     Icon: Wrench,
     Component: SlideHerramientas,
-    consent: 'terms',
-    consentSummary:
-      'el uso continuo de las herramientas del grupo, incluidas las del Sistema de Control Psicosocial. Cada herramienta solicitará su propio permiso, de forma específica, antes de acceder a cualquier dato',
   },
   {
     id: 'motivos',
@@ -1165,7 +1159,6 @@ const SLIDES: Slide[] = [
     title: 'Motivos',
     Icon: Heart,
     Component: SlideMotivos,
-    consent: 'ack',
   },
   {
     id: 'onboarding',
@@ -1173,9 +1166,6 @@ const SLIDES: Slide[] = [
     title: 'Onboarding',
     Icon: Gavel,
     Component: SlideOnboarding,
-    consent: 'terms',
-    consentSummary:
-      'regirte por las 3 reglas del proyecto, cuyo incumplimiento implica la destitución',
   },
   {
     id: 'metodo-crecimiento',
@@ -1183,7 +1173,6 @@ const SLIDES: Slide[] = [
     title: 'Método de crecimiento',
     Icon: TrendingUp,
     Component: SlideMetodoCrecimiento,
-    consent: 'ack',
   },
   {
     id: 'lideracion',
@@ -1191,7 +1180,6 @@ const SLIDES: Slide[] = [
     title: 'Lideración sobre Acciones',
     Icon: RefreshCw,
     Component: SlideLideracion,
-    consent: 'ack',
   },
   {
     id: 'afiliacion',
@@ -1199,9 +1187,6 @@ const SLIDES: Slide[] = [
     title: 'Afiliación',
     Icon: BadgeCheck,
     Component: SlideAfiliacion,
-    consent: 'terms',
-    consentSummary:
-      'las condiciones del proceso de afiliación: acceso como candidato, asistencia a las reuniones semanales y uso de los recursos otorgados conforme a su propósito',
   },
   // Slider 8: pendiente de contenido del usuario.
 ];
@@ -1447,8 +1432,7 @@ export default function OnboardingSlidersModal({
             <footer className="onb-pie">
               {!isForm && (
                 <AcceptTerms
-                  mode={current.consent}
-                  summary={current.consentSummary}
+                  mode="ack"
                   checked={!!acceptedHere}
                   onToggle={toggleAccept}
                 />
@@ -1495,27 +1479,30 @@ export default function OnboardingSlidersModal({
 
 function AcceptTerms({
   mode,
-  summary,
   checked,
   onToggle,
   inline = false,
 }: {
-  mode: 'terms' | 'ack' | 'final' | 'marketing';
-  summary?: string;
+  mode: 'ack' | 'final' | 'marketing';
   checked: boolean;
   onToggle: () => void;
   inline?: boolean;
 }) {
+  // Con sonido (Fernando, 2026-10-29): «clic» que sube al marcar, que baja al desmarcar.
+  const alternar = () => {
+    sonarInterruptor(!checked);
+    onToggle();
+  };
   return (
     <div
-      onClick={onToggle}
+      onClick={alternar}
       role="checkbox"
       aria-checked={checked}
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
-          onToggle();
+          alternar();
         }
       }}
       // El interruptor de aceptación (2026-10-26): una pieza con borde que se enciende al
@@ -1526,12 +1513,7 @@ function AcceptTerms({
         <span>{checked && <Check />}</span>
       </span>
       <span className="text-[12.5px] leading-relaxed text-digi-muted">
-        {mode === 'terms' ? (
-          <>
-            Acepto lo indicado en este apartado:{' '}
-            <strong className="font-semibold text-digi-text">{summary}</strong>.
-          </>
-        ) : mode === 'final' ? (
+        {mode === 'final' ? (
           <>
             Acepto los{' '}
             <a

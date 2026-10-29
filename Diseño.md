@@ -677,6 +677,11 @@ esquinas de cámara no cambian.
   resaltada en recuadro con filete `accent`.
   Fernando reescribió a mano el texto de introducción y quitó las notas «Cuatro roles…», «Del
   piso 1…» y el recuadro final: no reponerlos.
+- **Todos los pasos de la postulación se aceptan IGUAL** (Fernando, 2026-10-29): «Entendido. He
+  leído y comprendido la información de este apartado.». Se retiraron los «Acepto lo indicado en
+  este apartado: <resumen>» de Herramientas, Onboarding y Afiliación (campos `consent`). Solo el
+  último paso conserva sus casillas legales (términos y publicidad). Cada interruptor SUENA
+  (`sonarInterruptor`: sube al marcar, baja al desmarcar).
 - **🚫 NADA de etiquetas con relleno + borde alrededor de un texto (Fernando, 2026-10-29: «ese
   estilo ya he dicho antes que no me gusta y no lo quiero ver en otras partes»).** Un texto se
   marca, como mucho, con COLOR DE TEXTO. Si hay que presentar una secuencia, se diseña (recorrido,

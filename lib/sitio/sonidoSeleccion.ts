@@ -268,3 +268,53 @@ export function sonarPasar() {
     // Sin audio no se rompe nada.
   }
 }
+
+/**
+ * MARCAR «ENTENDIDO» EN LA POSTULACIÓN (Fernando, 2026-10-29: «que al aceptar… tenga un sonidito
+ * también»). El «clic» de un interruptor: un golpecito seco y una nota corta que SUBE (sol5 → re6)
+ * al encender; al apagar, una sola nota que baja, más bajita. Más discreto que elegir una tarjeta.
+ */
+export function sonarInterruptor(encendido: boolean) {
+  try {
+    const ctx = obtenerContexto();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + 0.005;
+    const salida = ctx.createGain();
+    salida.gain.value = VOLUMEN * (encendido ? 0.75 : 0.5);
+    salida.connect(ctx.destination);
+
+    // El golpecito del mecanismo: ruido muy corto filtrado.
+    const largoRuido = 0.025;
+    const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * largoRuido), ctx.sampleRate);
+    const datos = buffer.getChannelData(0);
+    for (let k = 0; k < datos.length; k++) datos[k] = (Math.random() * 2 - 1) * (1 - k / datos.length);
+    const ruido = ctx.createBufferSource();
+    ruido.buffer = buffer;
+    const pasoAlto = ctx.createBiquadFilter();
+    pasoAlto.type = 'highpass';
+    pasoAlto.frequency.value = 2500;
+    const volRuido = ctx.createGain();
+    volRuido.gain.value = 0.35;
+    ruido.connect(pasoAlto).connect(volRuido).connect(salida);
+    ruido.start(t0);
+
+    const notas = encendido ? [783.99, 1174.66] : [987.77, 659.25];
+    notas.forEach((f, i) => {
+      if (!encendido && i === 0) return; // al apagar, solo la nota que baja
+      const inicio = t0 + 0.012 + (encendido ? i * 0.055 : 0);
+      const largo = i === notas.length - 1 ? 0.13 : 0.06;
+      const osc = ctx.createOscillator();
+      const vol = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, inicio);
+      vol.gain.setValueAtTime(0.0001, inicio);
+      vol.gain.exponentialRampToValueAtTime(0.6, inicio + 0.005);
+      vol.gain.exponentialRampToValueAtTime(0.0001, inicio + largo);
+      osc.connect(vol).connect(salida);
+      osc.start(inicio);
+      osc.stop(inicio + largo + 0.02);
+    });
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+}
