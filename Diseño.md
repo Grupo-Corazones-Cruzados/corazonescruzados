@@ -4884,7 +4884,11 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
   Texto corrido en **DotGothic16** (matriz de puntos, legible a 13 px; `--font-body/-display/-sans`).
   ⚠️ DESCARTADA Pixelify Sans: a 13 px «C»≈«O», «5»≈«S» (*$15,00* se leía *$18,00*) y su ligadura «fi»
   parece una «A». Antes de adoptar una letra decorativa, mirar importes, teléfonos y «fi» a 2×.
-- **`--texto-acento`**: los temas oscuros de paneles neutros (Corazón, Eléctrico, Videojuego) pintan
+- **Negro** (base oscura): fondo `#000` (OLED), paneles `#171717` separados por su borde `#2e2e2e`, sin
+  sombra ni color de marca; acento gris `#737373` (blanco 4,7:1), lo elegido y el texto de acento en
+  blanco; el botón PRINCIPAL blanco con texto negro (en grafito se confundía con los secundarios).
+  Raíl negro con acento blanco.
+- **`--texto-acento`**: los temas oscuros de paneles neutros (Corazón, Eléctrico, Videojuego, Negro) pintan
   `text-accent` con este tono más claro; el de relleno no llega a 4,5:1 sobre el grafito.
 - **Paneles en los temas oscuros** (Fernando, 2026-10-29: *«los paneles deben tener color para contrastar»*):
   la tarjeta NO es el color del fondo: grafito neutro (Corazón `#26262b`, 1,3:1) o grafito violáceo

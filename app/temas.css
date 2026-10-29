@@ -13,6 +13,7 @@
      · NAVIDAD   — nieve, pino y rojo de Navidad, con el menú en verde abeto. Base clara.
      · VIDEOJUEGO— máquina recreativa: pantalla de tubo, letra pixel de la casa, esquinas
                    rectas, sombras de bloque, verde neón y botones magenta. Base oscura.
+     · NEGRO     — negro puro y blanco, sin color de marca. Base oscura.
 
    ⚠️ Un tema SOLO redefine tokens (`--color-*`, `--tarjeta-*`, `--degradado-*`, el fondo) y
    el raíl. Las piezas (tarjetas, botones, cifras) ya los leen; un tema que necesite reglas
@@ -137,7 +138,7 @@
 }
 /* El acento como TEXTO sobre el grafito: el tono de relleno no llega a 4,5:1, así que los
    temas oscuros con paneles neutros declaran `--texto-acento`, más claro. */
-.corp.tema-progreso:is(.tema-corazon, .tema-electrico, .tema-videojuego).dark .text-accent:not(.rail .text-accent) { color: var(--texto-acento); }
+.corp.tema-progreso:is(.tema-corazon, .tema-electrico, .tema-videojuego, .tema-negro).dark .text-accent:not(.rail .text-accent) { color: var(--texto-acento); }
 .corp.tema-progreso.tema-corazon .rail {
   --color-digi-card: #1b080d;
   --color-digi-darker: #150609;
@@ -344,4 +345,52 @@
   --color-accent: #4ade80;
   --color-accent-light: #173d27;
   --color-accent-glow: #4ade80;
+}
+
+/* ── NEGRO — negro puro y blanco ───────────────────────────────────────────────────────
+   Fernando, 2026-10-29: «un tema negro». Fondo #000 (en pantallas OLED, píxeles apagados),
+   paneles #171717 separados por su BORDE (#2e2e2e) más que por el tono, y ningún color de
+   marca: lo elegido y el acento como texto en blanco, y el botón PRINCIPAL blanco con texto
+   negro (en grafito se confundía con los secundarios). Los colores de estado (verde, rojo,
+   ámbar) se quedan: dicen algo. */
+.corp.tema-progreso.tema-negro.dark {
+  --color-digi-dark: #000000;
+  --color-digi-darker: #0a0a0a;
+  --color-digi-card: #171717;
+  --color-digi-border: #2e2e2e;
+  --color-digi-text: #fafafa;
+  --color-digi-muted: #a3a3a3;
+  --color-accent: #737373;
+  --color-accent-hover: #8a8a8a;
+  --color-accent-light: #262626;
+  --color-accent-dark: #3a3a3a;
+  --color-accent-glow: #fafafa;
+  --texto-acento: #fafafa;
+  --tarjeta-fondo: #171717;
+  --cabecera-tabla: #171717;
+  --tarjeta-borde: #2e2e2e;
+  --tarjeta-sombra: none;
+  --etiqueta: #a3a3a3;
+  --fila-hover: rgba(255, 255, 255, 0.05);
+  --sombra-boton: rgba(0, 0, 0, 0);
+  --degradado-boton: linear-gradient(180deg, #ffffff, #e5e5e5);
+  --degradado-icono: linear-gradient(135deg, #404040, #262626);
+  --degradado-acento: linear-gradient(90deg, #ffffff, #a3a3a3);
+
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1.6px) 0 0 / 34px 34px,
+    #000000;
+  background-attachment: fixed;
+}
+.corp.tema-progreso.tema-negro.dark :is(.btn-primario, .pixel-btn-primary, button.bg-accent.text-white.rounded:not(.border), a.bg-accent.text-white.rounded:not(.border)) { color: #0a0a0a; }
+.corp.tema-progreso.tema-negro.dark [data-app-footer] { background-color: rgba(0, 0, 0, 0.85); }
+.corp.tema-progreso.tema-negro .rail {
+  --color-digi-card: #000000;
+  --color-digi-darker: #000000;
+  --color-digi-border: #262626;
+  --color-digi-text: #fafafa;
+  --color-digi-muted: #a3a3a3;
+  --color-accent: #fafafa;
+  --color-accent-light: #262626;
+  --color-accent-glow: #fafafa;
 }

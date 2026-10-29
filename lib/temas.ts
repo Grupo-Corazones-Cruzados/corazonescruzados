@@ -9,7 +9,7 @@
  * `muestra` son los colores de la miniatura del selector (fondo, tarjeta, acento): un dato
  * para pintar el botón, no estilos del tema.
  */
-export type TemaId = 'claro' | 'oscuro' | 'mixto' | 'corazon' | 'orquidea' | 'electrico' | 'navidad' | 'videojuego';
+export type TemaId = 'claro' | 'oscuro' | 'mixto' | 'corazon' | 'orquidea' | 'electrico' | 'navidad' | 'videojuego' | 'negro';
 
 export interface DefinicionTema {
   id: TemaId;
@@ -33,6 +33,8 @@ export const TEMAS: DefinicionTema[] = [
   { id: 'navidad', nombre: 'Navidad', base: 'claro', muestra: { fondo: '#eef3ef', tarjeta: '#ffffff', acento: '#c1121f', ventana: '#0f2a1d' } },
   // Máquina recreativa: letra pixel, esquinas rectas, verde neón y magenta.
   { id: 'videojuego', nombre: 'Videojuego', base: 'oscuro', muestra: { fondo: '#07061a', tarjeta: '#1f1e31', acento: '#4ade80' } },
+  // Negro puro y blanco, sin color de marca.
+  { id: 'negro', nombre: 'Negro', base: 'oscuro', muestra: { fondo: '#000000', tarjeta: '#171717', acento: '#fafafa' } },
 ];
 
 export const TEMA_POR_DEFECTO: TemaId = 'claro';
