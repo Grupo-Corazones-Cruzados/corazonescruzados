@@ -6,6 +6,7 @@ import {
   ensureIncidentTables, loadOwnerForIncidents, canManageIncidents, loadCategories, setIncidentsToken,
   COLUMNA_DUENO, INCIDENT_SEVERITIES, INCIDENT_STATUSES, type IncidentOwnerType, type IncidentOwner,
 } from '@/lib/incidents/schema';
+import { esSuPlataforma } from '@/lib/productos/plataformas';
 import { decodificarDataUri, fileIdDe, guardar, nombresDe, quitar } from '@/lib/media';
 
 /**
@@ -16,7 +17,9 @@ import { decodificarDataUri, fileIdDe, guardar, nombresDe, quitar } from '@/lib/
  */
 
 type Ctx = { params: Promise<{ id: string; incidentId?: string }> };
-const NO_ENCONTRADO: Record<IncidentOwnerType, string> = { project: 'Proyecto no encontrado', ticket: 'Ticket no encontrado' };
+const NO_ENCONTRADO: Record<IncidentOwnerType, string> = {
+  project: 'Proyecto no encontrado', ticket: 'Ticket no encontrado', plataforma: 'Plataforma no encontrada',
+};
 
 /** Sesión + dueño; con `gestionar`, además el permiso de gestión. Devuelve la respuesta de error si falla. */
 async function acceso(tipo: IncidentOwnerType, ctx: Ctx, gestionar: boolean) {
@@ -25,6 +28,10 @@ async function acceso(tipo: IncidentOwnerType, ctx: Ctx, gestionar: boolean) {
   const { id, incidentId } = await ctx.params;
   const owner = await loadOwnerForIncidents(tipo, id);
   if (!owner) return { error: NextResponse.json({ error: NO_ENCONTRADO[tipo] }, { status: 404 }) };
+  // Los incidentes de una plataforma solo los ve su cliente (o el admin): tener sesión no basta.
+  if (tipo === 'plataforma' && user.role !== 'admin' && !(await esSuPlataforma(owner, user.email))) {
+    return { error: NextResponse.json({ error: NO_ENCONTRADO[tipo] }, { status: 404 }) };
+  }
   const canManage = await canManageIncidents(user, owner);
   if (gestionar && !canManage) return { error: NextResponse.json({ error: 'No autorizado' }, { status: 403 }) };
   return { user, owner, canManage, incidentId: incidentId || '' };

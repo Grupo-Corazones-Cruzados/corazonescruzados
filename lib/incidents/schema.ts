@@ -76,7 +76,7 @@ export const STATUS_LABELS: Record<string, string> = {
  * Los dos comparten tablas —la fila lleva `project_id` O `ticket_id`—, rutas, componente y
  * portal público. `columna` es la que filtra en SQL; nunca sale de la entrada del usuario.
  */
-export type IncidentOwnerType = 'project' | 'ticket';
+export type IncidentOwnerType = 'project' | 'ticket' | 'plataforma';
 export type IncidentOwner = {
   tipo: IncidentOwnerType;
   id: number;
@@ -84,14 +84,32 @@ export type IncidentOwner = {
   client_id: number | null;
   assigned_member_id: number | null;
   incidents_token: string | null;
+  /** Solo de una plataforma: el producto y el inquilino, para comprobar que es del usuario. */
+  producto?: string;
+  slug?: string;
 };
 
-export const COLUMNA_DUENO: Record<IncidentOwnerType, 'project_id' | 'ticket_id'> = { project: 'project_id', ticket: 'ticket_id' };
-const TABLA_DUENO: Record<IncidentOwnerType, 'projects' | 'tickets'> = { project: 'projects', ticket: 'tickets' };
+export const COLUMNA_DUENO: Record<IncidentOwnerType, 'project_id' | 'ticket_id' | 'plataforma_id'> = {
+  project: 'project_id', ticket: 'ticket_id', plataforma: 'plataforma_id',
+};
+const TABLA_DUENO: Record<IncidentOwnerType, 'projects' | 'tickets' | 'plataformas'> = {
+  project: 'projects', ticket: 'tickets', plataforma: 'plataformas',
+};
 
 /** Carga el proyecto o el ticket con lo necesario para gestionar sus incidentes. */
 export async function loadOwnerForIncidents(tipo: IncidentOwnerType, id: string): Promise<IncidentOwner | null> {
   await ensureIncidentTables();
+  // Una plataforma (migración 075) es la organización de un cliente en un producto: no tiene
+  // cliente ni miembro asignado, así que solo el admin gestiona sus incidentes.
+  if (tipo === 'plataforma') {
+    const { rows: [r] } = await pool.query(
+      `SELECT id, nombre, producto, slug, incidents_token FROM gcc_world.plataformas WHERE id = $1`, [Number(id) || 0]);
+    if (!r) return null;
+    return {
+      tipo, id: Number(r.id), title: r.nombre, client_id: null, assigned_member_id: null,
+      incidents_token: r.incidents_token ?? null, producto: r.producto, slug: r.slug,
+    };
+  }
   const miembro = tipo === 'project' ? 'assigned_member_id' : 'member_id';
   const { rows } = await pool.query(
     `SELECT id, title, client_id, ${miembro} AS assigned_member_id, incidents_token
@@ -119,7 +137,7 @@ export async function setIncidentsToken(owner: IncidentOwner, token: string | nu
 export async function ownerByIncidentsToken(token: string): Promise<IncidentOwner | null> {
   if (!token || token.length < 16) return null;
   await ensureIncidentTables();
-  for (const tipo of ['project', 'ticket'] as const) {
+  for (const tipo of ['project', 'ticket', 'plataforma'] as const) {
     const { rows } = await pool.query(`SELECT id FROM gcc_world.${TABLA_DUENO[tipo]} WHERE incidents_token = $1 LIMIT 1`, [token]);
     if (rows[0]) return loadOwnerForIncidents(tipo, String(rows[0].id));
   }
