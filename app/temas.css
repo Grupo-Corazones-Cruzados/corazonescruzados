@@ -289,6 +289,13 @@
    texto de acento (9,8:1), botones magenta (blanco encima ≥ 4,7:1). */
 .corp.tema-progreso.tema-videojuego.dark {
   --font-titulo: 'Silkscreen', 'Space Grotesk', system-ui, sans-serif;
+  /* Texto corrido retro (Fernando, 2026-10-29: «que se sienta más al estilo retro»): DotGothic16,
+     letra de matriz de puntos que se LEE a 13 px (tildes, eñe; C, 5, B y 0 inconfundibles).
+     ⚠️ DESCARTADA Pixelify Sans: a 13 px su «C» parece «O» y su «5» una «S» —«$15,00» se leía
+     «$18,00»— y su ligadura «fi» parece una «A». Silkscreen solo vale para títulos. */
+  --font-body: 'DotGothic16', 'Inter', system-ui, sans-serif;
+  --font-display: 'DotGothic16', 'Inter', system-ui, sans-serif;
+  --font-sans: 'DotGothic16', 'Inter', system-ui, sans-serif;
   --radio-tarjeta: 4px;
   --radio-control: 2px;
   --color-digi-dark: #07061a;

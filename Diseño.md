@@ -4876,6 +4876,9 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
   (el título de página a 18/16 px: a 1,5 rem un título largo ocupaba 6 líneas en el teléfono);
   `--radio-tarjeta 4px`, `--radio-control 2px`, sombra de bloque `4px 4px 0`; paneles `#1f1e31`; lo
   elegido en verde (`#15803d`, texto `#4ade80`), botones magenta `#c026d3 → #7e22ce`.
+  Texto corrido en **DotGothic16** (matriz de puntos, legible a 13 px; `--font-body/-display/-sans`).
+  ⚠️ DESCARTADA Pixelify Sans: a 13 px «C»≈«O», «5»≈«S» (*$15,00* se leía *$18,00*) y su ligadura «fi»
+  parece una «A». Antes de adoptar una letra decorativa, mirar importes, teléfonos y «fi» a 2×.
 - **`--texto-acento`**: los temas oscuros de paneles neutros (Corazón, Eléctrico, Videojuego) pintan
   `text-accent` con este tono más claro; el de relleno no llega a 4,5:1 sobre el grafito.
 - **Paneles en los temas oscuros** (Fernando, 2026-10-29: *«los paneles deben tener color para contrastar»*):
