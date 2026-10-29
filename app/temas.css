@@ -76,22 +76,40 @@
   color: #f1707b; background-color: rgba(241,112,123,0.18); border-color: rgba(241,112,123,0.35);
 }
 
+/* ── PANELES QUE SE DESPEGAN DEL FONDO (Fernando, 2026-10-29) ──────────────────────
+   «los paneles deben tener color para contrastar […] no sean 100 % el color principal del
+   contenedor». En los temas oscuros la tarjeta es un gris cálido o grafito, más claro y menos
+   teñido que el fondo (≈1,25:1 contra él, antes 1,07:1), casi opaca, y los campos son un pozo
+   más oscuro que la tarjeta. El tinte del tema queda en el fondo, el raíl y el acento. */
+
+/* ── OSCURO — los paneles en grafito ───────────────────────────────────────────────── */
+.corp.tema-progreso.tema-oscuro.dark {
+  --color-digi-darker: #12101b;
+  --color-digi-card: #22202f;
+  --color-digi-border: #353246;
+  --color-accent-light: #332b5c;
+  --tarjeta-fondo: rgba(34, 32, 47, 0.97);
+  --cabecera-tabla: #22202f;
+  --tarjeta-borde: rgba(220, 210, 255, 0.10);
+  --fila-hover: rgba(220, 210, 255, 0.05);
+}
+
 /* ── CORAZÓN — rojo sangre sobre noche granate ─────────────────────────────────────── */
 .corp.tema-progreso.tema-corazon.dark {
   --color-digi-dark: #12060a;
-  --color-digi-darker: #170810;
-  --color-digi-card: #210c12;
-  --color-digi-border: #3d1820;
+  --color-digi-darker: #170c10;
+  --color-digi-card: #2e1c21;
+  --color-digi-border: #46292f;
   --color-digi-text: #fbeff1;
   --color-digi-muted: #c9a0a9;
   --color-accent: #e11d48;
   --color-accent-hover: #f43f5e;
-  --color-accent-light: #3f111b;
+  --color-accent-light: #4d1a26;
   --color-accent-dark: #a50d25;
   --color-accent-glow: #ff7a8e;
-  --tarjeta-fondo: rgba(33, 12, 18, 0.84);
-  --cabecera-tabla: #1d0a10;
-  --tarjeta-borde: rgba(251, 113, 133, 0.18);
+  --tarjeta-fondo: rgba(46, 28, 33, 0.97);
+  --cabecera-tabla: #2e1c21;
+  --tarjeta-borde: rgba(255, 196, 204, 0.11);
   --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.85), 0 0 30px -18px rgba(200, 16, 46, 0.5);
   --etiqueta: #d3a9b2;
   --fila-hover: rgba(251, 113, 133, 0.07);

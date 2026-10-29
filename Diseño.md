@@ -4833,6 +4833,10 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
   acento `#e11d48`, texto de acento `#ff7a8e`; botón `#e11d48 → #9f1239`. Raíl `#1b080d`.
 - **Orquídea** (base clara): rosa casi blanco `#fffafd → #f6e1ee` con puntos magenta; acento `#C71585`
   (blanco encima 5,4:1), `accent-light #fce7f3`; botón `#db2799 → #a5106d`. Raíl ciruela `#2a0d20`.
+- **Paneles en los temas oscuros** (Fernando, 2026-10-29: *«los paneles deben tener color para contrastar»*):
+  la tarjeta NO es el color del fondo: gris cálido (Corazón `#2e1c21`) o grafito (Oscuro `#22202f`),
+  casi opaca, ≈1,22:1 contra el fondo (antes 1,07:1), y los campos un pozo más oscuro (`#170c10` /
+  `#12101b`). El tinte del tema vive en el fondo, el raíl y el acento.
 - **Mixto** (base clara): fondo y tarjetas del Claro; lo que FLOTA toma los tokens de Aventura y las
   correcciones de color del oscuro. «Lo que flota» = `.modal-surface` (ventanitas y panel derecho) y la
   clase **`superficie-flotante`**, que llevan `Burbuja`, `MenuMas`, `FloatingWindow`, el panel de
