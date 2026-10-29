@@ -14,7 +14,7 @@ export default function DiasElegidos({ dias, onQuitar }: { dias: string[]; onQui
   if (dias.length === 0) return null;
   return (
     <div className="border-t border-digi-border pt-2.5">
-      <p className="text-[12px] font-medium text-digi-text mb-2" style={mf}>{dias.length} día(s) seleccionados</p>
+      <p className="text-[12px] font-medium text-digi-text mb-2" style={mf}>{dias.length} {dias.length === 1 ? 'día seleccionado' : 'días seleccionados'}</p>
       {/* ⭐ CON CONTRASTE EN LOS DOS TEMAS (Fernando, 2026-10-23). Eran `bg-accent-light` +
           `text-accent`: en el tema oscuro, morado oscuro sobre morado oscuro, no se leían.
           Ahora son el morado RELLENO de los días marcados del calendario de encima, con texto

@@ -5774,3 +5774,20 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   - **Cifras en es-ES** que se habían escapado: «14.00h» y «$0.00» en ticket y proyecto, y la ficha
     pública del ticket.
   - Buscadores con un texto de ejemplo que no cabía a 390 px (Clientes, Accesos), acortados.
+- **2026-10-29 · Tickets en el teléfono: formularios y navegación** · **NUEVO ESTÁNDAR** (Fernando: *«hay que
+  trabajar mucho en el detalle del ticket y la página para gestionar tickets en la versión móvil… tanto
+  formularios y navegación se ve mal»*).
+  - **Pie fijo de acciones en TODO formulario**: `PixelModal` acepta `pie` (Cancelar/Guardar…), pintado
+    fuera de lo que se desplaza; en el teléfono los botones se reparten el ancho. `EditPanel`/
+    `QuickEditDialog` lo usan, así que llega a todos sus formularios. Un formulario nuevo pone sus
+    acciones en `pie`, nunca al final del cuerpo.
+  - **El panel lateral mide `100dvh`**: con `100vh`, en iPhone el final (los botones) quedaba bajo la
+    barra de Safari.
+  - **Nada de un segundo `max-h` + `overflow` dentro de un panel**: Completar y facturar lo tenía y
+    cortaba el borde derecho y el final. Se desplaza el cuerpo del panel, y nada más.
+  - Segmentados de un formulario a todo el ancho en el teléfono; un título de sección con su selector
+    al lado se apila.
+  - **Lista → detalle sin paso intermedio**: en el teléfono tocar un ticket abre su página; el resumen
+    intermedio (tocar → resumen → «Ver detalle») queda solo en escritorio.
+  - **En el detalle, lo que elige va antes que lo elegido**: Días de trabajo sube sobre el Registro en el
+    teléfono. «Editar» de una tarjeta es el lápiz (`BotonEditar`), no un botón de texto.

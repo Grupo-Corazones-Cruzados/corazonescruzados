@@ -49,24 +49,23 @@ function EditSurface({
   };
 
   return (
-    <PixelModal open={open} onClose={onClose} title={title} size={size} busy={saving}>
-      <div className="flex flex-col gap-3" onKeyDown={onKeyDown}>
-        <div className="space-y-3">{children}</div>
-        <div className="flex items-center gap-2 pt-3 border-t border-digi-border">
+    <PixelModal open={open} onClose={onClose} title={title} size={size} busy={saving}
+      /* Las acciones van en el pie fijo de la ventana: «Guardar» siempre a la vista. */
+      pie={(
+        <>
           {danger && (
             <button type="button" onClick={danger.onClick} disabled={saving}
-              className="text-[12px] font-medium text-red-600 hover:underline disabled:opacity-50">
+              className="mr-auto !flex-none text-[12px] font-medium text-red-600 hover:underline disabled:opacity-50">
               {danger.label}
             </button>
           )}
-          <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={onClose} disabled={saving} className={BTN_SECONDARY}>Cancelar</button>
-            <button type="button" onClick={onSave} disabled={saving || !canSave} className={BTN_PRIMARY}>
-              {saving ? 'Guardando…' : saveLabel}
-            </button>
-          </div>
-        </div>
-      </div>
+          <button type="button" onClick={onClose} disabled={saving} className={BTN_SECONDARY}>Cancelar</button>
+          <button type="button" onClick={onSave} disabled={saving || !canSave} className={BTN_PRIMARY}>
+            {saving ? 'Guardando…' : saveLabel}
+          </button>
+        </>
+      )}>
+      <div className="space-y-3" onKeyDown={onKeyDown}>{children}</div>
     </PixelModal>
   );
 }

@@ -12,6 +12,13 @@ interface PixelModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Cuando está ocupado (p. ej. guardando), bloquea el cierre por overlay/Escape/X. */
   busy?: boolean;
+  /**
+   * Las acciones del formulario (Cancelar / Guardar…). Van FUERA de lo que se desplaza, pegadas
+   * abajo: así «Guardar» se ve siempre sin bajar al final (Fernando, 2026-10-29: en el teléfono
+   * había que recorrer todo el formulario para encontrarlo). En el teléfono los botones se
+   * reparten el ancho.
+   */
+  pie?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -47,7 +54,7 @@ function sePinta(el: HTMLDialogElement): boolean {
   return padre.getClientRects().length > 0;
 }
 
-export default function PixelModal({ open, onClose, title, size = 'md', busy = false, children }: PixelModalProps) {
+export default function PixelModal({ open, onClose, title, size = 'md', busy = false, pie, children }: PixelModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   // Dónde empezó la pulsación. Arrastrar desde dentro del formulario (al seleccionar texto)
@@ -63,8 +70,8 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
    * contenido —el padre ya pudo poner su estado a `null`— y no recibe clics.
    */
   const [saliendo, setSaliendo] = useState(false);
-  const ultimo = useRef({ title, children });
-  if (open) ultimo.current = { title, children };
+  const ultimo = useRef({ title, children, pie });
+  if (open) ultimo.current = { title, children, pie };
 
   useEffect(() => {
     const el = dialogRef.current;
@@ -119,6 +126,12 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
           <div className="modal-body max-h-[70vh] overflow-y-auto">
             {ultimo.current.children}
           </div>
+
+          {ultimo.current.pie && (
+            <div className="modal-pie shrink-0 flex flex-wrap items-center justify-end gap-2 border-t border-digi-border max-sm:[&>button]:flex-1">
+              {ultimo.current.pie}
+            </div>
+          )}
         </div>
       </div>
     </dialog>

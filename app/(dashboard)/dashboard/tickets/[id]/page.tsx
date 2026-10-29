@@ -31,6 +31,7 @@ import AssigneePicker from '@/components/tickets/AssigneePicker';
 import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
 import { fmt2, fmtNum } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import BotonEditar from '@/components/ui/BotonEditar';
 import PanelEtapas from '@/components/facturacion/PanelEtapas';
 import PestanasRail from '@/components/ui/PestanasRail';
 import ActionsMenu from '@/components/centralized/ActionsMenu';
@@ -944,9 +945,10 @@ export default function TicketDetailPage() {
               siempre. En tableta (`md`–`xl`) tres columnas dejaban al registro en ~280 px, así
               que las dos se apilan en UNA columna lateral que se desplaza entera y el registro
               se queda con el resto del ancho. En el teléfono van debajo del registro. */}
-          <div className="min-w-0 flex flex-col gap-4 md:col-start-1 md:row-start-1 lg:min-h-0 lg:overflow-y-auto xl:contents">
+          <div className="min-w-0 flex flex-col gap-4 max-md:contents md:col-start-1 md:row-start-1 lg:min-h-0 lg:overflow-y-auto xl:contents">
           {/* ── Días de trabajo: a la izquierda (arriba, en la columna lateral de tableta) ── */}
-          <aside className="min-w-0 xl:col-start-1 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
+          {/* En el teléfono va PRIMERO: el día que se elige aquí decide qué registro se ve. */}
+          <aside className="min-w-0 max-md:order-first xl:col-start-1 xl:row-start-1 xl:min-h-0 xl:overflow-y-auto">
             <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-[13px] font-semibold text-digi-text inline-flex items-center gap-1.5" style={mf}>
@@ -954,7 +956,7 @@ export default function TicketDetailPage() {
                   {timeSlots.length > 0 && <span className="text-digi-muted font-normal">({timeSlots.length})</span>}
                 </h3>
                 {canEdit && !isClosed && (
-                  <button onClick={startEditSlots} className="shrink-0 h-11 sm:h-auto px-3 sm:px-2 sm:py-1 inline-flex items-center text-[11px] text-accent border border-digi-border rounded hover:bg-accent/5 transition-colors" style={pf}>Editar</button>
+                  <BotonEditar onClick={startEditSlots} etiqueta="Editar días de trabajo" />
                 )}
               </div>
               {timeSlots.length > 0 ? (
@@ -1161,7 +1163,15 @@ export default function TicketDetailPage() {
       />
 
       {/* ========== Modal de edición del ticket (overlay centrado) ========== */}
-      <PixelModal open={editing} onClose={() => setEditing(false)} title="Editar ticket" size="lg">
+      <PixelModal open={editing} onClose={() => setEditing(false)} title="Editar ticket" size="lg"
+        pie={(
+          <>
+            <button onClick={() => setEditing(false)} className={BTN_SECONDARY}>Cancelar</button>
+            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={BTN_PRIMARY}>
+              {saving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </>
+        )}>
         <div className="space-y-4">
           <PixelInput label="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <div className="flex flex-col gap-1">
@@ -1184,16 +1194,40 @@ export default function TicketDetailPage() {
             <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} />
             <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-digi-border">
-            <button onClick={() => setEditing(false)} className={BTN_SECONDARY}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={BTN_PRIMARY}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
-          </div>
         </div>
       </PixelModal>
 
-      <PixelModal open={completeModal} onClose={() => !completing && setCompleteModal(false)} title="Completar Ticket y Generar Factura" size="lg">
+      <PixelModal open={completeModal} onClose={() => !completing && setCompleteModal(false)} title="Completar y facturar" size="lg" busy={completing}
+        pie={completing ? undefined : (() => {
+          const invoiceTotal = abonoMode ? Number(abonoAmount) || 0 : totalFactura(completeItems);
+          const cfExcede = completeAdquirente === 'consumidor_final' && invoiceTotal > TOPE_CONSUMIDOR_FINAL;
+          const faltaCuenta = completeAdquirente === 'cliente' && !completeCuentaId;
+          const isFormValid = (abonoMode ? invoiceTotal > 0 : completeItems.length > 0) && !cfExcede && !faltaCuenta;
+          /* En el teléfono: el aviso y «Enviar por correo» a todo el ancho; debajo las dos
+             secundarias repartidas y la principal entera. En escritorio, una fila. */
+          return (
+            <div className="w-full flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              {cfExcede && (
+                <div className="w-full px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
+                  El SRI no admite facturar a consumidor final por más de ${TOPE_CONSUMIDOR_FINAL},00. El total es ${fmt2(invoiceTotal)}: elige un cliente.
+                </div>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer sm:mr-auto min-h-9">
+                <input type="checkbox" checked={completeSendEmail} onChange={e => setCompleteSendEmail(e.target.checked)} className="accent-[#4B2D8E] w-4 h-4" />
+                <span className="text-[12.5px] text-digi-muted" style={mf}>Enviar por correo</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <button onClick={() => setCompleteModal(false)} className={BTN_SECONDARY}>Cancelar</button>
+                <button onClick={() => handleComplete(true)} className={BTN_SECONDARY}>Sin facturar</button>
+                <span title={faltaCuenta ? 'Elige el cliente al que se factura' : undefined} className="col-span-2 inline-flex">
+                  <button onClick={() => handleComplete(false)} disabled={!isFormValid} className={`${BTN_PRIMARY} w-full`}>
+                    <Receipt className="w-4 h-4" /> {abonoMode ? 'Facturar abono' : 'Completar y facturar'}
+                  </button>
+                </span>
+              </div>
+            </div>
+          );
+        })()}>
         {completing ? (
           <div className="py-8 space-y-6">
             <div className="space-y-3">
@@ -1202,7 +1236,7 @@ export default function TicketDetailPage() {
               </div>
               <p className="text-center text-[13px] text-digi-text" style={mf}>{completeStep}</p>
             </div>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               {[
                 { label: 'Cliente', done: completeStep !== 'Guardando datos del cliente...' && completeStep !== 'Completando ticket...' },
                 { label: 'Factura', done: completeStep.includes('autorizada') || completeStep.includes('Proceso completado') },
@@ -1221,7 +1255,9 @@ export default function TicketDetailPage() {
             <p className="text-center text-[12px] text-digi-muted" style={mf}>No cierres esta ventana hasta que el proceso termine</p>
           </div>
         ) : (
-        <div className="max-h-[80vh] overflow-y-auto pr-1">
+        <div>
+          {/* Sin desplazamiento propio: ya se desplaza el cuerpo del panel. Con un segundo
+              `max-h` + `overflow` dentro, en el teléfono se cortaba el borde derecho y el final. */}
           {/* Fase 3: Tipo de cobro — factura total o abono parcial */}
           {/* ⇒ MISMA ESTRUCTURA QUE EL FORMULARIO DEL PROYECTO (Fernando, 2026-09-29): arriba lo
               que se elige, a todo el ancho; debajo el detalle en tabla. Lo propio del ticket
@@ -1231,9 +1267,10 @@ export default function TicketDetailPage() {
             return (
               <section className="space-y-2 mb-4">
                 <h4 className="text-[12px] font-semibold text-digi-text border-b border-digi-border pb-1.5" style={pf}>Tipo de cobro</h4>
-                <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
                   <Segmentado<'total' | 'abono'>
                     etiqueta="Tipo de cobro"
+                    className="w-full sm:w-auto sm:max-w-sm"
                     valor={abonoMode ? 'abono' : 'total'}
                     onChange={(v) => { if (v === 'abono') { setAbonoMode(true); if (!abonoAmount) setAbonoAmount(String(payments.pending)); } else setAbonoMode(false); }}
                     opciones={[
@@ -1248,7 +1285,7 @@ export default function TicketDetailPage() {
                     ]}
                   />
                   {abonoMode && (
-                    <div className="w-40">
+                    <div className="w-full sm:w-40">
                       <EditField label="Monto del abono ($)">
                         <input value={abonoAmount} onChange={e => setAbonoAmount(e.target.value)} type="number" placeholder="0.00"
                           className={`${EDIT_INPUT} tabular-nums`} style={mf} />
@@ -1331,11 +1368,11 @@ export default function TicketDetailPage() {
           {/* Detalle: con abono es una sola línea «Abono a cuenta», que se arma al enviar. */}
           {!abonoMode && (
             <section className="space-y-2 mt-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-digi-border pb-1.5">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2 border-b border-digi-border pb-1.5">
                 <h4 className="text-[12px] font-semibold text-digi-text" style={pf}>Detalle</h4>
                 <Segmentado<'title' | 'breakdown'>
                   etiqueta="Origen de los ítems"
-                  className=""
+                  className="w-full sm:w-auto"
                   valor={itemsMode}
                   onChange={applyItemsMode}
                   opciones={[
@@ -1349,39 +1386,6 @@ export default function TicketDetailPage() {
             </section>
           )}
 
-          {/* ─── Pie ─── */}
-          {(() => {
-            const invoiceTotal = abonoMode ? Number(abonoAmount) || 0 : totalFactura(completeItems);
-            const cfExcede = completeAdquirente === 'consumidor_final' && invoiceTotal > TOPE_CONSUMIDOR_FINAL;
-            const faltaCuenta = completeAdquirente === 'cliente' && !completeCuentaId;
-            const isFormValid = !completing && (abonoMode ? invoiceTotal > 0 : completeItems.length > 0) && !cfExcede && !faltaCuenta;
-            return (
-              <div className="pt-3 mt-4 border-t border-digi-border space-y-2">
-                {cfExcede && (
-                  <div className="px-3 py-2 border border-red-300 rounded bg-red-50 text-[12px] text-red-600" style={mf}>
-                    El SRI no admite facturar a consumidor final por más de ${TOPE_CONSUMIDOR_FINAL}.00. El total es ${fmt2(invoiceTotal)}: elige un cliente.
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={completeSendEmail} onChange={e => setCompleteSendEmail(e.target.checked)} className="accent-[#4B2D8E]" />
-                    <span className="text-[12px] text-digi-muted" style={mf}>Enviar por correo</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setCompleteModal(false)} className={BTN_SECONDARY}>Cancelar</button>
-                    <button onClick={() => handleComplete(true)} disabled={completing} className={BTN_SECONDARY}>
-                      Completar sin facturar
-                    </button>
-                    <span title={faltaCuenta ? 'Elige el cliente al que se factura' : undefined} className="inline-flex">
-                      <button onClick={() => handleComplete(false)} disabled={!isFormValid} className={BTN_PRIMARY}>
-                        <Receipt className="w-4 h-4" /> {abonoMode ? 'Facturar abono' : 'Completar y facturar'}
-                      </button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
         )}
       </PixelModal>
@@ -1415,7 +1419,7 @@ export default function TicketDetailPage() {
         onSave={isRequestForMe ? handleAcceptWithSlots : handleSaveSlots}
         saving={savingSlots}
         canSave={selectedDates.length > 0}
-        saveLabel={isRequestForMe ? `Aceptar (${selectedDates.length} días)` : `Guardar (${selectedDates.length} días)`}
+        saveLabel={`${isRequestForMe ? 'Aceptar' : 'Guardar'} (${selectedDates.length} ${selectedDates.length === 1 ? 'día' : 'días'})`}
       >
         {renderSlotEditor()}
       </EditPanel>

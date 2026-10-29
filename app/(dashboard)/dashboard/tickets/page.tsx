@@ -454,7 +454,9 @@ export default function TicketsPage() {
               ) },
             ]}
             data={tickets}
-            onRowClick={(t: any) => selectTicket(t)}
+            /* En el teléfono la fila abre el ticket directamente: el resumen intermedio era un
+               paso de más (tocar → resumen → «Ver detalle»). El resumen queda en escritorio. */
+            onRowClick={(t: any) => (enTelefono ? router.push(`/dashboard/tickets/${t.id}`) : selectTicket(t))}
             emptyTitle="Sin tickets"
             emptyDesc="No hay tickets en este estado."
             /* ── El ticket, contado para un teléfono ──────────────────────────────────
@@ -535,20 +537,17 @@ export default function TicketsPage() {
       </div>
 
 
-      {/* El detalle en teléfono. En escritorio NO se monta: ver `enTelefono`. */}
-      {enTelefono && (
-        <PixelModal
-          open={!!selected}
-          onClose={() => setSelected(null)}
-          title={selected ? `#${selected.id} · ${selected.title}` : 'Ticket'}
-          size="md"
-        >
-          {cuerpoResumen}
-        </PixelModal>
-      )}
-
       {/* Create Ticket Modal */}
-      <PixelModal open={modal} onClose={() => setModal(false)} title={createMode === 'request' ? 'Solicitar ticket' : 'Nuevo ticket'} size="lg">
+      <PixelModal open={modal} onClose={() => setModal(false)} title={createMode === 'request' ? 'Solicitar ticket' : 'Nuevo ticket'} size="lg"
+        /* La acción en el pie fijo: a la vista sin bajar al final del formulario. */
+        pie={(
+          <>
+            <button onClick={() => setModal(false)} className={BTN_SECONDARY}>Cancelar</button>
+            <button onClick={handleCreate} disabled={creating || !form.title.trim()} className={BTN_PRIMARY}>
+              {creating ? 'Creando…' : 'Crear ticket'}
+            </button>
+          </>
+        )}>
         <div className="space-y-3">
           <PixelInput label="Título *" value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -662,12 +661,6 @@ export default function TicketsPage() {
             </div>
           )}
 
-          {/* Acción abajo a la derecha, no a todo el ancho (regla de disposición). */}
-          <div className="flex justify-end pt-3 border-t border-digi-border">
-            <button onClick={handleCreate} disabled={creating || !form.title.trim()} className={BTN_PRIMARY}>
-              {creating ? 'Creando…' : 'Crear ticket'}
-            </button>
-          </div>
         </div>
       </PixelModal>
 
