@@ -23,8 +23,8 @@ export const TEMAS: DefinicionTema[] = [
   { id: 'oscuro', nombre: 'Oscuro', base: 'oscuro', muestra: { fondo: '#0d0a1a', tarjeta: '#17122b', acento: '#8b5cf6' } },
   // Claro para el fondo y oscuro para lo que flota encima: paneles, ventanas y menús.
   { id: 'mixto', nombre: 'Mixto', base: 'claro', muestra: { fondo: '#f3effb', tarjeta: '#ffffff', acento: '#7c5ce0', ventana: '#17122b' } },
-  // El corazón del grupo: rojo sangre sobre una noche granate.
-  { id: 'corazon', nombre: 'Corazón', base: 'oscuro', muestra: { fondo: '#12060a', tarjeta: '#210c12', acento: '#e11d48' } },
+  // El corazón del grupo: rojo sangre sobre una noche granate, paneles en grafito.
+  { id: 'corazon', nombre: 'Corazón', base: 'oscuro', muestra: { fondo: '#12060a', tarjeta: '#26262b', acento: '#e11d48' } },
   // #C71585 (Fernando) sobre un rosa casi blanco.
   { id: 'orquidea', nombre: 'Orquídea', base: 'claro', muestra: { fondo: '#fbeef6', tarjeta: '#ffffff', acento: '#C71585' } },
 ];

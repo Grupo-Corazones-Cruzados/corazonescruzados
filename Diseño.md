@@ -4841,14 +4841,17 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
   `--degradado-*`, `--sombra-boton`, `--fila-hover`, el fondo) y los del raíl; las piezas de
   `tema-progreso.css` ya los leen. Selectores `.corp.tema-progreso.tema-<id>` (+ `:not(.dark)` en los
   claros) para ganar sin `!important`.
-- **Corazón** (base oscura): noche granate `#0e0407 → #17070c` con resplandor carmesí; tarjeta `#210c12`,
-  acento `#e11d48`, texto de acento `#ff7a8e`; botón `#e11d48 → #9f1239`. Raíl `#1b080d`.
+- **Corazón** (base oscura): noche granate `#0e0407 → #17070c` con resplandor carmesí; paneles en
+  **grafito neutro** `#26262b` (borde `#3b3b42`, campos `#141416`, texto `#f4f4f5`, tenue `#a1a1aa`);
+  acento `#e11d48`; `text-accent` en rosa `#fb7185` (el rojo como texto sobre grafito da 3,2:1); botón
+  `#e11d48 → #9f1239`. Raíl `#1b080d`. El rojo es para lo que actúa o está elegido, nunca para el panel.
 - **Orquídea** (base clara): rosa casi blanco `#fffafd → #f6e1ee` con puntos magenta; acento `#C71585`
   (blanco encima 5,4:1), `accent-light #fce7f3`; botón `#db2799 → #a5106d`. Raíl ciruela `#2a0d20`.
 - **Paneles en los temas oscuros** (Fernando, 2026-10-29: *«los paneles deben tener color para contrastar»*):
-  la tarjeta NO es el color del fondo: gris cálido (Corazón `#2e1c21`) o grafito (Oscuro `#22202f`),
-  casi opaca, ≈1,22:1 contra el fondo (antes 1,07:1), y los campos un pozo más oscuro (`#170c10` /
-  `#12101b`). El tinte del tema vive en el fondo, el raíl y el acento.
+  la tarjeta NO es el color del fondo: grafito neutro (Corazón `#26262b`, 1,3:1) o grafito violáceo
+  (Oscuro `#22202f`), casi opaca, y los campos un pozo más oscuro (`#141416` / `#12101b`). El tinte del
+  tema vive en el fondo, el raíl y el acento. ⚠️ DESCARTADO en Corazón: el gris cálido rojizo `#2e1c21`
+  (*«los paneles siguen tomando el color principal»*): un panel teñido del color del tema no contrasta.
 - **Mixto** (base clara): fondo y tarjetas del Claro; lo que FLOTA toma los tokens de Aventura y las
   correcciones de color del oscuro. «Lo que flota» = `.modal-surface` (ventanitas y panel derecho) y la
   clase **`superficie-flotante`**, que llevan `Burbuja`, `MenuMas`, `FloatingWindow`, el panel de

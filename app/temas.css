@@ -94,25 +94,30 @@
   --fila-hover: rgba(220, 210, 255, 0.05);
 }
 
-/* ── CORAZÓN — rojo sangre sobre noche granate ─────────────────────────────────────── */
+/* ── CORAZÓN — rojo sangre sobre noche granate ─────────────────────────────────────────
+   Segunda vuelta (Fernando, 2026-10-29: «los paneles siguen tomando el color principal»):
+   paneles, formularios y ventanas en GRAFITO NEUTRO, sin nada de rojo. El granate queda
+   para el fondo y el menú, y el rojo solo para lo que actúa o está elegido. Medido: panel
+   contra fondo 1,3:1, texto 13,7:1, tenue 5,9:1; el rojo como TEXTO sobre el grafito daba
+   3,2:1, por eso `text-accent` pasa a rosa claro (5,6:1). */
 .corp.tema-progreso.tema-corazon.dark {
   --color-digi-dark: #12060a;
-  --color-digi-darker: #170c10;
-  --color-digi-card: #2e1c21;
-  --color-digi-border: #46292f;
-  --color-digi-text: #fbeff1;
-  --color-digi-muted: #c9a0a9;
+  --color-digi-darker: #141416;
+  --color-digi-card: #26262b;
+  --color-digi-border: #3b3b42;
+  --color-digi-text: #f4f4f5;
+  --color-digi-muted: #a1a1aa;
   --color-accent: #e11d48;
   --color-accent-hover: #f43f5e;
   --color-accent-light: #4d1a26;
   --color-accent-dark: #a50d25;
   --color-accent-glow: #ff7a8e;
-  --tarjeta-fondo: rgba(46, 28, 33, 0.97);
-  --cabecera-tabla: #2e1c21;
-  --tarjeta-borde: rgba(255, 196, 204, 0.11);
-  --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.85), 0 0 30px -18px rgba(200, 16, 46, 0.5);
-  --etiqueta: #d3a9b2;
-  --fila-hover: rgba(251, 113, 133, 0.07);
+  --tarjeta-fondo: rgba(38, 38, 43, 0.98);
+  --cabecera-tabla: #26262b;
+  --tarjeta-borde: rgba(255, 255, 255, 0.08);
+  --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.9);
+  --etiqueta: #b4b4bb;
+  --fila-hover: rgba(255, 255, 255, 0.05);
   --sombra-boton: rgba(200, 16, 46, 0.75);
   --degradado-boton: linear-gradient(135deg, #e11d48, #9f1239);
   --degradado-icono: linear-gradient(135deg, #f43f5e, #be123c);
@@ -125,6 +130,7 @@
     linear-gradient(180deg, #0e0407 0%, #17070c 100%);
   background-attachment: fixed;
 }
+.corp.tema-progreso.tema-corazon.dark .text-accent:not(.rail .text-accent) { color: #fb7185; }
 .corp.tema-progreso.tema-corazon .rail {
   --color-digi-card: #1b080d;
   --color-digi-darker: #150609;
