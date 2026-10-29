@@ -36,8 +36,22 @@ export const PRODUCTOS = [
   // Quinto producto (2026-09-23): la sección «Automatizaciones» dejó de vivir dentro de la
   // plataforma y pasó a venderse como los demás, 5 $/mes con el agente de IA y las
   // campañas de correo y de WhatsApp dentro.
-  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones de WhatsApp', url: 'https://automatizaciones.grupocc.org' },
+  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones de WhatsApp', url: 'https://automatizaciones.grupocc.org', gccSuscripcion: true },
 ] as const;
+
+/**
+ * Hasta cuándo está pagado un inquilino cuya mensualidad se cobra en la plataforma
+ * (`inquilinos.gcc_suscripcion_id`, solo Automatizaciones): el último día del último mes
+ * pagado en `gcc_world.subscription_payments`. Es la misma regla que la puerta del producto
+ * (`productos/automatizaciones/src/lib/suscripcionGcc.ts`); su `suscripciones.pagado_hasta`
+ * se queda en la prueba del alta y NO se lee —por eso Peter Tours salía «vencida» con octubre
+ * pagado (Fernando, 2026-10-29).
+ */
+export const PAGADO_HASTA_GCC = `(
+  SELECT (date_trunc('month', max(sp.period)) + interval '1 month - 1 day')::date
+    FROM gcc_world.subscription_payments sp
+    JOIN gcc_world.subscriptions gs ON gs.id = sp.subscription_id
+   WHERE sp.subscription_id = i.gcc_suscripcion_id AND sp.paid AND gs.status <> 'cancelled')`;
 
 export const DIAS_DE_GRACIA = 30;
 
@@ -46,15 +60,20 @@ export async function accesosDelUsuario(email: string | null | undefined): Promi
   if (!email) return salida;
   for (const p of PRODUCTOS) {
     try {
+      const pagadoHasta = 'gccSuscripcion' in p
+        ? `CASE WHEN i.gcc_suscripcion_id IS NULL THEN s.pagado_hasta ELSE ${PAGADO_HASTA_GCC} END`
+        : 's.pagado_hasta';
       const { rows } = await pool.query(
-        `SELECT i.slug, i.nombre, i.cortesia, s.pagado_hasta
-           FROM ${p.esquema}.inquilinos i
-           LEFT JOIN ${p.esquema}.suscripciones s ON s.inquilino_id = i.id
-          WHERE lower(i.contacto_email) = lower($1)
-            AND i.estado <> 'SUSPENDIDO'
-            AND NOT i.solo_lectura
-            AND (i.cortesia OR (s.pagado_hasta IS NOT NULL AND s.pagado_hasta >= current_date - $2::int))
-          ORDER BY i.nombre`,
+        `SELECT * FROM (
+           SELECT i.slug, i.nombre, i.cortesia, ${pagadoHasta} AS pagado_hasta
+             FROM ${p.esquema}.inquilinos i
+             LEFT JOIN ${p.esquema}.suscripciones s ON s.inquilino_id = i.id
+            WHERE lower(i.contacto_email) = lower($1)
+              AND i.estado <> 'SUSPENDIDO'
+              AND NOT i.solo_lectura
+         ) x
+          WHERE cortesia OR (pagado_hasta IS NOT NULL AND pagado_hasta >= current_date - $2::int)
+          ORDER BY nombre`,
         [email, DIAS_DE_GRACIA],
       );
       if (!rows.length) continue;

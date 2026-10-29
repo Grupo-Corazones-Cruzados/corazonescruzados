@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { accesosDelUsuario, anfitrionDe, PRODUCTOS, type AccesoProducto } from './accesos';
+import { accesosDelUsuario, anfitrionDe, PAGADO_HASTA_GCC, PRODUCTOS, type AccesoProducto } from './accesos';
 
 /**
  * PLATAFORMAS CON DETALLE (Fernando, 2026-10-29).
@@ -111,8 +111,10 @@ export async function detallePlataforma(id: number, user: { role: string; email:
   const producto = PRODUCTOS.find((x) => x.clave === p.producto);
   if (!esquema || !producto) return null;
 
-  const { rows: [i] } = await pool.query(
-    `SELECT id, nombre, estado, cortesia, creado_en FROM ${esquema}.inquilinos WHERE slug = $1`, [p.slug]);
+  // Fila entera: `gcc_suscripcion_id` solo existe en algunos esquemas.
+  const { rows: [fila] } = await pool.query(
+    `SELECT to_jsonb(i) AS i FROM ${esquema}.inquilinos i WHERE slug = $1`, [p.slug]);
+  const i = fila?.i;
   if (!i) return null;
   const { rows: [s] } = await pool.query(
     `SELECT s.estado, s.inicio, s.pagado_hasta, s.metodo_pago, to_jsonb(pl) AS plan
@@ -120,9 +122,24 @@ export async function detallePlataforma(id: number, user: { role: string; email:
       WHERE s.inquilino_id = $1 ORDER BY s.id DESC LIMIT 1`, [i.id]);
   const { rows: [u] } = await pool.query(
     `SELECT count(*)::int AS n FROM ${esquema}.usuarios WHERE inquilino_id = $1 AND activo`, [i.id]);
-  const { rows: pagos } = await pool.query(
-    `SELECT periodo, monto, moneda, metodo, estado, pagado_en FROM ${esquema}.pagos_mensuales
-      WHERE inquilino_id = $1 ORDER BY periodo DESC NULLS LAST, id DESC LIMIT 24`, [i.id]);
+
+  // La mensualidad cobrada en la plataforma manda sobre la suscripción propia del producto
+  // (ver `PAGADO_HASTA_GCC`): de allí salen el inicio, hasta cuándo está pagado y los pagos.
+  const gcc = i.gcc_suscripcion_id
+    ? (await pool.query(
+        `SELECT gs.status, gs.start_date, ${PAGADO_HASTA_GCC} AS pagado_hasta
+           FROM (SELECT $1::int AS gcc_suscripcion_id) i JOIN gcc_world.subscriptions gs ON gs.id = i.gcc_suscripcion_id`,
+        [i.gcc_suscripcion_id])).rows[0] ?? null
+    : null;
+  const { rows: pagos } = gcc
+    ? await pool.query(
+        `SELECT to_char(sp.period, 'YYYY-MM') AS periodo, sp.amount AS monto, gs.currency AS moneda, NULL AS metodo,
+                CASE WHEN sp.paid THEN 'PAGADO' ELSE 'PENDIENTE' END AS estado, sp.paid_at AS pagado_en
+           FROM gcc_world.subscription_payments sp JOIN gcc_world.subscriptions gs ON gs.id = sp.subscription_id
+          WHERE sp.subscription_id = $1 ORDER BY sp.period DESC LIMIT 24`, [i.gcc_suscripcion_id])
+    : await pool.query(
+        `SELECT periodo, monto, moneda, metodo, estado, pagado_en FROM ${esquema}.pagos_mensuales
+          WHERE inquilino_id = $1 ORDER BY periodo DESC NULLS LAST, id DESC LIMIT 24`, [i.id]);
 
   const plan = s?.plan ?? null;
   return {
@@ -134,7 +151,9 @@ export async function detallePlataforma(id: number, user: { role: string; email:
     creadoEn: dia(i.creado_en),
     estado: i.estado ?? null,
     cortesia: Boolean(i.cortesia),
-    suscripcion: s ? { estado: s.estado ?? null, inicio: dia(s.inicio), pagadoHasta: dia(s.pagado_hasta), metodoPago: s.metodo_pago ?? null } : null,
+    suscripcion: gcc
+      ? { estado: gcc.status ?? null, inicio: dia(gcc.start_date), pagadoHasta: dia(gcc.pagado_hasta), metodoPago: null }
+      : s ? { estado: s.estado ?? null, inicio: dia(s.inicio), pagadoHasta: dia(s.pagado_hasta), metodoPago: s.metodo_pago ?? null } : null,
     plan: plan ? {
       nombre: plan.nombre,
       precio: plan.precio_mensual != null ? Number(plan.precio_mensual) : null,
