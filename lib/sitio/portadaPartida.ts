@@ -65,8 +65,8 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
       const H = e.clientHeight;
       if (modo === 'progreso') return 0;
       if (modo === 'aventura') return H;
-      const arriba = el.querySelector('.tarjeta-mundo-aventura')?.getBoundingClientRect();
-      const abajo = el.querySelector('.tarjeta-mundo-progreso')?.getBoundingClientRect();
+      const arriba = el.querySelector('.panel-mundo-aventura')?.getBoundingClientRect();
+      const abajo = el.querySelector('.panel-mundo-progreso')?.getBoundingClientRect();
       const top = e.getBoundingClientRect().top;
       if (arriba && abajo && abajo.top > arriba.bottom) return (arriba.bottom + abajo.top) / 2 - top;
       return H * 0.5;

@@ -3,7 +3,7 @@
 /**
  * LAS TARJETAS DE ROLES — tras elegir un mundo en la portada (Fernando, 2026-10-26).
  *
- * Con el MISMO estilo que las tarjetas de Aventura y Progreso (`TarjetasMundo`: Fernando, «que el
+ * Con el MISMO estilo que las tarjetas de Aventura y Progreso (la antigua `TarjetasMundo`, hoy borrada: Fernando, «que el
  * estilo de las tarjetas y contenido sea similar»): reutilizan sus clases (`.tarjeta-mundo-*`,
  * `.tm-*`) —etiqueta arriba, escenario con el icono, título, descripción, destello y el SELECTOR
  * de esquinas al pasar— y el color del mundo elegido. Cuatro en fila desde `lg`; 2×2 por debajo,

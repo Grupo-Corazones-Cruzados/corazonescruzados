@@ -4058,3 +4058,39 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .panel-mundo-ventajas { display: none; }
   .panel-mundo-vista .tm-icono { height: 150px; }
 }
+
+/* ═══ LOS PANELES DE MUNDO EN TODA LA APP, SIN IMÁGENES (Fernando, 2026-10-28) ═══
+   Deroga la vista previa y el «solo desde lg». Escritorio: cada panel centrado en su mitad.
+   Teléfono: uno sobre otro, cada uno en su mundo, centrado. */
+.panel-mundo { grid-template-columns: 1fr !important; justify-items: center; }
+.panel-mundo-texto { width: 100%; max-width: 440px; }
+.panel-mundo-vista { display: none !important; }
+@media (min-width: 1024px) {
+  .panel-mundo-titulo { font-size: clamp(2.8rem, 4.4vw, 4.4rem); }
+  .panel-mundo-texto { gap: 14px; }
+}
+@media (max-width: 1023.98px) {
+  .contents-movil { display: none; }
+  .portada-zona .inicio-portada { width: 100%; margin-inline: 0; }
+}
+@media (max-width: 639.98px) {
+  .paneles-mundo { grid-template-columns: 1fr; row-gap: clamp(56px, 10vh, 96px); }
+  .panel-mundo { padding: 0 8px; }
+  .panel-mundo-texto { align-items: center; text-align: center; gap: 8px; max-width: 360px; }
+  .panel-mundo-titulo { font-size: 2.3rem; }
+  .panel-mundo-desc { font-size: 0.9rem; max-width: 30ch; }
+  .panel-mundo-ventajas { display: none; }
+  .panel-mundo-boton { height: 46px; margin-top: 4px; }
+}
+@media (max-width: 639.98px) {
+  .paneles-mundo { row-gap: clamp(36px, 6vh, 64px); }
+  .panel-mundo-texto { gap: 6px; }
+  .portada-zona .inicio-pensamiento { margin-top: 10px; }
+}
+@media (max-width: 639.98px) and (max-height: 760px) {
+  .paneles-mundo { row-gap: 32px; }
+  .panel-mundo-titulo { font-size: 1.9rem; }
+  .panel-mundo-desc { display: none; }
+  .panel-mundo-etiqueta { font-size: 0.6rem; }
+  .panel-mundo-boton { height: 42px; font-size: 0.88rem; }
+}

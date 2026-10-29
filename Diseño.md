@@ -266,6 +266,13 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > «cruzar al mundo» con degradado rosa→lila (más oscuro en la Plataforma) y una línea de luz que
 > crece debajo. Su hueco está siempre reservado: nada se mueve al aparecer.
 >
+> **⭐ VIGENTE (2026-10-28): los paneles de mundo, SIN IMÁGENES y en TODA la app.** Fernando: le
+> gustó el panel de texto y no las vistas previas («reformula por completo para una app completa»).
+> `PanelesMundo` sustituye a `TarjetasMundo` (borrada) en teléfono y escritorio: etiqueta, título
+> grande, descripción, ventajas (solo escritorio) y botón. Escritorio: cada panel centrado en su
+> mitad. Teléfono: Aventura arriba / Progreso abajo, centrados; en teléfonos bajos sin
+> descripción. La raya horizontal se mide entre `.panel-mundo-aventura` y `.panel-mundo-progreso`.
+>
 > **⭐ PROPUESTA (2026-10-28): el escritorio como SITIO, el teléfono como APP.** Fernando: en
 > computadora «no parece un sitio web profesional», en teléfono sí le gusta. Desde `lg` la pantalla
 > de inicio usa `PanelesMundo.tsx` en vez de las tarjetas: cada mitad, una sección de producto

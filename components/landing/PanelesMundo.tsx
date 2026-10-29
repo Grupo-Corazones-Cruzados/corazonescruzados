@@ -1,17 +1,16 @@
 'use client';
 
 /**
- * LOS DOS MUNDOS COMO SECCIONES DE PRODUCTO — la pantalla de inicio en ESCRITORIO (Fernando,
- * 2026-10-28: «en computadora no parece un sitio web profesional… en teléfono lo veo como
- * aplicación y me gusta»). En el teléfono siguen las tarjetas (`TarjetasMundo`); desde `lg`,
- * cada mitad de la pantalla presenta su mundo como un sitio: etiqueta, título grande,
- * descripción, tres ventajas, un botón claro y una vista previa (la escena del juego / un panel).
- * El botón elige el mundo igual que la tarjeta.
+ * LOS DOS MUNDOS COMO SECCIONES — la pantalla de inicio en TODA la app (Fernando, 2026-10-28:
+ * le gustó el panel de texto en escritorio y no las imágenes; «reformula por completo para una
+ * app completa»). Cada mundo se presenta solo con texto: etiqueta, título grande, descripción,
+ * tres ventajas y un botón. Escritorio: una mitad cada uno, centrado en ella. Teléfono: Aventura
+ * arriba (cielo) y Progreso abajo (Plataforma), con la frontera líquida entre los dos.
+ * Sustituye a `TarjetasMundo` (borrada) y a las vistas previas con dibujos.
  */
 
 import { useState } from 'react';
 import { ArrowRight, BarChart3, CheckCircle2, Compass, FolderKanban, Swords, Users } from 'lucide-react';
-import { IconoAventura, IconoProgreso } from '@/components/landing/TarjetasMundo';
 
 type Mundo = 'aventura' | 'progreso';
 
@@ -74,9 +73,6 @@ export default function PanelesMundo({ onElegir, bloqueado }: { onElegir: (m: Mu
             {d.boton}
             <ArrowRight aria-hidden="true" />
           </button>
-        </div>
-        <div className="panel-mundo-vista" aria-hidden="true">
-          {m === 'aventura' ? <IconoAventura /> : <IconoProgreso />}
         </div>
       </section>
     );
