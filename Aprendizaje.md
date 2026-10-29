@@ -1,5 +1,87 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-10-29) — FACTURAS EMITIDAS EN 2025 AL «ESTADO FINANCIERO MENSUAL» · ✅ 100 % — CARGADAS Y VERIFICADAS
+
+**Declarado por Fernando el 2026-10-29:** *«actualizar el estado financiero mensual de la cuenta de
+lgonzalezm0@grupocc.org… necesito recuperar todas las facturas emitidas durante el año 2025… y
+agregarlas al estado financiero mensual»*.
+
+**Rol asumido:** integrador de datos tributarios (SRI Ecuador → finanzas internas).
+
+### Progreso
+- **% de información para el objetivo:** 100 %
+- **Estado (2026-10-29, cierre):** recorridos en el portal los 455 días del 01/01/2025 al 31/03/2026.
+  **19 facturas autorizadas anteriores a la plataforma cargadas** como ingresos (`source_type='sri_emitida'`,
+  `source_id` = clave de acceso, también en `finance_source_log`): 2025 = 12 facturas, **7.955 $**
+  (meses 1-9, 11 y 12; octubre sin facturas); 2026-02 = 5, 447,44 $; 2026-03 = 020 (100 $) y 021 (655 $),
+  sin renglón manual de marzo que las cubriera. Total 9.157,44 $. Archivo de la clave borrado.
+- **Regla de Fernando (2026-10-29): «hay que omitir siempre lo rechazado».** Solo AUTORIZADAS. Las 002, 017,
+  022 y 025 no salen autorizadas y no se cargan. Fuera también las de la plataforma del 29/03/2026
+  (001 a su nombre con la numeración reiniciada y 023 a Karina, anulada en la plataforma pero AUTORIZADA en el SRI).
+- ⚠️ Lo que ya existía: guardar un mes desde la ventana del Inicio (`app/api/finance/[id]/route.ts`) borra
+  y reinserta los renglones SIN `source_type`/`source_id`. El ingreso no se duplica (el registro de
+  orígenes sigue), pero la factura queda desvinculada (una anulación ya no la quitaría). Pendiente de decidir.
+
+### Fuentes consultadas (2026-10-29)
+- BD de producción (solo lectura, `BEGIN READ ONLY`, vía `DATABASE_PUBLIC_URL` del servicio Postgres;
+  `.env.local` ya no trae `DATABASE_URL` tras la rotación del incidente de Railway).
+- `lib/finance.ts`, llamadas a `add*IncomeToFinance`, `SRI-CONSULTA-COMPROBANTES.md`.
+
+### Preguntas y respuestas
+#### P1 — ¿Qué es el «estado financiero mensual» y de quién es? · ✅ Resuelta (código + BD)
+- Tabla «Estado financiero mensual» del Inicio, solo para staff. **Es uno solo para toda la
+  organización** (`finance_months` año+mes con totales; `finance_items` ingreso/egreso con
+  `source_type`/`source_id`); no hay uno por usuario. `lfgonzalezm0@grupocc.org` = admin, `member_id` 1.
+- Altas vía `addIncomeToFinance` (`lib/finance.ts`): un renglón por origen, con `finance_source_log`
+  para que un renglón borrado a mano no vuelva. Las facturas registran su `total`.
+- **Empieza en 2026-03**: hoy hay meses 2026-03 … 2026-10 y **ninguno de 2025**. Marzo 2026 se
+  cargó a mano (renglones sin `source_type`: «Proyecto Cercasa», «Sueldo Helen», «Saldo Pendiente»…).
+
+#### P2 — ¿Hay facturas de 2025 en GCC World? · ✅ Resuelta — **NO**
+- `gcc_world.invoices` empieza en 2026-03 (emisor `0930095922001`, siempre el mismo RUC). Las de 2025
+  se emitieron FUERA de la plataforma ⇒ hay que traerlas del SRI o de los archivos de Fernando.
+
+#### P3 — ¿Con qué se emitieron las de 2025 y dónde están sus archivos? · ✅ Resuelta (Fernando, 2026-10-29)
+- **Facturador gratuito del SRI**, en 2025 y en 2026 hasta antes de la primera factura de la plataforma.
+- Fernando NO quiere consultar él: pidió que se use su RUC para recorrer 2025 y principios de 2026.
+  Pasó su clave por `! read -s` a un archivo temporal del scratchpad (600); no queda en repo ni memoria.
+- La primera factura de la plataforma es **001-001-000000023 (29/03/2026)** ⇒ antes salieron ~22.
+  Ojo: el portal también enseña una **001-001-000000001 del 29/03/2026** que NO está en `invoices`.
+
+#### P4 — ¿Cómo se recupera el LISTADO? · ✅ Resuelta (probado en vivo 2026-10-29)
+- ⚠️ El salto directo a `comprobantesEmitidos.jsf` (cliente `app-tuportal-internet` → `GeneraToken.jsp`)
+  **cierra la sesión** aunque la clave sea buena (pasa con HTTP puro y con Chrome). Lo que funciona:
+  entrar por el portal nuevo (`/sri-en-linea/contribuyente/perfil`, cliente `app-sri-claves-angular`),
+  luego `tuportal-internet/accederAplicacion.jspa?redireccion=60&idGrupo=58` (Facturación electrónica →
+  Consultas) y en `menu.jsf` el enlace «Comprobantes electrónicos emitidos». Sin captcha (2026-10-29).
+- Formulario: `frmPrincipal:calendarFechaDesde_input` (UN día, dd/mm/aaaa), `cmbEstadoAutorizacion`
+  (AUT/NAT/PPR), `cmbTipoComprobante` (1 = Factura), `cmbEstablecimiento`. Tabla
+  `frmPrincipal:tablaCompEmitidos`: nº, tipo+serie, clave (enlace a la ficha `form-detalle-factura`),
+  autorización, emisión, subtotal, IVA, total, PDF (`lnkPdf`), documentos relacionados.
+- ⚠️ **El WS `AutorizacionComprobantesOffline` ya no devuelve comprobantes viejos**: una clave de mayo
+  2026 sale sin autorizaciones y la del 29/03/2026 da «fecha de emision esta fuera del rango
+  permitido». Para 2025 el cliente y el detalle salen de la ficha del portal y del RIDE, no del WS.
+- Recorrido día a día con Chrome (puppeteer-core) en curso: 01/01/2025 → 31/03/2026, ~10 s/día.
+
+#### P5 — ¿Cómo entran en el estado? · ✅ Resuelta (Fernando, 2026-10-29: «carga lo que encontraste»)
+- Propuesta: un ingreso por factura autorizada, en el mes de su fecha de emisión,
+  `source_type='sri2025'` (o `sri_externa`), `source_id`=clave de acceso (no se duplica si se repite
+  la carga), descripción «Factura 001-001-000000123 — <cliente>», importe = total. Anuladas fuera.
+- Dudas: ¿solo ingresos, o también egresos 2025? ¿también quieren verse en el módulo Facturas?
+
+### Plan de solución
+1. Fernando dice de dónde salen (P3) y pasa listado/XML.
+2. Script que lee los XML (o pide cada clave al WS), descarta anuladas y arma la tabla por mes.
+3. Enseñar el resumen por mes a Fernando ANTES de escribir.
+4. Insertar con la lógica de `addIncomeToFinance` (idempotente) y comprobar totales por mes.
+
+### Riesgos
+| Riesgo | Mitigación |
+|---|---|
+| Duplicar una factura | `source_id` = clave de acceso + índice único existente |
+| Contar anuladas o notas de crédito | Filtrar por estado y tipo de comprobante (01 = factura) |
+| Tocar datos reales por error | Lectura en transacción READ ONLY; escritura solo tras el visto bueno del resumen |
+
 ## Objetivo (2026-10-26 → 29) — LA PORTADA: EXPERIENCIA DEL CLIENTE AL ENTRAR (Aventura | Progreso) · ✅ 95 % — APROBADA POR FERNANDO
 
 **Declarado por Fernando el 2026-10-26:** renombrar «Comenzar Aventura» a «Aventura», poner a su
