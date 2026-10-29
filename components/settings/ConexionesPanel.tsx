@@ -106,7 +106,7 @@ export default function ConexionesPanel() {
         </div>
       )}
 
-      <div className="bg-digi-card border border-digi-border rounded-lg p-4 max-w-[720px]">
+      <div className="bg-digi-card border border-digi-border rounded-lg p-4">
         <div className="flex items-start gap-3 flex-wrap">
           <div className="w-10 h-10 rounded-md border border-digi-border flex items-center justify-center shrink-0"><LogoGoogle /></div>
           <div className="min-w-0 flex-1">
