@@ -706,7 +706,7 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
         clienteDireccion: invoice.client_address_sri || '',
         clienteEmail: invoice.client_email_sri || '',
         clienteTelefono: invoice.client_phone_sri || '',
-        formaPago: '20',
+        formaPago: formaPagoDelXml(xmlSigned),
         items: items.map((it: any) => ({
           description: it.description,
           quantity: Number(it.quantity),
@@ -749,6 +749,15 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
 }
 
 /**
+ * La forma de pago del RIDE sale del XML que se autorizó, no de una constante: el PDF
+ * imprimía siempre «20 — Otros con utilización del sistema financiero», también en las
+ * facturas cobradas con tarjeta (19/16), en efectivo (01) o con dinero electrónico (17).
+ */
+function formaPagoDelXml(xml: string | null | undefined): string {
+  return /<formaPago>(\d{2})<\/formaPago>/.exec(xml || '')?.[1] || '20';
+}
+
+/**
  * Re-render ONLY the visual RIDE PDF of an already-authorized invoice from its
  * stored data (no SRI calls). The RIDE is a derived representation, so this is
  * safe and lets older invoices pick up template fixes. Returns the PDF buffer;
@@ -771,7 +780,7 @@ export async function regenerateRidePdf(invoiceId: number, persist = false): Pro
     clienteDireccion: invoice.client_address_sri || '',
     clienteEmail: invoice.client_email_sri || '',
     clienteTelefono: invoice.client_phone_sri || '',
-    formaPago: '20',
+    formaPago: formaPagoDelXml(invoice.xml_signed),
     items: items.map((it: any) => ({
       description: it.description,
       quantity: Number(it.quantity),

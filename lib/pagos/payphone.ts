@@ -121,6 +121,8 @@ export type ConfirmacionPayphone = {
   /** Lo que PayPhone dice que cobró, en dólares. Se compara con lo que esperábamos. */
   importe: number | null;
   marcaTarjeta: string | null;
+  /** `cardType` de PayPhone: 'Credit' o 'Debit'. Decide el `formaPago` del SRI (19 o 16). */
+  tipoTarjeta: string | null;
   mensaje: string | null;
 };
 
@@ -162,6 +164,7 @@ export async function confirmarTransaccion(id: number, clientTxId: string): Prom
     autorizacion: d?.authorizationCode ?? null,
     importe: d?.amount != null ? aDolares(Number(d.amount)) : null,
     marcaTarjeta: d?.cardBrand ?? null,
+    tipoTarjeta: d?.cardType ?? null,
     mensaje: d?.message ?? null,
   };
 }

@@ -81,7 +81,10 @@ export async function GET(req: NextRequest) {
     const r = await confirmarPago(intentId, {
       referencia: String(conf.transactionId ?? transaccionId),
       metodo: 'card',
-      estadoProveedor: `${conf.estado}${conf.autorizacion ? ` · aut. ${conf.autorizacion}` : ''}`,
+      // Débito y crédito tienen código propio en el SRI (16 y 19). Sin esto, toda tarjeta
+      // salía como crédito: la 001-001-000000100 se pagó con débito y se facturó con 19.
+      esDebito: /debit/i.test(conf.tipoTarjeta || ''),
+      estadoProveedor: `${conf.estado}${conf.tipoTarjeta ? ` · ${/debit/i.test(conf.tipoTarjeta) ? 'débito' : 'crédito'}` : ''}${conf.autorizacion ? ` · aut. ${conf.autorizacion}` : ''}`,
     });
 
     if (primeraVez) {
