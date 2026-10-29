@@ -487,6 +487,7 @@ export default function LandingPage() {
   const warpRef = useRef<HTMLDivElement | null>(null);
   const planetMusicRef = useRef<HTMLAudioElement | null>(null);
   const peligroMusicRef = useRef<HTMLAudioElement | null>(null);
+  const corazonAudioRef = useRef<HTMLAudioElement | null>(null);
   const planetTimeoutsRef = useRef<number[]>([]);
   const worldChatTimeoutRef = useRef<number | null>(null);
   const worldChatAdvanceRef = useRef<number | null>(null);
@@ -771,6 +772,66 @@ export default function LandingPage() {
   // del espacio; se quitaron los dos (y el viento que callaba con los diálogos). Los sonidos de
   // la intro del juego (escritura, planeta, peligro) siguen, porque son del juego, no de la
   // portada. `audioCtxRef`/`spaceGainRef` quedan vacíos y lo que los usa ya lo comprueba.
+
+  // ── EL LATIDO DE FONDO (Fernando, 2026-10-29) ─────────────────────────────────────────
+  // «deja esta música de fondo en bucle y que deje de reproducirse mientras exista un
+  // formulario abierto». Suena en bucle en la portada y CALLA (con un fundido) mientras haya
+  // abierto cualquier formulario o ventana de acceso: candidato, postulación, inicio de sesión
+  // de cliente o miembro, alta de cliente, el menú de ingreso o los avisos de estado. También
+  // calla al irse al juego (`windAway`) y con la pestaña oculta. El navegador no deja sonar
+  // nada antes del primer gesto del visitante: se intenta al cargar y, si lo bloquea, arranca
+  // con el primer toque, clic o tecla.
+  const formularioAbierto =
+    recoveryOpen || entryChoiceOpen || onboardingOpen || clientSignupOpen || clientLoginOpen ||
+    memberLoginOpen || !!proposalPending || !!candidateAccount || !!clientPending;
+  const latidoDebeSonar = !formularioAbierto && !windAway;
+  const latidoDebeSonarRef = useRef(latidoDebeSonar);
+  latidoDebeSonarRef.current = latidoDebeSonar;
+  const latidoFundidoRef = useRef(0);
+  const fundirLatido = useCallback((sonar: boolean) => {
+    const audio = corazonAudioRef.current;
+    if (!audio) return;
+    const VOLUMEN = 0.45;
+    cancelAnimationFrame(latidoFundidoRef.current);
+    if (sonar && document.hidden) return;
+    if (sonar && audio.paused) {
+      audio.volume = 0;
+      audio.play().catch(() => undefined);
+    }
+    const desde = audio.volume;
+    const hasta = sonar ? VOLUMEN : 0;
+    const inicio = performance.now();
+    const DURACION = sonar ? 900 : 450;
+    const paso = (t: number) => {
+      const k = Math.min(1, (t - inicio) / DURACION);
+      audio.volume = Math.max(0, Math.min(1, desde + (hasta - desde) * k));
+      if (k < 1) latidoFundidoRef.current = requestAnimationFrame(paso);
+      else if (!sonar) audio.pause();
+    };
+    latidoFundidoRef.current = requestAnimationFrame(paso);
+  }, []);
+  useEffect(() => {
+    fundirLatido(latidoDebeSonar);
+  }, [latidoDebeSonar, fundirLatido]);
+  useEffect(() => {
+    // Arranque tras el primer gesto (si al cargar el navegador lo bloqueó) y pausa con la
+    // pestaña oculta.
+    const alGesto = () => {
+      const audio = corazonAudioRef.current;
+      if (audio && audio.paused && latidoDebeSonarRef.current) fundirLatido(true);
+    };
+    const alVisibilidad = () => fundirLatido(!document.hidden && latidoDebeSonarRef.current);
+    window.addEventListener('pointerdown', alGesto, true);
+    window.addEventListener('keydown', alGesto, true);
+    document.addEventListener('visibilitychange', alVisibilidad);
+    return () => {
+      window.removeEventListener('pointerdown', alGesto, true);
+      window.removeEventListener('keydown', alGesto, true);
+      document.removeEventListener('visibilitychange', alVisibilidad);
+      cancelAnimationFrame(latidoFundidoRef.current);
+      corazonAudioRef.current?.pause();
+    };
+  }, [fundirLatido]);
 
   // ── Planet entry — crossfade space ambient → planet music ────────
   useEffect(() => {
@@ -2719,6 +2780,7 @@ export default function LandingPage() {
         loop
         preload="auto"
       />
+      <audio ref={corazonAudioRef} src="/sounds/music/corazon-portada.mp3" loop preload="auto" />
       <audio
         ref={peligroMusicRef}
         src="/sounds/music/Peligro%20Music.mp3"

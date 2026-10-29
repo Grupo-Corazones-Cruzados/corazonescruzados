@@ -266,7 +266,8 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 > con relleno; botón para cambiar de mundo dentro; titular de texto (sustituido por el gráfico);
 > emblema XH; línea de luz, ondas y destello del cruce; tarjetas de mundo con personajes;
 > vistas previas con imágenes en escritorio; roles como tarjetas de escena; «Soy nuevo»/«Ya tengo
-> cuenta»; música de ambiente; píldora rellena en el botón del teléfono.
+> cuenta»; música de ambiente (viento y espacio; el LATIDO en bucle sí, pedido el 2026-10-29, y calla
+> con cualquier formulario abierto); píldora rellena en el botón del teléfono.
 >
 > **Cambio posterior (2026-10-26): cabeza fija y roles como tarjetas de mundo.**
 > · La insignia y el titular están SIEMPRE y en la MISMA posición antes y después de elegir

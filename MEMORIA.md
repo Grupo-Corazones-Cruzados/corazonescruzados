@@ -331,13 +331,17 @@ Stack estándar de la casa, con particularidades de este repo:
      **Una sola lógica de acceso**: `components/landing/opcionesAcceso.ts` (la usa también
      `EntryChoiceModal`) y `accionesAcceso` en `app/page.tsx`.
   4. **Formulario de candidato** «La travesía» con el tema del mundo (`OnboardingSlidersModal tema=`).
-  5. **Cabecera** con fondo fijo y cápsula de pestañas desde `md`; «Historia» → «Inicio»; sin música.
+  5. **Cabecera** con fondo fijo y cápsula de pestañas desde `md`; «Historia» → «Inicio».
+     **Sonido (2026-10-29, Fernando):** un LATIDO en bucle (`public/sounds/music/corazon-portada.mp3`,
+     22 s) que calla con fundido mientras hay CUALQUIER formulario o ventana de acceso abierta,
+     al irse al juego y con la pestaña oculta; arranca con el primer gesto si el navegador bloquea
+     el autoarranque (`formularioAbierto` en `app/page.tsx`). Sustituye al «sin música» del 26.
   6. **Sin desplazamiento** en ningún tamaño; márgenes seguros del teléfono (`--seguro-arriba/abajo`).
   **Descartado por Fernando** (no repetir; lista completa en `Diseño.md`): elegir al pasar el
   puntero, raya que sigue al puntero, texto partido de color, cristal/placa detrás del titular,
   botones distintos por mundo, gotas, botón «Elegir», titular de texto, emblema XH, ondas y
   destellos, tarjetas con personajes, imágenes/vistas previas, «Soy nuevo»/«Ya tengo cuenta»,
-  música de ambiente, píldora rellena en el teléfono.
+  música de ambiente (viento/espacio; el latido del 2026-10-29 sí lo pidió), píldora rellena en el teléfono.
   **Trampas pagadas:** (a) el `next dev -p 3002` de Fernando sirve CSS viejo → matar por puerto,
   `rm -rf .next/cache`, arrancar y comprobar ([[gcc-next-cache-css-viejo]]); (b) una variable
   animada con `@property` + `transition` se quedaba a medias → animar en JS; heredable recalculaba
