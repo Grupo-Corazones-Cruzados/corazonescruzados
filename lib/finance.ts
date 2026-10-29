@@ -217,9 +217,12 @@ export function nombreIngresoFacturado(numero: string, cliente: string | null | 
  * entre por cualquier flujo —factura de ticket, de proyecto, de etapa, de suscripción, del SRI—
  * sin tocar cada uno.
  *
- * Solo se renombran las parejas UNO A UNO entre ingreso y factura vigente: si una factura cubre
- * dos ingresos (Cercasa y Pisercons van en la 001-026) se quedarían con el mismo nombre y se
- * perdería cuál es cuál, así que esos conservan el suyo. Devuelve cuántos cambió.
+ * Un ingreso con UNA factura vigente toma su nombre. Si esa factura cubre VARIOS ingresos
+ * (Cercasa y Pisercons van en la 001-026), cada uno lleva además lo que lo distingue detrás de
+ * un «·»: «Factura 001-001-000000026 — Entheus hábitat SL · Proyecto Cercasa» (Fernando,
+ * 2026-10-29: «deberían también tener [factura]»). Lo de detrás es su nombre anterior y se
+ * conserva en las siguientes pasadas. Un ingreso con varias facturas no se toca. Devuelve
+ * cuántos cambió.
  */
 export async function nombrarIngresosFacturados(): Promise<number> {
   const { rows } = await pool.query(`
@@ -230,12 +233,18 @@ export async function nombrarIngresosFacturados(): Promise<number> {
           ON i.sri_status = 'authorized' AND i.status <> 'cancelled' AND i.invoice_number IS NOT NULL
          AND ${SQL_ENLACE_FACTURA}
        WHERE fi.type = 'income' AND fi.amount > 0)
-    SELECT p.* FROM pares p
-     WHERE (SELECT count(*) FROM pares x WHERE x.item_id = p.item_id) = 1
-       AND (SELECT count(*) FROM pares x WHERE x.invoice_id = p.invoice_id) = 1`);
+    SELECT p.*, (SELECT count(*) FROM pares x WHERE x.invoice_id = p.invoice_id) AS ingresos_de_la_factura
+      FROM pares p
+     WHERE (SELECT count(*) FROM pares x WHERE x.item_id = p.item_id) = 1`);
   let cambiados = 0;
   for (const r of rows) {
-    const nombre = nombreIngresoFacturado(r.invoice_number, r.client_name_sri);
+    const base = nombreIngresoFacturado(r.invoice_number, r.client_name_sri);
+    let nombre = base;
+    if (Number(r.ingresos_de_la_factura) > 1) {
+      const actual: string = r.description || '';
+      // Si ya lleva el nombre de la factura, se conserva lo que va detrás del «·».
+      nombre = actual.startsWith(`${base} · `) ? actual : `${base} · ${actual.trim() || 'parte'}`;
+    }
     if (r.description === nombre) continue;
     await pool.query(`UPDATE gcc_world.finance_items SET description = $2 WHERE id = $1`, [r.item_id, nombre]);
     cambiados++;
