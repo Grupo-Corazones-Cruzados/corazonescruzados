@@ -4786,7 +4786,8 @@ mientras se escribe.
   Experiencias y «Gestión Social» en Mi día como texto de color; «Aprobar/Rechazar» de una solicitud del
   proyecto como iconos ✓/✕. Regla general: `/diseno` §4-septies.
 - **2026-10-29 · Filtros en el estado financiero mensual** · **NUEVO** (Fernando). Año (`<select>`) y
-  resultado (`Segmentado` Todos · Ahorro · Pérdida), en `grid-cols-2` en el teléfono. Solo filtran la tabla;
+  resultado (`Segmentado` Todos · Ahorro · Pérdida), uno bajo otro en el teléfono. El AÑO también mueve las
+  cifras de dinero (etiqueta «Ingresos 2026»…; Fernando, mismo día); el resultado solo filtra la tabla;
   el reporte descarga lo mismo (`/api/finance/pdf?anio=&resultado=`, título «Reporte Financiero · 2026 ·
   meses con pérdida») y el botón dice «Reporte filtrado» cuando hay filtros.
 - **2026-10-29 · El panel no se parecía a la Plataforma de la portada** · **CAMBIO DE ESTÁNDAR**

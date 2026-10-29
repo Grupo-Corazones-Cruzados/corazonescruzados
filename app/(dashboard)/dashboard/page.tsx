@@ -78,9 +78,14 @@ export default function DashboardHome() {
     return true;
   });
 
-  const globalIncome = months.reduce((s, m) => s + Number(m.total_income || 0), 0);
-  const globalExpense = months.reduce((s, m) => s + Number(m.total_expense || 0), 0);
-  const globalSavings = months.reduce((s, m) => s + Number(m.total_savings || 0), 0);
+  // Las cifras de dinero siguen al AÑO elegido (Fernando, 2026-10-29: «según el filtro aplicado
+  // de año también que se actualicen los indicadores»). El de resultado no: ingresos de «los
+  // meses con pérdida» no es un total que nadie busque.
+  const mesesDelAnio = anio === 'todos' ? months : months.filter((m) => String(m.year) === anio);
+  const globalIncome = mesesDelAnio.reduce((s, m) => s + Number(m.total_income || 0), 0);
+  const globalExpense = mesesDelAnio.reduce((s, m) => s + Number(m.total_expense || 0), 0);
+  const globalSavings = mesesDelAnio.reduce((s, m) => s + Number(m.total_savings || 0), 0);
+  const delAnio = anio === 'todos' ? '' : ` ${anio}`;
 
   const openDetail = async (m: FinanceMonth) => {
     setDetailMonth(m);
@@ -148,9 +153,9 @@ export default function DashboardHome() {
         <Cifra Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} />
         <Cifra Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} />
         {isAdmin && <Cifra Icon={Users} label="Clientes" value={stats?.clients} />}
-        {isStaff && <Cifra Icon={TrendingUp} label="Total ingresos" value={money(globalIncome)} tone="green" />}
-        {isStaff && <Cifra Icon={TrendingDown} label="Total egresos" value={money(globalExpense)} tone="red" />}
-        {isStaff && <Cifra Icon={PiggyBank} label="Total ahorro" value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
+        {isStaff && <Cifra Icon={TrendingUp} label={delAnio ? `Ingresos${delAnio}` : 'Total ingresos'} value={money(globalIncome)} tone="green" />}
+        {isStaff && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
+        {isStaff && <Cifra Icon={PiggyBank} label={delAnio ? `Ahorro${delAnio}` : 'Total ahorro'} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
       </RejillaCifras>
 
       {/* Estado financiero mensual — SOLO staff (datos de toda la organización). */}
