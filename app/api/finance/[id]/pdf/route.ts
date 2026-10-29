@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       expenseItems: items.filter((i: any) => i.type === 'expense').map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
     }];
 
-    const pdfBuffer = await generateFinancePdf(data, `Reporte Financiero — ${monthName} ${m.year}`);
+    const pdfBuffer = await generateFinancePdf(data, 'Reporte financiero', { subtitulo: `${monthName} ${m.year}` });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

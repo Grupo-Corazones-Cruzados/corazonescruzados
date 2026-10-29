@@ -224,7 +224,7 @@ export default function DashboardHome() {
                 // en `title`/`aria-label`.
                 <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); window.open(`/api/finance/${m.id}/pdf`, '_blank'); }}
                   title="Descargar el PDF del mes" aria-label="Descargar el PDF del mes"
-                  className="destino-tactil w-8 h-8 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
+                  className="destino-tactil -my-1 w-7 h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-accent-light transition-colors">
                   <FileDown className="w-4 h-4" />
                 </button>
               ) },

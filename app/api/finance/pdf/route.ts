@@ -53,9 +53,9 @@ export async function GET(req: Request) {
     }
 
     const partes = [anio ? String(anio) : null, resultado === 'ahorro' ? 'meses con ahorro' : resultado === 'perdida' ? 'meses con pérdida' : null].filter(Boolean);
-    const titulo = partes.length ? `Reporte Financiero · ${partes.join(' · ')}` : 'Reporte Financiero Global';
+    const subtitulo = partes.length ? partes.map((p) => String(p).charAt(0).toUpperCase() + String(p).slice(1)).join(' · ') : 'Global · todos los meses';
     const archivo = ['Reporte-Financiero', ...(partes.length ? partes : ['Global'])].join('-').replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const pdfBuffer = await generateFinancePdf(months, titulo);
+    const pdfBuffer = await generateFinancePdf(months, 'Reporte financiero', { subtitulo });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

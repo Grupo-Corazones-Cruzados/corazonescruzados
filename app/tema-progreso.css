@@ -105,6 +105,11 @@
   background: var(--cabecera-tabla);
 }
 
+/* Filas COMPACTAS (Fernando, 2026-10-29: «cada fila ocupa mucha altura innecesariamente»):
+   8 px arriba y abajo en vez de 10, y la cabecera igual de ajustada. */
+.corp.tema-progreso .dt-td { padding-top: 7px; padding-bottom: 7px; }
+.corp.tema-progreso .dt-th { padding-top: 8px; padding-bottom: 8px; }
+
 /* ── Tarjetas (`.ep-tarjeta`) ───────────────────────────────────────────────────────── */
 .corp.tema-progreso :is(
   .pixel-card:not(.modal-surface),

@@ -4778,6 +4778,14 @@ mientras se escribe.
   abajo a la derecha (`BTN_DANGER` Desconectar + primaria/secundaria según estado).
 
 ## Desviaciones detectadas y resolución
+- **2026-10-29 · El reporte financiero en PDF era texto plano y montaba las descripciones** · **REDISEÑADO**
+  (Fernando: «más moderno y profesional»). `lib/finance-pdf.ts`: cabecera de marca (degradado
+  `#17122B → #4B2D8E`, logo, «Reporte financiero» + lo filtrado, periodo y fecha), tres indicadores con
+  barra de color (promedio mensual, tasa de ahorro), gráfico de barras ingresos/egresos (últimos 12 meses),
+  resumen por mes con margen y fila de total, y el detalle de cada mes en listas a todo el ancho (cada fila
+  MIDE su texto: con alto fijo de 11 pt las descripciones de dos líneas se montaban) con el ahorro en una
+  franja; el PDF de un mes, con las tres fichas de ahorro acumulado. Importes en es-ES. Pie «Página X de Y»
+  escrito sin `width` y con el margen inferior a 0. Filas de tabla del panel más compactas (`.dt-td` 7 px).
 - **2026-10-29 · «PDF» con borde y color, estados en píldora tintada, verde sin contraste y títulos de tabla
   montados** · **CORREGIDO + REGLA** (Fernando: «tiene un estilo muy de IA»). Inicio: el PDF de cada mes es
   un icono fantasma (`FileDown`); ingresos/egresos en `text-green-400`/`text-red-400` (tonos del tema, 6,3:1
