@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import PixelBadge from '@/components/ui/PixelBadge';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelModal from '@/components/ui/PixelModal';
 import ImageGallery from '@/components/ui/ImageGallery';
@@ -483,107 +484,101 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const reqDone = panelReqs.filter((r: any) => r.is_completed).length;
     const reqTotal = panelReqs.length;
     const reqPct = reqTotal ? Math.round((reqDone / reqTotal) * 100) : 0;
-    const cuerpo = (
+    // ⇒ EL PANEL EN TRES FRANJAS (Fernando, 2026-10-29): cabecera y acciones fijas, y lo que se
+    // desplaza es el cuerpo; dentro de él, la lista de requerimientos se queda con el sitio que
+    // sobra y se desplaza sola. Ver `PanelDetalle`.
+    const contenido = (
       <>
-        {!enVentana && (
-        <div className="flex items-start gap-3 p-4 border-b border-digi-border">
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-digi-text leading-tight" style={mf}>{t.title}</h3>
-            <p className="text-[11px] text-digi-muted mt-0.5 capitalize" style={mf}>{isProject ? 'Proyecto' : tabLabel.replace(/s$/, '')}</p>
-          </div>
-          <BotonCerrar onClick={cerrarPanel} />
-        </div>
-        )}
-        <div className={`${enVentana ? '' : 'p-4 '}space-y-3`}>
-          <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} alt={t.title} onOpen={openGalleryFromPanel} />
-          {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
-          <dl className="space-y-2">
-            {rows.map(([k, v], i) => (
-              <div key={i} className="flex items-center justify-between gap-3 text-[12px]">
-                <dt className="text-digi-muted" style={mf}>{k}</dt>
-                <dd className="text-digi-text text-right" style={mf}>{v}</dd>
-              </div>
-            ))}
-          </dl>
+        <ImageGallery key={t.id + (isProject ? '-p' : '')} images={panelImages} alt={t.title} onOpen={openGalleryFromPanel} />
+        {t.description && <p className="text-[12px] text-digi-text leading-relaxed" style={mf}>{t.description}</p>}
+        <dl className="space-y-2">
+          {rows.map(([k, v], i) => (
+            <div key={i} className="flex items-center justify-between gap-3 text-[12px]">
+              <dt className="text-digi-muted" style={mf}>{k}</dt>
+              <dd className="text-digi-text text-right" style={mf}>{v}</dd>
+            </div>
+          ))}
+        </dl>
 
-          {/* Requerimientos del proyecto (solo lectura), como en el módulo de Proyectos */}
-          {isProject && (panelReqsLoading || panelReqs.length > 0) && (
-            <div className="pt-1">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <h4 className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>
-                  Requerimientos{reqTotal > 0 && <span className="text-digi-muted/70"> ({reqDone}/{reqTotal})</span>}
-                </h4>
-                {reqTotal > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqPct}%` }} /></div>
-                    <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqPct}%</span>
-                  </div>
-                )}
-              </div>
-              {panelReqsLoading ? (
-                <div className="rounded-lg border border-digi-border overflow-hidden divide-y divide-digi-border/60">
-                  {[0, 1, 2].map((k) => <div key={k} className="h-8 bg-digi-darker animate-pulse" />)}
+        {/* Requerimientos del proyecto (solo lectura), como en el módulo de Proyectos */}
+        {isProject && (panelReqsLoading || panelReqs.length > 0) && (
+          <div className={`pt-1 ${enVentana ? '' : 'flex-1 min-h-32 flex flex-col'}`}>
+            <div className="flex items-center justify-between gap-3 mb-2 shrink-0">
+              <h4 className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>
+                Requerimientos{reqTotal > 0 && <span className="text-digi-muted/70"> ({reqDone}/{reqTotal})</span>}
+              </h4>
+              {reqTotal > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-1.5 rounded-full bg-digi-border/60 overflow-hidden"><div className="h-full rounded-full bg-accent transition-all" style={{ width: `${reqPct}%` }} /></div>
+                  <span className="text-[11px] text-digi-muted tabular-nums" style={mf}>{reqPct}%</span>
                 </div>
-              ) : (
-                <ul className="rounded-lg border border-digi-border divide-y divide-digi-border/50 overflow-hidden max-h-64 overflow-y-auto">
-                  {panelReqs.map((r: any, i: number) => {
-                    const accepted: any[] = r.assignments || [];
-                    return (
-                      <li key={r.id} className="flex items-start gap-2.5 px-2.5 py-1.5 bg-digi-card">
-                        <span className={`shrink-0 mt-px w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-semibold tabular-nums ${r.is_completed ? 'bg-accent-light text-accent' : 'bg-black/[0.04] text-digi-muted'}`} style={mf}>{i + 1}</span>
-                        <span className="text-[12px] text-digi-text leading-[1.35] flex-1 min-w-0" style={mf}>{r.title}</span>
-                        {accepted.length > 0 && (
-                          <div className="flex items-center -space-x-1.5 shrink-0 mt-px">
-                            {accepted.slice(0, 3).map((a) => (
-                              a.photo_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={a.id} src={a.photo_url} alt="" title={a.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover" />
-                              ) : (
-                                <div key={a.id} title={a.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[9px] font-semibold text-accent" style={mf}>{(a.member_name || '?')[0].toUpperCase()}</div>
-                              )
-                            ))}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
               )}
             </div>
-          )}
-
-          <div className="space-y-2 pt-1">
-            {/* «Entrar a Organización» ya no va aquí: vive en el módulo Plataformas (Fernando,
-                2026-10-23). Y a quien YA está suscrito no se le ofrece suscribirse otra vez:
-                en su lugar, el camino a Plataformas. */}
-            <Demostracion item={t} />
-            {accesosDe(t)?.length ? (
-              <Link href="/dashboard/plataformas" className={`${BTN_SECONDARY} w-full`}>
-                <LayoutGrid className="w-4 h-4" /> Ver en Plataformas
-              </Link>
+            {panelReqsLoading ? (
+              <div className="rounded-lg border border-digi-border overflow-hidden divide-y divide-digi-border/60">
+                {[0, 1, 2].map((k) => <div key={k} className="h-8 bg-digi-darker animate-pulse" />)}
+              </div>
             ) : (
-              <button
-                onClick={() => onPrimaryAction(t)}
-                className={`${t.demo_url ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
-              >
-                {isProject ? 'Solicitar proyecto' : t.es_suscripcion ? 'Quiero suscribirme' : 'Comprar'}
-              </button>
-            )}
-            {docsUrl && (
-              <a href={docsUrl} target="_blank" rel="noreferrer" className={`${BTN_SECONDARY} w-full`}>
-                <FileText className="w-4 h-4" /> Ver documentación <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              <ul className={`rounded-lg border border-digi-border divide-y divide-digi-border/50 overflow-y-auto ${enVentana ? 'max-h-64' : 'min-h-0'}`}>
+                {panelReqs.map((r: any, i: number) => {
+                  const accepted: any[] = r.assignments || [];
+                  return (
+                    <li key={r.id} className="flex items-start gap-2.5 px-2.5 py-1.5 bg-digi-card">
+                      <span className={`shrink-0 mt-px w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-semibold tabular-nums ${r.is_completed ? 'bg-accent-light text-accent' : 'bg-black/[0.04] text-digi-muted'}`} style={mf}>{i + 1}</span>
+                      <span className="text-[12px] text-digi-text leading-[1.35] flex-1 min-w-0" style={mf}>{r.title}</span>
+                      {accepted.length > 0 && (
+                        <div className="flex items-center -space-x-1.5 shrink-0 mt-px">
+                          {accepted.slice(0, 3).map((a) => (
+                            a.photo_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img key={a.id} src={a.photo_url} alt="" title={a.member_name} className="w-5 h-5 rounded-full border border-digi-border object-cover" />
+                            ) : (
+                              <div key={a.id} title={a.member_name} className="w-5 h-5 rounded-full border border-accent/20 bg-accent-light flex items-center justify-center text-[9px] font-semibold text-accent" style={mf}>{(a.member_name || '?')[0].toUpperCase()}</div>
+                            )
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
-        </div>
+        )}
       </>
     );
-    // En la columna de escritorio, el panel llega al pie y se desplaza dentro (Fernando, 2026-10-29).
-    if (enVentana) return <div>{cuerpo}</div>;
+    const pie = (
+      <>
+        {/* «Entrar a Organización» ya no va aquí: vive en el módulo Plataformas (Fernando,
+            2026-10-23). Y a quien YA está suscrito no se le ofrece suscribirse otra vez:
+            en su lugar, el camino a Plataformas. */}
+        <Demostracion item={t} />
+        {accesosDe(t)?.length ? (
+          <Link href="/dashboard/plataformas" className={`${BTN_SECONDARY} w-full`}>
+            <LayoutGrid className="w-4 h-4" /> Ver en Plataformas
+          </Link>
+        ) : (
+          <button
+            onClick={() => onPrimaryAction(t)}
+            className={`${t.demo_url ? BTN_SECONDARY : BTN_PRIMARY} w-full`}
+          >
+            {isProject ? 'Solicitar proyecto' : t.es_suscripcion ? 'Quiero suscribirme' : 'Comprar'}
+          </button>
+        )}
+        {docsUrl && (
+          <a href={docsUrl} target="_blank" rel="noreferrer" className={`${BTN_SECONDARY} w-full`}>
+            <FileText className="w-4 h-4" /> Ver documentación <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        )}
+      </>
+    );
+    // En el teléfono, dentro de su ventana (que ya trae título y cierre), todo va seguido.
+    if (enVentana) return <div className="space-y-3">{contenido}<div className="space-y-2 pt-1">{pie}</div></div>;
+    const tipo = isProject ? 'Proyecto' : tabLabel.replace(/s$/, '');
     return (
-      <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg shadow-sm lg:sticky lg:top-4">
-        {cuerpo}
-      </PanelHastaElPie>
+      <PanelDetalle titulo={t.title} subtitulo={tipo.charAt(0).toUpperCase() + tipo.slice(1)} onCerrar={cerrarPanel} pie={pie}>
+        {contenido}
+      </PanelDetalle>
     );
   };
 
@@ -602,33 +597,34 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       />
 
       {/* ── Right region: command bar + contenido ── */}
+      {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra de búsqueda va
+          dentro de la columna de las tarjetas, así el panel de la derecha aprovecha el alto
+          desde la misma línea que el raíl de la izquierda. */}
       <div className="flex-1 min-w-0 w-full">
-        {isCatalog && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
-                className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
-                style={mf} />
-            </div>
-            {/* Filtro por TALENTO (solo en la pestaña de proyectos, que es la que los tiene). */}
-            {tab === 'projects' && talentOptions.length > 0 && (
-              <div className="w-full sm:w-[280px]">
-                <MultiSelectSearch
-                  options={talentOptions.map((t) => ({ value: t, label: t }))}
-                  selected={talentFilter}
-                  onChange={setTalentFilter}
-                  placeholder="Filtrar por talento…"
-                />
-              </div>
-            )}
-          </div>
-        )}
-
         {!isCatalog ? (
           renderExtra?.(tab)
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+            <div className="min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                <div className="relative w-full sm:max-w-xs">
+                  <Search className="w-4 h-4 text-digi-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..."
+                    className="field-control w-full pl-8 pr-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+                    style={mf} />
+                </div>
+                {/* Filtro por TALENTO (solo en la pestaña de proyectos, que es la que los tiene). */}
+                {tab === 'projects' && talentOptions.length > 0 && (
+                  <div className="w-full sm:w-[280px]">
+                    <MultiSelectSearch
+                      options={talentOptions.map((t) => ({ value: t, label: t }))}
+                      selected={talentFilter}
+                      onChange={setTalentFilter}
+                      placeholder="Filtrar por talento…"
+                    />
+                  </div>
+                )}
+              </div>
             {/* Las tarjetas se desplazan dentro de su columna, que llega al pie; vacía, la tarjeta
                 ocupa todo el alto (Fernando, 2026-10-29). */}
             <PanelHastaElPie className="min-w-0 flex flex-col">
@@ -645,6 +641,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                 <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">{cards.map(renderCard)}</div>
               )}
             </PanelHastaElPie>
+            </div>
 
             {/* La columna solo en escritorio; por debajo, el panel que se abre encima (abajo). */}
             {!enTelefono && (
