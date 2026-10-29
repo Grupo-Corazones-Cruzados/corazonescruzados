@@ -69,7 +69,7 @@ export default function FloatingWindow({
   if (!open || !rect || !portalEl) return null;
 
   return createPortal(
-    <div className="fixed z-[70] bg-digi-card border border-digi-border rounded-xl shadow-2xl flex flex-col overflow-hidden" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
+    <div className="superficie-flotante fixed z-[70] bg-digi-card border border-digi-border rounded-xl shadow-2xl flex flex-col overflow-hidden" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
       {/* Cabecera (arrastrar) */}
       <div onPointerDown={start('move')} className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border bg-digi-dark cursor-move select-none shrink-0">
         <GripHorizontal className="w-4 h-4 text-digi-muted shrink-0" />

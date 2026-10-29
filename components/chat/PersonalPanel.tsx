@@ -197,7 +197,7 @@ export default function PersonalPanel({
   return (
     <section className={pantallaCompleta
       ? 'w-full h-full flex bg-digi-card overflow-hidden'
-      : 'w-[min(94vw,640px)] h-[min(74vh,500px)] flex rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden'} aria-label="Chats personales">
+      : 'superficie-flotante w-[min(94vw,640px)] h-[min(74vh,500px)] flex rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden'} aria-label="Chats personales">
       {/* Lista de chats */}
       <div className={`${sel ? (pantallaCompleta ? 'hidden' : 'hidden sm:flex') : 'flex'} ${pantallaCompleta ? 'w-full' : 'w-full sm:w-[220px] border-r border-digi-border'} shrink-0 flex-col`}>
         <header className={`shrink-0 flex items-center gap-2 border-b border-digi-border bg-accent text-white ${pantallaCompleta ? 'h-14 px-1.5' : 'h-11 px-3'}`}>

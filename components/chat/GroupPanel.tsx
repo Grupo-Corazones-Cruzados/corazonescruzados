@@ -101,7 +101,7 @@ export default function GroupPanel({ onClose, onRead, pantallaCompleta = false }
   return (
     <section className={pantallaCompleta
       ? 'w-full h-full flex flex-col bg-digi-card overflow-hidden'
-      : 'w-[min(92vw,360px)] h-[min(70vh,460px)] flex flex-col rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden'} aria-label="Chat general">
+      : 'superficie-flotante w-[min(92vw,360px)] h-[min(70vh,460px)] flex flex-col rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden'} aria-label="Chat general">
       <header className={`shrink-0 flex items-center gap-2 border-b border-digi-border bg-accent text-white ${pantallaCompleta ? 'h-14 px-1.5' : 'h-11 px-3'}`}>
         {pantallaCompleta && (
           <button onClick={onClose} aria-label="Volver" className="w-11 h-11 flex items-center justify-center rounded-lg hover:bg-white/15 transition-colors">

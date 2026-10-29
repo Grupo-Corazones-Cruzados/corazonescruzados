@@ -108,7 +108,7 @@ export default function MenuMas({
           ref={menuRef}
           role="menu"
           aria-label={label}
-          className={`fixed z-[80] bg-digi-card border border-digi-border shadow-lg rounded-lg p-1 transition-[opacity,scale] duration-200 ease-out ${
+          className={`superficie-flotante fixed z-[80] bg-digi-card border border-digi-border shadow-lg rounded-lg p-1 transition-[opacity,scale] duration-200 ease-out ${
             pos?.arriba ? 'origin-bottom-right' : 'origin-top-right'
           } ${visible && pos ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
           style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, width: Math.min(ANCHO, (typeof window !== 'undefined' ? window.innerWidth : ANCHO + 32) - MARGEN * 2) }}

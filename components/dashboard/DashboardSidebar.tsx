@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useTemaPanel } from '@/components/providers/TemaPanel';
+import SelectorTema from '@/components/dashboard/SelectorTema';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import DialogoVerComoOtro from '@/components/dashboard/DialogoVerComoOtro';
@@ -16,7 +16,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
-  LogOut, Sun, Moon, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid,
+  LogOut, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -57,7 +57,6 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function DashboardSidebar() {
   const { user, signOut, suplantacion } = useAuth();
-  const { oscuro, alternar } = useTemaPanel();
   const pathname = usePathname();
   // El estado lo comparte con la cabecera del teléfono, que es quien tiene el botón.
   const { abierto: mobileOpen, cerrar: cerrarMenuMovil } = useMenuMovil();
@@ -77,7 +76,10 @@ export default function DashboardSidebar() {
    * (`mobileOpen`), que abre el menú entero y ya funcionaba así.
    */
   const [sobreElMenu, setSobreElMenu] = useState(false);
-  const collapsed = !(sobreElMenu || mobileOpen);
+  // Con la burbuja de temas abierta el menú sigue desplegado: la burbuja vive fuera del
+  // `<aside>` y llevar el puntero a ella no es dejar el menú.
+  const [temasAbierto, setTemasAbierto] = useState(false);
+  const collapsed = !(sobreElMenu || mobileOpen || temasAbierto);
   // Módulo cuyo modal de tutoriales está abierto (null = ninguno). Al cerrarlo el
   // modal se DESMONTA, así el iframe de YouTube deja de reproducir.
   const [tutorialFor, setTutorialFor] = useState<NavItem | null>(null);
@@ -358,20 +360,9 @@ export default function DashboardSidebar() {
               relleno ni de borde, solo suben el brillo. El botón de contraer sigue fuera,
               que ya no hace falta desde que el menú se abre al acercar el puntero.
 
-              El tema está también en Configuración → Apariencia, y los dos mandan sobre el
-              mismo contexto: se toque donde se toque, quedan de acuerdo. */}
+              El de tema abre una burbuja con los temas (`SelectorTema`). */}
           <div className="flex flex-col gap-1.5">
-          <button
-            onClick={alternar}
-            aria-label={oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            title={oscuro ? 'Modo claro' : 'Modo oscuro'}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium
-                       transition-[filter] duration-150 hover:brightness-125 focus-visible:brightness-125"
-            style={{ ...mf, color: '#C9B8FF', background: 'rgba(201, 184, 255, 0.12)' }}
-          >
-            {oscuro ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {!collapsed && (oscuro ? 'Modo claro' : 'Modo oscuro')}
-          </button>
+          <SelectorTema collapsed={collapsed} alCambiarAbierto={setTemasAbierto} />
 
           <button
             onClick={signOut}

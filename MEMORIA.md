@@ -646,6 +646,12 @@ Stack estándar de la casa, con particularidades de este repo:
   ⚠️ `instrumentation.ts` se compila también para edge: lo de Node va en `instrumentation-node.ts`.
   En iPhone (navegador) solo con la PWA instalada (iOS 16.4+). **En la app nativa no hay push web**: el
   trabajo manda también por `avisarUsuarios` (`push_devices`, APNs/FCM, abre Mi día) y el botón no sale.
+- **🎨 VARIOS TEMAS DEL PANEL (Fernando, 2026-10-29).** El interruptor claro/oscuro del menú pasa a un
+  botón **«Tema»** con burbuja: Claro, Oscuro, **Mixto** (fondos claros, ventanas/paneles/menús oscuros),
+  **Corazón** (rojo sangre, oscuro) y **Orquídea** (#C71585, claro). Catálogo en `lib/temas.ts`, colores
+  en `app/temas.css`, estado en `components/providers/TemaPanel.tsx` (por cuenta en `localStorage`). Los
+  diseñó Claude por encargo («según tu creatividad»): si Fernando pide cambios de color, se tocan solo
+  los tokens del tema. Detalle en `Diseño.md` → «LOS TEMAS DEL PANEL».
 - **🔔 UNA SOLA PUERTA DE AVISOS + PREFERENCIAS POR PERSONA (Fernando, 2026-10-29).** *«todo lo de
   la campanita»* llega también al teléfono y al Mac, y *«que yo elija qué recibo»*.
   - **Catálogo único** `lib/avisos/catalogo.ts` (`AVISOS`: clase, grupo, nombre, canales `push`/`campana`,

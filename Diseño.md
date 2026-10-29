@@ -4814,6 +4814,33 @@ guarda al tocar, sin botón «Guardar», y si falla vuelve atrás con un toast. 
 navegador» con el `BotonAvisosPush` de Mi día; se esconde sola cuando el botón no se pinta (app nativa).
 Verificado a 1440 y 390 px, claro y oscuro (`scrollWidth` = ancho).
 
+## ⭐ LOS TEMAS DEL PANEL — Claro, Oscuro, Mixto, Corazón y Orquídea (2026-10-29)
+Fernando: *«que existan varios temas […] uno que use el color rojo sangre o corazón como principal,
+otro que use el violeta #C71585 […] y un tema mixto: claro para los fondos y oscuro para formularios o
+ventanas flotantes»*. Se eligen en el botón **«Tema»** del pie del menú de módulos
+(`components/dashboard/SelectorTema.tsx`), que abre una `Burbuja` con una fila por tema (miniatura con
+fondo, tarjeta y acento + nombre + ✓); se aplica al tocar sin cerrar la burbuja, para comparar. Mientras
+la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `localStorage`
+(`gcc_dash_theme:<id>`; los viejos `dark`/`light` se leen como Oscuro/Claro).
+- **Catálogo**: `lib/temas.ts` (id, nombre, base clara u oscura, colores de la miniatura). El layout pone
+  `tema-<id>` en `.corp` y `.dark` si la base es oscura: un tema oscuro hereda TODAS las correcciones de
+  `.corp.dark`.
+- **Colores**: `app/temas.css`. Un tema SOLO redefine tokens (`--color-*`, `--tarjeta-*`,
+  `--degradado-*`, `--sombra-boton`, `--fila-hover`, el fondo) y los del raíl; las piezas de
+  `tema-progreso.css` ya los leen. Selectores `.corp.tema-progreso.tema-<id>` (+ `:not(.dark)` en los
+  claros) para ganar sin `!important`.
+- **Corazón** (base oscura): noche granate `#0e0407 → #17070c` con resplandor carmesí; tarjeta `#210c12`,
+  acento `#e11d48`, texto de acento `#ff7a8e`; botón `#e11d48 → #9f1239`. Raíl `#1b080d`.
+- **Orquídea** (base clara): rosa casi blanco `#fffafd → #f6e1ee` con puntos magenta; acento `#C71585`
+  (blanco encima 5,4:1), `accent-light #fce7f3`; botón `#db2799 → #a5106d`. Raíl ciruela `#2a0d20`.
+- **Mixto** (base clara): fondo y tarjetas del Claro; lo que FLOTA toma los tokens de Aventura y las
+  correcciones de color del oscuro. «Lo que flota» = `.modal-surface` (ventanitas y panel derecho) y la
+  clase **`superficie-flotante`**, que llevan `Burbuja`, `MenuMas`, `FloatingWindow`, el panel de
+  notificaciones y los de chat. ⚠️ Una superficie flotante NUEVA tiene que llevar esa clase o en Mixto
+  saldrá clara.
+- Contraste medido (WCAG) en los cinco: texto y secundario ≥ 5,4:1; blanco sobre acento ≥ 4,7:1 salvo
+  el morado del Oscuro/Mixto (4,3:1, el de siempre). Verificado a 1440 y 390 px (`scrollWidth` = ancho).
+
 ## Desviaciones detectadas y resolución
 - **2026-10-29 · Tablas propias que en el teléfono se deslizaban de lado** · **CORREGIDO** (Fernando: «al
   pasar a la versión móvil los datos no se ven bien y deberían convertirse a galería»). `PixelDataTable` ya

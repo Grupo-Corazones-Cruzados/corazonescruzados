@@ -1,6 +1,7 @@
 'use client';
 
 import '../tema-progreso.css';
+import '../temas.css';
 
 import AuthGuard from '@/components/providers/AuthGuard';
 import PolicyEffectsProvider from '@/components/providers/PolicyEffectsProvider';
@@ -35,7 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  * del proveedor, y un componente no puede consumir un contexto que él mismo monta.
  */
 function Panel({ children }: { children: React.ReactNode }) {
-  const { oscuro } = useTemaPanel();
+  const { tema, oscuro } = useTemaPanel();
 
   /**
    * ⇒ EL MENÚ YA NO SE COLAPSA A MANO: se abre al pasar el puntero (ver
@@ -48,8 +49,9 @@ function Panel({ children }: { children: React.ReactNode }) {
    */
   return (
     // `tema-progreso`: el estilo de la sección Plataforma de la portada en todo el panel
-    // (Fernando, 2026-10-29). Ver `app/tema-progreso.css`.
-    <div className={`corp tema-progreso ${oscuro ? 'dark' : ''} flex min-h-screen`}>
+    // (Fernando, 2026-10-29). Ver `app/tema-progreso.css`. Encima, el tema elegido
+    // (`tema-<id>`, ver `app/temas.css`).
+    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} flex min-h-screen`}>
       <PolicyBanner collapsed />
       <DashboardSidebar />
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.

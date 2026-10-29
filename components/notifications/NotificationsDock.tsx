@@ -115,7 +115,7 @@ export default function NotificationsDock() {
           cambio, vive dentro de la barra (ver `PieAcciones`). */}
       {open && (
       <div className="fixed bottom-[calc(var(--pie-panel)+0.5rem)] right-3 lg:right-4 z-[95]">
-        <div className="mb-2 w-[min(92vw,360px)] rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden">
+        <div className="superficie-flotante mb-2 w-[min(92vw,360px)] rounded-xl border border-digi-border bg-digi-card shadow-2xl overflow-hidden">
           <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-digi-border">
             <Bell className="w-4 h-4 text-accent" />
             <span className="text-[13px] font-semibold text-digi-text flex-1">Notificaciones</span>

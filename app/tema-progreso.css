@@ -18,6 +18,7 @@
    layout del panel). Dos razones: `globals.css` lo editan a la vez otras sesiones (la
    portada), y así la especificidad (0,3,0) gana a las reglas `.corp …` (0,2,0) sin
    `!important`. El claro va con `:not(.dark)` para no pisar los tokens de `.corp.dark`.
+   Los demás temas (Mixto, Corazón, Orquídea) cambian estos tokens en `app/temas.css`.
    ═══════════════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Tokens ─────────────────────────────────────────────────────────────────────────── */
@@ -127,7 +128,7 @@
 }
 /* La tabla dibujaba un borde de 2 px: en una tarjeta de la portada es de 1. */
 .corp.tema-progreso .data-table { border-width: 1px; overflow: hidden; }
-.corp.tema-progreso .data-table .dt-row:hover { background: rgba(123, 95, 191, 0.06); }
+.corp.tema-progreso .data-table .dt-row:hover { background: var(--fila-hover, rgba(123, 95, 191, 0.06)); }
 /* Dentro de una tarjeta, otra tarjeta no vuelve a flotar: solo su borde. */
 .corp.tema-progreso :is(.pixel-card, .bg-digi-card.border.rounded-lg, .bg-digi-card.border.rounded-xl) :is(.bg-digi-card.border.rounded-lg, .bg-digi-card.border.rounded-xl) {
   box-shadow: none;
@@ -150,11 +151,11 @@
 .corp.tema-progreso :is(.btn-primario, .pixel-btn-primary, button.bg-accent.text-white.rounded:not(.border), a.bg-accent.text-white.rounded:not(.border)) {
   background-image: var(--degradado-boton);
   border-radius: var(--radio-control);
-  box-shadow: 0 10px 24px -12px rgba(109, 40, 217, 0.75);
+  box-shadow: 0 10px 24px -12px var(--sombra-boton, rgba(109, 40, 217, 0.75));
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 /* hover */
-.corp.tema-progreso :is(.btn-primario, .pixel-btn-primary, button.bg-accent.text-white.rounded:not(.border), a.bg-accent.text-white.rounded:not(.border)):hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 14px 28px -12px rgba(109, 40, 217, 0.85); }
+.corp.tema-progreso :is(.btn-primario, .pixel-btn-primary, button.bg-accent.text-white.rounded:not(.border), a.bg-accent.text-white.rounded:not(.border)):hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 14px 28px -12px var(--sombra-boton, rgba(109, 40, 217, 0.85)); }
 .corp.tema-progreso .btn-secundario {
   background-color: var(--tarjeta-fondo);
   border-color: var(--tarjeta-borde);
@@ -179,7 +180,7 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #4b2d8e;
+  color: var(--color-accent);
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(75, 45, 142, 0.2);
   -webkit-backdrop-filter: blur(12px);
@@ -205,7 +206,7 @@
   border-radius: 9px;
   color: #fff;
   background: var(--degradado-icono);
-  box-shadow: 0 6px 14px -8px rgba(124, 92, 224, 0.9);
+  box-shadow: 0 6px 14px -8px var(--sombra-boton, rgba(124, 92, 224, 0.9));
 }
 .corp.tema-progreso .cifra-icono[data-tono='green'] { background: linear-gradient(135deg, #16a34a, #0d9488); box-shadow: 0 6px 14px -8px rgba(22, 163, 74, 0.8); }
 .corp.tema-progreso .cifra-icono[data-tono='red'] { background: linear-gradient(135deg, #e11d48, #db2777); box-shadow: 0 6px 14px -8px rgba(225, 29, 72, 0.7); }

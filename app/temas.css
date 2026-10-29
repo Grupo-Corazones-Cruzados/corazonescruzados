@@ -1,0 +1,161 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════
+   LOS TEMAS DEL PANEL (Fernando, 2026-10-29: «que existan varios temas»)
+   ───────────────────────────────────────────────────────────────────────────────────────
+   El catálogo está en `lib/temas.ts`; el layout pone `tema-<id>` en `.corp` y, si el tema
+   es de base oscura, también `.dark`. Claro y Oscuro son los de `app/tema-progreso.css` tal
+   cual; aquí van los que cambian algo encima:
+
+     · MIXTO     — el fondo y las tarjetas en claro; lo que FLOTA (paneles de formulario,
+                   ventanitas, burbujas, menús, chats) en el oscuro de Aventura.
+     · CORAZÓN   — rojo sangre sobre una noche granate. Base oscura.
+     · ORQUÍDEA  — el #C71585 de Fernando sobre un rosa casi blanco. Base clara.
+
+   ⚠️ Un tema SOLO redefine tokens (`--color-*`, `--tarjeta-*`, `--degradado-*`, el fondo) y
+   el raíl. Las piezas (tarjetas, botones, cifras) ya los leen; un tema que necesite reglas
+   de piezas propias está copiando el diseño, no tiñéndolo.
+
+   Especificidad: cada selector lleva `.corp.tema-progreso.tema-<id>` y, en los claros,
+   `:not(.dark)`, para ganar a los de `tema-progreso.css` sin `!important`.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── MIXTO ──────────────────────────────────────────────────────────────────────────── */
+/* Lo que flota: `.modal-surface` (PixelModal y el panel derecho) y lo que lleva la clase
+   `superficie-flotante` (Burbuja, MenuMas, FloatingWindow, notificaciones y chats). */
+.corp.tema-progreso.tema-mixto :is(.modal-surface, .superficie-flotante) {
+  color-scheme: dark;
+  --color-digi-green: #6bb700;
+  --color-digi-dark: #0d0a1a;
+  --color-digi-darker: #110d22;
+  --color-digi-card: #17122b;
+  --color-digi-border: #2c2449;
+  --color-digi-text: #f1eefb;
+  --color-digi-muted: #a99fc7;
+  --color-accent: #8267d4;
+  --color-accent-hover: #9179df;
+  --color-accent-light: #2a2050;
+  --color-accent-dark: #6f4fc0;
+  --color-accent-glow: #a78bfa;
+  --color-red-400: #f1707b; --color-red-300: #f1707b;
+  --color-green-400: #6bb700;
+  --color-yellow-400: #e0b34d; --color-amber-400: #e0b34d; --color-amber-300: #e0b34d;
+  --color-purple-400: #b39ddb; --color-purple-300: #b39ddb; --color-pink-400: #f472b6;
+  --tarjeta-fondo: rgba(23, 18, 43, 0.96);
+  --cabecera-tabla: #160f2a;
+  --tarjeta-borde: rgba(167, 139, 250, 0.18);
+  --etiqueta: #b3a9d4;
+  --fila-hover: rgba(167, 139, 250, 0.08);
+  --degradado-boton: linear-gradient(135deg, #8b5cf6, #a21caf);
+  color: var(--color-digi-text);
+}
+/* El panel de la ventana: sin el blanco de `.pixel-card`. */
+.corp.tema-progreso.tema-mixto .modal-surface { background-color: var(--color-digi-card); border-color: var(--color-digi-border); }
+
+/* Las correcciones del modo oscuro (`.corp.dark` en globals.css) que dentro de una ventana
+   oscura hacen falta: fondos blancos y grises a mano, tintes de estado y textos de color. */
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .bg-white { background-color: var(--color-digi-card) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.bg-\[\#faf9f8\]) { background-color: var(--color-digi-darker) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.bg-\[\#f3f2f1\], .bg-\[\#edebe9\]) { background-color: #2a2342 !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.bg-black\/\[0\.02\], .bg-black\/\[0\.03\], .bg-black\/\[0\.04\], .bg-black\/\[0\.05\]) { background-color: rgba(255,255,255,0.05) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.hover\:bg-white, .hover\:bg-\[\#f3f2f1\], .hover\:bg-\[\#faf9f8\], .hover\:bg-black\/\[0\.03\], .hover\:bg-black\/\[0\.04\]):hover { background-color: rgba(255,255,255,0.07) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .bg-green-50 { background-color: rgba(107,183,0,0.13) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .bg-red-50 { background-color: rgba(241,112,123,0.13) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.bg-amber-50, .bg-yellow-50) { background-color: rgba(224,179,77,0.13) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.text-green-600, .text-green-700) { color: #7bc043 !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.text-red-500, .text-red-600, .text-red-700) { color: #f1707b !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.text-amber-600, .text-amber-700) { color: #e0b34d !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.border-red-200, .border-red-300) { border-color: rgba(241,112,123,0.42) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.border-green-300, .border-green-500\/30, .border-green-500\/40) { border-color: rgba(107,183,0,0.42) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .border-amber-300 { border-color: rgba(224,179,77,0.42) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .pixel-badge[data-variant="success"] { color: #7bc043; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .pixel-badge[data-variant="warning"] { color: #e0b34d; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .pixel-badge[data-variant="error"] { color: #f1707b; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .pixel-badge[data-variant="info"] { color: var(--color-accent-glow); }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .pixel-btn-secondary { background: var(--color-digi-card); }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.4) !important; }
+.corp.tema-mixto :is(.modal-surface, .superficie-flotante) :is(.boton-quitar:enabled:hover, .boton-quitar:enabled:focus-visible) {
+  color: #f1707b; background-color: rgba(241,112,123,0.18); border-color: rgba(241,112,123,0.35);
+}
+
+/* ── CORAZÓN — rojo sangre sobre noche granate ─────────────────────────────────────── */
+.corp.tema-progreso.tema-corazon.dark {
+  --color-digi-dark: #12060a;
+  --color-digi-darker: #170810;
+  --color-digi-card: #210c12;
+  --color-digi-border: #3d1820;
+  --color-digi-text: #fbeff1;
+  --color-digi-muted: #c9a0a9;
+  --color-accent: #e11d48;
+  --color-accent-hover: #f43f5e;
+  --color-accent-light: #3f111b;
+  --color-accent-dark: #a50d25;
+  --color-accent-glow: #ff7a8e;
+  --tarjeta-fondo: rgba(33, 12, 18, 0.84);
+  --cabecera-tabla: #1d0a10;
+  --tarjeta-borde: rgba(251, 113, 133, 0.18);
+  --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.85), 0 0 30px -18px rgba(200, 16, 46, 0.5);
+  --etiqueta: #d3a9b2;
+  --fila-hover: rgba(251, 113, 133, 0.07);
+  --sombra-boton: rgba(200, 16, 46, 0.75);
+  --degradado-boton: linear-gradient(135deg, #e11d48, #9f1239);
+  --degradado-icono: linear-gradient(135deg, #f43f5e, #be123c);
+  --degradado-acento: linear-gradient(90deg, #fda4af, #fb7185 45%, #e11d48);
+
+  background:
+    radial-gradient(rgba(255, 228, 232, 0.08) 1px, transparent 1.6px) 0 0 / 34px 34px,
+    radial-gradient(36vw 36vw at 88% -6%, rgba(200, 16, 46, 0.30), transparent 70%),
+    radial-gradient(30vw 30vw at 4% 106%, rgba(244, 63, 94, 0.14), transparent 70%),
+    linear-gradient(180deg, #0e0407 0%, #17070c 100%);
+  background-attachment: fixed;
+}
+.corp.tema-progreso.tema-corazon .rail {
+  --color-digi-card: #1b080d;
+  --color-digi-darker: #150609;
+  --color-digi-border: #3d1820;
+  --color-digi-text: #fcf0f2;
+  --color-digi-muted: #cf9faa;
+  --color-accent: #ff94a4;
+  --color-accent-light: #4a1522;
+  --color-accent-glow: #ff94a4;
+}
+
+/* ── ORQUÍDEA — #C71585 sobre rosa casi blanco ─────────────────────────────────────── */
+.corp.tema-progreso.tema-orquidea:not(.dark) {
+  --color-digi-dark: #fbf1f7;
+  --color-digi-card: #ffffff;
+  --color-digi-border: #f1dbe8;
+  --color-digi-text: #2a0f20;
+  --color-digi-muted: #7a5a6c;
+  --color-accent: #c71585;
+  --color-accent-hover: #a5106d;
+  --color-accent-light: #fce7f3;
+  --color-accent-dark: #9d0f68;
+  --color-accent-glow: #c71585;
+  --tarjeta-fondo: rgba(255, 255, 255, 0.86);
+  --cabecera-tabla: #fffbfd;
+  --tarjeta-borde: #f1dbe8;
+  --tarjeta-sombra: 0 14px 34px -16px rgba(199, 21, 133, 0.32);
+  --etiqueta: #7a5a6c;
+  --fila-hover: rgba(199, 21, 133, 0.05);
+  --sombra-boton: rgba(199, 21, 133, 0.7);
+  --degradado-boton: linear-gradient(135deg, #db2799, #a5106d);
+  --degradado-icono: linear-gradient(135deg, #e04aa8, #c71585);
+  --degradado-acento: linear-gradient(90deg, #f472b6, #c71585 50%, #86198f);
+
+  background:
+    radial-gradient(rgba(199, 21, 133, 0.11) 1px, transparent 1.6px) 0 0 / 28px 28px,
+    radial-gradient(34vw 34vw at 92% -4%, rgba(199, 21, 133, 0.17), transparent 70%),
+    radial-gradient(30vw 30vw at 6% 104%, rgba(244, 114, 182, 0.16), transparent 70%),
+    radial-gradient(24vw 24vw at 52% 45%, rgba(199, 21, 133, 0.05), transparent 70%),
+    linear-gradient(160deg, #fffafd 0%, #fbeef6 55%, #f6e1ee 100%);
+  background-attachment: fixed;
+}
+.corp.tema-progreso.tema-orquidea .rail {
+  --color-digi-card: #2a0d20;
+  --color-digi-darker: #220a1a;
+  --color-digi-border: #4a1a3a;
+  --color-digi-text: #fdf0f7;
+  --color-digi-muted: #d9a5c4;
+  --color-accent: #ff9ad5;
+  --color-accent-light: #561a43;
+  --color-accent-glow: #ff9ad5;
+}

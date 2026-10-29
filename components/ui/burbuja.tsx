@@ -149,7 +149,7 @@ export function Burbuja({
       aria-label={etiqueta}
       // z-[80] para quedar por encima del banner de Comandos Violeta (z-[60]) y de los
       // paneles deslizantes (z-[70]).
-      className="fixed z-[80] max-w-[calc(100vw-32px)] rounded-lg border border-digi-border bg-digi-card shadow-xl"
+      className="superficie-flotante fixed z-[80] max-w-[calc(100vw-32px)] rounded-lg border border-digi-border bg-digi-card shadow-xl"
       style={{
         top: caja.top,
         width: ancho,

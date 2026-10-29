@@ -1,43 +1,49 @@
 'use client';
 
 /**
- * EL TEMA DEL PANEL (claro / oscuro) — dueño único del estado.
+ * EL TEMA DEL PANEL — dueño único del estado.
  *
  * ── POR QUÉ SALE DEL LAYOUT (2026-08-28) ──────────────────────────────────────────────
- * El interruptor de tema vivía como un botón en el pie del menú lateral, y el estado en el
- * layout. Al quitar ese botón —el pie del menú se quedó con lo imprescindible— el tema se
- * ajusta desde **Configuración**, que es donde uno va a buscar sus preferencias.
+ * El estado vivía en el layout, pero quien lo cambia es el botón del menú lateral: un
+ * contexto deja que cualquiera lo lea o lo cambie sin pasar props por medio panel. El layout
+ * sigue siendo quien PINTA las clases (`.dark` y `tema-<id>`); aquí solo se guarda cuál es.
  *
- * Pero Configuración es una página, no el layout: no puede tocar un `useState` que vive
- * dos niveles por encima. De ahí este contexto. El layout sigue siendo quien PINTA la
- * clase `.corp.dark`; aquí solo se guarda cuál es y quién puede cambiarlo.
- *
- * Se recuerda en `localStorage` por navegador, no en la base: es una preferencia de cómo
- * se ve la pantalla en ESTE equipo, no un dato de la cuenta. Quien entre desde otro
- * ordenador empieza en claro, y está bien.
+ * ── VARIOS TEMAS (2026-10-29) ─────────────────────────────────────────────────────────
+ * Antes era claro/oscuro; ahora es uno del catálogo `lib/temas.ts`. `oscuro` se sigue
+ * exponiendo —derivado de la base del tema— porque es lo que decide la clase `.dark`.
  */
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { TEMA_POR_DEFECTO, definicionTema, type TemaId } from '@/lib/temas';
 
 /**
  * La preferencia se guarda POR CUENTA (`gcc_dash_theme:<id>`), no por navegador
  * (Fernando, 2026-09-21): una cuenta recién creada tiene que empezar en claro aunque
  * en ese mismo equipo otra cuenta haya elegido el oscuro. Sin cuenta se usa la llave
  * genérica, que es la de antes.
+ *
+ * Se recuerda en `localStorage`, no en la base: es cómo se ve la pantalla en ESTE equipo.
  */
 const LLAVE = 'gcc_dash_theme';
 
+/** Lo guardado antes de los temas era `dark`/`light`: se sigue entendiendo. */
+function leerGuardado(valor: string | null): TemaId {
+  if (valor === 'dark') return 'oscuro';
+  if (valor === 'light') return 'claro';
+  return definicionTema(valor)?.id ?? TEMA_POR_DEFECTO;
+}
+
 interface TemaPanel {
+  tema: TemaId;
   oscuro: boolean;
-  poner: (oscuro: boolean) => void;
-  alternar: () => void;
+  poner: (tema: TemaId) => void;
 }
 
 const Ctx = createContext<TemaPanel | null>(null);
 
 export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) {
-  const [oscuro, setOscuro] = useState(false);
+  const [tema, setTema] = useState<TemaId>(TEMA_POR_DEFECTO);
   const { user } = useAuth();
   const llave = user?.id ? `${LLAVE}:${user.id}` : LLAVE;
 
@@ -46,17 +52,17 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
   // Se relee al cambiar de cuenta: cada una tiene su llave, y la que no tiene nada guardado
   // empieza en claro.
   useEffect(() => {
-    try { setOscuro(localStorage.getItem(llave) === 'dark'); } catch { /* sin almacenamiento: claro */ }
+    try { setTema(leerGuardado(localStorage.getItem(llave))); } catch { /* sin almacenamiento: claro */ }
   }, [llave]);
 
-  const poner = useCallback((v: boolean) => {
-    setOscuro(v);
-    try { localStorage.setItem(llave, v ? 'dark' : 'light'); } catch { /* no impide cambiarlo ahora */ }
+  const poner = useCallback((t: TemaId) => {
+    setTema(t);
+    try { localStorage.setItem(llave, t); } catch { /* no impide cambiarlo ahora */ }
   }, [llave]);
 
-  const alternar = useCallback(() => poner(!oscuro), [oscuro, poner]);
+  const oscuro = definicionTema(tema)?.base === 'oscuro';
 
-  return <Ctx.Provider value={{ oscuro, poner, alternar }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ tema, oscuro, poner }}>{children}</Ctx.Provider>;
 }
 
 /**
@@ -64,5 +70,5 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
  * reventar: así un componente compartido con el sitio público se puede usar en los dos.
  */
 export function useTemaPanel(): TemaPanel {
-  return useContext(Ctx) ?? { oscuro: false, poner: () => {}, alternar: () => {} };
+  return useContext(Ctx) ?? { tema: TEMA_POR_DEFECTO, oscuro: false, poner: () => {} };
 }
