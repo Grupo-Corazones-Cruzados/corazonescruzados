@@ -119,6 +119,9 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
   · **J6201.02** — adaptación y configuración de una aplicación existente a los sistemas del cliente ⇒ Power Apps,
     Odoo, SharePoint, soporte de sistemas.
   · J6202 — consultoría informática (opcional: «Consultoría en Automatización de Procesos»).
+  · **Dónde se cambia (pantalla de Fernando, 2026-10-30):** SRI en Línea → RUC → Actualización solo ofrece
+    «Medios de contacto», «Establecimientos» y «Contador». No hay opción de actividades: en el RUC las actividades
+    cuelgan del establecimiento, así que se entra por **Establecimientos → 001**. Si no deja añadir, va a ventanilla.
   · Hoy tiene **S9609.07**, que el INEC describe como *limpiabotas, porteadores de maletas, encargados de
     estacionar vehículos, etcétera*: ninguna palabra en la factura lo acerca a desarrollo de software.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
