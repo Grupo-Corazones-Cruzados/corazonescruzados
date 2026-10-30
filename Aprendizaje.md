@@ -131,7 +131,9 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
     cuelgan del establecimiento, así que se entra por **Establecimientos → 001**. Si no deja añadir, va a ventanilla.
   · **Códigos del SRI vistos en su buscador (2026-10-30):** J62010201 = adaptación y configuración de una aplicación
     existente; J62021001 = planificación y diseño de sistemas que integran equipo, programas y comunicaciones;
-    J62090101 = recuperación ante desastres e instalación de programas. Buscar «programas informáticos» NO trae
+    J62090101 = recuperación ante desastres e instalación de programas. **J63110301 = «Servicios de aplicaciones»** (software por
+    uso: productos, tarifa de la plataforma); J63110101 = hospedaje de sitios web y aplicaciones (los «Servidor — mes»).
+    Salen buscando «aplicaciones»; «hospedaje» no devuelve nada. Buscar «programas informáticos» NO trae
     la de desarrollo: es **J62010101** y sale buscando «página».
   · **Al añadir J62010101 (2026-10-30) la tabla conserva S96090705**: no reemplaza. Antes de «Guardar», el SRI
     pide asociar dos «registros a su nombre»: **Actividad principal** y **Título profesional**. ⚠️ El título es el
