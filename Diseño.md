@@ -5963,3 +5963,11 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   −egreso» debajo, resultado a la derecha); el detalle como listado que se lee (concepto | importe), un lado a la
   vez con `Segmentado`, y cada renglón se edita en `QuickEditDialog`. Una cifra de `RejillaCifras` que queda sola
   en su fila ocupa las dos columnas.
+- **Formularios de Configuración en el teléfono** (Fernando, 2026-10-30, `components/settings/GrupoForm.tsx`): la sección no
+  es una tarjeta con todo dentro; cada bloque es un **grupo** con su nombre encima (11 px, mayúsculas, tenue) y su propia
+  tarjeta, sobre el fondo, como `PortadaSecciones`. Nunca tarjeta dentro de tarjeta en el teléfono. Una de varias opciones
+  es `Segmentado` (no cápsulas tintadas que se parten en filas). Dos campos gemelos sin título propio («Desde/Hasta») llevan
+  su nombre a la vista, no como texto de ejemplo.
+- **Ventanita dentro de un panel** (2026-10-30): el CSS de los paneles va con `>` (si no, la ventanita hereda sus márgenes
+  seguros) y `PixelModal` solo atiende `close`/`cancel` de su propio `<dialog>` (React los hace subir: la X cerraba los dos).
+  La acción que borra en el pie (`danger`) es un botón con papelera del alto de los demás; en el teléfono, solo la papelera.
