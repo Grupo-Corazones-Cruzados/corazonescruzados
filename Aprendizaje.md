@@ -11074,3 +11074,6 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
   referencia. Por corregir (él): un segundo P31 = Q22137024 (puso «official website» como valor de «instance
   of») → quitarlo y crear P856; alias en una sola cadena «GCC · Grupo CC · GCC» → tres alias; falta etiqueta en
   inglés. Añadido a `REDES` → `sameAs`.
+- 2026-10-30 · **Redes corregidas por Fernando:** Instagram `grupo_corazones_cruzados` y TikTok
+  `@grupo_corazones_cruzados` (antes `grupocorazonescruzados` y `@grupocc.org`). Cambiado en `PERFILES`
+  (pie + `sameAs`). ⚠️ En Wikidata (Q141934974) P2003 y P7085 siguen con los valores viejos: los corrige él.

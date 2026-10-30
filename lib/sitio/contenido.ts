@@ -96,9 +96,9 @@ export const OG_IMAGEN = '/opengraph-image?v=logo-2026-10-29';
  */
 export const PERFILES: { red: Red; url: string }[] = [
   { red: 'linkedin', url: 'https://www.linkedin.com/company/grupo-corazones-cruzados/' },
-  { red: 'instagram', url: 'https://www.instagram.com/grupocorazonescruzados/' },
+  { red: 'instagram', url: 'https://www.instagram.com/grupo_corazones_cruzados/' },
   { red: 'facebook', url: 'https://www.facebook.com/GrupoCorazonesCruzados' },
-  { red: 'tiktok', url: 'https://www.tiktok.com/@grupocc.org' },
+  { red: 'tiktok', url: 'https://www.tiktok.com/@grupo_corazones_cruzados' },
   { red: 'youtube', url: 'https://www.youtube.com/@grupocc-org' },
 ];
 
@@ -214,6 +214,12 @@ export interface Acceso {
    * buscador cortada a la mitad de una frase. Son dos textos porque son dos trabajos.
    */
   descripcion?: string;
+  /**
+   * El bloque al que pertenece la puerta (2026-10-30). Las puertas con grupo se pintan en
+   * columnas con su rótulo («Conoce el modelo» | «Tu camino») en vez de una fila de seis
+   * tarjetas encogidas. Sin grupo, todas van juntas en un solo bloque (Clientes).
+   */
+  grupo?: string;
   /* ⚠️ AQUÍ ESTABA `enlaceExterno`, EL BOTÓN GRANDE DENTRO DEL CONTENIDO — borrado el
      2026-08-20 al quedarse **sin un solo uso**. Lo tuvieron Marketplace («Ver el
      marketplace», retirado el 08-19) y «Cómo se entra» de Desarrollo Humano («Postularme»,
@@ -882,7 +888,7 @@ export const ACCESOS: Acceso[] = [
  */
 export const DESARROLLO: Acceso[] = [
   {
-    id: 'el-proyecto', icono: 'pulso',
+    id: 'el-proyecto', icono: 'pulso', grupo: 'Conoce el modelo',
     titulo: 'El proyecto',
     texto: 'Para quién es el Grupo Corazones Cruzados, y por qué existe.',
     descripcion:
@@ -949,13 +955,13 @@ export const DESARROLLO: Acceso[] = [
    * un sitio y cambian en los dos. La tabla y las reglas las pone la página de la sección.
    */
   {
-    id: 'modelo-organizacional-4p', icono: 'capas',
+    id: 'modelo-organizacional-4p', icono: 'capas', grupo: 'Conoce el modelo',
     titulo: 'Modelo Organizacional 4P',
     texto: 'Los cuatro pisos y los cuatro pasos con los que se organiza cada proyecto del grupo.',
     descripcion: MODELO_INTRO,
   },
   {
-    id: 'herramientas-del-modelo', icono: 'herramienta',
+    id: 'herramientas-del-modelo', icono: 'herramienta', grupo: 'Conoce el modelo',
     titulo: 'Herramientas del Modelo',
     texto: 'Metodología Condiciológica, Sistema de Control Psicosocial, Proyecto Centralizado y Violeta.',
     descripcion: HERRAMIENTAS_INTRO,
@@ -969,7 +975,7 @@ export const DESARROLLO: Acceso[] = [
   },
 
   {
-    id: 'como-se-entra', icono: 'acuerdo',
+    id: 'como-se-entra', icono: 'acuerdo', grupo: 'Tu camino',
     titulo: 'Cómo se entra',
     texto: 'La entrevista inicial, el estudio de tu caso y las alternativas que salen de ahí.',
     descripcion:
@@ -1027,7 +1033,7 @@ export const DESARROLLO: Acceso[] = [
   },
 
   {
-    id: 'tu-progreso', icono: 'tendencia',
+    id: 'tu-progreso', icono: 'tendencia', grupo: 'Tu camino',
     titulo: 'Tu progreso',
     texto: 'Cómo se trata tu caso, cómo se mide el avance y cuándo te conviertes en miembro.',
     descripcion:
@@ -1109,7 +1115,7 @@ export const DESARROLLO: Acceso[] = [
    * que solo él puede dar—. Donde haría falta un número, la frase se queda en el mecanismo.
    */
   {
-    id: 'ser-miembro', icono: 'institucion',
+    id: 'ser-miembro', icono: 'institucion', grupo: 'Tu camino',
     titulo: 'Ser miembro',
     texto: 'Qué haces, qué aportas y cómo participas en las decisiones de la organización.',
     descripcion:

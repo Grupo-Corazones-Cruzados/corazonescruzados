@@ -44,7 +44,7 @@
  *     git show e09e1dc0:components/sitio/ExploradorSecciones.tsx
  */
 
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
@@ -53,73 +53,71 @@ import type { ComponentProps, ReactNode } from 'react';
 import GaleriaTarjetas from './GaleriaTarjetas';
 import VideoYouTube from './VideoYouTube';
 import FaqsClientes from './FaqsClientes';
+import IndiceSeccion from './IndiceSeccion';
 
 /**
- * LAS PUERTAS — las secciones como una fila de tarjetas bajo la presentación (2026-10-29).
+ * LAS PUERTAS — las secciones en BLOQUES bajo la presentación (2026-10-30).
  *
- * Cuatro en fila desde `lg`, 2×2 por debajo (en el teléfono solo icono y nombre: la frase ya la
- * dice el contenido). La abierta va RELLENA de violeta con el texto en blanco —lo elegido, como la
- * píldora de la cabecera— y con `aria-current`. Cada tarjeta es un enlace de verdad a su URL.
+ * Eran una fila de tarjetas (2026-10-29) y con seis —Desarrollo Humano— cada una quedaba en
+ * ~200 px: títulos partidos («Orga-nizacional») y la frase cortada con «…». Fernando: *«todas las
+ * tarjetas se ven muy encogidas… puedes reformular por completo este apartado»*.
+ *
+ * Ahora cada puerta es una FILA ancha (icono · nombre y frase enteros · flecha) dentro de una
+ * tarjeta por bloque. Las secciones con `grupo` se reparten en columnas con su rótulo numerado
+ * —«01 Conoce el modelo» | «02 Tu camino»—, que además cuentan el orden de lectura. Sin grupo
+ * (Clientes) van en un solo bloque de dos columnas. La abierta, RELLENA de violeta como antes.
+ * En el teléfono, solo icono y nombre. Cada fila sigue siendo un enlace a su URL.
+ *
+ * «En esta página» (el índice de la derecha) vive en `IndiceSeccion.tsx`: marca la pregunta
+ * que se está leyendo, y para eso necesita el navegador.
  */
 function PuertasSecciones({
   secciones, activa, base, etiquetaNav,
 }: {
   secciones: Acceso[]; activa: string; base: string; etiquetaNav: string;
 }) {
-  return (
-    <nav aria-label={etiquetaNav} className="puertas-seccion" style={{ ['--n' as string]: secciones.length }}>
-      {secciones.map((a) => {
-        const abierta = a.id === activa;
-        const Icono = ICONOS[a.icono] ?? ICONOS.capas;
-        return (
-          <Link
-            key={a.id}
-            href={`${base}/${a.id}`}
-            aria-current={abierta ? 'page' : undefined}
-            className={`puerta-seccion ${abierta ? 'es-abierta' : ''}`}
-          >
-            <span className="puerta-icono" aria-hidden><Icono /></span>
-            <span className="puerta-titulo">{a.titulo}</span>
-            <span className="puerta-texto">{a.texto}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
+  const grupos: { nombre?: string; puertas: Acceso[] }[] = [];
+  for (const a of secciones) {
+    const g = grupos.find((x) => x.nombre === a.grupo);
+    if (g) g.puertas.push(a);
+    else grupos.push({ nombre: a.grupo, puertas: [a] });
+  }
 
-/**
- * EL ÍNDICE DE PREGUNTAS — el panel de la derecha.
- *
- * Solo existe si la sección tiene preguntas; si no, `ExploradorSecciones` no lo pasa y la
- * rejilla vuelve a dos columnas en vez de dejar un hueco blanco. Es lo que pasa hoy con
- * Democracia (ver el aviso en `ACCESOS`).
- */
-function IndicePreguntas({ temas }: { temas: NonNullable<Acceso['temas']> }) {
   return (
-    <aside aria-label="Preguntas de esta sección">
-      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-3">
-        En esta página
-      </p>
-      <ul className="space-y-1">
-        {temas.map((t) => (
-          <li key={t.id}>
-            <a
-              href={`#${t.id}`}
-              className="block rounded-lg px-3 py-2.5 text-[13.5px] leading-snug text-[var(--suave)]
-                         border border-transparent transition-colors
-                         hover:border-[var(--linea)] hover:bg-[#7b5fbf]/[0.05] hover:text-[var(--texto)]
-                         focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7b5fbf]/50"
-            >
-              <span className="block text-[10.5px] font-semibold uppercase tracking-[0.13em] text-[var(--violeta-txt)]">
-                {t.etiqueta}
-              </span>
-              <span className="mt-1 block">{t.pregunta}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </aside>
+    <nav aria-label={etiquetaNav} className="puertas-bloques" data-grupos={grupos.length}>
+      {grupos.map((g, i) => (
+        <div key={g.nombre ?? i} className="min-w-0">
+          {g.nombre && (
+            <p className="puertas-grupo-rotulo">
+              <span className="puertas-grupo-num" aria-hidden>{String(i + 1).padStart(2, '0')}</span>
+              {g.nombre}
+            </p>
+          )}
+          <ul className="puertas-lista">
+            {g.puertas.map((a) => {
+              const abierta = a.id === activa;
+              const Icono = ICONOS[a.icono] ?? ICONOS.capas;
+              return (
+                <li key={a.id} className="min-w-0">
+                  <Link
+                    href={`${base}/${a.id}`}
+                    aria-current={abierta ? 'page' : undefined}
+                    className={`puerta-fila ${abierta ? 'es-abierta' : ''}`}
+                  >
+                    <span className="puerta-icono" aria-hidden><Icono /></span>
+                    <span className="min-w-0">
+                      <span className="puerta-fila-titulo">{a.titulo}</span>
+                      <span className="puerta-fila-texto">{a.texto}</span>
+                    </span>
+                    <ChevronRight className="puerta-fila-flecha" aria-hidden />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
   );
 }
 
@@ -240,7 +238,7 @@ export default function ExploradorSecciones({
 
         {temas.length > 0 && (
           <div className="indice-sitio">
-            <IndicePreguntas temas={temas} />
+            <IndiceSeccion temas={temas} />
           </div>
         )}
       </div>

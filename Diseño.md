@@ -777,6 +777,26 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   la visible usaba el de la oculta y salía CUADRADA.
 - Verificado (producción) a 1440, 1100 y 390 px: `scrollWidth` igual al ancho.
 
+### ⭐ Las puertas en BLOQUES y «En esta página» que sigue la lectura (Fernando, 2026-10-30) — VIGENTE
+
+> *«todas las tarjetas se ven muy encogidas… puedes reformular por completo este apartado»*. Con seis
+> secciones, la fila de puertas dejaba ~200 px por tarjeta: «Orga-nizacional» partido y la frase con «…».
+
+- **Puertas = filas anchas dentro de una tarjeta por bloque** (`PuertasSecciones` en
+  `ExploradorSecciones.tsx`; `.puertas-bloques`, `.puertas-lista`, `.puerta-fila*`): icono · nombre y
+  frase ENTEROS · flecha `›`. La abierta, rellena de violeta (como antes).
+- **Bloques con nombre** por el campo `grupo` de `Acceso`: Desarrollo Humano = «01 Conoce el modelo»
+  (proyecto, Modelo 4P, Herramientas) | «02 Tu camino» (cómo se entra, progreso, ser miembro), en dos
+  columnas del mismo alto desde `lg`. Sin grupo (Clientes): un bloque de 2 columnas.
+- **Teléfono:** bloques apilados, filas con icono y nombre (sin frase).
+- **`.puertas-seccion`/`.puerta-seccion` siguen** para los talentos de Soluciones.
+- **«En esta página» = tarjeta** (`IndiceSeccion.tsx`, cliente; `.indice-tarjeta*`), 280 px, fija al
+  desplazar: preguntas numeradas 01, 02… y la que se está leyendo marcada (fondo violeta suave, barra
+  violeta a la izquierda, texto oscuro). Activa = última pregunta cuyo inicio pasó el 35 % de la
+  pantalla. Los enlaces siguen en el HTML.
+- Verificado (build de producción): 1440, 1100 y 390 px sin desplazamiento lateral; títulos en una
+  línea (25 px); filas de 590 px a 1440 (antes ~200).
+
 ### ⭐ El mundo «Progreso» en Soluciones, Clientes y Desarrollo Humano (Fernando, 2026-10-29) — VIGENTE
 
 > *«aprendamos de la página de inicio el estilo de la sección de Plataforma / Progreso para las
