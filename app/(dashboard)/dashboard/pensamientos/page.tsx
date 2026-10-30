@@ -55,9 +55,9 @@ export default function PensamientosPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   // Ids de los pensamientos publicados en la landing (solo los devuelve el API al admin).
-  // Hasta `publicadosMax` (10) desde el 2026-10-30; antes, uno solo.
+  // Hasta `publicadosMax` (30) desde el 2026-10-30; antes, uno solo.
   const [publicados, setPublicados] = useState<number[]>([]);
-  const [publicadosMax, setPublicadosMax] = useState(10);
+  const [publicadosMax, setPublicadosMax] = useState(30);
   const [days, setDays] = useState<DayBucket[]>([]);
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -220,7 +220,7 @@ export default function PensamientosPage() {
         {/* Escritorio: la columna de siempre */}
         <div className={`space-y-0.5 overflow-y-auto ${railFechas.style ? 'flex-1 min-h-0' : 'max-h-[70vh]'}`}>
           <BotonRail activo={selectedDay === null && !soloInicio} onClick={() => elegirDia(null)} icono={CalendarDays} texto="Recientes" cuenta={totals.count} />
-          {/* «En la página de inicio» (2026-10-30): los publicados en la landing, hasta 10. Solo el
+          {/* «En la página de inicio» (2026-10-30): los publicados en la landing, hasta 30. Solo el
               admin: es quien publica. La cuenta dice cuántos de los 10 caben ya usados. */}
           {isAdmin && (
             <BotonRail

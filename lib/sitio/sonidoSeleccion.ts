@@ -318,3 +318,74 @@ export function sonarInterruptor(encendido: boolean) {
     // Sin audio no se rompe nada.
   }
 }
+
+/**
+ * EL CIELO DE PENSAMIENTOS (Fernando, 2026-10-30: «un sonidito para cuando aparece un pensamiento
+ * o cuando se pone el puntero encima»).
+ *
+ * ⚠️ Como `sonarPasar`, ninguno de los dos CREA el audio: un pensamiento que aparece solo, o el
+ * puntero, no son gestos que el navegador acepte. Suenan cuando el contexto ya está despierto, y
+ * lo despierta `despertarAudio()` en el primer clic, toque o tecla del visitante en la portada.
+ */
+export function despertarAudio() {
+  try { obtenerContexto(); } catch { /* sin audio, en silencio */ }
+}
+
+/** Aparece un pensamiento: un tintineo de estrella, dos notas en seno (mi6 → si6) con cola larga
+ *  y un brillo desafinado encima. Muy bajito: acompaña, no avisa. */
+export function sonarPensamiento() {
+  try {
+    if (!contexto || contexto.state !== 'running') return;
+    const ctx = contexto;
+    const t0 = ctx.currentTime + 0.01;
+    const salida = ctx.createGain();
+    salida.gain.value = 0.11;
+    salida.connect(ctx.destination);
+    const eco = ctx.createDelay();
+    eco.delayTime.value = 0.16;
+    const ecoVol = ctx.createGain();
+    ecoVol.gain.value = 0.28;
+    salida.connect(eco); eco.connect(ecoVol); ecoVol.connect(ctx.destination);
+    [[1318.5, 0, 0.9], [1975.5, 0.11, 1.2], [1981, 0.11, 1.1]].forEach(([f, d, largo], i) => {
+      const inicio = t0 + d;
+      const osc = ctx.createOscillator();
+      const vol = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, inicio);
+      vol.gain.setValueAtTime(0.0001, inicio);
+      vol.gain.exponentialRampToValueAtTime(i === 2 ? 0.25 : 0.6, inicio + 0.012);
+      vol.gain.exponentialRampToValueAtTime(0.0001, inicio + largo);
+      osc.connect(vol).connect(salida);
+      osc.start(inicio);
+      osc.stop(inicio + largo + 0.05);
+    });
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+}
+
+/** El puntero sobre una estrella ya encendida: un destello cortísimo y agudo (mi7). */
+let ultimaEstrella = 0;
+export function sonarEstrella() {
+  try {
+    if (!contexto || contexto.state !== 'running') return;
+    const ahora = performance.now();
+    if (ahora - ultimaEstrella < 90) return;
+    ultimaEstrella = ahora;
+    const ctx = contexto;
+    const t0 = ctx.currentTime + 0.002;
+    const osc = ctx.createOscillator();
+    const vol = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2637, t0);
+    osc.frequency.exponentialRampToValueAtTime(3136, t0 + 0.04);
+    vol.gain.setValueAtTime(0.0001, t0);
+    vol.gain.exponentialRampToValueAtTime(0.06, t0 + 0.004);
+    vol.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+    osc.connect(vol).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.14);
+  } catch {
+    // Sin audio no se rompe nada.
+  }
+}

@@ -4518,7 +4518,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 
 /* ═══ EL CIELO DE PENSAMIENTOS (Fernando, 2026-10-30) — `PensamientosCielo.tsx` ═══
-   Hasta 10 estrellas en las zonas libres a los lados del titular (escritorio ancho); de una en
+   Hasta 30 estrellas repartidas por TODO el mapa, en lo libre (medido); de una en
    una se encienden y su pensamiento aparece junto a ellas. Noche (izquierda): estrellas blancas
    y texto claro. Día (derecha): estrellas violetas y texto en tinta. */
 .cielo-pensamientos { position: absolute; inset: 0; z-index: 3; pointer-events: none; transition: opacity 500ms ease; }
@@ -4550,7 +4550,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .pensamiento-fugaz.pensamiento-fugaz-estrella { text-align: center; }
 .pensamiento-fugaz-estrella .fugaz-etiqueta { justify-content: center; }
 .pensamiento-fugaz-estrella .fugaz-texto { justify-content: center; font-size: clamp(1.05rem, 1.35vw, 1.3rem); }
-.cielo-sobre { transform: translateY(-100%); }
 .pensamiento-fugaz-estrella.tono-dia::before { background: radial-gradient(closest-side, rgba(255, 255, 255, 0.9), rgba(237, 233, 254, 0.55) 60%, transparent); }
 .tono-dia .fugaz-etiqueta { color: #6d28d9; }
 .tono-dia .fugaz-fecha { color: #7a7394; }

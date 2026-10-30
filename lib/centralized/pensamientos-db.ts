@@ -352,8 +352,8 @@ export async function lastRun(): Promise<{ startedAt: string; finishedAt: string
  * acción explícita suya: el resto sigue siendo privado por fila.
  */
 
-/** Cuántos pensamientos puede haber publicados a la vez (Fernando, 2026-10-30). */
-export const PUBLICADOS_MAX = 10;
+/** Cuántos pensamientos puede haber publicados a la vez (Fernando, 2026-10-30: 10, y el mismo día 30). */
+export const PUBLICADOS_MAX = 30;
 
 /** Lo que se publica: SOLO el texto y la fecha. Nada del autor ni de la clasificación. */
 export interface FeaturedThought {
