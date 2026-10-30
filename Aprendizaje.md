@@ -122,6 +122,10 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
   · **Dónde se cambia (pantalla de Fernando, 2026-10-30):** SRI en Línea → RUC → Actualización solo ofrece
     «Medios de contacto», «Establecimientos» y «Contador». No hay opción de actividades: en el RUC las actividades
     cuelgan del establecimiento, así que se entra por **Establecimientos → 001**. Si no deja añadir, va a ventanilla.
+  · **Códigos del SRI vistos en su buscador (2026-10-30):** J62010201 = adaptación y configuración de una aplicación
+    existente; J62021001 = planificación y diseño de sistemas que integran equipo, programas y comunicaciones;
+    J62090101 = recuperación ante desastres e instalación de programas. Buscar «programas informáticos» NO trae
+    la de desarrollo (J620101xx): su texto dice «aplicaciones informáticas… páginas web».
   · Hoy tiene **S9609.07**, que el INEC describe como *limpiabotas, porteadores de maletas, encargados de
     estacionar vehículos, etcétera*: ninguna palabra en la factura lo acerca a desarrollo de software.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
