@@ -1298,6 +1298,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    enorme sobre su título y bajo sus botones en el iPhone). */
 /* Pie de acciones de un formulario (`pie` de PixelModal): fijo bajo lo que se desplaza. */
 .corp .modal-pie { padding: 12px 24px; background: var(--color-digi-card); }
+/* Sus esquinas de abajo siguen las de la ventanita: con fondo propio y esquinas rectas, el pie
+   asomaba por fuera del borde redondeado (2026-10-30). En el panel lateral el radio es 0. */
+.corp .modal-surface > .modal-pie { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 @media (max-width: 639.98px) { .corp .modal-pie { padding: 12px 16px; } }
 .corp .modal-surface[data-size='md'] > .modal-pie,
 .corp .modal-surface[data-size='lg'] > .modal-pie,

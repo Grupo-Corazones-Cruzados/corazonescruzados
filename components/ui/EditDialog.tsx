@@ -4,6 +4,7 @@ import React from 'react';
 import PixelModal from './PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY } from './Button';
 import BotonAyuda from './BotonAyuda';
+import { Trash2 } from 'lucide-react';
 
 /**
  * Superficies de EDICIÓN del dashboard — definición única.
@@ -53,10 +54,15 @@ function EditSurface({
       /* Las acciones van en el pie fijo de la ventana: «Guardar» siempre a la vista. */
       pie={(
         <>
+          {/* La acción que borra es un BOTÓN, del alto de los otros (Fernando, 2026-10-30: «el
+              botón de quitar no se ve muy bien»; era un texto rojo de 12 px suelto). La papelera
+              de `BotonQuitar` y el texto en rojo del tema; en el teléfono, solo la papelera, para
+              que Cancelar y Guardar conserven su ancho. Siempre a la izquierda, lejos del principal. */}
           {danger && (
-            <button type="button" onClick={danger.onClick} disabled={saving}
-              className="mr-auto !flex-none text-[12px] font-medium text-red-600 hover:underline disabled:opacity-50">
-              {danger.label}
+            <button type="button" onClick={danger.onClick} disabled={saving} aria-label={danger.label} title={danger.label}
+              className={`${BTN_SECONDARY} mr-auto !flex-none max-sm:!w-11 max-sm:!px-0 !text-red-400 hover:!border-red-400`}>
+              <Trash2 className="w-4 h-4" />
+              <span className="max-sm:sr-only">{danger.label}</span>
             </button>
           )}
           <button type="button" onClick={onClose} disabled={saving} className={BTN_SECONDARY}>Cancelar</button>

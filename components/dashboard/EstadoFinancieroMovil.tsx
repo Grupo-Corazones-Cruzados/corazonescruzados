@@ -30,6 +30,12 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const dinero = (n: number) => `${n < 0 ? '−' : ''}$${fmt2(Math.abs(n))}`;
 const colorAhorro = (n: number) => (n >= 0 ? 'text-accent' : 'text-red-400');
+/** El importe se escribe como se lee aquí, con coma decimal («300,50»); se guarda con punto. */
+const aPantalla = (v: string) => (v ? String(v).replace('.', ',') : '');
+const aGuardar = (v: string) => {
+  const t = v.replace(/\s/g, '');
+  return t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t;
+};
 
 /** Qué parte de lo que entró se fue en egresos, 0–100 (más de 100 = pérdida). */
 function parteGastada(ingresos: number, egresos: number) {
@@ -177,7 +183,8 @@ export function DetalleMesMovil<R extends RenglonMovil>({
 
   const guardarRenglon = () => {
     if (!editando) return;
-    const { i, description, amount } = editando;
+    const { i, description } = editando;
+    const amount = aGuardar(editando.amount);
     setLista((prev) => (i < 0
       ? [...prev.filter((r) => r.description.trim() || Number(r.amount)), { type: lado, description, amount } as R]
       : prev.map((r, k) => (k === i ? { ...r, description, amount } : r))));
@@ -247,7 +254,7 @@ export function DetalleMesMovil<R extends RenglonMovil>({
               return (
                 <li key={i}>
                   {tocable ? (
-                    <button type="button" onClick={() => setEditando({ i, description: r.description, amount: r.amount })}
+                    <button type="button" onClick={() => setEditando({ i, description: r.description, amount: aPantalla(r.amount) })}
                       className="w-full min-h-[52px] flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-accent-light/40">
                       {contenido}
                     </button>
@@ -269,11 +276,11 @@ export function DetalleMesMovil<R extends RenglonMovil>({
 
       <QuickEditDialog
         open={!!editando}
-        title={editando?.i === -1 ? (lado === 'income' ? 'Nuevo ingreso' : 'Nuevo egreso') : (lado === 'income' ? 'Ingreso' : 'Egreso')}
+        title={editando?.i === -1 ? (lado === 'income' ? 'Nuevo ingreso' : 'Nuevo egreso') : (lado === 'income' ? 'Editar ingreso' : 'Editar egreso')}
         onClose={() => setEditando(null)}
         onSave={guardarRenglon}
         saveLabel="Listo"
-        canSave={!!editando && (!!editando.description.trim() || Number(editando.amount) > 0)}
+        canSave={!!editando && (!!editando.description.trim() || Number(aGuardar(editando.amount)) > 0)}
         danger={editando && editando.i >= 0 ? { label: 'Quitar', onClick: quitarRenglon } : undefined}
       >
         <EditField label="Descripción">
@@ -281,9 +288,9 @@ export function DetalleMesMovil<R extends RenglonMovil>({
             onChange={(e) => setEditando((d) => (d ? { ...d, description: e.target.value } : d))} />
         </EditField>
         <EditField label="Importe">
-          <input value={editando?.amount ?? ''} type="number" min="0" step="0.01" inputMode="decimal" placeholder="0,00"
+          <input value={editando?.amount ?? ''} type="text" inputMode="decimal" placeholder="0,00"
             className={`${EDIT_INPUT} tabular-nums`} style={mf}
-            onChange={(e) => setEditando((d) => (d ? { ...d, amount: e.target.value } : d))} />
+            onChange={(e) => { const v = e.target.value.replace(/[^\d.,]/g, ''); setEditando((d) => (d ? { ...d, amount: v } : d)); }} />
         </EditField>
       </QuickEditDialog>
     </div>

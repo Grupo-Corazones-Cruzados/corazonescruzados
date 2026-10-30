@@ -95,10 +95,14 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
   return (
     <dialog
       ref={dialogRef}
-      onClose={() => { if (open) onClose(); }}
+      // ⚠️ Solo los eventos de ESTE diálogo (2026-10-30). Una ventanita abierta dentro de un
+      // panel es su hija en React, y React hace subir `close`/`cancel` por el árbol aunque el
+      // navegador no los haga subir: cerrar la ventanita («Ingreso» en el estado financiero)
+      // cerraba también el mes entero.
+      onClose={(e) => { if (e.target !== e.currentTarget) return; if (open) onClose(); }}
       // Escape: en vez de dejar que el navegador cierre de golpe, se pide el cierre al padre
       // y la salida se anima como cualquier otra.
-      onCancel={(e) => { e.preventDefault(); if (!busy) onClose(); }}
+      onCancel={(e) => { if (e.target !== e.currentTarget) return; e.preventDefault(); if (!busy) onClose(); }}
       data-saliendo={saliendo || undefined}
       // Pulsar el VELO cierra (Fernando, 2026-10-04). Antes solo se miraba el `<dialog>`, pero
       // lo tapa entero `.modal-overlay`, que era quien recibía el clic: no cerraba nunca.
