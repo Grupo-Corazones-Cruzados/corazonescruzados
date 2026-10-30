@@ -128,19 +128,21 @@ export async function listDays(s: Subject): Promise<DayBucket[]> {
 }
 
 /** Pensamientos de un día concreto (o los más recientes si no se indica día). */
-export async function listThoughts(s: Subject, day?: string, limit = 200): Promise<Thought[]> {
+export async function listThoughts(s: Subject, day?: string, limit = 200, soloPublicados = false): Promise<Thought[]> {
   await ensurePensamientosTables();
   const dayed = !!day && /^\d{4}-\d{2}-\d{2}$/.test(day);
   const params: any[] = [s.kind, s.id];
   let clause = '';
   if (dayed) { params.push(day); clause = `AND ${LOCAL_DAY} = $3::date`; }
+  // El filtro «En la página de inicio» (2026-10-30): solo los publicados, el último primero.
+  if (soloPublicados) clause += ' AND t.featured_at IS NOT NULL';
   params.push(limit);
   const { rows } = await pool.query(
     `SELECT t.id, t.content, t.char_count, t.category, t.created_at, t.updated_at,
             to_char(${LOCAL_DAY}, 'YYYY-MM-DD') AS day
        FROM gcc_world.pn_thoughts t
       WHERE t.subject_kind = $1 AND t.subject_id = $2 ${clause}
-      ORDER BY t.created_at DESC
+      ORDER BY ${soloPublicados ? 't.featured_at DESC' : 't.created_at DESC'}
       LIMIT $${params.length}`,
     params,
   );

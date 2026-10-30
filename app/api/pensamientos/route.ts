@@ -20,11 +20,13 @@ export async function GET(req: NextRequest) {
     if (!subject) return NextResponse.json({ data: { subject: null, days: [], thoughts: [] } });
 
     const day = req.nextUrl.searchParams.get('day') || undefined;
+    // `?publicados=1`: solo los que están en la página de inicio (filtro del admin).
+    const soloPublicados = user.role === 'admin' && req.nextUrl.searchParams.get('publicados') === '1';
     // `publishedIds` solo para el admin: es quien puede publicarlos en la landing (hasta
     // `PUBLICADOS_MAX`), y le sirve para ver cuáles tiene publicados ahora mismo.
     const [days, thoughts, publishedIds] = await Promise.all([
       listDays(subject),
-      listThoughts(subject, day),
+      listThoughts(subject, soloPublicados ? undefined : day, 200, soloPublicados),
       user.role === 'admin' ? publishedIdsOf(subject) : Promise.resolve([] as number[]),
     ]);
     return NextResponse.json({ data: { subject, days, thoughts, publishedIds, publicadosMax: PUBLICADOS_MAX } });

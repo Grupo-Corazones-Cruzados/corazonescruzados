@@ -16,6 +16,8 @@ import BotonQuitar from '@/components/ui/BotonQuitar';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
+/** Valor del `<select>` del teléfono para el filtro «En la página de inicio». */
+const INICIO = '__inicio';
 const df = { fontFamily: 'var(--font-display)' } as const;
 const nf = new Intl.NumberFormat('es-ES');
 
@@ -59,6 +61,11 @@ export default function PensamientosPage() {
   const [days, setDays] = useState<DayBucket[]>([]);
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // Filtro «En la página de inicio» (Fernando, 2026-10-30): solo los publicados en la landing.
+  // Excluye la fecha: elegir un día lo quita, y elegirlo quita el día.
+  const [soloInicio, setSoloInicio] = useState(false);
+  const elegirDia = (d: string | null) => { setSoloInicio(false); setSelectedDay(d); };
+  const elegirInicio = () => { setSelectedDay(null); setSoloInicio(true); };
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
@@ -69,13 +76,15 @@ export default function PensamientosPage() {
   const taRef = useRef<HTMLTextAreaElement>(null);
   // Fernando, 2026-10-29: en escritorio el raíl de fechas y el centro llegan hasta el pie
   // aunque haya poco; lo que no quepa se desplaza dentro de cada uno, no la página.
-  const railFechas = useAltoHastaElPie<HTMLElement>({ desdeAncho: 1024, minimo: 320 });
-  const centro = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1024, minimo: 320 });
+  // Vista de computadora desde 768 px (antes 1024): Fernando trabaja en una ventana de ~1000 px y
+  // veía la del teléfono (2026-10-30: «solo tenemos la vista de teléfono»).
+  const railFechas = useAltoHastaElPie<HTMLElement>({ desdeAncho: 768, minimo: 320 });
+  const centro = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 768, minimo: 320 });
 
-  const load = useCallback(async (day?: string | null) => {
+  const load = useCallback(async (day?: string | null, inicio = false) => {
     setLoading(true);
     try {
-      const qs = day ? `?day=${day}` : '';
+      const qs = inicio ? '?publicados=1' : day ? `?day=${day}` : '';
       const res = await fetch(`/api/pensamientos${qs}`);
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'Error');
@@ -86,7 +95,7 @@ export default function PensamientosPage() {
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(selectedDay); }, [load, selectedDay]);
+  useEffect(() => { load(selectedDay, soloInicio); }, [load, selectedDay, soloInicio]);
 
   /**
    * Publica un pensamiento en la página de inicio (o lo retira). Se pide confirmación al
@@ -106,6 +115,8 @@ export default function PensamientosPage() {
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || 'Error');
         setPublicados((ids) => (quitar ? ids.filter((x) => x !== t.id) : [...ids, t.id]));
+        // Con el filtro «En la página de inicio», el que se retira sale de la lista.
+        if (quitar && soloInicio) setThoughts((ts) => ts.filter((x) => x.id !== t.id));
         toast.success(quitar ? 'Ya no se muestra en la página de inicio.' : 'Publicado en la página de inicio.');
       } catch (e: any) { toast.error(e.message); }
     };
@@ -143,7 +154,8 @@ export default function PensamientosPage() {
       setDraft('');
       // Al guardar, saltamos al día de hoy para que el pensamiento recién escrito se vea.
       const today = todayLocal();
-      if (selectedDay && selectedDay !== today) setSelectedDay(today);
+      if (soloInicio) elegirDia(null); // un pensamiento nuevo no está publicado: a «Recientes»
+      else if (selectedDay && selectedDay !== today) setSelectedDay(today);
       else await load(selectedDay);
       taRef.current?.focus();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
@@ -160,7 +172,7 @@ export default function PensamientosPage() {
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'Error');
       setEditing(null);
-      await load(selectedDay);
+      await load(selectedDay, soloInicio);
       toast.success('Pensamiento actualizado. La IA lo volverá a etiquetar esta noche.');
     } catch (e: any) { toast.error(e.message); }
   };
@@ -171,7 +183,7 @@ export default function PensamientosPage() {
       try {
         const res = await fetch(`/api/pensamientos/${t.id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error((await res.json()).error || 'Error');
-        await load(selectedDay);
+        await load(selectedDay, soloInicio);
       } catch (e: any) { toast.error(e.message); }
     },
   });
@@ -185,7 +197,7 @@ export default function PensamientosPage() {
   const draftIntensity = intensityOf(draft.trim().length);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 items-start">
+    <div className="flex flex-col md:flex-row gap-4 items-start">
       {/* ── Panel de fechas ─────────────────────────────────────────────────────────
           En escritorio es una columna. En TELÉFONO era la misma columna apilada arriba:
           17 fechas × 35 px = **600 px que hay que recorrer enteros antes de poder
@@ -195,41 +207,32 @@ export default function PensamientosPage() {
           que adivinarlo. Ahora (Fernando, 2026-10-23: nada se desliza de lado escondiendo
           opciones) es un <select> nativo a todo el ancho: una línea, y la lista entera a
           un toque. */}
-      <select aria-label="Fecha" value={selectedDay ?? ''} onChange={(e) => setSelectedDay(e.target.value || null)}
-        className="lg:hidden field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
+      <select aria-label="Fecha" value={soloInicio ? INICIO : selectedDay ?? ''}
+        onChange={(e) => (e.target.value === INICIO ? elegirInicio() : elegirDia(e.target.value || null))}
+        className="md:hidden field-control field-select h-11 w-full px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
         <option value="">Recientes{totals.count > 0 ? ` · ${totals.count}` : ''}</option>
+        {isAdmin && <option value={INICIO}>En la página de inicio · {publicados.length}</option>}
         {days.map((d) => <option key={d.day} value={d.day}>{fmtDayCorto(d.day)} · {d.count}</option>)}
       </select>
-      <aside ref={railFechas.ref} style={railFechas.style} className="hidden lg:flex lg:flex-col w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
+      <aside ref={railFechas.ref} style={railFechas.style} className="hidden md:flex md:flex-col w-[230px] shrink-0 bg-digi-card border border-digi-border rounded-lg p-2">
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide px-2 pt-1 pb-2" style={df}>Fechas</p>
 
         {/* Escritorio: la columna de siempre */}
         <div className={`space-y-0.5 overflow-y-auto ${railFechas.style ? 'flex-1 min-h-0' : 'max-h-[70vh]'}`}>
-          <button
-            onClick={() => setSelectedDay(null)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-              selectedDay === null ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-            }`}
-          >
-            <CalendarDays className={`w-4 h-4 shrink-0 ${selectedDay === null ? 'text-accent' : 'text-digi-muted'}`} />
-            <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>Recientes</span>
-            {totals.count > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${selectedDay === null ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{totals.count}</span>
-            )}
-          </button>
+          <BotonRail activo={selectedDay === null && !soloInicio} onClick={() => elegirDia(null)} icono={CalendarDays} texto="Recientes" cuenta={totals.count} />
+          {/* «En la página de inicio» (2026-10-30): los publicados en la landing, hasta 10. Solo el
+              admin: es quien publica. La cuenta dice cuántos de los 10 caben ya usados. */}
+          {isAdmin && (
+            <BotonRail
+              activo={soloInicio} onClick={elegirInicio} icono={Globe} texto="En la página de inicio"
+              cuenta={publicados.length} titulo={`${publicados.length} de ${publicadosMax} publicados`}
+            />
+          )}
+          {days.length > 0 && <div className="mx-2 my-1.5 border-t border-digi-border" aria-hidden />}
 
-          {days.map((d) => {
-            const active = selectedDay === d.day;
-            return (
-              <button key={d.day} onClick={() => setSelectedDay(d.day)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
-                  active ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
-                }`}>
-                <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{fmtDayLong(d.day)}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-accent/15 text-accent' : 'bg-black/[0.05] text-digi-muted'}`}>{d.count}</span>
-              </button>
-            );
-          })}
+          {days.map((d) => (
+            <BotonRail key={d.day} activo={selectedDay === d.day} onClick={() => elegirDia(d.day)} texto={fmtDayLong(d.day)} cuenta={d.count} />
+          ))}
           {days.length === 0 && !loading && (
             <p className="px-3 py-3 text-[11.5px] text-digi-muted/60" style={mf}>Todavía no has escrito nada.</p>
           )}
@@ -243,7 +246,7 @@ export default function PensamientosPage() {
         <div className="flex items-center gap-2 mb-3 shrink-0">
           <BrainCircuit className="w-4 h-4 text-accent shrink-0" />
           <p className="text-[13px] font-semibold text-digi-text" style={df}>
-            {selectedDay ? fmtDayLong(selectedDay) : 'Pensamientos recientes'}
+            {soloInicio ? 'En la página de inicio' : selectedDay ? fmtDayLong(selectedDay) : 'Pensamientos recientes'}
           </p>
           <button className={`${BTN_SECONDARY} ml-auto h-11 md:h-auto shrink-0`} onClick={openCharts} style={mf}>
             <LineChart className="w-4 h-4" /> Gráficos
@@ -280,8 +283,12 @@ export default function PensamientosPage() {
         ) : thoughts.length === 0 ? (
           <div className={`bg-digi-card border border-digi-border rounded-xl py-12 text-center ${centro.style ? 'flex-1 min-h-[200px] flex flex-col items-center justify-center' : ''}`}>
             <BrainCircuit className="w-8 h-8 text-digi-muted mx-auto mb-2" />
-            <p className="text-[13px] text-digi-text font-medium" style={mf}>Sin pensamientos {selectedDay ? 'este día' : 'todavía'}</p>
-            <p className="text-[12px] text-digi-muted mt-1" style={mf}>Escribe arriba para empezar.</p>
+            <p className="text-[13px] text-digi-text font-medium" style={mf}>
+              {soloInicio ? 'Ningún pensamiento en la página de inicio' : `Sin pensamientos ${selectedDay ? 'este día' : 'todavía'}`}
+            </p>
+            <p className="text-[12px] text-digi-muted mt-1" style={mf}>
+              {soloInicio ? 'Publica uno con el megáfono de cada pensamiento.' : 'Escribe arriba para empezar.'}
+            </p>
           </div>
         ) : (
           <div className={`space-y-2 ${centro.style ? 'flex-1 min-h-[200px] overflow-y-auto pr-1' : ''}`}>
@@ -417,5 +424,34 @@ function ThoughtCard({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Una entrada del raíl de fechas: «Recientes», «En la página de inicio» o un día. La elegida, con
+ * el realce del raíl (fondo de acento suave + raya a la izquierda). La cuenta va como TEXTO, sin
+ * cápsula de color (Diseño.md: cifras e indicadores sin relleno).
+ */
+function BotonRail({
+  activo, onClick, texto, cuenta, icono: Icono, titulo,
+}: {
+  activo: boolean; onClick: () => void; texto: string; cuenta?: number;
+  icono?: React.ComponentType<{ className?: string }>; titulo?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={titulo}
+      aria-current={activo ? 'true' : undefined}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors border-l-2 ${
+        activo ? 'bg-accent-light border-accent text-accent' : 'border-transparent text-digi-text hover:bg-black/[0.03]'
+      }`}
+    >
+      {Icono && <Icono className={`w-4 h-4 shrink-0 ${activo ? 'text-accent' : 'text-digi-muted'}`} />}
+      <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate" style={mf}>{texto}</span>
+      {!!cuenta && (
+        <span className={`text-[11px] font-semibold tabular-nums ${activo ? 'text-accent' : 'text-digi-muted'}`} style={mf}>{cuenta}</span>
+      )}
+    </button>
   );
 }

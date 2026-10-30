@@ -777,6 +777,15 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   la visible usaba el de la oculta y salía CUADRADA.
 - Verificado (producción) a 1440, 1100 y 390 px: `scrollWidth` igual al ancho.
 
+### Pensamientos: filtro «En la página de inicio» y vista de computadora desde 768 px (Fernando, 2026-10-30)
+- El filtro de ALCANCE va en el raíl izquierdo (como manda «la barra de una lista»): bajo «Recientes»,
+  «🌐 En la página de inicio · N» (solo admin; `title` «N de 10 publicados»), una raya, y las fechas. En el
+  teléfono, la misma opción en el `<select>` de arriba. API: `GET /api/pensamientos?publicados=1`.
+- Cada entrada del raíl es `BotonRail` (una definición): la cuenta va como TEXTO (`text-[11px] font-semibold
+  tabular-nums`), sin la cápsula gris/violeta que llevaba (desviación corregida).
+- Raíl + centro desde `md` (768), no `lg`: con el menú lateral, la ventana de ~1000 px de Fernando caía en la
+  vista del teléfono (*«solo tenemos la vista de teléfono»*). Verificado con sesión a 1000, 1440 y 390.
+
 ### ⭐ Las puertas en BLOQUES y «En esta página» que sigue la lectura (Fernando, 2026-10-30) — VIGENTE
 
 > *«todas las tarjetas se ven muy encogidas… puedes reformular por completo este apartado»*. Con seis
