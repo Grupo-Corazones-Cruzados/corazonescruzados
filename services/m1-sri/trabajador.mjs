@@ -19,6 +19,14 @@ const TIPOS = [1, 3]; // 1 factura, 3 nota de crédito
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => { const l = `${new Date().toISOString()} ${a.join(' ')}`; console.log(l); try { appendFileSync(join(DIR, 'registro.log'), l + '\n'); } catch {} };
 
+/** El resultado cuesta un par de minutos de Chrome: un corte de red al enviarlo no lo tira, se reintenta. */
+async function enviar(cuerpo) {
+  for (let i = 1; ; i++) {
+    try { return await puerta('POST', cuerpo); }
+    catch (e) { if (i >= 6 || /^4\d\d/.test(e.message)) throw e; log(`  envío fallido (${e.message}), reintento ${i}`); await espera(10000 * i); }
+  }
+}
+
 async function puerta(metodo, cuerpo) {
   const r = await fetch(PUERTA, {
     method: metodo,
@@ -114,11 +122,11 @@ async function ejecutar(t) {
       resultados.push({ year, month, ok, comprobantes: ok ? comprobantes : [], mensaje: ok ? undefined : mensaje });
       log(`  ${month}/${year}: ${ok ? `${comprobantes.length} comprobantes` : `FALLÓ ${mensaje}`}`);
     }
-    const r = await puerta('POST', { id: t.id, meses: resultados });
+    const r = await enviar({ id: t.id, meses: resultados });
     log(`trabajo ${t.id}: ${r.estado}, ${r.nuevos} nuevos`);
   } catch (e) {
     log(`trabajo ${t.id}: ERROR ${e.message}`);
-    await puerta('POST', { id: t.id, meses: resultados, error: e.message }).catch((e2) => log('no se pudo avisar:', e2.message));
+    await enviar({ id: t.id, meses: resultados, error: e.message }).catch((e2) => log('no se pudo avisar:', e2.message));
   } finally {
     await browser?.close().catch(() => {});
   }
