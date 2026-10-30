@@ -34,7 +34,10 @@ async function puerta(metodo, cuerpo) {
 async function entrar(ruc, clave) {
   const browser = await puppeteer.launch({
     executablePath: CHROME, headless: false,
-    args: ['--lang=es-EC', '--disable-blink-features=AutomationControlled', '--window-size=1366,900'],
+    // Con la tapa cerrada nadie ve la ventana: sin estas tres, Chrome la da por oculta y frena
+    // sus temporizadores y su pintado, y el captcha invisible puede no terminar.
+    args: ['--lang=es-EC', '--disable-blink-features=AutomationControlled', '--window-size=1366,900',
+      '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'],
     ignoreDefaultArgs: ['--enable-automation'],
   });
   const page = await browser.newPage();
