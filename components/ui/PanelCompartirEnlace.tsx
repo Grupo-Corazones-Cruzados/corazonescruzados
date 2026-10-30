@@ -16,8 +16,8 @@ export type Duracion = { v: number; l: string };
  * COMPARTIR UN ENLACE CON TOKEN — definición ÚNICA del formulario (2026-09-28).
  *
  * Nació en «Compartir acceso a la cotización» y Fernando lo pidió igual para cobrar un
- * proyecto: vigencia arriba, el correo del cliente, y dos botones — «Generar enlace» (para
- * copiarlo y mandarlo uno mismo) y «Generar y enviar» (sale el correo). Debajo, el enlace
+ * proyecto: vigencia arriba, el correo del cliente, y dos botones FIJOS EN EL PIE — «Generar enlace» (para
+ * copiarlo y mandarlo uno mismo) y «Generar y enviar» (sale el correo). Al final del cuerpo, el enlace
  * con su botón de copiar.
  *
  * ⚠️ Antes había tres versiones parecidas (la de la cotización en panel, y dos ventanitas
@@ -76,7 +76,15 @@ export default function PanelCompartirEnlace({
   const copiar = () => { if (url) { navigator.clipboard.writeText(url); toast.success('Enlace copiado'); } };
 
   return (
-    <PixelModal open={open} onClose={onClose} title={title} busy={busy}>
+    // ⇒ LOS BOTONES VAN EN EL `pie` DEL PANEL (Fernando, 2026-10-30). Escritos dentro del
+    // cuerpo, el enlace generado aparecía DEBAJO de ellos, dejaban de ser lo último y los
+    // botones saltaban del pie a media pantalla. El enlace va al final del cuerpo.
+    <PixelModal open={open} onClose={onClose} title={title} busy={busy} pie={
+      <>
+        <button onClick={() => lanzar(false)} disabled={busy || !puedeGenerar} className={`${BTN_SECONDARY} flex-1`}>Generar enlace</button>
+        <button onClick={() => lanzar(true)} disabled={busy || !puedeGenerar} className={`${BTN_PRIMARY} flex-1`}><Send className="w-4 h-4" /> Generar y enviar</button>
+      </>
+    }>
       <div className="space-y-3">
         <p className="text-[12px] text-digi-muted" style={mf}>{intro}</p>
 
@@ -93,11 +101,6 @@ export default function PanelCompartirEnlace({
         <PixelInput label={etiquetaCorreo} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@correo.com" />
 
         {pie}
-
-        <div className="flex gap-2">
-          <button onClick={() => lanzar(false)} disabled={busy || !puedeGenerar} className={`${BTN_SECONDARY} flex-1`}>Generar enlace</button>
-          <button onClick={() => lanzar(true)} disabled={busy || !puedeGenerar} className={`${BTN_PRIMARY} flex-1`}><Send className="w-4 h-4" /> Generar y enviar</button>
-        </div>
 
         {url && (
           <div className="pt-2 border-t border-digi-border">
