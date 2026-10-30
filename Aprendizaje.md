@@ -1,5 +1,39 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-10-30) — COBRAR POR LA PLATAFORMA: EL MIEMBRO FACTURA SU SERVICIO Y GCC SU TARIFA · 🔎 35 % — MODELO PROPUESTO; FALTAN DECISIONES DE FERNANDO Y LA CONTADORA
+
+**Declarado por Fernando el 2026-10-30:** los miembros/candidatos venden servicios por la plataforma (p. ej. ticket
+de 3 h × 15 $ = 45 $). GCC cobra 0,50 $/h (1,50 $) por usar la plataforma y debe facturarlo; el miembro conecta lo
+suyo del SRI para facturar su parte. Duda: cómo se le presenta al cliente y cómo se factura cada parte.
+
+**Rol asumido:** arquitecto de plataformas de pago (marketplace) con criterio tributario ecuatoriano.
+
+### Modelo propuesto (2026-10-30)
+- **Dos servicios y dos facturas, a dos clientes distintos:** el miembro factura al cliente los 45 $ (su RUC, su
+  firma); GCC factura AL MIEMBRO la tarifa (1,50 $). El cliente ve una sola factura. Es el modelo de comisión
+  descontada (Uber, Mercado Libre), y el que Fernando describió («de los 45 $, 1,50 es para la plataforma»).
+- **«Integrar la cuenta del SRI» = firma electrónica (.p12 + clave) + RUC + punto de emisión propio** del miembro
+  (p. ej. 002 para la plataforma, así no choca con su secuencial). La clave de SRI en Línea no hace falta. Sin RUC
+  y firma, el miembro no puede cobrar por la plataforma.
+- Tarifa de GCC: **factura mensual consolidada** a cada miembro (no una de 0,50 $ por ticket); «+ IVA cuando
+  corresponda» (0 % hoy como Negocio Popular; 15 % si en 2027 pasa a Emprendedor).
+
+### Riesgos detectados
+| Riesgo | Por qué | Mitigación |
+|---|---|---|
+| Los 45 $ entran a la cuenta de GCC | El SRI cruza depósitos: GCC parecería ingresar 45 $ y no 1,50 $; con Negocio Popular y tope de 20.000 $ es grave | Mejor que el dinero vaya directo al miembro (pago dividido); si no, contrato de mandato de cobro + factura del miembro + liquidación de cada pago, validado por la contadora |
+| La pasarela cuesta más que la tarifa | PayPhone 5,75 % de 45 $ = 2,59 $ > 1,50 $ | La comisión de la pasarela se descuenta al miembro o se cobra aparte |
+| Hoy el sistema tiene UN emisor | `lib/integrations/sri/config.ts` fija RUC, razón social, establecimiento y `data/firma.p12` | Pasar a emisor por miembro: firma cifrada (`CLAVE_MAESTRA_SECRETOS`), secuencial por emisor y punto de emisión |
+| IVA del miembro | Depende de su régimen (Negocio Popular 0 %, resto 15 %) | Guardar el régimen del miembro y calcular su IVA con él |
+
+### Preguntas · ⏸ Fernando
+- P1 ¿El dinero lo recibe GCC y luego paga al miembro, o se quiere que llegue directo al miembro?
+- P2 ¿Quién absorbe la comisión de la pasarela: el miembro, el cliente o GCC?
+- P3 ¿Los candidatos también cobran? Muchos no tendrán RUC ni firma.
+- P4 ¿La tarifa es solo por hora de ticket, o también un % de productos/proyectos?
+- P5 (contadora/SRI) Actividad para la intermediación por plataforma y tratamiento de los cobros por cuenta de terceros.
+- P6 (técnica) ¿PayPhone o Kushki permiten pago dividido (split)? Sin verificar.
+
 ## Objetivo (declarado 2026-10-30) — ¿«SISTEMAS» EN LAS FACTURAS PONE EN RIESGO EL RIMPE NEGOCIO POPULAR? · 🔎 85 % — DATOS Y RUC REVISADOS; FALTA CONFIRMAR CON EL SRI Y LAS DECISIONES DE FERNANDO
 
 **Declarado por Fernando el 2026-10-30:** su contadora le advierte que poner «sistemas» en las facturas puede
