@@ -142,6 +142,11 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
     **Visto (2026-10-30):** el control dice *«Para ejercer una actividad profesional seleccione un título de
     educación superior»* y lista LICENCIADO/A EN PSICOLOGÍA (Senescyt, 05/12/2023) con casilla. **Es opcional y se
     deja SIN marcar**: no ejerce psicología, y marcarlo declararía actividad profesional.
+  · **TRÁMITE ENVIADO (2026-10-30, ~16:40):** establecimiento 001 con 5 actividades — S96090705, J62010101,
+    J62010201, J63110101, J63110301 — y el título de psicología SIN asociar. El SRI lo aceptó con visto verde y
+    avisará por correo (lfgonzalezm0@outlook.com) al completarse; el certificado de ese día aún salía con la
+    actualización del 01/08/2026. **Pendiente:** certificado nuevo con las 5; comprobar cuál quedó como PRINCIPAL
+    (no se vio elegida) y que el régimen siga en Negocio Popular. Si la principal sigue en S96090705, cambiarla.
   · Hoy tiene **S9609.07**, que el INEC describe como *limpiabotas, porteadores de maletas, encargados de
     estacionar vehículos, etcétera*: ninguna palabra en la factura lo acerca a desarrollo de software.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
