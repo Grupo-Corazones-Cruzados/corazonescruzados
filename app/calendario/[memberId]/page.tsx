@@ -310,7 +310,10 @@ export default function PublicCalendarPage() {
   const flecha = 'w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
 
   return (
-    <div className={`corp page-dark ${enTelefono ? 'h-dvh flex flex-col overflow-hidden' : 'min-h-screen'}`}>
+    // `fixed inset-0` y no `h-dvh`: en el navegador de WhatsApp (iPhone) `100dvh` medía más que
+    // lo visible y la página volvía a desplazarse, con la cabecera y «Agendar» fuera de la
+    // vista. Lo fijo mide exactamente la ventana y no deja nada que desplazar.
+    <div className={`corp page-dark ${enTelefono ? 'fixed inset-0 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]' : 'min-h-screen'}`}>
       <div className="shrink-0"><PublicHeader /></div>
       <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col p-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
         <div className={`bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0' : 'h-[calc(100dvh-6.5rem)]'}`}>
@@ -413,7 +416,7 @@ export default function PublicCalendarPage() {
           {/* Grid — clic en zona libre abre el formulario con esa hora; clic en un bloque
               ocupado no muestra detalle (confidencial), salvo tu propia reserva reciente.
               En el teléfono sin alto impuesto: la agenda mide lo que ocupa y baja la página. */}
-          <div className={enTelefono ? 'p-2.5 flex-1 min-h-0 overflow-y-auto overscroll-contain' : 'p-3 flex-1 min-h-0 flex flex-col'}>
+          <div className={enTelefono ? 'p-2.5 flex-1 min-h-0 flex flex-col' : 'p-3 flex-1 min-h-0 flex flex-col'}>
             <CalendarView
               view={view}
               currentDate={currentDate}
@@ -421,6 +424,7 @@ export default function PublicCalendarPage() {
               onDayClick={onGridClick}
               onEventClick={onEventClick}
               fillHeight
+              rejillaSiempre
             />
           </div>
 

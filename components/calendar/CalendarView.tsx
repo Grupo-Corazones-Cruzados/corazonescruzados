@@ -22,6 +22,12 @@ interface Props {
   // Cuando es true, el calendario llena el alto de su contenedor y su cuerpo (grilla
   // de horas / mes) se desplaza internamente; el encabezado (días) queda fijo arriba.
   fillHeight?: boolean;
+  /**
+   * Vista de DÍA: la rejilla de horas también en el teléfono, en vez de la agenda (lista de lo
+   * que hay). Para quien viene a buscar un HUECO —el calendario público, Fernando 2026-10-30:
+   * «no tiene sentido… ya hay más espacio»—: los huecos se ven y se tocan para agendar.
+   */
+  rejillaSiempre?: boolean;
 }
 
 const WEEK_HOUR_START = 0;
@@ -415,11 +421,41 @@ function AgendaDia({ currentDate, instances, onDayClick, onEventClick, onGenerat
 }
 
 function DayView(props: Props) {
-  const { currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight } = props;
+  const { currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight, rejillaSiempre } = props;
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const now = useEcuadorNow();
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (fillHeight && scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_PX; }, [fillHeight]);
+  if (rejillaSiempre) {
+    // Misma rejilla en todos los anchos: cabecera fija y las horas se desplazan por dentro.
+    return (
+      <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'h-full flex flex-col' : ''}`}>
+        <div className="grid shrink-0" style={{ gridTemplateColumns: '56px 1fr' }}>
+          <div className="border-r border-b border-digi-border bg-digi-dark" />
+          <div className="px-3 py-2 border-b border-digi-border bg-digi-dark flex items-center justify-between gap-2">
+            <div className="text-[13px] font-semibold text-digi-text capitalize" style={mf}>
+              {DAY_LABELS_ES_LONG[currentDate.getDay()]} {currentDate.getDate()}
+            </div>
+            <DayTotals totals={dayTotals(instances, currentDate)} />
+          </div>
+        </div>
+        <div ref={scrollRef} className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto overscroll-contain' : ''}>
+          <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
+            <div className="border-r border-digi-border">
+              {hours.map((h) => (
+                <div key={h} className="text-[10px] text-digi-muted px-1 text-right border-b border-digi-border/50"
+                  style={{ height: HOUR_PX, ...mf }}>
+                  {String(h).padStart(2, '0')}:00
+                </div>
+              ))}
+            </div>
+            <DayColumn day={currentDate} instances={instances} hours={hours} now={now}
+              onDayClick={onDayClick} onEventClick={onEventClick} onGeneratedClick={onGeneratedClick} />
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     // ⚠️ El alto impuesto (`fillHeight`) es solo desde `md`: en teléfono manda la agenda,
     // que mide lo que ocupa. Un contenedor de una pantalla entera con tres filas dentro

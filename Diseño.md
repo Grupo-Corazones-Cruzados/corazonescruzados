@@ -6006,3 +6006,6 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   abajo de forma innecesaria»*): columna de `h-dvh` con `overflow-hidden` = cabecera · tarjeta `flex-1 min-h-0` · franja
   de la acción (en el flujo, con su margen seguro). La página NO se desplaza; solo la lista dentro de la tarjeta, y solo
   si no cabe (`overflow-y-auto overscroll-contain`). Verificar: `scrollHeight` del documento == alto de la ventana.
+  La columna es `fixed inset-0`, no `h-dvh`: en el navegador de WhatsApp del iPhone `100dvh` medía más que lo visible y
+  la página volvía a desplazarse. Y quien viene a buscar un HUECO ve el día con sus horas (rejilla), no una lista de lo
+  ocupado: el espacio libre es lo que se busca (`rejillaSiempre` de `CalendarView`).
