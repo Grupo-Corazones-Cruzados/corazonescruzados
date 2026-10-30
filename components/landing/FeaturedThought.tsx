@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 interface Featured { content: string; createdAt: string }
 
@@ -21,12 +21,19 @@ export default function FeaturedThought({
   windAway = false,
   tema = 'aventura',
   compacto = false,
+  nube = false,
+  visible = true,
 }: {
   windAway?: boolean;
   tema?: 'aventura' | 'progreso';
   /** La barra de consejo de la pantalla de inicio (2026-10-26): una cápsula de cristal sobre
    *  la raya, «PENSAMIENTO · “…” · fecha», como los consejos de una pantalla de carga. */
   compacto?: boolean;
+  /** «EL CORAZÓN PIENSA» (2026-10-30): la nube de pensamiento que sale del corazón del titular.
+   *  Sustituye a `compacto` en la portada. Ver la explicación en `NubePensamiento`, abajo. */
+  nube?: boolean;
+  /** Solo con `nube`: se esconde (vuelve al corazón) mientras hay un mundo elegido. */
+  visible?: boolean;
 }) {
   const [data, setData] = useState<Featured | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +71,19 @@ export default function FeaturedThought({
     ? new Date(data.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
     : '';
   const escribiendo = !!data && shown < data.content.length;
+
+  if (nube) {
+    return (
+      <NubePensamiento
+        data={data}
+        loading={loading}
+        visible={visible}
+        texto={data ? data.content.slice(0, shown) : ''}
+        escribiendo={escribiendo}
+        fecha={fecha}
+      />
+    );
+  }
 
   if (compacto) {
     // ALTO FIJO (Fernando, 2026-10-27): la cápsula ocupa SIEMPRE lo mismo —etiqueta y dos
@@ -184,6 +204,97 @@ export default function FeaturedThought({
             </p>
           </>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * «EL CORAZÓN PIENSA» — el pensamiento como NUBE DE PENSAMIENTO del corazón (Fernando, 2026-10-30:
+ * *«reformula la presentación del pensamiento… más adaptada a nuestro diseño actual»*).
+ *
+ * Antes era una cápsula oscura al pie de la portada, encima de la frontera entre los dos mundos:
+ * una caja ajena al resto, pegada al pie, que se comía 130 px de alto. Ahora lo piensa el corazón
+ * del titular, como en un cómic: tres burbujas que crecen desde él y la nube de cristal (la misma
+ * familia que la insignia «Proyecto de Desarrollo Humano»), con la etiqueta, la fecha y la frase
+ * escribiéndose.
+ *
+ * · Escritorio ancho (≥ 1100 × 680): flota en el cielo, a la IZQUIERDA del corazón, sin ocupar
+ *   sitio en el flujo. Su posición se MIDE (el corazón cambia de tamaño con la ventana).
+ * · Más estrecho y teléfono: bajo el corazón y la Tierra (donde luego sale el eslogan), con las
+ *   burbujas subiendo hasta el corazón. Su hueco se reserva mientras carga: nada salta.
+ * · Al elegir un mundo vuelve al corazón (se encoge hacia él) ANTES de que el corazón salte, y
+ *   deja el sitio al eslogan; al volver, reaparece. Sin pensamiento publicado, no hay nube.
+ */
+function NubePensamiento({
+  data, loading, visible, texto, escribiendo, fecha,
+}: {
+  data: Featured | null; loading: boolean; visible: boolean;
+  texto: string; escribiendo: boolean; fecha: string;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  // Tras esconderse, deja de ocupar sitio (en el flujo del teléfono), cuando termina la salida.
+  const [montada, setMontada] = useState(visible);
+  useEffect(() => {
+    if (visible) { setMontada(true); return; }
+    const id = window.setTimeout(() => setMontada(false), 320);
+    return () => window.clearTimeout(id);
+  }, [visible]);
+
+  // Dónde está el corazón respecto a la cabeza de la portada (y respecto a la propia nube, para
+  // que las burbujas suban justo hasta él en el teléfono).
+  useLayoutEffect(() => {
+    const nubeEl = ref.current;
+    if (!nubeEl || !montada) return;
+    const cabeza = nubeEl.closest('.portada-cabeza') as HTMLElement | null;
+    const medir = () => {
+      const corazon = cabeza?.querySelector('.grafico-corazon')?.getBoundingClientRect();
+      if (!cabeza || !corazon) return;
+      const c = cabeza.getBoundingClientRect();
+      nubeEl.style.setProperty('--corazon-x', `${corazon.left - c.left}px`);
+      nubeEl.style.setProperty('--corazon-y', `${corazon.top - c.top}px`);
+      nubeEl.style.setProperty('--corazon-alto', `${corazon.height}px`);
+      const n = nubeEl.getBoundingClientRect();
+      nubeEl.style.setProperty('--cola-x', `${corazon.left + corazon.width / 2 - n.left}px`);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (cabeza) ro.observe(cabeza);
+    window.addEventListener('resize', medir);
+    return () => { ro.disconnect(); window.removeEventListener('resize', medir); };
+  }, [montada, data]);
+
+  if (!loading && !data) return null;
+  if (!montada) return null;
+
+  const lista = !!data && visible;
+  return (
+    <div
+      ref={ref}
+      className={`pensamiento-nube ${lista ? 'es-visible' : ''}`}
+      role="note"
+      aria-label="Pensamiento"
+    >
+      <span className="nube-burbuja nube-burbuja-1" aria-hidden="true" />
+      <span className="nube-burbuja nube-burbuja-2" aria-hidden="true" />
+      <span className="nube-burbuja nube-burbuja-3" aria-hidden="true" />
+      <div className="nube-cuerpo cristal-portada">
+        <p className="nube-etiqueta">
+          <span className="pensamiento-barra-punto" aria-hidden="true" />
+          Pensamiento
+          {fecha && <span className="nube-fecha">· {fecha}</span>}
+        </p>
+        {data && (
+          <>
+            <p className="sr-only">{data.content}</p>
+            <p className="nube-texto" aria-hidden="true">
+              <span className="comilla-pensamiento">“</span>
+              {texto}
+              {escribiendo && <span style={{ color: 'var(--color-accent-glow)', animation: 'thoughtCaret 0.9s steps(1) infinite' }}>▌</span>}
+              {!escribiendo && <span className="comilla-pensamiento">”</span>}
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

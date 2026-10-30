@@ -4445,3 +4445,82 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    cortaba («E…»). Sale hacia la derecha desde el borde del icono, entera (2026-10-29). */
 .tarjeta-rol .tr-escena { overflow: visible; }
 .tarjeta-rol .tr-estado { left: 0; transform: none; max-width: none; top: -11px; }
+
+/* ═══ «EL CORAZÓN PIENSA» — la nube del pensamiento (Fernando, 2026-10-30) ═══
+   Sustituye a la cápsula del pie (`.pensamiento-barra`, ya sin uso en la portada). Tres burbujas
+   que crecen desde el corazón y la nube de cristal; entra después del titular, flota apenas y, al
+   elegir mundo, se encoge de vuelta al corazón. Ver `NubePensamiento` en FeaturedThought.tsx. */
+.portada-cabeza { position: relative; }
+.pensamiento-nube {
+  --nube-ancho: min(92vw, 520px);
+  position: relative; width: var(--nube-ancho); margin-top: 26px; z-index: 3;
+  pointer-events: none;
+}
+.nube-cuerpo {
+  position: relative; box-sizing: border-box; height: 92px; padding: 12px 18px 14px; border-radius: 22px;
+  border: 1px solid rgba(167, 139, 250, 0.32);
+  box-shadow: 0 0 34px -6px rgba(167, 139, 250, 0.28), 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+  text-align: left; overflow: hidden;
+}
+.nube-etiqueta {
+  display: flex; align-items: center; gap: 8px; height: 16px;
+  font: 700 0.62rem/16px 'Inter', system-ui, sans-serif; letter-spacing: 0.26em; text-transform: uppercase; color: #c4b5fd;
+}
+.nube-fecha { font-weight: 500; letter-spacing: 0.08em; text-transform: none; color: #8b84a8; font-size: 0.66rem; }
+.nube-texto {
+  margin-top: 6px; font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+  font-size: 1.02rem; line-height: 1.4; color: #ede9fe;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+/* Las burbujas: de la más pequeña (junto al corazón) a la más grande (junto a la nube). */
+.nube-burbuja {
+  position: absolute; border-radius: 9999px; background: rgba(13, 10, 28, 0.82);
+  border: 1px solid rgba(167, 139, 250, 0.4); box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+}
+/* Teléfono y ventanas estrechas: la nube bajo el titular; las burbujas suben hasta el corazón. */
+.nube-burbuja-1 { width: 11px; height: 11px; left: calc(var(--cola-x, 30%) - 5px); top: -13px; }
+.nube-burbuja-2 { width: 7px; height: 7px; left: calc(var(--cola-x, 30%) - 4px); top: -22px; }
+.nube-burbuja-3 { width: 4px; height: 4px; left: calc(var(--cola-x, 30%) - 3px); top: -28px; }
+
+/* La entrada: burbujas desde el corazón, una tras otra, y la nube se infla. Y un vaivén suave. */
+.pensamiento-nube .nube-burbuja, .pensamiento-nube .nube-cuerpo { opacity: 0; transform: scale(0.4); transition: opacity 240ms ease, transform 280ms cubic-bezier(0.5, 0, 0.75, 0); }
+.pensamiento-nube .nube-cuerpo { transform-origin: var(--cola-x, 30%) 0; }
+.pensamiento-nube.es-visible .nube-burbuja-3 { animation: nubeBurbuja 420ms cubic-bezier(0.3, 1.5, 0.5, 1) 700ms forwards; }
+.pensamiento-nube.es-visible .nube-burbuja-2 { animation: nubeBurbuja 420ms cubic-bezier(0.3, 1.5, 0.5, 1) 820ms forwards; }
+.pensamiento-nube.es-visible .nube-burbuja-1 { animation: nubeBurbuja 420ms cubic-bezier(0.3, 1.5, 0.5, 1) 940ms forwards; }
+.pensamiento-nube.es-visible .nube-cuerpo { animation: nubeInfla 620ms cubic-bezier(0.25, 1.4, 0.45, 1) 1040ms forwards, nubeFlota 6s ease-in-out 1700ms infinite alternate; }
+@keyframes nubeBurbuja { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes nubeInfla { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes nubeFlota { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(-4px); } }
+/* Vuelve al corazón (al elegir mundo): se encoge y se apaga (la transición de arriba). */
+.pensamiento-nube:not(.es-visible) .nube-cuerpo, .pensamiento-nube:not(.es-visible) .nube-burbuja { animation: none; }
+
+/* Escritorio ancho: flota en el cielo a la IZQUIERDA del corazón, fuera del flujo. */
+@media (min-width: 1100px) and (min-height: 680px) {
+  .pensamiento-nube {
+    --nube-ancho: clamp(300px, 25vw, 380px);
+    position: absolute; margin: 0;
+    left: calc(var(--corazon-x, 0px) - 52px - var(--nube-ancho));
+    top: calc(var(--corazon-y, 0px) - 6px);
+  }
+  .nube-cuerpo { height: 108px; padding: 14px 20px 14px; border-radius: 26px 26px 10px 26px; transform-origin: 100% 50%; }
+  .nube-texto { -webkit-line-clamp: 3; font-size: 1.06rem; }
+  /* Las burbujas, horizontales entre la nube y el corazón, a la altura de su centro. */
+  .nube-burbuja-1 { left: calc(100% + 8px); top: calc(var(--corazon-alto, 60px) / 2 + 2px); }
+  .nube-burbuja-2 { left: calc(100% + 25px); top: calc(var(--corazon-alto, 60px) / 2 + 6px); }
+  .nube-burbuja-3 { left: calc(100% + 38px); top: calc(var(--corazon-alto, 60px) / 2 + 8px); }
+  .pensamiento-nube .nube-cuerpo { transform-origin: 100% 40%; }
+}
+/* Donde la nube va bajo el titular, el hueco del eslogan no se reserva en la pantalla de inicio
+   (la nube ocupa ese sitio; el eslogan aparece cuando la nube ya se fue). */
+@media (max-width: 1099.98px), (max-height: 679.98px) {
+  .landing-page[data-modo='partido'] .eslogan-portada { display: none; }
+}
+@media (max-width: 639.98px) {
+  .pensamiento-nube { margin-top: 22px; }
+  .nube-cuerpo { height: 84px; padding: 10px 14px 12px; border-radius: 18px; }
+  .nube-texto { font-size: 0.95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pensamiento-nube.es-visible .nube-burbuja, .pensamiento-nube.es-visible .nube-cuerpo { animation: none; opacity: 1; transform: none; }
+}

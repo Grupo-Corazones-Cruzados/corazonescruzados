@@ -3121,6 +3121,9 @@ export default function LandingPage() {
                 </span>
               )}
             </div>
+            {/* «EL CORAZÓN PIENSA» (Fernando, 2026-10-30): el pensamiento destacado, como nube que sale
+                del corazón. Se esconde al elegir mundo, antes de que el corazón cruce. */}
+            <FeaturedThought nube visible={!mundoElegido} />
             {/* EL ESLOGAN (Fernando, 2026-10-28): aparece debajo de los iconos cuando el corazón
                 termina de unirse a la Tierra, palabra a palabra. Su hueco está SIEMPRE reservado
                 (invisible antes de elegir), así no mueve nada al aparecer. */}
@@ -3140,9 +3143,8 @@ export default function LandingPage() {
                 <div className="inicio-tarjetas aparecer" style={{ ['--retraso' as string]: '360ms' }}>
                   <PanelesMundo onElegir={elegirMundo} bloqueado={landingLocked} />
                 </div>
-                <div className="inicio-pensamiento aparecer" style={{ ['--retraso' as string]: '520ms' }}>
-                  <FeaturedThought compacto />
-                </div>
+                {/* El pensamiento ya no va aquí, al pie: lo piensa el corazón (`FeaturedThought nube`,
+                    en la cabeza, 2026-10-30). */}
               </div>
             ) : (
               <div key="mundo" className={`mundo-elegido mundo-${mundoElegido}`}>
