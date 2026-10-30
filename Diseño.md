@@ -1890,6 +1890,20 @@ Excel» (`components/herramientas/FormatosExcel.tsx`):
   `PublicHeader`); el título va DENTRO de una tarjeta, porque sobre el fondo oscuro el texto de la tarjeta
   clara no se lee.
 
+### ⛔ Lo que se saca con `createPortal` va al ENVOLTORIO DEL TEMA, no al `<body>` (Fernando, 2026-10-30)
+
+> *«qué pasó en este formulario, es un diseño antiquísimo que no aplica para nada el diseño actual»*.
+
+La ventanita «Clave del SRI» se colgó de `document.body` para sacarla de la barra de abajo del
+teléfono, y salió con la piel pixel antigua (Silkscreen, borde violeta, campo negro): fuera de
+`.corp` no aplica ninguna regla del panel. Regla:
+- Destino del portal: `el.closest('dialog') ?? document.querySelector('.corp') ?? document.body`,
+  como ya hacen `MenuMas` y `Burbuja`.
+- Un `PixelModal` NUNCA se monta dentro de `EnBarraAcciones`: la barra estira sus botones
+  (`[&_button]:w-full`), también la X. Se porta al envoltorio del tema.
+- Tras tocar dónde se monta algo, se MIRA la captura en los dos temas y en teléfono y escritorio;
+  medir anchos no basta.
+
 ### Componentes compartidos (una definición por control)
 | Control | Componente | Notas |
 |---|---|---|

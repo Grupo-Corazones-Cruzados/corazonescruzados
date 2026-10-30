@@ -122,17 +122,19 @@ export default function BotonGastosSri({ onActualizado, className = '' }: { onAc
         />
       </span>
 
-      {/* La ventanita va al <body>: en el teléfono este botón vive dentro de la barra de abajo
-          (`EnBarraAcciones`), que estira todos sus botones a lo ancho — también la X de cerrar. */}
+      {/* La ventanita va al ENVOLTORIO DEL TEMA (`.corp`), como `MenuMas` y `Burbuja`: en el
+          teléfono este botón vive dentro de la barra de abajo (`EnBarraAcciones`), que estira
+          todos sus botones —también la X—, y colgarla del <body> la dejaba sin el tema del panel
+          (salía con la piel pixel antigua). */}
       {typeof document !== 'undefined' && createPortal(
       <PixelModal open={pidiendoClave} onClose={() => !guardando && setPidiendoClave(false)} title="Clave del SRI" size="sm" busy={guardando}
         pie={<>
           <button onClick={() => setPidiendoClave(false)} disabled={guardando} className={BTN_SECONDARY}>Cancelar</button>
-          <button onClick={guardarClave} disabled={guardando || !clave.trim()} className={BTN_PRIMARY}>Guardar y actualizar</button>
+          <button onClick={guardarClave} disabled={guardando || !clave.trim()} className={BTN_PRIMARY}>Guardar</button>
         </>}>
         <PixelInput label="Clave de SRI en Línea" type="password" autoComplete="off" value={clave}
           onChange={(e) => setClave(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') guardarClave(); }} />
-      </PixelModal>, document.body)}
+      </PixelModal>, document.querySelector('.corp') ?? document.body)}
     </>
   );
 }
