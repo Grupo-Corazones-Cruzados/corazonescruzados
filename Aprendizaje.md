@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (declarado 2026-10-30) — ¿«SISTEMAS» EN LAS FACTURAS PONE EN RIESGO EL RIMPE NEGOCIO POPULAR? · 🔎 70 % — DATOS REALES REVISADOS; FALTA EL CERTIFICADO DE RUC
+## Objetivo (declarado 2026-10-30) — ¿«SISTEMAS» EN LAS FACTURAS PONE EN RIESGO EL RIMPE NEGOCIO POPULAR? · 🔎 85 % — DATOS Y RUC REVISADOS; FALTA CONFIRMAR CON EL SRI Y LAS DECISIONES DE FERNANDO
 
 **Declarado por Fernando el 2026-10-30:** su contadora le advierte que poner «sistemas» en las facturas puede
 sacarlo del Negocio Popular (su título es de psicología y su RUC dice «servicios varios»); otra conversación
@@ -66,14 +66,28 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
   carmonanuclearmd.jc (cliente 2325; ¿la 001-088 era para Imadexa, cliente 11?) · ¿reemitir 043 (cédula falsa),
   las 4 de Roberto, 038 y 088 (correo por nombre)? · anular la 023 a Karina.
 
-### P6 — Actividades CIIU del RUC y categoría · ⏸ Bloqueada (Fernando: certificado de RUC)
+### P6 — Actividades CIIU del RUC y categoría · ✅ Resuelta (certificado del 2026-08-01, `documentos-negocio/RUC-certificado-SRI-2026-08-01.pdf`)
+- RUC 0930095922001, persona natural, **ACTIVO, RIMPE – NEGOCIO POPULAR**, registro e inicio el 29/01/2025, no
+  obligado a contabilidad, 1 establecimiento, Guayaquil.
+- **Una sola actividad: S96090705 «Actividades de servicios diversos»** (grupo S9609, servicios personales n.c.p.).
+- **Una sola obligación: 1011, renta de personas naturales.** No tiene IVA: cuadra con facturar todo al 0 %.
+- **El desajuste es real y no lo arregla cambiar palabras:** el 100 % de lo facturado es informático (desarrollo,
+  automatización, soporte de sistemas, más cursos y consultoría en 2025) y nada de eso es S9609. «Soporte» o
+  «mantenimiento» de software siguen siendo J62, no «servicios diversos».
+- Lo que encaja: J6201 (programación) y J6202 (consultoría informática); los cursos de Grow Up serían P85.
+  Añadir la actividad es una actualización del RUC; **confirmar con el SRI antes** que no toca la categoría
+  (las fuentes 2026 se contradicen sobre «actividades profesionales»).
+- El certificado es del 2026-08-01: conviene descargar uno nuevo, por la recategorización de julio de 2026.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
 ### P8 — ¿Contratos/cotizaciones escritas? · 🔎 Parcial: los proyectos tienen plan de etapas y cotización en la plataforma
 
-### Conclusión provisional
-Cambiar «desarrollo/sistema» por «soporte/mantenimiento» no protege nada: el SRI cruza **montos** (y la
-pasarela bancariza cada cobro) y 2026 va a pasar de 20.000 $. La decisión que importa es preparar el paso a
-**RIMPE Emprendedor en 2027** (IVA, declaraciones) y alinear el CIIU del RUC con lo que de verdad se factura.
+### Conclusión (2026-10-30, con el RUC)
+Cambiar «desarrollo/sistema» por «soporte/mantenimiento» no protege nada: el SRI cruza **montos**, la pasarela
+bancariza cada cobro, y el soporte de software tampoco es «servicios diversos». Dos decisiones reales:
+1. **Alinear el RUC**: añadir J62 (confirmando antes con el SRI que no cambia la categoría).
+2. **Preparar 2027**: si 2026 pasa de 20.000 $ (lleva 15.379,97 $), pasa a RIMPE Emprendedor ⇒ declaraciones de
+   IVA, y los servicios a clientes ecuatorianos (45 % de 2026) llevarían IVA 15 %; lo del exterior sigue al 0 %
+   como exportación de servicios. Afecta a los precios a clientes locales.
 
 ## Objetivo (declarado 2026-10-29) — NOTIFICACIONES DE LA APP MÓVIL + LA APP INSTALADA EN EL MACBOOK, CON NOTIFICACIONES · 🔎 80 % — SERVIDOR HECHO; MAC BLOQUEADO POR APPLE
 
