@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useAccionesFijas } from '@/components/ui/acciones-fijas';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
 interface PixelModalProps {
@@ -61,6 +62,10 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
   // y soltar fuera dispara el `click` en el velo; eso no debe cerrar nada.
   const pulsadoEnVelo = useRef(false);
   const esVelo = (t: EventTarget | null) => t === dialogRef.current || t === overlayRef.current;
+  const cuerpoRef = useRef<HTMLDivElement>(null);
+  // Los botones que el formulario lleva DENTRO del cuerpo se fijan abajo en el panel, como
+  // si fueran `pie`. Ver `acciones-fijas.ts`.
+  useAccionesFijas(cuerpoRef, open && size !== 'sm' && !pie);
 
   /**
    * ⭐ LA SALIDA TAMBIÉN SE ANIMA (Fernando, 2026-10-23: lo que aparece al navegar entra y
@@ -123,7 +128,7 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
           </div>
 
           {/* Body */}
-          <div className="modal-body max-h-[70vh] overflow-y-auto">
+          <div ref={cuerpoRef} className="modal-body max-h-[70vh] overflow-y-auto">
             {ultimo.current.children}
           </div>
 

@@ -146,6 +146,9 @@ function Demostracion({ item }: { item: any }) {
  * variantes leen exactamente lo mismo; solo cambia el botón principal (prop
  * `onPrimaryAction`) y las pestañas extra con sesión (prop `tabsExtra`).
  */
+/** El detalle partido para la ventana del teléfono: el contenido y los botones del `pie`. */
+type PartesVentana = { contenido: React.ReactNode; pie: React.ReactNode };
+
 export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange, slugInicial, onSeleccion }: MarketplaceCatalogProps) {
   const tabs = [...CATALOG_TABS, ...tabsExtra];
   const [tab, setTabState] = useState('projects');
@@ -461,7 +464,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   };
 
   /** `enVentana`: dentro del panel del teléfono, que ya trae su título y su cierre. */
-  const renderMarketplacePanel = (enVentana = false) => {
+  const renderMarketplacePanel = (enVentana = false): React.ReactNode | PartesVentana => {
     if (!selected) {
       return (
         // Hasta el pie aunque esté vacío (Fernando, 2026-10-29). Solo se pinta en la columna de escritorio.
@@ -573,8 +576,9 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         )}
       </>
     );
-    // En el teléfono, dentro de su ventana (que ya trae título y cierre), todo va seguido.
-    if (enVentana) return <div className="space-y-3">{contenido}<div className="space-y-2 pt-1">{pie}</div></div>;
+    // En el teléfono, dentro de su ventana (que ya trae título y cierre): el contenido aquí y
+    // los botones en el `pie` de la ventana, fijos abajo (Fernando, 2026-10-30).
+    if (enVentana) return { contenido: <div className="space-y-3">{contenido}</div>, pie };
     const tipo = isProject ? 'Proyecto' : tabLabel.replace(/s$/, '');
     return (
       <PanelDetalle titulo={t.title} subtitulo={tipo.charAt(0).toUpperCase() + tipo.slice(1)} onCerrar={cerrarPanel} pie={pie}>
@@ -582,6 +586,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       </PanelDetalle>
     );
   };
+
+  const ventana = enTelefono && selected ? (renderMarketplacePanel(true) as PartesVentana) : null;
 
   const cards = tab === 'projects'
     ? marketplaceProjects.filter((p: any) => !search || p.title?.toLowerCase().includes(search.toLowerCase()))
@@ -644,7 +650,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
             {/* La columna solo en escritorio; por debajo, el panel que se abre encima (abajo). */}
             {!enTelefono && (
               <aside className="w-full xl:w-[360px]">
-                {renderMarketplacePanel()}
+                {renderMarketplacePanel() as React.ReactNode}
               </aside>
             )}
           </div>
@@ -653,8 +659,8 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
 
       {/* El detalle en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
       {enTelefono && (
-        <PixelModal open={!!selected} onClose={cerrarPanel} title={selected?.title || 'Detalle'} size="md">
-          {selected && renderMarketplacePanel(true)}
+        <PixelModal open={!!selected} onClose={cerrarPanel} title={selected?.title || 'Detalle'} size="md" pie={ventana?.pie}>
+          {ventana?.contenido}
         </PixelModal>
       )}
 

@@ -4903,6 +4903,23 @@ la burbuja está abierta el menú no se repliega. Se recuerda por cuenta en `loc
 - Contraste medido (WCAG) en los cinco: texto y secundario ≥ 5,4:1; blanco sobre acento ≥ 4,7:1 salvo
   el morado del Oscuro/Mixto (4,3:1, el de siempre). Verificado a 1440 y 390 px (`scrollWidth` = ancho).
 
+## ⭐ LOS BOTONES DEL PANEL, FIJOS ABAJO (2026-10-30)
+Fernando: *«el botón o botones estén fijos en la parte inferior del panel y que no dependa su
+visualización o posición de otro control»* (el «Solicitar proyecto» del Marketplace salía pegado a los
+requerimientos, a media pantalla del teléfono).
+- **La forma correcta** sigue siendo `pie` de `PixelModal`: fuera de lo que se desplaza.
+- **Red para los que no lo usan** (~78 paneles con los botones dentro del `<form>`): `useAccionesFijas`
+  (`components/ui/acciones-fijas.ts`, lo llama `PixelModal` en md/lg/xl sin `pie`) busca el ÚLTIMO
+  elemento visible del cuerpo: una fila de botones/enlaces con uno principal, de enviar o de
+  cancelar/cerrar (si va al final de una barra horizontal, la barra entera), o un botón principal
+  suelto. La marca con `data-acciones-fijas` y `globals.css` («ACCIONES FIJAS») la pega abajo con
+  `sticky` y la franja del pie; sus contenedores, si son cajas normales, pasan a columna flexible para
+  que en un formulario corto baje al final. No se mueve del `<form>`: `type="submit"` sigue funcionando.
+- Botón suelto: no se puede envolver sin romper a React; la franja la pinta su sombra recortada con
+  `clip-path` y el borde su `::before`.
+- Medido a 390 y 1440 px: Clientes, Proyectos, Suscripciones, Recordatorios, Tickets y Marketplace con
+  los botones a ≤ 13 px del borde inferior, arriba y abajo del desplazamiento.
+
 ## ⭐ MOVIMIENTO AL NAVEGAR — páginas, detalles y filtros (2026-10-29)
 Fernando: *«agregar animaciones al cambiar de módulos o cambiar filtros o abrir formulario o ingresar a
 pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos en `app/(dashboard)/layout.tsx`.

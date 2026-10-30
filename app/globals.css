@@ -1301,6 +1301,60 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .corp .modal-surface[data-size='xl'] .modal-pie { padding-bottom: calc(12px + var(--seguro-abajo)); }
 .corp .modal-surface:has(.modal-pie) .modal-body { padding-bottom: 20px; }
 
+/* ⭐ ACCIONES FIJAS (Fernando, 2026-10-30: «el botón o botones estén fijos en la parte inferior
+   del panel y que no dependa su visualización o posición de otro control»). Los paneles que
+   llevan sus botones DENTRO del formulario en vez de en `pie`: `useAccionesFijas`
+   (components/ui/acciones-fijas.ts) marca la fila y aquí se pega al pie del panel, con la
+   misma franja que `.modal-pie`. Solo en los paneles (md/lg/xl), no en la ventanita.
+   · La CADENA (el cuerpo y los contenedores de la fila) pasa a columna flexible y la fila
+     lleva `margin-top: auto`: en un formulario corto baja al final del panel.
+   · `sticky` + `bottom: 0`: en uno largo se queda a la vista mientras se desplaza.
+   · `--acciones-izq/-der`: lo que le falta a cada lado para ir de borde a borde. */
+.corp .modal-surface:not([data-size='sm']) .modal-body[data-acciones-cadena] { display: flex; flex-direction: column; }
+.corp .modal-surface:not([data-size='sm']) .modal-body:has([data-acciones-fijas]) { padding-bottom: 0; }
+.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-cadena] { display: flex; flex-direction: column; flex: 1 0 auto; }
+.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas] { position: sticky; z-index: 5; }
+.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas=''] {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: auto calc(-1 * var(--acciones-der, 0px)) 0 calc(-1 * var(--acciones-izq, 0px));
+  padding: 12px var(--acciones-der, 0px) calc(12px + var(--seguro-abajo)) var(--acciones-izq, 0px);
+  background: var(--color-digi-card);
+  border-top: 1px solid var(--color-digi-border);
+}
+/* Un botón SUELTO no se puede envolver: el botón se queda como es y la franja la pinta su
+   sombra (sin desenfoque y con un tamaño de sobra), recortada 12 px por encima con
+   `clip-path`; el borde de arriba es su `::before`. */
+.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas='boton'] {
+  margin-top: auto;
+  bottom: calc(12px + var(--seguro-abajo));
+  box-shadow: 0 0 0 100vmax var(--color-digi-card);
+  clip-path: inset(-13px -100vmax -100vmax -100vmax);
+}
+.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas='boton']::before {
+  content: '';
+  position: absolute;
+  left: -100vmax;
+  right: -100vmax;
+  top: -13px;
+  height: 1px;
+  background: var(--color-digi-border);
+  pointer-events: none;
+}
+/* Separación con lo de arriba: el margen superior ya es `auto`, así que el hueco lo pone el anterior. */
+.corp .modal-surface:not([data-size='sm']) .modal-body :has(+ [data-acciones-fijas]) { margin-bottom: 20px; }
+.corp .modal-surface:not([data-size='sm']) .modal-body :has(+ [data-acciones-fijas='boton']) { margin-bottom: 32px; }
+@media (max-width: 639.98px) {
+  /* En el teléfono los botones se reparten el ancho, como en `.modal-pie`. */
+  .corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas=''] > * { flex: 1 1 0; min-width: 0; }
+}
+
 /* Tabs — Fluent pivot */
 .corp .pivot { border-bottom: 1px solid var(--color-digi-border); gap: 4px; }
 .corp .pivot--flush { border-bottom: none; margin-bottom: 0; justify-content: flex-end; }
