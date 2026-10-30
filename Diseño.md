@@ -2153,6 +2153,16 @@ Proyectos). Ajustes con secciones → **rail + contenido** (Configuración). Cat
 
 ---
 
+- **Pensamientos** (`pensamientos/page.tsx`, 2026-10-30, Fernando: *«el diseño de tabla […] al elegir
+  una fila en un panel derecho poder ver todo el detalle»*) — **rail (fechas) + compositor + tabla +
+  panel**, igual que Plataformas: `PixelDataTable` (Fecha/Hora · Pensamiento · Dimensión · Intensidad;
+  🌐 en los publicados) y `PanelDetalle` de 360 px desde 1280 px con los datos, el texto ENTERO y al pie
+  Eliminar · Publicar · Editar. Por debajo de 1280, el mismo detalle en `PixelModal md`. Editar va en
+  panel lateral, nunca en la fila. La dimensión es icono + texto de su color, sin cápsula.
+  · **`tablaDesde="md"`** (prop nueva de `PixelDataTable`, por defecto `lg`): la tabla —y su relleno
+    hasta el pie— desde 768 px en vez de 1024, para módulos cuyo escritorio empieza en `md`. Fernando
+    trabaja en ~1000 px y veía tarjetas.
+
 ### Grafo de conocimiento (canvas oscuro + panel "glass") — estándar para relaciones tipo Obsidian
 Adoptado 2026-07-07 en **Apoyo y Autoayuda** (`components/centralized/apoyo/KnowledgeGraph.tsx`,
 `ApoyoAutoayudaSystem.tsx`). Para visualizar entidades conectadas (situaciones/problemas/causas/

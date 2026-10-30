@@ -5,15 +5,19 @@ import { toast } from 'sonner';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import ThoughtCharts, { type DayBucket, type MonthBucket } from '@/components/pensamientos/ThoughtCharts';
 import { DIMENSION_LABEL, DIMENSION_COLOR } from '@/lib/centralized/apoyo';
 import { DIMENSION_ICON } from '@/components/centralized/dimensionIcons';
 import { intensityOf } from '@/lib/centralized/pensamientos';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { BrainCircuit, Plus, LineChart, CalendarDays, Pencil, X, Check, Clock, Megaphone, Globe } from 'lucide-react';
-import BotonQuitar from '@/components/ui/BotonQuitar';
+import { BrainCircuit, Plus, LineChart, CalendarDays, Pencil, Megaphone, Globe, Trash2 } from 'lucide-react';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import PixelDataTable from '@/components/ui/PixelDataTable';
+import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
+import PanelDetalle from '@/components/ui/PanelDetalle';
+import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
+import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 /** Valor del `<select>` del teléfono para el filtro «En la página de inicio». */
@@ -70,6 +74,12 @@ export default function PensamientosPage() {
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<{ id: number; content: string } | null>(null);
+  // ⭐ TABLA + PANEL DERECHO (Fernando, 2026-10-30: «el diseño de tabla […] al elegir una fila en
+  // un panel derecho poder ver todo el detalle del pensamiento elegido»). Mismo patrón que
+  // Plataformas: desde 1280 px el panel está al lado y enseña siempre uno; por debajo, el
+  // detalle se abre como panel lateral.
+  const [elegido, setElegido] = useState<Thought | null>(null);
+  const enVentana = !useConsultaMedia(PANTALLA_XL);
   const [confirm, setConfirm] = useState<{ text: string; onOk: () => void } | null>(null);
   const [chartsOpen, setChartsOpen] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -96,6 +106,16 @@ export default function PensamientosPage() {
   }, []);
 
   useEffect(() => { load(selectedDay, soloInicio); }, [load, selectedDay, soloInicio]);
+
+  // El elegido sigue a la lista: si cambia (otro día, se borró, se editó) se refresca o pasa al
+  // primero. En la ventana lateral no se elige solo: se abre al tocar una fila.
+  useEffect(() => {
+    setElegido((e) => {
+      const mismo = e ? thoughts.find((t) => t.id === e.id) : undefined;
+      if (mismo) return mismo;
+      return enVentana ? null : thoughts[0] ?? null;
+    });
+  }, [thoughts, enVentana]);
 
   /**
    * Publica un pensamiento en la página de inicio (o lo retira). Se pide confirmación al
@@ -262,7 +282,7 @@ export default function PensamientosPage() {
             onKeyDown={onKey}
             minRows={4}
             placeholder="Escribe un pensamiento… puede ser una línea o una lectura larga."
-            className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none"
+            className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text placeholder:text-digi-muted/50 focus:outline-none"
             style={mf}
           />
           <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -271,45 +291,104 @@ export default function PensamientosPage() {
                 <span style={{ color: draftIntensity.color }}>{draftIntensity.label}</span> · {nf.format(draft.trim().length)} caracteres
               </span>
             )}
-            <span className="text-[11px] text-digi-muted/60 hidden sm:inline" style={mf}>⌘/Ctrl + Enter para guardar</span>
-            <button className={`${BTN_PRIMARY} ml-auto h-11 md:h-auto`} onClick={save} disabled={saving || !draft.trim()} style={mf}>
+            <button className={`${BTN_PRIMARY} ml-auto h-11 md:h-auto`} onClick={save} disabled={saving || !draft.trim()} style={mf} title="⌘/Ctrl + Enter">
               <Plus className="w-4 h-4" /> Guardar
             </button>
           </div>
         </div>
 
-        {loading ? (
-          <p className="py-10 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
-        ) : thoughts.length === 0 ? (
-          <div className={`bg-digi-card border border-digi-border rounded-xl py-12 text-center ${centro.style ? 'flex-1 min-h-[200px] flex flex-col items-center justify-center' : ''}`}>
-            <BrainCircuit className="w-8 h-8 text-digi-muted mx-auto mb-2" />
-            <p className="text-[13px] text-digi-text font-medium" style={mf}>
-              {soloInicio ? 'Ningún pensamiento en la página de inicio' : `Sin pensamientos ${selectedDay ? 'este día' : 'todavía'}`}
-            </p>
-            <p className="text-[12px] text-digi-muted mt-1" style={mf}>
-              {soloInicio ? 'Publica uno con el megáfono de cada pensamiento.' : 'Escribe arriba para empezar.'}
-            </p>
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+          <div className="min-w-0">
+            {loading && thoughts.length === 0 ? (
+              <p className="py-10 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</p>
+            ) : (
+              <TablaVaciaHastaElPie vacia={thoughts.length === 0}>
+                <PixelDataTable
+                  unidad={['pensamiento', 'pensamientos']}
+                  singleLine
+                  tablaDesde="md"
+                  data={thoughts}
+                  onRowClick={(t: Thought) => setElegido(t)}
+                  rowClassName={(t: Thought) => (!enVentana && elegido?.id === t.id ? 'bg-accent/5' : '')}
+                  emptyTitle={soloInicio ? 'Ningún pensamiento en la página de inicio' : `Sin pensamientos ${selectedDay ? 'este día' : 'todavía'}`}
+                  emptyDesc={soloInicio ? 'Publica uno desde su detalle.' : 'Escribe arriba para empezar.'}
+                  columns={[
+                    { key: 'cuando', header: selectedDay ? 'Hora' : 'Fecha', width: selectedDay ? '70px' : '150px', render: (t: Thought) => (
+                      <span className="text-[12px] text-digi-muted tabular-nums" style={mf}>
+                        {selectedDay ? fmtTime(t.createdAt) : `${fmtDayCorto(t.day)} · ${fmtTime(t.createdAt)}`}
+                      </span>
+                    ) },
+                    { key: 'texto', header: 'Pensamiento', render: (t: Thought) => (
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        {publicados.includes(t.id) && <Globe className="w-3.5 h-3.5 text-accent shrink-0" aria-label="En la página de inicio" />}
+                        <span className={`truncate text-[13px] ${!enVentana && elegido?.id === t.id ? 'text-accent font-medium' : 'text-digi-text'}`} style={mf}>{t.content}</span>
+                      </span>
+                    ) },
+                    { key: 'dimension', header: 'Dimensión', width: '120px', hideOnMobile: true, render: (t: Thought) => <Dimension categoria={t.category} /> },
+                    { key: 'intensidad', header: 'Intensidad', width: '96px', hideOnMobile: true, render: (t: Thought) => <Intensidad chars={t.charCount} /> },
+                  ]}
+                  tarjetaMovil={(t: Thought) => (
+                    <div style={mf}>
+                      <div className="flex items-center gap-2 mb-1 text-[11.5px] text-digi-muted tabular-nums">
+                        <span>{selectedDay ? fmtTime(t.createdAt) : `${fmtDayCorto(t.day)} · ${fmtTime(t.createdAt)}`}</span>
+                        <Intensidad chars={t.charCount} />
+                        <Dimension categoria={t.category} />
+                        {publicados.includes(t.id) && <Globe className="w-3.5 h-3.5 text-accent" aria-label="En la página de inicio" />}
+                      </div>
+                      <p className="text-[13px] text-digi-text line-clamp-2">{t.content}</p>
+                    </div>
+                  )}
+                />
+              </TablaVaciaHastaElPie>
+            )}
           </div>
-        ) : (
-          <div className={`space-y-2 ${centro.style ? 'flex-1 min-h-[200px] overflow-y-auto pr-1' : ''}`}>
-            {thoughts.map((t) => (
-              <ThoughtCard
-                key={t.id}
-                t={t}
-                editing={editing?.id === t.id ? editing.content : null}
-                onEditChange={(content) => setEditing({ id: t.id, content })}
-                onStartEdit={() => setEditing({ id: t.id, content: t.content })}
-                onCancelEdit={() => setEditing(null)}
-                onSaveEdit={saveEdit}
-                onDelete={() => remove(t)}
-                canFeature={isAdmin}
-                featured={publicados.includes(t.id)}
-                onToggleFeatured={() => toggleFeatured(t)}
-              />
-            ))}
-          </div>
-        )}
+
+          {!enVentana && (
+            <aside className="w-full xl:w-[360px]">
+              {elegido ? (
+                <DetallePensamiento
+                  key={elegido.id} t={elegido}
+                  publicado={publicados.includes(elegido.id)} puedePublicar={isAdmin}
+                  onPublicar={() => toggleFeatured(elegido)}
+                  onEditar={() => setEditing({ id: elegido.id, content: elegido.content })}
+                  onEliminar={() => remove(elegido)}
+                />
+              ) : (
+                <PanelHastaElPie desdeAncho={1280} className="bg-digi-card border border-digi-border rounded-lg p-6 text-center flex flex-col justify-center">
+                  <BrainCircuit className="w-5 h-5 text-digi-muted mx-auto mb-2" />
+                  <p className="text-[12px] text-digi-muted" style={mf}>Elige un pensamiento para leerlo entero.</p>
+                </PanelHastaElPie>
+              )}
+            </aside>
+          )}
+        </div>
       </div>
+
+      {/* El detalle por debajo de 1280 px: el mismo, en el panel lateral. En escritorio no se monta. */}
+      {enVentana && (
+        <PixelModal open={!!elegido} onClose={() => setElegido(null)} title="Pensamiento" size="md"
+          pie={elegido && <AccionesPensamiento publicado={publicados.includes(elegido.id)} puedePublicar={isAdmin}
+            onPublicar={() => toggleFeatured(elegido)}
+            onEditar={() => setEditing({ id: elegido.id, content: elegido.content })}
+            onEliminar={() => remove(elegido)} />}>
+          {elegido && <CuerpoPensamiento t={elegido} publicado={publicados.includes(elegido.id)} />}
+        </PixelModal>
+      )}
+
+      {/* Editar: en el panel lateral, nunca en la fila (regla «nada de edición inline»). */}
+      <PixelModal open={!!editing} onClose={() => setEditing(null)} title="Editar pensamiento" size="md"
+        pie={<>
+          <button className={BTN_SECONDARY} onClick={() => setEditing(null)} style={mf}>Cancelar</button>
+          <button className={BTN_PRIMARY} onClick={saveEdit} disabled={!editing?.content.trim()} style={mf}>Guardar</button>
+        </>}>
+        {editing && (
+          <AutoGrowTextarea
+            value={editing.content} onChange={(e) => setEditing({ id: editing.id, content: e.target.value })} minRows={10}
+            className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text leading-relaxed focus:outline-none"
+            style={mf}
+          />
+        )}
+      </PixelModal>
 
       <PixelModal open={chartsOpen} onClose={() => setChartsOpen(false)} title="Tus pensamientos en gráficos" size="lg">
         {stats
@@ -328,102 +407,79 @@ export default function PensamientosPage() {
   );
 }
 
-/** Tarjeta de un pensamiento. Los largos se recortan y se expanden al pulsar. */
-function ThoughtCard({
-  t, editing, onEditChange, onStartEdit, onCancelEdit, onSaveEdit, onDelete,
-  canFeature = false, featured = false, onToggleFeatured,
-}: {
-  t: Thought; editing: string | null;
-  onEditChange: (v: string) => void; onStartEdit: () => void; onCancelEdit: () => void;
-  onSaveEdit: () => void; onDelete: () => void;
-  /** Solo el admin puede publicar un pensamiento en la página de inicio. */
-  canFeature?: boolean;
-  featured?: boolean;
-  onToggleFeatured?: () => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const intensity = intensityOf(t.charCount);
-  const long = t.charCount > 420;
-  const Icon = t.category ? DIMENSION_ICON[t.category] : null;
-
-  if (editing !== null) {
-    return (
-      <div className="rounded-lg border border-accent bg-digi-card p-3">
-        <AutoGrowTextarea
-          value={editing} onChange={(e) => onEditChange(e.target.value)} minRows={6}
-          className="w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
-          style={mf}
-        />
-        <div className="flex justify-end gap-2 mt-2">
-          <button className={`${BTN_SECONDARY} h-11 md:h-auto`} onClick={onCancelEdit} style={mf}><X className="w-4 h-4" /> Cancelar</button>
-          <button className={`${BTN_PRIMARY} h-11 md:h-auto`} onClick={onSaveEdit} style={mf}><Check className="w-4 h-4" /> Guardar</button>
-        </div>
-      </div>
-    );
-  }
-
+/**
+ * La dimensión del pensamiento: su icono y su nombre en el color de la dimensión (el mismo de los
+ * gráficos). Sin cápsula con relleno ni borde (Fernando, 2026-10-29).
+ */
+function Dimension({ categoria }: { categoria: string | null }) {
+  const Icon = categoria ? DIMENSION_ICON[categoria] : null;
+  if (!categoria || !Icon) return <span className="text-[11.5px] text-digi-muted/60" style={mf}>Sin etiquetar</span>;
   return (
-    <div className={`rounded-lg bg-digi-card p-3 group border ${featured ? 'border-accent ring-1 ring-accent/30' : 'border-digi-border'}`}>
-      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-        <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted tabular-nums" style={mf}>
-          <Clock className="w-3 h-3" /> {fmtTime(t.createdAt)}
-        </span>
-        {/* La intensidad, en texto de color: «Breve/Media/Extensa» ya dice el dato y el
-            punto lo repetía (2026-10-23). La etiqueta de DIMENSIÓN de al lado sí conserva
-            su color de fondo: ese color identifica la dimensión en todo el módulo (es el
-            mismo de los gráficos), y lleva icono, no punto. */}
-        <span className="text-[11px] font-medium" style={{ ...mf, color: intensity.color }}>{intensity.label}</span>
-        {t.category && Icon ? (
-          <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border"
-            style={{ ...mf, color: DIMENSION_COLOR[t.category], borderColor: `${DIMENSION_COLOR[t.category]}55`, background: `${DIMENSION_COLOR[t.category]}18` }}>
-            <Icon className="w-3 h-3" /> {DIMENSION_LABEL[t.category]}
-          </span>
-        ) : (
-          <span className="text-[10.5px] text-digi-muted/60" style={mf}>Sin etiquetar</span>
-        )}
-        {featured && (
-          <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-accent" style={mf}>
-            <Globe className="w-3 h-3" /> En la página de inicio
-          </span>
-        )}
-      </div>
+    <span className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ ...mf, color: DIMENSION_COLOR[categoria] }}>
+      <Icon className="w-3.5 h-3.5 shrink-0" /> {DIMENSION_LABEL[categoria]}
+    </span>
+  );
+}
 
-      <p className={`text-[13px] text-digi-text whitespace-pre-wrap leading-relaxed ${!expanded && long ? 'line-clamp-4' : ''}`} style={mf}>
-        {t.content}
-      </p>
-      {long && (
-        <button onClick={() => setExpanded((v) => !v)} className="mt-1 h-11 md:h-auto inline-flex items-center text-[11.5px] text-accent hover:underline" style={mf}>
-          {expanded ? 'Ver menos' : 'Ver todo'}
+/** «Breve / Media / Profunda…», en el color de su intensidad. */
+function Intensidad({ chars }: { chars: number }) {
+  const i = intensityOf(chars);
+  return <span className="text-[12px] font-medium" style={{ ...mf, color: i.color }}>{i.label}</span>;
+}
+
+/** Lo que se lee del pensamiento: sus datos y el texto ENTERO. Lo comparten el panel y la ventana. */
+function CuerpoPensamiento({ t, publicado }: { t: Thought; publicado: boolean }) {
+  const filas: [string, React.ReactNode][] = [
+    ['Fecha', `${fmtDayLong(t.day)} · ${fmtTime(t.createdAt)}`],
+    ['Dimensión', <Dimension key="d" categoria={t.category} />],
+    ['Intensidad', <Intensidad key="i" chars={t.charCount} />],
+    ['Caracteres', nf.format(t.charCount)],
+    ...(publicado ? [['Página de inicio', <span key="p" className="inline-flex items-center gap-1 text-accent"><Globe className="w-3.5 h-3.5" /> Publicado</span>] as [string, React.ReactNode]] : []),
+  ];
+  return (
+    <div className="space-y-4">
+      <dl className="divide-y divide-digi-border border-y border-digi-border" style={mf}>
+        {filas.map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between gap-3 py-2">
+            <dt className="text-[11.5px] text-digi-muted shrink-0">{k}</dt>
+            <dd className="text-[12.5px] text-digi-text text-right min-w-0">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-[13.5px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>{t.content}</p>
+    </div>
+  );
+}
+
+/** Publicar (solo el admin), editar y eliminar: fijos al pie del panel. */
+function AccionesPensamiento({ publicado, puedePublicar, onPublicar, onEditar, onEliminar }: {
+  publicado: boolean; puedePublicar: boolean; onPublicar: () => void; onEditar: () => void; onEliminar: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 w-full">
+      <button className={BTN_DANGER} onClick={onEliminar} style={mf} title="Eliminar pensamiento" aria-label="Eliminar pensamiento">
+        <Trash2 className="w-4 h-4" />
+      </button>
+      <div className="flex-1" />
+      {puedePublicar && (
+        <button className={BTN_SECONDARY} onClick={onPublicar} style={mf}>
+          <Megaphone className="w-4 h-4" /> {publicado ? 'Quitar del inicio' : 'Publicar'}
         </button>
       )}
-
-      {/* ── Acciones ────────────────────────────────────────────────────────────────
-          Estaban en la cabecera, a 14 px y con `opacity-0 group-hover`: en un teléfono
-          eran INALCANZABLES —la pantalla quedaba de solo lectura— y aun revelándolas,
-          14 px no se aciertan con el pulgar. Ahora van al pie, a 44 px, y `acciones-al-pasar`
-          las mantiene visibles salvo donde de verdad hay puntero. */}
-      <div className="mt-0.5 md:mt-1.5 flex items-center gap-1 h-11 md:h-7">
-        <span className="text-[11px] text-digi-muted/60 tabular-nums" style={mf}>{nf.format(t.charCount)} car.</span>
-        {/* La DESTACADA enseña siempre sus acciones, también con puntero: es la que está
-            publicada en la portada y quitarla de ahí no debería exigir buscarla.
-            `!opacity-100` porque `.group:not(:hover) .acciones-al-pasar` gana por
-            especificidad a una utilidad suelta. */}
-        <div className={`acciones-al-pasar ml-auto flex items-center gap-1 ${featured ? '!opacity-100' : ''}`}>
-        {canFeature && (
-          <button
-            onClick={onToggleFeatured}
-            className={`w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md transition-colors ${featured ? 'text-accent bg-accent-light' : 'text-digi-muted hover:text-accent hover:bg-black/[0.04]'}`}
-            title={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
-            aria-label={featured ? 'Quitar de la página de inicio' : 'Mostrar en la página de inicio'}
-          >
-            <Megaphone className="w-4 h-4 md:w-3.5 md:h-3.5" />
-          </button>
-        )}
-        <button onClick={onStartEdit} className="w-11 h-11 md:w-7 md:h-7 inline-flex items-center justify-center rounded-md text-digi-muted hover:text-accent hover:bg-black/[0.04] transition-colors" aria-label="Editar pensamiento"><Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" /></button>
-        <BotonQuitar onClick={onDelete} etiqueta="Eliminar pensamiento" />
-        </div>
-      </div>
+      <button className={BTN_PRIMARY} onClick={onEditar} style={mf}><Pencil className="w-4 h-4" /> Editar</button>
     </div>
+  );
+}
+
+/** El panel de la derecha (desde 1280 px), con `PanelDetalle`: cabecera, texto que se desplaza y acciones fijas. */
+function DetallePensamiento({ t, publicado, puedePublicar, onPublicar, onEditar, onEliminar }: {
+  t: Thought; publicado: boolean; puedePublicar: boolean; onPublicar: () => void; onEditar: () => void; onEliminar: () => void;
+}) {
+  return (
+    <PanelDetalle titulo="Pensamiento" subtitulo={`${fmtDayLong(t.day)} · ${fmtTime(t.createdAt)}`} icono={BrainCircuit}
+      pie={<AccionesPensamiento publicado={publicado} puedePublicar={puedePublicar} onPublicar={onPublicar} onEditar={onEditar} onEliminar={onEliminar} />}>
+      <CuerpoPensamiento t={t} publicado={publicado} />
+    </PanelDetalle>
   );
 }
 

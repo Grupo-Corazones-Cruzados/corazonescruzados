@@ -52,6 +52,12 @@ interface PixelDataTableProps<T> {
    */
   tarjetaMovil?: (item: T) => React.ReactNode;
   /**
+   * Desde qué ancho se ve la TABLA en vez de las tarjetas (con `tarjetaMovil`). Por defecto `lg`.
+   * `md` para los módulos cuya vista de escritorio empieza en 768 px (Pensamientos, 2026-10-30:
+   * Fernando trabaja en una ventana de ~1000 px y veía tarjetas en lugar de la tabla).
+   */
+  tablaDesde?: 'md' | 'lg';
+  /**
    * Hay una petición en curso (p. ej. se acaba de cambiar el filtro). Las filas que ya se
    * ven se ATENÚAN y dejan de responder hasta que llegan las nuevas, y una lista vacía dice
    * «Cargando…» en vez de «Sin datos» (2026-09-28). Sin esto, al cambiar de filtro la tabla
@@ -116,12 +122,16 @@ export default function PixelDataTable<T>({
   onSort,
   rowClassName,
   tarjetaMovil,
+  tablaDesde = 'lg',
   cargando = false,
   unidad = ['registro', 'registros'],
   recuento,
   resumen,
   sinRecuento = false,
 }: PixelDataTableProps<T>) {
+  // Clases literales (Tailwind solo genera las que ve escritas): tarjetas y tabla según `tablaDesde`.
+  const soloTarjetas = tablaDesde === 'md' ? 'md:hidden' : 'lg:hidden';
+  const soloTabla = tablaDesde === 'md' ? 'hidden md:flex' : 'hidden lg:flex';
   const wrapRef = useRef<HTMLDivElement>(null);
   const [fillH, setFillH] = useState<number>();
 
@@ -149,7 +159,8 @@ export default function PixelDataTable<T>({
        *
        * 1024 es el mismo corte que usan los diseños para pasar de apilado a columnas.
        */
-      if (window.innerWidth < 1024) { setFillH(undefined); return; }
+      // Con `tablaDesde="md"` la tabla ya es la de escritorio desde 768 px, y ahí también llena.
+      if (window.innerWidth < (tablaDesde === 'md' ? 768 : 1024)) { setFillH(undefined); return; }
 
       const top = el.getBoundingClientRect().top;
       const h = Math.max(window.innerHeight - top - BOTTOM_GAP - appFooterHeight() - bottomReserve, MIN_HEIGHT);
@@ -166,7 +177,7 @@ export default function PixelDataTable<T>({
       window.removeEventListener('resize', compute);
       ro.disconnect();
     };
-  }, [data.length]);
+  }, [data.length, tablaDesde]);
 
   if (data.length === 0) {
     return (
@@ -205,7 +216,7 @@ export default function PixelDataTable<T>({
       className={`transition-opacity duration-150 ${cargando ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* ── El mismo contenido, contado para un teléfono ── */}
       {tarjetaMovil && (
-        <div className="lg:hidden space-y-2">
+        <div className={`${soloTarjetas} space-y-2`}>
           <Fragment key={firmaDatos(data)}>
           {data.map((item, i) => (
             <div
@@ -234,11 +245,11 @@ export default function PixelDataTable<T>({
           tabla se queda fuera. Regla en `/diseno` §4-ter. */}
       {!tarjetaMovil && <GaleriaTabla columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} />}
       {/* En el teléfono la tabla está escondida, y con ella su pie: va también aquí. */}
-      {pie && <div className={`${tarjetaMovil ? 'lg:hidden' : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{pie}</div>}
+      {pie && <div className={`${tarjetaMovil ? soloTarjetas : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{pie}</div>}
 
       <div
         ref={wrapRef}
-        className={`data-table border-2 border-digi-border overflow-hidden flex-col ${tarjetaMovil ? 'hidden lg:flex' : 'hidden md:flex'}`}
+        className={`data-table border-2 border-digi-border overflow-hidden flex-col ${tarjetaMovil ? soloTabla : 'hidden md:flex'}`}
         style={{ height: fillH }}
       >
       <div className="flex-1 min-h-0 overflow-auto">
