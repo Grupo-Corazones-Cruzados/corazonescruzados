@@ -78,6 +78,15 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
   Añadir la actividad es una actualización del RUC; **confirmar con el SRI antes** que no toca la categoría
   (las fuentes 2026 se contradicen sobre «actividades profesionales»).
 - El certificado es del 2026-08-01: conviene descargar uno nuevo, por la recategorización de julio de 2026.
+- **Códigos comprobados en el clasificador del INEC (CIIU 4.0, 2026-10-30)**; el SRI añade 2 dígitos más
+  (S9609.07 → S96090705), así que el código final se elige en SRI en Línea:
+  · **J6201.01** — diseño y escritura de código de sistemas operativos, aplicaciones, bases de datos y páginas web
+    ⇒ la principal: cubre casi todo lo facturado en 2026.
+  · **J6201.02** — adaptación y configuración de una aplicación existente a los sistemas del cliente ⇒ Power Apps,
+    Odoo, SharePoint, soporte de sistemas.
+  · J6202 — consultoría informática (opcional: «Consultoría en Automatización de Procesos»).
+  · Hoy tiene **S9609.07**, que el INEC describe como *limpiabotas, porteadores de maletas, encargados de
+    estacionar vehículos, etcétera*: ninguna palabra en la factura lo acerca a desarrollo de software.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
 ### P8 — ¿Contratos/cotizaciones escritas? · 🔎 Parcial: los proyectos tienen plan de etapas y cotización en la plataforma
 
