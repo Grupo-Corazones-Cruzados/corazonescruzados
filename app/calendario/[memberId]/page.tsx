@@ -310,10 +310,12 @@ export default function PublicCalendarPage() {
   const flecha = 'w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
 
   return (
-    // `fixed inset-0` y no `h-dvh`: en el navegador de WhatsApp (iPhone) `100dvh` medía más que
-    // lo visible y la página volvía a desplazarse, con la cabecera y «Agendar» fuera de la
-    // vista. Lo fijo mide exactamente la ventana y no deja nada que desplazar.
-    <div className={`corp page-dark ${enTelefono ? 'fixed inset-0 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]' : 'min-h-screen'}`}>
+    // FIJA arriba y con el alto VISIBLE (`h-dvh`), las dos cosas (iPhone, navegador de WhatsApp):
+    //  · solo `h-dvh` en el flujo: la página aún se desplazaba (lo que el cuerpo suma alrededor);
+    //  · solo `fixed inset-0`: llega al borde de la ventana, DEBAJO de la barra del navegador,
+    //    que tapaba el final del calendario y «Agendar».
+    // `fixed top-0 h-dvh` no deja nada que desplazar y termina justo encima de esa barra.
+    <div className={`corp page-dark ${enTelefono ? 'fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]' : 'min-h-screen'}`}>
       <div className="shrink-0"><PublicHeader /></div>
       <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col p-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
         <div className={`bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0' : 'h-[calc(100dvh-6.5rem)]'}`}>
