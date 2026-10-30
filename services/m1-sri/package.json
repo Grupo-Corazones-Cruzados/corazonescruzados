@@ -1,0 +1,8 @@
+{
+  "name": "gcc-m1-sri",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "24.40.0"
+  }
+}

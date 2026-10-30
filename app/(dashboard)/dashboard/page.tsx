@@ -14,6 +14,7 @@ import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import BotonGastosSri from '@/components/dashboard/BotonGastosSri';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
 import Interruptor from '@/components/ui/Interruptor';
@@ -200,10 +201,14 @@ export default function DashboardHome() {
         <>
           <div className="mb-3">
             <h2 className="titulo-progreso text-[18px] text-digi-text">Estado financiero mensual</h2>
-            {mesesFiltrados.length > 0 && (
+            {(mesesFiltrados.length > 0 || isAdmin) && (
               <EnBarraAcciones>
-                <MenuMas items={opcionesReporte} label={textoReporte}
-                  boton={{ texto: textoReporte, icon: Download, className: `${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5` }} />
+                {/* Un solo botón montado a la vez (teléfono O escritorio): cada uno pregunta y avisa. */}
+                {isAdmin && enTelefono && <BotonGastosSri onActualizado={fetchMonths} />}
+                {mesesFiltrados.length > 0 && (
+                  <MenuMas items={opcionesReporte} label={textoReporte}
+                    boton={{ texto: textoReporte, icon: Download, className: `${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5` }} />
+                )}
               </EnBarraAcciones>
             )}
           </div>
@@ -239,10 +244,15 @@ export default function DashboardHome() {
                   teléfono es la acción principal y va a la barra de abajo. */}
               {/* El margen va en un envoltorio: en un `button` del panel, `ml-auto` lo pisa el
                   estilo base y el botón se quedaba pegado a los filtros. */}
-              {mesesFiltrados.length > 0 && (
-                <div className="hidden lg:block ml-auto shrink-0">
-                  <MenuMas items={opcionesReporte} label={textoReporte}
-                    boton={{ texto: textoReporte, icon: Download, className: BTN_SECONDARY }} />
+              {/* ⭐ «Gastos del SRI» (Fernando, 2026-10-30), junto al reporte: trae los egresos
+                  del SRI de los meses aún no revisados. Solo el admin (es su clave del SRI). */}
+              {(mesesFiltrados.length > 0 || isAdmin) && (
+                <div className="hidden lg:flex items-center gap-2 ml-auto shrink-0">
+                  {isAdmin && !enTelefono && <BotonGastosSri onActualizado={fetchMonths} />}
+                  {mesesFiltrados.length > 0 && (
+                    <MenuMas items={opcionesReporte} label={textoReporte}
+                      boton={{ texto: textoReporte, icon: Download, className: BTN_SECONDARY }} />
+                  )}
                 </div>
               )}
             </div>
