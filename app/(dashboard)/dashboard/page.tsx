@@ -10,8 +10,9 @@ import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, Plus, ChevronRight, FileDown, Lock, type LucideIcon } from 'lucide-react';
+  Download, Plus, ChevronRight, FileDown, FileText, Lock, type LucideIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
+import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
@@ -76,11 +77,19 @@ export default function DashboardHome() {
   const ahorroDe = (m: FinanceMonth) => ingresoDe(m) - Number(m.total_expense || 0);
   const anios = [...new Set(months.map((m) => String(m.year)))].sort((a, b) => Number(b) - Number(a));
   // El reporte descarga lo MISMO que enseña la tabla (Fernando, 2026-10-29).
-  const urlReporte = `/api/finance/pdf?${new URLSearchParams({
+  // Tres versiones (Fernando, 2026-10-30): la completa, solo ingresos y solo egresos.
+  const urlReporte = (tipo?: 'ingresos' | 'egresos') => `/api/finance/pdf?${new URLSearchParams({
     ...(anio !== 'todos' ? { anio } : {}),
     ...(resultado !== 'todos' ? { resultado } : {}),
     ...(soloFacturado ? { facturado: '1' } : {}),
+    ...(tipo ? { tipo } : {}),
   }).toString()}`;
+  const opcionesReporte = [
+    { label: 'Ingresos y egresos', icon: FileText, onClick: () => window.open(urlReporte(), '_blank') },
+    { label: 'Solo ingresos', icon: TrendingUp, onClick: () => window.open(urlReporte('ingresos'), '_blank') },
+    { label: 'Solo egresos', icon: TrendingDown, onClick: () => window.open(urlReporte('egresos'), '_blank') },
+  ];
+  const textoReporte = anio === 'todos' && resultado === 'todos' && !soloFacturado ? 'Reporte global' : 'Reporte filtrado';
   const mesesFiltrados = months.filter((m) => {
     if (anio !== 'todos' && String(m.year) !== anio) return false;
     const ahorro = ahorroDe(m);
@@ -181,9 +190,8 @@ export default function DashboardHome() {
             <h2 className="titulo-progreso text-[18px] text-digi-text">Estado financiero mensual</h2>
             {mesesFiltrados.length > 0 && (
               <EnBarraAcciones>
-                <button onClick={() => window.open(urlReporte, '_blank')} className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5`}>
-                  <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' && !soloFacturado ? 'Reporte global' : 'Reporte filtrado'}
-                </button>
+                <MenuMas items={opcionesReporte} label={textoReporte}
+                  boton={{ texto: textoReporte, icon: Download, className: `${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5` }} />
               </EnBarraAcciones>
             )}
           </div>
@@ -221,9 +229,8 @@ export default function DashboardHome() {
                   estilo base y el botón se quedaba pegado a los filtros. */}
               {mesesFiltrados.length > 0 && (
                 <div className="hidden lg:block ml-auto shrink-0">
-                  <button onClick={() => window.open(urlReporte, '_blank')} className={BTN_SECONDARY}>
-                    <Download className="w-4 h-4" /> {anio === 'todos' && resultado === 'todos' && !soloFacturado ? 'Reporte global' : 'Reporte filtrado'}
-                  </button>
+                  <MenuMas items={opcionesReporte} label={textoReporte}
+                    boton={{ texto: textoReporte, icon: Download, className: BTN_SECONDARY }} />
                 </div>
               )}
             </div>

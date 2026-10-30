@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MoreHorizontal, type LucideIcon } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { useAparicion } from '@/lib/hooks/useAparicion';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -34,11 +34,16 @@ const MARGEN = 16;
  * Regla en `/diseno` §4-quater.
  */
 export default function MenuMas({
-  items, label = 'Más acciones', className = '',
+  items, label = 'Más acciones', className = '', boton,
 }: {
   items: AccionMenu[];
   label?: string;
   className?: string;
+  /**
+   * Un botón con texto en vez del «⋯», cuando el menú ES la acción (p. ej. «Reporte global»
+   * con sus variantes). Lleva icono, texto y un chevron; `className` es su estilo de botón.
+   */
+  boton?: { texto: string; icon: LucideIcon; className: string };
 }) {
   const [abierto, setAbierto] = useState(false);
   const { montado, visible } = useAparicion(abierto);
@@ -88,6 +93,20 @@ export default function MenuMas({
 
   return (
     <>
+      {boton ? (
+        <button
+          ref={botonRef}
+          type="button"
+          onClick={() => setAbierto((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={abierto}
+          className={`${boton.className} ${className}`}
+          style={mf}
+        >
+          <boton.icon className="w-4 h-4" /> {boton.texto}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+        </button>
+      ) : (
       <button
         ref={botonRef}
         type="button"
@@ -102,6 +121,7 @@ export default function MenuMas({
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
+      )}
 
       {montado && contenedor && createPortal(
         <div

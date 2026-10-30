@@ -12,6 +12,7 @@ const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','A
  *   · `anio`      — un año (`2026`); sin él, todos.
  *   · `resultado` — `ahorro` (ahorro ≥ 0) o `perdida` (< 0); sin él, todos.
  *   · `facturado` — `1`: los ingresos, solo los facturados.
+ *   · `tipo`      — `ingresos` o `egresos`: el reporte de un solo lado (Fernando, 2026-10-30).
  * El título y el nombre del archivo dicen qué se filtró, para que el PDF se explique solo.
  */
 export async function GET(req: Request) {
@@ -28,6 +29,7 @@ export async function GET(req: Request) {
     // `facturado=1`: los ingresos cuentan solo lo facturado (ver SQL_INGRESO_FACTURADO); los
     // egresos, todos. El ahorro y el filtro de resultado se calculan con ese ingreso.
     const soloFacturado = q.get('facturado') === '1';
+    const tipo = q.get('tipo') === 'ingresos' || q.get('tipo') === 'egresos' ? (q.get('tipo') as 'ingresos' | 'egresos') : null;
 
     const condiciones: string[] = [];
     const params: unknown[] = [];
@@ -61,10 +63,10 @@ export async function GET(req: Request) {
       });
     }
 
-    const partes = [anio ? String(anio) : null, soloFacturado ? 'solo facturado' : null, resultado === 'ahorro' ? 'meses con ahorro' : resultado === 'perdida' ? 'meses con pérdida' : null].filter(Boolean);
+    const partes = [tipo === 'ingresos' ? 'solo ingresos' : tipo === 'egresos' ? 'solo egresos' : null, anio ? String(anio) : null, soloFacturado ? 'solo facturado' : null, resultado === 'ahorro' ? 'meses con ahorro' : resultado === 'perdida' ? 'meses con pérdida' : null].filter(Boolean);
     const subtitulo = partes.length ? partes.map((p) => String(p).charAt(0).toUpperCase() + String(p).slice(1)).join(' · ') : 'Global · todos los meses';
     const archivo = ['Reporte-Financiero', ...(partes.length ? partes : ['Global'])].join('-').replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const pdfBuffer = await generateFinancePdf(months, 'Reporte financiero', { subtitulo });
+    const pdfBuffer = await generateFinancePdf(months, tipo === 'ingresos' ? 'Reporte de ingresos' : tipo === 'egresos' ? 'Reporte de egresos' : 'Reporte financiero', { subtitulo, solo: tipo ?? undefined });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

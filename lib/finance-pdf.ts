@@ -72,7 +72,11 @@ function logoDataUrl(): string | null {
 export async function generateFinancePdf(
   months: FinanceMonthData[],
   title: string,
-  opciones: { subtitulo?: string } = {},
+  /**
+   * `solo`: el reporte de un lado (Fernando, 2026-10-30). Sin el otro lado no hay ahorro, así
+   * que las tarjetas, el gráfico, la tabla y cada mes enseñan solo ingresos o solo egresos.
+   */
+  opciones: { subtitulo?: string; solo?: 'ingresos' | 'egresos' } = {},
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', bufferPages: true, margins: { top: M, bottom: 56, left: M, right: M } });
@@ -96,6 +100,12 @@ export async function generateFinancePdf(
     const gEgresos = months.reduce((s, m) => s + m.totalExpense, 0);
     const gAhorro = months.reduce((s, m) => s + m.totalSavings, 0);
     const n = Math.max(months.length, 1);
+    const solo = opciones.solo;
+    // El lado que se enseña cuando hay `solo`.
+    const lado = solo === 'egresos'
+      ? { t: 'Egresos', total: gEgresos, de: (m: FinanceMonthData) => m.totalExpense, items: (m: FinanceMonthData) => m.expenseItems, color: C.rojo, barra: C.rojoBarra }
+      : { t: 'Ingresos', total: gIngresos, de: (m: FinanceMonthData) => m.totalIncome, items: (m: FinanceMonthData) => m.incomeItems, color: C.verde, barra: C.verdeBarra };
+    const conceptos = months.reduce((k, m) => k + lado.items(m).length, 0);
     const periodo = cronologico.length
       ? cronologico.length === 1
         ? `${cronologico[0].monthName} ${cronologico[0].year}`
@@ -134,7 +144,11 @@ export async function generateFinancePdf(
 
     // ── 2. INDICADORES ─────────────────────────────────────────────────────────────────
     const tasa = gIngresos > 0 ? (gAhorro / gIngresos) * 100 : 0;
-    const tarjetas: { etiqueta: string; valor: number; color: string; nota: string }[] = [
+    const tarjetas: { etiqueta: string; valor: number | string; color: string; nota: string }[] = solo ? [
+      { etiqueta: lado.t, valor: lado.total, color: lado.barra, nota: `${months.length} ${months.length === 1 ? 'mes' : 'meses'}` },
+      { etiqueta: 'Promedio mensual', valor: lado.total / n, color: lado.barra, nota: 'Sobre los meses del reporte' },
+      { etiqueta: 'Conceptos', valor: String(conceptos), color: C.violetaVivo, nota: n > 1 ? `${fmt2(conceptos / n)} por mes` : 'En el mes' },
+    ] : [
       { etiqueta: 'Ingresos', valor: gIngresos, color: C.verdeBarra, nota: n > 1 ? `Promedio mensual ${money(gIngresos / n)}` : `${months[0]?.incomeItems.length ?? 0} conceptos` },
       { etiqueta: 'Egresos', valor: gEgresos, color: C.rojoBarra, nota: n > 1 ? `Promedio mensual ${money(gEgresos / n)}` : `${months[0]?.expenseItems.length ?? 0} conceptos` },
       { etiqueta: 'Ahorro', valor: gAhorro, color: C.violetaVivo, nota: `Tasa de ahorro ${fmt2(tasa)} %` },
@@ -147,8 +161,8 @@ export async function generateFinancePdf(
       doc.roundedRect(x, y, TW, TH, 8).fillAndStroke('#FFFFFF', C.borde);
       doc.save().roundedRect(x, y, 4, TH, 2).fill(t.color).restore();
       doc.font('Helvetica-Bold').fontSize(7).fillColor(C.tenue).text(t.etiqueta.toUpperCase(), x + 16, y + 13, { characterSpacing: 1.4 });
-      const colorValor = t.etiqueta === 'Ahorro' && t.valor < 0 ? C.rojo : C.tinta;
-      doc.font('Helvetica-Bold').fontSize(17).fillColor(colorValor).text(money(t.valor), x + 16, y + 26, { width: TW - 28 });
+      const colorValor = t.etiqueta === 'Ahorro' && Number(t.valor) < 0 ? C.rojo : C.tinta;
+      doc.font('Helvetica-Bold').fontSize(17).fillColor(colorValor).text(typeof t.valor === 'number' ? money(t.valor) : t.valor, x + 16, y + 26, { width: TW - 28 });
       doc.font('Helvetica').fontSize(7.5).fillColor(C.tenue).text(t.nota, x + 16, y + 50, { width: TW - 28 });
     });
     y += TH + 26;
@@ -172,7 +186,7 @@ export async function generateFinancePdf(
       y += 16; // la leyenda va en esta franja, bajo el título
       const top = y;
       const base = top + CH - 18;
-      const maxV = Math.max(1, ...serie.map((m) => Math.max(m.totalIncome, m.totalExpense)));
+      const maxV = Math.max(1, ...serie.map((m) => (solo ? lado.de(m) : Math.max(m.totalIncome, m.totalExpense))));
       // Líneas guía: 0, 50 % y 100 % del máximo.
       [0, 0.5, 1].forEach((f) => {
         const yy = base - (CH - 34) * f;
@@ -186,8 +200,14 @@ export async function generateFinancePdf(
       const bw = Math.min(14, paso * 0.32);
       serie.forEach((m, i) => {
         const cx = M + 50 + paso * i + paso / 2;
-        const hi = ((CH - 34) * m.totalIncome) / maxV;
-        const he = ((CH - 34) * m.totalExpense) / maxV;
+        if (solo) {
+          // Una sola barra por mes, centrada y algo más ancha.
+          const h = ((CH - 34) * lado.de(m)) / maxV;
+          const b = Math.min(20, paso * 0.45);
+          if (h > 0) doc.roundedRect(cx - b / 2, base - h, b, h, Math.min(2.5, h / 2)).fill(lado.barra);
+        }
+        const hi = solo ? 0 : ((CH - 34) * m.totalIncome) / maxV;
+        const he = solo ? 0 : ((CH - 34) * m.totalExpense) / maxV;
         if (hi > 0) doc.roundedRect(cx - bw - 1, base - hi, bw, hi, Math.min(2.5, hi / 2)).fill(C.verdeBarra);
         if (he > 0) doc.roundedRect(cx + 1, base - he, bw, he, Math.min(2.5, he / 2)).fill(C.rojoBarra);
         const et = `${MESES_CORTOS[m.month - 1]} ${String(m.year).slice(2)}`;
@@ -199,13 +219,21 @@ export async function generateFinancePdf(
         doc.roundedRect(x, top - 16, 8, 8, 2).fill(color);
         doc.font('Helvetica').fontSize(7.5).fillColor(C.tenue).text(texto, x + 12, top - 15.5);
       };
-      ley(M, C.verdeBarra, 'Ingresos');
-      ley(M + 62, C.rojoBarra, 'Egresos');
+      if (solo) ley(M, lado.barra, lado.t);
+      else {
+        ley(M, C.verdeBarra, 'Ingresos');
+        ley(M + 62, C.rojoBarra, 'Egresos');
+      }
       y = top + CH + 18;
 
       // ── 3b. TABLA RESUMEN ──────────────────────────────────────────────────────────
       titulo('Resumen por mes', `${months.length} meses`);
-      const cols = [
+      const cols = solo ? [
+        { t: 'Mes', w: 0.34, a: 'left' as const },
+        { t: lado.t, w: 0.24, a: 'right' as const },
+        { t: 'Conceptos', w: 0.2, a: 'right' as const },
+        { t: '% del total', w: 0.22, a: 'right' as const },
+      ] : [
         { t: 'Mes', w: 0.28, a: 'left' as const },
         { t: 'Ingresos', w: 0.19, a: 'right' as const },
         { t: 'Egresos', w: 0.19, a: 'right' as const },
@@ -236,6 +264,15 @@ export async function generateFinancePdf(
       months.forEach((m, i) => {
         if (y + 20 > LIMITE) { nuevaPagina(); cabecera(); }
         if (i % 2 === 1) doc.rect(M, y - 4, PW, 20).fill('#FBFAFE');
+        if (solo) {
+          fila(
+            [`${m.monthName} ${m.year}`, money(lado.de(m)), String(lado.items(m).length), lado.total > 0 ? `${fmt2((lado.de(m) / lado.total) * 100)} %` : '—'],
+            y + 2,
+            { colores: [C.tinta, lado.color, C.tenue, C.tenue] },
+          );
+          y += 20;
+          return;
+        }
         const margen = m.totalIncome > 0 ? `${fmt2((m.totalSavings / m.totalIncome) * 100)} %` : '—';
         fila(
           [`${m.monthName} ${m.year}`, money(m.totalIncome), money(m.totalExpense), money(m.totalSavings), margen],
@@ -247,7 +284,10 @@ export async function generateFinancePdf(
       asegurar(28);
       doc.moveTo(M, y).lineTo(M + PW, y).lineWidth(1).strokeColor(C.violeta).stroke();
       y += 7;
-      fila(['Total', money(gIngresos), money(gEgresos), money(gAhorro), gIngresos > 0 ? `${fmt2(tasa)} %` : '—'], y, {
+      if (solo) fila(['Total', money(lado.total), String(conceptos), lado.total > 0 ? '100 %' : '—'], y, {
+        negrita: true, tam: 9, colores: [C.tinta, lado.color, C.tinta, C.tinta],
+      });
+      else fila(['Total', money(gIngresos), money(gEgresos), money(gAhorro), gIngresos > 0 ? `${fmt2(tasa)} %` : '—'], y, {
         negrita: true, tam: 9, colores: [C.tinta, C.verde, C.rojo, gAhorro < 0 ? C.rojo : C.violeta, C.tinta],
       });
       y += 30;
@@ -273,7 +313,7 @@ export async function generateFinancePdf(
       doc.font('Helvetica-Bold').fontSize(12).fillColor(C.tinta).text(`${m.monthName} ${m.year}${sigue ? ' (continuación)' : ''}`, M + 16, y + 9);
       // Con un solo mes, sus cifras ya están en las tarjetas de arriba: no se repiten.
       if (!sigue && months.length > 1) {
-        const resumen = [
+        const resumen = solo ? [{ t: lado.t, v: money(lado.de(m)), c: lado.color }] : [
           { t: 'Ingresos', v: money(m.totalIncome), c: C.verde },
           { t: 'Egresos', v: money(m.totalExpense), c: C.rojo },
           { t: 'Ahorro', v: money(m.totalSavings), c: m.totalSavings < 0 ? C.rojo : C.violeta },
@@ -321,8 +361,9 @@ export async function generateFinancePdf(
         doc.text(money(total), M + PW - 104, y, { width: 100, align: 'right' });
         y += 20;
       };
-      lista('Ingresos', C.verde, m.incomeItems, m.totalIncome, false);
-      lista('Egresos', C.rojo, m.expenseItems, m.totalExpense, true);
+      if (solo !== 'egresos') lista('Ingresos', C.verde, m.incomeItems, m.totalIncome, false);
+      if (solo !== 'ingresos') lista('Egresos', C.rojo, m.expenseItems, m.totalExpense, true);
+      if (solo) { y += 6; continue; }
 
       // El ahorro: una franja fina en el mes de un reporte de varios; con el acumulado (PDF de un
       // mes), tres fichas.
