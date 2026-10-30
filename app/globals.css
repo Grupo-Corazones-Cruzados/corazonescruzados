@@ -1276,30 +1276,33 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    solo distingue `sm` (ventanita centrada) del panel. Los paneles que no usan `PixelModal`
    (la cotización de Proyectos) leen la misma variable. */
 .corp { --ancho-panel-derecho: 1040px; }
-.corp .modal-surface[data-size='md'] .modal-header,
-.corp .modal-surface[data-size='lg'] .modal-header,
-.corp .modal-surface[data-size='xl'] .modal-header { flex: 0 0 auto; padding-top: calc(14px + var(--seguro-arriba)); }
+.corp .modal-surface[data-size='md'] > .modal-header,
+.corp .modal-surface[data-size='lg'] > .modal-header,
+.corp .modal-surface[data-size='xl'] > .modal-header { flex: 0 0 auto; padding-top: calc(14px + var(--seguro-arriba)); }
 @media (min-width: 640px) {
-  .corp .modal-surface[data-size='md'] .modal-header,
-  .corp .modal-surface[data-size='lg'] .modal-header,
-  .corp .modal-surface[data-size='xl'] .modal-header { padding-top: calc(16px + var(--seguro-arriba)); }
+  .corp .modal-surface[data-size='md'] > .modal-header,
+  .corp .modal-surface[data-size='lg'] > .modal-header,
+  .corp .modal-surface[data-size='xl'] > .modal-header { padding-top: calc(16px + var(--seguro-arriba)); }
 }
-.corp .modal-surface[data-size='md'] .modal-body,
-.corp .modal-surface[data-size='lg'] .modal-body,
-.corp .modal-surface[data-size='xl'] .modal-body {
+.corp .modal-surface[data-size='md'] > .modal-body,
+.corp .modal-surface[data-size='lg'] > .modal-body,
+.corp .modal-surface[data-size='xl'] > .modal-body {
   flex: 1 1 auto;
   max-height: none;             /* override the centered-dialog 70vh cap */
   /* Lo último del formulario (sus botones) no puede quedar bajo la barra de inicio. */
   padding-bottom: calc(24px + var(--seguro-abajo));
 }
 
+/* ⚠️ Con `>` y no con espacio (2026-10-30): una ventanita abierta DENTRO de un panel es su
+   descendiente en el DOM, y con el espacio heredaba el margen seguro del panel (un hueco
+   enorme sobre su título y bajo sus botones en el iPhone). */
 /* Pie de acciones de un formulario (`pie` de PixelModal): fijo bajo lo que se desplaza. */
 .corp .modal-pie { padding: 12px 24px; background: var(--color-digi-card); }
 @media (max-width: 639.98px) { .corp .modal-pie { padding: 12px 16px; } }
-.corp .modal-surface[data-size='md'] .modal-pie,
-.corp .modal-surface[data-size='lg'] .modal-pie,
-.corp .modal-surface[data-size='xl'] .modal-pie { padding-bottom: calc(12px + var(--seguro-abajo)); }
-.corp .modal-surface:has(.modal-pie) .modal-body { padding-bottom: 20px; }
+.corp .modal-surface[data-size='md'] > .modal-pie,
+.corp .modal-surface[data-size='lg'] > .modal-pie,
+.corp .modal-surface[data-size='xl'] > .modal-pie { padding-bottom: calc(12px + var(--seguro-abajo)); }
+.corp .modal-surface:has(> .modal-pie) > .modal-body { padding-bottom: 20px; }
 
 /* ⭐ ACCIONES FIJAS (Fernando, 2026-10-30: «el botón o botones estén fijos en la parte inferior
    del panel y que no dependa su visualización o posición de otro control»). Los paneles que
@@ -1310,11 +1313,11 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
      lleva `margin-top: auto`: en un formulario corto baja al final del panel.
    · `sticky` + `bottom: 0`: en uno largo se queda a la vista mientras se desplaza.
    · `--acciones-izq/-der`: lo que le falta a cada lado para ir de borde a borde. */
-.corp .modal-surface:not([data-size='sm']) .modal-body[data-acciones-cadena] { display: flex; flex-direction: column; }
-.corp .modal-surface:not([data-size='sm']) .modal-body:has([data-acciones-fijas]) { padding-bottom: 0; }
-.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-cadena] { display: flex; flex-direction: column; flex: 1 0 auto; }
-.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas] { position: sticky; z-index: 5; }
-.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas=''] {
+.corp .modal-surface:not([data-size='sm']) > .modal-body[data-acciones-cadena] { display: flex; flex-direction: column; }
+.corp .modal-surface:not([data-size='sm']) > .modal-body:has([data-acciones-fijas]) { padding-bottom: 0; }
+.corp .modal-surface:not([data-size='sm']) > .modal-body [data-acciones-cadena] { display: flex; flex-direction: column; flex: 1 0 auto; }
+.corp .modal-surface:not([data-size='sm']) > .modal-body [data-acciones-fijas] { position: sticky; z-index: 5; }
+.corp .modal-surface:not([data-size='sm']) > .modal-body [data-acciones-fijas=''] {
   position: sticky;
   bottom: 0;
   z-index: 5;
@@ -1331,13 +1334,13 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* Un botón SUELTO no se puede envolver: el botón se queda como es y la franja la pinta su
    sombra (sin desenfoque y con un tamaño de sobra), recortada 12 px por encima con
    `clip-path`; el borde de arriba es su `::before`. */
-.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas='boton'] {
+.corp .modal-surface:not([data-size='sm']) > .modal-body [data-acciones-fijas='boton'] {
   margin-top: auto;
   bottom: calc(12px + var(--seguro-abajo));
   box-shadow: 0 0 0 100vmax var(--color-digi-card);
   clip-path: inset(-13px -100vmax -100vmax -100vmax);
 }
-.corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas='boton']::before {
+.corp .modal-surface:not([data-size='sm']) > .modal-body [data-acciones-fijas='boton']::before {
   content: '';
   position: absolute;
   left: -100vmax;
@@ -1348,11 +1351,11 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   pointer-events: none;
 }
 /* Separación con lo de arriba: el margen superior ya es `auto`, así que el hueco lo pone el anterior. */
-.corp .modal-surface:not([data-size='sm']) .modal-body :has(+ [data-acciones-fijas]) { margin-bottom: 20px; }
-.corp .modal-surface:not([data-size='sm']) .modal-body :has(+ [data-acciones-fijas='boton']) { margin-bottom: 32px; }
+.corp .modal-surface:not([data-size='sm']) > .modal-body :has(+ [data-acciones-fijas]) { margin-bottom: 20px; }
+.corp .modal-surface:not([data-size='sm']) > .modal-body :has(+ [data-acciones-fijas='boton']) { margin-bottom: 32px; }
 @media (max-width: 639.98px) {
   /* En el teléfono los botones se reparten el ancho, como en `.modal-pie`. */
-  .corp .modal-surface:not([data-size='sm']) .modal-body [data-acciones-fijas=''] > * { flex: 1 1 0; min-width: 0; }
+  .corp .modal-surface:not([data-size='sm']) > .modal-body [data-acciones-fijas=''] > * { flex: 1 1 0; min-width: 0; }
 }
 
 /* Tabs — Fluent pivot */
@@ -4485,8 +4488,14 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* …y se disuelve hacia arriba. */
 .pensamiento-fugaz[data-fase='saliendo'] { animation: fugazSale 1.4s ease-in forwards; }
 @keyframes fugazSale { from { opacity: 1; transform: translateY(-8px); filter: blur(0); } to { opacity: 0; transform: translateY(-30px); filter: blur(10px); } }
-.hueco-pensamiento-movil { display: none; }
-@media (max-width: 639.98px) { .hueco-pensamiento-movil { display: flex; } }
+/* El hueco de la antigua cápsula, del MISMO alto (98 / 92 px) en todos los tamaños: sin él, los dos
+   mundos se recentran y bajan. Vacío desde 640 px; en el teléfono lleva el pensamiento. */
+.hueco-pensamiento { box-sizing: content-box; height: 98px; align-items: center; }
+.hueco-pensamiento .pensamiento-fugaz-pie { display: none; }
+@media (max-width: 639.98px) {
+  .hueco-pensamiento { height: 92px; }
+  .hueco-pensamiento .pensamiento-fugaz-pie { display: flex; }
+}
 
 /* Teléfono: en el cielo NO (no cabe sin apretar el titular); en el hueco de abajo, en el mundo
    Progreso claro: mismo alto que tenía la cápsula, centrado y en tinta oscura. */

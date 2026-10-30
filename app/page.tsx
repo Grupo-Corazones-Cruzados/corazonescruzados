@@ -3144,9 +3144,10 @@ export default function LandingPage() {
                   <PanelesMundo onElegir={elegirMundo} bloqueado={landingLocked} />
                 </div>
                 {/* El pensamiento ya no va aquí: flota en el cielo (`FeaturedThought nube`, en la cabeza,
-                    2026-10-30). En el TELÉFONO aparece aquí, en su hueco de siempre, para que Aventura y
-                    Progreso queden donde estaban (Fernando: «no muevas las posiciones»). */}
-                <div className="inicio-pensamiento hueco-pensamiento-movil">
+                    2026-10-30). Pero su HUECO se queda, del mismo alto, en todos los tamaños: Aventura y
+                    Progreso quedan donde estaban (Fernando: «antes estaban perfectamente posicionados»).
+                    En el teléfono el pensamiento aparece aquí; desde 640 px, en el cielo. */}
+                <div className="inicio-pensamiento hueco-pensamiento">
                   <FeaturedThought nube lugar="pie" visible={!mundoElegido} />
                 </div>
               </div>
