@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthProvider';
-import BrandLoader from '@/components/ui/BrandLoader';
+import CargaPanel from '@/components/dashboard/CargaPanel';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -15,13 +15,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-digi-darker">
-        <BrandLoader size="lg" label="Cargando..." />
-      </div>
-    );
-  }
+  // La silueta del panel, con el tema de este equipo (ver `CargaPanel`).
+  if (isLoading) return <CargaPanel />;
 
   if (!user) return null;
 

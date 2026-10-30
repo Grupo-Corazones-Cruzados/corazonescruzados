@@ -4630,3 +4630,10 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .cc-cabeza { display: none; }
   .cc-relleno { animation: none; opacity: 1; }
 }
+
+/* Los tres puntos de `BrandLoader` («Cargando ticket…»), de uno en uno (2026-10-30). Aquí y no en
+   `movimiento.css` porque el indicador se usa también en las pantallas de acceso. */
+@keyframes cargaPuntos { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75%, 100% { content: '...'; } }
+.carga-puntos { display: inline-block; width: 1.1em; text-align: left; }
+.carga-puntos::after { content: '...'; animation: cargaPuntos 1.2s steps(1) infinite; }
+@media (prefers-reduced-motion: reduce) { .carga-puntos::after { animation: none; } }

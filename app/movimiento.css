@@ -40,3 +40,49 @@
 @media (prefers-reduced-motion: reduce) {
   .corp main[data-entrada] > *, .corp .fila-entra { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════════════
+   LA PANTALLA DE CARGA DEL PANEL (`components/dashboard/CargaPanel.tsx`, 2026-10-30).
+   ───────────────────────────────────────────────────────────────────────────────────────
+   · `.carga-bloque`: un hueco con la forma de lo que viene. Su color sale del borde del tema
+     y un brillo lo cruza en diagonal; `--i` lo retrasa, así la luz avanza como una ola por
+     el panel en vez de parpadear todo a la vez.
+   · `.carga-tarjeta`: la tarjeta de siempre (fondo, borde y radio del tema).
+   · `.carga-barra`: un tramo del degradado de acento del tema que recorre el borde de arriba.
+   · Al aparecer, todo entra con un fundido: si la sesión responde al momento, no hay destello.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+@keyframes cargaBrillo { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+@keyframes cargaBarra { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@keyframes cargaAparece { from { opacity: 0; } to { opacity: 1; } }
+
+.corp .carga-panel, .corp.carga-panel { animation: cargaAparece 300ms ease-out 120ms backwards; }
+.corp .carga-bloque {
+  background:
+    linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--color-digi-card) 70%, transparent) 50%, transparent 70%)
+      0 0 / 250% 100% no-repeat,
+    color-mix(in srgb, var(--color-digi-border) 75%, transparent);
+  animation: cargaBrillo 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.corp.dark .carga-bloque {
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.07) 50%, transparent 70%) 0 0 / 250% 100% no-repeat,
+    color-mix(in srgb, var(--color-digi-border) 80%, transparent);
+  background-size: 250% 100%, auto;
+}
+.corp .carga-tarjeta {
+  background: var(--tarjeta-fondo, var(--color-digi-card));
+  border: 1px solid var(--tarjeta-borde, var(--color-digi-border));
+  border-radius: var(--radio-tarjeta, 12px);
+}
+.corp .carga-barra { overflow: hidden; }
+.corp .carga-barra::before {
+  content: ''; position: absolute; inset: 0; width: 40%;
+  background: var(--degradado-acento, var(--color-accent));
+  border-radius: 9999px;
+  animation: cargaBarra 1.3s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corp .carga-bloque, .corp .carga-barra::before { animation: none; }
+}

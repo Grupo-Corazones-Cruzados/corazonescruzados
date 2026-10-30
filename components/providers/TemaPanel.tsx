@@ -27,6 +27,12 @@ import { TEMA_POR_DEFECTO, definicionTema, type TemaId } from '@/lib/temas';
  */
 const LLAVE = 'gcc_dash_theme';
 
+/**
+ * El ÚLTIMO tema usado en este equipo, sea de la cuenta que sea: lo lee la pantalla de carga
+ * (`CargaPanel`), que se ve antes de saber quién entra (Fernando, 2026-10-30).
+ */
+export const LLAVE_ULTIMO_TEMA = 'gcc_dash_theme:ultimo';
+
 /** Lo guardado antes de los temas era `dark`/`light`: se sigue entendiendo. */
 function leerGuardado(valor: string | null): TemaId {
   if (valor === 'dark') return 'oscuro';
@@ -52,12 +58,16 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
   // Se relee al cambiar de cuenta: cada una tiene su llave, y la que no tiene nada guardado
   // empieza en claro.
   useEffect(() => {
-    try { setTema(leerGuardado(localStorage.getItem(llave))); } catch { /* sin almacenamiento: claro */ }
-  }, [llave]);
+    try {
+      const t = leerGuardado(localStorage.getItem(llave));
+      setTema(t);
+      if (user?.id) localStorage.setItem(LLAVE_ULTIMO_TEMA, t);
+    } catch { /* sin almacenamiento: claro */ }
+  }, [llave, user?.id]);
 
   const poner = useCallback((t: TemaId) => {
     setTema(t);
-    try { localStorage.setItem(llave, t); } catch { /* no impide cambiarlo ahora */ }
+    try { localStorage.setItem(llave, t); localStorage.setItem(LLAVE_ULTIMO_TEMA, t); } catch { /* no impide cambiarlo ahora */ }
   }, [llave]);
 
   const oscuro = definicionTema(tema)?.base === 'oscuro';

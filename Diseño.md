@@ -4055,6 +4055,17 @@ que se coloca igual; lo único que cambia es de quién hereda los colores.
 Ahora son dos `div` con borde: cero peticiones, pintado en el mismo fotograma. El logo sigue
 en el raíl y en los diálogos de acceso — pero **ya no hace de reloj de arena**.
 
+**2026-10-30 (Fernando: «un estilo más de /dashboard, que cambie según el tema, nuevo e interesante»):**
+- **La carga del panel ENTERO** (mientras se comprueba la sesión) es `CargaPanel`
+  (`components/dashboard/CargaPanel.tsx`): la SILUETA del panel —raíl, saludo, cifras, filtros y tabla—
+  en bloques que se iluminan en ola (`.carga-bloque`, `--i` escalona), una barra fina con el degradado
+  del tema que recorre el borde de arriba y una cápsula abajo, «Preparando tu panel…». Lleva el tema del
+  equipo: `TemaPanel` guarda el último usado (`gcc_dash_theme:ultimo`) y un `<script>` en línea lo aplica
+  antes de hidratar (sin fogonazo claro en los temas oscuros). DESCARTADO: anillo + «CARGANDO...» en
+  letra pixel sobre negro, fuera del tema.
+- **Dentro de una página**, `BrandLoader`: arco de acento + arco interior con el degradado del tema en
+  sentido contrario; el texto en la letra del panel, tenue, con los tres puntos latiendo (`.carga-puntos`).
+
 ### Hover que NO cambia el relleno
 Los botones del pie del raíl («Modo claro», «Salir») tenían cada uno su estilo, y al pasar por
 encima se teñían y movían el borde: sobre el raíl oscuro ese recuadro saltaba a la vista más
