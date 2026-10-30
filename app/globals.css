@@ -4591,3 +4591,42 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .pensamiento-fugaz-estrella .fugaz-texto > span { animation-duration: 1.1s; animation-delay: calc(300ms + var(--i) * 0.13s); }
 @keyframes fugazPalabra { from { opacity: 0; transform: translateY(0.35em); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
 .pensamiento-fugaz-estrella .fugaz-firma { animation-delay: calc(600ms + var(--i) * 0.13s); }
+
+/* ═══ LA ESTRELLA SE LICÚA EN DOS CORAZONES CRUZADOS (Fernando, 2026-10-30) ═══
+   Ver `CorazonesCruzados` en PensamientosCielo.tsx. El punto desaparece y una cabeza brillante
+   dibuja el primer corazón (1,3 s) y luego el segundo, cruzado (desde 0,75 s); después se
+   rellenan con un brillo suave. El vértice de abajo del primero cae en el centro de la estrella. */
+.cielo-estrella.es-encendida > span { animation: estrellaLicua 500ms ease-in forwards; }
+@keyframes estrellaLicua { 0% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(0.3); } }
+.corazones-cruzados {
+  position: absolute; width: 38px; height: 28.5px; overflow: visible; pointer-events: none;
+  /* El vértice (12, 22) del viewBox 32×24 → (14,25 px, 26,1 px), sobre el centro del botón de 28 px. */
+  left: calc(50% - 14.25px); top: calc(50% - 26.1px);
+  --cc: #f5d0fe; --cc-brillo: rgba(232, 121, 249, 0.65); --cc-relleno: rgba(232, 121, 249, 0.16);
+  filter: drop-shadow(0 0 3px var(--cc-brillo));
+  transform-origin: 37.5% 91.6%; /* el vértice: se encogen hacia la estrella */
+  transition: opacity 900ms ease, transform 900ms ease;
+}
+.cielo-estrella-derecha .corazones-cruzados { --cc: #a21caf; --cc-brillo: rgba(192, 38, 211, 0.4); --cc-relleno: rgba(192, 38, 211, 0.1); }
+.cc-trazo {
+  fill: none; stroke: var(--cc); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 100; stroke-dashoffset: 100;
+  animation: ccTrazo 1.3s cubic-bezier(0.45, 0, 0.35, 1) forwards;
+}
+.cc-dos .cc-trazo { stroke-width: 1.4; animation-duration: 1.2s; animation-delay: 0.75s; }
+@keyframes ccTrazo { to { stroke-dashoffset: 0; } }
+.cc-cabeza { fill: #fff; filter: drop-shadow(0 0 2px var(--cc-brillo)); animation: ccCabeza 1.3s ease forwards; }
+.cielo-estrella-derecha .cc-cabeza { fill: #e879f9; }
+.cc-dos .cc-cabeza { opacity: 0; animation: ccCabeza 1.2s ease 0.75s forwards; }
+/* La cabeza nace del punto, brilla mientras dibuja y se funde al cerrar el corazón. */
+@keyframes ccCabeza { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+.cc-relleno { fill: var(--cc-relleno); stroke: none; opacity: 0; animation: ccRelleno 1s ease 1.6s forwards; }
+.cc-dos .cc-relleno { animation-delay: 1.9s; }
+@keyframes ccRelleno { to { opacity: 1; } }
+/* Al irse el pensamiento: los corazones se apagan encogiéndose hacia la estrella. */
+.corazones-cruzados.se-apaga { opacity: 0; transform: scale(0.4) translateY(10px); }
+@media (prefers-reduced-motion: reduce) {
+  .cc-trazo { animation: none; stroke-dashoffset: 0; }
+  .cc-cabeza { display: none; }
+  .cc-relleno { animation: none; opacity: 1; }
+}

@@ -320,10 +320,11 @@ export function sonarInterruptor(encendido: boolean) {
 }
 
 /**
- * EL CIELO DE PENSAMIENTOS (Fernando, 2026-10-30: «un sonidito para cuando aparece un pensamiento
- * o cuando se pone el puntero encima»).
+ * EL CIELO DE PENSAMIENTOS (Fernando, 2026-10-30: «un sonidito para cuando aparece un pensamiento»).
+ * El destello al pasar otra vez por la estrella que ya brilla se quitó el mismo día («suena otro
+ * sonido repetidamente»): solo suena la aparición.
  *
- * ⚠️ Como `sonarPasar`, ninguno de los dos CREA el audio: un pensamiento que aparece solo, o el
+ * ⚠️ Como `sonarPasar`, no CREA el audio: un pensamiento que aparece solo, o el
  * puntero, no son gestos que el navegador acepte. Suenan cuando el contexto ya está despierto, y
  * lo despierta `despertarAudio()` en el primer clic, toque o tecla del visitante en la portada.
  */
@@ -359,32 +360,6 @@ export function sonarPensamiento() {
       osc.start(inicio);
       osc.stop(inicio + largo + 0.05);
     });
-  } catch {
-    // Sin audio no se rompe nada.
-  }
-}
-
-/** El puntero sobre una estrella ya encendida: un destello cortísimo y agudo (mi7). */
-let ultimaEstrella = 0;
-export function sonarEstrella() {
-  try {
-    if (!contexto || contexto.state !== 'running') return;
-    const ahora = performance.now();
-    if (ahora - ultimaEstrella < 90) return;
-    ultimaEstrella = ahora;
-    const ctx = contexto;
-    const t0 = ctx.currentTime + 0.002;
-    const osc = ctx.createOscillator();
-    const vol = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(2637, t0);
-    osc.frequency.exponentialRampToValueAtTime(3136, t0 + 0.04);
-    vol.gain.setValueAtTime(0.0001, t0);
-    vol.gain.exponentialRampToValueAtTime(0.04, t0 + 0.004);
-    vol.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
-    osc.connect(vol).connect(ctx.destination);
-    osc.start(t0);
-    osc.stop(t0 + 0.14);
   } catch {
     // Sin audio no se rompe nada.
   }

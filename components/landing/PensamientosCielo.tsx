@@ -11,8 +11,9 @@
  * espacio libre de la pantalla (no se apretujan); si hay más pensamientos, se turnan en ellas.
  * Titilan. De una en una SE ENCIENDEN: su pensamiento aparece junto a ella palabra a palabra, flota
  * unos segundos y se disuelve; luego otra. Al pasar el puntero por una estrella (o enfocarla con el
- * teclado) su pensamiento aparece en el acto. Suena un tintineo al aparecer y un destello al pasar
- * por la que ya brilla (`sonarPensamiento`/`sonarEstrella`).
+ * teclado) su pensamiento aparece en el acto. Suena un tintineo al aparecer (`sonarPensamiento`).
+ * Al encenderse, la estrella se LICÚA en dos corazones cruzados que se dibujan como la estela de un
+ * gusanito (`CorazonesCruzados`, abajo).
  *
  * EL REPARTO SE MIDE, no se dibuja a mano: se toman los rectángulos de lo que YA ocupa la pantalla
  * (insignia, corazón, Tierra, cada línea de los dos paneles) y una franja a cada lado de la onda
@@ -31,7 +32,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { despertarAudio, sonarEstrella, sonarPensamiento } from '@/lib/sitio/sonidoSeleccion';
+import { despertarAudio, sonarPensamiento } from '@/lib/sitio/sonidoSeleccion';
 
 interface Pensamiento { content: string; createdAt: string }
 type Fase = 'oculta' | 'visible' | 'saliendo';
@@ -157,7 +158,8 @@ function colocarTexto(e: Estrella, largo: number, mapa: ReturnType<typeof medirM
     return Math.abs(d.x - o.x) > w * 0.3 || Math.abs(d.y - o.y) > 24 ? { ...d, w: 0, h: 0, x: -1e6 } : d;
   });
   // Su propia estrella también estorba: el texto nunca la pisa.
-  const estorbos = [...estorbosDe(mapa, 8), { x: e.x - 22, y: e.y - 22, w: 44, h: 44 }];
+  // Su propia estrella —y los corazones que nacen de ella, que suben ~30 px— también estorban.
+  const estorbos = [...estorbosDe(mapa, 8), { x: e.x - 26, y: e.y - 40, w: 52, h: 62 }];
   let mejor = opciones[0];
   let menos = Infinity;
   for (const o of opciones) {
@@ -253,11 +255,12 @@ export default function PensamientosCielo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lista, visible]);
 
-  /** El puntero sobre la estrella `j`: si ya brilla, un destello; si no, su pensamiento, ya. */
+  /** El puntero sobre la estrella `j`: su pensamiento, ya. Si ya es el que brilla, nada: ni lo
+   *  reinicia ni suena (Fernando, 2026-10-30: pasar otra vez por el mismo sonaba «repetidamente»). */
   const encender = (j: number) => {
     if (!visible) return;
     const i = asignada.current[j] ?? j;
-    if (i === actual && fase === 'visible') { sonarEstrella(); return; }
+    if (i === actual && fase !== 'oculta') return;
     mostrar(i, 0);
   };
 
@@ -352,6 +355,7 @@ export default function PensamientosCielo({
           tabIndex={visible ? 0 : -1}
         >
           <span aria-hidden="true" />
+          {i === encendida && fase !== 'oculta' && <CorazonesCruzados key={vuelta} apagandose={fase === 'saliendo'} />}
         </button>
       ))}
       <div
@@ -366,5 +370,40 @@ export default function PensamientosCielo({
         {fase !== 'oculta' && texto}
       </div>
     </div>
+  );
+}
+
+/**
+ * DOS CORAZONES CRUZADOS — en lo que se convierte una estrella al encenderse (Fernando, 2026-10-30:
+ * *«que el circulito se licúe y se convierta en alguna forma… que signifique algo para nuestro
+ * proyecto… como un camino de gusanito que se alargue y tome poco a poco la forma»*).
+ *
+ * El punto se licúa en una CABEZA brillante que recorre el contorno de un corazón dejando su estela
+ * (el trazo se dibuja con `stroke-dashoffset`, la cabeza viaja con `animateMotion`), y luego otra
+ * dibuja un segundo corazón que se cruza con el primero: el símbolo del grupo. Al terminar se
+ * rellenan con un brillo suave; cuando el pensamiento se va, se apagan y vuelve el punto.
+ * Se monta de nuevo en cada aparición (`key`), así la animación SMIL empieza desde cero.
+ * El vértice de abajo del primer corazón está justo en la estrella: de ahí sale la cabeza.
+ */
+const CORAZON = 'M12 22 C12 22 2 15.5 2 9.2 C2 5.8 4.7 3.5 7.6 3.5 C9.6 3.5 11.2 4.6 12 6.2 C12.8 4.6 14.4 3.5 16.4 3.5 C19.3 3.5 22 5.8 22 9.2 C22 15.5 12 22 12 22 Z';
+
+function CorazonesCruzados({ apagandose }: { apagandose: boolean }) {
+  return (
+    <svg className={`corazones-cruzados ${apagandose ? 'se-apaga' : ''}`} viewBox="0 0 32 24" aria-hidden="true">
+      <g className="cc-uno">
+        <path className="cc-relleno" d={CORAZON} />
+        <path className="cc-trazo" d={CORAZON} pathLength={100} />
+        <circle className="cc-cabeza" r="1.6">
+          <animateMotion dur="1.3s" fill="freeze" path={CORAZON} calcMode="spline" keyPoints="0;1" keyTimes="0;1" keySplines="0.45 0 0.35 1" />
+        </circle>
+      </g>
+      <g className="cc-dos" transform="translate(9.5 3.2) scale(0.76)">
+        <path className="cc-relleno" d={CORAZON} />
+        <path className="cc-trazo" d={CORAZON} pathLength={100} />
+        <circle className="cc-cabeza" r="2">
+          <animateMotion dur="1.2s" begin="0.75s" fill="freeze" path={CORAZON} calcMode="spline" keyPoints="0;1" keyTimes="0;1" keySplines="0.45 0 0.35 1" />
+        </circle>
+      </g>
+    </svg>
   );
 }
