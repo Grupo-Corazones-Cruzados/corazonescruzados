@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { resolveSubject } from '@/lib/centralized/subject';
-import { listDays, listThoughts, createThought, featuredIdOf } from '@/lib/centralized/pensamientos-db';
+import { listDays, listThoughts, createThought, publishedIdsOf, PUBLICADOS_MAX } from '@/lib/centralized/pensamientos-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,14 +20,14 @@ export async function GET(req: NextRequest) {
     if (!subject) return NextResponse.json({ data: { subject: null, days: [], thoughts: [] } });
 
     const day = req.nextUrl.searchParams.get('day') || undefined;
-    // `featuredId` solo para el admin: es quien puede publicar uno en la landing, y le
-    // sirve para ver cuál tiene publicado ahora mismo.
-    const [days, thoughts, featuredId] = await Promise.all([
+    // `publishedIds` solo para el admin: es quien puede publicarlos en la landing (hasta
+    // `PUBLICADOS_MAX`), y le sirve para ver cuáles tiene publicados ahora mismo.
+    const [days, thoughts, publishedIds] = await Promise.all([
       listDays(subject),
       listThoughts(subject, day),
-      user.role === 'admin' ? featuredIdOf(subject) : Promise.resolve(null),
+      user.role === 'admin' ? publishedIdsOf(subject) : Promise.resolve([] as number[]),
     ]);
-    return NextResponse.json({ data: { subject, days, thoughts, featuredId } });
+    return NextResponse.json({ data: { subject, days, thoughts, publishedIds, publicadosMax: PUBLICADOS_MAX } });
   } catch (err: any) {
     console.error('Pensamientos list:', err.message);
     return NextResponse.json({ error: 'No se pudieron cargar los pensamientos.' }, { status: 500 });

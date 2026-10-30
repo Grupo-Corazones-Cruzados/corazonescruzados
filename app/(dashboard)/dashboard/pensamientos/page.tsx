@@ -52,8 +52,10 @@ const todayLocal = () =>
 export default function PensamientosPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  // Id del pensamiento publicado en la landing (solo lo devuelve el API al admin).
-  const [featuredId, setFeaturedId] = useState<number | null>(null);
+  // Ids de los pensamientos publicados en la landing (solo los devuelve el API al admin).
+  // Hasta `publicadosMax` (10) desde el 2026-10-30; antes, uno solo.
+  const [publicados, setPublicados] = useState<number[]>([]);
+  const [publicadosMax, setPublicadosMax] = useState(10);
   const [days, setDays] = useState<DayBucket[]>([]);
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -79,36 +81,41 @@ export default function PensamientosPage() {
       if (!res.ok) throw new Error(j.error || 'Error');
       setDays(j.data.days || []);
       setThoughts(j.data.thoughts || []);
-      setFeaturedId(j.data.featuredId ?? null);
+      setPublicados(j.data.publishedIds ?? []);
+      if (j.data.publicadosMax) setPublicadosMax(j.data.publicadosMax);
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(selectedDay); }, [load, selectedDay]);
 
   /**
-   * Publica un pensamiento en la página de inicio (o lo quita). Se pide confirmación
-   * porque el texto pasa a ser PÚBLICO: lo ve cualquiera que abra la landing, sin
-   * necesidad de tener cuenta.
+   * Publica un pensamiento en la página de inicio (o lo retira). Se pide confirmación al
+   * publicar porque el texto pasa a ser PÚBLICO: lo ve cualquiera que abra la landing, sin
+   * necesidad de tener cuenta. Caben `publicadosMax`; el servidor lo vigila igualmente.
    */
   const toggleFeatured = (t: Thought) => {
-    const quitar = featuredId === t.id;
+    const quitar = publicados.includes(t.id);
     const apply = async () => {
       setConfirm(null);
       try {
         const res = await fetch('/api/pensamientos/destacado', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: quitar ? null : t.id }),
+          body: JSON.stringify({ id: t.id, publicar: !quitar }),
         });
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || 'Error');
-        setFeaturedId(quitar ? null : t.id);
+        setPublicados((ids) => (quitar ? ids.filter((x) => x !== t.id) : [...ids, t.id]));
         toast.success(quitar ? 'Ya no se muestra en la página de inicio.' : 'Publicado en la página de inicio.');
       } catch (e: any) { toast.error(e.message); }
     };
     if (quitar) return apply();
+    if (publicados.length >= publicadosMax) {
+      toast.error(`Ya hay ${publicadosMax} pensamientos en la página de inicio. Retira uno para publicar este.`);
+      return;
+    }
     setConfirm({
-      text: 'Este pensamiento se mostrará en la página de inicio, donde puede leerlo cualquiera que entre al sitio, tenga cuenta o no. Solo puede haber uno publicado: si ya había otro, se reemplaza. ¿Publicarlo?',
+      text: `Este pensamiento se mostrará en la página de inicio, donde puede leerlo cualquiera que entre al sitio, tenga cuenta o no. Llevas ${publicados.length} de ${publicadosMax} publicados. ¿Publicarlo?`,
       onOk: apply,
     });
   };
@@ -289,7 +296,7 @@ export default function PensamientosPage() {
                 onSaveEdit={saveEdit}
                 onDelete={() => remove(t)}
                 canFeature={isAdmin}
-                featured={featuredId === t.id}
+                featured={publicados.includes(t.id)}
                 onToggleFeatured={() => toggleFeatured(t)}
               />
             ))}
@@ -368,7 +375,7 @@ function ThoughtCard({
           <span className="text-[10.5px] text-digi-muted/60" style={mf}>Sin etiquetar</span>
         )}
         {featured && (
-          <span className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/30" style={mf}>
+          <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-accent" style={mf}>
             <Globe className="w-3 h-3" /> En la página de inicio
           </span>
         )}

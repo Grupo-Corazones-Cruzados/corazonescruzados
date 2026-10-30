@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import PixelStars from '@/components/landing/PixelStars';
 import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
-import FeaturedThought from '@/components/landing/FeaturedThought';
+import PensamientosCielo from '@/components/landing/PensamientosCielo';
 import FondosPortada from '@/components/landing/FondosPortada';
 import PanelesMundo from '@/components/landing/PanelesMundo';
 import RolesMundo from '@/components/landing/RolesMundo';
@@ -3121,9 +3121,9 @@ export default function LandingPage() {
                 </span>
               )}
             </div>
-            {/* EL PENSAMIENTO FUGAZ (Fernando, 2026-10-30): aparece en el cielo, flota y se va solo.
-                No aparece con un mundo elegido. */}
-            <FeaturedThought nube visible={!mundoElegido} />
+            {/* EL CIELO DE PENSAMIENTOS (Fernando, 2026-10-30): hasta 10 pensamientos como estrellas
+                que se encienden de una en una (ver `PensamientosCielo`). Apagado con un mundo elegido. */}
+            <PensamientosCielo lugar="cielo" visible={!mundoElegido} />
             {/* EL ESLOGAN (Fernando, 2026-10-28): aparece debajo de los iconos cuando el corazón
                 termina de unirse a la Tierra, palabra a palabra. Su hueco está SIEMPRE reservado
                 (invisible antes de elegir), así no mueve nada al aparecer. */}
@@ -3148,7 +3148,7 @@ export default function LandingPage() {
                     Progreso quedan donde estaban (Fernando: «antes estaban perfectamente posicionados»).
                     En el teléfono el pensamiento aparece aquí; desde 640 px, en el cielo. */}
                 <div className="inicio-pensamiento hueco-pensamiento">
-                  <FeaturedThought nube lugar="pie" visible={!mundoElegido} />
+                  <PensamientosCielo lugar="pie" visible={!mundoElegido} />
                 </div>
               </div>
             ) : (

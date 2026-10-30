@@ -58,12 +58,13 @@ async function doEnsure(): Promise<void> {
   // Índice PARCIAL: el trabajo nocturno solo busca los que están sin etiquetar.
   await pool.query(`CREATE INDEX IF NOT EXISTS pn_thoughts_pending_idx ON gcc_world.pn_thoughts (id) WHERE category IS NULL`);
 
-  // DESTACADO en la página de inicio pública: marca de cuándo se publicó. Solo puede
-  // haber UNO a la vez, y lo garantiza un índice único parcial (no basta con limpiar los
-  // demás desde el código: así la base tampoco admite dos publicados por una carrera).
+  // PUBLICADOS en la página de inicio pública: marca de cuándo se publicó. Hasta el 2026-10-30
+  // solo podía haber UNO (índice único parcial `pn_thoughts_featured_uniq`); desde entonces
+  // hasta `PUBLICADOS_MAX` (Fernando: «que se puedan publicar hasta 10 pensamientos»). El tope
+  // lo vigila `setThoughtPublished` dentro de una transacción con candado, así dos clics a la
+  // vez tampoco pasan de 10.
   await pool.query(`ALTER TABLE gcc_world.pn_thoughts ADD COLUMN IF NOT EXISTS featured_at TIMESTAMPTZ`);
-  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS pn_thoughts_featured_uniq
-                      ON gcc_world.pn_thoughts ((featured_at IS NOT NULL)) WHERE featured_at IS NOT NULL`);
+  await pool.query(`DROP INDEX IF EXISTS gcc_world.pn_thoughts_featured_uniq`);
 
   // Bitácora del trabajo nocturno (observabilidad: saber si corrió y qué hizo).
   await pool.query(`
@@ -343,11 +344,14 @@ export async function lastRun(): Promise<{ startedAt: string; finishedAt: string
   };
 }
 
-/* ── Destacado en la página de inicio ─────────────────────────────────────────
- * El administrador puede elegir UNO de SUS pensamientos para mostrarlo en la landing
- * pública (`/`). Es la única vía por la que un pensamiento sale de su dueño, y siempre
- * por acción explícita suya: el resto sigue siendo privado por fila.
+/* ── Publicados en la página de inicio ──────────────────────────────────────────
+ * El administrador puede publicar hasta `PUBLICADOS_MAX` de SUS pensamientos en la landing
+ * pública (`/`). Es la única vía por la que un pensamiento sale de su dueño, y siempre por
+ * acción explícita suya: el resto sigue siendo privado por fila.
  */
+
+/** Cuántos pensamientos puede haber publicados a la vez (Fernando, 2026-10-30). */
+export const PUBLICADOS_MAX = 10;
 
 /** Lo que se publica: SOLO el texto y la fecha. Nada del autor ni de la clasificación. */
 export interface FeaturedThought {
@@ -356,28 +360,35 @@ export interface FeaturedThought {
   createdAt: string;
 }
 
+export type ResultadoPublicar = 'ok' | 'no-es-tuyo' | 'tope';
+
 /**
- * Publica un pensamiento del sujeto (o despublica con `id = null`). Verifica la
- * pertenencia: nadie puede publicar un pensamiento ajeno aunque acierte el id.
- * Devuelve `false` si el id no es del sujeto.
+ * Publica (`publicar = true`) o retira un pensamiento del sujeto. Verifica la pertenencia:
+ * nadie puede publicar uno ajeno aunque acierte el id. Con `PUBLICADOS_MAX` ya publicados
+ * devuelve `'tope'` sin tocar nada.
  */
-export async function setFeaturedThought(s: Subject, id: number | null): Promise<boolean> {
+export async function setThoughtPublished(s: Subject, id: number, publicar: boolean): Promise<ResultadoPublicar> {
   await ensurePensamientosTables();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    // Siempre se limpia primero: solo puede haber uno publicado a la vez.
-    await client.query(`UPDATE gcc_world.pn_thoughts SET featured_at = NULL WHERE featured_at IS NOT NULL`);
-    if (id !== null) {
-      const { rowCount } = await client.query(
-        `UPDATE gcc_world.pn_thoughts SET featured_at = NOW()
-          WHERE id = $3 AND subject_kind = $1 AND subject_id = $2`,
-        [s.kind, s.id, id],
-      );
-      if (!rowCount) { await client.query('ROLLBACK'); return false; }
+    // Un candado por transacción: dos publicaciones a la vez se ponen en fila y el conteo
+    // de abajo no se queda viejo.
+    await client.query(`SELECT pg_advisory_xact_lock(hashtext('pn_thoughts_publicados'))`);
+    const propio = await client.query(
+      `SELECT featured_at FROM gcc_world.pn_thoughts WHERE id = $3 AND subject_kind = $1 AND subject_id = $2`,
+      [s.kind, s.id, id],
+    );
+    if (!propio.rowCount) { await client.query('ROLLBACK'); return 'no-es-tuyo'; }
+    if (publicar && propio.rows[0].featured_at === null) {
+      const { rows } = await client.query(`SELECT COUNT(*)::int AS n FROM gcc_world.pn_thoughts WHERE featured_at IS NOT NULL`);
+      if (rows[0].n >= PUBLICADOS_MAX) { await client.query('ROLLBACK'); return 'tope'; }
+      await client.query(`UPDATE gcc_world.pn_thoughts SET featured_at = NOW() WHERE id = $1`, [id]);
+    } else if (!publicar) {
+      await client.query(`UPDATE gcc_world.pn_thoughts SET featured_at = NULL WHERE id = $1`, [id]);
     }
     await client.query('COMMIT');
-    return true;
+    return 'ok';
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -393,28 +404,27 @@ export async function setFeaturedThought(s: Subject, id: number | null): Promise
  */
 export const FEATURED_MAX_LEN = 600;
 
-/** El pensamiento publicado, o `null`. Lectura PÚBLICA: no expone autor ni categoría. */
-export async function getFeaturedThought(): Promise<FeaturedThought | null> {
+/** Los pensamientos publicados (hasta `PUBLICADOS_MAX`), el último publicado primero.
+ *  Lectura PÚBLICA: no expone autor, id ni categoría. */
+export async function getPublishedThoughts(): Promise<FeaturedThought[]> {
   await ensurePensamientosTables();
   const { rows } = await pool.query(
     `SELECT content, created_at FROM gcc_world.pn_thoughts
-      WHERE featured_at IS NOT NULL ORDER BY featured_at DESC LIMIT 1`);
-  if (rows.length === 0) return null;
-
-  const full = String(rows[0].content ?? '').trim();
-  const content = full.length > FEATURED_MAX_LEN
-    ? `${full.slice(0, FEATURED_MAX_LEN).trimEnd()}…`
-    : full;
-  return { content, createdAt: new Date(rows[0].created_at).toISOString() };
+      WHERE featured_at IS NOT NULL ORDER BY featured_at DESC LIMIT $1`, [PUBLICADOS_MAX]);
+  return rows.map((r: { content: string | null; created_at: string }) => {
+    const full = String(r.content ?? '').trim();
+    const content = full.length > FEATURED_MAX_LEN ? `${full.slice(0, FEATURED_MAX_LEN).trimEnd()}…` : full;
+    return { content, createdAt: new Date(r.created_at).toISOString() };
+  });
 }
 
-/** Id del pensamiento publicado por ESTE sujeto (para marcarlo en su lista). */
-export async function featuredIdOf(s: Subject): Promise<number | null> {
+/** Ids de los pensamientos publicados por ESTE sujeto (para marcarlos en su lista). */
+export async function publishedIdsOf(s: Subject): Promise<number[]> {
   await ensurePensamientosTables();
   const { rows } = await pool.query(
     `SELECT id FROM gcc_world.pn_thoughts
-      WHERE featured_at IS NOT NULL AND subject_kind = $1 AND subject_id = $2 LIMIT 1`,
+      WHERE featured_at IS NOT NULL AND subject_kind = $1 AND subject_id = $2`,
     [s.kind, s.id],
   );
-  return rows.length ? Number(rows[0].id) : null;
+  return rows.map((r: { id: string | number }) => Number(r.id));
 }
