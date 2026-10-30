@@ -23,6 +23,7 @@ export default function FeaturedThought({
   compacto = false,
   nube = false,
   visible = true,
+  lugar = 'cielo',
 }: {
   windAway?: boolean;
   tema?: 'aventura' | 'progreso';
@@ -32,8 +33,10 @@ export default function FeaturedThought({
   /** «EL CORAZÓN PIENSA» (2026-10-30): la nube de pensamiento que sale del corazón del titular.
    *  Sustituye a `compacto` en la portada. Ver la explicación en `NubePensamiento`, abajo. */
   nube?: boolean;
-  /** Solo con `nube`: se esconde (vuelve al corazón) mientras hay un mundo elegido. */
+  /** Solo con `nube`: no aparece mientras hay un mundo elegido. */
   visible?: boolean;
+  /** Solo con `nube`: `cielo` junto al corazón (desde 640 px) o `pie`, en el hueco de abajo (teléfono). */
+  lugar?: 'cielo' | 'pie';
 }) {
   const [data, setData] = useState<Featured | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +81,7 @@ export default function FeaturedThought({
         data={data}
         loading={loading}
         visible={visible}
+        lugar={lugar}
         texto={data ? data.content.slice(0, shown) : ''}
         escribiendo={escribiendo}
         fecha={fecha}
@@ -210,92 +214,87 @@ export default function FeaturedThought({
 }
 
 /**
- * «EL CORAZÓN PIENSA» — el pensamiento como NUBE DE PENSAMIENTO del corazón (Fernando, 2026-10-30:
- * *«reformula la presentación del pensamiento… más adaptada a nuestro diseño actual»*).
+ * EL PENSAMIENTO FUGAZ (Fernando, 2026-10-30: *«que el pensamiento aparezca y flote… y que
+ * automáticamente después desaparezca solito»*).
  *
- * Antes era una cápsula oscura al pie de la portada, encima de la frontera entre los dos mundos:
- * una caja ajena al resto, pegada al pie, que se comía 130 px de alto. Ahora lo piensa el corazón
- * del titular, como en un cómic: tres burbujas que crecen desde él y la nube de cristal (la misma
- * familia que la insignia «Proyecto de Desarrollo Humano»), con la etiqueta, la fecha y la frase
- * escribiéndose.
+ * Sin caja: la frase aparece en el cielo palabra a palabra (sube desde el desenfoque, como el
+ * eslogan), flota despacio unos segundos con un halo violeta detrás y se disuelve hacia arriba. Al
+ * medio minuto vuelve. Es una presencia, no un panel: nunca ocupa sitio en el flujo.
  *
- * · Escritorio ancho (≥ 1100 × 680): flota en el cielo, a la IZQUIERDA del corazón, sin ocupar
- *   sitio en el flujo. Su posición se MIDE (el corazón cambia de tamaño con la ventana).
- * · Más estrecho y teléfono: bajo el corazón y la Tierra (donde luego sale el eslogan), con las
- *   burbujas subiendo hasta el corazón. Su hueco se reserva mientras carga: nada salta.
- * · Al elegir un mundo vuelve al corazón (se encoge hacia él) ANTES de que el corazón salte, y
- *   deja el sitio al eslogan; al volver, reaparece. Sin pensamiento publicado, no hay nube.
+ * · Desde 640 px: en el cielo de la Aventura, a la IZQUIERDA del corazón y alineada hacia él. Su
+ *   posición y su ancho se MIDEN (el corazón cambia de sitio y tamaño con la ventana).
+ * · Teléfono (`lugar="pie"`): en el hueco de abajo, en el mundo Progreso, donde estaba la
+ *   cápsula; el hueco se conserva, así Aventura y Progreso NO se mueven (la primera versión, la
+ *   nube bajo el titular, los empujaba: Fernando, *«en la versión móvil no muevas las posiciones»*).
+ * · Mientras hay un mundo elegido no aparece. Sin pensamiento publicado, nada.
  */
+const PENSAMIENTO_ESPERA_MS = 1400;   // tras cargar la portada
+const PENSAMIENTO_PAUSA_MS = 30000;   // entre una aparición y la siguiente
+const PENSAMIENTO_SALIDA_MS = 1400;
+
 function NubePensamiento({
-  data, loading, visible, texto, escribiendo, fecha,
+  data, visible, fecha, lugar,
 }: {
-  data: Featured | null; loading: boolean; visible: boolean;
+  data: Featured | null; loading: boolean; visible: boolean; lugar: 'cielo' | 'pie';
   texto: string; escribiendo: boolean; fecha: string;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  // Tras esconderse, deja de ocupar sitio (en el flujo del teléfono), cuando termina la salida.
-  const [montada, setMontada] = useState(visible);
-  useEffect(() => {
-    if (visible) { setMontada(true); return; }
-    const id = window.setTimeout(() => setMontada(false), 320);
-    return () => window.clearTimeout(id);
-  }, [visible]);
+  const [fase, setFase] = useState<'oculta' | 'visible' | 'saliendo'>('oculta');
+  const palabras = data ? data.content.split(/\s+/).filter(Boolean) : [];
 
-  // Dónde está el corazón respecto a la cabeza de la portada (y respecto a la propia nube, para
-  // que las burbujas suban justo hasta él en el teléfono).
+  // El ciclo: aparece, se queda (más cuanto más larga es la frase), se va, pausa… y otra vez.
+  useEffect(() => {
+    if (!data || !visible) { setFase('oculta'); return; }
+    const quieta = Math.max(7000, palabras.length * 380 + 4500);
+    const timers: number[] = [];
+    const ciclo = (espera: number) => {
+      timers.push(window.setTimeout(() => {
+        setFase('visible');
+        timers.push(window.setTimeout(() => {
+          setFase('saliendo');
+          timers.push(window.setTimeout(() => { setFase('oculta'); ciclo(PENSAMIENTO_PAUSA_MS); }, PENSAMIENTO_SALIDA_MS));
+        }, quieta));
+      }, espera));
+    };
+    ciclo(PENSAMIENTO_ESPERA_MS);
+    return () => timers.forEach((t) => window.clearTimeout(t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, visible]);
+
+  // Dónde está el corazón respecto a la cabeza de la portada.
   useLayoutEffect(() => {
-    const nubeEl = ref.current;
-    if (!nubeEl || !montada) return;
-    const cabeza = nubeEl.closest('.portada-cabeza') as HTMLElement | null;
+    const el = ref.current;
+    if (!el || fase === 'oculta' || lugar !== 'cielo') return;
+    const cabeza = el.closest('.portada-cabeza') as HTMLElement | null;
     const medir = () => {
       const corazon = cabeza?.querySelector('.grafico-corazon')?.getBoundingClientRect();
       if (!cabeza || !corazon) return;
       const c = cabeza.getBoundingClientRect();
-      nubeEl.style.setProperty('--corazon-x', `${corazon.left - c.left}px`);
-      nubeEl.style.setProperty('--corazon-y', `${corazon.top - c.top}px`);
-      nubeEl.style.setProperty('--corazon-alto', `${corazon.height}px`);
-      const n = nubeEl.getBoundingClientRect();
-      nubeEl.style.setProperty('--cola-x', `${corazon.left + corazon.width / 2 - n.left}px`);
+      const x = corazon.left - c.left;
+      el.style.setProperty('--corazon-x', `${x}px`);
+      el.style.setProperty('--corazon-y', `${corazon.top - c.top}px`);
+      // A la izquierda del corazón caben `x` px menos el aire de los dos lados.
+      el.style.setProperty('--fugaz-ancho', `${Math.max(160, Math.min(400, x + c.left - 64))}px`);
     };
     medir();
-    const ro = new ResizeObserver(medir);
-    if (cabeza) ro.observe(cabeza);
     window.addEventListener('resize', medir);
-    return () => { ro.disconnect(); window.removeEventListener('resize', medir); };
-  }, [montada, data]);
+    return () => window.removeEventListener('resize', medir);
+  }, [fase, lugar]);
 
-  if (!loading && !data) return null;
-  if (!montada) return null;
-
-  const lista = !!data && visible;
+  if (!data) return null;
   return (
-    <div
-      ref={ref}
-      className={`pensamiento-nube ${lista ? 'es-visible' : ''}`}
-      role="note"
-      aria-label="Pensamiento"
-    >
-      <span className="nube-burbuja nube-burbuja-1" aria-hidden="true" />
-      <span className="nube-burbuja nube-burbuja-2" aria-hidden="true" />
-      <span className="nube-burbuja nube-burbuja-3" aria-hidden="true" />
-      <div className="nube-cuerpo cristal-portada">
-        <p className="nube-etiqueta">
-          <span className="pensamiento-barra-punto" aria-hidden="true" />
-          Pensamiento
-          {fecha && <span className="nube-fecha">· {fecha}</span>}
-        </p>
-        {data && (
-          <>
-            <p className="sr-only">{data.content}</p>
-            <p className="nube-texto" aria-hidden="true">
-              <span className="comilla-pensamiento">“</span>
-              {texto}
-              {escribiendo && <span style={{ color: 'var(--color-accent-glow)', animation: 'thoughtCaret 0.9s steps(1) infinite' }}>▌</span>}
-              {!escribiendo && <span className="comilla-pensamiento">”</span>}
-            </p>
-          </>
-        )}
-      </div>
+    <div ref={ref} className={`pensamiento-fugaz pensamiento-fugaz-${lugar}`} data-fase={fase} role="note" aria-label="Pensamiento">
+      {fase !== 'oculta' && (
+        <>
+          <p className="fugaz-etiqueta"><span className="pensamiento-barra-punto" aria-hidden="true" />Pensamiento<span className="fugaz-fecha"> · {fecha}</span></p>
+          <p className="sr-only">{data.content}</p>
+          <p className="fugaz-texto" aria-hidden="true">
+            {palabras.map((p, i) => (
+              <span key={i} style={{ ['--i' as string]: i }}>{p}</span>
+            ))}
+          </p>
+        </>
+      )}
     </div>
   );
 }
