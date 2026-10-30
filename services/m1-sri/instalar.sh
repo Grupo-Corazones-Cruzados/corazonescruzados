@@ -18,5 +18,8 @@ fi
   P=~/.gcc-sri/org.grupocc.sri-gastos.plist;
   if [ -w ~/Library/LaunchAgents ]; then cp -f $P ~/Library/LaunchAgents/; P=~/Library/LaunchAgents/org.grupocc.sri-gastos.plist;
   else echo "⚠️ LaunchAgents no es escribible: la tarea NO sobrevivirá a un reinicio"; fi;
-  launchctl bootout gui/$(id -u)/org.grupocc.sri-gastos 2>/dev/null || true; sleep 1;
-  launchctl bootstrap gui/$(id -u) $P && echo "tarea cargada"'
+  launchctl bootout gui/$(id -u)/org.grupocc.sri-gastos 2>/dev/null || true;
+  # bootout termina en segundo plano: un bootstrap inmediato falla con «5: Input/output error».
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    sleep 2; launchctl bootstrap gui/$(id -u) $P 2>/dev/null && { echo "tarea cargada"; exit 0; };
+  done; echo "⚠️ no se pudo cargar la tarea"; exit 1'
