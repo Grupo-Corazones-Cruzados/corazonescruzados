@@ -1,5 +1,62 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-10-30) — ¿«SISTEMAS» EN LAS FACTURAS PONE EN RIESGO EL RIMPE NEGOCIO POPULAR? · 🔎 70 % — DATOS REALES REVISADOS; FALTA EL CERTIFICADO DE RUC
+
+**Declarado por Fernando el 2026-10-30:** su contadora le advierte que poner «sistemas» en las facturas puede
+sacarlo del Negocio Popular (su título es de psicología y su RUC dice «servicios varios»); otra conversación
+de IA le pidió datos. Pide revisarlo con sus datos reales.
+
+**Rol asumido:** analista tributario de datos (SRI Ecuador). No sustituye a la contadora: se le dan cifras.
+
+### Fuentes (2026-10-30)
+- BD de producción, `gcc_world.invoices` + `invoice_items_sri`/`invoice_items`, `BEGIN READ ONLY`:
+  75 facturas `sri_status='authorized'` (31/01/2025 → 29/10/2026). Fuera 10 anuladas y 4 rechazadas/error.
+- Prensa y blogs contables 2026 (no hay texto oficial del art. 97.4 LRTI en los resultados; se contradicen
+  sobre si «actividades profesionales» excluyen del Negocio Popular).
+
+### P1 — ¿Cuánto facturó? · ✅ Resuelta (BD)
+- **2025: 7.955 $** (12 facturas; 11 a Grow Up, 30 $ a Erazo).
+- **2026 hasta el 29/10: 15.379,97 $** (63 facturas). Octubre solo: ~2.970 $. A ese ritmo cierra 2026 por
+  encima de **20.000 $** ⇒ el Negocio Popular se pierde en 2027 **por ingresos**, diga lo que diga la factura.
+  Es el riesgo real; la palabra «sistemas» no lo cambia.
+
+### P2 — ¿Hay clientes de Ecuador? · ✅ Resuelta (BD) — **SÍ, casi la mitad**
+- 2026: **6.863,66 $ a RUC/cédula ecuatorianos** (37 facturas, ~11 clientes: Expoflor, Méndez, Peter Tours,
+  Oscar Cando, Roberto Rivadeneira, Sofintri, Jepc Import, Karla Bowen, Hugo Moya, Solubles Instantáneos…)
+  + 211,07 $ a Consumidor Final (9). Exterior: 8.305,24 $ (17; Entheus, Compañía Internacional de Seguros,
+  Dynamixmtl, Gestión de Proyectos…). 2025: 99,6 % exterior (Grow Up). La afirmación «no tienes clientes
+  ecuatorianos» es falsa para 2026.
+
+### P3 — ¿Qué comprobante y con qué IVA? · ✅ Resuelta (BD)
+- **Factura electrónica**, todas con **IVA 0 %** (`iva_amount=0`, base en `subtotal_0`). Leyenda del régimen
+  en `infoAdicional` (ver memoria `sri-ec-rimpe-negocio-popular`).
+
+### P4 — ¿Qué dicen las descripciones? · ✅ Resuelta (BD)
+- Unas 7 facturas dicen «Sistema …» (gestión de pedidos de trajes, afiliados, Sistema Contable, soporte en
+  Sistema de Facturación). Más delicadas para «servicio profesional» que «sistemas» son **«Consultoría»**
+  (001-011, 001-100), **«Asesoría»** (001-033, 043, 049) y **«Curso»/«Capacitación»** (2025 Grow Up, 001-073).
+- Hay **cobro recurrente**: Grow Up mensual en 2025 («Asistencia… automatización»); servidor 5 $/mes de
+  Peter Tours y Carliza Hotel.
+- Facturación electrónica para clientes: Peter Tours («núcleo sin SRI», Sistema Contable) y Dynamixmtl
+  («Soporte en Sistema de Facturación») ⇒ relevante para el CIIU propio que mencionó la otra IA.
+
+### P5 — Defectos de datos que el SRI sí puede cruzar · ✅ Resuelta (BD)
+- 001-038: RUC de Peter Tours con un **correo como razón social** y sin tipo de identificación.
+- 2018923849 (Julian Estrella) facturado como **exterior** (001-042) y como **cédula** (001-043).
+- Entheus con `B 22868756` y con `22868756`.
+- PROINAM SAC (empresa) y Carliza Hotel facturados a **Consumidor Final**.
+- 001-059 lleva renglones «Transferencia Interbancaria» e «Impuesto» como si fueran servicio.
+- 001-023 a Karina: anulada en la plataforma, AUTORIZADA en el SRI (pendiente ya anotado).
+
+### P6 — Actividades CIIU del RUC y categoría · ⏸ Bloqueada (Fernando: certificado de RUC)
+### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
+### P8 — ¿Contratos/cotizaciones escritas? · 🔎 Parcial: los proyectos tienen plan de etapas y cotización en la plataforma
+
+### Conclusión provisional
+Cambiar «desarrollo/sistema» por «soporte/mantenimiento» no protege nada: el SRI cruza **montos** (y la
+pasarela bancariza cada cobro) y 2026 va a pasar de 20.000 $. La decisión que importa es preparar el paso a
+**RIMPE Emprendedor en 2027** (IVA, declaraciones) y alinear el CIIU del RUC con lo que de verdad se factura.
+
 ## Objetivo (declarado 2026-10-29) — NOTIFICACIONES DE LA APP MÓVIL + LA APP INSTALADA EN EL MACBOOK, CON NOTIFICACIONES · 🔎 80 % — SERVIDOR HECHO; MAC BLOQUEADO POR APPLE
 
 **Declarado por Fernando el 2026-10-29:** *«vamos a trabajar en las notificaciones que se recibe en la
