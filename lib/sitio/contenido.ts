@@ -99,6 +99,9 @@ export const REDES = [
   'https://www.facebook.com/GrupoCorazonesCruzados',
   'https://www.tiktok.com/@grupocc.org',
   'https://www.youtube.com/@grupocc-org',
+  /* El elemento de Wikidata que creó Fernando el 2026-10-30. Es lo que más pesa para que Google
+     y los asistentes con IA no lo confundan con la asociación mexicana del mismo nombre. */
+  'https://www.wikidata.org/wiki/Q141934974',
 ] as const;
 
 /* ═══════════════════════ NAVEGACIÓN ═══════════════════════ */

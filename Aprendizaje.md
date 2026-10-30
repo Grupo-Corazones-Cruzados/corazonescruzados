@@ -10980,3 +10980,8 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
   quiere publicar «Guayaquil, Ecuador», 2026-08-20) y sin fundador (exigiría un elemento de persona). ⚠️ El año
   de fundación «2011» que se usó en la bio larga NO consta en el repo: falta que Fernando lo confirme. Cuando
   dé el Q-ID, se añade `https://www.wikidata.org/wiki/Q…` a `REDES` (`lib/sitio/contenido.ts`) → `sameAs`.
+  Elemento creado: **Q141934974** (leído por la API el 2026-10-30). Bien: P31 organización, Instagram, LinkedIn,
+  Facebook, TikTok, YouTube handle, inception 2011 (año confirmado por Fernando al ponerlo), todos con
+  referencia. Por corregir (él): un segundo P31 = Q22137024 (puso «official website» como valor de «instance
+  of») → quitarlo y crear P856; alias en una sola cadena «GCC · Grupo CC · GCC» → tres alias; falta etiqueta en
+  inglés. Añadido a `REDES` → `sameAs`.
