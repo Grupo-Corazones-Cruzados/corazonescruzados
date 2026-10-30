@@ -1,6 +1,7 @@
 import { SRI_CONFIG, getTipoIdentificacion } from './config';
 import { generateAccessKey, formatInvoiceNumber, ecuadorDateParts } from './access-key';
 import { sriText, sriAttr, SRI_MAX } from './text';
+import { cedulaValida, errorRazonSocial } from '../../pagos/identificacion';
 
 export interface InvoiceItem {
   codigoPrincipal?: string;
@@ -89,6 +90,21 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   const fechaEmision = `${dd}/${mm}/${aaaa}`;
 
   const tipoIdComprador = data.clienteIdTipo || getTipoIdentificacion(data.clienteRuc);
+
+  // El SRI autoriza aunque el comprador esté mal (cédula falsa, correo por nombre) y el error
+  // queda en un comprobante que ya no se puede editar: se para aquí, antes de numerar.
+  if (tipoIdComprador !== '07') {
+    const errorNombre = errorRazonSocial(data.clienteNombre);
+    if (errorNombre) throw new Error(errorNombre);
+  }
+  if (tipoIdComprador === '05' && !cedulaValida(data.clienteRuc)) {
+    throw new Error(`La cédula ${data.clienteRuc} no es válida. Si el cliente es de otro país, factúrale como identificación del exterior.`);
+  }
+  // RUC de persona natural = cédula + 001. Así se facturaron cuatro al 0916737222001, que no
+  // existe en el catastro del SRI (comprobado el 2026-10-30).
+  if (tipoIdComprador === '04' && Number(data.clienteRuc[2]) < 6 && !cedulaValida(data.clienteRuc.slice(0, 10))) {
+    throw new Error(`El RUC ${data.clienteRuc} no es válido: sus 10 primeros dígitos no son una cédula.`);
+  }
 
   // SRI requires 9999999999999 for exterior (08) identification
   const idCompradorSri = tipoIdComprador === '08' ? '9999999999999' : data.clienteRuc;

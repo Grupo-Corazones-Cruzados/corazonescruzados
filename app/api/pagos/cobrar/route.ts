@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
 import { cotizarCobro, idMesSuscripcion, crearIntento, anotarRespuestaProveedor, confirmarPago, type DatosFacturacion } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
-import { deducirIdentificacion } from '@/lib/pagos/identificacion';
+import { deducirIdentificacion, errorRazonSocial } from '@/lib/pagos/identificacion';
 import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 import { pool } from '@/lib/db';
 
@@ -34,7 +34,8 @@ function validarFacturacion(f: any): DatosFacturacion & { pais: string } {
   const pais = String(f?.pais || '').trim();
   const numero = String(f?.ruc || f?.identificacion || '').trim();
 
-  if (!name) throw new Error('Falta la razón social o el nombre para la factura.');
+  const errorNombre = errorRazonSocial(name);
+  if (errorNombre) throw new Error(errorNombre);
   if (name.length > 300) throw new Error('La razón social no puede pasar de 300 caracteres.');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('El correo no es válido.');
 

@@ -48,6 +48,24 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
 - 001-059 lleva renglones «Transferencia Interbancaria» e «Impuesto» como si fueran servicio.
 - 001-023 a Karina: anulada en la plataforma, AUTORIZADA en el SRI (pendiente ya anotado).
 
+### P5-bis — Corrección (Fernando, 2026-10-30: «sí corrige los errores») · ✅ Hecho lo que se puede sin el SRI
+- **Una factura AUTORIZADA no se edita.** Lo que dice el XML firmado es lo que tiene el SRI; la plataforma debe
+  coincidir con él. Corregir el comprobante = nota de crédito + factura nueva (sale correo al cliente) ⇒ decisión
+  de Fernando, una por una.
+- **Hallado al comparar los 56 XML con la BD:** las facturas al exterior llevan `identificacionComprador`
+  9999999999999 y el número real en `infoAdicional`. Es a propósito (e111d0b0, 2026-03-30), no un error.
+- **🔴 El RUC 0916737222001 (Roberto Rivadeneira) NO EXISTE en el catastro del SRI** (`existePorNumeroRuc` →
+  false; los demás RUC de clientes → true). Le salieron 4 facturas: 001-090, 095, 101, 104 (920 $). Falla el
+  dígito verificador de su cédula. El SRI autoriza igual: no valida el comprador.
+- **Arreglado en el código:** `cedulaValida()` y `errorRazonSocial()` en `lib/pagos/identificacion.ts`. Las usan
+  el formulario de cobro (`/api/pagos/cobrar`) y `buildFacturaXml` (antes de numerar): no se emite con cédula falsa,
+  RUC de persona natural con cédula falsa ni correo como razón social. Pruebas: `npm run pagos:prueba-id`.
+- **Arreglado en los datos** (copia previa en el scratchpad de la sesión, `respaldo-correccion-20261030.json`):
+  la 001-038 tenía `client_id_type` vacío y el XML dice 04 ⇒ 04; el cliente 8 (Julian, México) pasó de 05 a 08.
+- **⏸ De Fernando:** RUC correcto de Roberto Rivadeneira (su próxima factura se para hasta tenerlo) · nombre real de
+  carmonanuclearmd.jc (cliente 2325; ¿la 001-088 era para Imadexa, cliente 11?) · ¿reemitir 043 (cédula falsa),
+  las 4 de Roberto, 038 y 088 (correo por nombre)? · anular la 023 a Karina.
+
 ### P6 — Actividades CIIU del RUC y categoría · ⏸ Bloqueada (Fernando: certificado de RUC)
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
 ### P8 — ¿Contratos/cotizaciones escritas? · 🔎 Parcial: los proyectos tienen plan de etapas y cotización en la plataforma

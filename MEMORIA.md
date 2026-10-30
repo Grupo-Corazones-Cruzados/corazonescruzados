@@ -321,6 +321,12 @@ Stack estándar de la casa, con particularidades de este repo:
   ETAPA no (cada etapa tiene su ingreso). 2026: facturado 13.958,80 de 19.631,11. **Pendiente de Fernando:**
   ingresos que faltan (001-024 $425 P7, 001-096 $296,25 T28, 001-098 $300 P37 etapa 1), ingresos de proyecto
   que duplican sus etapas (P25 $679,50, P38 $870) y la etapa 1 de P37 apuntando a la factura anulada 001-097.
+- **🪪 EL SRI AUTORIZA COMPRADORES FALSOS (2026-10-30).** Salieron AUTORIZADAS facturas a un RUC que no existe
+  (0916737222001, Roberto Rivadeneira: 001-090/095/101/104), a una «cédula» de un mexicano (001-043) y con un correo
+  como razón social (001-038, 001-088). El error queda en un comprobante que no se edita. Por eso `buildFacturaXml`
+  para antes de numerar con `cedulaValida()`/`errorRazonSocial()` (`lib/pagos/identificacion.ts`). Para saber si un
+  RUC existe: `GET srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/ConsolidadoContribuyente/
+  existePorNumeroRuc?numeroRuc=…` (público, devuelve true/false). Detalle y pendientes: `Aprendizaje.md` § RIMPE.
 - **📒 FACTURAS DEL FACTURADOR DEL SRI EN EL ESTADO FINANCIERO (Fernando, 2026-10-29).** Antes de la
   plataforma (primera factura propia: 001-001-000000023, 29/03/2026) emitía con el **facturador gratuito
   del SRI**. Se recorrió el portal día a día con su RUC (2024 → 31/03/2026) y se cargaron **19 facturas

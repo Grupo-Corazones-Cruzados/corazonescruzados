@@ -68,13 +68,53 @@ export function deducirIdentificacion(pais: string, numeroBruto: string): Result
     if (numero.length !== 13) {
       return { ok: false, error: 'Un RUC tiene 13 dígitos y termina en 001. Revisa tu número.' };
     }
+    // El RUC de una persona natural es su cédula + 001: se comprueba esa cédula.
+    if (Number(numero[2]) < 6 && !cedulaValida(numero.slice(0, 10))) {
+      return { ok: false, error: 'Ese RUC no es válido: revisa los 10 primeros dígitos (tu cédula).' };
+    }
     return { ok: true, valor: { idType: '04', etiqueta: 'RUC' } };
   }
 
   if (numero.length !== 10) {
     return { ok: false, error: 'Una cédula tiene 10 dígitos; un RUC, 13 y termina en 001.' };
   }
+  if (!cedulaValida(numero)) {
+    return { ok: false, error: 'Esa cédula no es válida. Revisa el número.' };
+  }
   return { ok: true, valor: { idType: '05', etiqueta: 'Cédula' } };
+}
+
+/**
+ * Cédula ecuatoriana: provincia 01-24 (o 30, extranjeros residentes), tercer dígito menor que 6
+ * y dígito verificador de módulo 10.
+ *
+ * ⚠️ El SRI NO lo comprueba al autorizar: la 001-001-000000043 (2026-06-09) salió AUTORIZADA a
+ * un cliente de México con «cédula» 2018923849, que no lo es. El error queda en el comprobante.
+ */
+export function cedulaValida(numero: string): boolean {
+  if (!/^\d{10}$/.test(numero)) return false;
+  const provincia = Number(numero.slice(0, 2));
+  if (!((provincia >= 1 && provincia <= 24) || provincia === 30)) return false;
+  if (Number(numero[2]) >= 6) return false;
+  let suma = 0;
+  for (let i = 0; i < 9; i++) {
+    let v = Number(numero[i]) * (i % 2 === 0 ? 2 : 1);
+    if (v > 9) v -= 9;
+    suma += v;
+  }
+  return (10 - (suma % 10)) % 10 === Number(numero[9]);
+}
+
+/**
+ * Lo que se puede poner como razón social del comprador. Un correo no lo es: salieron así la
+ * 001-038 (RUC de Peter Tours) y la 001-088, porque la cuenta del cliente no tenía nombre y se
+ * usó su correo.
+ */
+export function errorRazonSocial(nombre: string): string | null {
+  const n = (nombre || '').trim();
+  if (!n) return 'Falta la razón social o el nombre para la factura.';
+  if (n.includes('@')) return 'La razón social no puede ser un correo: escribe el nombre o la empresa.';
+  return null;
 }
 
 /** Lo que la pantalla enseña mientras se escribe. Nunca lanza: sin dato aún, no dice nada. */
