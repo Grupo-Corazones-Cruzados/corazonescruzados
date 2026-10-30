@@ -137,6 +137,9 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
     pide asociar dos «registros a su nombre»: **Actividad principal** y **Título profesional**. ⚠️ El título es el
     de psicología: asociarlo a la actividad de software la declararía ejercicio profesional, que es justo el riesgo
     de exclusión del RIMPE que temía la contadora. No asociarlo a J62; ver qué ofrece el control antes de guardar.
+    **Visto (2026-10-30):** el control dice *«Para ejercer una actividad profesional seleccione un título de
+    educación superior»* y lista LICENCIADO/A EN PSICOLOGÍA (Senescyt, 05/12/2023) con casilla. **Es opcional y se
+    deja SIN marcar**: no ejerce psicología, y marcarlo declararía actividad profesional.
   · Hoy tiene **S9609.07**, que el INEC describe como *limpiabotas, porteadores de maletas, encargados de
     estacionar vehículos, etcétera*: ninguna palabra en la factura lo acerca a desarrollo de software.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
