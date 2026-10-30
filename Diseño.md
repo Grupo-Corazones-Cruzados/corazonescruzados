@@ -5957,3 +5957,9 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
     intermedio (tocar → resumen → «Ver detalle») queda solo en escritorio.
   - **En el detalle, lo que elige va antes que lo elegido**: Días de trabajo sube sobre el Registro en el
     teléfono. «Editar» de una tarjeta es el lápiz (`BotonEditar`), no un botón de texto.
+- **Estado financiero en el teléfono** (Fernando, 2026-10-30, `components/dashboard/EstadoFinancieroMovil.tsx`):
+  una lista de importes NO es una tabla puesta en tarjetas. Balance arriba (la cifra que se viene a ver, grande,
+  y una línea fina con la parte gastada); los periodos agrupados por año, UNA fila cada uno (nombre + «+ingreso ·
+  −egreso» debajo, resultado a la derecha); el detalle como listado que se lee (concepto | importe), un lado a la
+  vez con `Segmentado`, y cada renglón se edita en `QuickEditDialog`. Una cifra de `RejillaCifras` que queda sola
+  en su fila ocupa las dos columnas.
