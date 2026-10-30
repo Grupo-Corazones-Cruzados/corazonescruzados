@@ -91,8 +91,8 @@ function medirMapa() {
 const estorbosDe = (m: ReturnType<typeof medirMapa>, margen: number): Caja[] =>
   [...m.ocupado.map((c) => crecer(c, margen)), ...m.paneles.map((c) => crecer(c, 6)), m.onda];
 
-/** Cuántas estrellas caben sin que el cielo se vea apretado: una por cada ~42 000 px² libres. */
-const PX_POR_ESTRELLA = 42000;
+/** Cuántas estrellas caben sin que el cielo se vea apretado: una por cada ~34 000 px² libres. */
+const PX_POR_ESTRELLA = 34000;
 
 /**
  * Reparte las estrellas por lo libre, lo más separadas posible: como mucho `n` (los publicados) y
@@ -100,9 +100,12 @@ const PX_POR_ESTRELLA = 42000;
  * pensamiento LARGO cabe a su lado sin tapar nada: así ninguna estrella queda «encajonada».
  */
 function repartir(n: number, mapa: ReturnType<typeof medirMapa>): Estrella[] {
-  const { limites, corte } = mapa;
+  const { corte } = mapa;
+  // Las estrellas, a 90 px de los bordes y algo más lejos de la cabecera y el pie: en una esquina
+  // caían dentro del adorno del marco («un rectángulo que sobresale de forma rara», 2026-10-30).
+  const limites: Caja = { x: mapa.limites.x + 62, y: mapa.limites.y + 44, w: mapa.limites.w - 124, h: mapa.limites.h - 74 };
   const azar = semilla(Math.round(limites.w) * 31 + Math.round(limites.h));
-  const prohibido = estorbosDe(mapa, 22);
+  const prohibido = estorbosDe(mapa, 28);
   const candidatos: { x: number; y: number }[] = [];
   const MUESTRAS = 1400;
   let libres = 0;
@@ -140,21 +143,25 @@ function colocarTexto(e: Estrella, largo: number, mapa: ReturnType<typeof medirM
     x: Math.min(Math.max(c.x, limites.x), limites.x + limites.w - c.w),
     y: Math.min(Math.max(c.y, limites.y), limites.y + limites.h - c.h),
   });
+  // Siempre CENTRADO respecto a su estrella (debajo, encima o a un lado) y con aire: en diagonal
+  // la estrella quedaba en una esquina del texto, «en una posición incómoda» (2026-10-30). Una
+  // opción que, al encajarla en pantalla, se aleja de la estrella, no vale.
+  const GAP = 28;
   const opciones: Caja[] = [
-    { x: e.x - w / 2, y: e.y + 16, w, h },
-    { x: e.x - w / 2, y: e.y - 16 - h, w, h },
-    { x: e.x + 18, y: e.y - h / 2, w, h },
-    { x: e.x - 18 - w, y: e.y - h / 2, w, h },
-    { x: e.x + 14, y: e.y + 14, w, h },
-    { x: e.x - 14 - w, y: e.y + 14, w, h },
-    { x: e.x + 14, y: e.y - 14 - h, w, h },
-    { x: e.x - 14 - w, y: e.y - 14 - h, w, h },
-  ].map(dentro);
+    { x: e.x - w / 2, y: e.y + GAP, w, h },
+    { x: e.x - w / 2, y: e.y - GAP - h, w, h },
+    { x: e.x + GAP + 6, y: e.y - h / 2, w, h },
+    { x: e.x - GAP - 6 - w, y: e.y - h / 2, w, h },
+  ].map((o) => {
+    const d = dentro(o);
+    return Math.abs(d.x - o.x) > w * 0.3 || Math.abs(d.y - o.y) > 24 ? { ...d, w: 0, h: 0, x: -1e6 } : d;
+  });
   // Su propia estrella también estorba: el texto nunca la pisa.
-  const estorbos = [...estorbosDe(mapa, 8), { x: e.x - 16, y: e.y - 16, w: 32, h: 32 }];
+  const estorbos = [...estorbosDe(mapa, 8), { x: e.x - 22, y: e.y - 22, w: 44, h: 44 }];
   let mejor = opciones[0];
   let menos = Infinity;
   for (const o of opciones) {
+    if (!o.w) continue;
     const tapa = estorbos.reduce((a, c) => a + solape(o, c), 0);
     if (tapa < menos) { menos = tapa; mejor = o; }
     if (tapa === 0) break;

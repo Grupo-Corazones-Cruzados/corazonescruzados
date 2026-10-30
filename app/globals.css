@@ -4569,3 +4569,25 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) {
   .cielo-estrella > span, .cielo-estrella.es-encendida > span { animation: none; }
 }
+
+/* ═══ El cielo, MÁS SUTIL (Fernando, 2026-10-30: «que se sienta más sutil la experiencia») ═══
+   Estrellas más pequeñas y tenues; la encendida brilla menos y late despacio; el texto más
+   pequeño, con menos resplandor, y sus palabras llegan más despacio. Pisa lo de arriba. */
+.cielo-estrella > span { width: 4px; height: 4px; }
+.cielo-estrella:hover > span, .cielo-estrella:focus-visible > span { width: 6px; height: 6px; }
+.cielo-estrella.es-encendida > span {
+  width: 7px; height: 7px;
+  box-shadow: 0 0 8px 2px rgba(232, 121, 249, 0.55), 0 0 18px 5px rgba(167, 139, 250, 0.2);
+  animation: estrellaLate 2.6s ease-in-out infinite;
+}
+.cielo-estrella-derecha.es-encendida > span { box-shadow: 0 0 8px 2px rgba(192, 38, 211, 0.4), 0 0 16px 5px rgba(124, 58, 237, 0.16); }
+@keyframes estrellaLate { 50% { transform: scale(1.18); } }
+@keyframes estrellaNace { 0% { opacity: 0; transform: scale(0); } 60% { opacity: 0.9; transform: scale(1.25); } 100% { opacity: 0.35; transform: scale(0.85); } }
+@keyframes estrellaTitila { from { opacity: 0.25; transform: scale(0.85); } to { opacity: 0.75; transform: scale(1); } }
+.pensamiento-fugaz-estrella .fugaz-texto { font-size: clamp(0.98rem, 1.12vw, 1.14rem); line-height: 1.35; }
+.pensamiento-fugaz-estrella.tono-noche .fugaz-texto { color: #ebe7f7; text-shadow: 0 0 12px rgba(167, 139, 250, 0.32), 0 2px 8px rgba(0, 0, 0, 0.55); }
+.pensamiento-fugaz-estrella::before { opacity: 0; }
+.pensamiento-fugaz-estrella[data-fase='visible']::before { opacity: 0.6; }
+.pensamiento-fugaz-estrella .fugaz-texto > span { animation-duration: 1.1s; animation-delay: calc(300ms + var(--i) * 0.13s); }
+@keyframes fugazPalabra { from { opacity: 0; transform: translateY(0.35em); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+.pensamiento-fugaz-estrella .fugaz-firma { animation-delay: calc(600ms + var(--i) * 0.13s); }

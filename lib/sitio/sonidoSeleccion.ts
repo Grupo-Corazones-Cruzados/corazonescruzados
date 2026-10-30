@@ -339,7 +339,7 @@ export function sonarPensamiento() {
     const ctx = contexto;
     const t0 = ctx.currentTime + 0.01;
     const salida = ctx.createGain();
-    salida.gain.value = 0.11;
+    salida.gain.value = 0.07; // más sutil (Fernando, 2026-10-30)
     salida.connect(ctx.destination);
     const eco = ctx.createDelay();
     eco.delayTime.value = 0.16;
@@ -380,7 +380,7 @@ export function sonarEstrella() {
     osc.frequency.setValueAtTime(2637, t0);
     osc.frequency.exponentialRampToValueAtTime(3136, t0 + 0.04);
     vol.gain.setValueAtTime(0.0001, t0);
-    vol.gain.exponentialRampToValueAtTime(0.06, t0 + 0.004);
+    vol.gain.exponentialRampToValueAtTime(0.04, t0 + 0.004);
     vol.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
     osc.connect(vol).connect(ctx.destination);
     osc.start(t0);
