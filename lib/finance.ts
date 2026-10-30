@@ -177,6 +177,16 @@ export const SQL_INGRESO_FACTURADO = `(fi.type = 'income' AND CASE fi.source_typ
   WHEN 'subscription' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.source_type = 'subscription' AND i.source_id = fi.source_id AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
   ELSE FALSE END)`;
 
+/**
+ * ⭐ RENGLONES BLOQUEADOS — no se editan ni se quitan desde la ventana del mes:
+ *   · los ingresos facturados (`SQL_INGRESO_FACTURADO`, Fernando 2026-10-29), que se van al anular
+ *     su factura;
+ *   · los egresos leídos del SRI (`sri_recibida`, Fernando 2026-10-30: «que estén bloqueados y que
+ *     no se puedan quitar cuando vienen del SRI»): son comprobantes recibidos a su RUC.
+ * Lo usan el detalle del mes (para pintar el candado) y el guardado (para no tocarlos).
+ */
+export const SQL_RENGLON_BLOQUEADO = `(${SQL_INGRESO_FACTURADO} OR (fi.type = 'expense' AND fi.source_type = 'sri_recibida'))`;
+
 /** Los orígenes que se pueden guardar desde el formulario del mes (los que escribe el sistema). */
 export const ORIGENES_INGRESO = new Set(['invoice', 'ticket', 'project', 'subscription', 'sri_emitida']);
 

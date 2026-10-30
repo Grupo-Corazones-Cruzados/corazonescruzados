@@ -24,7 +24,7 @@ const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','A
 
 interface Stats { open_tickets: number; active_projects: number; users?: number; active_members?: number; clients?: number; }
 interface FinanceMonth { id: number; year: number; month: number; total_income: string; total_expense: string; total_savings: string; facturado_income?: string; }
-interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; facturado?: boolean; }
+interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; facturado?: boolean; bloqueado?: boolean; source_type?: string | null; }
 
 export default function DashboardHome() {
   const { user } = useAuth();
@@ -424,13 +424,17 @@ function BloqueImportes({
         )}
         {items.map((item, i) => {
           if (oculto?.(item)) return null;
-          // ⭐ BLOQUEADO si está vinculado a una factura vigente (Fernando, 2026-10-29): no se edita
-          // ni se borra aquí; se quita solo al ANULAR su factura. El servidor lo hace cumplir igual.
-          const bloqueado = item.type === 'income' && item.facturado === true;
+          // ⭐ BLOQUEADO (lo decide el servidor, `SQL_RENGLON_BLOQUEADO`): un ingreso vinculado a una
+          // factura vigente (2026-10-29), que se quita al ANULAR su factura, o un egreso leído del SRI
+          // (2026-10-30). No se edita ni se borra aquí, y el servidor lo hace cumplir igual.
+          const bloqueado = item.bloqueado ?? (item.type === 'income' && item.facturado === true);
+          const motivo = item.type === 'expense'
+            ? 'Comprobante recibido del SRI: no se edita ni se elimina aquí.'
+            : 'Vinculado a una factura: no se edita ni se elimina aquí; se quita al anular la factura.';
           const editableFila = editable && !bloqueado;
           return (
           <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2"
-            title={bloqueado ? 'Vinculado a una factura: no se edita ni se elimina aquí; se quita al anular la factura.' : undefined}>
+            title={bloqueado ? motivo : undefined}>
             <input
               value={item.description} onChange={(e) => cambiar(i, 'description', e.target.value)}
               placeholder="Descripción" readOnly={!editableFila}
@@ -447,7 +451,7 @@ function BloqueImportes({
                 <BotonQuitar onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))} etiqueta="Quitar" />
               )}
               {editable && bloqueado && (
-                <span className="destino-tactil w-8 h-8 shrink-0 inline-flex items-center justify-center text-digi-muted" aria-label="Vinculado a una factura">
+                <span className="destino-tactil w-8 h-8 shrink-0 inline-flex items-center justify-center text-digi-muted" aria-label={motivo}>
                   <Lock className="w-3.5 h-3.5" />
                 </span>
               )}

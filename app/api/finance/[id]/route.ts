@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { SQL_INGRESO_FACTURADO, ORIGENES_INGRESO, recalcMonth } from '@/lib/finance';
+import { SQL_INGRESO_FACTURADO, SQL_RENGLON_BLOQUEADO, ORIGENES_INGRESO, recalcMonth } from '@/lib/finance';
 
 // GET: fetch month detail with items (admin and member only)
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!month) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const { rows: items } = await pool.query(
-      `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [id]
+      `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado, ${SQL_RENGLON_BLOQUEADO} AS bloqueado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [id]
     );
 
     return NextResponse.json({ data: { ...month, items } });
@@ -34,12 +34,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (!Array.isArray(items)) return NextResponse.json({ error: 'items requerido' }, { status: 400 });
 
-    // ⭐ LOS INGRESOS FACTURADOS NO SE EDITAN NI SE BORRAN DESDE AQUÍ (Fernando, 2026-10-29).
-    // Los vinculados a una factura vigente se quedan tal cual en la base, lleguen como lleguen
-    // (o no lleguen) en `items`: solo se van al ANULAR su factura. El resto del mes se reescribe
-    // como siempre.
+    // ⭐ LOS RENGLONES BLOQUEADOS NO SE EDITAN NI SE BORRAN DESDE AQUÍ: los ingresos facturados
+    // (2026-10-29) y los egresos leídos del SRI (2026-10-30), ver `SQL_RENGLON_BLOQUEADO`. Se quedan
+    // tal cual en la base, lleguen como lleguen (o no lleguen) en `items`. El resto del mes se
+    // reescribe como siempre.
     const { rows: bloqueados } = await pool.query(
-      `SELECT fi.id FROM gcc_world.finance_items fi WHERE fi.month_id = $1 AND ${SQL_INGRESO_FACTURADO}`, [id]
+      `SELECT fi.id FROM gcc_world.finance_items fi WHERE fi.month_id = $1 AND ${SQL_RENGLON_BLOQUEADO}`, [id]
     );
     const idsBloqueados = new Set(bloqueados.map((r: any) => String(r.id)));
     await pool.query(
@@ -89,6 +89,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const user = await getCurrentUser();
     if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id } = await params;
+
+    // Borrar el mes se llevaría por delante sus renglones bloqueados: un mes con alguno no se borra.
+    const { rows: [b] } = await pool.query(
+      `SELECT count(*)::int AS n FROM gcc_world.finance_items fi WHERE fi.month_id = $1 AND ${SQL_RENGLON_BLOQUEADO}`, [id]
+    );
+    if (b?.n > 0) return NextResponse.json({ error: 'Este mes tiene ingresos facturados o egresos del SRI: no se puede borrar.' }, { status: 409 });
 
     await pool.query(`DELETE FROM gcc_world.finance_months WHERE id = $1`, [id]);
     return NextResponse.json({ ok: true });
