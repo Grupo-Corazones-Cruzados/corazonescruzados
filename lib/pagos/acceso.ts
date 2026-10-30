@@ -297,3 +297,45 @@ export async function autorizarCompartir(
     : 'de esta suscripción';
   throw new SinAcceso(`Solo quien recibe el pago ${cual} puede hacer esto.`);
 }
+
+/**
+ * ⭐ EL DETALLE DESDE EL ENLACE DE PAGO (Fernando, 2026-10-30: «dejar un apartado para abrir el
+ * detalle […] y si el cliente tiene cuenta o sesión abierta que pueda ver el detalle de su
+ * ticket o proyecto desde la vista de usuario»).
+ *
+ * El enlace de pago es la llave de UNA cosa, así que también abre su detalle de solo lectura
+ * (`/ticket/<id>?link=…`, `/proyecto/<id>?link=…`), pero solo el de esa cosa: el tipo y el id
+ * los manda el enlace, no la URL. Vale mientras no esté anulado ni caducado, aunque ya se haya
+ * pagado: quien vuelve al correo después de pagar suele venir a ver qué pagó.
+ * `pagable` dice si todavía tiene sentido el «Ir al pago».
+ */
+export async function enlaceVeDetalle(
+  token: string | null | undefined,
+  sourceType: 'project' | 'ticket',
+  sourceId: number | string,
+): Promise<{ pagable: boolean } | null> {
+  if (!token || token.length < 20) return null;
+  const { rows: [l] } = await pool.query(
+    `SELECT paid_at FROM gcc_world.payment_links
+      WHERE token = $1 AND source_type = $2 AND source_id = $3
+        AND revoked_at IS NULL AND expires_at > NOW()`,
+    [token, sourceType, String(sourceId)],
+  );
+  return l ? { pagable: !l.paid_at } : null;
+}
+
+/**
+ * La ruta del panel donde ESTE usuario ve el ticket o proyecto, o `null` si no hay sesión o no
+ * es suyo. «Suyo» lo decide `autorizarCobro`, la misma puerta que el cobro con sesión: no se
+ * inventa aquí un segundo criterio de pertenencia.
+ */
+export async function vistaDeUsuario(sourceType: string, sourceId: number | string): Promise<string | null> {
+  if (sourceType !== 'project' && sourceType !== 'ticket') return null;
+  if (!(await getCurrentUser())) return null;
+  try {
+    await autorizarCobro({ sourceType, sourceId });
+    return `/dashboard/${sourceType === 'ticket' ? 'tickets' : 'projects'}/${sourceId}`;
+  } catch {
+    return null;
+  }
+}

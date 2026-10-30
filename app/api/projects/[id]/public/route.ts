@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { enlaceVeDetalle } from '@/lib/pagos/acceso';
 import { getProjectBilling } from '@/lib/payments';
 
 /**
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const token = req.nextUrl.searchParams.get('token');
+    // El enlace de pago del proyecto también abre su detalle (ver `enlaceVeDetalle`).
+    const conEnlace = await enlaceVeDetalle(req.nextUrl.searchParams.get('link'), 'project', id);
 
     await pool.query(`
       ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS public_token VARCHAR(64);
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const project = rows[0];
 
     // Los proyectos privados exigen el token del enlace, y sin caducar.
-    if (project.is_private) {
+    if (project.is_private && !conEnlace) {
       if (!token || token !== project.public_token) {
         return NextResponse.json({ error: 'Este proyecto es privado' }, { status: 403 });
       }
@@ -90,6 +93,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         })),
         totalEtapas: billing?.mode === 'etapas' ? billing.stagesTotal : 0,
         invoices,
+        // Con el enlace de pago: si aún se puede pagar, la página ofrece volver al cobro.
+        pagable: conEnlace?.pagable ?? false,
       },
     });
   } catch (err: any) {

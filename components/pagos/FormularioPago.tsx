@@ -43,6 +43,8 @@ export type DatosPago = {
   importesPorMetodo?: Record<string, { recargo: number; total: number }>;
   cuentas?: CuentaBancaria[];
   detalle?: { etiqueta: string; valor: string }[];
+  /** Dónde ver el ticket o proyecto: su panel (con sesión y siendo suyo) o la página pública. */
+  detalleUrl?: string | null;
 };
 
 export type CuentaBancaria = {
@@ -61,7 +63,7 @@ export type CuentaBancaria = {
 // (`lib/pagos/identificacion.ts`). «Tipo de identificación» es vocabulario del SRI, no del
 // cliente — él sabe de qué país es y cuál es su número, y traducirlo es trabajo nuestro.
 
-const CAMPO = 'w-full rounded-lg border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] px-3 py-2.5 text-[15px] text-[var(--texto)] outline-none focus:border-[var(--violeta-vivo)] focus:ring-2 focus:ring-[var(--violeta)]/20 transition';
+const CAMPO = 'w-full rounded-lg border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] px-3 py-2.5 text-[15px] text-[var(--texto)] outline-none focus:border-[var(--tenue)] transition';
 const ETIQUETA = 'block text-[13px] font-medium text-[var(--texto)] mb-1.5';
 
 /**
@@ -512,7 +514,6 @@ export default function FormularioPago({
             <input id="tr-file" type="file" accept="image/*,application/pdf"
               onChange={e => setComprobante(e.target.files?.[0] || null)}
               className="w-full text-[14px] text-[var(--suave)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--violeta)] file:px-4 file:py-2 file:text-[14px] file:font-semibold file:text-white hover:file:opacity-90" />
-            <p className="mt-2 text-[13px] text-[var(--tenue)]">Foto o PDF, hasta 8 MB.</p>
           </div>
 
           {error && (
@@ -553,14 +554,6 @@ export default function FormularioPago({
             </label>
             <input id="ruc" className={CAMPO} value={f.ruc} onChange={e => set('ruc', e.target.value)}
               inputMode={esLocal ? 'numeric' : 'text'} autoComplete="off" required />
-            {/* Solo se dice algo cuando hay algo que decir: qué se dedujo de lo que escribió.
-                Explicarle de antemano el formato del RUC era enseñarle la norma antes de que
-                la necesitara — y si se equivoca, el error al enviar ya se lo explica. */}
-            {etiquetaId && (
-              <p className="mt-1.5 text-[12.5px] text-[var(--tenue)]">
-                Se registrará como <strong className="text-[var(--texto)]">{etiquetaId}</strong>
-              </p>
-            )}
           </div>
           <div className="sm:col-span-2">
             <label className={ETIQUETA} htmlFor="razon">Nombre o razón social</label>
@@ -580,9 +573,6 @@ export default function FormularioPago({
             <input id="dir" className={CAMPO} value={f.address} onChange={e => set('address', e.target.value)} />
           </div>
         </div>
-        <p className="mt-2.5 text-[13px] text-[var(--tenue)]">
-          La factura electrónica se emite con estos datos y te llega al correo en cuanto el pago se confirme.
-        </p>
       </fieldset>
 
       {/* ── Tarjeta ── */}
@@ -627,11 +617,6 @@ export default function FormularioPago({
                 <option value={0}>Pago corriente (sin diferir)</option>
                 {[3, 6, 9, 12].map(m => <option key={m} value={m}>{m} meses</option>)}
               </select>
-              {/* Al comercio le llega el importe completo igualmente: las cuotas las
-                  administra el banco del cliente. Decirlo evita la pregunta. */}
-              <p className="mt-2 text-[13px] text-[var(--tenue)]">
-                Si difieres, tu banco te reparte las cuotas. Los intereses dependen de tu tarjeta.
-              </p>
             </div>
           </div>
         </fieldset>
@@ -715,12 +700,6 @@ export default function FormularioPago({
           </div>
         )}
 
-        {metodo === 'card' && (
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-[12.5px] text-[var(--tenue)]">
-            <Lock className="w-3.5 h-3.5" />
-            Los datos de tu tarjeta viajan cifrados a la pasarela. GCC no los recibe ni los guarda.
-          </p>
-        )}
       </div>
     </form>
   );

@@ -1112,6 +1112,12 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
         ? (Buffer.isBuffer(inv.pdf_data) ? inv.pdf_data : Buffer.from(inv.pdf_data))
         : null;
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org';
+      // La página del detalle necesita una llave: sin ella el ticket contestaba «Token
+      // requerido». Si se pagó con un enlace de pago, ese enlace la abre (`enlaceVeDetalle`).
+      const { rows: [enlacePagado] } = await pool.query(
+        `SELECT token FROM gcc_world.payment_links WHERE intent_id = $1 LIMIT 1`, [intento.id],
+      ).catch(() => ({ rows: [] as any[] }));
+      const llave = enlacePagado?.token ? `?link=${encodeURIComponent(enlacePagado.token)}` : '';
       await sendPaidInvoiceEmail({
         email: facturacion.email,
         projectTitle: titulo,
@@ -1121,8 +1127,8 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
         total: Number(inv?.total) || Number(intento.charge_amount) || 0,
         pdf,
         projectUrl: esSuscripcion ? null
-          : esTicket ? `${base}/ticket/${sourceId}`
-          : `${base}/proyecto/${sourceId}`,
+          : esTicket ? `${base}/ticket/${sourceId}${llave}`
+          : `${base}/proyecto/${sourceId}${llave}`,
       });
     } catch (e: any) {
       console.error(`[pagos] la factura ${invoiceId} se emitió pero el correo no salió:`, e.message);

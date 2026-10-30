@@ -1546,6 +1546,36 @@ Estado pasó a **insignia de solo lectura**. El servidor ya los rechazaba —el 
 un agujero— pero **un botón que falla al pulsarlo es peor que no tenerlo**: promete algo y
 deja al cliente creyendo que hizo algo mal.
 
+#### ⭐ El detalle desde el enlace de pago y las reglas vigentes (Fernando, 2026-10-30)
+
+> *«en todos los enlaces de pago […] se apliquen las nuevas reglas de diseño […] y además dejar
+> un apartado para abrir el detalle […] y si el cliente tiene cuenta o sesión abierta que pueda
+> ver el detalle de su ticket o proyecto desde la vista de usuario»*.
+
+- **«Ver detalle del ticket / del proyecto»** (`EnlaceBoton` secundario con `Eye`) a la derecha de
+  «Estás pagando…». Adónde lleva lo decide el servidor (`detalleUrl` de `/api/pagos/etapa`):
+  · con sesión y siendo suyo (`vistaDeUsuario`, la misma puerta que `autorizarCobro`) → su panel,
+    `/dashboard/tickets/<id>` o `/dashboard/projects/<id>`;
+  · si no → la página pública con el mismo enlace: `/ticket/<id>?link=…` o `/proyecto/<id>?link=…`
+    (`enlaceVeDetalle`: el enlace solo abre SU ticket o proyecto, mientras no esté anulado ni
+    caducado, aunque ya se haya pagado).
+- Las dos páginas de detalle tienen **«Ir al pago»** (primario, abajo a la derecha de la cabecera)
+  mientras el enlace se pueda pagar.
+- **`/ticket/[id]` pasa a `(sitio)`** (antes era pixel art oscuro suelto) y acepta las dos llaves:
+  el `token` del correo de la factura y el `link` del pago. Enseña el trabajo registrado (fecha,
+  qué, tiempo, importe), las etapas y las facturas con su PDF; nunca quién lo hizo ni notas internas.
+- **Piezas comunes en `components/sitio/DetallePublico.tsx`** (`CabeceraDetalle`, `Estado`, `Dato`,
+  `TarjetaEtapas`, `TarjetaFacturas`, `ErrorEnlace`, `EnlaceBoton`): `/proyecto` y `/ticket` no
+  repiten una versión «parecida».
+- Reglas aplicadas aquí y en `FormularioPago`: el estado y «Estás pagando» son **texto con icono o
+  punto, sin cápsula con relleno ni borde**; **ninguna nota de ayuda** bajo un control (fuera «Se
+  registrará como RUC», «La factura electrónica se emite…», «Foto o PDF…», «Si difieres…», la del
+  cifrado bajo el botón y «Cada etapa se factura…»); el **foco de un campo es borde gris**
+  (`--tenue`), sin halo violeta. Deroga «el aviso de cifrado va bajo el botón».
+- ⚠️ `Contenedor` lleva `w-full`: el marco de `(sitio)` es una columna flex y un `mx-auto` sin
+  ancho se encogía al contenido (el detalle de un ticket corto salía de 790 px). Verificado: las
+  páginas públicas miden igual que antes a 1440 y 390.
+
 ## Editor del mundo — Fluent (estandarizado)
 
 ### Stack de estilos

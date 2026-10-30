@@ -22,10 +22,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, Layers, ShieldCheck, Receipt } from 'lucide-react';
+import { CheckCircle2, Clock, Eye, Layers, Receipt } from 'lucide-react';
 import { Contenedor, Tarjeta } from '@/components/sitio/piezas';
+import { CargandoDetalle, EnlaceBoton, ErrorEnlace } from '@/components/sitio/DetallePublico';
 import FormularioPago, { type DatosPago } from '@/components/pagos/FormularioPago';
-import { SITIO } from '@/lib/sitio/contenido';
 import { fmt2 } from '@/lib/format';
 
 export default function PantallaPago({ consulta, link, sourceId, stageId, sourceType, periodo }: {
@@ -51,36 +51,9 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
       .finally(() => setCargando(false));
   }, [consulta]);
 
-  if (cargando) {
-    return (
-      <Contenedor ancho="amplio" className="py-24">
-        <div className="h-6 w-48 rounded bg-[var(--linea)] animate-pulse" />
-        <div className="mt-4 h-10 w-2/3 rounded bg-[var(--linea)] animate-pulse" />
-        <div className="mt-10 h-64 rounded-xl bg-[var(--linea)]/60 animate-pulse" />
-      </Contenedor>
-    );
-  }
-
+  if (cargando) return <Contenedor ancho="amplio" className="py-24"><CargandoDetalle /></Contenedor>;
   if (error || !datos) {
-    return (
-      <Contenedor ancho="amplio" className="py-24">
-        <Tarjeta className="max-w-xl mx-auto text-center">
-          <ShieldCheck className="w-8 h-8 mx-auto text-[var(--violeta-txt)]" />
-          <h1 className="mt-4 text-[22px] font-semibold text-[var(--texto)]">
-            {error || 'No se pudo cargar el pago.'}
-          </h1>
-          <p className="mt-2 text-[15px] text-[var(--suave)]">
-            Si el enlace caducó, pídenos uno nuevo y te lo enviamos al momento.
-          </p>
-          {/* Mismo criterio que en `/proyecto/[id]`: a quien se le acaba de caducar un
-              enlace se le contesta por correo, no mandándolo a leer condiciones legales. */}
-          <a href={`mailto:${SITIO.correo}`}
-            className="mt-6 inline-flex items-center justify-center rounded-lg bg-[var(--violeta)] px-5 py-2.5 text-[14px] font-semibold text-white hover:opacity-90">
-            Escríbenos
-          </a>
-        </Tarjeta>
-      </Contenedor>
-    );
+    return <Contenedor ancho="amplio" className="py-24"><ErrorEnlace mensaje={error || 'No se pudo cargar el pago.'} /></Contenedor>;
   }
 
   const { proyecto, etapa } = datos;
@@ -113,7 +86,10 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
         {proyecto.descripcion && (
           <p className="mt-4 text-[16.5px] leading-relaxed text-[var(--suave)]">{proyecto.descripcion}</p>
         )}
-        <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] px-3.5 py-1.5 text-[13.5px] text-[var(--texto)]">
+        {/* Qué se paga, en texto con su icono: sin cápsula con relleno ni borde (regla de
+            Fernando del 2026-10-29). Y a la derecha, el detalle de lo que se paga. */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <p className="inline-flex items-center gap-2 text-[14.5px] text-[var(--texto)]">
           <Receipt className="w-4 h-4 text-[var(--violeta-txt)]" />
           {hayPlan
             ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
@@ -121,6 +97,14 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
               ? <>Estás contratando <strong className="font-semibold">{etapa.nombre}</strong></>
               : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
         </p>
+        {/* ⭐ VER EL DETALLE (Fernando, 2026-10-30). El servidor decide adónde: con sesión y
+            siendo suyo, a su panel; si no, a la página de solo lectura con este mismo enlace. */}
+        {datos.detalleUrl && (
+          <EnlaceBoton href={datos.detalleUrl} icon={Eye}>
+            Ver detalle del {proyecto.tipo === 'ticket' ? 'ticket' : 'proyecto'}
+          </EnlaceBoton>
+        )}
+        </div>
       </header>
 
         {/* ── QUÉ SE ESTÁ PAGANDO ──
@@ -177,10 +161,6 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-[13px] text-[var(--tenue)]">
-              Cada etapa se factura al cumplirse, por separado. Este enlace cobra únicamente la
-              que está resaltada.
-            </p>
           </Tarjeta>
         )}
 

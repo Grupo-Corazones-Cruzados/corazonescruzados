@@ -10,7 +10,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
-import { autorizarCobro, SinAcceso } from '@/lib/pagos/acceso';
+import { autorizarCobro, SinAcceso, vistaDeUsuario } from '@/lib/pagos/acceso';
 import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion, partesAltaProducto } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
 import { getBillingForClient } from '@/lib/billing-clients';
@@ -165,8 +165,17 @@ export async function GET(req: NextRequest) {
       if (fecha(p2?.deadline)) detalle.push({ etiqueta: 'Entrega prevista', valor: fecha(p2.deadline)! });
     }
 
+    // ⭐ DÓNDE SE VE EL DETALLE (Fernando, 2026-10-30). Con sesión y siendo suyo, en su panel;
+    // si no, con el mismo enlace, en la página pública de solo lectura del ticket o proyecto.
+    const linkToken = sp.get('link');
+    const detalleUrl = (auth.sourceType === 'project' || auth.sourceType === 'ticket')
+      ? (await vistaDeUsuario(auth.sourceType, auth.sourceId))
+        ?? (linkToken ? `/${auth.sourceType === 'ticket' ? 'ticket' : 'proyecto'}/${auth.sourceId}?link=${encodeURIComponent(linkToken)}` : null)
+      : null;
+
     return NextResponse.json({
       detalle,
+      detalleUrl,
       // Los dos importes, para que el cliente elija con el número delante: la transferencia
       // no lleva recargo porque ahí no cobra ninguna pasarela.
       importesPorMetodo: etapa.importes,

@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { enlaceVeDetalle } from '@/lib/pagos/acceso';
 import { regenerateRidePdf } from '@/lib/integrations/sri';
 
 /**
@@ -15,6 +16,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const token = req.nextUrl.searchParams.get('token');
+    // El enlace de pago del proyecto también abre su detalle (ver `enlaceVeDetalle`).
+    const conEnlace = await enlaceVeDetalle(req.nextUrl.searchParams.get('link'), 'project', id);
     const invoiceId = req.nextUrl.searchParams.get('invoice_id');
     if (!invoiceId) return NextResponse.json({ error: 'Falta la factura' }, { status: 400 });
 
@@ -24,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     );
     if (!project) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
 
-    if (project.is_private) {
+    if (project.is_private && !conEnlace) {
       if (!token || token !== project.public_token) {
         return NextResponse.json({ error: 'Este proyecto es privado' }, { status: 403 });
       }

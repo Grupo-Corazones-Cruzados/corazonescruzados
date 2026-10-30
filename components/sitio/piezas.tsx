@@ -127,7 +127,9 @@ export function Contenedor({
   // `sitio` (1280 px, Fernando 2026-10-29): las páginas públicas como SITIO WEB, centradas y con
   // aire a los lados, en vez de los paneles pegados a los bordes de `amplio`.
   const max = ancho === 'amplio' ? 'max-w-[1560px]' : ancho === 'sitio' ? 'max-w-7xl' : 'max-w-6xl';
-  return <div className={`mx-auto ${max} px-5 sm:px-6 ${className}`}>{children}</div>;
+  // `w-full`: el marco de `(sitio)` es una columna flex, y ahí un `mx-auto` sin ancho se encoge
+  // al de su contenido (el detalle de un ticket con poco texto salía de 790 px en vez de 1280).
+  return <div className={`mx-auto w-full ${max} px-5 sm:px-6 ${className}`}>{children}</div>;
 }
 
 /* `ExploradorTresPaneles` se borró el 2026-10-29 (ver `git show 8d23d58e:components/sitio/piezas.tsx`). */
