@@ -424,7 +424,9 @@ function DayView(props: Props) {
     // ⚠️ El alto impuesto (`fillHeight`) es solo desde `md`: en teléfono manda la agenda,
     // que mide lo que ocupa. Un contenedor de una pantalla entera con tres filas dentro
     // obliga a recorrer el hueco para llegar a lo que viene después.
-    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'md:h-full md:flex md:flex-col' : ''}`}>
+    // En el teléfono, con `fillHeight`, la caja llega al menos al final de su contenedor (alto
+    // completo, 2026-10-30): con pocos eventos ya no se queda a media pantalla.
+    <div className={`border border-digi-border rounded-lg overflow-hidden bg-digi-card ${fillHeight ? 'max-md:min-h-full md:h-full md:flex md:flex-col' : ''}`}>
       {/* En teléfono no hay columna de horas, así que su hueco de 56 px tampoco: la
           cabecera ocupa el ancho. `md:grid` la devuelve a su sitio en escritorio. */}
       <div className="flex md:grid shrink-0" style={{ gridTemplateColumns: '56px 1fr' }}>

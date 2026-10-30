@@ -286,9 +286,11 @@ export default function PublicCalendarPage() {
 
   // En el teléfono (Fernando, 2026-10-30: «hay mucha altura ocupada… los controles también
   // ocupan mucha altura… y el calendario no se puede deslizar, está como bloqueado»):
-  //  · la tarjeta NO tiene alto fijo. Con `h-[100dvh-…]` + `overflow-hidden` la agenda del día
-  //    (que en el teléfono mide lo que ocupa) quedaba cortada y no había nada que desplazar;
-  //    ahora se desplaza la página entera.
+  //  · ALTO COMPLETO, no el del contenido (Fernando, el mismo día: «el contenedor debe ocupar
+  //    toda la altura… y me puedo deslizar hacia abajo de forma innecesaria»). La pantalla es
+  //    una columna de `100dvh` que NO se desplaza: cabecera · tarjeta (`flex-1`) · «Agendar».
+  //    Lo único que se desplaza, y solo si no cabe, es la agenda dentro de la tarjeta.
+  //    (Antes: alto fijo con `overflow-hidden` que cortaba la agenda sin dejarla bajar.)
   //  · arriba solo el nombre y su estado; zona horaria, última actualización y leyenda van en
   //    la burbuja (i), como en las cabeceras del panel.
   //  · los controles en UNA fila (‹ fecha › · Hoy · sincronizar) y «Agendar» abajo, fijo, a
@@ -308,10 +310,10 @@ export default function PublicCalendarPage() {
   const flecha = 'w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
 
   return (
-    <div className="corp page-dark min-h-screen">
-      <PublicHeader />
-      <div className="max-w-6xl mx-auto space-y-4 py-4 md:py-6 px-3 md:px-8">
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col md:h-[calc(100dvh-6.5rem)]">
+    <div className={`corp page-dark ${enTelefono ? 'h-dvh flex flex-col overflow-hidden' : 'min-h-screen'}`}>
+      <div className="shrink-0"><PublicHeader /></div>
+      <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col p-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
+        <div className={`bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0' : 'h-[calc(100dvh-6.5rem)]'}`}>
           {enTelefono ? (
             <div className="px-4 py-3 border-b border-digi-border shrink-0">
               <div className="flex items-start gap-1">
@@ -411,14 +413,14 @@ export default function PublicCalendarPage() {
           {/* Grid — clic en zona libre abre el formulario con esa hora; clic en un bloque
               ocupado no muestra detalle (confidencial), salvo tu propia reserva reciente.
               En el teléfono sin alto impuesto: la agenda mide lo que ocupa y baja la página. */}
-          <div className={enTelefono ? 'p-2.5' : 'p-3 flex-1 min-h-0 flex flex-col'}>
+          <div className={enTelefono ? 'p-2.5 flex-1 min-h-0 overflow-y-auto overscroll-contain' : 'p-3 flex-1 min-h-0 flex flex-col'}>
             <CalendarView
               view={view}
               currentDate={currentDate}
               instances={displayInstances}
               onDayClick={onGridClick}
               onEventClick={onEventClick}
-              fillHeight={!enTelefono}
+              fillHeight
             />
           </div>
 
@@ -431,12 +433,12 @@ export default function PublicCalendarPage() {
           </div>
           )}
         </div>
-        {/* Hueco para que la barra de «Agendar» no tape el final de la agenda. */}
-        {enTelefono && <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))]" aria-hidden />}
       </div>
 
+      {/* «Agendar» en su franja propia al final de la columna: en el flujo, no flotando, así
+          nunca tapa la agenda. */}
       {enTelefono && (
-        <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-digi-card border-t border-digi-border">
+        <div className="shrink-0 px-3 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-digi-card border-t border-digi-border">
           <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={`${BTN_PRIMARY} w-full h-12 text-[15px]`}>
             <CalendarPlus className="w-[18px] h-[18px]" /> Agendar espacio
           </button>

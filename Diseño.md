@@ -6001,3 +6001,8 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
 - **Ventanita dentro de un panel** (2026-10-30): el CSS de los paneles va con `>` (si no, la ventanita hereda sus márgenes
   seguros) y `PixelModal` solo atiende `close`/`cancel` de su propio `<dialog>` (React los hace subir: la X cerraba los dos).
   La acción que borra en el pie (`danger`) es un botón con papelera del alto de los demás; en el teléfono, solo la papelera.
+- **Una pantalla de teléfono con una lista y una acción principal** (calendario público, Fernando 2026-10-30: *«el
+  contenedor debe ocupar toda la altura y no depender de la altura que requiera su contenido… me puedo deslizar hacia
+  abajo de forma innecesaria»*): columna de `h-dvh` con `overflow-hidden` = cabecera · tarjeta `flex-1 min-h-0` · franja
+  de la acción (en el flujo, con su margen seguro). La página NO se desplaza; solo la lista dentro de la tarjeta, y solo
+  si no cabe (`overflow-y-auto overscroll-contain`). Verificar: `scrollHeight` del documento == alto de la ventana.
