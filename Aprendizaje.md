@@ -26,6 +26,13 @@ suyo del SRI para facturar su parte. Duda: cómo se le presenta al cliente y có
 | Hoy el sistema tiene UN emisor | `lib/integrations/sri/config.ts` fija RUC, razón social, establecimiento y `data/firma.p12` | Pasar a emisor por miembro: firma cifrada (`CLAVE_MAESTRA_SECRETOS`), secuencial por emisor y punto de emisión |
 | IVA del miembro | Depende de su régimen (Negocio Popular 0 %, resto 15 %) | Guardar el régimen del miembro y calcular su IVA con él |
 
+### La tarifa de la plataforma es «uso de software», no comisión (2026-10-30)
+- Si la tarifa se define como **cargo por uso de la plataforma** (0,50 $ por hora gestionada, como el SaaS que ya se
+  vende: servidor 5 $/mes, Reservas, Pedidos), su actividad es la de **servicios de aplicación / hospedaje (J6311)**,
+  no «comisionista». La palabra y el contrato importan: «comisión por venta» empuja a intermediación.
+- Lo que sigue siendo intermediación es **cobrar el dinero del cliente por cuenta del miembro**. Eso no lo cambia
+  ningún código de actividad: lo resuelve que el dinero vaya directo al miembro (P1).
+
 ### Preguntas · ⏸ Fernando
 - P1 ¿El dinero lo recibe GCC y luego paga al miembro, o se quiere que llegue directo al miembro?
 - P2 ¿Quién absorbe la comisión de la pasarela: el miembro, el cliente o GCC?
@@ -126,6 +133,10 @@ de IA le pidió datos. Pide revisarlo con sus datos reales.
     existente; J62021001 = planificación y diseño de sistemas que integran equipo, programas y comunicaciones;
     J62090101 = recuperación ante desastres e instalación de programas. Buscar «programas informáticos» NO trae
     la de desarrollo: es **J62010101** y sale buscando «página».
+  · **Al añadir J62010101 (2026-10-30) la tabla conserva S96090705**: no reemplaza. Antes de «Guardar», el SRI
+    pide asociar dos «registros a su nombre»: **Actividad principal** y **Título profesional**. ⚠️ El título es el
+    de psicología: asociarlo a la actividad de software la declararía ejercicio profesional, que es justo el riesgo
+    de exclusión del RIMPE que temía la contadora. No asociarlo a J62; ver qué ofrece el control antes de guardar.
   · Hoy tiene **S9609.07**, que el INEC describe como *limpiabotas, porteadores de maletas, encargados de
     estacionar vehículos, etcétera*: ninguna palabra en la factura lo acerca a desarrollo de software.
 ### P7 — ¿Factura o piensa facturar psicología? · ⏸ Bloqueada (Fernando)
