@@ -1,5 +1,6 @@
 'use client';
 
+import GrupoForm from './GrupoForm';
 import { useCallback, useEffect, useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { Fingerprint, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -96,17 +97,16 @@ export default function PasskeysPanel() {
   const caducadas = (lista ?? []).filter((p) => !p.sirve);
 
   return (
-    <div className="pt-3 border-t border-digi-border space-y-3">
-      {/* Título «Passkey» con su acción a la altura, a la derecha (Fernando, 2026-09-30): el
-          mismo botón pequeño de acento que el «Editar» junto a los títulos de las tarjetas. */}
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-[13px] font-semibold text-digi-text" style={mf}>Passkey</h4>
+    /* Título «Passkey» con su acción a la altura, a la derecha (Fernando, 2026-09-30): el
+       mismo botón pequeño de acento que el «Editar» junto a los títulos de las tarjetas. En el
+       teléfono es un grupo con su tarjeta (`GrupoForm`, 2026-10-30). */
+    <GrupoForm titulo="Passkey" extra={(
         <button type="button" onClick={registrar} disabled={ocupado} title="Añadir passkey de este equipo"
           className="destino-tactil inline-flex items-center gap-1 text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}>
           {ocupado ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}
           {ocupado ? 'Esperando…' : 'Añadir'}
         </button>
-      </div>
+      )}>
 
       {error && (
         <p className="flex items-start gap-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300" style={mf}>
@@ -161,6 +161,6 @@ export default function PasskeysPanel() {
           </span>
         </p>
       )}
-    </div>
+    </GrupoForm>
   );
 }

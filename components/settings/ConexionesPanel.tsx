@@ -94,7 +94,7 @@ export default function ConexionesPanel() {
   const revocada = c?.estado === 'revocada';
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto p-4">
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 max-lg:p-0">
       {aviso && (
         <div className={`mb-3 px-3 py-2 rounded-md border text-[12px] flex items-center gap-2 ${aviso.ok ? 'border-green-300/60 bg-green-400/10 text-green-700' : 'border-red-400/40 bg-red-500/10 text-red-600'}`} style={mf}>
           {aviso.ok ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />} {aviso.text}
@@ -106,7 +106,7 @@ export default function ConexionesPanel() {
         </div>
       )}
 
-      <div className="bg-digi-card border border-digi-border rounded-lg p-4">
+      <div className="bg-digi-card border border-digi-border rounded-xl p-4">
         <div className="flex items-start gap-3 flex-wrap">
           <div className="w-10 h-10 rounded-md border border-digi-border flex items-center justify-center shrink-0"><LogoGoogle /></div>
           <div className="min-w-0 flex-1">
@@ -124,11 +124,14 @@ export default function ConexionesPanel() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        {/* Los permisos, como texto con su icono: sin cápsula con relleno y borde (regla
+            «sin etiquetas con relleno», 2026-10-30). El concedido en acento; el que falta, tenue. */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
           {PERMISOS.map(({ Icon, label, scope }) => {
             const concedido = !!c && !revocada && c.scopes.includes(scope);
             return (
-              <span key={scope} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] ${concedido ? 'bg-accent-light border-accent/30 text-accent' : 'bg-black/[0.04] border-digi-border text-digi-muted'}`} style={mf}>
+              <span key={scope} title={concedido ? 'Permiso concedido' : 'Sin permiso'}
+                className={`inline-flex items-center gap-1.5 text-[12.5px] ${concedido ? 'text-accent' : 'text-digi-muted line-through decoration-digi-muted/50'}`} style={mf}>
                 <Icon className="w-3.5 h-3.5" /> {label}
               </span>
             );

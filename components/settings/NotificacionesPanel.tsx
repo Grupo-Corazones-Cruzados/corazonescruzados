@@ -63,7 +63,7 @@ export default function NotificacionesPanel() {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
+    <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 max-lg:p-0">
       {err && (
         <div className="mb-3 px-3 py-2 rounded-md border border-red-400/40 bg-red-500/10 text-[12px] text-red-600 flex items-center gap-2" style={mf}>
           <XCircle className="w-4 h-4 shrink-0" /> {err}

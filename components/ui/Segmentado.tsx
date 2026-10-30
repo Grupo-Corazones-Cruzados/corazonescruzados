@@ -37,7 +37,7 @@ export default function Segmentado<T extends string>({
       {opciones.map((o) => (
         <button key={o.valor} type="button" onClick={() => !o.deshabilitada && onChange(o.valor)} disabled={o.deshabilitada}
           title={o.deshabilitada ? o.porque : undefined} aria-pressed={valor === o.valor}
-          className={`flex-1 px-3 py-1.5 rounded-md text-[12.5px] font-medium leading-tight transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`flex-1 min-w-0 px-2 sm:px-3 py-1.5 rounded-md text-[12.5px] font-medium leading-tight transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
             valor === o.valor ? 'bg-accent text-white' : 'text-digi-text enabled:hover:bg-black/[0.04]'}`} style={mf}>
           {o.texto}
           {o.detalle && <span className={`block text-[11px] font-normal tabular-nums ${valor === o.valor ? 'text-white/80' : 'text-digi-muted'}`}>{o.detalle}</span>}

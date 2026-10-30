@@ -181,7 +181,9 @@ function ConfiguracionMovil({ tabs, seccion, isMember, onCompartir }: {
           <DetailHeader breadcrumb={{ label: 'Configuración', href: '/dashboard/settings' }} title={s.label} />
         ) : <h1 className="page-title pixel-heading text-digi-text mb-4">Perfil</h1>}
         {s.key === 'perfil' ? <ProfilePanel /> : (
-          <div className="flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
+          // Sin tarjeta alrededor (2026-10-30): cada sección pinta sus bloques como tarjetas propias
+          // sobre el fondo; una tarjeta dentro de otra se comía el ancho de los campos.
+          <div className="flex flex-col">
             {s.key === 'cv' && <CvPanel />}
             {s.key === 'availability' && <AvailabilityPanel />}
             {s.key === 'portfolio' && <PortfolioPanel />}

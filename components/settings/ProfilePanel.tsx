@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
+import GrupoForm from '@/components/settings/GrupoForm';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import PasskeysPanel from '@/components/settings/PasskeysPanel';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
@@ -204,7 +205,10 @@ export default function ProfilePanel() {
         </button>
       )}
     >
-      <form id="perfil-form" onSubmit={handleSave} className="p-4 space-y-4">
+      {/* En el teléfono, cada bloque es un grupo con su tarjeta y su nombre encima (`GrupoForm`,
+          Fernando 2026-10-30); en escritorio, la misma columna de siempre. */}
+      <form id="perfil-form" onSubmit={handleSave} className="p-4 max-lg:p-0 space-y-4 max-lg:space-y-5">
+        <GrupoForm titulo="Cuenta" tituloEscritorio={false} primero>
         {/* Avatar */}
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
@@ -241,6 +245,9 @@ export default function ProfilePanel() {
           </div>
         </div>
 
+        </GrupoForm>
+
+        <GrupoForm titulo="Datos personales" tituloEscritorio={false} primero>
         <div className="grid grid-cols-2 gap-3">
           <PixelInput label="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Juan" />
           <PixelInput label="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Pérez" />
@@ -250,33 +257,34 @@ export default function ProfilePanel() {
           <PixelInput label="Ubicación" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} placeholder="Guayaquil, Ecuador" />
         )}
 
-        {esMiembro && (
-          <div className="flex flex-col gap-1">
-            <label className="text-[12px] font-medium text-digi-text" style={mf}>Aspiración salarial (USD/mes)</label>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" min={0} step={50} inputMode="numeric" value={salarioMin}
-                onChange={(e) => setSalarioMin(e.target.value)} placeholder="Desde"
-                className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-              <input type="number" min={0} step={50} inputMode="numeric" value={salarioMax}
-                onChange={(e) => setSalarioMax(e.target.value)} placeholder="Hasta"
-                className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
-            </div>
-          </div>
-        )}
+        </GrupoForm>
 
         {esMiembro && (
+        <GrupoForm titulo="Perfil profesional" tituloEscritorio={false} primero>
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-digi-text" style={mf}>Aspiración salarial (USD/mes)</label>
+            {/* «Desde» y «Hasta» con su nombre a la vista: como texto de ejemplo desaparecían en
+                cuanto había un número, y «1500 · 2000» no decía cuál era cuál (2026-10-30). */}
+            <div className="grid grid-cols-2 gap-2">
+              {([['Desde', salarioMin, setSalarioMin], ['Hasta', salarioMax, setSalarioMax]] as const).map(([nombre, valor, poner]) => (
+                <label key={nombre} className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[11px] text-digi-muted" style={mf}>{nombre}</span>
+                  <input type="number" min={0} step={50} inputMode="numeric" value={valor}
+                    onChange={(e) => poner(e.target.value)} placeholder="0"
+                    className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text tabular-nums placeholder:text-digi-muted/50 focus:border-accent focus:outline-none" style={mf} />
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1">
             <label className="text-[12px] font-medium text-digi-text" style={mf}>Idiomas</label>
             <MultiSelectSearch options={IDIOMAS} selected={idiomas} onChange={setIdiomas} placeholder="Elegir idiomas…" />
           </div>
+        </GrupoForm>
         )}
 
-        <div className="pt-3 border-t border-digi-border space-y-3">
-          {/* Regla de formularios: solo el título del campo y el campo. La
-              explicación va dentro del botón de ayuda, no como párrafo fijo. */}
-          <h4 className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}>
-            <AtSign className="w-4 h-4 text-accent" /> Redes sociales
-          </h4>
+        <GrupoForm titulo="Redes sociales" Icon={AtSign}>
           {/* LinkedIn y el sitio web viven aquí desde 2026-08-14: son enlaces, y
               tenerlos en «Mi CV» los separaba de los otros cuatro sin motivo. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -287,7 +295,7 @@ export default function ProfilePanel() {
             <CampoRed red="instagram" valor={instagram} onChange={setInstagram} />
             <CampoRed red="facebook" valor={facebook} onChange={setFacebook} />
           </div>
-        </div>
+        </GrupoForm>
 
         {/* Sin la sección «Cuenta»: correo, ID, rol y verificado son datos del
             sistema, no del perfil que se edita. Quien entra ya sabe con qué cuenta

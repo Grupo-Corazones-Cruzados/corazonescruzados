@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import BotonAyuda from '@/components/ui/BotonAyuda';
 import Interruptor from '@/components/ui/Interruptor';
+import Segmentado from '@/components/ui/Segmentado';
 import { fmtNum } from '@/lib/format';
 import { CalendarClock, Clock3, CalendarCheck, Save, Briefcase, Loader2, Check } from 'lucide-react';
 
@@ -31,15 +32,16 @@ const dayHours = (d: DaySchedule) => Math.max(0, toMin(d.end) - toMin(d.start)) 
  * `member_cv_profiles` (campos `job_*`) y es lo que sale en el CV público.        */
 type EstadoLaboral = 'immediate' | 'from_date' | 'not_available';
 
+// Textos cortos: van en un segmentado de tres en 390 px (2026-10-30).
 const ESTADOS: { v: EstadoLaboral; label: string }[] = [
   { v: 'immediate', label: 'De inmediato' },
-  { v: 'from_date', label: 'A partir de una fecha' },
-  { v: 'not_available', label: 'No disponible por ahora' },
+  { v: 'from_date', label: 'Desde una fecha' },
+  { v: 'not_available', label: 'No disponible' },
 ];
 const JORNADAS = [
-  { v: 'full', label: 'Jornada completa' },
+  { v: 'full', label: 'Completa' },
   { v: 'part', label: 'Media jornada' },
-  { v: 'both', label: 'Completa o parcial' },
+  { v: 'both', label: 'Cualquiera' },
 ];
 const MODALIDADES = [
   { v: 'remote', label: 'Remoto' },
@@ -150,16 +152,13 @@ export default function AvailabilityPanel() {
 
   const presetBtn = 'px-2.5 py-1 rounded-md text-[12px] font-medium border border-digi-border text-digi-text hover:border-accent hover:text-accent transition-colors';
 
-  const segmento = (activo: boolean) =>
-    `px-3 py-1.5 rounded-md text-[12.5px] font-medium border transition-colors ${
-      activo ? 'bg-accent-light border-accent text-accent' : 'border-digi-border text-digi-muted hover:border-accent/40 hover:text-digi-text'
-    }`;
-
   return (
     /* El contenido rueda por dentro: el alto lo pone el panel, no los campos. */
-    <div className="h-full min-h-0 overflow-y-auto p-4 space-y-4">
+    /* En el teléfono sin margen propio: la página ya no es tarjeta y cada bloque es la suya
+       (`bg-digi-card`), como los grupos de Perfil (Fernando, 2026-10-30). */
+    <div className="h-full min-h-0 overflow-y-auto p-4 max-lg:p-0 space-y-4">
       {/* ── Disponibilidad LABORAL (lo que ve un reclutador en el CV público) ── */}
-      <div className="rounded-xl border border-digi-border overflow-hidden">
+      <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
         <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">
           <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}>
             <Briefcase className="w-4 h-4 text-accent" /> Disponibilidad laboral
@@ -180,11 +179,12 @@ export default function AvailabilityPanel() {
         <div className="p-4 space-y-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-[12px] font-medium text-digi-text" style={mf}>Cuándo puedes empezar</label>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {ESTADOS.map((e) => (
-                <button key={e.v} type="button" onClick={() => tocarLaboral({ job_status: e.v })}
-                  className={segmento(laboral.job_status === e.v)} style={mf}>{e.label}</button>
-              ))}
+            {/* Una de varias = `Segmentado` (2026-10-30). Eran cápsulas con relleno y borde de
+                acento que se partían en dos filas en el teléfono. */}
+            <div className="flex flex-col gap-1.5">
+              <Segmentado etiqueta="Cuándo puedes empezar" className="w-full" valor={laboral.job_status}
+                onChange={(v) => tocarLaboral({ job_status: v })}
+                opciones={ESTADOS.map((e) => ({ valor: e.v, texto: e.label }))} />
               {/* El campo de fecha aparece SOLO con el estado que lo usa: un selector
                   de fecha atenuado al lado de «de inmediato» es ruido permanente. */}
               {laboral.job_status === 'from_date' && (
@@ -198,21 +198,15 @@ export default function AvailabilityPanel() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-medium text-digi-text" style={mf}>Jornada</label>
-              <div className="flex flex-wrap gap-1.5">
-                {JORNADAS.map((j) => (
-                  <button key={j.v} type="button" onClick={() => tocarLaboral({ job_workday: j.v })}
-                    className={segmento(laboral.job_workday === j.v)} style={mf}>{j.label}</button>
-                ))}
-              </div>
+              <Segmentado etiqueta="Jornada" className="w-full" valor={laboral.job_workday}
+                onChange={(v) => tocarLaboral({ job_workday: v })}
+                opciones={JORNADAS.map((j) => ({ valor: j.v, texto: j.label }))} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-medium text-digi-text" style={mf}>Modalidad</label>
-              <div className="flex flex-wrap gap-1.5">
-                {MODALIDADES.map((m) => (
-                  <button key={m.v} type="button" onClick={() => tocarLaboral({ job_mode: m.v })}
-                    className={segmento(laboral.job_mode === m.v)} style={mf}>{m.label}</button>
-                ))}
-              </div>
+              <Segmentado etiqueta="Modalidad" className="w-full" valor={laboral.job_mode}
+                onChange={(v) => tocarLaboral({ job_mode: v })}
+                opciones={MODALIDADES.map((m) => ({ valor: m.v, texto: m.label }))} />
             </div>
           </div>
 
@@ -236,7 +230,7 @@ export default function AvailabilityPanel() {
 
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
       {/* ── Editor de días ── */}
-      <div className="rounded-xl border border-digi-border overflow-hidden">
+      <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 border-b border-digi-border">
           <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-digi-text" style={mf}>
             <Clock3 className="w-4 h-4 text-accent" /> Horario semanal
@@ -283,7 +277,7 @@ export default function AvailabilityPanel() {
       </div>
 
       {/* ── Resumen ── */}
-      <div className="rounded-xl border border-digi-border p-4 lg:sticky lg:top-4">
+      <div className="rounded-xl border border-digi-border bg-digi-card p-4 lg:sticky lg:top-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center"><CalendarClock className="w-4 h-4 text-accent" /></div>
           <span className="text-[13px] font-semibold text-digi-text" style={mf}>Resumen</span>

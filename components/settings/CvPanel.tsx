@@ -1,5 +1,6 @@
 'use client';
 
+import GrupoForm, { useEnTelefono } from './GrupoForm';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ const yearRange = (a?: string, b?: string) => (a || b ? [a, b].filter(Boolean).j
 export default function CvPanel() {
   const { user } = useAuth();
   const memberId = user?.member_id;
+  const enTelefono = useEnTelefono();
   const [bio, setBio] = useState('');
   // Educación/experiencia GLOBALES ya no se editan (cada talento tiene la suya); se
   // conservan en estado para no perder datos previos al guardar.
@@ -191,37 +193,38 @@ export default function CvPanel() {
        scroll por muchos talentos que haya. `min-h-0` es lo que permite encoger el
        área de arriba; sin él, el pie se saldría de la tarjeta. */
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 max-lg:p-0 space-y-5">
       {/* Datos base: solo la biografía. El titular profesional se eliminó —lo
           sustituye el nombre del talento en el CV público— y la aspiración salarial
           y los idiomas se fueron al panel de Perfil (Fernando, 2026-08-15). */}
+      {/* En el teléfono, grupos con su tarjeta y su nombre encima (`GrupoForm`, 2026-10-30). */}
+      <GrupoForm titulo="Biografía" tituloEscritorio={false} primero>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium text-digi-text" style={mf}>Biografía</label>
+        <label className="text-[12px] font-medium text-digi-text max-lg:sr-only" style={mf}>Biografía</label>
         <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Describe tu experiencia…"
           className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none resize-none" style={mf} />
       </div>
+      </GrupoForm>
 
-      {/* Talentos */}
-      <div className="pt-4 border-t border-digi-border">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h4 className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}><Sparkles className="w-4 h-4 text-accent" /> Talentos</h4>
-          <div className="w-full sm:w-[280px]">
-            <TalentPicker options={availableTalents} onPick={addTalent} />
-          </div>
-        </div>
+      {/* Talentos. El buscador va junto al título en escritorio y como primer campo del grupo
+          en el teléfono (junto a un título de 11 px no cabe). */}
+      <GrupoForm titulo="Talentos" Icon={Sparkles}
+        extra={enTelefono ? undefined : <div className="w-[280px]"><TalentPicker options={availableTalents} onPick={addTalent} /></div>}>
+        {enTelefono && <TalentPicker options={availableTalents} onPick={addTalent} />}
         {talents.length === 0 ? (
           <p className="text-[12px] text-digi-muted/60" style={mf}>Aún no agregas talentos. Cada talento tiene su educación, experiencia y servicios.</p>
         ) : (() => {
           const t = talents[activeIdx];
           const talentServices = services.filter((s) => s.talent === t.key);
           return (
-            <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
+            // En el teléfono ya está dentro de la tarjeta del grupo: sin otra caja alrededor.
+            <div className={enTelefono ? '' : 'rounded-xl border border-digi-border bg-digi-card overflow-hidden'}>
               {/* ── Teléfono: el talento se elige con un control que enseña todos ──
                   La tira de pestañas se deslizaba de lado y a 390 px cortaba «Psicol…»
                   (Fernando, 2026-10-23: nada se desliza escondiendo opciones). Hasta tres
                   talentos, `Segmentado`; más, un <select>. El quitar va al lado y actúa
                   sobre el talento elegido, como la «×» de su pestaña en escritorio. */}
-              <div className="lg:hidden flex items-center gap-2 p-2 border-b border-digi-border">
+              <div className="lg:hidden flex items-center gap-2 pb-3 border-b border-digi-border">
                 {talents.length > 3 ? (
                   <select aria-label="Talento" value={activeIdx} onChange={(e) => setActiveTalent(Number(e.target.value))}
                     className="field-control field-select h-11 min-w-0 flex-1 px-3 bg-digi-card border border-digi-border rounded-md text-[13.5px] text-digi-text appearance-none cursor-pointer" style={mf}>
@@ -249,7 +252,7 @@ export default function CvPanel() {
               </div>
 
               {/* Contenido del talento seleccionado: listas compactas + agregar en modal */}
-              <div className="p-4 space-y-4">
+              <div className={enTelefono ? 'pt-4 space-y-4' : 'p-4 space-y-4'}>
                 <ListSection title="Educación" icon={<GraduationCap className="w-4 h-4 text-accent" />}
                   count={t.education.length} emptyText="Sin formación registrada."
                   onAdd={() => setEduForm({ idx: null, draft: emptyEdu() })}>
@@ -298,7 +301,7 @@ export default function CvPanel() {
             </div>
           );
         })()}
-      </div>
+      </GrupoForm>
 
       </div>
 
@@ -575,11 +578,14 @@ function SkillsDelTalento({ valores, onChange }: { valores: string[]; onChange: 
           Sin skills. Agrega las que usas con este talento.
         </p>
       ) : (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1.5">
           {valores.map((v) => (
-            <span key={v} className="inline-flex items-center gap-1 text-[12px] px-2 py-1 rounded-full bg-accent-light text-accent" style={mf}>
+            // Sin cápsula con relleno (regla «sin etiquetas con relleno», 2026-10-30): el texto y
+            // su «×», que es un botón de verdad con área táctil.
+            <span key={v} className="inline-flex items-center gap-0.5 text-[13px] text-digi-text" style={mf}>
               {v}
-              <button type="button" onClick={() => onChange(valores.filter((x) => x !== v))} className="hover:text-accent-hover" aria-label={`Quitar ${v}`}>
+              <button type="button" onClick={() => onChange(valores.filter((x) => x !== v))} aria-label={`Quitar ${v}`} title={`Quitar ${v}`}
+                className="destino-tactil w-5 h-5 inline-flex items-center justify-center rounded text-digi-muted hover:text-red-400 transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </span>

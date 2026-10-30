@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import { useEnTelefono } from './GrupoForm';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -39,8 +40,11 @@ export default function SettingsPanel({
   bodyClassName?: string;
   className?: string;
 }) {
+  // En el teléfono el panel NO es tarjeta: sus grupos lo son (`GrupoForm`), sobre el fondo,
+  // y los campos ganan el ancho que se comían dos márgenes (Fernando, 2026-10-30).
+  const enTelefono = useEnTelefono();
   return (
-    <section className={`flex flex-col min-h-0 bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden ${className}`}>
+    <section className={`flex flex-col min-h-0 ${enTelefono ? '' : 'bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden'} ${className}`}>
       {/* En el teléfono el título ya lo pone la pantalla de la sección (flecha + nombre). */}
       <header className="max-lg:hidden flex items-center gap-2.5 px-4 py-3 border-b border-digi-border shrink-0">
         <div className="w-8 h-8 rounded-lg bg-accent-light flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-accent" /></div>
@@ -51,7 +55,7 @@ export default function SettingsPanel({
         {headerExtra}
       </header>
 
-      <div className={`flex-1 min-h-0 overflow-y-auto ${bodyClassName}`}>{children}</div>
+      <div className={`flex-1 min-h-0 overflow-y-auto ${enTelefono ? 'space-y-5' : bodyClassName}`}>{children}</div>
 
       {/* En el teléfono el pie baja a la barra de acciones de abajo (regla de las principales). */}
       {pie && (

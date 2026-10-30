@@ -278,7 +278,7 @@ export default function PortfolioPanel() {
 
   return (
     /* El contenido rueda por dentro: el alto lo pone el panel, no la tabla. */
-    <div className="h-full min-h-0 overflow-y-auto p-4 space-y-3">
+    <div className="h-full min-h-0 overflow-y-auto p-4 max-lg:p-0 space-y-3">
       {/* Catálogo (segmentado) + buscador + Nuevo. En el teléfono el segmentado va a todo el
           ancho, el buscador debajo y «Nuevo» a la barra de abajo (`/diseno` §4-quater). */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
