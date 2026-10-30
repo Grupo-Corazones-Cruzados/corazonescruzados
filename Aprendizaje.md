@@ -10958,3 +10958,8 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
   implementar los sistemas de gobernanza de GCC). Los negocios afiliados entran en la **Estrategia
   Organizacional**, que conecta negocios y talentos. Sustituye la idea anterior («todo proyecto es recurso
   de GCC», un solo liderazgo).
+
+- 2026-10-29 · Formulario de postulación, paso 2: **Violeta** (texto de Fernando) deja de explicarse como
+  color/marca/filosofía/actitud y pasa a un texto poético: la luz que nos representa, el color que une
+  corazones, un lugar para los diferentes; el reto de candidatos y miembros, medible por la prospección y
+  la evaluación continua.

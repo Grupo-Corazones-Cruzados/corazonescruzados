@@ -349,7 +349,8 @@ const TOOLS: AccordionItem[] = [
   },
   {
     name: 'Violeta',
-    summary: 'El color, la marca y la filosofía que nos unen en uno solo.',
+    summary: 'La luz que nos representa, el color que une corazones.',
+    // Texto de Fernando (2026-10-29), literal.
     body: () => (
       <>
         <div
@@ -361,28 +362,31 @@ const TOOLS: AccordionItem[] = [
           }}
         />
         <p style={cardDesc}>
-          El violeta nace de la unión de dos colores distintos —el rojo y el azul—. Esa es,
-          justamente, nuestra filosofía: <strong style={strong}>unir lo diferente para crear algo
-          más grande</strong>. La unión hace la fuerza, y el violeta es el color que representa al
-          Grupo Corazones Cruzados.
+          <strong style={strong}>Violeta es la luz que nos representa</strong>, el color que une
+          corazones, y un lugar para aquellos que son diferentes. Esta luz, ilumina el vacío y lo
+          aprovecha, une destinos mientras destruye sus formas, y convierte todo lo que parece
+          imposible, en sueños y felicidad.
         </p>
         <p style={cardDesc}>
-          <strong style={strong}>Como marca</strong>, el violeta está presente, de forma
-          consistente, en todos nuestros proyectos —sin importar quién sea su dueño—, para que
-          cualquier persona reconozca al instante que pertenecen al grupo. Es nuestro sello
-          compartido.
+          Es aquello que amamos, y luego aparece cuando recordamos nuestras raíces; es una expresión
+          tan humana, tan natural, y es eso que sientes en el pálpito, en cada golpe, en cada
+          esfuerzo, y con cada lágrima que derramaste mientras todo se movía a tu alrededor. Violeta
+          es el mundo de afuera y lo de adentro, la verdad que no queremos aceptar, el problema que
+          estamos confrontando, y la nostalgia que sientes cuando recuerdas ese preciso momento
+          cuando todo lo malo cambió.
         </p>
         <p style={cardDesc}>
-          <strong style={strong}>Como filosofía personal</strong>, invitamos a cada miembro a
-          identificarse con lo que el violeta representa. No se trata de una obligación, sino de
-          creer genuinamente en esta forma de ver las cosas.
+          Comprender esta fuerza que nos hace soñar, desear, y buscar sin saber cuándo deberíamos
+          parar; ese deseo insaciable por insistir y descubrir aquello tan profundo que no cabe en el
+          pecho, y que además tiene la habilidad de cruzar los corazones, los sentimientos y
+          transformar la realidad.
         </p>
         <p style={cardDesc}>
-          <strong style={strong}>Como actitud</strong>, el violeta es reciprocidad: ayudar y
-          dejarse ayudar. El apoyo que recibimos hoy lo devolvemos mañana. Compartimos lo aprendido
-          entre generaciones y proyectos, competimos de forma sana y, cuando una iniciativa pierde
-          fuerza, su talento encuentra un nuevo lugar donde brillar. Así crecemos de manera
-          constante, ganamos experiencia y construimos la confianza de quienes nos eligen.
+          Violeta es el reto de todos los candidatos y los miembros que ansiamos alcanzar, ese sueño
+          eterno por proteger la calidad, la humanidad, y el futuro. Violeta es un sueño que se puede
+          medir a través de la prospección, y todos quienes participan en este proyecto demostrarán a
+          través de la <strong style={strong}>evaluación continua</strong> si pueden representar los
+          valores y la bandera con el color que debemos proteger.
         </p>
       </>
     ),
