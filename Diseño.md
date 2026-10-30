@@ -5963,10 +5963,11 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   −egreso» debajo, resultado a la derecha); el detalle como listado que se lee (concepto | importe), un lado a la
   vez con `Segmentado`, y cada renglón se edita en `QuickEditDialog`. Una cifra de `RejillaCifras` que queda sola
   en su fila ocupa las dos columnas.
-- **Ingresos, Egresos y Adicionales** (Fernando, 2026-10-30): en el mes, Ingresos y Egresos son lo del SRI y se
-  LEEN (renglón «concepto | importe», candado junto al título del bloque, sin campos ni botones); lo no facturado va
-  en una tercera columna, **Adicionales**, con dos grupos (ingresos / egresos) y su «+», nombre de UNA palabra (los
-  espacios no se escriben) e importe. La tabla de meses suma una columna Adicionales (neto con signo, «—» si no hay);
+- **Ingresos, Egresos y Adicionales** (Fernando, 2026-10-30): el mes se ve en PESTAÑAS también en el escritorio
+  (`DetalleMes`), una lista a la vez —tres columnas lado a lado hacían la pantalla larguísima y se DESCARTARON—.
+  Ingresos y Egresos son lo del SRI y se LEEN (candado en cada renglón); **Adicionales** es lo no facturado: primero
+  los ingresos (+) y luego los egresos (−), cada renglón se edita en `QuickEditDialog` (Ingreso/Egreso, nombre de UNA
+  palabra —los espacios no se escriben— e importe). Bajo cada pestaña, «cuántos · cuánto». La tabla de meses suma una columna Adicionales (neto con signo, «—» si no hay);
   con «Solo facturado» la columna desaparece. En el teléfono, una tercera opción del `Segmentado` con la cuenta en
   `detalle` (con tres opciones, «Adicionales · 1» no cabe en una línea).
 - **Formularios de Configuración en el teléfono** (Fernando, 2026-10-30, `components/settings/GrupoForm.tsx`): la sección no

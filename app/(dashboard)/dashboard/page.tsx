@@ -10,8 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, Plus, ChevronRight, FileDown, FileText, Lock, Coins, type LucideIcon } from 'lucide-react';
-import BotonQuitar from '@/components/ui/BotonQuitar';
+  Download, ChevronRight, FileDown, FileText } from 'lucide-react';
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import BotonGastosSri from '@/components/dashboard/BotonGastosSri';
@@ -19,7 +18,7 @@ import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
 import Interruptor from '@/components/ui/Interruptor';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
-import { BalanceMovil, MesesMovil, DetalleMesMovil } from '@/components/dashboard/EstadoFinancieroMovil';
+import { BalanceMovil, MesesMovil, DetalleMes } from '@/components/dashboard/EstadoFinancieroMovil';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -359,14 +358,17 @@ export default function DashboardHome() {
       <PixelModal open={!!detailMonth} onClose={() => !saving && setDetailMonth(null)}
         title={detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : ''} size="lg"
         busy={saving}
-        // En el teléfono las acciones van en el pie fijo: «Guardar» a la vista sin bajar 40 renglones.
-        pie={enTelefono && !loadingDetail ? (
+        // Las acciones van en el pie fijo, en los dos anchos: «Guardar» a la vista sin bajar 40 renglones.
+        pie={!loadingDetail ? (
           <>
             <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf${soloFacturado ? '?facturado=1' : ''}`, '_blank')}
               aria-label="Descargar el PDF del mes" title="Descargar el PDF del mes"
               className={`${BTN_SECONDARY} !flex-none mr-auto inline-flex items-center justify-center gap-1.5`}>
               <Download className="w-4 h-4" /> PDF
             </button>
+            {isAdmin && !enTelefono && (
+              <button onClick={() => setDetailMonth(null)} className="pixel-btn pixel-btn-secondary text-sm h-11">Cancelar</button>
+            )}
             {isAdmin ? (
               <button onClick={saveDetail} disabled={saving} className="pixel-btn pixel-btn-primary text-sm h-11 disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar'}
@@ -378,8 +380,11 @@ export default function DashboardHome() {
         ) : undefined}>
         {loadingDetail ? (
           <p className="text-center text-digi-muted py-8 text-[13px]" style={mf}>Cargando...</p>
-        ) : enTelefono ? (
-          <DetalleMesMovil
+        ) : (
+          // ⭐ EL MES EN PESTAÑAS, EN LOS DOS ANCHOS (Fernando, 2026-10-30: con tres columnas «la cola de
+          // esta pantalla se hace larguísima»; «el diseño de ingresos y egresos como pestañas estaba súper
+          // bien»). Una lista a la vez: Ingresos, Egresos (lo del SRI, de solo lectura) o Adicionales.
+          <DetalleMes
             ingresos={incomeItems} egresos={expenseItems}
             adicionales={soloFacturado ? null : adicionales} setAdicionales={setAdicionales}
             editable={isAdmin} oculto={ocultoPorFiltro}
@@ -387,201 +392,8 @@ export default function DashboardHome() {
             totalIngresos={detailIncome + detailAdicionalIngreso} totalEgresos={detailExpense + detailAdicionalEgreso}
             ahorroAnterior={priorSavings} ahorroGlobal={cumulativeSavings}
           />
-        ) : (
-          // ⚠️ SIN caja de desplazamiento propia (Fernando, 2026-10-29: «hay que desplazarse hacia
-          // abajo para ver el formulario y su botón de guardar»). Era `max-h-[75vh] overflow-y-auto`
-          // DENTRO del panel lateral, que ya se desplaza: el formulario se cortaba a media altura y
-          // «Guardar» quedaba escondido en esa caja. Ahora el formulario es UNO y ocupa el panel, que
-          // se desplaza entero, con sus botones al final.
-          <div className="space-y-4">
-            {/* Tres columnas: Ingresos y Egresos son lo del SRI, de solo lectura (candado en la
-                cabecera); Adicionales, lo no facturado, se escribe a mano. */}
-            <div className={`grid grid-cols-1 gap-4 ${soloFacturado ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}`}>
-              <BloqueImportes
-                titulo={soloFacturado ? 'Ingresos facturados' : 'Ingresos'} Icon={TrendingUp} colorIcono="text-green-400" colorTotal="text-green-400"
-                total={money(detailIncome)} items={incomeItems} oculto={ocultoPorFiltro} vacio="Sin ingresos registrados."
-              />
-              <BloqueImportes
-                titulo="Egresos" Icon={TrendingDown} colorIcono="text-red-400" colorTotal="text-red-400"
-                total={money(detailExpense)} items={expenseItems} vacio="Sin egresos registrados."
-              />
-              {!soloFacturado && (
-                <BloqueAdicionales items={adicionales} setItems={setAdicionales} editable={isAdmin}
-                  total={detailAdicionalIngreso - detailAdicionalEgreso} />
-              )}
-            </div>
-
-            {/* Resumen de ahorro */}
-            <div className="rounded-lg border border-digi-border p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-digi-text" style={mf}>Ahorro del mes</p>
-                  <p className="text-[11px] text-digi-muted" style={mf}>Ingresos − egresos{soloFacturado ? '' : ' + adicionales'} de {detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : 'el mes'}</p>
-                </div>
-                <span className={`text-2xl font-bold tabular-nums shrink-0 ${detailSavings >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(detailSavings)}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-digi-darker border border-digi-border text-[12px]" style={mf}>
-                  <span className="text-digi-muted">A la fecha (mes anterior)</span>
-                  <span className={`font-medium tabular-nums ${priorSavings >= 0 ? 'text-digi-text' : 'text-red-400'}`}>{money(priorSavings)}</span>
-                </div>
-                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-accent-light border border-accent/30 text-[12px]" style={mf}>
-                  <span className="text-accent">Ahorro global (a la fecha)</span>
-                  <span className="text-accent font-semibold tabular-nums">{money(cumulativeSavings)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Acciones. En teléfono se apilan y ocupan el ancho: dos botones de 90 px
-                compitiendo en una fila es donde el pulgar se equivoca, y «Guardar» —la
-                acción de verdad— queda al alcance, abajo del todo. */}
-            {/* El pie es el FINAL del formulario, en su sitio: se llega desplazando, como a todo lo
-                demás (Fernando, 2026-10-29: «no debería verla flotando… el formulario debe ser dueño
-                del espacio y uno solo»). Un pie pegado al borde dejaba pasar el contenido por detrás. */}
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4 border-t border-digi-border">
-              <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf${soloFacturado ? '?facturado=1' : ''}`, '_blank')}
-                className="inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto px-3 py-2 border border-digi-border rounded text-sm font-medium text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-                <Download className="w-4 h-4" /> PDF
-              </button>
-              <div className="flex flex-col-reverse sm:flex-row gap-2">
-                <button onClick={() => setDetailMonth(null)} className="pixel-btn pixel-btn-secondary text-sm h-11 sm:h-auto">{isAdmin ? 'Cancelar' : 'Cerrar'}</button>
-                {isAdmin && (
-                  <button onClick={saveDetail} disabled={saving} className="pixel-btn pixel-btn-primary text-sm h-11 sm:h-auto disabled:opacity-50">
-                    {saving ? 'Guardando...' : 'Guardar'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
         )}
       </PixelModal>
-    </div>
-  );
-}
-
-/**
- * Un bloque de importes del SRI (ingresos o egresos) del estado mensual: DE SOLO LECTURA (Fernando,
- * 2026-10-30: «dejar completamente bloqueados los ingresos y egresos actuales ya que estos dos solo
- * graban lo registrado en el SRI»). El candado de la cabecera lo dice; lo que no se factura va en
- * `BloqueAdicionales`.
- */
-function BloqueImportes({
-  titulo, Icon, colorIcono, colorTotal, total, items, vacio, oculto,
-}: {
-  titulo: string;
-  Icon: LucideIcon;
-  colorIcono: string;
-  colorTotal: string;
-  total: string;
-  items: FinanceItem[];
-  vacio: string;
-  /** Filas que no se dibujan (el filtro «Solo facturado»). */
-  oculto?: (it: FinanceItem) => boolean;
-}) {
-  const ocultos = oculto ? items.filter(oculto).length : 0;
-  const visibles = items.filter((it) => !oculto?.(it));
-  return (
-    <div className="rounded-lg border border-digi-border overflow-hidden min-w-0">
-      <CabeceraBloque titulo={titulo} Icon={Icon} colorIcono={colorIcono} total={total} colorTotal={colorTotal}
-        candado="Solo lo registrado en el SRI: no se edita aquí." />
-      <div className="p-3 space-y-1">
-        {visibles.length === 0 && <p className="text-[12px] text-digi-muted text-center py-2" style={mf}>{vacio}</p>}
-        {ocultos > 0 && (
-          <p className="text-[11.5px] text-digi-muted pb-1" style={mf}>
-            {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'} por «Solo facturado».
-          </p>
-        )}
-        {visibles.map((item, i) => (
-          <div key={item.id ?? i} className="flex items-baseline justify-between gap-3 py-1 text-[12.5px]" style={mf}>
-            <span className="min-w-0 truncate text-digi-text" title={item.description}>{item.description || 'Sin descripción'}</span>
-            <span className={`shrink-0 font-medium tabular-nums ${colorTotal}`}>${fmt2(Number(item.amount) || 0)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CabeceraBloque({ titulo, Icon, colorIcono, total, colorTotal, candado }: {
-  titulo: string; Icon: LucideIcon; colorIcono: string; total: string; colorTotal: string; candado?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-black/[0.02] border-b border-digi-border">
-      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text min-w-0" style={mf}>
-        <Icon className={`w-4 h-4 shrink-0 ${colorIcono}`} /> {titulo}
-        {candado && <span title={candado} aria-label={candado} className="inline-flex text-digi-muted"><Lock className="w-3.5 h-3.5" /></span>}
-      </span>
-      <span className={`text-[14px] font-semibold tabular-nums shrink-0 ${colorTotal}`} style={mf}>{total}</span>
-    </div>
-  );
-}
-
-/**
- * ⭐ LA COLUMNA DE ADICIONALES (Fernando, 2026-10-30: «otra columna que sea la encargada de grabar
- * los ingresos adicionales no facturados y los egresos adicionales no facturados […] nombre de una
- * sola palabra, y poder administrarlos»). Dentro, dos grupos —ingresos y egresos— con su «+»; cada
- * renglón es su nombre (una palabra: los espacios no se escriben) y el importe. El total de la
- * cabecera es lo neto: lo que suma o resta al ahorro.
- */
-function BloqueAdicionales({ items, setItems, editable, total }: {
-  items: FinanceItem[];
-  setItems: React.Dispatch<React.SetStateAction<FinanceItem[]>>;
-  editable: boolean;
-  total: number;
-}) {
-  const cambiar = (i: number, cambio: Partial<FinanceItem>) =>
-    setItems((prev) => prev.map((it, k) => (k === i ? { ...it, ...cambio } : it)));
-  const CAMPO = 'field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:outline-none read-only:bg-transparent read-only:border-transparent read-only:cursor-default';
-  const signo = (n: number) => `${n < 0 ? '−' : n > 0 ? '+' : ''}$${fmt2(Math.abs(n))}`;
-  const grupos = [
-    { tipo: 'income' as const, titulo: 'Ingresos', agregar: 'Ingreso', color: 'text-green-400', vacio: 'Sin ingresos adicionales.' },
-    { tipo: 'expense' as const, titulo: 'Egresos', agregar: 'Egreso', color: 'text-red-400', vacio: 'Sin egresos adicionales.' },
-  ];
-
-  return (
-    <div className="rounded-lg border border-digi-border overflow-hidden min-w-0">
-      <CabeceraBloque titulo="Adicionales" Icon={Coins} colorIcono="text-accent" total={signo(total)}
-        colorTotal={total > 0 ? 'text-green-400' : total < 0 ? 'text-red-400' : 'text-digi-muted'} />
-      <div className="p-3 space-y-4">
-        {grupos.map((g) => {
-          // El índice es el de la lista COMPLETA: así se edita y se quita el renglón correcto.
-          const filas = items.map((it, i) => ({ it, i })).filter(({ it }) => it.type === g.tipo);
-          const subtotal = filas.reduce((s, { it }) => s + (Number(it.amount) || 0), 0);
-          return (
-            <section key={g.tipo} className="space-y-2">
-              <div className="flex items-baseline justify-between text-[11px] font-semibold uppercase tracking-wide text-digi-muted" style={mf}>
-                <span>{g.titulo}</span>
-                <span className={`tabular-nums ${filas.length ? g.color : ''}`}>${fmt2(subtotal)}</span>
-              </div>
-              {filas.length === 0 && !editable && <p className="text-[12px] text-digi-muted" style={mf}>{g.vacio}</p>}
-              {filas.map(({ it, i }) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <input
-                    value={it.description} readOnly={!editable} placeholder="Nombre" aria-label={`Nombre del ${g.agregar.toLowerCase()} (una palabra)`}
-                    title={it.description}
-                    // Una sola palabra: los espacios no llegan a escribirse.
-                    onChange={(e) => cambiar(i, { description: e.target.value.replace(/\s+/g, '') })}
-                    className={`${CAMPO} flex-1 min-w-0`} style={mf}
-                  />
-                  <input
-                    value={it.amount} readOnly={!editable} onChange={(e) => cambiar(i, { amount: e.target.value })}
-                    type="number" min="0" step="0.01" placeholder="0.00" inputMode="decimal" aria-label="Importe"
-                    className={`${CAMPO} w-24 shrink-0 text-right ${g.color}`} style={mf}
-                  />
-                  {editable && <BotonQuitar onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))} etiqueta="Quitar" />}
-                </div>
-              ))}
-              {editable && (
-                <button type="button" onClick={() => setItems((prev) => [...prev, { type: g.tipo, description: '', amount: '', adicional: true }])}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 border border-dashed border-digi-border rounded-lg text-[12px] font-medium text-digi-muted hover:border-accent hover:text-accent transition-colors"
-                  style={mf}>
-                  <Plus className="w-3.5 h-3.5" /> {g.agregar}
-                </button>
-              )}
-            </section>
-          );
-        })}
-      </div>
     </div>
   );
 }

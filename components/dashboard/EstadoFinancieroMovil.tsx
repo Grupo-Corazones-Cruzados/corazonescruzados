@@ -20,7 +20,7 @@ import { QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDial
  *    salió, y una línea fina que dice qué parte de lo que entró se fue en egresos.
  *  - `MesesMovil`: los meses agrupados por año, cada uno UNA fila (~56 px): el mes con «+ingreso
  *    · −egreso» debajo y el ahorro a la derecha. El año lleva su ahorro en la cabecera.
- *  - `DetalleMesMovil`: el mes como un LISTADO que se lee (concepto a la izquierda, importe a la
+ *  - `DetalleMes`: el mes como un LISTADO que se lee (concepto a la izquierda, importe a la
  *    derecha), ingresos o egresos de uno en uno, y cada renglón se edita en su ventanita (dos
  *    campos: regla de `EditDialog`), nunca encima.
  * Desde `lg`, el escritorio sigue con su tabla y sus bloques de siempre.
@@ -151,14 +151,14 @@ export interface RenglonMovil {
 type Lado = 'income' | 'expense' | 'adicional';
 
 /**
- * El cuerpo del mes en el teléfono. Trabaja sobre las MISMAS listas que el escritorio, así el
+ * El cuerpo del mes, en el teléfono Y en el escritorio (desde el 2026-10-30, ver la página). Trabaja sobre las MISMAS listas que el escritorio, así el
  * «Guardar» del pie no cambia.
  *
  * Desde el 2026-10-30 (Fernando) ingresos y egresos son lo del SRI y se leen, no se tocan; lo que
  * se escribe a mano son los ADICIONALES —ingresos y egresos no facturados, de nombre una palabra—,
  * en su propia pestaña. `adicionales = null` la esconde («Solo facturado»).
  */
-export function DetalleMesMovil<R extends RenglonMovil>({
+export function DetalleMes<R extends RenglonMovil>({
   ingresos, egresos, adicionales, setAdicionales, editable, oculto, etiquetaIngresos,
   totalIngresos, totalEgresos, ahorroAnterior, ahorroGlobal,
 }: {
@@ -180,12 +180,20 @@ export function DetalleMesMovil<R extends RenglonMovil>({
   const [editando, setEditando] = useState<{ i: number; type: 'income' | 'expense'; description: string; amount: string } | null>(null);
 
   const lista: R[] = lado === 'income' ? ingresos : lado === 'expense' ? egresos : (adicionales ?? []);
+  // En Adicionales, primero los ingresos y luego los egresos (el índice sigue siendo el de la lista).
   const visibles = lista
     .map((r, i) => ({ r, i }))
-    .filter(({ r }) => !oculto(r) && (r.description.trim() || Number(r.amount)));
+    .filter(({ r }) => !oculto(r) && (r.description.trim() || Number(r.amount)))
+    .sort((a, b) => (lado === 'adicional' ? Number(a.r.type === 'expense') - Number(b.r.type === 'expense') : 0));
   const ocultos = lado === 'income' ? ingresos.filter(oculto).length : 0;
   const ahorro = totalIngresos - totalEgresos;
-  const cuenta = (l: R[]) => l.filter((r) => !oculto(r) && (r.description.trim() || Number(r.amount))).length;
+  const utiles = (l: R[]) => l.filter((r) => !oculto(r) && (r.description.trim() || Number(r.amount)));
+  const suma = (l: R[]) => utiles(l).reduce((s, r) => s + (r.type === 'expense' && l === adicionales ? -1 : 1) * (Number(r.amount) || 0), 0);
+  // Bajo el nombre de cada pestaña, cuántos renglones y cuánto suman (los adicionales, lo neto con signo).
+  const detalle = (l: R[], conSigno = false) => {
+    const n = suma(l);
+    return `${utiles(l).length} · ${conSigno && n > 0 ? '+' : ''}${dinero(n)}`;
+  };
   const tocable = editable && lado === 'adicional';
 
   const guardarRenglon = () => {
@@ -207,11 +215,14 @@ export function DetalleMesMovil<R extends RenglonMovil>({
   return (
     <div className="space-y-4" style={mf}>
       {/* El resultado del mes primero: es lo que se viene a ver. */}
-      <section className="rounded-xl border border-digi-border p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-digi-muted">Ahorro del mes</p>
-        <p className={`mt-0.5 text-[28px] leading-tight font-bold tabular-nums ${colorAhorro(ahorro)}`}>{dinero(ahorro)}</p>
-        <div className="mt-3"><LineaGasto ingresos={totalIngresos} egresos={totalEgresos} /></div>
-        <dl className="mt-3 space-y-1.5 text-[12.5px]">
+      {/* En el escritorio, el ahorro a la izquierda y sus cifras a la derecha: una franja, no una torre. */}
+      <section className="rounded-xl border border-digi-border p-4 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-digi-muted">Ahorro del mes</p>
+          <p className={`mt-0.5 text-[28px] leading-tight font-bold tabular-nums ${colorAhorro(ahorro)}`}>{dinero(ahorro)}</p>
+          <div className="mt-3"><LineaGasto ingresos={totalIngresos} egresos={totalEgresos} /></div>
+        </div>
+        <dl className="mt-3 lg:mt-0 space-y-1.5 text-[12.5px]">
           <div className="flex justify-between gap-3"><dt className="text-digi-muted">{etiquetaIngresos}</dt><dd className="tabular-nums font-medium text-green-400">{dinero(totalIngresos)}</dd></div>
           <div className="flex justify-between gap-3"><dt className="text-digi-muted">Egresos</dt><dd className="tabular-nums font-medium text-red-400">{dinero(totalEgresos)}</dd></div>
           <div className="flex justify-between gap-3 pt-1.5 border-t border-digi-border"><dt className="text-digi-muted">A la fecha (mes anterior)</dt><dd className={`tabular-nums font-medium ${ahorroAnterior >= 0 ? 'text-digi-text' : 'text-red-400'}`}>{dinero(ahorroAnterior)}</dd></div>
@@ -221,14 +232,14 @@ export function DetalleMesMovil<R extends RenglonMovil>({
 
       <Segmentado
         etiqueta="Ver"
-        className="w-full"
+        className="w-full lg:max-w-xl"
         valor={lado}
         onChange={setLado}
         // La cuenta, en la segunda línea: con tres opciones, «Adicionales · 1» no cabe en una.
         opciones={[
-          { valor: 'income', texto: etiquetaIngresos, detalle: String(cuenta(ingresos)) },
-          { valor: 'expense', texto: 'Egresos', detalle: String(cuenta(egresos)) },
-          ...(adicionales ? [{ valor: 'adicional' as const, texto: 'Adicionales', detalle: String(cuenta(adicionales)) }] : []),
+          { valor: 'income', texto: etiquetaIngresos, detalle: detalle(ingresos) },
+          { valor: 'expense', texto: 'Egresos', detalle: detalle(egresos) },
+          ...(adicionales ? [{ valor: 'adicional' as const, texto: 'Adicionales', detalle: detalle(adicionales, true) }] : []),
         ]}
       />
 
@@ -263,11 +274,11 @@ export function DetalleMesMovil<R extends RenglonMovil>({
                 <li key={i}>
                   {tocable ? (
                     <button type="button" onClick={() => setEditando({ i, type: r.type, description: r.description, amount: aPantalla(r.amount) })}
-                      className="w-full min-h-[52px] flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-accent-light/40">
+                      className="w-full min-h-[52px] lg:min-h-[40px] flex items-center gap-3 px-3.5 py-2.5 lg:py-1.5 text-left hover:bg-black/[0.03] active:bg-accent-light/40 transition-colors">
                       {contenido}
                     </button>
                   ) : (
-                    <div className="min-h-[52px] flex items-center gap-3 px-3.5 py-2.5">{contenido}</div>
+                    <div className="min-h-[52px] lg:min-h-[40px] flex items-center gap-3 px-3.5 py-2.5 lg:py-1.5">{contenido}</div>
                   )}
                 </li>
               );
