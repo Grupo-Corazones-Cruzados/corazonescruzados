@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { accessRoleOf } from '@/lib/dashboard/access';
@@ -17,8 +17,12 @@ import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
 import Interruptor from '@/components/ui/Interruptor';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
+import { BalanceMovil, MesesMovil, DetalleMesMovil } from '@/components/dashboard/EstadoFinancieroMovil';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
+
+const sinSuscripcion = () => () => {};
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -34,6 +38,12 @@ export default function DashboardHome() {
   const role = accessRoleOf(user);
   const isAdmin = role === 'admin';
   const isStaff = role === 'member' || role === 'admin';
+  // Por debajo de `lg` el estado financiero tiene su versión de teléfono (ver
+  // `components/dashboard/EstadoFinancieroMovil.tsx`); el mismo corte que la tabla. Hasta
+  // hidratar se pinta el escritorio, para no ver el teléfono un instante en el ordenador.
+  const hidratado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
+  const pantallaGrande = useConsultaMedia(PANTALLA_LG);
+  const enTelefono = hidratado && !pantallaGrande;
   const [stats, setStats] = useState<Stats | null>(null);
   const [months, setMonths] = useState<FinanceMonth[]>([]);
 
@@ -174,13 +184,15 @@ export default function DashboardHome() {
 
       {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
           las finanzas globales y el conteo de clientes son solo para staff/admin. */}
+      {/* En el teléfono las tres cifras de dinero no van aquí: las dice el balance de abajo,
+          que sigue al filtro de año (un dato no se dice dos veces). */}
       <RejillaCifras className="mb-5">
         <Cifra Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} />
         <Cifra Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} />
         {isAdmin && <Cifra Icon={Users} label="Clientes" value={stats?.clients} />}
-        {isStaff && <Cifra Icon={TrendingUp} label={`${soloFacturado ? 'Facturado' : delAnio ? 'Ingresos' : 'Total ingresos'}${delAnio}`} value={money(globalIncome)} tone="green" />}
-        {isStaff && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
-        {isStaff && <Cifra Icon={PiggyBank} label={`${delAnio || soloFacturado ? 'Ahorro' : 'Total ahorro'}${delAnio}`} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
+        {isStaff && !enTelefono && <Cifra Icon={TrendingUp} label={`${soloFacturado ? 'Facturado' : delAnio ? 'Ingresos' : 'Total ingresos'}${delAnio}`} value={money(globalIncome)} tone="green" />}
+        {isStaff && !enTelefono && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
+        {isStaff && !enTelefono && <Cifra Icon={PiggyBank} label={`${delAnio || soloFacturado ? 'Ahorro' : 'Total ahorro'}${delAnio}`} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
       </RejillaCifras>
 
       {/* Estado financiero mensual — SOLO staff (datos de toda la organización). */}
@@ -200,7 +212,7 @@ export default function DashboardHome() {
               segmentado de tres no cabía y «Pérdida» se cortaba); desde `sm`, juntos a la
               izquierda con su ancho. Resultado es el `Segmentado` de siempre; el año, un `<select>`. */}
           {months.length > 0 && (
-            <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 mb-3">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 mb-3">
               <select value={anio} onChange={(e) => setAnio(e.target.value)} aria-label="Año"
                 className="field-control field-select min-w-0 h-11 sm:h-[38px] sm:w-40 px-3 bg-digi-card border border-digi-border rounded-md text-[13px] text-digi-text appearance-none cursor-pointer" style={mf}>
                 <option value="todos">Todos los años</option>
@@ -208,7 +220,7 @@ export default function DashboardHome() {
               </select>
               <Segmentado
                 etiqueta="Resultado del mes"
-                className="min-w-0 sm:w-72"
+                className="min-w-0 sm:w-72 max-sm:col-span-2 max-sm:order-last"
                 valor={resultado}
                 onChange={setResultado}
                 opciones={[
@@ -236,6 +248,20 @@ export default function DashboardHome() {
             </div>
           )}
 
+          {enTelefono ? (
+            <>
+              <BalanceMovil
+                etiquetaAhorro={`Ahorro${delAnio || ' total'}`}
+                etiquetaIngresos={soloFacturado ? 'Facturado' : 'Ingresos'}
+                ingresos={globalIncome} egresos={globalExpense}
+              />
+              <MesesMovil
+                meses={mesesFiltrados} ingresoDe={ingresoDe} egresoDe={(m) => Number(m.total_expense || 0)}
+                onAbrir={openDetail}
+                vacio={months.length ? 'Ningún mes cumple los filtros.' : 'No hay estados financieros aún.'}
+              />
+            </>
+          ) : (
           <PixelDataTable
             unidad={['mes', 'meses']}
             data={mesesFiltrados}
@@ -297,14 +323,42 @@ export default function DashboardHome() {
               );
             }}
           />
+          )}
         </>
       )}
 
       {/* Detail Modal */}
       <PixelModal open={!!detailMonth} onClose={() => !saving && setDetailMonth(null)}
-        title={detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : ''} size="lg">
+        title={detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : ''} size="lg"
+        busy={saving}
+        // En el teléfono las acciones van en el pie fijo: «Guardar» a la vista sin bajar 40 renglones.
+        pie={enTelefono && !loadingDetail ? (
+          <>
+            <button onClick={() => detailMonth && window.open(`/api/finance/${detailMonth.id}/pdf${soloFacturado ? '?facturado=1' : ''}`, '_blank')}
+              aria-label="Descargar el PDF del mes" title="Descargar el PDF del mes"
+              className={`${BTN_SECONDARY} !flex-none mr-auto inline-flex items-center justify-center gap-1.5`}>
+              <Download className="w-4 h-4" /> PDF
+            </button>
+            {isAdmin ? (
+              <button onClick={saveDetail} disabled={saving} className="pixel-btn pixel-btn-primary text-sm h-11 disabled:opacity-50">
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            ) : (
+              <button onClick={() => setDetailMonth(null)} className="pixel-btn pixel-btn-secondary text-sm h-11">Cerrar</button>
+            )}
+          </>
+        ) : undefined}>
         {loadingDetail ? (
           <p className="text-center text-digi-muted py-8 text-[13px]" style={mf}>Cargando...</p>
+        ) : enTelefono ? (
+          <DetalleMesMovil
+            ingresos={incomeItems} egresos={expenseItems}
+            setIngresos={setIncomeItems} setEgresos={setExpenseItems}
+            editable={isAdmin} oculto={ocultoPorFiltro}
+            etiquetaIngresos={soloFacturado ? 'Facturado' : 'Ingresos'}
+            totalIngresos={detailIncome} totalEgresos={detailExpense}
+            ahorroAnterior={priorSavings} ahorroGlobal={cumulativeSavings}
+          />
         ) : (
           // ⚠️ SIN caja de desplazamiento propia (Fernando, 2026-10-29: «hay que desplazarse hacia
           // abajo para ver el formulario y su botón de guardar»). Era `max-h-[75vh] overflow-y-auto`

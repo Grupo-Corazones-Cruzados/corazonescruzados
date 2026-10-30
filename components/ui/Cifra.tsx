@@ -44,7 +44,8 @@ const CHIP: Record<TonoCifra, string> = {
  * `md` y, desde `xl`, las seis en UNA fila. Antes eran tarjetas de ~90 px en dos filas.
  */
 export function RejillaCifras({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 ${className}`}>{children}</div>;
+  // En dos columnas, una cifra que queda sola en su fila ocupa la fila entera (sin hueco al lado).
+  return <div className={`grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${className}`}>{children}</div>;
 }
 
 export function Cifra({
