@@ -48,8 +48,8 @@ import { ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
-import { BloqueTema, ICONOS, PresentacionPagina } from './piezas';
-import type { ComponentProps } from 'react';
+import { BloqueTema, conNegritas, ICONOS, PresentacionPagina } from './piezas';
+import type { ComponentProps, ReactNode } from 'react';
 import GaleriaTarjetas from './GaleriaTarjetas';
 import VideoYouTube from './VideoYouTube';
 import FaqsClientes from './FaqsClientes';
@@ -154,7 +154,7 @@ function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
 }
 
 export default function ExploradorSecciones({
-  secciones, activa, faqs, base, rotulo, etiquetaNav, presentacion,
+  secciones, activa, faqs, base, rotulo, etiquetaNav, presentacion, children,
 }: {
   /** Las secciones de las puertas. `ACCESOS` en `/clientes`, `DESARROLLO` en la otra. */
   secciones: Acceso[];
@@ -170,6 +170,8 @@ export default function ExploradorSecciones({
   etiquetaNav: string;
   /** La presentación de la página (la misma en todas sus secciones). */
   presentacion: ComponentProps<typeof PresentacionPagina>;
+  /** Contenido propio de la sección, bajo su descripción (p. ej. la tabla del Modelo 4P). */
+  children?: ReactNode;
 }) {
   const acceso = secciones.find((a) => a.id === activa);
   if (!acceso) return null;
@@ -195,8 +197,10 @@ export default function ExploradorSecciones({
           </div>
           {/* La descripción LARGA si la sección la tiene; si no, su frase corta. */}
           <p className="mt-4 text-[16px] leading-relaxed text-[var(--suave)] max-w-3xl whitespace-pre-line">
-            {acceso.descripcion ?? acceso.texto}
+            {conNegritas(acceso.descripcion ?? acceso.texto)}
           </p>
+
+          {children && <div className="mt-8 max-w-3xl">{children}</div>}
 
           {temas.length > 0 && <IndiceEnFila temas={temas} />}
 

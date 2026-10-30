@@ -27,6 +27,21 @@ import { Contenedor } from '@/components/sitio/piezas';
 import { PRESENTACION_DESARROLLO } from '@/components/sitio/presentaciones';
 import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from '../../clientes/faqs-build';
+import Modelo4P, { ReglasModelo4P } from '@/components/landing/Modelo4P';
+import { sinNegritas } from '@/lib/sitio/modeloGcc';
+
+/**
+ * Lo que una sección enseña además de sus temas. El Modelo 4P es una TABLA (pisos × pasos) y sus
+ * seis reglas: los mismos componentes del formulario de postulación (2026-10-30).
+ */
+const CONTENIDO_PROPIO: Record<string, React.ReactNode> = {
+  'modelo-organizacional-4p': (
+    <div className="flex flex-col gap-6">
+      <Modelo4P />
+      <ReglasModelo4P />
+    </div>
+  ),
+};
 
 type Props = { params: Promise<{ seccion: string }> };
 
@@ -82,7 +97,9 @@ export default async function SeccionDesarrolloPage({ params }: Props) {
             rotulo="Desarrollo humano"
             presentacion={PRESENTACION_DESARROLLO}
             etiquetaNav="Secciones de desarrollo humano"
-          />
+          >
+            {CONTENIDO_PROPIO[acceso.id]}
+          </ExploradorSecciones>
         </Contenedor>
       </section>
 
@@ -114,7 +131,7 @@ export default async function SeccionDesarrolloPage({ params }: Props) {
         const preguntas = [
           ...(acceso.temas ?? [])
             .filter((t) => t.texto)
-            .map((t) => ({ name: t.pregunta, text: t.texto as string })),
+            .map((t) => ({ name: t.pregunta, text: sinNegritas(t.texto as string).replace(/\n{2,}/g, ' ') })),
           ...faqs.map((f) => ({ name: f.pregunta, text: f.respuesta })),
         ];
         if (preguntas.length === 0) return null;

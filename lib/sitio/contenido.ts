@@ -20,6 +20,7 @@
  *    candidatos—, que son los tres públicos del proyecto.
  */
 
+import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_INTRO } from '@/lib/sitio/modeloGcc';
 import { NOMBRE_COMERCIAL, RAZON_SOCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 
 export const SITIO = {
@@ -364,6 +365,8 @@ export interface Tema {
    * sueltos.
    */
   pasos?: [Paso] | [Paso, Paso] | [Paso, Paso, Paso];
+  /** Pinta los seis pasos de la Metodología Condiciológica tras el primer párrafo de `texto`. */
+  conPasosCondiciologia?: boolean;
 }
 
 /** Un paso de un `Tema`. Ver el aviso de `Tema.pasos`: como mucho tres, y en orden. */
@@ -924,6 +927,35 @@ export const DESARROLLO: Acceso[] = [
         ],
       },
     ],
+  },
+
+  /**
+   * ⭐ EL MODELO DE GRUPO Y SUS HERRAMIENTAS, PÚBLICOS (Fernando, 2026-10-30).
+   *
+   * Hasta hoy vivían solo dentro del formulario de postulación, y los buscadores no los veían:
+   * al hablar del grupo, Google y Bing repetían la descripción general. Fernando: *«que los
+   * buscadores recolecten esta información como parte fundamental de lo que es nuestro
+   * negocio»*. Son los MISMOS textos del formulario (`lib/sitio/modeloGcc.ts`): se corrigen en
+   * un sitio y cambian en los dos. La tabla y las reglas las pone la página de la sección.
+   */
+  {
+    id: 'modelo-organizacional-4p', icono: 'capas',
+    titulo: 'Modelo Organizacional 4P',
+    texto: 'Los cuatro pisos y los cuatro pasos con los que se organiza cada proyecto del grupo.',
+    descripcion: MODELO_INTRO,
+  },
+  {
+    id: 'herramientas-del-modelo', icono: 'herramienta',
+    titulo: 'Herramientas del Modelo',
+    texto: 'Metodología Condiciológica, Sistema de Control Psicosocial, Proyecto Centralizado y Violeta.',
+    descripcion: HERRAMIENTAS_INTRO,
+    temas: HERRAMIENTAS.map((h, i) => ({
+      id: h.id,
+      etiqueta: `Herramienta ${i + 1}`,
+      pregunta: h.pregunta,
+      texto: h.parrafos.join('\n\n'),
+      conPasosCondiciologia: h.conPasos,
+    })),
   },
 
   {

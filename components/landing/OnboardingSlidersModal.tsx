@@ -32,7 +32,9 @@
 import Captcha from '@/components/landing/Captcha';
 import { horaDeReanudacion, useEstadoRegistro } from '@/components/landing/estadoRegistro';
 import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
+import Modelo4P, { PasosCondiciologia, ReglasModelo4P } from '@/components/landing/Modelo4P';
+import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_INTRO, trozosNegrita } from '@/lib/sitio/modeloGcc';
 import {
   AlertTriangle,
   Clock,
@@ -85,318 +87,52 @@ type Slide = {
 /* Slider 1 — Modelo de Grupo (Modelo 4P)                             */
 /* ------------------------------------------------------------------ */
 
-const PISOS: { name: string; desc: string }[] = [
-  {
-    name: 'Global',
-    desc: 'Gobierna los sistemas fundamentales de la organización y toma las decisiones de alto nivel que hacen posible el crecimiento de cada etapa.',
-  },
-  {
-    name: 'Pilar',
-    desc: 'Diseña y gestiona los proyectos aprobados, dándoles forma y dirección para que estén listos para ejecutarse.',
-  },
-  {
-    name: 'Controlador',
-    desc: 'Traduce cada proyecto en tareas concretas y las asigna a quienes las llevarán a cabo.',
-  },
-  {
-    name: 'Colaborador',
-    desc: 'Ejecuta con precisión las tareas asignadas. Es el lugar donde las ideas se transforman en trabajo terminado.',
-  },
-];
-
-const PASOS: { n: string; name: string; desc: string }[] = [
-  {
-    n: '01',
-    name: 'Fundamentación',
-    desc: 'Todo comienza con el porqué. Aquí investigamos y construimos la base de conocimiento que respalda el proyecto, para que nada se edifique sobre suposiciones.',
-  },
-  {
-    n: '02',
-    name: 'Creación',
-    desc: 'Con los cimientos listos, damos forma al planteamiento: la idea ya fundamentada se convierte en una propuesta concreta y accionable.',
-  },
-  {
-    n: '03',
-    name: 'Implementación',
-    desc: 'Llevamos el proyecto puertas adentro: configuramos su gestión interna, definimos políticas y reglas de negocio, y asignamos los roles y responsabilidades que lo mantendrán en marcha.',
-  },
-  {
-    n: '04',
-    name: 'Gestión',
-    desc: 'Finalmente lo abrimos al mundo. Publicación, marketing y monetización para que el proyecto crezca y genere valor real.',
-  },
-];
-
-/**
- * EL MODELO 4P COMO TABLA (Fernando, 2026-10-29: «quitemos las pestañas… en formato tabla, los
- * 4 pisos con su nombre y número, y los 4 pasos uno a la derecha del otro, porque es la forma
- * correcta de representar el modelo organizacional 4P»).
- *
- * Filas = los 4 PISOS (del gobierno, arriba, a la ejecución, abajo); columnas = los 4 PASOS (de
- * izquierda a derecha, en el orden en que se recorren). Cada cruce es un punto: en toda etapa
- * participan los cuatro roles. Al pasar por un piso, un paso o un cruce, se iluminan su fila y su
- * columna; la descripción de cada uno queda en su `title`.
- */
-function Modelo4P() {
-  const [foco, setFoco] = useState<{ piso: number | null; paso: number | null }>({ piso: null, paso: null });
-  const soltar = () => setFoco({ piso: null, paso: null });
-  return (
-    <div className="modelo-4p" onMouseLeave={soltar}>
-      <table>
-        <caption className="sr-only">Modelo Organizacional 4P: los 4 pisos (filas) por los 4 pasos (columnas)</caption>
-        <thead>
-          <tr>
-            <th scope="col" className="m4p-esquina">
-              <span className="m4p-esquina-pasos">Pasos →</span>
-              <span className="m4p-esquina-pisos">Pisos ↓</span>
-            </th>
-            {PASOS.map((s, j) => (
-              <th
-                key={s.name}
-                scope="col"
-                title={s.desc}
-                className={`m4p-paso ${foco.paso === j ? 'es-foco' : ''}`}
-                onMouseEnter={() => setFoco({ piso: null, paso: j })}
-                onClick={() => setFoco({ piso: null, paso: j })}
-              >
-                <span className="m4p-num">{j + 1}</span>
-                <span className="m4p-nombre">{s.name}</span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {PISOS.map((p, i) => (
-            <tr key={p.name}>
-              <th
-                scope="row"
-                title={p.desc}
-                className={`m4p-piso ${foco.piso === i ? 'es-foco' : ''}`}
-                onMouseEnter={() => setFoco({ piso: i, paso: null })}
-                onClick={() => setFoco({ piso: i, paso: null })}
-              >
-                <span className="m4p-num">{i + 1}</span>
-                <span className="m4p-nombre">{p.name}</span>
-              </th>
-              {PASOS.map((s, j) => {
-                const enFila = foco.piso === i;
-                const enColumna = foco.paso === j;
-                return (
-                  <td
-                    key={s.name}
-                    className={`m4p-cruce ${enFila || enColumna ? 'es-foco' : ''} ${enFila && enColumna ? 'es-cruce' : ''}`}
-                    onMouseEnter={() => setFoco({ piso: i, paso: j })}
-                onClick={() => setFoco({ piso: i, paso: j })}
-                    aria-label={`${p.name} en ${s.name}`}
-                  >
-                    <span className="m4p-punto" aria-hidden="true" />
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function SlideModelo() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={pStyle}>
-        Este es el <strong style={strong}>proyecto de desarrollo humano</strong> del <strong style={strong}>Grupo Corazones Cruzados</strong>. Estamos aquí para luchar por un sueño, que es transformar el mundo, y construir un futuro mejor. Lo que queremos impulsar es el reconocimiento y aprovechamiento de las condiciones de los sujetos, para lograr estrategias organizacionales que logren resolver nuestras problemáticas sociales. Para alcanzar un objetivo tan grande como éste, trabajaremos usando como base el{' '}
-        <strong style={strong}>Modelo Organizacional 4P</strong>: el cual consiste en descubrir el talento de cada sujeto para posicionarlo en determinado rol y función de cualquier proyecto. Dicho esto, el modelo se distribuye de la siguiente manera:
-      </p>
+      <p style={pStyle}><Negritas texto={MODELO_INTRO} /></p>
 
       <Modelo4P />
 
-      {/* Cómo se lee la tabla (Fernando, 2026-10-29, texto literal). La última es la conclusión. */}
-      <ol className="m4p-reglas">
-        {REGLAS_4P.map((r, i) => (
-          <li key={i} className={i === REGLAS_4P.length - 1 ? 'es-conclusion' : ''}>
-            <span className="m4p-regla-num" aria-hidden="true">{i + 1}</span>
-            <span>{r}</span>
-          </li>
-        ))}
-      </ol>
+      <ReglasModelo4P />
     </div>
   );
 }
-
-const REGLAS_4P = [
-  'Cada piso representa un rol en la organización que cumple con una necesidad en la gestión de un proyecto.',
-  'Cada paso representa una función en el levantamiento y progreso de cualquier proyecto.',
-  'Cada miembro de la organización se le asigna un piso y paso de acuerdo a su talento.',
-  'Según el piso y paso que tenga asignado el miembro, se tiene acceso a un conjunto de sistemas.',
-  'Cada sistema se activa según la necesidad del proyecto en el que participe el miembro.',
-  'La necesidad determina todo lo que hacemos.',
-];
 
 /* ------------------------------------------------------------------ */
 /* Slider 2 — Herramientas                                            */
 /* ------------------------------------------------------------------ */
 
-const COND_STEPS = ['Reconocer', 'Controlar', 'Predecir', 'Experimentar', 'Convertir', 'Cambiar'];
-
-/**
- * LOS SEIS PASOS DE LA METODOLOGÍA como un RECORRIDO (Fernando, 2026-10-29): una línea con un
- * nodo por paso y, debajo, el número y el nombre SOLO con color de texto — nada de etiquetas con
- * relleno ni borde (*«ese estilo ya he dicho antes que no me gusta»*). Seis en fila desde `sm`;
- * en el teléfono, dos filas de tres. Estilos `.cond-*` en globals.css.
- */
-function PasosCondiciologia() {
-  return (
-    <ol className="cond-pasos" aria-label="Los seis pasos de la Metodología Condiciológica">
-      {COND_STEPS.map((s, i) => (
-        <li key={s} className="cond-paso">
-          <span className="cond-nodo" aria-hidden="true" />
-          <span className="cond-num">{String(i + 1).padStart(2, '0')}</span>
-          <span className="cond-nombre">{s}</span>
-        </li>
+// Textos de Fernando (2026-10-29), literales, en `lib/sitio/modeloGcc.ts`: los comparten las
+// páginas públicas de Desarrollo Humano. La Metodología lleva su recorrido tras el primer párrafo.
+const TOOLS: AccordionItem[] = HERRAMIENTAS.map((h) => ({
+  name: h.nombre,
+  summary: h.resumen,
+  body: () => (
+    <>
+      {h.parrafos.map((texto, i) => (
+        <Fragment key={i}>
+          <p style={cardDesc}><Negritas texto={texto} /></p>
+          {h.conPasos && i === 0 && <PasosCondiciologia />}
+        </Fragment>
       ))}
-    </ol>
+    </>
+  ),
+}));
+
+/** Los `**dobles asteriscos**` de los textos compartidos, en la negrita del formulario. */
+function Negritas({ texto }: { texto: string }) {
+  return (
+    <>
+      {trozosNegrita(texto).map((x, i) => (x.negrita ? <strong key={i} style={strong}>{x.t}</strong> : <Fragment key={i}>{x.t}</Fragment>))}
+    </>
   );
 }
-
-const TOOLS: AccordionItem[] = [
-  {
-    name: 'Metodología Condiciológica',
-    summary: 'Una metodología científica de seis pasos, aplicable a cualquier ámbito de investigación.',
-    // Texto de Fernando (2026-10-29), literal.
-    body: () => (
-      <>
-        <p style={cardDesc}>
-          La <strong style={strong}>Metodología Condiciológica</strong> es una metodología con
-          enfoque científico que fue creada para desarrollar la investigación de la Condiciología a
-          través de <strong style={strong}>seis pasos</strong>, los cuales son aplicables en
-          cualquier ámbito de investigación.
-        </p>
-        <PasosCondiciologia />
-        <p style={cardDesc}>
-          Cada paso espera un conjunto de parámetros que están siendo determinados por la{' '}
-          <strong style={strong}>Condiciología</strong>, la cual es una ciencia en desarrollo que se
-          basa en evidenciar el estudio de las <strong style={strong}>condiciones</strong> como un
-          conjunto de factores que conforman la generación de un comportamiento dentro de un
-          instante de la realidad.
-        </p>
-        <p style={cardDesc}>
-          Para obtener los datos que esperan los parámetros de los pasos de la metodología, se
-          utilizan diferentes fuentes de datos que vienen de herramientas que se ofrecerán solo a
-          candidatos y miembros de la organización para según las condiciones del servicio, acepte
-          consumir, o no hacer uso de las herramientas que disponemos para ellos.
-        </p>
-      </>
-    ),
-  },
-  {
-    name: 'Sistema de Control Psicosocial',
-    summary: 'Una arquitectura tecnológica contra la inseguridad física, basada en las señales de todos.',
-    // Texto de Fernando (2026-10-29), literal.
-    body: () => (
-      <>
-        <p style={cardDesc}>
-          El <strong style={strong}>Sistema de Control Psicosocial</strong> es una arquitectura con
-          enfoque tecnológico que busca resolver principalmente la problemática de{' '}
-          <strong style={strong}>inseguridad física</strong>, siendo un sistema que está basado en
-          señales indicadas por la gran masa de clientes, candidatos, y miembros de la organización.
-        </p>
-        <p style={cardDesc}>
-          Este sistema pretende dibujar la realidad a través de señales recibidas por parte de todos
-          los dispositivos asociados que están siendo utilizados por usuarios del sistema,
-          incluyendo usuarios de tipo agente con Inteligencia Artificial.
-        </p>
-        <p style={cardDesc}>
-          Lo que propone este sistema es llevar la seguridad física y la aplicación de la ley a un
-          nivel <strong style={strong}>«ipso facto»</strong>, es decir que el acto delictivo tenga
-          consecuencias en el momento sin requerir tiempo de procesos, intermediarios, o roles que solo
-          alargan o incluso disminuyen la carga real de una condena.
-        </p>
-        <p style={cardDesc}>
-          Su función principal es <strong style={strong}>organizar a las masas</strong> a través de
-          un sistema que castiga el delito, y recompensa de muchas maneras a los denunciantes.
-        </p>
-      </>
-    ),
-  },
-  {
-    name: 'Proyecto Centralizado',
-    summary: 'Un servicio para negocios que necesitan recuperar o mejorar su flujo de trabajo.',
-    // Texto de Fernando (2026-10-29), literal.
-    body: () => (
-      <>
-        <p style={cardDesc}>
-          El <strong style={strong}>Proyecto Centralizado</strong> del Grupo Corazones Cruzados es un
-          servicio exclusivo que se ofrece a clientes, candidatos, y miembros de la organización, el
-          cual busca ser una solución para negocios que tienen condiciones de necesidad/problemáticas
-          internas/crisis que requieren alguna intervención para recuperar el correcto funcionamiento
-          del flujo de trabajo, o descubrir mejores formas de seguir haciendo.
-        </p>
-        <p style={cardDesc}>
-          Para ofrecer este servicio se requiere llegar a un{' '}
-          <strong style={strong}>previo acuerdo con el dueño del negocio</strong>, que incluye
-          condiciones de acceso y control temporal en los departamentos afectados para poder
-          implementar todos los sistemas de gobernanza del Grupo Corazones Cruzados.
-        </p>
-        <p style={cardDesc}>
-          Existen otros beneficios adicionales por conectarse al Proyecto Centralizado debido a que
-          los negocios afiliados serían parte de la{' '}
-          <strong style={strong}>Estrategia Organizacional</strong>, la cual conecta otros negocios
-          y talentos para adoptar las mejores soluciones y crear oportunidades.
-        </p>
-      </>
-    ),
-  },
-  {
-    name: 'Violeta',
-    summary: 'La luz que nos representa, el color que une corazones.',
-    // Texto de Fernando (2026-10-29), literal.
-    body: () => (
-      <>
-        <p style={cardDesc}>
-          <strong style={strong}>Violeta es la luz que nos representa</strong>, el color que une
-          corazones, y un lugar para aquellos que son diferentes. Esta luz, ilumina el vacío y lo
-          aprovecha, une destinos mientras destruye sus formas, y convierte todo lo que parece
-          imposible, en sueños y felicidad.
-        </p>
-        <p style={cardDesc}>
-          Es aquello que amamos, y luego aparece cuando recordamos nuestras raíces; es una expresión
-          tan humana, tan natural, y es eso que sientes en el pálpito, en cada golpe, en cada
-          esfuerzo, y con cada lágrima que derramaste mientras todo lo que no querías, se movía a tu alrededor. Violeta
-          es el mundo de afuera y lo de adentro, la verdad que no queremos aceptar, el problema que
-          estamos confrontando, y la nostalgia que sientes cuando recuerdas ese preciso momento
-          cuando todo lo malo cambió.
-        </p>
-        <p style={cardDesc}>
-          Comprender esta fuerza que nos hace soñar, desear, y buscar sin saber cuándo deberíamos
-          parar; ese deseo insaciable por insistir y descubrir aquello tan profundo que no cabe en el
-          pecho, y que además tiene la habilidad de cruzar los corazones, los sentimientos y
-          transformar la realidad.
-        </p>
-        <p style={cardDesc}>
-          Violeta es el reto de todos los candidatos y los miembros que ansiamos alcanzar, ese sueño
-          eterno por proteger la calidad de lo que nos hace humanos, el futuro de nuestros hijos, y convertirnos en los líderes dispuestos a cambiar el mundo. Violeta es un sueño que se puede
-          medir a través de la prospección, y todos quienes participan en este proyecto demostrarán a
-          través de la <strong style={strong}>evaluación continua</strong> si son capaces de representar los
-          valores y una bandera que logrará cruzar al mundo.
-        </p>
-      </>
-    ),
-  },
-];
 
 function SlideHerramientas() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <p style={pStyle}>
-        El <strong style={strong}>Modelo Organizacional 4P</strong> funciona como un motor que para
-        operar necesita tener en buenas condiciones sus requisitos. Lo que requerimos para este motor
-        es un <strong style={strong}>talento correctamente clasificado</strong> que se pueda tratar y
-        posicionar en función de la estrategia organizacional. Para hacer esta correcta
-        clasificación nos apoyaremos de las <strong style={strong}>herramientas del Modelo</strong>,
-        las cuales van a ser las fuentes de información que justificarán el posicionamiento de cada
-        miembro. Las herramientas que usaremos son las siguientes:
-      </p>
+      <p style={pStyle}><Negritas texto={HERRAMIENTAS_INTRO} /></p>
       <Accordion items={TOOLS} />
     </div>
   );

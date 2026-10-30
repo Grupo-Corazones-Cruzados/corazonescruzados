@@ -1706,6 +1706,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
     .tema-anima ol > li:nth-child(1) { animation-range: entry 15% cover 22%; }
     .tema-anima ol > li:nth-child(2) { animation-range: entry 22% cover 29%; }
     .tema-anima ol > li:nth-child(3) { animation-range: entry 29% cover 36%; }
+    /* El recorrido de la Metodología (2026-10-30) no es una lista de pasos del tema: sus seis
+       nodos se ven siempre enteros; sin esto, del cuarto al sexto se quedaban a medio aparecer. */
+    .tema-anima .cond-pasos > li { animation: none; }
     /* ⚠️ No hay cuarto rango porque **no hay cuarto paso**: el tipo `Tema.pasos` es una tupla
        de como mucho tres, así que un `nth-child(4)` no puede existir. Llegó a haber rangos
        hasta el sexto durante unas horas del 2026-08-19, cuando metí seis cosas donde caben
@@ -3015,6 +3018,29 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .m4p-piso .m4p-num { margin-right: 6px; width: 22px; height: 22px; }
   .m4p-piso .m4p-nombre { font-size: 0.76rem; }
   .m4p-cruce { height: 46px; }
+}
+/* LA MISMA TABLA, RECORRIDO Y REGLAS EN EL SITIO PÚBLICO (Desarrollo Humano, 2026-10-30). Las
+   piezas se pintan con los tokens del formulario; aquí se reasignan a la paleta clara de
+   `.claro-publico`, sin una segunda copia de las reglas. Y el texto, al tamaño de lectura del sitio. */
+.claro-publico .modelo-4p,
+.claro-publico .m4p-reglas,
+.claro-publico .cond-pasos {
+  --color-digi-darker: var(--tarjeta);
+  --color-digi-card: #f5f2fb;
+  --color-digi-border: var(--linea-fuerte);
+  --color-digi-text: var(--texto);
+  --color-digi-muted: var(--tenue);
+  --color-accent: var(--violeta);
+  --color-accent-glow: var(--violeta-txt);
+  --color-accent-light: rgba(123, 95, 191, 0.12);
+}
+.claro-publico .modelo-4p { box-shadow: 0 14px 34px -24px rgba(75, 45, 142, 0.35); }
+.claro-publico .m4p-reglas > li { font-size: 1rem; color: var(--suave); }
+.claro-publico .m4p-reglas > li.es-conclusion { color: var(--texto); }
+.claro-publico .cond-nombre { font-size: 0.95rem; }
+@media (min-width: 640px) {
+  .claro-publico .m4p-nombre { font-size: 0.95rem; }
+  .claro-publico .m4p-paso .m4p-nombre { font-size: 0.9rem; }
 }
 /* Dentro del contenido (casillas del paso final): el interruptor arriba, junto a la primera línea. */
 .onb-aceptar.es-en-linea { align-items: flex-start; }

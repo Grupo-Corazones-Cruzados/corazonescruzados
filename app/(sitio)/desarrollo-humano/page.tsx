@@ -42,6 +42,7 @@ import { Contenedor } from '@/components/sitio/piezas';
 import { PRESENTACION_DESARROLLO } from '@/components/sitio/presentaciones';
 import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from '../clientes/faqs-build';
+import { HERRAMIENTAS } from '@/lib/sitio/modeloGcc';
 
 export const revalidate = 300;
 
@@ -57,7 +58,8 @@ export const metadata: Metadata = {
   // términos con «Guayaquil»/«Ecuador», que eran los más fáciles de ganar; ver el aviso en
   // `app/layout.tsx`. (Google no usa `keywords` para posicionar, pero se deja coherente.)
   keywords: [
-    'condiciología', 'Modelo 4P', 'desarrollo humano', 'GCC World', 'trabajar por talento',
+    'condiciología', 'Modelo 4P', 'Modelo Organizacional 4P', 'Metodología Condiciológica',
+    'Sistema de Control Psicosocial', 'Proyecto Centralizado', 'desarrollo humano', 'GCC World',
   ],
   alternates: { canonical: '/desarrollo-humano' },
   openGraph: {
@@ -120,6 +122,11 @@ export default async function DesarrolloHumanoPage() {
             // una decisión aparte y sabiendo esto.
               description:
                 'Proyecto de desarrollo humano que desarrolla proyectos, personas y sistemas bajo una misma filosofía.',
+              // Lo que define al grupo (2026-10-30), para que un buscador lo asocie al nombre.
+              knowsAbout: [
+                'Desarrollo humano', 'Modelo Organizacional 4P', 'Condiciología',
+                ...HERRAMIENTAS.map((h) => h.nombre),
+              ],
             },
           }),
         }}

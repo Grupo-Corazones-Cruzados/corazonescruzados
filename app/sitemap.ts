@@ -37,7 +37,8 @@ const ULTIMO_CAMBIO = {
   /** Las cinco puertas: `/negocio` → `/soluciones` → `/clientes` (08-17 y 08-18). */
   clientes: '2026-08-18',
   /** `/recursos` → `/desarrollo-humano` el 2026-08-17, y de paso pasó a tema claro. */
-  desarrolloHumano: '2026-08-17',
+  /** 2026-10-30: dos secciones nuevas (Modelo 4P y Herramientas) cambian sus puertas. */
+  desarrolloHumano: '2026-10-30',
   /**
    * La página de los ámbitos. Nació vacía en `/soluciones` el 2026-08-17, se llenó el 08-18 y
    * ese mismo día pasó a llamarse **Soluciones** y a vivir en `/soluciones`.
@@ -47,6 +48,15 @@ const ULTIMO_CAMBIO = {
   /** Los documentos legales, que se mueven en bloque. */
   legales: '2026-08-02',
 } as const;
+
+/**
+ * Las secciones del Modelo de Grupo y sus herramientas (2026-10-30), con los textos del
+ * formulario de postulación. Al cambiar esos textos (`lib/sitio/modeloGcc.ts`), su fecha aquí.
+ */
+const ULTIMO_CAMBIO_MODELO: Record<string, string> = {
+  'modelo-organizacional-4p': '2026-10-30',
+  'herramientas-del-modelo': '2026-10-30',
+};
 
 /**
  * ⚠️ ASÍNCRONO DESDE EL 2026-08-18, porque las páginas de talento salen de la BASE.
@@ -107,7 +117,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // propia página con su contenido, y no un bloque escondido detrás de un clic.
     ...DESARROLLO.map((a) => ({
       url: `${SITIO.url}/desarrollo-humano/${a.id}`,
-      lastModified: ULTIMO_CAMBIO.desarrolloHumano,
+      lastModified: a.id in ULTIMO_CAMBIO_MODELO ? ULTIMO_CAMBIO_MODELO[a.id] : ULTIMO_CAMBIO.desarrolloHumano,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     })),

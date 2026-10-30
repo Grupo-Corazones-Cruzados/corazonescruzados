@@ -35,7 +35,8 @@
  *    blanca del papel → la clase `claro-tarjeta`.
  */
 
-import type { CSSProperties, ReactNode } from 'react';
+import { Fragment, type CSSProperties, type ReactNode } from 'react';
+import { PasosCondiciologia } from '@/components/landing/Modelo4P';
 import type { Paso } from '@/lib/sitio/contenido';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -266,7 +267,7 @@ export function FondoHeroe() {
  * porque usa aire y tipografía, no efectos. Server Component.
  */
 export function BloqueTema({
-  id, etiqueta, pregunta, texto, pasos,
+  id, etiqueta, pregunta, texto, pasos, conPasosCondiciologia,
 }: {
   id: string;
   etiqueta: string;
@@ -275,6 +276,8 @@ export function BloqueTema({
   texto?: string;
   /** Como mucho TRES, y en orden. Ver el aviso de `Tema.pasos` en `lib/sitio/contenido.ts`. */
   pasos?: readonly Paso[];
+  /** Los seis pasos de la Metodología Condiciológica, tras el primer párrafo. */
+  conPasosCondiciologia?: boolean;
 }) {
   return (
     <section
@@ -323,11 +326,16 @@ export function BloqueTema({
 
         {/* Sin respuesta escrita no se pinta el párrafo —ni un hueco, ni un relleno—. Es la
             regla del sitio, y aquí además evita publicar texto que nadie ha escrito. */}
-        {texto && (
-          <p className="mt-6 text-[16.5px] sm:text-[18px] leading-relaxed text-[var(--suave)] max-w-2xl">
-            {texto}
-          </p>
-        )}
+        {/* Una línea en blanco separa párrafos y `**así**` es negrita (2026-10-30: los textos
+            de las herramientas del Modelo traen varios párrafos). */}
+        {texto?.split(/\n{2,}/).map((parrafo, i) => (
+          <Fragment key={i}>
+            <p className={`${i === 0 ? 'mt-6' : 'mt-4'} text-[16.5px] sm:text-[18px] leading-relaxed text-[var(--suave)] max-w-2xl`}>
+              {conNegritas(parrafo)}
+            </p>
+            {conPasosCondiciologia && i === 0 && <div className="mt-6 max-w-2xl"><PasosCondiciologia /></div>}
+          </Fragment>
+        ))}
 
         {pasos && pasos.length > 0 && (
           <ol className="pasos-tema mt-12 grid gap-8 sm:gap-6">
