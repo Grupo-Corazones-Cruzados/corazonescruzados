@@ -10973,3 +10973,10 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
   (`scripts/indexnow.mjs`). Sobre el Sistema de Control Psicosocial: Fernando lo publica tal cual —«es lo que se
   quiere cambiar» del modelo de condena actual—; no volver a proponer suavizarlo.
   Search Console YA existe (verificado 2026-08-19, etiqueta en `app/layout.tsx`); Bing se importa desde ahí.
+  Mismo día: Fernando pidió indexación en Search Console de las dos páginas nuevas y creó su cuenta de Wikidata
+  (verificado antes: no existe ningún elemento «Corazones Cruzados» ni «Grupo Corazones Cruzados» en Wikidata).
+  Guía dada: elemento con etiqueta/descripción/alias, P31 organización (Q43229), P856 web, P4264 LinkedIn,
+  P2003 Instagram, P2013 Facebook, P7085 TikTok, P11245 YouTube, con referencia P854 a la web. Sin país (no
+  quiere publicar «Guayaquil, Ecuador», 2026-08-20) y sin fundador (exigiría un elemento de persona). ⚠️ El año
+  de fundación «2011» que se usó en la bio larga NO consta en el repo: falta que Fernando lo confirme. Cuando
+  dé el Q-ID, se añade `https://www.wikidata.org/wiki/Q…` a `REDES` (`lib/sitio/contenido.ts`) → `sameAs`.
