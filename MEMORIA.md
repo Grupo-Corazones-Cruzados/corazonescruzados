@@ -200,6 +200,54 @@ base verbatim):
   humano en todas sus dimensiones**; **no se abusa de su tiempo ni hay trabajos no remunerados** —
   toda acción tiene propósito y beneficio para el candidato.
 
+## ✍️ Estilo de escritura de Fernando — LA REGLA para todo texto que se escriba por él (2026-10-30)
+
+> Fernando: *«ese es mi estilo de escritura y a diferencia de tu manera que no me gusta nada para todo lo
+> generado»*. Modelo a imitar: los textos del **Modelo Organizacional 4P** y las **Herramientas del Modelo**
+> (`lib/sitio/modeloGcc.ts`, literales suyos; esos NO se tocan). Todo texto nuevo o reescrito para el
+> sitio, el formulario o la plataforma se escribe ASÍ, no con la voz «de marketing» del asistente.
+
+**Cómo escribe:**
+1. **Define primero, con nombre propio.** Abre nombrando la cosa en negrita y diciendo qué es y con qué
+   enfoque: «La **Metodología Condiciológica** es una metodología con enfoque científico que fue creada
+   para…», «El **Sistema de Control Psicosocial** es una arquitectura con enfoque tecnológico que busca…».
+2. **Después, propósito y funcionamiento**, con verbos de intención: *busca, pretende, propone, requiere,
+   permite*; fórmulas suyas: «Lo que propone este sistema es…», «Su función principal es…», «Para ofrecer
+   este servicio se requiere…», «Dicho esto, …», «es decir…».
+3. **Frases largas y encadenadas** con comas y relativos: *el cual, la cual, los cuales, las cuales*,
+   gerundios (*siendo, buscando*), y la **coma antes de «y»** al cerrar una enumeración («clientes,
+   candidatos, y miembros»; «mental, laboral, social, y corporal»). Párrafos de 2–4 frases.
+4. **Registro formal-conceptual, del propio proyecto:** *sujeto(s), condiciones, necesidad, problemáticas,
+   talento, rol y función, posicionar, estrategia organizacional, organización, gobernanza, prospección,
+   evaluación continua, clientes / candidatos / miembros de la organización*.
+5. **Voz institucional:** «el Grupo Corazones Cruzados», «la organización», y un **«nosotros»** de
+   propósito («Estamos aquí para luchar por un sueño…», «trabajaremos», «nos apoyaremos»). Al público lo
+   nombra en tercera persona («los postulantes deberán…»); el «tú» solo aparece puntual («deberás
+   redactar tus motivos»).
+6. **Visión grande y con sentido:** «transformar el mundo, y construir un futuro mejor», «resolver nuestras
+   problemáticas sociales». Lo poético se reserva para lo emocional (Violeta: anáfora «Violeta es…»,
+   contrastes, tríadas), no para explicar un servicio.
+7. **Reglas como enunciados completos y declarativos**: «Cada piso representa un rol…», «La necesidad
+   determina todo lo que hacemos.»
+8. **Negrita** para los conceptos clave (`**así**`), sin abusar.
+
+**Lo que NO quiere (la voz del asistente):** frases cortas de eslogan publicitario («Elige un talento y
+mira lo hecho», «No hace falta un título ni experiencia: tu talento lo descubrimos juntos»); los dos
+puntos que presentan un remate; rayas (—) para incisos; el tuteo constante y cercano; adjetivos de
+venta; fragmentos sin verbo; preguntas retóricas de marketing.
+
+**Ejemplo** (presentación de Desarrollo Humano). Antes (asistente): *«Un proyecto que usa tus condiciones
+como ancla para tu progreso mental, laboral, social y corporal, con logros individuales y colectivos. No
+hace falta un título ni experiencia: tu talento lo descubrimos juntos.»* En su estilo: *«El Grupo
+Corazones Cruzados es un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de
+las condiciones de los sujetos, las cuales se usan como ancla para su progreso mental, laboral, social, y
+corporal, buscando logros de forma individual como colectiva. Para formar parte de este proyecto no se
+requiere de un título ni de experiencia previa, ya que el talento de cada candidato se descubre durante el
+proceso.»*
+
+**Pendiente (lo pedirá él):** reescribir con esta regla Soluciones, Clientes y Desarrollo Humano (salvo
+Modelo 4P y Herramientas, que quedan igual).
+
 ## Stack
 Stack estándar de la casa, con particularidades de este repo:
 - **App**: Next.js 15 (App Router) + TypeScript + React 19 + Tailwind v4.
