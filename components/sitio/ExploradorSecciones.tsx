@@ -44,8 +44,7 @@
  *     git show e09e1dc0:components/sitio/ExploradorSecciones.tsx
  */
 
-import { ArrowDown, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowDown } from 'lucide-react';
 import { SITIO, type Acceso } from '@/lib/sitio/contenido';
 import type { Faq } from '@/lib/faqs';
 import { BloqueTema, conNegritas, ICONOS, PresentacionPagina } from './piezas';
@@ -54,70 +53,26 @@ import GaleriaTarjetas from './GaleriaTarjetas';
 import VideoYouTube from './VideoYouTube';
 import FaqsClientes from './FaqsClientes';
 import IndiceSeccion from './IndiceSeccion';
+import PuertasBloques from './PuertasBloques';
 
 /**
- * LAS PUERTAS — las secciones en BLOQUES bajo la presentación (2026-10-30).
- *
- * Eran una fila de tarjetas (2026-10-29) y con seis —Desarrollo Humano— cada una quedaba en
- * ~200 px: títulos partidos («Orga-nizacional») y la frase cortada con «…». Fernando: *«todas las
- * tarjetas se ven muy encogidas… puedes reformular por completo este apartado»*.
- *
- * Ahora cada puerta es una FILA ancha (icono · nombre y frase enteros · flecha) dentro de una
- * tarjeta por bloque. Las secciones con `grupo` se reparten en columnas con su rótulo numerado
- * —«01 Conoce el modelo» | «02 Tu camino»—, que además cuentan el orden de lectura. Sin grupo
- * (Clientes) van en un solo bloque de dos columnas. La abierta, RELLENA de violeta como antes.
- * En el teléfono, solo icono y nombre. Cada fila sigue siendo un enlace a su URL.
- *
- * «En esta página» (el índice de la derecha) vive en `IndiceSeccion.tsx`: marca la pregunta
- * que se está leyendo, y para eso necesita el navegador.
+ * LAS PUERTAS — cada sección, una fila en su bloque (`PuertasBloques`, compartido con Soluciones).
+ * «En esta página» (el índice de la derecha) vive en `IndiceSeccion.tsx`.
  */
 function PuertasSecciones({
   secciones, activa, base, etiquetaNav,
 }: {
   secciones: Acceso[]; activa: string; base: string; etiquetaNav: string;
 }) {
-  const grupos: { nombre?: string; puertas: Acceso[] }[] = [];
-  for (const a of secciones) {
-    const g = grupos.find((x) => x.nombre === a.grupo);
-    if (g) g.puertas.push(a);
-    else grupos.push({ nombre: a.grupo, puertas: [a] });
-  }
-
   return (
-    <nav aria-label={etiquetaNav} className="puertas-bloques" data-grupos={grupos.length}>
-      {grupos.map((g, i) => (
-        <div key={g.nombre ?? i} className="min-w-0">
-          {g.nombre && (
-            <p className="puertas-grupo-rotulo">
-              <span className="puertas-grupo-num" aria-hidden>{String(i + 1).padStart(2, '0')}</span>
-              {g.nombre}
-            </p>
-          )}
-          <ul className="puertas-lista">
-            {g.puertas.map((a) => {
-              const abierta = a.id === activa;
-              const Icono = ICONOS[a.icono] ?? ICONOS.capas;
-              return (
-                <li key={a.id} className="min-w-0">
-                  <Link
-                    href={`${base}/${a.id}`}
-                    aria-current={abierta ? 'page' : undefined}
-                    className={`puerta-fila ${abierta ? 'es-abierta' : ''}`}
-                  >
-                    <span className="puerta-icono" aria-hidden><Icono /></span>
-                    <span className="min-w-0">
-                      <span className="puerta-fila-titulo">{a.titulo}</span>
-                      <span className="puerta-fila-texto">{a.texto}</span>
-                    </span>
-                    <ChevronRight className="puerta-fila-flecha" aria-hidden />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-    </nav>
+    <PuertasBloques
+      etiquetaNav={etiquetaNav}
+      activa={activa}
+      puertas={secciones.map((a) => {
+        const Icono = ICONOS[a.icono] ?? ICONOS.capas;
+        return { id: a.id, href: `${base}/${a.id}`, titulo: a.titulo, texto: a.texto, grupo: a.grupo, icono: <Icono /> };
+      })}
+    />
   );
 }
 

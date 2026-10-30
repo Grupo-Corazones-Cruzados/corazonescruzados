@@ -4257,11 +4257,16 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* Los dos bloques, del mismo alto: la lista estira sus filas (`auto` + `stretch`). */
 .puertas-bloques > div { display: flex; flex-direction: column; }
 .puertas-lista { flex: 1; }
-@media (min-width: 1024px) { .puertas-bloques[data-grupos='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Bloques de 380 px como mínimo: dos se reparten la página; con más, caben tres por fila y el resto baja. */
+@media (min-width: 1024px) { .puertas-bloques[data-grupos='varios'] { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); } }
 .puertas-grupo-rotulo { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px 6px; font: 700 0.7rem/1 'Inter', system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: var(--violeta-txt); }
 .puertas-grupo-num { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-size: 0.95rem; letter-spacing: 0; color: var(--tenue); font-variant-numeric: tabular-nums; }
 .puertas-lista { list-style: none; margin: 0; padding: 6px; display: grid; gap: 2px; border-radius: 20px; background: rgba(255, 255, 255, 0.82); border: 1px solid var(--linea); box-shadow: 0 18px 40px -26px rgba(75, 45, 142, 0.45); }
-@media (min-width: 1024px) { .puertas-bloques[data-grupos='1'] .puertas-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) {
+  .puertas-bloques[data-grupos='uno'] .puertas-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Una sola puerta (hoy, Soluciones con un talento): media página, no una tarjeta medio vacía. */
+  .puertas-bloques[data-grupos='uno'] .puertas-lista[data-n='1'] { grid-template-columns: minmax(0, 1fr); max-width: calc(50% - 12px); }
+}
 .puerta-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; transition: background-color 180ms ease, box-shadow 180ms ease; }
 .puerta-fila:hover { background: rgba(124, 58, 237, 0.06); }
 .puerta-fila:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }

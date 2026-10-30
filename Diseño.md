@@ -789,7 +789,11 @@ el titular del diálogo sigue diciendo «a la Plataforma».
   (proyecto, Modelo 4P, Herramientas) | «02 Tu camino» (cómo se entra, progreso, ser miembro), en dos
   columnas del mismo alto desde `lg`. Sin grupo (Clientes): un bloque de 2 columnas.
 - **Teléfono:** bloques apilados, filas con icono y nombre (sin frase).
-- **`.puertas-seccion`/`.puerta-seccion` siguen** para los talentos de Soluciones.
+- **Una sola definición: `components/sitio/PuertasBloques.tsx`** (Clientes, Desarrollo Humano y, desde el
+  mismo día, **Soluciones**: un bloque por SOLUCIÓN con sus talentos y «N trabajos»; Fernando: *«a futuro
+  se va a llegar a crear más soluciones»*). Bloques en `repeat(auto-fit, minmax(380px, 1fr))`: dos se
+  reparten la página, con más caben tres por fila y el resto baja; nada se encoge. Un bloque con UNA
+  sola puerta mide media página (no una tarjeta medio vacía).
 - **«En esta página» = tarjeta** (`IndiceSeccion.tsx`, cliente; `.indice-tarjeta*`), 280 px, fija al
   desplazar: preguntas numeradas 01, 02… y la que se está leyendo marcada (fondo violeta suave, barra
   violeta a la izquierda, texto oscuro). Activa = última pregunta cuyo inicio pasó el 35 % de la

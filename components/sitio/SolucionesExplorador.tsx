@@ -37,6 +37,7 @@ import type {
   Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo, Concepto,
 } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
+import PuertasBloques from './PuertasBloques';
 import { ICONOS } from './piezas';
 
 export interface SolucionConContenido extends Solucion {
@@ -251,27 +252,23 @@ export default function SolucionesExplorador({
     <div className="soluciones-sitio">
       {/* ── LOS TALENTOS, COMO PUERTAS (Fernando, 2026-10-29: «el diseño está muy mal para mostrar
           el contenido… usa tu reformulación») ──────────────────────────────────────────────
-          Sustituye a las carpetas del panel izquierdo: la misma fila de tarjetas que las
-          secciones de Clientes y Desarrollo Humano, con la solución como rótulo y la cuenta de
-          trabajos. Cada talento sigue siendo una URL. Para la versión con carpetas y tres
+          Sustituye a las carpetas del panel izquierdo. Desde el 2026-10-30, `PuertasBloques` como en
+          Clientes y Desarrollo Humano: un bloque por SOLUCIÓN con sus talentos en filas y la cuenta
+          de trabajos, para que crezca sin encogerse («a futuro se va a llegar a crear más
+          soluciones», Fernando). Cada talento sigue siendo una URL. Para la versión con carpetas y tres
           paneles: `git show 8d23d58e:components/sitio/SolucionesExplorador.tsx`. */}
-      <nav aria-label="Talentos" className="puertas-seccion" style={{ ['--n' as string]: 4 }}>
-        {todosLosTalentos.map((t) => {
-          const abierta = t.talento === elegido;
-          return (
-            <Link
-              key={t.talento}
-              href={`/soluciones/${t.slug}`}
-              aria-current={abierta ? 'page' : undefined}
-              className={`puerta-seccion ${abierta ? 'es-abierta' : ''}`}
-            >
-              <span className="puerta-icono" aria-hidden><FolderOpen /></span>
-              <span className="puerta-titulo">{t.talento}</span>
-              <span className="puerta-texto">{t.solucion} · {t.total} {t.total === 1 ? 'trabajo' : 'trabajos'}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      <PuertasBloques
+        etiquetaNav="Talentos"
+        activa={elegido}
+        puertas={todosLosTalentos.map((t) => ({
+          id: t.talento,
+          href: `/soluciones/${t.slug}`,
+          titulo: t.talento,
+          texto: `${t.total} ${t.total === 1 ? 'trabajo' : 'trabajos'}`,
+          grupo: t.solucion,
+          icono: <FolderOpen />,
+        }))}
+      />
 
       <div className="mt-[clamp(36px,5vw,64px)]">
         {solucionDelElegido && (
