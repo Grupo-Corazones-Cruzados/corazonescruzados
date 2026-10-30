@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { generateFinancePdf } from '@/lib/finance-pdf';
-import { ensureFinanceTables, SQL_INGRESO_FACTURADO } from '@/lib/finance';
+import { ensureFinanceTables, SQL_INGRESO_FACTURADO, renglonPdf } from '@/lib/finance';
 
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     const anio = /^\d{4}$/.test(q.get('anio') ?? '') ? Number(q.get('anio')) : null;
     const resultado = q.get('resultado') === 'ahorro' || q.get('resultado') === 'perdida' ? q.get('resultado') : null;
     // `facturado=1`: los ingresos cuentan solo lo facturado (ver SQL_INGRESO_FACTURADO); los
-    // egresos, todos. El ahorro y el filtro de resultado se calculan con ese ingreso.
+    // egresos, solo los del SRI (sin adicionales). El ahorro y el filtro de resultado se calculan con ese ingreso.
     const soloFacturado = q.get('facturado') === '1';
     const tipo = q.get('tipo') === 'ingresos' || q.get('tipo') === 'egresos' ? (q.get('tipo') as 'ingresos' | 'egresos') : null;
 
@@ -46,8 +46,10 @@ export async function GET(req: Request) {
         `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [m.id]
       );
       const ingresos = items.filter((i: any) => i.type === 'income' && (!soloFacturado || i.facturado));
-      const totalIncome = soloFacturado ? ingresos.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0) : Number(m.total_income) || 0;
-      const totalExpense = Number(m.total_expense) || 0;
+      // Con «solo facturado», lo del SRI y nada más: fuera también los egresos adicionales.
+      const egresos = items.filter((i: any) => i.type === 'expense' && (!soloFacturado || !i.adicional));
+      const totalIncome = ingresos.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0);
+      const totalExpense = egresos.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0);
       const totalSavings = totalIncome - totalExpense;
       if (resultado === 'ahorro' && totalSavings < 0) continue;
       if (resultado === 'perdida' && totalSavings >= 0) continue;
@@ -58,8 +60,8 @@ export async function GET(req: Request) {
         totalIncome,
         totalExpense,
         totalSavings,
-        incomeItems: ingresos.map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
-        expenseItems: items.filter((i: any) => i.type === 'expense').map((i: any) => ({ description: i.description, amount: Number(i.amount) || 0 })),
+        incomeItems: ingresos.map(renglonPdf),
+        expenseItems: egresos.map(renglonPdf),
       });
     }
 

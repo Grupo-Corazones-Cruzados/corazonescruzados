@@ -10,7 +10,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, Plus, ChevronRight, FileDown, FileText, Lock, type LucideIcon } from 'lucide-react';
+  Download, Plus, ChevronRight, FileDown, FileText, Lock, Coins, type LucideIcon } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
@@ -28,8 +28,8 @@ const sinSuscripcion = () => () => {};
 const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 interface Stats { open_tickets: number; active_projects: number; users?: number; active_members?: number; clients?: number; }
-interface FinanceMonth { id: number; year: number; month: number; total_income: string; total_expense: string; total_savings: string; facturado_income?: string; }
-interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; facturado?: boolean; bloqueado?: boolean; source_type?: string | null; }
+interface FinanceMonth { id: number; year: number; month: number; total_income: string; total_expense: string; total_savings: string; facturado_income?: string; adicional_income?: string; adicional_expense?: string; }
+interface FinanceItem { id?: number; type: 'income' | 'expense'; description: string; amount: string; facturado?: boolean; bloqueado?: boolean; adicional?: boolean; source_type?: string | null; }
 
 export default function DashboardHome() {
   const { user } = useAuth();
@@ -55,6 +55,10 @@ export default function DashboardHome() {
   const [detailMonth, setDetailMonth] = useState<FinanceMonth | null>(null);
   const [incomeItems, setIncomeItems] = useState<FinanceItem[]>([]);
   const [expenseItems, setExpenseItems] = useState<FinanceItem[]>([]);
+  // ⭐ ADICIONALES (Fernando, 2026-10-30): ingresos y egresos NO facturados, en su propia columna y
+  // con nombre de una palabra. Es lo ÚNICO que se escribe en el mes: ingresos y egresos son lo del
+  // SRI y quedan bloqueados (`SQL_RENGLON_BLOQUEADO`).
+  const [adicionales, setAdicionales] = useState<FinanceItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -84,8 +88,15 @@ export default function DashboardHome() {
    * no cambian. El ahorro, las cifras, el filtro de resultado y el reporte usan ese ingreso.
    */
   const [soloFacturado, setSoloFacturado] = useState(false);
-  const ingresoDe = (m: FinanceMonth) => Number((soloFacturado ? m.facturado_income : m.total_income) || 0);
-  const ahorroDe = (m: FinanceMonth) => ingresoDe(m) - Number(m.total_expense || 0);
+  // Las columnas del mes. `total_income`/`total_expense` incluyen los adicionales; la tabla los
+  // separa. Con «Solo facturado» se mira solo lo del SRI: los adicionales no cuentan.
+  const ingresoDe = (m: FinanceMonth) => Number((soloFacturado ? m.facturado_income : Number(m.total_income || 0) - Number(m.adicional_income || 0)) || 0);
+  const egresoDe = (m: FinanceMonth) => Number(m.total_expense || 0) - Number(m.adicional_expense || 0);
+  const adicionalDe = (m: FinanceMonth) => (soloFacturado ? 0 : Number(m.adicional_income || 0) - Number(m.adicional_expense || 0));
+  const ahorroDe = (m: FinanceMonth) => ingresoDe(m) - egresoDe(m) + adicionalDe(m);
+  // Lo que entró y lo que salió EN TOTAL (SRI + adicionales): las cifras de arriba y el teléfono.
+  const entradaDe = (m: FinanceMonth) => ingresoDe(m) + (soloFacturado ? 0 : Number(m.adicional_income || 0));
+  const salidaDe = (m: FinanceMonth) => egresoDe(m) + (soloFacturado ? 0 : Number(m.adicional_expense || 0));
   const anios = [...new Set(months.map((m) => String(m.year)))].sort((a, b) => Number(b) - Number(a));
   // El reporte descarga lo MISMO que enseña la tabla (Fernando, 2026-10-29).
   // Tres versiones (Fernando, 2026-10-30): la completa, solo ingresos y solo egresos.
@@ -113,8 +124,8 @@ export default function DashboardHome() {
   // de año también que se actualicen los indicadores»). El de resultado no: ingresos de «los
   // meses con pérdida» no es un total que nadie busque.
   const mesesDelAnio = anio === 'todos' ? months : months.filter((m) => String(m.year) === anio);
-  const globalIncome = mesesDelAnio.reduce((s, m) => s + ingresoDe(m), 0);
-  const globalExpense = mesesDelAnio.reduce((s, m) => s + Number(m.total_expense || 0), 0);
+  const globalIncome = mesesDelAnio.reduce((s, m) => s + entradaDe(m), 0);
+  const globalExpense = mesesDelAnio.reduce((s, m) => s + salidaDe(m), 0);
   const globalSavings = globalIncome - globalExpense;
   const delAnio = anio === 'todos' ? '' : ` ${anio}`;
 
@@ -125,8 +136,9 @@ export default function DashboardHome() {
       const res = await fetch(`/api/finance/${m.id}`);
       const data = await res.json();
       const items: FinanceItem[] = data.data?.items || [];
-      setIncomeItems(items.filter(i => i.type === 'income').length > 0 ? items.filter(i => i.type === 'income') : [{ type: 'income', description: '', amount: '' }]);
-      setExpenseItems(items.filter(i => i.type === 'expense').length > 0 ? items.filter(i => i.type === 'expense') : [{ type: 'expense', description: '', amount: '' }]);
+      setIncomeItems(items.filter(i => i.type === 'income' && !i.adicional));
+      setExpenseItems(items.filter(i => i.type === 'expense' && !i.adicional));
+      setAdicionales(items.filter(i => i.adicional));
     } catch { toast.error('Error al cargar detalle'); }
     finally { setLoadingDetail(false); }
   };
@@ -135,17 +147,17 @@ export default function DashboardHome() {
     if (!detailMonth) return;
     setSaving(true);
     try {
-      const allItems = [
-        ...incomeItems.filter(i => i.description.trim() || Number(i.amount)),
-        ...expenseItems.filter(i => i.description.trim() || Number(i.amount)),
-      ];
+      // Solo los adicionales: lo del SRI no se manda (el servidor tampoco lo tocaría).
+      const lista = adicionales
+        .filter(i => i.description.trim() || Number(i.amount))
+        .map(({ type, description, amount }) => ({ type, description: description.trim(), amount }));
       const res = await fetch(`/api/finance/${detailMonth.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: allItems }),
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adicionales: lista }),
       });
-      if (!res.ok) throw new Error();
-      toast.success('Estado mensual guardado');
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || 'Error al guardar');
+      toast.success('Adicionales guardados');
       setDetailMonth(null); fetchMonths();
-    } catch { toast.error('Error al guardar'); }
+    } catch (e: any) { toast.error(e?.message || 'Error al guardar'); }
     finally { setSaving(false); }
   };
 
@@ -154,9 +166,12 @@ export default function DashboardHome() {
   // guardado reescribe el mes entero, así que siguen en el estado y se guardan con los demás. Los
   // que se añaden a mano (aún sin marca) se ven.
   const ocultoPorFiltro = (it: FinanceItem) => soloFacturado && it.type === 'income' && it.facturado === false;
-  const detailIncome = incomeItems.filter((i) => !ocultoPorFiltro(i)).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  const detailExpense = expenseItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  const detailSavings = detailIncome - detailExpense;
+  const suma = (l: FinanceItem[]) => l.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const detailIncome = suma(incomeItems.filter((i) => !ocultoPorFiltro(i)));
+  const detailExpense = suma(expenseItems);
+  const detailAdicionalIngreso = soloFacturado ? 0 : suma(adicionales.filter((i) => i.type === 'income'));
+  const detailAdicionalEgreso = soloFacturado ? 0 : suma(adicionales.filter((i) => i.type === 'expense'));
+  const detailSavings = detailIncome - detailExpense + detailAdicionalIngreso - detailAdicionalEgreso;
   const priorSavings = detailMonth
     ? months.filter(m => m.year < detailMonth.year || (m.year === detailMonth.year && m.month < detailMonth.month)).reduce((s, m) => s + ahorroDe(m), 0)
     : 0;
@@ -266,7 +281,7 @@ export default function DashboardHome() {
                 ingresos={globalIncome} egresos={globalExpense}
               />
               <MesesMovil
-                meses={mesesFiltrados} ingresoDe={ingresoDe} egresoDe={(m) => Number(m.total_expense || 0)}
+                meses={mesesFiltrados} ingresoDe={entradaDe} egresoDe={salidaDe}
                 onAbrir={openDetail}
                 vacio={months.length ? 'Ningún mes cumple los filtros.' : 'No hay estados financieros aún.'}
               />
@@ -282,10 +297,13 @@ export default function DashboardHome() {
             emptyTitle="Sin registros"
             emptyDesc={months.length ? 'Ningún mes cumple los filtros.' : 'No hay estados financieros aún.'}
             columns={[
-              { key: 'period', header: 'Periodo', width: '28%', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
-              { key: 'income', header: soloFacturado ? 'Facturado' : 'Ingresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(ingresoDe(m))}</span> },
-              { key: 'expense', header: 'Egresos', width: '22%', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(Number(m.total_expense || 0))}</span> },
-              { key: 'savings', header: 'Ahorro', width: '22%', render: (m: any) => { const s = ahorroDe(m); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
+              { key: 'period', header: 'Periodo', width: soloFacturado ? '28%' : '24%', render: (m: any) => <span className="text-[13px] font-medium text-digi-text" style={mf}>{MONTH_NAMES[m.month - 1]} {m.year}</span> },
+              { key: 'income', header: soloFacturado ? 'Facturado' : 'Ingresos', width: soloFacturado ? '22%' : '17%', render: (m: any) => <span className="text-[12px] font-medium text-green-400 tabular-nums" style={mf}>{money(ingresoDe(m))}</span> },
+              { key: 'expense', header: 'Egresos', width: soloFacturado ? '22%' : '17%', render: (m: any) => <span className="text-[12px] font-medium text-red-400 tabular-nums" style={mf}>{money(egresoDe(m))}</span> },
+              // Lo neto de los adicionales del mes (ingresos − egresos no facturados). Con «Solo
+              // facturado» no cuentan, así que la columna no se enseña.
+              ...(soloFacturado ? [] : [{ key: 'extra', header: 'Adicionales', width: '17%', render: (m: any) => { const a = adicionalDe(m); return <span className={`text-[12px] font-medium tabular-nums ${a > 0 ? 'text-green-400' : a < 0 ? 'text-red-400' : 'text-digi-muted'}`} style={mf}>{a ? `${a > 0 ? '+' : '−'}${money(Math.abs(a))}` : '—'}</span>; } }]),
+              { key: 'savings', header: 'Ahorro', width: soloFacturado ? '22%' : '19%', render: (m: any) => { const s = ahorroDe(m); return <span className={`text-[12px] tabular-nums font-medium ${s >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(s)}</span>; } },
               { key: 'pdf', header: '', width: '60px', render: (m: any) => (
                 // ⭐ UN ICONO, no una etiqueta «PDF» con borde y color (Fernando, 2026-10-29: «tiene
                 // un estilo muy de IA»). Botón fantasma: sin borde ni relleno en reposo; el nombre
@@ -320,7 +338,7 @@ export default function DashboardHome() {
                   <dl className="mt-2 grid grid-cols-3 gap-1.5 text-center">
                     {([
                       [soloFacturado ? 'Facturado' : 'Ingresos', ingresoDe(m), 'text-green-400'],
-                      ['Egresos', Number(m.total_expense || 0), 'text-red-400'],
+                      ['Egresos', egresoDe(m), 'text-red-400'],
                       ['Ahorro', ahorro, ahorro >= 0 ? 'text-accent' : 'text-red-400'],
                     ] as [string, number, string][]).map(([etiqueta, valor, color]) => (
                       <div key={etiqueta} className="rounded-md bg-black/[0.02] py-1">
@@ -363,10 +381,10 @@ export default function DashboardHome() {
         ) : enTelefono ? (
           <DetalleMesMovil
             ingresos={incomeItems} egresos={expenseItems}
-            setIngresos={setIncomeItems} setEgresos={setExpenseItems}
+            adicionales={soloFacturado ? null : adicionales} setAdicionales={setAdicionales}
             editable={isAdmin} oculto={ocultoPorFiltro}
             etiquetaIngresos={soloFacturado ? 'Facturado' : 'Ingresos'}
-            totalIngresos={detailIncome} totalEgresos={detailExpense}
+            totalIngresos={detailIncome + detailAdicionalIngreso} totalEgresos={detailExpense + detailAdicionalEgreso}
             ahorroAnterior={priorSavings} ahorroGlobal={cumulativeSavings}
           />
         ) : (
@@ -376,17 +394,21 @@ export default function DashboardHome() {
           // «Guardar» quedaba escondido en esa caja. Ahora el formulario es UNO y ocupa el panel, que
           // se desplaza entero, con sus botones al final.
           <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Tres columnas: Ingresos y Egresos son lo del SRI, de solo lectura (candado en la
+                cabecera); Adicionales, lo no facturado, se escribe a mano. */}
+            <div className={`grid grid-cols-1 gap-4 ${soloFacturado ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}`}>
               <BloqueImportes
                 titulo={soloFacturado ? 'Ingresos facturados' : 'Ingresos'} Icon={TrendingUp} colorIcono="text-green-400" colorTotal="text-green-400"
-                total={money(detailIncome)} items={incomeItems} setItems={setIncomeItems} oculto={ocultoPorFiltro}
-                editable={isAdmin} tipo="income" vacio="Sin ingresos registrados." textoAgregar="Agregar ingreso"
+                total={money(detailIncome)} items={incomeItems} oculto={ocultoPorFiltro} vacio="Sin ingresos registrados."
               />
               <BloqueImportes
                 titulo="Egresos" Icon={TrendingDown} colorIcono="text-red-400" colorTotal="text-red-400"
-                total={money(detailExpense)} items={expenseItems} setItems={setExpenseItems}
-                editable={isAdmin} tipo="expense" vacio="Sin egresos registrados." textoAgregar="Agregar egreso"
+                total={money(detailExpense)} items={expenseItems} vacio="Sin egresos registrados."
               />
+              {!soloFacturado && (
+                <BloqueAdicionales items={adicionales} setItems={setAdicionales} editable={isAdmin}
+                  total={detailAdicionalIngreso - detailAdicionalEgreso} />
+              )}
             </div>
 
             {/* Resumen de ahorro */}
@@ -394,7 +416,7 @@ export default function DashboardHome() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
                 <div className="min-w-0">
                   <p className="text-[13px] font-semibold text-digi-text" style={mf}>Ahorro del mes</p>
-                  <p className="text-[11px] text-digi-muted" style={mf}>Ingresos − egresos de {detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : 'el mes'}</p>
+                  <p className="text-[11px] text-digi-muted" style={mf}>Ingresos − egresos{soloFacturado ? '' : ' + adicionales'} de {detailMonth ? `${MONTH_NAMES[detailMonth.month - 1]} ${detailMonth.year}` : 'el mes'}</p>
                 </div>
                 <span className={`text-2xl font-bold tabular-nums shrink-0 ${detailSavings >= 0 ? 'text-accent' : 'text-red-400'}`} style={mf}>{money(detailSavings)}</span>
               </div>
@@ -438,17 +460,13 @@ export default function DashboardHome() {
 }
 
 /**
- * Un bloque de importes (ingresos o egresos) del estado mensual.
- *
- * ── SU DISEÑO DE TELÉFONO ──────────────────────────────────────────────────────────
- * En escritorio la fila es «descripción · importe · quitar» en una línea. En 390 px eso
- * deja a la descripción ~180 px, que no alcanzan para leer lo que uno acaba de escribir.
- * Aquí la fila **se parte**: la descripción ocupa el ancho y el importe se va a una
- * segunda línea, con el botón de quitar a 44 px al lado. Es la misma fila, contada para
- * el sitio que hay.
+ * Un bloque de importes del SRI (ingresos o egresos) del estado mensual: DE SOLO LECTURA (Fernando,
+ * 2026-10-30: «dejar completamente bloqueados los ingresos y egresos actuales ya que estos dos solo
+ * graban lo registrado en el SRI»). El candado de la cabecera lo dice; lo que no se factura va en
+ * `BloqueAdicionales`.
  */
 function BloqueImportes({
-  titulo, Icon, colorIcono, colorTotal, total, items, setItems, editable, tipo, vacio, textoAgregar, oculto,
+  titulo, Icon, colorIcono, colorTotal, total, items, vacio, oculto,
 }: {
   titulo: string;
   Icon: LucideIcon;
@@ -456,82 +474,113 @@ function BloqueImportes({
   colorTotal: string;
   total: string;
   items: FinanceItem[];
-  setItems: React.Dispatch<React.SetStateAction<FinanceItem[]>>;
-  editable: boolean;
-  tipo: 'income' | 'expense';
   vacio: string;
-  textoAgregar: string;
-  /** Filas que no se dibujan (el filtro «Solo facturado») pero que se conservan y se guardan. */
+  /** Filas que no se dibujan (el filtro «Solo facturado»). */
   oculto?: (it: FinanceItem) => boolean;
 }) {
   const ocultos = oculto ? items.filter(oculto).length : 0;
-  const cambiar = (i: number, campo: 'description' | 'amount', valor: string) => {
-    if (!editable) return;
-    setItems((prev) => prev.map((it, k) => (k === i ? { ...it, [campo]: valor } : it)));
-  };
-  const CAMPO = 'field-control px-2.5 py-2 sm:py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none read-only:bg-transparent read-only:border-transparent read-only:cursor-default';
-
+  const visibles = items.filter((it) => !oculto?.(it));
   return (
-    <div className="rounded-lg border border-digi-border overflow-hidden">
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-black/[0.02] border-b border-digi-border">
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text" style={mf}>
-          <Icon className={`w-4 h-4 ${colorIcono}`} /> {titulo}
-        </span>
-        <span className={`text-[14px] font-semibold tabular-nums ${colorTotal}`} style={mf}>{total}</span>
-      </div>
-      <div className="p-3 space-y-2.5 sm:space-y-2">
-        {items.length === 0 && !editable && <p className="text-[12px] text-digi-muted text-center py-2" style={mf}>{vacio}</p>}
+    <div className="rounded-lg border border-digi-border overflow-hidden min-w-0">
+      <CabeceraBloque titulo={titulo} Icon={Icon} colorIcono={colorIcono} total={total} colorTotal={colorTotal}
+        candado="Solo lo registrado en el SRI: no se edita aquí." />
+      <div className="p-3 space-y-1">
+        {visibles.length === 0 && <p className="text-[12px] text-digi-muted text-center py-2" style={mf}>{vacio}</p>}
         {ocultos > 0 && (
-          <p className="text-[11.5px] text-digi-muted" style={mf}>
-            {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'} por «Solo facturado». Se conservan al guardar.
+          <p className="text-[11.5px] text-digi-muted pb-1" style={mf}>
+            {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'} por «Solo facturado».
           </p>
         )}
-        {items.map((item, i) => {
-          if (oculto?.(item)) return null;
-          // ⭐ BLOQUEADO (lo decide el servidor, `SQL_RENGLON_BLOQUEADO`): un ingreso vinculado a una
-          // factura vigente (2026-10-29), que se quita al ANULAR su factura, o un egreso leído del SRI
-          // (2026-10-30). No se edita ni se borra aquí, y el servidor lo hace cumplir igual.
-          const bloqueado = item.bloqueado ?? (item.type === 'income' && item.facturado === true);
-          const motivo = item.type === 'expense'
-            ? 'Comprobante recibido del SRI: no se edita ni se elimina aquí.'
-            : 'Vinculado a una factura: no se edita ni se elimina aquí; se quita al anular la factura.';
-          const editableFila = editable && !bloqueado;
-          return (
-          <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2"
-            title={bloqueado ? motivo : undefined}>
-            <input
-              value={item.description} onChange={(e) => cambiar(i, 'description', e.target.value)}
-              placeholder="Descripción" readOnly={!editableFila}
-              className={`${CAMPO} w-full sm:flex-1 sm:min-w-0`} style={mf}
-            />
-            <div className="flex items-center gap-2">
-              <input
-                value={item.amount} onChange={(e) => cambiar(i, 'amount', e.target.value)}
-                type="number" min="0" step="0.01" placeholder="0.00" readOnly={!editableFila}
-                inputMode="decimal"
-                className={`${CAMPO} flex-1 sm:flex-none sm:w-28 sm:shrink-0 text-right`} style={mf}
-              />
-              {editableFila && (
-                <BotonQuitar onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))} etiqueta="Quitar" />
-              )}
-              {editable && bloqueado && (
-                <span className="destino-tactil w-8 h-8 shrink-0 inline-flex items-center justify-center text-digi-muted" aria-label={motivo}>
-                  <Lock className="w-3.5 h-3.5" />
-                </span>
-              )}
-            </div>
+        {visibles.map((item, i) => (
+          <div key={item.id ?? i} className="flex items-baseline justify-between gap-3 py-1 text-[12.5px]" style={mf}>
+            <span className="min-w-0 truncate text-digi-text" title={item.description}>{item.description || 'Sin descripción'}</span>
+            <span className={`shrink-0 font-medium tabular-nums ${colorTotal}`}>${fmt2(Number(item.amount) || 0)}</span>
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CabeceraBloque({ titulo, Icon, colorIcono, total, colorTotal, candado }: {
+  titulo: string; Icon: LucideIcon; colorIcono: string; total: string; colorTotal: string; candado?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-black/[0.02] border-b border-digi-border">
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-digi-text min-w-0" style={mf}>
+        <Icon className={`w-4 h-4 shrink-0 ${colorIcono}`} /> {titulo}
+        {candado && <span title={candado} aria-label={candado} className="inline-flex text-digi-muted"><Lock className="w-3.5 h-3.5" /></span>}
+      </span>
+      <span className={`text-[14px] font-semibold tabular-nums shrink-0 ${colorTotal}`} style={mf}>{total}</span>
+    </div>
+  );
+}
+
+/**
+ * ⭐ LA COLUMNA DE ADICIONALES (Fernando, 2026-10-30: «otra columna que sea la encargada de grabar
+ * los ingresos adicionales no facturados y los egresos adicionales no facturados […] nombre de una
+ * sola palabra, y poder administrarlos»). Dentro, dos grupos —ingresos y egresos— con su «+»; cada
+ * renglón es su nombre (una palabra: los espacios no se escriben) y el importe. El total de la
+ * cabecera es lo neto: lo que suma o resta al ahorro.
+ */
+function BloqueAdicionales({ items, setItems, editable, total }: {
+  items: FinanceItem[];
+  setItems: React.Dispatch<React.SetStateAction<FinanceItem[]>>;
+  editable: boolean;
+  total: number;
+}) {
+  const cambiar = (i: number, cambio: Partial<FinanceItem>) =>
+    setItems((prev) => prev.map((it, k) => (k === i ? { ...it, ...cambio } : it)));
+  const CAMPO = 'field-control px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:outline-none read-only:bg-transparent read-only:border-transparent read-only:cursor-default';
+  const signo = (n: number) => `${n < 0 ? '−' : n > 0 ? '+' : ''}$${fmt2(Math.abs(n))}`;
+  const grupos = [
+    { tipo: 'income' as const, titulo: 'Ingresos', agregar: 'Ingreso', color: 'text-green-400', vacio: 'Sin ingresos adicionales.' },
+    { tipo: 'expense' as const, titulo: 'Egresos', agregar: 'Egreso', color: 'text-red-400', vacio: 'Sin egresos adicionales.' },
+  ];
+
+  return (
+    <div className="rounded-lg border border-digi-border overflow-hidden min-w-0">
+      <CabeceraBloque titulo="Adicionales" Icon={Coins} colorIcono="text-accent" total={signo(total)}
+        colorTotal={total > 0 ? 'text-green-400' : total < 0 ? 'text-red-400' : 'text-digi-muted'} />
+      <div className="p-3 space-y-4">
+        {grupos.map((g) => {
+          // El índice es el de la lista COMPLETA: así se edita y se quita el renglón correcto.
+          const filas = items.map((it, i) => ({ it, i })).filter(({ it }) => it.type === g.tipo);
+          const subtotal = filas.reduce((s, { it }) => s + (Number(it.amount) || 0), 0);
+          return (
+            <section key={g.tipo} className="space-y-2">
+              <div className="flex items-baseline justify-between text-[11px] font-semibold uppercase tracking-wide text-digi-muted" style={mf}>
+                <span>{g.titulo}</span>
+                <span className={`tabular-nums ${filas.length ? g.color : ''}`}>${fmt2(subtotal)}</span>
+              </div>
+              {filas.length === 0 && !editable && <p className="text-[12px] text-digi-muted" style={mf}>{g.vacio}</p>}
+              {filas.map(({ it, i }) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <input
+                    value={it.description} readOnly={!editable} placeholder="Nombre" aria-label={`Nombre del ${g.agregar.toLowerCase()} (una palabra)`}
+                    title={it.description}
+                    // Una sola palabra: los espacios no llegan a escribirse.
+                    onChange={(e) => cambiar(i, { description: e.target.value.replace(/\s+/g, '') })}
+                    className={`${CAMPO} flex-1 min-w-0`} style={mf}
+                  />
+                  <input
+                    value={it.amount} readOnly={!editable} onChange={(e) => cambiar(i, { amount: e.target.value })}
+                    type="number" min="0" step="0.01" placeholder="0.00" inputMode="decimal" aria-label="Importe"
+                    className={`${CAMPO} w-24 shrink-0 text-right ${g.color}`} style={mf}
+                  />
+                  {editable && <BotonQuitar onClick={() => setItems((prev) => prev.filter((_, k) => k !== i))} etiqueta="Quitar" />}
+                </div>
+              ))}
+              {editable && (
+                <button type="button" onClick={() => setItems((prev) => [...prev, { type: g.tipo, description: '', amount: '', adicional: true }])}
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 border border-dashed border-digi-border rounded-lg text-[12px] font-medium text-digi-muted hover:border-accent hover:text-accent transition-colors"
+                  style={mf}>
+                  <Plus className="w-3.5 h-3.5" /> {g.agregar}
+                </button>
+              )}
+            </section>
           );
         })}
-        {editable && (
-          <button
-            onClick={() => setItems((prev) => [...prev, { type: tipo, description: '', amount: '' }])}
-            className="w-full inline-flex items-center justify-center gap-1.5 h-11 sm:h-auto sm:py-2 border border-dashed border-digi-border rounded-lg text-[12px] font-medium text-digi-muted hover:border-accent hover:text-accent transition-colors"
-            style={mf}
-          >
-            <Plus className="w-3.5 h-3.5" /> {textoAgregar}
-          </button>
-        )}
       </div>
     </div>
   );

@@ -30,6 +30,13 @@ async function ensureFinanceTables() {
     ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS source_type VARCHAR(20);
     ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS source_id TEXT;
   `);
+  // ⭐ ADICIONALES (Fernando, 2026-10-30): los ingresos y egresos NO facturados, escritos a mano en
+  // su propia columna. Ingresos y egresos quedan para lo que trae el SRI (y el sistema). Todo
+  // renglón escrito a mano —sin origen— es un adicional: así los que ya existían pasan solos.
+  await pool.query(`
+    ALTER TABLE gcc_world.finance_items ADD COLUMN IF NOT EXISTS adicional BOOLEAN NOT NULL DEFAULT FALSE;
+    UPDATE gcc_world.finance_items SET adicional = TRUE WHERE source_type IS NULL AND NOT adicional;
+  `);
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_items_source_unique
     ON gcc_world.finance_items (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL
@@ -178,17 +185,21 @@ export const SQL_INGRESO_FACTURADO = `(fi.type = 'income' AND CASE fi.source_typ
   ELSE FALSE END)`;
 
 /**
- * ⭐ RENGLONES BLOQUEADOS — no se editan ni se quitan desde la ventana del mes:
- *   · los ingresos facturados (`SQL_INGRESO_FACTURADO`, Fernando 2026-10-29), que se van al anular
- *     su factura;
- *   · los egresos leídos del SRI (`sri_recibida`, Fernando 2026-10-30: «que estén bloqueados y que
- *     no se puedan quitar cuando vienen del SRI»): son comprobantes recibidos a su RUC.
- * Lo usan el detalle del mes (para pintar el candado) y el guardado (para no tocarlos).
+ * ⭐ RENGLONES BLOQUEADOS — no se editan ni se quitan desde la ventana del mes. Desde el 2026-10-30
+ * son TODOS los ingresos y egresos (Fernando: «dejar completamente bloqueados los ingresos y egresos
+ * actuales ya que estos dos solo graban lo registrado en el SRI»): las facturas, que se van al anular
+ * la factura, y los comprobantes recibidos, leídos del SRI. Lo único que se escribe a mano son los
+ * ADICIONALES (`fi.adicional`). Lo usan el detalle del mes y el borrado del mes.
  */
-export const SQL_RENGLON_BLOQUEADO = `(${SQL_INGRESO_FACTURADO} OR (fi.type = 'expense' AND fi.source_type = 'sri_recibida'))`;
+export const SQL_RENGLON_BLOQUEADO = `(NOT fi.adicional)`;
 
-/** Los orígenes que se pueden guardar desde el formulario del mes (los que escribe el sistema). */
-export const ORIGENES_INGRESO = new Set(['invoice', 'ticket', 'project', 'subscription', 'sri_emitida']);
+/** El renglón como va en el PDF: los adicionales, marcados, porque van en la lista de su lado. */
+export function renglonPdf(i: { description: string; amount: unknown; adicional?: boolean }) {
+  return { description: i.adicional ? `Adicional · ${i.description}` : i.description, amount: Number(i.amount) || 0 };
+}
+
+/** Un adicional se llama con UNA palabra (Fernando, 2026-10-30): «Sueldo», «Arriendo», «Préstamo». */
+export const NOMBRE_ADICIONAL = /^[^\s]{1,40}$/u;
 
 /**
  * QUÉ FACTURA ES LA DE ESTE INGRESO — condición SQL entre `fi` (finance_items) e `i` (invoices). La

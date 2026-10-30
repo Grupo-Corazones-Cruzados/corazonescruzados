@@ -145,20 +145,27 @@ export interface RenglonMovil {
   amount: string;
   facturado?: boolean;
   bloqueado?: boolean;
+  adicional?: boolean;
 }
 
+type Lado = 'income' | 'expense' | 'adicional';
+
 /**
- * El cuerpo del mes en el teléfono. Trabaja sobre las MISMAS listas que el escritorio
- * (`incomeItems`/`expenseItems` de la página), así el «Guardar» del pie no cambia.
+ * El cuerpo del mes en el teléfono. Trabaja sobre las MISMAS listas que el escritorio, así el
+ * «Guardar» del pie no cambia.
+ *
+ * Desde el 2026-10-30 (Fernando) ingresos y egresos son lo del SRI y se leen, no se tocan; lo que
+ * se escribe a mano son los ADICIONALES —ingresos y egresos no facturados, de nombre una palabra—,
+ * en su propia pestaña. `adicionales = null` la esconde («Solo facturado»).
  */
 export function DetalleMesMovil<R extends RenglonMovil>({
-  ingresos, egresos, setIngresos, setEgresos, editable, oculto, etiquetaIngresos,
+  ingresos, egresos, adicionales, setAdicionales, editable, oculto, etiquetaIngresos,
   totalIngresos, totalEgresos, ahorroAnterior, ahorroGlobal,
 }: {
   ingresos: R[];
   egresos: R[];
-  setIngresos: React.Dispatch<React.SetStateAction<R[]>>;
-  setEgresos: React.Dispatch<React.SetStateAction<R[]>>;
+  adicionales: R[] | null;
+  setAdicionales: React.Dispatch<React.SetStateAction<R[]>>;
   editable: boolean;
   oculto: (r: R) => boolean;
   etiquetaIngresos: string;
@@ -167,33 +174,33 @@ export function DetalleMesMovil<R extends RenglonMovil>({
   ahorroAnterior: number;
   ahorroGlobal: number;
 }) {
-  const [lado, setLado] = useState<'income' | 'expense'>('income');
-  // Renglón en edición: su índice en la lista (o -1 si es nuevo) y los dos campos.
-  const [editando, setEditando] = useState<{ i: number; description: string; amount: string } | null>(null);
+  const [elegido, setLado] = useState<Lado>('income');
+  const lado: Lado = elegido === 'adicional' && !adicionales ? 'income' : elegido;
+  // Adicional en edición: su índice (o -1 si es nuevo) y sus tres campos.
+  const [editando, setEditando] = useState<{ i: number; type: 'income' | 'expense'; description: string; amount: string } | null>(null);
 
-  const lista = lado === 'income' ? ingresos : egresos;
-  const setLista = lado === 'income' ? setIngresos : setEgresos;
-  // Los renglones vacíos que la página siembra para el formulario de escritorio no se pintan.
+  const lista: R[] = lado === 'income' ? ingresos : lado === 'expense' ? egresos : (adicionales ?? []);
   const visibles = lista
     .map((r, i) => ({ r, i }))
     .filter(({ r }) => !oculto(r) && (r.description.trim() || Number(r.amount)));
-  const ocultos = lista.filter(oculto).length;
+  const ocultos = lado === 'income' ? ingresos.filter(oculto).length : 0;
   const ahorro = totalIngresos - totalEgresos;
   const cuenta = (l: R[]) => l.filter((r) => !oculto(r) && (r.description.trim() || Number(r.amount))).length;
+  const tocable = editable && lado === 'adicional';
 
   const guardarRenglon = () => {
     if (!editando) return;
-    const { i, description } = editando;
+    const { i, type, description } = editando;
     const amount = aGuardar(editando.amount);
-    setLista((prev) => (i < 0
-      ? [...prev.filter((r) => r.description.trim() || Number(r.amount)), { type: lado, description, amount } as R]
-      : prev.map((r, k) => (k === i ? { ...r, description, amount } : r))));
+    setAdicionales((prev) => (i < 0
+      ? [...prev, { type, description, amount, adicional: true } as R]
+      : prev.map((r, k) => (k === i ? { ...r, type, description, amount } : r))));
     setEditando(null);
   };
   const quitarRenglon = () => {
     if (!editando || editando.i < 0) return;
     const i = editando.i;
-    setLista((prev) => prev.filter((_, k) => k !== i));
+    setAdicionales((prev) => prev.filter((_, k) => k !== i));
     setEditando(null);
   };
 
@@ -217,44 +224,45 @@ export function DetalleMesMovil<R extends RenglonMovil>({
         className="w-full"
         valor={lado}
         onChange={setLado}
+        // La cuenta, en la segunda línea: con tres opciones, «Adicionales · 1» no cabe en una.
         opciones={[
-          { valor: 'income', texto: `${etiquetaIngresos} · ${cuenta(ingresos)}` },
-          { valor: 'expense', texto: `Egresos · ${cuenta(egresos)}` },
+          { valor: 'income', texto: etiquetaIngresos, detalle: String(cuenta(ingresos)) },
+          { valor: 'expense', texto: 'Egresos', detalle: String(cuenta(egresos)) },
+          ...(adicionales ? [{ valor: 'adicional' as const, texto: 'Adicionales', detalle: String(cuenta(adicionales)) }] : []),
         ]}
       />
 
       <section className="rounded-xl border border-digi-border overflow-hidden">
-        {ocultos > 0 && lado === 'income' && (
+        {ocultos > 0 && (
           <p className="px-3.5 py-2 text-[11.5px] text-digi-muted border-b border-digi-border">
-            {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'}; se conservan al guardar.
+            {ocultos} {ocultos === 1 ? 'ingreso sin factura oculto' : 'ingresos sin factura ocultos'}.
           </p>
         )}
         {visibles.length === 0 ? (
           <p className="px-3.5 py-6 text-center text-[13px] text-digi-muted">
-            {lado === 'income' ? 'Sin ingresos registrados.' : 'Sin egresos registrados.'}
+            {lado === 'income' ? 'Sin ingresos registrados.' : lado === 'expense' ? 'Sin egresos registrados.' : 'Sin adicionales.'}
           </p>
         ) : (
           <ul className="divide-y divide-digi-border">
             {visibles.map(({ r, i }) => {
-              const bloqueado = r.bloqueado ?? (r.type === 'income' && r.facturado === true);
-              const tocable = editable && !bloqueado;
+              const entra = r.type === 'income';
               const contenido = (
                 <>
                   <span className="flex-1 min-w-0 text-[13px] leading-snug text-digi-text line-clamp-2 break-words">
                     {r.description || <span className="text-digi-muted">Sin descripción</span>}
                   </span>
-                  <span className={`shrink-0 text-[13.5px] font-semibold tabular-nums ${lado === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                    {dinero(Number(r.amount) || 0)}
+                  <span className={`shrink-0 text-[13.5px] font-semibold tabular-nums ${entra ? 'text-green-400' : 'text-red-400'}`}>
+                    {lado === 'adicional' ? (entra ? '+' : '−') : ''}{dinero(Number(r.amount) || 0)}
                   </span>
-                  {bloqueado
-                    ? <Lock className="w-3.5 h-3.5 text-digi-muted shrink-0" aria-label={r.type === 'expense' ? 'Comprobante recibido del SRI' : 'Vinculado a una factura'} />
+                  {lado !== 'adicional'
+                    ? <Lock className="w-3.5 h-3.5 text-digi-muted shrink-0" aria-label="Registrado en el SRI" />
                     : tocable && <ChevronRight className="w-4 h-4 text-digi-muted shrink-0" />}
                 </>
               );
               return (
                 <li key={i}>
                   {tocable ? (
-                    <button type="button" onClick={() => setEditando({ i, description: r.description, amount: aPantalla(r.amount) })}
+                    <button type="button" onClick={() => setEditando({ i, type: r.type, description: r.description, amount: aPantalla(r.amount) })}
                       className="w-full min-h-[52px] flex items-center gap-3 px-3.5 py-2.5 text-left active:bg-accent-light/40">
                       {contenido}
                     </button>
@@ -266,26 +274,34 @@ export function DetalleMesMovil<R extends RenglonMovil>({
             })}
           </ul>
         )}
-        {editable && (
-          <button type="button" onClick={() => setEditando({ i: -1, description: '', amount: '' })}
+        {tocable && (
+          <button type="button" onClick={() => setEditando({ i: -1, type: 'income', description: '', amount: '' })}
             className="w-full min-h-[48px] inline-flex items-center justify-center gap-1.5 border-t border-digi-border text-[13px] font-medium text-accent active:bg-accent-light/40">
-            <Plus className="w-4 h-4" /> {lado === 'income' ? 'Agregar ingreso' : 'Agregar egreso'}
+            <Plus className="w-4 h-4" /> Agregar adicional
           </button>
         )}
       </section>
 
       <QuickEditDialog
         open={!!editando}
-        title={editando?.i === -1 ? (lado === 'income' ? 'Nuevo ingreso' : 'Nuevo egreso') : (lado === 'income' ? 'Editar ingreso' : 'Editar egreso')}
+        title={editando?.i === -1 ? 'Nuevo adicional' : 'Editar adicional'}
         onClose={() => setEditando(null)}
         onSave={guardarRenglon}
         saveLabel="Listo"
-        canSave={!!editando && (!!editando.description.trim() || Number(aGuardar(editando.amount)) > 0)}
+        canSave={!!editando && !!editando.description.trim() && Number(aGuardar(editando.amount)) > 0}
         danger={editando && editando.i >= 0 ? { label: 'Quitar', onClick: quitarRenglon } : undefined}
       >
-        <EditField label="Descripción">
+        <Segmentado
+          etiqueta="Tipo"
+          className="w-full"
+          valor={editando?.type ?? 'income'}
+          onChange={(type) => setEditando((d) => (d ? { ...d, type } : d))}
+          opciones={[{ valor: 'income', texto: 'Ingreso' }, { valor: 'expense', texto: 'Egreso' }]}
+        />
+        <EditField label="Nombre">
+          {/* Una sola palabra: los espacios no llegan a escribirse. */}
           <input value={editando?.description ?? ''} autoFocus className={EDIT_INPUT} style={mf}
-            onChange={(e) => setEditando((d) => (d ? { ...d, description: e.target.value } : d))} />
+            onChange={(e) => { const v = e.target.value.replace(/\s+/g, ''); setEditando((d) => (d ? { ...d, description: v } : d)); }} />
         </EditField>
         <EditField label="Importe">
           <input value={editando?.amount ?? ''} type="text" inputMode="decimal" placeholder="0,00"

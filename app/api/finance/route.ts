@@ -100,10 +100,16 @@ export async function GET() {
     }
 
     // `facturado_income`: lo que de los ingresos del mes tiene factura (ver SQL_INGRESO_FACTURADO).
+    // `adicional_income`/`adicional_expense`: lo escrito a mano en la columna Adicionales, que va
+    // INCLUIDO en `total_income`/`total_expense` (Fernando, 2026-10-30).
     const { rows } = await pool.query(
       `SELECT fm.*,
               COALESCE((SELECT SUM(fi.amount) FROM gcc_world.finance_items fi
-                         WHERE fi.month_id = fm.id AND ${SQL_INGRESO_FACTURADO}), 0) AS facturado_income
+                         WHERE fi.month_id = fm.id AND ${SQL_INGRESO_FACTURADO}), 0) AS facturado_income,
+              COALESCE((SELECT SUM(fi.amount) FROM gcc_world.finance_items fi
+                         WHERE fi.month_id = fm.id AND fi.adicional AND fi.type = 'income'), 0) AS adicional_income,
+              COALESCE((SELECT SUM(fi.amount) FROM gcc_world.finance_items fi
+                         WHERE fi.month_id = fm.id AND fi.adicional AND fi.type = 'expense'), 0) AS adicional_expense
          FROM gcc_world.finance_months fm
         ORDER BY fm.year DESC, fm.month DESC`
     );
