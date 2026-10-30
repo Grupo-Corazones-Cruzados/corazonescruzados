@@ -353,14 +353,6 @@ const TOOLS: AccordionItem[] = [
     // Texto de Fernando (2026-10-29), literal.
     body: () => (
       <>
-        <div
-          style={{
-            height: 8,
-            borderRadius: 4,
-            margin: '2px 0 12px',
-            background: 'linear-gradient(90deg, #d63b5a 0%, #7B5FBF 50%, #2f6bd6 100%)',
-          }}
-        />
         <p style={cardDesc}>
           <strong style={strong}>Violeta es la luz que nos representa</strong>, el color que une
           corazones, y un lugar para aquellos que son diferentes. Esta luz, ilumina el vacío y lo
