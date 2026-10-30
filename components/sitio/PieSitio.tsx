@@ -2,7 +2,8 @@
  * PIE DEL SITIO PÚBLICO — solo lo que es suyo.
  *
  * ── QUÉ LLEVA ──────────────────────────────────────────────────────────────────
- * Los **enlaces legales** y el **copyright**. Nada más.
+ * Los **enlaces legales**, el **copyright** y los **accesos a las redes** del grupo (iconos;
+ * Fernando, 2026-10-30: «iconos con accesos rápidos a las redes sociales»).
  *
  * ── QUÉ NO LLEVA, Y POR QUÉ ────────────────────────────────────────────────────
  * · **La navegación.** La versión anterior repetía Inicio · Soluciones · Desarrollo Humano ·
@@ -29,7 +30,9 @@
  */
 
 import Link from 'next/link';
-import { SITIO } from '@/lib/sitio/contenido';
+import { SITIO, PERFILES } from '@/lib/sitio/contenido';
+import { REDES as DEF_REDES } from '@/lib/members/redes';
+import IconoRed from '@/components/ui/IconoRed';
 import { Contenedor } from './piezas';
 
 export default function PieSitio() {
@@ -57,26 +60,48 @@ export default function PieSitio() {
       itemScope
       itemType="https://schema.org/Organization"
     >
-      <Contenedor className="flex flex-col-reverse items-center gap-3 sm:flex-row sm:justify-between sm:gap-6">
-        {/* El `itemProp="name"` viaja aquí: sin él, el microdato de Organization se queda
-            sin nombre, y eso lo leen los buscadores. */}
-        <p className="text-[12px] text-white/25 whitespace-nowrap">
-          © {new Date().getFullYear()} <span itemProp="name">{SITIO.nombre}</span>
-        </p>
+      {/* Teléfono: los iconos arriba y «© · Legal» en una sola línea debajo — las mismas dos filas
+          que antes, así `--alto-pie` no cambia. Desde `sm`, una fila de tres columnas: ©, iconos en el centro EXACTO, Legal.
+          La fila de iconos ocupa el alto de una línea de texto (`-my-1.5`): el destino táctil de
+          28 px se come el relleno, no le añade alto al pie. */}
+      <Contenedor className="flex flex-col items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-6">
+        <nav aria-label="Redes sociales" className="-my-1.5 flex items-center gap-1 sm:order-2">
+          {PERFILES.map((p) => (
+            <a
+              key={p.red}
+              href={p.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${SITIO.nombre} en ${DEF_REDES[p.red].etiqueta}`}
+              title={DEF_REDES[p.red].etiqueta}
+              className="grid h-7 w-7 place-items-center rounded-md text-white/40 transition-colors hover:text-white"
+            >
+              <IconoRed red={p.red} />
+            </a>
+          ))}
+        </nav>
 
-        {/* UN SOLO enlace, no cuatro (decisión de Fernando, 2026-08-02). Antes había uno
-            por documento —términos, agente de WhatsApp, eliminar datos, datos del negocio—
-            y son cuatro entradas para un mismo tema. `/legal` los indexa todos arriba, así
-            que desde aquí se llega a cualquiera con un clic más.
-            ⚠️ Las URLs concretas NO desaparecen: `/legal/whatsapp#eliminar-datos` y
-            `#condiciones` están declaradas en Meta y siguen funcionando. Lo que cambia es
-            cuántas puertas hay en el pie, no cuántas páginas existen. */}
-        <Link
-          href="/legal"
-          className="text-[12px] text-white/40 hover:text-white transition-colors whitespace-nowrap"
-        >
-          Legal y privacidad
-        </Link>
+        <div className="flex items-center gap-4 sm:contents">
+          {/* El `itemProp="name"` viaja aquí: sin él, el microdato de Organization se queda
+              sin nombre, y eso lo leen los buscadores. */}
+          <p className="text-[12px] text-white/25 whitespace-nowrap sm:order-1 sm:justify-self-start">
+            © {new Date().getFullYear()} <span itemProp="name">{SITIO.nombre}</span>
+          </p>
+
+          {/* UN SOLO enlace, no cuatro (decisión de Fernando, 2026-08-02). Antes había uno
+              por documento —términos, agente de WhatsApp, eliminar datos, datos del negocio—
+              y son cuatro entradas para un mismo tema. `/legal` los indexa todos arriba, así
+              que desde aquí se llega a cualquiera con un clic más.
+              ⚠️ Las URLs concretas NO desaparecen: `/legal/whatsapp#eliminar-datos` y
+              `#condiciones` están declaradas en Meta y siguen funcionando. Lo que cambia es
+              cuántas puertas hay en el pie, no cuántas páginas existen. */}
+          <Link
+            href="/legal"
+            className="text-[12px] text-white/40 hover:text-white transition-colors whitespace-nowrap sm:order-3 sm:justify-self-end"
+          >
+            Legal y privacidad
+          </Link>
+        </div>
       </Contenedor>
     </footer>
   );

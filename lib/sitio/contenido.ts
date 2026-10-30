@@ -22,6 +22,7 @@
 
 import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_INTRO } from '@/lib/sitio/modeloGcc';
 import { NOMBRE_COMERCIAL, RAZON_SOCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
+import type { Red } from '@/lib/members/redes';
 
 export const SITIO = {
   nombre: NOMBRE_COMERCIAL,
@@ -93,16 +94,22 @@ export const OG_IMAGEN = '/opengraph-image?v=logo-2026-10-29';
  * un buscador solo vería una pantalla de acceso. La que vale es la dirección pública.
  * Comprobadas las tres el 2026-08-03: responden 200 sin sesión.
  */
+export const PERFILES: { red: Red; url: string }[] = [
+  { red: 'linkedin', url: 'https://www.linkedin.com/company/grupo-corazones-cruzados/' },
+  { red: 'instagram', url: 'https://www.instagram.com/grupocorazonescruzados/' },
+  { red: 'facebook', url: 'https://www.facebook.com/GrupoCorazonesCruzados' },
+  { red: 'tiktok', url: 'https://www.tiktok.com/@grupocc.org' },
+  { red: 'youtube', url: 'https://www.youtube.com/@grupocc-org' },
+];
+
+/** Los iconos del pie salen de `PERFILES` (2026-10-30, Fernando: accesos rápidos a las redes). */
 export const REDES = [
-  'https://www.linkedin.com/company/grupo-corazones-cruzados/',
-  'https://www.instagram.com/grupocorazonescruzados/',
-  'https://www.facebook.com/GrupoCorazonesCruzados',
-  'https://www.tiktok.com/@grupocc.org',
-  'https://www.youtube.com/@grupocc-org',
+  ...PERFILES.map((p) => p.url),
   /* El elemento de Wikidata que creó Fernando el 2026-10-30. Es lo que más pesa para que Google
-     y los asistentes con IA no lo confundan con la asociación mexicana del mismo nombre. */
+     y los asistentes con IA no lo confundan con la asociación mexicana del mismo nombre.
+     Va solo aquí, no en el pie: es un dato para máquinas, no una red que visitar. */
   'https://www.wikidata.org/wiki/Q141934974',
-] as const;
+];
 
 /* ═══════════════════════ NAVEGACIÓN ═══════════════════════ */
 

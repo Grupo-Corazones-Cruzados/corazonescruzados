@@ -218,6 +218,15 @@ cinco** (y en 671 a 390 px de ancho). Comprobado página por página, en escrito
 
 `z-50`: por debajo de la cabecera (`z-[60]`) y muy por debajo de los diálogos (`z-[220]`).
 
+**Iconos de las redes en el pie (Fernando, 2026-10-30: «iconos con accesos rápidos a las redes sociales»).**
+`PieSitio` lleva LinkedIn, Instagram, Facebook, TikTok y YouTube como iconos solos (`IconoRed`,
+`components/ui/IconoRed.tsx`, la MISMA definición que el CV), sin relleno: `text-white/40` → blanco
+al pasar, destino de 28 px. Lista en `PERFILES` (`lib/sitio/contenido.ts`), que también alimenta el
+`sameAs`. Escritorio: rejilla `1fr auto 1fr` (©, iconos en el centro exacto, Legal). Teléfono:
+iconos arriba y «© · Legal» en una línea: dos filas como antes. La fila de iconos ocupa el alto de una
+línea (`-my-1.5`), así `--alto-pie` NO cambió (medido: 59 / 87 px) y la portada sigue sin
+desplazamiento en 1440×900, 1100×700, 390×844 y 375×667.
+
 ### ⭐ 2026-10-26 — La portada partida: Aventura | Progreso
 
 > **⭐ ESTADO VIGENTE (cierre del 2026-10-28, aprobado por Fernando: «vamos súper bien, me
