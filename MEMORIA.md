@@ -3935,6 +3935,13 @@ Stack estándar de la casa, con particularidades de este repo:
     - **💸 ~7.800 tokens de ENTRADA por respuesta**, porque los 14 bloques de conocimiento
       viajan enteros en cada llamada. Con 9 $ de saldo, vigilar el gasto en un día real.
 
+  - **📚 EL MODELO 4P Y SUS HERRAMIENTAS, PÚBLICOS (2026-10-30).** Sus textos (de Fernando) viven en
+    `lib/sitio/modeloGcc.ts` y los leen el formulario de postulación, las secciones
+    `/desarrollo-humano/modelo-organizacional-4p` y `/herramientas-del-modelo` y `/llms.txt`. Antes
+    estaban solo dentro del modal → ningún buscador los veía. **Cambiar un texto: en ese archivo y la
+    fecha en `ULTIMO_CAMBIO_MODELO` de `app/sitemap.ts`; luego `node scripts/indexnow.mjs <rutas>`**
+    (avisa a Bing/Copilot sin cuenta; Google no usa IndexNow). El Sistema de Control Psicosocial se
+    publica tal cual por decisión de Fernando: no proponer suavizarlo.
   - **🔎 GOOGLE NO SE PUEDE FORZAR POR API (2026-09-06).** Fernando preguntó si podíamos
     hacer que Google reindexe nuestras páginas. **No.** La *Indexing API* admite
     oficialmente **solo `JobPosting` y `BroadcastEvent`**; Google ha dicho que puede dejar

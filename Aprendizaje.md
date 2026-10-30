@@ -10963,3 +10963,13 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
   color/marca/filosofía/actitud y pasa a un texto poético: la luz que nos representa, el color que une
   corazones, un lugar para los diferentes; el reto de candidatos y miembros, medible por la prospección y
   la evaluación continua.
+
+- 2026-10-30 · **El Modelo y sus herramientas, públicos para los buscadores.** Fernando: que Google/Bing y sus
+  modos con IA recojan el Modelo 4P y las herramientas «como parte fundamental de lo que es nuestro negocio»;
+  hoy los resúmenes repiten solo «desarrollo humano + condiciones». Causa medida: esos textos vivían solo en
+  el formulario (modal que se abre con un botón) → invisibles para un rastreador. Hecho: textos a
+  `lib/sitio/modeloGcc.ts` (fuente única formulario + sitio), secciones `/desarrollo-humano/modelo-organizacional-4p`
+  y `/desarrollo-humano/herramientas-del-modelo` (FAQPage «¿Qué es…?»), `/llms.txt`, `knowsAbout`, IndexNow
+  (`scripts/indexnow.mjs`). Sobre el Sistema de Control Psicosocial: Fernando lo publica tal cual —«es lo que se
+  quiere cambiar» del modelo de condena actual—; no volver a proponer suavizarlo.
+  Search Console YA existe (verificado 2026-08-19, etiqueta en `app/layout.tsx`); Bing se importa desde ahí.
