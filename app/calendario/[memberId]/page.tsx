@@ -10,6 +10,7 @@ import CalendarView, { type CalendarViewMode } from '@/components/calendar/Calen
 import EventDetailsModal from '@/components/calendar/EventDetailsModal';
 import ProposalModal, { type ProposalPayload } from '@/components/calendar/ProposalModal';
 import PublicHeader from '@/components/public/PublicHeader';
+import { BotonDetalles } from '@/components/ui/DetailHeader';
 import {
   type CalendarEvent,
   type EventInstance,
@@ -283,12 +284,55 @@ export default function PublicCalendarPage() {
     );
   }
 
+  // En el teléfono (Fernando, 2026-10-30: «hay mucha altura ocupada… los controles también
+  // ocupan mucha altura… y el calendario no se puede deslizar, está como bloqueado»):
+  //  · la tarjeta NO tiene alto fijo. Con `h-[100dvh-…]` + `overflow-hidden` la agenda del día
+  //    (que en el teléfono mide lo que ocupa) quedaba cortada y no había nada que desplazar;
+  //    ahora se desplaza la página entera.
+  //  · arriba solo el nombre y su estado; zona horaria, última actualización y leyenda van en
+  //    la burbuja (i), como en las cabeceras del panel.
+  //  · los controles en UNA fila (‹ fecha › · Hoy · sincronizar) y «Agendar» abajo, fijo, a
+  //    todo el ancho: es LA acción de la página.
+  const enTelefono = !allowMultiView;
+  const esHoy = new Date().toDateString() === currentDate.toDateString();
+  const leyenda = (
+    <>
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
+        <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${BUSY_COLOR}30`, borderLeft: `3px solid ${BUSY_COLOR}` }} /> Ocupado
+      </span>
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
+        <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f59e0b1f', borderLeft: '3px dashed #f59e0b' }} /> Tu propuesta (pendiente)
+      </span>
+    </>
+  );
+  const flecha = 'w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
+
   return (
     <div className="corp page-dark min-h-screen">
       <PublicHeader />
-      <div className="max-w-6xl mx-auto space-y-4 py-6 px-4 md:px-8">
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-6.5rem)]">
-          {/* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */}
+      <div className="max-w-6xl mx-auto space-y-4 py-4 md:py-6 px-3 md:px-8">
+        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col md:h-[calc(100dvh-6.5rem)]">
+          {enTelefono ? (
+            <div className="px-4 py-3 border-b border-digi-border shrink-0">
+              <div className="flex items-start gap-1">
+                <h1 className="text-[17px] leading-snug font-semibold text-digi-text min-w-0" style={df}>{memberName}</h1>
+                <BotonDetalles
+                  titulo={memberName}
+                  detalles={[
+                    { icono: Clock, etiqueta: 'Zona horaria', valor: 'GMT-5 · Ecuador' },
+                    { icono: RefreshCw, etiqueta: 'Actualizado', valor: lastSync ? fmtSync(lastSync) : 'Sin sincronizar' },
+                    { icono: CalendarDays, etiqueta: 'Qué se ve', valor: 'Solo las franjas ocupadas, no el detalle de los eventos.' },
+                  ]}
+                  chips={leyenda}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[memberStatus].color }} />
+                <span className="text-[12px] text-digi-muted" style={mf}>{AVAILABILITY[memberStatus].label}</span>
+              </div>
+            </div>
+          ) : (
+          /* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */
           <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="min-w-0">
               <div className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Calendario público</div>
@@ -309,35 +353,45 @@ export default function PublicCalendarPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Command bar */}
+          {enTelefono ? (
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-digi-border shrink-0">
+              <button onClick={goPrev} aria-label="Día anterior" className={flecha}><ChevronLeft className="w-5 h-5" /></button>
+              <span className="flex-1 min-w-0 text-center text-[14.5px] font-semibold text-digi-text capitalize truncate" style={mf}>{label}</span>
+              <button onClick={goNext} aria-label="Día siguiente" className={flecha}><ChevronRight className="w-5 h-5" /></button>
+              {!esHoy && (
+                <button onClick={() => setCurrentDate(new Date())} className="h-11 px-3 shrink-0 rounded-md border border-digi-border text-[13px] font-medium text-digi-text" style={mf}>Hoy</button>
+              )}
+              <button onClick={() => load()} disabled={loading} aria-label="Sincronizar calendario" title="Sincronizar calendario" className={flecha}>
+                <RefreshCw className={`w-[18px] h-[18px] ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          ) : (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-2">
               <button onClick={() => setCurrentDate(new Date())} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
               <div className="flex items-center gap-1">
-                <button onClick={goPrev} aria-label="Anterior" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                <button onClick={goNext} aria-label="Siguiente" className="w-8 h-8 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                <button onClick={goPrev} aria-label="Anterior" className={flecha}><ChevronLeft className="w-4 h-4" /></button>
+                <button onClick={goNext} aria-label="Siguiente" className={flecha}><ChevronRight className="w-4 h-4" /></button>
               </div>
               <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Toggle Mes/Semana/Día: solo en pantallas que lo permiten (≥ 768px);
-                  en móvil se usa siempre la vista de Día y se navega con ‹ ›. */}
-              {allowMultiView && (
-                <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
-                  {VIEWS.map((v) => (
-                    <button
-                      key={v.value}
-                      onClick={() => setView(v.value)}
-                      className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`}
-                      style={mf}
-                    >
-                      {v.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
+                {VIEWS.map((v) => (
+                  <button
+                    key={v.value}
+                    onClick={() => setView(v.value)}
+                    className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`}
+                    style={mf}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
               <button
                 onClick={() => load()}
                 disabled={loading}
@@ -345,41 +399,49 @@ export default function PublicCalendarPage() {
                 title={lastSync ? `Última actualización: ${fmtSync(lastSync)}` : 'Sincronizar calendario'}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{loading ? 'Sincronizando…' : 'Sincronizar'}</span>
+                <span>{loading ? 'Sincronizando…' : 'Sincronizar'}</span>
               </button>
               <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={BTN_PRIMARY}>
-                <CalendarPlus className="w-4 h-4" />
-                <span className="sm:hidden">Agendar</span>
-                <span className="hidden sm:inline">Agendar espacio</span>
+                <CalendarPlus className="w-4 h-4" /> Agendar espacio
               </button>
             </div>
           </div>
+          )}
 
           {/* Grid — clic en zona libre abre el formulario con esa hora; clic en un bloque
-              ocupado no muestra detalle (confidencial), salvo tu propia reserva reciente */}
-          <div className="p-3 flex-1 min-h-0 flex flex-col">
+              ocupado no muestra detalle (confidencial), salvo tu propia reserva reciente.
+              En el teléfono sin alto impuesto: la agenda mide lo que ocupa y baja la página. */}
+          <div className={enTelefono ? 'p-2.5' : 'p-3 flex-1 min-h-0 flex flex-col'}>
             <CalendarView
               view={view}
               currentDate={currentDate}
               instances={displayInstances}
               onDayClick={onGridClick}
               onEventClick={onEventClick}
-              fillHeight
+              fillHeight={!enTelefono}
             />
           </div>
 
-          {/* Leyenda — el calendario público es libre/ocupado (sin exponer el detalle de los eventos) */}
+          {/* Leyenda — el calendario público es libre/ocupado (sin exponer el detalle de los
+              eventos). En el teléfono vive en la burbuja (i) de arriba. */}
+          {!enTelefono && (
           <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted shrink-0" style={mf}>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${BUSY_COLOR}30`, borderLeft: `3px solid ${BUSY_COLOR}` }} /> Ocupado
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f59e0b1f', borderLeft: '3px dashed #f59e0b' }} /> Tu propuesta (pendiente)
-            </span>
+            {leyenda}
             <span className="ml-auto">Solo se muestran las franjas ocupadas, no el detalle de los eventos.</span>
           </div>
+          )}
         </div>
+        {/* Hueco para que la barra de «Agendar» no tape el final de la agenda. */}
+        {enTelefono && <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))]" aria-hidden />}
       </div>
+
+      {enTelefono && (
+        <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-digi-card border-t border-digi-border">
+          <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={`${BTN_PRIMARY} w-full h-12 text-[15px]`}>
+            <CalendarPlus className="w-[18px] h-[18px]" /> Agendar espacio
+          </button>
+        </div>
+      )}
 
       {/* El detalle solo se abre para reservas PROPIAS de esta sesión → muestra el dato
           real y permite cancelarla (mientras no se recargue la página). */}

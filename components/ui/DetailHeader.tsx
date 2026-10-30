@@ -125,8 +125,9 @@ export default function DetailHeader({
   );
 }
 
-/** El botón (i) y su burbuja con los datos secundarios del registro. */
-function BotonDetalles({ titulo, detalles, chips }: { titulo: string; detalles?: Detalle[]; chips?: ReactNode }) {
+/** El botón (i) y su burbuja con los datos secundarios del registro. Exportado: lo usan también
+ *  las páginas públicas (calendario) para no repetir la burbuja. */
+export function BotonDetalles({ titulo, detalles, chips }: { titulo: string; detalles?: Detalle[]; chips?: ReactNode }) {
   const [abierto, setAbierto] = useState(false);
   const botonRef = useRef<HTMLButtonElement | null>(null);
   const cerrar = useCallback(() => setAbierto(false), []);
