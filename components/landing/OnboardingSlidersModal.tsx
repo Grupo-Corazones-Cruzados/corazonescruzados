@@ -362,7 +362,7 @@ const TOOLS: AccordionItem[] = [
         <p style={cardDesc}>
           Es aquello que amamos, y luego aparece cuando recordamos nuestras raíces; es una expresión
           tan humana, tan natural, y es eso que sientes en el pálpito, en cada golpe, en cada
-          esfuerzo, y con cada lágrima que derramaste mientras todo se movía a tu alrededor. Violeta
+          esfuerzo, y con cada lágrima que derramaste mientras todo lo que no querías, se movía a tu alrededor. Violeta
           es el mundo de afuera y lo de adentro, la verdad que no queremos aceptar, el problema que
           estamos confrontando, y la nostalgia que sientes cuando recuerdas ese preciso momento
           cuando todo lo malo cambió.
@@ -375,10 +375,10 @@ const TOOLS: AccordionItem[] = [
         </p>
         <p style={cardDesc}>
           Violeta es el reto de todos los candidatos y los miembros que ansiamos alcanzar, ese sueño
-          eterno por proteger la calidad, la humanidad, y el futuro. Violeta es un sueño que se puede
+          eterno por proteger la calidad de lo que nos hace humanos, el futuro de nuestros hijos, y convertirnos en los líderes dispuestos a cambiar el mundo. Violeta es un sueño que se puede
           medir a través de la prospección, y todos quienes participan en este proyecto demostrarán a
-          través de la <strong style={strong}>evaluación continua</strong> si pueden representar los
-          valores y la bandera con el color que debemos proteger.
+          través de la <strong style={strong}>evaluación continua</strong> si son capaces de representar los
+          valores y una bandera que logrará cruzar al mundo.
         </p>
       </>
     ),
