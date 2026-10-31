@@ -52,14 +52,37 @@ export default function PublicCalendarPage() {
   const [view, setView] = useState<CalendarViewMode>('week');
   // En pantallas chicas (teléfono) solo se permite la vista de DÍA; los botones de
   // Semana/Mes aparecen solo si la pantalla lo permite (≥ 768px).
+  //
+  // ⚠️ No basta el ancho de la ventana (Fernando, iPhone 17, 2026-10-31: «sigue viéndose sin
+  // estar en versión de teléfono»). Un navegador en «sitio de escritorio» le da a la página
+  // 980 px de ancho aunque el teléfono mida 402: también es teléfono si el puntero es un dedo
+  // y la PANTALLA es estrecha.
   const [allowMultiView, setAllowMultiView] = useState(true);
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    const apply = () => setAllowMultiView(mq.matches);
+    const ancho = window.matchMedia('(min-width: 768px)');
+    const dedo = window.matchMedia('(pointer: coarse)');
+    const apply = () => setAllowMultiView(ancho.matches && !(dedo.matches && Math.min(screen.width, screen.height) < 768));
     apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
+    ancho.addEventListener('change', apply);
+    return () => ancho.removeEventListener('change', apply);
   }, []);
+  // `?diag=1`: lo que el navegador le dice a la página, en pantalla, para depurar desde el
+  // teléfono sin herramientas (qué versión llegó, qué ancho ve, en qué modo quedó).
+  const [diag, setDiag] = useState<string | null>(null);
+  useEffect(() => {
+    if (search?.get('diag') !== '1') return;
+    const pagina = [...document.scripts].map((x) => x.src).find((x) => x.includes('calendario'))?.split('/').pop() ?? '?';
+    const pintar = () => setDiag([
+      `versión ${pagina}`,
+      `ventana ${innerWidth}×${innerHeight} · pantalla ${screen.width}×${screen.height} · dpr ${devicePixelRatio}`,
+      `visual ${Math.round(visualViewport?.width ?? 0)}×${Math.round(visualViewport?.height ?? 0)} · dedo ${matchMedia('(pointer: coarse)').matches ? 'sí' : 'no'}`,
+      `viewport «${document.querySelector('meta[name=viewport]')?.getAttribute('content') ?? '—'}»`,
+      navigator.userAgent,
+    ].join('\n'));
+    pintar();
+    addEventListener('resize', pintar);
+    return () => removeEventListener('resize', pintar);
+  }, [search]);
   useEffect(() => { if (!allowMultiView) setView('day'); }, [allowMultiView]);
   // El alto que de verdad se VE en el teléfono, medido: algunos navegadores dentro de apps
   // (WhatsApp en iPhone) dan a `100dvh` el alto de la pantalla entera, también lo que tapa su
@@ -333,6 +356,11 @@ export default function PublicCalendarPage() {
       style={enTelefono && altoVisible ? { height: altoVisible } : undefined}
     >
       <div className="shrink-0"><PublicHeader /></div>
+      {diag && (
+        <pre className="fixed top-0 inset-x-0 z-[999] m-0 p-2 bg-black/85 text-[10px] leading-snug text-lime-300 whitespace-pre-wrap break-all pointer-events-none">
+          {`modo ${allowMultiView ? 'ESCRITORIO' : 'TELÉFONO'}\n${diag}`}
+        </pre>
+      )}
       <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col px-3 pt-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
         <div className={`bg-digi-card border border-digi-border shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0 rounded-t-xl border-b-0' : 'rounded-xl h-[calc(100dvh-6.5rem)]'}`}>
           {enTelefono ? (
