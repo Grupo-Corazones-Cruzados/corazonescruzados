@@ -71,9 +71,9 @@ export function presentacionSoluciones(soluciones: SolucionConContenido[]): Pres
   const proyectos = proyectosV.size, tickets = ticketsV.size, productos = productosV.size;
   return {
     etiqueta: 'Soluciones',
-    titulo: 'Lo que sabemos hacer, con trabajo terminado',
+    titulo: 'Cuando tengas problemas, conecta con nosotros',
     texto:
-      'Cada solución reúne los talentos del grupo y lo que ya entregaron con ellos: proyectos, tickets y productos. Elige un talento y mira lo hecho.',
+      'Las soluciones que ofrecemos aprovechan las estrategias aplicadas previamente con clientes experimentales para publicar versiones que se actualizan según la experiencia; además, te damos acceso a la guía del proyecto para que conozcas el alcance y resultados esperados.',
     cifras: [
       { valor: proyectos, etiqueta: 'Proyectos' },
       { valor: tickets, etiqueta: 'Tickets' },

@@ -46,11 +46,11 @@ export const metadata: Metadata = {
   /** Solo el nombre: la plantilla de `app/layout.tsx` añade « · Grupo Corazones Cruzados». */
   title: 'Soluciones',
   description:
-    'Los tipos de proyecto que Grupo Corazones Cruzados es capaz de manejar, con el trabajo terminado en cada uno: automatización de procesos, desarrollo y más.',
+    'Las soluciones que ofrecemos aprovechan las estrategias aplicadas previamente con clientes experimentales para publicar versiones que se actualizan según la experiencia; además, te damos acceso a la guía del proyecto para que conozcas el alcance y resultados esperados.',
   alternates: { canonical: '/soluciones' },
   openGraph: {
     title: `Soluciones — ${SITIO.nombre}`,
-    description: 'Los tipos de proyecto que manejamos y el trabajo terminado en cada uno.',
+    description: 'Cuando tengas problemas, conecta con nosotros',
     url: `${SITIO.url}/soluciones`,
     type: 'website',
     locale: 'es_EC',

@@ -291,9 +291,9 @@ export default function SolucionesExplorador({
           Era una tira que se movía sola en una columna a la derecha y robaba ancho a los
           trabajos. Ahora es una rejilla quieta (4/3/2/1 columnas), entera y sin deslizar. */}
       {conceptosActivos.length > 0 && (
-        <section aria-label="Lo que sabemos hacer" className="mt-10">
+        <section aria-label="Productos y Servicios asociados" className="mt-10">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)]">
-            Lo que sabemos hacer
+            Productos y Servicios asociados
           </p>
           <ul className="conceptos-rejilla mt-4">
             {conceptosActivos.map((c) => {
