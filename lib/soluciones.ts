@@ -71,6 +71,11 @@ export interface TalentoDeSolucion {
    * movería enlaces ya repartidos ante cualquier retoque del catálogo.
    */
   slug: string;
+  /**
+   * Clave del mapa `ICONOS` (`components/sitio/piezas.tsx`), como la de los conceptos
+   * (migración 076). `null` = el icono por defecto.
+   */
+  icono: string | null;
 }
 
 export interface Solucion {
@@ -122,7 +127,8 @@ export async function listarSoluciones(): Promise<Solucion[]> {
             COALESCE(
               (SELECT json_agg(json_build_object('talento', t.talento,
                                                  'descripcion', t.descripcion,
-                                                 'slug', t.slug)
+                                                 'slug', t.slug,
+                                                 'icono', t.icono)
                                ORDER BY t.orden, t.talento)
                  FROM gcc_world.solucion_talentos t
                 WHERE t.solucion_id = a.id),
@@ -248,13 +254,16 @@ export async function fijarTalentos(
     );
     if (unicos.length) {
       await cliente.query(
-        `INSERT INTO gcc_world.solucion_talentos (solucion_id, talento, orden, descripcion, slug)
-         SELECT $1, t.valor, t.ord - 1, d.valor, s.valor
+        `INSERT INTO gcc_world.solucion_talentos (solucion_id, talento, orden, descripcion, slug, icono)
+         SELECT $1, t.valor, t.ord - 1, d.valor, s.valor, i.valor
            FROM UNNEST($2::text[]) WITH ORDINALITY AS t(valor, ord)
            JOIN UNNEST($3::text[]) WITH ORDINALITY AS d(valor, ord) ON d.ord = t.ord
            JOIN UNNEST($4::text[]) WITH ORDINALITY AS s(valor, ord) ON s.ord = t.ord
+           JOIN UNNEST($5::text[]) WITH ORDINALITY AS i(valor, ord) ON i.ord = t.ord
          ON CONFLICT (solucion_id, talento) DO UPDATE
-            SET orden = EXCLUDED.orden, descripcion = EXCLUDED.descripcion`,
+            -- El icono que no venga (una pantalla vieja que no lo conoce) se conserva.
+            SET orden = EXCLUDED.orden, descripcion = EXCLUDED.descripcion,
+                icono = COALESCE(EXCLUDED.icono, gcc_world.solucion_talentos.icono)`,
         [
           solucionId,
           unicos.map((t) => t.talento),
@@ -263,6 +272,8 @@ export async function fijarTalentos(
           // se usa al INSERTAR: el `DO UPDATE` no lo toca, porque es una URL publicada
           // (migración 043) y no algo que se reescriba en cada guardado.
           unicos.map((t) => aSlug(t.talento)),
+          // Como el de los conceptos, una clave de `ICONOS`; la web cae al de por defecto si no existe.
+          unicos.map((t) => (typeof t.icono === 'string' && /^[a-z-]{1,40}$/.test(t.icono) ? t.icono : null)),
         ],
       );
     }

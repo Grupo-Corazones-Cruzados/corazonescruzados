@@ -77,6 +77,7 @@ interface FilaTalento {
   talento: string;
   slug: string;
   descripcion: string | null;
+  icono: string | null;
   conceptos: number;
   proyectos: number;
   tickets: number;
@@ -107,6 +108,8 @@ export default function SolucionesPanel() {
   /* ── El panel ANCHO de un talento: su descripción y sus conceptos ─────────── */
   const [talentoAbierto, setTalentoAbierto] = useState<FilaTalento | null>(null);
   const [descripcion, setDescripcion] = useState('');
+  /** El icono del talento (migración 076): se ve junto a su nombre en Clientes ▸ Soluciones. */
+  const [tIcono, setTIcono] = useState('destello');
 
   const [conceptoEnEdicion, setConceptoEnEdicion] = useState<Concepto | 'nuevo' | null>(null);
   const [cTitulo, setCTitulo] = useState('');
@@ -160,6 +163,7 @@ export default function SolucionesPanel() {
       talento: t.talento,
       slug: t.slug,
       descripcion: t.descripcion,
+      icono: t.icono,
       conceptos: conceptos[t.talento]?.length ?? 0,
       proyectos: cobertura[t.talento]?.proyectos ?? 0,
       tickets: cobertura[t.talento]?.tickets ?? 0,
@@ -225,7 +229,7 @@ export default function SolucionesPanel() {
     const nuevos = seleccion
       .filter((t) => !previos.some((p) => p.talento === t))
       .sort((a, b) => a.localeCompare(b, 'es-ES', { sensitivity: 'base' }))
-      .map((t) => ({ talento: t, descripcion: null, slug: '' } as TalentoDeSolucion));
+      .map((t) => ({ talento: t, descripcion: null, slug: '', icono: null } as TalentoDeSolucion));
     return [...siguen, ...nuevos];
   }
 
@@ -484,7 +488,7 @@ export default function SolucionesPanel() {
                 emptyDesc={cargando ? '' : 'Pulsa «Añadir talentos» para elegirlos del catálogo.'}
                 /* La fila entera abre el panel del talento: allí se escribe su descripción y
                    se gestionan sus conceptos (Fernando, 2026-08-21). */
-                onRowClick={(f) => { setTalentoAbierto(f); setDescripcion(f.descripcion ?? ''); }}
+                onRowClick={(f) => { setTalentoAbierto(f); setDescripcion(f.descripcion ?? ''); setTIcono(f.icono ?? 'destello'); }}
                 /* UNA línea por fila (Fernando, 2026-08-22): la descripción de un talento son
                    párrafos, y desplegada entera hacía filas de seis líneas para una tabla que
                    sirve para ENCONTRAR el talento, no para leerlo — se lee en su panel. Lo que
@@ -492,6 +496,14 @@ export default function SolucionesPanel() {
                    y es el contenido. */
                 singleLine
                 columns={[
+                  { key: 'icono', header: '', width: '44px', render: (f: FilaTalento) => {
+                    const Icono = (f.icono && ICONOS[f.icono]) || ICONOS.destello;
+                    return (
+                      <span className="inline-flex items-center justify-center w-7 h-7 rounded border border-digi-border text-accent" title={f.icono ?? undefined}>
+                        <Icono className="w-4 h-4" />
+                      </span>
+                    );
+                  } },
                   { key: 'talento', header: 'Talento', width: '260px', render: (f: FilaTalento) => (
                     <span className="text-digi-text font-medium">{f.talento}</span>
                   ) },
@@ -539,16 +551,16 @@ export default function SolucionesPanel() {
           title={talentoAbierto.talento}
           onClose={() => setTalentoAbierto(null)}
           saving={guardando}
-          saveLabel="Guardar descripción"
+          saveLabel="Guardar"
           onSave={async () => {
             setGuardando(true);
             try {
               const texto = descripcion.trim() || null;
               const lista = solucion.talentos.map((t) =>
-                t.talento === talentoAbierto.talento ? { ...t, descripcion: texto } : t);
+                t.talento === talentoAbierto.talento ? { ...t, descripcion: texto, icono: tIcono } : t);
               if (await guardarTalentos(solucion.id, lista)) {
                 setTalentoAbierto(null);
-                toast.success('Descripción guardada');
+                toast.success('Talento guardado');
               }
             } finally {
               setGuardando(false);
@@ -567,6 +579,9 @@ export default function SolucionesPanel() {
               className={`${CAMPO} resize-y`}
               style={mf}
             />
+          </EditField>
+          <EditField label="Icono">
+            <GaleriaIconos valor={tIcono} onChange={setTIcono} />
           </EditField>
           {/* ── SUS CONCEPTOS ─────────────────────────────────────────────────── */}
           <div className="flex items-center gap-2 pt-2">

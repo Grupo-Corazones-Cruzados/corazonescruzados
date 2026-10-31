@@ -6080,3 +6080,10 @@ Desarrollo Humano mientras Fernando decide.
   2×2, rejilla de conceptos y lo hecho en pestañas numeradas con cuenta (`SolucionDetalle.tsx`):
   Proyectos · Tickets · **Soluciones** (= productos, nombre de Fernando) · Talentos. En el teléfono,
   cuatro pestañas en 2×2.
+  **Cambio del mismo día:** encima, el buscador redondo de la casa (nombre, descripción, talento o
+  producto/servicio, sin tildes). En la tarjeta, «Talentos» con su icono (columna `icono` de
+  `solucion_talentos`, migración 076, se elige con `GaleriaIconos` en Admin) en lugar de los productos.
+  La tarjeta ya no es un `<a>` entero: el enlace del nombre la cubre con `::after` y cada talento es
+  su propio enlace encima (`z-index:1`), porque dos `<a>` no se anidan. Las páginas de la solución y
+  de cada talento (`/clientes/soluciones/<sol>/<talento>`) comparten `FichaSolucion.tsx`: en la de la
+  solución la rejilla son sus talentos enlazados; en la del talento, sus Productos y Servicios.

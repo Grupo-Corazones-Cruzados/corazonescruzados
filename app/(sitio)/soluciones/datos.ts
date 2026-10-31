@@ -97,3 +97,24 @@ export function resumenSolucion(s: SolucionConContenido) {
     conceptos: unico(s.talentos.flatMap((t) => s.conceptos[t.talento] ?? []), (x) => x.id),
   };
 }
+
+/**
+ * LO DE UN TALENTO DENTRO DE SU SOLUCIÓN — para su página en Clientes
+ * (`/clientes/soluciones/<solución>/<talento>`, 2026-10-31). `null` si el talento no es de esa solución.
+ */
+export function resumenTalento(s: SolucionConContenido, slug: string) {
+  const t = s.talentos.find((x) => x.slug === slug);
+  if (!t) return null;
+  const c = s.contenido[t.talento] ?? VACIO;
+  return { ...t, ...c, conceptos: s.conceptos[t.talento] ?? [] };
+}
+
+/** Las cuatro cifras de lo hecho, en el orden en que se enseñan. */
+export function cifrasDe(r: Pick<ReturnType<typeof resumenSolucion>, 'proyectos' | 'tickets' | 'productos' | 'miembros'>) {
+  return [
+    { valor: r.proyectos.length, etiqueta: 'Proyectos', uno: 'proyecto', varios: 'proyectos' },
+    { valor: r.tickets.length, etiqueta: 'Tickets', uno: 'ticket', varios: 'tickets' },
+    { valor: r.productos.length, etiqueta: 'Soluciones', uno: 'solución', varios: 'soluciones' },
+    { valor: r.miembros.length, etiqueta: 'Talentos', uno: 'talento', varios: 'talentos' },
+  ];
+}

@@ -68,14 +68,14 @@ const ULTIMO_CAMBIO_MODELO: Record<string, string> = {
 async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
   try {
     const soluciones = await listarSoluciones();
-    return soluciones.flatMap((a) =>
-      a.talentos.map((t) => ({
-        url: `${SITIO.url}/soluciones/${t.slug}`,
-        lastModified: ULTIMO_CAMBIO.soluciones,
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      })),
-    );
+    const entrada = (ruta: string, lastModified: string) =>
+      ({ url: `${SITIO.url}${ruta}`, lastModified, changeFrequency: 'weekly' as const, priority: 0.7 });
+    return soluciones.flatMap((a) => [
+      ...a.talentos.map((t) => entrada(`/soluciones/${t.slug}`, ULTIMO_CAMBIO.soluciones)),
+      // Las páginas de Clientes (2026-10-31): la de cada solución y la de cada uno de sus talentos.
+      entrada(`/clientes/soluciones/${a.slug}`, ULTIMO_CAMBIO.clientes),
+      ...a.talentos.map((t) => entrada(`/clientes/soluciones/${a.slug}/${t.slug}`, ULTIMO_CAMBIO.clientes)),
+    ]);
   } catch {
     return [];
   }
