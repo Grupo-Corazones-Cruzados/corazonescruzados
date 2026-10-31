@@ -6982,6 +6982,11 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   - **Qué muestra ahora** (elección de Fernando entre tres opciones): avance en %, las **etapas
     pactadas** con importe y estado (facturada/pendiente), **todas las facturas** con su PDF
     descargable, y las imágenes del proyecto. Nada de requerimientos, miembros ni costos internos.
+  - **⚠️ CAMBIO 2026-10-31 (Fernando): los requerimientos SÍ se ven** en la página pública: título,
+    descripción y si está entregado, en `TarjetaRequerimientos` con la barra de avance dentro. Siguen
+    ocultos los miembros/talentos, el costo y las plazas (la API solo selecciona `id, title,
+    description, hecho`). Pendiente de su respuesta: si las horas que llevan algunos títulos
+    («— 7 horas») deben verse.
   - **Dónde vive:** `app/(sitio)/proyecto/[id]/page.tsx` — dentro del grupo `(sitio)`, así que
     hereda el marco público (cabecera oscura, cuerpo claro, pie oscuro) sin cambiar la URL.
   - **Excepción a la regla de diseño:** él dijo *«propongo yo, con el lenguaje del sitio»* **para
