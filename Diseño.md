@@ -5110,6 +5110,17 @@ pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos 
 - ⚠️ Ninguna animación deja un `transform` puesto al acabar: convertiría los `fixed` de dentro en relativos.
   Medido: a 390 px el desborde es 0 durante y después.
 
+## ⭐ EL RECUENTO CIERRA LA GALERÍA, NO LA ABRE (2026-10-31)
+
+Fernando, sobre «27 tickets» puesto ENCIMA de las tarjetas: *«los recuentos van al final de la tabla o
+galería, no al principio, y debe tener un borde o relleno de fondo para distinguirlo… debajo de la
+paginación»*. Es la misma regla que ya regía las tablas del panel (recuento en la última franja de la
+tarjeta de la tabla) llevada a las GALERÍAS del sitio:
+- Orden al pie: tarjetas → paginación → **recuento en cápsula** con borde y fondo
+  (`.pie-galeria` / `.pie-galeria-recuento`, `ListaTickets.tsx`).
+- Con varias páginas dice el tramo: «Mostrando **1–12** de **27** tickets»; con una, «**27** tickets».
+- Encima de la galería solo van los filtros (y «× Quitar filtros» si hay alguno puesto). Nunca el recuento.
+
 ## ⭐ LA FLECHA DE UN DESPLEGABLE, CON AIRE (2026-10-31)
 
 Fernando: *«estos controles de desplegables tienen la flecha súper mal colocada… muy al borde del

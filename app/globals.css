@@ -4807,11 +4807,17 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .filtro-sitio select { width: 100%; height: 44px; padding: 0 44px 0 18px; background-position: right 18px center; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background-color: rgba(255, 255, 255, 0.85); font-size: 0.9rem; color: var(--texto); text-overflow: ellipsis; }
 .filtro-sitio select[data-activo] { border-color: rgba(124, 58, 237, 0.55); color: var(--violeta-txt); font-weight: 600; }
 .filtro-sitio select:focus { outline: none; border-color: #7b5fbf; }
-.filtros-tickets-resumen { margin-top: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--linea); display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.88rem; color: var(--tenue); }
-.filtros-tickets-resumen b { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--texto); }
-.filtros-tickets-resumen button { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--violeta-txt); }
-.filtros-tickets-resumen button:hover { text-decoration: underline; text-underline-offset: 3px; }
-.filtros-tickets-resumen svg { width: 15px; height: 15px; }
+.filtros-tickets-quitar { margin-top: 12px; display: flex; justify-content: flex-end; }
+.filtros-tickets-quitar button { display: inline-flex; align-items: center; gap: 4px; font-size: 0.88rem; font-weight: 600; color: var(--violeta-txt); }
+.filtros-tickets-quitar button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.filtros-tickets-quitar svg { width: 15px; height: 15px; }
+/* EL PIE DE UNA GALERÍA (2026-10-31): el recuento CIERRA la galería, no la abre (Fernando: «los recuentos
+   van al final de la tabla o galería… con un borde o relleno de fondo… debajo de la paginación»).
+   Paginación arriba y, debajo, el recuento en su cápsula con borde y fondo. */
+.pie-galeria { margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.pie-galeria .paginacion-sitio { margin-top: 0; }
+.pie-galeria-recuento { padding: 9px 18px; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background-color: rgba(255, 255, 255, 0.85); box-shadow: 0 12px 26px -22px rgba(75, 45, 142, 0.55); font-size: 0.88rem; color: var(--tenue); text-align: center; }
+.pie-galeria-recuento b { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--texto); font-variant-numeric: tabular-nums; }
 .paginacion-sitio { margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .paginacion-sitio button { display: grid; place-items: center; min-width: 40px; height: 40px; padding: 0 10px; border-radius: 9999px; border: 1px solid var(--linea); background: rgba(255, 255, 255, 0.8); font: 600 0.9rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--suave); font-variant-numeric: tabular-nums; transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
 .paginacion-sitio button:hover:not(:disabled) { border-color: rgba(124, 58, 237, 0.35); color: var(--violeta-txt); }

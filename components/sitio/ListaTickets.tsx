@@ -13,7 +13,9 @@
  * ya elegido se conserva en su lista aunque los otros filtros lo dejen a cero, para poder quitarlo.
  * La fecha es la que enseña la tarjeta (`creado`, en UTC como `comoFecha`).
  *
- * Tarjetas `TarjetaTrabajo` de 12 en 12 con paginación; cualquier filtro vuelve a la página 1.
+ * Tarjetas `TarjetaTrabajo` de 12 en 12; cualquier filtro vuelve a la página 1. El recuento va AL FINAL,
+ * en su cápsula con borde y fondo, debajo de la paginación (regla de `/diseno`: el recuento cierra
+ * la tabla o galería, nunca la abre).
  */
 
 import { useMemo, useRef, useState } from 'react';
@@ -128,12 +130,11 @@ export default function ListaTickets({
         </div>
       </div>
 
-      <div className="filtros-tickets-resumen">
-        <span><b>{vistos.length.toLocaleString('es-ES')}</b> {vistos.length === 1 ? 'ticket' : 'tickets'}</span>
-        {hayFiltro && (
+      {hayFiltro && (
+        <div className="filtros-tickets-quitar">
           <button type="button" onClick={limpiar}><X aria-hidden /> Quitar filtros</button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="mt-5">
         {enPagina.length === 0 ? (
@@ -143,21 +144,29 @@ export default function ListaTickets({
         )}
       </div>
 
-      {paginas > 1 && (
-        <nav aria-label="Páginas" className="paginacion-sitio">
-          <button type="button" onClick={() => irA(p - 1)} disabled={p === 0} aria-label="Página anterior">
-            <ChevronLeft aria-hidden />
-          </button>
-          {Array.from({ length: paginas }, (_, n) => (
-            <button key={n} type="button" onClick={() => irA(n)} aria-current={n === p ? 'page' : undefined}>
-              {n + 1}
+      <div className="pie-galeria">
+        {paginas > 1 && (
+          <nav aria-label="Páginas" className="paginacion-sitio">
+            <button type="button" onClick={() => irA(p - 1)} disabled={p === 0} aria-label="Página anterior">
+              <ChevronLeft aria-hidden />
             </button>
-          ))}
-          <button type="button" onClick={() => irA(p + 1)} disabled={p === paginas - 1} aria-label="Página siguiente">
-            <ChevronRight aria-hidden />
-          </button>
-        </nav>
-      )}
+            {Array.from({ length: paginas }, (_, n) => (
+              <button key={n} type="button" onClick={() => irA(n)} aria-current={n === p ? 'page' : undefined}>
+                {n + 1}
+              </button>
+            ))}
+            <button type="button" onClick={() => irA(p + 1)} disabled={p === paginas - 1} aria-label="Página siguiente">
+              <ChevronRight aria-hidden />
+            </button>
+          </nav>
+        )}
+        <p className="pie-galeria-recuento" aria-live="polite">
+          {vistos.length === 0 ? '0 tickets' : <>
+            {paginas > 1 && <>Mostrando <b>{(p * POR_PAGINA + 1).toLocaleString('es-ES')}–{(p * POR_PAGINA + enPagina.length).toLocaleString('es-ES')}</b> de </>}
+            <b>{vistos.length.toLocaleString('es-ES')}</b> {vistos.length === 1 ? 'ticket' : 'tickets'}
+          </>}
+        </p>
+      </div>
     </section>
   );
 }
