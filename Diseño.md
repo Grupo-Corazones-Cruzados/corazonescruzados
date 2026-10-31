@@ -6061,6 +6061,10 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   `PixelDataTable` la galería del teléfono tiene un TECHO (`max-height` medido hasta el fondo del `main`, descontando el
   hueco de `BarraAcciones`): si sus tarjetas no caben se desplaza por dentro con los filtros y su pie quietos; con pocas
   mide lo suyo. Verificar a 390 px: `scrollHeight` del documento == alto de la ventana en cada módulo.
+- **Fecha y hora en el iPhone** (Fernando, 2026-10-31: «el campo fecha límite» más ancho que los demás): el control
+  nativo de iOS trae ancho mínimo propio y se sale aunque lleve `w-full`. Lo corrige UNA regla en `app/globals.css`
+  (`@supports (-webkit-touch-callout: none)`: `appearance: none`, `min-width: 0`, valor a la izquierda y con alto
+  mínimo). Ningún formulario lo arregla por su cuenta.
 
 ### Temas en pestañas numeradas (Clientes, 2026-10-31)
 Fernando pidió reformular cómo se dividen los temas de una página. `components/sitio/TemasPestanas.tsx`

@@ -214,13 +214,12 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
    * nativo tiene ancho mínimo propio), había un párrafo de explicación arriba, dos cajas
    * rellenas que repetían la fecha y los botones al final de todo. Ahora:
    *  · grupos con su nombre (Tus datos · La reunión · Cuándo), sin párrafo de ayuda;
-   *  · la fecha a todo el ancho e Inicio/Fin en dos columnas, con `min-w-0` para que quepan;
+   *  · la fecha a todo el ancho e Inicio/Fin en dos columnas (que quepan en iOS: `globals.css`);
    *  · la zona horaria con su botón de detectar como icono al lado;
    *  · «en tu hora» en UNA línea y solo si tu zona es otra; avisos como texto, sin caja;
    *  · los botones en el pie del panel (en el teléfono, a partes iguales y siempre a la vista).
    */
   const grupo = 'text-[11px] font-semibold uppercase tracking-wider text-digi-muted';
-  const fechaHora = 'min-w-0 appearance-none text-left [&::-webkit-date-and-time-value]:text-left';
 
   return (
     <PixelModal
@@ -268,13 +267,13 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
           <h3 className={grupo}>Cuándo · hora de Ecuador (GMT-5)</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="col-span-2 md:col-span-1 min-w-0">
-              <PixelInput type="date" label="FECHA" value={date} onChange={(e) => setDate(e.target.value)} className={fechaHora} />
+              <PixelInput type="date" label="FECHA" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="min-w-0">
-              <PixelInput type="time" label="INICIO" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={fechaHora} />
+              <PixelInput type="time" label="INICIO" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
             </div>
             <div className="min-w-0">
-              <PixelInput type="time" label="FIN" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={fechaHora} />
+              <PixelInput type="time" label="FIN" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </div>
           </div>
           {slotBusy && (
@@ -337,7 +336,7 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
                 })}
               </div>
               <div className="min-w-0 md:max-w-[220px]">
-                <PixelInput type="date" label="HASTA (OPCIONAL)" value={until} onChange={(e) => setUntil(e.target.value)} className={fechaHora} />
+                <PixelInput type="date" label="HASTA (OPCIONAL)" value={until} onChange={(e) => setUntil(e.target.value)} />
               </div>
             </>
           )}
