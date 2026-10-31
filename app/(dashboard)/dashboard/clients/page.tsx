@@ -336,10 +336,9 @@ export default function ClientsPage() {
         {/* Hasta 3 juegos de datos de facturación (Fernando, 2026-10-31): al facturar se elige
             cuál, y se propone el que está «por defecto». */}
         {!detail.is_consumidor_final && (
-          <div className="flex items-center gap-2">
             <Segmentado<string>
               etiqueta="Datos de facturación"
-              className="flex-1 min-w-0"
+              className="w-full"
               valor={datoSel}
               onChange={elegirDato}
               opciones={[
@@ -347,10 +346,6 @@ export default function ClientsPage() {
                 ...(listaDatos.length < 3 ? [{ valor: 'nuevo', texto: '+ Añadir', detalle: esNuevo ? 'Sin guardar' : `${listaDatos.length} de 3` }] : []),
               ]}
             />
-            {user?.role === 'admin' && datoActual && !datoActual.titular && (
-              <BotonQuitar onClick={quitarDato} etiqueta="Quitar estos datos de facturación" />
-            )}
-          </div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -375,8 +370,14 @@ export default function ClientsPage() {
         <div><label className={labelCls} style={mf}>Dirección</label><input value={e.address} onChange={ev => setE({ ...e, address: ev.target.value })} className={smallInputCls} style={mf} /></div>
         <div><label className={labelCls} style={mf}>País</label><CountrySelect value={e.country || ''} onChange={(v) => setE({ ...e, country: v })} /></div>
         {!detail.is_consumidor_final && listaDatos.length + (esNuevo ? 1 : 0) > 1 && (
-          <label className="flex items-center justify-between gap-3 cursor-pointer">
+          <div className="flex items-center justify-between gap-3 min-h-7">
             <span className="text-[12.5px] text-digi-text" style={mf}>Usar por defecto al facturar</span>
+            <div className="flex items-center gap-2">
+            {/* Quitar unos datos extra va aquí, en un hueco que existe siempre (vacío si no se
+                puede quitar): junto al selector lo estrechaba y movía las opciones. */}
+            {user?.role === 'admin' && datoActual && !datoActual.titular
+              ? <BotonQuitar onClick={quitarDato} etiqueta="Quitar estos datos de facturación" />
+              : <span aria-hidden className="w-7 h-7" />}
             <Interruptor
               etiqueta="Usar por defecto al facturar"
               activo={esNuevo ? nuevoPredeterminado : !!datoActual?.predeterminada}
@@ -389,7 +390,8 @@ export default function ClientsPage() {
                 marcarPredeterminado(v ? datoActual.id : titular?.id ?? detail.id);
               }}
             />
-          </label>
+            </div>
+          </div>
         )}
         <div><label className={labelCls} style={mf}>Notas del cliente</label><textarea value={notas} onChange={ev => setNotas(ev.target.value)} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
         {detail.aliases?.length > 0 && (
