@@ -5059,6 +5059,27 @@ En Pensamientos salía una barra de desplazamiento sin que nada estuviera oculto
 - **Los dos cálculos redondean hacia abajo, y encoger se aplica siempre.** Antes toleraban 1 px de más.
 - **Verificado con Chrome visible:** 11 páginas en tres tamaños de ventana, todas con 0 px sobrantes.
 
+## ⭐ EN EL TELÉFONO, UN SISTEMA DE VARIOS PANELES ES «LISTA → DETALLE» (Fernando, 2026-10-31)
+
+Caso: Generación de Contenido (`components/centralized/systems/GeneracionDeContenidoSystem.tsx`).
+Apilados, sus tres paneles eran una tira interminable (lista + guion de 15.000 caracteres +
+requerimientos + metadatos + estado), las pestañas no cabían —el subrayado caía sobre «⋯» con
+la etiqueta de otra— y cada lámina vacía del carrusel ocupaba la pantalla entera. Fernando: *«hay
+reglas de diseño para la versión móvil que hay que corregir… implementar ideas para que sea mejor
+navegable en relación al contenido y lo extenso que puede ser»*. La regla, para todo sistema:
+- **Por debajo de `xl` se MONTA otra vista** (`useConsultaMedia(PANTALLA_XL)`), no se apilan las
+  columnas: pantalla 1 = la lista (tarjetas de 44 px+ con estado, fecha y avance); pantalla 2 = el
+  detalle, con «‹ Lista» para volver. El escritorio no se toca.
+- **Lo principal a la barra de abajo** (`EnBarraAcciones`, solo bajo `lg`; entre `lg` y `xl` va en
+  la cabecera). Lo de menos uso (editar, configuración, eliminar) al «⋯» (`MenuMas`).
+- **Más de 3 secciones = `<select>` nativo** de 44 px, con «✓» en las que ya tienen contenido.
+- **Texto largo = índice «Ir a…»** (`<select>` con los bloques `##` del texto o los títulos de
+  grupo; aparece con 3 o más) y **«‹ Anterior / Siguiente ›» al final** de la sección, que sube
+  al selector. Nada pegado a la ventana: la regla de la cabecera del móvil sigue mandando.
+- **Lo que en escritorio es una columna lateral de estado** pasa a un selector junto al título
+  (`ActionsMenu` con `disparador` y `activo`).
+- **Rejillas de tarjetas con imagen: 2 columnas** también en el teléfono.
+
 ## Varios juegos de datos en una ficha: `Segmentado` + «+ Añadir» (2026-10-31)
 
 Cuando un registro guarda VARIOS juegos del mismo formulario (los hasta 3 datos de facturación de un cliente,

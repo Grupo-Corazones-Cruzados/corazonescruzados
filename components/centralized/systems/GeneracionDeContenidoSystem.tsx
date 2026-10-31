@@ -1,11 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import { useConsultaMedia, PANTALLA_LG, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
+import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
+import MenuMas from '@/components/ui/MenuMas';
 import { toast } from 'sonner';
 import {
   Plus, Settings, Sparkles, Pencil, Trash2, RefreshCw, Image as ImageIcon,
-  ClipboardList, Info, FileVideo, Wand2, Check, X,
+  ClipboardList, Info, FileVideo, Wand2, Check, X, ChevronLeft, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import Button, { BTN_SECONDARY } from '@/components/ui/Button';
 import PixelBadge from '@/components/ui/PixelBadge';
@@ -37,6 +40,24 @@ interface ContenidoLista {
 }
 interface Entregable { id: number; tipo: EntregableTipo; texto: string; datos: any; editado: boolean; generado_en: string }
 interface Lamina { id: number; orden: number; rol: LaminaRol; titulo: string; texto: string; prompt_visual: string; imagen_url: string | null; error: string | null }
+
+/** Campo nativo del teléfono: 44 px de alto y la flecha del sistema (regla «más de 3 opciones,
+ *  un `<select>`»). */
+const SELECT_MOVIL = 'field-control field-select appearance-none w-full h-11 px-3 bg-digi-darker border-2 border-digi-border text-[14px] text-digi-text focus:border-accent focus:outline-none';
+
+/** Un guion en sus bloques `## …` (escenas con su minuto): el índice «Ir a…» del teléfono. */
+function partirPorBloques(texto: string): { intro: string; bloques: { titulo: string; md: string }[] } {
+  const lineas = (texto || '').split('\n');
+  const bloques: { titulo: string; md: string }[] = [];
+  const intro: string[] = [];
+  for (const l of lineas) {
+    const m = /^##\s+(.*)$/.exec(l);
+    if (m) bloques.push({ titulo: m[1].trim(), md: '' });
+    else if (bloques.length) bloques[bloques.length - 1].md += l + '\n';
+    else intro.push(l);
+  }
+  return { intro: intro.join('\n'), bloques };
+}
 
 const vacio = {
   tema: '', proposito_social: '', proposito_monetario: '', desarrollo: '',
@@ -83,6 +104,20 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
 
   const [editandoTexto, setEditandoTexto] = useState<EntregableTipo | null>(null);
   const [borrador, setBorrador] = useState('');
+
+  /**
+   * ⭐ EN EL TELÉFONO NO SE APILAN LOS TRES PANELES (Fernando, 2026-10-31: «implementar ideas para
+   * que la versión móvil sea mejor navegable en relación al contenido y lo extenso que puede ser»).
+   * Apilados eran lista + guion de 15.000 caracteres + requerimientos + metadatos + estado, una
+   * sola tira interminable, y las pestañas no cabían (el subrayado caía sobre «⋯»). Por debajo de
+   * `xl` son DOS pantallas: la lista y, al tocar uno, su detalle, con las seis secciones en un
+   * `<select>`, un índice «Ir a…» de los bloques del texto y «Anterior / Siguiente» al final. Lo
+   * principal («Nueva idea», «Generar todo») va a la barra de abajo. Se decide QUÉ SE MONTA en
+   * JS, no con clases (ver Clientes).
+   */
+  const enEscritorio = useConsultaMedia(PANTALLA_XL);
+  const conBarraAbajo = !useConsultaMedia(PANTALLA_LG);
+  const arribaSeccion = useRef<HTMLDivElement>(null);
 
   /* ── Carga ────────────────────────────────────────────────────────────────── */
   const cargarLista = useCallback(async () => {
@@ -285,7 +320,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
   const ocupado = Boolean(generando) || enTanda || generandoLamina !== null;
   const estado: ContenidoEstado = (detalle?.estado as ContenidoEstado) || 'en_desarrollo';
 
-  const cuerpoCentral = () => {
+  const cuerpoCentral = (conAnclas = false) => {
     if (!detalle) {
       return (
         <div className="h-full flex flex-col items-center justify-center text-center py-12">
@@ -314,7 +349,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
             className="field-control flex-1 min-h-[320px] w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-[13px] leading-relaxed text-digi-text focus:border-accent focus:outline-none"
             style={mf}
           />
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
             <button type="button" onClick={() => setEditandoTexto(null)} className={BTN_SECONDARY}>
               <X className="w-4 h-4" /> Cancelar
             </button>
@@ -324,6 +359,19 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
       );
     }
 
+    if (conAnclas && e.texto) {
+      const { intro, bloques } = partirPorBloques(e.texto);
+      return (
+        <div className="prose-sm max-w-none text-[13px] text-digi-text" style={mf}>
+          {intro.trim() && <MarkdownRenderer content={intro} />}
+          {bloques.map((b, i) => (
+            <section key={i} id={`gc-bloque-${i}`} className="scroll-mt-4">
+              <MarkdownRenderer content={`## ${b.titulo}\n${b.md}`} />
+            </section>
+          ))}
+        </div>
+      );
+    }
     return (
       <div className="prose-sm max-w-none text-[13px] text-digi-text" style={mf}>
         <MarkdownRenderer content={e.texto || '_El agente no devolvió texto para este entregable._'} />
@@ -368,14 +416,16 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
               type="button"
               onClick={generarTodasLasImagenes}
               disabled={ocupado}
-              className={`${BTN_SECONDARY} ml-auto`}
+              className={`${BTN_SECONDARY} w-full sm:w-auto sm:ml-auto`}
             >
               <ImageIcon className="w-4 h-4" />
               {generandoLamina !== null ? 'Generando imágenes…' : `Generar las ${pendientes} imágenes que faltan`}
             </button>
           )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3">
+        {/* Dos columnas también en el teléfono: una lámina vacía a todo el ancho ocupaba la
+            pantalla entera, y eran ocho. */}
+        <div className="grid grid-cols-2 2xl:grid-cols-3 gap-2 sm:gap-3">
           {laminas.map((l) => (
             <div key={l.id} className="rounded-xl border border-digi-border overflow-hidden bg-digi-card flex flex-col">
               <div className="relative aspect-square bg-black/[0.04] flex items-center justify-center">
@@ -438,7 +488,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
     return (
       <div className="flex flex-col gap-2.5">
         {grupos.map((g: any, i: number) => (
-          <div key={i}>
+          <div key={i} id={`gc-bloque-${i}`} className="scroll-mt-4">
             <p className="text-[11.5px] font-semibold text-digi-text uppercase tracking-wide" style={df}>{g.titulo}</p>
             <ul className="mt-1 space-y-1">
               {(g.items || []).map((it: any, j: number) => (
@@ -516,6 +566,318 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
 
   // Las columnas llegan al pie de la ruta, medido y no a ojo (Fernando, 2026-10-29).
   const altoPie = useAltoHastaElPie<HTMLDivElement>({ desdeAncho: 1280 });
+
+  /* ── Teléfono y tableta ──────────────────────────────────────────────────── */
+  const SECCIONES = ENTREGABLES.map((e) => e.tipo);
+  const irASeccion = (t: EntregableTipo, subir = false) => {
+    setTab(t); setEditandoTexto(null);
+    if (subir) requestAnimationFrame(() => arribaSeccion.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+  };
+  const anclas: string[] = !detalle ? []
+    : tab === 'requerimientos' ? (entregables.requerimientos?.datos?.grupos || []).map((g: any) => g.titulo)
+    : tab !== 'carrusel' && tab !== 'metadatos' && entregables[tab] ? partirPorBloques(entregables[tab].texto).bloques.map((b) => b.titulo)
+    : [];
+  const iSeccion = SECCIONES.indexOf(tab);
+  const botonGenerarTodo = (
+    <Button onClick={generarTodo} disabled={ocupado} icon={<Sparkles className="w-4 h-4" />}>
+      {enTanda ? `Generando ${generando ? ENTREGABLE_META[generando].label : ''}…` : 'Generar todo'}
+    </Button>
+  );
+  const botonNuevaIdea = (
+    <Button onClick={abrirNueva} icon={<Plus className="w-4 h-4" />}>Nueva idea</Button>
+  );
+
+  const cuerpoSeccionMovil = () => {
+    if (tab === 'requerimientos') return entregables.requerimientos ? bloqueRequerimientos() : vistaSinGenerar('requerimientos');
+    if (tab === 'metadatos') return entregables.metadatos ? bloqueMetadatos() : vistaSinGenerar('metadatos');
+    return cuerpoCentral(true);
+  };
+
+  const listaMovil = (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <FileVideo className="w-4 h-4 text-accent" />
+        <span className="text-[14px] font-semibold text-digi-text" style={df}>Contenidos</span>
+        <span className="text-[12px] text-digi-muted" style={mf}>{lista.length}</span>
+        <div className="ml-auto flex items-center gap-2">
+          {!conBarraAbajo && botonNuevaIdea}
+          <button
+            type="button"
+            onClick={() => setPromptsOpen(true)}
+            aria-label="Configuración del agente"
+            title="Configuración del agente"
+            className="w-11 h-11 flex items-center justify-center rounded border border-digi-border text-digi-muted hover:border-accent hover:text-accent transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="bg-digi-card border border-digi-border rounded-xl overflow-hidden divide-y divide-digi-border/60">
+        {lista.length === 0 ? (
+          <p className="px-4 py-6 text-center text-[13px] text-digi-muted" style={mf}>Todavía no hay ideas de video.</p>
+        ) : lista.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => { setSelId(c.id); setTab('guion_largo'); setEditandoTexto(null); }}
+            className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/[0.03] transition-colors"
+          >
+            <span className="flex-1 min-w-0">
+              <span className="flex items-center gap-2 text-[12px]" style={mf}>
+                <PixelBadge variant={ESTADO_VARIANT[c.estado]}>{ESTADO_LABEL[c.estado]}</PixelBadge>
+                <span className="text-digi-muted">{new Date(c.created_at).toLocaleDateString('es-ES')}</span>
+                <span className="ml-auto text-digi-muted tabular-nums">{c.entregables_count}/{ENTREGABLES.length}</span>
+              </span>
+              <span className="block mt-1 text-[14px] font-medium text-digi-text leading-snug line-clamp-3" style={mf}>
+                {c.titulo || c.tema}
+              </span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-digi-muted shrink-0" />
+          </button>
+        ))}
+      </div>
+      {conBarraAbajo && <EnBarraAcciones>{botonNuevaIdea}</EnBarraAcciones>}
+    </div>
+  );
+
+  const detalleMovil = (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => { setSelId(null); setEditandoTexto(null); }}
+          className="min-h-11 -ml-2 px-2 inline-flex items-center gap-1 text-[13px] text-digi-muted hover:text-accent transition-colors"
+          style={mf}
+        >
+          <ChevronLeft className="w-4 h-4" /> Contenidos
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          {!conBarraAbajo && detalle && botonGenerarTodo}
+          {detalle && (
+            <MenuMas items={[
+              { label: 'Editar idea', icon: Pencil, onClick: abrirEdicion },
+              { label: 'Configuración del agente', icon: Settings, onClick: () => setPromptsOpen(true) },
+              { label: 'Eliminar contenido', icon: Trash2, danger: true, onClick: () => setBorrar(lista.find((c) => c.id === selId) || null) },
+            ]} />
+          )}
+        </div>
+      </div>
+
+      {!detalle ? (
+        <div className="py-16 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div>
+      ) : (
+        <>
+          <div className="bg-digi-card border border-digi-border rounded-xl px-4 py-3 flex flex-col gap-1.5">
+            <h2 className="text-[15px] font-semibold text-digi-text leading-snug" style={df}>{detalle.titulo || detalle.tema}</h2>
+            <div className="flex items-center gap-3 text-[12px] text-digi-muted" style={mf}>
+              {/* El estado se cambia tocándolo: en el teléfono no hay columna derecha. */}
+              <ActionsMenu
+                label="Estado del contenido"
+                disparador={
+                  <span className="inline-flex items-center gap-1 min-h-11 sm:min-h-0 py-1">
+                    <PixelBadge variant={ESTADO_VARIANT[estado]}>{ESTADO_LABEL[estado]}</PixelBadge>
+                    <ChevronDown className="w-3.5 h-3.5 text-digi-muted" />
+                  </span>
+                }
+                items={ESTADOS.map((e) => ({ label: ESTADO_LABEL[e], activo: estado === e, onClick: () => cambiarEstado(e) }))}
+              />
+              <span className="tabular-nums">{Object.keys(entregables).length}/{ENTREGABLES.length} entregables</span>
+            </div>
+          </div>
+
+          <div ref={arribaSeccion} className="scroll-mt-4 flex flex-col gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="field-label text-[11px] text-digi-muted" style={mf}>Sección</span>
+              <select value={tab} onChange={(e) => irASeccion(e.target.value as EntregableTipo)} className={SELECT_MOVIL} style={mf}>
+                {SECCIONES.map((t) => (
+                  <option key={t} value={t}>
+                    {ENTREGABLE_META[t].label}{entregables[t] ? ' ✓' : ''}{t === 'carrusel' && laminas.length ? ` · ${laminas.length} láminas` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {anclas.length >= 3 && editandoTexto !== tab && (
+              <label className="flex flex-col gap-1">
+                <span className="field-label text-[11px] text-digi-muted" style={mf}>Ir a</span>
+                <select
+                  value=""
+                  onChange={(e) => document.getElementById(`gc-bloque-${e.target.value}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
+                  className={SELECT_MOVIL}
+                  style={mf}
+                >
+                  <option value="" disabled>{anclas.length} bloques…</option>
+                  {anclas.map((a, i) => <option key={i} value={i}>{a}</option>)}
+                </select>
+              </label>
+            )}
+            {entregables[tab] && editandoTexto !== tab && (
+              <div className="flex items-center gap-2">
+                {ENTREGABLE_META[tab].editable && (
+                  <button type="button" onClick={() => abrirEditorTexto(tab)} className={`${BTN_SECONDARY} flex-1`}>
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                )}
+                <button type="button" onClick={() => generar(tab)} disabled={ocupado} className={`${BTN_SECONDARY} flex-1`}>
+                  <RefreshCw className="w-4 h-4" /> {generando === tab ? 'Generando…' : 'Regenerar'}
+                </button>
+              </div>
+            )}
+            {entregables[tab]?.editado && <span className="text-[12px]"><PixelBadge variant="warning">Editado a mano</PixelBadge></span>}
+          </div>
+
+          <div className="bg-digi-card border border-digi-border rounded-xl p-3.5">
+            {cargando ? <div className="py-16 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div> : cuerpoSeccionMovil()}
+          </div>
+
+          {/* Al terminar de leer una sección, la siguiente sin volver arriba a buscarla. */}
+          <div className="flex items-center gap-2">
+            {iSeccion > 0 && (
+              <button type="button" onClick={() => irASeccion(SECCIONES[iSeccion - 1], true)} className={`${BTN_SECONDARY} flex-1 min-w-0`}>
+                <ChevronLeft className="w-4 h-4 shrink-0" /> <span className="truncate">{ENTREGABLE_META[SECCIONES[iSeccion - 1]].label}</span>
+              </button>
+            )}
+            {iSeccion < SECCIONES.length - 1 && (
+              <button type="button" onClick={() => irASeccion(SECCIONES[iSeccion + 1], true)} className={`${BTN_SECONDARY} flex-1 min-w-0`}>
+                <span className="truncate">{ENTREGABLE_META[SECCIONES[iSeccion + 1]].label}</span> <ChevronRight className="w-4 h-4 shrink-0" />
+              </button>
+            )}
+          </div>
+          {conBarraAbajo && <EnBarraAcciones>{botonGenerarTodo}</EnBarraAcciones>}
+        </>
+      )}
+    </div>
+  );
+
+  const dialogos = (
+    <>
+      {/* ── Formulario de la idea ── */}
+      <EditPanel
+        open={ideaOpen}
+        onClose={() => setIdeaOpen(false)}
+        title={editandoIdea ? 'Editar idea de video' : 'Nueva idea de video'}
+        onSave={guardarIdea}
+        saving={guardando}
+        canSave={Boolean(form.tema.trim())}
+        saveLabel={editandoIdea ? 'Guardar' : 'Crear idea'}
+      >
+        <EditField label="Tema">
+          <input
+            value={form.tema}
+            onChange={(e) => setForm({ ...form, tema: e.target.value })}
+            className={EDIT_INPUT}
+            placeholder="De qué trata el video"
+          />
+        </EditField>
+        <EditField label="Propósito social" hint="Qué cambio busca provocar el video en quien lo ve.">
+          <textarea
+            value={form.proposito_social}
+            onChange={(e) => setForm({ ...form, proposito_social: e.target.value })}
+            rows={2}
+            className={EDIT_INPUT}
+          />
+        </EditField>
+        <EditField label="Propósito monetario" hint="Cómo se convierte este contenido en ingreso: qué se vende, a quién y en qué momento.">
+          <textarea
+            value={form.proposito_monetario}
+            onChange={(e) => setForm({ ...form, proposito_monetario: e.target.value })}
+            rows={2}
+            className={EDIT_INPUT}
+          />
+        </EditField>
+        <EditField label="Desarrollo del contenido" hint="Por dónde debe ir el video: el hilo, los puntos que no pueden faltar, el final.">
+          <textarea
+            value={form.desarrollo}
+            onChange={(e) => setForm({ ...form, desarrollo: e.target.value })}
+            rows={4}
+            className={EDIT_INPUT}
+          />
+        </EditField>
+
+        <EditField label="Referencia histórica" hint="Trabajos reales del grupo —productos, proyectos o tickets— que el video puede citar como ejemplo. Se pueden elegir varios.">
+          <div className="flex flex-col gap-1.5">
+            <button type="button" onClick={() => setRefsOpen(true)} className={BTN_SECONDARY}>
+              {form.referencias.length ? `${form.referencias.length} elegida(s) · cambiar` : 'Buscar trabajos del grupo'}
+            </button>
+            {form.referencias.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {form.referencias.map((r) => (
+                  <PixelBadge key={`${r.tipo}-${r.ref_id}`} variant="info">{r.titulo}</PixelBadge>
+                ))}
+              </div>
+            )}
+          </div>
+        </EditField>
+
+        <EditField label="Fuente de conocimiento" hint="Lo ya clasificado en Gestión de Datos: códigos, categorías, piezas, rompecabezas, subtemas y temas. Es de donde sale lo que el video afirma.">
+          <div className="flex flex-col gap-1.5">
+            <button type="button" onClick={() => setFuentesOpen(true)} className={BTN_SECONDARY}>
+              {form.fuentes.length ? `${form.fuentes.length} elegida(s) · cambiar` : 'Abrir Gestión de Datos'}
+            </button>
+            {form.fuentes.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {form.fuentes.map((f) => (
+                  <PixelBadge key={`${f.tipo}-${f.ref_id}`}>{f.etiqueta}</PixelBadge>
+                ))}
+              </div>
+            )}
+          </div>
+        </EditField>
+
+        <EditField label="Talento">
+          <select
+            value={form.talento}
+            onChange={(e) => setForm({ ...form, talento: e.target.value })}
+            className={EDIT_INPUT}
+          >
+            <option value="">Sin talento</option>
+            {talentos.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </EditField>
+
+        <EditField label="Tonos de expresión" hint="Se pueden elegir varios: el agente busca cómo integrarlos —por ejemplo, abrir en triste y resolver en alegre— para captar la atención. La lista se edita en Encuadre Condiciológico.">
+          <MultiSelectSearch
+            options={tonos.map((t) => ({ value: t, label: t }))}
+            selected={form.tonos}
+            onChange={(tonosSel) => setForm({ ...form, tonos: tonosSel })}
+            placeholder="Buscar tono…"
+          />
+        </EditField>
+      </EditPanel>
+
+      <SelectorReferencias
+        open={refsOpen}
+        onClose={() => setRefsOpen(false)}
+        elegidas={form.referencias}
+        onGuardar={(refs) => setForm((f) => ({ ...f, referencias: refs }))}
+      />
+      <SelectorFuentes
+        open={fuentesOpen}
+        onClose={() => setFuentesOpen(false)}
+        elegidas={form.fuentes}
+        onGuardar={(fs) => setForm((f) => ({ ...f, fuentes: fs }))}
+      />
+      <PanelPrompts open={promptsOpen} onClose={() => setPromptsOpen(false)} />
+
+      <PixelConfirm
+        open={Boolean(borrar)}
+        title="Eliminar contenido"
+        message={`Se eliminan la idea «${borrar?.titulo || borrar?.tema || ''}» y todos sus entregables, incluidas las láminas del carrusel. No se puede deshacer.`}
+        confirmLabel="Eliminar"
+        danger
+        onConfirm={confirmarBorrado}
+        onCancel={() => setBorrar(null)}
+      />
+    </>
+  );
+
+  if (!enEscritorio) {
+    return (
+      <div>
+        {selId ? detalleMovil : listaMovil}
+        {dialogos}
+      </div>
+    );
+  }
 
   return (
     <div ref={altoPie.ref} style={altoPie.style} className="flex flex-col xl:flex-row gap-4">
@@ -722,123 +1084,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
         )}
       </aside>
 
-      {/* ── Formulario de la idea ── */}
-      <EditPanel
-        open={ideaOpen}
-        onClose={() => setIdeaOpen(false)}
-        title={editandoIdea ? 'Editar idea de video' : 'Nueva idea de video'}
-        onSave={guardarIdea}
-        saving={guardando}
-        canSave={Boolean(form.tema.trim())}
-        saveLabel={editandoIdea ? 'Guardar' : 'Crear idea'}
-      >
-        <EditField label="Tema">
-          <input
-            value={form.tema}
-            onChange={(e) => setForm({ ...form, tema: e.target.value })}
-            className={EDIT_INPUT}
-            placeholder="De qué trata el video"
-          />
-        </EditField>
-        <EditField label="Propósito social" hint="Qué cambio busca provocar el video en quien lo ve.">
-          <textarea
-            value={form.proposito_social}
-            onChange={(e) => setForm({ ...form, proposito_social: e.target.value })}
-            rows={2}
-            className={EDIT_INPUT}
-          />
-        </EditField>
-        <EditField label="Propósito monetario" hint="Cómo se convierte este contenido en ingreso: qué se vende, a quién y en qué momento.">
-          <textarea
-            value={form.proposito_monetario}
-            onChange={(e) => setForm({ ...form, proposito_monetario: e.target.value })}
-            rows={2}
-            className={EDIT_INPUT}
-          />
-        </EditField>
-        <EditField label="Desarrollo del contenido" hint="Por dónde debe ir el video: el hilo, los puntos que no pueden faltar, el final.">
-          <textarea
-            value={form.desarrollo}
-            onChange={(e) => setForm({ ...form, desarrollo: e.target.value })}
-            rows={4}
-            className={EDIT_INPUT}
-          />
-        </EditField>
-
-        <EditField label="Referencia histórica" hint="Trabajos reales del grupo —productos, proyectos o tickets— que el video puede citar como ejemplo. Se pueden elegir varios.">
-          <div className="flex flex-col gap-1.5">
-            <button type="button" onClick={() => setRefsOpen(true)} className={BTN_SECONDARY}>
-              {form.referencias.length ? `${form.referencias.length} elegida(s) · cambiar` : 'Buscar trabajos del grupo'}
-            </button>
-            {form.referencias.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {form.referencias.map((r) => (
-                  <PixelBadge key={`${r.tipo}-${r.ref_id}`} variant="info">{r.titulo}</PixelBadge>
-                ))}
-              </div>
-            )}
-          </div>
-        </EditField>
-
-        <EditField label="Fuente de conocimiento" hint="Lo ya clasificado en Gestión de Datos: códigos, categorías, piezas, rompecabezas, subtemas y temas. Es de donde sale lo que el video afirma.">
-          <div className="flex flex-col gap-1.5">
-            <button type="button" onClick={() => setFuentesOpen(true)} className={BTN_SECONDARY}>
-              {form.fuentes.length ? `${form.fuentes.length} elegida(s) · cambiar` : 'Abrir Gestión de Datos'}
-            </button>
-            {form.fuentes.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {form.fuentes.map((f) => (
-                  <PixelBadge key={`${f.tipo}-${f.ref_id}`}>{f.etiqueta}</PixelBadge>
-                ))}
-              </div>
-            )}
-          </div>
-        </EditField>
-
-        <EditField label="Talento">
-          <select
-            value={form.talento}
-            onChange={(e) => setForm({ ...form, talento: e.target.value })}
-            className={EDIT_INPUT}
-          >
-            <option value="">Sin talento</option>
-            {talentos.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </EditField>
-
-        <EditField label="Tonos de expresión" hint="Se pueden elegir varios: el agente busca cómo integrarlos —por ejemplo, abrir en triste y resolver en alegre— para captar la atención. La lista se edita en Encuadre Condiciológico.">
-          <MultiSelectSearch
-            options={tonos.map((t) => ({ value: t, label: t }))}
-            selected={form.tonos}
-            onChange={(tonosSel) => setForm({ ...form, tonos: tonosSel })}
-            placeholder="Buscar tono…"
-          />
-        </EditField>
-      </EditPanel>
-
-      <SelectorReferencias
-        open={refsOpen}
-        onClose={() => setRefsOpen(false)}
-        elegidas={form.referencias}
-        onGuardar={(refs) => setForm((f) => ({ ...f, referencias: refs }))}
-      />
-      <SelectorFuentes
-        open={fuentesOpen}
-        onClose={() => setFuentesOpen(false)}
-        elegidas={form.fuentes}
-        onGuardar={(fs) => setForm((f) => ({ ...f, fuentes: fs }))}
-      />
-      <PanelPrompts open={promptsOpen} onClose={() => setPromptsOpen(false)} />
-
-      <PixelConfirm
-        open={Boolean(borrar)}
-        title="Eliminar contenido"
-        message={`Se eliminan la idea «${borrar?.titulo || borrar?.tema || ''}» y todos sus entregables, incluidas las láminas del carrusel. No se puede deshacer.`}
-        confirmLabel="Eliminar"
-        danger
-        onConfirm={confirmarBorrado}
-        onCancel={() => setBorrar(null)}
-      />
+      {dialogos}
     </div>
   );
 }
