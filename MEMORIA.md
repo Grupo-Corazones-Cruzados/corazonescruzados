@@ -228,6 +228,10 @@ base verbatim):
   Bajo el tema Tickets van los tickets **terminados** (`ticketsPublicos`; un primer intento con los
   pendientes lo quitó Fernando el mismo día), sin cliente, filtrables por solución, año, mes, talento y
   miembro combinados.
+- **Fecha de finalización de un ticket (2026-10-31, migración 077):** un disparador en `gcc_world.tickets`
+  pone `completed_at = now()` al pasar a `completed` (por cualquier vía: panel, factura, factura manual)
+  y lo vacía si deja de estarlo. Los 23 completados antes sin fecha no se rellenaron (sería un dato
+  inferido); el sitio usa para ellos el último día trabajado (`ticketsPublicos`/`ticketComoTrabajo`).
 
 ## Stack
 Stack estándar de la casa, con particularidades de este repo:
