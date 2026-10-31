@@ -53,8 +53,8 @@
 
 import type { Metadata } from 'next';
 import { SITIO, REDES, OG_IMAGEN, TEMAS_CLIENTES } from '@/lib/sitio/contenido';
-import { Contenedor } from '@/components/sitio/piezas';
-import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
+import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
+import TemasClientes from '@/components/sitio/TemasClientes';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 
 export const metadata: Metadata = {
@@ -87,16 +87,9 @@ export default function ClientesPage() {
           Fernando (2026-08-18). */}
       <section className="flex-1 pt-6 sm:pt-10 pb-16">
         <Contenedor ancho="sitio">
-          {/* Los temas Soluciones · Tickets · Proyectos (2026-10-31); abre el primero. */}
-          <ExploradorSecciones
-            secciones={TEMAS_CLIENTES}
-            activa={TEMAS_CLIENTES[0].id}
-            faqs={[]}
-            base="/clientes"
-            rotulo="Clientes"
-            presentacion={PRESENTACION_CLIENTES}
-            etiquetaNav="Temas para clientes"
-          />
+          {/* La presentación y, debajo, los temas en pestañas numeradas (2026-10-31). */}
+          <PresentacionPagina {...PRESENTACION_CLIENTES} />
+          <TemasClientes inicial={TEMAS_CLIENTES[0].id} />
         </Contenedor>
       </section>
 

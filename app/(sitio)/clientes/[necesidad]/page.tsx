@@ -26,7 +26,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId, TEMAS_CLIENTES, temaClientesPorId } from '@/lib/sitio/contenido';
-import { Contenedor } from '@/components/sitio/piezas';
+import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
+import TemasClientes from '@/components/sitio/TemasClientes';
 import { ACCESOS as SECCIONES } from '@/lib/sitio/contenido';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
@@ -100,15 +101,22 @@ export default async function DetalleNecesidadPage({ params }: Props) {
           llevan un hueco al final. */}
       <section className="flex-1 overflow-x-clip pt-6 sm:pt-10 pb-40 sm:pb-56">
         <Contenedor ancho="sitio">
+          {nuevo ? (
+            <>
+              <PresentacionPagina {...PRESENTACION_CLIENTES} />
+              <TemasClientes inicial={acceso.id} />
+            </>
+          ) : (
           <ExploradorSecciones
-            secciones={nuevo ? TEMAS_CLIENTES : SECCIONES}
+            secciones={SECCIONES}
             activa={acceso.id}
             faqs={faqs}
             base="/clientes"
             rotulo="Clientes"
             presentacion={PRESENTACION_CLIENTES}
-            etiquetaNav={nuevo ? 'Temas para clientes' : 'Secciones para clientes'}
+            etiquetaNav="Secciones para clientes"
           />
+          )}
         </Contenedor>
       </section>
 

@@ -6030,3 +6030,15 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   La columna es `fixed inset-x-0 top-0 h-dvh`: solo `h-dvh` en el flujo dejaba desplazar la página, y solo `fixed
   inset-0` se metía bajo la barra del navegador de WhatsApp (tapaba el final y la acción). Y quien viene a buscar un HUECO ve el día con sus horas (rejilla), no una lista de lo
   ocupado: el espacio libre es lo que se busca (`rejillaSiempre` de `CalendarView`).
+
+### Temas en pestañas numeradas (Clientes, 2026-10-31)
+Fernando pidió reformular cómo se dividen los temas de una página. `components/sitio/TemasPestanas.tsx`
+(+ `TemasClientes.tsx`, que prepara iconos y negritas en el servidor; CSS «LOS TEMAS EN PESTAÑAS
+NUMERADAS» al final de `app/globals.css`): fila de pestañas `01 · 02 · 03` con raya superior que se
+llena en degradado violeta en la elegida; un panel grande del mundo Progreso (tarjeta blanca 84 %,
+radio 28) con número `01 / 03`, `<h1>` del tema y su texto, y a la derecha el icono en un orbe con
+halos que respira (como el cruce de la portada). Cambiar de tema no navega: estado + `replaceState`
+a `/<base>/<tema>`, panel que entra desde el lado hacia el que se avanzó; flechas ← → entre pestañas.
+En el teléfono, las tres pestañas en una fila sin icono y el orbe pequeño arriba del panel.
+Sustituye en Clientes a las puertas en bloque (`PuertasBloques`), que siguen en Soluciones y
+Desarrollo Humano mientras Fernando decide.
