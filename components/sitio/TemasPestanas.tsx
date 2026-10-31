@@ -25,6 +25,8 @@ export interface TemaPestana {
   descripcion: ReactNode;
   icono: ReactNode;
   iconoGrande: ReactNode;
+  /** Lo que va debajo de la tarjeta del tema (p. ej. la lista de soluciones). */
+  contenido?: ReactNode;
 }
 
 export default function TemasPestanas({
@@ -105,6 +107,7 @@ export default function TemasPestanas({
           <span className="tema-orbe-nucleo">{tema.iconoGrande}</span>
         </div>
       </div>
+      {tema.contenido && <div key={`${tema.id}-contenido`} className="tema-contenido">{tema.contenido}</div>}
     </section>
   );
 }

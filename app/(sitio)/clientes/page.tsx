@@ -57,6 +57,9 @@ import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
 import TemasClientes from '@/components/sitio/TemasClientes';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 
+/** En cada visita: el tema Soluciones lista las soluciones de la base (caché de 5 min). */
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   /**
    * El nombre de la pestaña. Aquí va solo esa palabra porque la plantilla de

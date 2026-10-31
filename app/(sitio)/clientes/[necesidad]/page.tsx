@@ -25,7 +25,7 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId, TEMAS_CLIENTES, temaClientesPorId } from '@/lib/sitio/contenido';
+import { SITIO, OG_IMAGEN, accesoPorId, TEMAS_CLIENTES, temaClientesPorId } from '@/lib/sitio/contenido';
 import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
 import TemasClientes from '@/components/sitio/TemasClientes';
 import { ACCESOS as SECCIONES } from '@/lib/sitio/contenido';
@@ -35,23 +35,14 @@ import { faqsTolerantesAlBuild } from '../faqs-build';
 
 type Props = { params: Promise<{ necesidad: string }> };
 
-export function generateStaticParams() {
-  // Los temas nuevos (2026-10-31) y, detrás, las cuatro secciones de antes, que siguen vivas.
-  return [...TEMAS_CLIENTES, ...ACCESOS].map((a) => ({ necesidad: a.id }));
-}
-
-/** Un tramo inventado no debe existir: nada fuera de `ACCESOS` se renderiza. */
-export const dynamicParams = false;
-
 /**
- * ⏱️ SE REGENERA CADA 5 MINUTOS, Y ES IMPRESCINDIBLE.
- *
- * La página se sirve como HTML ya hecho —rápido y perfectamente indexable—, pero **las
- * preguntas frecuentes salen de la base de datos**. Sin esto, una pregunta creada desde
- * Admin → FAQs **no aparecería en la web hasta el siguiente despliegue**, y nadie
- * entendería por qué: la habría guardado bien y no estaría.
+ * ⏱️ SE PINTA EN CADA VISITA desde el 2026-10-31: los temas de Clientes llevan la lista de
+ * soluciones, que sale de la base (con caché de 5 min, `cargarSolucionesCacheadas`). Prerenderizada
+ * en el build —donde no hay base— salía vacía para el primer visitante, como ya pasó en
+ * `/soluciones`. Un tramo que no existe sigue siendo un 404 (`notFound` abajo).
+ * `/clientes/soluciones` NO pasa por aquí: tiene su carpeta, de la que cuelgan las soluciones.
  */
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { necesidad } = await params;

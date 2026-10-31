@@ -79,7 +79,7 @@ function iniciales(nombre: string): string {
  * «Una tarjeta grande de ese usuario con sus datos de contacto nada más» (Fernando). Así
  * que: foto, nombre, correo y teléfono. Lo que esté vacío no se pinta.
  */
-function TarjetaMiembro({ miembro }: { miembro: MiembroConTalento }) {
+export function TarjetaMiembro({ miembro }: { miembro: MiembroConTalento }) {
   return (
     <article className="tarjeta-portafolio p-5 flex items-center gap-4">
       <span className="w-16 h-16 shrink-0 rounded-full overflow-hidden border border-[var(--linea)]">
@@ -109,7 +109,8 @@ function TarjetaMiembro({ miembro }: { miembro: MiembroConTalento }) {
   );
 }
 
-function TarjetaProducto({ producto }: { producto: Producto }) {
+/** `etiqueta`: en la página de una solución de Clientes los productos se llaman «Solución» (Fernando, 2026-10-31). */
+export function TarjetaProducto({ producto, etiqueta = 'Producto' }: { producto: Producto; etiqueta?: string }) {
   return (
     <article className="tarjeta-portafolio flex flex-col">
       {producto.imagen && (
@@ -122,7 +123,7 @@ function TarjetaProducto({ producto }: { producto: Producto }) {
         </div>
       )}
       <div className="p-5 flex flex-col gap-2">
-        <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">Producto</span>
+        <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">{etiqueta}</span>
         <h3 className="text-[17px] font-semibold text-[var(--texto)] leading-snug">{producto.nombre}</h3>
         {producto.descripcion && (
           <p className="text-[13.5px] text-[var(--suave)] leading-relaxed">{producto.descripcion}</p>

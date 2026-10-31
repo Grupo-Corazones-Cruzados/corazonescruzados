@@ -77,3 +77,23 @@ export const cargarSolucionesCacheadas = unstable_cache(
   ['soluciones-con-contenido'],
   { revalidate: 300 },
 );
+
+/**
+ * TODO LO DE UNA SOLUCIÓN, SUMANDO SUS TALENTOS — para la lista y la página de cada solución en
+ * Clientes (2026-10-31). Un mismo trabajo o miembro puede colgar de varios talentos: se cuenta una vez.
+ */
+export function resumenSolucion(s: SolucionConContenido) {
+  const unico = <T,>(l: T[], clave: (x: T) => string | number) => {
+    const vistos = new Set<string | number>();
+    return l.filter((x) => (vistos.has(clave(x)) ? false : (vistos.add(clave(x)), true)));
+  };
+  const c = Object.values(s.contenido);
+  return {
+    descripciones: s.talentos.map((t) => t.descripcion).filter((d): d is string => !!d),
+    proyectos: unico(c.flatMap((x) => x.proyectos), (x) => x.id),
+    tickets: unico(c.flatMap((x) => x.tickets), (x) => x.id),
+    productos: unico(c.flatMap((x) => x.productos), (x) => x.id),
+    miembros: unico(c.flatMap((x) => x.miembros), (x) => x.memberId),
+    conceptos: unico(s.talentos.flatMap((t) => s.conceptos[t.talento] ?? []), (x) => x.id),
+  };
+}
