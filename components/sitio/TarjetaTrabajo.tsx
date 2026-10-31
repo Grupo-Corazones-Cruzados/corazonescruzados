@@ -40,6 +40,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Images, Mail, Phone, X } from 'lucide-react';
 import type { Trabajo, Persona } from '@/lib/soluciones';
+import { enlaceWhatsApp, IconoWhatsApp } from './whatsapp';
 
 const ETIQUETA: Record<Trabajo['tipo'], string> = {
   proyecto: 'Proyecto',
@@ -214,6 +215,12 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
             {responsable.telefono && (
               <a href={`tel:${responsable.telefono.replace(/\s+/g, '')}`} title={responsable.telefono} aria-label={`Llamar a ${responsable.nombre}`} className="contacto-redondo">
                 <Phone aria-hidden />
+              </a>
+            )}
+            {enlaceWhatsApp(responsable.telefono) && (
+              <a href={enlaceWhatsApp(responsable.telefono)!} target="_blank" rel="noopener noreferrer"
+                title="WhatsApp" aria-label={`Escribir a ${responsable.nombre} por WhatsApp`} className="contacto-redondo contacto-whatsapp">
+                <IconoWhatsApp className="" />
               </a>
             )}
           </div>

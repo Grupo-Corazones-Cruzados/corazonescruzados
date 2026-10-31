@@ -13,6 +13,9 @@
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { MiembroConTalento, Producto, Trabajo } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
+import GaleriaFiltrable, {
+  FILTRO_ANIO, FILTRO_MES, FILTRO_MIEMBRO, textoDeTrabajo, type FiltroGaleria,
+} from './GaleriaFiltrable';
 import { TarjetaMiembro, TarjetaProducto } from './SolucionesExplorador';
 
 export default function SolucionDetalle({
@@ -23,27 +26,37 @@ export default function SolucionDetalle({
   productos: Producto[];
   miembros: MiembroConTalento[];
 }) {
-  const vacio = (texto: string) => <p className="text-[14px] text-[var(--tenue)] py-6">{texto}</p>;
+  // Cada pestaña es una `GaleriaFiltrable` (Fernando, 2026-10-31: «los filtros, buscadores requeridos
+  // para los tipos que existen»): proyectos por año, mes, miembro y etiqueta; tickets por año, mes y
+  // miembro; soluciones y talentos, con el buscador. El talento no se filtra: la página ya es de uno.
   const pestanas: { id: string; titulo: string; cuenta: number; cuerpo: ReactNode }[] = [
     {
       id: 'proyectos', titulo: 'Proyectos', cuenta: proyectos.length,
-      cuerpo: proyectos.length ? <div className="rejilla-trabajos">{proyectos.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}</div>
-        : vacio('Todavía no hay proyectos terminados con esta solución.'),
+      cuerpo: <GaleriaFiltrable items={proyectos} clave={(t) => t.id} texto={textoDeTrabajo}
+        filtros={FILTROS_PROYECTO} render={(t) => <TarjetaTrabajo trabajo={t} />}
+        unidad={['proyecto', 'proyectos']} buscar="Buscar proyectos…"
+        vacio="Todavía no hay proyectos terminados con esta solución." />,
     },
     {
       id: 'tickets', titulo: 'Tickets', cuenta: tickets.length,
-      cuerpo: tickets.length ? <div className="rejilla-trabajos">{tickets.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}</div>
-        : vacio('Todavía no hay tickets terminados con esta solución.'),
+      cuerpo: <GaleriaFiltrable items={tickets} clave={(t) => t.id} texto={textoDeTrabajo}
+        filtros={FILTROS_TICKET} render={(t) => <TarjetaTrabajo trabajo={t} />}
+        unidad={['ticket', 'tickets']} buscar="Buscar tickets…"
+        vacio="Todavía no hay tickets terminados con esta solución." />,
     },
     {
       id: 'soluciones', titulo: 'Soluciones', cuenta: productos.length,
-      cuerpo: productos.length ? <div className="rejilla-trabajos">{productos.map((p) => <TarjetaProducto key={p.id} producto={p} etiqueta="Solución" />)}</div>
-        : vacio('Todavía no hay soluciones publicadas en esta solución.'),
+      cuerpo: <GaleriaFiltrable items={productos} clave={(p) => p.id} texto={(p) => `${p.nombre} ${p.descripcion ?? ''}`}
+        render={(p) => <TarjetaProducto producto={p} etiqueta="Solución" />}
+        unidad={['solución', 'soluciones']} buscar="Buscar soluciones…"
+        vacio="Todavía no hay soluciones publicadas en esta solución." />,
     },
     {
       id: 'talentos', titulo: 'Talentos', cuenta: miembros.length,
-      cuerpo: miembros.length ? <div className="rejilla-trabajos">{miembros.map((m) => <TarjetaMiembro key={m.memberId} miembro={m} />)}</div>
-        : vacio('Todavía no hay talentos en esta solución.'),
+      cuerpo: <GaleriaFiltrable items={miembros} clave={(m) => m.memberId} texto={(m) => `${m.nombre} ${m.correo ?? ''}`}
+        render={(m) => <TarjetaMiembro miembro={m} />}
+        unidad={['talento', 'talentos']} buscar="Buscar talentos…"
+        vacio="Todavía no hay talentos en esta solución." />,
     },
   ];
 
@@ -99,3 +112,9 @@ export default function SolucionDetalle({
     </section>
   );
 }
+
+const FILTROS_PROYECTO: FiltroGaleria<Trabajo>[] = [
+  FILTRO_ANIO, FILTRO_MES, FILTRO_MIEMBRO,
+  { clave: 'etiqueta', todos: 'Todas las etiquetas', valores: (t) => t.etiquetas },
+];
+const FILTROS_TICKET: FiltroGaleria<Trabajo>[] = [FILTRO_ANIO, FILTRO_MES, FILTRO_MIEMBRO];

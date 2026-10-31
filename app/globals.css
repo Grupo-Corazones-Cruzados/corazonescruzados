@@ -4458,6 +4458,10 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .rejilla-trabajos > * { break-inside: avoid; margin-bottom: 18px; width: 100%; min-width: 0; }
 @media (min-width: 720px) { .rejilla-trabajos { columns: 2; } }
 @media (min-width: 1100px) { .rejilla-trabajos { columns: 3; } }
+/* El mismo mosaico repartido en turnos por `GaleriaFiltrable` (2026-10-31): las filas se leen de
+   izquierda a derecha en el orden de la lista. */
+.rejilla-turnos { display: grid; grid-template-columns: repeat(var(--columnas), minmax(0, 1fr)); gap: 18px; align-items: start; }
+.rejilla-turnos-columna { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
 .contacto-redondo {
   flex: none; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9999px;
@@ -4465,6 +4469,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 .contacto-redondo svg { width: 15px; height: 15px; }
 .contacto-redondo:hover { color: #fff; background: #6d28d9; }
+/* WhatsApp (2026-10-31): el mismo botón redondo, con el verde de la marca. */
+.contacto-redondo.contacto-whatsapp { color: #128c4a; background: rgba(37, 211, 102, 0.12); }
+.contacto-redondo.contacto-whatsapp:hover { color: #fff; background: #25d366; }
 
 /* ═══ AJUSTES DE TELÉFONO (Fernando, 2026-10-29) ═══
    1. En su iPhone 17 instalado como app (márgenes de 62 px arriba y 34 abajo) la portada medía
@@ -4791,29 +4798,37 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .tema-pestana-cuenta { margin-left: 8px; font: 600 0.8rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--tenue); font-variant-numeric: tabular-nums; }
 .tema-pestana[aria-selected='true'] .tema-pestana-cuenta { color: var(--violeta-txt); }
 .hecho-panel { margin-top: 22px; animation: temaEntra 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-/* Tickets de Clientes (2026-10-31): cinco filtros que se combinan (solución, año, mes, talento,
-   miembro) + buscador. Teléfono: 2 columnas y el buscador a todo el ancho; tablet: 3; computadora:
-   los cinco en una fila y el buscador debajo a todo el ancho. El filtro puesto lleva borde violeta.
-   La paginación, botones redondos con la página actual en violeta. */
-.filtros-tickets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.filtros-tickets-busca { grid-column: 1 / -1; }
-/* Cinco filtros en 2 o 3 columnas dejarían un hueco: el último (miembro) se estira a lo que sobra. */
-.filtros-tickets > .filtro-sitio:nth-child(5) { grid-column: 1 / -1; }
-@media (min-width: 640px) { .filtros-tickets > .filtro-sitio:nth-child(5) { grid-column: span 2; } }
-@media (min-width: 1024px) { .filtros-tickets > .filtro-sitio:nth-child(5) { grid-column: auto; } }
-@media (min-width: 640px) { .filtros-tickets { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1024px) { .filtros-tickets { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+/* LA GALERÍA CON FILTROS (2026-10-31, `GaleriaFiltrable.tsx`): desplegables redondos que se combinan y
+   el buscador a todo el ancho debajo. Computadora: los filtros en una fila (hasta 5); teléfono y
+   tablet: de dos en dos, y si queda uno impar se estira (ningún hueco). El filtro puesto lleva borde
+   violeta. Paginación: botones redondos con la actual en degradado violeta. */
+.filtros-galeria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.filtros-galeria-busca { grid-column: 1 / -1; }
+.filtros-galeria > .filtro-sitio:nth-last-child(2):nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 1024px) {
+  .filtros-galeria { display: flex; flex-wrap: wrap; }
+  .filtros-galeria > .filtro-sitio { flex: 1 1 0; }
+  .filtros-galeria-busca { flex: 1 0 100%; }
+  /* Con un solo filtro, filtro y buscador en la misma fila: un desplegable a todo el ancho sobra. */
+  .filtros-galeria > .filtro-sitio:first-child:nth-last-child(2) { flex: 0 0 300px; }
+  .filtros-galeria:has(> .filtro-sitio:first-child:nth-last-child(2)) > .filtros-galeria-busca { flex: 1 1 0; }
+}
 .filtro-sitio { display: block; min-width: 0; }
 .filtro-sitio select { width: 100%; height: 44px; padding: 0 44px 0 18px; background-position: right 18px center; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background-color: rgba(255, 255, 255, 0.85); font-size: 0.9rem; color: var(--texto); text-overflow: ellipsis; }
 .filtro-sitio select[data-activo] { border-color: rgba(124, 58, 237, 0.55); color: var(--violeta-txt); font-weight: 600; }
 .filtro-sitio select:focus { outline: none; border-color: #7b5fbf; }
-.filtros-tickets-quitar { margin-top: 12px; display: flex; justify-content: flex-end; }
-.filtros-tickets-quitar button { display: inline-flex; align-items: center; gap: 4px; font-size: 0.88rem; font-weight: 600; color: var(--violeta-txt); }
-.filtros-tickets-quitar button:hover { text-decoration: underline; text-underline-offset: 3px; }
-.filtros-tickets-quitar svg { width: 15px; height: 15px; }
+.filtros-galeria-quitar { margin-top: 12px; display: flex; justify-content: flex-end; }
+.filtros-galeria-quitar button { display: inline-flex; align-items: center; gap: 4px; font-size: 0.88rem; font-weight: 600; color: var(--violeta-txt); }
+.filtros-galeria-quitar button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.filtros-galeria-quitar svg { width: 15px; height: 15px; }
 /* EL PIE DE UNA GALERÍA (2026-10-31): el recuento CIERRA la galería, no la abre (Fernando: «los recuentos
    van al final de la tabla o galería… con un borde o relleno de fondo… debajo de la paginación»).
    Paginación arriba y, debajo, el recuento en su cápsula con borde y fondo. */
+/* El botón de WhatsApp de la tarjeta de un talento (2026-10-31): contorno, verde de la marca en el
+   icono y el texto; se llena al pasar. Sin relleno en reposo (regla de no cápsulas rellenas). */
+.boton-whatsapp { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 9999px; border: 1px solid rgba(37, 211, 102, 0.55); color: #128c4a; font-size: 0.85rem; font-weight: 600; transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
+.boton-whatsapp:hover { background-color: #25d366; border-color: #25d366; color: #fff; }
+.boton-whatsapp:focus-visible { outline: 2px solid #25d366; outline-offset: 2px; }
 .pie-galeria { margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .pie-galeria .paginacion-sitio { margin-top: 0; }
 .pie-galeria-recuento { padding: 9px 18px; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background-color: rgba(255, 255, 255, 0.85); box-shadow: 0 12px 26px -22px rgba(75, 45, 142, 0.55); font-size: 0.88rem; color: var(--tenue); text-align: center; }

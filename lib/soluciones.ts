@@ -477,11 +477,15 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
   // Los tickets: su participante es el miembro asignado, si lo hubo.
   const { rows: tickets } = await pool.query(
     `SELECT t.id, t.title, t.description, t.required_talents, t.created_at,
+            COALESCE(t.completed_at,
+                     (SELECT GREATEST(MAX(COALESCE(a.work_date, a.created_at::date)), (SELECT MAX(s.date) FROM gcc_world.ticket_time_slots s WHERE s.ticket_id = t.id))
+                        FROM gcc_world.ticket_actions a WHERE a.ticket_id = t.id),
+                     t.created_at) AS fin,
             m.id AS member_id, m.name, m.photo_url, m.email, m.phone
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
       WHERE t.status = $2 AND $1 = ANY(t.required_talents)
-      ORDER BY t.created_at DESC NULLS LAST, t.id DESC`,
+      ORDER BY fin DESC NULLS LAST, t.id DESC`,
     [talento, ESTADO_PUBLICABLE],
   );
 
@@ -498,7 +502,7 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
 
 
 
-/** Una fila de `tickets` (con su miembro asignado) como tarjeta del sitio. */
+/** Una fila de `tickets` (con su miembro asignado y su fecha `fin`) como tarjeta del sitio. */
 function ticketComoTrabajo(t: any): Trabajo {
   return {
     tipo: 'ticket' as const,
@@ -518,8 +522,11 @@ function ticketComoTrabajo(t: any): Trabajo {
           rol: 'responsible' as const,
         }]
       : [],
-    creado: t.created_at ? new Date(t.created_at).toISOString() : null,
-    creadoTexto: comoFecha(t.created_at),
+    // ⚠️ En un ticket la fecha es la de FINALIZACIÓN (Fernando, 2026-10-31: «ordenado de forma
+    // descendente según la fecha de finalización»): `completed_at`; si no se anotó (23 de 27 al
+    // 2026-10-31), el último día trabajado (registros y horarios); y si tampoco hay, la de creación.
+    creado: t.fin ? new Date(t.fin).toISOString() : null,
+    creadoTexto: comoFecha(t.fin),
   };
 }
 
@@ -535,11 +542,15 @@ function ticketComoTrabajo(t: any): Trabajo {
 export async function ticketsPublicos(): Promise<Trabajo[]> {
   const { rows } = await pool.query(
     `SELECT t.id, t.title, t.description, t.required_talents, t.created_at,
+            COALESCE(t.completed_at,
+                     (SELECT GREATEST(MAX(COALESCE(a.work_date, a.created_at::date)), (SELECT MAX(s.date) FROM gcc_world.ticket_time_slots s WHERE s.ticket_id = t.id))
+                        FROM gcc_world.ticket_actions a WHERE a.ticket_id = t.id),
+                     t.created_at) AS fin,
             m.id AS member_id, m.name, m.photo_url, m.email, m.phone
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
       WHERE t.status = $1
-      ORDER BY t.created_at DESC NULLS LAST, t.id DESC`,
+      ORDER BY fin DESC NULLS LAST, t.id DESC`,
     [ESTADO_PUBLICABLE],
   );
   return rows.map(ticketComoTrabajo);

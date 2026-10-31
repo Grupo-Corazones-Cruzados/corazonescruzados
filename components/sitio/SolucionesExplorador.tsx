@@ -38,6 +38,7 @@ import type {
 } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
 import SelectorSegmentado from './SelectorSegmentado';
+import { enlaceWhatsApp, IconoWhatsApp } from './whatsapp';
 import PuertasBloques from './PuertasBloques';
 import { ICONOS } from './piezas';
 
@@ -105,10 +106,18 @@ export function TarjetaMiembro({ miembro }: { miembro: MiembroConTalento }) {
             <Phone className="w-3.5 h-3.5 shrink-0 text-[var(--violeta-txt)]" /> {miembro.telefono}
           </p>
         )}
+        {/* Abrir un chat con el talento (Fernando, 2026-10-31). Solo si su número sirve para wa.me. */}
+        {enlaceWhatsApp(miembro.telefono) && (
+          <a href={enlaceWhatsApp(miembro.telefono)!} target="_blank" rel="noopener noreferrer"
+            className="boton-whatsapp mt-3" aria-label={`Escribir a ${miembro.nombre} por WhatsApp`}>
+            <IconoWhatsApp /> WhatsApp
+          </a>
+        )}
       </div>
     </article>
   );
 }
+
 
 /** `etiqueta`: en la página de una solución de Clientes los productos se llaman «Solución» (Fernando, 2026-10-31). */
 export function TarjetaProducto({ producto, etiqueta = 'Producto' }: { producto: Producto; etiqueta?: string }) {

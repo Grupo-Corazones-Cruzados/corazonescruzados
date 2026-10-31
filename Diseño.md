@@ -5110,6 +5110,21 @@ pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos 
 - ⚠️ Ninguna animación deja un `transform` puesto al acabar: convertiría los `fixed` de dentro en relativos.
   Medido: a 390 px el desborde es 0 durante y después.
 
+## ⭐ LA GALERÍA CON FILTROS DEL SITIO — `GaleriaFiltrable` (2026-10-31)
+
+Una sola definición para toda lista de tarjetas con filtros: Clientes ▸ Tickets (solución, año, mes,
+talento, miembro), Clientes ▸ Soluciones (talento) y las cuatro pestañas de la página de un talento
+(proyectos: año, mes, miembro, etiqueta; tickets: año, mes, miembro; soluciones y talentos: buscador).
+- Filtros facetados que se combinan (cada uno ofrece solo lo que deja resultados, con su cuenta); un
+  filtro sin valores no se pinta; con uno solo, en computadora va en la fila del buscador.
+- Buscador a todo el ancho, «× Quitar filtros», paginación y recuento al pie.
+- **El mosaico se lee por filas:** ya montado, las tarjetas se reparten en turnos entre las columnas
+  (`.rejilla-turnos`); el mosaico de columnas CSS las llenaba de arriba abajo y una lista ordenada por
+  fecha parecía desordenada.
+- Los tickets se ordenan y fechan por **finalización** (`completed_at`, o el último día trabajado).
+- Contacto: botón WhatsApp (`components/sitio/whatsapp.tsx`, `wa.me`) en la tarjeta de un talento
+  (contorno verde) y como 3.er botón redondo (`.contacto-whatsapp`) en las de proyecto/ticket.
+
 ## ⭐ EL RECUENTO CIERRA LA GALERÍA, NO LA ABRE (2026-10-31)
 
 Fernando, sobre «27 tickets» puesto ENCIMA de las tarjetas: *«los recuentos van al final de la tabla o
