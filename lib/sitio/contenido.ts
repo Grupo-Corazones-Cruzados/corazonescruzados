@@ -1246,7 +1246,13 @@ export const TEMAS_CLIENTES: Acceso[] = [
     descripcion:
       'Nuestra propuesta se basa en la metodología del "Progreso Horizontal", el cual aplicamos mediante inversiones que hacemos con Clientes Experimentales para descubrir estrategias funcionales y exitosas que podemos lanzar como "Soluciones".',
   },
-  { id: 'tickets', icono: 'ticket', titulo: 'Tickets', texto: '' },
+  {
+    id: 'tickets', icono: 'ticket',
+    titulo: 'Tickets',
+    texto: '',
+    descripcion:
+      'Nuestra segunda propuesta consiste en llenar los huecos de conocimiento y competencia que tiene cualquier organización en sus flujos de trabajo mediante "Tickets" que son revisados por nuestros miembros y candidatos que tienen el talento para atenderlos y garantizar los resultados esperados.',
+  },
   { id: 'proyectos', icono: 'rama', titulo: 'Proyectos', texto: '' },
 ];
 
