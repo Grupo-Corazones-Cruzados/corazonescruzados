@@ -6083,7 +6083,8 @@ Desarrollo Humano mientras Fernando decide.
   **Cambio del mismo día:** encima, el buscador redondo de la casa (nombre, descripción, talento o
   producto/servicio, sin tildes). En la tarjeta, «Talentos» con su icono (columna `icono` de
   `solucion_talentos`, migración 076, se elige con `GaleriaIconos` en Admin) en lugar de los productos.
-  La tarjeta ya no es un `<a>` entero: el enlace del nombre la cubre con `::after` y cada talento es
-  su propio enlace encima (`z-index:1`), porque dos `<a>` no se anidan. Las páginas de la solución y
-  de cada talento (`/clientes/soluciones/<sol>/<talento>`) comparten `FichaSolucion.tsx`: en la de la
-  solución la rejilla son sus talentos enlazados; en la del talento, sus Productos y Servicios.
+  **La tarjeta de la solución NO se elige** (Fernando: «quita que al seleccionar la solución se vaya a
+  otra pantalla»): sin flecha ni elevación al pasar. Se elige el **talento** (icono + nombre + flechita
+  ↗ que se mueve al pasar), que abre `/clientes/soluciones/<sol>/<talento>` (`FichaSolucion.tsx`:
+  cabecera con cifras, Productos y Servicios asociados y pestañas de lo hecho; «‹ Soluciones» vuelve a
+  la lista). `/clientes/soluciones/<sol>` redirige (308) a la lista.

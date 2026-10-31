@@ -8,8 +8,9 @@
  * con su icono (Fernando, 2026-10-31: «reemplazando los productos y servicios para incluir los
  * talentos») y al pie cuánto hay detrás, sumando todos sus talentos. Lo que está a cero no se dice.
  *
- * · El nombre lleva a la página de la solución y su enlace cubre la tarjeta entera; cada talento es
- *   su PROPIO enlace, a la página del talento (por encima del de la tarjeta: dos `<a>` no se anidan).
+ * · La tarjeta NO es un enlace (Fernando, 2026-10-31: «quita que al seleccionar la solución se vaya
+ *   a otra pantalla»): lo que se elige es el TALENTO, y cada uno lleva a su página.
+ *   `/clientes/soluciones/<solución>` ya no existe como página: redirige aquí.
  * · Encima, un buscador: por nombre, descripción, talento o producto/servicio, sin tildes.
  * Los datos salen de Admin → Soluciones; aquí no hay ningún texto escrito a mano.
  */
@@ -65,12 +66,7 @@ export default function ListaSoluciones({ soluciones }: { soluciones: FilaSoluci
             <li key={s.id} className="solucion-fila">
               <span className="solucion-fila-num">{String(n + 1).padStart(2, '0')}</span>
               <span className="solucion-fila-cuerpo">
-                <span className="solucion-fila-cabeza">
-                  <h2 className="solucion-fila-nombre">
-                    <Link href={`/clientes/soluciones/${s.slug}`} className="solucion-fila-enlace">{s.nombre}</Link>
-                  </h2>
-                  <span className="solucion-fila-ir" aria-hidden><ArrowUpRight /></span>
-                </span>
+                <h2 className="solucion-fila-nombre">{s.nombre}</h2>
                 {s.descripciones.map((d, k) => <p key={k} className="solucion-fila-texto">{d}</p>)}
                 {s.talentos.length > 0 && (
                   <>
@@ -83,6 +79,7 @@ export default function ListaSoluciones({ soluciones }: { soluciones: FilaSoluci
                             <Link href={`/clientes/soluciones/${s.slug}/${t.slug}`} className="solucion-talento">
                               <Icono aria-hidden />
                               {t.talento}
+                              <ArrowUpRight className="solucion-talento-ir" aria-hidden />
                             </Link>
                           </li>
                         );

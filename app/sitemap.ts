@@ -72,8 +72,7 @@ async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
       ({ url: `${SITIO.url}${ruta}`, lastModified, changeFrequency: 'weekly' as const, priority: 0.7 });
     return soluciones.flatMap((a) => [
       ...a.talentos.map((t) => entrada(`/soluciones/${t.slug}`, ULTIMO_CAMBIO.soluciones)),
-      // Las páginas de Clientes (2026-10-31): la de cada solución y la de cada uno de sus talentos.
-      entrada(`/clientes/soluciones/${a.slug}`, ULTIMO_CAMBIO.clientes),
+      // Las páginas de Clientes (2026-10-31): la de cada talento. La de la solución redirige a la lista.
       ...a.talentos.map((t) => entrada(`/clientes/soluciones/${a.slug}/${t.slug}`, ULTIMO_CAMBIO.clientes)),
     ]);
   } catch {

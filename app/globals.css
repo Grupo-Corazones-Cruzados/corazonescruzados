@@ -4373,9 +4373,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px;
   background: rgba(255, 255, 255, 0.72); border: 1px solid var(--linea);
 }
-.concepto-celda-enlace { transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 260ms ease, background-color 260ms ease, box-shadow 260ms ease; }
-.concepto-celda-enlace:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.95); border-color: rgba(124, 58, 237, 0.28); box-shadow: 0 18px 36px -26px rgba(75, 45, 142, 0.5); }
-.concepto-celda-enlace:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
 .concepto-celda .puerta-icono { width: 34px; height: 34px; border-radius: 10px; flex: none; }
 .concepto-celda .puerta-icono svg { width: 17px; height: 17px; }
 .concepto-titulo { display: block; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.015em; color: var(--texto); }
@@ -4708,22 +4705,15 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .tema-contenido { margin-top: 22px; animation: temaEntra 520ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both; }
 .lista-soluciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .solucion-fila { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; padding: 30px 34px; border-radius: 24px; background: rgba(255, 255, 255, 0.72); border: 1px solid var(--linea); box-shadow: 0 18px 40px -30px rgba(75, 45, 142, 0.4); transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease, border-color 260ms ease, background-color 260ms ease; }
-.solucion-fila:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.92); border-color: rgba(124, 58, 237, 0.28); box-shadow: 0 26px 50px -30px rgba(75, 45, 142, 0.55); }
-.solucion-fila { position: relative; }
-/* El enlace del nombre cubre la tarjeta entera; los talentos, que son enlaces a su página, van encima. */
-.solucion-fila-enlace::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
-.solucion-fila-enlace:focus-visible { outline: none; }
-.solucion-fila:has(.solucion-fila-enlace:focus-visible) { outline: 2px solid #a78bfa; outline-offset: 3px; }
-.solucion-talento { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 9px; border-radius: 8px; transition: color 200ms ease; }
+/* La tarjeta no se elige (2026-10-31): se elige el TALENTO, que lleva a su página. */
+.solucion-talento { display: inline-flex; align-items: center; gap: 9px; border-radius: 8px; transition: color 200ms ease; }
 .solucion-talento:hover { color: var(--violeta-txt); text-decoration: underline; text-underline-offset: 3px; }
+.solucion-conceptos .solucion-talento-ir { width: 14px; height: 14px; opacity: 0.55; transition: transform 200ms ease, opacity 200ms ease; }
+.solucion-talento:hover .solucion-talento-ir { opacity: 1; transform: translate(2px, -2px); }
 .solucion-talento:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
 .solucion-fila-num { font: 700 2.4rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.04em; color: transparent; -webkit-text-stroke: 1px rgba(124, 58, 237, 0.45); font-variant-numeric: tabular-nums; }
 .solucion-fila-cuerpo { min-width: 0; display: flex; flex-direction: column; }
-.solucion-fila-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .solucion-fila-nombre { font: 700 1.75rem/1.1 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.03em; color: var(--texto); }
-.solucion-fila-ir { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; border-radius: 9999px; color: var(--violeta-txt); background: rgba(124, 58, 237, 0.08); transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), background-color 260ms ease, color 260ms ease; }
-.solucion-fila-ir svg { width: 20px; height: 20px; }
-.solucion-fila:hover .solucion-fila-ir { color: #fff; background: linear-gradient(135deg, #7c3aed, #a855f7); transform: rotate(45deg); }
 .solucion-fila-texto { margin-top: 12px; max-width: 52rem; font-size: 0.98rem; line-height: 1.65; color: var(--suave); }
 .solucion-fila-rotulo { margin-top: 22px; font: 700 0.68rem/1 'Inter', system-ui, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--violeta-txt); }
 .solucion-conceptos { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 22px; }
@@ -4757,5 +4747,5 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tema-contenido, .solucion-cabeza, .hecho-panel { animation: none; }
-  .solucion-fila, .solucion-fila-ir { transition: none; }
+  .solucion-fila, .solucion-talento-ir { transition: none; }
 }

@@ -52,7 +52,7 @@ export default async function TalentoDeSolucionPage({ params }: Props) {
   const { s, t } = h;
   return (
     <FichaSolucion
-      volver={{ href: `/clientes/soluciones/${s.slug}`, texto: s.nombre }}
+      volver={{ href: '/clientes/soluciones', texto: 'Soluciones' }}
       etiqueta={`Talento · ${s.nombre}`}
       titulo={t.talento}
       descripciones={t.descripcion ? [t.descripcion] : []}

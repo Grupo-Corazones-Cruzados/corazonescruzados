@@ -1,11 +1,10 @@
 /**
- * LA FICHA DE UNA SOLUCIÓN O DE UNO DE SUS TALENTOS — el mismo dibujo para las dos páginas de
- * Clientes (2026-10-31): `/clientes/soluciones/<solución>` y `/clientes/soluciones/<solución>/<talento>`.
+ * LA FICHA DE UN TALENTO DE UNA SOLUCIÓN — `/clientes/soluciones/<solución>/<talento>` (2026-10-31).
  *
  * Arriba, el camino de vuelta y la cabecera (etiqueta, nombre, descripción y las cuatro cifras);
- * debajo, una rejilla con rótulo —los talentos en la de la solución, cada uno un enlace a su página;
- * los Productos y Servicios asociados en la del talento—; y al final lo hecho, en pestañas
- * numeradas (`SolucionDetalle`).
+ * debajo, una rejilla con rótulo (los Productos y Servicios asociados del talento); y al final lo
+ * hecho, en pestañas numeradas (`SolucionDetalle`). Desde el 2026-10-31 solo la usa la página del
+ * talento: la de la solución redirige a la lista.
  */
 
 import Link from 'next/link';
@@ -20,7 +19,6 @@ export interface CeldaFicha {
   icono: string | null;
   titulo: string;
   texto: string | null;
-  href?: string;
 }
 
 export default function FichaSolucion({
@@ -64,20 +62,13 @@ export default function FichaSolucion({
             <ul className="conceptos-rejilla mt-4">
               {celdas.map((c) => {
                 const Icono = (c.icono && ICONOS[c.icono]) || ICONOS[iconoPorDefecto];
-                const cuerpo = (
-                  <>
+                return (
+                  <li key={c.clave} className="concepto-celda">
                     <span className="puerta-icono" aria-hidden><Icono /></span>
                     <span className="min-w-0">
                       <span className="concepto-titulo">{c.titulo}</span>
                       {c.texto && <span className="concepto-texto">{c.texto}</span>}
                     </span>
-                  </>
-                );
-                return (
-                  <li key={c.clave} className="flex">
-                    {c.href
-                      ? <Link href={c.href} className="concepto-celda concepto-celda-enlace flex-1">{cuerpo}</Link>
-                      : <span className="concepto-celda flex-1">{cuerpo}</span>}
                   </li>
                 );
               })}
