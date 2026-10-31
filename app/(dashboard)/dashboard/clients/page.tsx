@@ -326,6 +326,8 @@ export default function ClientsPage() {
     </div>
   );
   const listaDatos = fichaLista ? datosOrden(detail) : [];
+  /** «120…001»: la identificación entera ensanchaba la opción elegida. */
+  const idCorta = (id?: string) => !id ? '—' : id.length > 7 ? `${id.slice(0, 3)}…${id.slice(-3)}` : id;
   const datoActual = listaDatos.find((x: any) => String(x.id) === datoSel) || null;
   const esNuevo = datoSel === 'nuevo';
   const datosFicha = !fichaLista ? null : (
@@ -341,7 +343,7 @@ export default function ClientsPage() {
               valor={datoSel}
               onChange={elegirDato}
               opciones={[
-                ...listaDatos.map((d: any, i: number) => ({ valor: String(d.id), texto: `Datos ${i + 1}`, detalle: d.predeterminada ? 'Por defecto' : (d.ruc || '—') })),
+                ...listaDatos.map((d: any, i: number) => ({ valor: String(d.id), texto: `Datos ${i + 1}`, detalle: idCorta(d.ruc), marca: d.predeterminada ? 'Por defecto al facturar' : undefined })),
                 ...(listaDatos.length < 3 ? [{ valor: 'nuevo', texto: '+ Añadir', detalle: esNuevo ? 'Sin guardar' : `${listaDatos.length} de 3` }] : []),
               ]}
             />
@@ -456,7 +458,8 @@ export default function ClientsPage() {
     {toggleFicha}
   </div>
 
-  <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
+  {/* Sin alto propio: desplaza el cuerpo de la ventana, no una segunda caja dentro. */}
+  <div className="p-4 space-y-3">
     {detailTab === 'datos' ? datosFicha : consumosFicha(false)}
   </div>
     </>

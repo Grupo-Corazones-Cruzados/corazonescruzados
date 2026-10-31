@@ -1,5 +1,7 @@
 'use client';
 
+import { Star } from 'lucide-react';
+
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type OpcionSegmentado<T extends string> = {
@@ -10,6 +12,9 @@ export type OpcionSegmentado<T extends string> = {
   deshabilitada?: boolean;
   /** Por qué está deshabilitada: sale al pasar el ratón. */
   porque?: string;
+  /** Una estrella en la esquina que la señala (p. ej. «Por defecto»); el texto va en `title`.
+   *  Así la marca no cambia el texto ni el ancho de la opción. */
+  marca?: string;
 };
 
 /**
@@ -37,8 +42,13 @@ export default function Segmentado<T extends string>({
       {opciones.map((o) => (
         <button key={o.valor} type="button" onClick={() => !o.deshabilitada && onChange(o.valor)} disabled={o.deshabilitada}
           title={o.deshabilitada ? o.porque : undefined} aria-pressed={valor === o.valor}
-          className={`flex-1 min-w-0 px-2 sm:px-3 py-1.5 rounded-md text-[12.5px] font-medium leading-tight transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`relative flex-1 min-w-0 px-2 sm:px-3 py-1.5 rounded-md text-[12.5px] font-medium leading-tight transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
             valor === o.valor ? 'bg-accent text-white' : 'text-digi-text enabled:hover:bg-black/[0.04]'}`} style={mf}>
+          {o.marca && (
+            <span title={o.marca} aria-label={o.marca} role="img" className="absolute top-1 right-1">
+              <Star className={`w-3 h-3 ${valor === o.valor ? 'text-white fill-white' : 'text-amber-500 fill-amber-500'}`} />
+            </span>
+          )}
           {o.texto}
           {o.detalle && <span title={o.detalle} className={`block truncate text-[11px] font-normal tabular-nums ${valor === o.valor ? 'text-white/80' : 'text-digi-muted'}`}>{o.detalle}</span>}
         </button>
