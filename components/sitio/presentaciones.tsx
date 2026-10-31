@@ -22,7 +22,7 @@ export const PRESENTACION_CLIENTES: Presentacion = {
   etiqueta: 'Clientes',
   titulo: 'Impulsa tu proyecto o negocio, a medida de lo que necesitas',
   texto:
-    'Creemos que tanto las ideas ingeniosas, como el talento que trabaja para hacerlo realidad son el motor del progreso de este mundo, y ambos deberían ser justamente recompensados. En la actualidad el sistema laboral hace de intermediario, complicando la adquisición de talento, el progreso de cualquier negocio, y además robándose recursos que deberían ser dirigidos para quienes realmente se lo merecen. Nuestra propuesta se basa en la metodología del "Progreso Horizontal", el cual aplicamos mediante inversiones que hacemos con Clientes Experimentales para descubrir estrategias funcionales y exitosas que podemos lanzar como "Soluciones".',
+    'Creemos que tanto las ideas ingeniosas, como el talento que trabaja para hacerlo realidad son el motor del progreso de este mundo, y ambos deberían ser justamente recompensados. En la actualidad el sistema laboral hace de intermediario, complicando la adquisición de talento, el progreso de cualquier negocio, y además robándose recursos que deberían ser dirigidos para quienes realmente se lo merecen.',
 };
 
 /**

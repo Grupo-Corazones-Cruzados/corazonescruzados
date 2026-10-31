@@ -5,7 +5,7 @@
  * 2026-08-18 es **«Clientes»** en `/clientes`: el nombre «Soluciones» pasó a la página de
  * las soluciones, que es donde Fernando quería ese contenido. Las rutas viejas redirigen.
  *
- * ── DESDE EL 2026-10-31: SOLO EL TITULAR Y SU TEXTO ───────────────────────────
+ * ── DESDE EL 2026-10-31: PRESENTACIÓN + TEMAS Soluciones · Tickets · Proyectos ──
  * El sitio pasa a Inicio · Candidatos · Clientes · Miembros (Fernando) y esta portada se queda
  * solo con la presentación, a la espera de lo que él dicte. **Las cuatro secciones NO se
  * borraron**: siguen en `ACCESOS` y en `/clientes/[necesidad]` (indexadas en Google), de donde
@@ -52,8 +52,9 @@
  */
 
 import type { Metadata } from 'next';
-import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
+import { SITIO, REDES, OG_IMAGEN, TEMAS_CLIENTES } from '@/lib/sitio/contenido';
+import { Contenedor } from '@/components/sitio/piezas';
+import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 
 export const metadata: Metadata = {
@@ -86,7 +87,16 @@ export default function ClientesPage() {
           Fernando (2026-08-18). */}
       <section className="flex-1 pt-6 sm:pt-10 pb-16">
         <Contenedor ancho="sitio">
-          <PresentacionPagina {...PRESENTACION_CLIENTES} />
+          {/* Los temas Soluciones · Tickets · Proyectos (2026-10-31); abre el primero. */}
+          <ExploradorSecciones
+            secciones={TEMAS_CLIENTES}
+            activa={TEMAS_CLIENTES[0].id}
+            faqs={[]}
+            base="/clientes"
+            rotulo="Clientes"
+            presentacion={PRESENTACION_CLIENTES}
+            etiquetaNav="Temas para clientes"
+          />
         </Contenedor>
       </section>
 
@@ -119,10 +129,10 @@ export default function ClientesPage() {
             hasOfferCatalog: {
               '@type': 'OfferCatalog',
               name: 'Lo que ofrecemos',
-              itemListElement: ACCESOS.map((a) => ({
+              itemListElement: TEMAS_CLIENTES.map((a) => ({
                 '@type': 'Offer',
                 url: `${SITIO.url}/clientes/${a.id}`,
-                itemOffered: { '@type': 'Service', name: a.titulo, description: a.texto },
+                itemOffered: { '@type': 'Service', name: a.titulo, description: a.texto || a.descripcion },
               })),
             },
           }),

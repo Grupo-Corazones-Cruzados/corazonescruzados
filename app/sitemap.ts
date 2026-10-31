@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITIO, ACCESOS, DESARROLLO } from '@/lib/sitio/contenido';
+import { SITIO, ACCESOS, DESARROLLO, TEMAS_CLIENTES } from '@/lib/sitio/contenido';
 import { listarSoluciones } from '@/lib/soluciones';
 import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
@@ -106,6 +106,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ⚠️ Aquí van SOLO las URLs nuevas. Las viejas de `/negocio` redirigen (301) y una URL
     // que redirige no se pone en el mapa del sitio: se le estaría pidiendo a Google que
     // indexe algo que él mismo va a descartar.
+    // Los temas de 2026-10-31; solo los que ya tienen texto (un tema vacío no se pide indexar).
+    ...TEMAS_CLIENTES.filter((a) => a.texto || a.descripcion).map((a) => ({
+      url: `${SITIO.url}/clientes/${a.id}`,
+      lastModified: ULTIMO_CAMBIO.clientes,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
     ...ACCESOS.map((a) => ({
       url: `${SITIO.url}/clientes/${a.id}`,
       lastModified: ULTIMO_CAMBIO.clientes,

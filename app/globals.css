@@ -4272,6 +4272,8 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .puertas-bloques[data-grupos='uno'] .puertas-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* Una sola puerta (hoy, Soluciones con un talento): media página, no una tarjeta medio vacía. */
   .puertas-bloques[data-grupos='uno'] .puertas-lista[data-n='1'] { grid-template-columns: minmax(0, 1fr); max-width: calc(50% - 12px); }
+  /* Tres puertas (Clientes: Soluciones · Tickets · Proyectos, 2026-10-31) van en una fila, no 2 + 1 suelta. */
+  .puertas-bloques[data-grupos='uno'] .puertas-lista[data-n='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .puerta-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; transition: background-color 180ms ease, box-shadow 180ms ease; }
 .puerta-fila:hover { background: rgba(124, 58, 237, 0.06); }

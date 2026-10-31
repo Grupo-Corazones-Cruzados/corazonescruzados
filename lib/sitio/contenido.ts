@@ -1230,6 +1230,30 @@ export function accesoPorId(id: string): Acceso | undefined {
   return ACCESOS.find((a) => a.id === id);
 }
 
+/* ══════════════════ TEMAS_CLIENTES — los temas de /clientes desde el 2026-10-31 ══════════════════ */
+
+/**
+ * LOS TEMAS DE CLIENTES (Fernando, 2026-10-31): Soluciones · Tickets · Proyectos, con las mismas
+ * puertas que antes tenía `ACCESOS`. Él va dictando el contenido; los textos se trasladan tal cual.
+ * Tickets y Proyectos nacen sin texto. Las cuatro secciones de antes (`ACCESOS`) siguen vivas en
+ * sus URLs para recuperar de ellas lo que haga falta.
+ */
+export const TEMAS_CLIENTES: Acceso[] = [
+  {
+    id: 'soluciones', icono: 'estrella',
+    titulo: 'Soluciones',
+    texto: '',
+    descripcion:
+      'Nuestra propuesta se basa en la metodología del "Progreso Horizontal", el cual aplicamos mediante inversiones que hacemos con Clientes Experimentales para descubrir estrategias funcionales y exitosas que podemos lanzar como "Soluciones".',
+  },
+  { id: 'tickets', icono: 'ticket', titulo: 'Tickets', texto: '' },
+  { id: 'proyectos', icono: 'rama', titulo: 'Proyectos', texto: '' },
+];
+
+export function temaClientesPorId(id: string): Acceso | undefined {
+  return TEMAS_CLIENTES.find((a) => a.id === id);
+}
+
 /* ═══════════════════════ SERVICIOS ═══════════════════════ */
 
 export type Publico = 'clientes' | 'miembros' | 'candidatos';

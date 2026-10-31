@@ -25,7 +25,7 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId } from '@/lib/sitio/contenido';
+import { SITIO, ACCESOS, OG_IMAGEN, accesoPorId, TEMAS_CLIENTES, temaClientesPorId } from '@/lib/sitio/contenido';
 import { Contenedor } from '@/components/sitio/piezas';
 import { ACCESOS as SECCIONES } from '@/lib/sitio/contenido';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
@@ -35,7 +35,8 @@ import { faqsTolerantesAlBuild } from '../faqs-build';
 type Props = { params: Promise<{ necesidad: string }> };
 
 export function generateStaticParams() {
-  return ACCESOS.map((a) => ({ necesidad: a.id }));
+  // Los temas nuevos (2026-10-31) y, detrás, las cuatro secciones de antes, que siguen vivas.
+  return [...TEMAS_CLIENTES, ...ACCESOS].map((a) => ({ necesidad: a.id }));
 }
 
 /** Un tramo inventado no debe existir: nada fuera de `ACCESOS` se renderiza. */
@@ -53,16 +54,16 @@ export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { necesidad } = await params;
-  const acceso = accesoPorId(necesidad);
+  const acceso = temaClientesPorId(necesidad) ?? accesoPorId(necesidad);
   if (!acceso) return {};
 
   return {
     title: acceso.titulo,
-    description: acceso.texto,
+    description: acceso.texto || acceso.descripcion,
     alternates: { canonical: `/clientes/${acceso.id}` },
     openGraph: {
       title: `${acceso.titulo} — ${SITIO.nombre}`,
-      description: acceso.texto,
+      description: acceso.texto || acceso.descripcion,
       url: `${SITIO.url}/clientes/${acceso.id}`,
       type: 'website',
       locale: 'es_EC',
@@ -73,8 +74,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DetalleNecesidadPage({ params }: Props) {
   const { necesidad } = await params;
-  const acceso = accesoPorId(necesidad);
+  const acceso = temaClientesPorId(necesidad) ?? accesoPorId(necesidad);
   if (!acceso) notFound();
+  const nuevo = TEMAS_CLIENTES.some((t) => t.id === acceso.id);
 
   // Se leen en el servidor, al generar la página: las preguntas y sus respuestas viajan ya
   // escritas dentro del HTML. Si se pidieran por red desde el navegador, el buscador —que es
@@ -99,13 +101,13 @@ export default async function DetalleNecesidadPage({ params }: Props) {
       <section className="flex-1 overflow-x-clip pt-6 sm:pt-10 pb-40 sm:pb-56">
         <Contenedor ancho="sitio">
           <ExploradorSecciones
-            secciones={SECCIONES}
+            secciones={nuevo ? TEMAS_CLIENTES : SECCIONES}
             activa={acceso.id}
             faqs={faqs}
             base="/clientes"
             rotulo="Clientes"
             presentacion={PRESENTACION_CLIENTES}
-            etiquetaNav="Secciones para clientes"
+            etiquetaNav={nuevo ? 'Temas para clientes' : 'Secciones para clientes'}
           />
         </Contenedor>
       </section>

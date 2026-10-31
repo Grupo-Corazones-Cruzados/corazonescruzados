@@ -197,7 +197,7 @@ export default function CabeceraSitio() {
                 href={n.href}
                 data-pestana={n.href}
                 aria-current={activo ? 'page' : undefined}
-                className={`relative z-[1] py-2 transition-colors duration-300 rounded-full px-3 text-[13px] min-[1100px]:px-4 min-[1100px]:text-[13.5px] ${
+                className={`relative z-[1] whitespace-nowrap py-2 transition-colors duration-300 rounded-full px-3 text-[13px] min-[1100px]:text-[13.5px] ${
                   activo
                     ? `text-white ${indicadorListo ? '' : 'bg-white/[0.1]'}`
                     : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
