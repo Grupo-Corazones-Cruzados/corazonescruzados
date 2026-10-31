@@ -992,6 +992,25 @@ html {
   padding-right: 36px;
 }
 
+/* ⭐ TODO `<select>` LLEVA LA FLECHA DIBUJADA POR NOSOTROS, CON AIRE (Fernando, 2026-10-31: «la flecha
+   súper mal colocada… muy al borde del control»). La flecha del sistema se pega al borde e ignora el
+   relleno; en un control de cápsula (`rounded-full`) queda encima de la curva. Regla para TODOS los
+   desplegables fuera del panel (el panel `.corp` tiene la suya, más abajo, que gana por especificidad):
+   `appearance: none`, chevron propio a 14 px del borde y hueco de 38 px para que el texto no la pise.
+   Los de cápsula (`.filtro-sitio`, `.segmentado-movil`) la meten más: 18 px / 44 px, en su propia regla.
+   `:where()` deja la especificidad en la de un `select` suelto: cualquier regla con nombre la ajusta. */
+select:where(:not([multiple]):not([size]):not(.field-plain)) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237B5FBF' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+  padding-right: 38px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
 /* Base typography for the whole dashboard scope */
 .corp { font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif; }
 
@@ -1185,16 +1204,23 @@ html {
 .corp select:not(.field-plain):not([multiple]) {
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23605e5c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23484644' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 30px;
+  /* 2026-10-31: estaba a 10 px, de 12 px y gris oscuro; pegada a la esquina redondeada y casi
+     invisible en el tema oscuro (Fernando: «la flecha súper mal colocada»). Ver la regla general. */
+  background-position: right 12px center;
+  background-size: 14px 14px;
+  padding-right: 36px;
   cursor: pointer;
+}
+/* En el tema oscuro, la flecha en gris claro: la gris oscura no se veía. */
+.corp.dark select:not(.field-plain):not([multiple]), .dark .corp select:not(.field-plain):not([multiple]) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d2d0ce' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 .corp select:not(.field-plain):not([multiple]):disabled { cursor: default; }
 /* Variante con nombre para celdas estrechas (IVA de una línea de factura): la flecha
    pegada al borde, para que el valor no se corte. */
-.corp select.select-compacto:not([multiple]) { padding-left: 6px; padding-right: 18px; background-position: right 4px center; }
+.corp select.select-compacto:not([multiple]) { padding-left: 6px; padding-right: 20px; background-position: right 5px center; background-size: 12px 12px; }
 .corp .field-label {
   font-family: var(--font-display);
   font-size: 0.75rem;             /* 12px */
@@ -4421,8 +4447,8 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .segmentado-opcion.es-activa .segmentado-cuenta { color: rgba(255, 255, 255, 0.8); }
 .segmentado-movil { display: block; width: 100%; }
 .segmentado-movil select {
-  width: 100%; height: 44px; padding: 0 14px; border-radius: 9999px; border: 1px solid var(--linea-fuerte);
-  background: rgba(255, 255, 255, 0.85); font-size: 0.95rem; color: var(--texto);
+  width: 100%; height: 44px; padding: 0 44px 0 18px; background-position: right 18px center; border-radius: 9999px; border: 1px solid var(--linea-fuerte);
+  background-color: rgba(255, 255, 255, 0.85); font-size: 0.95rem; color: var(--texto);
 }
 @media (min-width: 640px) { .segmentado-movil { display: none; } }
 
@@ -4778,7 +4804,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (min-width: 640px) { .filtros-tickets { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .filtros-tickets { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .filtro-sitio { display: block; min-width: 0; }
-.filtro-sitio select { width: 100%; height: 44px; padding: 0 14px; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background: rgba(255, 255, 255, 0.85); font-size: 0.9rem; color: var(--texto); text-overflow: ellipsis; }
+.filtro-sitio select { width: 100%; height: 44px; padding: 0 44px 0 18px; background-position: right 18px center; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background-color: rgba(255, 255, 255, 0.85); font-size: 0.9rem; color: var(--texto); text-overflow: ellipsis; }
 .filtro-sitio select[data-activo] { border-color: rgba(124, 58, 237, 0.55); color: var(--violeta-txt); font-weight: 600; }
 .filtro-sitio select:focus { outline: none; border-color: #7b5fbf; }
 .filtros-tickets-resumen { margin-top: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--linea); display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.88rem; color: var(--tenue); }

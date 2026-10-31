@@ -5089,6 +5089,27 @@ pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos 
 - ⚠️ Ninguna animación deja un `transform` puesto al acabar: convertiría los `fixed` de dentro en relativos.
   Medido: a 390 px el desborde es 0 durante y después.
 
+## ⭐ LA FLECHA DE UN DESPLEGABLE, CON AIRE (2026-10-31)
+
+Fernando: *«estos controles de desplegables tienen la flecha súper mal colocada… muy al borde del
+control»* (los filtros de Clientes ▸ Tickets, y lo mismo en `/dashboard`). La flecha del sistema se
+pega al borde e ignora el relleno; en una cápsula (`rounded-full`) cae encima de la curva. Regla:
+
+- **Ningún `<select>` usa la flecha del sistema.** `appearance: none` + chevron SVG propio como
+  `background-image`, con `background-repeat: no-repeat` y `background-size` fijo.
+- **Distancia al borde ≥ el radio de la esquina.** Esquina pequeña (`rounded`/`rounded-md`): flecha
+  a **12 px** del borde, de **14 px**, y `padding-right: 36px`. Cápsula (`rounded-full`): a **18 px**,
+  `padding: 0 44px 0 18px`. El hueco derecho = distancia + tamaño + ~10 px, para que el texto largo
+  termine en «…» antes de pisarla (`text-overflow: ellipsis`).
+- **Contraste en los dos temas:** gris oscuro `#484644` en claro, `#d2d0ce` en oscuro (`.corp.dark`);
+  en el sitio público, violeta `#7B5FBF`.
+- **Vive en el CSS global, no en cada control:** sitio público `select:where(...)` (especificidad de un
+  `select` suelto, así cualquier regla con nombre la ajusta); panel `.corp select:not(.field-plain)…`;
+  productos `select.campo`. Nunca `background:` abreviado en una regla de `select`: borra la flecha —
+  usar `background-color`. Celdas estrechas: `select-compacto` (5 px / 12 px).
+- **Verificar midiendo:** `getComputedStyle(select).backgroundPosition` y `paddingRight`, y una
+  captura del control en claro y oscuro.
+
 ## Desviaciones detectadas y resolución
 - **2026-10-29 · Automatizaciones › Bandeja: «no salió» sin motivo** · **CORREGIDO**. El aviso de envío fallido
   no decía por qué; ahora el motivo (con la respuesta de Meta) va en el `title` del aviso, sin frase debajo
