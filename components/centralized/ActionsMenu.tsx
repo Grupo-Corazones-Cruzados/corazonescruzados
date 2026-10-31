@@ -9,7 +9,10 @@ export interface ActionItem {
   label: string;
   /** Marca la opción vigente (✓ a la derecha), para usar el menú como SELECTOR. */
   activo?: boolean;
-  icon?: any;
+  /** El COMPONENTE del icono (`Pencil`), no el icono ya dibujado (`<Pencil />`): el menú lo
+   *  dibuja él con su tamaño. Era `any` y un `<Pencil />` pasaba el compilador y tumbaba la
+   *  pantalla entera al abrir el menú (Generación de Contenido, 2026-10-31). */
+  icon?: React.ComponentType<{ className?: string }>;
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;

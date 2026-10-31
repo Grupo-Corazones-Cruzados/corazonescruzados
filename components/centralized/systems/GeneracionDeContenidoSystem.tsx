@@ -592,9 +592,9 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
               </Button>
               <ActionsMenu
                 items={[
-                  { label: 'Editar idea', icon: <Pencil className="w-3.5 h-3.5" />, onClick: abrirEdicion },
+                  { label: 'Editar idea', icon: Pencil, onClick: abrirEdicion },
                   {
-                    label: 'Eliminar contenido', icon: <Trash2 className="w-3.5 h-3.5" />, danger: true,
+                    label: 'Eliminar contenido', icon: Trash2, danger: true,
                     onClick: () => setBorrar(lista.find((c) => c.id === selId) || null),
                   },
                 ]}
