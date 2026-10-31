@@ -202,6 +202,12 @@ base verbatim):
 
 ## ✍️ Los textos del sitio los corrige Fernando (2026-10-30)
 
+- **2026-10-31 · pestañas nuevas.** El menú pasa a Inicio · Candidatos · Clientes · Miembros. Candidatos
+  y Miembros nacen vacías (`noindex`); `/clientes` queda solo con su presentación (las secciones siguen
+  en `ACCESOS` y en `/clientes/[necesidad]`). Soluciones y Desarrollo Humano siguen visibles hasta que
+  Fernando diga qué se recupera de ellas; al final se quitan. Con seis pestañas el nombre del logo se
+  esconde por debajo de 1150 px. Aplicados ya: Soluciones (5 textos) y la presentación de Clientes.
+
 > Intenté describir «su estilo de escritura» a partir del Modelo 4P y las Herramientas y Fernando lo
 > rechazó: *«terrible tu interpretación, así no es»*. NO se imita ni se resume su estilo. Él corrige TODOS
 > los textos de las páginas en un editor (artifact) y el asistente solo los TRASLADA al código, literales.
