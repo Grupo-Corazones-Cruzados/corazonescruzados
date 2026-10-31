@@ -29,6 +29,9 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
     };
   });
   const tickets = await cargarTicketsCacheados();
+  const solucionDe = Object.fromEntries(
+    (await cargarSolucionesCacheadas()).flatMap((s) => s.talentos.map((t) => [t.talento, s.nombre])),
+  );
   const temas = TEMAS_CLIENTES.map((t) => {
     const Icono = ICONOS[t.icono] ?? ICONOS.capas;
     const texto = t.descripcion ?? t.texto;
@@ -39,7 +42,7 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
       icono: <Icono className="h-4 w-4" />,
       iconoGrande: <Icono className="h-12 w-12" strokeWidth={1.5} />,
       contenido: t.id === 'soluciones' ? <ListaSoluciones soluciones={soluciones} />
-        : t.id === 'tickets' ? <ListaTickets tickets={tickets} />
+        : t.id === 'tickets' ? <ListaTickets tickets={tickets} solucionDe={solucionDe} />
         : undefined,
     };
   });

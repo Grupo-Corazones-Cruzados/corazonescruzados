@@ -4765,10 +4765,27 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .tema-pestana-cuenta { margin-left: 8px; font: 600 0.8rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--tenue); font-variant-numeric: tabular-nums; }
 .tema-pestana[aria-selected='true'] .tema-pestana-cuenta { color: var(--violeta-txt); }
 .hecho-panel { margin-top: 22px; animation: temaEntra 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-/* Tickets de Clientes (2026-10-31): el filtro de talento es el `<select>` redondo del teléfono, pero
-   visible en todos los anchos; y la paginación, botones redondos con la página actual en violeta. */
-.segmentado-movil.tickets-talento { display: block; }
-@media (min-width: 640px) { .segmentado-movil.tickets-talento { width: 230px; } }
+/* Tickets de Clientes (2026-10-31): cinco filtros que se combinan (solución, año, mes, talento,
+   miembro) + buscador. Teléfono: 2 columnas y el buscador a todo el ancho; tablet: 3; computadora:
+   los cinco en una fila y el buscador debajo a todo el ancho. El filtro puesto lleva borde violeta.
+   La paginación, botones redondos con la página actual en violeta. */
+.filtros-tickets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.filtros-tickets-busca { grid-column: 1 / -1; }
+/* Cinco filtros en 2 o 3 columnas dejarían un hueco: el último (miembro) se estira a lo que sobra. */
+.filtros-tickets > .filtro-sitio:nth-child(5) { grid-column: 1 / -1; }
+@media (min-width: 640px) { .filtros-tickets > .filtro-sitio:nth-child(5) { grid-column: span 2; } }
+@media (min-width: 1024px) { .filtros-tickets > .filtro-sitio:nth-child(5) { grid-column: auto; } }
+@media (min-width: 640px) { .filtros-tickets { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .filtros-tickets { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.filtro-sitio { display: block; min-width: 0; }
+.filtro-sitio select { width: 100%; height: 44px; padding: 0 14px; border-radius: 9999px; border: 1px solid var(--linea-fuerte); background: rgba(255, 255, 255, 0.85); font-size: 0.9rem; color: var(--texto); text-overflow: ellipsis; }
+.filtro-sitio select[data-activo] { border-color: rgba(124, 58, 237, 0.55); color: var(--violeta-txt); font-weight: 600; }
+.filtro-sitio select:focus { outline: none; border-color: #7b5fbf; }
+.filtros-tickets-resumen { margin-top: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--linea); display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 0.88rem; color: var(--tenue); }
+.filtros-tickets-resumen b { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--texto); }
+.filtros-tickets-resumen button { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--violeta-txt); }
+.filtros-tickets-resumen button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.filtros-tickets-resumen svg { width: 15px; height: 15px; }
 .paginacion-sitio { margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .paginacion-sitio button { display: grid; place-items: center; min-width: 40px; height: 40px; padding: 0 10px; border-radius: 9999px; border: 1px solid var(--linea); background: rgba(255, 255, 255, 0.8); font: 600 0.9rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--suave); font-variant-numeric: tabular-nums; transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
 .paginacion-sitio button:hover:not(:disabled) { border-color: rgba(124, 58, 237, 0.35); color: var(--violeta-txt); }
@@ -4789,3 +4806,11 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .tema-contenido, .solucion-cabeza, .hecho-panel { animation: none; }
   .solucion-fila, .solucion-talento-ir { transition: none; }
 }
+
+/* ── Pasos del formulario de pago (Fernando, 2026-10-31) ─────────────────────────────
+   Cada paso entra deslizándose desde el lado hacia el que se avanza. */
+@keyframes pagoPasoAdelante { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+@keyframes pagoPasoAtras { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.pago-paso-adelante { animation: pagoPasoAdelante 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+.pago-paso-atras { animation: pagoPasoAtras 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) { .pago-paso-adelante, .pago-paso-atras { animation: none; } }

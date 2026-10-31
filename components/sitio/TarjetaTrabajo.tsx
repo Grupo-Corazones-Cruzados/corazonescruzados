@@ -150,12 +150,6 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
             {ETIQUETA[trabajo.tipo]}
-            {/* Solo en la lista de tickets de Clientes; color de texto, sin cápsula. */}
-            {trabajo.estado && (
-              <span className={trabajo.estado === 'resuelto' ? 'text-[var(--tenue)]' : 'text-[#c2410c]'}>
-                {' · '}{trabajo.estado === 'resuelto' ? 'Resuelto' : 'Por resolver'}
-              </span>
-            )}
           </span>
           {trabajo.creadoTexto && (
             <time

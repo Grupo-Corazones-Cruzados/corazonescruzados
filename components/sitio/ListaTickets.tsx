@@ -2,51 +2,98 @@
 
 /**
  * LA LISTA DE TICKETS — dentro del tema «Tickets» de Clientes (Fernando, 2026-10-31: «pon debajo del
- * título todos los tickets que se han creado, aunque puedes poner paginación, filtros y el buscador;
- * la idea es que el usuario pueda ver los tickets que se pueden resolver»).
+ * título todos los tickets que se han creado… paginación, filtros y el buscador»).
  *
- * Barra: estado en el selector segmentado (Por resolver · Resueltos · Todos, con su cuenta), talento
- * si hay más de uno, y el buscador redondo de la casa. Debajo, las tarjetas de siempre
- * (`TarjetaTrabajo`, con «Por resolver» / «Resuelto» junto a «Ticket») de 12 en 12 con paginación.
- * Arranca en «Por resolver» si hay alguno: es lo que se viene a ver.
+ * Solo los terminados, y sin filtro de estado (el mismo día: «quita los filtros por estado… solo
+ * completados»). Filtros: **solución, año, mes, talento y miembro**, más el buscador redondo de la casa.
+ *
+ * ── LAS MEZCLAS DE FILTROS ──────────────────────────────────────────────────────────
+ * Se combinan todos (Y). Cada desplegable ofrece solo lo que, con los DEMÁS filtros puestos, todavía
+ * deja algún ticket, y dice cuántos: así ninguna combinación lleva a una lista vacía por sorpresa. Lo
+ * ya elegido se conserva en su lista aunque los otros filtros lo dejen a cero, para poder quitarlo.
+ * La fecha es la que enseña la tarjeta (`creado`, en UTC como `comoFecha`).
+ *
+ * Tarjetas `TarjetaTrabajo` de 12 en 12 con paginación; cualquier filtro vuelve a la página 1.
  */
 
 import { useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import type { Trabajo } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
-import SelectorSegmentado from './SelectorSegmentado';
 
-type Estado = 'por-resolver' | 'resuelto' | 'todos';
 const POR_PAGINA = 12;
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const sinTildes = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export default function ListaTickets({ tickets }: { tickets: Trabajo[] }) {
-  const pendientes = tickets.filter((t) => t.estado === 'por-resolver').length;
-  const [estado, setEstado] = useState<Estado>(pendientes > 0 ? 'por-resolver' : 'todos');
-  const [talento, setTalento] = useState('');
+type Clave = 'solucion' | 'anio' | 'mes' | 'talento' | 'miembro';
+type Filtros = Record<Clave, string>;
+const VACIOS: Filtros = { solucion: '', anio: '', mes: '', talento: '', miembro: '' };
+
+/** Los valores de un ticket para cada filtro (un ticket puede tener varios talentos o personas). */
+function valores(t: Trabajo, solucionDe: Record<string, string>): Record<Clave, string[]> {
+  const f = t.creado ? new Date(t.creado) : null;
+  return {
+    solucion: [...new Set(t.etiquetas.map((x) => solucionDe[x]).filter(Boolean))],
+    anio: f ? [String(f.getUTCFullYear())] : [],
+    mes: f ? [String(f.getUTCMonth() + 1)] : [],
+    talento: t.etiquetas,
+    miembro: t.personas.map((p) => p.nombre),
+  };
+}
+
+export default function ListaTickets({
+  tickets, solucionDe,
+}: {
+  tickets: Trabajo[];
+  /** Talento → nombre de su solución (un talento pertenece a una sola, migración 042). */
+  solucionDe: Record<string, string>;
+}) {
+  const [filtros, setFiltros] = useState<Filtros>(VACIOS);
   const [busca, setBusca] = useState('');
   const [pagina, setPagina] = useState(0);
-  const arriba = useRef<HTMLDivElement>(null);
+  const arriba = useRef<HTMLElement>(null);
 
-  const talentos = useMemo(
-    () => [...new Set(tickets.flatMap((t) => t.etiquetas))].sort((a, b) => a.localeCompare(b, 'es')),
-    [tickets],
-  );
   const q = sinTildes(busca.trim());
-  // La cuenta de cada estado respeta el talento y la búsqueda: dice cuántos verías al pulsarlo.
-  const filtrados = useMemo(() => tickets.filter((t) =>
-    (!talento || t.etiquetas.includes(talento)) &&
-    (!q || sinTildes(`${t.titulo} ${t.descripcion ?? ''} ${t.etiquetas.join(' ')}`).includes(q)),
-  ), [tickets, talento, q]);
-  const cuenta = (e: Estado) => (e === 'todos' ? filtrados.length : filtrados.filter((t) => t.estado === e).length);
-  const vistos = estado === 'todos' ? filtrados : filtrados.filter((t) => t.estado === estado);
+  const filas = useMemo(() => tickets.map((t) => ({
+    t,
+    v: valores(t, solucionDe),
+    texto: sinTildes(`${t.titulo} ${t.descripcion ?? ''} ${t.etiquetas.join(' ')} ${t.personas.map((p) => p.nombre).join(' ')}`),
+  })), [tickets, solucionDe]);
+
+  /** ¿Pasa la fila todos los filtros menos `salvo`? */
+  const pasa = (f: (typeof filas)[number], salvo?: Clave) =>
+    (!q || f.texto.includes(q)) &&
+    (Object.keys(filtros) as Clave[]).every((k) => k === salvo || !filtros[k] || f.v[k].includes(filtros[k]));
+
+  const vistos = filas.filter((f) => pasa(f)).map((f) => f.t);
+
+  /** Las opciones de un filtro con su cuenta, según los demás filtros. */
+  const opciones = (k: Clave) => {
+    const cuenta = new Map<string, number>();
+    for (const f of filas) if (pasa(f, k)) for (const v of f.v[k]) cuenta.set(v, (cuenta.get(v) ?? 0) + 1);
+    if (filtros[k] && !cuenta.has(filtros[k])) cuenta.set(filtros[k], 0);
+    const lista = [...cuenta.entries()];
+    if (k === 'anio') lista.sort((a, b) => Number(b[0]) - Number(a[0]));
+    else if (k === 'mes') lista.sort((a, b) => Number(a[0]) - Number(b[0]));
+    else lista.sort((a, b) => a[0].localeCompare(b[0], 'es'));
+    return lista;
+  };
+
+  const FILTROS: { k: Clave; todos: string; nombre: (v: string) => string }[] = [
+    { k: 'solucion', todos: 'Todas las soluciones', nombre: (v) => v },
+    { k: 'anio', todos: 'Todos los años', nombre: (v) => v },
+    { k: 'mes', todos: 'Todos los meses', nombre: (v) => MESES[Number(v) - 1] },
+    { k: 'talento', todos: 'Todos los talentos', nombre: (v) => v },
+    { k: 'miembro', todos: 'Todos los miembros', nombre: (v) => v },
+  ];
+
   const paginas = Math.max(1, Math.ceil(vistos.length / POR_PAGINA));
   const p = Math.min(pagina, paginas - 1);
-  const pagina0 = vistos.slice(p * POR_PAGINA, (p + 1) * POR_PAGINA);
+  const enPagina = vistos.slice(p * POR_PAGINA, (p + 1) * POR_PAGINA);
+  const hayFiltro = !!q || Object.values(filtros).some(Boolean);
 
-  // Cualquier filtro nuevo vuelve a la primera página.
-  const filtrar = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPagina(0); };
+  const poner = (k: Clave, v: string) => { setFiltros((f) => ({ ...f, [k]: v })); setPagina(0); };
+  const limpiar = () => { setFiltros(VACIOS); setBusca(''); setPagina(0); };
   const irA = (n: number) => {
     setPagina(n);
     arriba.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -56,50 +103,43 @@ export default function ListaTickets({ tickets }: { tickets: Trabajo[] }) {
 
   return (
     <section aria-label="Tickets" ref={arriba} className="scroll-mt-24">
-      <div className="barra-trabajos">
-        <SelectorSegmentado<Estado>
-          etiqueta="Estado"
-          valor={estado}
-          onCambiar={filtrar(setEstado)}
-          opciones={[
-            { id: 'por-resolver', label: 'Por resolver', cuenta: cuenta('por-resolver') },
-            { id: 'resuelto', label: 'Resueltos', cuenta: cuenta('resuelto') },
-            { id: 'todos', label: 'Todos', cuenta: cuenta('todos') },
-          ]}
-        />
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          {talentos.length > 1 && (
-            <label className="segmentado-movil tickets-talento">
-              <span className="sr-only">Talento</span>
-              <select value={talento} onChange={(e) => filtrar(setTalento)(e.target.value)}>
-                <option value="">Todos los talentos</option>
-                {talentos.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </label>
-          )}
-          <div className="relative w-full sm:w-[320px] sm:shrink-0">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
-            <input
-              type="search"
-              value={busca}
-              onChange={(e) => filtrar(setBusca)(e.target.value)}
-              placeholder="Buscar tickets…"
-              aria-label="Buscar tickets"
-              className="w-full h-11 pl-10 pr-4 rounded-full border border-[var(--linea-fuerte)] bg-white/85
-                         text-[14.5px] text-[var(--texto)] placeholder:text-[var(--apagado)]
-                         focus:border-[#7b5fbf]/60 focus:outline-none transition-colors"
-            />
-          </div>
+      <div className="filtros-tickets">
+        {FILTROS.map(({ k, todos, nombre }) => (
+          <label key={k} className="filtro-sitio">
+            <span className="sr-only">{todos}</span>
+            <select value={filtros[k]} onChange={(e) => poner(k, e.target.value)} data-activo={filtros[k] ? '' : undefined}>
+              <option value="">{todos}</option>
+              {opciones(k).map(([v, n]) => <option key={v} value={v}>{nombre(v)} · {n}</option>)}
+            </select>
+          </label>
+        ))}
+        <div className="relative filtros-tickets-busca">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => { setBusca(e.target.value); setPagina(0); }}
+            placeholder="Buscar tickets…"
+            aria-label="Buscar tickets"
+            className="w-full h-11 pl-10 pr-4 rounded-full border border-[var(--linea-fuerte)] bg-white/85
+                       text-[14.5px] text-[var(--texto)] placeholder:text-[var(--apagado)]
+                       focus:border-[#7b5fbf]/60 focus:outline-none transition-colors"
+          />
         </div>
       </div>
 
-      <div className="mt-6">
-        {pagina0.length === 0 ? (
-          <p className="text-[14px] text-[var(--tenue)] py-6">
-            {q || talento ? 'Ningún ticket coincide con la búsqueda.' : estado === 'por-resolver' ? 'No hay tickets por resolver ahora mismo.' : 'Todavía no hay tickets.'}
-          </p>
+      <div className="filtros-tickets-resumen">
+        <span><b>{vistos.length.toLocaleString('es-ES')}</b> {vistos.length === 1 ? 'ticket' : 'tickets'}</span>
+        {hayFiltro && (
+          <button type="button" onClick={limpiar}><X aria-hidden /> Quitar filtros</button>
+        )}
+      </div>
+
+      <div className="mt-5">
+        {enPagina.length === 0 ? (
+          <p className="text-[14px] text-[var(--tenue)] py-6">Ningún ticket coincide con los filtros.</p>
         ) : (
-          <div className="rejilla-trabajos">{pagina0.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}</div>
+          <div className="rejilla-trabajos">{enPagina.map((t) => <TarjetaTrabajo key={t.id} trabajo={t} />)}</div>
         )}
       </div>
 

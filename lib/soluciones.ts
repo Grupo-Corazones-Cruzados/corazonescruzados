@@ -380,11 +380,6 @@ export interface Trabajo {
    * horaria. Formateado una vez aquí, las dos pasadas escriben exactamente lo mismo.
    */
   creadoTexto: string | null;
-  /**
-   * Solo en la lista de tickets de Clientes (2026-10-31), que enseña también los que aún no se
-   * resuelven. En las páginas de talento todo está terminado y no se dice.
-   */
-  estado?: 'resuelto' | 'por-resolver';
 }
 
 /**
@@ -533,24 +528,21 @@ function ticketComoTrabajo(t: any): Trabajo {
  * todos los tickets que se han creado… la idea es que el usuario pueda ver los tickets que se pueden
  * resolver»).
  *
- * ⚠️ Deroga para ESTA lista la regla de «solo lo terminado» (`ESTADO_PUBLICABLE`), porque lo pide él
- * y el sentido es justo enseñar lo pendiente. Fuera siguen los borradores (`draft`: aún no existen) y
- * los cancelados (no se van a resolver). Sin cliente: solo título, descripción, talentos, fecha y
- * quien lo atiende — lo mismo que ya enseñan las páginas de talento.
+ * Solo los TERMINADOS (`ESTADO_PUBLICABLE`): el mismo día pidió quitar los pendientes («solo
+ * completados debes mostrar»). Sin cliente: título, descripción, talentos, fecha y quien lo atendió —
+ * lo mismo que ya enseñan las páginas de talento.
  */
 export async function ticketsPublicos(): Promise<Trabajo[]> {
   const { rows } = await pool.query(
-    `SELECT t.id, t.title, t.description, t.required_talents, t.created_at, t.status,
+    `SELECT t.id, t.title, t.description, t.required_talents, t.created_at,
             m.id AS member_id, m.name, m.photo_url, m.email, m.phone
        FROM gcc_world.tickets t
        LEFT JOIN gcc_world.members m ON m.id = t.member_id
-      WHERE t.status NOT IN ('draft', 'cancelled')
+      WHERE t.status = $1
       ORDER BY t.created_at DESC NULLS LAST, t.id DESC`,
+    [ESTADO_PUBLICABLE],
   );
-  return rows.map((t: any) => ({
-    ...ticketComoTrabajo(t),
-    estado: t.status === ESTADO_PUBLICABLE ? 'resuelto' : 'por-resolver',
-  }));
+  return rows.map(ticketComoTrabajo);
 }
 
 /* ═══════════════════ EL CONTENIDO DE LAS CUATRO PESTAÑAS ═══════════════════ */

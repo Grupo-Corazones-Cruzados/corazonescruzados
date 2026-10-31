@@ -225,10 +225,9 @@ base verbatim):
 - **Clientes ▸ Soluciones / Tickets (2026-10-31):** la tarjeta de la solución solo lleva su nombre y no es
   enlace; se elige el TALENTO (`/clientes/soluciones/<sol>/<talento>`, con sus productos y servicios y lo
   hecho); `/clientes/soluciones/<sol>` redirige a la lista. Cada talento tiene icono (migración 076).
-  Bajo el tema Tickets van **todos** los tickets (`ticketsPublicos`), también los pendientes, por
-  decisión de Fernando: excepción a «solo se publica lo terminado»; fuera `draft` y `cancelled`, sin
-  cliente. ⚠️ Un ticket pendiente aún no pasó por el nombre estándar: su título/descripción salen tal
-  como se escribieron.
+  Bajo el tema Tickets van los tickets **terminados** (`ticketsPublicos`; un primer intento con los
+  pendientes lo quitó Fernando el mismo día), sin cliente, filtrables por solución, año, mes, talento y
+  miembro combinados.
 
 ## Stack
 Stack estándar de la casa, con particularidades de este repo:
