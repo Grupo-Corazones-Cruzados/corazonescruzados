@@ -14,13 +14,15 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import BarraLista from '@/components/ui/BarraLista';
 import {
-  Inbox, Clock, CheckCircle2, AlertTriangle, Plus, X, Paperclip, Trash2,
+  Inbox, Clock, CheckCircle2, AlertTriangle, Plus, X, Paperclip,
   Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
   RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
+import PieAcciones from '@/components/ui/PieAcciones';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -420,36 +422,28 @@ export default function RecordatoriosPage() {
 
   </>
   );
+  /** UNA fila (regla «PieAcciones», Fernando 2026-10-31): papelera sola a la izquierda;
+   *  Editar y, a la derecha del todo, completar o reactivar. */
   const accionesDetalle = !detail ? null : (
-    <>
+    <PieAcciones onEliminar={() => del(detail.id)} etiquetaEliminar="Eliminar recordatorio">
+      <button onClick={() => openEdit(detail.id)} className={BTN_SECONDARY}>
+        <Pencil className="w-4 h-4" /> Editar
+      </button>
       {detailStatus === 'done' ? (
-        <button onClick={() => setStatus(detail.id, 'active')} className={`${BTN_SECONDARY} w-full`}>
-          <RotateCcw className="w-4 h-4" /> Reactivar recordatorio
+        <button onClick={() => setStatus(detail.id, 'active')} className={BTN_PRIMARY}>
+          <RotateCcw className="w-4 h-4" /> Reactivar
         </button>
       ) : (
-        <button onClick={() => setStatus(detail.id, 'done')} className={`${BTN_PRIMARY} w-full`}>
-          <CheckCircle2 className="w-4 h-4" /> Marcar como completado
+        <button onClick={() => setStatus(detail.id, 'done')} className={BTN_PRIMARY}>
+          <CheckCircle2 className="w-4 h-4" /> Completar
         </button>
       )}
-      <div className="flex gap-2">
-        <button onClick={() => openEdit(detail.id)} className={`${BTN_SECONDARY} flex-1`}>
-          <Pencil className="w-4 h-4" /> Editar
-        </button>
-        <button onClick={() => del(detail.id)} className="inline-flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-medium text-red-500 border border-red-500/40 rounded hover:bg-red-500/10 transition-colors" style={mf}>
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    </>
+    </PieAcciones>
   );
   /** En el panel del teléfono, todo seguido, como antes. */
   const cuerpoDetalle = !detail ? null : (
   <div className="p-4 space-y-3">
     {contenidoDetalle(false)}
-
-    {/* Acciones */}
-    <div className="space-y-2 pt-2 border-t border-digi-border">
-      {accionesDetalle}
-    </div>
   </div>
   );
 
@@ -582,6 +576,7 @@ export default function RecordatoriosPage() {
           onClose={() => { setSelected(null); setSelDetail(null); }}
           title={detail?.title || 'Recordatorio'}
           size="md"
+          pie={accionesDetalle}
         >
           {cuerpoDetalle}
         </PixelModal>
@@ -741,9 +736,7 @@ export default function RecordatoriosPage() {
           )}
 
           <div className="flex items-center justify-between gap-2 pt-2 border-t border-digi-border">
-            {editId ? (
-              <button onClick={() => del(editId)} className="inline-flex items-center gap-1.5 py-2 px-3 text-sm font-medium text-red-500 border border-red-500/40 rounded hover:bg-red-500/10 transition-colors" style={mf}><Trash2 className="w-4 h-4" /> Eliminar</button>
-            ) : <span />}
+            {editId ? <BotonEliminar onClick={() => del(editId)} etiqueta="Eliminar recordatorio" /> : <span />}
             <div className="flex gap-2">
               <button onClick={() => setModal(false)} className={BTN_SECONDARY}>Cancelar</button>
               <button onClick={save} disabled={saving || !title.trim()} className={`${BTN_PRIMARY} disabled:opacity-50`}>{saving ? 'Guardando…' : editId ? 'Guardar' : 'Crear'}</button>

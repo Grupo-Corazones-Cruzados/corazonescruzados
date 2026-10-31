@@ -9,15 +9,16 @@ import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import RecursosTab from '@/components/centralized/systems/gestion-social/RecursosTab';
-import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { VALORES, VALOR_LABEL } from '@/lib/centralized/valores';
 import { TALENTOS } from '@/lib/centralized/talentos';
 import {
-  Layers, FileEdit, Megaphone, PlayCircle, CheckCircle2, XCircle, Plus, Trash2, Pencil,
+  Layers, FileEdit, Megaphone, PlayCircle, CheckCircle2, XCircle, Plus, Pencil,
   CalendarDays, MapPin, Clock, Users, Gem, Sparkles, PartyPopper, Square, Info,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import BarraLista from '@/components/ui/BarraLista';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -472,7 +473,10 @@ function EventDetail({
       </dl>
 
       {/* Control del ciclo de vida: publicar → iniciar → finalizar (todo manual). */}
-      <div className="mt-3 pt-3 border-t border-digi-border flex flex-wrap gap-2">
+      <div className="mt-3 pt-3 border-t border-digi-border flex flex-wrap items-center gap-2">
+        <BotonEliminar onClick={onDelete} disabled={busy} etiqueta="Eliminar evento" />
+        <div className="flex-1" />
+        {editable && <button className={BTN_SECONDARY} onClick={onEdit} disabled={busy} style={mf}><Pencil className="w-4 h-4" /> Editar</button>}
         {event.status === 'draft' && (
           <button className={BTN_PRIMARY} onClick={onPublish} disabled={busy || event.taskCount === 0} style={mf}>
             <Megaphone className="w-4 h-4" /> Publicar
@@ -488,8 +492,6 @@ function EventDetail({
             <Square className="w-4 h-4" /> Finalizar evento
           </button>
         )}
-        {editable && <button className={BTN_SECONDARY} onClick={onEdit} disabled={busy} style={mf}><Pencil className="w-4 h-4" /> Editar</button>}
-        <button className={BTN_DANGER} onClick={onDelete} disabled={busy} style={mf}><Trash2 className="w-4 h-4" /> Eliminar</button>
       </div>
 
       {event.status === 'draft' && event.taskCount === 0 && (

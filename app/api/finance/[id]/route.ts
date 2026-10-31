@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: 'Cada adicional es un ingreso o un egreso.' }, { status: 400 });
       }
       if (!NOMBRE_ADICIONAL.test(description) && !nombresPrevios.has(description)) {
-        return NextResponse.json({ error: `«${description || 'sin nombre'}»: el nombre de un adicional es una sola palabra.` }, { status: 400 });
+        return NextResponse.json({ error: `«${description || 'sin nombre'}»: el nombre de un adicional va de 1 a 40 caracteres.` }, { status: 400 });
       }
       if (!(amount > 0)) {
         return NextResponse.json({ error: `«${description}»: el importe tiene que ser mayor que cero.` }, { status: 400 });

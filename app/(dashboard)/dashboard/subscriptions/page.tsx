@@ -16,10 +16,11 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
+import PieAcciones from '@/components/ui/PieAcciones';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import BarraLista from '@/components/ui/BarraLista';
 import { fmt2 } from '@/lib/format';
-import { Layers, CheckCircle2, PauseCircle, XCircle, Plus, X, Trash2, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
+import { Layers, CheckCircle2, PauseCircle, XCircle, Plus, X, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -373,22 +374,14 @@ export default function SubscriptionsPage() {
     </p>
   </>
   );
+  /** La papelera sola a la izquierda del pie (regla «PieAcciones», Fernando 2026-10-31). */
   const eliminarSuscripcion = !selected || loadingDetail || !detail || user?.role !== 'admin' ? null : (
-        <button onClick={requestDelete}
-          className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 w-full sm:w-auto text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
-          <Trash2 className="w-3.5 h-3.5" /> Eliminar suscripción
-        </button>
+    <PieAcciones onEliminar={requestDelete} etiquetaEliminar="Eliminar suscripción" />
   );
   /** En la ventana del teléfono, todo seguido, como antes. */
   const cuerpoMeses = !selected || loadingDetail || !detail ? null : (
   <div className="p-4 space-y-3">
     {mesesFicha(false)}
-
-    {eliminarSuscripcion && (
-      <div className="pt-2 border-t border-digi-border">
-        {eliminarSuscripcion}
-      </div>
-    )}
   </div>
   );
 
@@ -543,6 +536,7 @@ export default function SubscriptionsPage() {
           onClose={() => { setSelected(null); setDetail(null); }}
           title={detail ? `${detail.title} · ${detail.client_name || ''}` : 'Suscripción'}
           size="md"
+          pie={eliminarSuscripcion}
         >
           {loadingDetail || !detail
             ? <p className="py-10 text-center text-[12px] text-digi-muted" style={mf}>Cargando…</p>

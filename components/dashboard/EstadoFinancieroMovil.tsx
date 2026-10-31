@@ -155,7 +155,7 @@ type Lado = 'income' | 'expense' | 'adicional';
  * «Guardar» del pie no cambia.
  *
  * Desde el 2026-10-30 (Fernando) ingresos y egresos son lo del SRI y se leen, no se tocan; lo que
- * se escribe a mano son los ADICIONALES —ingresos y egresos no facturados, de nombre una palabra—,
+ * se escribe a mano son los ADICIONALES —ingresos y egresos no facturados, con un nombre corto—,
  * en su propia pestaña. `adicionales = null` la esconde («Solo facturado»).
  */
 export function DetalleMes<R extends RenglonMovil>({
@@ -198,7 +198,8 @@ export function DetalleMes<R extends RenglonMovil>({
 
   const guardarRenglon = () => {
     if (!editando) return;
-    const { i, type, description } = editando;
+    const { i, type } = editando;
+    const description = editando.description.trim();
     const amount = aGuardar(editando.amount);
     setAdicionales((prev) => (i < 0
       ? [...prev, { type, description, amount, adicional: true } as R]
@@ -310,12 +311,14 @@ export function DetalleMes<R extends RenglonMovil>({
           opciones={[{ valor: 'income', texto: 'Ingreso' }, { valor: 'expense', texto: 'Egreso' }]}
         />
         <EditField label="Nombre">
-          {/* Una sola palabra: los espacios no llegan a escribirse. */}
-          <input value={editando?.description ?? ''} autoFocus className={EDIT_INPUT} style={mf}
-            onChange={(e) => { const v = e.target.value.replace(/\s+/g, ''); setEditando((d) => (d ? { ...d, description: v } : d)); }} />
+          {/* Con espacios (Fernando, 2026-10-31: «Consumo Tania»); hasta 40 caracteres. Sin
+              autocompletar: no es un dato de una cuenta. */}
+          <input value={editando?.description ?? ''} autoFocus maxLength={40} autoComplete="off" data-1p-ignore data-lpignore="true"
+            className={EDIT_INPUT} style={mf}
+            onChange={(e) => { const v = e.target.value.replace(/\s+/g, ' ').trimStart(); setEditando((d) => (d ? { ...d, description: v } : d)); }} />
         </EditField>
         <EditField label="Importe">
-          <input value={editando?.amount ?? ''} type="text" inputMode="decimal" placeholder="0,00"
+          <input value={editando?.amount ?? ''} type="text" inputMode="decimal" placeholder="0,00" autoComplete="off" data-1p-ignore data-lpignore="true"
             className={`${EDIT_INPUT} tabular-nums`} style={mf}
             onChange={(e) => { const v = e.target.value.replace(/[^\d.,]/g, ''); setEditando((d) => (d ? { ...d, amount: v } : d)); }} />
         </EditField>

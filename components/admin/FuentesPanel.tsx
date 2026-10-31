@@ -11,12 +11,13 @@ import {
   buildFuentesTree, filterTree, allNodeIds, type TreeNode, type NodeKind,
 } from '@/lib/admin/fuentes-tree';
 import {
-  Database, Search, Plus, Trash2, ChevronLeft, ChevronRight, Table2, KeyRound, Lock,
+  Database, Search, Plus, ChevronLeft, ChevronRight, Table2, KeyRound, Lock,
   Boxes, Network, GitBranch, Folder, ChevronsDownUp, ChevronsUpDown,
   type LucideIcon,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { GaleriaTabla } from '@/components/ui/PixelDataTable';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const nf = new Intl.NumberFormat('es-ES');
@@ -592,9 +593,7 @@ export default function FuentesPanel() {
             {/* Acciones: secundaria y destructiva a la izquierda, primaria a la derecha */}
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-digi-border">
               {form.mode === 'edit' && editable ? (
-                <Button variant="danger" icon={<Trash2 className="w-4 h-4" />} onClick={() => remove(form.row!)} disabled={saving}>
-                  Eliminar
-                </Button>
+                <BotonEliminar onClick={() => remove(form.row!)} disabled={saving} etiqueta="Eliminar fuente" />
               ) : <span />}
               <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={() => setForm(null)} disabled={saving}>Cancelar</Button>

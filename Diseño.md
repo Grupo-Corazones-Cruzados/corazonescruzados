@@ -5027,6 +5027,20 @@ requerimientos, a media pantalla del teléfono).
 - Medido a 390 y 1440 px: Clientes, Proyectos, Suscripciones, Recordatorios, Tickets y Marketplace con
   los botones a ≤ 13 px del borde inferior, arriba y abajo del desplazamiento.
 
+## ⭐ EL PIE DE UN PANEL: UNA FILA, Y ELIMINAR SOLO CON ICONO (2026-10-31)
+
+Fernando tomó como modelo el pie de Pensamientos. *«Generalmente el botón de eliminar prefiero que siempre sea un botón con el icono sin texto.»*
+
+- **`components/ui/PieAcciones.tsx`**: una fila. La papelera va sola a la izquierda; con `izquierda`, el `MenuMas` de lo de menos uso se pone a su lado. A la derecha, los secundarios y el principal el último.
+- **`components/ui/BotonEliminar.tsx`**: `BTN_DANGER` con solo la papelera y el nombre en `title`. `QuickEditDialog` (`danger`) ya no muestra texto en ningún ancho.
+- **Aplicado en:**
+  - Clientes: papelera · Guardar cambios.
+  - Centralizado: papelera · ⋯ (Compartir, Editar, Activar/Desactivar) · Abrir sistema.
+  - Recordatorios: papelera · Editar · Completar/Reactivar.
+  - Suscripciones, FAQs.
+  - Botón de eliminar sin texto en Herramientas (Accesos, Enlaces, Entregas), Fuentes, Tutoriales, Calendario, Incidentes y los sistemas de Centralizado (Apoyo, Comandos, Encuadre, Gestión de Datos, Gestión Social).
+- **Se quedan como están:** Factura (acciones de solo consulta apiladas) y la distribución de Herramientas. Revocar y Desactivar conservan el texto, porque no borran.
+
 ## ⭐ MOVIMIENTO AL NAVEGAR — páginas, detalles y filtros (2026-10-29)
 Fernando: *«agregar animaciones al cambiar de módulos o cambiar filtros o abrir formulario o ingresar a
 pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos en `app/(dashboard)/layout.tsx`.

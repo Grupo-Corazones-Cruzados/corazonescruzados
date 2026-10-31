@@ -7,10 +7,11 @@ import PixelModal from '@/components/ui/PixelModal';
 import { toast } from 'sonner';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import {
-  Layers, Plus, Trash2, Search, Sparkles, Gem, MapPin, BookOpen, Zap, Target, Gauge,
+  Layers, Plus, Search, Sparkles, Gem, MapPin, BookOpen, Zap, Target, Gauge,
   Map as MapIcon, Brain, Shapes, X, ChevronRight,
 } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -167,13 +168,7 @@ export default function EncuadreCondiciologicoSystem({
             </div>
 
             <div className="p-2.5 border-t border-digi-border flex items-center justify-between gap-2">
-              <button
-                onClick={() => setConfirmDel(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
-                style={mf}
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Eliminar
-              </button>
+              <BotonEliminar onClick={() => setConfirmDel(true)} etiqueta="Eliminar opción" />
               <button
                 onClick={save}
                 disabled={saving || !draft.trim() || draft.trim() === selOpt.label}

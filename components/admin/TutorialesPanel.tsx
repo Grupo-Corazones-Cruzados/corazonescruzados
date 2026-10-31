@@ -8,10 +8,11 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import Button from '@/components/ui/Button';
 import { DASHBOARD_MODULES, moduleLabel } from '@/lib/dashboard/modules';
 import {
-  Video, Plus, Trash2, Youtube, EyeOff, GripVertical, Info, ExternalLink,
+  Video, Plus, Youtube, EyeOff, GripVertical, Info, ExternalLink,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -399,17 +400,14 @@ export default function TutorialesPanel() {
 
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-digi-border">
               {form.id ? (
-                <Button
-                  variant="danger"
-                  icon={<Trash2 className="w-4 h-4" />}
+                <BotonEliminar
+                  etiqueta="Eliminar tutorial"
                   disabled={saving}
                   onClick={() => {
                     const t = items.find((x) => x.id === form.id);
                     if (t) remove(t);
                   }}
-                >
-                  Eliminar
-                </Button>
+                />
               ) : <span />}
               <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={() => setForm(null)} disabled={saving}>Cancelar</Button>

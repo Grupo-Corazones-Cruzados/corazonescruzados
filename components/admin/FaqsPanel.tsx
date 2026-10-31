@@ -28,7 +28,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HelpCircle, Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { HelpCircle, Plus, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 import FilterRail from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
@@ -53,6 +53,7 @@ const SECCIONES_CON_FAQS = [
   ...DESARROLLO.map((a) => ({ ...a, base: '/desarrollo-humano' })),
 ];
 import type { Faq } from '@/lib/faqs';
+import PieAcciones from '@/components/ui/PieAcciones';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const CAMPO =
@@ -299,15 +300,12 @@ export default function FaqsPanel() {
               <p className="mt-4 text-[13px] leading-relaxed text-digi-muted whitespace-pre-wrap" style={mf}>
                 {elegida.respuesta}
               </p>
-              <div className="mt-6 pt-4 border-t border-digi-border flex items-center gap-2">
-                <button onClick={() => abrirEdicion(elegida)} className={BTN_SECONDARY} style={mf}>
-                  <Pencil className="w-4 h-4" /> Editar
-                </button>
-                <button onClick={() => setPorBorrar(elegida)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] rounded text-red-600 hover:bg-red-50 transition-colors"
-                  style={mf}>
-                  <Trash2 className="w-4 h-4" /> Eliminar
-                </button>
+              <div className="mt-6 pt-4 border-t border-digi-border">
+                <PieAcciones onEliminar={() => setPorBorrar(elegida)} etiquetaEliminar="Eliminar pregunta">
+                  <button onClick={() => abrirEdicion(elegida)} className={BTN_SECONDARY} style={mf}>
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                </PieAcciones>
               </div>
             </>
           ) : (

@@ -198,8 +198,9 @@ export function renglonPdf(i: { description: string; amount: unknown; adicional?
   return { description: i.adicional ? `Adicional · ${i.description}` : i.description, amount: Number(i.amount) || 0 };
 }
 
-/** Un adicional se llama con UNA palabra (Fernando, 2026-10-30): «Sueldo», «Arriendo», «Préstamo». */
-export const NOMBRE_ADICIONAL = /^[^\s]{1,40}$/u;
+/** El nombre de un adicional: de 1 a 40 caracteres en una línea, sin espacios en los extremos.
+ *  Fue de UNA palabra (2026-10-30) hasta que Fernando pidió espacios (2026-10-31: «Consumo Tania»). */
+export const NOMBRE_ADICIONAL = /^\S(?:[^\n\r]{0,38}\S)?$/u;
 
 /**
  * QUÉ FACTURA ES LA DE ESTE INGRESO — condición SQL entre `fi` (finance_items) e `i` (invoices). La

@@ -469,8 +469,8 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                         </div>
 
                         <div className={`${GLASS} p-3`}>
-                          <button onClick={() => setConfirmDel(selectedNode)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-[12.5px] font-medium text-red-300 transition-colors" style={mf}>
-                            <Trash2 className="w-3.5 h-3.5" /> Eliminar política
+                          <button onClick={() => setConfirmDel(selectedNode)} title="Eliminar política" aria-label="Eliminar política" className="inline-flex items-center justify-center w-10 h-9 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-red-300 transition-colors">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </>
@@ -483,9 +483,10 @@ export default function ComandosVioletaSystem({ isAdmin: _isAdmin }: { system?: 
                           <p className="text-[10.5px] font-semibold uppercase tracking-wide text-white/50" style={df}>{FUNCTION_LABEL[selectedNode.functionType!]}</p>
                           <p className="text-[12.5px] text-white/85 mt-1" style={mf}><FunctionSummary node={selectedNode} /></p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setConfirmDel(selectedNode)} title="Eliminar función" aria-label="Eliminar función" className="inline-flex items-center justify-center w-10 h-9 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-red-300 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          <div className="flex-1" />
                           <button onClick={() => openEditFunction(selectedNode)} className={`${GLASS_BTN} px-3 py-2 text-[12.5px] font-medium`} style={mf}><Pencil className="w-3.5 h-3.5" /> Editar</button>
-                          <button onClick={() => setConfirmDel(selectedNode)} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-[12.5px] font-medium text-red-300 transition-colors" style={mf}><Trash2 className="w-3.5 h-3.5" /> Eliminar</button>
                         </div>
                       </div>
                     )}

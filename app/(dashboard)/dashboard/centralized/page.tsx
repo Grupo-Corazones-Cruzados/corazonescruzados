@@ -14,10 +14,13 @@ import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
+import PieAcciones from '@/components/ui/PieAcciones';
+import MenuMas from '@/components/ui/MenuMas';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
 import {
   Layers, Globe, Landmark, ClipboardList, Wrench, Boxes, Users, Plus,
-  Share2, Pencil, Trash2, ArrowRight, X,
+  Share2, Pencil, Power, ArrowRight, X,
 } from 'lucide-react';
 import {
   PISOS, PASOS, PISO_LABEL, PASO_LABEL, CELL_MAP, systemPath,
@@ -192,41 +195,28 @@ export default function CentralizedPage() {
     <p className="text-[10.5px] text-digi-muted/80 pt-1 break-all" style={mf}>{systemPath({ piso: selected.piso, paso: selected.paso, slug: selected.slug })}</p>
   </div>
   );
+  /** Las acciones en UNA fila (regla «PieAcciones», Fernando 2026-10-31): papelera sola a la
+   *  izquierda, las de menos uso en el «⋯» y «Abrir sistema» a la derecha. */
   const accionesSistema = !selected ? null : (
-  <>
-    <button
-      onClick={() => openSystem(selected)}
-      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors"
-      style={mf}
+    <PieAcciones
+      onEliminar={isAdmin ? () => handleDeleteSys(selected) : undefined}
+      etiquetaEliminar="Eliminar sistema"
+      izquierda={isAdmin && (
+        <MenuMas label="Más acciones del sistema" items={[
+          { label: 'Compartir', icon: Share2, onClick: () => openShare(selected) },
+          { label: 'Editar', icon: Pencil, onClick: () => openEditSystem(selected) },
+          { label: selected.is_active ? 'Desactivar' : 'Activar', icon: Power, onClick: () => handleToggleActive(selected) },
+        ]} />
+      )}
     >
-      Abrir sistema <ArrowRight className="w-4 h-4" />
-    </button>
-    {isAdmin && (
-      <div className="grid grid-cols-2 gap-2">
-        <button onClick={() => openShare(selected)}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-          <Share2 className="w-3.5 h-3.5" /> Compartir
-        </button>
-        <button onClick={() => openEditSystem(selected)}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-          <Pencil className="w-3.5 h-3.5" /> Editar
-        </button>
-        <button onClick={() => handleToggleActive(selected)}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-digi-border rounded text-[12px] text-digi-text hover:border-accent hover:text-accent transition-colors" style={mf}>
-          {selected.is_active ? 'Desactivar' : 'Activar'}
-        </button>
-        <button onClick={() => handleDeleteSys(selected)}
-          className="inline-flex items-center justify-center gap-1.5 px-2 py-2 border border-red-500/30 rounded text-[12px] text-red-500 hover:bg-red-50 transition-colors" style={mf}>
-          <Trash2 className="w-3.5 h-3.5" /> Eliminar
-        </button>
-      </div>
-    )}
-  </>
+      <button onClick={() => openSystem(selected)} className={BTN_PRIMARY} style={mf}>
+        Abrir sistema <ArrowRight className="w-4 h-4" />
+      </button>
+    </PieAcciones>
   );
   const cuerpoSistema = !selected ? null : (
   <div className="space-y-4">
     {datosSistema}
-    <div className="space-y-2">{accionesSistema}</div>
   </div>
   );
 
@@ -341,7 +331,7 @@ export default function CentralizedPage() {
 
       {/* El detalle en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
       {enTelefono && (
-        <PixelModal open={!!selected} onClose={() => setSelected(null)} title={selected?.name || 'Sistema'} size="md">
+        <PixelModal open={!!selected} onClose={() => setSelected(null)} title={selected?.name || 'Sistema'} size="md" pie={accionesSistema}>
           {cuerpoSistema}
         </PixelModal>
       )}

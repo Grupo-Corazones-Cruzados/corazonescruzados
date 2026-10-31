@@ -10,11 +10,12 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import {
-  AlertTriangle, Plus, Share2, Tags, X, Trash2, Copy, Link2, RefreshCw, ImagePlus,
+  AlertTriangle, Plus, Share2, Tags, X, Copy, Link2, RefreshCw, ImagePlus,
 } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import NombreArchivo, { renombrarEnPlataforma } from '@/components/media/NombreArchivo';
 import { fileIdDe } from '@/lib/media/ref';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -299,13 +300,13 @@ function IncidentDetailModal({ api, incidentId, canManage, onClose, onChanged }:
           {canManage && (
             <div className="border-t border-digi-border pt-3 space-y-2">
               <div className="flex items-end gap-2">
+                <BotonEliminar onClick={() => setConfirmDel(true)} etiqueta="Eliminar incidente" />
                 <div className="flex-1">
                   <PixelSelect label="Estado" value={status} onChange={(e) => setStatus(e.target.value)}
                     options={STATUSES.map((s) => ({ value: s, label: ST[s].label }))} />
                 </div>
                 <button onClick={saveStatus} disabled={busy || status === inc.status} className={`${BTN_PRIMARY} disabled:opacity-50`}>Guardar</button>
               </div>
-              <button onClick={() => setConfirmDel(true)} className={`${BTN_DANGER} w-full`}><Trash2 className="w-3.5 h-3.5" /> Eliminar incidente</button>
             </div>
           )}
           <PixelConfirm open={confirmDel} title="Eliminar incidente" message="¿Eliminar este incidente? No se puede deshacer."

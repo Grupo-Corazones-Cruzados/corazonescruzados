@@ -6,10 +6,11 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import { WorkTasksSummary } from '@/components/calendar/WorkTasks';
-import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
-import { Save, Trash2, X, AlertTriangle, Video, Copy, Check } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { Save, X, AlertTriangle, Video, Copy, Check } from 'lucide-react';
 import type { CalendarEvent, RecurrenceType, EventType } from '@/lib/calendar/recurrence';
 import { DAY_LABELS_ES_SHORT, EVENT_TYPE_LABELS_ES, toDateOnly, nombreSala } from '@/lib/calendar/recurrence';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 
 const pf = { fontFamily: 'var(--font-body)' } as const;
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -531,15 +532,7 @@ export default function EventModal({ open, onClose, onSave, onDelete, event, ini
         <div className="flex items-center justify-between pt-2 border-t border-digi-border">
           <div>
             {event && onDelete && (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                disabled={saving}
-                className={BTN_DANGER}
-                style={mf}
-              >
-                <Trash2 className="w-4 h-4" /> Eliminar
-              </button>
+              <BotonEliminar onClick={() => setConfirmDelete(true)} disabled={saving} etiqueta="Eliminar evento" />
             )}
           </div>
           <div className="flex gap-2">

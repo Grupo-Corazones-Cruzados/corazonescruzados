@@ -56,13 +56,12 @@ function EditSurface({
         <>
           {/* La acción que borra es un BOTÓN, del alto de los otros (Fernando, 2026-10-30: «el
               botón de quitar no se ve muy bien»; era un texto rojo de 12 px suelto). La papelera
-              de `BotonQuitar` y el texto en rojo del tema; en el teléfono, solo la papelera, para
-              que Cancelar y Guardar conserven su ancho. Siempre a la izquierda, lejos del principal. */}
+              de `BotonQuitar` en rojo, SIN texto en ningún ancho (Fernando, 2026-10-31: «el botón de
+              eliminar siempre con el icono sin texto»); el nombre va en `title`. Siempre a la izquierda, lejos del principal. */}
           {danger && (
             <button type="button" onClick={danger.onClick} disabled={saving} aria-label={danger.label} title={danger.label}
               className={`${BTN_SECONDARY} mr-auto !flex-none max-sm:!w-11 max-sm:!px-0 !text-red-400 hover:!border-red-400`}>
               <Trash2 className="w-4 h-4" />
-              <span className="max-sm:sr-only">{danger.label}</span>
             </button>
           )}
           <button type="button" onClick={onClose} disabled={saving} className={BTN_SECONDARY}>Cancelar</button>

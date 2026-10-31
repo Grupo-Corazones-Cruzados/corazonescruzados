@@ -55,7 +55,7 @@ export default function DashboardHome() {
   const [incomeItems, setIncomeItems] = useState<FinanceItem[]>([]);
   const [expenseItems, setExpenseItems] = useState<FinanceItem[]>([]);
   // ⭐ ADICIONALES (Fernando, 2026-10-30): ingresos y egresos NO facturados, en su propia columna y
-  // con nombre de una palabra. Es lo ÚNICO que se escribe en el mes: ingresos y egresos son lo del
+  // con un nombre corto. Es lo ÚNICO que se escribe en el mes: ingresos y egresos son lo del
   // SRI y quedan bloqueados (`SQL_RENGLON_BLOQUEADO`).
   const [adicionales, setAdicionales] = useState<FinanceItem[]>([]);
   const [saving, setSaving] = useState(false);

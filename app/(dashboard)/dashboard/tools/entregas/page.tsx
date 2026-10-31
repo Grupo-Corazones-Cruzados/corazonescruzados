@@ -12,9 +12,10 @@ import PixelModal from '@/components/ui/PixelModal';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import BarraLista from '@/components/ui/BarraLista';
-import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import BotonEliminar from '@/components/ui/BotonEliminar';
 import { fmt2 } from '@/lib/format';
-import { Trash2, PackageOpen, CircleDot, CheckCircle2, Lock, Clock, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
+import { PackageOpen, CircleDot, CheckCircle2, Lock, Clock, Copy, Download, Paperclip, LayoutGrid } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -158,7 +159,7 @@ export default function EntregasPage() {
       )}
 
       <div className="pt-3 border-t border-digi-border flex flex-wrap gap-2">
-        <button onClick={() => setConfirmar('eliminar')} disabled={ocupado} className={BTN_DANGER}><Trash2 className="w-4 h-4" /> Eliminar</button>
+        <BotonEliminar onClick={() => setConfirmar('eliminar')} disabled={ocupado} etiqueta="Eliminar entrega" />
         {sel.estado === 'vigente' && (
           <div className="ml-auto flex gap-2">
             <button onClick={() => setConfirmar('cerrar')} disabled={ocupado} className={BTN_SECONDARY}><Lock className="w-4 h-4" /> Cerrar</button>

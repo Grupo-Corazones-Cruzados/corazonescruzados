@@ -390,8 +390,8 @@ export default function ApoyoAutoayudaSystem({ isAdmin: _isAdmin }: { system?: a
                         </button>
                       )}
 
-                      <button onClick={() => setConfirmDel(selectedNode)} className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-[12.5px] font-medium text-red-300 transition-colors" style={mf}>
-                        <Trash2 className="w-3.5 h-3.5" /> Eliminar {NODE_META[selectedNode.type].label.toLowerCase()}
+                      <button onClick={() => setConfirmDel(selectedNode)} title={`Eliminar ${NODE_META[selectedNode.type].label.toLowerCase()}`} aria-label={`Eliminar ${NODE_META[selectedNode.type].label.toLowerCase()}`} className="self-start inline-flex items-center justify-center w-10 h-9 border border-red-400/40 bg-red-500/15 hover:bg-red-500/25 rounded-md text-red-300 transition-colors">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </>

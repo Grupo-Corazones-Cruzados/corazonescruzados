@@ -13,13 +13,15 @@ import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
+import PieAcciones from '@/components/ui/PieAcciones';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import BarraLista from '@/components/ui/BarraLista';
 import { PAISES } from '@/lib/countries';
 import { fmt2 } from '@/lib/format';
 import {
   Users, Building2, Contact, BookUser, UserRound, Globe, Plus, X,
-  Trash2, CheckCircle2, ChevronDown, ExternalLink, FileText,
+  CheckCircle2, ChevronDown, ExternalLink, FileText,
 } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -280,12 +282,9 @@ export default function ClientsPage() {
     </>
   );
   const guardarFicha = !fichaLista ? null : (
-    <>
-        <button onClick={saveClient} disabled={saving} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
-          {saving ? '...' : savedOk ? '✓ Guardado' : 'Guardar cambios'}
+        <button onClick={saveClient} disabled={saving} className={BTN_PRIMARY} style={mf}>
+          {saving ? 'Guardando…' : savedOk ? <><CheckCircle2 className="w-4 h-4" /> Guardado</> : 'Guardar cambios'}
         </button>
-        {savedOk && <p className="text-[12px] text-green-600 text-center flex items-center justify-center gap-1" style={mf}><CheckCircle2 className="w-3.5 h-3.5" /> Cambios guardados</p>}
-    </>
   );
   /** `enPanel`: en la columna de escritorio la lista de facturas se queda con el alto que sobra
    *  y se desplaza sola (ver `PanelDetalle`); en el teléfono va seguida, como antes. */
@@ -326,10 +325,13 @@ export default function ClientsPage() {
         </div>
     </>
   );
-  const eliminarFicha = !fichaLista || user?.role !== 'admin' || detail.is_consumidor_final ? null : (
-        <button onClick={deleteClient} className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 w-full sm:w-auto text-[12px] px-2.5 py-1.5 border border-red-300 rounded text-red-600 hover:bg-red-50 transition-colors" style={mf}>
-          <Trash2 className="w-3.5 h-3.5" /> Eliminar cliente
-        </button>
+  const puedeEliminar = fichaLista && user?.role === 'admin' && !detail.is_consumidor_final;
+  /** Las acciones en UNA fila (regla «PieAcciones», Fernando 2026-10-31): papelera sola a la
+   *  izquierda y «Guardar cambios» a la derecha; en «Consumos» solo la papelera. */
+  const accionesFicha = !fichaLista || (detailTab !== 'datos' && !puedeEliminar) ? null : (
+    <PieAcciones onEliminar={puedeEliminar ? deleteClient : undefined} etiquetaEliminar="Eliminar cliente">
+      {detailTab === 'datos' && guardarFicha}
+    </PieAcciones>
   );
 
   /** El cuerpo de la ficha en la ventana del teléfono. */
@@ -341,13 +343,7 @@ export default function ClientsPage() {
   </div>
 
   <div className="p-4 space-y-3 max-h-[62vh] overflow-y-auto">
-    {detailTab === 'datos' ? <>{datosFicha}{guardarFicha}</> : consumosFicha(false)}
-
-    {eliminarFicha && (
-      <div className="pt-2 border-t border-digi-border">
-        {eliminarFicha}
-      </div>
-    )}
+    {detailTab === 'datos' ? datosFicha : consumosFicha(false)}
   </div>
     </>
   );
@@ -455,7 +451,7 @@ export default function ClientsPage() {
                   }
                   subtitulo={[ID_TYPE_LABEL[detail.id_type] || detail.id_type, detail.ruc].filter(Boolean).join(' · ') || undefined}
                   onCerrar={() => { setSelected(null); setDetail(null); }}
-                  pie={detailTab === 'datos' || eliminarFicha ? <>{detailTab === 'datos' && guardarFicha}{eliminarFicha}</> : undefined}
+                  pie={accionesFicha ?? undefined}
                 >
                   <div>{toggleFicha}</div>
                   {detailTab === 'datos' ? datosFicha : consumosFicha(true)}
@@ -474,6 +470,7 @@ export default function ClientsPage() {
           onClose={() => { setSelected(null); setDetail(null); }}
           title={detail?.name || 'Cliente'}
           size="md"
+          pie={accionesFicha}
         >
           {loadingDetail || !detail
             ? <p className="py-10 text-center text-[12px] text-digi-muted" style={mf}>Cargando…</p>

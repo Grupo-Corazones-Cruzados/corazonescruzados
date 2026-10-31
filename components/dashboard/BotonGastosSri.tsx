@@ -126,13 +126,19 @@ export default function BotonGastosSri({ onActualizado, className = '' }: { onAc
           teléfono este botón vive dentro de la barra de abajo (`EnBarraAcciones`), que estira
           todos sus botones —también la X—, y colgarla del <body> la dejaba sin el tema del panel
           (salía con la piel pixel antigua). */}
-      {typeof document !== 'undefined' && createPortal(
+      {/* Solo se MONTA mientras se pide (2026-10-31): `PixelModal` conserva su contenido al
+          cerrarse, y un campo de contraseña escondido en el Inicio hacía que el navegador
+          ofreciera «guardar la contraseña» cada vez que se guardaba un adicional. Por lo mismo
+          el campo es de texto con los caracteres ocultos por CSS: los gestores de contraseñas
+          no lo toman por un inicio de sesión. */}
+      {pidiendoClave && typeof document !== 'undefined' && createPortal(
       <PixelModal open={pidiendoClave} onClose={() => !guardando && setPidiendoClave(false)} title="Clave del SRI" size="sm" busy={guardando}
         pie={<>
           <button onClick={() => setPidiendoClave(false)} disabled={guardando} className={BTN_SECONDARY}>Cancelar</button>
           <button onClick={guardarClave} disabled={guardando || !clave.trim()} className={BTN_PRIMARY}>Guardar</button>
         </>}>
-        <PixelInput label="Clave de SRI en Línea" type="password" autoComplete="off" value={clave}
+        <PixelInput label="Clave de SRI en Línea" type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+          data-1p-ignore data-lpignore="true" className="[-webkit-text-security:disc]" value={clave}
           onChange={(e) => setClave(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') guardarClave(); }} />
       </PixelModal>, document.querySelector('.corp') ?? document.body)}
     </>

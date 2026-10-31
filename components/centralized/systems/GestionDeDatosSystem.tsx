@@ -1109,9 +1109,10 @@ function Meta({ rows }: { rows: [string, string][] }) {
 
 function DetailActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete: () => void }) {
   return (
-    <div className="flex justify-end gap-2 mt-3 pt-2.5 border-t border-white/10">
+    <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-white/10">
+      <button onClick={onDelete} title="Eliminar" aria-label="Eliminar" className="inline-flex items-center justify-center w-8 h-8 text-red-300 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+      <div className="flex-1" />
       {onEdit && <button onClick={onEdit} className={`${GLASS_BTN} px-2.5 py-1.5 text-[12px]`} style={mf}><Pencil className="w-3 h-3" /> Editar</button>}
-      <button onClick={onDelete} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] text-red-300 border border-red-400/30 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors" style={mf}><Trash2 className="w-3 h-3" /> Eliminar</button>
     </div>
   );
 }
