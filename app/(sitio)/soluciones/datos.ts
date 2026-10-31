@@ -10,7 +10,7 @@
  */
 
 import {
-  listarSoluciones, contenidoDeTalento, conceptosPorTalento,
+  listarSoluciones, contenidoDeTalento, conceptosPorTalento, ticketsPublicos,
   type ContenidoDeTalento,
 } from '@/lib/soluciones';
 import { unstable_cache } from 'next/cache';
@@ -118,3 +118,9 @@ export function cifrasDe(r: Pick<ReturnType<typeof resumenSolucion>, 'proyectos'
     { valor: r.miembros.length, etiqueta: 'Talentos', uno: 'talento', varios: 'talentos' },
   ];
 }
+
+/**
+ * Los tickets de Clientes ▸ Tickets (2026-10-31), con la misma caché de 5 minutos que las soluciones:
+ * la página se pinta en cada visita, la base se consulta como mucho una vez cada 5 minutos.
+ */
+export const cargarTicketsCacheados = unstable_cache(() => ticketsPublicos(), ['tickets-publicos'], { revalidate: 300 });

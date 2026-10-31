@@ -6110,3 +6110,9 @@ Desarrollo Humano mientras Fernando decide.
   tenue (`FolderOpen`, `Ticket`, `Package`, `Users`): desde 1024 px, columna propia a la DERECHA de la
   tarjeta (220 px, raya vertical a su izquierda, una cifra por línea); por debajo, al pie con raya
   arriba (en el teléfono, rejilla 2×2).
+- **Lista de tickets (2026-10-31):** bajo el tema «Tickets» de Clientes, `ListaTickets.tsx`: barra con
+  `SelectorSegmentado` (Por resolver · Resueltos · Todos, con cuenta; arranca en «Por resolver»), select
+  redondo de talento si hay más de uno y el buscador redondo; tarjetas `TarjetaTrabajo` en el mosaico
+  `.rejilla-trabajos`, de 12 en 12, con `.paginacion-sitio` (botones redondos, la actual en degradado
+  violeta). El estado va junto a «Ticket» como color de texto (naranja «Por resolver», tenue «Resuelto»).
+  `SelectorSegmentado.tsx` se extrajo de `SolucionesExplorador` para usarlo en los dos sitios.

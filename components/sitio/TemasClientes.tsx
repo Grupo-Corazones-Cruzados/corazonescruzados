@@ -1,13 +1,15 @@
 /**
  * LOS TEMAS DE CLIENTES, preparados en el servidor para `TemasPestanas` (iconos y negritas ya
- * pintados). El tema «Soluciones» lleva debajo la lista de soluciones de Admin → Soluciones.
+ * pintados). El tema «Soluciones» lleva debajo la lista de soluciones de Admin → Soluciones, y el
+ * tema «Tickets», la lista de todos los tickets (`ListaTickets`).
  */
 
 import { TEMAS_CLIENTES } from '@/lib/sitio/contenido';
-import { cargarSolucionesCacheadas, resumenSolucion, cifrasDe } from '@/app/(sitio)/soluciones/datos';
+import { cargarSolucionesCacheadas, cargarTicketsCacheados, resumenSolucion, cifrasDe } from '@/app/(sitio)/soluciones/datos';
 import { ICONOS, conNegritas } from './piezas';
 import TemasPestanas from './TemasPestanas';
 import ListaSoluciones, { type FilaSolucion } from './ListaSoluciones';
+import ListaTickets from './ListaTickets';
 
 // La misma que usa el buscador de la lista (que es de cliente y no se puede llamar desde aquí).
 const sinTildes = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -26,6 +28,7 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
         ...r.conceptos.map((c) => c.titulo)].join(' ')),
     };
   });
+  const tickets = await cargarTicketsCacheados();
   const temas = TEMAS_CLIENTES.map((t) => {
     const Icono = ICONOS[t.icono] ?? ICONOS.capas;
     const texto = t.descripcion ?? t.texto;
@@ -35,7 +38,9 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
       descripcion: texto ? conNegritas(texto) : null,
       icono: <Icono className="h-4 w-4" />,
       iconoGrande: <Icono className="h-12 w-12" strokeWidth={1.5} />,
-      contenido: t.id === 'soluciones' ? <ListaSoluciones soluciones={soluciones} /> : undefined,
+      contenido: t.id === 'soluciones' ? <ListaSoluciones soluciones={soluciones} />
+        : t.id === 'tickets' ? <ListaTickets tickets={tickets} />
+        : undefined,
     };
   });
   return <TemasPestanas temas={temas} inicial={inicial} base="/clientes" />;

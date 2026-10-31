@@ -222,6 +222,13 @@ base verbatim):
   reemplazar en `archivo` el `original` por el `texto`, literal. Los marcadores `{fecha}` y `{destino}` de las
   opciones de acceso son variables del código. Después, volver a sembrar `original = texto` para que el editor
   muestre «0 cambiados».
+- **Clientes ▸ Soluciones / Tickets (2026-10-31):** la tarjeta de la solución solo lleva su nombre y no es
+  enlace; se elige el TALENTO (`/clientes/soluciones/<sol>/<talento>`, con sus productos y servicios y lo
+  hecho); `/clientes/soluciones/<sol>` redirige a la lista. Cada talento tiene icono (migración 076).
+  Bajo el tema Tickets van **todos** los tickets (`ticketsPublicos`), también los pendientes, por
+  decisión de Fernando: excepción a «solo se publica lo terminado»; fuera `draft` y `cancelled`, sin
+  cliente. ⚠️ Un ticket pendiente aún no pasó por el nombre estándar: su título/descripción salen tal
+  como se escribieron.
 
 ## Stack
 Stack estándar de la casa, con particularidades de este repo:

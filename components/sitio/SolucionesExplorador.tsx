@@ -30,13 +30,14 @@
  * para el buscador**. Sin esto, de treinta trabajos Google vería los de una pestaña.
  */
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { FolderOpen, Mail, Phone, Search } from 'lucide-react';
 import type {
   Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo, Concepto,
 } from '@/lib/soluciones';
 import TarjetaTrabajo from './TarjetaTrabajo';
+import SelectorSegmentado from './SelectorSegmentado';
 import PuertasBloques from './PuertasBloques';
 import { ICONOS } from './piezas';
 
@@ -320,7 +321,12 @@ export default function SolucionesExplorador({
           fila, busca dentro de la pestaña abierta. */}
       <section aria-label="Trabajo terminado" className="mt-12">
         <div className="barra-trabajos">
-          <SelectorPestanas pestana={pestana} cuantos={cuantos} onCambiar={setPestana} />
+          <SelectorSegmentado
+            etiqueta="Contenido del talento"
+            valor={pestana}
+            onCambiar={setPestana}
+            opciones={ORDEN_PESTANAS.map((id) => ({ id, label: PESTANAS.find((x) => x.id === id)!.label, cuenta: cuantos[id] }))}
+          />
           <div className="relative w-full sm:w-[320px] sm:shrink-0">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--apagado)] pointer-events-none" />
             <input
@@ -392,72 +398,3 @@ export default function SolucionesExplorador({
     </div>
   );
 }
-
-/**
- * EL SELECTOR DE PESTAÑAS — control segmentado con cápsula que se desliza (escritorio) y
- * `<select>` nativo (teléfono). Orden: lo que más se busca primero.
- */
-function SelectorPestanas({
-  pestana, cuantos, onCambiar,
-}: {
-  pestana: Pestana;
-  cuantos: Record<Pestana, number>;
-  onCambiar: (p: Pestana) => void;
-}) {
-  const marcoRef = useRef<HTMLDivElement>(null);
-  const capsulaRef = useRef<HTMLSpanElement>(null);
-  const [lista, setLista] = useState(false);
-  useLayoutEffect(() => {
-    const marco = marcoRef.current;
-    const capsula = capsulaRef.current;
-    if (!marco || !capsula) return;
-    const colocar = () => {
-      const b = marco.querySelector<HTMLElement>(`[data-pestana="${pestana}"]`);
-      if (!b) return;
-      capsula.style.transform = `translateX(${b.offsetLeft}px)`;
-      capsula.style.width = `${b.offsetWidth}px`;
-    };
-    colocar();
-    setLista(true);
-    const ro = new ResizeObserver(colocar);
-    ro.observe(marco);
-    return () => ro.disconnect();
-  }, [pestana]);
-
-  return (
-    <>
-      <div ref={marcoRef} role="tablist" aria-label="Contenido del talento" className="segmentado-trabajos">
-        <span ref={capsulaRef} className={`segmentado-capsula ${lista ? 'es-lista' : ''}`} aria-hidden />
-        {ORDEN_PESTANAS.map((id) => {
-          const p = PESTANAS.find((x) => x.id === id)!;
-          const activa = id === pestana;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              data-pestana={id}
-              aria-selected={activa}
-              onClick={() => onCambiar(id)}
-              className={`segmentado-opcion ${activa ? 'es-activa' : ''}`}
-            >
-              {p.label}
-              <span className="segmentado-cuenta">{cuantos[id]}</span>
-            </button>
-          );
-        })}
-      </div>
-      <label className="segmentado-movil">
-        <span className="sr-only">Ver</span>
-        <select value={pestana} onChange={(e) => onCambiar(e.target.value as Pestana)}>
-          {ORDEN_PESTANAS.map((id) => (
-            <option key={id} value={id}>
-              Ver: {PESTANAS.find((x) => x.id === id)!.label} · {cuantos[id]}
-            </option>
-          ))}
-        </select>
-      </label>
-    </>
-  );
-}
-

@@ -380,6 +380,11 @@ export interface Trabajo {
    * horaria. Formateado una vez aquí, las dos pasadas escriben exactamente lo mismo.
    */
   creadoTexto: string | null;
+  /**
+   * Solo en la lista de tickets de Clientes (2026-10-31), que enseña también los que aún no se
+   * resuelven. En las páginas de talento todo está terminado y no se dice.
+   */
+  estado?: 'resuelto' | 'por-resolver';
 }
 
 /**
@@ -485,7 +490,22 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
     [talento, ESTADO_PUBLICABLE],
   );
 
-  const deTickets: Trabajo[] = tickets.map((t: any) => ({
+  const deTickets: Trabajo[] = tickets.map(ticketComoTrabajo);
+
+  // ⚠️ Se ordena por la MISMA fecha que se enseña. Ordenar por `updated_at` y pintar
+  // `created_at` dejaría las tarjetas con las fechas desordenadas a la vista, que se lee como
+  // un fallo. Y con los 30 `updated_at` puestos en el mismo segundo por la limpieza de
+  // nombres, ese orden ya no significaba nada.
+  return [...conPersonas, ...deTickets].sort(
+    (a, b) => (b.creado ?? '').localeCompare(a.creado ?? ''),
+  );
+}
+
+
+
+/** Una fila de `tickets` (con su miembro asignado) como tarjeta del sitio. */
+function ticketComoTrabajo(t: any): Trabajo {
+  return {
     tipo: 'ticket' as const,
     id: Number(t.id),
     titulo: t.title,
@@ -505,17 +525,33 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
       : [],
     creado: t.created_at ? new Date(t.created_at).toISOString() : null,
     creadoTexto: comoFecha(t.created_at),
-  }));
-
-  // ⚠️ Se ordena por la MISMA fecha que se enseña. Ordenar por `updated_at` y pintar
-  // `created_at` dejaría las tarjetas con las fechas desordenadas a la vista, que se lee como
-  // un fallo. Y con los 30 `updated_at` puestos en el mismo segundo por la limpieza de
-  // nombres, ese orden ya no significaba nada.
-  return [...conPersonas, ...deTickets].sort(
-    (a, b) => (b.creado ?? '').localeCompare(a.creado ?? ''),
-  );
+  };
 }
 
+/**
+ * TODOS LOS TICKETS PARA LA LISTA DE CLIENTES ▸ TICKETS (Fernando, 2026-10-31: «pon debajo del título
+ * todos los tickets que se han creado… la idea es que el usuario pueda ver los tickets que se pueden
+ * resolver»).
+ *
+ * ⚠️ Deroga para ESTA lista la regla de «solo lo terminado» (`ESTADO_PUBLICABLE`), porque lo pide él
+ * y el sentido es justo enseñar lo pendiente. Fuera siguen los borradores (`draft`: aún no existen) y
+ * los cancelados (no se van a resolver). Sin cliente: solo título, descripción, talentos, fecha y
+ * quien lo atiende — lo mismo que ya enseñan las páginas de talento.
+ */
+export async function ticketsPublicos(): Promise<Trabajo[]> {
+  const { rows } = await pool.query(
+    `SELECT t.id, t.title, t.description, t.required_talents, t.created_at, t.status,
+            m.id AS member_id, m.name, m.photo_url, m.email, m.phone
+       FROM gcc_world.tickets t
+       LEFT JOIN gcc_world.members m ON m.id = t.member_id
+      WHERE t.status NOT IN ('draft', 'cancelled')
+      ORDER BY t.created_at DESC NULLS LAST, t.id DESC`,
+  );
+  return rows.map((t: any) => ({
+    ...ticketComoTrabajo(t),
+    estado: t.status === ESTADO_PUBLICABLE ? 'resuelto' : 'por-resolver',
+  }));
+}
 
 /* ═══════════════════ EL CONTENIDO DE LAS CUATRO PESTAÑAS ═══════════════════ */
 
