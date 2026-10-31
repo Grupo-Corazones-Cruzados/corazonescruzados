@@ -6044,6 +6044,15 @@ con `1280px` las dos mitades se desalinearían en cuanto alguien cambie el tama�
   La columna es `fixed inset-x-0 top-0 h-dvh`: solo `h-dvh` en el flujo dejaba desplazar la página, y solo `fixed
   inset-0` se metía bajo la barra del navegador de WhatsApp (tapaba el final y la acción). Y quien viene a buscar un HUECO ve el día con sus horas (rejilla), no una lista de lo
   ocupado: el espacio libre es lo que se busca (`rejillaSiempre` de `CalendarView`).
+  Además la ruta usa `viewportFit: 'auto'` (su `layout.tsx`) y mide el alto visible: con el `cover` de la raíz la
+  página se dibujaba bajo la hora y bajo la barra del navegador de WhatsApp (2026-10-31).
+- **El panel en el teléfono no desplaza la PÁGINA** (Fernando, 2026-10-31: *«hay deslizamiento de página que oculta el
+  header… si hubiese que tener un deslizamiento debería ser a nivel de galería internamente»*). En
+  `app/(dashboard)/layout.tsx`, por debajo de `lg` el armazón mide la pantalla (`max-lg:h-dvh max-lg:overflow-hidden`),
+  la cabecera queda fija y el `main` (sin `min-h-screen` en el teléfono) es lo único que podría desplazarse. Y en
+  `PixelDataTable` la galería del teléfono tiene un TECHO (`max-height` medido hasta el fondo del `main`, descontando el
+  hueco de `BarraAcciones`): si sus tarjetas no caben se desplaza por dentro con los filtros y su pie quietos; con pocas
+  mide lo suyo. Verificar a 390 px: `scrollHeight` del documento == alto de la ventana en cada módulo.
 
 ### Temas en pestañas numeradas (Clientes, 2026-10-31)
 Fernando pidió reformular cómo se dividen los temas de una página. `components/sitio/TemasPestanas.tsx`

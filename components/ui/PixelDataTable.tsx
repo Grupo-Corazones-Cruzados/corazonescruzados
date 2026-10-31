@@ -2,6 +2,8 @@
 
 import { Fragment, useRef, useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ID_BARRA_ACCIONES } from '@/components/dashboard/BarraAcciones';
+import { contenedorDesplazable } from '@/lib/hooks/useAltoHastaElPie';
 
 export interface Column<T> {
   key: string;
@@ -91,7 +93,7 @@ const BOTTOM_GAP = 16; // breathing room below the table
 function appFooterHeight(): number {
   if (typeof document === 'undefined') return 0;
   const el = document.querySelector('[data-app-footer]');
-  return el ? Math.round(el.getBoundingClientRect().height) : 0;
+  return el ? Math.ceil(el.getBoundingClientRect().height) : 0;
 }
 const MIN_HEIGHT = 220;
 
@@ -163,8 +165,15 @@ export default function PixelDataTable<T>({
       if (window.innerWidth < (tablaDesde === 'md' ? 768 : 1024)) { setFillH(undefined); return; }
 
       const top = el.getBoundingClientRect().top;
-      const h = Math.max(window.innerHeight - top - BOTTOM_GAP - appFooterHeight() - bottomReserve, MIN_HEIGHT);
-      setFillH((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
+      let fondo = window.innerHeight - BOTTOM_GAP - appFooterHeight();
+      // ⚠️ Tampoco más abajo que el CONTENEDOR QUE SE DESPLAZA (Fernando, 2026-10-31: «aparece un
+      // desplazamiento vertical de la página que realmente no existe»). En Pensamientos la columna
+      // central para 12 px sobre el pie y deja el relleno del `main`; la tabla, que solo contaba
+      // sus 16 px, la pasaba por 6 y salía la barra. Mismo cálculo que `useAltoHastaElPie`.
+      const cont = contenedorDesplazable(el);
+      if (cont) fondo = Math.min(fondo, cont.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(cont).paddingBottom) || 0));
+      const h = Math.max(Math.floor(fondo - bottomReserve - top), MIN_HEIGHT);
+      setFillH((prev) => (prev === undefined || h < prev || h - prev > 1 ? h : prev));
     };
     // run after layout settles (content above may still be rendering)
     const raf = requestAnimationFrame(compute);
@@ -178,6 +187,42 @@ export default function PixelDataTable<T>({
       ro.disconnect();
     };
   }, [data.length, tablaDesde]);
+
+  /**
+   * ⭐ EN EL TELÉFONO, LA QUE SE DESPLAZA ES LA GALERÍA, NO LA PÁGINA (Fernando, 2026-10-31: «si
+   * hubiese que tener un deslizamiento debería ser a nivel de galería internamente pero no en
+   * la página»). Un TECHO, no un alto: la galería llega como mucho al fondo del `main` y, si sus
+   * tarjetas no caben, se desplaza por dentro con los filtros quietos encima. Con pocas tarjetas
+   * mide lo suyo, así lo que va debajo (un panel apilado, ver arriba) sigue a la vista.
+   */
+  const movilRef = useRef<HTMLDivElement>(null);
+  const [techoMovil, setTechoMovil] = useState<number>();
+  useEffect(() => {
+    const medir = () => {
+      const el = movilRef.current;
+      if (!el || window.innerWidth >= (tarjetaMovil ? (tablaDesde === 'md' ? 768 : 1024) : 768)) { setTechoMovil(undefined); return; }
+      const main = el.closest('main');
+      if (!main) return;
+      const caja = main.getBoundingClientRect();
+      const relleno = parseFloat(getComputedStyle(main).paddingBottom) || 0;
+      // Contra la posición SIN desplazar: si el `main` ya bajó un poco, el techo no cambia.
+      const arriba = el.getBoundingClientRect().top + main.scrollTop - caja.top;
+      // El hueco de la barra de acciones del teléfono va DESPUÉS de la página (ver `BarraAcciones`):
+      // ocupa 64 px + sus márgenes (16 − 8) cuando una página le porta botones.
+      const hueco = document.getElementById(ID_BARRA_ACCIONES);
+      const debajo = hueco?.offsetHeight ? hueco.offsetHeight + 8 : 0;
+      const h = Math.max(Math.round(main.clientHeight - relleno - arriba - debajo), MIN_MOVIL);
+      setTechoMovil((prev) => (prev === undefined || Math.abs(prev - h) > 1 ? h : prev));
+    };
+    const raf = requestAnimationFrame(medir);
+    window.addEventListener('resize', medir);
+    const ro = new ResizeObserver(() => requestAnimationFrame(medir));
+    const main = movilRef.current?.closest('main');
+    if (main?.firstElementChild) ro.observe(main.firstElementChild);
+    const hueco = document.getElementById(ID_BARRA_ACCIONES);
+    if (hueco) ro.observe(hueco);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', medir); ro.disconnect(); };
+  }, [data.length, tablaDesde, tarjetaMovil]);
 
   if (data.length === 0) {
     return (
@@ -214,9 +259,12 @@ export default function PixelDataTable<T>({
   return (
     <div aria-busy={cargando || undefined}
       className={`transition-opacity duration-150 ${cargando ? 'opacity-50 pointer-events-none' : ''}`}>
+      {/* ── Teléfono: galería (con su techo, se desplaza por dentro) y su pie debajo, quieto ── */}
+      <div ref={movilRef} className={`${tarjetaMovil ? soloTarjetas : 'md:hidden'} flex flex-col`} style={{ maxHeight: techoMovil }}>
+      <div className="min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1">
       {/* ── El mismo contenido, contado para un teléfono ── */}
       {tarjetaMovil && (
-        <div className={`${soloTarjetas} space-y-2`}>
+        <div className="space-y-2">
           <Fragment key={firmaDatos(data)}>
           {data.map((item, i) => (
             <div
@@ -243,9 +291,11 @@ export default function PixelDataTable<T>({
           que sale de las MISMAS columnas: la primera es la cabecera, las que no tienen título
           (acciones) van a su derecha y el resto en una rejilla «TÍTULO / valor». Así ninguna
           tabla se queda fuera. Regla en `/diseno` §4-ter. */}
-      {!tarjetaMovil && <GaleriaTabla columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} />}
+      {!tarjetaMovil && <GaleriaTabla columns={columns} data={data} onRowClick={onRowClick} rowClassName={rowClassName} className="" />}
+      </div>
       {/* En el teléfono la tabla está escondida, y con ella su pie: va también aquí. */}
-      {pie && <div className={`${tarjetaMovil ? soloTarjetas : 'md:hidden'} mt-2 border border-digi-border rounded-lg overflow-hidden`}>{pie}</div>}
+      {pie && <div className="shrink-0 mt-2 border border-digi-border rounded-lg overflow-hidden">{pie}</div>}
+      </div>
 
       <div
         ref={wrapRef}
@@ -331,6 +381,9 @@ export default function PixelDataTable<T>({
  * - `onRowClick` abre el detalle completo: con muchas columnas se pasan solo las que caben en
  *   una tarjeta y el resto se ve al tocarla.
  */
+/** Lo mínimo que se le deja a la galería del teléfono aunque no quepa (entonces baja el `main`). */
+const MIN_MOVIL = 240;
+
 export function GaleriaTabla<T>({
   columns, data, onRowClick, rowClassName, className = 'md:hidden',
 }: {

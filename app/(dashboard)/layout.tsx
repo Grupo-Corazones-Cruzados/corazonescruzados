@@ -58,7 +58,7 @@ function Panel({ children }: { children: React.ReactNode }) {
     // `tema-progreso`: el estilo de la sección Plataforma de la portada en todo el panel
     // (Fernando, 2026-10-29). Ver `app/tema-progreso.css`. Encima, el tema elegido
     // (`tema-<id>`, ver `app/temas.css`).
-    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} flex min-h-screen`}>
+    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} flex min-h-screen max-lg:h-dvh max-lg:overflow-hidden`}>
       <PolicyBanner collapsed />
       <DashboardSidebar />
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.
@@ -78,13 +78,21 @@ function Panel({ children }: { children: React.ReactNode }) {
           y por qué, no solo dónde estaba. Media app depende de que el que se desplaza sea
           este `main` (ver `useAltoHastaElPie`).
 
-          La columna solo apila la cabecera y el contenido; no impone altura ninguna. */}
-      <div className="flex-1 min-w-0 flex flex-col ml-0 lg:ml-16">
+          La columna solo apila la cabecera y el contenido; no impone altura ninguna.
+
+          ⇒ EN EL TELÉFONO, LA PÁGINA NO SE DESPLAZA (Fernando, 2026-10-31: «hay deslizamiento
+          de página que oculta el header… y es completamente innecesario porque no hay nada de
+          contenido»). Cabecera + un `main` de `min-h-screen` medían una pantalla MÁS la
+          cabecera, así que siempre sobraba esa franja y al desplazarla se iba la cabecera.
+          Por debajo de `lg` la columna mide la pantalla (`h-dvh`), la cabecera se queda fija
+          y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
+          escritorio no hay cabecera y todo sigue como siempre. */}
+      <div className="flex-1 min-w-0 flex flex-col ml-0 lg:ml-16 max-lg:min-h-0">
         <CabeceraMovil />
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}
-        <main ref={mainRef} data-entrada={entrada} className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto min-h-screen">
+        <main ref={mainRef} data-entrada={entrada} className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto lg:min-h-screen max-lg:min-h-0 max-lg:overscroll-contain">
           <DashboardAccessGuard>{children}</DashboardAccessGuard>
           {/* Las acciones principales del teléfono (ver `BarraAcciones`): último hijo, para
               que su hueco quede DESPUÉS de todo y la barra no tape el último campo. */}
