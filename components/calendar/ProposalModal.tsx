@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PixelModal from '@/components/ui/PixelModal';
 import PixelInput from '@/components/ui/PixelInput';
-import PixelSelect from '@/components/ui/PixelSelect';
+import Segmentado from '@/components/ui/Segmentado';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Send, X, AlertTriangle, Crosshair } from 'lucide-react';
@@ -202,129 +202,123 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
     }
   };
 
+  // La equivalencia en la hora del visitante solo se dice si ES DISTINTA: con la misma zona
+  // repetía las dos fechas que ya se ven en los campos.
+  const tuHorario = formatInTz(startUTC, tz) !== formatInTz(startUTC, MEMBER_TZ)
+    ? `${formatInTz(startUTC, tz)} – ${new Intl.DateTimeFormat('es-EC', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(endUTC)}`
+    : null;
+
+  /*
+   * ⭐ EL FORMULARIO, TAMBIÉN PARA EL TELÉFONO (Fernando, 2026-10-31: «este formulario es de
+   * computadora»). En el iPhone los campos de fecha y hora se salían por la derecha (el control
+   * nativo tiene ancho mínimo propio), había un párrafo de explicación arriba, dos cajas
+   * rellenas que repetían la fecha y los botones al final de todo. Ahora:
+   *  · grupos con su nombre (Tus datos · La reunión · Cuándo), sin párrafo de ayuda;
+   *  · la fecha a todo el ancho e Inicio/Fin en dos columnas, con `min-w-0` para que quepan;
+   *  · la zona horaria con su botón de detectar como icono al lado;
+   *  · «en tu hora» en UNA línea y solo si tu zona es otra; avisos como texto, sin caja;
+   *  · los botones en el pie del panel (en el teléfono, a partes iguales y siempre a la vista).
+   */
+  const grupo = 'text-[11px] font-semibold uppercase tracking-wider text-digi-muted';
+  const fechaHora = 'min-w-0 appearance-none text-left [&::-webkit-date-and-time-value]:text-left';
+
   return (
-    <PixelModal open={open} onClose={onClose} title="Proponer espacio" size="lg">
-      <div className="space-y-4">
-        <p className="text-[13px] text-digi-muted" style={mf}>
-          Solicita un espacio con <strong>{memberName}</strong>. No necesitas una cuenta: déjanos tu
-          correo y tu propuesta quedará pendiente hasta que {memberName} la acepte o rechace
-          (te avisaremos por correo).
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <PixelInput
-            label="TU NOMBRE"
-            value={guestName}
-            onChange={(e) => setGuestName(e.target.value)}
-            placeholder="Nombre y apellido"
-          />
-          <PixelInput
-            type="email"
-            label="TU CORREO"
-            value={guestEmail}
-            onChange={(e) => setGuestEmail(e.target.value)}
-            placeholder="tu@correo.com"
-          />
-        </div>
-
-        <PixelInput
-          label="TÍTULO"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Reunión inicial, sesión de revisión…"
-        />
-
-        <div>
-          <label className="text-[12px] font-medium text-digi-muted" style={mf}>Detalle (opcional)</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="field-control w-full mt-1 px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border rounded-md text-[13px] text-digi-text focus:border-accent focus:outline-none"
-            style={mf}
-          />
-        </div>
-
-        <div className="text-[12px] font-medium text-accent" style={mf}>
-          Fecha y hora en horario del miembro · Ecuador (GMT-5)
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <PixelInput
-            type="date"
-            label="FECHA"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-          <PixelInput
-            type="time"
-            label="INICIO"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
-          <PixelInput
-            type="time"
-            label="FIN"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-          />
-        </div>
-
-        {slotBusy && (
-          <div className="flex items-center gap-2 border border-amber-300 bg-amber-50 rounded-md px-3 py-2 text-[12.5px] text-amber-700" style={mf}>
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            Ese horario ya está ocupado. Elige otra fecha u hora.
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
-          <SearchableSelect
-            label="TU ZONA HORARIA"
-            value={tz}
-            onChange={setTz}
-            options={tzList}
-            searchPlaceholder="Buscar zona horaria…"
-          />
-          <button
-            type="button"
-            onClick={autoDetectTz}
-            className={`${BTN_SECONDARY} whitespace-nowrap`}
-            style={mf}
-          >
-            <Crosshair className="w-4 h-4" /> Auto-detectar
+    <PixelModal
+      open={open}
+      onClose={onClose}
+      title="Proponer espacio"
+      size="lg"
+      busy={saving}
+      pie={
+        <>
+          <button type="button" onClick={onClose} disabled={saving} className={BTN_SECONDARY} style={mf}>
+            <X className="w-4 h-4" /> Cancelar
           </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
-          <div className="rounded-lg border border-accent bg-accent-light p-3 space-y-1" style={mf}>
-            <div className="text-accent text-[12px] font-medium">Horario del miembro · Ecuador (GMT-5)</div>
-            <div className="text-digi-text">Inicio: {formatInTz(startUTC, MEMBER_TZ)}</div>
-            <div className="text-digi-text">Fin: {formatInTz(endUTC, MEMBER_TZ)}</div>
+          <button type="button" onClick={submit} disabled={saving || slotBusy} className={BTN_PRIMARY} style={mf}>
+            <Send className="w-4 h-4" /> {saving ? 'Enviando…' : slotBusy ? 'Horario ocupado' : 'Enviar propuesta'}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-6" style={mf}>
+        <section className="space-y-3">
+          <h3 className={grupo}>Tus datos</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <PixelInput label="TU NOMBRE" value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Nombre y apellido" autoComplete="name" />
+            <PixelInput type="email" label="TU CORREO" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="tu@correo.com" autoComplete="email" inputMode="email" />
           </div>
-          <div className="rounded-lg border border-digi-border bg-digi-darker p-3 space-y-1" style={mf}>
-            <div className="text-digi-muted text-[12px] font-medium">Tu horario ({tz})</div>
-            <div className="text-digi-text">Inicio: {formatInTz(startUTC, tz)}</div>
-            <div className="text-digi-text">Fin: {formatInTz(endUTC, tz)}</div>
-          </div>
-        </div>
+        </section>
 
-        <div>
-          <PixelSelect
-            label="RECURRENCIA"
-            value={recurrence}
-            onChange={(e) => setRecurrence(e.target.value as ProposalRecurrence)}
-            options={[
-              { value: 'none', label: 'Un solo día' },
-              { value: 'weekly', label: 'Semanalmente (días seleccionados)' },
+        <section className="space-y-3">
+          <h3 className={grupo}>La reunión con {memberName.split(" ")[0]}</h3>
+          <PixelInput label="TÍTULO" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Reunión inicial, sesión de revisión…" />
+          <div className="flex flex-col gap-1">
+            <label htmlFor="propuesta-detalle" className="field-label text-[10px] text-accent-glow opacity-70" style={{ fontFamily: 'var(--font-display)' }}>DETALLE (OPCIONAL)</label>
+            <textarea
+              id="propuesta-detalle"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="field-control w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:outline-none"
+            />
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h3 className={grupo}>Cuándo · hora de Ecuador (GMT-5)</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="col-span-2 md:col-span-1 min-w-0">
+              <PixelInput type="date" label="FECHA" value={date} onChange={(e) => setDate(e.target.value)} className={fechaHora} />
+            </div>
+            <div className="min-w-0">
+              <PixelInput type="time" label="INICIO" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={fechaHora} />
+            </div>
+            <div className="min-w-0">
+              <PixelInput type="time" label="FIN" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={fechaHora} />
+            </div>
+          </div>
+          {slotBusy && (
+            <p className="flex items-center gap-1.5 text-[12.5px] text-amber-600">
+              <AlertTriangle className="w-4 h-4 shrink-0" /> Ese horario ya está ocupado. Elige otra fecha u hora.
+            </p>
+          )}
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1 min-w-0">
+              <SearchableSelect label="TU ZONA HORARIA" value={tz} onChange={setTz} options={tzList} searchPlaceholder="Buscar zona horaria…" />
+            </div>
+            <button
+              type="button"
+              onClick={autoDetectTz}
+              className={`${BTN_SECONDARY} !w-11 !h-11 !px-0 shrink-0`}
+              title="Detectar mi zona horaria"
+              aria-label="Detectar mi zona horaria"
+            >
+              <Crosshair className="w-4 h-4" />
+            </button>
+          </div>
+          {tuHorario && (
+            <p className="text-[12.5px] text-digi-muted">
+              En tu hora: <span className="text-digi-text">{tuHorario}</span>
+            </p>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <h3 className={grupo}>Se repite</h3>
+          <Segmentado
+            etiqueta="Recurrencia"
+            className="w-full md:max-w-sm"
+            valor={recurrence}
+            onChange={setRecurrence}
+            opciones={[
+              { valor: 'none', texto: 'Un solo día' },
+              { valor: 'weekly', texto: 'Cada semana' },
             ]}
           />
-        </div>
-
-        {recurrence === 'weekly' && (
-          <>
-            <div>
-              <div className="text-[12px] font-medium text-digi-muted mb-1" style={mf}>Días de la semana</div>
-              <div className="flex gap-1 flex-wrap">
+          {recurrence === 'weekly' && (
+            <>
+              <div role="group" aria-label="Días de la semana" className="grid grid-cols-7 gap-1 md:flex">
                 {DAY_LABELS_ES_SHORT.map((label, dow) => {
                   const active = days.includes(dow);
                   return (
@@ -332,53 +326,28 @@ export default function ProposalModal({ open, onClose, onSubmit, memberName, ini
                       key={dow}
                       type="button"
                       onClick={() => toggleDay(dow)}
-                      className={`w-10 h-10 text-[12px] border rounded-md transition-colors ${
-                        active ? 'border-accent bg-accent-light text-accent' : 'border-digi-border text-digi-muted hover:text-digi-text'
+                      aria-pressed={active}
+                      className={`h-11 md:w-10 md:h-10 text-[12px] border rounded-md transition-colors ${
+                        active ? 'border-accent text-accent font-semibold' : 'border-digi-border text-digi-muted hover:text-digi-text'
                       }`}
-                      style={mf}
                     >
                       {label}
                     </button>
                   );
                 })}
               </div>
-            </div>
-            <PixelInput
-              type="date"
-              label="HASTA (OPCIONAL)"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
-            />
-          </>
-        )}
+              <div className="min-w-0 md:max-w-[220px]">
+                <PixelInput type="date" label="HASTA (OPCIONAL)" value={until} onChange={(e) => setUntil(e.target.value)} className={fechaHora} />
+              </div>
+            </>
+          )}
+        </section>
 
         {error && (
-          <div className="flex items-center gap-2 text-[13px] text-red-600 border border-red-300 bg-red-50 rounded-md px-3 py-2" style={mf}>
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {error}
-          </div>
+          <p role="alert" className="flex items-center gap-1.5 text-[13px] text-red-500">
+            <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
+          </p>
         )}
-
-        <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className={BTN_SECONDARY}
-            style={mf}
-          >
-            <X className="w-4 h-4" /> Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={saving || slotBusy}
-            className={BTN_PRIMARY}
-            style={mf}
-          >
-            <Send className="w-4 h-4" /> {saving ? 'Enviando…' : slotBusy ? 'Horario ocupado' : 'Enviar propuesta'}
-          </button>
-        </div>
       </div>
     </PixelModal>
   );
