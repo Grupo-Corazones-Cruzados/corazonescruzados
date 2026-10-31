@@ -124,6 +124,19 @@ export const NAVEGACION = [
    */
   { href: '/', label: 'Inicio' },
   /**
+   * LAS PESTAÑAS NUEVAS (Fernando, 2026-10-31): el sitio pasa a Inicio · Candidatos · Clientes ·
+   * Miembros. Candidatos y Miembros nacen VACÍAS, y Clientes queda solo con su titular y su texto;
+   * él irá dictando qué llevan. Soluciones y Desarrollo Humano siguen visibles mientras tanto,
+   * porque de ellas se recuperará lo que vaya a las nuevas; al final se quitarán.
+   */
+  { href: '/candidatos', label: 'Candidatos' },
+  /**
+   * Las cinco puertas: «Negocios» (`/negocio`) → «Soluciones» (`/soluciones`) → **«Clientes»**
+   * (`/clientes`). Las dos rutas viejas redirigen aquí desde `next.config.ts`.
+   */
+  { href: '/clientes', label: 'Clientes' },
+  { href: '/miembros', label: 'Miembros' },
+  /**
    * ⚠️ ESTAS DOS PESTAÑAS **INTERCAMBIARON SUS NOMBRES** EL 2026-08-18. Que conste el
    * orden, porque leer el historial sin esto despista:
    *
@@ -138,11 +151,6 @@ export const NAVEGACION = [
    * cara al público, no el modelo.
    */
   { href: '/soluciones', label: 'Soluciones' },
-  /**
-   * Las cinco puertas: «Negocios» (`/negocio`) → «Soluciones» (`/soluciones`) → **«Clientes»**
-   * (`/clientes`). Las dos rutas viejas redirigen aquí desde `next.config.ts`.
-   */
-  { href: '/clientes', label: 'Clientes' },
   // La etiqueta ya decía «Desarrollo Humano» mientras la ruta seguía siendo `/recursos`, que
   // era el nombre viejo. El 2026-08-17 se igualaron: titular, pestaña, menú y URL dicen lo
   // mismo. La ruta vieja redirige (308) desde `next.config.ts`.

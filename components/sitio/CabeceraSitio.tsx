@@ -170,7 +170,7 @@ export default function CabeceraSitio() {
             className="shrink-0 rounded-full"
           />
           <span
-            className="text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors md:max-[999px]:hidden"
+            className="text-[15px] font-semibold text-white tracking-tight group-hover:text-[#c4b5fd] transition-colors md:max-[1149px]:hidden"
           >
             Grupo Corazones Cruzados
           </span>
@@ -180,7 +180,8 @@ export default function CabeceraSitio() {
           // En la portada la cápsula aparece ya desde `md` (Fernando, 2026-10-26: con su
           // ventana de ~1000 px salía la hamburguesa y «se veían perfecto» las pestañas). Entre
           // `md` y 1100 px, compacta; y por debajo de 1000 px el nombre se esconde (queda el
-          // logo), o la cápsula centrada lo pisaría. La hamburguesa, solo en el teléfono.
+          // logo), o la cápsula centrada lo pisaría. Con seis pestañas (2026-10-31) el nombre se
+          // esconde por debajo de 1150 px: a 1000 la cápsula ya lo pisaba. La hamburguesa, solo en el teléfono.
           ref={navRef}
           className="hidden md:flex items-center gap-1 cristal-portada absolute left-1/2 -translate-x-1/2 rounded-full p-1"
           aria-label="Principal"

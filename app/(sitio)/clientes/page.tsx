@@ -5,6 +5,12 @@
  * 2026-08-18 es **«Clientes»** en `/clientes`: el nombre «Soluciones» pasó a la página de
  * las soluciones, que es donde Fernando quería ese contenido. Las rutas viejas redirigen.
  *
+ * ── DESDE EL 2026-10-31: SOLO EL TITULAR Y SU TEXTO ───────────────────────────
+ * El sitio pasa a Inicio · Candidatos · Clientes · Miembros (Fernando) y esta portada se queda
+ * solo con la presentación, a la espera de lo que él dicte. **Las cuatro secciones NO se
+ * borraron**: siguen en `ACCESOS` y en `/clientes/[necesidad]` (indexadas en Google), de donde
+ * se recuperará lo que haga falta. Lo de abajo describe la portada hasta ese día.
+ *
  * ── QUÉ ES DESDE EL 2026-08-18 ─────────────────────────────────────────────────
  * Un explorador de tres paneles, como pidió Fernando: las cuatro secciones en galería
  * vertical a la izquierda, el contenido de la abierta en el centro, y sus preguntas a la
@@ -47,13 +53,8 @@
 
 import type { Metadata } from 'next';
 import { SITIO, ACCESOS, REDES, OG_IMAGEN } from '@/lib/sitio/contenido';
-import { Contenedor } from '@/components/sitio/piezas';
+import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
-import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
-import { faqsTolerantesAlBuild } from './faqs-build';
-
-/** Las preguntas frecuentes salen de la base y se editan en Admin → FAQs. Ver la página hija. */
-export const revalidate = 300;
 
 export const metadata: Metadata = {
   /**
@@ -76,12 +77,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ClientesPage() {
-  // La primera sección, como `/soluciones` abre el primer talento: una página de entrada
-  // que arranca vacía obliga a adivinar que hay que pulsar algo.
-  const primera = ACCESOS[0];
-  const faqs = await faqsTolerantesAlBuild(primera.id);
-
+export default function ClientesPage() {
   return (
     <>
       {/* `flex-1`: la sección ocupa TODO el alto que sobre. Con poco contenido, su fondo
@@ -90,15 +86,7 @@ export default async function ClientesPage() {
           Fernando (2026-08-18). */}
       <section className="flex-1 pt-6 sm:pt-10 pb-16">
         <Contenedor ancho="sitio">
-          <ExploradorSecciones
-            secciones={ACCESOS}
-            activa={primera.id}
-            faqs={faqs}
-            base="/clientes"
-            rotulo="Clientes"
-            presentacion={PRESENTACION_CLIENTES}
-            etiquetaNav="Secciones para clientes"
-          />
+          <PresentacionPagina {...PRESENTACION_CLIENTES} />
         </Contenedor>
       </section>
 

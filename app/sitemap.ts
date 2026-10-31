@@ -35,7 +35,7 @@ const ULTIMO_CAMBIO = {
    * la nueva pronto en vez de seguir sirviendo la vieja durante semanas.
    */
   /** Las cinco puertas: `/negocio` → `/soluciones` → `/clientes` (08-17 y 08-18). */
-  clientes: '2026-08-18',
+  clientes: '2026-10-31',
   /** `/recursos` → `/desarrollo-humano` el 2026-08-17, y de paso pasó a tema claro. */
   /** 2026-10-30: dos secciones nuevas (Modelo 4P y Herramientas) cambian sus puertas. */
   desarrolloHumano: '2026-10-30',

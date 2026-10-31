@@ -20,9 +20,9 @@ type Presentacion = ComponentProps<typeof PresentacionPagina>;
    (Fernando: «este contenido no me gusta»). Para verla: `git show 054f6e22:components/sitio/presentaciones.tsx`. */
 export const PRESENTACION_CLIENTES: Presentacion = {
   etiqueta: 'Clientes',
-  titulo: 'Lo que tu organización puede hacer con nosotros',
+  titulo: 'Impulsa tu proyecto o negocio, a medida de lo que necesitas',
   texto:
-    'Publica tickets y proyectos para que los resuelva quien tiene el talento, pon a prueba a tus colaboradores en el videojuego, compra en el marketplace y vota sobre las mejoras de la organización.',
+    'Creemos que tanto las ideas ingeniosas, como el talento que trabaja para hacerlo realidad son el motor del progreso de este mundo, y ambos deberían ser justamente recompensados. En la actualidad el sistema laboral hace de intermediario, complicando la adquisición de talento, el progreso de cualquier negocio, y además robándose recursos que deberían ser dirigidos para quienes realmente se lo merecen. Nuestra propuesta se basa en la metodología del "Progreso Horizontal", el cual aplicamos mediante inversiones que hacemos con Clientes Experimentales para descubrir estrategias funcionales y exitosas que podemos lanzar como "Soluciones".',
 };
 
 /**
