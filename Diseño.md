@@ -5041,6 +5041,14 @@ Fernando tomó como modelo el pie de Pensamientos. *«Generalmente el botón de 
   - Botón de eliminar sin texto en Herramientas (Accesos, Enlaces, Entregas), Fuentes, Tutoriales, Calendario, Incidentes y los sistemas de Centralizado (Apoyo, Comandos, Encuadre, Gestión de Datos, Gestión Social).
 - **Se quedan como están:** Factura (acciones de solo consulta apiladas) y la distribución de Herramientas. Revocar y Desactivar conservan el texto, porque no borran.
 
+## ⭐ SIN BARRA DE PÁGINA FANTASMA (2026-10-31)
+
+En Pensamientos salía una barra de desplazamiento sin que nada estuviera oculto. La tabla (`PixelDataTable`) calculaba su alto con la ventana: 16 px más el pie. La columna central (`useAltoHastaElPie`) lo calculaba con el contenedor que se desplaza, descontando su relleno inferior. La tabla la pasaba 6 px.
+
+- **Ahora la tabla también se limita al contenedor que se desplaza**, con `contenedorDesplazable`, exportado del hook.
+- **Los dos cálculos redondean hacia abajo, y encoger se aplica siempre.** Antes toleraban 1 px de más.
+- **Verificado con Chrome visible:** 11 páginas en tres tamaños de ventana, todas con 0 px sobrantes.
+
 ## ⭐ MOVIMIENTO AL NAVEGAR — páginas, detalles y filtros (2026-10-29)
 Fernando: *«agregar animaciones al cambiar de módulos o cambiar filtros o abrir formulario o ingresar a
 pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos en `app/(dashboard)/layout.tsx`.

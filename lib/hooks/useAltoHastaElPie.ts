@@ -47,11 +47,11 @@ import { useCallback, useEffect, useState } from 'react';
 /** Alto del pie fijo de la app. Cero si esta página no lo tiene. */
 function altoDelPie(): number {
   const el = document.querySelector('[data-app-footer]');
-  return el ? Math.round(el.getBoundingClientRect().height) : 0;
+  return el ? Math.ceil(el.getBoundingClientRect().height) : 0;
 }
 
 /** El ancestro que se desplaza, para no invadir su relleno inferior. */
-function contenedorDesplazable(el: HTMLElement): HTMLElement | null {
+export function contenedorDesplazable(el: HTMLElement): HTMLElement | null {
   for (let p = el.parentElement; p; p = p.parentElement) {
     const desborde = getComputedStyle(p).overflowY;
     if (desborde === 'auto' || desborde === 'scroll') return p;
@@ -90,10 +90,13 @@ export function useAltoHastaElPie<T extends HTMLElement = HTMLDivElement>(
         fondo = Math.min(fondo, cont.getBoundingClientRect().bottom - relleno);
       }
 
-      const h = Math.max(Math.round(fondo - arriba), minimo);
+      // HACIA ABAJO, nunca redondeado (2026-10-31): con posiciones fraccionarias (zoom, Retina)
+      // medio píxel de más ya desborda al contenedor y saca su barra de desplazamiento.
+      const h = Math.max(Math.floor(fondo - arriba), minimo);
       // Solo se guarda si cambia de verdad: un `setState` por cada aviso del observador
-      // sería un renderizado continuo.
-      setAlto((previo) => (previo === undefined || Math.abs(previo - h) > 1 ? h : previo));
+      // sería un renderizado continuo. Pero ENCOGER se aplica siempre: quedarse 1 px largo
+      // también desborda.
+      setAlto((previo) => (previo === undefined || h < previo || h - previo > 1 ? h : previo));
     };
 
     // Tras el primer trazado: lo de arriba puede seguir montándose.
