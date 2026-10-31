@@ -323,21 +323,21 @@ export default function PublicCalendarPage() {
   const flecha = 'w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
 
   return (
-    // FIJA arriba y con el alto VISIBLE (`h-dvh`), las dos cosas (iPhone, navegador de WhatsApp):
-    //  · solo `h-dvh` en el flujo: la página aún se desplazaba (lo que el cuerpo suma alrededor);
-    //  · solo `fixed inset-0`: llega al borde de la ventana, DEBAJO de la barra del navegador,
-    //    que tapaba el final del calendario y «Agendar».
-    //  · `fixed top-0 h-dvh`: con `viewportFit: cover` la página seguía bajo la hora y bajo esa
-    //    barra (2026-10-31). Ahora la ruta usa `auto` (su `layout.tsx`) y el alto se mide.
+    // FIJA arriba y con el alto VISIBLE: la página no se desplaza; solo las horas, dentro.
+    // ⚠️ La barra inferior del navegador de WhatsApp (iPhone) se pinta ENCIMA de la página y
+    // ningún alto la descuenta (ni `dvh`, ni `innerHeight`, ni `viewport-fit`: probado el
+    // 2026-10-31). Por eso nada importante vive abajo: «Agendar» va arriba, junto al nombre, la
+    // tarjeta llega al borde y las horas llevan un hueco final para poder subir la última.
     <div
       className={`corp page-dark ${enTelefono ? 'fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden' : 'min-h-screen'}`}
       style={enTelefono && altoVisible ? { height: altoVisible } : undefined}
     >
       <div className="shrink-0"><PublicHeader /></div>
-      <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col p-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
-        <div className={`bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0' : 'h-[calc(100dvh-6.5rem)]'}`}>
+      <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col px-3 pt-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
+        <div className={`bg-digi-card border border-digi-border shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0 rounded-t-xl border-b-0' : 'rounded-xl h-[calc(100dvh-6.5rem)]'}`}>
           {enTelefono ? (
-            <div className="px-4 py-3 border-b border-digi-border shrink-0">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-digi-border shrink-0">
+              <div className="flex-1 min-w-0">
               <div className="flex items-start gap-1">
                 <h1 className="text-[17px] leading-snug font-semibold text-digi-text min-w-0" style={df}>{memberName}</h1>
                 <BotonDetalles
@@ -354,6 +354,10 @@ export default function PublicCalendarPage() {
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[memberStatus].color }} />
                 <span className="text-[12px] text-digi-muted" style={mf}>{AVAILABILITY[memberStatus].label}</span>
               </div>
+              </div>
+              <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={`${BTN_PRIMARY} h-11 shrink-0`}>
+                <CalendarPlus className="w-[18px] h-[18px]" /> Agendar
+              </button>
             </div>
           ) : (
           /* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */
@@ -435,7 +439,7 @@ export default function PublicCalendarPage() {
           {/* Grid — clic en zona libre abre el formulario con esa hora; clic en un bloque
               ocupado no muestra detalle (confidencial), salvo tu propia reserva reciente.
               En el teléfono sin alto impuesto: la agenda mide lo que ocupa y baja la página. */}
-          <div className={enTelefono ? 'p-2.5 flex-1 min-h-0 flex flex-col' : 'p-3 flex-1 min-h-0 flex flex-col'}>
+          <div className={enTelefono ? 'px-2.5 pt-2.5 flex-1 min-h-0 flex flex-col' : 'p-3 flex-1 min-h-0 flex flex-col'}>
             <CalendarView
               view={view}
               currentDate={currentDate}
@@ -444,6 +448,7 @@ export default function PublicCalendarPage() {
               onEventClick={onEventClick}
               fillHeight
               rejillaSiempre
+              rellenoFinal={enTelefono ? 'pb-28' : ''}
             />
           </div>
 
@@ -457,16 +462,6 @@ export default function PublicCalendarPage() {
           )}
         </div>
       </div>
-
-      {/* «Agendar» en su franja propia al final de la columna: en el flujo, no flotando, así
-          nunca tapa la agenda. */}
-      {enTelefono && (
-        <div className="shrink-0 px-3 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-digi-card border-t border-digi-border">
-          <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={`${BTN_PRIMARY} w-full h-12 text-[15px]`}>
-            <CalendarPlus className="w-[18px] h-[18px]" /> Agendar espacio
-          </button>
-        </div>
-      )}
 
       {/* El detalle solo se abre para reservas PROPIAS de esta sesión → muestra el dato
           real y permite cancelarla (mientras no se recargue la página). */}

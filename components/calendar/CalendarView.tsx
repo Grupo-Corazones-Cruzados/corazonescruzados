@@ -28,6 +28,12 @@ interface Props {
    * «no tiene sentido… ya hay más espacio»—: los huecos se ven y se tocan para agendar.
    */
   rejillaSiempre?: boolean;
+  /**
+   * Hueco al final de las horas (clase de relleno, p. ej. `pb-28`) para que la última hora
+   * pueda subir por encima de lo que tape el fondo de la pantalla: la barra del navegador de
+   * WhatsApp en el iPhone se pinta ENCIMA de la página y no se puede medir (2026-10-31).
+   */
+  rellenoFinal?: string;
 }
 
 const WEEK_HOUR_START = 0;
@@ -421,7 +427,7 @@ function AgendaDia({ currentDate, instances, onDayClick, onEventClick, onGenerat
 }
 
 function DayView(props: Props) {
-  const { currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight, rejillaSiempre } = props;
+  const { currentDate, instances, onDayClick, onEventClick, onGeneratedClick, fillHeight, rejillaSiempre, rellenoFinal = '' } = props;
   const hours = Array.from({ length: WEEK_HOUR_END - WEEK_HOUR_START + 1 }, (_, i) => i + WEEK_HOUR_START);
   const now = useEcuadorNow();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -439,7 +445,7 @@ function DayView(props: Props) {
             <DayTotals totals={dayTotals(instances, currentDate)} />
           </div>
         </div>
-        <div ref={scrollRef} className={fillHeight ? 'flex-1 min-h-0 overflow-y-auto overscroll-contain' : ''}>
+        <div ref={scrollRef} className={`${fillHeight ? 'flex-1 min-h-0 overflow-y-auto overscroll-contain' : ''} ${rellenoFinal}`}>
           <div className="grid" style={{ gridTemplateColumns: '56px 1fr' }}>
             <div className="border-r border-digi-border">
               {hours.map((h) => (
