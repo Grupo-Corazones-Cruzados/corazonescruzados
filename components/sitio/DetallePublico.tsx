@@ -12,7 +12,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { CheckCircle2, Clock, Download, FileText, Layers, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { CheckCircle2, Clock, Download, FileText, Layers, ListChecks, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { Tarjeta } from '@/components/sitio/piezas';
 import { SITIO } from '@/lib/sitio/contenido';
 import { fmt2 } from '@/lib/format';
@@ -117,6 +117,49 @@ export function TarjetaEtapas({ etapas, total, titulo = 'Etapas' }: {
   );
 }
 
+/**
+ * Los requerimientos del proyecto, con el AVANCE dentro (Fernando, 2026-10-31: «que se vean los
+ * requerimientos registrados aunque sea la página pública»). La barra de avance vivía suelta bajo
+ * la cabecera, a media anchura y lejos de lo que mide; ahora encabeza la lista que cuenta.
+ * Enseña qué se entrega y si ya se entregó; nunca quién lo hace ni lo que cuesta por dentro.
+ */
+export function TarjetaRequerimientos({ requerimientos }: {
+  requerimientos: { id: number; title: string; description?: string | null; hecho: boolean }[];
+}) {
+  if (!requerimientos.length) return null;
+  const hechos = requerimientos.filter((r) => r.hecho).length;
+  const pct = Math.round((hechos / requerimientos.length) * 100);
+  return (
+    <Tarjeta>
+      <TituloTarjeta icon={ListChecks} cifra={`${hechos} de ${requerimientos.length}`}>Requerimientos</TituloTarjeta>
+      <div className="mt-4 flex items-center gap-3" role="progressbar" aria-label="Avance del proyecto"
+        aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+        <div className="flex-1 h-1.5 rounded-full bg-[var(--linea)] overflow-hidden">
+          <div className="h-full rounded-full bg-[var(--violeta)] transition-[width] duration-700" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="text-[13px] font-semibold tabular-nums text-[var(--violeta-txt)]">{pct}%</span>
+      </div>
+      <ul className="mt-3 divide-y divide-[var(--linea)]">
+        {requerimientos.map((r) => (
+          <li key={r.id} className="flex items-start gap-3 py-3.5">
+            {r.hecho
+              ? <CheckCircle2 aria-hidden className="mt-0.5 w-4 h-4 shrink-0 text-emerald-600" />
+              : <Clock aria-hidden className="mt-0.5 w-4 h-4 shrink-0 text-[var(--apagado)]" />}
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] text-[var(--texto)] break-words">{r.title}</span>
+              {r.description && (
+                <span className="mt-1 block text-[13.5px] leading-relaxed text-[var(--suave)] break-words">{r.description}</span>
+              )}
+            </span>
+            {/* En el teléfono el estado lo dice el icono: la palabra le robaba media fila al texto. */}
+            <span className="shrink-0 text-[13px] text-[var(--tenue)] max-sm:sr-only">{r.hecho ? 'Entregado' : 'Pendiente'}</span>
+          </li>
+        ))}
+      </ul>
+    </Tarjeta>
+  );
+}
+
 export function TarjetaFacturas({ facturas, pdf }: { facturas: any[]; pdf: (f: any) => string }) {
   if (!facturas.length) return null;
   const facturado = facturas.reduce((s, f) => s + Number(f.total || 0), 0);
@@ -137,9 +180,12 @@ export function TarjetaFacturas({ facturas, pdf }: { facturas: any[]; pdf: (f: a
             <span className="flex items-center gap-3 shrink-0">
               <span className="text-[15px] tabular-nums text-[var(--texto)]">${fmt2(Number(f.total))}</span>
               {f.has_pdf && (
+                // Botón de icono fantasma, como toda acción dentro de una fila (Diseño.md: nada de
+                // «PDF» metido en una cajita con borde).
                 <a href={pdf(f)} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--linea-fuerte)] px-3 py-1.5 text-[13px] font-medium text-[var(--violeta-txt)] hover:border-[var(--violeta-vivo)] transition-colors">
-                  <Download className="w-4 h-4" /> PDF
+                  title={`Descargar PDF de la factura ${f.invoice_number}`} aria-label={`Descargar PDF de la factura ${f.invoice_number}`}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--tenue)] hover:text-[var(--violeta-txt)] hover:bg-[#7b5fbf]/[0.08] transition-colors">
+                  <Download className="w-[18px] h-[18px]" />
                 </a>
               )}
             </span>

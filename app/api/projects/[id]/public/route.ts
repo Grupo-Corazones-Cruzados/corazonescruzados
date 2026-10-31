@@ -6,9 +6,10 @@ import { getProjectBilling } from '@/lib/payments';
 /**
  * Lo que ve el CLIENTE del proyecto con el enlace que le llega por correo.
  *
- * Enseña el acuerdo, no la cocina: avance, las ETAPAS pactadas con su importe y su estado,
- * y las facturas emitidas. **No** salen los requerimientos, ni quién los hace, ni lo que
- * cuesta cada pieza por dentro — eso es el reparto interno del trabajo (ver MEMORIA.md,
+ * Enseña el acuerdo, no la cocina: los REQUERIMIENTOS (título, descripción y si ya se
+ * entregó; Fernando, 2026-10-31), las ETAPAS pactadas con su importe y su estado, y las
+ * facturas emitidas. **No** sale quién hace cada requerimiento ni lo que cuesta por dentro
+ * (`cost`, `talents`, `slots`) — eso es el reparto interno del trabajo (ver MEMORIA.md,
  * «la etapa no es el requerimiento»).
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -50,14 +51,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    // Avance: solo la CIFRA de requerimientos entregados, nunca cuáles ni de quién.
-    const { rows: [avance] } = await pool.query(
-      `SELECT count(*) AS total, count(completed_at) AS hechos
-         FROM gcc_world.project_requirements WHERE project_id = $1`,
+    // Requerimientos: solo lo que el cliente pactó ver. Nada de coste, talentos ni plazas.
+    const { rows: requerimientos } = await pool.query(
+      `SELECT id, title, description, (completed_at IS NOT NULL) AS hecho
+         FROM gcc_world.project_requirements WHERE project_id = $1 ORDER BY id`,
       [id]
     );
-    const total = Number(avance?.total) || 0;
-    const hechos = Number(avance?.hechos) || 0;
+    const total = requerimientos.length;
+    const hechos = requerimientos.filter((r: { hecho: boolean }) => r.hecho).length;
 
     // Etapas pactadas y su estado de facturación.
     const billing = await getProjectBilling(id);
@@ -87,6 +88,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       data: {
         ...project,
         avance: { total, hechos, pct: total > 0 ? Math.round((hechos / total) * 100) : 0 },
+        requerimientos,
         etapas: (billing?.etapas || []).map(e => ({
           id: e.id, name: e.name, amount: e.amount,
           facturada: !!e.invoiceId, invoiceNumber: e.invoiceNumber,

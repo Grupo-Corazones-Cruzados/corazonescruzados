@@ -1597,6 +1597,16 @@ deja al cliente creyendo que hizo algo mal.
 - **`/ticket/[id]` pasa a `(sitio)`** (antes era pixel art oscuro suelto) y acepta las dos llaves:
   el `token` del correo de la factura y el `link` del pago. Enseña el trabajo registrado (fecha,
   qué, tiempo, importe), las etapas y las facturas con su PDF; nunca quién lo hizo ni notas internas.
+- **`/proyecto/[id]` enseña los requerimientos (Fernando, 2026-10-31: *«en desktop esa barra de
+  progreso se ve mal […] requiero que se vean los requerimientos registrados aunque sea la página
+  pública»*).** `TarjetaRequerimientos`: título, descripción entera y estado (✓ verde / reloj tenue,
+  «Entregado»/«Pendiente», que en el teléfono solo lee el lector de pantalla); nunca talentos, coste
+  ni plazas. **La barra de avance va DENTRO de esa tarjeta**, bajo su título con «N de M»; suelta bajo
+  la cabecera, a media anchura y lejos de lo que mide, se veía mal (DESCARTADA). Escritorio: la lista a
+  la izquierda (`minmax(0,1.4fr)`) y etapas + facturas apiladas a la derecha; sin requerimientos,
+  etapas y facturas a dos columnas como antes.
+- El **PDF de una factura** en `TarjetaFacturas` pasa a botón de icono fantasma (antes «⬇ PDF» con
+  borde, una cápsula de las que la regla descarta).
 - **Piezas comunes en `components/sitio/DetallePublico.tsx`** (`CabeceraDetalle`, `Estado`, `Dato`,
   `TarjetaEtapas`, `TarjetaFacturas`, `ErrorEnlace`, `EnlaceBoton`): `/proyecto` y `/ticket` no
   repiten una versión «parecida».

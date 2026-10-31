@@ -8,11 +8,13 @@
  * claro** y pie oscuro, igual que `/soluciones` o `/legal`. Antes era la última isla de
  * pixel art oscuro del sitio, con fuentes Silkscreen, y no se parecía a nada de lo demás.
  *
- * ── QUÉ ENSEÑA, Y QUÉ NO (Fernando, 2026-08-19) ───────────────────────────────
- * Enseña el ACUERDO: avance, las etapas pactadas con su importe y su estado, las facturas
- * emitidas con su PDF, y las imágenes del proyecto. **No** enseña los requerimientos, ni
- * quién los hace, ni lo que cuesta cada pieza por dentro: eso es el reparto interno del
- * trabajo y el cliente no tiene por qué verlo.
+ * ── QUÉ ENSEÑA, Y QUÉ NO (Fernando, 2026-08-19; requerimientos desde 2026-10-31) ──────
+ * Enseña el ACUERDO: los requerimientos con su avance, las etapas pactadas con su importe y
+ * su estado, las facturas emitidas con su PDF, y las imágenes del proyecto. **No** enseña
+ * quién hace cada requerimiento ni lo que cuesta por dentro: eso es el reparto interno.
+ *
+ * Disposición: los requerimientos a la izquierda (la lista larga) y, a su lado, etapas y
+ * facturas apiladas. La barra de avance va DENTRO de la tarjeta de requerimientos.
  */
 
 import { useEffect, useState } from 'react';
@@ -20,7 +22,8 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Clock, CreditCard } from 'lucide-react';
 import { Contenedor } from '@/components/sitio/piezas';
 import {
-  CabeceraDetalle, CargandoDetalle, Dato, EnlaceBoton, ErrorEnlace, Estado, TarjetaEtapas, TarjetaFacturas, fechaCorta,
+  CabeceraDetalle, CargandoDetalle, Dato, EnlaceBoton, ErrorEnlace, Estado, TarjetaEtapas, TarjetaFacturas,
+  TarjetaRequerimientos, fechaCorta,
 } from '@/components/sitio/DetallePublico';
 
 const ESTADO: Record<string, string> = {
@@ -55,6 +58,7 @@ export default function PaginaProyectoPublico() {
 
   const etapas: any[] = p.etapas || [];
   const facturas: any[] = p.invoices || [];
+  const requerimientos: any[] = p.requerimientos || [];
   const pdf = (f: any) => `/api/projects/${id}/public/invoice?invoice_id=${f.id}${llave ? `&${llave}` : ''}`;
 
   return (
@@ -72,24 +76,22 @@ export default function PaginaProyectoPublico() {
           : undefined}
       />
 
-      {/* ── Avance ── */}
-      {p.avance?.total > 0 && (
-        <section className="mt-10 max-w-3xl">
-          <div className="flex items-end justify-between mb-2">
-            <span className="text-[13px] font-semibold text-[var(--texto)]">Avance del proyecto</span>
-            <span className="text-[13px] tabular-nums text-[var(--violeta-txt)] font-semibold">{p.avance.pct}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-[var(--linea)] overflow-hidden">
-            <div className="h-full rounded-full bg-[var(--violeta)] transition-[width] duration-700"
-              style={{ width: `${p.avance.pct}%` }} />
-          </div>
-        </section>
+      {requerimientos.length > 0 ? (
+        <div className="mt-12 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
+          <TarjetaRequerimientos requerimientos={requerimientos} />
+          {(etapas.length > 0 || facturas.length > 0) && (
+            <div className="grid gap-6 min-w-0">
+              <TarjetaEtapas etapas={etapas} total={Number(p.totalEtapas || 0)} titulo="Etapas del proyecto" />
+              <TarjetaFacturas facturas={facturas} pdf={pdf} />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-12 grid gap-6 lg:grid-cols-2 items-start">
+          <TarjetaEtapas etapas={etapas} total={Number(p.totalEtapas || 0)} titulo="Etapas del proyecto" />
+          <TarjetaFacturas facturas={facturas} pdf={pdf} />
+        </div>
       )}
-
-      <div className="mt-12 grid gap-6 lg:grid-cols-2 items-start">
-        <TarjetaEtapas etapas={etapas} total={Number(p.totalEtapas || 0)} titulo="Etapas del proyecto" />
-        <TarjetaFacturas facturas={facturas} pdf={pdf} />
-      </div>
 
       {/* ── Imágenes ── */}
       {p.images?.length > 0 && (
