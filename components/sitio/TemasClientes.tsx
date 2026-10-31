@@ -20,7 +20,6 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
       id: s.id,
       slug: s.slug,
       nombre: s.nombre,
-      descripciones: r.descripciones,
       talentos: s.talentos.map(({ talento, slug, icono }) => ({ talento, slug, icono })),
       cifras: cifrasDe(r).filter((c) => c.valor > 0),
       busqueda: sinTildes([s.nombre, ...r.descripciones, ...s.talentos.map((t) => t.talento),

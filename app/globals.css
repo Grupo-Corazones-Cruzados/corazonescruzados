@@ -4714,7 +4714,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .solucion-fila-num { font: 700 2.4rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.04em; color: transparent; -webkit-text-stroke: 1px rgba(124, 58, 237, 0.45); font-variant-numeric: tabular-nums; }
 .solucion-fila-cuerpo { min-width: 0; display: flex; flex-direction: column; }
 .solucion-fila-nombre { font: 700 1.75rem/1.1 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.03em; color: var(--texto); }
-.solucion-fila-texto { margin-top: 12px; max-width: 52rem; font-size: 0.98rem; line-height: 1.65; color: var(--suave); }
 .solucion-fila-rotulo { margin-top: 22px; font: 700 0.68rem/1 'Inter', system-ui, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--violeta-txt); }
 .solucion-conceptos { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 22px; }
 .solucion-conceptos li { display: flex; align-items: center; gap: 9px; font-size: 0.9rem; color: var(--texto); }

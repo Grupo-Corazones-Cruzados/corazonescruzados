@@ -4,7 +4,8 @@
  * LA LISTA DE SOLUCIONES — dentro del tema «Soluciones» de Clientes (Fernando, 2026-10-31: «incluir
  * todas las soluciones creadas como lista… descripción y los productos y servicios asociados»).
  *
- * Una tarjeta ancha por solución: número, nombre, la descripción de sus talentos, **sus talentos**
+ * Una tarjeta ancha por solución: número, nombre (SIN descripción: la que hay es del talento y va en
+ * su página — Fernando, 2026-10-31), **sus talentos**
  * con su icono (Fernando, 2026-10-31: «reemplazando los productos y servicios para incluir los
  * talentos») y al pie cuánto hay detrás, sumando todos sus talentos. Lo que está a cero no se dice.
  *
@@ -24,7 +25,6 @@ export interface FilaSolucion {
   id: number;
   slug: string;
   nombre: string;
-  descripciones: string[];
   talentos: { talento: string; slug: string; icono: string | null }[];
   cifras: { valor: number; uno: string; varios: string }[];
   /** Todo lo que se puede buscar, ya en minúsculas y sin tildes. */
@@ -67,7 +67,6 @@ export default function ListaSoluciones({ soluciones }: { soluciones: FilaSoluci
               <span className="solucion-fila-num">{String(n + 1).padStart(2, '0')}</span>
               <span className="solucion-fila-cuerpo">
                 <h2 className="solucion-fila-nombre">{s.nombre}</h2>
-                {s.descripciones.map((d, k) => <p key={k} className="solucion-fila-texto">{d}</p>)}
                 {s.talentos.length > 0 && (
                   <>
                     <span className="solucion-fila-rotulo">Talentos</span>

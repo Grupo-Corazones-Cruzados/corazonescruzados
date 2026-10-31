@@ -6075,7 +6075,7 @@ Sustituye en Clientes a las puertas en bloque (`PuertasBloques`), que siguen en 
 Desarrollo Humano mientras Fernando decide.
 - **Lista de soluciones (2026-10-31):** dentro del tema «Soluciones» de Clientes, `ListaSoluciones.tsx`:
   una tarjeta ancha por solución, entera enlace, con número en contorno, nombre, descripción de sus
-  talentos, «Productos y Servicios asociados» (icono + nombre, sin cápsulas) y cifras al pie; la
+  talentos (QUITADA el mismo día: la tarjeta lleva solo el nombre; la descripción es del talento), «Productos y Servicios asociados» (icono + nombre, sin cápsulas) y cifras al pie; la
   flecha gira 45° al pasar. Cada una abre `/clientes/soluciones/<slug>`: cabecera grande con cifras
   2×2, rejilla de conceptos y lo hecho en pestañas numeradas con cuenta (`SolucionDetalle.tsx`):
   Proyectos · Tickets · **Soluciones** (= productos, nombre de Fernando) · Talentos. En el teléfono,
