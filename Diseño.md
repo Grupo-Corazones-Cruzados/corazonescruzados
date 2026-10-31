@@ -5132,7 +5132,7 @@ galería, no al principio, y debe tener un borde o relleno de fondo para disting
 paginación»*. Es la misma regla que ya regía las tablas del panel (recuento en la última franja de la
 tarjeta de la tabla) llevada a las GALERÍAS del sitio:
 - Orden al pie: tarjetas → paginación → **recuento en cápsula** con borde y fondo
-  (`.pie-galeria` / `.pie-galeria-recuento`, `ListaTickets.tsx`).
+  (`.pie-galeria` / `.pie-galeria-recuento`, `GaleriaFiltrable.tsx`).
 - Con varias páginas dice el tramo: «Mostrando **1–12** de **27** tickets»; con una, «**27** tickets».
 - Encima de la galería solo van los filtros (y «× Quitar filtros» si hay alguno puesto). Nunca el recuento.
 
@@ -6188,7 +6188,7 @@ Desarrollo Humano mientras Fernando decide.
   tenue (`FolderOpen`, `Ticket`, `Package`, `Users`): desde 1024 px, columna propia a la DERECHA de la
   tarjeta (220 px, raya vertical a su izquierda, una cifra por línea); por debajo, al pie con raya
   arriba (en el teléfono, rejilla 2×2).
-- **Lista de tickets (2026-10-31):** bajo el tema «Tickets» de Clientes, `ListaTickets.tsx`, solo los
+- **Lista de tickets (2026-10-31):** bajo los temas «Tickets» y «Proyectos» de Clientes, `ListaTrabajos.tsx` (antes `ListaTickets`), solo los
   terminados y SIN filtro de estado (Fernando lo quitó). Cinco `<select>` redondos `.filtro-sitio`
   (solución, año, mes, talento, miembro) en `.filtros-tickets` (2/3/5 columnas) + el buscador redondo a
   todo el ancho; el filtro puesto lleva borde y texto violeta. **Facetado:** cada desplegable ofrece

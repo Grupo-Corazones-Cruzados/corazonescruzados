@@ -3,7 +3,7 @@
 /**
  * LA GALERÍA CON FILTROS DEL SITIO — una sola definición para toda lista de tarjetas con filtros
  * (2026-10-31). La usan Clientes ▸ Tickets, Clientes ▸ Soluciones y las cuatro pestañas de la página
- * de cada talento (Proyectos · Tickets · Soluciones · Talentos). Nació en `ListaTickets` y se extrajo
+ * de cada talento (Proyectos · Tickets · Soluciones · Talentos). Nació en la lista de tickets (hoy `ListaTrabajos`) y se extrajo
  * cuando Fernando pidió «los filtros, buscadores requeridos» en las pestañas del talento.
  *
  * Arriba: los desplegables redondos (`.filtro-sitio`) y el buscador a todo el ancho; «× Quitar

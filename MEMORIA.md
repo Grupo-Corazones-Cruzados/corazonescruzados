@@ -232,6 +232,11 @@ base verbatim):
   pone `completed_at = now()` al pasar a `completed` (por cualquier vía: panel, factura, factura manual)
   y lo vacía si deja de estarlo. Los 23 completados antes sin fecha no se rellenaron (sería un dato
   inferido); el sitio usa para ellos el último día trabajado (`ticketsPublicos`/`ticketComoTrabajo`).
+- **Proyectos (2026-10-31, migración 078):** `projects.completed_at` nueva, con el mismo disparador. Bajo
+  el tema Proyectos de Clientes van los proyectos terminados (`proyectosPublicos`), por finalización
+  (`completed_at`, o el último requerimiento terminado, o la creación), con filtros de solución, año,
+  mes, talento (los de sus requerimientos), miembro y etiqueta. Antes de añadir la columna se comprobó
+  que ninguna consulta que une `projects` con `project_requirements` usa `completed_at` sin prefijo.
 
 ## Stack
 Stack estándar de la casa, con particularidades de este repo:

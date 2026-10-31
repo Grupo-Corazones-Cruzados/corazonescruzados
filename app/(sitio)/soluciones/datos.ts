@@ -10,7 +10,7 @@
  */
 
 import {
-  listarSoluciones, contenidoDeTalento, conceptosPorTalento, ticketsPublicos,
+  listarSoluciones, contenidoDeTalento, conceptosPorTalento, ticketsPublicos, proyectosPublicos,
   type ContenidoDeTalento,
 } from '@/lib/soluciones';
 import { unstable_cache } from 'next/cache';
@@ -124,3 +124,4 @@ export function cifrasDe(r: Pick<ReturnType<typeof resumenSolucion>, 'proyectos'
  * la página se pinta en cada visita, la base se consulta como mucho una vez cada 5 minutos.
  */
 export const cargarTicketsCacheados = unstable_cache(() => ticketsPublicos(), ['tickets-publicos'], { revalidate: 300 });
+export const cargarProyectosCacheados = unstable_cache(() => proyectosPublicos(), ['proyectos-publicos'], { revalidate: 300 });

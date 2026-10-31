@@ -1,15 +1,15 @@
 /**
  * LOS TEMAS DE CLIENTES, preparados en el servidor para `TemasPestanas` (iconos y negritas ya
  * pintados). El tema «Soluciones» lleva debajo la lista de soluciones de Admin → Soluciones, y el
- * tema «Tickets», la lista de todos los tickets (`ListaTickets`).
+ * tema «Tickets» y el «Proyectos», la lista de los terminados (`ListaTrabajos`).
  */
 
 import { TEMAS_CLIENTES } from '@/lib/sitio/contenido';
-import { cargarSolucionesCacheadas, cargarTicketsCacheados, resumenSolucion, cifrasDe } from '@/app/(sitio)/soluciones/datos';
+import { cargarSolucionesCacheadas, cargarTicketsCacheados, cargarProyectosCacheados, resumenSolucion, cifrasDe } from '@/app/(sitio)/soluciones/datos';
 import { ICONOS, conNegritas } from './piezas';
 import TemasPestanas from './TemasPestanas';
 import ListaSoluciones, { type FilaSolucion } from './ListaSoluciones';
-import ListaTickets from './ListaTickets';
+import ListaTrabajos from './ListaTrabajos';
 
 // La misma que usa el buscador de la lista (que es de cliente y no se puede llamar desde aquí).
 const sinTildes = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -28,7 +28,7 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
         ...r.conceptos.map((c) => c.titulo)].join(' ')),
     };
   });
-  const tickets = await cargarTicketsCacheados();
+  const [tickets, proyectos] = await Promise.all([cargarTicketsCacheados(), cargarProyectosCacheados()]);
   const solucionDe = Object.fromEntries(
     (await cargarSolucionesCacheadas()).flatMap((s) => s.talentos.map((t) => [t.talento, s.nombre])),
   );
@@ -42,7 +42,8 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
       icono: <Icono className="h-4 w-4" />,
       iconoGrande: <Icono className="h-12 w-12" strokeWidth={1.5} />,
       contenido: t.id === 'soluciones' ? <ListaSoluciones soluciones={soluciones} />
-        : t.id === 'tickets' ? <ListaTickets tickets={tickets} solucionDe={solucionDe} />
+        : t.id === 'tickets' ? <ListaTrabajos tipo="ticket" trabajos={tickets} solucionDe={solucionDe} />
+        : t.id === 'proyectos' ? <ListaTrabajos tipo="proyecto" trabajos={proyectos} solucionDe={solucionDe} />
         : undefined,
     };
   });

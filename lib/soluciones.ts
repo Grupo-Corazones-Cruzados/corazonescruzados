@@ -380,6 +380,8 @@ export interface Trabajo {
    * horaria. Formateado una vez aquí, las dos pasadas escriben exactamente lo mismo.
    */
   creadoTexto: string | null;
+  /** Los talentos del trabajo (los del ticket, o los de los requerimientos del proyecto), para filtrar. */
+  talentos?: string[];
 }
 
 /**
@@ -441,38 +443,19 @@ const PARTICIPANTES_DE_PROYECTO = `
  */
 export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
   const { rows: proyectos } = await pool.query(
-    `SELECT DISTINCT p.id, p.title, p.description, p.tags, p.images, p.created_at
+    `SELECT p.id, p.title, p.description, p.tags, p.images, p.created_at,
+            COALESCE(p.completed_at,
+                     (SELECT MAX(rq.completed_at) FROM gcc_world.project_requirements rq WHERE rq.project_id = p.id),
+                     p.created_at) AS fin
        FROM gcc_world.projects p
-       JOIN gcc_world.project_requirements r ON r.project_id = p.id
-      WHERE p.status = $2 AND $1 = ANY(r.talents)
-      ORDER BY p.created_at DESC NULLS LAST, p.id DESC`,
+      WHERE p.status = $2
+        AND EXISTS (SELECT 1 FROM gcc_world.project_requirements r WHERE r.project_id = p.id AND $1 = ANY(r.talents))
+      ORDER BY fin DESC NULLS LAST, p.id DESC`,
     [talento, ESTADO_PUBLICABLE],
   );
 
   const conPersonas: Trabajo[] = [];
-  for (const p of proyectos) {
-    const { rows: personas } = await pool.query(PARTICIPANTES_DE_PROYECTO, [p.id]);
-    conPersonas.push({
-      tipo: 'proyecto',
-      id: Number(p.id),
-      titulo: p.title,
-      descripcion: p.description ?? null,
-      etiquetas: p.tags ?? [],
-      imagenes: (p.images ?? [])
-        .filter((x: unknown) => typeof x === 'string' && x)
-        .map((u: string) => capturaDifuminada(u)),
-      personas: personas.map((m: any) => ({
-        memberId: Number(m.member_id),
-        nombre: m.name,
-        foto: m.photo_url ?? null,
-        correo: m.email ?? null,
-        telefono: m.phone ?? null,
-        rol: m.rol === 'responsible' ? 'responsible' : 'participant',
-      })),
-      creado: p.created_at ? new Date(p.created_at).toISOString() : null,
-      creadoTexto: comoFecha(p.created_at),
-    });
-  }
+  for (const p of proyectos) conPersonas.push(await proyectoComoTrabajo(p));
 
   // Los tickets: su participante es el miembro asignado, si lo hubo.
   const { rows: tickets } = await pool.query(
@@ -502,6 +485,60 @@ export async function trabajoDeTalento(talento: string): Promise<Trabajo[]> {
 
 
 
+
+/**
+ * Una fila de `projects` (con su fecha `fin`) como tarjeta del sitio, con sus participantes.
+ * ⚠️ La fecha es la de FINALIZACIÓN (2026-10-31, igual que los tickets): `completed_at` (migración 078);
+ * si no se anotó, el último requerimiento terminado; y si tampoco, la de creación.
+ */
+async function proyectoComoTrabajo(p: any, talentos?: string[]): Promise<Trabajo> {
+  const { rows: personas } = await pool.query(PARTICIPANTES_DE_PROYECTO, [p.id]);
+  return {
+    tipo: 'proyecto',
+    id: Number(p.id),
+    titulo: p.title,
+    descripcion: p.description ?? null,
+    etiquetas: p.tags ?? [],
+    talentos,
+    imagenes: (p.images ?? [])
+      .filter((x: unknown) => typeof x === 'string' && x)
+      .map((u: string) => capturaDifuminada(u)),
+    personas: personas.map((m: any) => ({
+      memberId: Number(m.member_id),
+      nombre: m.name,
+      foto: m.photo_url ?? null,
+      correo: m.email ?? null,
+      telefono: m.phone ?? null,
+      rol: m.rol === 'responsible' ? 'responsible' : 'participant',
+    })),
+    creado: p.fin ? new Date(p.fin).toISOString() : null,
+    creadoTexto: comoFecha(p.fin),
+  };
+}
+
+/**
+ * TODOS LOS PROYECTOS TERMINADOS PARA CLIENTES ▸ PROYECTOS (Fernando, 2026-10-31: «algo parecido a lo
+ * que hicimos en tickets debemos hacer en proyectos»). Con sus talentos (los de sus requerimientos)
+ * para los filtros de solución y talento. Sin cliente, como en las páginas de talento.
+ */
+export async function proyectosPublicos(): Promise<Trabajo[]> {
+  const { rows } = await pool.query(
+    `SELECT p.id, p.title, p.description, p.tags, p.images, p.created_at,
+            COALESCE(p.completed_at,
+                     (SELECT MAX(rq.completed_at) FROM gcc_world.project_requirements rq WHERE rq.project_id = p.id),
+                     p.created_at) AS fin,
+            COALESCE((SELECT array_agg(DISTINCT t ORDER BY t) FROM gcc_world.project_requirements r, unnest(r.talents) t
+                       WHERE r.project_id = p.id), '{}') AS talentos
+       FROM gcc_world.projects p
+      WHERE p.status = $1
+      ORDER BY fin DESC NULLS LAST, p.id DESC`,
+    [ESTADO_PUBLICABLE],
+  );
+  const lista: Trabajo[] = [];
+  for (const p of rows) lista.push(await proyectoComoTrabajo(p, p.talentos ?? []));
+  return lista;
+}
+
 /** Una fila de `tickets` (con su miembro asignado y su fecha `fin`) como tarjeta del sitio. */
 function ticketComoTrabajo(t: any): Trabajo {
   return {
@@ -511,6 +548,7 @@ function ticketComoTrabajo(t: any): Trabajo {
     descripcion: t.description ?? null,
     // El ticket no tiene tags propios: sus talentos hacen de etiqueta.
     etiquetas: t.required_talents ?? [],
+    talentos: t.required_talents ?? [],
     imagenes: [],
     personas: t.member_id
       ? [{
