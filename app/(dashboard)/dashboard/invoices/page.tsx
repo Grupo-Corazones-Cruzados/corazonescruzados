@@ -107,6 +107,10 @@ function InvoicesPageInner() {
   const [mPaymentCode, setMPaymentCode] = useState('20');
   const [mItems, setMItems] = useState<{ description: string; quantity: string; unitPrice: string; ivaRate: string; discount: string }[]>([]);
   const [mAdditionalFields, setMAdditionalFields] = useState<{ name: string; value: string }[]>([]);
+  // Los datos de facturación guardados del cliente del proyecto/factura (hasta 3): con más de
+  // uno sale un selector que rellena el adquirente; se propone el predeterminado.
+  const [mDatosCliente, setMDatosCliente] = useState<any[]>([]);
+  const [mDatoId, setMDatoId] = useState('');
   const [mSendEmail, setMSendEmail] = useState(true);
 
   // Currency
@@ -163,9 +167,21 @@ function InvoicesPageInner() {
     setMClientEmail(c.client_email);
     setMClientPhone(c.client_phone);
     setMClientAddress(c.client_address);
+    setMDatoId('');
     setHistoryOpen(false);
     setHistorySearch('');
     toast.success(`Datos de ${c.client_name} cargados`);
+  };
+
+  /** Rellena el adquirente con uno de los datos guardados del cliente. */
+  const aplicarDatoCliente = (bc: any) => {
+    setMDatoId(String(bc.id));
+    setMIdType(bc.id_type || '07');
+    setMClientRuc(bc.ruc || '9999999999999');
+    setMClientName(bc.name || 'CONSUMIDOR FINAL');
+    setMClientEmail(bc.email || '');
+    setMClientPhone(bc.phone || '');
+    setMClientAddress(bc.address || '');
   };
 
   const clearClientFields = () => {
@@ -175,6 +191,7 @@ function InvoicesPageInner() {
     setMClientEmail('');
     setMClientPhone('');
     setMClientAddress('');
+    setMDatoId('');
     setHistoryOpen(false);
     setHistorySearch('');
   };
@@ -194,6 +211,7 @@ function InvoicesPageInner() {
     setProcessing(false);
     setProcessStep('');
     setManualStep('project');
+    setMDatosCliente([]); setMDatoId('');
     setShowManual(true);
     try {
       const r = await fetch('/api/invoices/billable-projects');
@@ -251,18 +269,13 @@ function InvoicesPageInner() {
     // esperaba a la cuenta de facturación, el modal se quedaba un par de segundos
     // en blanco (visto en la revisión con navegador).
     setManualStep('form');
+    setMDatosCliente([]); setMDatoId('');
     if (p.clientId) {
       try {
         const r = await fetch(`/api/billing-clients?portal_client_id=${p.clientId}`);
-        const { data: bc } = await r.json();
-        if (bc) {
-          setMIdType(bc.id_type || '07');
-          setMClientRuc(bc.ruc || '9999999999999');
-          setMClientName(bc.name || 'CONSUMIDOR FINAL');
-          setMClientEmail(bc.email || '');
-          setMClientPhone(bc.phone || '');
-          setMClientAddress(bc.address || '');
-        }
+        const { data: bc, opciones } = await r.json();
+        setMDatosCliente(Array.isArray(opciones) ? opciones : []);
+        if (bc) aplicarDatoCliente(bc);
       } catch { /* sin cuenta de facturación → se llena a mano */ }
     }
   };
@@ -315,6 +328,17 @@ function InvoicesPageInner() {
       }
 
       setManualStep('form');
+      // La refactura sale con los datos de la factura original; si el cliente tiene varios
+      // guardados, se puede cambiar a otro con el selector.
+      setMDatosCliente([]); setMDatoId('');
+      if (inv.client_id != null) {
+        fetch(`/api/billing-clients?portal_client_id=${inv.client_id}`).then(r => r.json())
+          .then(({ opciones }) => {
+            const lista = Array.isArray(opciones) ? opciones : [];
+            setMDatosCliente(lista);
+            setMDatoId(String(lista.find((d: any) => d.ruc === inv.client_ruc)?.id || ''));
+          }).catch(() => {});
+      }
       setMIdType(inv.client_id_type || '07');
       setMClientName(inv.client_name_sri || 'CONSUMIDOR FINAL');
       setMClientRuc(inv.client_ruc || '9999999999999');
@@ -773,6 +797,17 @@ function InvoicesPageInner() {
                     <div className="text-[11px] text-digi-muted" style={pf}>
                       Elige uno para rellenar los campos, o cierra y llena manualmente.
                     </div>
+                  </div>
+                )}
+
+                {mDatosCliente.length > 1 && (
+                  <div>
+                    <label className="field-label text-[11px] text-digi-muted mb-1 block" style={pf}>Datos de facturación del cliente</label>
+                    <select value={mDatoId} onChange={e => { const d = mDatosCliente.find((x: any) => String(x.id) === e.target.value); if (d) aplicarDatoCliente(d); }}
+                      className="w-full field-control field-select appearance-none px-2.5 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf}>
+                      {!mDatoId && <option value="">Otros datos</option>}
+                      {mDatosCliente.map((d: any) => <option key={d.id} value={String(d.id)}>{d.name} · {d.ruc}{d.predeterminada ? ' (predeterminado)' : ''}</option>)}
+                    </select>
                   </div>
                 )}
 

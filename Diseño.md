@@ -5049,6 +5049,20 @@ En Pensamientos salía una barra de desplazamiento sin que nada estuviera oculto
 - **Los dos cálculos redondean hacia abajo, y encoger se aplica siempre.** Antes toleraban 1 px de más.
 - **Verificado con Chrome visible:** 11 páginas en tres tamaños de ventana, todas con 0 px sobrantes.
 
+## Varios juegos de datos en una ficha: `Segmentado` + «+ Añadir» (2026-10-31)
+
+Cuando un registro guarda VARIOS juegos del mismo formulario (los hasta 3 datos de facturación de un cliente,
+`app/(dashboard)/dashboard/clients/page.tsx`), se eligen con un `Segmentado` encima de los campos y se editan
+de uno en uno con los mismos campos:
+- Cada opción: «Datos 1/2/3» y, en pequeño, lo que lo distingue (la identificación) o «Por defecto».
+- La última opción, mientras haya hueco, es «+ Añadir» (detalle «2 de 3»; elegida, «Sin guardar»); el botón
+  principal del pie pasa a «Guardar datos».
+- Quitar un juego extra: `BotonQuitar` a la derecha del `Segmentado` (la papelera del PIE sigue siendo la del
+  registro entero). El juego base no se quita.
+- «Usar por defecto al facturar» es un `Interruptor` en su fila, sin nota debajo; solo sale con más de un juego.
+- `Segmentado` recorta el `detalle` a una línea (`truncate`, con `title`): una identificación larga partía la
+  opción en dos líneas.
+
 ## ⭐ MOVIMIENTO AL NAVEGAR — páginas, detalles y filtros (2026-10-29)
 Fernando: *«agregar animaciones al cambiar de módulos o cambiar filtros o abrir formulario o ingresar a
 pantallas de detalles»*. Fuente única: **`app/movimiento.css`** + dos ganchos en `app/(dashboard)/layout.tsx`.

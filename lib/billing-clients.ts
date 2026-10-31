@@ -36,6 +36,11 @@ export async function ensureBillingClientsTable() {
   await pool.query(`ALTER TABLE gcc_world.billing_clients ALTER COLUMN ruc DROP NOT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE gcc_world.billing_clients ALTER COLUMN id_type DROP NOT NULL`).catch(() => {});
   await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS portal_client_id INT`);
+  // Hasta 3 juegos de datos de facturación por cliente (Fernando, 2026-10-31): ver
+  // `MAX_DATOS_FACTURACION`. Los extra son filas con `titular_id` = la fila del cliente.
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS titular_id INT`);
+  await pool.query(`ALTER TABLE gcc_world.billing_clients ADD COLUMN IF NOT EXISTS dato_predeterminado_id INT`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS billing_clients_titular_idx ON gcc_world.billing_clients (titular_id)`);
 
   // Siembra idempotente desde las facturas existentes (no sobrescribe ediciones).
   // Excluye identificaciones que ya son alias de algún cliente (fusionadas) para no recrearlas.
@@ -95,6 +100,14 @@ export async function ensureBillingClientsTable() {
   // Dirección inversa: billing_clients → clients (enlaza/crea y copia correos faltantes).
   try { await reconcileClientsAndBilling(); } catch (e: any) { console.error('reconcileClientsAndBilling error:', e.message); }
 
+  // Los datos extra van con el cliente de portal de su titular: es por ese enlace como
+  // ticket, proyecto y cobro encuentran «los datos de este cliente».
+  await pool.query(`
+    UPDATE gcc_world.billing_clients h SET portal_client_id = t.portal_client_id
+      FROM gcc_world.billing_clients t
+     WHERE h.titular_id = t.id AND h.portal_client_id IS DISTINCT FROM t.portal_client_id
+  `);
+
   _init = true;
 }
 
@@ -137,9 +150,10 @@ export const CONSUMIDOR_FINAL_RUC = '9999999999999';
  */
 export async function reconcileClientsAndBilling(): Promise<void> {
   // 1) billing_clients sin portal → enlazar o crear un `clients`
+  // Los datos extra de un cliente (`titular_id`) no son clientes: se enlazan con el de su titular.
   const { rows: unlinked } = await pool.query(
     `SELECT id, name, email, ruc FROM gcc_world.billing_clients
-      WHERE portal_client_id IS NULL AND COALESCE(ruc, '') <> '${CONSUMIDOR_FINAL_RUC}'`,
+      WHERE portal_client_id IS NULL AND titular_id IS NULL AND COALESCE(ruc, '') <> '${CONSUMIDOR_FINAL_RUC}'`,
   );
   for (const bc of unlinked) {
     const email = (bc.email || '').trim().toLowerCase() || null;
@@ -206,7 +220,6 @@ export type BillingData = {
   address?: string | null;
 };
 
-/** La cuenta de facturación (1 por cliente, por ahora) del cliente de portal `clientId`, o null. */
 /**
  * ¿Se puede FACTURAR con esta cuenta tal cual? (Fernando, 2026-09-29).
  *
@@ -234,19 +247,68 @@ export function cuentaFacturable(bc: { id_type?: string | null; ruc?: string | n
     && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(bc.email || '').trim());
 }
 
-export async function getBillingForClient(clientId: number | string): Promise<any | null> {
-  await ensureBillingClientsTable();
+/**
+ * VARIOS DATOS DE FACTURACIÓN POR CLIENTE — hasta 3 (Fernando, 2026-10-31: «por cada cliente
+ * se puedan guardar varios datos de facturación hasta 3 máximo, y cuando se vaya a facturar,
+ * en todas partes, poder elegirlos mediante un selector, que se escoja por defecto lo
+ * preregistrado»). Deroga el «una cuenta por cliente» del 2026-08-25.
+ *
+ * La fila del cliente (`titular_id IS NULL`) es la que sale en el módulo de Clientes y guarda
+ * su primer juego de datos. Los otros dos son filas de `billing_clients` con `titular_id` =
+ * esa fila: así cada juego tiene su id, y ticket, proyecto y suscripción facturan con
+ * `billing_client_id` igual que antes. Las facturas de cualquiera de los tres cuentan para el
+ * cliente (`SQL_RUCS_DEL_CLIENTE`). `dato_predeterminado_id` del titular dice cuál se propone
+ * al facturar; sin él, el suyo propio.
+ */
+export const MAX_DATOS_FACTURACION = 3;
+
+/** Las facturas del cliente `bc` (alias de la fila titular): las de sus tres juegos y sus alias. */
+export const SQL_RUCS_DEL_CLIENTE = (bc: string, i: string) => `(${i}.client_ruc = ${bc}.ruc OR ${i}.client_ruc = ANY(${bc}.aliases)
+  OR ${i}.client_ruc IN (SELECT h.ruc FROM gcc_world.billing_clients h WHERE h.titular_id = ${bc}.id AND h.ruc IS NOT NULL))`;
+
+/** El titular y sus datos extra, el predeterminado primero. `titularId` es la fila del cliente. */
+export async function getDatosDelTitular(titularId: number | string): Promise<any[]> {
   const { rows } = await pool.query(
-    `SELECT * FROM gcc_world.billing_clients WHERE portal_client_id = $1 ORDER BY id LIMIT 1`,
+    `SELECT h.*, (h.id = COALESCE(t.dato_predeterminado_id, t.id)) AS predeterminada
+       FROM gcc_world.billing_clients t
+       JOIN gcc_world.billing_clients h ON h.id = t.id OR h.titular_id = t.id
+      WHERE t.id = $1
+      ORDER BY (h.id = COALESCE(t.dato_predeterminado_id, t.id)) DESC, (h.titular_id IS NULL) DESC, h.id`,
+    [titularId],
+  );
+  return rows;
+}
+
+/** La fila titular del cliente de portal `clientId` (si hubiera dos, la más antigua), o null. */
+async function titularDeCliente(clientId: number | string): Promise<any | null> {
+  const { rows } = await pool.query(
+    `SELECT * FROM gcc_world.billing_clients WHERE portal_client_id = $1 AND titular_id IS NULL ORDER BY id LIMIT 1`,
     [clientId],
   );
   return rows[0] || null;
 }
 
+/** Los juegos de datos del cliente de portal `clientId`, el predeterminado primero. */
+export async function getDatosFacturacionCliente(clientId: number | string): Promise<any[]> {
+  await ensureBillingClientsTable();
+  const t = await titularDeCliente(clientId);
+  return t ? getDatosDelTitular(t.id) : [];
+}
+
+/** Los datos que se proponen al facturar al cliente de portal `clientId`, o null. */
+export async function getBillingForClient(clientId: number | string): Promise<any | null> {
+  return (await getDatosFacturacionCliente(clientId))[0] || null;
+}
+
 /**
- * Crea o actualiza la cuenta de facturación del cliente de portal `clientId` (una por cliente).
- * Devuelve el id de la fila `billing_clients`. Maneja el UNIQUE de `ruc` de forma defensiva:
- * si el ruc ya pertenece a OTRA cuenta, conserva la del cliente sin robar el ruc ajeno.
+ * Guarda los datos con los que se acaba de facturar al cliente de portal `clientId` (el cobro
+ * en línea y la factura manual, donde se escriben a mano). Con varios juegos por cliente:
+ *   · si la identificación es la de uno de sus juegos, se actualiza ese;
+ *   · si es nueva y le queda hueco (menos de `MAX_DATOS_FACTURACION`), se añade como otro juego;
+ *   · si ya tiene los tres, no se toca nada: la factura sale igual con lo escrito.
+ * Un cliente sin identificación todavía la recibe en su propia fila. Devuelve el id de la
+ * fila guardada, o null. El UNIQUE de `ruc` se respeta: una identificación de otro cliente no
+ * se le roba.
  */
 export async function upsertBillingForClient(clientId: number | string, data: BillingData): Promise<number | null> {
   await ensureBillingClientsTable();
@@ -256,31 +318,45 @@ export async function upsertBillingForClient(clientId: number | string, data: Bi
   const email = (data.email || '').trim() || null;
   const phone = (data.phone || '').trim() || null;
   const address = (data.address || '').trim() || null;
+  // Facturar a consumidor final no es un juego de datos del cliente.
+  if (ruc === CONSUMIDOR_FINAL_RUC) return null;
 
-  const existing = await pool.query(
-    `SELECT id FROM gcc_world.billing_clients WHERE portal_client_id = $1 ORDER BY id LIMIT 1`, [clientId],
-  );
-  if (existing.rows[0]) {
-    const id = Number(existing.rows[0].id);
-    let setRuc = ruc;
-    if (ruc) {
-      const clash = await pool.query(`SELECT 1 FROM gcc_world.billing_clients WHERE ruc = $1 AND id <> $2 LIMIT 1`, [ruc, id]);
-      if (clash.rows[0]) setRuc = null; // el ruc ya es de otra cuenta → no lo tocamos
+  const titular = await titularDeCliente(clientId);
+  if (titular) {
+    const datos = await getDatosDelTitular(titular.id);
+    const mismo = ruc ? datos.find((d) => d.ruc === ruc) : null;
+    // Sin identificación propia, la fila del cliente se completa con esta.
+    const destino = mismo || (!String(titular.ruc || '').trim() ? titular : null);
+    if (destino) {
+      let setRuc = ruc;
+      if (ruc && !mismo) {
+        const clash = await pool.query(`SELECT 1 FROM gcc_world.billing_clients WHERE ruc = $1 AND id <> $2 LIMIT 1`, [ruc, destino.id]);
+        if (clash.rows[0]) setRuc = null; // el ruc ya es de otra cuenta → no lo tocamos
+      }
+      await pool.query(
+        `UPDATE gcc_world.billing_clients
+            SET id_type = $1, ruc = COALESCE($2, ruc), name = $3, email = $4, phone = $5, address = $6, updated_at = NOW()
+          WHERE id = $7`,
+        [idType, setRuc, name, email, phone, address, destino.id],
+      );
+      return Number(destino.id);
     }
-    await pool.query(
-      `UPDATE gcc_world.billing_clients
-          SET id_type = $1, ruc = COALESCE($2, ruc), name = $3, email = $4, phone = $5, address = $6, updated_at = NOW()
-        WHERE id = $7`,
-      [idType, setRuc, name, email, phone, address, id],
+    if (!ruc || datos.length >= MAX_DATOS_FACTURACION) return null;
+    const clash = await pool.query(`SELECT 1 FROM gcc_world.billing_clients WHERE ruc = $1 LIMIT 1`, [ruc]);
+    if (clash.rows[0]) return null;
+    const ins = await pool.query(
+      `INSERT INTO gcc_world.billing_clients (id_type, ruc, name, email, phone, address, portal_client_id, titular_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+      [idType, ruc, name, email, phone, address, clientId, titular.id],
     );
-    return id;
+    return Number(ins.rows[0].id);
   }
 
   // Sin cuenta aún: si existe una fila con ese ruc sin dueño, se enlaza; si es de otro, se crea sin ruc.
   if (ruc) {
-    const byRuc = await pool.query(`SELECT id, portal_client_id FROM gcc_world.billing_clients WHERE ruc = $1 LIMIT 1`, [ruc]);
+    const byRuc = await pool.query(`SELECT id, portal_client_id, titular_id FROM gcc_world.billing_clients WHERE ruc = $1 LIMIT 1`, [ruc]);
     if (byRuc.rows[0]) {
-      if (byRuc.rows[0].portal_client_id == null) {
+      if (byRuc.rows[0].portal_client_id == null && byRuc.rows[0].titular_id == null) {
         const id = Number(byRuc.rows[0].id);
         await pool.query(
           `UPDATE gcc_world.billing_clients SET portal_client_id = $1, id_type = $2, name = $3, email = $4, phone = $5, address = $6, updated_at = NOW() WHERE id = $7`,

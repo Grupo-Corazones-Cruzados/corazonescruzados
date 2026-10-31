@@ -298,6 +298,27 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧾 HASTA 3 DATOS DE FACTURACIÓN POR CLIENTE (Fernando, 2026-10-31).** *«por cada cliente se puedan guardar
+  varios datos de facturación hasta 3 máximo… y cuando se vaya a facturar, en todas partes, poder elegirlos mediante
+  un selector, que se escoja por defecto lo preregistrado»*. Deroga el «una sola cuenta por cliente» del 2026-08-25.
+  - **Modelo:** la fila del cliente en `billing_clients` (`titular_id IS NULL`) es su juego 1 y la que sale en
+    Clientes; los otros dos son filas con `titular_id` = esa fila (mismo `portal_client_id`). Así cada juego tiene
+    su id y ticket/proyecto/suscripción facturan con `billing_client_id` como antes. `dato_predeterminado_id` del
+    titular = el que se propone (sin él, el suyo). `MAX_DATOS_FACTURACION`, `SQL_RUCS_DEL_CLIENTE`,
+    `getDatosFacturacionCliente` en `lib/billing-clients.ts`; alta en `POST /api/billing-clients/[id]/datos`.
+  - **Facturas:** las de cualquiera de sus juegos cuentan para el cliente. Quitar un juego pasa su identificación a
+    `aliases` del titular: sus facturas siguen contando y la siembra desde facturas no lo resucita como cliente.
+  - **Dónde se elige:** ticket y proyecto (`AdquirenteFactura`: los del cliente primero, el predeterminado
+    elegido — `cuentaPorDefecto`), factura manual (selector si hay más de uno), suscripción nueva (lista cada juego)
+    y la página de pago del cliente (`facturacionOpciones`, «Datos guardados»).
+  - **Tras un cobro en línea o una factura manual** (`upsertBillingForClient`): misma identificación → actualiza ese
+    juego; nueva y con hueco → se añade como otro juego; con los 3 ocupados → no se toca nada. Antes la
+    identificación nueva PISABA la del cliente.
+  - Probado 2026-10-31 con un cliente de prueba creado y borrado (sin tocar datos reales); totales de la lista
+    idénticos a la fórmula anterior (28 clientes, 76 facturas, 23.364,97 $). De paso: en «Consumos» las facturas
+    de martes y jueves salían sin fecha (`String(Date).split('T')` sobre «Tue…/Thu…»).
+  - Ya había dos clientes de portal con DOS filas titulares (portal 25: Tagi + KARINA MUYULEMA; portal 36: Jepc
+    Import + Oscar Cando): siguen saliendo como dos clientes. ⏳ Preguntar a Fernando si los junta como datos de uno.
 - **🔒 INGRESOS FACTURADOS BLOQUEADOS (Fernando, 2026-10-29).** En el formulario del mes, un ingreso enlazado a una
   factura vigente no se edita ni se borra (candado, sin papelera) y el PUT de `/api/finance/[id]` lo hace cumplir:
   conserva esas filas tal cual lleguen como lleguen (probado: intento de borrar una y cambiar otra → mes idéntico).
@@ -2210,7 +2231,8 @@ Stack estándar de la casa, con particularidades de este repo:
   **Falta la pantalla del cliente**, que es suya (ver abajo).
   - **Lo que decidió:** **Kushki**; la **comisión la paga el cliente**; la **factura se emite
     TRAS confirmarse el pago**; se cobra **etapa por etapa**; **una sola cuenta de facturación
-    por cliente** (retiró el tope de 3 — *«por ahora no pasa nada»*); y el **régimen lo asume
+    por cliente** (retiró el tope de 3 — *«por ahora no pasa nada»*; ⚠️ DEROGADO el 2026-10-31: hasta 3, ver
+    «Decisiones recientes»); y el **régimen lo asume
     él**: *«si luego el SRI nos indica, debemos empezar a facturar con IVA, por ahora no lo
     hacemos»*. Alcance v1: **solo proyectos con plan de etapas**.
   - **⭐ EL RECARGO VA EN LÍNEA APARTE DE LA FACTURA, y eso salvó un descuadre silencioso.**

@@ -13,7 +13,7 @@ import { pool } from '@/lib/db';
 import { autorizarCobro, SinAcceso, vistaDeUsuario } from '@/lib/pagos/acceso';
 import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion, partesAltaProducto } from '@/lib/pagos/intentos';
 import { proveedorActivo } from '@/lib/pagos';
-import { getBillingForClient } from '@/lib/billing-clients';
+import { getDatosFacturacionCliente } from '@/lib/billing-clients';
 import { getTicketBilling } from '@/lib/payments';
 import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 
@@ -45,13 +45,15 @@ export async function GET(req: NextRequest) {
     // vuelve al enlace del correo después de haber pagado.
     const pagada = await cobroPagadoDe(auth);
 
-    // Datos de facturación prellenados. Una cuenta por cliente: Fernando lo confirmó el
-    // 2026-08-25 («dejemos una sola cuenta de facturación por cliente»).
+    // Datos de facturación prellenados: los PREDETERMINADOS del cliente, y en
+    // `facturacionOpciones` todos los que tiene guardados (hasta 3, Fernando 2026-10-31; deroga
+    // el «una sola cuenta por cliente» del 2026-08-25) para que elija con un selector.
     //
     // ⚠️ En un PRODUCTO el comprador puede no ser cliente todavía —esa es justo la gracia del
     // marketplace—, así que el formulario sale vacío y él escribe sus datos. Se prellena solo
     // si resulta que ya tenía cuenta de facturación, buscándola por su correo.
     let facturacion: any = null;
+    let facturacionOpciones: any[] = [];
     const esTicket = auth.sourceType === 'ticket';
     const esSuscripcion = auth.sourceType === 'subscription';
     const esProducto = auth.sourceType === 'product';
@@ -87,19 +89,20 @@ export async function GET(req: NextRequest) {
             [auth.solicitante.email],
           )).rows[0]?.id : null);
     if (clienteParaPrellenar) {
-      const b = await getBillingForClient(clienteParaPrellenar);
-      if (b) {
-        facturacion = {
+      // Consumidor final no es un dato del cliente: no se ofrece.
+      facturacionOpciones = (await getDatosFacturacionCliente(clienteParaPrellenar))
+        .filter((b: any) => b.ruc !== '9999999999999')
+        .map((b: any) => ({
           // El país es lo que ahora se pregunta; si la cuenta guardada no lo tiene, se
           // asume Ecuador, que es de donde viene la inmensa mayoría.
           pais: b.country || 'Ecuador',
           ruc: b.ruc || '',
           name: b.name || '',
-          email: b.email || proj.client_email || '',
+          email: b.email || proj?.client_email || '',
           phone: b.phone || '',
           address: b.address || '',
-        };
-      }
+        }));
+      facturacion = facturacionOpciones[0] || null;
     }
 
     // El plan completo, para que el cliente vea DÓNDE encaja lo que va a pagar. Pagar una
@@ -218,6 +221,7 @@ export async function GET(req: NextRequest) {
           : null,
       },
       facturacion,
+      facturacionOpciones,
       // Un enlace generado sin enviar puede no llevar correo: entonces manda la cuenta de facturación.
       correoDestino: (auth.solicitante.tipo === 'enlace' && auth.solicitante.email) || facturacion?.email || null,
       canal: auth.canal,

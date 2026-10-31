@@ -14,6 +14,9 @@ import FilterRail from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
 import PieAcciones from '@/components/ui/PieAcciones';
+import Segmentado from '@/components/ui/Segmentado';
+import Interruptor from '@/components/ui/Interruptor';
+import BotonQuitar from '@/components/ui/BotonQuitar';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
 import BarraLista from '@/components/ui/BarraLista';
@@ -124,7 +127,12 @@ export default function ClientsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
-  const [e, setE] = useState<any>({ id_type: '04', ruc: '', name: '', email: '', phone: '', address: '', notes: '' });
+  const [e, setE] = useState<any>({ id_type: '04', ruc: '', name: '', email: '', phone: '', address: '', country: '' });
+  /** Hasta 3 juegos de datos de facturación por cliente (Fernando, 2026-10-31). `datoSel` es el
+   *  que se edita (su id) o 'nuevo'; las notas son del cliente, no de un juego. */
+  const [datoSel, setDatoSel] = useState('');
+  const [notas, setNotas] = useState('');
+  const [nuevoPredeterminado, setNuevoPredeterminado] = useState(false);
   const [confirmCfg, setConfirmCfg] = useState<{ title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
   const [detailTab, setDetailTab] = useState<'datos' | 'consumos'>('datos');
 
@@ -188,13 +196,34 @@ export default function ClientsPage() {
     finally { setCreating(false); }
   };
 
+  /** Los juegos de datos en orden fijo: los del cliente primero y luego por antigüedad, así
+   *  «Datos 2» no cambia de sitio al marcar otro como predeterminado. */
+  const datosOrden = (d: any): any[] => [...(d?.datos || [])].sort((a: any, b: any) => (Number(b.titular) - Number(a.titular)) || a.id - b.id);
+  const formDe = (x: any) => ({ id_type: x?.id_type || '04', ruc: x?.ruc || '', name: x?.name || '', email: x?.email || '', phone: x?.phone || '', address: x?.address || '', country: x?.country || '' });
+
+  /** Pone la ficha en pantalla editando el juego `id` (por defecto el del cliente). */
+  const mostrarFicha = (d: any, id?: number | string) => {
+    setDetail(d || null);
+    if (!d) return;
+    const lista = datosOrden(d);
+    const dato = lista.find((x: any) => String(x.id) === String(id)) || lista[0] || d;
+    setDatoSel(String(dato.id));
+    setE(formDe(dato));
+    setNotas(d.notes || '');
+  };
+
+  const elegirDato = (v: string) => {
+    if (v === 'nuevo') { setDatoSel('nuevo'); setE(formDe(null)); setNuevoPredeterminado(false); }
+    else { setDatoSel(v); setE(formDe(datosOrden(detail).find((x: any) => String(x.id) === v))); }
+    setSavedOk(false);
+  };
+
   const openDetail = async (c: any) => {
     setSelected(c); setDetail(null); setDetailTab('datos'); setSavedOk(false); setLoadingDetail(true);
     try {
       const res = await fetch(`/api/billing-clients/${c.id}`);
       const data = await res.json();
-      setDetail(data.data || null);
-      if (data.data) setE({ id_type: data.data.id_type, ruc: data.data.ruc, name: data.data.name, email: data.data.email || '', phone: data.data.phone || '', address: data.data.address || '', notes: data.data.notes || '', country: data.data.country || '' });
+      mostrarFicha(data.data);
     } catch { toast.error('No se pudo cargar el detalle'); }
     finally { setLoadingDetail(false); }
   };
@@ -203,16 +232,62 @@ export default function ClientsPage() {
     if (!detail) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/billing-clients/${detail.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(e),
+      if (datoSel === 'nuevo') {
+        const res = await fetch(`/api/billing-clients/${detail.id}/datos`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...e, predeterminado: nuevoPredeterminado }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || 'Error'); return; }
+        // Las notas del cliente, si se tocaron mientras tanto.
+        if (notas !== (detail.notes || '')) {
+          await fetch(`/api/billing-clients/${detail.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notas }) });
+        }
+        const d = await (await fetch(`/api/billing-clients/${detail.id}`)).json();
+        mostrarFicha(d.data, data.data?.id);
+        toast.success('Datos de facturación añadidos');
+      } else {
+        const res = await fetch(`/api/billing-clients/${datoSel}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...e, notes: notas }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || 'Error'); return; }
+        mostrarFicha(data.data, datoSel);
+        toast.success('Cliente actualizado');
+      }
+      setSavedOk(true); setTimeout(() => setSavedOk(false), 3000);
+      fetchData();
+    } catch { toast.error('Error'); }
+    finally { setSaving(false); }
+  };
+
+  /** Marca el juego `id` como el que se propone al facturar. */
+  const marcarPredeterminado = async (id: number | string) => {
+    try {
+      const res = await fetch(`/api/billing-clients/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ predeterminado: true }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Error'); return; }
-      setDetail(data.data);
-      setSavedOk(true); setTimeout(() => setSavedOk(false), 3000);
-      toast.success('Cliente actualizado'); fetchData();
+      mostrarFicha(data.data, datoSel);
     } catch { toast.error('Error'); }
-    finally { setSaving(false); }
+  };
+
+  const quitarDato = () => {
+    const dato = datosOrden(detail).find((x: any) => String(x.id) === datoSel);
+    if (!dato || dato.titular) return;
+    setConfirmCfg({
+      title: 'Quitar datos de facturación', confirmLabel: 'Quitar', danger: true,
+      message: `¿Quitar los datos «${dato.name} · ${dato.ruc}» de este cliente? Sus facturas se conservan y siguen contando para él.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/billing-clients/${dato.id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok) { toast.error(data.error || 'Error'); return; }
+          mostrarFicha(data.data);
+          toast.success('Datos de facturación quitados'); fetchData();
+        } catch { toast.error('Error al quitar'); }
+      },
+    });
   };
 
   const deleteClient = () => {
@@ -250,14 +325,36 @@ export default function ClientsPage() {
       ))}
     </div>
   );
+  const listaDatos = fichaLista ? datosOrden(detail) : [];
+  const datoActual = listaDatos.find((x: any) => String(x.id) === datoSel) || null;
+  const esNuevo = datoSel === 'nuevo';
   const datosFicha = !fichaLista ? null : (
     <>
         {detail.is_consumidor_final && <p className="text-[11px] text-digi-muted" style={mf}>Registro especial: agrupa todas las facturas a consumidor final.</p>}
+        {/* Hasta 3 juegos de datos de facturación (Fernando, 2026-10-31): al facturar se elige
+            cuál, y se propone el que está «por defecto». */}
+        {!detail.is_consumidor_final && (
+          <div className="flex items-center gap-2">
+            <Segmentado<string>
+              etiqueta="Datos de facturación"
+              className="flex-1 min-w-0"
+              valor={datoSel}
+              onChange={elegirDato}
+              opciones={[
+                ...listaDatos.map((d: any, i: number) => ({ valor: String(d.id), texto: `Datos ${i + 1}`, detalle: d.predeterminada ? 'Por defecto' : (d.ruc || '—') })),
+                ...(listaDatos.length < 3 ? [{ valor: 'nuevo', texto: '+ Añadir', detalle: esNuevo ? 'Sin guardar' : `${listaDatos.length} de 3` }] : []),
+              ]}
+            />
+            {user?.role === 'admin' && datoActual && !datoActual.titular && (
+              <BotonQuitar onClick={quitarDato} etiqueta="Quitar estos datos de facturación" />
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className={labelCls} style={mf}>Tipo ID</label>
             <select value={e.id_type} onChange={ev => setE({ ...e, id_type: ev.target.value })} disabled={detail.is_consumidor_final} className={`${smallInputCls} field-select appearance-none disabled:opacity-50`} style={mf}>
-              <option value="04">RUC</option><option value="05">Cédula</option><option value="06">Pasaporte</option><option value="07">Consumidor Final</option><option value="08">ID Exterior</option>
+              <option value="04">RUC</option><option value="05">Cédula</option><option value="06">Pasaporte</option>{(!datoActual || datoActual.titular) && !esNuevo && <option value="07">Consumidor Final</option>}<option value="08">ID Exterior</option>
             </select>
           </div>
           <div>
@@ -275,7 +372,24 @@ export default function ClientsPage() {
         </div>
         <div><label className={labelCls} style={mf}>Dirección</label><input value={e.address} onChange={ev => setE({ ...e, address: ev.target.value })} className={smallInputCls} style={mf} /></div>
         <div><label className={labelCls} style={mf}>País</label><CountrySelect value={e.country || ''} onChange={(v) => setE({ ...e, country: v })} /></div>
-        <div><label className={labelCls} style={mf}>Notas</label><textarea value={e.notes} onChange={ev => setE({ ...e, notes: ev.target.value })} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
+        {!detail.is_consumidor_final && listaDatos.length + (esNuevo ? 1 : 0) > 1 && (
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <span className="text-[12.5px] text-digi-text" style={mf}>Usar por defecto al facturar</span>
+            <Interruptor
+              etiqueta="Usar por defecto al facturar"
+              activo={esNuevo ? nuevoPredeterminado : !!datoActual?.predeterminada}
+              // Siempre hay unos por defecto: apagarlo en unos extra devuelve el papel a los del cliente.
+              disabled={!esNuevo && !!datoActual?.titular && !!datoActual?.predeterminada}
+              onChange={(v) => {
+                if (esNuevo) { setNuevoPredeterminado(v); return; }
+                if (!datoActual) return;
+                const titular = listaDatos.find((x: any) => x.titular);
+                marcarPredeterminado(v ? datoActual.id : titular?.id ?? detail.id);
+              }}
+            />
+          </label>
+        )}
+        <div><label className={labelCls} style={mf}>Notas del cliente</label><textarea value={notas} onChange={ev => setNotas(ev.target.value)} rows={2} className={`${smallInputCls} resize-none`} style={mf} /></div>
         {detail.aliases?.length > 0 && (
           <div className="text-[11px] text-digi-muted" style={mf}><span className="text-accent font-medium">Identificaciones fusionadas: </span>{detail.aliases.join(', ')}</div>
         )}
@@ -283,7 +397,7 @@ export default function ClientsPage() {
   );
   const guardarFicha = !fichaLista ? null : (
         <button onClick={saveClient} disabled={saving} className={BTN_PRIMARY} style={mf}>
-          {saving ? 'Guardando…' : savedOk ? <><CheckCircle2 className="w-4 h-4" /> Guardado</> : 'Guardar cambios'}
+          {saving ? 'Guardando…' : savedOk ? <><CheckCircle2 className="w-4 h-4" /> Guardado</> : esNuevo ? 'Guardar datos' : 'Guardar cambios'}
         </button>
   );
   /** `enPanel`: en la columna de escritorio la lista de facturas se queda con el alto que sobra

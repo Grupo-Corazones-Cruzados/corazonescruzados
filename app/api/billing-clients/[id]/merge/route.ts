@@ -21,25 +21,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!source_id) return NextResponse.json({ error: 'Falta el cliente a fusionar' }, { status: 400 });
     if (String(source_id) === String(id)) return NextResponse.json({ error: 'No se puede fusionar un cliente consigo mismo' }, { status: 400 });
 
-    const { rows: [target] } = await pool.query(`SELECT id, ruc, aliases FROM gcc_world.billing_clients WHERE id = $1`, [id]);
-    const { rows: [source] } = await pool.query(`SELECT id, ruc, aliases FROM gcc_world.billing_clients WHERE id = $1`, [source_id]);
+    const { rows: [target] } = await pool.query(`SELECT id, ruc, aliases, titular_id FROM gcc_world.billing_clients WHERE id = $1`, [id]);
+    const { rows: [source] } = await pool.query(`SELECT id, ruc, aliases, titular_id FROM gcc_world.billing_clients WHERE id = $1`, [source_id]);
     if (!target || !source) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
+    if (target.titular_id != null || source.titular_id != null) {
+      return NextResponse.json({ error: 'Se fusionan clientes, no sus datos de facturación extra' }, { status: 400 });
+    }
     if (target.ruc === CONSUMIDOR_FINAL_RUC || source.ruc === CONSUMIDOR_FINAL_RUC) {
       return NextResponse.json({ error: 'No se puede fusionar el registro Consumidor Final' }, { status: 400 });
     }
 
     // El canónico adopta como alias: el ruc del origen + los alias del origen.
+    // Los datos extra del origen se van con él: sus identificaciones también pasan a alias.
+    const { rows: extraOrigen } = await pool.query(`SELECT ruc FROM gcc_world.billing_clients WHERE titular_id = $1`, [source_id]);
     const newAliases = Array.from(new Set([
       ...(target.aliases || []),
       source.ruc,
       ...(source.aliases || []),
+      ...extraOrigen.map((r: any) => r.ruc),
     ].filter((r: string) => r && r !== target.ruc)));
 
     const c = await pool.connect();
     try {
       await c.query('BEGIN');
       await c.query(`UPDATE gcc_world.billing_clients SET aliases = $1, updated_at = NOW() WHERE id = $2`, [newAliases, id]);
-      await c.query(`DELETE FROM gcc_world.billing_clients WHERE id = $1`, [source_id]);
+      await c.query(`DELETE FROM gcc_world.billing_clients WHERE id = $1 OR titular_id = $1`, [source_id]);
       await c.query('COMMIT');
     } catch (e) { await c.query('ROLLBACK'); throw e; }
     finally { c.release(); }

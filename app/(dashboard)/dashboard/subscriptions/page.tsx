@@ -22,6 +22,7 @@ import BarraLista from '@/components/ui/BarraLista';
 import { fmt2 } from '@/lib/format';
 import { Layers, CheckCircle2, PauseCircle, XCircle, Plus, X, FileText, ChevronLeft, ChevronRight, CreditCard, Lock } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
+import { etiquetaCuenta } from '@/components/facturacion/AdquirenteFactura';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -50,6 +51,8 @@ type BillingClient = {
   id: number; id_type: string; ruc: string; name: string;
   email: string | null; phone: string | null; address: string | null;
   is_consumidor_final: boolean;
+  /** El cliente del que son estos datos (hasta 3 por cliente). */
+  titular_nombre?: string | null;
 };
 
 function dueText(daysUntilDue: number) {
@@ -122,7 +125,8 @@ export default function SubscriptionsPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { setPage(1); }, [tab, search]);
   useEffect(() => {
-    fetch('/api/billing-clients').then(r => r.json()).then(d => setBillingClients(d.data || [])).catch(() => {});
+    // Cada juego de datos de facturación, no cada cliente: un cliente puede tener hasta 3.
+    fetch('/api/billing-clients?cuentas=1').then(r => r.json()).then(d => setBillingClients(d.data || [])).catch(() => {});
   }, []);
 
   const selectedClient = useMemo(
@@ -549,7 +553,7 @@ export default function SubscriptionsPage() {
         <div className="space-y-3">
           <PixelSelect label="Cliente *" value={cBillingId} onChange={e => setCBillingId(e.target.value)}
             placeholder="— Selecciona un cliente —"
-            options={billingClients.map(c => ({ value: String(c.id), label: `${c.name}${!c.is_consumidor_final && c.ruc ? ` · ${c.ruc}` : ''}` }))} />
+            options={billingClients.map(c => ({ value: String(c.id), label: c.is_consumidor_final ? c.name : etiquetaCuenta(c) }))} />
           <span className="text-[11px] text-digi-muted block -mt-1" style={mf}>De la lista de clientes registrados (incluye Consumidor Final)</span>
 
           {selectedClient && (

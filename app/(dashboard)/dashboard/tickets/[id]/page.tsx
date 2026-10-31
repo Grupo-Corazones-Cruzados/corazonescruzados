@@ -11,7 +11,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
-import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL } from '@/components/facturacion/AdquirenteFactura';
+import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL, cuentaPorDefecto, ordenarCuentas } from '@/components/facturacion/AdquirenteFactura';
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import Segmentado from '@/components/ui/Segmentado';
 import DiasElegidos from '@/components/tickets/DiasElegidos';
@@ -360,17 +360,18 @@ export default function TicketDetailPage() {
   const openCompleteModal = async () => {
     // Fase 2: para facturar, el ticket debe tener un cliente asignado.
     if (!ticket?.client_id) { toast.error('Asigna un cliente al ticket antes de facturar (edítalo y elige el cliente).'); return; }
-    // Las cuentas con las que se puede facturar tal cual; se preselecciona la del cliente del
-    // ticket si la tiene completa. Ver `cuentaFacturable` en lib/billing-clients.ts.
+    // Las cuentas con las que se puede facturar tal cual; se preselecciona la predeterminada del
+    // cliente del ticket si la tiene completa. Ver `cuentaFacturable` en lib/billing-clients.ts.
     setCompleteAdquirente('cliente');
     setCompleteCuentaId('');
     setCargandoCuentas(true);
     fetch('/api/billing-clients?facturables=1')
       .then((r) => r.json())
       .then(({ data }) => {
-        const lista: CuentaFacturable[] = Array.isArray(data) ? data : [];
+        // Hasta 3 juegos de datos por cliente: los suyos van primero y se propone el predeterminado.
+        const lista: CuentaFacturable[] = ordenarCuentas(Array.isArray(data) ? data : [], ticket.client_id);
         setCuentasFacturables(lista);
-        const propia = lista.find((c) => Number(c.portal_client_id) === Number(ticket.client_id));
+        const propia = cuentaPorDefecto(lista, ticket.client_id);
         if (propia) { setCompleteCuentaId(String(propia.id)); setCompleteClientEmail(propia.email || ''); }
       })
       .catch(() => setCuentasFacturables([]))

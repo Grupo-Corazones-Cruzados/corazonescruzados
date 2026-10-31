@@ -1013,8 +1013,9 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     catch (e: any) { console.error('[pagos] cobro', intento.id, 'no pudo marcar los registros del ticket:', e.message); }
   }
 
-  // Enlaza la factura con el cliente del proyecto y guarda su cuenta de facturación, igual
-  // que hace el canal manual. Una cuenta por cliente: Fernando lo confirmó el 2026-08-25.
+  // Enlaza la factura con el cliente del proyecto y guarda los datos con los que pagó, igual
+  // que hace el canal manual: actualiza el juego con esa identificación o, si es nueva, lo
+  // añade a los suyos (hasta 3, Fernando 2026-10-31). Ver `upsertBillingForClient`.
   try {
     const { rows: [proj] } = await pool.query(
       esSuscripcion

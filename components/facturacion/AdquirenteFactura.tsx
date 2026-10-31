@@ -5,12 +5,42 @@ import Segmentado from '@/components/ui/Segmentado';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-/** Una cuenta de facturación con la que se puede facturar tal cual (ver `cuentaFacturable`). */
+/** Una cuenta de facturación con la que se puede facturar tal cual (ver `cuentaFacturable`).
+ *  Es UN JUEGO de datos: un cliente tiene hasta 3 (`titular_nombre` es el cliente). */
 export type CuentaFacturable = {
   id: number; id_type: string; ruc: string; name: string;
   email: string | null; phone: string | null; address: string | null;
   portal_client_id: number | null;
+  titular_id?: number | null;
+  titular_nombre?: string | null;
+  /** Los datos que se proponen al facturar a su cliente. */
+  predeterminada?: boolean;
 };
+
+/**
+ * LOS DATOS QUE SE PROPONEN para el cliente de portal `clientId` (Fernando, 2026-10-31: «que
+ * se escoja por defecto lo preregistrado»): los marcados como predeterminados y, si esos no se
+ * pueden usar tal cual, el primero completo de los suyos.
+ */
+export function cuentaPorDefecto(cuentas: CuentaFacturable[], clientId: number | string | null | undefined): CuentaFacturable | null {
+  if (clientId == null) return null;
+  const suyas = cuentas.filter((c) => Number(c.portal_client_id) === Number(clientId));
+  return suyas.find((c) => c.predeterminada) || suyas[0] || null;
+}
+
+/** Los datos del cliente primero (el predeterminado delante) y después el resto, como venían. */
+export function ordenarCuentas(cuentas: CuentaFacturable[], clientId: number | string | null | undefined): CuentaFacturable[] {
+  if (clientId == null) return cuentas;
+  const suyas = cuentas.filter((c) => Number(c.portal_client_id) === Number(clientId));
+  return [...suyas, ...cuentas.filter((c) => !suyas.includes(c))];
+}
+
+/** «Razón social · identificación», y de qué cliente es si no se llama igual que él. */
+export function etiquetaCuenta(c: Pick<CuentaFacturable, 'name' | 'ruc' | 'titular_nombre'>): string {
+  const de = c.titular_nombre && c.titular_nombre.trim().toLowerCase() !== String(c.name || '').trim().toLowerCase()
+    ? ` — ${c.titular_nombre}` : '';
+  return `${c.name} · ${c.ruc}${de}`;
+}
 
 export type ModoAdquirente = 'cliente' | 'consumidor_final';
 
@@ -61,7 +91,7 @@ export default function AdquirenteFactura({
           <SearchableSelect
             value={cuentaId}
             onChange={onCuenta}
-            options={cuentas.map((c) => ({ value: String(c.id), label: `${c.name} · ${c.ruc}` }))}
+            options={cuentas.map((c) => ({ value: String(c.id), label: etiquetaCuenta(c) }))}
             placeholder={cargando ? 'Cargando clientes…' : cuentas.length ? 'Elige el cliente…' : 'No hay clientes con datos de facturación completos'}
             searchPlaceholder="Buscar por nombre o identificación…"
             disabled={cargando || cuentas.length === 0}

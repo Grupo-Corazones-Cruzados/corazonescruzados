@@ -36,6 +36,8 @@ export type DatosPago = {
   importes: { neto: number; recargo: number; total: number };
   pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string | null };
   facturacion: any;
+  /** Todos los datos de facturación guardados del cliente (hasta 3), los predeterminados primero. */
+  facturacionOpciones?: any[];
   correoDestino: string | null;
   canal: string;
   yaPagada: { invoiceId: number | null } | null;
@@ -189,6 +191,15 @@ export default function FormularioPago({
   const [hecho, setHecho] = useState<{ invoiceId: number | null; aviso: string | null } | null>(null);
 
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+  // Con varios datos guardados se elige cuál (Fernando, 2026-10-31); se puede seguir escribiendo
+  // a mano, y entonces el selector dice «Otros datos».
+  const opciones: any[] = datos.facturacionOpciones || [];
+  const opcionElegida = opciones.findIndex(o => ['ruc', 'name', 'email', 'phone', 'address', 'pais']
+    .every(k => String(o[k] || '') === String((f as any)[k] || '')));
+  const elegirOpcion = (i: number) => {
+    const o = opciones[i];
+    if (o) setF({ pais: o.pais || PAIS_LOCAL, ruc: o.ruc || '', name: o.name || '', email: o.email || '', phone: o.phone || '', address: o.address || '' });
+  };
   const esLocal = f.pais === PAIS_LOCAL;
   // La MISMA función que usa el servidor para decidir: si aquí dijera una cosa y allí otra,
   // el cliente vería «se registrará como RUC» y el cobro se caería con otro mensaje.
@@ -538,6 +549,16 @@ export default function FormularioPago({
           Datos para tu factura
         </legend>
         <div className="grid gap-4 sm:grid-cols-2">
+          {opciones.length > 1 && (
+            <div className="sm:col-span-2">
+              <label className={ETIQUETA} htmlFor="datos-guardados">Datos guardados</label>
+              <select id="datos-guardados" className={CAMPO} value={opcionElegida}
+                onChange={e => elegirOpcion(Number(e.target.value))}>
+                {opcionElegida < 0 && <option value={-1}>Otros datos</option>}
+                {opciones.map((o, i) => <option key={i} value={i}>{o.name}{o.ruc ? ` · ${o.ruc}` : ''}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className={ETIQUETA} htmlFor="pais">País</label>
             <select id="pais" className={CAMPO} value={f.pais} onChange={e => set('pais', e.target.value)}>

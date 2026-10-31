@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureBillingClientsTable, getBillingForClient, SQL_FACTURA_CUENTA, cuentaFacturable } from '@/lib/billing-clients';
+import { ensureBillingClientsTable, getDatosFacturacionCliente, SQL_FACTURA_CUENTA, SQL_RUCS_DEL_CLIENTE, cuentaFacturable } from '@/lib/billing-clients';
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,11 +11,34 @@ export async function GET(req: NextRequest) {
     }
     await ensureBillingClientsTable();
 
-    // `?portal_client_id=` → la cuenta de facturación (1 por cliente) para PRELLENAR el modal.
+    // `?portal_client_id=` → los datos de facturación del cliente para PRELLENAR el modal:
+    // `data` los predeterminados y `opciones` todos (hasta 3), el predeterminado primero.
     const portalClientId = new URL(req.url).searchParams.get('portal_client_id');
     if (portalClientId) {
-      const bc = await getBillingForClient(portalClientId);
-      return NextResponse.json({ data: bc || null });
+      const datos = await getDatosFacturacionCliente(portalClientId);
+      return NextResponse.json({ data: datos[0] || null, opciones: datos });
+    }
+
+    // `?facturables=1` / `?cuentas=1` → CADA JUEGO DE DATOS, no cada cliente: es lo que se
+    // elige al facturar. `titular_nombre` es el cliente al que pertenece y `predeterminada`
+    // si es el que se propone para él. `facturables` deja solo los completos (ver `cuentaFacturable`).
+    const sp = new URL(req.url).searchParams;
+    if (sp.get('facturables') === '1' || sp.get('cuentas') === '1') {
+      const { rows } = await pool.query(
+        `SELECT h.id, h.id_type, h.ruc, h.name, h.email, h.phone, h.address, h.country, h.portal_client_id, h.titular_id,
+                t.name AS titular_nombre,
+                (h.id = COALESCE(t.dato_predeterminado_id, t.id)) AS predeterminada,
+                h.ruc = '9999999999999' AS is_consumidor_final
+           FROM gcc_world.billing_clients h
+           JOIN gcc_world.billing_clients t ON t.id = COALESCE(h.titular_id, h.id)
+          ORDER BY LOWER(t.name), t.id, (h.id = COALESCE(t.dato_predeterminado_id, t.id)) DESC, (h.titular_id IS NULL) DESC, h.id`,
+      );
+      const cuentas = rows.map((r: any) => ({
+        ...r,
+        portal_client_id: r.portal_client_id != null ? Number(r.portal_client_id) : null,
+        titular_id: r.titular_id != null ? Number(r.titular_id) : null,
+      }));
+      return NextResponse.json({ data: sp.get('facturables') === '1' ? cuentas.filter(cuentaFacturable) : cuentas });
     }
 
     const search = (new URL(req.url).searchParams.get('search') || '').trim();
@@ -23,7 +46,9 @@ export async function GET(req: NextRequest) {
     let where = '';
     if (search) {
       params.push(`%${search}%`);
-      where = `WHERE bc.name ILIKE $1 OR bc.ruc ILIKE $1 OR bc.email ILIKE $1`;
+      // Se busca también en los datos extra: el cliente sale si cualquiera de sus juegos coincide.
+      where = `AND (bc.name ILIKE $1 OR bc.ruc ILIKE $1 OR bc.email ILIKE $1
+            OR EXISTS (SELECT 1 FROM gcc_world.billing_clients h WHERE h.titular_id = bc.id AND (h.name ILIKE $1 OR h.ruc ILIKE $1 OR h.email ILIKE $1)))`;
     }
 
     const { rows } = await pool.query(
@@ -39,9 +64,9 @@ export async function GET(req: NextRequest) {
                   COUNT(*) FILTER (WHERE sri_status = 'authorized')::int AS autorizadas,
                   MAX(created_at) FILTER (WHERE ${SQL_FACTURA_CUENTA}) AS ultima
              FROM gcc_world.invoices i
-            WHERE i.client_ruc = bc.ruc OR i.client_ruc = ANY(bc.aliases)
+            WHERE ${SQL_RUCS_DEL_CLIENTE('bc', 'i')}
          ) s ON true
-         ${where}
+         WHERE bc.titular_id IS NULL ${where}
          ORDER BY LOWER(bc.name) ASC`,
       params
     );
@@ -55,11 +80,6 @@ export async function GET(req: NextRequest) {
       portal_client_id: r.portal_client_id != null ? Number(r.portal_client_id) : null,
     }));
 
-    // `?facturables=1` → solo las cuentas con las que se puede facturar tal cual (el
-    // selector de «Completar y facturar»). Ver `cuentaFacturable`.
-    if (new URL(req.url).searchParams.get('facturables') === '1') {
-      return NextResponse.json({ data: data.filter(cuentaFacturable) });
-    }
     return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Billing clients list error:', err.message);
