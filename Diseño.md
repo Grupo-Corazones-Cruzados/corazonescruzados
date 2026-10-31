@@ -6088,3 +6088,7 @@ Desarrollo Humano mientras Fernando decide.
   ↗ que se mueve al pasar), que abre `/clientes/soluciones/<sol>/<talento>` (`FichaSolucion.tsx`:
   cabecera con cifras, Productos y Servicios asociados y pestañas de lo hecho; «‹ Soluciones» vuelve a
   la lista). `/clientes/soluciones/<sol>` redirige (308) a la lista.
+  El recuento (proyectos · tickets · soluciones · talentos) lleva un icono por cifra en cuadrito violeta
+  tenue (`FolderOpen`, `Ticket`, `Package`, `Users`): desde 1024 px, columna propia a la DERECHA de la
+  tarjeta (220 px, raya vertical a su izquierda, una cifra por línea); por debajo, al pie con raya
+  arriba (en el teléfono, rejilla 2×2).

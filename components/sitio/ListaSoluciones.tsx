@@ -7,7 +7,8 @@
  * Una tarjeta ancha por solución: número, nombre (SIN descripción: la que hay es del talento y va en
  * su página — Fernando, 2026-10-31), **sus talentos**
  * con su icono (Fernando, 2026-10-31: «reemplazando los productos y servicios para incluir los
- * talentos») y al pie cuánto hay detrás, sumando todos sus talentos. Lo que está a cero no se dice.
+ * talentos») y cuánto hay detrás, sumando todos sus talentos, con un icono por cifra: a la derecha en
+ * la computadora, al pie en el teléfono. Lo que está a cero no se dice.
  *
  * · La tarjeta NO es un enlace (Fernando, 2026-10-31: «quita que al seleccionar la solución se vaya
  *   a otra pantalla»): lo que se elige es el TALENTO, y cada uno lleva a su página.
@@ -18,7 +19,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Search } from 'lucide-react';
+import { ArrowUpRight, FolderOpen, Package, Search, Ticket, Users, type LucideIcon } from 'lucide-react';
 import { ICONOS } from './piezas';
 
 export interface FilaSolucion {
@@ -26,10 +27,15 @@ export interface FilaSolucion {
   slug: string;
   nombre: string;
   talentos: { talento: string; slug: string; icono: string | null }[];
-  cifras: { valor: number; uno: string; varios: string }[];
+  cifras: { valor: number; etiqueta: string; uno: string; varios: string }[];
   /** Todo lo que se puede buscar, ya en minúsculas y sin tildes. */
   busqueda: string;
 }
+
+/** El icono de cada cifra (Fernando, 2026-10-31: «usando iconos representativos a cada concepto»). */
+const ICONO_CIFRA: Record<string, LucideIcon> = {
+  Proyectos: FolderOpen, Tickets: Ticket, Soluciones: Package, Talentos: Users,
+};
 
 const sinTildes = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -86,14 +92,21 @@ export default function ListaSoluciones({ soluciones }: { soluciones: FilaSoluci
                     </ul>
                   </>
                 )}
-                {s.cifras.length > 0 && (
-                  <span className="solucion-fila-cifras">
-                    {s.cifras.map((c) => (
-                      <span key={c.uno}><b>{c.valor.toLocaleString('es-ES')}</b> {c.valor === 1 ? c.uno : c.varios}</span>
-                    ))}
-                  </span>
-                )}
               </span>
+              {/* En la computadora, columna propia a la derecha de la tarjeta; en el teléfono, al pie. */}
+              {s.cifras.length > 0 && (
+                <ul className="solucion-fila-cifras" aria-label="Recuento">
+                  {s.cifras.map((c) => {
+                    const Icono = ICONO_CIFRA[c.etiqueta];
+                    return (
+                      <li key={c.etiqueta}>
+                        <span className="solucion-cifra-icono" aria-hidden><Icono /></span>
+                        <b>{c.valor.toLocaleString('es-ES')}</b> {c.valor === 1 ? c.uno : c.varios}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </li>
           );
         })}

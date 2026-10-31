@@ -4718,8 +4718,17 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .solucion-conceptos { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 22px; }
 .solucion-conceptos li { display: flex; align-items: center; gap: 9px; font-size: 0.9rem; color: var(--texto); }
 .solucion-conceptos svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--violeta-txt); }
-.solucion-fila-cifras { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--linea); display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 0.86rem; color: var(--tenue); }
+.solucion-fila-cifras { grid-column: 2; list-style: none; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--linea); display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 0.86rem; color: var(--tenue); }
+.solucion-fila-cifras li { display: flex; align-items: center; gap: 8px; }
 .solucion-fila-cifras b { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-size: 1rem; color: var(--texto); }
+.solucion-cifra-icono { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; color: var(--violeta-txt); background: rgba(124, 58, 237, 0.08); }
+.solucion-cifra-icono svg { width: 15px; height: 15px; }
+/* Computadora: el recuento en columna propia a la derecha, separado por una raya vertical. */
+@media (min-width: 1024px) {
+  .solucion-fila { grid-template-columns: auto minmax(0, 1fr) 220px; }
+  .solucion-fila-cifras { grid-column: 3; align-self: center; flex-direction: column; gap: 14px; padding: 4px 0 4px 28px; border-top: 0; border-left: 1px solid var(--linea); }
+  .solucion-fila-cifras b { font-size: 1.15rem; }
+}
 
 .solucion-ruta a { display: inline-flex; align-items: center; gap: 4px; font-size: 0.88rem; font-weight: 600; color: var(--violeta-txt); }
 .solucion-ruta a:hover { text-decoration: underline; text-underline-offset: 3px; }
@@ -4738,6 +4747,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 
 @media (max-width: 639px) {
   .solucion-fila { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 22px 20px; border-radius: 20px; }
+  .solucion-fila-cifras { grid-column: 1; margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .solucion-fila-num { font-size: 1.6rem; }
   .solucion-fila-nombre { font-size: 1.4rem; }
   .solucion-conceptos { grid-template-columns: minmax(0, 1fr); }
