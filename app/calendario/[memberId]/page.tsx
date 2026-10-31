@@ -61,6 +61,19 @@ export default function PublicCalendarPage() {
     return () => mq.removeEventListener('change', apply);
   }, []);
   useEffect(() => { if (!allowMultiView) setView('day'); }, [allowMultiView]);
+  // El alto que de verdad se VE en el teléfono, medido: algunos navegadores dentro de apps
+  // (WhatsApp en iPhone) dan a `100dvh` el alto de la pantalla entera, también lo que tapa su
+  // barra inferior. Se toma el menor de lo que informa el navegador; hasta medirlo, `h-dvh`.
+  const [altoVisible, setAltoVisible] = useState<number | null>(null);
+  useEffect(() => {
+    if (allowMultiView) return;
+    const vv = window.visualViewport;
+    const medir = () => setAltoVisible(Math.min(window.innerHeight, vv?.height ?? Infinity, document.documentElement.clientHeight));
+    medir();
+    window.addEventListener('resize', medir);
+    vv?.addEventListener('resize', medir);
+    return () => { window.removeEventListener('resize', medir); vv?.removeEventListener('resize', medir); };
+  }, [allowMultiView]);
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [memberName, setMemberName] = useState<string>('');
@@ -314,8 +327,12 @@ export default function PublicCalendarPage() {
     //  · solo `h-dvh` en el flujo: la página aún se desplazaba (lo que el cuerpo suma alrededor);
     //  · solo `fixed inset-0`: llega al borde de la ventana, DEBAJO de la barra del navegador,
     //    que tapaba el final del calendario y «Agendar».
-    // `fixed top-0 h-dvh` no deja nada que desplazar y termina justo encima de esa barra.
-    <div className={`corp page-dark ${enTelefono ? 'fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden pt-[env(safe-area-inset-top)]' : 'min-h-screen'}`}>
+    //  · `fixed top-0 h-dvh`: con `viewportFit: cover` la página seguía bajo la hora y bajo esa
+    //    barra (2026-10-31). Ahora la ruta usa `auto` (su `layout.tsx`) y el alto se mide.
+    <div
+      className={`corp page-dark ${enTelefono ? 'fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden' : 'min-h-screen'}`}
+      style={enTelefono && altoVisible ? { height: altoVisible } : undefined}
+    >
       <div className="shrink-0"><PublicHeader /></div>
       <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col p-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
         <div className={`bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0' : 'h-[calc(100dvh-6.5rem)]'}`}>
