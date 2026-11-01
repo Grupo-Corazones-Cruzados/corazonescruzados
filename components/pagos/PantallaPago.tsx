@@ -24,7 +24,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, Eye, Layers, Receipt } from 'lucide-react';
 import { Contenedor, Tarjeta } from '@/components/sitio/piezas';
-import { CargandoDetalle, EnlaceBoton, ErrorEnlace } from '@/components/sitio/DetallePublico';
+import { CabeceraDetalle, CargandoDetalle, EnlaceBoton, ErrorEnlace } from '@/components/sitio/DetallePublico';
 import FormularioPago, { type DatosPago } from '@/components/pagos/FormularioPago';
 import { fmt2 } from '@/lib/format';
 
@@ -75,37 +75,26 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
           principio, que es lo que ha venido a hacer. */}
       <div className={`grid gap-8 lg:gap-10 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-2' : 'max-w-xl mx-auto'}`}>
       <div className="min-w-0">
-      {/* ── Encabezado ── */}
-      <header>
-        <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--violeta-txt)]">
-          {proyecto.cliente || 'Pago de proyecto'}
-        </p>
-        <h1 className="mt-3 text-[30px] sm:text-[38px] leading-[1.15] font-semibold tracking-tight text-[var(--texto)]">
-          {proyecto.titulo}
-        </h1>
-        {proyecto.descripcion && (
-          <p className="mt-4 text-[16.5px] leading-relaxed text-[var(--suave)]">{proyecto.descripcion}</p>
-        )}
-        {/* Qué se paga, en texto con su icono: sin cápsula con relleno ni borde (regla de
-            Fernando del 2026-10-29). Y a la derecha, el detalle de lo que se paga. */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <p className="inline-flex items-center gap-2 text-[14.5px] text-[var(--texto)]">
-          <Receipt className="w-4 h-4 text-[var(--violeta-txt)]" />
-          {hayPlan
-            ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
-            : (proyecto.tipo === 'subscription' || proyecto.tipo === 'product')
-              ? <>Estás contratando <strong className="font-semibold">{etapa.nombre}</strong></>
-              : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
-        </p>
-        {/* ⭐ VER EL DETALLE (Fernando, 2026-10-30). El servidor decide adónde: con sesión y
-            siendo suyo, a su panel; si no, a la página de solo lectura con este mismo enlace. */}
-        {datos.detalleUrl && (
-          <EnlaceBoton href={datos.detalleUrl} icon={Eye}>
-            Ver detalle del {proyecto.tipo === 'ticket' ? 'ticket' : 'proyecto'}
-          </EnlaceBoton>
-        )}
-        </div>
-      </header>
+      {/* ── Encabezado ── la MISMA cabecera que `/proyecto/[id]` y `/ticket/[id]` (2026-10-31):
+          las dos páginas que llegan por correo tienen que reconocerse como de la misma casa. */}
+      <CabeceraDetalle
+        rotulo={proyecto.cliente || 'Pago de proyecto'}
+        titulo={proyecto.titulo}
+        descripcion={proyecto.descripcion}
+        datos={
+          <span className="inline-flex items-center gap-2 text-[var(--texto)]">
+            <Receipt className="w-4 h-4 text-[var(--violeta-txt)]" />
+            {hayPlan
+              ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
+              : (proyecto.tipo === 'subscription' || proyecto.tipo === 'product')
+                ? <>Estás contratando <strong className="font-semibold">{etapa.nombre}</strong></>
+                : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
+          </span>
+        }
+        acciones={datos.detalleUrl
+          ? <EnlaceBoton href={datos.detalleUrl} icon={Eye}>Ver detalle del {proyecto.tipo === 'ticket' ? 'ticket' : 'proyecto'}</EnlaceBoton>
+          : undefined}
+      />
 
         {/* ── QUÉ SE ESTÁ PAGANDO ──
             «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
@@ -166,8 +155,8 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
 
       </div>
 
-        {/* ── El pago ── */}
-        <Tarjeta>
+        {/* ── El pago, por pasos ── */}
+        <Tarjeta className="lg:sticky lg:top-24">
           <FormularioPago
             datos={datos}
             link={link}

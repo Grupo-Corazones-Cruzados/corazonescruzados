@@ -29,12 +29,15 @@ export type CuentaBancaria = {
   correo: string;
   /** Solo para transferencias desde el exterior. */
   swift?: string;
+  /** El símbolo del banco (`public/bancos/`), para que el cliente reconozca a qué banco va. */
+  logo: string;
 };
 
 export const CUENTAS_BANCARIAS: CuentaBancaria[] = [
   {
     id: 'pichincha',
     banco: 'Banco Pichincha',
+    logo: '/bancos/pichincha.svg',
     tipo: 'Cuenta de ahorro',
     numero: '2211587576',
     titular: 'Luis Fernando González Muyulema',
@@ -44,6 +47,7 @@ export const CUENTAS_BANCARIAS: CuentaBancaria[] = [
   {
     id: 'guayaquil',
     banco: 'Banco Guayaquil',
+    logo: '/bancos/guayaquil.png',
     tipo: 'Cuenta de ahorro',
     numero: '0039785956',
     titular: 'Luis Fernando González Muyulema',

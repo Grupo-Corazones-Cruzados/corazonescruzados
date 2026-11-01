@@ -1424,6 +1424,27 @@ formularios de pago se separan al primer arreglo, y el que se queda atrás es el
 - **En modo de pruebas la pantalla lo grita** con una caja ámbar. Una pasarela simulada que
   se ve igual que la real es una forma de cobrar de mentira creyendo que se cobró.
 
+**⭐ El cobro POR PASOS (2026-11-01, Fernando: «al no poder ver la cuenta del banco confunde»;
+«que la presentación del formulario sea como por pasos […] aplicando tu estilo»).**
+- **Caminos:** transferencia = **Método → Cuenta → Factura → Comprobante**; tarjeta =
+  **Método → Factura → Pago**. «Método» solo aparece si hay tarjeta. **La CUENTA va ANTES de la
+  factura**: el cliente ve a qué banco transfiere antes de rellenar nada. El orden del servidor no
+  cambia (la factura crea el cobro con `/api/pagos/cobrar`; el comprobante se sube al final).
+- **`components/pagos/IndicadorPasos.tsx`** es la definición única del camino: nodos `w-8 h-8`
+  redondos (hecho = violeta lleno con ✓ y se puede volver; actual = borde `--violeta-vivo` con su
+  icono y halo; por venir = borde gris con su número), línea de 2 px que se llena de violeta,
+  nombre de 12 px debajo. Es el «camino» de la postulación puesto en horizontal y en claro.
+- Arriba, siempre visible: «TOTAL A PAGAR» + etapa a la izquierda, importe de 28 px a la derecha.
+- Cada paso entra deslizándose (`.pago-paso-adelante|atras`, 0,32 s, `globals.css`); pie de una
+  fila: **Atrás** con borde a la izquierda, principal a la derecha («Ya tengo los datos»,
+  «Continuar», «Enviar comprobante», «Pagar $X» / «Continuar al pago»).
+- **Logos de los bancos** en `public/bancos/` y el campo `logo` de `lib/pagos/cuentas.ts`
+  (solo el isotipo, en una baldosa blanca). En el teléfono la baldosa del banco pone el logo
+  ENCIMA del nombre para que «Banco Pichincha» no se corte.
+- Datos de la cuenta en un `dl` con un botón fantasma de copiar por fila; el monto, en negrita.
+- El comprobante se sube tocando una caja de borde discontinuo (el `<input type=file>` es `sr-only`).
+- La cabecera de `/pagar` es la misma `CabeceraDetalle` de `/proyecto/[id]`.
+
 **Compartir el enlace (dashboard) — `PanelCompartirEnlace` (2026-09-28, sustituye a la
 ventanita centrada).** Fernando pidió que el enlace de pago se compartiera **con el mismo
 formulario que «Compartir acceso a la cotización»**. Ese formulario es ahora la definición

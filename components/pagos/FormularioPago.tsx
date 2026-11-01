@@ -17,7 +17,11 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { CreditCard, Landmark, Lock, Loader2, AlertCircle, CheckCircle2, Clock, Copy, Check, Upload } from 'lucide-react';
+import {
+  CreditCard, Landmark, Lock, Loader2, AlertCircle, CheckCircle2, Clock, Copy, Check, Upload,
+  ArrowLeft, ArrowRight, FileText, Wallet, type LucideIcon,
+} from 'lucide-react';
+import IndicadorPasos from '@/components/pagos/IndicadorPasos';
 import { PAISES } from '@/lib/countries';
 import { PAIS_LOCAL, etiquetaProvisional } from '@/lib/pagos/identificacion';
 import { fmt2 } from '@/lib/format';
@@ -52,6 +56,37 @@ export type DatosPago = {
 export type CuentaBancaria = {
   id: string; banco: string; tipo: string; numero: string;
   titular: string; identificacion: string; correo: string; swift?: string;
+  /** El símbolo del banco (`public/bancos/`). */
+  logo?: string;
+};
+
+/** El símbolo del banco en su cuadro blanco: se reconoce de un vistazo a qué banco va el dinero. */
+function LogoBanco({ cuenta, tamano = 'md' }: { cuenta: CuentaBancaria; tamano?: 'sm' | 'md' }) {
+  const caja = tamano === 'sm' ? 'w-7 h-7 p-1 rounded-md' : 'w-11 h-11 p-1.5 rounded-lg';
+  return (
+    <span className={`${caja} shrink-0 inline-flex items-center justify-center bg-white border border-[var(--linea)]`}>
+      {cuenta.logo
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={cuenta.logo} alt="" className="w-full h-full object-contain" />
+        : <Landmark className="w-full h-full text-[var(--violeta-txt)]" />}
+    </span>
+  );
+}
+
+/**
+ * ⭐ LOS PASOS (Fernando, 2026-10-31). El formulario se recorre por pasos, y cada método tiene
+ * los suyos. En la transferencia la CUENTA va ANTES que la factura: *«al no poder ver la cuenta
+ * del banco confunde»* — antes los datos del banco solo salían después de rellenar la factura.
+ * El orden del servidor no cambia: la factura sigue creando el cobro (que deja apuntados sus
+ * datos) y el comprobante se sube después.
+ */
+type IdPaso = 'metodo' | 'cuenta' | 'factura' | 'pago' | 'comprobante';
+const PASOS: Record<IdPaso, { nombre: string; titulo: string; Icon: LucideIcon }> = {
+  metodo: { nombre: 'Método', titulo: '¿Cómo quieres pagar?', Icon: Wallet },
+  cuenta: { nombre: 'Cuenta', titulo: 'Transfiere a nuestra cuenta', Icon: Landmark },
+  factura: { nombre: 'Factura', titulo: 'Datos para tu factura', Icon: FileText },
+  pago: { nombre: 'Pago', titulo: 'Confirma y paga', Icon: Lock },
+  comprobante: { nombre: 'Comprobante', titulo: 'Sube tu comprobante', Icon: Upload },
 };
 
 /**
@@ -167,6 +202,33 @@ export default function FormularioPago({
   const [enEspera, setEnEspera] = useState(false);
   const [copiado, setCopiado] = useState<string | null>(null);
 
+  // ── Los pasos ──────────────────────────────────────────────────────────────
+  // Con un solo método no hay nada que elegir: el camino empieza en el siguiente paso.
+  const pasos: IdPaso[] = metodo === 'transfer'
+    ? [...(puedeTarjeta ? ['metodo' as const] : []), 'cuenta', 'factura', 'comprobante']
+    : ['metodo', 'factura', 'pago'];
+  const [paso, setPaso] = useState<IdPaso>(pasos[0]);
+  const [sentido, setSentido] = useState<1 | -1>(1);
+  const iPaso = Math.max(0, pasos.indexOf(paso));
+  const ir = (p: IdPaso) => {
+    setError('');
+    setSentido(pasos.indexOf(p) < iPaso ? -1 : 1);
+    setPaso(p);
+  };
+  /**
+   * A qué paso se puede volver. Con el cobro ya creado (transferencia esperando comprobante o
+   * Cajita de PayPhone pintada) no se vuelve a la factura ni al método: cambiarlos ahí dejaría
+   * un cobro hecho con otros datos.
+   */
+  const alcanzable = (i: number) => {
+    if (paramsCajita) return false;
+    if (transferIntent) return pasos[i] === 'cuenta';
+    return i < iPaso;
+  };
+  let anterior: IdPaso | null = null;
+  for (let i = iPaso - 1; i >= 0 && !anterior; i--) if (alcanzable(i)) anterior = pasos[i];
+  const cuentaElegida = (datos.cuentas || []).find(c => c.id === (bancoUsado || cuentaAbierta)) || datos.cuentas?.[0];
+
   const copiar = (texto: string, cual: string) => {
     navigator.clipboard.writeText(texto);
     setCopiado(cual);
@@ -275,8 +337,7 @@ export default function FormularioPago({
     });
   }
 
-  async function pagar(e: React.FormEvent) {
-    e.preventDefault();
+  async function pagar() {
     setError('');
     setEnviando(true);
     try {
@@ -310,6 +371,7 @@ export default function FormularioPago({
         // No se ha cobrado nada: ahora el cliente va a su banco y vuelve con el comprobante.
         setTransferIntent(d.intentId);
         setEnviando(false);
+        ir('comprobante');
         return;
       }
 
@@ -338,8 +400,7 @@ export default function FormularioPago({
   }
 
   /** Sube el comprobante y deja el cobro esperando que una persona lo confirme. */
-  async function subirComprobante(e: React.FormEvent) {
-    e.preventDefault();
+  async function subirComprobante() {
     if (!transferIntent || !comprobante) return;
     setError('');
     setEnviando(true);
@@ -348,7 +409,7 @@ export default function FormularioPago({
       fd.append('intent_id', String(transferIntent));
       fd.append('archivo', comprobante);
       fd.append('referencia', referencia);
-      fd.append('banco', bancoUsado || cuentaAbierta || '');
+      fd.append('banco', cuentaElegida?.id || '');
       if (link) fd.append('link', link);
 
       const res = await fetch('/api/pagos/comprobante', { method: 'POST', body: fd });
@@ -401,327 +462,359 @@ export default function FormularioPago({
   // pantalla sin ganar nada.
   const puedePagar = !enviando && (esSimulado || cobraEnCliente || kushkiListo);
 
+  /** Lo que hace el botón principal en cada paso. */
+  async function avanzar(e: React.FormEvent) {
+    e.preventDefault();
+    if (paso === 'metodo') return ir(pasos[iPaso + 1]);
+    if (paso === 'cuenta') return ir(transferIntent ? 'comprobante' : 'factura');
+    // La factura de una transferencia crea el cobro y, si sale bien, `pagar` lleva al comprobante.
+    if (paso === 'factura') return metodo === 'transfer' ? pagar() : ir('pago');
+    if (paso === 'pago') return pagar();
+    if (paso === 'comprobante') return subirComprobante();
+  }
+
+  const principal: { texto: string; Icon: LucideIcon; desactivado?: boolean } | null =
+    paso === 'pago'
+      ? (paramsCajita ? null : {
+        texto: cobraEnCliente ? 'Continuar al pago' : `Pagar $${fmt2(importeActual.total)}`,
+        Icon: Lock, desactivado: !puedePagar,
+      })
+      : paso === 'comprobante'
+        ? { texto: 'Enviar comprobante', Icon: Upload, desactivado: !comprobante || enviando }
+        : paso === 'cuenta'
+          ? { texto: transferIntent ? 'Ir al comprobante' : 'Ya tengo los datos', Icon: ArrowRight }
+          : { texto: 'Continuar', Icon: ArrowRight, desactivado: enviando };
+
+  const total = `$${fmt2(importeActual.total)}`;
+  const fila = (etiqueta: string, valor: string, clave: string, fuerte = false) => (
+    <div key={clave} className="flex items-center justify-between gap-3 py-2.5">
+      <dt className="text-[13px] text-[var(--tenue)] shrink-0">{etiqueta}</dt>
+      <dd className="flex items-center gap-1 min-w-0">
+        <span className={`truncate tabular-nums ${fuerte ? 'text-[17px] font-semibold' : 'text-[14.5px]'} text-[var(--texto)]`}>{valor}</span>
+        {/* Copiar importa de verdad: un número de cuenta tecleado a mano es una transferencia
+            que se va a otra parte. */}
+        <button type="button" onClick={() => copiar(valor.replace(/^\$/, ''), clave)}
+          title={`Copiar ${etiqueta.toLowerCase()}`} aria-label={`Copiar ${etiqueta.toLowerCase()}`}
+          className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--tenue)] hover:text-[var(--violeta-txt)] hover:bg-[#7b5fbf]/[0.08] transition-colors">
+          {copiado === clave ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+        </button>
+      </dd>
+    </div>
+  );
+
+  const avisoError = error && (
+    <p className="mt-5 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-50/70 px-3 py-2.5 text-[13.5px] text-red-800">
+      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> {error}
+    </p>
+  );
+
   return (
-    <form onSubmit={pagar} className="space-y-7">
-      {/* ── Método ── (se esconde si la pasarela solo ofrece uno: elegir entre una sola
-           opción no es elegir, es ruido) */}
-      <fieldset className={transferIntent ? 'hidden' : ''}>
-        <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
-          Cómo quieres pagar
-        </legend>
-        {/* CADA MÉTODO ENSEÑA SU PRECIO. Desde el 2026-09-30 los dos son el precio final (la
-            comisión de la tarjeta ya no se traslada al cliente); si algún día vuelve a
-            haber recargo, la diferencia se verá aquí sin tocar nada. */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          {puedeTarjeta && (
-            <button type="button" onClick={() => setMetodo('card')}
-              className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-left transition ${
-                metodo === 'card'
-                  ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/8'
-                  : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)]/50'}`}>
-              <span className="min-w-0">
-                <span className="flex items-center gap-2 text-[14px] font-medium text-[var(--texto)]">
-                  <CreditCard className="w-[18px] h-[18px]" /> Tarjeta
-                </span>
-                <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Al instante · crédito o débito</span>
-              </span>
-              <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[var(--texto)]">
-                ${fmt2(datos.importesPorMetodo?.card?.total ?? importes.total)}
-              </span>
-            </button>
-          )}
-          <button type="button" onClick={() => setMetodo('transfer')}
-            className={`flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-left transition ${
-              metodo === 'transfer'
-                ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/8'
-                : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)]/50'}`}>
-            <span className="min-w-0">
-              <span className="flex items-center gap-2 text-[14px] font-medium text-[var(--texto)]">
-                <Landmark className="w-[18px] h-[18px]" /> Transferencia
-              </span>
-              <span className="mt-1 block text-[12.5px] text-[var(--tenue)]">Se verifica el pago</span>
-            </span>
-            <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[var(--texto)]">
-              ${fmt2(datos.importesPorMetodo?.transfer?.total ?? importes.neto)}
-            </span>
-          </button>
+    <form onSubmit={avanzar} className="flex flex-col">
+      {/* ── Lo que se paga, siempre a la vista, y el camino ── */}
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Total a pagar</p>
+          <p className="mt-1 truncate text-[13.5px] text-[var(--suave)]">{datos.etapa.nombre}</p>
         </div>
-      </fieldset>
+        <p className="text-[28px] leading-none font-semibold tabular-nums tracking-tight text-[var(--texto)]">{total}</p>
+      </div>
+      <div className="mt-6 -mx-1">
+        <IndicadorPasos
+          pasos={pasos.map(id => ({ id, nombre: PASOS[id].nombre, Icon: PASOS[id].Icon }))}
+          actual={iPaso}
+          alcanzable={alcanzable}
+          onIr={(i) => ir(pasos[i])}
+        />
+      </div>
 
-      {/* ── Transferencia: las cuentas y el comprobante ── */}
-      {metodo === 'transfer' && transferIntent && (
-        <fieldset className="space-y-4">
-          <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
-            Transfiere y sube tu comprobante
-          </legend>
+      {/* ── El paso ── */}
+      <div key={paso} className={`mt-7 border-t border-[var(--linea)] pt-6 ${sentido > 0 ? 'pago-paso-adelante' : 'pago-paso-atras'}`}>
+        <h2 className="text-[19px] font-semibold tracking-tight text-[var(--texto)]">{PASOS[paso].titulo}</h2>
 
-          <div className="rounded-lg border border-[var(--linea-fuerte)] overflow-hidden">
-            {(datos.cuentas || []).map((c) => (
-              <div key={c.id} className="border-b border-[var(--linea)] last:border-b-0">
-                <button type="button" onClick={() => setCuentaAbierta(cuentaAbierta === c.id ? null : c.id)}
-                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-[var(--violeta)]/5 transition-colors">
-                  <span className="flex items-center gap-2.5">
-                    <Landmark className="w-4 h-4 text-[var(--violeta-txt)]" />
-                    <span className="text-[15px] font-medium text-[var(--texto)]">{c.banco}</span>
+        {/* 1 · Método: cada uno con su precio; la transferencia enseña ya sus bancos. */}
+        {paso === 'metodo' && (
+          <div role="radiogroup" aria-label="Método de pago" className="mt-5 grid gap-3">
+            {([
+              puedeTarjeta && {
+                id: 'card' as const, Icon: CreditCard, nombre: 'Tarjeta de crédito o débito', detalle: 'Se acredita al instante',
+                total: datos.importesPorMetodo?.card?.total ?? importes.total, extra: null,
+              },
+              {
+                id: 'transfer' as const, Icon: Landmark, nombre: 'Transferencia bancaria', detalle: 'Verificamos tu comprobante',
+                total: datos.importesPorMetodo?.transfer?.total ?? importes.neto,
+                extra: (datos.cuentas || []).length > 0 && (
+                  <span className="mt-3 flex items-center gap-2">
+                    {(datos.cuentas || []).map(c => <LogoBanco key={c.id} cuenta={c} tamano="sm" />)}
+                    <span className="text-[12.5px] text-[var(--tenue)]">{(datos.cuentas || []).map(c => c.banco.replace('Banco ', '')).join(' · ')}</span>
                   </span>
-                  <span className="text-[13px] text-[var(--tenue)]">{cuentaAbierta === c.id ? 'Ocultar' : 'Ver datos'}</span>
+                ),
+              },
+            ].filter(Boolean) as any[]).map((m) => {
+              const elegido = metodo === m.id;
+              return (
+                <button key={m.id} type="button" role="radio" aria-checked={elegido} onClick={() => setMetodo(m.id)}
+                  className={`relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all ${
+                    elegido
+                      ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/[0.06] shadow-[0_0_0_3px_rgba(123,95,191,0.12)]'
+                      : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)]/50'}`}>
+                  <span className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors ${
+                    elegido ? 'bg-[var(--violeta)] text-white' : 'bg-[var(--linea)] text-[var(--suave)]'}`}>
+                    <m.Icon className="w-5 h-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-medium text-[var(--texto)]">{m.nombre}</span>
+                    <span className="mt-0.5 block text-[13px] text-[var(--tenue)]">{m.detalle}</span>
+                    {m.extra}
+                  </span>
+                  <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[var(--texto)]">${fmt2(m.total)}</span>
                 </button>
-                {cuentaAbierta === c.id && (
-                  <dl className="px-4 pb-4 space-y-2">
-                    {[
-                      ['Tipo de cuenta', c.tipo, false],
-                      ['Número de cuenta', c.numero, true],
-                      ['Titular', c.titular, true],
-                      ['Cédula', c.identificacion, true],
-                      ['Correo', c.correo, true],
-                      ...(c.swift ? [['Código SWIFT', c.swift, true] as const] : []),
-                    ].map(([et, val, copiable]) => (
-                      <div key={String(et)} className="flex items-center justify-between gap-3">
-                        <dt className="text-[13px] text-[var(--tenue)] shrink-0">{et}</dt>
-                        <dd className="flex items-center gap-2 min-w-0">
-                          <span className="text-[14px] text-[var(--texto)] truncate">{val}</span>
-                          {/* Copiar importa de verdad: un número de cuenta tecleado a mano es
-                              una transferencia que se va a otra parte. */}
-                          {copiable && (
-                            <button type="button" onClick={() => copiar(String(val), `${c.id}-${et}`)}
-                              className="shrink-0 text-[var(--violeta-txt)] hover:opacity-70" title="Copiar">
-                              {copiado === `${c.id}-${et}`
-                                ? <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
-
-          <p className="text-[13.5px] leading-relaxed text-[var(--suave)]">
-            Transfiere <strong className="text-[var(--texto)]">${fmt2(importeActual.total)}</strong> a
-            cualquiera de las dos cuentas y sube aquí tu comprobante. Tu pago quedará en espera hasta
-            que lo verifiquemos.
-          </p>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={ETIQUETA} htmlFor="tr-banco">¿A qué banco transferiste?</label>
-              <select id="tr-banco" className={CAMPO} value={bancoUsado || cuentaAbierta || ''}
-                onChange={e => setBancoUsado(e.target.value)}>
-                {(datos.cuentas || []).map(c => <option key={c.id} value={c.id}>{c.banco}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={ETIQUETA} htmlFor="tr-ref">Número de comprobante</label>
-              <input id="tr-ref" className={CAMPO} value={referencia} onChange={e => setReferencia(e.target.value)}
-                placeholder="Opcional, pero ayuda" />
-            </div>
-          </div>
-
-          <div>
-            <label className={ETIQUETA} htmlFor="tr-file">Comprobante</label>
-            <input id="tr-file" type="file" accept="image/*,application/pdf"
-              onChange={e => setComprobante(e.target.files?.[0] || null)}
-              className="w-full text-[14px] text-[var(--suave)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--violeta)] file:px-4 file:py-2 file:text-[14px] file:font-semibold file:text-white hover:file:opacity-90" />
-          </div>
-
-          {error && (
-            <p className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-50/70 px-3 py-2.5 text-[13.5px] text-red-800">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> {error}
-            </p>
-          )}
-
-          <button type="button" onClick={subirComprobante} disabled={!comprobante || enviando}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--violeta)] px-5 py-3 text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
-            {enviando
-              ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Enviando…</>
-              : <><Upload className="w-[18px] h-[18px]" /> Enviar comprobante</>}
-          </button>
-        </fieldset>
-      )}
-
-      {/* ── Facturación ── (se esconde una vez que el cliente está subiendo el
-           comprobante: sus datos ya quedaron guardados con el cobro) */}
-      <fieldset className={metodo === 'transfer' && transferIntent ? 'hidden' : ''}>
-        <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
-          Datos para tu factura
-        </legend>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {opciones.length > 1 && (
-            <div className="sm:col-span-2">
-              <label className={ETIQUETA} htmlFor="datos-guardados">Datos guardados</label>
-              <select id="datos-guardados" className={CAMPO} value={opcionElegida}
-                onChange={e => elegirOpcion(Number(e.target.value))}>
-                {opcionElegida < 0 && <option value={-1}>Otros datos</option>}
-                {opciones.map((o, i) => <option key={i} value={i}>{o.name}{o.ruc ? ` · ${o.ruc}` : ''}</option>)}
-              </select>
-            </div>
-          )}
-          <div>
-            <label className={ETIQUETA} htmlFor="pais">País</label>
-            <select id="pais" className={CAMPO} value={f.pais} onChange={e => set('pais', e.target.value)}>
-              {/* Ecuador primero porque es de donde viene casi todo el mundo; el resto,
-                  alfabético. Hacer bajar 50 países hasta la E cada vez es fricción tonta. */}
-              <option value={PAIS_LOCAL}>{PAIS_LOCAL}</option>
-              <option disabled>──────────</option>
-              {PAISES.filter(x => x !== PAIS_LOCAL).map(x => <option key={x} value={x}>{x}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={ETIQUETA} htmlFor="ruc">
-              {esLocal ? 'Cédula o RUC' : 'Identificación'}
-            </label>
-            <input id="ruc" className={CAMPO} value={f.ruc} onChange={e => set('ruc', e.target.value)}
-              inputMode={esLocal ? 'numeric' : 'text'} autoComplete="off" required />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={ETIQUETA} htmlFor="razon">Nombre o razón social</label>
-            <input id="razon" className={CAMPO} value={f.name} onChange={e => set('name', e.target.value)} required />
-          </div>
-          <div>
-            <label className={ETIQUETA} htmlFor="correo">Correo</label>
-            <input id="correo" type="email" className={CAMPO} value={f.email}
-              onChange={e => set('email', e.target.value)} required />
-          </div>
-          <div>
-            <label className={ETIQUETA} htmlFor="tel">Teléfono</label>
-            <input id="tel" className={CAMPO} value={f.phone} onChange={e => set('phone', e.target.value)} />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={ETIQUETA} htmlFor="dir">Dirección</label>
-            <input id="dir" className={CAMPO} value={f.address} onChange={e => set('address', e.target.value)} />
-          </div>
-        </div>
-      </fieldset>
-
-      {/* ── Tarjeta ── */}
-      {metodo === 'card' && !esSimulado && !cobraEnCliente && (
-        <fieldset>
-          <legend className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--violeta-txt)] mb-3">
-            Tu tarjeta
-          </legend>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className={ETIQUETA} htmlFor="tj-nombre">Nombre en la tarjeta</label>
-              <input id="tj-nombre" className={CAMPO} autoComplete="cc-name"
-                value={tarjeta.nombre} onChange={e => setTarjeta(p => ({ ...p, nombre: e.target.value }))} required />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={ETIQUETA} htmlFor="tj-num">Número</label>
-              <input id="tj-num" className={CAMPO} inputMode="numeric" autoComplete="cc-number"
-                value={tarjeta.numero} onChange={e => setTarjeta(p => ({ ...p, numero: e.target.value }))} required />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={ETIQUETA} htmlFor="tj-mes">Mes</label>
-                <input id="tj-mes" className={CAMPO} placeholder="MM" maxLength={2} inputMode="numeric"
-                  autoComplete="cc-exp-month"
-                  value={tarjeta.mes} onChange={e => setTarjeta(p => ({ ...p, mes: e.target.value }))} required />
-              </div>
-              <div>
-                <label className={ETIQUETA} htmlFor="tj-anio">Año</label>
-                <input id="tj-anio" className={CAMPO} placeholder="AA" maxLength={2} inputMode="numeric"
-                  autoComplete="cc-exp-year"
-                  value={tarjeta.anio} onChange={e => setTarjeta(p => ({ ...p, anio: e.target.value }))} required />
-              </div>
-            </div>
-            <div>
-              <label className={ETIQUETA} htmlFor="tj-cvc">Código de seguridad</label>
-              <input id="tj-cvc" className={CAMPO} maxLength={4} inputMode="numeric" autoComplete="cc-csc"
-                value={tarjeta.cvc} onChange={e => setTarjeta(p => ({ ...p, cvc: e.target.value }))} required />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={ETIQUETA} htmlFor="tj-meses">Diferir el pago</label>
-              <select id="tj-meses" className={CAMPO} value={meses} onChange={e => setMeses(Number(e.target.value))}>
-                <option value={0}>Pago corriente (sin diferir)</option>
-                {[3, 6, 9, 12].map(m => <option key={m} value={m}>{m} meses</option>)}
-              </select>
-            </div>
-          </div>
-        </fieldset>
-      )}
-
-      {/* ── Modo de pruebas ── */}
-      {esSimulado && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-50/60 p-4">
-          <p className="text-[13px] font-semibold text-amber-900">Pasarela en modo de PRUEBAS</p>
-          <p className="mt-1 text-[13px] text-amber-900/80">
-            No se cobra dinero real. Escribe <code className="font-mono">rechazar</code> para
-            probar el camino del cobro rechazado.
-          </p>
-          <input className={`${CAMPO} mt-3`} value={tokenPrueba} onChange={e => setTokenPrueba(e.target.value)} />
-        </div>
-      )}
-
-      {/* ── Total y acción ── */}
-      <div className={`rounded-xl border border-[var(--linea-fuerte)] bg-[var(--tarjeta)] p-5 ${
-        metodo === 'transfer' && transferIntent ? 'hidden' : ''}`}>
-        <dl className="space-y-2 text-[14px]">
-          <div className="flex justify-between gap-4">
-            <dt className="text-[var(--suave)]">{datos.etapa.nombre}</dt>
-            <dd className="tabular-nums text-[var(--texto)]">${fmt2(importes.neto)}</dd>
-          </div>
-          {importeActual.recargo > 0 && (
-            <div className="flex justify-between gap-4">
-              <dt className="text-[var(--tenue)]">Gastos de procesamiento de pago en línea</dt>
-              <dd className="tabular-nums text-[var(--tenue)]">${fmt2(importeActual.recargo)}</dd>
-            </div>
-          )}
-          <div className="flex justify-between gap-4 border-t border-[var(--linea)] pt-3 mt-3">
-            <dt className="font-semibold text-[var(--texto)]">Total a pagar</dt>
-            <dd className="text-[20px] font-semibold tabular-nums text-[var(--texto)]">${fmt2(importeActual.total)}</dd>
-          </div>
-        </dl>
-
-        {error && (
-          <p className="mt-4 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-50/70 px-3 py-2.5 text-[13.5px] text-red-800">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> {error}
-          </p>
         )}
 
-        {!esSimulado && !cobraEnCliente && !kushkiListo && pasarela.clavePublica && (
-          <p className="mt-4 text-[13px] text-[var(--tenue)]">Preparando la pasarela…</p>
-        )}
-        {!esSimulado && !cobraEnCliente && !pasarela.clavePublica && (
-          <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-50/70 px-3 py-2.5 text-[13.5px] text-amber-900">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            El cobro en línea todavía no está activo. Escríbenos y lo resolvemos.
-          </p>
-        )}
-
-        {/* Con la Cajita el botón desaparece en cuanto ella se pinta: quien cobra a partir
-            de ese momento es PayPhone, y dejar debajo un botón nuestro que dice «Pagar»
-            invita a pulsar el que no cobra. */}
-        {!paramsCajita && (
-          <button type="submit" disabled={!puedePagar}
-            className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--violeta)] px-5 py-3 text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
-            {enviando
-              ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Procesando…</>
-              : metodo === 'transfer'
-                ? <><Landmark className="w-[18px] h-[18px]" /> Ver datos para transferir</>
-                : cobraEnCliente
-                  ? <><Lock className="w-[18px] h-[18px]" /> Continuar al pago</>
-                  : <><Lock className="w-[18px] h-[18px]" /> Pagar ${fmt2(importeActual.total)}</>}
-          </button>
-        )}
-
-        {/* Donde PayPhone dibuja su formulario. El div existe siempre que haya parámetros:
-            si se montara solo al estar lista la librería, `render('pp-button')` no
-            encontraría el contenedor la primera vez. */}
-        {paramsCajita && (
+        {/* 2 · Transferencia: elegir el banco y ver su cuenta, ANTES de la factura. */}
+        {paso === 'cuenta' && cuentaElegida && (
           <div className="mt-5">
-            {!cajitaLista && (
-              <p className="mb-3 flex items-center gap-2 text-[13px] text-[var(--tenue)]">
-                <Loader2 className="w-4 h-4 animate-spin" /> Abriendo la pasarela de pago…
+            <div role="radiogroup" aria-label="Banco" className="grid grid-cols-2 gap-3">
+              {(datos.cuentas || []).map(c => {
+                const elegido = c.id === cuentaElegida.id;
+                return (
+                  <button key={c.id} type="button" role="radio" aria-checked={elegido}
+                    onClick={() => { setBancoUsado(c.id); setCuentaAbierta(c.id); }}
+                    className={`flex items-center gap-2 sm:gap-3 max-sm:flex-col max-sm:text-center rounded-xl border p-3 sm:text-left transition-all ${
+                      elegido
+                        ? 'border-[var(--violeta-vivo)] bg-[var(--violeta)]/[0.06] shadow-[0_0_0_3px_rgba(123,95,191,0.12)]'
+                        : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)]/50'}`}>
+                    <LogoBanco cuenta={c} />
+                    <span className="min-w-0 max-w-full">
+                      <span className="block truncate text-[14.5px] font-medium text-[var(--texto)]">{c.banco}</span>
+                      <span className="block truncate text-[12.5px] text-[var(--tenue)]">{c.tipo}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <dl key={cuentaElegida.id} className="pago-paso-adelante mt-4 rounded-xl border border-[var(--linea-fuerte)] px-4 divide-y divide-[var(--linea)]">
+              {fila('Monto a transferir', total, 'monto', true)}
+              {fila('Número de cuenta', cuentaElegida.numero, `${cuentaElegida.id}-numero`)}
+              {fila('Titular', cuentaElegida.titular, `${cuentaElegida.id}-titular`)}
+              {fila('Cédula', cuentaElegida.identificacion, `${cuentaElegida.id}-ced`)}
+              {fila('Correo', cuentaElegida.correo, `${cuentaElegida.id}-correo`)}
+              {cuentaElegida.swift && fila('Código SWIFT', cuentaElegida.swift, `${cuentaElegida.id}-swift`)}
+            </dl>
+          </div>
+        )}
+
+        {/* Factura */}
+        {paso === 'factura' && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {opciones.length > 1 && (
+              <div className="sm:col-span-2">
+                <label className={ETIQUETA} htmlFor="datos-guardados">Datos guardados</label>
+                <select id="datos-guardados" className={CAMPO} value={opcionElegida}
+                  onChange={e => elegirOpcion(Number(e.target.value))}>
+                  {opcionElegida < 0 && <option value={-1}>Otros datos</option>}
+                  {opciones.map((o, i) => <option key={i} value={i}>{o.name}{o.ruc ? ` · ${o.ruc}` : ''}</option>)}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className={ETIQUETA} htmlFor="pais">País</label>
+              <select id="pais" className={CAMPO} value={f.pais} onChange={e => set('pais', e.target.value)}>
+                {/* Ecuador primero porque es de donde viene casi todo el mundo; el resto,
+                    alfabético. Hacer bajar 50 países hasta la E cada vez es fricción tonta. */}
+                <option value={PAIS_LOCAL}>{PAIS_LOCAL}</option>
+                <option disabled>──────────</option>
+                {PAISES.filter(x => x !== PAIS_LOCAL).map(x => <option key={x} value={x}>{x}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={ETIQUETA} htmlFor="ruc">{esLocal ? 'Cédula o RUC' : 'Identificación'}</label>
+              <input id="ruc" className={CAMPO} value={f.ruc} onChange={e => set('ruc', e.target.value)}
+                inputMode={esLocal ? 'numeric' : 'text'} autoComplete="off" required />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={ETIQUETA} htmlFor="razon">Nombre o razón social</label>
+              <input id="razon" className={CAMPO} value={f.name} onChange={e => set('name', e.target.value)} required />
+            </div>
+            <div>
+              <label className={ETIQUETA} htmlFor="correo">Correo</label>
+              <input id="correo" type="email" className={CAMPO} value={f.email}
+                onChange={e => set('email', e.target.value)} required />
+            </div>
+            <div>
+              <label className={ETIQUETA} htmlFor="tel">Teléfono</label>
+              <input id="tel" className={CAMPO} value={f.phone} onChange={e => set('phone', e.target.value)} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={ETIQUETA} htmlFor="dir">Dirección</label>
+              <input id="dir" className={CAMPO} value={f.address} onChange={e => set('address', e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {/* Tarjeta: confirmar y pagar */}
+        {paso === 'pago' && (
+          <div className="mt-5 space-y-5">
+            <dl className="rounded-xl border border-[var(--linea-fuerte)] px-4 py-1 divide-y divide-[var(--linea)] text-[14px]">
+              <div className="flex justify-between gap-4 py-2.5">
+                <dt className="text-[var(--tenue)]">Factura a</dt>
+                <dd className="min-w-0 truncate text-right text-[var(--texto)]">{f.name}{f.ruc ? ` · ${f.ruc}` : ''}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-2.5">
+                <dt className="text-[var(--tenue)]">{datos.etapa.nombre}</dt>
+                <dd className="tabular-nums text-[var(--texto)]">${fmt2(importes.neto)}</dd>
+              </div>
+              {importeActual.recargo > 0 && (
+                <div className="flex justify-between gap-4 py-2.5">
+                  <dt className="text-[var(--tenue)]">Gastos de procesamiento de pago en línea</dt>
+                  <dd className="tabular-nums text-[var(--tenue)]">${fmt2(importeActual.recargo)}</dd>
+                </div>
+              )}
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="font-semibold text-[var(--texto)]">Total</dt>
+                <dd className="text-[18px] font-semibold tabular-nums text-[var(--texto)]">{total}</dd>
+              </div>
+            </dl>
+
+            {!esSimulado && !cobraEnCliente && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className={ETIQUETA} htmlFor="tj-nombre">Nombre en la tarjeta</label>
+                  <input id="tj-nombre" className={CAMPO} autoComplete="cc-name"
+                    value={tarjeta.nombre} onChange={e => setTarjeta(p => ({ ...p, nombre: e.target.value }))} required />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={ETIQUETA} htmlFor="tj-num">Número</label>
+                  <input id="tj-num" className={CAMPO} inputMode="numeric" autoComplete="cc-number"
+                    value={tarjeta.numero} onChange={e => setTarjeta(p => ({ ...p, numero: e.target.value }))} required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={ETIQUETA} htmlFor="tj-mes">Mes</label>
+                    <input id="tj-mes" className={CAMPO} placeholder="MM" maxLength={2} inputMode="numeric" autoComplete="cc-exp-month"
+                      value={tarjeta.mes} onChange={e => setTarjeta(p => ({ ...p, mes: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <label className={ETIQUETA} htmlFor="tj-anio">Año</label>
+                    <input id="tj-anio" className={CAMPO} placeholder="AA" maxLength={2} inputMode="numeric" autoComplete="cc-exp-year"
+                      value={tarjeta.anio} onChange={e => setTarjeta(p => ({ ...p, anio: e.target.value }))} required />
+                  </div>
+                </div>
+                <div>
+                  <label className={ETIQUETA} htmlFor="tj-cvc">Código de seguridad</label>
+                  <input id="tj-cvc" className={CAMPO} maxLength={4} inputMode="numeric" autoComplete="cc-csc"
+                    value={tarjeta.cvc} onChange={e => setTarjeta(p => ({ ...p, cvc: e.target.value }))} required />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={ETIQUETA} htmlFor="tj-meses">Diferir el pago</label>
+                  <select id="tj-meses" className={CAMPO} value={meses} onChange={e => setMeses(Number(e.target.value))}>
+                    <option value={0}>Pago corriente (sin diferir)</option>
+                    {[3, 6, 9, 12].map(m => <option key={m} value={m}>{m} meses</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {esSimulado && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-50/60 p-4">
+                <p className="text-[13px] font-semibold text-amber-900">Pasarela en modo de PRUEBAS</p>
+                <p className="mt-1 text-[13px] text-amber-900/80">
+                  No se cobra dinero real. Escribe <code className="font-mono">rechazar</code> para
+                  probar el camino del cobro rechazado.
+                </p>
+                <input className={`${CAMPO} mt-3`} value={tokenPrueba} onChange={e => setTokenPrueba(e.target.value)} />
+              </div>
+            )}
+
+            {!esSimulado && !cobraEnCliente && !kushkiListo && pasarela.clavePublica && (
+              <p className="text-[13px] text-[var(--tenue)]">Preparando la pasarela…</p>
+            )}
+            {!esSimulado && !cobraEnCliente && !pasarela.clavePublica && (
+              <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-50/70 px-3 py-2.5 text-[13.5px] text-amber-900">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                El cobro en línea todavía no está activo. Escríbenos y lo resolvemos.
               </p>
             )}
-            <div id="pp-button" />
+
+            {/* Donde PayPhone dibuja su formulario. Con la Cajita pintada desaparece nuestro
+                botón: quien cobra a partir de ahí es PayPhone, y un «Pagar» nuestro debajo
+                invitaría a pulsar el que no cobra. */}
+            {paramsCajita && (
+              <div>
+                {!cajitaLista && (
+                  <p className="mb-3 flex items-center gap-2 text-[13px] text-[var(--tenue)]">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Abriendo la pasarela de pago…
+                  </p>
+                )}
+                <div id="pp-button" />
+              </div>
+            )}
           </div>
         )}
 
+        {/* Transferencia: el comprobante */}
+        {paso === 'comprobante' && cuentaElegida && (
+          <div className="mt-5 space-y-4">
+            <div className="flex items-center gap-3 rounded-xl border border-[var(--linea-fuerte)] p-3">
+              <LogoBanco cuenta={cuentaElegida} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14.5px] font-medium text-[var(--texto)]">{cuentaElegida.banco}</span>
+                <span className="block truncate text-[13px] tabular-nums text-[var(--tenue)]">N.º {cuentaElegida.numero}</span>
+              </span>
+              <span className="shrink-0 text-[15px] font-semibold tabular-nums text-[var(--texto)]">{total}</span>
+            </div>
+
+            {/* Soltar o elegir el archivo: la caja entera es el botón. */}
+            <label htmlFor="tr-file"
+              className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center cursor-pointer transition-colors ${
+                comprobante
+                  ? 'border-emerald-500/50 bg-emerald-50/50'
+                  : 'border-[var(--linea-fuerte)] hover:border-[var(--violeta-vivo)] hover:bg-[var(--violeta)]/[0.04]'}`}>
+              {comprobante
+                ? <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                : <Upload className="w-7 h-7 text-[var(--violeta-txt)]" />}
+              <span className="max-w-full truncate text-[14.5px] font-medium text-[var(--texto)]">
+                {comprobante ? comprobante.name : 'Elige la foto o el PDF del comprobante'}
+              </span>
+              {comprobante && <span className="text-[13px] text-[var(--violeta-txt)]">Cambiar archivo</span>}
+              <input id="tr-file" type="file" accept="image/*,application/pdf" className="sr-only"
+                onChange={e => setComprobante(e.target.files?.[0] || null)} />
+            </label>
+
+            <div>
+              <label className={ETIQUETA} htmlFor="tr-ref">Número de comprobante (opcional)</label>
+              <input id="tr-ref" className={CAMPO} value={referencia} onChange={e => setReferencia(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {avisoError}
       </div>
+
+      {/* ── Atrás · principal: siempre en la misma fila, al final del paso ── */}
+      {(anterior || principal) && (
+        <div className="mt-7 flex items-center justify-between gap-3 border-t border-[var(--linea)] pt-5">
+          {anterior ? (
+            <button type="button" onClick={() => ir(anterior)} disabled={enviando}
+              className="inline-flex items-center gap-2 h-11 px-4 rounded-lg border border-[var(--linea-fuerte)] text-[15px] font-medium text-[var(--texto)] hover:border-[var(--violeta)] transition-colors disabled:opacity-50">
+              <ArrowLeft className="w-[18px] h-[18px]" /> Atrás
+            </button>
+          ) : <span />}
+          {principal && (
+            <button type="submit" disabled={principal.desactivado || enviando}
+              className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[var(--violeta)] hover:bg-[#3f2578] text-[15px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed max-sm:flex-1">
+              {enviando
+                ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Procesando…</>
+                : principal.Icon === ArrowRight
+                  ? <>{principal.texto} <principal.Icon className="w-[18px] h-[18px]" /></>
+                  : <><principal.Icon className="w-[18px] h-[18px]" /> {principal.texto}</>}
+            </button>
+          )}
+        </div>
+      )}
     </form>
   );
 }
