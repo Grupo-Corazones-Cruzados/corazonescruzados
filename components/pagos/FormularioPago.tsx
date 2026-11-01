@@ -543,9 +543,9 @@ export default function FormularioPago({
                 id: 'transfer' as const, Icon: Landmark, nombre: 'Transferencia bancaria', detalle: 'Verificamos tu comprobante',
                 total: datos.importesPorMetodo?.transfer?.total ?? importes.neto,
                 extra: (datos.cuentas || []).length > 0 && (
-                  <span className="mt-3 flex items-center gap-2">
+                  <span className="mt-3 flex min-w-0 items-center gap-2">
                     {(datos.cuentas || []).map(c => <LogoBanco key={c.id} cuenta={c} tamano="sm" />)}
-                    <span className="text-[12.5px] text-[var(--tenue)]">{(datos.cuentas || []).map(c => c.banco.replace('Banco ', '')).join(' · ')}</span>
+                    <span className="min-w-0 truncate text-[12.5px] text-[var(--tenue)]">{(datos.cuentas || []).map(c => c.banco.replace('Banco ', '')).join(' · ')}</span>
                   </span>
                 ),
               },

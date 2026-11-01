@@ -1443,7 +1443,28 @@ formularios de pago se separan al primer arreglo, y el que se queda atrás es el
   ENCIMA del nombre para que «Banco Pichincha» no se corte.
 - Datos de la cuenta en un `dl` con un botón fantasma de copiar por fila; el monto, en negrita.
 - El comprobante se sube tocando una caja de borde discontinuo (el `<input type=file>` es `sr-only`).
-- La cabecera de `/pagar` es la misma `CabeceraDetalle` de `/proyecto/[id]`.
+- ~~La cabecera de `/pagar` es la misma `CabeceraDetalle` de `/proyecto/[id]`.~~ Derogado el
+  2026-11-01: ver el bloque siguiente.
+
+**⭐ LO QUE SE PAGA, ENCIMA DEL FORMULARIO Y EN SU MISMO LENGUAJE (2026-11-01, Fernando: «el panel
+izquierdo […] creo que deberían alinearse con el diseño del formulario […] quizás no una en el lado
+derecho y otra en el lado izquierdo sino una encima y debajo de la otra»).**
+- **Una sola columna** centrada (`max-w-[720px]`, `space-y-5`) en todos los anchos: arriba la
+  tarjeta de lo que se paga, debajo la del formulario. Deroga las dos columnas de 2026-08-26.
+- Las dos tarjetas hablan igual: **rótulo violeta en MAYÚSCULAS 12 px con la cifra a la derecha**
+  («ETAPAS DEL PROYECTO · $560,00» como «TOTAL A PAGAR · $260,00»), filas separadas por `--linea`.
+- Tarjeta de arriba: cliente como rótulo + «Ver detalle» (enlace fantasma con icono, a la derecha)
+  · título 24/28 px (no el titular de 38 px de una cabecera de página) · descripción recortada a
+  3 líneas con «Ver más» (si pasa de 220 caracteres), para que el formulario quede cerca de arriba.
+- **Las etapas usan los MISMOS nodos que el camino del formulario** (`IndicadorPasos`): pagada =
+  violeta lleno con ✓; la que se paga = borde `--violeta-vivo` con halo y «Pagas ahora» en violeta;
+  pendiente = borde gris con su número. Encima, una **barra de 8 px repartida por importe** con los
+  mismos tres estados.
+- Ticket/suscripción/producto: en vez de etapas, «QUÉ ESTÁS PAGANDO» con el `dl` del detalle.
+- Se quitó «Estás pagando Etapa 2»: el formulario ya dice «TOTAL A PAGAR · Etapa 2» (un dato no se
+  dice dos veces).
+- Regla general: **cuando una pantalla tiene un formulario por pasos, lo que lo acompaña se escribe
+  con su mismo lenguaje** (rótulos, nodos, filas) y va encima, no en una columna de otro estilo.
 
 **Compartir el enlace (dashboard) — `PanelCompartirEnlace` (2026-09-28, sustituye a la
 ventanita centrada).** Fernando pidió que el enlace de pago se compartiera **con el mismo
@@ -1468,7 +1489,7 @@ formulario que «Compartir acceso a la cotización»**. Ese formulario es ahora 
   generar={async ({ horas, email, enviar }) => ({ url, mensaje: 'Enlace generado' })} />
 ```
 
-#### Ancho de la pantalla de pago (2026-08-26)
+#### Ancho de la pantalla de pago (2026-08-26) — ⛔ DEROGADO el 2026-11-01 (una sola columna, ver arriba)
 
 Usa **`Contenedor ancho="amplio"`** (`max-w-[1560px]`), no el `lectura` del resto del sitio.
 Motivo: no es una página que se lea, es una que se **rellena** — dos columnas de formulario

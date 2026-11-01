@@ -22,9 +22,9 @@
  */
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, Eye, Layers, Receipt } from 'lucide-react';
+import { Check, ChevronDown, Eye } from 'lucide-react';
 import { Contenedor, Tarjeta } from '@/components/sitio/piezas';
-import { CabeceraDetalle, CargandoDetalle, EnlaceBoton, ErrorEnlace } from '@/components/sitio/DetallePublico';
+import { CargandoDetalle, ErrorEnlace } from '@/components/sitio/DetallePublico';
 import FormularioPago, { type DatosPago } from '@/components/pagos/FormularioPago';
 import { fmt2 } from '@/lib/format';
 
@@ -42,6 +42,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   const [datos, setDatos] = useState<DatosPago | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [verTodo, setVerTodo] = useState(false);
 
   useEffect(() => {
     fetch(`/api/pagos/etapa?${consulta}`)
@@ -59,104 +60,121 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   const { proyecto, etapa } = datos;
   const etapas = proyecto.etapas || [];
   const totalPlan = etapas.reduce((s: number, e: any) => s + Number(e.importe || 0), 0);
-  // Un ticket se cobra entero: no hay plan que enseñar, así que la pantalla se queda a una
-  // sola columna en vez de dejar un hueco donde debería ir la lista.
   const hayPlan = etapas.length > 0;
   const hayDetalle = (datos.detalle || []).length > 0;
 
+  const tipo = proyecto.tipo === 'ticket' ? 'ticket' : 'proyecto';
+  const larga = (proyecto.descripcion || '').length > 220;
+
   return (
-    <Contenedor ancho="amplio" className="py-14 sm:py-20">
-      {/* ⚠️ LA REJILLA EMPIEZA ARRIBA DEL TODO, con el encabezado DENTRO de la columna
-          izquierda (Fernando, 2026-08-26: «sube la parte de llenar los datos arriba, ese
-          espacio está desocupado y se ve feo»).
-          Antes el título ocupaba una banda a lo ancho y el formulario arrancaba debajo, así
-          que al lado del título quedaba medio ancho de pantalla vacío y el cliente tenía que
-          bajar para empezar a rellenar. Ahora el formulario está a la vista desde el
-          principio, que es lo que ha venido a hacer. */}
-      <div className={`grid gap-8 lg:gap-10 items-start ${(hayPlan || hayDetalle) ? 'lg:grid-cols-2' : 'max-w-xl mx-auto'}`}>
-      <div className="min-w-0">
-      {/* ── Encabezado ── la MISMA cabecera que `/proyecto/[id]` y `/ticket/[id]` (2026-10-31):
-          las dos páginas que llegan por correo tienen que reconocerse como de la misma casa. */}
-      <CabeceraDetalle
-        rotulo={proyecto.cliente || 'Pago de proyecto'}
-        titulo={proyecto.titulo}
-        descripcion={proyecto.descripcion}
-        datos={
-          <span className="inline-flex items-center gap-2 text-[var(--texto)]">
-            <Receipt className="w-4 h-4 text-[var(--violeta-txt)]" />
-            {hayPlan
-              ? <>Estás pagando <strong className="font-semibold">{etapa.nombre}</strong></>
-              : (proyecto.tipo === 'subscription' || proyecto.tipo === 'product')
-                ? <>Estás contratando <strong className="font-semibold">{etapa.nombre}</strong></>
-                : <>Estás pagando este {proyecto.tipo === 'ticket' ? 'ticket' : 'trabajo'}</>}
-          </span>
-        }
-        acciones={datos.detalleUrl
-          ? <EnlaceBoton href={datos.detalleUrl} icon={Eye}>Ver detalle del {proyecto.tipo === 'ticket' ? 'ticket' : 'proyecto'}</EnlaceBoton>
-          : undefined}
-      />
+    <Contenedor ancho="amplio" className="py-10 sm:py-16">
+      {/* ⚠️ UNA SOLA COLUMNA: lo que se paga ENCIMA del formulario (Fernando, 2026-11-01: «creo que
+          deberían alinearse con el diseño del formulario […] quizás no una en el lado derecho y otra
+          en el lado izquierdo sino una encima y debajo de la otra»).
+          Antes la izquierda era una cabecera de página (rótulo + titular de 38 px + descripción
+          suelta sobre el fondo) y la derecha una tarjeta: dos lenguajes. Ahora las dos son
+          tarjetas del mismo ancho y hablan igual: rótulo violeta en mayúsculas con la cifra a la
+          derecha, filas separadas por líneas, y las etapas con los MISMOS nodos que el camino del
+          formulario (hecha = violeta con ✓, la de ahora = borde violeta con halo, por venir =
+          gris con su número). La descripción larga se recorta a tres líneas para que el
+          formulario quede cerca de arriba, que es a lo que viene el cliente (2026-08-26). */}
+      <div className="mx-auto w-full max-w-[720px] space-y-5">
+        <Tarjeta>
+          <div className="flex items-start justify-between gap-4">
+            <p className="min-w-0 truncate pt-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">
+              {proyecto.cliente || 'Pago de proyecto'}
+            </p>
+            {datos.detalleUrl && (
+              <a href={datos.detalleUrl} title={`Ver detalle del ${tipo}`}
+                className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 -mr-2 rounded-lg text-[14px] font-medium text-[var(--violeta-txt)] hover:bg-[var(--violeta-vivo)]/10 transition-colors">
+                <Eye className="w-4 h-4" /> Ver detalle
+              </a>
+            )}
+          </div>
+          <h1 className="mt-2 text-[24px] sm:text-[28px] leading-[1.2] font-semibold tracking-tight text-[var(--texto)]">
+            {proyecto.titulo}
+          </h1>
+          {proyecto.descripcion && (
+            <>
+              <p className={`mt-3 text-[15px] leading-relaxed text-[var(--suave)] ${larga && !verTodo ? 'line-clamp-3' : ''}`}>
+                {proyecto.descripcion}
+              </p>
+              {larga && (
+                <button type="button" onClick={() => setVerTodo(v => !v)}
+                  className="mt-1.5 inline-flex items-center gap-1 text-[13.5px] font-medium text-[var(--violeta-txt)] hover:underline">
+                  {verTodo ? 'Ver menos' : 'Ver más'}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${verTodo ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </>
+          )}
 
-        {/* ── QUÉ SE ESTÁ PAGANDO ──
-            «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
-            2026-08-26). Antes solo salía el título, y en un ticket o una suscripción eso deja
-            al cliente pagando algo que no reconoce. Cada origen aporta los datos que ÉL
-            necesita — nunca costos internos ni reparto del trabajo. */}
-        {!hayPlan && hayDetalle && (
-          /* Se queda a la vista mientras el cliente rellena el formulario: el panel derecho
-             es mucho más largo, así que sin esto el resumen desaparece por arriba justo
-             cuando conviene poder mirarlo — y deja un hueco vacío enorme en pantallas
-             anchas. Solo en `lg`: en móvil las tarjetas van una debajo de otra. */
-          <Tarjeta className="mt-8">
-            <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
-              <Receipt className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Qué estás pagando
-            </h2>
-            <dl className="mt-4 divide-y divide-[var(--linea)]">
-              {(datos.detalle || []).map((d: any) => (
-                <div key={d.etiqueta} className="flex items-start justify-between gap-4 py-3">
-                  <dt className="text-[13.5px] text-[var(--tenue)] shrink-0">{d.etiqueta}</dt>
-                  <dd className="text-[14.5px] text-[var(--texto)] text-right">{d.valor}</dd>
+          {/* ── El plan completo, para que sepa dónde encaja lo que paga ── */}
+          {hayPlan && (
+            <div className="mt-6 border-t border-[var(--linea)] pt-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Etapas del proyecto</p>
+                <p className="text-[15px] font-semibold tabular-nums text-[var(--texto)]">${fmt2(totalPlan)}</p>
+              </div>
+              {/* La barra: cada etapa ocupa lo que pesa en el total. */}
+              {totalPlan > 0 && (
+                <div className="mt-3 flex h-2 gap-[3px]" aria-hidden>
+                  {etapas.map((e: any) => (
+                    <span key={e.id} style={{ flexGrow: Math.max(Number(e.importe || 0), totalPlan * 0.04) }}
+                      className={`basis-0 rounded-full ${e.facturada ? 'bg-[var(--violeta)]'
+                        : e.esLaQueSePaga ? 'bg-[var(--violeta-vivo)]/45 ring-1 ring-inset ring-[var(--violeta-vivo)]'
+                        : 'bg-[var(--linea)]'}`} />
+                  ))}
                 </div>
-              ))}
-            </dl>
-          </Tarjeta>
-        )}
-        {/* ── El plan completo, para que sepa dónde encaja lo que paga ── */}
-        {hayPlan && (
-          <Tarjeta className="mt-8">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 text-[17px] font-semibold text-[var(--texto)]">
-                <Layers className="w-[18px] h-[18px] text-[var(--violeta-txt)]" /> Etapas del proyecto
-              </h2>
-              <span className="text-[15px] font-semibold tabular-nums text-[var(--texto)]">${fmt2(totalPlan)}</span>
+              )}
+              <ul className="mt-3 divide-y divide-[var(--linea)]">
+                {etapas.map((e: any, i: number) => (
+                  <li key={e.id} aria-current={e.esLaQueSePaga ? 'step' : undefined}
+                    className="flex items-center justify-between gap-3 py-3">
+                    <span className="min-w-0 flex items-center gap-3">
+                      <span className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold tabular-nums ${
+                        e.facturada ? 'bg-[var(--violeta)] text-white'
+                        : e.esLaQueSePaga ? 'border-2 border-[var(--violeta-vivo)] text-[var(--violeta-txt)] shadow-[0_0_0_4px_rgba(123,95,191,0.14)]'
+                        : 'border border-[var(--linea-fuerte)] text-[var(--tenue)]'}`}>
+                        {e.facturada ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : i + 1}
+                      </span>
+                      <span className={`truncate text-[15px] text-[var(--texto)] ${e.esLaQueSePaga ? 'font-semibold' : ''}`}>{e.nombre}</span>
+                    </span>
+                    <span className="flex items-center gap-3 shrink-0">
+                      <span className={`text-[13px] ${e.esLaQueSePaga ? 'font-medium text-[var(--violeta-txt)]' : 'text-[var(--tenue)]'}`}>
+                        {e.facturada ? 'Pagada' : e.esLaQueSePaga ? 'Pagas ahora' : 'Pendiente'}
+                      </span>
+                      <span className={`text-[15px] tabular-nums ${e.facturada ? 'text-[var(--tenue)]' : 'text-[var(--texto)]'} ${e.esLaQueSePaga ? 'font-semibold' : ''}`}>
+                        ${fmt2(Number(e.importe))}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="mt-4 divide-y divide-[var(--linea)]">
-              {etapas.map((e: any) => (
-                <li key={e.id}
-                  className={`flex items-center justify-between gap-3 py-3 ${e.esLaQueSePaga ? 'px-3 -mx-3 rounded-lg bg-[var(--violeta)]/8' : ''}`}>
-                  <span className="min-w-0 flex items-center gap-2">
-                    {e.facturada
-                      ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-                      : <Clock className="w-4 h-4 shrink-0 text-[var(--apagado)]" />}
-                    <span className={`truncate text-[15px] ${e.esLaQueSePaga ? 'font-semibold text-[var(--texto)]' : 'text-[var(--texto)]'}`}>
-                      {e.nombre}
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-3 shrink-0">
-                    <span className="text-[13px] text-[var(--tenue)]">
-                      {e.facturada ? 'Pagada' : e.esLaQueSePaga ? 'Ahora' : 'Pendiente'}
-                    </span>
-                    <span className="text-[15px] tabular-nums text-[var(--texto)]">${fmt2(Number(e.importe))}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Tarjeta>
-        )}
+          )}
 
-      </div>
+          {/* ── QUÉ SE ESTÁ PAGANDO ── (ticket, suscripción, producto: no hay plan de etapas)
+              «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
+              2026-08-26). Nunca costos internos ni reparto del trabajo. */}
+          {!hayPlan && hayDetalle && (
+            <div className="mt-6 border-t border-[var(--linea)] pt-5">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Qué estás pagando</p>
+              <dl className="mt-2 divide-y divide-[var(--linea)]">
+                {(datos.detalle || []).map((d: any) => (
+                  <div key={d.etiqueta} className="flex items-start justify-between gap-4 py-3">
+                    <dt className="text-[13.5px] text-[var(--tenue)] shrink-0">{d.etiqueta}</dt>
+                    <dd className="text-[14.5px] text-[var(--texto)] text-right">{d.valor}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </Tarjeta>
 
-        {/* ── El pago, por pasos ── */}
-        <Tarjeta className="lg:sticky lg:top-24">
+        {/* ── El pago, por pasos ── (ya dice «Total a pagar · <etapa>»: por eso arriba no se
+            repite «Estás pagando…») */}
+        <Tarjeta>
           <FormularioPago
             datos={datos}
             link={link}
