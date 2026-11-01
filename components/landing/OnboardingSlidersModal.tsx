@@ -222,23 +222,19 @@ const MOTIVOS: AccordionItem[] = [
   },
 ];
 
+const MOTIVOS_ENTRADA = [
+  '¡Cuando era pequeño me encantaba soñar! Soñar, soñar y solo soñar... ¡cuánto me encantaba soñar! Para mí, el sueño era la cuna de los retorcidos, el lugar más cálido, el lugar más cómodo, el mundo del cual jamás quería escapar.',
+  'Pero la realidad siempre volvía en forma de responsabilidad. Y vivir se convirtió en recordar aquello que no me gustaba y que sentía que no podía cambiar. Esa confrontación entre mi sueño y la realidad es lo que he revivido tantas veces, arrastrando una frustración intolerable que hunde mi pecho como si no tuviese otra forma de estar.',
+  '¡Porque soy incapaz de aceptar este mundo! Y me aferro aquí, usando la promesa de aquel día que en profundo dolor, decidí dejar de soñar para empezar a vivir una realidad, dispuesto a cambiar todo lo que he visto y que jamás voy a olvidar.',
+  'No tengo otra opción. Prefiero morir antes que seguir observando todo lo que está mal en este mundo. Así que esto es todo lo que tengo, lo que me mueve y por lo que estoy dispuesto a darlo todo. No voy a aceptar jamás un futuro en el que mis hijos vivan en un mundo diferente al que quiero construir. No importa lo difícil o imposible que parezca; voy a cambiar este mundo, aunque me cueste la vida.',
+];
+
 function SlideMotivos() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Texto de Fernando (2026-11-01), literal. Sustituye a la entrada genérica («Más allá del
-          cómo, importa el porqué…»). */}
-      <p style={pStyle}>
-        ¡Cuando era pequeño me encantaba soñar! Soñar, soñar y solo soñar... ¡Cuánto me encantaba
-        soñar! Para mí, soñar era la cuna de los retorcidos, el lugar más cálido, el lugar más
-        cómodo, el mundo del cual jamás quería escapar. Pero la realidad a veces volvía en forma de
-        responsabilidad, y cuando recordaba todo lo que no me gustaba, odiaba tantísimo esta
-        frustación que siento sobre todo lo que no podía cambiar. Aquella sensación de frustración
-        intolerable que hunde mi pecho como si no tuviese otra forma de estar, esa idea de que si
-        elijo soñar, no puedo hacer estar aquí, y en donde prefiría morir antes que aceptarlo. Para
-        mí no existe otra opción, esto es todo lo que tengo, lo que me mueve y por lo que estoy
-        dispuesto a darlo todo, no puedo aceptar un futuro en donde mis hijos vivan en un mundo
-        diferente al que quiero construir, y voy a hacer todo lo posible para crearlo.
-      </p>
+      {/* Texto de Fernando (2026-11-01, 2.ª versión), literal y en sus cuatro párrafos. Sustituye a
+          la entrada genérica («Más allá del cómo, importa el porqué…»). */}
+      {MOTIVOS_ENTRADA.map((t, i) => <p key={i} style={pStyle}>{t}</p>)}
       <Accordion items={MOTIVOS} />
     </div>
   );
