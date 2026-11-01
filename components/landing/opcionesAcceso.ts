@@ -22,7 +22,7 @@
 
 import type { ComponentType } from 'react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
-import { Briefcase, Clock, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
+import { Briefcase, LogIn, ShieldCheck } from 'lucide-react';
 
 export type TonoOpcion = 'default' | 'success' | 'warning';
 
@@ -88,30 +88,10 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
   const pausa = !!registro?.bloqueado;
   const sinAccion = () => undefined;
 
+  // ⭐ 2026-11-01 (Fernando): la tarjeta de POSTULACIÓN se quitó de la portada (Aventura y
+  // Progreso) y del diálogo de acceso: postularse se hace en la página Candidatos
+  // (`/candidatos/postulacion`), con la misma pausa por equipo.
   return [
-    pausa
-      ? {
-          clave: 'candidato',
-          grupo: 'nuevo',
-          pausada: true,
-          tono: 'warning',
-          Icono: Clock,
-          insignia: 'En pausa',
-          titulo: 'Postulación',
-          corta: `Disponible desde el ${horaDeReanudacion(registro?.hasta ?? null)}.`,
-          descripcion: `Desde este equipo ya se creó un registro en las últimas 24 horas. Podrás postularte a partir del ${horaDeReanudacion(registro?.hasta ?? null)}.`,
-          onClick: sinAccion,
-        }
-      : {
-          clave: 'candidato',
-          grupo: 'nuevo',
-          tono: 'default',
-          Icono: UserPlus,
-          titulo: 'Postulación',
-          corta: 'Conoce el proyecto y postúlate.',
-          descripcion: 'Conoce el proyecto y postúlate para formar parte del Grupo Corazones Cruzados.',
-          onClick: acciones.onCandidate,
-        },
     {
       clave: 'soy-candidato',
       grupo: 'cuenta',

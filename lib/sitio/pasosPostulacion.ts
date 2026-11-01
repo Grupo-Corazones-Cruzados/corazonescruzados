@@ -11,6 +11,8 @@ export const PASOS_POSTULACION_IDS = [
   { id: 'metodo-crecimiento', titulo: 'Método de crecimiento' },
   { id: 'lideracion', titulo: 'Lideración sobre Acciones' },
   { id: 'afiliacion', titulo: 'Afiliación' },
+  // El formulario en sí: solo en la página Candidatos (2026-11-01); el diálogo lo pinta aparte.
+  { id: 'postulacion', titulo: 'Postulación' },
 ] as const;
 
 export type PasoPostulacionId = (typeof PASOS_POSTULACION_IDS)[number]['id'];

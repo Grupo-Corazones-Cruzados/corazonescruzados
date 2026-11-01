@@ -1217,6 +1217,130 @@ export default function OnboardingSlidersModal({
 }
 
 /* ------------------------------------------------------------------ */
+/* Envío de la postulación (portada y página Candidatos)              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Registra la propuesta (queda en espera de aprobación del admin global). Lleva el captcha y puede
+ * rechazarse (captcha caducado, un registro cada 24 h por equipo): devuelve el MENSAJE DE ERROR, o
+ * `null` si salió bien. 409 = ese correo ya se postuló → igualmente en espera.
+ */
+export async function enviarPostulacion(postulacion: PostulacionData): Promise<string | null> {
+  try {
+    const r = await fetch('/api/candidate/proposal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(postulacion),
+    });
+    if (!r.ok && r.status !== 409) {
+      const j = await r.json().catch(() => null);
+      return (j?.error as string) || 'No pudimos enviar tu postulación. Inténtalo de nuevo.';
+    }
+    return null;
+  } catch {
+    return 'No pudimos enviar tu postulación. Revisa tu conexión e inténtalo de nuevo.';
+  }
+}
+
+/**
+ * EL FORMULARIO DE POSTULACIÓN DENTRO DE LA PÁGINA CANDIDATOS (Fernando, 2026-11-01: «quita de la
+ * pantalla de inicio la tarjeta… lo dejo acá en la pestaña de candidatos, con la misma restricción»).
+ * Los mismos campos, aceptaciones y captcha que el último paso del diálogo, y la MISMA pausa por
+ * equipo: si desde aquí ya se creó un registro, se avisa en vez de enseñar el formulario (y el
+ * servidor lo vuelve a comprobar al enviar).
+ */
+export function PostulacionEnPagina() {
+  const registro = useEstadoRegistro();
+  const [email, setEmail] = useState('');
+  const [reason, setReason] = useState('');
+  const [marketing, setMarketing] = useState(false);
+  const [finalAccepted, setFinalAccepted] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [enviada, setEnviada] = useState(false);
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const formOk = emailOk && reason.trim().length >= 10 && finalAccepted && !!captcha && !enviando;
+
+  const enviar = async () => {
+    if (!formOk || !captcha) return;
+    setEnviando(true);
+    setErrorEnvio(null);
+    const error = await enviarPostulacion({ email: email.trim(), reason: reason.trim(), marketing, altcha: captcha });
+    setEnviando(false);
+    if (error) {
+      setErrorEnvio(error);
+      setReinicioCaptcha((n) => n + 1);
+      return;
+    }
+    setEnviada(true);
+  };
+
+  if (enviada) {
+    return (
+      <div className="postulacion-aviso" role="status">
+        <Send aria-hidden />
+        <div>
+          <p className="postulacion-aviso-titulo">Tu postulación está en revisión</p>
+          <p style={pStyle}>
+            Tu propuesta quedó registrada y está <strong style={strong}>en espera de aprobación</strong> por
+            parte del administrador del proyecto. Te avisaremos a <strong style={strong}>{email.trim()}</strong>{' '}
+            cuando sea aprobada.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  if (registro === null) return <p style={pStyle}>Comprobando…</p>;
+  if (registro.bloqueado) {
+    return (
+      <div className="postulacion-aviso" role="status">
+        <Clock aria-hidden />
+        <div>
+          <p className="postulacion-aviso-titulo">Postulación: en pausa</p>
+          <p style={pStyle}>
+            Desde este equipo ya se creó un registro hace poco. Para evitar registros en cadena, cada
+            equipo puede crear un registro cada 24 horas. Podrás postularte a partir del{' '}
+            <strong style={strong}>{horaDeReanudacion(registro.hasta)}</strong>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      <CandidateForm
+        email={email}
+        setEmail={setEmail}
+        emailOk={emailOk}
+        reason={reason}
+        setReason={setReason}
+        termsAccepted={finalAccepted}
+        onToggleTerms={() => setFinalAccepted((v) => !v)}
+        marketing={marketing}
+        onToggleMarketing={() => setMarketing((v) => !v)}
+        enfocar={false}
+      />
+      <div>
+        <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="claro" />
+        {errorEnvio && (
+          <p role="alert" className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-[13px] leading-relaxed text-red-700">
+            {errorEnvio}
+          </p>
+        )}
+      </div>
+      <div className="flex justify-end">
+        <button type="button" onClick={enviar} disabled={!formOk} className="postulacion-enviar">
+          <Send aria-hidden />
+          {enviando ? 'Enviando…' : 'Enviar mi postulación'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Aceptación de términos (por slider)                                */
 /* ------------------------------------------------------------------ */
 
@@ -1306,6 +1430,7 @@ function CandidateForm({
   onToggleTerms,
   marketing,
   onToggleMarketing,
+  enfocar = true,
 }: {
   email: string;
   setEmail: (v: string) => void;
@@ -1316,6 +1441,8 @@ function CandidateForm({
   onToggleTerms: () => void;
   marketing: boolean;
   onToggleMarketing: () => void;
+  /** En el diálogo, el cursor va al motivo; en la página Candidatos no (movería la pantalla). */
+  enfocar?: boolean;
 }) {
   const max = 1000;
   const short = reason.trim().length < 10;
@@ -1352,7 +1479,7 @@ function CandidateForm({
             value={reason}
             onChange={(e) => setReason(e.target.value.slice(0, max))}
             placeholder="Escribe aquí qué te mueve a formar parte de esto..."
-            autoFocus
+            autoFocus={enfocar}
             rows={7}
             className="field-control w-full resize-y min-h-[150px] px-3 py-2.5 bg-digi-darker border border-digi-border rounded text-sm text-digi-text placeholder:text-digi-muted/60 focus:border-accent focus:outline-none transition-colors"
             style={{ fontFamily: 'var(--font-body)', lineHeight: 1.6 }}

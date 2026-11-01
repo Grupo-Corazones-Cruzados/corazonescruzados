@@ -10,29 +10,37 @@
  * desplazar; a la derecha el apartado elegido y, al pie, Anterior / Siguiente para leerlo en orden.
  * En el teléfono y la tableta el camino es un desplegable a todo el ancho (regla de `/diseno`).
  *
- * El contenido es **el mismo componente** que pinta el formulario (`SLIDES` de
+ * El último paso es el formulario de postulación (`PostulacionEnPagina`), con la misma pausa por
+ * equipo que tenía en la portada. El contenido es **el mismo componente** que pinta el formulario (`SLIDES` de
  * `OnboardingSlidersModal`): cambiar un texto allí lo cambia aquí. Cada apartado tiene su URL
  * (`/candidatos/<apartado>`), que se reescribe con `replaceState` al cambiar.
  */
 
 import { useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { SLIDES } from '@/components/landing/OnboardingSlidersModal';
+import { ArrowLeft, ArrowRight, Send } from 'lucide-react';
+import { SLIDES, PostulacionEnPagina } from '@/components/landing/OnboardingSlidersModal';
+import { tituloDePaso } from '@/lib/sitio/pasosPostulacion';
+
+/** Los siete apartados y, al final, el formulario (Fernando, 2026-11-01: ya no se abre desde la portada). */
+const PASOS = [
+  ...SLIDES,
+  { id: 'postulacion' as const, title: tituloDePaso('postulacion'), Icon: Send, Component: PostulacionEnPagina },
+];
 
 const dos = (n: number) => String(n).padStart(2, '0');
 
 export default function TemasCandidatos({ inicial }: { inicial: string }) {
-  const [activa, setActiva] = useState(() => Math.max(0, SLIDES.findIndex((s) => s.id === inicial)));
+  const [activa, setActiva] = useState(() => Math.max(0, PASOS.findIndex((s) => s.id === inicial)));
   const [dir, setDir] = useState<'der' | 'izq' | null>(null);
   const arriba = useRef<HTMLElement>(null);
-  const paso = SLIDES[activa];
+  const paso = PASOS[activa];
   const { Component } = paso;
 
   const ir = (j: number, subir = false) => {
-    if (j === activa || j < 0 || j >= SLIDES.length) return;
+    if (j === activa || j < 0 || j >= PASOS.length) return;
     setDir(j > activa ? 'der' : 'izq');
     setActiva(j);
-    window.history.replaceState(null, '', `/candidatos/${SLIDES[j].id}`);
+    window.history.replaceState(null, '', `/candidatos/${PASOS[j].id}`);
     if (subir) arriba.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -40,14 +48,14 @@ export default function TemasCandidatos({ inicial }: { inicial: string }) {
     <section ref={arriba} className="recorrido scroll-mt-24" aria-label="Apartados de la postulación">
       <label className="segmentado-movil recorrido-select">
         <span className="sr-only">Apartado</span>
-        <select value={paso.id} onChange={(e) => ir(SLIDES.findIndex((s) => s.id === e.target.value))}>
-          {SLIDES.map((s, j) => <option key={s.id} value={s.id}>{dos(j + 1)} · {s.title}</option>)}
+        <select value={paso.id} onChange={(e) => ir(PASOS.findIndex((s) => s.id === e.target.value))}>
+          {PASOS.map((s, j) => <option key={s.id} value={s.id}>{dos(j + 1)} · {s.title}</option>)}
         </select>
       </label>
 
       <nav className="recorrido-camino" aria-label="Apartados">
         <ol>
-          {SLIDES.map((s, j) => {
+          {PASOS.map((s, j) => {
             const Icon = s.Icon;
             return (
               <li key={s.id}>
@@ -67,7 +75,7 @@ export default function TemasCandidatos({ inicial }: { inicial: string }) {
 
       <article key={paso.id} className="recorrido-paso" data-dir={dir ?? undefined}>
         <header className="recorrido-cabecera">
-          <p className="recorrido-cuenta">{dos(activa + 1)} / {dos(SLIDES.length)}</p>
+          <p className="recorrido-cuenta">{dos(activa + 1)} / {dos(PASOS.length)}</p>
           {/* El `<h1>` de la página es el apartado abierto: cada URL, su título. */}
           <h1 className="recorrido-titulo">{paso.title}</h1>
         </header>
@@ -75,12 +83,12 @@ export default function TemasCandidatos({ inicial }: { inicial: string }) {
         <footer className="recorrido-pie">
           {activa > 0 ? (
             <button type="button" onClick={() => ir(activa - 1, true)} className="recorrido-boton">
-              <ArrowLeft aria-hidden /> <span><small>Anterior</small>{SLIDES[activa - 1].title}</span>
+              <ArrowLeft aria-hidden /> <span><small>Anterior</small>{PASOS[activa - 1].title}</span>
             </button>
           ) : <span />}
-          {activa < SLIDES.length - 1 && (
+          {activa < PASOS.length - 1 && (
             <button type="button" onClick={() => ir(activa + 1, true)} className="recorrido-boton es-siguiente">
-              <span><small>Siguiente</small>{SLIDES[activa + 1].title}</span> <ArrowRight aria-hidden />
+              <span><small>Siguiente</small>{PASOS[activa + 1].title}</span> <ArrowRight aria-hidden />
             </button>
           )}
         </footer>

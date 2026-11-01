@@ -23,7 +23,7 @@ import CreadorPersonaje, {
 import { type CharacterConfig } from '@/components/landing/CharacterCreator';
 import SavePointIndicator from '@/components/landing/SavePointIndicator';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
-import OnboardingSlidersModal from '@/components/landing/OnboardingSlidersModal';
+import OnboardingSlidersModal, { enviarPostulacion } from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
 import { ACCESO_PLATAFORMA, ACCESO_VIDEOJUEGO, destinoTrasAccesoValido } from '@/lib/sitio/acceso';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
@@ -3218,23 +3218,9 @@ export default function LandingPage() {
           tema={entryDestination === 'game' ? 'aventura' : 'progreso'}
           onClose={() => setOnboardingOpen(false)}
           onComplete={async (postulacion) => {
-            // Registra la propuesta (queda en espera de aprobación del admin global). El candidato
-            // NO entra al juego hasta ser aprobado. Desde el 2026-10-29 lleva el captcha y puede
-            // rechazarse (captcha caducado, un registro cada 24 h): el error vuelve al formulario,
-            // que lo enseña sin cerrarse. 409 = ese correo ya se postuló → igualmente en espera.
-            try {
-              const r = await fetch('/api/candidate/proposal', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(postulacion),
-              });
-              if (!r.ok && r.status !== 409) {
-                const j = await r.json().catch(() => null);
-                return (j?.error as string) || 'No pudimos enviar tu postulación. Inténtalo de nuevo.';
-              }
-            } catch {
-              return 'No pudimos enviar tu postulación. Revisa tu conexión e inténtalo de nuevo.';
-            }
+            // Registra la propuesta (`enviarPostulacion`, la misma que usa la página Candidatos).
+            const error = await enviarPostulacion(postulacion);
+            if (error) return error;
             setOnboardingOpen(false);
             setProposalPending({ email: postulacion.email, emailVerified: false });
             return null;
