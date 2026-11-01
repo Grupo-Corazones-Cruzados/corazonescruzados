@@ -225,10 +225,19 @@ const MOTIVOS: AccordionItem[] = [
 function SlideMotivos() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Texto de Fernando (2026-11-01), literal. Sustituye a la entrada genérica («Más allá del
+          cómo, importa el porqué…»). */}
       <p style={pStyle}>
-        Más allá del <em>cómo</em>, importa el <strong style={strong}>porqué</strong>. Estos son
-        los motivos que dan sentido a la existencia del Grupo Corazones Cruzados. Toca cada uno
-        para leerlo.
+        ¡Cuando era pequeño me encantaba soñar! Soñar, soñar y solo soñar... ¡Cuánto me encantaba
+        soñar! Para mí, soñar era la cuna de los retorcidos, el lugar más cálido, el lugar más
+        cómodo, el mundo del cual jamás quería escapar. Pero la realidad a veces volvía en forma de
+        responsabilidad, y cuando recordaba todo lo que no me gustaba, odiaba tantísimo esta
+        frustación que siento sobre todo lo que no podía cambiar. Aquella sensación de frustración
+        intolerable que hunde mi pecho como si no tuviese otra forma de estar, esa idea de que si
+        elijo soñar, no puedo hacer estar aquí, y en donde prefiría morir antes que aceptarlo. Para
+        mí no existe otra opción, esto es todo lo que tengo, lo que me mueve y por lo que estoy
+        dispuesto a darlo todo, no puedo aceptar un futuro en donde mis hijos vivan en un mundo
+        diferente al que quiero construir, y voy a hacer todo lo posible para crearlo.
       </p>
       <Accordion items={MOTIVOS} />
     </div>
