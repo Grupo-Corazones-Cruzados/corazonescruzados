@@ -6169,6 +6169,7 @@ a `/<base>/<tema>`, panel que entra desde el lado hacia el que se avanzó; flech
 En el teléfono, las tres pestañas en una fila sin icono y el orbe pequeño arriba del panel.
 Sustituye en Clientes a las puertas en bloque (`PuertasBloques`), que siguen en Soluciones y
 Desarrollo Humano mientras Fernando decide.
+- **Más de 4 apartados = recorrido, no pestañas (2026-11-01, Candidatos):** 7 pestañas numeradas en fila se partían en dos y tres líneas y Fernando las rechazó. Con más de 4: camino vertical a la izquierda (`.recorrido-camino`, puntos con icono unidos por una línea, fijo al desplazar), el apartado a la derecha con «01 / 07» + h1, y al pie Anterior / Siguiente con el nombre del apartado. Hasta `lg`, un `<select>` `.segmentado-movil` a todo el ancho. Referencia: `components/sitio/TemasCandidatos.tsx`. Para pintar piezas del formulario (tokens `--color-digi-*`) en el sitio claro, el contenedor redefine esos tokens (`.paso-candidato`).
 - **Soluciones publicadas (2026-11-01):** sustituyen a la lista de abajo en el tema «Soluciones»: `ListaProductos.tsx`, la misma `GaleriaFiltrable` que Tickets/Proyectos, con `TarjetaProducto` (etiqueta «Solución») y el pie de contacto común `PieContacto`.
 - **Lista de soluciones (2026-10-31, QUITADA del tema el 2026-11-01):** dentro del tema «Soluciones» de Clientes, `ListaSoluciones.tsx`:
   una tarjeta ancha por solución, entera enlace, con número en contorno, nombre, descripción de sus

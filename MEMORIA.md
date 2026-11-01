@@ -234,6 +234,12 @@ base verbatim):
   filtros solución, talento, año, miembro y precio, y el contacto (correo, teléfono, WhatsApp) de quien
   la publicó (`PieContacto`, extraído de `TarjetaTrabajo`). Las páginas de cada talento siguen vivas
   (sitemap) pero ya nada del tema las enlaza: pendiente decidir desde dónde se llega.
+- **Página Candidatos (2026-11-01):** presentación «Un corazón puede cruzar al mundo» (etiqueta Candidatos,
+  el cruce del corazón a la derecha, texto de Fernando literal en `PRESENTACION_CANDIDATOS`) y debajo los 7
+  apartados del formulario de postulación en orden (`TemasCandidatos`, mismos componentes `SLIDES` del
+  formulario; ids/títulos en `lib/sitio/pasosPostulacion.ts`), con URL `/candidatos/<apartado>`. Las
+  pestañas numeradas de Clientes se probaron y Fernando las rechazó («son muchas, se ve súper mal»): es un
+  camino vertical + Anterior/Siguiente. Sigue `noindex` hasta que él la dé por buena.
 - **Fecha de finalización de un ticket (2026-10-31, migración 077):** un disparador en `gcc_world.tickets`
   pone `completed_at = now()` al pasar a `completed` (por cualquier vía: panel, factura, factura manual)
   y lo vacía si deja de estarlo. Los 23 completados antes sin fecha no se rellenaron (sería un dato

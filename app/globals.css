@@ -4748,6 +4748,58 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .tema-orbe-nucleo svg { width: 26px; height: 26px; }
   .tema-panel-titulo { margin-top: 10px; }
 }
+/* ══ CANDIDATOS: EL RECORRIDO DE LA POSTULACIÓN (2026-11-01) ══════════════════════════════════
+   `components/sitio/TemasCandidatos.tsx`. Siete apartados no caben en pestañas: camino vertical a la
+   izquierda (fijo al desplazar) y el apartado a la derecha; hasta `lg`, un desplegable. */
+.recorrido { margin-top: 8px; display: grid; gap: 24px; animation: presentacionEntra 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms both; }
+.segmentado-movil.recorrido-select { display: block; }
+.recorrido-camino { display: none; }
+@media (min-width: 1024px) {
+  .recorrido { grid-template-columns: 260px minmax(0, 1fr); gap: 48px; align-items: start; }
+  .segmentado-movil.recorrido-select { display: none; }
+  .recorrido-camino { display: block; position: sticky; top: 6rem; }
+}
+.recorrido-camino ol { list-style: none; margin: 0; padding: 0; position: relative; }
+/* La línea que une los puntos, por detrás. */
+.recorrido-camino ol::before { content: ''; position: absolute; left: 17px; top: 22px; bottom: 22px; width: 2px; border-radius: 2px; background: var(--linea); }
+.recorrido-nodo { position: relative; width: 100%; display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 0; text-align: left; background: none; border: 0; cursor: pointer; color: var(--tenue); transition: color 200ms ease; }
+.recorrido-nodo:hover { color: var(--suave); }
+.recorrido-nodo-punto { position: relative; flex-shrink: 0; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9999px; background: #fff; border: 1px solid var(--linea-fuerte); color: var(--tenue); transition: color 200ms ease, background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease; }
+.recorrido-nodo[data-hecho] .recorrido-nodo-punto { color: var(--violeta-txt); border-color: rgba(124, 58, 237, 0.4); }
+.recorrido-nodo[aria-current='step'] { color: var(--texto); }
+.recorrido-nodo[aria-current='step'] .recorrido-nodo-punto { color: #fff; border-color: transparent; background: linear-gradient(135deg, #7c3aed, #c026d3); box-shadow: 0 8px 20px -8px rgba(124, 58, 237, 0.8); }
+.recorrido-nodo-texto { display: flex; flex-direction: column; gap: 3px; font: 600 0.98rem/1.25 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; }
+.recorrido-nodo-num { font-size: 0.72rem; letter-spacing: 0.1em; font-variant-numeric: tabular-nums; color: var(--apagado); }
+.recorrido-nodo[aria-current='step'] .recorrido-nodo-num { color: var(--violeta-txt); }
+.recorrido-nodo:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; border-radius: 10px; }
+
+.recorrido-paso { min-width: 0; animation: temaEntra 480ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.recorrido-paso[data-dir='der'] { animation-name: temaEntraDer; }
+.recorrido-paso[data-dir='izq'] { animation-name: temaEntraIzq; }
+.recorrido-cabecera { margin-bottom: 20px; }
+.recorrido-cuenta { font: 600 0.75rem/1 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: 0.18em; color: var(--violeta-txt); font-variant-numeric: tabular-nums; }
+.recorrido-titulo { margin-top: 12px; font: 700 clamp(1.8rem, 3.4vw, 2.6rem)/1.05 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.035em; color: var(--texto); }
+.recorrido-pie { margin-top: 20px; display: flex; justify-content: space-between; gap: 12px; }
+.recorrido-boton { display: inline-flex; align-items: center; gap: 12px; min-width: 0; max-width: 48%; padding: 12px 18px; border-radius: 16px; border: 1px solid var(--linea-fuerte); background: rgba(255, 255, 255, 0.85); color: var(--texto); text-align: left; cursor: pointer; transition: border-color 200ms ease, background-color 200ms ease; }
+.recorrido-boton:hover { border-color: rgba(124, 58, 237, 0.45); background: #fff; }
+.recorrido-boton svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--violeta-txt); }
+.recorrido-boton span { display: flex; flex-direction: column; min-width: 0; font: 600 0.95rem/1.25 'Space Grotesk', 'Inter', system-ui, sans-serif; }
+.recorrido-boton small { font: 500 0.72rem/1.2 'Inter', system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tenue); }
+.recorrido-boton.es-siguiente { margin-left: auto; text-align: right; }
+.recorrido-boton.es-siguiente span { align-items: flex-end; }
+@media (prefers-reduced-motion: reduce) { .recorrido, .recorrido-paso { animation: none; } }
+
+/* Las piezas del formulario se pintan con los tokens `--color-digi-*` / `--color-accent*` (en el
+   formulario, los de la isla `.corp dark`); aquí se les dan los del sitio claro. */
+.paso-candidato {
+  padding: 36px 40px; border-radius: 24px; background: rgba(255, 255, 255, 0.84); border: 1px solid var(--linea);
+  --color-digi-text: var(--texto); --color-digi-muted: var(--suave); --color-digi-border: var(--linea);
+  --color-digi-card: #ffffff; --color-digi-darker: #faf9fe; --color-digi-dark: #f6f4fb;
+  --color-accent: #6d28d9; --color-accent-hover: #5b21b6; --color-accent-light: #ede9fe; --color-accent-glow: var(--violeta-txt);
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif; --font-body: 'Inter', system-ui, sans-serif;
+}
+@media (max-width: 639px) { .paso-candidato { padding: 22px 18px; border-radius: 20px; } }
+
 @media (prefers-reduced-motion: reduce) {
   .temas, .tema-panel, .tema-orbe-halo, .tema-orbe-anillo-2, .tema-orbe-nucleo { animation: none; }
   .tema-pestana-raya { transition: none; }

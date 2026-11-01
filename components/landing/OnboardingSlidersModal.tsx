@@ -54,6 +54,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import { tituloDePaso, type PasoPostulacionId } from '@/lib/sitio/pasosPostulacion';
 import { sonarInterruptor } from '@/lib/sitio/sonidoSeleccion';
 import LogoGirando from '@/components/ui/LogoGirando';
 import PixelInput from '@/components/ui/PixelInput';
@@ -71,7 +72,7 @@ export type PostulacionData = {
 type IconType = React.ComponentType<{ className?: string }>;
 
 type Slide = {
-  id: string;
+  id: PasoPostulacionId;
   kicker: string;
   title: string;
   /** Icono del paso en el rail y en la cabecera (lucide, estándar del dashboard). */
@@ -879,53 +880,54 @@ function SlideAfiliacion() {
 /* Lista de sliders (crecerá hasta 8)                                 */
 /* ------------------------------------------------------------------ */
 
-const SLIDES: Slide[] = [
+/** Exportada: la página Candidatos enseña estos mismos apartados, uno por pestaña. */
+export const SLIDES: Slide[] = [
   {
     id: 'modelo',
+    title: tituloDePaso('modelo'),
     kicker: 'Slider 1',
-    title: 'Modelo de Grupo',
     Icon: Layers3,
     Component: SlideModelo,
   },
   {
     id: 'herramientas',
+    title: tituloDePaso('herramientas'),
     kicker: 'Slider 2',
-    title: 'Herramientas',
     Icon: Wrench,
     Component: SlideHerramientas,
   },
   {
     id: 'motivos',
+    title: tituloDePaso('motivos'),
     kicker: 'Slider 3',
-    title: 'Motivos',
     Icon: Heart,
     Component: SlideMotivos,
   },
   {
     id: 'onboarding',
+    title: tituloDePaso('onboarding'),
     kicker: 'Slider 4',
-    title: 'Onboarding',
     Icon: Gavel,
     Component: SlideOnboarding,
   },
   {
     id: 'metodo-crecimiento',
+    title: tituloDePaso('metodo-crecimiento'),
     kicker: 'Slider 5',
-    title: 'Método de crecimiento',
     Icon: TrendingUp,
     Component: SlideMetodoCrecimiento,
   },
   {
     id: 'lideracion',
+    title: tituloDePaso('lideracion'),
     kicker: 'Slider 6',
-    title: 'Lideración sobre Acciones',
     Icon: RefreshCw,
     Component: SlideLideracion,
   },
   {
     id: 'afiliacion',
+    title: tituloDePaso('afiliacion'),
     kicker: 'Slider 7',
-    title: 'Afiliación',
     Icon: BadgeCheck,
     Component: SlideAfiliacion,
   },

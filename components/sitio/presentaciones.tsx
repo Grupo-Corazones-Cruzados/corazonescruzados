@@ -26,6 +26,26 @@ export const PRESENTACION_CLIENTES: Presentacion = {
 };
 
 /**
+ * Candidatos (Fernando, 2026-11-01): el titular de Desarrollo Humano, su misma pieza a la derecha y
+ * su texto, literal.
+ */
+export const PRESENTACION_CANDIDATOS: Presentacion = {
+  etiqueta: 'Candidatos',
+  titulo: 'Un corazón puede cruzar al mundo',
+  texto:
+    'El Proyecto del Grupo Corazones Cruzados, es un Proyecto de Desarrollo Humano que aplica Sistemas de Gobernanza Innovadores con el fin de Reconocer y Aprovechar las Condiciones de los Sujetos, generando como resultado las Soluciones que requerimos implementar para confrontar o corregir Problemas Individuales, y Problemáticas Sociales que hoy están siendo la causa de nuestra degeneración como Sociedad y nos alejan cada vez más que nuestro objetivo principal, el cual es la Unión de la Humanidad.',
+  visual: (
+    <span className="visual-cruce" aria-hidden>
+      <span className="visual-cruce-halo" />
+      <span className="sello-cruce">
+        <span className="sello-mundo"><IconoMundo idRecorte="mundo-candidatos" /></span>
+        <span className="sello-corazon"><IconoCorazon /></span>
+      </span>
+    </span>
+  ),
+};
+
+/**
  * Desarrollo Humano abre con la frase de la portada y su imagen: el corazón ya posado sobre la
  * Tierra, como queda tras «el cruce del corazón».
  */

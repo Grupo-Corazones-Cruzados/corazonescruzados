@@ -1,12 +1,14 @@
 /**
- * CANDIDATOS — pestaña nueva, VACÍA a propósito (Fernando, 2026-10-31).
+ * CANDIDATOS — `/candidatos` y `/candidatos/<apartado>` (Fernando, 2026-11-01).
  *
- * El sitio pasa a Inicio · Candidatos · Clientes · Miembros y Fernando dictará qué va aquí;
- * buena parte saldrá de Soluciones y Desarrollo Humano. Hasta entonces no se indexa: una página
- * vacía en Google es peor que ninguna.
+ * Arriba, la presentación (titular de Desarrollo Humano con el cruce del corazón y su texto); debajo,
+ * los apartados del formulario de postulación en su orden, uno por pestaña (`TemasCandidatos`), para
+ * revisar todo el contenido desde aquí. Hasta que Fernando lo dé por bueno no se indexa.
  */
 
 import type { Metadata } from 'next';
+import PaginaCandidatos from '@/components/sitio/PaginaCandidatos';
+import { PASOS_POSTULACION_IDS } from '@/lib/sitio/pasosPostulacion';
 
 export const metadata: Metadata = {
   title: 'Candidatos',
@@ -15,9 +17,5 @@ export const metadata: Metadata = {
 };
 
 export default function CandidatosPage() {
-  return (
-    <section className="flex-1 pt-6 sm:pt-10 pb-16">
-      <h1 className="sr-only">Candidatos</h1>
-    </section>
-  );
+  return <PaginaCandidatos paso={PASOS_POSTULACION_IDS[0].id} />;
 }
