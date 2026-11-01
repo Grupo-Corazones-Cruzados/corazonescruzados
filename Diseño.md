@@ -6169,7 +6169,8 @@ a `/<base>/<tema>`, panel que entra desde el lado hacia el que se avanzó; flech
 En el teléfono, las tres pestañas en una fila sin icono y el orbe pequeño arriba del panel.
 Sustituye en Clientes a las puertas en bloque (`PuertasBloques`), que siguen en Soluciones y
 Desarrollo Humano mientras Fernando decide.
-- **Lista de soluciones (2026-10-31):** dentro del tema «Soluciones» de Clientes, `ListaSoluciones.tsx`:
+- **Soluciones publicadas (2026-11-01):** sustituyen a la lista de abajo en el tema «Soluciones»: `ListaProductos.tsx`, la misma `GaleriaFiltrable` que Tickets/Proyectos, con `TarjetaProducto` (etiqueta «Solución») y el pie de contacto común `PieContacto`.
+- **Lista de soluciones (2026-10-31, QUITADA del tema el 2026-11-01):** dentro del tema «Soluciones» de Clientes, `ListaSoluciones.tsx`:
   una tarjeta ancha por solución, entera enlace, con número en contorno, nombre, descripción de sus
   talentos (QUITADA el mismo día: la tarjeta lleva solo el nombre; la descripción es del talento), «Productos y Servicios asociados» (icono + nombre, sin cápsulas) y cifras al pie; la
   flecha gira 45° al pasar. Cada una abre `/clientes/soluciones/<slug>`: cabecera grande con cifras

@@ -228,6 +228,12 @@ base verbatim):
   Bajo el tema Tickets van los tickets **terminados** (`ticketsPublicos`; un primer intento con los
   pendientes lo quitó Fernando el mismo día), sin cliente, filtrables por solución, año, mes, talento y
   miembro combinados.
+  **2026-11-01:** la lista de soluciones (Tecnología con sus talentos y cifras) se QUITÓ del tema
+  Soluciones («esta parte ya no va»). En su lugar van las **soluciones publicadas** (los productos de
+  `products`, que en el sitio se llaman «Soluciones»): `solucionesPublicadas()` + `ListaProductos`, con
+  filtros solución, talento, año, miembro y precio, y el contacto (correo, teléfono, WhatsApp) de quien
+  la publicó (`PieContacto`, extraído de `TarjetaTrabajo`). Las páginas de cada talento siguen vivas
+  (sitemap) pero ya nada del tema las enlaza: pendiente decidir desde dónde se llega.
 - **Fecha de finalización de un ticket (2026-10-31, migración 077):** un disparador en `gcc_world.tickets`
   pone `completed_at = now()` al pasar a `completed` (por cualquier vía: panel, factura, factura manual)
   y lo vacía si deja de estarlo. Los 23 completados antes sin fecha no se rellenaron (sería un dato

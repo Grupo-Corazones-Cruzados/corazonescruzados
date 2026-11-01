@@ -10,7 +10,7 @@
  */
 
 import {
-  listarSoluciones, contenidoDeTalento, conceptosPorTalento, ticketsPublicos, proyectosPublicos,
+  listarSoluciones, contenidoDeTalento, conceptosPorTalento, ticketsPublicos, proyectosPublicos, solucionesPublicadas,
   type ContenidoDeTalento,
 } from '@/lib/soluciones';
 import { unstable_cache } from 'next/cache';
@@ -125,3 +125,4 @@ export function cifrasDe(r: Pick<ReturnType<typeof resumenSolucion>, 'proyectos'
  */
 export const cargarTicketsCacheados = unstable_cache(() => ticketsPublicos(), ['tickets-publicos'], { revalidate: 300 });
 export const cargarProyectosCacheados = unstable_cache(() => proyectosPublicos(), ['proyectos-publicos'], { revalidate: 300 });
+export const cargarProductosCacheados = unstable_cache(() => solucionesPublicadas(), ['soluciones-publicadas'], { revalidate: 300 });

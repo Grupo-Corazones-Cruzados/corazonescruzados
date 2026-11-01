@@ -36,7 +36,7 @@ import { FolderOpen, Mail, Phone, Search } from 'lucide-react';
 import type {
   Solucion, ContenidoDeTalento, MiembroConTalento, Producto, Trabajo, Concepto,
 } from '@/lib/soluciones';
-import TarjetaTrabajo from './TarjetaTrabajo';
+import TarjetaTrabajo, { PieContacto } from './TarjetaTrabajo';
 import SelectorSegmentado from './SelectorSegmentado';
 import { enlaceWhatsApp, IconoWhatsApp } from './whatsapp';
 import PuertasBloques from './PuertasBloques';
@@ -132,7 +132,7 @@ export function TarjetaProducto({ producto, etiqueta = 'Producto' }: { producto:
           <img src={producto.imagen} alt="" loading="lazy" className="w-full h-full object-cover blur-[1px]" />
         </div>
       )}
-      <div className="p-5 flex flex-col gap-2">
+      <div className="p-5 flex flex-col gap-2 flex-1">
         <span className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--violeta-txt)]">{etiqueta}</span>
         <h3 className="text-[17px] font-semibold text-[var(--texto)] leading-snug">{producto.nombre}</h3>
         {producto.descripcion && (
@@ -143,6 +143,7 @@ export function TarjetaProducto({ producto, etiqueta = 'Producto' }: { producto:
             {producto.precio.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
           </p>
         )}
+        <PieContacto personas={producto.personas ?? []} />
       </div>
     </article>
   );

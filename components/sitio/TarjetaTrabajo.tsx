@@ -74,7 +74,6 @@ function Avatar({ persona }: { persona: Persona }) {
 export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
   const [abierta, setAbierta] = useState<number | null>(null);
   const [entera, setEntera] = useState(false);
-  const responsable = trabajo.personas.find((p) => p.rol === 'responsible') ?? trabajo.personas[0];
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -194,37 +193,7 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
 
         {/* El pie: quién lo hizo y cómo contactarle, a la vista (sin burbujas). `mt-auto` lo
             alinea abajo aunque las descripciones midan distinto. */}
-        {responsable && (
-          <div className="mt-auto pt-4 border-t border-[var(--linea)] flex items-center gap-3">
-            <span className="flex shrink-0">
-              {trabajo.personas.slice(0, 3).map((p, i) => (
-                <span key={p.memberId} className={i === 0 ? '' : '-ml-2.5'}><Avatar persona={p} /></span>
-              ))}
-            </span>
-            <span className="min-w-0 flex-1 text-[13px] leading-tight">
-              <span className="block truncate font-semibold text-[var(--texto)]">{responsable.nombre}</span>
-              {trabajo.personas.length > 1 && (
-                <span className="text-[12px] text-[var(--tenue)]">y {trabajo.personas.length - 1} más</span>
-              )}
-            </span>
-            {responsable.correo && (
-              <a href={`mailto:${responsable.correo}`} title={responsable.correo} aria-label={`Escribir a ${responsable.nombre}`} className="contacto-redondo">
-                <Mail aria-hidden />
-              </a>
-            )}
-            {responsable.telefono && (
-              <a href={`tel:${responsable.telefono.replace(/\s+/g, '')}`} title={responsable.telefono} aria-label={`Llamar a ${responsable.nombre}`} className="contacto-redondo">
-                <Phone aria-hidden />
-              </a>
-            )}
-            {enlaceWhatsApp(responsable.telefono) && (
-              <a href={enlaceWhatsApp(responsable.telefono)!} target="_blank" rel="noopener noreferrer"
-                title="WhatsApp" aria-label={`Escribir a ${responsable.nombre} por WhatsApp`} className="contacto-redondo contacto-whatsapp">
-                <IconoWhatsApp className="" />
-              </a>
-            )}
-          </div>
-        )}
+        <PieContacto personas={trabajo.personas} />
       </div>
 
       {/* El visor: `<dialog>` NATIVO. Trae hecho lo que un diálogo casero olvida —atrapa el
@@ -282,5 +251,45 @@ export default function TarjetaTrabajo({ trabajo }: { trabajo: Trabajo }) {
         </dialog>
       )}
     </article>
+  );
+}
+
+/**
+ * El pie de una tarjeta: quién lo hizo y cómo contactarle (correo, teléfono y WhatsApp). Lo usan
+ * los proyectos, los tickets y las soluciones (`TarjetaProducto`). `mt-auto` lo alinea abajo.
+ */
+export function PieContacto({ personas }: { personas: Persona[] }) {
+  const responsable = personas.find((p) => p.rol === 'responsible') ?? personas[0];
+  if (!responsable) return null;
+  return (
+    <div className="mt-auto pt-4 border-t border-[var(--linea)] flex items-center gap-3">
+      <span className="flex shrink-0">
+        {personas.slice(0, 3).map((p, i) => (
+          <span key={p.memberId} className={i === 0 ? '' : '-ml-2.5'}><Avatar persona={p} /></span>
+        ))}
+      </span>
+      <span className="min-w-0 flex-1 text-[13px] leading-tight">
+        <span className="block truncate font-semibold text-[var(--texto)]">{responsable.nombre}</span>
+        {personas.length > 1 && (
+          <span className="text-[12px] text-[var(--tenue)]">y {personas.length - 1} más</span>
+        )}
+      </span>
+      {responsable.correo && (
+        <a href={`mailto:${responsable.correo}`} title={responsable.correo} aria-label={`Escribir a ${responsable.nombre}`} className="contacto-redondo">
+          <Mail aria-hidden />
+        </a>
+      )}
+      {responsable.telefono && (
+        <a href={`tel:${responsable.telefono.replace(/\s+/g, '')}`} title={responsable.telefono} aria-label={`Llamar a ${responsable.nombre}`} className="contacto-redondo">
+          <Phone aria-hidden />
+        </a>
+      )}
+      {enlaceWhatsApp(responsable.telefono) && (
+        <a href={enlaceWhatsApp(responsable.telefono)!} target="_blank" rel="noopener noreferrer"
+          title="WhatsApp" aria-label={`Escribir a ${responsable.nombre} por WhatsApp`} className="contacto-redondo contacto-whatsapp">
+          <IconoWhatsApp className="" />
+        </a>
+      )}
+    </div>
   );
 }

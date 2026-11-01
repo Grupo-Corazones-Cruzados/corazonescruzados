@@ -610,13 +610,43 @@ export interface MiembroConTalento {
   telefono: string | null;
 }
 
-/** Un producto del catálogo, para la pestaña «Productos». */
+/** Un producto del catálogo, que en el sitio se llama «Solución» (Fernando, 2026-10-31). */
 export interface Producto {
   id: number;
   nombre: string;
   descripcion: string | null;
   imagen: string | null;
   precio: number | null;
+  /** El talento que lo declara (el de su ítem del portafolio). */
+  talento: string | null;
+  /** Cuándo se publicó (`created_at`), para el filtro por año. */
+  creado: string | null;
+  /** Quien lo publicó en su portafolio: el contacto del pie de la tarjeta. */
+  personas: Persona[];
+}
+
+const CONSULTA_PRODUCTOS = `
+  SELECT p.id, p.name, p.description, p.image_url, p.price, p.created_at, i.talent,
+         m.id AS member_id, m.name AS member_name, m.photo_url, m.email, m.phone
+    FROM gcc_world.products p
+    JOIN gcc_world.member_portfolio_items i ON i.id = p.portfolio_item_id
+    LEFT JOIN gcc_world.members m ON m.id = i.member_id
+   WHERE COALESCE(p.is_active, true) = true`;
+
+function productoDeFila(r: any): Producto {
+  return {
+    id: Number(r.id),
+    nombre: r.name,
+    descripcion: r.description ?? null,
+    imagen: r.image_url ? capturaDifuminada(r.image_url) : null,
+    precio: r.price === null || r.price === undefined ? null : Number(r.price),
+    talento: r.talent ?? null,
+    creado: r.created_at ? new Date(r.created_at).toISOString() : null,
+    personas: r.member_id ? [{
+      memberId: Number(r.member_id), nombre: r.member_name, foto: r.photo_url ?? null,
+      correo: r.email ?? null, telefono: r.phone ?? null, rol: 'responsible',
+    }] : [],
+  };
 }
 
 /** Todo lo que se enseña de un talento, ya repartido por pestaña. */
@@ -667,20 +697,21 @@ export async function miembrosConTalento(talento: string): Promise<MiembroConTal
  */
 export async function productosDeTalento(talento: string): Promise<Producto[]> {
   const { rows } = await pool.query(
-    `SELECT p.id, p.name, p.description, p.image_url, p.price
-       FROM gcc_world.products p
-       JOIN gcc_world.member_portfolio_items i ON i.id = p.portfolio_item_id
-      WHERE i.talent = $1 AND COALESCE(p.is_active, true) = true
+    `${CONSULTA_PRODUCTOS} AND i.talent = $1
       ORDER BY p.updated_at DESC NULLS LAST, p.id DESC`,
     [talento],
   );
-  return rows.map((r: any) => ({
-    id: Number(r.id),
-    nombre: r.name,
-    descripcion: r.description ?? null,
-    imagen: r.image_url ? capturaDifuminada(r.image_url) : null,
-    precio: r.price === null || r.price === undefined ? null : Number(r.price),
-  }));
+  return rows.map(productoDeFila);
+}
+
+/**
+ * TODAS LAS SOLUCIONES PUBLICADAS — bajo el tema «Soluciones» de Clientes (Fernando, 2026-11-01:
+ * «poner las soluciones o productos existentes, pero con el nombre de soluciones, y poner los
+ * filtros»). Las mismas que las pestañas de cada talento, de la más reciente a la más antigua.
+ */
+export async function solucionesPublicadas(): Promise<Producto[]> {
+  const { rows } = await pool.query(`${CONSULTA_PRODUCTOS} ORDER BY p.created_at DESC NULLS LAST, p.id DESC`);
+  return rows.map(productoDeFila);
 }
 
 /** Todo lo de un talento, en una llamada: es lo que consume la página pública. */

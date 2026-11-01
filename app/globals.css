@@ -4754,7 +4754,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 
 /* ══ LA LISTA DE SOLUCIONES Y LA PÁGINA DE CADA UNA — Clientes (2026-10-31) ═══════════════════
-   `ListaSoluciones.tsx` (dentro del tema «Soluciones»), `clientes/soluciones/[solucion]/page.tsx`
+   `ListaSoluciones.tsx` (quitada del tema «Soluciones» el 2026-11-01: `.solucion-fila*` ya no se usa), `clientes/soluciones/[solucion]/page.tsx`
    y `SolucionDetalle.tsx` (pestañas numeradas de lo hecho, con `.tema-pestana`). */
 .tema-contenido { margin-top: 22px; animation: temaEntra 520ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both; }
 .lista-soluciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
