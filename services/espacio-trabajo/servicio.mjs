@@ -165,7 +165,7 @@ function textoUsuario(t) {
   }
   const limpio = plegarCadena(texto.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim());
   if (!limpio) return null;
-  if (/^(<local-command|<command-message|<task-notification|Caveat: |Base directory for this skill:|This session is being continued)/.test(limpio)) return null;
+  if (/^(<local-command|<command-message|<task-notification|Caveat: |Base directory for this skill:|This session is being continued|\[Request interrupted by user)/.test(limpio)) return null;
   return limpio;
 }
 
@@ -327,9 +327,12 @@ class SesionViva {
       return;
     }
     if (m.type === 'result') {
-      this.noVisto = this.clientes.size === 0;
+      const detenida = this.detenida === true;
+      this.detenida = false;
+      // Lo que paraste tú no hay que avisártelo.
+      this.noVisto = this.clientes.size === 0 && !detenida;
       this.emitir({
-        tipo: 'fin', ok: m.subtype === 'success' && !m.is_error, duracion: m.duration_ms,
+        tipo: 'fin', detenida, ok: m.subtype === 'success' && !m.is_error, duracion: m.duration_ms,
         error: m.subtype === 'success' ? null : (m.errors || []).join(' ') || m.subtype,
         tokens: m.usage ? (m.usage.input_tokens || 0) + (m.usage.cache_read_input_tokens || 0) + (m.usage.cache_creation_input_tokens || 0) : null,
       });
@@ -693,7 +696,13 @@ ruta('POST', '/sesiones/:id/enviar', async ({ p, cuerpo }) => {
   return { ok: true };
 });
 const viva = (id) => { const s = vivas.get(id); if (!s) throw new ErrorApi(409, 'La sesión no está en marcha.'); return s; };
-ruta('POST', '/sesiones/:id/detener', async ({ p }) => { await viva(p.id).q.interrupt(); return { ok: true }; });
+/** Para lo que esté haciendo, incluidas las tareas en segundo plano. La conversación sigue donde estaba. */
+ruta('POST', '/sesiones/:id/detener', async ({ p }) => {
+  const s = viva(p.id);
+  if (s.estado === 'trabajando' || s.estado === 'espera') { s.detenida = true; await s.q.interrupt(); }
+  await Promise.all([...s.tareas].map((t) => s.q.stopTask(t).catch(() => {})));
+  return { ok: true };
+});
 ruta('POST', '/sesiones/:id/responder', async ({ p, cuerpo }) => { viva(p.id).responder(cuerpo.solicitudId, cuerpo); return { ok: true }; });
 ruta('POST', '/sesiones/:id/ajustes', async ({ p, cuerpo }) => {
   const s = vivas.get(p.id);

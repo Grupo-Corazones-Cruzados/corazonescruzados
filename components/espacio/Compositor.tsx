@@ -151,10 +151,11 @@ function useBorrador(clave: string, texto: string, setTexto: (f: (t: string) => 
 }
 
 export default function Compositor({
-  proyectoId, trabajando, deshabilitado, sesionId, modelo, modo, enEscritorio, alCambiarModelo, alCambiarModo, alEnviar, alDetener, alLimpiar,
+  proyectoId, trabajando, detenible, deshabilitado, sesionId, modelo, modo, enEscritorio, alCambiarModelo, alCambiarModo, alEnviar, alDetener, alLimpiar,
 }: {
   proyectoId: string;
   trabajando: boolean;
+  detenible: boolean;
   deshabilitado?: boolean;
   sesionId: string | null;
   modelo: string;
@@ -261,6 +262,14 @@ export default function Compositor({
     if (ok) { setTexto(''); setImagenes([]); setAdjuntos([]); } else if (t) borrador.restaurar(t);
   }
 
+  /* Esc para, como en la terminal, con el cursor en el cuadro o sin foco en ningún control. */
+  useEffect(() => {
+    if (!detenible) return;
+    const alPulsar = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape' && document.activeElement === document.body) alDetener(); };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [detenible, alDetener]);
+
   function tecla(e: KeyboardEvent) {
     if (sugerencias.length) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setIndice((i) => (i + 1) % sugerencias.length); return; }
@@ -268,6 +277,7 @@ export default function Compositor({
       if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) { e.preventDefault(); completar(sugerencias[indice].name); return; }
       if (e.key === 'Escape') { e.preventDefault(); setCerrado(true); return; }
     }
+    if (e.key === 'Escape' && detenible) { e.preventDefault(); alDetener(); return; }
     // En el teléfono, Intro es salto de línea: se envía con el botón.
     if (e.key === 'Enter' && !e.shiftKey && enEscritorio && !e.nativeEvent.isComposing) { e.preventDefault(); enviar(); }
   }
@@ -292,8 +302,11 @@ export default function Compositor({
       {dictado.estado === 'transcribiendo' ? <Loader2 className="w-4 h-4 animate-spin" /> : grabando ? <Square className="w-3.5 h-3.5 fill-current" /> : <Mic className="w-4 h-4" />}
     </button>
   );
-  const principal = trabajando && !hayAlgo
-    ? <button type="button" onClick={alDetener} aria-label="Detener" title="Detener" className={`${BTN_ICONO_SECUNDARIO} ${icono}`}><Square className="w-3.5 h-3.5" /></button>
+  /* Parar va aparte de enviar: lo escrito se queda en el cuadro para mandar la corrección. */
+  const detener = detenible && (
+    <button type="button" onClick={alDetener} aria-label="Detener" title={enEscritorio ? 'Detener (Esc)' : 'Detener'} className={`${BTN_ICONO_SECUNDARIO} ${icono} !border-red-400 !text-red-400`}><Square className="w-3.5 h-3.5 fill-current" /></button>
+  );
+  const principal = detenible && !hayAlgo ? null
     : <button type="button" onClick={enviar} disabled={enviando || subiendo || deshabilitado || !hayAlgo} aria-label="Enviar" title="Enviar" className={`${BTN_ICONO_PRIMARIO} ${enEscritorio ? '' : '!w-9 !h-9 !min-w-9 !min-h-9 shrink-0'}`}>
         {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
       </button>;
@@ -343,11 +356,11 @@ export default function Compositor({
             {adjuntar}
             <SelectoresSesion sesionId={sesionId} modelo={modelo} modo={modo} alCambiarModelo={alCambiarModelo} alCambiarModo={alCambiarModo} />
             <span className="flex-1" />
-            {contador}{microfono}{principal}
+            {contador}{microfono}{detener}{principal}
           </div>
         </>
       ) : (
-        <div className="flex items-end gap-0.5">{adjuntar}{campo}{contador && <span className="self-center">{contador}</span>}{microfono}{principal}</div>
+        <div className="flex items-end gap-0.5">{adjuntar}{campo}{contador && <span className="self-center">{contador}</span>}{microfono}{detener}{principal}</div>
       )}
     </div>
   );

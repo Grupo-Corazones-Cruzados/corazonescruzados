@@ -14,7 +14,7 @@ import Compositor, { SelectoresSesion, type Imagen } from './Compositor';
 import RenombrarSesion from './RenombrarSesion';
 import { api, ErrorEspacio, escucharEventos, EVENTO_TITULO, MODOS, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
 
-interface Fin { ok: boolean; duracion: number; error: string | null }
+interface Fin { ok: boolean; detenida?: boolean; duracion: number; error: string | null }
 
 const segundos = (ms: number) => (ms < 60000 ? `${Math.round(ms / 1000)} s` : `${Math.floor(ms / 60000)} min ${Math.round((ms % 60000) / 1000)} s`);
 
@@ -97,7 +97,7 @@ export default function Conversacion({
       case 'solicitud': setSolicitudes((l) => (l.some((x) => x.solicitudId === e.solicitudId) ? l : [...l, e])); break;
       case 'solicitud_fin': setSolicitudes((l) => l.filter((x) => x.solicitudId !== e.solicitudId)); break;
       case 'fin':
-        setParcial(''); setFin({ ok: e.ok, duracion: e.duracion, error: e.error }); alCambiar();
+        setParcial(''); setFin({ ok: e.ok, detenida: e.detenida, duracion: e.duracion, error: e.error }); alCambiar();
         if (idRef.current) api(`/sesiones/${idRef.current}/mensajes?proyecto=${proyecto.id}&antes=0`).then((j) => { if (j.titulo) setTitulo(j.titulo); }).catch(() => {});
         break;
       case 'error': setError(e.texto); break;
@@ -258,7 +258,7 @@ export default function Conversacion({
             {solicitudes.map((s) => <TarjetaSolicitud key={s.solicitudId} s={s} responder={responder} />)}
             {trabajando && !parcial && !solicitudes.length && <p className="flex items-center gap-2 text-[12.5px] text-accent"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Trabajando</p>}
             {tareas > 0 && !trabajando && <p className="flex items-center gap-2 text-[12.5px] text-accent"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {tareas === 1 ? 'Una tarea sigue' : `${tareas} tareas siguen`} en segundo plano. Claude retomará al terminar.</p>}
-            {fin && !trabajando && !tareas && <p className={`text-[11.5px] tabular-nums ${fin.ok ? 'text-digi-muted' : 'text-red-400'}`}>{fin.ok ? `Terminó en ${segundos(fin.duracion)}` : `Terminó con error: ${fin.error || 'sin detalle'}`}</p>}
+            {fin && !trabajando && !tareas && <p className={`text-[11.5px] tabular-nums ${fin.ok || fin.detenida ? 'text-digi-muted' : 'text-red-400'}`}>{fin.detenida ? 'Detenida' : fin.ok ? `Terminó en ${segundos(fin.duracion)}` : `Terminó con error: ${fin.error || 'sin detalle'}`}</p>}
             {error && <p className={`rounded-lg border p-3 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error}</p>}
           </div>
         </div>
@@ -266,7 +266,7 @@ export default function Conversacion({
       </div>
 
       <div className="max-lg:pb-[var(--seguro-abajo)] bg-digi-card">
-        <Compositor key={sesionId || 'nueva'} proyectoId={proyecto.id} trabajando={trabajando} sesionId={sesionId} modelo={modelo} modo={modo} enEscritorio={enEscritorio}
+        <Compositor key={sesionId || 'nueva'} proyectoId={proyecto.id} trabajando={trabajando} detenible={trabajando || estado === 'espera' || tareas > 0} sesionId={sesionId} modelo={modelo} modo={modo} enEscritorio={enEscritorio}
           alCambiarModelo={(m) => { setModelo(m); ajustar({ modelo: m }); }}
           alCambiarModo={(m) => { setModo(m); ajustar({ modo: m }); }}
           alEnviar={mandar}

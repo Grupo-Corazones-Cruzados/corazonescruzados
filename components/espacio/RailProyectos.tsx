@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion, MessageSquareDashed, Plus, Search, SquareTerminal, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion, MessageSquareDashed, Plus, Search, Square, SquareTerminal, X } from 'lucide-react';
 import BotonEditar from '@/components/ui/BotonEditar';
 import { BTN_ICONO_FILA } from '@/components/ui/Button';
 import RenombrarSesion, { type SesionARenombrar } from './RenombrarSesion';
 import { api, claveBorrador, EVENTO_BORRADOR, EVENTO_TITULO, hace, TEXTO_ESTADO, type Proyecto, type Sesion, type Viva } from './api';
 
 const SIN_ENVIAR = 'Escrito sin enviar';
-/* En el teléfono no hay «pasar el ratón»: las acciones de la fila se ven siempre. */
-const AL_PASAR = 'lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100 transition-opacity';
+
 
 function MarcaBorrador({ className = '' }: { className?: string }) {
   return <span role="img" aria-label={SIN_ENVIAR} title={SIN_ENVIAR} className={`shrink-0 text-amber-400 ${className}`}><MessageSquareDashed className="w-3.5 h-3.5" /></span>;
@@ -32,6 +31,18 @@ export function FilaSesion({ titulo, linea, activa, alElegir, icono, borrador }:
 function procesando(s: Sesion) {
   const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
   return v ? v.estado === 'iniciando' || v.estado === 'trabajando' || (v.tareas || 0) > 0 : s.estadoTerminal === 'busy';
+}
+
+/** Solo se para desde aquí lo que corre aquí: una terminal se para en su terminal. */
+function detenible(s: Sesion) {
+  return !!s.viva && s.viva.estado !== 'cerrada' && (procesando(s) || s.viva.estado === 'espera');
+}
+
+function BotonDetener({ s }: { s: Sesion }) {
+  return (
+    <button type="button" onClick={() => { api(`/sesiones/${s.id}/detener`, { cuerpo: {} }).catch(() => {}); }} aria-label={`Detener ${s.titulo}`} title="Detener"
+      className={`${BTN_ICONO_FILA} !text-red-400`}><Square className="w-3 h-3 fill-current" /></button>
+  );
 }
 
 /** Qué está haciendo la sesión, de un vistazo. Lo escrito sin enviar es aparte: puede darse a la vez. */
@@ -168,10 +179,10 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                     icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]}
                     linea={lineaSesion(alDia(s), proyectos.find((p) => p.id === s.proyecto)?.nombre)} />
                 </div>
-                <BotonEditar onClick={() => setNombrando(s)} etiqueta={`Cambiar el nombre de ${s.titulo}`} title="Cambiar nombre" className={AL_PASAR} />
-                {procesando(alDia(s)) ? <span aria-hidden className="shrink-0 w-7" /> : (
+                <BotonEditar onClick={() => setNombrando(s)} etiqueta={`Cambiar el nombre de ${s.titulo}`} title="Cambiar nombre" />
+                {detenible(alDia(s)) ? <BotonDetener s={s} /> : procesando(alDia(s)) ? <span aria-hidden className="shrink-0 w-7" /> : (
                   <button type="button" onClick={() => cerrarActiva(s.id)} aria-label={`Cerrar la sesión ${s.titulo}`} title="Cerrar sesión"
-                    className={`${BTN_ICONO_FILA} ${AL_PASAR}`}><X className="w-3.5 h-3.5" /></button>
+                    className={BTN_ICONO_FILA}><X className="w-3.5 h-3.5" /></button>
                 )}
               </div>
             ))}
@@ -203,7 +214,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                       {borradores[claveBorrador(p.id, null)] && <MarcaBorrador />}
                       {activos > 0 && <span className="shrink-0 text-[11px] font-semibold tabular-nums text-accent">{activos}</span>}
                     </button>
-                    <span className="hidden lg:inline-flex lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity"><BotonEditar onClick={() => alEditar(p)} etiqueta={`Editar ${p.nombre}`} /></span>
+                    <span className="hidden lg:inline-flex"><BotonEditar onClick={() => alEditar(p)} etiqueta={`Editar ${p.nombre}`} /></span>
                     <button type="button" onClick={() => alNueva(p.id)} aria-label={`Sesión nueva en ${p.nombre}`} title="Sesión nueva" className={BTN_ICONO_FILA}><Plus className="w-3.5 h-3.5" /></button>
                   </div>
                   {abierto && (
@@ -215,7 +226,8 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                           <div className="flex-1 min-w-0">
                             <FilaSesion titulo={s.titulo} linea={lineaSesion(alDia(s))} icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]} activa={!desdeActivas && sesionId === s.id} alElegir={() => alElegir(p.id, s.id)} />
                           </div>
-                          <BotonEditar onClick={() => setNombrando(s)} etiqueta={`Cambiar el nombre de ${s.titulo}`} title="Cambiar nombre" className={AL_PASAR} />
+                          <BotonEditar onClick={() => setNombrando(s)} etiqueta={`Cambiar el nombre de ${s.titulo}`} title="Cambiar nombre" />
+                          {detenible(alDia(s)) && <BotonDetener s={s} />}
                         </div>
                       ))}
                       <button type="button" onClick={() => alEditar(p)} className="lg:hidden px-2 py-1.5 text-[12px] text-digi-muted hover:text-digi-text">Editar proyecto</button>
