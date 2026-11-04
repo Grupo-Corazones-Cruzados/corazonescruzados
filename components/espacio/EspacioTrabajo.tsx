@@ -58,7 +58,7 @@ function Espacio() {
   useEffect(() => { document.title = espera ? `(${espera}) Espacio de trabajo` : 'Espacio de trabajo'; }, [espera]);
 
   const pestanas = (
-    <div className="shrink-0 p-2 border-b border-digi-border">
+    <div className="shrink-0 px-2 py-1.5 lg:p-2 border-b border-digi-border">
       <Segmentado<Vista> etiqueta="Vista" className="w-full" valor={vista} onChange={(v) => ir({ v })} opciones={[
         { valor: 'sesiones', texto: 'Sesiones' }, { valor: 'incidencias', texto: 'Incidencias' },
       ]} />
@@ -107,7 +107,7 @@ function Espacio() {
   return (
     <>
       {error && <p className={`mb-2 rounded-lg border p-2.5 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error}</p>}
-      <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} className="bg-digi-card border border-digi-border rounded-lg overflow-hidden">
+      <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} className="bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden">
         {contenido}
       </PanelHastaElPie>
       <PanelProyecto abierto={editar.abierto} proyecto={editar.proyecto} alCerrar={() => setEditar((x) => ({ ...x, abierto: false }))} alCambiar={() => { cargarProyectos(); refrescar(); }} />

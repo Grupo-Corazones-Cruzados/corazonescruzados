@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ChevronLeft, Copy, Loader2, Pencil, Power, SquareTerminal } from 'lucide-react';
+import { ArrowDown, ChevronLeft, Copy, Loader2, Pencil, Power, SlidersHorizontal, SquareTerminal } from 'lucide-react';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import MenuMas from '@/components/ui/MenuMas';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelModal from '@/components/ui/PixelModal';
@@ -11,8 +12,8 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import ListaMensajes from './Bloques';
 import TarjetaSolicitud from './Solicitud';
-import Compositor, { type Imagen } from './Compositor';
-import { api, ErrorEspacio, escucharEventos, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
+import Compositor, { SelectoresSesion, type Imagen } from './Compositor';
+import { api, ErrorEspacio, escucharEventos, MODOS, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
 
 interface Fin { ok: boolean; duracion: number; error: string | null }
 
@@ -49,6 +50,8 @@ export default function Conversacion({
   const [confirmar, setConfirmar] = useState<null | (() => void)>(null);
   const [renombrar, setRenombrar] = useState<string | null>(null);
   const [comando, setComando] = useState('');
+  const [ajustes, setAjustes] = useState(false);
+  const enEscritorio = useConsultaMedia(PANTALLA_LG);
   const fuente = useRef<(() => void) | null>(null);
   const ultimoSeq = useRef(0);
   const vistos = useRef(new Set<string>());
@@ -148,9 +151,9 @@ export default function Conversacion({
     requestAnimationFrame(() => { if (c) c.scrollTop = c.scrollHeight - alto; });
   }
 
-  async function mandar(texto: string, imagenes: Imagen[], forzar = false): Promise<boolean> {
+  async function mandar(texto: string, imagenes: Imagen[], adjuntos: string[], forzar = false): Promise<boolean> {
     const cuerpo = {
-      proyecto: proyecto.id, texto, forzar, modo,
+      proyecto: proyecto.id, texto, forzar, modo, adjuntos,
       modelo: modelo === 'default' ? undefined : modelo,
       imagenes: imagenes.map(({ tipo, datos }) => ({ tipo, datos })),
     };
@@ -172,7 +175,7 @@ export default function Conversacion({
       if (e instanceof ErrorEspacio && e.codigo === 'abierta_en_terminal') {
         return new Promise((ok) => setConfirmar(() => async () => {
           setConfirmar(null);
-          ok(await mandar(texto, imagenes, true));
+          ok(await mandar(texto, imagenes, adjuntos, true));
         }));
       }
       setError(e instanceof Error ? e.message : 'No se pudo enviar.');
@@ -213,20 +216,21 @@ export default function Conversacion({
 
   return (
     <section className="flex flex-col min-h-0 min-w-0 h-full">
-      <header className="shrink-0 flex items-center gap-2 px-3 min-h-12 border-b border-digi-border">
+      <header className="shrink-0 flex items-center gap-1.5 pl-2 pr-1.5 lg:px-3 min-h-11 lg:min-h-12 border-b border-digi-border">
         {alVolver && <button type="button" onClick={alVolver} aria-label="Volver a la lista" className="destino-tactil -ml-1 w-8 h-8 flex items-center justify-center rounded-md text-digi-muted hover:text-digi-text"><ChevronLeft className="w-5 h-5" /></button>}
         <div className="min-w-0 flex-1">
           <h2 className="text-[13.5px] font-semibold text-digi-text truncate" title={titulo}>{sesionId ? titulo || 'Sesión' : 'Sesión nueva'}</h2>
           <p className="text-[11.5px] text-digi-muted truncate" title={carpeta}>
-            {proyecto.nombre}{lineaEstado && <> · <span className={lineaEstado.clase}>{lineaEstado.texto}</span></>}{enTerminal && !estado && <> · <span className="text-amber-400">Abierta en una terminal</span></>}
+            {proyecto.nombre}{!enEscritorio && modo !== 'bypassPermissions' && <> · {MODOS.find((m) => m.valor === modo)?.texto}</>}{lineaEstado && <> · <span className={lineaEstado.clase}>{lineaEstado.texto}</span></>}{enTerminal && !estado && <> · <span className="text-amber-400">Abierta en una terminal</span></>}
           </p>
         </div>
-        {sesionId && (
+        {(sesionId || !enEscritorio) && (
           <MenuMas items={[
-            { label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(titulo) },
+            ...(enEscritorio ? [] : [{ label: 'Modelo y permisos', icon: SlidersHorizontal, onClick: () => setAjustes(true) }]),
+            ...(!sesionId ? [] : [{ label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(titulo) },
             { label: 'Abrir en Terminal', icon: SquareTerminal, onClick: () => terminal(true), disabled: trabajando, hint: 'Primero detén la sesión' },
             { label: 'Copiar comando de terminal', icon: Copy, onClick: () => terminal(false), disabled: trabajando, hint: 'Primero detén la sesión' },
-            { label: 'Cerrar el proceso', icon: Power, onClick: () => { api(`/sesiones/${sesionId}/cerrar`, { cuerpo: {} }).then(() => { setEstado(null); alCambiar(); }); }, disabled: !estado },
+            { label: 'Cerrar el proceso', icon: Power, onClick: () => { api(`/sesiones/${sesionId}/cerrar`, { cuerpo: {} }).then(() => { setEstado(null); alCambiar(); }); }, disabled: !estado }]),
           ]} />
         )}
       </header>
@@ -249,7 +253,7 @@ export default function Conversacion({
       </div>
 
       <div className="max-lg:pb-[var(--seguro-abajo)] bg-digi-card">
-        <Compositor trabajando={trabajando} sesionId={sesionId} modelo={modelo} modo={modo}
+        <Compositor proyectoId={proyecto.id} trabajando={trabajando} sesionId={sesionId} modelo={modelo} modo={modo} enEscritorio={enEscritorio}
           alCambiarModelo={(m) => { setModelo(m); ajustar({ modelo: m }); }}
           alCambiarModo={(m) => { setModo(m); ajustar({ modo: m }); }}
           alEnviar={mandar}
@@ -263,6 +267,11 @@ export default function Conversacion({
       <PixelModal open={renombrar !== null} onClose={() => setRenombrar(null)} title="Cambiar nombre" size="sm"
         pie={<PieAcciones><button type="button" className={BTN_SECONDARY} onClick={() => setRenombrar(null)}>Cancelar</button><button type="button" className={BTN_PRIMARY} onClick={guardarTitulo}>Guardar</button></PieAcciones>}>
         <PixelInput label="Nombre" value={renombrar || ''} autoFocus onChange={(e) => setRenombrar(e.target.value)} />
+      </PixelModal>
+      <PixelModal open={ajustes} onClose={() => setAjustes(false)} title="Modelo y permisos" size="sm">
+        <SelectoresSesion sesionId={sesionId} modelo={modelo} modo={modo} columna
+          alCambiarModelo={(m) => { setModelo(m); ajustar({ modelo: m }); }}
+          alCambiarModo={(m) => { setModo(m); ajustar({ modo: m }); }} />
       </PixelModal>
       <PixelModal open={!!comando} onClose={() => setComando('')} title="Comando copiado" size="sm">
         <pre className="text-[12px] font-mono whitespace-pre-wrap break-all rounded-md bg-digi-darker p-2.5 text-digi-text">{comando}</pre>

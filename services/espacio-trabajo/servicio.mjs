@@ -6,7 +6,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFile } from 'node:child_process';
 import { query, listSessions, getSessionMessages, renameSession, getSessionInfo } from '@anthropic-ai/claude-agent-sdk';
-import { ajustesDeSesion, entornoLimpio, RAICES_CLIENTES } from './aislamiento.mjs';
+import { pipeline } from 'node:stream/promises';
+import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, RAICES_CLIENTES } from './aislamiento.mjs';
 
 /**
  * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
@@ -23,6 +24,9 @@ const CLAUDE = process.env.CLAUDE_BIN || path.join(os.homedir(), '.local/bin/cla
 const MODO_DEFECTO = 'bypassPermissions';
 const INACTIVA_MS = 30 * 60_000;
 const MAX_EVENTOS = 4000;
+const MAX_ADJUNTO = 100 * 1024 * 1024;
+const DIAS_ADJUNTOS = 30;
+const MARCA_ADJUNTOS = '[Archivos adjuntos por el usuario. Léelos con la herramienta Read]';
 
 fs.mkdirSync(DATOS, { recursive: true, mode: 0o700 });
 const rutaDato = (n) => path.join(DATOS, n);
@@ -151,6 +155,22 @@ function textoUsuario(t) {
   return limpio;
 }
 
+/** Separa de un mensaje las rutas de sus adjuntos: en pantalla se ve el nombre, no la ruta. */
+function bloquesDeTexto(tipo, texto) {
+  if (tipo !== 'user') return texto && texto.trim() ? [{ tipo: 'texto', texto }] : [];
+  const limpio = textoUsuario(texto);
+  if (!limpio) return [];
+  const i = limpio.indexOf(MARCA_ADJUNTOS);
+  if (i < 0) return [{ tipo: 'texto', texto: limpio }];
+  const salida = [];
+  const propio = limpio.slice(0, i).trim();
+  if (propio) salida.push({ tipo: 'texto', texto: propio });
+  for (const l of limpio.slice(i + MARCA_ADJUNTOS.length).split('\n')) {
+    if (l.startsWith('- ')) salida.push({ tipo: 'adjunto', nombre: path.basename(l.slice(2).trim()) });
+  }
+  return salida;
+}
+
 function aplanarResultado(c) {
   if (typeof c === 'string') return c;
   if (!Array.isArray(c)) return '';
@@ -162,10 +182,8 @@ export function normalizar(tipo, message) {
   const bloques = [];
   const lista = typeof contenido === 'string' ? [{ type: 'text', text: contenido }] : Array.isArray(contenido) ? contenido : [];
   for (const b of lista) {
-    if (b.type === 'text') {
-      const texto = tipo === 'user' ? textoUsuario(b.text) : b.text;
-      if (texto && texto.trim()) bloques.push({ tipo: 'texto', texto });
-    } else if (b.type === 'thinking' && b.thinking) bloques.push({ tipo: 'pensando', texto: recortar(b.thinking) });
+    if (b.type === 'text') bloques.push(...bloquesDeTexto(tipo, b.text));
+    else if (b.type === 'thinking' && b.thinking) bloques.push({ tipo: 'pensando', texto: recortar(b.thinking) });
     else if (b.type === 'tool_use') bloques.push({ tipo: 'herramienta', id: b.id, nombre: b.name, entrada: recortarEntrada(b.input) });
     else if (b.type === 'tool_result') bloques.push({ tipo: 'resultado', id: b.tool_use_id, error: !!b.is_error, texto: recortar(aplanarResultado(b.content)) });
     else if (b.type === 'image') bloques.push({ tipo: 'imagen' });
@@ -201,6 +219,8 @@ class SesionViva {
 
   opciones(proyectosTodos) {
     const { cwd, proyecto, modelo, modo, retomar, id } = this;
+    const adjuntos = carpetaAdjuntos(proyecto.id, DATOS);
+    fs.mkdirSync(adjuntos, { recursive: true, mode: 0o700 });
     const opciones = {
       cwd,
       env: entornoLimpio(),
@@ -209,7 +229,7 @@ class SesionViva {
       permissionMode: modo,
       allowDangerouslySkipPermissions: true,
       includePartialMessages: true,
-      settings: ajustesDeSesion({ cwd, raizProyecto: proyecto.ruta, proyectos: proyectosTodos, sandbox: proyecto.sandbox }),
+      settings: ajustesDeSesion({ cwd, raizProyecto: proyecto.ruta, proyectos: proyectosTodos, sandbox: proyecto.sandbox, adjuntos, datos: DATOS }),
       canUseTool: (herramienta, entrada, ctx) => this.preguntar(herramienta, entrada, ctx),
     };
     if (cwd !== proyecto.ruta) opciones.additionalDirectories = [proyecto.ruta];
@@ -254,14 +274,16 @@ class SesionViva {
     s.resolver({ behavior: 'allow', updatedInput });
   }
 
-  enviar({ texto, imagenes = [] }) {
+  enviar({ texto, imagenes = [], adjuntos = [] }) {
     const contenido = [];
     for (const i of imagenes) contenido.push({ type: 'image', source: { type: 'base64', media_type: i.tipo, data: i.datos } });
-    if (texto) contenido.push({ type: 'text', text: texto });
+    const rutas = validarAdjuntos(this.proyecto, adjuntos);
+    const completo = [texto, rutas.length ? `${MARCA_ADJUNTOS}\n${rutas.map((r) => `- ${r}`).join('\n')}` : ''].filter(Boolean).join('\n\n');
+    if (completo) contenido.push({ type: 'text', text: completo });
     const uuid = crypto.randomUUID();
     this.actividad = Date.now();
     this.cambiarEstado('trabajando');
-    this.emitir({ tipo: 'mensaje', uuid, rol: 'user', bloques: normalizar('user', { content: contenido.map((b) => (b.type === 'text' ? { ...b, text: texto } : b)) }), propio: true });
+    this.emitir({ tipo: 'mensaje', uuid, rol: 'user', bloques: normalizar('user', { content: contenido }), propio: true });
     this.cola.poner({ type: 'user', uuid, session_id: this.id, parent_tool_use_id: null, message: { role: 'user', content: contenido } });
   }
 
@@ -347,6 +369,61 @@ class SesionViva {
     this.cola.cerrar();
     this.q.close();
     this.terminar();
+  }
+}
+
+/** Una ruta que venga de fuera solo vale si es un adjunto de este mismo proyecto. */
+function validarAdjuntos(proyecto, rutas) {
+  const carpeta = carpetaAdjuntos(proyecto.id, DATOS);
+  return (Array.isArray(rutas) ? rutas : []).map((r) => {
+    let real;
+    try { real = fs.realpathSync(String(r)); } catch { throw new ErrorApi(400, 'Ese adjunto ya no existe. Vuelve a adjuntarlo.'); }
+    if (!real.startsWith(`${fs.realpathSync(carpeta)}${path.sep}`)) throw new ErrorApi(400, 'Ese adjunto no es de este proyecto.');
+    return real;
+  });
+}
+
+function limpiarNombre(nombre) {
+  const base = path.basename(String(nombre || '')).replace(/[\x00-\x1f\x7f/\\]/g, ' ').trim().slice(0, 180);
+  return !base || base === '.' || base === '..' ? 'archivo' : base;
+}
+
+/** Va en crudo y por partes: un archivo de 100 MB no cabe en un JSON en memoria. */
+async function subirAdjunto(req, proyectoId, nombre) {
+  const proyecto = await proyectoPorId(proyectoId);
+  if (Number(req.headers['content-length'] || 0) > MAX_ADJUNTO) throw new ErrorApi(413, 'El archivo pasa de 100 MB.');
+  const dir = path.join(carpetaAdjuntos(proyecto.id, DATOS), crypto.randomUUID());
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const ruta = path.join(dir, limpiarNombre(nombre));
+  let total = 0;
+  try {
+    await pipeline(req, async function* (origen) {
+      for await (const trozo of origen) {
+        total += trozo.length;
+        if (total > MAX_ADJUNTO) throw new ErrorApi(413, 'El archivo pasa de 100 MB.');
+        yield trozo;
+      }
+    }, fs.createWriteStream(ruta, { mode: 0o600 }));
+  } catch (e) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    throw e;
+  }
+  return { ruta, nombre: path.basename(ruta), tamano: total };
+}
+
+/** Los adjuntos no son el proyecto: pasado un mes dejan de ocupar disco. */
+function purgarAdjuntos() {
+  const raiz = path.join(DATOS, 'adjuntos');
+  let proyectos = [];
+  try { proyectos = fs.readdirSync(raiz); } catch { return; }
+  const limite = Date.now() - DIAS_ADJUNTOS * 86400_000;
+  for (const p of proyectos) {
+    let carpetas = [];
+    try { carpetas = fs.readdirSync(path.join(raiz, p)); } catch { continue; }
+    for (const c of carpetas) {
+      const d = path.join(raiz, p, c);
+      try { if (fs.statSync(d).mtimeMs < limite) fs.rmSync(d, { recursive: true, force: true }); } catch { /* otra vuelta */ }
+    }
   }
 }
 
@@ -653,6 +730,8 @@ const servidor = http.createServer(async (req, res) => {
       if (!s) return responder(404, { error: 'La sesión no está en marcha.' });
       return sse(req, res, s, Number(url.searchParams.get('desde') || 0));
     }
+    const subida = url.pathname.match(/^\/proyectos\/([^/]+)\/adjuntos$/);
+    if (subida && req.method === 'POST') return responder(200, await subirAdjunto(req, subida[1], url.searchParams.get('nombre')));
     for (const r of rutas) {
       if (r.metodo !== req.method) continue;
       const m = url.pathname.match(r.re);
@@ -671,6 +750,8 @@ const servidor = http.createServer(async (req, res) => {
 if (process.env.ESPACIO_SIN_ARRANCAR !== '1') {
   servidor.listen(PUERTO, '127.0.0.1', () => console.log(`[espacio] servicio en 127.0.0.1:${PUERTO}`));
   precargarListas();
+  purgarAdjuntos();
+  setInterval(purgarAdjuntos, 86400_000).unref();
   // Con corriente, la Mac no se duerme mientras el servicio corre. Con batería, sí.
   spawn('caffeinate', ['-s', '-w', String(process.pid)], { stdio: 'ignore', detached: true }).unref();
   const apagar = () => { for (const s of vivas.values()) s.cerrar(); servidor.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };

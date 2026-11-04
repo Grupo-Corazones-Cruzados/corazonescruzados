@@ -43,7 +43,7 @@ export default function EspacioEnApp() {
   const src = direccion ? `${direccion}/espacio?tema=${encodeURIComponent(tema)}&oscuro=${oscuro ? 1 : 0}` : null;
 
   return (
-    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} className="relative bg-digi-card border border-digi-border rounded-lg overflow-hidden">
+    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} className="relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden max-lg:pb-[var(--seguro-abajo)]">
       {src && <iframe key={intento} src={src} title="Espacio de trabajo" allow="microphone" className={`w-full h-full border-0 ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (

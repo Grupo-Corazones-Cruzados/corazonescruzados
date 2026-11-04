@@ -42,18 +42,23 @@ export function hermanas(raiz, cwd, leer = (d) => fs.readdirSync(d)) {
 /** Nombre de la carpeta de sesiones de Claude Code para un directorio de trabajo. */
 export const carpetaSesiones = (cwd) => path.join(HOME, '.claude/projects', cwd.replace(/[^a-zA-Z0-9]/g, '-'));
 
-export function ajustesDeSesion({ cwd, raizProyecto = cwd, proyectos = [], sandbox = true, leer }) {
-  const denegar = new Set();
+/** Los adjuntos de un proyecto. Cada uno tiene la suya: un proyecto no ve los de otro. */
+export const carpetaAdjuntos = (proyectoId, datos = path.join(HOME, '.gcc-espacio')) => path.join(datos, 'adjuntos', proyectoId);
+
+export function ajustesDeSesion({ cwd, raizProyecto = cwd, proyectos = [], sandbox = true, leer, adjuntos = null, datos = path.join(HOME, '.gcc-espacio') }) {
+  // El token, la contraseña y las variables de la copia local no son para las sesiones.
+  const denegar = new Set([datos]);
   for (const raiz of RAICES_CLIENTES) {
     if (dentroDe(raizProyecto, raiz)) for (const h of hermanas(raiz, raizProyecto, leer)) denegar.add(h);
     else denegar.add(raiz);
   }
-  // Un proyecto registrado que cuelga de este (Motordesa ▸ Marketplace) sigue siendo otro proyecto.
-  const anidados = [];
+  // Abrir una carpeta madre (Motordesa) es pedir todo lo que cuelga de ella (Gestión de Ventas,
+  // Marketplace…), aunque cada una esté registrada también por su cuenta. Fernando trabaja así el
+  // cliente entero; denegarlas dejó a esa sesión sin el código que tenía que revisar (2026-11-04).
+  // Al revés no: una sesión de Marketplace sigue sin ver a Gestión de Ventas.
   for (const p of proyectos) {
-    if (p.ruta === raizProyecto || dentroDe(raizProyecto, p.ruta)) continue;
+    if (dentroDe(p.ruta, raizProyecto) || dentroDe(raizProyecto, p.ruta)) continue;
     denegar.add(p.ruta);
-    if (dentroDe(p.ruta, raizProyecto)) anidados.push(p.ruta);
   }
   const memoria = carpetaSesiones(raizProyecto);
   const memoriaCwd = carpetaSesiones(cwd);
@@ -61,8 +66,7 @@ export function ajustesDeSesion({ cwd, raizProyecto = cwd, proyectos = [], sandb
     permissions: {
       blockReadsOutsideWorkingDirectories: true,
       blockWritesOutsideWorkingDirectories: true,
-      blockReadsExemptPaths: [path.join(HOME, '.claude/skills'), path.join(HOME, '.claude/plugins'), path.join(HOME, '.claude/CLAUDE.md'), memoria, memoriaCwd],
-      deny: anidados.flatMap((r) => [`Read(/${r}/**)`, `Edit(/${r}/**)`]),
+      blockReadsExemptPaths: [path.join(HOME, '.claude/skills'), path.join(HOME, '.claude/plugins'), path.join(HOME, '.claude/CLAUDE.md'), memoria, memoriaCwd, ...(adjuntos ? [adjuntos] : [])],
     },
   };
   if (sandbox) {
@@ -79,7 +83,7 @@ export function ajustesDeSesion({ cwd, raizProyecto = cwd, proyectos = [], sandb
       filesystem: {
         denyRead: [...denegar, path.join(HOME, '.claude/projects')],
         allowRead: [
-          raizProyecto, memoria, memoriaCwd, path.join(HOME, 'Library/Keychains'), path.join(HOME, '.config/gh'),
+          raizProyecto, memoria, memoriaCwd, ...(adjuntos ? [adjuntos] : []), path.join(HOME, 'Library/Keychains'), path.join(HOME, '.config/gh'),
           path.join(HOME, '.config/git'), path.join(HOME, '.gitconfig'), path.join(HOME, '.npm'), path.join(HOME, '.npmrc'),
           path.join(HOME, '.nvm'), path.join(HOME, '.local'), path.join(HOME, '.railway'),
         ],

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertCircle, ChevronRight, FileText, Globe, ImageIcon, ListChecks, Pencil, Search, Sparkles, Terminal, Wrench } from 'lucide-react';
+import { AlertCircle, ChevronRight, FileText, Globe, ImageIcon, ListChecks, Paperclip, Pencil, Search, Sparkles, Terminal, Wrench } from 'lucide-react';
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import type { Bloque, Mensaje } from './api';
 
@@ -71,7 +71,9 @@ export default function ListaMensajes({ mensajes, parcial }: { mensajes: Mensaje
               <div className="max-w-[85%] rounded-lg bg-accent-light text-digi-text px-3 py-2 text-[13.5px] min-w-0">
                 {visibles.map((b, i) => b.tipo === 'imagen'
                   ? <span key={i} className="flex items-center gap-1.5 text-[12px] text-digi-muted"><ImageIcon className="w-3.5 h-3.5" /> Imagen</span>
-                  : b.tipo === 'texto' ? <p key={i} className="whitespace-pre-wrap break-words">{b.texto}</p> : null)}
+                  : b.tipo === 'adjunto'
+                    ? <span key={i} className="flex items-center gap-1.5 text-[12px] text-digi-muted min-w-0"><Paperclip className="w-3.5 h-3.5 shrink-0" /><span className="truncate" title={b.nombre}>{b.nombre}</span></span>
+                    : b.tipo === 'texto' ? <p key={i} className="whitespace-pre-wrap break-words">{b.texto}</p> : null)}
               </div>
             </div>
           );

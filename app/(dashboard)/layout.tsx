@@ -94,14 +94,14 @@ function Panel({ children }: { children: React.ReactNode }) {
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}
-        <main ref={mainRef} data-entrada={entrada} className="flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto lg:min-h-screen max-lg:min-h-0 max-lg:overscroll-contain">
+        <main ref={mainRef} data-entrada={entrada} className={`${sinMuelle ? 'max-lg:!p-0' : ''} flex-1 p-4 md:p-6 pb-[calc(var(--pie-panel)+1.25rem)] overflow-auto lg:min-h-screen max-lg:min-h-0 max-lg:overscroll-contain`}>
           <DashboardAccessGuard>{children}</DashboardAccessGuard>
           {/* Las acciones principales del teléfono (ver `BarraAcciones`): último hijo, para
               que su hueco quede DESPUÉS de todo y la barra no tape el último campo. */}
           <HuecoBarraAcciones />
         </main>
       </div>
-      <DashboardBreadcrumb collapsed />
+      <div className={sinMuelle ? 'max-lg:hidden' : ''}><DashboardBreadcrumb collapsed /></div>
       {/* Muelle inferior derecho, de derecha a izquierda: campanita · Mis chats · Chat
           (y GCC Bot cuando hay cotización). La campanita es el ancla: los demás se miden
           contra ella. Dentro de `.corp` para heredar el tema. */}

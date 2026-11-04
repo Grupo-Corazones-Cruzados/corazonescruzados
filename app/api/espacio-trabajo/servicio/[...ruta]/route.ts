@@ -13,7 +13,8 @@ async function pasar(req: Request, { params }: { params: Promise<{ ruta: string[
   try {
     const r = await llamarServicio(destino, {
       method: req.method, signal: req.signal,
-      body: req.method === 'GET' ? undefined : await req.text(),
+      // En bytes: un adjunto pasado por `text()` llegaría corrupto.
+      body: req.method === 'GET' ? undefined : await req.arrayBuffer(),
     });
     return new Response(r.body, {
       status: r.status,

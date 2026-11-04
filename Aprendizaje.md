@@ -62,6 +62,8 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 
 - **Dentro de las apps (2026-11-04):** probado en Chrome con cookies de terceros bloqueadas y modo app simulado: pide contraseña, entra por token, abre sesión, dicta y no desborda. Sin probar en la app web de Safari ni en la nativa real. Duda abierta: si `limitsNavigationsToAppBoundDomains` deja cargar el marco en iOS sin recompilar; el dominio ya está en `WKAppBoundDomains` para la siguiente compilación.
 
+- **Corrección (2026-11-04):** denegar los proyectos anidados fue un error. Una sesión en la carpeta `Motordesa` no pudo leer Gestión de Ventas, Marketplace ni App Pagare a la Orden. Ahora la carpeta madre alcanza todo lo suyo; los hijos entre sí y los demás clientes siguen bloqueados.
+
 ### Pendiente
 - ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.
 - Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.

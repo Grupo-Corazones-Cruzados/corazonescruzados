@@ -82,6 +82,7 @@ export type Bloque =
   | { tipo: 'texto'; texto: string }
   | { tipo: 'pensando'; texto: string }
   | { tipo: 'imagen' }
+  | { tipo: 'adjunto'; nombre: string }
   | { tipo: 'herramienta'; id: string; nombre: string; entrada: any }
   | { tipo: 'resultado'; id: string; error: boolean; texto: string };
 
