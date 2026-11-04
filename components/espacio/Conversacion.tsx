@@ -12,7 +12,7 @@ import { TONO } from '@/components/ui/tonos';
 import ListaMensajes from './Bloques';
 import TarjetaSolicitud from './Solicitud';
 import Compositor, { type Imagen } from './Compositor';
-import { api, BASE, ErrorEspacio, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
+import { api, ErrorEspacio, escucharEventos, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
 
 interface Fin { ok: boolean; duracion: number; error: string | null }
 
@@ -49,7 +49,7 @@ export default function Conversacion({
   const [confirmar, setConfirmar] = useState<null | (() => void)>(null);
   const [renombrar, setRenombrar] = useState<string | null>(null);
   const [comando, setComando] = useState('');
-  const fuente = useRef<EventSource | null>(null);
+  const fuente = useRef<(() => void) | null>(null);
   const ultimoSeq = useRef(0);
   const vistos = useRef(new Set<string>());
   const caja = useRef<HTMLDivElement>(null);
@@ -91,16 +91,14 @@ export default function Conversacion({
   }, [alCambiar, proyecto.id]);
 
   const conectar = useCallback((id: string) => {
-    fuente.current?.close();
+    fuente.current?.();
     // Cada proceso del servicio numera desde cero; lo ya visto lo descarta el `uuid`.
     ultimoSeq.current = 0;
-    const f = new EventSource(`${BASE}/sesiones/${id}/eventos?desde=0`);
-    f.onmessage = (m) => {
-      const e = JSON.parse(m.data);
+    const parar = escucharEventos(id, (e) => {
       manejar(e);
-      if (e.tipo === 'estado' && e.estado === 'cerrada') { f.close(); setSolicitudes([]); }
-    };
-    fuente.current = f;
+      if (e.tipo === 'estado' && e.estado === 'cerrada') { parar(); fuente.current = null; setSolicitudes([]); }
+    });
+    fuente.current = parar;
   }, [manejar]);
 
   const cargar = useCallback(async (id: string) => {
@@ -132,7 +130,7 @@ export default function Conversacion({
   useEffect(() => {
     setMensajes([]); setParcial(''); setSolicitudes([]); setEstado(null); setFin(null); setError(''); setTitulo(''); setEnTerminal(false); setAnteriores(null);
     if (sesionId) cargar(sesionId); else { setCargando(false); setCarpeta(proyecto.ruta); }
-    return () => { fuente.current?.close(); fuente.current = null; };
+    return () => { fuente.current?.(); fuente.current = null; };
     // Solo al cambiar de sesión: `cargar` depende del proyecto, que cambia con ella.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionId, proyecto.id]);
@@ -165,7 +163,7 @@ export default function Conversacion({
         return true;
       }
       await api(`/sesiones/${sesionId}/enviar`, { cuerpo });
-      if (!fuente.current || fuente.current.readyState === EventSource.CLOSED) conectar(sesionId);
+      if (!fuente.current) conectar(sesionId);
       setEstado('trabajando');
       setEnTerminal(false);
       alCambiar();

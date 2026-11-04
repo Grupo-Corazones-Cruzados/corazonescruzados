@@ -42,6 +42,7 @@ const TABS = [
 
 /** Solo existe en la instancia local: en la web esa ruta responde 404 y la pestaña no aparece. */
 const RUTA_ESPACIO = '/dashboard/admin/espacio';
+const RUTA_ESPACIO_APP = '/dashboard/admin/espacio-app';
 const TAB_ESPACIO = { value: 'espacio', label: 'Espacio de trabajo', Icon: SquareTerminal, grupo: 'Personal' };
 
 
@@ -59,11 +60,17 @@ function Admin() {
   const tabUrl = useSearchParams().get('tab');
   const enTelefono = !useConsultaMedia(PANTALLA_LG);
   const hidratado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
-  const [espacioLocal, setEspacioLocal] = useState(false);
+  // En la Mac se abre directo. En la app de escritorio o la del teléfono va en un marco, por la
+  // red privada. En una pestaña normal de la web la opción no existe.
+  const [rutaEspacio, setRutaEspacio] = useState<string | null>(null);
   useEffect(() => {
-    fetch('/api/espacio-trabajo/estado').then((r) => setEspacioLocal(r.ok)).catch(() => {});
+    const w = window as any;
+    const enApp = !!w.Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches;
+    fetch('/api/espacio-trabajo/estado')
+      .then((r) => setRutaEspacio(r.ok ? RUTA_ESPACIO : enApp ? RUTA_ESPACIO_APP : null))
+      .catch(() => setRutaEspacio(enApp ? RUTA_ESPACIO_APP : null));
   }, []);
-  const pestanas = espacioLocal ? [TAB_ESPACIO, ...TABS] : TABS;
+  const pestanas = rutaEspacio ? [TAB_ESPACIO, ...TABS] : TABS;
 
   useEffect(() => {
     if (tabUrl && TABS.some((t) => t.value === tabUrl)) setTab(tabUrl);
@@ -89,7 +96,7 @@ function Admin() {
       return (
         <PortadaSecciones titulo="Admin"
           secciones={pestanas.map((t) => ({ key: t.value, label: t.label, Icon: t.Icon, grupo: t.grupo }))}
-          onAbrir={(key) => router.push(key === TAB_ESPACIO.value ? RUTA_ESPACIO : `/dashboard/admin?tab=${key}`, { scroll: false })} />
+          onAbrir={(key) => router.push(key === TAB_ESPACIO.value ? rutaEspacio! : `/dashboard/admin?tab=${key}`, { scroll: false })} />
       );
     }
     return (
@@ -108,7 +115,7 @@ function Admin() {
         {pestanas.map((t) => {
           const active = tab === t.value;
           return (
-            <button key={t.value} onClick={() => (t.value === TAB_ESPACIO.value ? router.push(RUTA_ESPACIO) : setTab(t.value))}
+            <button key={t.value} onClick={() => (t.value === TAB_ESPACIO.value ? router.push(rutaEspacio!) : setTab(t.value))}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-md whitespace-nowrap transition-colors ${
                 active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.03]'
               }`}>

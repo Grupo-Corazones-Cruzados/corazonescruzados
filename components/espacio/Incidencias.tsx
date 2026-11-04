@@ -8,7 +8,7 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import Segmentado from '@/components/ui/Segmentado';
-import { api, hace, type Proyecto, type Sesion } from './api';
+import { api, cabeceras, hace, type Proyecto, type Sesion } from './api';
 import { FilaSesion } from './RailProyectos';
 
 interface MensajeWa { id: number; direccion: 'ENTRANTE' | 'SALIENTE'; tipo: string; texto: string | null; en: string }
@@ -46,7 +46,7 @@ export default function Incidencias({ cabecera, proyectos, enTelefono, alAbrirSe
 
   const cargar = useCallback(async () => {
     try {
-      const r = await fetch('/api/espacio-trabajo/incidencias');
+      const r = await fetch('/api/espacio-trabajo/incidencias', { headers: cabeceras() });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'No se pudieron leer las incidencias.');
       setConversaciones(j.conversaciones); setLocales(j.estado); setError('');

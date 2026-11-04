@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FolderOpen, Loader2 } from 'lucide-react';
 import { Suspense } from 'react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
@@ -15,10 +15,10 @@ import PanelProyecto from './PanelProyecto';
 import { api, type Proyecto, type Viva } from './api';
 
 type Vista = 'sesiones' | 'incidencias';
-const RUTA = '/dashboard/admin/espacio';
 
 function Espacio() {
   const router = useRouter();
+  const ruta = usePathname();
   const params = useSearchParams();
   const proyectoId = params.get('p');
   const sesionUrl = params.get('s');
@@ -36,9 +36,9 @@ function Espacio() {
     if (q.v === 'incidencias') u.set('v', 'incidencias');
     if (q.p) u.set('p', q.p);
     if (q.s) u.set('s', q.s);
-    const destino = `${RUTA}${u.size ? `?${u}` : ''}`;
+    const destino = `${ruta}${u.size ? `?${u}` : ''}`;
     if (sustituir) router.replace(destino, { scroll: false }); else router.push(destino, { scroll: false });
-  }, [router]);
+  }, [router, ruta]);
 
   const cargarProyectos = useCallback(() => api('/proyectos').then((j) => { setProyectos(j.proyectos); setError(''); }).catch((e) => { setError(e.message); setProyectos((p) => p ?? []); }), []);
   useEffect(() => { cargarProyectos(); }, [cargarProyectos]);

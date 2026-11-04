@@ -7,7 +7,8 @@
     "errorPath": "error.html",
     "allowNavigation": [
       "app.grupocc.org",
-      "*.grupocc.org"
+      "*.grupocc.org",
+      "luiss-macbook-pro-1.tail496c78.ts.net"
     ]
   },
   "android": {

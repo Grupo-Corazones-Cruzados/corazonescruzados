@@ -6,7 +6,7 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { api, MODOS } from './api';
+import { api, cabeceras, MODOS } from './api';
 
 export interface Imagen { tipo: string; datos: string; url: string }
 const TIPOS_IMAGEN = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
@@ -46,7 +46,7 @@ function useDictado(alTexto: (t: string) => void) {
       form.append('audio', new Blob(trozos, { type: mime }));
       form.append('mimeType', mime);
       try {
-        const r = await fetch('/api/espacio-trabajo/dictar', { method: 'POST', body: form });
+        const r = await fetch('/api/espacio-trabajo/dictar', { method: 'POST', body: form, headers: cabeceras() });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.error || 'No se pudo transcribir.');
         if (j.texto) alTexto(j.texto); else setError('No se oyó nada.');

@@ -38,8 +38,16 @@ export async function cerrarSesion() {
   (await cookies()).delete(COOKIE);
 }
 
+/**
+ * Dentro de la app, el espacio va en un marco de otro dominio. Safari no le da cookies a un marco
+ * así, de modo que ahí la sesión es un token que el navegador manda en una cabecera.
+ */
+export async function emitirToken(): Promise<string> {
+  return new SignJWT({ espacio: true }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('30d').sign(secreto());
+}
+
 export async function sesionValida(): Promise<boolean> {
-  const c = (await cookies()).get(COOKIE)?.value;
+  const c = (await cookies()).get(COOKIE)?.value || (await headers()).get('x-espacio-token');
   if (!c) return false;
   try { await jwtVerify(c, secreto()); return true; } catch { return false; }
 }

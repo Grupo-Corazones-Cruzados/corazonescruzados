@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { pool } from '@/lib/db';
 import { createToken, setAuthCookie, type UserRole } from '@/lib/auth/jwt';
-import { cerrarSesion, emitirSesion, llamarServicio, rechazo } from '@/lib/espacio-trabajo/guardia';
+import { cerrarSesion, emitirSesion, emitirToken, llamarServicio, rechazo } from '@/lib/espacio-trabajo/guardia';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (fuera) return fuera;
   const { accion, clave } = await req.json().catch(() => ({}));
   if (accion === 'salir') { await cerrarSesion(); return NextResponse.json({ ok: true }); }
-  if (accion !== 'crear' && accion !== 'entrar') return NextResponse.json({ error: 'Acción desconocida.' }, { status: 400 });
+  if (accion !== 'crear' && accion !== 'entrar' && accion !== 'token') return NextResponse.json({ error: 'Acción desconocida.' }, { status: 400 });
 
   const h = await headers();
   // La primera contraseña solo se crea sentado en la Mac, no desde la red privada.
@@ -19,11 +19,14 @@ export async function POST(req: Request) {
 
   let r: Response;
   try {
-    r = await llamarServicio(`/acceso/${accion}`, { method: 'POST', body: JSON.stringify({ clave }) });
+    r = await llamarServicio(`/acceso/${accion === 'token' ? 'entrar' : accion}`, { method: 'POST', body: JSON.stringify({ clave }) });
   } catch {
     return NextResponse.json({ error: 'El servicio local no está en marcha.' }, { status: 503 });
   }
   if (!r.ok) return NextResponse.json(await r.json().catch(() => ({ error: 'No se pudo entrar.' })), { status: r.status });
+
+  // Dentro de la app no hace falta la cuenta de GCC: la app ya tiene su sesión.
+  if (accion === 'token') return NextResponse.json({ token: await emitirToken() });
 
   const email = process.env['ESPACIO_ADMIN_EMAIL'];
   if (!email) return NextResponse.json({ error: 'Falta ESPACIO_ADMIN_EMAIL en la instancia local.' }, { status: 500 });

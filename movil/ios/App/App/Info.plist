@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CAPACITOR_DEBUG</key>
+	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>GCC World</string>
+	<string>GCC World</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -20,28 +20,43 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>org.grupocc.gccworld</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>gccworld</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Para dictar mensajes en el espacio de trabajo.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
-    <false/>
-    <key>UISceneConfigurations</key>
-    <dict>
-      <key>UIWindowSceneSessionRoleApplication</key>
-      <array>
-        <dict>
-            <key>UISceneConfigurationName</key>
-            <string>Default Configuration</string>
-            <key>UISceneDelegateClassName</key>
-            <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-            <key>UISceneStoryboardFile</key>
-            <string>Main</string>
-        </dict>
-      </array>
-    </dict>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
 	</dict>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -51,6 +66,8 @@
 	<array>
 		<string>armv7</string>
 	</array>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -66,27 +83,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<!-- Dominios de la app: iOS solo da service worker (lo que permite usar la app sin red)
-	     si la navegación se limita a estos dominios (2026-10-07). -->
 	<key>WKAppBoundDomains</key>
 	<array>
 		<string>app.grupocc.org</string>
 		<string>grupocc.org</string>
+		<string>luiss-macbook-pro-1.tail496c78.ts.net</string>
 	</array>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>org.grupocc.gccworld</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>gccworld</string>
-			</array>
-		</dict>
-	</array>
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleLightContent</string>
 </dict>
 </plist>

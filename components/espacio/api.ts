@@ -5,14 +5,70 @@ export class ErrorEspacio extends Error {
   constructor(mensaje: string, public estado: number, public codigo?: string) { super(mensaje); }
 }
 
+const LLAVE_TOKEN = 'espacio_token';
+export const RUTA_EMBEBIDA = '/espacio';
+
+export function tokenGuardado(): string | null {
+  try { return localStorage.getItem(LLAVE_TOKEN); } catch { return null; }
+}
+export function guardarToken(t: string | null) {
+  try { if (t) localStorage.setItem(LLAVE_TOKEN, t); else localStorage.removeItem(LLAVE_TOKEN); } catch { /* se volverá a pedir */ }
+}
+export function cabeceras(extra: Record<string, string> = {}): Record<string, string> {
+  const t = tokenGuardado();
+  return t ? { ...extra, 'x-espacio-token': t } : extra;
+}
+
+function sesionCaducada() {
+  if (window.location.pathname === RUTA_EMBEBIDA) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
+  else window.location.href = '/espacio-acceso';
+}
+
+/**
+ * Los eventos de una sesión. Va por `fetch` y no por EventSource porque este no deja mandar
+ * cabeceras, y dentro de la app la sesión viaja en una. Si se corta (el teléfono en segundo plano),
+ * reconecta; quien escucha descarta lo ya visto por su número.
+ */
+export function escucharEventos(id: string, alEvento: (e: any) => void): () => void {
+  const corte = new AbortController();
+  (async () => {
+    while (!corte.signal.aborted) {
+      try {
+        const r = await fetch(`${BASE}/sesiones/${id}/eventos?desde=0`, { headers: cabeceras(), signal: corte.signal });
+        if (r.status === 401) { sesionCaducada(); return; }
+        if (r.status === 404) return;
+        if (!r.ok || !r.body) throw new Error('sin eventos');
+        const lector = r.body.getReader();
+        const texto = new TextDecoder();
+        let resto = '';
+        for (;;) {
+          const { value, done } = await lector.read();
+          if (done) break;
+          resto += texto.decode(value, { stream: true });
+          let i;
+          while ((i = resto.indexOf('\n\n')) >= 0) {
+            const trozo = resto.slice(0, i);
+            resto = resto.slice(i + 2);
+            const dato = trozo.split('\n').find((l) => l.startsWith('data: '));
+            if (dato) alEvento(JSON.parse(dato.slice(6)));
+          }
+        }
+      } catch { /* se reintenta abajo */ }
+      if (corte.signal.aborted) return;
+      await new Promise((ok) => setTimeout(ok, 2000));
+    }
+  })();
+  return () => corte.abort();
+}
+
 export async function api<T = any>(ruta: string, init?: { metodo?: string; cuerpo?: unknown }): Promise<T> {
   const r = await fetch(`${BASE}${ruta}`, {
     method: init?.metodo || (init?.cuerpo !== undefined ? 'POST' : 'GET'),
-    headers: { 'Content-Type': 'application/json' },
+    headers: cabeceras({ 'Content-Type': 'application/json' }),
     body: init?.cuerpo !== undefined ? JSON.stringify(init.cuerpo) : undefined,
   });
   const j = await r.json().catch(() => ({}));
-  if (r.status === 401) { window.location.href = '/espacio-acceso'; throw new ErrorEspacio('Hay que entrar de nuevo.', 401); }
+  if (r.status === 401) { sesionCaducada(); throw new ErrorEspacio('Hay que entrar de nuevo.', 401); }
   if (!r.ok) throw new ErrorEspacio(j.error || 'No se pudo completar.', r.status, j.codigo);
   return j as T;
 }
