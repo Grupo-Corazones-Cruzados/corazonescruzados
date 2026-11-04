@@ -54,7 +54,7 @@ plist_servicio="$AGENTES/org.grupocc.espacio-servicio.plist"
 plist_web="$AGENTES/org.grupocc.espacio-web.plist"
 RUTA="$(dirname "$NODO"):$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-cat > "$plist_servicio" <<PLIST
+cat > "$plist_servicio.nuevo" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -69,7 +69,7 @@ cat > "$plist_servicio" <<PLIST
 </dict></plist>
 PLIST
 
-cat > "$plist_web" <<PLIST
+cat > "$plist_web.nuevo" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -87,10 +87,22 @@ cat > "$plist_web" <<PLIST
   <key>StandardErrorPath</key><string>$DATOS/web.log</string>
 </dict></plist>
 PLIST
-chmod 600 "$plist_web" "$plist_servicio"
+chmod 600 "$plist_web.nuevo" "$plist_servicio.nuevo"
 
+cargada() { launchctl print "gui/$UID_ACTUAL/$1" >/dev/null 2>&1; }
+
+# Reiniciar con kickstart no deja hueco: lo hace launchd, y aunque maten este instalador a la mitad
+# (o lo haya lanzado una sesión del propio servicio) la tarea vuelve sola. Entre bootout y bootstrap, en
+# cambio, un corte la deja descargada hasta que alguien la cargue: así cayó el 2026-11-04. Por eso se
+# descarga solo si la configuración cambió de verdad.
 cargar() {
+  if cargada "$1" && cmp -s "$2.nuevo" "$2"; then
+    rm -f "$2.nuevo"
+    launchctl kickstart -k "gui/$UID_ACTUAL/$1"
+    return
+  fi
   launchctl bootout "gui/$UID_ACTUAL/$1" 2>/dev/null || true
+  mv "$2.nuevo" "$2"
   # bootout termina en segundo plano: un bootstrap inmediato falla con «5: Input/output error».
   for i in 1 2 3 4 5 6 7 8 9 10; do
     sleep 1
@@ -101,7 +113,7 @@ cargar() {
 
 # La web se reinicia siempre. El servicio solo si cambió, porque reiniciarlo corta lo que esté trabajando.
 cargar org.grupocc.espacio-web "$plist_web"
-if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo || ! launchctl print "gui/$UID_ACTUAL/org.grupocc.espacio-servicio" >/dev/null 2>&1; then
+if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo || ! cargada org.grupocc.espacio-servicio || ! cmp -s "$plist_servicio.nuevo" "$plist_servicio"; then
   # Reiniciarlo corta la respuesta en curso: se espera a que no haya ninguna (hasta 15 minutos).
   for i in {1..90}; do
     curl -s -m 5 -H "Authorization: Bearer $(cat "$DATOS/token" 2>/dev/null)" http://127.0.0.1:3791/vivas | grep -q -E '"estado":"(trabajando|espera)"' || break
@@ -109,6 +121,8 @@ if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- servic
     sleep 10
   done
   cargar org.grupocc.espacio-servicio "$plist_servicio"
+else
+  rm -f "$plist_servicio.nuevo"
 fi
 
 echo "✓ Listo en http://localhost:3792/espacio-acceso"
