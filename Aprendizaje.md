@@ -208,7 +208,8 @@ revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en est
 - **El iPhone no se puede leer desde el Mac:** `devicectl` lo ve emparejado, pero lista solo 3 apps y da error al pedir
   los archivos de CapCut. Una copia de seguridad completa llevaría todos sus datos privados y puede no caber (256 GB de
   capacidad, 82 GB libres), así que no se usa.
-- **~~Subirlos a la nube de CapCut~~ — DESCARTADO el 2026-11-04:** pesan 6 GB y 1 GB, y la subida es muy lenta (Fernando).
+- **Nube de CapCut:** descartada para los dos por peso (6 GB y 1 GB) y lentitud, pero **Fernando decidió el 2026-11-04 subir
+  el de desarrollo humano**, porque su configuración de edición puede servir mucho. El del 1021 sigue sin subirse.
 - **Vía nueva:** el estilo se estudia con los **videos exportados** por AirDrop (ritmo, efectos, gráficos, audio). Sin
   los identificadores de esos proyectos: no hacen falta, porque los favoritos son referencia de gusto. Las pruebas P1,
   P2, P4 y P5 se hacen con `prueba-ia`, un proyecto pequeño creado en el Mac.
