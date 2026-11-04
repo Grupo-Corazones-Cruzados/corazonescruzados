@@ -3,9 +3,7 @@ import { create } from 'zustand';
 /**
  * Estado global mínimo de la app.
  *
- * Antes guardaba además el mundo web de los agentes ("DigiMundo") y su estado de
- * carga; ese mundo se eliminó —el mundo del juego es Godot—, así que aquí solo
- * queda el medidor de memoria que pinta la barra superior.
+ * Guarda el medidor de memoria que pinta la barra superior.
  */
 
 export type MemoryLevel = 'ok' | 'warn' | 'critical';

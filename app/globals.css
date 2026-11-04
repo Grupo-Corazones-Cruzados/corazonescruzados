@@ -123,12 +123,6 @@ html {
    LANDING PAGE — Pixel-Art / Retro Game Style
    ===================================================== */
 
-/* --- Sprite animation keyframes --- */
-@keyframes spriteWalk {
-  from { background-position-x: var(--sx, 0px); }
-  to   { background-position-x: calc(var(--sx, 0px) + var(--sw, -256px)); }
-}
-
 @keyframes slowSpin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
@@ -587,52 +581,6 @@ html {
 
 .pixel-card.pixel-card--no-hover:hover::before {
   border-color: transparent;
-}
-
-/* --- Digimon sprite container --- */
-.digi-sprite {
-  --sw: -256px;
-  width: 64px;
-  height: 64px;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  background-size: 256px 256px;
-  animation: spriteWalk 0.5s steps(4) infinite;
-}
-
-.digi-sprite-lg {
-  --sw: -512px;
-  width: 128px;
-  height: 128px;
-  background-size: 512px 512px;
-}
-
-/* Walk right (row 2, y=128 in 256px sheet) */
-.digi-walk-right {
-  background-position-y: -128px;
-}
-.digi-walk-right.digi-sprite-lg {
-  background-position-y: -256px;
-}
-
-/* Walk left (row 1, y=64 in 256px sheet) */
-.digi-walk-left {
-  background-position-y: -64px;
-}
-.digi-walk-left.digi-sprite-lg {
-  background-position-y: -128px;
-}
-
-/* Walk down (row 0) */
-.digi-walk-down {
-  background-position-y: 0;
-}
-
-/* --- Walking Digimon across screen --- */
-.digi-walker {
-  position: fixed;
-  pointer-events: auto;
-  z-index: 40;
 }
 
 /* --- Pixel art stars background --- */

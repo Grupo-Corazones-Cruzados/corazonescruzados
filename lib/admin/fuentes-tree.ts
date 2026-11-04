@@ -182,13 +182,13 @@ export const FUENTES_TAXONOMY: TreeSpec[] = [
     tables: ['razones', 'tutoriales'],
   },
   {
-    name: 'Videojuego (DigiMundo)', kind: 'module',
+    name: 'Videojuego', kind: 'module',
     tables: ['scenes', 'world_maps', 'npcs', 'lights', 'item_placements', 'item_placement_syncs'],
     children: [
       { name: 'Economía y progreso', kind: 'subsystem',
         tables: ['game_currencies', 'game_stages', 'game_action_log', 'ledger_entries',
                  'ledger_balances', 'player_progress', 'player_flags', 'player_stage_unlocks'] },
-      { name: 'Estructura de proyectos', kind: 'subsystem', hint: 'Modelos Prisma del agente DigiMundo',
+      { name: 'Estructura de proyectos', kind: 'subsystem', hint: 'Tablas heredadas sin uso',
         tables: ['Project', 'Module', 'Section', 'Subsection', 'Incident'] },
     ],
   },

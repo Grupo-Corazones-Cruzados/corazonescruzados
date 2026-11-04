@@ -13,18 +13,3 @@ export function sanitizeFilename(name: string): string {
     .replace(/^_|_$/g, '');
 }
 
-export function generateHookConfig(agentId: string, agentName: string, serverUrl = 'http://localhost:4321') {
-  const hookUrl = `${serverUrl}/api/hooks/claude-code?agent=${agentId}&name=${encodeURIComponent(agentName)}`;
-  const hookEntry = [{ hooks: [{ type: 'http', url: hookUrl }] }];
-  return {
-    hooks: {
-      SessionStart: hookEntry,
-      UserPromptSubmit: hookEntry,
-      PreToolUse: hookEntry,
-      PostToolUse: hookEntry,
-      PostToolUseFailure: hookEntry,
-      Stop: hookEntry,
-      SessionEnd: hookEntry,
-    },
-  };
-}

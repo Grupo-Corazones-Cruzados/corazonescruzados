@@ -5225,7 +5225,7 @@ export default function LandingPage() {
   );
 }
 
-// One-of-a-kind crest icon per value (Digimon-style symbolic SVG). Each
+// One-of-a-kind crest icon per value (symbolic SVG). Each
 // uses the value's main colour as fill and a darker outline for depth.
 function ValueIcon({
   label,

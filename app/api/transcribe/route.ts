@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     whisperForm.append('language', 'es');
     whisperForm.append('temperature', '0.2');
     whisperForm.append('response_format', 'verbose_json');
-    whisperForm.append('prompt', 'Agumon, Gabumon, Piyomon, Shoutmon, Patamon, Digimon, código, programación, proyecto, GCC WORLD');
+    whisperForm.append('prompt', 'código, programación, proyecto, GCC World');
 
     const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
