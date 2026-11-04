@@ -64,6 +64,8 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 
 - **Corrección (2026-11-04):** denegar los proyectos anidados fue un error. Una sesión en la carpeta `Motordesa` no pudo leer Gestión de Ventas, Marketplace ni App Pagare a la Orden. Ahora la carpeta madre alcanza todo lo suyo; los hijos entre sí y los demás clientes siguen bloqueados.
 
+- **Adjuntos (2026-11-04):** van a `~/.gcc-espacio/adjuntos/<proyecto>/`, hasta 100 MB, en bytes y se purgan al mes. Las imágenes de hasta 10 MB van dentro del mensaje. Probado: binario íntegro, nombre `../../../token` neutralizado, ruta de otro proyecto rechazada, Read y Bash leen el propio y no el ajeno.
+
 ### Pendiente
 - ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.
 - Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.
