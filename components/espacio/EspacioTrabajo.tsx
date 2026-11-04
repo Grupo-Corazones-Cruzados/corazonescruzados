@@ -12,19 +12,21 @@ import RailProyectos from './RailProyectos';
 import Conversacion from './Conversacion';
 import Incidencias from './Incidencias';
 import PanelProyecto from './PanelProyecto';
+import PanelServidores from './PanelServidores';
 import { api, type Proyecto, type Viva } from './api';
 
-type Vista = 'sesiones' | 'incidencias';
+type Vista = 'sesiones' | 'incidencias' | 'servidores';
 
 function Espacio() {
   const router = useRouter();
   const ruta = usePathname();
   const params = useSearchParams();
+  const enTelefono = !useConsultaMedia(PANTALLA_LG);
   const proyectoId = params.get('p');
   const sesionUrl = params.get('s');
   const desdeActivas = params.get('a') === '1';
-  const vista: Vista = params.get('v') === 'incidencias' ? 'incidencias' : 'sesiones';
-  const enTelefono = !useConsultaMedia(PANTALLA_LG);
+  const v = params.get('v');
+  const vista: Vista = v === 'incidencias' || (v === 'servidores' && enTelefono) ? v : 'sesiones';
 
   const [proyectos, setProyectos] = useState<Proyecto[] | null>(null);
   const [vivas, setVivas] = useState<Viva[]>([]);
@@ -34,7 +36,7 @@ function Espacio() {
 
   const ir = useCallback((q: { p?: string; s?: string; v?: Vista; a?: boolean }, sustituir = false) => {
     const u = new URLSearchParams();
-    if (q.v === 'incidencias') u.set('v', 'incidencias');
+    if (q.v && q.v !== 'sesiones') u.set('v', q.v);
     if (q.p) u.set('p', q.p);
     if (q.s) u.set('s', q.s);
     if (q.a) u.set('a', '1');
@@ -63,6 +65,7 @@ function Espacio() {
     <div className="shrink-0 px-2 py-1.5 lg:p-2 border-b border-digi-border">
       <Segmentado<Vista> etiqueta="Vista" className="w-full" valor={vista} onChange={(v) => ir({ v })} opciones={[
         { valor: 'sesiones', texto: 'Sesiones' }, { valor: 'incidencias', texto: 'Incidencias' },
+        ...(enTelefono ? [{ valor: 'servidores' as const, texto: 'Servidores' }] : []),
       ]} />
     </div>
   );
@@ -87,12 +90,14 @@ function Espacio() {
   else if (enTelefono) {
     /* Teléfono: lista → detalle. Se decide qué se MONTA, no se esconde con clases. */
     contenido = vista === 'sesiones' && conversacion ? conversacion : (
-      vista === 'incidencias' ? incidencias : <div className="flex flex-col h-full min-h-0">{pestanas}<div className="flex-1 min-h-0">{rail}</div></div>
+      vista === 'incidencias' ? incidencias : vista === 'servidores' ? <PanelServidores proyectoId={proyectoId} plegable={false} cabecera={pestanas} /> : <div className="flex flex-col h-full min-h-0">{pestanas}<div className="flex-1 min-h-0">{rail}</div></div>
     );
-  } else if (vista === 'incidencias') {
-    contenido = incidencias;
   } else {
+    /* El panel de servidores se queda igual en Sesiones y en Incidencias. */
     contenido = (
+      <div className="flex h-full min-h-0">
+      <div className="flex-1 min-w-0 min-h-0">
+      {vista === 'incidencias' ? incidencias : (
       <div className="grid grid-cols-[300px_minmax(0,1fr)] h-full min-h-0">
         <div className="flex flex-col min-h-0 border-r border-digi-border">{pestanas}<div className="flex-1 min-h-0">{rail}</div></div>
         <div className="min-h-0 min-w-0">
@@ -102,6 +107,10 @@ function Espacio() {
             </div>
           )}
         </div>
+      </div>
+      )}
+      </div>
+      <PanelServidores proyectoId={proyectoId} plegable />
       </div>
     );
   }

@@ -12,6 +12,7 @@ import { sesionesActivas, ultimaInteraccion } from './activas.mjs';
 import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
 import { carpetaDe, ErrorVideo, estadoSubida, guardarParte, primerMensaje, raizEdicion, terminarSubida } from './videos.mjs';
 import { generarJson } from './generar.mjs';
+import { crearServidores } from './servidores.mjs';
 
 /**
  * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
@@ -588,6 +589,9 @@ ruta('POST', '/acceso/crear', async ({ cuerpo }) => {
   return { ok: true };
 });
 ruta('POST', '/acceso/entrar', async ({ cuerpo }) => { comprobarClave(cuerpo.clave); return { ok: true }; });
+
+const servidores = crearServidores({ proyectos });
+ruta('GET', '/servidores', () => servidores.leer());
 
 ruta('GET', '/proyectos', async () => ({ proyectos: await proyectos() }));
 ruta('GET', '/proyectos/detectados', async () => {
