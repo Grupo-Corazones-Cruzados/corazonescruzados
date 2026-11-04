@@ -5,6 +5,7 @@ import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import org.grupocc.gccworld.reloj.RelojTicketPlugin;
 import org.grupocc.gccworld.reloj.Relojes;
+import org.grupocc.gccworld.seguridad.ControlPsicosocialPlugin;
 
 public class MainActivity extends BridgeActivity {
     /** Ruta de la plataforma que abrir (p. ej. el ticket al tocar la notificación del reloj). */
@@ -27,6 +28,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(RelojTicketPlugin.class);
+        registerPlugin(ControlPsicosocialPlugin.class);
         super.onCreate(savedInstanceState);
         abrirRuta(getIntent());
     }

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@/lib/types";
+import { apagarProteccionNativa } from "@/lib/movil/control-psicosocial";
 
 /** Cuando un administrador está viendo la plataforma como este usuario. `null` = sesión normal. */
 export interface Suplantacion {
@@ -92,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Salir de la cuenta apaga el rastreo de este teléfono: no sigue enviando a nombre de nadie.
+    await apagarProteccionNativa().catch(() => {});
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     window.location.href = "/";

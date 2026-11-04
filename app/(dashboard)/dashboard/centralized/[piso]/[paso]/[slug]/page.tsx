@@ -20,6 +20,7 @@ import EncuadreCondiciologicoSystem from '@/components/centralized/systems/Encua
 import PercepcionSocialSystem from '@/components/centralized/systems/PercepcionSocialSystem';
 import GestionSocialSystem from '@/components/centralized/systems/GestionSocialSystem';
 import GeneracionDeContenidoSystem from '@/components/centralized/systems/GeneracionDeContenidoSystem';
+import ControlPsicosocialSystem from '@/components/centralized/systems/ControlPsicosocialSystem';
 import { isPiso, isPaso, cellName as cellNameFor } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -144,6 +145,8 @@ export default function CentralizedSystemPage() {
           <GestionSocialSystem system={system} isAdmin={isAdmin} />
         ) : slug === 'generacion-de-contenido' ? (
           <GeneracionDeContenidoSystem system={system} isAdmin={isAdmin} />
+        ) : slug === 'control-psicosocial' ? (
+          <ControlPsicosocialSystem />
         ) : (
           <div className="bg-digi-card border border-digi-border rounded-xl text-center py-16">
             <div className="w-12 h-12 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center mx-auto mb-3">

@@ -28,6 +28,10 @@ public class MensajeriaService extends FirebaseMessagingService {
             Chats.mostrar(this, d.get("chat"), d.get("titulo"), d.get("remitente"), d.get("mensaje"), d.get("ruta"));
             return;
         }
+        if ("aviso".equals(mensaje.getData().get("tipo")) && "1".equals(mensaje.getData().get("urgente"))) {
+            org.grupocc.gccworld.seguridad.Proteccion.mostrarAuxilio(this, mensaje.getData().get("titulo"), mensaje.getData().get("cuerpo"), mensaje.getData().get("ruta"));
+            return;
+        }
         if ("aviso".equals(mensaje.getData().get("tipo"))) {
             Relojes.mostrarAviso(this, mensaje.getData().get("titulo"), mensaje.getData().get("cuerpo"), mensaje.getData().get("ruta"));
             return;

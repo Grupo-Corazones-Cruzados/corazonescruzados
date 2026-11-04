@@ -16,9 +16,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Avisos de chat: «Responder» con texto, sin abrir la app (como WhatsApp).
         let responder = UNTextInputNotificationAction(identifier: "RESPONDER", title: "Responder", options: [],
                                                       textInputButtonTitle: "Enviar", textInputPlaceholder: "Mensaje")
+        let cancelarAuxilio = UNNotificationAction(identifier: "CANCELAR", title: "Cancelar", options: [])
         UNUserNotificationCenter.current().setNotificationCategories([
             UNNotificationCategory(identifier: "CHAT", actions: [responder], intentIdentifiers: [], options: []),
+            UNNotificationCategory(identifier: Proteccion.categoriaCancelar, actions: [cancelarAuxilio], intentIdentifiers: [], options: []),
         ])
+        // Control Psicosocial: el sistema también abre la app aquí, sin vista, por un cambio de ubicación.
+        Proteccion.compartida.reanudar()
         return true
     }
 
@@ -78,6 +82,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     /// Tocar un aviso abre su pantalla de la plataforma (`ruta` en el mensaje).
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
+        if response.actionIdentifier == "CANCELAR" {
+            Proteccion.compartida.cancelarCuenta()
+            completionHandler()
+            return
+        }
         // «Responder» desde el aviso de un chat: se envía sin abrir la app.
         if response.actionIdentifier == "RESPONDER",
            let r = response as? UNTextInputNotificationResponse,

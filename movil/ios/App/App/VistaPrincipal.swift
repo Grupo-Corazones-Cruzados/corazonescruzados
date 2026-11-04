@@ -5,6 +5,7 @@ import UIKit
 class VistaPrincipal: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(RelojTicketPlugin())
+        bridge?.registerPluginInstance(ControlPsicosocialPlugin())
     }
 
     /// Abre una ruta de la plataforma (p. ej. el ticket al tocar la Actividad en Vivo).

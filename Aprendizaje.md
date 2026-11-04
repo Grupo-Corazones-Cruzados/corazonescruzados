@@ -11517,3 +11517,42 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
 - 2026-10-30 · **Redes corregidas por Fernando:** Instagram `grupo_corazones_cruzados` y TikTok
   `@grupo_corazones_cruzados` (antes `grupocorazonescruzados` y `@grupocc.org`). Cambiado en `PERFILES`
   (pie + `sameAs`). ⚠️ En Wikidata (Q141934974) P2003 y P7085 siguen con los valores viejos: los corrige él.
+
+---
+
+# CONTROL PSICOSOCIAL — rastreo, auxilio y frase de voz (2026-11-04)
+
+**Objetivo:** que los miembros compartan su ubicación en segundo plano, puedan pedir auxilio y llamar al 911, y que una frase dispare
+la alerta a todos. **Rol asumido:** ingeniero móvil y de seguridad. **Información para el objetivo: 80 %** (falta la prueba en teléfono real).
+
+## Preguntas y respuestas
+- **P1 ¿Quién es miembro? · ✅** `role` admin/member y `member_id`. Solo `member_id` no basta (candidatos). Fuente: `/api/auth/me` y la base.
+- **P2 ¿Puede rastrearse sin que la persona lo sepa? · ✅ No, y no se construyó.** `/legal` §9 promete consentimiento propio, separado y previo,
+  y que negarse no impide lo demás. Android exige notificación visible; iOS, indicadores.
+- **P3 ¿Dura la sesión lo suficiente? · ✅ No:** caduca a los 7 días. Por eso el teléfono tiene llave propia.
+- **P4 ¿Cómo se detecta la frase en Android? · ✅** Vosk sin red (`vosk-model-small-es-0.42`, 40 MB, se baja al activar y se comprueba su huella).
+  Se midió con voces sintéticas en español y `say` + `ffmpeg`:
+  - solo frase + `[unk]`: saltaba con «yo te entrego esto» y «yo también entrego todo»;
+  - vocabulario libre: 16/40, parte con voces inglesas que no sirven como prueba;
+  - **frase + señuelos, solo resultado final: 20/20 y 2 falsas de 32**, ambas con oraciones que contienen la frase literal. Es lo implementado.
+  - Los parciales de Vosk cambian mientras se habla y daban falsas alarmas: no se usan.
+- **P5 ¿Y en iPhone? · ✅ con límites.** `SFSpeechRecognizer` con `requiresOnDeviceRecognition`; si no está disponible, no enciende (se prometió que el
+  audio no sale). Si la persona cierra la app a mano, el micrófono no vuelve hasta abrirla; la ubicación sí, por cambios significativos.
+- **P6 ¿Puede llamar sola al 911? · ✅ No.** Android e iOS solo abren el marcador con el número; la persona confirma. La frase avisa a los miembros, no al 911.
+- **P7 ¿Se puede encender el micrófono desde segundo plano? · ✅ No en Android 14+.** Tras reiniciar el teléfono sigue solo la ubicación y la notificación pide abrir la app.
+- **P8 ¿Pasa la revisión de las tiendas? · ❓ Abierta.** Google exige declarar ubicación en segundo plano y servicio de micrófono; Apple revisa el modo `audio` en segundo plano. No hay garantía.
+- **P9 ¿Funciona con grito, ruido, bolsillo y teléfono bloqueado? · ⏸ Sin probar:** requiere personas y teléfono real. Solo hay voces sintéticas limpias.
+
+## Trampas
+- `avisarUsuarios` respeta preferencias: un auxilio no puede depender de ellas.
+- `createNotification` con un tipo fuera del catálogo llega a la campana y nadie puede apagarlo (por eso `auxilio` no está en el catálogo).
+- Las posiciones de quien retiró el consentimiento no deben seguir saliendo en la lista: el `LATERAL` filtra por consentimiento o por auxilio abierto.
+- Refrescar el detalle no puede llenar el registro de accesos: una misma consulta cuenta una vez cada 30 min.
+- Volver a declarar el micrófono en un servicio que ya corre, desde segundo plano, lo rechaza Android y se pierde la escucha: «Cancelar» y «enviar ahora» no lo redeclaran.
+- Aplicar el intervalo normal al reabrir la app bajaba el ritmo en mitad de un auxilio: se conserva el vigente.
+
+## Verificación hecha (2026-11-04)
+Capa de datos: 28 comprobaciones en una transacción con ROLLBACK, sin claves de push. `tsc` y `next build`. Android `assembleDebug` y iOS `xcodebuild` compilan. Chrome a 1440 y 390 px en
+claro y oscuro con datos simulados y escrituras bloqueadas. Candidato 403, miembro y admin 200, sin sesión 403, llave falsa rechazada.
+**Sin probar en teléfono real:** permisos, segundo plano, voz, push de auxilio, consentimiento en pantalla, `tel:911` dentro de la app y el mapa dentro de la app del iPhone.
+

@@ -6306,3 +6306,13 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 - **Cuadro de escritura:** `textarea.sin-marco` dentro de su franja. En escritorio, acciones debajo del campo. En el teléfono, UNA fila de 49 px (adjuntar · campo · micrófono · enviar) que crece con el texto. Un adjunto es icono + nombre recortado + quitar, sin cápsula. Intro envía solo en escritorio.
 - **`AutoGrowTextarea` lleva `rows={minRows}`:** sin eso, el navegador mide dos filas y el campo nunca baja de dos líneas aunque se pida una.
 
+## Control Psicosocial — Rastreo (2026-11-04)
+`components/centralized/systems/ControlPsicosocialSystem.tsx`. Tres columnas: tarjeta «Rastreo» (300 px) · `PixelDataTable singleLine` · `PanelDetalle` (340 px, desde `xl`). Por debajo de `xl`, el detalle
+es `PixelModal` encima de la lista; en el teléfono la tabla es galería y las emergencias quedan arriba en dos columnas.
+- **Emergencias:** «Pedir auxilio» (`BTN_DANGER`) y «Llamar al 911» (`BTN_SECONDARY`, enlace `tel:911`), de 48 px de alto. Se quedan al principio, excepción consciente a la barra inferior: es lo primero que debe encontrarse.
+- **Estado:** texto de color sin relleno (rojo auxilio, verde activa, ámbar sin señal, tenue no comparte).
+- **Interruptores:** `Interruptor`, y solo donde funcionan: en el navegador no salen, porque la activación es del teléfono.
+- **Consentimiento:** `PixelModal md` con los puntos y pie `No acepto · Acepto y activar`. Los textos son un primer borrador para que los corrija Fernando (`CONSENTIMIENTO`).
+- **Notificación de la detección:** «GCC World · Procesando aviso», sin la palabra auxilio, porque la pantalla puede estar a la vista de quien amenaza. Es una decisión de seguridad; no «mejorar» ese texto.
+- **Canal Android «Auxilio de un miembro»:** alarma, vibración y pantalla de bloqueo. Rojo `0xFFB3261E`, copia del rojo del tema, como el morado de `Relojes`.
+

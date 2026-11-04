@@ -103,7 +103,7 @@ export async function enviarActividadEnVivo(
  */
 export async function enviarAvisoApns(
   destinos: { token: string; entorno: EntornoApns }[],
-  aviso: { titulo: string; cuerpo: string; ruta?: string; categoria?: string; hilo?: string; datos?: Record<string, string> },
+  aviso: { titulo: string; cuerpo: string; ruta?: string; categoria?: string; hilo?: string; datos?: Record<string, string>; urgente?: boolean },
 ): Promise<void> {
   if (!destinos.length) return;
   const c = configurado();
@@ -116,7 +116,9 @@ export async function enviarAvisoApns(
       aps: {
         // El tono de GCC va dentro de la app (`App/gcc_aviso.caf`, 2026-10-29); una app instalada
         // antes de llevarlo suena con el de siempre: iOS cae al sonido por defecto si no lo encuentra.
-        alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: 'gcc_aviso.caf',
+        alert: { title: aviso.titulo, body: aviso.cuerpo }, sound: aviso.urgente ? 'default' : 'gcc_aviso.caf',
+        // Un auxilio traspasa los modos de concentración (permiso `time-sensitive`).
+        ...(aviso.urgente ? { 'interruption-level': 'time-sensitive', 'relevance-score': 1 } : {}),
         ...(aviso.categoria ? { category: aviso.categoria } : {}),
         ...(aviso.hilo ? { 'thread-id': aviso.hilo } : {}),
       },

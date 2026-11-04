@@ -35,10 +35,21 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Si eres miembro y activas Control Psicosocial, tu ubicación se comparte también con la app cerrada, para poder ayudarte en una emergencia.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Si eres miembro y activas Control Psicosocial, tu ubicación se comparte para poder ayudarte en una emergencia.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Para dictar mensajes en el espacio de trabajo.</string>
+	<string>Para dictar mensajes en el espacio de trabajo y, si eres miembro y lo activas, detectar tu frase de auxilio. El audio no se graba ni sale del teléfono.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Para detectar tu frase de auxilio dentro del teléfono, si eres miembro y activas esa función.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>location</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

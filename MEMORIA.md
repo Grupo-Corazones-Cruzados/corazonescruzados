@@ -331,6 +331,31 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🛡️ CONTROL PSICOSOCIAL: PRIMERA SECCIÓN, RASTREO (Fernando, 2026-11-04).** Sistema nuevo de Centralizado
+  (colaborador · implementación, celda «Planificador», slug `control-psicosocial`, tablas `cp_`, migración 080). Será «máximo
+  extenso»; hoy lleva ubicación en segundo plano, botón de auxilio, llamada al 911 y la frase «yo te entrego todo», que avisa
+  a todos los miembros. Funciona en teléfonos con la app instalada por USB (APK 1.6 / iOS 1.2 build 3).
+  - **Miembro = `role` admin o member Y `member_id`.** Un candidato también tiene `member_id` (role client): queda fuera. El
+    sistema se ve para todo miembro sea cual sea su piso y paso (excepción en `GET /api/centralized/systems`): la mayoría
+    tiene piso y paso nulos.
+  - **Decidido por el asistente a falta de respuesta, Fernando puede cambiarlo:** el admin ve a todos los que aceptaron; un miembro
+    se ve a sí mismo y, durante un auxilio, a quien lo pidió. Historial de 7 días; lo de un auxilio se conserva. Cada 5 min, y
+    15 s en auxilio. 10 s para cancelar una detección de voz, con vibración y aviso discreto (puede haber un agresor mirando).
+  - **Consentimiento propio de cada función**, como promete `/legal` §9: `cp_consentimientos` guarda aceptar y retirar. Nadie
+    puede activar el rastreo de otro, ni un admin viendo «como otro». El teléfono muestra siempre que está activo. Apagar
+    la ubicación borra el historial. Cada consulta ajena queda en `cp_accesos` y la persona ve quién la hizo.
+  - **Llave propia del teléfono (`x-cp-dispositivo`, hash en `cp_dispositivos`)**: la sesión caduca a los 7 días y el rastreo
+    se habría apagado sin avisar. 401/403 en el servidor ⇒ el teléfono se apaga y olvida la llave. Salir de la cuenta también.
+  - **El auxilio NO pasa por `avisarUsuarios`**, que se salta a quien apagó una clase de avisos. Android recibe `tipo=aviso` +
+    `urgente=1`: una APK antigua lo enseña normal y la nueva con canal de alarma.
+  - **Pendiente de Fernando:** (1) `/legal` §9 dice «este sistema no recopila datos»: ya no es cierto para quien active esto, y
+    la evaluación de impacto de la LOPDP sigue por hacer. (2) Probar en teléfono real con voz, ruido y gritos reales.
+    (3) iPhone: sin el permiso `time-sensitive` el aviso no atraviesa el modo Concentración; no se añadió porque cambia la
+    configuración en la cuenta de Apple del cliente. Las alertas críticas requieren aprobación de Apple.
+    (4) Tiendas: Google y Apple exigen justificar la ubicación en segundo plano y el micrófono continuo; puede que no
+    aprueben la escucha continua. Lo investigado y los límites, en `Aprendizaje.md` («CONTROL PSICOSOCIAL»).
+  - `079_gcont_videos` figura pendiente en `schema_migrations`, aunque su tabla existe (no es de esta tarea). Por eso la 080
+    se aplicó sola y no con `npm run migrate`.
 - **🖼️ IMÁGENES DEL MARKETPLACE: NÍTIDAS Y EN DRIVE (Fernando, 2026-11-04).** *«ya no quiero que se vean borrosas en
   ningún lado»* → fuera todo desenfoque (ruta de imagen del marketplace, `/soluciones`, CSS). Dos fallos que encontró al
   cambiar las fotos el 2026-11-01: (1) **Configuración ▸ Portafolio ▸ proyecto del equipo** abría el formulario SIN las

@@ -29,6 +29,7 @@
 		A1CC00000000000000000014 /* RelojLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000007 /* RelojLiveActivity.swift */; };
 		A1CC00000000000000000015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1CC00000000000000000008 /* Assets.xcassets */; };
 		A1CC00000000000000000016 /* RelojWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1CC0000000000000000000A /* RelojWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1CC0000000000000000F102 /* ControlPsicosocial.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC0000000000000000F101 /* ControlPsicosocial.swift */; };
 		A1CC0000000000000000F002 /* ObservadorRelojes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CC0000000000000000F001 /* ObservadorRelojes.swift */; };
 /* End PBXBuildFile section */
 
@@ -79,6 +80,7 @@
 		A1CC00000000000000000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1CC00000000000000000009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1CC0000000000000000000A /* RelojWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RelojWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1CC0000000000000000F101 /* ControlPsicosocial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlPsicosocial.swift; sourceTree = "<group>"; };
 		A1CC0000000000000000F001 /* ObservadorRelojes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservadorRelojes.swift; sourceTree = "<group>"; };
 		A1CC0000000000000000F003 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -129,6 +131,7 @@
 				A1CC00000000000000000002 /* VistaPrincipal.swift */,
 				A1CC00000000000000000001 /* RelojTicketPlugin.swift */,
 				A1CC0000000000000000F001 /* ObservadorRelojes.swift */,
+				A1CC0000000000000000F101 /* ControlPsicosocial.swift */,
 				A1CC0000000000000000F003 /* App.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -279,6 +282,7 @@
 				A1CC0000000000000000000C /* VistaPrincipal.swift in Sources */,
 				A1CC0000000000000000000B /* RelojTicketPlugin.swift in Sources */,
 				A1CC0000000000000000F002 /* ObservadorRelojes.swift in Sources */,
+				A1CC0000000000000000F102 /* ControlPsicosocial.swift in Sources */,
 				A1CC0000000000000000000D /* RelojAtributos.swift in Sources */,
 				A1CC0000000000000000000E /* ServidorReloj.swift in Sources */,
 				A1CC0000000000000000000F /* DetenerRelojIntent.swift in Sources */,
@@ -443,7 +447,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5H27NSRYKQ;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -451,7 +455,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gccworld.provisional;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -467,7 +471,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5H27NSRYKQ;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -475,7 +479,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gccworld.provisional;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -488,7 +492,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 5H27NSRYKQ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RelojWidget/Info.plist;
@@ -499,7 +503,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gccworld.provisional.RelojWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -514,7 +518,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 5H27NSRYKQ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RelojWidget/Info.plist;
@@ -525,7 +529,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gccworld.provisional.RelojWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

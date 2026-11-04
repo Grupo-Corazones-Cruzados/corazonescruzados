@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { slugify, pisosAtOrBelow } from '@/lib/centralized/systems';
+import { SLUG_CONTROL_PSICOSOCIAL } from '@/lib/centralized/control-psicosocial';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** Genera un slug único para un sistema (dentro de centralized_systems). */
@@ -185,6 +186,7 @@ export async function GET(req: NextRequest) {
     // miembro accede a los sistemas de SU paso (exacto) en SU piso y en todos los
     // pisos por DEBAJO (jerárquico), o a los que se le compartieron explícitamente.
     if (user.role !== 'admin') {
+      let alcance = '';
       conditions.push('s.is_active = true');
       const { rows: [me] } = await pool.query(
         `SELECT m.id AS member_id, m.piso, m.paso
@@ -196,13 +198,16 @@ export async function GET(req: NextRequest) {
         // Sin miembro asociado → sin acceso a ningún sistema.
         return NextResponse.json({ data: [] });
       }
+      // Control Psicosocial es de TODOS los miembros, sea cual sea su piso y paso (la seguridad no
+      // depende de la celda). Un candidato también tiene `member_id`, pero su rol es `client`.
+      if (user.role === 'member') alcance = ` OR s.slug = '${SLUG_CONTROL_PSICOSOCIAL}'`;
       const allowedPisos = pisosAtOrBelow(me.piso); // su piso + los de abajo
       const pp = `$${params.length + 1}`; params.push(allowedPisos as any);
       const ms = `$${params.length + 1}`; params.push(me.paso ?? '');
       const mid = `$${params.length + 1}`; params.push(String(me.member_id));
       conditions.push(
         `((s.piso = ANY(${pp}::text[]) AND s.paso = ${ms})` +
-        ` OR EXISTS (SELECT 1 FROM gcc_world.centralized_member_access a WHERE a.system_id = s.id AND a.member_id = ${mid}::int))`
+        ` OR EXISTS (SELECT 1 FROM gcc_world.centralized_member_access a WHERE a.system_id = s.id AND a.member_id = ${mid}::int)${alcance})`
       );
     }
 
