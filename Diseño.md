@@ -6250,6 +6250,7 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 - **Teléfono (Fernando, 2026-11-04: «muchísima altura en botones o controles»):** lista → detalle, decidido en JS, a pantalla completa: sin pie de ruta, sin márgenes y sin tarjeta, y sin el muelle de chats y avisos, que ocupa el sitio de enviar. Cabecera de 44 px. Modelo y permisos van en el «⋯».
 - **Estado de sesión:** texto de color, sin punto ni píldora (`TEXTO_ESTADO`): Trabajando en acento, Espera tu respuesta en `amber-400`, Lista en `green-400`.
 - **Una herramienta** es una línea plegada (icono, nombre, resumen en mono) y se abre al pulsar. Una pregunta de Claude es una tarjeta dentro de la conversación.
+- **Pantalla encendida:** en el teléfono, un sol en la cabecera a la izquierda de Recargar (`BotonPantallaActiva`), solo en esta ruta. Encendido, en `amber-400`, sin relleno.
 - **Cuadro de escritura:** `textarea.sin-marco` dentro de su franja. En escritorio, acciones debajo del campo. En el teléfono, UNA fila de 49 px (adjuntar · campo · micrófono · enviar) que crece con el texto. Un adjunto es icono + nombre recortado + quitar, sin cápsula. Intro envía solo en escritorio.
 - **`AutoGrowTextarea` lleva `rows={minRows}`:** sin eso, el navegador mide dos filas y el campo nunca baja de dos líneas aunque se pida una.
 

@@ -30,8 +30,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Menu, RotateCw } from 'lucide-react';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
+import BotonPantallaActiva from '@/components/espacio/BotonPantallaActiva';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -40,6 +42,7 @@ export default function CabeceraMovil() {
   // Se decide tras montar: en el servidor no hay `window` y el HTML tiene que coincidir.
   const [enApp, setEnApp] = useState(false);
   const [recargando, setRecargando] = useState(false);
+  const enEspacio = usePathname().startsWith('/dashboard/admin/espacio');
   useEffect(() => {
     const w = window as any;
     setEnApp(!!w.Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches);
@@ -73,11 +76,13 @@ export default function CabeceraMovil() {
         </span>
       </Link>
 
+      {enEspacio && <BotonPantallaActiva className="ml-auto" />}
+
       {enApp && (
         <button
           onClick={() => { setRecargando(true); window.location.reload(); }}
           disabled={recargando}
-          className="ml-auto w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
+          className={`${enEspacio ? '-ml-2' : 'ml-auto'} w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150`}
           aria-label="Recargar"
           title="Recargar"
         >
