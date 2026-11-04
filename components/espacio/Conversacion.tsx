@@ -269,7 +269,7 @@ export default function Conversacion({
       </div>
 
       <div className="max-lg:pb-[var(--seguro-abajo)] bg-digi-card">
-        <Compositor proyectoId={proyecto.id} trabajando={trabajando} sesionId={sesionId} modelo={modelo} modo={modo} enEscritorio={enEscritorio}
+        <Compositor key={sesionId || 'nueva'} proyectoId={proyecto.id} trabajando={trabajando} sesionId={sesionId} modelo={modelo} modo={modo} enEscritorio={enEscritorio}
           alCambiarModelo={(m) => { setModelo(m); ajustar({ modelo: m }); }}
           alCambiarModo={(m) => { setModo(m); ajustar({ modo: m }); }}
           alEnviar={mandar}

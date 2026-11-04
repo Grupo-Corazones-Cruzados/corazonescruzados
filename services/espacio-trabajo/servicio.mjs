@@ -8,6 +8,7 @@ import { spawn, execFile } from 'node:child_process';
 import { query, listSessions, getSessionMessages, renameSession, getSessionInfo } from '@anthropic-ai/claude-agent-sdk';
 import { pipeline } from 'node:stream/promises';
 import { expandirCadena, plegarCadena } from './cadena.mjs';
+import { sesionesActivas } from './activas.mjs';
 import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
 
 /**
@@ -326,7 +327,7 @@ class SesionViva {
       return;
     }
     if (m.type === 'result') {
-      this.noVisto = true;
+      this.noVisto = this.clientes.size === 0;
       this.emitir({
         tipo: 'fin', ok: m.subtype === 'success' && !m.is_error, duracion: m.duration_ms,
         error: m.subtype === 'success' ? null : (m.errors || []).join(' ') || m.subtype,
@@ -470,9 +471,10 @@ function abiertaEnTerminal(id) {
   return null;
 }
 
+/** Las abiertas en una terminal, con lo que están haciendo: busy, shell, waiting o idle. */
 function sesionesEnTerminal() {
   const dir = path.join(os.homedir(), '.claude/sessions');
-  const ids = new Set();
+  const ids = new Map();
   try {
     for (const f of fs.readdirSync(dir)) {
       if (!f.endsWith('.json')) continue;
@@ -480,7 +482,7 @@ function sesionesEnTerminal() {
         const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
         if (!esTerminal(d)) continue;
         process.kill(d.pid, 0);
-        ids.add(d.sessionId);
+        ids.set(d.sessionId, d.status || null);
       } catch { /* muerto */ }
     }
   } catch { /* sin carpeta */ }
@@ -607,22 +609,42 @@ ruta('DELETE', '/proyectos/:id', async ({ p }) => {
   return { ok: true };
 });
 
-ruta('GET', '/proyectos/:id/sesiones', async ({ p }) => {
-  const proyecto = (await proyectos()).find((x) => x.id === p.id);
-  if (!proyecto) throw new ErrorApi(404, 'Ese proyecto no está registrado.');
-  const terminal = sesionesEnTerminal();
+async function sesionesDe(proyecto, terminal) {
   const todas = [];
   for (const dir of [proyecto.ruta, ...(proyecto.subcarpetas || [])]) {
     const l = await listSessions({ dir, limit: 60, includeWorktrees: false }).catch(() => []);
     for (const s of l) todas.push({
-      id: s.sessionId, titulo: s.customTitle || s.summary || s.firstPrompt || 'Sesión sin título',
+      id: s.sessionId, proyecto: proyecto.id, titulo: s.customTitle || s.summary || s.firstPrompt || 'Sesión sin título',
       actualizada: s.lastModified, rama: s.gitBranch || null, carpeta: dir === proyecto.ruta ? null : path.relative(proyecto.ruta, dir),
-      enTerminal: terminal.has(s.sessionId), error: ultimosErrores.get(s.sessionId) || null,
+      enTerminal: terminal.has(s.sessionId), estadoTerminal: terminal.get(s.sessionId) || null, error: ultimosErrores.get(s.sessionId) || null,
       viva: vivas.has(s.sessionId) ? resumenViva(vivas.get(s.sessionId)) : null,
     });
   }
-  const unicas = [...new Map(todas.map((s) => [s.id, s])).values()].sort((a, b) => b.actualizada - a.actualizada);
-  return { sesiones: unicas };
+  return [...new Map(todas.map((s) => [s.id, s])).values()].sort((a, b) => b.actualizada - a.actualizada);
+}
+
+ruta('GET', '/proyectos/:id/sesiones', async ({ p }) => {
+  const proyecto = (await proyectos()).find((x) => x.id === p.id);
+  if (!proyecto) throw new ErrorApi(404, 'Ese proyecto no está registrado.');
+  return { sesiones: await sesionesDe(proyecto, sesionesEnTerminal()) };
+});
+
+ruta('GET', '/sesiones/activas', async () => {
+  const terminal = sesionesEnTerminal();
+  const filas = (await Promise.all((await proyectos()).map((p) => sesionesDe(p, terminal)))).flat();
+  return { sesiones: sesionesActivas(filas, [...vivas.values()].map(resumenViva)) };
+});
+
+/* Lo escrito y no enviado vive aquí y no en el navegador: así se ve igual en la Mac y en el teléfono. */
+ruta('GET', '/borradores', async () => ({ borradores: leerJson('borradores.json', {}) }));
+ruta('POST', '/borradores', async ({ cuerpo }) => {
+  const clave = String(cuerpo.clave || '');
+  if (!/^[\w-]{1,80}$/.test(clave)) throw new ErrorApi(400, 'Clave inválida.');
+  const todos = leerJson('borradores.json', {});
+  const texto = String(cuerpo.texto || '');
+  if (texto.trim()) todos[clave] = texto.slice(0, 200000); else delete todos[clave];
+  guardarJson('borradores.json', todos);
+  return { ok: true };
 });
 
 ruta('GET', '/vivas', async () => ({ vivas: [...vivas.values()].map(resumenViva) }));

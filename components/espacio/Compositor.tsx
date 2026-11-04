@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from 'react';
 import { ArrowUp, Loader2, Mic, Paperclip, Square, X } from 'lucide-react';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
-import { api, BASE, cabeceras, MODOS } from './api';
+import { api, BASE, cabeceras, claveBorrador, EVENTO_BORRADOR, MODOS } from './api';
 
 export interface Imagen { tipo: string; datos: string; url: string }
 interface Adjunto { clave: string; nombre: string; ruta: string | null }
@@ -108,6 +108,48 @@ function useDictado(alTexto: (t: string) => void) {
   return { estado, segundos, error, alternar: () => (estado === 'grabando' ? grabador.current?.stop() : estado === 'quieto' ? empezar() : undefined) };
 }
 
+/** Guarda lo que se escribe mientras se escribe. Cada sesión monta su propio compositor. */
+function useBorrador(clave: string, texto: string, setTexto: (f: (t: string) => string) => void) {
+  const cargado = useRef(false);
+  const ultimo = useRef('');
+  const pendiente = useRef<string | null>(null);
+  const reloj = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const escribir = useCallback((t: string) => {
+    pendiente.current = null;
+    ultimo.current = t;
+    api('/borradores', { cuerpo: { clave, texto: t } }).then(() => window.dispatchEvent(new Event(EVENTO_BORRADOR))).catch(() => {});
+  }, [clave]);
+
+  useEffect(() => {
+    let vivo = true;
+    api('/borradores').then((j) => {
+      if (!vivo) return;
+      const guardado: string = j.borradores[clave] || '';
+      ultimo.current = guardado;
+      if (guardado) setTexto((act) => act || guardado);
+    }).catch(() => {}).finally(() => { cargado.current = true; });
+    return () => {
+      vivo = false;
+      clearTimeout(reloj.current);
+      if (pendiente.current !== null) escribir(pendiente.current);
+    };
+  }, [clave, escribir, setTexto]);
+
+  useEffect(() => {
+    if (!cargado.current || texto === ultimo.current) return;
+    pendiente.current = texto;
+    clearTimeout(reloj.current);
+    reloj.current = setTimeout(() => escribir(texto), 400);
+  }, [texto, escribir]);
+
+  return {
+    /** Al enviar: lo enviado ya no es un borrador, y no debe volver si la sesión cambia en el camino. */
+    vaciar: () => { clearTimeout(reloj.current); escribir(''); },
+    restaurar: escribir,
+  };
+}
+
 export default function Compositor({
   proyectoId, trabajando, deshabilitado, sesionId, modelo, modo, enEscritorio, alCambiarModelo, alCambiarModo, alEnviar, alDetener, alLimpiar,
 }: {
@@ -136,6 +178,9 @@ export default function Compositor({
   const [cerrado, setCerrado] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
   const archivo = useRef<HTMLInputElement>(null);
+
+  const borrador = useBorrador(claveBorrador(proyectoId, sesionId), texto, setTexto);
+  useEffect(() => { if (enEscritorio) area.current?.focus(); }, [enEscritorio]);
 
   const dictado = useDictado((t) => {
     setTexto((act) => (act.trim() ? `${act.trimEnd()} ${t}` : t));
@@ -210,9 +255,10 @@ export default function Compositor({
     if (t === '/clear' || t === '/new' || t === '/reset') { setTexto(''); alLimpiar(); return; }
     if (t === '/plan') { setTexto(''); alCambiarModo('plan'); return; }
     setEnviando(true);
+    borrador.vaciar();
     const ok = await alEnviar(t, imagenes, adjuntos.map((a) => a.ruta as string));
     setEnviando(false);
-    if (ok) { setTexto(''); setImagenes([]); setAdjuntos([]); }
+    if (ok) { setTexto(''); setImagenes([]); setAdjuntos([]); } else if (t) borrador.restaurar(t);
   }
 
   function tecla(e: KeyboardEvent) {

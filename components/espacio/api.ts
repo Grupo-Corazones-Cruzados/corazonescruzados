@@ -76,7 +76,7 @@ export async function api<T = any>(ruta: string, init?: { metodo?: string; cuerp
 export interface Proyecto { id: string; ruta: string; nombre: string; grupo: string; subcarpetas: string[]; aislado: boolean }
 export type EstadoViva = 'iniciando' | 'trabajando' | 'espera' | 'libre' | 'cerrada';
 export interface Viva { id: string; proyecto: string; estado: EstadoViva; noVisto: boolean; modelo?: string; modo?: string; preguntas: number; tareas?: number }
-export interface Sesion { id: string; titulo: string; actualizada: number; rama: string | null; carpeta: string | null; enTerminal: boolean; error: string | null; viva: Viva | null }
+export interface Sesion { id: string; proyecto: string; titulo: string; actualizada: number; rama: string | null; carpeta: string | null; enTerminal: boolean; estadoTerminal?: string | null; error: string | null; viva: Viva | null }
 
 export type Bloque =
   | { tipo: 'texto'; texto: string }
@@ -105,6 +105,10 @@ export function hace(ms: number | undefined): string {
   if (s < 30 * 86400) return `hace ${Math.floor(s / 86400)} d`;
   return new Date(ms).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
+
+/** Lo escrito en una sesión que aún no existe se guarda a nombre de su proyecto. */
+export const claveBorrador = (proyecto: string, sesion: string | null) => sesion || `nueva-${proyecto}`;
+export const EVENTO_BORRADOR = 'espacio-borrador';
 
 export const TEXTO_ESTADO: Record<EstadoViva, { texto: string; clase: string }> = {
   iniciando: { texto: 'Iniciando', clase: 'text-digi-muted' },
