@@ -107,7 +107,7 @@ function Espacio() {
   return (
     <>
       {error && <p className={`mb-2 rounded-lg border p-2.5 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error}</p>}
-      <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} className="bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden">
+      <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className="bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden">
         {contenido}
       </PanelHastaElPie>
       <PanelProyecto abierto={editar.abierto} proyecto={editar.proyecto} alCerrar={() => setEditar((x) => ({ ...x, abierto: false }))} alCambiar={() => { cargarProyectos(); refrescar(); }} />

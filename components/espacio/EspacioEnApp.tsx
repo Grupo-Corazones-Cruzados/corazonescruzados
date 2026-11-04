@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, WifiOff } from 'lucide-react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import { BTN_SECONDARY } from '@/components/ui/Button';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTemaPanel } from '@/components/providers/TemaPanel';
 
@@ -19,6 +20,7 @@ export default function EspacioEnApp() {
   const router = useRouter();
   const { user } = useAuth();
   const { tema, oscuro } = useTemaPanel();
+  const enTelefono = !useConsultaMedia(PANTALLA_LG);
   const [direccion, setDireccion] = useState<string | null>(null);
   const [estado, setEstado] = useState<'cargando' | 'listo' | 'sin-conexion'>('cargando');
   const [intento, setIntento] = useState(0);
@@ -43,7 +45,7 @@ export default function EspacioEnApp() {
   const src = direccion ? `${direccion}/espacio?tema=${encodeURIComponent(tema)}&oscuro=${oscuro ? 1 : 0}` : null;
 
   return (
-    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} className="relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden max-lg:pb-[var(--seguro-abajo)]">
+    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className="relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden max-lg:pb-[var(--seguro-abajo)]">
       {src && <iframe key={intento} src={src} title="Espacio de trabajo" allow="microphone" className={`w-full h-full border-0 ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (

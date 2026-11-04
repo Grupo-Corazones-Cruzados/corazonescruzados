@@ -16,7 +16,7 @@ import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
  *   <PanelHastaElPie className="bg-digi-card border border-digi-border rounded-lg">…</PanelHastaElPie>
  */
 export default function PanelHastaElPie({
-  children, className = '', desdeAncho = 1024, minimo = 320, desplazar = true,
+  children, className = '', desdeAncho = 1024, minimo = 320, desplazar = true, respiro = 12,
 }: {
   children: ReactNode;
   className?: string;
@@ -24,8 +24,10 @@ export default function PanelHastaElPie({
   minimo?: number;
   /** `false` si el panel ya trae su propia zona con desplazamiento dentro. */
   desplazar?: boolean;
+  /** Hueco hasta el pie. `0` para una pantalla que llega al borde. */
+  respiro?: number;
 }) {
-  const { ref, style } = useAltoHastaElPie<HTMLDivElement>({ desdeAncho, minimo });
+  const { ref, style } = useAltoHastaElPie<HTMLDivElement>({ desdeAncho, minimo, respiro });
   return (
     <div ref={ref} style={style} className={`${style && desplazar ? 'overflow-y-auto' : ''} ${className}`}>
       {children}

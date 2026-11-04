@@ -225,7 +225,7 @@ export default function Conversacion({
           </p>
         </div>
         {(sesionId || !enEscritorio) && (
-          <MenuMas items={[
+          <MenuMas className="max-lg:!border-0 max-lg:!w-9 max-lg:!h-9 max-lg:!min-w-9 max-lg:!min-h-9" items={[
             ...(enEscritorio ? [] : [{ label: 'Modelo y permisos', icon: SlidersHorizontal, onClick: () => setAjustes(true) }]),
             ...(!sesionId ? [] : [{ label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(titulo) },
             { label: 'Abrir en Terminal', icon: SquareTerminal, onClick: () => terminal(true), disabled: trabajando, hint: 'Primero detén la sesión' },

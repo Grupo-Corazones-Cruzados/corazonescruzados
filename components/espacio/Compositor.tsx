@@ -282,7 +282,7 @@ export default function Compositor({
           </div>
         </>
       ) : (
-        <div className="flex items-end gap-0.5">{adjuntar}{campo}{contador}{microfono}{principal}</div>
+        <div className="flex items-end gap-0.5">{adjuntar}{campo}{contador && <span className="self-center">{contador}</span>}{microfono}{principal}</div>
       )}
     </div>
   );

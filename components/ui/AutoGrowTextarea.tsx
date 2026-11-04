@@ -65,6 +65,7 @@ const AutoGrowTextarea = forwardRef<HTMLTextAreaElement, Props>(function AutoGro
 
   return (
     <textarea
+      rows={minRows}
       {...rest}
       ref={innerRef}
       value={value}
