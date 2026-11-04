@@ -50,7 +50,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 72 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LOS VIDEOS DE REFERENCIA
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 78 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LA PRUEBA CON UN VIDEO REAL
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -125,6 +125,27 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
   - **Favoritos:** referencia de gusto; se usan tal cual solo si llevan la marca. Si no, la IA busca un equivalente con licencia.
   - **CapCut Pro** da acceso a lo pagado, pero el acuerdo no dice que amplíe la licencia. No es consejo legal.
 - La guía de edición se sigue afinando comparando lo que la IA colocó con lo que Fernando dejó, quitó o movió.
+
+### Estilo medido en sus videos de referencia (2026-11-04) — primera versión de la guía, sin corregir por Fernando
+**Fuente:** `ref-desarrollo-humano.mov` (7:34, vertical 1080×1920, 60 fps) y `ref-automatizacion-procesos.mov` (0:25, vertical,
+30 fps), analizados con ffmpeg, Whisper local y hojas de fotogramas. **El audio no se escuchó:** lo sonoro se deduce de
+espectrogramas y puede estar mal.
+- **Ritmo:** la mediana entre cambios es de unos 3 s en desarrollo humano, con encuadres que cambian seguido a cámara
+  (la cuenta de cortes incluye efectos). El de automatización va más rápido y alterna cara y pantalla.
+- **Recursos:** cara a cámara como base; plano detalle al demostrar (cuaderno); ilustración IA a pantalla casi completa,
+  ligeramente girada; grabación de la app a pantalla completa cuando la nombra; rótulo blanco en mayúsculas («PASO 1»);
+  nota con chincheta y texto a máquina («Sistema Catering»); dirección web abajo al mencionarla.
+- **Humor:** remates con fundido a negro breve e inserto de meme; blanco y negro con cartel «ATTENTION» para subrayar.
+- **Sonido:** solo voz la mayor parte del tiempo; **no se aprecia música continua** y sí ráfagas breves puntuales (posibles
+  efectos). Sonoridad integrada de −27 LUFS, muy por debajo de los −14 LUFS que suelen tomarse de referencia en redes.
+- **Oportunidades:** música suave que baje bajo la voz; efectos más frecuentes en cambios de encuadre, gráficos y remates;
+  subir la sonoridad; un gráfico persistente que indique la fase de la pirámide; iconos para enumeraciones («alimentación,
+  agua, descanso»); cierre con llamada a la acción más clara.
+- **Riesgo:** el inserto de Los Simpson (2:15) es material de terceros; para publicidad, sustituir por recurso propio o con licencia.
+- **Whisper:** escribió «Mastro» por «Maslow»: la guía necesita un vocabulario con términos propios y de marca.
+
+### Herramientas instaladas (2026-11-04)
+`whisper-cpp` por Homebrew y modelo `medium` (1,5 GB) en `~/.cache/whisper-cpp/`.
 
 ### Canales y formatos (Fernando, 2026-11-04)
 - Publica en YouTube, TikTok, Instagram, Facebook y LinkedIn, según el video. **Horizontal: exclusivo de YouTube.**
