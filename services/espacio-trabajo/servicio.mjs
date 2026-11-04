@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { spawn, execFile } from 'node:child_process';
 import { query, listSessions, getSessionMessages, renameSession, getSessionInfo } from '@anthropic-ai/claude-agent-sdk';
 import { pipeline } from 'node:stream/promises';
+import { expandirCadena, plegarCadena } from './cadena.mjs';
 import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
 
 /**
@@ -159,9 +160,9 @@ function textoUsuario(t) {
   const comando = texto.match(/<command-name>([^<]*)<\/command-name>[\s\S]*?(?:<command-args>([\s\S]*?)<\/command-args>)?/);
   if (comando) {
     const args = texto.match(/<command-args>([\s\S]*?)<\/command-args>/);
-    return `${comando[1]}${args?.[1] ? ` ${args[1]}` : ''}`.trim();
+    return plegarCadena(`${comando[1]}${args?.[1] ? ` ${args[1]}` : ''}`.trim());
   }
-  const limpio = texto.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim();
+  const limpio = plegarCadena(texto.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim());
   if (!limpio) return null;
   if (/^(<local-command|<command-message|<task-notification|Caveat: |Base directory for this skill:|This session is being continued)/.test(limpio)) return null;
   return limpio;
@@ -292,7 +293,8 @@ class SesionViva {
     const contenido = [];
     for (const i of imagenes) contenido.push({ type: 'image', source: { type: 'base64', media_type: i.tipo, data: i.datos } });
     const rutas = validarAdjuntos(this.proyecto, adjuntos);
-    const completo = [texto, rutas.length ? `${MARCA_ADJUNTOS}\n${rutas.map((r) => `- ${r}`).join('\n')}` : ''].filter(Boolean).join('\n\n');
+    const nombres = (this.comandos?.length ? this.comandos : comandosGlobales).map((c) => c.name);
+    const completo = [expandirCadena(texto, nombres), rutas.length ? `${MARCA_ADJUNTOS}\n${rutas.map((r) => `- ${r}`).join('\n')}` : ''].filter(Boolean).join('\n\n');
     if (completo) contenido.push({ type: 'text', text: completo });
     const uuid = crypto.randomUUID();
     this.actividad = Date.now();

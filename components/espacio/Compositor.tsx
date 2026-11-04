@@ -132,20 +132,37 @@ export default function Compositor({
   const [encima, setEncima] = useState(false);
   const { comandos } = useListas(sesionId);
   const [indice, setIndice] = useState(0);
+  const [cursor, setCursor] = useState(0);
+  const [cerrado, setCerrado] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
   const archivo = useRef<HTMLInputElement>(null);
 
   const dictado = useDictado((t) => {
     setTexto((act) => (act.trim() ? `${act.trimEnd()} ${t}` : t));
+    setCerrado(true);
     area.current?.focus();
   });
 
-  const buscando = /^\/[^\s]*$/.test(texto) ? texto.slice(1).toLowerCase() : null;
+  /* La palabra que se está escribiendo, si empieza con «/»: en cualquier punto del texto, porque
+     Fernando encadena skills («/memoria /aprendizaje …»). Una ruta como /Users/x no cuenta. */
+  const palabra = useMemo(() => {
+    const m = texto.slice(0, cursor).match(/(?:^|\s)\/([^\s/]*)$/);
+    return m ? { inicio: cursor - m[1].length - 1, busca: m[1].toLowerCase() } : null;
+  }, [texto, cursor]);
   const sugerencias = useMemo(() => {
-    if (buscando === null) return [];
-    return comandos.filter((c) => c.name.toLowerCase().includes(buscando)).slice(0, 8);
-  }, [buscando, comandos]);
-  useEffect(() => setIndice(0), [buscando]);
+    if (!palabra || cerrado) return [];
+    return comandos.filter((c) => c.name.toLowerCase().includes(palabra.busca)).slice(0, 8);
+  }, [palabra, cerrado, comandos]);
+  useEffect(() => { setIndice(0); setCerrado(false); }, [palabra?.inicio, palabra?.busca]);
+
+  function completar(nombre: string) {
+    if (!palabra) return;
+    const nuevo = `${texto.slice(0, palabra.inicio)}/${nombre} ${texto.slice(cursor)}`;
+    const posicion = palabra.inicio + nombre.length + 2;
+    setTexto(nuevo);
+    setCursor(posicion);
+    requestAnimationFrame(() => { area.current?.focus(); area.current?.setSelectionRange(posicion, posicion); });
+  }
 
   async function subir(f: File) {
     if (f.size > MAX_ADJUNTO) { setErrorArchivo(`${f.name} pasa de 100 MB.`); return; }
@@ -202,7 +219,8 @@ export default function Compositor({
     if (sugerencias.length) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setIndice((i) => (i + 1) % sugerencias.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setIndice((i) => (i - 1 + sugerencias.length) % sugerencias.length); return; }
-      if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) { e.preventDefault(); setTexto(`/${sugerencias[indice].name} `); return; }
+      if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) { e.preventDefault(); completar(sugerencias[indice].name); return; }
+      if (e.key === 'Escape') { e.preventDefault(); setCerrado(true); return; }
     }
     // En el teléfono, Intro es salto de línea: se envía con el botón.
     if (e.key === 'Enter' && !e.shiftKey && enEscritorio && !e.nativeEvent.isComposing) { e.preventDefault(); enviar(); }
@@ -213,7 +231,7 @@ export default function Compositor({
   const grabando = dictado.estado === 'grabando';
 
   const campo = (
-    <AutoGrowTextarea ref={area} value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={tecla} onPaste={pegar} disabled={deshabilitado}
+    <AutoGrowTextarea ref={area} value={texto} onChange={(e) => { setTexto(e.target.value); setCursor(e.target.selectionStart); }} onSelect={(e) => setCursor(e.currentTarget.selectionStart)} onKeyDown={tecla} onPaste={pegar} disabled={deshabilitado}
       minRows={1} maxHeight={enEscritorio ? 220 : 120} placeholder="Escribe o dicta"
       className={`sin-marco ${enEscritorio ? 'w-full' : 'flex-1 min-w-0 self-center'} resize-none px-1 py-1 text-[16px] lg:text-[13.5px] text-digi-text placeholder:text-digi-muted outline-none`} />
   );
@@ -243,7 +261,7 @@ export default function Compositor({
         <ul role="listbox" className="absolute left-2.5 right-2.5 bottom-full mb-1 z-10 rounded-lg border border-digi-border bg-digi-card shadow-lg overflow-hidden">
           {sugerencias.map((c, i) => (
             <li key={c.name} role="option" aria-selected={i === indice}>
-              <button type="button" onMouseDown={(e) => { e.preventDefault(); setTexto(`/${c.name} `); area.current?.focus(); }}
+              <button type="button" onMouseDown={(e) => { e.preventDefault(); completar(c.name); }}
                 className={`w-full flex items-baseline gap-2 px-3 py-2 min-h-11 sm:min-h-0 text-left ${i === indice ? 'bg-accent-light' : 'hover:bg-black/[0.03]'}`}>
                 <span className="text-[12.5px] font-mono font-medium text-digi-text shrink-0">/{c.name}</span>
                 <span className="text-[12px] text-digi-muted truncate min-w-0">{c.description}</span>

@@ -73,6 +73,8 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
   - **No existe en este motor, sí en terminal:** `/rewind`, `/status`, `/help`, `/memory`, `/hooks`, `/permissions`, `/skills`, `/tasks`, `/export`, `/plugin`, `/add-dir`, `/ide`, `/statusline`, `/vim`, `/login`, `/bug`, `/release-notes`, `/fast`. Se ocultan del menú; `/plan` cambia el modo.
   - **Conectores de claude.ai (Gmail, Drive, Docs):** el motor no los carga (`mcp_servers` vacío). Servidores propios de MCP no probados.
 
+- **Skills encadenadas (2026-11-04):** `/a /b texto` en el motor solo ejecuta `/a` y recibe `/b` como texto; la terminal carga las dos. `cadena.mjs` pide las siguientes con la herramienta Skill. El menú `/` se abre en cualquier palabra que empiece con `/`.
+
 ### Pendiente
 - ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.
 - Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.
@@ -229,6 +231,44 @@ revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en est
   un **duplicado** del proyecto, tocando solo CapCut y sin guardar. Anotar: pistas y su orden; por cada tipo de elemento
   (zoom/keyframes, texto, sonido, música, transición, efecto), nombre, duración, volumen y ajustes; y dónde cae en el
   video. Guardar el resultado aquí y seguir con la transparencia y `prueba-ia`.
+- **Revisión de `revisión-IA` en el iPhone (hecha el 2026-11-04, 09:25–09:46):** vertical, 7:34, sin final añadido. Se vio
+  reproduciéndolo y capturando la línea de tiempo: arrastrar no funciona en segundo plano. **Tiempos aproximados (±1 s),
+  leídos de capturas; el audio no se escuchó y casi ningún ajuste se abrió.**
+  - **Pistas en la vista normal:** video principal · superposición · audio · texto. La fila de audio mezcla la onda
+    de voz con sonidos y música; no se desplegaron las capas, así que no se sabe cuántas hay de verdad.
+  - **Cortes:** cada pocos segundos durante todo el video. Marca ⋈ = lleva transición (hay decenas; **tipo sin leer**) y
+    marca | = corte sin transición (lectura de los iconos, sin confirmar). El encuadre salta entre cortes (acercar,
+    mover a un lado); **no se comprobó si es escala fija o keyframes**.
+  - **Rótulos de paso (fila de texto), sobre el plano detalle del cuaderno:** Paso 1 Dibujar una pirámide 0:17–0:23 · Paso 2
+    Separar fases 0:36–0:42 · Paso 3 Necesidades Fisiológicas 0:59–1:04 · Paso 4 Necesidades de Seguridad 1:52–1:55 · Afiliación
+    ~2:55–2:59 (número sin leer; sería el 5) · Paso 6 Reconocimiento 4:21–4:27 · Paso 7 Autorrealización 5:32–5:37.
+    Blanco, mayúsculas, dos líneas, abajo.
+  - **Otros textos:** «Mr. Obvio» con flecha, a mano, 2:22–2:28, con un acercamiento fuerte a la cara · cartel de papel
+    «ATTENTION» ×3 sostenido por dos manos, 2:33–2:40, con el video en blanco y negro · «APP.GRUPOCC.ORG (GRUPO CORAZONES
+    CRUZADOS)» 7:20–7:23.
+  - **Superposiciones:** hombre de camisa azul ~0:01–0:02 · meme (hombre mirando de reojo), franja horizontal, ~0:06–0:08 ·
+    profesor + pirámide de Maslow, mitad inferior, ~0:11–0:15 · ilustración «Pirámide de Maslow» sobre el torso ~0:25–0:31 y
+    ~0:49–0:55 · foto de hombre con gafas y varias más ~1:28–1:33 · franja oscura con destellos bajo el texto de la web
+    ~7:18–7:22.
+  - **En la pista principal:** Los Simpson 2:15–2:19 y 4:15–4:17 (material de terceros, ver la regla de memes). Antes del
+    segundo, ~4:13, un tramo en blanco y negro con líneas de televisor.
+  - **Sonidos con nombre:** «Finger…», «Cano…» y «…ger patche…» en 0:00–0:03 · «"Pop…» ~0:06 · **«Shot sound with delay»**
+    entrando con el cartel y con los rótulos (2:33, ~2:55, 4:21, 5:32) · «CanonSOD ShutterClick» ~4:37–4:40. Además, sonidos
+    breves con nombre en caracteres chinos, poco legible, en los cambios de plano con transición (~0:46, 1:11, 1:20, 1:41,
+    2:03, 2:09, 3:38, 4:05, 5:12); por su sitio serían barridos, **sin confirmar**.
+  - **Música:** solo «Chill Pop, Going-Out, Chilling, Cafe(1608119)», en ráfagas: ~0:10–0:16, ~3:58–4:03 y ~4:18–4:22. Sin
+    música continua, como ya se dedujo del espectrograma.
+  - **Volumen:** al seleccionar la fila de la voz en 7:11, el control (0–1000) estaba **en el extremo 0**, sin número, con
+    «Reducir el ruido» y «Ajuste de la intensidad» apagados. Puede que esa pista esté silenciada y la voz salga del clip, o
+    que el control no pintara el valor: **sin confirmar**. Los demás volúmenes no se abrieron.
+  - **Patrón que se repite:** rótulo + «Shot sound with delay» + cuaderno al empezar cada paso; barrido en las transiciones;
+    meme o cartel como remate; música solo como puente breve.
+  - **Sin ver:** nombres completos de sonidos, tipo de transición, estilo y animación de textos, keyframes y capas.
+  - **Efecto de abrirlo:** deshacer siguió apagado y no se editó nada, pero **CapCut guardó solo al salir**: la fecha pasó de
+    08:08 a 09:46 y el tamaño de 4148 a 4241 MB. Abrir un proyecto ya lo modifica: por eso se hace sobre un duplicado.
+- **Duplicación del iPhone, «Tiempo agotado» (2026-11-04):** se arregló reiniciando el iPhone. La sesión murió a las 09:09 por
+  falta de paquetes y luego el iPhone no contestaba en los 10 s de arranque. **No era Tailscale** (funcionó 11 min con él). Al
+  leer el registro en zsh hay que escribir `/usr/bin/log`: `log` a secas es un comando interno y no lee nada.
 - **«Compartir archivos» de Finder/iTunes no sirve en iOS:** consultado con `pymobiledevice3` el 2026-11-04, CapCut 19.9.0 en
   el iPad no declara `UIFileSharingEnabled` (20 de sus 302 apps sí). El iPhone no estaba por USB, así que se midió en el iPad.
 - **Vía nueva:** el estilo se estudia con los **videos exportados** por AirDrop (ritmo, efectos, gráficos, audio). Sin
