@@ -338,12 +338,13 @@ Stack estándar de la casa, con particularidades de este repo:
   - **Miembro = `role` admin o member Y `member_id`.** Un candidato también tiene `member_id` (role client): queda fuera. El
     sistema se ve para todo miembro sea cual sea su piso y paso (excepción en `GET /api/centralized/systems`): la mayoría
     tiene piso y paso nulos.
-  - **Decidido por el asistente a falta de respuesta, Fernando puede cambiarlo:** el admin ve a todos los que aceptaron; un miembro
-    se ve a sí mismo y, durante un auxilio, a quien lo pidió. Historial de 7 días; lo de un auxilio se conserva. Cada 5 min, y
-    15 s en auxilio. 10 s para cancelar una detección de voz, con vibración y aviso discreto (puede haber un agresor mirando).
+  - **Quién ve qué (Fernando, 2026-11-04, deroga lo que propuso el asistente):** todo miembro ve a todos los que aceptaron compartir,
+    incluido el administrador, en un mapa (Leaflet + OpenStreetMap). **Decidido por el asistente, sin respuesta aún:** historial de
+    7 días (lo de un auxilio se conserva); envío cada 5 min y cada 15 s en auxilio; 10 s para cancelar una detección de voz, con
+    vibración y aviso discreto (puede haber un agresor mirando).
   - **Consentimiento propio de cada función**, como promete `/legal` §9: `cp_consentimientos` guarda aceptar y retirar. Nadie
     puede activar el rastreo de otro, ni un admin viendo «como otro». El teléfono muestra siempre que está activo. Apagar
-    la ubicación borra el historial. Cada consulta ajena queda en `cp_accesos` y la persona ve quién la hizo.
+    la ubicación borra el historial. Quien abre el mapa queda en `cp_accesos` (una vez cada 30 min por par) y la persona ve quién fue.
   - **Llave propia del teléfono (`x-cp-dispositivo`, hash en `cp_dispositivos`)**: la sesión caduca a los 7 días y el rastreo
     se habría apagado sin avisar. 401/403 en el servidor ⇒ el teléfono se apaga y olvida la llave. Salir de la cuenta también.
   - **El auxilio NO pasa por `avisarUsuarios`**, que se salta a quien apagó una clase de avisos. Android recibe `tipo=aviso` +

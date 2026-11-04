@@ -14,7 +14,7 @@ export default function ProteccionNativa() {
     const sincronizar = async () => {
       const n = await estadoNativo();
       if (!n?.activo) return;
-      const r = await fetch('/api/centralized/control-psicosocial', { cache: 'no-store' });
+      const r = await fetch('/api/centralized/control-psicosocial?solo=mio', { cache: 'no-store' });
       // Sin sesión no se toca nada: el teléfono usa su llave. Un fallo del servidor tampoco.
       if (r.status === 403) { await apagarProteccionNativa(); return; }
       if (!r.ok) return;

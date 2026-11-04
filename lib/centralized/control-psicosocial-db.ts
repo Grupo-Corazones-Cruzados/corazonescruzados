@@ -16,8 +16,8 @@ import {
  * MIEMBRO = `role` admin o member Y `member_id`. Solo `member_id` no basta: un candidato
  * (role client) también lo tiene, para su hoja de vida.
  *
- * QUIÉN VE QUÉ: cada uno, lo suyo; el admin, a todos los que aceptaron; cualquier miembro, a quien
- * tiene un auxilio abierto. Nadie puede activar el rastreo de otro.
+ * QUIÉN VE QUÉ (Fernando, 2026-11-04): todo miembro ve a todos los que aceptaron compartir, incluido
+ * el administrador, y queda registrado. Nadie puede activar el rastreo de otro.
  */
 
 const NOMBRE = `COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), m.name, u.email)`;
@@ -168,13 +168,19 @@ const FILA = `
     ) p ON true
    WHERE ${ES_MIEMBRO}`;
 
-export async function estadoRastreo(m: Miembro) {
+/**
+ * Lo que enseña el mapa. `soloMio`: lo que el teléfono pregunta al abrirse para alinearse con el
+ * servidor; ahí nadie está mirando a nadie, así que no devuelve a otros ni registra consultas.
+ */
+export async function estadoRastreo(m: Miembro, soloMio = false) {
   const { rows: filas } = await pool.query(
-    m.isAdmin
-      ? `${FILA} ORDER BY a.id IS NULL, nombre`
-      : `${FILA} AND (u.id = $1 OR a.id IS NOT NULL) ORDER BY a.id IS NULL, nombre`,
-    m.isAdmin ? [] : [m.userId],
+    soloMio ? `${FILA} AND u.id = $1` : `${FILA} ORDER BY a.id IS NULL, nombre`,
+    soloMio ? [m.userId] : [],
   );
+  if (!soloMio) {
+    await registrarAccesos(m.userId, (filas as FilaRastreo[])
+      .filter((f) => f.user_id !== m.userId && f.lat != null).map((f) => f.user_id));
+  }
   const { rows: accesos } = await pool.query(
     `SELECT ${NOMBRE} AS nombre, ac.creado_en
        FROM gcc_world.cp_accesos ac
@@ -195,21 +201,24 @@ export async function estadoRastreo(m: Miembro) {
   };
 }
 
-/** Detalle de un miembro, si quien pregunta puede verlo. Mirar a otro queda registrado. */
+/** La pantalla refresca cada pocos segundos: una misma consulta cuenta una vez cada media hora. */
+async function registrarAccesos(quien: string, aQuienes: string[]) {
+  if (!aQuienes.length) return;
+  await pool.query(
+    `INSERT INTO gcc_world.cp_accesos (quien, a_quien)
+     SELECT $1::uuid, x FROM UNNEST($2::uuid[]) AS x
+      WHERE NOT EXISTS (
+        SELECT 1 FROM gcc_world.cp_accesos ac
+         WHERE ac.quien = $1::uuid AND ac.a_quien = x AND ac.creado_en > NOW() - INTERVAL '30 minutes')`,
+    [quien, aQuienes],
+  );
+}
+
+/** Detalle de un miembro. Mirar a otro queda registrado. */
 export async function detalleMiembro(m: Miembro, objetivo: string) {
   const { rows: [fila] } = await pool.query(`${FILA} AND u.id = $1`, [objetivo]);
   if (!fila) return null;
-  if (objetivo !== m.userId && !m.isAdmin && !fila.alerta_id) return null;
-  if (objetivo !== m.userId) {
-    // El panel refresca cada pocos segundos: una misma consulta cuenta una vez cada media hora.
-    await pool.query(
-      `INSERT INTO gcc_world.cp_accesos (quien, a_quien)
-       SELECT $1::uuid, $2::uuid WHERE NOT EXISTS (
-         SELECT 1 FROM gcc_world.cp_accesos
-          WHERE quien = $1::uuid AND a_quien = $2::uuid AND creado_en > NOW() - INTERVAL '30 minutes')`,
-      [m.userId, objetivo],
-    );
-  }
+  if (objetivo !== m.userId && fila.lat != null) await registrarAccesos(m.userId, [objetivo]);
   const { rows: recorrido } = fila.alerta_id
     ? await pool.query(
       `SELECT lat, lng, precision_m, registrada_en FROM gcc_world.cp_posiciones

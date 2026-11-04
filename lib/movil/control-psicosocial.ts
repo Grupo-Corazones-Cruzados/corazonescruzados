@@ -45,6 +45,13 @@ export async function plataformaNativa(): Promise<'android' | 'ios' | null> {
   return (await cargar())?.plataforma ?? null;
 }
 
+/** Está dentro de la app, pero es una instalación anterior al rastreo: hay que actualizarla. */
+export async function appSinRastreo(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const { Capacitor } = await import('@capacitor/core');
+  return Capacitor.isNativePlatform() && !Capacitor.isPluginAvailable('ControlPsicosocial');
+}
+
 export async function estadoNativo(): Promise<EstadoNativo | null> {
   const c = await cargar();
   return c ? c.p.estado() : null;

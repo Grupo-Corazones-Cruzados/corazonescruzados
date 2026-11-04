@@ -12,6 +12,7 @@ import PieAcciones from '@/components/ui/PieAcciones';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
+import MapaMiembros from '@/components/centralized/control-psicosocial/MapaMiembros';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useSondeo } from '@/lib/hooks/useSondeo';
 import { fmtInt } from '@/lib/format';
@@ -19,7 +20,7 @@ import {
   CONSENTIMIENTO, estadoSenal, type EstadoSenal, type FilaRastreo, type FuncionCp,
 } from '@/lib/centralized/control-psicosocial';
 import {
-  apagarProteccionNativa, configurarNativo, enviarPosicionAhora, estadoNativo, pedirPermisosNativos,
+  apagarProteccionNativa, appSinRastreo, configurarNativo, enviarPosicionAhora, estadoNativo, pedirPermisosNativos,
   plataformaNativa, type EstadoNativo,
 } from '@/lib/movil/control-psicosocial';
 
@@ -64,26 +65,13 @@ function posicionRapida(): Promise<{ lat: number; lng: number } | null> {
   });
 }
 
-function Mapa({ lat, lng }: { lat: number; lng: number }) {
-  const d = 0.004;
-  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d},${lat - d},${lng + d},${lat + d}&layer=mapnik&marker=${lat},${lng}`;
-  return (
-    <iframe
-      title="Mapa de la ubicación"
-      src={src}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      className="w-full h-64 rounded-md border border-digi-border bg-digi-bg"
-    />
-  );
-}
-
 export default function ControlPsicosocialSystem() {
   const params = useSearchParams();
   const [estado, setEstado] = useState<Estado | null>(null);
   const [error, setError] = useState('');
   const [plataforma, setPlataforma] = useState<'android' | 'ios' | null>(null);
   const [nativo, setNativo] = useState<EstadoNativo | null>(null);
+  const [sinRastreo, setSinRastreo] = useState(false);
   const [consentir, setConsentir] = useState<FuncionCp | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [confirmarAuxilio, setConfirmarAuxilio] = useState(false);
@@ -107,7 +95,7 @@ export default function ControlPsicosocialSystem() {
     if (r.ok) setDetalle((await r.json()).data);
   }, [elegido]);
 
-  useEffect(() => { cargar(); plataformaNativa().then(setPlataforma); }, [cargar]);
+  useEffect(() => { cargar(); plataformaNativa().then(setPlataforma); appSinRastreo().then(setSinRastreo); }, [cargar]);
   useEffect(() => { setDetalle(null); cargarDetalle(); }, [cargarDetalle]);
   useSondeo(cargar, 15_000);
   useSondeo(cargarDetalle, 15_000, !!elegido);
@@ -250,7 +238,7 @@ export default function ControlPsicosocialSystem() {
       <p className={SENAL[estadoSenal(detalle)].clase}>{SENAL[estadoSenal(detalle)].texto}</p>
       {punto ? (
         <>
-          <Mapa lat={punto.lat} lng={punto.lng} />
+          {!conColumna && <MapaMiembros filas={[{ ...detalle, lat: punto.lat, lng: punto.lng }]} elegido={detalle.user_id} className="h-64" />}
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${punto.lat},${punto.lng}`}
             target="_blank" rel="noreferrer"
@@ -346,7 +334,7 @@ export default function ControlPsicosocialSystem() {
           </div>
         ) : (
           <p className="text-[12px] text-digi-muted flex items-center gap-1.5" style={mf}>
-            La ubicación y la voz se activan desde la app del teléfono.
+            {sinRastreo ? 'Esta instalación de la app no trae el rastreo. Hay que actualizarla.' : 'La ubicación y la voz se activan desde la app del teléfono.'}
           </p>
         )}
 
@@ -355,9 +343,9 @@ export default function ControlPsicosocialSystem() {
           {estado.accesos.length === 0 ? (
             <p className="text-[12px] text-digi-muted">Nadie todavía.</p>
           ) : (
-            <ul className="divide-y divide-digi-border">
+            <ul className="divide-y divide-digi-border max-h-36 overflow-y-auto">
               {estado.accesos.map((a) => (
-                <li key={a.creado_en} className="flex items-center justify-between gap-2 py-1.5 text-[12px]">
+                <li key={`${a.nombre}-${a.creado_en}`} className="flex items-center justify-between gap-2 py-1.5 text-[12px]">
                   <span className="truncate min-w-0 text-digi-text" title={a.nombre}>{a.nombre}</span>
                   <span className="shrink-0 text-digi-muted">{fecha(a.creado_en)}</span>
                 </li>
@@ -367,15 +355,23 @@ export default function ControlPsicosocialSystem() {
         </div>
       </PanelHastaElPie>
 
-      <PixelDataTable
-        columns={columnas}
-        data={estado.filas}
-        singleLine
-        onRowClick={(f: FilaRastreo) => setElegido(f.user_id)}
-        rowClassName={(f: FilaRastreo) => (f.user_id === elegido ? 'bg-accent-light' : '')}
-        emptyTitle="Sin miembros"
-        unidad={['miembro', 'miembros']}
-      />
+      <div className="min-w-0 space-y-4">
+        <MapaMiembros
+          filas={estado.filas}
+          elegido={elegido}
+          onElegir={setElegido}
+          className="h-80 lg:h-[46dvh]"
+        />
+        <PixelDataTable
+          columns={columnas}
+          data={estado.filas}
+          singleLine
+          onRowClick={(f: FilaRastreo) => setElegido(f.user_id)}
+          rowClassName={(f: FilaRastreo) => (f.user_id === elegido ? 'bg-accent-light' : '')}
+          emptyTitle="Sin miembros"
+          unidad={['miembro', 'miembros']}
+        />
+      </div>
 
       {detalle && conColumna && (
         <PanelDetalle

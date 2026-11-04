@@ -21,7 +21,7 @@ export const DIAS_HISTORIAL = 7;
 export type FuncionCp = 'ubicacion' | 'voz';
 
 /** Si cambia lo que se acepta, se sube la versión: queda escrito qué texto aceptó cada quien. */
-export const VERSION_CONSENTIMIENTO = 1;
+export const VERSION_CONSENTIMIENTO = 2;
 
 export const CONSENTIMIENTO: Record<FuncionCp, { titulo: string; puntos: string[]; aceptar: string }> = {
   ubicacion: {
@@ -29,8 +29,9 @@ export const CONSENTIMIENTO: Record<FuncionCp, { titulo: string; puntos: string[
     aceptar: 'Acepto y activar',
     puntos: [
       'Este teléfono enviará tu ubicación a GCC World cada 5 minutos, también con la app cerrada, y cada 15 segundos durante un auxilio.',
-      'El administrador puede ver tu última ubicación en cualquier momento. Durante un auxilio tuyo, todos los miembros la ven.',
-      'Cada consulta de tu ubicación queda registrada y tú puedes ver quién la hizo.',
+      'Todos los miembros, incluido el administrador, pueden ver tu última ubicación en el mapa en cualquier momento.',
+      'Cada vez que otro miembro abre el mapa queda registrado, y tú puedes ver quién fue.',
+      'El mapa se dibuja con OpenStreetMap: al abrirlo, ese servicio recibe la zona que se está mirando.',
       `El historial se borra a los ${DIAS_HISTORIAL} días. Lo registrado durante un auxilio se conserva con ese auxilio.`,
       'El teléfono mostrará siempre que está activo. Puedes apagarlo cuando quieras desde aquí: se deja de enviar y se borra tu historial.',
       'Es voluntario. Negarte no te impide usar el resto de la plataforma.',

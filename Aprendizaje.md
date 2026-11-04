@@ -11557,3 +11557,10 @@ Capa de datos: 28 comprobaciones en una transacción con ROLLBACK, sin claves de
 claro y oscuro con datos simulados y escrituras bloqueadas. Candidato 403, miembro y admin 200, sin sesión 403, llave falsa rechazada.
 **Sin probar en teléfono real:** permisos, segundo plano, voz, push de auxilio, consentimiento en pantalla, `tel:911` dentro de la app y el mapa dentro de la app del iPhone.
 
+## Control Psicosocial — segunda iteración (2026-11-04, Fernando probó en su iPhone)
+- **«Dije la frase y no funcionó»:** tenía la instalación anterior, sin el plugin nativo. La web se publica sola, pero lo nativo (permisos, ubicación, voz) solo llega al instalar de nuevo por cable. Es la misma confusión que puede repetirse en cada cambio nativo.
+- **El mensaje engañaba:** «se activan desde la app del teléfono», leído dentro de la app. Ahora distingue navegador de instalación sin actualizar (`appSinRastreo`).
+- **P10 ¿Mapa con varios miembros? · ✅** El mapa incrustado de OpenStreetMap solo pinta un marcador: se pasó a Leaflet con marcas propias (`divIcon`), sin las imágenes por defecto. `isolate` para que su z-index no pase sobre los paneles.
+- **Registrar quién mira:** ahora mirar es abrir el mapa, no un detalle. Se registra en `estadoRastreo`, y `?solo=mio` deja fuera la sincronización del teléfono al abrirse, que no es mirar a nadie.
+- **Verificación:** 12 comprobaciones con ROLLBACK; Chrome con mapa real a 1440, 1000 y 390 px. **Sin comprobar:** que el mapa cargue dentro de la app del iPhone (`limitsNavigationsToAppBoundDomains`).
+
