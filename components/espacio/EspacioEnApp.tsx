@@ -8,6 +8,7 @@ import { BTN_SECONDARY } from '@/components/ui/Button';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTemaPanel } from '@/components/providers/TemaPanel';
+import { esAppInstalada, RUTA_EMBEBIDA } from './api';
 
 const ESPERA_MS = 12000;
 
@@ -16,7 +17,7 @@ const ESPERA_MS = 12000;
  * sí misma: enmarca lo que sirve la Mac por Tailscale, y fuera de esa red el marco no llega a
  * cargar. El marco avisa cuando carga, porque desde fuera no se puede saber si falló.
  */
-export default function EspacioEnApp() {
+export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio de trabajo' }: { ruta?: string; titulo?: string }) {
   const router = useRouter();
   const { user } = useAuth();
   const { tema, oscuro } = useTemaPanel();
@@ -26,9 +27,7 @@ export default function EspacioEnApp() {
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
-    const w = window as any;
-    const enApp = !!w.Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches;
-    if (!enApp || (user && user.role !== 'admin')) { router.replace('/dashboard/admin'); return; }
+    if (!esAppInstalada() || (user && user.role !== 'admin')) { router.replace('/dashboard/admin'); return; }
     fetch('/api/espacio-trabajo/direccion').then((r) => r.json()).then((j) => setDireccion(j.direccion || null)).catch(() => setEstado('sin-conexion'));
   }, [router, user]);
 
@@ -42,11 +41,11 @@ export default function EspacioEnApp() {
   }, [direccion, intento]);
 
   const reintentar = useCallback(() => { setEstado('cargando'); setIntento((i) => i + 1); }, []);
-  const src = direccion ? `${direccion}/espacio?tema=${encodeURIComponent(tema)}&oscuro=${oscuro ? 1 : 0}` : null;
+  const src = direccion ? `${direccion}${ruta}?tema=${encodeURIComponent(tema)}&oscuro=${oscuro ? 1 : 0}` : null;
 
   return (
     <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className="relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden max-lg:pb-[var(--seguro-abajo)]">
-      {src && <iframe key={intento} src={src} title="Espacio de trabajo" allow="microphone" className={`w-full h-full border-0 ${estado === 'listo' ? '' : 'invisible'}`} />}
+      {src && <iframe key={intento} src={src} title={titulo} allow="microphone" className={`w-full h-full border-0 ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">

@@ -34,6 +34,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, RotateCw } from 'lucide-react';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import BotonPantallaActiva from '@/components/espacio/BotonPantallaActiva';
+import { esAppInstalada } from '@/components/espacio/api';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -44,8 +45,7 @@ export default function CabeceraMovil() {
   const [recargando, setRecargando] = useState(false);
   const enEspacio = usePathname().startsWith('/dashboard/admin/espacio');
   useEffect(() => {
-    const w = window as any;
-    setEnApp(!!w.Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches);
+    setEnApp(esAppInstalada());
   }, []);
 
   return (

@@ -1,5 +1,5 @@
 import { rechazo } from '@/lib/espacio-trabajo/guardia';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   createContenido, listContenidos, memberIdDeUsuario,
@@ -10,7 +10,7 @@ import { isFuenteTipo, isReferenciaTipo } from '@/lib/centralized/generacion-con
 // Las ideas son PRIVADAS por colaborador; el admin las ve todas. El alcance lo fuerza la
 // capa de datos, no esta ruta: aquí solo se dice QUIÉN pregunta.
 async function guard() {
-  const user = await getCurrentUser();
+  const user = await usuarioLocal();
   if (!user || !['admin', 'member'].includes(user.role)) return null;
   return { userId: user.userId, isAdmin: user.role === 'admin' };
 }

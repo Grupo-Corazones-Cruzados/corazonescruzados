@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2, Lock } from 'lucide-react';
 import PixelInput from '@/components/ui/PixelInput';
@@ -15,7 +15,7 @@ import '../../app/temas.css';
  * EL ESPACIO DE TRABAJO DENTRO DE LA APP. Se sirve desde la Mac por la red privada y va en un marco
  * del panel; el tema se recibe de la app, porque aquí no se comparte su almacenamiento.
  */
-export default function EspacioEmbebido() {
+export default function EspacioEmbebido({ titulo = 'Espacio de trabajo', children }: { titulo?: string; children?: ReactNode }) {
   const params = useSearchParams();
   const [tema] = useState(() => (/^[a-z0-9-]{1,30}$/.test(params.get('tema') || '') ? params.get('tema') : 'por-defecto'));
   const [oscuro] = useState(() => params.get('oscuro') === '1');
@@ -53,14 +53,14 @@ export default function EspacioEmbebido() {
 
   return (
     <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} h-dvh p-0 bg-digi-dark`}>
-      {estado === 'dentro' && <EspacioTrabajo />}
+      {estado === 'dentro' && (children ?? <EspacioTrabajo />)}
       {estado === 'cargando' && <div className="h-full flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'clave' && (
         <div className="h-full flex items-center justify-center p-4">
           <form onSubmit={entrar} className="w-full max-w-sm bg-digi-card border border-digi-border rounded-lg p-6 space-y-4">
             <div className="flex items-center gap-2.5">
               <span className="w-9 h-9 rounded-lg bg-accent-light flex items-center justify-center"><Lock className="w-4 h-4 text-accent" /></span>
-              <h1 className="text-[15px] font-semibold text-digi-text">Espacio de trabajo</h1>
+              <h1 className="text-[15px] font-semibold text-digi-text">{titulo}</h1>
             </div>
             <PixelInput type="password" label="Contraseña" autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} />
             {error && <p className={`text-[13px] ${TONO.error.texto}`}>{error}</p>}

@@ -5,6 +5,8 @@ import crypto from 'node:crypto';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies, headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { pool } from '@/lib/db';
+import { getCurrentUser, type TokenPayload } from '@/lib/auth/jwt';
 
 /**
  * EL CANDADO DEL ESPACIO DE TRABAJO. Solo existe en la instancia local que arranca launchd.
@@ -50,6 +52,20 @@ export async function sesionValida(): Promise<boolean> {
   const c = (await cookies()).get(COOKIE)?.value || (await headers()).get('x-espacio-token');
   if (!c) return false;
   try { await jwtVerify(c, secreto()); return true; } catch { return false; }
+}
+
+/**
+ * Quién pregunta. Dentro del marco de las apps no hay cookie de GCC World, pero la contraseña del
+ * Espacio de trabajo es del administrador: la misma equivalencia que hace `/api/espacio-trabajo/acceso`.
+ * En la web no cambia nada, porque ahí `espacioHabilitado()` es falso.
+ */
+export async function usuarioLocal(): Promise<TokenPayload | null> {
+  const usuario = await getCurrentUser();
+  if (usuario) return usuario;
+  const email = process.env['ESPACIO_ADMIN_EMAIL'];
+  if (!espacioHabilitado() || !email || !(await sesionValida())) return null;
+  const { rows: [u] } = await pool.query(`SELECT id, email, role FROM gcc_world.users WHERE lower(email) = lower($1) AND role = 'admin'`, [email]);
+  return u ? { userId: String(u.id), email: u.email, role: u.role } : null;
 }
 
 const NO_EXISTE = () => new NextResponse('Not Found', { status: 404 });

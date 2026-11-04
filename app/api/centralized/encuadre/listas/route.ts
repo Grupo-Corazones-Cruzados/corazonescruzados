@@ -1,9 +1,9 @@
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextResponse } from 'next/server';
 import { listGlobalLists, getListOptions, addListOption, updateListOption, deleteListOption } from '@/lib/centralized/encuadre-db';
 
 async function guard() {
-  const user = await getCurrentUser();
+  const user = await usuarioLocal();
   if (!user || !['admin', 'member'].includes(user.role)) return null;
   return user;
 }

@@ -7,6 +7,9 @@ export class ErrorEspacio extends Error {
 
 const LLAVE_TOKEN = 'espacio_token';
 export const RUTA_EMBEBIDA = '/espacio';
+export const RUTA_CONTENIDO = '/contenido';
+/** Aplicación instalada: la nativa del teléfono o la del escritorio. */
+export const esAppInstalada = () => !!(window as any).Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches;
 export const rutaAcceso = (volver: string) => `/espacio-acceso?volver=${encodeURIComponent(volver)}`;
 /** Solo rutas de aquí: un enlace no puede mandar a otra web tras escribir la contraseña. */
 export const destinoSeguro = (v: string | null | undefined) => (v && v.startsWith('/') && !v.startsWith('//') && !v.includes('\\') ? v : '/dashboard/admin/espacio');
@@ -23,7 +26,7 @@ export function cabeceras(extra: Record<string, string> = {}): Record<string, st
 }
 
 function sesionCaducada() {
-  if (window.location.pathname === RUTA_EMBEBIDA) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
+  if (window.location.pathname === RUTA_EMBEBIDA || window.location.pathname === RUTA_CONTENIDO) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
   else window.location.href = rutaAcceso(window.location.pathname + window.location.search);
 }
 

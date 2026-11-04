@@ -1,12 +1,12 @@
 import { borrarCarpetaVideo } from '@/lib/espacio-trabajo/claude-local';
 import { rechazo } from '@/lib/espacio-trabajo/guardia';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteContenido, listarVideos, getContenido, updateContenido } from '@/lib/centralized/generacion-contenido-db';
 import { isEstado, isFuenteTipo, isReferenciaTipo } from '@/lib/centralized/generacion-contenido';
 
 async function guard() {
-  const user = await getCurrentUser();
+  const user = await usuarioLocal();
   if (!user || !['admin', 'member'].includes(user.role)) return null;
   return { userId: user.userId, isAdmin: user.role === 'admin' };
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { llamarServicio, rechazo } from '@/lib/espacio-trabajo/guardia';
 import { fijarSesionVideo, getContenido, getVideo } from '@/lib/centralized/generacion-contenido-db';
 import { contextoDeIdea } from '@/lib/centralized/generacion-contenido';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request, { params }: { params: Promise<{ videoId: string }> }) {
   const fuera = await rechazo(req);
   if (fuera) return fuera;
-  const user = await getCurrentUser();
+  const user = await usuarioLocal();
   if (!user || !['admin', 'member'].includes(user.role)) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   const isAdmin = user.role === 'admin';
   const v = await getVideo(Number((await params).videoId), user.userId, isAdmin);

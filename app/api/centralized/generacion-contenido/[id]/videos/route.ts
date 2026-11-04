@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { crearVideo, listarVideos } from '@/lib/centralized/generacion-contenido-db';
 
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 type Ruta = { params: Promise<{ id: string }> };
 
 async function quien() {
-  const user = await getCurrentUser();
+  const user = await usuarioLocal();
   return user && ['admin', 'member'].includes(user.role) ? { userId: user.userId, isAdmin: user.role === 'admin' } : null;
 }
 

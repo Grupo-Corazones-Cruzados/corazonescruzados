@@ -11,7 +11,9 @@ import {
   ClipboardList, Info, FileVideo, Wand2, Check, X, ChevronLeft, ChevronRight, ChevronDown, Loader2, Lock, FileText, Clapperboard,
 } from 'lucide-react';
 import Button, { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
-import { rutaAcceso } from '@/components/espacio/api';
+import { esAppInstalada, rutaAcceso, RUTA_CONTENIDO } from '@/components/espacio/api';
+import EspacioEnApp from '@/components/espacio/EspacioEnApp';
+import { useAuth } from '@/components/providers/AuthProvider';
 import VideosDeIdea from '@/components/centralized/generacion-contenido/VideosDeIdea';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelTabs from '@/components/ui/PixelTabs';
@@ -37,7 +39,10 @@ type Puerta = 'cargando' | 'web' | 'clave' | 'sin-servicio' | 'dentro';
  * Va detrás del mismo candado que el Espacio de trabajo.
  */
 export default function GeneracionDeContenidoSystem(_props: { system?: any; isAdmin?: boolean }) {
+  const { user } = useAuth();
   const [puerta, setPuerta] = useState<Puerta>('cargando');
+  const [enApp, setEnApp] = useState(false);
+  useEffect(() => { setEnApp(esAppInstalada()); }, []);
   useEffect(() => {
     fetch('/api/espacio-trabajo/estado')
       .then(async (r) => {
@@ -48,6 +53,8 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
       .catch(() => setPuerta('web'));
   }, []);
   if (puerta === 'dentro') return <SistemaLocal />;
+  /* Desde las apps instaladas se usa lo que sirve la Mac por la red privada, como el Espacio de trabajo. */
+  if (puerta === 'web' && enApp && user?.role === 'admin') return <EspacioEnApp ruta={RUTA_CONTENIDO} titulo="Generación de Contenido" />;
   if (puerta === 'cargando') return <div className="py-16 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>;
   const ruta = typeof window === 'undefined' ? '' : window.location.pathname;
   return (
@@ -113,7 +120,7 @@ const vacio = {
  */
 // El alcance (quién ve qué) lo decide el SERVIDOR: las rutas filtran por dueño y el admin
 // las ve todas. La pantalla no recibe permisos que decidir, y por eso no usa `isAdmin`.
-function SistemaLocal() {
+export function SistemaLocal({ enMarco = false }: { enMarco?: boolean }) {
   const [lista, setLista] = useState<ContenidoLista[]>([]);
   const [selId, setSelId] = useState<number | null>(null);
   const [detalle, setDetalle] = useState<any | null>(null);
@@ -153,7 +160,8 @@ function SistemaLocal() {
    * JS, no con clases (ver Clientes).
    */
   const enEscritorio = useConsultaMedia(PANTALLA_XL);
-  const conBarraAbajo = !useConsultaMedia(PANTALLA_LG);
+  /* En el marco de las apps no está la barra inferior del panel: lo principal se queda arriba. */
+  const conBarraAbajo = !useConsultaMedia(PANTALLA_LG) && !enMarco;
   const arribaSeccion = useRef<HTMLDivElement>(null);
 
   /* ── Carga ────────────────────────────────────────────────────────────────── */

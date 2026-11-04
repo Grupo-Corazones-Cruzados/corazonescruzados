@@ -15,6 +15,7 @@ import FaqsPanel from '@/components/admin/FaqsPanel';
 import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import PromptsPanel from '@/components/admin/PromptsPanel';
 import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, SquareTerminal } from 'lucide-react';
+import { esAppInstalada } from '@/components/espacio/api';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -64,8 +65,7 @@ function Admin() {
   // red privada. En una pestaña normal de la web la opción no existe.
   const [rutaEspacio, setRutaEspacio] = useState<string | null>(null);
   useEffect(() => {
-    const w = window as any;
-    const enApp = !!w.Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches;
+    const enApp = esAppInstalada();
     fetch('/api/espacio-trabajo/estado')
       .then((r) => setRutaEspacio(r.ok ? RUTA_ESPACIO : enApp ? RUTA_ESPACIO_APP : null))
       .catch(() => setRutaEspacio(enApp ? RUTA_ESPACIO_APP : null));

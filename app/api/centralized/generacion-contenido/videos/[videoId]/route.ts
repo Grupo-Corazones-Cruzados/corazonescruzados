@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { borrarCarpetaVideo } from '@/lib/espacio-trabajo/claude-local';
 import { borrarVideo, fijarSesionVideo, getVideo } from '@/lib/centralized/generacion-contenido-db';
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 type Ruta = { params: Promise<{ videoId: string }> };
 
 async function videoDe(videoId: string) {
-  const user = await getCurrentUser();
+  const user = await usuarioLocal();
   if (!user || !['admin', 'member'].includes(user.role)) return null;
   return getVideo(Number(videoId), user.userId, user.role === 'admin');
 }
