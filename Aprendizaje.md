@@ -84,7 +84,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 82 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LA PRUEBA CON UN VIDEO REAL
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 85 % — FALTAN LAS PRUEBAS DE ESCRITURA EN CAPCUT 9.5 Y LA PRUEBA CON UN VIDEO REAL
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -102,9 +102,10 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
   `~/Library/Containers/com.lemon.lvoverseas/Data/Movies/CapCut/User Data/Projects/com.lveditor.draft/<proyecto>/`,
   con la línea de tiempo en `draft_info.json` y una copia en `Timelines/<uuid>/`. No se encontró API pública de cuenta.
   (Fuente: disco de Fernando, solo lectura, y búsqueda web.)
-- 🔎 **¿Sigue siendo JSON legible en 9.5?** Medido legible en un proyecto guardado por 9.0 a las 14:14 del 2026-10-25.
-  La app se actualizó a 9.5.0 a las 14:18, así que ningún proyecto de este equipo lo ha guardado 9.5. Junto al proyecto
-  hay `crypto_key_store.dat`, de función desconocida. **Prueba P1.**
+- ✅ **¿Sigue siendo JSON legible en 9.5?** Sí (medido el 2026-11-04). `1014` y `1104` están guardados por 9.5.0
+  (`app_version` 9.5.0, `new_version` 187.0.0) y su `draft_info.json` es JSON plano. `1014` tiene un clip y `1104` está
+  vacío, así que falta ver cómo guarda 9.5 audio y transiciones (P5). `crypto_key_store.dat` sigue junto a `1014`, con
+  función desconocida; `1104` no lo tiene y la línea de tiempo se lee sin él. **Prueba P1.**
 - 🔎 **¿Acepta un proyecto escrito por una herramienta en Mac?** Sin verificar. `capcut-cli` da 9.x en Mac como
   «reportado/sin verificar»; `pyCapCut` lista 9.5.0.4050 pero indica abrir los borradores en Windows. **Prueba P2.**
 - ✅ **¿Dónde guardar el material?** CapCut está aislado con sandbox y tiene `assets.movies.read-write`: `~/Movies` lo
@@ -120,7 +121,7 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
 - ✅ **¿Imágenes del carrusel?** Siguen con `gpt-image-2` por API: lo único del sistema que no pasa a Claude Code. (Fuente: Fernando, 2026-11-04.)
 
 ### Pruebas pendientes (necesitan a Fernando)
-- **P1:** proyecto vacío creado por CapCut 9.5 con un clip: ¿`draft_info.json` sigue legible?
+- **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
 - **P3:** MOV ProRes 4444 de HyperFrames importado en CapCut: ¿fondo transparente?
 - **P4:** Fernando mueve algo y guarda: ¿el agente lee el cambio y conserva lo suyo al añadir más?
@@ -193,6 +194,8 @@ HyperFrames 0.9.11 renderizó `~/Movies/GCC-Edicion/pruebas/piramide-fases-trans
 `yuva444p12le`. Alfa medida a cero en una esquina y parcial en la pirámide; se vio bien compuesta con ffmpeg sobre su video.
 **Falta confirmarlo en CapCut.** Vertical: gráficos y texto en la franja de 168 a 1330 px y sin tapar la cara. La
 revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en esta prueba. Los colores son provisionales.
+El MOV se importó en el proyecto `1104` del Mac (06:45 del 2026-11-04), pero el proyecto quedó sin clips y con portada
+negra, lo que no demuestra nada: **el resultado solo lo puede decir Fernando.**
 
 ### Herramientas instaladas (2026-11-04)
 `whisper-cpp` por Homebrew y modelo `medium` (1,5 GB) en `~/.cache/whisper-cpp/`. Skills de HyperFrames (`hyperframes`,
@@ -259,13 +262,22 @@ revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en est
   - **Música:** solo «Chill Pop, Going-Out, Chilling, Cafe(1608119)», en ráfagas: ~0:10–0:16, ~3:58–4:03 y ~4:18–4:22. Sin
     música continua, como ya se dedujo del espectrograma.
   - **Volumen:** al seleccionar la fila de la voz en 7:11, el control (0–1000) estaba **en el extremo 0**, sin número, con
-    «Reducir el ruido» y «Ajuste de la intensidad» apagados. Puede que esa pista esté silenciada y la voz salga del clip, o
-    que el control no pintara el valor: **sin confirmar**. Los demás volúmenes no se abrieron.
+    «Reducir el ruido» y «Ajuste de la intensidad» apagados. **Fernando confirma que esa pista está silenciada a propósito**
+    (2026-11-04). Al escribir en un proyecto suyo, no subirla ni tomarla como referencia de volumen. Por qué la deja así y
+    de dónde sale la voz no se ha preguntado. Los demás volúmenes no se abrieron.
   - **Patrón que se repite:** rótulo + «Shot sound with delay» + cuaderno al empezar cada paso; barrido en las transiciones;
     meme o cartel como remate; música solo como puente breve.
   - **Sin ver:** nombres completos de sonidos, tipo de transición, estilo y animación de textos, keyframes y capas.
   - **Efecto de abrirlo:** deshacer siguió apagado y no se editó nada, pero **CapCut guardó solo al salir**: la fecha pasó de
     08:08 a 09:46 y el tamaño de 4148 a 4241 MB. Abrir un proyecto ya lo modifica: por eso se hace sobre un duplicado.
+  - **Lo que queda sin ver se mide mejor en el Mac:** el tipo de transición, los keyframes y los volúmenes se leen exactos del
+    JSON de `prueba-ia`, así que no hace falta otra revisión en el iPhone. El estudio de estilo queda cubierto.
+  - **Los sonidos no se pueden identificar desde el catálogo del Mac:** «Shot sound with delay», «CanonSOD» y «Chill Pop,
+    Going-Out» no aparecen en ninguna de las 3 bases `rp.db` (última escritura 2026-10-25). Se confirma la vía del «proyecto
+    catálogo». «Chill Pop» es de la biblioteca de CapCut: no sirve para publicidad según lo decidido.
+- **Proyectos del Mac en la papelera de CapCut (medido 2026-11-04):** `1014`, `1025` y `1015` pasaron a `.recycle_bin` a las
+  06:48 (con 6 s entre uno y otro) y `1104` a las 08:08, con CapCut abierto. Siguen enteros. Falta que Fernando confirme que
+  fue a propósito. Ninguno es la referencia del iPhone; `1014` del Mac es otro proyecto de una sola pista.
 - **Duplicación del iPhone, «Tiempo agotado» (2026-11-04):** se arregló reiniciando el iPhone. La sesión murió a las 09:09 por
   falta de paquetes y luego el iPhone no contestaba en los 10 s de arranque. **No era Tailscale** (funcionó 11 min con él). Al
   leer el registro en zsh hay que escribir `/usr/bin/log`: `log` a secas es un comando interno y no lee nada.
