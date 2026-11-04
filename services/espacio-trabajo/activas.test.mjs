@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sesionesActivas, VENTANA_ACTIVA_MS as V } from './activas.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { sesionesActivas, ultimaInteraccion, VENTANA_ACTIVA_MS as V } from './activas.mjs';
 
 const AHORA = 1_000_000_000_000;
 const fila = (id, edad, extra = {}) => ({ id, proyecto: 'p', titulo: id, actualizada: AHORA - edad, carpeta: null, viva: null, ...extra });
@@ -33,4 +36,23 @@ test('no se repite si dos proyectos ven la misma carpeta, y manda el de la raíz
 
 test('de la más reciente a la más antigua', () => {
   assert.deepEqual(ids(sesionesActivas([fila('b', 5000), fila('a', 10), fila('c', 90000)], [], AHORA)), ['a', 'b', 'c']);
+});
+
+test('la interacción es el último mensaje, no lo último que se escribió en el archivo', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'activas-'));
+  const a = path.join(dir, 's.jsonl');
+  const l = (o) => `${JSON.stringify(o)}\n`;
+  fs.writeFileSync(a, l({ type: 'user', timestamp: '2026-01-01T00:00:00.000Z' }) + l({ type: 'assistant', timestamp: '2026-01-02T00:00:00.000Z' })
+    + l({ type: 'user', isMeta: true, timestamp: '2026-02-01T00:00:00.000Z' }) + l({ type: 'system', subtype: 'away_summary', timestamp: '2026-03-01T00:00:00.000Z' }) + l({ type: 'ai-title', aiTitle: 'x' }));
+  assert.equal(ultimaInteraccion(a), Date.parse('2026-01-02T00:00:00.000Z'));
+  fs.appendFileSync(a, l({ type: 'mode', timestamp: '2026-04-01T00:00:00.000Z' }));
+  assert.equal(ultimaInteraccion(a), Date.parse('2026-01-02T00:00:00.000Z'));
+  fs.appendFileSync(a, 'x'.repeat(300 * 1024) + '\n');
+  assert.equal(ultimaInteraccion(a), Date.parse('2026-01-02T00:00:00.000Z'), 'mira más atrás si el final no tiene mensajes');
+  fs.appendFileSync(a, l({ type: 'user', timestamp: '2026-05-01T00:00:00.000Z' }));
+  assert.equal(ultimaInteraccion(a), Date.parse('2026-05-01T00:00:00.000Z'));
+  fs.writeFileSync(a, l({ type: 'ai-title' }));
+  assert.equal(ultimaInteraccion(a), null);
+  assert.equal(ultimaInteraccion(path.join(dir, 'no-existe.jsonl')), null);
+  fs.rmSync(dir, { recursive: true });
 });

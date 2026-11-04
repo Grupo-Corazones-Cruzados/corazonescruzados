@@ -31,7 +31,7 @@ function IconoEstado({ s }: { s: Sesion }) {
   const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
   const t = v ? null : s.estadoTerminal;
   const [Icono, texto, clase] =
-    (v && (v.estado === 'iniciando' || v.estado === 'trabajando' || (v.tareas || 0) > 0)) || t === 'busy' || t === 'shell' ? [Loader2, 'Procesando', 'text-accent animate-spin'] as const
+    (v && (v.estado === 'iniciando' || v.estado === 'trabajando' || (v.tareas || 0) > 0)) || t === 'busy' ? [Loader2, 'Procesando', 'text-accent animate-spin'] as const
     : v?.estado === 'espera' || t === 'waiting' ? [MessageCircleQuestion, 'Espera tu respuesta', 'text-amber-400'] as const
     : s.error ? [AlertCircle, 'Se detuvo', 'text-red-400'] as const
     : s.enTerminal && !v && !t ? [SquareTerminal, 'En una terminal', 'text-digi-muted'] as const
@@ -50,13 +50,15 @@ function lineaSesion(s: Sesion, detalle = s.rama) {
   );
 }
 
-export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, version, alElegir, alNueva, alEditar, alAgregar }: {
+export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alNueva, alEditar, alAgregar }: {
   proyectos: Proyecto[];
   vivas: Viva[];
   proyectoId: string | null;
   sesionId: string | null;
+  desdeActivas: boolean;
   version: number;
   alElegir: (proyecto: string, sesion: string) => void;
+  alElegirActiva: (proyecto: string, sesion: string) => void;
   alNueva: (proyecto: string) => void;
   alEditar: (p: Proyecto) => void;
   alAgregar: () => void;
@@ -66,7 +68,8 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   const [sesiones, setSesiones] = useState<Record<string, Sesion[]>>({});
   const [cargando, setCargando] = useState<Set<string>>(new Set());
 
-  useEffect(() => { if (proyectoId) setAbiertos((a) => (a.has(proyectoId) ? a : new Set(a).add(proyectoId))); }, [proyectoId]);
+  /* Lo que se elige en Activas no mueve la lista de proyectos: cada panel lleva su propia selección. */
+  useEffect(() => { if (proyectoId && !desdeActivas) setAbiertos((a) => (a.has(proyectoId) ? a : new Set(a).add(proyectoId))); }, [proyectoId, desdeActivas]);
 
   const clave = [...abiertos].join();
   useEffect(() => {
@@ -131,7 +134,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
           </p>
           <div className="min-h-0 overflow-y-auto overflow-x-hidden px-2 pb-1.5">
             {activas.map((s) => (
-              <FilaSesion key={s.id} titulo={s.titulo} activa={sesionId === s.id} alElegir={() => alElegir(s.proyecto, s.id)}
+              <FilaSesion key={s.id} titulo={s.titulo} activa={desdeActivas && sesionId === s.id} alElegir={() => alElegirActiva(s.proyecto, s.id)}
                 icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]}
                 linea={lineaSesion(alDia(s), proyectos.find((p) => p.id === s.proyecto)?.nombre)} />
             ))}
@@ -170,7 +173,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                     <div className="ml-3 pl-1.5 border-l border-digi-border mb-1 min-w-0">
                       {cargando.has(p.id) && !sesiones[p.id] && <Loader2 className="w-3.5 h-3.5 m-2 animate-spin text-digi-muted" />}
                       {sesiones[p.id]?.length === 0 && <p className="px-2 py-1.5 text-[12px] text-digi-muted">Sin sesiones</p>}
-                      {sesiones[p.id]?.map((s) => <FilaSesion key={s.id} titulo={s.titulo} linea={lineaSesion(alDia(s))} icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]} activa={sesionId === s.id} alElegir={() => alElegir(p.id, s.id)} />)}
+                      {sesiones[p.id]?.map((s) => <FilaSesion key={s.id} titulo={s.titulo} linea={lineaSesion(alDia(s))} icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]} activa={!desdeActivas && sesionId === s.id} alElegir={() => alElegir(p.id, s.id)} />)}
                       <button type="button" onClick={() => alEditar(p)} className="lg:hidden px-2 py-1.5 text-[12px] text-digi-muted hover:text-digi-text">Editar proyecto</button>
                     </div>
                   )}

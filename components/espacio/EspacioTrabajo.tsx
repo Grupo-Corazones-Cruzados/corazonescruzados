@@ -22,6 +22,7 @@ function Espacio() {
   const params = useSearchParams();
   const proyectoId = params.get('p');
   const sesionUrl = params.get('s');
+  const desdeActivas = params.get('a') === '1';
   const vista: Vista = params.get('v') === 'incidencias' ? 'incidencias' : 'sesiones';
   const enTelefono = !useConsultaMedia(PANTALLA_LG);
 
@@ -31,11 +32,12 @@ function Espacio() {
   const [version, setVersion] = useState(0);
   const [editar, setEditar] = useState<{ abierto: boolean; proyecto: Proyecto | null }>({ abierto: false, proyecto: null });
 
-  const ir = useCallback((q: { p?: string; s?: string; v?: Vista; nueva?: boolean }, sustituir = false) => {
+  const ir = useCallback((q: { p?: string; s?: string; v?: Vista; a?: boolean }, sustituir = false) => {
     const u = new URLSearchParams();
     if (q.v === 'incidencias') u.set('v', 'incidencias');
     if (q.p) u.set('p', q.p);
     if (q.s) u.set('s', q.s);
+    if (q.a) u.set('a', '1');
     const destino = `${ruta}${u.size ? `?${u}` : ''}`;
     if (sustituir) router.replace(destino, { scroll: false }); else router.push(destino, { scroll: false });
   }, [router, ruta]);
@@ -66,15 +68,15 @@ function Espacio() {
   );
 
   const rail = (
-    <RailProyectos proyectos={proyectos || []} vivas={vivas} proyectoId={proyectoId} sesionId={sesionUrl} version={version}
-      alElegir={(p, s) => ir({ p, s })} alNueva={(p) => ir({ p })} alEditar={(p) => setEditar({ abierto: true, proyecto: p })} alAgregar={() => setEditar({ abierto: true, proyecto: null })} />
+    <RailProyectos proyectos={proyectos || []} vivas={vivas} proyectoId={proyectoId} sesionId={sesionUrl} desdeActivas={desdeActivas} version={version}
+      alElegir={(p, s) => ir({ p, s })} alElegirActiva={(p, s) => ir({ p, s, a: true })} alNueva={(p) => ir({ p })} alEditar={(p) => setEditar({ abierto: true, proyecto: p })} alAgregar={() => setEditar({ abierto: true, proyecto: null })} />
   );
 
   const conversacion = proyecto ? (
     <Conversacion key={proyecto.id} proyecto={proyecto} sesionId={sesionUrl}
       alVolver={enTelefono ? () => ir({}) : undefined}
-      alCrear={(id) => { ir({ p: proyecto.id, s: id }, true); refrescar(); }}
-      alNueva={() => ir({ p: proyecto.id })}
+      alCrear={(id) => { ir({ p: proyecto.id, s: id, a: desdeActivas }, true); refrescar(); }}
+      alNueva={() => ir({ p: proyecto.id, a: desdeActivas })}
       alCambiar={refrescar} />
   ) : null;
 

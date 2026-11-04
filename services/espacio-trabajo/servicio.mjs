@@ -8,7 +8,7 @@ import { spawn, execFile } from 'node:child_process';
 import { query, listSessions, getSessionMessages, renameSession, getSessionInfo } from '@anthropic-ai/claude-agent-sdk';
 import { pipeline } from 'node:stream/promises';
 import { expandirCadena, plegarCadena } from './cadena.mjs';
-import { sesionesActivas } from './activas.mjs';
+import { sesionesActivas, ultimaInteraccion } from './activas.mjs';
 import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
 
 /**
@@ -609,13 +609,15 @@ ruta('DELETE', '/proyectos/:id', async ({ p }) => {
   return { ok: true };
 });
 
+const archivoSesion = (dir, id) => path.join(os.homedir(), '.claude/projects', dir.normalize('NFC').replace(/[^a-zA-Z0-9]/g, '-'), `${id}.jsonl`);
+
 async function sesionesDe(proyecto, terminal) {
   const todas = [];
   for (const dir of [proyecto.ruta, ...(proyecto.subcarpetas || [])]) {
     const l = await listSessions({ dir, limit: 60, includeWorktrees: false }).catch(() => []);
     for (const s of l) todas.push({
       id: s.sessionId, proyecto: proyecto.id, titulo: s.customTitle || s.summary || s.firstPrompt || 'Sesión sin título',
-      actualizada: s.lastModified, rama: s.gitBranch || null, carpeta: dir === proyecto.ruta ? null : path.relative(proyecto.ruta, dir),
+      actualizada: ultimaInteraccion(archivoSesion(dir, s.sessionId)) ?? s.lastModified, rama: s.gitBranch || null, carpeta: dir === proyecto.ruta ? null : path.relative(proyecto.ruta, dir),
       enTerminal: terminal.has(s.sessionId), estadoTerminal: terminal.get(s.sessionId) || null, error: ultimosErrores.get(s.sessionId) || null,
       viva: vivas.has(s.sessionId) ? resumenViva(vivas.get(s.sessionId)) : null,
     });
