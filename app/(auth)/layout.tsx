@@ -1,19 +1,25 @@
-import PixelStars from "@/components/landing/PixelStars";
+import LogoGirando from '@/components/ui/LogoGirando';
+import { FONDO_AUTH } from '@/components/landing/authEstilos';
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+/**
+ * MARCO DE LAS PÁGINAS DE ACCESO QUE LLEGAN POR CORREO — confirmar el correo y restablecer la
+ * contraseña (Fernando, 2026-11-04: «al estilo aplicado en el formulario de inicio de sesión»).
+ *
+ * Es el diálogo de acceso de la portada (`ClientLoginModal`) sin la portada detrás: `corp dark`,
+ * el logo girando con «GCC WORLD» encima y un panel de 440 px. Las piezas de estilo son las de
+ * `components/landing/authEstilos.ts`, las mismas del diálogo: equivalente no es igual.
+ * Antes era la piel pixel antigua (estrellas, esquinas, letra Silkscreen, «OK»/«ERR»).
+ */
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="landing-page auth-screen min-h-screen flex items-center justify-center px-4 py-12 relative">
-      <PixelStars count={30} />
-      {/* Pixel corners */}
-      <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-accent/20" />
-      <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-accent/20" />
-      <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-accent/20" />
-      <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-accent/20" />
-      <div className="relative z-10 w-full max-w-md">{children}</div>
+    <div className="corp dark min-h-dvh flex items-center justify-center px-4 py-12" style={FONDO_AUTH}>
+      <div className="w-full max-w-[440px] flex flex-col items-center gap-[18px]">
+        <div className="flex flex-col items-center gap-2">
+          <LogoGirando tamano={40} />
+          <span className="text-[0.72rem] tracking-[0.2em] text-white" style={{ fontFamily: 'var(--font-body)' }}>GCC WORLD</span>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

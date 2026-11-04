@@ -2,10 +2,15 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
-import BrandLoader from "@/components/ui/BrandLoader";
+import { XCircle } from "lucide-react";
+import { PANEL_AUTH, TITULO_AUTH, TEXTO_AUTH, CAMPO_AUTH, ERROR_AUTH } from "@/components/landing/authEstilos";
 
+/**
+ * RESTABLECER LA CONTRASEÑA — la página del enlace del correo «¿olvidaste tu contraseña?». Con
+ * el aspecto del diálogo de acceso (ver `app/(auth)/layout.tsx`): campos sin etiqueta, el
+ * marcador hace de rótulo, y el botón primario a todo el ancho.
+ */
 function ResetForm() {
   const params = useSearchParams();
   const token = params.get("token");
@@ -14,32 +19,25 @@ function ResetForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const pixelFont = { fontFamily: "'Silkscreen', cursive" } as const;
+  const [error, setError] = useState<string | null>(null);
 
   if (!token) {
     return (
-      <div className="pixel-card text-center">
-        <div className="text-4xl mb-4 text-red-400" style={pixelFont}>ERR</div>
-        <h2 className="pixel-heading text-base text-white mb-2">
-          Enlace Invalido
-        </h2>
-        <p className="text-xs opacity-50 mb-6" style={{ ...pixelFont, color: "#94A3B8" }}>
-          Este enlace no contiene un token valido.
-        </p>
-        <Link href="/auth">
-          <button className="pixel-btn pixel-btn-primary">
-            Volver al Inicio
-          </button>
-        </Link>
+      <div style={PANEL_AUTH}>
+        <h1 style={TITULO_AUTH} className="flex items-center gap-2">
+          <XCircle className="w-5 h-5 text-red-400 shrink-0" /> Enlace no válido
+        </h1>
+        <p style={TEXTO_AUTH}>Este enlace no trae el código para cambiar la contraseña. Pide uno nuevo desde «¿Olvidaste tu contraseña?».</p>
+        <a href="/auth" className="pixel-btn pixel-btn-primary w-full flex items-center justify-center">Ir a iniciar sesión</a>
       </div>
     );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (password !== confirm) {
-      toast.error("Las contraseñas no coinciden");
+      setError("Las contraseñas no coinciden.");
       return;
     }
     setLoading(true);
@@ -54,69 +52,33 @@ function ResetForm() {
       toast.success("Contraseña actualizada. Ya puedes iniciar sesión.");
       router.push("/auth");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error");
+      setError(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="pixel-card">
-      <h2 className="pixel-heading text-base text-white text-center mb-1">
-        Nueva Contrasena
-      </h2>
-      <p
-        className="text-center text-xs mb-6 opacity-50"
-        style={{ ...pixelFont, color: "#94A3B8" }}
-      >
-        Ingresa tu nueva contrasena
-      </p>
+    <div style={PANEL_AUTH}>
+      <h1 style={TITULO_AUTH}>Nueva contraseña</h1>
+      <p style={TEXTO_AUTH}>Escribe la contraseña con la que entrarás desde ahora.</p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label
-            className="text-[10px] text-accent-glow opacity-70"
-            style={pixelFont}
-          >
-            Nueva contrasena
-          </label>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Minimo 8 caracteres"
-            className="w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none transition-colors"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label
-            className="text-[10px] text-accent-glow opacity-70"
-            style={pixelFont}
-          >
-            Confirmar contrasena
-          </label>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Repite la contrasena"
-            className="w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:border-accent focus:outline-none transition-colors"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="pixel-btn pixel-btn-primary w-full mt-2 disabled:opacity-50"
-        >
-          {loading ? "Cargando..." : "Actualizar Contrasena"}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+        <input
+          type="password" required minLength={8} autoComplete="new-password" autoFocus
+          value={password} onChange={(e) => setPassword(e.target.value)}
+          placeholder="Nueva contraseña (mín. 8)" aria-label="Nueva contraseña"
+          style={CAMPO_AUTH}
+        />
+        <input
+          type="password" required minLength={8} autoComplete="new-password"
+          value={confirm} onChange={(e) => setConfirm(e.target.value)}
+          placeholder="Repite la contraseña" aria-label="Repite la contraseña"
+          style={CAMPO_AUTH}
+        />
+        {error && <div role="alert" style={ERROR_AUTH}>{error}</div>}
+        <button type="submit" disabled={loading} className="pixel-btn pixel-btn-primary w-full" style={{ marginTop: 4, opacity: loading ? 0.6 : 1 }}>
+          {loading ? "Guardando…" : "Cambiar contraseña"}
         </button>
       </form>
     </div>
@@ -125,13 +87,7 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-20">
-          <BrandLoader size="lg" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div style={PANEL_AUTH} />}>
       <ResetForm />
     </Suspense>
   );

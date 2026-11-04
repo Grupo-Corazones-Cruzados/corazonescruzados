@@ -1,21 +1,18 @@
 /**
  * MARCO DEL CV PÚBLICO.
  *
- * No usa el marco de `/clientes` (`CabeceraSitio` + `PieSitio`) a propósito: quien
- * abre este enlace viene a leer el CV de una persona, no a navegar por el sitio del
- * grupo. Una cabecera con «Negocio · Recursos · Contacto» encima de un currículum
- * compite con lo único que hay que mirar.
+ * Desde el 2026-11-04 va dentro de `MarcoPublico`, como las demás páginas que se abren por
+ * enlace (Fernando: «está muy bien el tema y el diseño implementado, creo que hace falta
+ * aplicarlo en el CV también»). Deroga el «CV siempre en claro» del 2026-08-14: el tema es el
+ * del visitante (el último que usó en el panel, o el de su sistema) y los colores son los
+ * tokens del panel. Imprimir sigue saliendo en claro (`@media print` en `cv-publico.css`).
  *
- * ── TEMA CLARO, Y NO ES UN DESPISTE ───────────────────────────────────────────
- * Decisión de Fernando (2026-08-14): **el oscuro es el tema interno de la app**; lo
- * que se comparte por enlace va en claro. Por eso este `<div>` fuerza el fondo claro
- * aunque el `<html>` de la raíz lleve la clase `dark` para todo lo demás.
- *
- * Fondo y tipografía LITERALES, como en todo lo que se sirve a terceros: la página
- * tiene que verse igual pase lo que pase con el tema del panel.
+ * La cabecera es la mínima del marco (logo y nada más): quien abre el enlace viene a leer el
+ * CV de una persona, no a navegar por el sitio del grupo.
  */
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
+import MarcoPublico from '@/components/public/MarcoPublico';
 import './cv-publico.css';
 
 /**
@@ -48,16 +45,11 @@ export const metadata: Metadata = {
 };
 
 export default function CvLayout({ children }: { children: ReactNode }) {
+  // `cv-publico` solo lleva lo propio del CV (maqueta, barra, animaciones); los colores y el
+  // fondo los pone el marco.
   return (
-    <div
-      // `claro-publico` trae la paleta (fuente única, en `app/globals.css`, compartida
-      // con las cinco páginas del sitio); `cv-publico` solo lo propio del CV.
-      className="claro-publico cv-publico relative min-h-screen bg-[var(--papel)] text-[var(--suave)] antialiased"
-      style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
-    >
-      <div className="cv-fondo" aria-hidden />
-      <div className="cv-rejilla" aria-hidden />
-      <div className="relative z-10">{children}</div>
-    </div>
+    <MarcoPublico sinContenedor className="cv-publico antialiased">
+      {children}
+    </MarcoPublico>
   );
 }

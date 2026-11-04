@@ -1,13 +1,16 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import BrandLoader from "@/components/ui/BrandLoader";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle2, XCircle } from "lucide-react";
+import { PANEL_AUTH, TITULO_AUTH, TEXTO_AUTH } from "@/components/landing/authEstilos";
 
+/**
+ * CONFIRMAR EL CORREO — la página del enlace que llega al crear la cuenta. Con el aspecto del
+ * diálogo de acceso (ver `app/(auth)/layout.tsx`).
+ */
 function VerifyContent() {
   const params = useSearchParams();
-  const router = useRouter();
   const token = params.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -15,7 +18,7 @@ function VerifyContent() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("Token no proporcionado.");
+      setMessage("El enlace no trae el código de confirmación. Ábrelo de nuevo desde el correo.");
       return;
     }
 
@@ -25,7 +28,7 @@ function VerifyContent() {
         if (res.ok) {
           setStatus("success");
           setMessage(data.message);
-          // Tres segundos con el «OK» a la vista y el aviso de a dónde va (Fernando,
+          // Tres segundos con la confirmación a la vista y el aviso de a dónde va (Fernando,
           // 2026-09-21): antes saltaba a los dos segundos y, para un cliente, /dashboard
           // era una pantalla intermedia en negro que a su vez lo mandaba al marketplace.
           // El cliente va DIRECTO al marketplace, que es su primera pantalla.
@@ -38,62 +41,50 @@ function VerifyContent() {
       })
       .catch(() => {
         setStatus("error");
-        setMessage("Error de conexion.");
+        setMessage("No hay conexión. Vuelve a intentarlo en un momento.");
       });
-  }, [token, router]);
-
-  const pixelFont = { fontFamily: "'Silkscreen', cursive" } as const;
+  }, [token]);
 
   return (
-    <div className="pixel-card text-center">
-      {status === "loading" && (
-        <BrandLoader size="lg" label="Verificando tu cuenta..." />
-      )}
+    <div style={PANEL_AUTH}>
+      {status === "loading" && <Esperando texto="Confirmando tu correo…" />}
 
       {status === "success" && (
         <>
-          <div className="text-4xl mb-4 text-green-400" style={pixelFont}>OK</div>
-          <h2 className="pixel-heading text-base text-white mb-2">
-            Cuenta Verificada
-          </h2>
-          <p className="text-xs opacity-50" style={{ ...pixelFont, color: "#94A3B8" }}>
-            {message}
-          </p>
-          <p className="text-[10px] mt-4 opacity-60 inline-flex items-center gap-2" style={{ ...pixelFont, color: "#7B5FBF" }}>
-            <BrandLoader size="sm" /> Redirigiendo a la plataforma del cliente…
-          </p>
+          <h1 style={TITULO_AUTH} className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" /> Correo confirmado
+          </h1>
+          <p style={TEXTO_AUTH}>{message}</p>
+          <Esperando texto="Entrando a la plataforma…" />
         </>
       )}
 
       {status === "error" && (
         <>
-          <div className="text-4xl mb-4 text-red-400" style={pixelFont}>ERR</div>
-          <h2 className="pixel-heading text-base text-white mb-2">
-            Error de Verificacion
-          </h2>
-          <p className="text-xs opacity-50 mb-6" style={{ ...pixelFont, color: "#94A3B8" }}>
-            {message}
-          </p>
-          <Link href="/auth">
-            <button className="pixel-btn pixel-btn-primary">
-              Volver al Inicio
-            </button>
-          </Link>
+          <h1 style={TITULO_AUTH} className="flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-400 shrink-0" /> No se pudo confirmar
+          </h1>
+          <p style={TEXTO_AUTH}>{message}</p>
+          <a href="/auth" className="pixel-btn pixel-btn-primary w-full flex items-center justify-center">Ir a iniciar sesión</a>
         </>
       )}
     </div>
   );
 }
 
+/** Un anillo en el acento y el texto, como el «Preparando tu panel» de la carga. */
+function Esperando({ texto }: { texto: string }) {
+  return (
+    <div className="flex items-center gap-2.5 text-[0.84rem] text-digi-muted" style={{ fontFamily: "var(--font-body)" }}>
+      <span aria-hidden className="w-4 h-4 rounded-full border-2 border-digi-border border-t-accent animate-spin motion-reduce:animate-none" />
+      {texto}
+    </div>
+  );
+}
+
 export default function VerifyPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-20">
-          <BrandLoader size="lg" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div style={PANEL_AUTH}><Esperando texto="Cargando…" /></div>}>
       <VerifyContent />
     </Suspense>
   );

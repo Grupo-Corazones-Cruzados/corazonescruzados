@@ -1,12 +1,11 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   CV PÚBLICO — tema CLARO, animaciones y retículas propias.
+   CV PÚBLICO — maqueta, animaciones y la barra de contacto.
 
-   ── POR QUÉ CLARO, SI TODO LO PÚBLICO DEL SITIO ES OSCURO ───────────────────
-   Decisión de Fernando (2026-08-14): **el oscuro es el tema interno de la app**;
-   lo que se comparte por un enlace va en claro. Un currículum se lee, se compara
-   con otros y a veces se imprime; el fondo oscuro lo convierte en una pieza de
-   producto en vez de un documento. Alcance: **solo `/cv` por ahora** — `/negocio`,
-   los legales y el resto de enlaces siguen como están, funcionando.
+   Desde el 2026-11-04 el CV vive dentro de `MarcoPublico` (`components/public/`), con el
+   envoltorio del panel (`corp tema-progreso tema-<id>` + `.dark`): los COLORES y el FONDO son
+   los del tema del visitante y aquí solo se usan sus tokens (`--color-digi-*`, `--tarjeta-*`,
+   `--color-accent*`). Ni un color literal: con un color fijo, el CV dejaría de leerse en
+   alguno de los temas.
 
    ── LA REGLA QUE MANDA: NUNCA OCULTAR CONTENIDO ─────────────────────────────
    Todo lo animado está dentro de `@supports (animation-timeline: view())`, y
@@ -14,38 +13,10 @@
    —Firefox hoy— no se aplica nada y el contenido se ve quieto y entero.
    ───────────────────────────────────────────────────────────────────────────── */
 
-/* ── LA PALETA YA NO ESTÁ AQUÍ ────────────────────────────────────────────────
-   Vivía en este bloque, y el 2026-08-17 se mudó a `.claro-publico`, en
-   `app/globals.css`, cuando el sitio público entero pasó a claro y habría hecho
-   falta escribirla por segunda vez. El `<div>` de `app/cv/layout.tsx` lleva ahora
-   las dos clases: `claro-publico` pone los colores, `cv-publico` lo propio del CV.
-
-   Los valores son EXACTAMENTE los que había. Si hay que retocar un color, se
-   retoca allí y cambia también en las cinco páginas del sitio — que es el motivo
-   de haberla sacado.                                                            */
-
-/* ── Fondo: dos degradados CSS, cero peticiones de red ─────────────────────── */
-.cv-fondo {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(58rem 34rem at 12% -12%, rgba(123, 95, 191, 0.16), transparent 68%),
-    radial-gradient(42rem 30rem at 100% -4%, rgba(123, 95, 191, 0.09), transparent 62%);
-}
-.cv-rejilla {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(75, 45, 142, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(75, 45, 142, 0.055) 1px, transparent 1px);
-  background-size: 64px 64px;
-  -webkit-mask-image: radial-gradient(70% 55% at 50% 0%, #000 28%, transparent 100%);
-  mask-image: radial-gradient(70% 55% at 50% 0%, #000 28%, transparent 100%);
-}
+/* El acento como TEXTO: el `--color-accent` de los temas oscuros no llega a 4,5:1 sobre la
+   tarjeta, así que en oscuro se usa el brillante (o el `--texto-acento` del tema que lo tenga). */
+.cv-publico .cv-acento { color: var(--texto-acento, var(--color-accent)); }
+.cv-publico.dark .cv-acento { color: var(--texto-acento, var(--color-accent-glow)); }
 
 /* ── Entrada de la ficha: por TIEMPO, y aquí es correcto ───────────────────
    Está en pantalla desde el primer fotograma, así que no hay recorrido de scroll
@@ -130,18 +101,6 @@
    **`.tarjeta-portafolio`**, con los mismos valores y un nombre que no miente al
    usarse fuera del CV.                                                          */
 
-/* ── Pestañas: píldoras horizontales, la activa teñida ─────────────────────── */
-.cv-pestanas button {
-  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-}
-.cv-pestanas-h button:hover { border-color: var(--linea-fuerte); }
-.cv-pestanas-h button[aria-selected='true'] {
-  border-color: rgba(123, 95, 191, 0.55);
-  background: rgba(123, 95, 191, 0.1);
-  color: var(--violeta-txt);
-  font-weight: 500;
-}
-
 /* ─────────────────────────────────────────────────────────────────────────────
    LA MAQUETA: DOS COLUMNAS **SOLO SI DE VERDAD CABE**
 
@@ -165,6 +124,11 @@
    ⓘ En texto corrido bajaba a 880 y el umbral podía ser 920, es decir, dos columnas
    en bastantes portátiles más. Se probó y **Fernando prefirió las píldoras**: es su
    decisión, tomada sobre el resultado, y el coste queda escrito aquí.
+
+   🔁 **Remedido el 2026-11-04** al pasar el CV al marco del panel (cabecera de 57 px y
+   bloques en tarjetas): la ficha termina en 1079 px con el aire normal y en 1009 px con el
+   compacto, y la barra de contacto ocupa 71 px. Por eso ahora: dos columnas desde **1100 px**
+   de alto, compactas hasta **1169 px** y con el aire normal desde 1170.
 
    ⚠️ **Cada vez que la ficha cambie de contenido hay que VOLVER A MEDIRLO.** Pasó al
    subir las skills de 4 a 21: la ficha saltó a 1122 px y la vista de dos columnas
@@ -191,11 +155,11 @@
 .cv-cols { display: block; }
 .cv-solo-dos { display: none; }
 
-@media (min-width: 1024px) and (min-height: 1000px) {
+@media (min-width: 1024px) and (min-height: 1100px) {
   /* El marco es una columna: las dos columnas arriba y la barra de contacto
      abajo, **a lo ancho de la página entera**. */
   .cv-marco {
-    height: 100dvh;
+    height: calc(100dvh - 3.5rem - 1px);         /* menos la cabecera del marco y su borde */
     overflow: hidden;                            /* la página NO se desplaza */
     padding-bottom: 0.75rem;
     display: flex;
@@ -212,7 +176,7 @@
   .cv-ficha { height: 100%; min-height: 0; overflow: visible; padding-block: 2.5rem; }
   /* Pantalla justa: se aprieta el aire y la foto, y así entran dos columnas donde
      antes había que apilar. */
-  @media (max-height: 1000px) {
+  @media (max-height: 1169px) {
     .cv-ficha { padding-block: 1.75rem; }
     .cv-ficha > * + * { margin-top: 1.1rem; }
     .cv-foto { height: 6rem; width: 6rem; }
@@ -226,7 +190,7 @@
   .cv-solo-apilado { display: none; }
 }
 
-@media (min-width: 1280px) and (min-height: 1000px) {
+@media (min-width: 1280px) and (min-height: 1100px) {
   .cv-cols { grid-template-columns: 400px minmax(0, 1fr); gap: 3.5rem; }
 }
 
@@ -239,20 +203,22 @@
   inset-inline: 0;
   bottom: 0;
   z-index: 30;
-  border-top: 1px solid var(--linea);
-  background: rgba(255, 255, 255, 0.92);
+  border-top: 1px solid var(--tarjeta-borde, var(--color-digi-border));
+  background: var(--tarjeta-fondo, var(--color-digi-card));
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+  padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
   padding: 0.6rem 1rem;
 }
-@media (min-width: 1024px) and (min-height: 1000px) {
+@media (min-width: 1024px) and (min-height: 1100px) {
   .cv-barra {
     position: static;
     flex-shrink: 0;
     margin-top: 0.75rem;
-    border: 1px solid var(--linea);
-    border-radius: 0.75rem;
-    background: var(--tarjeta);
-    box-shadow: 0 1px 2px rgba(28, 27, 34, 0.04);
+    border: 1px solid var(--tarjeta-borde, var(--color-digi-border));
+    border-radius: var(--radio-tarjeta, 0.75rem);
+    background: var(--tarjeta-fondo, var(--color-digi-card));
+    box-shadow: var(--tarjeta-sombra, none);
     padding: 0.6rem 0.9rem;
   }
 }
@@ -265,43 +231,50 @@
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 0.5rem;
-  border: 1px solid var(--linea);
-  background: var(--tarjeta);
-  color: var(--suave);
+  border: 1px solid var(--color-digi-border);
+  background: var(--color-digi-card);
+  color: var(--color-digi-text);
   transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 .cv-red:hover {
-  color: var(--violeta);
-  border-color: rgba(123, 95, 191, 0.55);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
   transform: translateY(-1px);
 }
 @media (prefers-reduced-motion: reduce) { .cv-red:hover { transform: none; } }
 
 /* ── Barras de desplazamiento internas, finas y violetas ───────────────────
-   En escritorio la página no se desplaza: lo hacen la ficha y el panel por
-   dentro. Sin esto, el navegador dibuja SU barra —oscura con el tema oscuro del
-   sistema— y vuelve a verse como una raya negra partiendo la página, que es
-   exactamente el defecto que se acababa de quitar.
+   En escritorio la página no se desplaza: lo hace el panel por dentro. Sin esto,
+   el navegador dibuja SU barra, que no sigue el tema y parte la página.
 
    Se estiliza, **no se oculta**: una barra invisible deja sin pista de que hay
    más contenido debajo, y con el ratón (sin gesto táctil) es peor todavía.     */
 .cv-scroll {
   scrollbar-width: thin;                                   /* Firefox */
-  scrollbar-color: rgba(123, 95, 191, 0.35) transparent;
+  scrollbar-color: var(--color-digi-border) transparent;
 }
 .cv-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .cv-scroll::-webkit-scrollbar-track { background: transparent; }
 .cv-scroll::-webkit-scrollbar-thumb {
-  background: rgba(123, 95, 191, 0.3);
+  background: var(--color-digi-border);
   border-radius: 999px;
 }
-.cv-scroll::-webkit-scrollbar-thumb:hover { background: rgba(123, 95, 191, 0.5); }
+.cv-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-digi-muted); }
 
 /* ── Impresión: red de seguridad para quien pulse Ctrl+P ───────────────────
    El documento bueno es el PDF del botón; esto solo evita que la versión
    impresa salga con la barra pegajosa encima.                                 */
 @media print {
-  .cv-fondo, .cv-rejilla, .cv-no-imprimir { display: none !important; }
-  .cv-publico { background: #fff !important; }
-  .tarjeta-portafolio { box-shadow: none !important; }
+  /* Impreso, SIEMPRE en claro aunque el visitante use un tema oscuro: tinta oscura sobre
+     papel blanco, sin el fondo del tema ni las sombras de las tarjetas. */
+  .cv-no-imprimir, header { display: none !important; }
+  .cv-publico {
+    background: #fff !important;
+    --color-digi-text: #1c1b22 !important; --color-digi-muted: #56545f !important; --color-digi-border: #d9d5e3 !important;
+    --color-digi-card: #fff !important; --color-digi-darker: #fff !important; --tarjeta-fondo: #fff !important; --tarjeta-sombra: none !important;
+    --color-accent: #4b2d8e !important; --color-accent-glow: #4b2d8e !important; --texto-acento: #4b2d8e !important; --etiqueta: #56545f !important;
+  }
+  .cv-publico .bg-digi-card { box-shadow: none !important; backdrop-filter: none !important; }
+  .cv-marco { height: auto !important; overflow: visible !important; }
+  .cv-rueda { overflow: visible !important; }
 }

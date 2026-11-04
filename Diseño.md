@@ -3271,6 +3271,21 @@ función y no de la memoria de quien escribe.
 > en la app de Meta y enlazadas desde formularios. Reorganizar la navegación **añade puertas, no
 > mueve habitaciones**.
 
+## ⭐⭐ LAS TRES FAMILIAS DE LO PÚBLICO (Fernando, 2026-11-04 — regla general)
+
+> *«para enlaces públicos que vienen de la plataforma o /dashboard hay que usar el estilo que
+> aplicaste en cotizaciones, y luego para inicio de sesión o formulario de la página pública deben
+> ser el estilo de inicio de sesión, y luego para páginas públicas que no vienen de /dashboard hay
+> que usar el estilo de las páginas públicas como la de soluciones, o clientes, o candidatos»*
+
+| Familia | Cuándo | Cómo se hace |
+|---|---|---|
+| **1 · Enlace del panel** | Lo genera alguien desde la plataforma y se abre sin sesión: cotización, calendario, enlace de archivos, entrega, herramienta, incidentes, documentación, CV | `components/public/MarcoPublico.tsx` (tema del panel del visitante) |
+| **2 · Acceso** | Iniciar sesión, crear cuenta, confirmar el correo, restablecer la contraseña y cualquier formulario de acceso de una página pública | Las piezas de `components/landing/authEstilos.ts` (`corp dark`, logo girando, panel de 440 px, campos sin etiqueta, primario a todo el ancho); páginas en `app/(auth)/` |
+| **3 · Sitio** | Lo que no sale del panel: soluciones, clientes, candidatos, desarrollo humano, legal | `(sitio)` con `Contenedor`, `Tarjeta`, `claro-publico` |
+
+Antes de crear o tocar una página pública, se decide su familia por **de dónde viene** el que la abre.
+
 ## ⭐ Páginas públicas POR ENLACE con el diseño del PANEL — `MarcoPublico` (2026-11-04)
 
 Fernando: *«quiero que apliques las mejoras para [cotización, calendario, enlace, entrega,

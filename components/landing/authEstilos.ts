@@ -54,3 +54,24 @@ export const ENLACE_AUTH: React.CSSProperties = {
   fontFamily: 'var(--font-body)', fontSize: '0.78rem',
   color: '#c9b6ff', textDecoration: 'underline', marginTop: 2,
 };
+
+/** Texto de apoyo bajo el título (el mismo gris lila del diálogo). */
+export const TEXTO_AUTH: React.CSSProperties = SUBTITULO_AUTH;
+
+/**
+ * EL FONDO DE LAS PÁGINAS DE ACCESO QUE LLEGAN POR CORREO (`/auth/verify`,
+ * `/auth/reset-password`, 2026-11-04). El diálogo de la portada flota sobre la noche de
+ * «Aventura» oscurecida por su velo; estas páginas no tienen portada detrás, así que pintan esa
+ * misma noche ya velada: violeta casi negro con dos nebulosas suaves.
+ */
+export const FONDO_AUTH: React.CSSProperties = {
+  background:
+    'radial-gradient(rgba(233,229,247,0.07) 1px, transparent 1.6px) 0 0 / 34px 34px,' +
+    'radial-gradient(36vw 36vw at 88% -6%, rgba(123,95,191,0.22), transparent 70%),' +
+    'radial-gradient(30vw 30vw at 4% 106%, rgba(162,28,175,0.12), transparent 70%),' +
+    'linear-gradient(180deg, #07060f 0%, #0c0a18 100%)',
+  backgroundAttachment: 'fixed',
+};
+
+/** Mensaje de error del diálogo. */
+export const ERROR_AUTH: React.CSSProperties = { fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: '#ff8f8f' };

@@ -33,6 +33,8 @@ import {
   DIAS_SEMANA, ETIQUETA_JORNADA, ETIQUETA_MODALIDAD, textoSalario, type CvPublico,
 } from '@/lib/members/cv-tipos';
 import PortafolioPublico from '@/components/cv/PortafolioPublico';
+import Segmentado from '@/components/ui/Segmentado';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 
 type Pestana = 'perfil' | 'portafolio';
 
@@ -114,7 +116,7 @@ export default function CvCuerpo({
               perdía contra el hermano siguiente por orden del DOM. */}
           <div className="cv-identidad cv-entra cv-entra-1 flex flex-col items-center text-center lg:items-start lg:text-left">
             <Foto cv={cv} />
-            <h1 className="mt-5 text-[26px] sm:text-[30px] font-semibold leading-tight text-[#1c1b22]">{cv.nombre}</h1>
+            <h1 className="mt-5 titulo-progreso text-[26px] sm:text-[30px] leading-tight text-digi-text">{cv.nombre}</h1>
             {/* ⭐ El nombre del TALENTO hace de titular, y es el conmutador.
                 Con varios talentos se vuelve un botón que despliega la lista: el
                 titular *es* lo que se está mirando, así que cambiarlo es cambiar de
@@ -123,13 +125,13 @@ export default function CvCuerpo({
               cv.talentos.length > 1 ? (
                 <SelectorTalento talentos={cv.talentos} activo={iTalento} onElegir={setITalento} />
               ) : (
-                <p className="mt-1.5 text-[15px] text-[#5b3fa8]">{talento.nombre}</p>
+                <p className="cv-acento mt-1.5 text-[15px]">{talento.nombre}</p>
               )
             ) : cv.cargo ? (
-              <p className="mt-1.5 text-[15px] text-[#5b3fa8]">{cv.cargo}</p>
+              <p className="cv-acento mt-1.5 text-[15px]">{cv.cargo}</p>
             ) : null}
             {cv.ubicacion && (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-[#86838f]">
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-digi-muted">
                 <MapPin className="w-3.5 h-3.5" aria-hidden /> {cv.ubicacion}
               </p>
             )}
@@ -137,18 +139,18 @@ export default function CvCuerpo({
 
           {/* Sueldo: la otra mitad de lo que se busca en tres segundos. */}
           {cv.salario && (
-            <div className="cv-entra cv-entra-2 rounded-xl border border-[#7b5fbf]/30 bg-[#7b5fbf]/[0.07] px-4 py-3">
-              <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-[#86838f]">
+            <div className="cv-entra cv-entra-2 bg-digi-card border border-digi-border rounded-xl px-4 py-3">
+              <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">
                 <Wallet className="w-3.5 h-3.5" aria-hidden /> Aspiración salarial
               </p>
-              <p className="mt-1 text-[22px] font-semibold text-[#4b2d8e] tabular-nums">{textoSalario(cv.salario)}</p>
-              <p className="text-[12px] text-[#86838f]">al mes · USD</p>
+              <p className="titulo-progreso mt-1 text-[22px] text-digi-text tabular-nums">{textoSalario(cv.salario)}</p>
+              <p className="text-[12px] text-digi-muted">al mes · USD</p>
             </div>
           )}
 
           {/* ── Disponibilidad, ahora en la ficha ── */}
           <FichaBloque titulo="Disponibilidad" className="cv-entra cv-entra-2">
-            <ul className="space-y-2 text-[13.5px] text-[#56545f]">
+            <ul className="space-y-2 text-[13.5px] text-digi-text">
               <Dato icono={<CalendarClock className="w-4 h-4" />}>
                 {cv.disponibilidad.estado === 'not_available'
                   ? 'No disponible por ahora'
@@ -160,7 +162,7 @@ export default function CvCuerpo({
               <Dato icono={<MapPin className="w-4 h-4" />}>{ETIQUETA_MODALIDAD[cv.disponibilidad.modalidad]}</Dato>
             </ul>
             {cv.disponibilidad.nota && (
-              <p className="mt-3 border-t border-[#e6e3ee] pt-2.5 text-[12.5px] leading-relaxed text-[#86838f]">
+              <p className="mt-3 border-t border-digi-border pt-2.5 text-[12.5px] leading-relaxed text-digi-muted">
                 {cv.disponibilidad.nota}
               </p>
             )}
@@ -188,7 +190,7 @@ export default function CvCuerpo({
               quepa en pantallas más bajas sin necesitar desplazamiento. */}
 
           {cv.actualizado && (
-            <p className="hidden lg:block text-[11.5px] text-[#a3a0ac]">
+            <p className="hidden lg:block text-[11.5px] text-digi-muted">
               Actualizado el {new Date(cv.actualizado).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}
             </p>
           )}
@@ -216,16 +218,10 @@ export default function CvCuerpo({
               que es otra cosa. Horizontales, una al lado de otra, en todos los
               tamaños — ya no hay una versión para móvil y otra para escritorio. */}
           {pestanas.length > 1 && (
-            <nav aria-label="Secciones del currículum"
-              className="cv-pestanas cv-pestanas-h cv-no-imprimir shrink-0 mt-7 flex gap-1.5 overflow-x-auto">
-              {pestanas.map((p) => (
-                <button key={p.id} type="button" role="tab" aria-selected={activa === p.id}
-                  aria-controls={`panel-${p.id}`} onClick={() => setActiva(p.id)}
-                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#e6e3ee] bg-white px-4 py-2 text-[13.5px] text-[#56545f]">
-                  <span aria-hidden>{p.icono}</span> {p.label}
-                </button>
-              ))}
-            </nav>
+            <div className="cv-no-imprimir shrink-0 mt-7">
+              <Segmentado etiqueta="Secciones del currículum" className="w-full sm:w-[280px]" valor={activa} onChange={setActiva}
+                opciones={pestanas.map((p) => ({ valor: p.id, texto: p.label }))} />
+            </div>
           )}
 
           {/* ⚠️ Los tres paneles SIEMPRE están en el DOM; solo se oculta el que no
@@ -234,18 +230,18 @@ export default function CvCuerpo({
           <div key={`${activa}-${iTalento}`} className="cv-panel cv-scroll cv-rueda mt-8">
             <Panel id="perfil" activa={activa} titulo="Perfil" conRotulo={pestanas.length < 2}>
               {cv.bio && (
-                <p className="max-w-[68ch] text-[15.5px] sm:text-[16.5px] leading-relaxed text-[#56545f]">{cv.bio}</p>
+                <p className="max-w-[68ch] text-[15.5px] sm:text-[16.5px] leading-relaxed text-digi-text">{cv.bio}</p>
               )}
 
               {hayTrayectoria && (
                 <div className={cv.bio ? 'mt-11' : ''}>
-                  <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Trayectoria</h3>
-                  <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">Trayectoria</h3>
+                  <div className="mt-1.5 mb-7 h-px w-full bg-digi-border" aria-hidden />
                   <div className="space-y-10">
                     {(talento ? [talento] : []).filter((t) => t.experiencia.length || t.educacion.length).map((t) => (
                       <div key={t.nombre}>
                         {t.servicios.length > 0 && (
-                          <p className="mb-4 text-[13.5px] text-[#5b3fa8]">{t.servicios.join(' · ')}</p>
+                          <p className="cv-acento mb-4 text-[13.5px]">{t.servicios.join(' · ')}</p>
                         )}
                         {t.experiencia.length > 0 && (
                           <Bloque titulo="Experiencia" icono={<Briefcase className="w-3.5 h-3.5" />}>
@@ -274,13 +270,13 @@ export default function CvCuerpo({
                   —siete días en una lista vertical ocupan una pantalla para nada. */}
               {cv.disponibilidad.horario.length > 0 && (
                 <div className="mt-11">
-                  <h3 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">Horario de atención</h3>
-                  <div className="mt-1.5 mb-5 h-px w-full bg-[#e6e3ee]" aria-hidden />
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">Horario de atención</h3>
+                  <div className="mt-1.5 mb-5 h-px w-full bg-digi-border" aria-hidden />
                   <dl className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-2">
                     {cv.disponibilidad.horario.map((f) => (
-                      <div key={f.dia} className="flex items-center justify-between gap-3 border-b border-[#e6e3ee] pb-1.5 text-[13.5px]">
-                        <dt className="text-[#56545f]">{DIAS_SEMANA[f.dia - 1]}</dt>
-                        <dd className="tabular-nums text-[#86838f]">{f.inicio} – {f.fin}</dd>
+                      <div key={f.dia} className="flex items-center justify-between gap-3 border-b border-digi-border pb-1.5 text-[13.5px]">
+                        <dt className="text-digi-text">{DIAS_SEMANA[f.dia - 1]}</dt>
+                        <dd className="tabular-nums text-digi-muted">{f.inicio} – {f.fin}</dd>
                       </div>
                     ))}
                   </dl>
@@ -323,18 +319,18 @@ function SelectorTalento({ talentos, activo, onElegir }: {
 }) {
   return (
     <details className="cv-talentos group relative mt-1.5">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1 -mx-2 text-[15px] text-[#5b3fa8] transition-colors hover:bg-[#7b5fbf]/[0.08]">
+      <summary className="cv-acento inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1 -mx-2 text-[15px] transition-colors hover:bg-accent-light">
         {talentos[activo]?.nombre}
         <ChevronDown className="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
         <span className="sr-only">Cambiar de talento</span>
       </summary>
-      <div className="absolute left-0 z-20 mt-1 min-w-[15rem] overflow-hidden rounded-xl border border-[#e6e3ee] bg-white py-1 shadow-lg">
+      <div className="absolute left-0 z-20 mt-1 min-w-[15rem] overflow-hidden rounded-xl border border-digi-border bg-digi-card py-1 shadow-lg">
         {talentos.map((t, i) => (
           <button key={t.nombre} type="button"
             onClick={(e) => { onElegir(i); (e.currentTarget.closest('details') as HTMLDetailsElement).open = false; }}
-            className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[14px] transition-colors hover:bg-[#f2f0f7] ${
-              i === activo ? 'text-[#4b2d8e] font-medium' : 'text-[#56545f]'}`}>
-            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${i === activo ? 'text-[#7b5fbf]' : 'text-[#cfc9de]'}`} aria-hidden />
+            className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[14px] transition-colors hover:bg-accent-light ${
+              i === activo ? 'cv-acento font-medium' : 'text-digi-text'}`}>
+            <Sparkles className={`w-3.5 h-3.5 shrink-0 ${i === activo ? 'text-accent' : 'text-digi-muted'}`} aria-hidden />
             {t.nombre}
           </button>
         ))}
@@ -371,7 +367,7 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
         {/* Contacto directo */}
         {cv.correo && (
           <a href={`mailto:${cv.correo}`} title={cv.correo}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#e6e3ee] bg-white px-2.5 h-[2.1rem] text-[13px] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-digi-border bg-digi-card px-2.5 h-[2.1rem] text-[13px] text-digi-text transition-colors hover:border-accent hover:text-accent">
             <Mail className="w-4 h-4 shrink-0" aria-hidden />
             <span className="hidden sm:inline max-w-[16ch] truncate">{cv.correo}</span>
             <span className="sr-only sm:hidden">Escribir un correo</span>
@@ -379,7 +375,7 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
         )}
         {cv.telefono && (
           <a href={`tel:${cv.telefono.replace(/[^\d+]/g, '')}`} title={cv.telefono}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#e6e3ee] bg-white px-2.5 h-[2.1rem] text-[13px] text-[#56545f] transition-colors hover:border-[#7b5fbf] hover:text-[#4b2d8e]">
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-digi-border bg-digi-card px-2.5 h-[2.1rem] text-[13px] text-digi-text transition-colors hover:border-accent hover:text-accent">
             <Phone className="w-4 h-4 shrink-0" aria-hidden />
             <span className="hidden sm:inline">{cv.telefono}</span>
             <span className="sr-only sm:hidden">Llamar</span>
@@ -387,7 +383,7 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
         )}
 
         {hayContacto && cv.redes.length > 0 && (
-          <span className="hidden sm:block h-5 w-px shrink-0 bg-[#e6e3ee]" aria-hidden />
+          <span className="hidden sm:block h-5 w-px shrink-0 bg-digi-border" aria-hidden />
         )}
 
         {/* Redes: solo iconos. El nombre va en el `title` y en la etiqueta accesible. */}
@@ -404,7 +400,7 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
 
         {/* La acción principal, siempre a la derecha y sin encogerse. */}
         <a href={urlPdf}
-          className="ml-auto inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#4b2d8e] px-4 h-[2.1rem] text-[13.5px] font-medium text-white transition-colors hover:bg-[#5b3fa8]">
+          className={`${BTN_PRIMARY} ml-auto shrink-0 !min-h-0 h-[2.1rem] px-4`}>
           <Download className="w-4 h-4" aria-hidden />
           <span className="hidden sm:inline">Descargar en PDF</span>
           <span className="sm:hidden">PDF</span>
@@ -418,12 +414,12 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
 
 function Foto({ cv }: { cv: CvPublico }) {
   const iniciales = cv.nombre.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-  const clases = 'cv-foto rounded-2xl border border-[#7b5fbf]/35 object-cover';
+  const clases = 'cv-foto rounded-2xl border border-digi-border object-cover';
   return cv.foto ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={cv.foto} alt={cv.nombre} className={clases} />
   ) : (
-    <div className={`${clases} flex items-center justify-center bg-[#7b5fbf]/10 text-3xl font-semibold text-[#4b2d8e]`}>
+    <div className={`${clases} flex items-center justify-center text-3xl font-semibold text-white`} style={{ background: 'var(--degradado-icono)' }}>
       {iniciales}
     </div>
   );
@@ -432,8 +428,8 @@ function Foto({ cv }: { cv: CvPublico }) {
 /** Bloque de la ficha: rótulo en versalitas sobre una tarjeta clara. */
 function FichaBloque({ titulo, className = '', children }: { titulo: string; className?: string; children: React.ReactNode }) {
   return (
-    <section className={`tarjeta-portafolio p-4 ${className}`}>
-      <h2 className="text-[10.5px] uppercase tracking-[0.15em] text-[#5b3fa8]">{titulo}</h2>
+    <section className={`bg-digi-card border border-digi-border rounded-xl p-4 ${className}`}>
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">{titulo}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -442,7 +438,7 @@ function FichaBloque({ titulo, className = '', children }: { titulo: string; cla
 function Dato({ icono, children }: { icono: React.ReactNode; children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2.5">
-      <span className="mt-0.5 shrink-0 text-[#7b5fbf]" aria-hidden>{icono}</span>
+      <span className="mt-0.5 shrink-0 text-accent" aria-hidden>{icono}</span>
       <span>{children}</span>
     </li>
   );
@@ -450,11 +446,11 @@ function Dato({ icono, children }: { icono: React.ReactNode; children: React.Rea
 
 function Cifra({ icono, rotulo, valor }: { icono: React.ReactNode; rotulo: string; valor: string }) {
   return (
-    <div className="tarjeta-portafolio px-4 py-3.5">
-      <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.13em] text-[#86838f]">
-        <span className="text-[#7b5fbf]" aria-hidden>{icono}</span> {rotulo}
+    <div className="bg-digi-card border border-digi-border rounded-xl px-4 py-3.5">
+      <p className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">
+        <span className="text-accent" aria-hidden>{icono}</span> {rotulo}
       </p>
-      <p className="mt-1 text-[17px] font-semibold text-[#1c1b22]">{valor}</p>
+      <p className="titulo-progreso mt-1 text-[17px] text-digi-text">{valor}</p>
     </div>
   );
 }
@@ -474,8 +470,8 @@ function Panel({ id, activa, titulo, conRotulo = true, children }: {
     <section id={`panel-${id}`} role="tabpanel" hidden={activa !== id} aria-label={titulo}>
       {conRotulo && (
         <>
-          <h2 className="text-[11px] uppercase tracking-[0.18em] text-[#5b3fa8]">{titulo}</h2>
-          <div className="mt-1.5 mb-7 h-px w-full bg-[#e6e3ee]" aria-hidden />
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">{titulo}</h2>
+          <div className="mt-1.5 mb-7 h-px w-full bg-digi-border" aria-hidden />
         </>
       )}
       {children}
@@ -486,8 +482,8 @@ function Panel({ id, activa, titulo, conRotulo = true, children }: {
 function Bloque({ titulo, icono, children }: { titulo: string; icono: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="mt-6">
-      <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-[#86838f]">
-        <span className="text-[#a3a0ac]" aria-hidden>{icono}</span> {titulo}
+      <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">
+        <span aria-hidden>{icono}</span> {titulo}
       </p>
       <div className="mt-3 space-y-5">{children}</div>
     </div>
@@ -498,13 +494,13 @@ function Bloque({ titulo, icono, children }: { titulo: string; icono: React.Reac
  *  dibujar una caja por entrada, que a diez entradas cansa la vista. */
 function Hito({ titulo, sub, texto, fecha }: { titulo: string; sub: string; texto: string; fecha: string }) {
   return (
-    <div className="border-l border-[#e6e3ee] pl-4 sm:pl-5 transition-colors hover:border-[#7b5fbf]">
+    <div className="border-l-2 border-digi-border pl-4 sm:pl-5 transition-colors hover:border-accent">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-        <h4 className="text-[16px] font-medium text-[#1c1b22]">{titulo}</h4>
-        {fecha && <span className="shrink-0 text-[12.5px] tabular-nums text-[#a3a0ac]">{fecha}</span>}
+        <h4 className="text-[16px] font-medium text-digi-text">{titulo}</h4>
+        {fecha && <span className="shrink-0 text-[12.5px] tabular-nums text-digi-muted">{fecha}</span>}
       </div>
-      {sub && <p className="mt-0.5 text-[13.5px] text-[#5b3fa8]">{sub}</p>}
-      {texto && <p className="mt-2 max-w-[68ch] text-[14.5px] leading-relaxed text-[#56545f]">{texto}</p>}
+      {sub && <p className="cv-acento mt-0.5 text-[13.5px]">{sub}</p>}
+      {texto && <p className="mt-2 max-w-[68ch] text-[14.5px] leading-relaxed text-digi-muted">{texto}</p>}
     </div>
   );
 }
@@ -518,19 +514,20 @@ function Hito({ titulo, sub, texto, fecha }: { titulo: string; sub: string; text
  * se veía bien. El coste está contabilizado: la ficha pide 1052 px en vez de 880, y
  * por eso el umbral de la vista de dos columnas subió a 1000. Es una decisión suya,
  * tomada sobre el resultado.
+ *
+ * Desde el 2026-11-04 (diseño del panel) son píldoras de SOLO BORDE, sin relleno de color:
+ * regla «sin etiquetas con relleno». El tamaño no cambia, así que el umbral sigue valiendo.
  */
 function Chips({ titulo, icono, valores, destacado = false }: { titulo: string; icono: React.ReactNode; valores: string[]; destacado?: boolean }) {
   return (
     <div>
-      <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.13em] text-[#a3a0ac]">
+      <p className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">
         <span aria-hidden>{icono}</span> {titulo}
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {valores.map((v) => (
-          <span key={v} className={`rounded-full px-2.5 py-1 text-[12.5px] transition-colors ${
-            destacado
-              ? 'border border-[#7b5fbf]/30 bg-[#7b5fbf]/[0.08] text-[#4b2d8e] hover:border-[#7b5fbf]/60'
-              : 'border border-[#e6e3ee] bg-white text-[#56545f] hover:border-[#cfc9de]'}`}>
+          <span key={v} className={`rounded-full border px-2.5 py-1 text-[12.5px] transition-colors ${
+            destacado ? 'border-accent/40 text-digi-text hover:border-accent' : 'border-digi-border text-digi-muted hover:text-digi-text'}`}>
             {v}
           </span>
         ))}

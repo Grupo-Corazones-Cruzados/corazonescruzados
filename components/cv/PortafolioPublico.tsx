@@ -68,12 +68,12 @@ export default function PortafolioPublico({ token, items }: { token: string; ite
     <>
       <div className="cv-cascada grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {items.map((item) => (
-          <article key={`${item.fuente}-${item.id}`} className="tarjeta-portafolio overflow-hidden flex flex-col">
+          <article key={`${item.fuente}-${item.id}`} className="bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col transition-colors hover:border-accent/50">
             {item.imagenes > 0 ? (
               <button
                 type="button"
                 onClick={() => setAbierto({ item, i: 0 })}
-                className="relative block w-full aspect-[16/10] overflow-hidden bg-[#f2f0f7] group"
+                className="relative block w-full aspect-[16/10] overflow-hidden bg-digi-darker group"
                 aria-label={`Ver las ${item.imagenes} imágenes de ${item.titulo}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -96,17 +96,17 @@ export default function PortafolioPublico({ token, items }: { token: string; ite
                 del sitio público: una lista vacía no deja hueco ni «próximamente». */}
 
             <div className="p-5 flex flex-col gap-2 flex-1">
-              <span className="text-[10.5px] uppercase tracking-[0.14em] text-[#5b3fa8]">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">
                 {TIPO[item.tipo] || item.tipo}
               </span>
-              <h3 className="text-[17px] font-semibold text-[#1c1b22] leading-snug">{item.titulo}</h3>
+              <h3 className="titulo-progreso text-[17px] text-digi-text leading-snug">{item.titulo}</h3>
               {item.descripcion && (
-                <p className="text-[13.5px] text-[#56545f] leading-relaxed">{item.descripcion}</p>
+                <p className="text-[13.5px] text-digi-muted leading-relaxed">{item.descripcion}</p>
               )}
               {item.etiquetas.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {item.etiquetas.map((t) => (
-                    <span key={t} className="rounded-full border border-[#e6e3ee] px-2.5 py-0.5 text-[11px] text-[#86838f]">
+                    <span key={t} className="rounded-full border border-digi-border px-2.5 py-0.5 text-[11px] text-digi-muted">
                       {t}
                     </span>
                   ))}
@@ -119,7 +119,7 @@ export default function PortafolioPublico({ token, items }: { token: string; ite
                   href={item.enlace}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
-                  className="mt-auto pt-2 inline-flex items-center gap-1.5 text-[12.5px] text-[#5b3fa8] hover:text-[#4b2d8e] transition-colors"
+                  className="mt-auto pt-2 inline-flex items-center gap-1.5 cv-acento text-[12.5px] hover:underline"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> Ver el proyecto
                 </a>
@@ -139,18 +139,18 @@ export default function PortafolioPublico({ token, items }: { token: string; ite
           const fuera = e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
           if (fuera) setAbierto(null);
         }}
-        className="m-auto w-[min(96vw,1100px)] max-h-[92vh] rounded-xl border border-[#e6e3ee] bg-white p-0 text-[#56545f] backdrop:bg-[#1c1b22]/55 backdrop:backdrop-blur-sm"
+        className="m-auto w-[min(96vw,1100px)] max-h-[92vh] rounded-xl border border-digi-border bg-digi-card p-0 text-digi-text backdrop:bg-black/55 backdrop:backdrop-blur-sm"
       >
         {abierto && (
           <div className="flex flex-col">
-            <div className="flex items-center justify-between gap-3 border-b border-[#e6e3ee] px-5 py-3">
-              <h4 className="truncate text-[15px] font-semibold text-[#1c1b22]">{abierto.item.titulo}</h4>
+            <div className="flex items-center justify-between gap-3 border-b border-digi-border px-5 py-3">
+              <h4 className="truncate text-[15px] font-semibold text-digi-text">{abierto.item.titulo}</h4>
               <button type="button" onClick={() => setAbierto(null)} aria-label="Cerrar"
-                className="rounded-md p-1.5 text-[#86838f] hover:bg-[#f2f0f7] hover:text-[#1c1b22] transition-colors">
+                className="rounded-md p-1.5 text-digi-muted hover:bg-accent-light hover:text-digi-text transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="relative flex items-center justify-center bg-[#f2f0f7] p-3">
+            <div className="relative flex items-center justify-center bg-digi-darker p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={src(abierto.item, abierto.i, 1600)}
@@ -171,7 +171,7 @@ export default function PortafolioPublico({ token, items }: { token: string; ite
               )}
             </div>
             {abierto.item.imagenes > 1 && (
-              <p className="px-5 py-2.5 text-center text-[12px] text-[#86838f] tabular-nums">
+              <p className="px-5 py-2.5 text-center text-[12px] text-digi-muted tabular-nums">
                 {abierto.i + 1} / {abierto.item.imagenes}
               </p>
             )}
