@@ -142,6 +142,18 @@ proyectos en la papelera son a propósito: quiere solo proyectos nuevos.
 - **El chat ya existe:** la skill aparece en Claude Code y debería salir en el Espacio de trabajo. Sin comprobar en esa pantalla.
 - **Falta:** llevar Generación de Contenido a Claude local, bloquearla en la web y conectar el botón de subir video.
 
+### Primer video sin editar (2026-11-04): lista de procesos automatizados, 3:56
+Fernando valoró bien la primera prueba («excelente aporte») y pidió probar con un video sin editar y no tan bien recortado. Lo que enseñó:
+- **Whisper de corrido se desvía hasta 3 s sobre las pausas largas:** «chatbot» en 38,4 s con silencio hasta 40,6 s. `preparar.mjs` ahora transcribe
+  tramo a tramo entre silencios, y además acierta más («SRI», «abonos»). En tramos muy cortos inventa frases: se contrastan.
+- **Un video mal recortado rompe el flujo por capas:** si Fernando corta después, las capas no le siguen. `construir.mjs` admite `cortes`: el original
+  queda igual, la pista principal lleva un clip por trozo y los tiempos del plan van en tiempo del original. Es la única excepción a la pista intocable y se avisa.
+- **Efectos simultáneos:** una sola pista daba 26 errores de solape en `lint`, invisibles en la vista previa. Se reparten en varias pistas.
+- **Volumen de música:** un número fijo no sirve. La empresarial a 0,1 quedaba a 3,5 LU de la voz; se mide y se deja 10–14 LU por debajo.
+- **Bloque nuevo `tarjeta`:** para listas numeradas. Va bajo la barbilla (y=905–1330) y es casi opaca para que no se transparente la ropa.
+- **Resultado:** de 3:56 a 2:13, 17 gráficos, 65 efectos, 2 músicas; 5,5 min de render y 1,5 GB. Proyecto `prueba-sin-editar-v1` escrito con `lint` limpio
+  y registrado. **Sigue sin abrirse en CapCut real.**
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
