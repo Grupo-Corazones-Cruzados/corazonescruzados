@@ -75,6 +75,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 
 - **Skills encadenadas (2026-11-04):** `/a /b texto` en el motor solo ejecuta `/a` y recibe `/b` como texto; la terminal carga las dos. `cadena.mjs` pide las siguientes con la herramienta Skill. El menú `/` se abre en cualquier palabra que empiece con `/`.
 - **Panel «Activas» (2026-11-04):** encima de los proyectos, sesiones de todos los proyectos con un mensaje real en menos de 2 días (`activas.mjs`; la fecha del archivo no sirve, las terminales abiertas escriben datos internos sin que nadie las use, y el estado `shell` de una terminal no es «procesando»); las más viejas siguen en su proyecto. Cada fila lleva icono de estado (procesando, espera, se detuvo, terminal, terminó; verde si no se ha visto) y un lápiz si hay texto sin enviar. Los borradores (`~/.gcc-espacio/borradores.json`) solo guardan texto y se comparten entre Mac y teléfono; cada sesión tiene su compositor (antes el texto se quedaba al cambiar de sesión dentro del proyecto).
+- **Cerrar una sesión activa (2026-11-04):** la X de la fila apaga su proceso (si corre aquí) y la saca del panel; la fecha queda en `~/.gcc-espacio/sesiones-cerradas.json` y un mensaje posterior la devuelve. Una terminal sigue abierta: no se mata ningún proceso ajeno. Mientras procesa no hay X.
 
 ### Pendiente
 - ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.

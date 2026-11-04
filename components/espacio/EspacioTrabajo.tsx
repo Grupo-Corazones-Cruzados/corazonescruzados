@@ -69,7 +69,7 @@ function Espacio() {
 
   const rail = (
     <RailProyectos proyectos={proyectos || []} vivas={vivas} proyectoId={proyectoId} sesionId={sesionUrl} desdeActivas={desdeActivas} version={version}
-      alElegir={(p, s) => ir({ p, s })} alElegirActiva={(p, s) => ir({ p, s, a: true })} alNueva={(p) => ir({ p })} alEditar={(p) => setEditar({ abierto: true, proyecto: p })} alAgregar={() => setEditar({ abierto: true, proyecto: null })} />
+      alElegir={(p, s) => ir({ p, s })} alElegirActiva={(p, s) => ir({ p, s, a: true })} alCerrada={(s) => { if (s === sesionUrl) ir({}); }} alNueva={(p) => ir({ p })} alEditar={(p) => setEditar({ abierto: true, proyecto: p })} alAgregar={() => setEditar({ abierto: true, proyecto: null })} />
   );
 
   const conversacion = proyecto ? (

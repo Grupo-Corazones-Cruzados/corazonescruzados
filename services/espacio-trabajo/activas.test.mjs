@@ -56,3 +56,10 @@ test('la interacción es el último mensaje, no lo último que se escribió en e
   assert.equal(ultimaInteraccion(path.join(dir, 'no-existe.jsonl')), null);
   fs.rmSync(dir, { recursive: true });
 });
+
+test('una sesión cerrada sale del panel y vuelve con el siguiente mensaje', () => {
+  const cerradas = { a: AHORA - 500 };
+  assert.deepEqual(ids(sesionesActivas([fila('a', 1000), fila('b', 1000)], [], AHORA, cerradas)), ['b']);
+  assert.deepEqual(ids(sesionesActivas([fila('a', 100), fila('b', 1000)], [], AHORA, cerradas)), ['a', 'b'], 'hubo un mensaje después de cerrarla');
+  assert.deepEqual(ids(sesionesActivas([fila('a', 1000, { viva: { id: 'a', estado: 'trabajando' } })], [], AHORA, cerradas)), ['a'], 'si trabaja, se ve');
+});

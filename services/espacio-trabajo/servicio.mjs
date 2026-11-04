@@ -634,7 +634,7 @@ ruta('GET', '/proyectos/:id/sesiones', async ({ p }) => {
 ruta('GET', '/sesiones/activas', async () => {
   const terminal = sesionesEnTerminal();
   const filas = (await Promise.all((await proyectos()).map((p) => sesionesDe(p, terminal)))).flat();
-  return { sesiones: sesionesActivas(filas, [...vivas.values()].map(resumenViva)) };
+  return { sesiones: sesionesActivas(filas, [...vivas.values()].map(resumenViva), Date.now(), leerJson('sesiones-cerradas.json', {})) };
 });
 
 /* Lo escrito y no enviado vive aquí y no en el navegador: así se ve igual en la Mac y en el teléfono. */
@@ -713,6 +713,14 @@ ruta('POST', '/sesiones/:id/sin-aislamiento', async ({ p }) => {
 });
 ruta('POST', '/sesiones/:id/visto', async ({ p }) => { const s = vivas.get(p.id); if (s) s.noVisto = false; return { ok: true }; });
 ruta('POST', '/sesiones/:id/cerrar', async ({ p }) => { vivas.get(p.id)?.cerrar(); return { ok: true }; });
+/** Deja de estar activa: se apaga su proceso y sale del panel. La conversación no se toca. */
+ruta('POST', '/sesiones/:id/desactivar', async ({ p }) => {
+  const s = vivas.get(p.id);
+  if ((s && (s.estado === 'trabajando' || s.estado === 'iniciando' || s.tareas.size)) || sesionesEnTerminal().get(p.id) === 'busy') throw new ErrorApi(409, 'La sesión está trabajando. Deténla antes.');
+  s?.cerrar();
+  guardarJson('sesiones-cerradas.json', { ...leerJson('sesiones-cerradas.json', {}), [p.id]: Date.now() });
+  return { ok: true };
+});
 ruta('POST', '/sesiones/:id/titulo', async ({ p, cuerpo }) => {
   const proyecto = await proyectoPorId(cuerpo.proyecto);
   const donde = await ubicar(proyecto, p.id);

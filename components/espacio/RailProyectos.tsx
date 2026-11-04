@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion, Pencil, Plus, Search, SquareTerminal } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion, Pencil, Plus, Search, SquareTerminal, X } from 'lucide-react';
 import BotonEditar from '@/components/ui/BotonEditar';
 import { BTN_ICONO_FILA } from '@/components/ui/Button';
 import { api, claveBorrador, EVENTO_BORRADOR, hace, TEXTO_ESTADO, type Proyecto, type Sesion, type Viva } from './api';
@@ -26,12 +26,17 @@ export function FilaSesion({ titulo, linea, activa, alElegir, icono, borrador }:
   );
 }
 
+function procesando(s: Sesion) {
+  const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
+  return v ? v.estado === 'iniciando' || v.estado === 'trabajando' || (v.tareas || 0) > 0 : s.estadoTerminal === 'busy';
+}
+
 /** Qué está haciendo la sesión, de un vistazo. Lo escrito sin enviar es aparte: puede darse a la vez. */
 function IconoEstado({ s }: { s: Sesion }) {
   const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
   const t = v ? null : s.estadoTerminal;
   const [Icono, texto, clase] =
-    (v && (v.estado === 'iniciando' || v.estado === 'trabajando' || (v.tareas || 0) > 0)) || t === 'busy' ? [Loader2, 'Procesando', 'text-accent animate-spin'] as const
+    procesando(s) ? [Loader2, 'Procesando', 'text-accent animate-spin'] as const
     : v?.estado === 'espera' || t === 'waiting' ? [MessageCircleQuestion, 'Espera tu respuesta', 'text-amber-400'] as const
     : s.error ? [AlertCircle, 'Se detuvo', 'text-red-400'] as const
     : s.enTerminal && !v && !t ? [SquareTerminal, 'En una terminal', 'text-digi-muted'] as const
@@ -50,7 +55,7 @@ function lineaSesion(s: Sesion, detalle = s.rama) {
   );
 }
 
-export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alNueva, alEditar, alAgregar }: {
+export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alCerrada, alNueva, alEditar, alAgregar }: {
   proyectos: Proyecto[];
   vivas: Viva[];
   proyectoId: string | null;
@@ -59,6 +64,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   version: number;
   alElegir: (proyecto: string, sesion: string) => void;
   alElegirActiva: (proyecto: string, sesion: string) => void;
+  alCerrada: (sesion: string) => void;
   alNueva: (proyecto: string) => void;
   alEditar: (p: Proyecto) => void;
   alAgregar: () => void;
@@ -108,6 +114,13 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
     return () => { vivo = false; clearInterval(t); };
   }, [enMarcha, version]);
 
+  function cerrarActiva(id: string) {
+    setActivas((l) => l.filter((s) => s.id !== id));
+    alCerrada(id);
+    // Si no se pudo (empezó a trabajar justo ahora), la sesión vuelve sola al panel.
+    api(`/sesiones/${id}/desactivar`, { cuerpo: {} }).catch(() => api('/sesiones/activas').then((j) => setActivas(j.sesiones)).catch(() => {}));
+  }
+
   const [borradores, setBorradores] = useState<Record<string, string>>({});
   useEffect(() => {
     let vivo = true;
@@ -134,9 +147,17 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
           </p>
           <div className="min-h-0 overflow-y-auto overflow-x-hidden px-2 pb-1.5">
             {activas.map((s) => (
-              <FilaSesion key={s.id} titulo={s.titulo} activa={desdeActivas && sesionId === s.id} alElegir={() => alElegirActiva(s.proyecto, s.id)}
-                icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]}
-                linea={lineaSesion(alDia(s), proyectos.find((p) => p.id === s.proyecto)?.nombre)} />
+              <div key={s.id} className="group flex items-center gap-0.5 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <FilaSesion titulo={s.titulo} activa={desdeActivas && sesionId === s.id} alElegir={() => alElegirActiva(s.proyecto, s.id)}
+                    icono={<IconoEstado s={alDia(s)} />} borrador={!!borradores[s.id]}
+                    linea={lineaSesion(alDia(s), proyectos.find((p) => p.id === s.proyecto)?.nombre)} />
+                </div>
+                {!procesando(alDia(s)) && (
+                  <button type="button" onClick={() => cerrarActiva(s.id)} aria-label={`Cerrar la sesión ${s.titulo}`} title="Cerrar sesión"
+                    className={`${BTN_ICONO_FILA} lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100 transition-opacity`}><X className="w-3.5 h-3.5" /></button>
+                )}
+              </div>
             ))}
           </div>
         </section>

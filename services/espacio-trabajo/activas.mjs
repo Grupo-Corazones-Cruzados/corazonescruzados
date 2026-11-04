@@ -45,10 +45,11 @@ export function ultimaInteraccion(archivo) {
 
 export const enMarcha = (v) => Boolean(v) && v.estado !== 'cerrada' && (v.estado !== 'libre' || v.noVisto || (v.tareas || 0) > 0);
 
-export function sesionesActivas(filas, vivas, ahora = Date.now()) {
+/** `cerradas`: cuándo se cerró cada una a mano. Vuelve a ser activa con el siguiente mensaje. */
+export function sesionesActivas(filas, vivas, ahora = Date.now(), cerradas = {}) {
   const porId = new Map();
   for (const f of filas) {
-    if (ahora - f.actualizada >= VENTANA_ACTIVA_MS && !enMarcha(f.viva)) continue;
+    if (!enMarcha(f.viva) && (ahora - f.actualizada >= VENTANA_ACTIVA_MS || cerradas[f.id] >= f.actualizada)) continue;
     // Una subcarpeta de un proyecto puede ser otro proyecto: manda aquel cuya raíz es esa carpeta.
     const ya = porId.get(f.id);
     if (!ya || (ya.carpeta && !f.carpeta)) porId.set(f.id, f);
