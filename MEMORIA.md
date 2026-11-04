@@ -7006,6 +7006,8 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   (`NSMicrophoneUsageDescription`).
   **Acceso completo por defecto (Fernando, 2026-11-04):** sin sandbox ni bloqueos; una instrucción fija le dice que no edite otro proyecto sin pedírselo y que use la memoria del proyecto correcto. Solo se aíslan un proyecto marcado y las sesiones nacidas de una incidencia. Lista de lo que funciona y lo que no, en `Aprendizaje.md`.
   ⚠️ Las tablas `Project`/`Module`/`Section`/`Subsection`/`Incident` siguen en uso por `/portal`: no borrarlas sin decidirlo.
+  **Interfaz acordada con Fernando (2026-11-04):** panel «Activas» encima de los proyectos: una sesión es activa si tuvo un mensaje real en menos de 2 días, y pasado ese plazo «ya no se usa» (sigue en su proyecto). Activas y la lista de proyectos llevan cada una su selección, sin moverse entre sí. Cerrar una sesión la saca del panel hasta el siguiente mensaje. Cada fila dice su estado con un icono y marca lo escrito sin enviar; se le puede cambiar el nombre; se puede detener lo que procesa sin perder lo escrito, para mandar una corrección. Editar, cerrar y detener se ven siempre, sin depender del puntero. Una sesión en terminal no se detiene ni se cierra desde aquí. Cómo se midió y qué falta, en `Aprendizaje.md`; cómo se ve, en `Diseño.md`.
+  Un cambio solo llega a la herramienta instalada con `bash services/espacio-trabajo/instalar.sh`: el push a `main` despliega Railway, no esta copia local.
 
 ## Decisiones y reglas de negocio
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**

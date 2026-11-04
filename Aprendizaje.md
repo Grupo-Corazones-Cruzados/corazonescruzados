@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (declarado 2026-11-04) — ESPACIO DE TRABAJO LOCAL CON CLAUDE CODE PARA TODOS LOS PROYECTOS · 🔎 90 %
+## Objetivo (declarado 2026-11-04) — ESPACIO DE TRABAJO LOCAL CON CLAUDE CODE PARA TODOS LOS PROYECTOS · 🔎 95 %
 
 **Necesidad (Fernando):** una sola interfaz, en el módulo Admin y solo en local (teléfono por Tailscale), para
 trabajar con Claude Code en todos sus proyectos, con varias sesiones por proyecto, igual que hoy en VS Code, más
@@ -74,15 +74,24 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
   - **Conectores de claude.ai (Gmail, Drive, Docs):** el motor no los carga (`mcp_servers` vacío). Servidores propios de MCP no probados.
 
 - **Skills encadenadas (2026-11-04):** `/a /b texto` en el motor solo ejecuta `/a` y recibe `/b` como texto; la terminal carga las dos. `cadena.mjs` pide las siguientes con la herramienta Skill. El menú `/` se abre en cualquier palabra que empiece con `/`.
-- **Panel «Activas» (2026-11-04):** encima de los proyectos, sesiones de todos los proyectos con un mensaje real en menos de 2 días (`activas.mjs`; la fecha del archivo no sirve, las terminales abiertas escriben datos internos sin que nadie las use, y el estado `shell` de una terminal no es «procesando»); las más viejas siguen en su proyecto. Cada fila lleva icono de estado (procesando, espera, se detuvo, terminal, terminó; verde si no se ha visto) y un lápiz si hay texto sin enviar. Los borradores (`~/.gcc-espacio/borradores.json`) solo guardan texto y se comparten entre Mac y teléfono; cada sesión tiene su compositor (antes el texto se quedaba al cambiar de sesión dentro del proyecto).
+- **Panel «Activas» (2026-11-04):** encima de los proyectos, sesiones de todos los proyectos con un mensaje real en menos de 2 días (`activas.mjs`; la fecha del archivo no sirve, las terminales abiertas escriben datos internos sin que nadie las use, y el estado `shell` de una terminal no es «procesando»); las más viejas siguen en su proyecto. Cada fila lleva icono de estado (procesando, espera, se detuvo, terminal, terminó; verde si no se ha visto) y una marca ámbar (`MessageSquareDashed`; antes un lápiz, que se confundía con el de editar) si hay texto sin enviar. Los borradores (`~/.gcc-espacio/borradores.json`) solo guardan texto y se comparten entre Mac y teléfono; cada sesión tiene su compositor (antes el texto se quedaba al cambiar de sesión dentro del proyecto).
 - **Cerrar una sesión activa (2026-11-04):** la X de la fila apaga su proceso (si corre aquí) y la saca del panel; la fecha queda en `~/.gcc-espacio/sesiones-cerradas.json` y un mensaje posterior la devuelve. Una terminal sigue abierta: no se mata ningún proceso ajeno. Mientras procesa no hay X.
 - **Cambiar el nombre (2026-11-04):** lápiz en cada fila, además del «⋯» de la conversación; una sola ventanita (`RenombrarSesion`) avisa por evento a quien muestre el título. No cuenta como interacción: no devuelve una sesión cerrada al panel.
 - **Detener (2026-11-04):** el botón rojo convive con enviar (lo escrito se queda), Esc también para, y hay uno en cada fila de lo que corre aquí; para además las tareas en segundo plano con `stopTask`. Un mensaje enviado mientras trabaja se atiende tras parar. Una terminal abierta no se para desde aquí. Las acciones de las filas se ven siempre: Fernando no quiere iconos ocultos hasta pasar el ratón.
+- **Por qué detener no mata a lo bruto:** `q.interrupt()` conserva el contexto, y el aviso es «Detenida» en gris porque lo pidió él, no un error. El marcador `[Request interrupted by user` que Claude Code escribe en el transcript se oculta del historial: salía como un mensaje suyo. Parar sin mirar la sesión no marca «sin ver». Medido en sesiones de ensayo: 270 ms con el comando muerto; también paran una tarea en segundo plano y una espera de permiso (retira la pregunta, el comando no llega a ejecutarse).
+- **Cada panel con su selección (corrección de Fernando, 2026-11-04):** elegir en Activas no toca el árbol de proyectos, ni al revés. Lo decide `a=1` en la URL (`desdeActivas`); el árbol solo se despliega si la sesión se eligió en él.
+- **Estado real de una sesión de terminal (medido el 2026-11-04):** `~/.claude/sessions/*.json` trae `status` (`busy`, `waiting`, `idle`, `shell`) y `statusUpdatedAt` coincide con el último mensaje. Solo `busy` es procesando: `shell` es un proceso con un shell hijo (había uno de FlowData con 171 h). Tratarlo como procesando fue el giro falso que Fernando vio en su captura.
+- **Última interacción:** última línea `user`/`assistant` sin `isMeta` del transcript, cacheada por `mtime:size`, leyendo 256 KB del final y, si no basta, 8 MB. Con la fecha del archivo salían 21 sesiones «recientes» de 8 reales.
+- **Límites conocidos:** una sesión abierta en terminal no se puede detener desde aquí (una señal a un proceso ajeno podría cerrarlo) y su X solo la saca del panel. Sin comprobar: si una terminal abierta pisa un nombre cambiado desde aquí.
+- **Probar sin tocar lo real:** `ESPACIO_DATOS=~/.gcc-espacio-prueba ESPACIO_PUERTO=3899 node servicio.mjs` y `next start -p 3898` con `NEXT_DIST_DIR=.next-espacio-build ESPACIO_TRABAJO_LOCAL=1`. Trampas: el servicio aislado lee las sesiones reales y cambiar un nombre escribe su transcript, así que solo se opera sobre las del proyecto de ensayo; un `PixelModal` cerrado sigue en el DOM (filtrar por `offsetParent`); el build toca `tsconfig.json` y `next-env.d.ts` (`git checkout` al acabar). Al final se borran `.next-espacio-build`, `~/.gcc-espacio-prueba` y la carpeta del ensayo en `~/.claude/projects`.
 
 ### Pendiente
 - ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.
-- Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.
+- Probar en el iPhone real: micrófono, márgenes seguros, cuadro de escritura y botón de detener.
 - Fernando decide qué hacer con el portal de `Incident` y las páginas `(main)`/`(public)/panel`.
+- ⏸ Fernando: ¿la X de una sesión en terminal también debe cerrar esa terminal, con confirmación? Hoy no la cierra.
+- Revisar `/api/transcribe` e `/api/incidents`, que siguen sin pedir sesión.
+- Fernando sigue indicando detalles de la interfaz, uno a uno.
 
 ### Plan
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
