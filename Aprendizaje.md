@@ -69,7 +69,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 78 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LA PRUEBA CON UN VIDEO REAL
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 82 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LA PRUEBA CON UN VIDEO REAL
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -163,8 +163,25 @@ espectrogramas y puede estar mal.
 - **Riesgo:** el inserto de Los Simpson (2:15) es material de terceros; para publicidad, sustituir por recurso propio o con licencia.
 - **Whisper:** escribió «Mastro» por «Maslow»: la guía necesita un vocabulario con términos propios y de marca.
 
+### Respuestas de Fernando sobre la guía (2026-11-04)
+- **La lectura de su estilo es correcta.** Música de fondo sí, y **puede cambiar según la transición o lo que se habla**:
+  la guía la planifica por tramos, con cambios justificados, no una sola pista fija.
+- **Memes:** solo material permitido. Además de Los Simpson, al inicio de `ref-desarrollo-humano` aparece otro meme de terceros.
+- **Sin anuncios pagados:** solo publica en sus canales. Sigue siendo uso comercial, porque promociona negocios.
+- **Dos cuentas por red:** Grupo Corazones Cruzados (desarrollo humano) y otra para automatización de procesos. La guía
+  y las licencias se piensan por marca.
+- **Epidemic se contradice:** la página del plan Business y la de ofertas dicen 1 canal por plataforma; la comparativa de
+  planes dice 3. Con 2 cuentas por red, **confirmar con ellos antes de pagar**. Business Plus cubre hasta 10 canales, desde 100 $/mes.
+
+### P3, primera mitad (2026-11-04)
+HyperFrames 0.9.11 renderizó `~/Movies/GCC-Edicion/pruebas/piramide-fases-transparente.mov` (12 s, 54 MB). `ffprobe`: ProRes 4444,
+`yuva444p12le`. Alfa medida a cero en una esquina y parcial en la pirámide; se vio bien compuesta con ffmpeg sobre su video.
+**Falta confirmarlo en CapCut.** Vertical: gráficos y texto en la franja de 168 a 1330 px y sin tapar la cara. La
+revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en esta prueba. Los colores son provisionales.
+
 ### Herramientas instaladas (2026-11-04)
-`whisper-cpp` por Homebrew y modelo `medium` (1,5 GB) en `~/.cache/whisper-cpp/`.
+`whisper-cpp` por Homebrew y modelo `medium` (1,5 GB) en `~/.cache/whisper-cpp/`. Skills de HyperFrames (`hyperframes`,
+`hyperframes-cli`, `hyperframes-registry`, `media-use`) en `~/.claude/skills/`; `init` las instaló solo.
 
 ### Canales y formatos (Fernando, 2026-11-04)
 - Publica en YouTube, TikTok, Instagram, Facebook y LinkedIn, según el video. **Horizontal: exclusivo de YouTube.**
